@@ -25,15 +25,15 @@ Set the optional `Description` field on a Go template (manifest templates reuse 
 
 {/* BEGIN GENERATED CATALOG TABLE */}
 
-Generated from `internal/catalog.Templates` (374 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
+Generated from `internal/catalog.Templates` (382 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
 
 | Category | Templates |
 | --- | --- |
 | [AI](#ai) | 34 |
 | [Analytics](#analytics) | 8 |
-| [Applications](#applications) | 18 |
+| [Applications](#applications) | 24 |
 | [Automation](#automation) | 8 |
-| [Communication](#communication) | 19 |
+| [Communication](#communication) | 20 |
 | [Dashboard](#dashboard) | 8 |
 | [Database Tools](#database-tools) | 23 |
 | [Developer Tools](#developer-tools) | 56 |
@@ -43,7 +43,7 @@ Generated from `internal/catalog.Templates` (374 entries as of this build). Run 
 | [IoT](#iot) | 3 |
 | [Media](#media) | 28 |
 | [Monitoring](#monitoring) | 25 |
-| [Productivity](#productivity) | 74 |
+| [Productivity](#productivity) | 75 |
 | [Security](#security) | 18 |
 | [Starter Kits](#starter-kits) | 7 |
 | [Storage](#storage) | 14 |
@@ -114,14 +114,20 @@ Generated from `internal/catalog.Templates` (374 entries as of this build). Run 
 | [Joomla](https://docs.joomla.org) | A long-established CMS with a large extension ecosystem for business sites, portals, and communities. | `joomla` |  |
 | [Kutt](https://docs.kutt.it/) | A modern URL shortener with custom domains, link analytics and an API, backed by Postgres and Redis. | `kutt` |  |
 | [Lowcoder](https://docs.lowcoder.cloud) | An open-source low-code platform for building internal apps, dashboards, and workflows with drag-and-drop. | `lowcoder` |  |
+| [LubeLogger](https://docs.lubelogger.com/) | A self-hosted vehicle maintenance and fuel mileage tracker with reminders and document storage. MIT licensed. On first open, register the first user, which becomes the root account. | `lubelogger` |  |
+| [Maintainerr](https://docs.maintainerr.info/) | Rule-based media library cleanup for Plex and Jellyfin that works with Sonarr, Radarr and Seerr. MIT licensed. On first open, add your media server and arr apps in settings, then build rules. | `maintainerr` |  |
 | [MediaWiki](https://www.mediawiki.org/wiki/Manual:Contents) | The wiki engine behind Wikipedia, for large collaborative knowledge bases with rich version history. | `mediawiki` |  |
 | [Moodle](https://moodle.org) | A widely used, highly customizable learning management system for online courses. | `moodle` |  |
 | [Nextcloud](https://docs.nextcloud.com) | Self-hosted file sync, sharing, and collaboration, a full private alternative to consumer cloud drives. | `nextcloud` |  |
 | [Odoo](https://www.odoo.com/documentation) | An all-in-one business suite covering CRM, sales, inventory, accounting, and a website builder. | `odoo` |  |
 | [OrangeHRM](https://docs.orangehrm.com/) | An open-source human resources management suite: PTO, recruitment, performance, and an employee directory. | `orangehrm` |  |
 | [Redlib](https://github.com/redlib-org/redlib) | A private, lightweight front-end for browsing Reddit without tracking or ads. | `redlib` |  |
+| [SABnzbd](https://sabnzbd.org/wiki/) | A Usenet binary downloader with a web interface, RSS and post-processing. GPL-2.0 licensed. On first open, run the setup wizard to add your Usenet provider; if you serve it on a domain, add that host name under Config, Special, host_whitelist. | `sabnzbd` |  |
 | [SearXNG](https://docs.searxng.org) | A privacy-respecting metasearch engine that aggregates results from dozens of search services. | `searxng` |  |
+| [Seerr](https://docs.seerr.dev/) | A media request manager for Jellyfin, Plex and Emby with Sonarr and Radarr hand-off, the merged successor of Overseerr and Jellyseerr. MIT licensed. On first open, sign in with your media server account to become the admin. | `seerr` |  |
+| [Spoolman](https://github.com/Donkie/Spoolman) | A filament spool inventory manager for 3D printers with usage tracking and printer firmware integrations. MIT licensed. On first open, add your filaments and vendors; there is no login, so keep it behind a private network or an auth proxy. | `spoolman` |  |
 | [Vvveb CMS](https://docs.vvveb.com) | A CMS for building websites, blogs, and ecommerce stores. | `vvveb` |  |
+| [Wizarr](https://docs.wizarr.dev/) | An invitation and onboarding manager for Jellyfin, Plex and Emby servers. MIT licensed. On first open, create the admin account, then connect your media server. | `wizarr` |  |
 | [WordPress](https://wordpress.org/documentation/) | The world's most widely used content management system, self-hosted with its own database. | `wordpress` |  |
 
 ## Automation
@@ -145,6 +151,7 @@ Generated from `internal/catalog.Templates` (374 entries as of this build). Run 
 | [Apprise API](https://github.com/caronc/apprise-api) | A single HTTP endpoint that fans a notification out to 100+ services such as Slack, Discord, and email. | `apprise-api` |  |
 | [Campfire](https://github.com/basecamp/once-campfire) | Basecamp's open-source group chat app: rooms, direct messages, and file sharing, self-hosted as one container. | `campfire` |  |
 | [Chatwoot](https://www.chatwoot.com/docs/self-hosted/) | An open-source customer support platform for live chat, email, and social messaging. | `chatwoot` |  |
+| [Element Web](https://github.com/element-hq/element-web) | The Element Matrix web client, served as static files and pointed at the homeserver you choose, for example the Matrix Synapse template. AGPL-3.0 licensed client. No account lives here, sign in or register on your homeserver. | `element-web` |  |
 | [FreeScout](https://github.com/freescout-helpdesk/freescout/wiki) | A free, self-hosted help desk and shared mailbox, a lighter alternative to Zendesk or Help Scout. | `freescout` |  |
 | [Gotify](https://gotify.net/docs/) | A simple push notification server with a REST API and web UI, for sending messages to your devices. | `gotify` |  |
 | [Listmonk](https://listmonk.app/docs/) | A self-hosted newsletter and mailing list manager with a fast, dependency-light core. | `listmonk` |  |
@@ -446,6 +453,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Redmine](https://www.redmine.org/projects/redmine/wiki/Guide) | A mature project management and issue tracker with Gantt charts, wikis and time tracking, backed by Postgres. | `redmine` |  |
 | [RSSHub](https://docs.rsshub.app/deploy/) | Turns sites without a feed into RSS feeds, with thousands of ready-made routes (AGPL-3.0). The instance is open to anyone who can reach it, so restrict access. | `rsshub` |  |
 | [Ryot](https://github.com/ignisda/ryot) | A self-hosted tracker for media, fitness, and other parts of life. | `ryot` |  |
+| [Shaarli](https://shaarli.readthedocs.io/) | A minimalist personal bookmark manager, link sharer and microblog with no database. zlib licensed. On first open, the install page asks you to create the admin login. | `shaarli` |  |
 | [Shiori](https://github.com/go-shiori/shiori/tree/master/docs) | A simple bookmark manager with offline archiving, built as a single Go binary. | `shiori` |  |
 | [SilverBullet](https://silverbullet.md) | A programmable, Markdown-based notes app you can extend with your own scripts and queries. | `silverbullet` |  |
 | [SiYuan](https://github.com/siyuan-note/siyuan) | A privacy-first, self-hosted personal knowledge management app with block-based markdown notes. | `siyuan` |  |

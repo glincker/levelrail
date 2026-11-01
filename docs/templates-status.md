@@ -141,7 +141,7 @@ Fixed in the wave N pass: `valkey` interpolated its password from the host shell
 
 Generated from the registry scan in `internal/catalog/platforms.json` (`scripts/scan-catalog-platforms`), not from the smoke run. A template is `yes` only when every image it uses lists `linux/arm64` in its manifest. `not checked` means unknown, not unsupported: the scan could not read a manifest or the image tag is set at install time.
 
-Last scan: 2026-11-01T00:10:24Z. **357 yes, 15 amd64 only, 2 not checked** of 374 templates.
+Last scan: 2026-11-01T04:09:06Z. **365 yes, 15 amd64 only, 2 not checked** of 382 templates.
 
 | Template | arm64 | Verified platforms |
 | --- | --- | --- |
@@ -219,6 +219,7 @@ Last scan: 2026-11-01T00:10:24Z. **357 yes, 15 amd64 only, 2 not checked** of 37
 | `easyappointments` | yes | linux/amd64, linux/arm64 |
 | `elasticsearch` | yes | linux/amd64, linux/arm64 |
 | `elasticsearch-kibana` | yes | linux/amd64, linux/arm64 |
+| `element-web` | yes | linux/amd64, linux/arm64 |
 | `emby` | yes | linux/amd64, linux/arm64 |
 | `embystat` | yes | linux/amd64, linux/arm64 |
 | `espocrm` | yes | linux/amd64, linux/arm64 |
@@ -325,10 +326,12 @@ Last scan: 2026-11-01T00:10:24Z. **357 yes, 15 amd64 only, 2 not checked** of 37
 | `logto` | yes | linux/amd64, linux/arm64 |
 | `loki` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `lowcoder` | yes | linux/amd64, linux/arm64 |
+| `lubelogger` | yes | linux/amd64, linux/arm64 |
 | `mage-ai` | yes | linux/amd64, linux/arm64 |
 | `mail-mox` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/s390x |
 | `mailhog` | amd64 only | linux/amd64 |
 | `mailpit` | yes | linux/386, linux/amd64, linux/arm64 |
+| `maintainerr` | yes | linux/amd64, linux/arm64 |
 | `marimo` | yes | linux/amd64, linux/arm64 |
 | `matomo` | yes | linux/amd64, linux/arm64, linux/ppc64le, linux/s390x |
 | `matrix-synapse` | yes | linux/amd64, linux/arm64 |
@@ -442,11 +445,14 @@ Last scan: 2026-11-01T00:10:24Z. **357 yes, 15 amd64 only, 2 not checked** of 37
 | `rsshub` | yes | linux/amd64, linux/arm64 |
 | `rustdesk-server` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
 | `ryot` | yes | linux/amd64, linux/arm64 |
+| `sabnzbd` | yes | linux/amd64, linux/arm64 |
 | `seafile` | yes | linux/amd64, linux/arm64 |
 | `searxng` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `seaweedfs` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
+| `seerr` | yes | linux/amd64, linux/arm64 |
 | `semaphore` | yes | linux/amd64, linux/arm64 |
 | `sftpgo` | yes | linux/amd64, linux/arm, linux/arm64, linux/ppc64le |
+| `shaarli` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `shiori` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `shlink` | yes | linux/amd64, linux/arm64 |
 | `silverbullet` | yes | linux/amd64, linux/arm, linux/arm64 |
@@ -460,6 +466,7 @@ Last scan: 2026-11-01T00:10:24Z. **357 yes, 15 amd64 only, 2 not checked** of 37
 | `sparkyfitness` | yes | linux/amd64, linux/arm64 |
 | `speaches` | yes | linux/amd64, linux/arm64 |
 | `speedtest-tracker` | yes | linux/amd64, linux/arm64 |
+| `spoolman` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `stable-diffusion-webui` | amd64 only | linux/amd64 |
 | `stalwart` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `static-site-api-starter` | yes | linux/amd64, linux/arm, linux/arm64, linux/s390x |
@@ -513,6 +520,7 @@ Last scan: 2026-11-01T00:10:24Z. **357 yes, 15 amd64 only, 2 not checked** of 37
 | `whoogle` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `wikijs` | yes | linux/amd64, linux/arm64 |
 | `windmill` | yes | linux/amd64, linux/arm64 |
+| `wizarr` | yes | linux/amd64, linux/arm64 |
 | `woodpecker` | yes | freebsd/amd64, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/riscv64 |
 | `wordpress` | yes | linux/amd64, linux/arm64 |
 | `worker-redis-queue-starter` | yes | linux/amd64, linux/arm, linux/arm64, linux/s390x |

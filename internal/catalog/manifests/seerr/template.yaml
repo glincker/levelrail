@@ -1,0 +1,20 @@
+id: seerr
+name: Seerr
+description: A media request manager for Jellyfin, Plex and Emby with Sonarr and Radarr hand-off, the merged successor of Overseerr and Jellyseerr. MIT licensed. On first open, sign in with your media server account to become the admin.
+icon: ticket
+category: Applications
+documentation_url: https://docs.seerr.dev/
+recommended_memory_bytes: 536870912
+env:
+  - key: TZ
+    label: Time zone
+    description: IANA time zone for logs and scheduled jobs.
+    default: Etc/UTC
+domains:
+  - service: seerr
+    port: 5055
+    description: Public address of Seerr.
+healthcheck:
+  service: seerr
+  port: 5055
+  path: /api/v1/status

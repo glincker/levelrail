@@ -7965,6 +7965,52 @@
   }
  },
  {
+  "id": "element-web",
+  "name": "Element Web",
+  "slogan": "The Element Matrix web client, served as static files and pointed at the homeserver you choose, for example the Matrix Synapse template. AGPL-3.0 licensed client. No account lives here, sign in or register on your homeserver.",
+  "category": "Communication",
+  "docUrl": "https://github.com/element-hq/element-web",
+  "memoryMiB": 64,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "element",
+    "image": "vectorim/element-web:v1.12.33",
+    "ports": [
+     80
+    ],
+    "volumes": []
+   }
+  ],
+  "env": [],
+  "requirements": {
+   "level": "standard",
+   "findings": [],
+   "protections": [
+    {
+     "code": "https_ingress",
+     "label": "Automatic HTTPS and an ingress shield in front of every domain"
+    },
+    {
+     "code": "health_gated_deploy",
+     "label": "Deploys are gated on the health check before traffic switches"
+    },
+    {
+     "code": "rollback",
+     "label": "One-step rollback to the previous revision"
+    },
+    {
+     "code": "exposure_report",
+     "label": "Exposure report shows what is reachable from outside"
+    },
+    {
+     "code": "firewall",
+     "label": "Host firewall rules managed for published ports"
+    }
+   ]
+  }
+ },
+ {
   "id": "emby",
   "name": "Emby",
   "slogan": "A media server that organizes your movies, shows, and music and streams them to any device.",
@@ -19757,6 +19803,86 @@
   }
  },
  {
+  "id": "lubelogger",
+  "name": "LubeLogger",
+  "slogan": "A self-hosted vehicle maintenance and fuel mileage tracker with reminders and document storage. MIT licensed. On first open, register the first user, which becomes the root account.",
+  "category": "Applications",
+  "docUrl": "https://docs.lubelogger.com/",
+  "memoryMiB": 256,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "lubelogger",
+    "image": "ghcr.io/hargata/lubelogger:v1.7.4",
+    "ports": [
+     8080
+    ],
+    "volumes": [
+     "data -> /App/data",
+     "config -> /App/config",
+     "keys -> /root/.aspnet/DataProtection-Keys"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "lubelogger",
+    "name": "LANG",
+    "kind": "preset"
+   },
+   {
+    "service": "lubelogger",
+    "name": "LC_ALL",
+    "kind": "preset"
+   },
+   {
+    "service": "lubelogger",
+    "name": "LUBELOGGER_ALLOWED_FILE_EXTENSIONS",
+    "kind": "preset"
+   }
+  ],
+  "requirements": {
+   "level": "standard",
+   "findings": [
+    {
+     "code": "persistent_data",
+     "severity": "info",
+     "services": [
+      "lubelogger"
+     ],
+     "detail": "config, data, keys",
+     "message": "Stores data in named volumes"
+    }
+   ],
+   "protections": [
+    {
+     "code": "https_ingress",
+     "label": "Automatic HTTPS and an ingress shield in front of every domain"
+    },
+    {
+     "code": "volume_backups",
+     "label": "Named volumes can be backed up and restored"
+    },
+    {
+     "code": "health_gated_deploy",
+     "label": "Deploys are gated on the health check before traffic switches"
+    },
+    {
+     "code": "rollback",
+     "label": "One-step rollback to the previous revision"
+    },
+    {
+     "code": "exposure_report",
+     "label": "Exposure report shows what is reachable from outside"
+    },
+    {
+     "code": "firewall",
+     "label": "Host firewall rules managed for published ports"
+    }
+   ]
+  }
+ },
+ {
   "id": "mage-ai",
   "name": "Mage AI",
   "slogan": "A data pipeline tool for building, running and monitoring ETL, streaming and dbt workflows in notebooks and a UI.",
@@ -20076,6 +20202,74 @@
       "mailpit"
      ],
      "detail": "mailpit_data",
+     "message": "Stores data in named volumes"
+    }
+   ],
+   "protections": [
+    {
+     "code": "https_ingress",
+     "label": "Automatic HTTPS and an ingress shield in front of every domain"
+    },
+    {
+     "code": "volume_backups",
+     "label": "Named volumes can be backed up and restored"
+    },
+    {
+     "code": "health_gated_deploy",
+     "label": "Deploys are gated on the health check before traffic switches"
+    },
+    {
+     "code": "rollback",
+     "label": "One-step rollback to the previous revision"
+    },
+    {
+     "code": "exposure_report",
+     "label": "Exposure report shows what is reachable from outside"
+    },
+    {
+     "code": "firewall",
+     "label": "Host firewall rules managed for published ports"
+    }
+   ]
+  }
+ },
+ {
+  "id": "maintainerr",
+  "name": "Maintainerr",
+  "slogan": "Rule-based media library cleanup for Plex and Jellyfin that works with Sonarr, Radarr and Seerr. MIT licensed. On first open, add your media server and arr apps in settings, then build rules.",
+  "category": "Applications",
+  "docUrl": "https://docs.maintainerr.info/",
+  "memoryMiB": 384,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "maintainerr",
+    "image": "ghcr.io/maintainerr/maintainerr:3.31.0",
+    "ports": [
+     6246
+    ],
+    "volumes": [
+     "data -> /opt/data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "maintainerr",
+    "name": "TZ",
+    "kind": "preset"
+   }
+  ],
+  "requirements": {
+   "level": "standard",
+   "findings": [
+    {
+     "code": "persistent_data",
+     "severity": "info",
+     "services": [
+      "maintainerr"
+     ],
+     "detail": "data",
      "message": "Stores data in named volumes"
     }
    ],
@@ -32041,6 +32235,85 @@
   }
  },
  {
+  "id": "sabnzbd",
+  "name": "SABnzbd",
+  "slogan": "A Usenet binary downloader with a web interface, RSS and post-processing. GPL-2.0 licensed. On first open, run the setup wizard to add your Usenet provider; if you serve it on a domain, add that host name under Config, Special, host_whitelist.",
+  "category": "Applications",
+  "docUrl": "https://sabnzbd.org/wiki/",
+  "memoryMiB": 384,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "sabnzbd",
+    "image": "lscr.io/linuxserver/sabnzbd:5.1.3",
+    "ports": [
+     8080
+    ],
+    "volumes": [
+     "config -> /config",
+     "downloads -> /downloads"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "sabnzbd",
+    "name": "PGID",
+    "kind": "preset"
+   },
+   {
+    "service": "sabnzbd",
+    "name": "PUID",
+    "kind": "preset"
+   },
+   {
+    "service": "sabnzbd",
+    "name": "TZ",
+    "kind": "preset"
+   }
+  ],
+  "requirements": {
+   "level": "standard",
+   "findings": [
+    {
+     "code": "persistent_data",
+     "severity": "info",
+     "services": [
+      "sabnzbd"
+     ],
+     "detail": "config, downloads",
+     "message": "Stores data in named volumes"
+    }
+   ],
+   "protections": [
+    {
+     "code": "https_ingress",
+     "label": "Automatic HTTPS and an ingress shield in front of every domain"
+    },
+    {
+     "code": "volume_backups",
+     "label": "Named volumes can be backed up and restored"
+    },
+    {
+     "code": "health_gated_deploy",
+     "label": "Deploys are gated on the health check before traffic switches"
+    },
+    {
+     "code": "rollback",
+     "label": "One-step rollback to the previous revision"
+    },
+    {
+     "code": "exposure_report",
+     "label": "Exposure report shows what is reachable from outside"
+    },
+    {
+     "code": "firewall",
+     "label": "Host firewall rules managed for published ports"
+    }
+   ]
+  }
+ },
+ {
   "id": "seafile",
   "name": "Seafile",
   "slogan": "Self-hosted file sync and share with real file-level versioning and client-side encryption options.",
@@ -32408,6 +32681,84 @@
   }
  },
  {
+  "id": "seerr",
+  "name": "Seerr",
+  "slogan": "A media request manager for Jellyfin, Plex and Emby with Sonarr and Radarr hand-off, the merged successor of Overseerr and Jellyseerr. MIT licensed. On first open, sign in with your media server account to become the admin.",
+  "category": "Applications",
+  "docUrl": "https://docs.seerr.dev/",
+  "memoryMiB": 512,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "seerr",
+    "image": "ghcr.io/seerr-team/seerr:v3.5.1",
+    "ports": [
+     5055
+    ],
+    "volumes": [
+     "config -> /app/config"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "seerr",
+    "name": "LOG_LEVEL",
+    "kind": "preset"
+   },
+   {
+    "service": "seerr",
+    "name": "PORT",
+    "kind": "preset"
+   },
+   {
+    "service": "seerr",
+    "name": "TZ",
+    "kind": "preset"
+   }
+  ],
+  "requirements": {
+   "level": "standard",
+   "findings": [
+    {
+     "code": "persistent_data",
+     "severity": "info",
+     "services": [
+      "seerr"
+     ],
+     "detail": "config",
+     "message": "Stores data in named volumes"
+    }
+   ],
+   "protections": [
+    {
+     "code": "https_ingress",
+     "label": "Automatic HTTPS and an ingress shield in front of every domain"
+    },
+    {
+     "code": "volume_backups",
+     "label": "Named volumes can be backed up and restored"
+    },
+    {
+     "code": "health_gated_deploy",
+     "label": "Deploys are gated on the health check before traffic switches"
+    },
+    {
+     "code": "rollback",
+     "label": "One-step rollback to the previous revision"
+    },
+    {
+     "code": "exposure_report",
+     "label": "Exposure report shows what is reachable from outside"
+    },
+    {
+     "code": "firewall",
+     "label": "Host firewall rules managed for published ports"
+    }
+   ]
+  }
+ },
+ {
   "id": "semaphore",
   "name": "Semaphore UI",
   "slogan": "A modern web UI for running Ansible, Terraform, and shell tasks with schedules, history, and access control.",
@@ -32564,6 +32915,75 @@
       "sftpgo"
      ],
      "detail": "sftpgo_data, sftpgo_home",
+     "message": "Stores data in named volumes"
+    }
+   ],
+   "protections": [
+    {
+     "code": "https_ingress",
+     "label": "Automatic HTTPS and an ingress shield in front of every domain"
+    },
+    {
+     "code": "volume_backups",
+     "label": "Named volumes can be backed up and restored"
+    },
+    {
+     "code": "health_gated_deploy",
+     "label": "Deploys are gated on the health check before traffic switches"
+    },
+    {
+     "code": "rollback",
+     "label": "One-step rollback to the previous revision"
+    },
+    {
+     "code": "exposure_report",
+     "label": "Exposure report shows what is reachable from outside"
+    },
+    {
+     "code": "firewall",
+     "label": "Host firewall rules managed for published ports"
+    }
+   ]
+  }
+ },
+ {
+  "id": "shaarli",
+  "name": "Shaarli",
+  "slogan": "A minimalist personal bookmark manager, link sharer and microblog with no database. zlib licensed. On first open, the install page asks you to create the admin login.",
+  "category": "Productivity",
+  "docUrl": "https://shaarli.readthedocs.io/",
+  "memoryMiB": 128,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "shaarli",
+    "image": "ghcr.io/shaarli/shaarli:v0.16.10",
+    "ports": [
+     80
+    ],
+    "volumes": [
+     "data -> /var/www/shaarli/data",
+     "cache -> /var/www/shaarli/cache"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "shaarli",
+    "name": "TZ",
+    "kind": "preset"
+   }
+  ],
+  "requirements": {
+   "level": "standard",
+   "findings": [
+    {
+     "code": "persistent_data",
+     "severity": "info",
+     "services": [
+      "shaarli"
+     ],
+     "detail": "cache, data",
      "message": "Stores data in named volumes"
     }
    ],
@@ -33923,6 +34343,79 @@
     {
      "code": "secret_masking",
      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+    },
+    {
+     "code": "volume_backups",
+     "label": "Named volumes can be backed up and restored"
+    },
+    {
+     "code": "health_gated_deploy",
+     "label": "Deploys are gated on the health check before traffic switches"
+    },
+    {
+     "code": "rollback",
+     "label": "One-step rollback to the previous revision"
+    },
+    {
+     "code": "exposure_report",
+     "label": "Exposure report shows what is reachable from outside"
+    },
+    {
+     "code": "firewall",
+     "label": "Host firewall rules managed for published ports"
+    }
+   ]
+  }
+ },
+ {
+  "id": "spoolman",
+  "name": "Spoolman",
+  "slogan": "A filament spool inventory manager for 3D printers with usage tracking and printer firmware integrations. MIT licensed. On first open, add your filaments and vendors; there is no login, so keep it behind a private network or an auth proxy.",
+  "category": "Applications",
+  "docUrl": "https://github.com/Donkie/Spoolman",
+  "memoryMiB": 256,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "spoolman",
+    "image": "ghcr.io/donkie/spoolman:0.27.1",
+    "ports": [
+     8000
+    ],
+    "volumes": [
+     "data -> /home/app/.local/share/spoolman"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "spoolman",
+    "name": "SPOOLMAN_DB_TYPE",
+    "kind": "preset"
+   },
+   {
+    "service": "spoolman",
+    "name": "TZ",
+    "kind": "preset"
+   }
+  ],
+  "requirements": {
+   "level": "standard",
+   "findings": [
+    {
+     "code": "persistent_data",
+     "severity": "info",
+     "services": [
+      "spoolman"
+     ],
+     "detail": "data",
+     "message": "Stores data in named volumes"
+    }
+   ],
+   "protections": [
+    {
+     "code": "https_ingress",
+     "label": "Automatic HTTPS and an ingress shield in front of every domain"
     },
     {
      "code": "volume_backups",
@@ -39539,6 +40032,74 @@
     {
      "code": "secret_masking",
      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+    },
+    {
+     "code": "volume_backups",
+     "label": "Named volumes can be backed up and restored"
+    },
+    {
+     "code": "health_gated_deploy",
+     "label": "Deploys are gated on the health check before traffic switches"
+    },
+    {
+     "code": "rollback",
+     "label": "One-step rollback to the previous revision"
+    },
+    {
+     "code": "exposure_report",
+     "label": "Exposure report shows what is reachable from outside"
+    },
+    {
+     "code": "firewall",
+     "label": "Host firewall rules managed for published ports"
+    }
+   ]
+  }
+ },
+ {
+  "id": "wizarr",
+  "name": "Wizarr",
+  "slogan": "An invitation and onboarding manager for Jellyfin, Plex and Emby servers. MIT licensed. On first open, create the admin account, then connect your media server.",
+  "category": "Applications",
+  "docUrl": "https://docs.wizarr.dev/",
+  "memoryMiB": 256,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "wizarr",
+    "image": "ghcr.io/wizarrrr/wizarr:v2026.10.1",
+    "ports": [
+     5690
+    ],
+    "volumes": [
+     "database -> /data/database"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "wizarr",
+    "name": "TZ",
+    "kind": "preset"
+   }
+  ],
+  "requirements": {
+   "level": "standard",
+   "findings": [
+    {
+     "code": "persistent_data",
+     "severity": "info",
+     "services": [
+      "wizarr"
+     ],
+     "detail": "database",
+     "message": "Stores data in named volumes"
+    }
+   ],
+   "protections": [
+    {
+     "code": "https_ingress",
+     "label": "Automatic HTTPS and an ingress shield in front of every domain"
     },
     {
      "code": "volume_backups",

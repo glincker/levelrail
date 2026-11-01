@@ -1,0 +1,20 @@
+id: shaarli
+name: Shaarli
+description: A minimalist personal bookmark manager, link sharer and microblog with no database. zlib licensed. On first open, the install page asks you to create the admin login.
+icon: link
+category: Productivity
+documentation_url: https://shaarli.readthedocs.io/
+recommended_memory_bytes: 134217728
+env:
+  - key: TZ
+    label: Time zone
+    description: IANA time zone for bookmark dates.
+    default: Etc/UTC
+domains:
+  - service: shaarli
+    port: 80
+    description: Public address of Shaarli.
+healthcheck:
+  service: shaarli
+  port: 80
+  path: /tpl/default/img/favicon.png

@@ -1,0 +1,14 @@
+services:
+  maintainerr:
+    image: ghcr.io/maintainerr/maintainerr:3.31.0
+    ports: ["6246"]
+    environment:
+      TZ: ${TZ}
+    volumes:
+      - data:/opt/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:6246/ || curl -fsS -o /dev/null http://127.0.0.1:6246/"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 45s

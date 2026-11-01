@@ -1,5 +1,5 @@
 {
-  "scanned_at": "2026-11-01T00:10:24Z",
+  "scanned_at": "2026-11-01T04:09:06Z",
   "images": [
     {
       "image": "1dev/server",
@@ -1057,6 +1057,16 @@
       "checked_at": "2026-10-31T23:54:42Z"
     },
     {
+      "image": "ghcr.io/donkie/spoolman",
+      "tag": "0.27.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-11-01T04:09:06Z"
+    },
+    {
       "image": "ghcr.io/flaresolverr/flaresolverr",
       "tag": "v3.5.0",
       "platforms": [
@@ -1150,6 +1160,15 @@
         "linux/arm64"
       ],
       "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/hargata/lubelogger",
+      "tag": "v1.7.4",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-11-01T04:09:06Z"
     },
     {
       "image": "ghcr.io/haveagitgat/tdarr",
@@ -1268,6 +1287,15 @@
         "linux/arm64"
       ],
       "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/maintainerr/maintainerr",
+      "tag": "3.31.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-11-01T04:09:06Z"
     },
     {
       "image": "ghcr.io/marimo-team/marimo",
@@ -1426,6 +1454,25 @@
       "checked_at": "2026-10-31T23:54:42Z"
     },
     {
+      "image": "ghcr.io/seerr-team/seerr",
+      "tag": "v3.5.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-11-01T04:09:06Z"
+    },
+    {
+      "image": "ghcr.io/shaarli/shaarli",
+      "tag": "v0.16.10",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-11-01T04:09:06Z"
+    },
+    {
       "image": "ghcr.io/silverbulletmd/silverbullet",
       "tag": "2.11.1",
       "platforms": [
@@ -1527,6 +1574,15 @@
         "linux/arm64"
       ],
       "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "ghcr.io/wizarrrr/wizarr",
+      "tag": "v2026.10.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-11-01T04:09:06Z"
     },
     {
       "image": "ghost",
@@ -2341,6 +2397,15 @@
         "linux/arm64"
       ],
       "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "lscr.io/linuxserver/sabnzbd",
+      "tag": "5.1.3",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-11-01T04:09:06Z"
     },
     {
       "image": "lscr.io/linuxserver/snapdrop",
@@ -3903,6 +3968,15 @@
       "checked_at": "2026-10-31T23:54:42Z"
     },
     {
+      "image": "vectorim/element-web",
+      "tag": "v1.12.33",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-11-01T04:09:06Z"
+    },
+    {
       "image": "verdaccio/verdaccio",
       "tag": "5.31.1",
       "platforms": [
@@ -4410,6 +4484,10 @@
       "linux/amd64",
       "linux/arm64"
     ],
+    "element-web": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
     "emby": [
       "linux/amd64",
       "linux/arm64"
@@ -4882,6 +4960,10 @@
       "linux/amd64",
       "linux/arm64"
     ],
+    "lubelogger": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
     "mage-ai": [
       "linux/amd64",
       "linux/arm64"
@@ -4899,6 +4981,10 @@
     ],
     "mailpit": [
       "linux/386",
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "maintainerr": [
       "linux/amd64",
       "linux/arm64"
     ],
@@ -5432,6 +5518,10 @@
       "linux/amd64",
       "linux/arm64"
     ],
+    "sabnzbd": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
     "seafile": [
       "linux/amd64",
       "linux/arm64"
@@ -5447,6 +5537,10 @@
       "linux/arm",
       "linux/arm64"
     ],
+    "seerr": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
     "semaphore": [
       "linux/amd64",
       "linux/arm64"
@@ -5456,6 +5550,11 @@
       "linux/arm",
       "linux/arm64",
       "linux/ppc64le"
+    ],
+    "shaarli": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
     ],
     "shiori": [
       "linux/amd64",
@@ -5507,6 +5606,11 @@
     ],
     "speedtest-tracker": [
       "linux/amd64",
+      "linux/arm64"
+    ],
+    "spoolman": [
+      "linux/amd64",
+      "linux/arm",
       "linux/arm64"
     ],
     "stable-diffusion-webui": [
@@ -5741,6 +5845,10 @@
       "linux/arm64"
     ],
     "windmill": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "wizarr": [
       "linux/amd64",
       "linux/arm64"
     ],

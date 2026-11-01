@@ -226,6 +226,7 @@ export const TEMPLATE_LOGO_LOADERS: Record<
   'elasticsearch-kibana': () => import('@thesvg/react/elasticsearch'),
   emby: () => import('@thesvg/react/emby'),
   etcd: () => import('@thesvg/react/etcd'),
+  'element-web': () => import('@thesvg/react/element'),
   'firefox-browser': () => import('@thesvg/react/firefox-browser'),
   flipt: () => import('@thesvg/react/flipt'),
   'forgejo-postgres': () => import('@thesvg/react/forgejo'),
@@ -499,6 +500,6 @@ export const COMPOSITE_LOGOS: Record<string, [TechLogoKey, TechLogoKey?]> = {
 
 // No thesvg mark exists for these products yet; they render the monogram tile.
 export const KNOWN_MISSING_LOGOS: readonly string[] =
-  'diun gotenberg lldap campfire once-campfire bugsink imgcompress embystat budge proxyscotch kutt metamcp archivebox backrest crawl4ai headscale open-notebook radicale gatus mail-mox factorio palworld terraria'.split(
+  'diun gotenberg lldap campfire once-campfire bugsink imgcompress embystat budge proxyscotch kutt metamcp archivebox backrest crawl4ai headscale open-notebook radicale gatus mail-mox factorio palworld terraria seerr wizarr maintainerr sabnzbd lubelogger spoolman shaarli'.split(
     ' ',
   )

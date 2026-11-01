@@ -1,0 +1,65 @@
+---
+title: "Self-host Shaarli with Docker"
+sidebarTitle: "Shaarli"
+description: "A minimalist personal bookmark manager, link sharer and microblog with no database. zlib licensed. On first open, the install page asks you to create the admin login."
+"og:url": "https://docs.levelrail.com/self-host/shaarli"
+---
+
+A minimalist personal bookmark manager, link sharer and microblog with no database. zlib licensed. On first open, the install page asks you to create the admin login.
+
+This page describes the Levelrail template for Shaarli (Productivity). It deploys the services below as one Docker Compose app on your own server. Project site: https://shaarli.readthedocs.io/.
+
+Recommended memory: about 128 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `shaarli` | `ghcr.io/shaarli/shaarli:v0.16.10` | 80 | `data -&#62; /var/www/shaarli/data`<br />`cache -&#62; /var/www/shaarli/cache` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `shaarli` | `TZ` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`shaarli`): cache, data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Shaarli with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Shaarli. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy shaarli --name my-shaarli
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Productivity templates
+
+- [AFFiNE](/self-host/affine)
+- [AppFlowy](/self-host/appflowy)
+- [ArchiveBox](/self-host/archivebox)
+- [Baby Buddy](/self-host/babybuddy)
+- [BentoPDF](/self-host/bentopdf)
+
+All templates are listed in the [self-host gallery](/self-host).

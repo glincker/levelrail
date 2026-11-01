@@ -1,0 +1,28 @@
+id: element-web
+name: Element Web
+description: The Element Matrix web client, served as static files and pointed at the homeserver you choose, for example the Matrix Synapse template. AGPL-3.0 licensed client. No account lives here, sign in or register on your homeserver.
+icon: users
+category: Communication
+documentation_url: https://github.com/element-hq/element-web
+recommended_memory_bytes: 67108864
+env:
+  - key: HOMESERVER_URL
+    label: Homeserver URL
+    description: Base URL of your Matrix homeserver, reachable from the user's browser.
+    default: https://matrix-client.matrix.org
+  - key: HOMESERVER_NAME
+    label: Homeserver name
+    description: The server name part of Matrix IDs on that homeserver.
+    default: matrix.org
+  - key: BRAND
+    label: Brand
+    description: Name shown in the client.
+    default: Element
+domains:
+  - service: element
+    port: 80
+    description: Public address of Element Web.
+healthcheck:
+  service: element
+  port: 80
+  path: /
