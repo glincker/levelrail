@@ -1636,6 +1636,11 @@
     "useAmbient": "Usar la propia identidad de AWS de este plano de control (variables de entorno, configuración compartida o un perfil de instancia de EC2) en lugar de una clave guardada"
   },
   "storageDestinations": {
+    "accountLabel": {
+      "r2": "ID de cuenta de Cloudflare",
+      "oracle": "Namespace",
+      "default": "ID de cuenta o namespace"
+    },
     "classes": {
       "archives": "Archivos de registros",
       "artifacts": "Artefactos de pipelines",

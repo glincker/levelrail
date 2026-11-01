@@ -34,6 +34,12 @@ export type BrandIconName =
   | 'svelte'
   | 'nuxt'
   | 'astro'
+  | 'hugo'
+  | 'jekyll'
+  | 'eleventy'
+  | 'nestjs'
+  | 'flask'
+  | 'rust'
   | 'django'
   | 'fastapi'
   | 'laravel'
@@ -175,6 +181,12 @@ const LOADERS: Record<
   svelte: () => import('@thesvg/react/svelte'),
   nuxt: () => import('@thesvg/react/nuxt'),
   astro: () => import('@thesvg/react/astro'),
+  hugo: () => import('@thesvg/react/hugo'),
+  jekyll: () => import('@thesvg/react/jekyll'),
+  eleventy: () => import('@thesvg/react/eleventy'),
+  nestjs: () => import('@thesvg/react/nestjs'),
+  flask: () => import('@thesvg/react/flask'),
+  rust: () => import('@thesvg/react/rust'),
   django: () => import('@thesvg/react/django'),
   fastapi: () => import('@thesvg/react/fastapi'),
   laravel: () => import('@thesvg/react/laravel'),

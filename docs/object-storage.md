@@ -57,7 +57,7 @@ These three are not yet verified against a real bucket.
 
 **Google Cloud Storage** (`--provider gcs`): endpoint `https://storage.googleapis.com` (the XML API), region `auto`, path-style. It needs an HMAC key, not a service account JSON file. In Cloud Storage, open Settings, then Interoperability, create an HMAC key for a service account that has `Storage Object Admin` on the bucket, and use the access ID as the access key id and the secret as the secret access key.
 
-**Oracle Cloud Object Storage** has no preset, because the endpoint needs your tenancy namespace and the dashboard form only has a Cloudflare-named account field. Use the `custom` provider with these fields:
+**Oracle Cloud Object Storage** (`--provider oracle`): pick the Oracle Cloud preset, enter your tenancy namespace in the Namespace field and the OCI region, and the endpoint is built for you. The same settings by hand with the `custom` provider:
 
 | Field | Value |
 | --- | --- |

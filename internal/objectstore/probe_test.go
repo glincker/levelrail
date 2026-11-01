@@ -79,6 +79,8 @@ func TestResolve(t *testing.T) {
 		{name: "wasabi default region", preset: PresetWasabi, wantEndpoint: "https://s3.us-east-1.wasabisys.com", wantRegion: "us-east-1"},
 		{name: "gcs fixed endpoint", preset: PresetGCS, wantEndpoint: "https://storage.googleapis.com", wantRegion: "auto"},
 		{name: "tigris fixed endpoint", preset: PresetTigris, wantEndpoint: "https://t3.storage.dev", wantRegion: "auto"},
+		{name: "oracle namespace and region", preset: PresetOracle, account: "axabc", region: "eu-frankfurt-1", wantEndpoint: "https://axabc.compat.objectstorage.eu-frankfurt-1.oraclecloud.com", wantRegion: "eu-frankfurt-1"},
+		{name: "oracle needs namespace", preset: PresetOracle, region: "eu-frankfurt-1", wantErr: true},
 		{name: "aws no endpoint", preset: PresetAWS, region: "eu-west-1", wantRegion: "eu-west-1"},
 		{name: "minio needs endpoint", preset: PresetMinIO, wantErr: true},
 		{name: "minio endpoint trimmed", preset: PresetMinIO, endpoint: "http://minio.local:9000/", wantEndpoint: "http://minio.local:9000", wantRegion: "us-east-1"},

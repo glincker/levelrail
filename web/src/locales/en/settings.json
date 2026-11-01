@@ -2610,6 +2610,11 @@
     "removedToast": "Firewall rule removed."
   },
   "storageDestinations": {
+    "accountLabel": {
+      "r2": "Cloudflare account ID",
+      "oracle": "Namespace",
+      "default": "Account or namespace ID"
+    },
     "usage": {
       "header": "Usage",
       "none": "Empty",
