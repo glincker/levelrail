@@ -338,3 +338,27 @@ func TestClearStaleSuspended(t *testing.T) {
 		t.Fatal("input mutated")
 	}
 }
+
+func TestRunCloudChecks_ImageArchCoversFailedDeploy(t *testing.T) {
+	t.Parallel()
+	// Mirrors the store: per-service list, newest first.
+	attempts := map[string][]store.DeployAttempt{
+		"broken": {{Image: "acme/amd-only:1", Status: store.DeployAttemptStatusFailed}, {Image: "acme/old:1", Status: store.DeployAttemptStatusSucceeded}},
+		"fixed":  {{Image: "acme/ok:2", Status: store.DeployAttemptStatusSucceeded}, {Image: "acme/amd-only:0", Status: store.DeployAttemptStatusFailed}},
+	}
+	list := func(_ context.Context, n string) ([]store.DeployAttempt, error) {
+		if n == "none" {
+			return nil, errors.New("list failed")
+		}
+		return attempts[n], nil
+	}
+	d := fakeCloudDeps(nil, nil, nil)
+	d.failedImages = func(ctx context.Context) []string {
+		return latestFailedImages(ctx, []string{"broken", "fixed", "none"}, list)
+	}
+	d.imageArch = func(context.Context, string) (string, error) { return "amd64", nil }
+	r := cloudByCode(runCloudChecks(context.Background(), d), "image_arch")
+	if r == nil || !strings.Contains(r.Message, "acme/amd-only:1 is amd64") || strings.Contains(r.Message, ":0") {
+		t.Fatalf("got %+v", r)
+	}
+}

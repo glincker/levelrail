@@ -66,7 +66,10 @@ type cloudDeps struct {
 	metadata  func(ctx context.Context, url string) ([]byte, error)
 	ports     func(ctx context.Context) ([]cloudPort, error)
 	imageArch func(ctx context.Context, image string) (string, error)
-	hostArch  string
+	// failedImages lists image refs of apps whose latest deploy failed and so
+	// have no running container for the port audit to see.
+	failedImages func(ctx context.Context) []string
+	hostArch     string
 }
 
 func realCloudDeps() cloudDeps {
@@ -112,6 +115,7 @@ func (rt *Router) doctorCheckCloud(ctx context.Context) []doctorCheckResource {
 			return det.Arch, nil
 		}
 	}
+	d.failedImages = rt.failedDeployImages
 	d.ports = func(ctx context.Context) ([]cloudPort, error) {
 		if rt.exposure == nil || rt.apps == nil || rt.databases == nil {
 			return nil, nil
@@ -132,6 +136,38 @@ func (rt *Router) doctorCheckCloud(ctx context.Context) []doctorCheckResource {
 		return append(out, rt.desiredCloudPortsNow(ctx)...), nil
 	}
 	return runCloudChecks(ctx, d)
+}
+
+// failedDeployImages returns the image of each app's newest attempt when it
+// failed, so a failed create still gets an architecture check.
+func (rt *Router) failedDeployImages(ctx context.Context) []string {
+	if rt.apps == nil || rt.deployAttempts == nil {
+		return nil
+	}
+	services, err := rt.apps.ListDesiredServices(ctx)
+	if err != nil {
+		return nil
+	}
+	names := make([]string, 0, len(services))
+	for _, s := range services {
+		names = append(names, s.Name)
+	}
+	return latestFailedImages(ctx, names, rt.deployAttempts.ListDeployAttempts)
+}
+
+// latestFailedImages relies on the list being newest first, like the store.
+func latestFailedImages(ctx context.Context, names []string, list func(context.Context, string) ([]store.DeployAttempt, error)) []string {
+	var out []string
+	for _, n := range names {
+		attempts, err := list(ctx, n)
+		if err != nil || len(attempts) == 0 {
+			continue
+		}
+		if a := attempts[0]; a.Status == store.DeployAttemptStatusFailed && a.Image != "" {
+			out = append(out, a.Image)
+		}
+	}
+	return out
 }
 
 func (rt *Router) desiredCloudPortsNow(ctx context.Context) []cloudPort {
@@ -431,20 +467,27 @@ func imageArchResult(ctx context.Context, d cloudDeps, ports []cloudPort) (docto
 	if d.imageArch == nil || d.hostArch == "" {
 		return doctorCheckResource{}, false
 	}
+	images := make([]string, 0, len(ports))
+	for _, p := range ports {
+		images = append(images, p.Image)
+	}
+	if d.failedImages != nil {
+		images = append(images, d.failedImages(ctx)...)
+	}
 	seen := map[string]bool{}
 	var bad []string
-	for _, p := range ports {
-		if seen[p.Image] || !cloudSafeImage(p.Image) {
+	for _, img := range images {
+		if seen[img] || !cloudSafeImage(img) {
 			continue
 		}
-		seen[p.Image] = true
+		seen[img] = true
 		ictx, cancel := context.WithTimeout(ctx, doctorPingTimeout)
-		arch, err := d.imageArch(ictx, p.Image)
+		arch, err := d.imageArch(ictx, img)
 		cancel()
 		if err != nil || arch == "" || arch == d.hostArch {
 			continue
 		}
-		bad = append(bad, fmt.Sprintf("%s is %s", p.Image, arch))
+		bad = append(bad, fmt.Sprintf("%s is %s", img, arch))
 	}
 	if len(bad) == 0 {
 		return doctorCheckResource{}, false
