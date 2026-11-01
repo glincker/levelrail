@@ -14,7 +14,7 @@ func summarizeAppConditions(conditions []reconcile.Condition) appStatusSummary {
 		return appStatusSummary{Label: "No status yet", Variant: "muted"}
 	}
 	for _, c := range conditions {
-		if c.Reason == "Suspended" {
+		if c.Reason == "Suspended" || c.Reason == "RetainedDeployStopped" {
 			return appStatusSummary{Label: "Stopped", Variant: "muted"}
 		}
 	}

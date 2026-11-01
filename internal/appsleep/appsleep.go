@@ -411,11 +411,13 @@ func Wake(ctx context.Context, sleep interface {
 	if !a.Sleeping {
 		return false, nil
 	}
-	if err := apps.UpdateServiceSuspended(ctx, name, false); err != nil {
-		return false, fmt.Errorf("start sleeping app: %w", err)
-	}
+	// Clear the sleeping mark first: the reconciler keeps a sleeping deploy copy down.
 	if err := sleep.SetAppSleeping(ctx, name, false, now); err != nil {
 		return false, err
+	}
+	if err := apps.UpdateServiceSuspended(ctx, name, false); err != nil {
+		_ = sleep.SetAppSleeping(ctx, name, true, now)
+		return false, fmt.Errorf("start sleeping app: %w", err)
 	}
 	if nudger != nil {
 		nudger.Nudge()

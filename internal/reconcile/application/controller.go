@@ -514,6 +514,15 @@ type RetainedDeploys interface {
 	IsRetained(ctx context.Context, service string) bool
 }
 
+// retainedAsleep is true for a deploy-URL copy still marked sleeping: a stray
+// unsuspend (project start, bulk start) must not boot a second copy of the app.
+func (c *Controller) retainedAsleep(ctx context.Context) bool {
+	a, ok := c.retained.(interface {
+		Asleep(ctx context.Context, service string) bool
+	})
+	return ok && a.Asleep(ctx, c.serviceName)
+}
+
 // WithRetainedDeploys makes retained deploy services stop retrying after
 // repeated readiness failures instead of looping with the crash backoff.
 func WithRetainedDeploys(r RetainedDeploys) Option {
@@ -624,7 +633,7 @@ func (c *Controller) reconcileDesired(ctx context.Context, desired *store.Desire
 	// own doc comment): converge to zero containers and return early,
 	// same containers-only teardown removeStale already performs after a
 	// deploy, just with keep=nil instead of the new replica set.
-	if desired.Suspended {
+	if desired.Suspended || c.retainedAsleep(ctx) {
 		// One container listing serves both teardowns: this runs for every
 		// suspended app on every resync.
 		all, err := c.listPrefix(ctx, c.serviceName+"-")
@@ -636,7 +645,7 @@ func (c *Controller) reconcileDesired(ctx context.Context, desired *store.Desire
 			return notReady("SuspendFailed", err), fmt.Errorf("application/%s: suspend: remove containers: %w", c.serviceName, err)
 		}
 		result := unknownResult("Suspended")
-		if c.retained != nil && c.retained.IsRetained(ctx, c.serviceName) {
+		if c.retained != nil && desired.Suspended && c.retained.IsRetained(ctx, c.serviceName) {
 			result = unknownResult(reasonRetainedDeployStopped)
 		}
 		result.Conditions = append(result.Conditions, c.reconcileEgressWith(ctx, c.filterEgressSidecars(all), nil, desired))
