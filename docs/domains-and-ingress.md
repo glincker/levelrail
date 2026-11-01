@@ -160,7 +160,7 @@ The **Guided setup** button on an app's Domains tab walks one domain through fou
 1. **Domain.** Pick the environment it belongs to, and optionally route the `www` or apex twin with a redirect to the one you typed.
 2. **DNS record.** The exact A, AAAA or CNAME record to add, re-checked live.
 3. **Container port.** Whether the running container really listens on the app's port. This reads the container's socket table, so it needs exec access enabled for the app; without it the step says it could not verify.
-4. **Certificate.** Which challenge applies. HTTP-01 needs the internet to reach port 80 on this server, and non-wildcard hosts use it by default. DNS-01 is used for wildcard hosts, and for every host once you run `levelrail settings ingress dns01 enable` (a stored setting that applies without a restart; `APP_INGRESS_DNS01_ALL_HOSTS=true` only seeds the default until something is stored), and needs a connected DNS provider (Cloudflare, Route53 or Google Cloud DNS). Without it, a non-wildcard host on a private (LAN, NAT, NAS) address cannot get a trusted certificate from ACME. Enabling it is refused while no provider is connected. DNS-01 for single hosts is not yet verified against a real CA. The step says which provider is connected, or none, and where to connect one. Use a wildcard host, a tunnel, or an uploaded certificate instead.
+4. **Certificate.** Which challenge applies. HTTP-01 needs the internet to reach port 80 on this server, and non-wildcard hosts use it by default. DNS-01 is used for wildcard hosts, and for every host once you turn on the runtime setting `ingress.dns01_all_hosts` (see below), and needs a connected DNS provider (Cloudflare, Route53 or Google Cloud DNS). Without it, a non-wildcard host on a private (LAN, NAT, NAS) address cannot get a trusted certificate from ACME. Enabling it is refused while no provider is connected. DNS-01 for single hosts is not yet verified against a real CA. The step says which provider is connected, or none, and where to connect one. Use a wildcard host, a tunnel, or an uploaded certificate instead.
 
 When a certificate request fails, the dashboard shows the certificate authority's own error next to the one step that usually fixes it: open ports 80 and 443, fix the DNS record, wait out a rate limit, or correct a CAA record. The same reason appears on the Domains list and in `domains check`.
 
@@ -456,6 +456,18 @@ An upload is all or nothing: if saving the key or the record fails, the previous
 ### Domains that are dropped or downgraded
 
 The ingress pass never degrades a domain silently. Each pass records a per-domain issue, shown on the domain list (and by `levelrail-cli domains list`): an uploaded certificate that cannot be read (automatic issuance is used instead), a basic auth password that cannot be read (the domain is not routed rather than served open), a wildcard with no DNS-01 provider, or a standalone target that is unavailable. A dropped domain also turns the ingress Ready condition False with the domain names; fixing the cause clears it on the next pass. Each issue on the domain list has a Fix button: **Use automatic certificate** (root only, clears the uploaded certificate) or **Upload again** for a certificate, **Set password** for basic auth, **Connect DNS provider** for a wildcard, **Open app** or **Check target** for an unavailable target.
+
+## DNS-01 for single hosts
+
+By default only wildcard hosts use DNS-01. If port 80 is closed or the server is behind CGNAT, turn it on for every host. This is a runtime setting (`ingress.dns01_all_hosts`): you manage it from the ingress settings card or the CLI, a stored value applies without a restart, and `APP_INGRESS_DNS01_ALL_HOSTS` only seeds the default while nothing is stored.
+
+```bash
+levelrail-cli settings ingress dns01 show
+levelrail-cli settings ingress dns01 enable
+levelrail-cli settings ingress dns01 disable
+```
+
+API: `GET` and `PUT /api/v1/settings/ingress/dns01`. Enabling is refused while no DNS provider is connected (see below). This path is not yet verified against a real CA.
 
 ## Wildcard domains: DNS-01 providers
 

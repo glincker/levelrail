@@ -33,6 +33,8 @@ Each process reads these variables once at startup, so a change only takes effec
 - **Node agent:** variables marked "agent" below are read by `levelrail-agent`. Set them on the agent's container or service, not on the control plane. See [Docker](/docker) and [Node provisioning](/node-provisioning).
 - **Command line client:** variables marked "CLI" are read by `levelrail-cli` in the shell where you run it.
 
+Exception: Levelrail is an infrastructure deployment, so controls that operators change in production are runtime settings managed from the dashboard and the CLI. For those, the environment variable only seeds the default while nothing is stored, a stored value always wins, and it applies without a restart. Rows below say which setting replaces the variable.
+
 Duration values use Go duration syntax such as `30s`, `5m`, `1h30m`. Most variables fall back to their default when the value is unset or invalid; the exceptions are called out in the tables.
 
 ## Sessions and cookies
@@ -196,7 +198,12 @@ Signed JSON posts sent when audited actions succeed. Positive durations only; an
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
+| `APP_EVENT_WEBHOOK_MAX_ATTEMPTS` | `8` | Delivery attempts before an event is given up. Positive integer. |
+| `APP_EVENT_WEBHOOK_BACKOFF_BASE` | `30s` | First wait before a retry. Duration. |
+| `APP_EVENT_WEBHOOK_BACKOFF_MAX` | `1h` | Cap on the retry wait. Duration. |
 | `APP_EVENT_WEBHOOK_TIMEOUT` | `10s` | Timeout of one delivery request. Duration. |
+| `APP_EVENT_WEBHOOK_RETENTION` | `720h` (30 days) | How long delivery records are kept. Duration. |
+| `APP_EVENT_WEBHOOK_QUEUE_SIZE` | `1024` | Events held in memory while waiting to be sent. Positive integer. |
 
 ## Ingress
 
@@ -206,7 +213,51 @@ The edge hardening limits are in [Domains and ingress](/domains-and-ingress#edge
 | --- | --- | --- |
 | `APP_INGRESS_RETRY_INTERVAL` | `250ms` | Pause between retries when a proxied backend cannot be reached during the `APP_INGRESS_RETRY_WINDOW`. A negative or unparseable value is a startup error, not a silent fallback. |
 | `APP_INGRESS_SOCKET_ACTIVATION` | `auto` | Controls use of sockets inherited from systemd. `auto` uses them if present. `true` (also `1`, `on`) makes missing inherited sockets a startup error. `false` (also `0`, `off`) ignores them. See [Surviving a control plane restart](/domains-and-ingress#surviving-a-control-plane-restart). |
+| `APP_INGRESS_DNS01_ALL_HOSTS` | off | `true` uses DNS-01 for every host, not only wildcards. Needs a connected DNS provider. Only seeds the default: the runtime setting `ingress.dns01_all_hosts` (`levelrail-cli settings ingress dns01 enable`) wins and applies without a restart. Not yet verified against a real CA. Source: `internal/runtimesettings/registry.go`. |
 | `APP_CLOUDFLARED_IMAGE` | `cloudflare/cloudflared:2026.10.7` | Image that runs the Cloudflare Tunnel daemon. Set it to bump the pinned tag or point at a mirror without a new release. Control plane. Source: `internal/reconcile/cloudflaretunnel/controller.go`. |
+
+## Dynamic DNS
+
+Keeps a DNS name pointed at this host's public IPv4. See [Dynamic DNS](/dynamic-dns). Control plane. Source: `internal/ddns/config.go`.
+
+These variables only seed the default while nothing is stored. Manage the setting in the ingress settings card or with `levelrail-cli settings ddns`; a stored value wins and applies without a restart. The update URL and token are stored encrypted and never shown.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_DDNS_ENABLED` | off | `1`, `true`, `on`, `yes` or `enabled` turns the updater on. Also off while `APP_PUBLIC_IP_DETECT` is off. Replaced by `levelrail-cli settings ddns enable`. |
+| `APP_DDNS_INTERVAL` | `5m` | Time between address checks. Replaced by `settings ddns set --interval`. |
+| `APP_DDNS_PROBE_URLS` | falls back to `APP_PUBLIC_IP_PROBE_URLS`, then three public probes | Comma or space separated probe URLs. Replaced by `--probe-urls`. |
+| `APP_DDNS_PROBE_QUORUM` | `2` | Probes that must agree on the address. Replaced by `--probe-quorum`. |
+| `APP_DDNS_TIMEOUT` | `10s` | Timeout of one probe or update request. Replaced by `--timeout`. |
+| `APP_DDNS_MIN_UPDATE_GAP` | `5m` | Shortest time between provider writes. Replaced by `--min-update-gap`. |
+| `APP_DDNS_REASSERT_INTERVAL` | `24h` | Write the record again after this long even if the address is unchanged. Replaced by `--reassert`. |
+| `APP_DDNS_FAIL_ALERT_AFTER` | `3` | Consecutive failures before an alert is raised. Replaced by `--fail-alert-after`. |
+| `APP_DDNS_ALLOW_PRIVATE` | off | Allow loopback and private update destinations. Replaced by `--allow-private`. |
+| `APP_DDNS_ALLOW_INSECURE_HTTP` | off | Allow a plain `http` update URL. Replaced by `--allow-insecure-http`. |
+| `APP_DDNS_UPDATE_URL` | unset | Generic update URL containing `{ip}`. Wins over the DuckDNS pair. Replaced by `settings ddns set --provider generic --target`. |
+| `APP_DDNS_DUCKDNS_DOMAINS` | unset | DuckDNS domains, comma separated. Replaced by `--provider duckdns --domains`. |
+| `APP_DDNS_DUCKDNS_TOKEN` | unset | DuckDNS token. Replaced by `--provider duckdns --target`. |
+
+Public address detection, shared with the updater. Source: `internal/ingress/publicip.go`, `internal/ddns/config.go`. These are read at startup and have no setting yet.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_PUBLIC_IP_DETECT` | on | `off`, `0`, `false`, `no` or `disabled` stops address detection and keeps the dynamic DNS env default off. |
+| `APP_PUBLIC_IP_PROBE_URLS` | `https://api.ipify.org`, `https://icanhazip.com`, `https://ifconfig.me/ip` | Probe URLs, comma or space separated. |
+| `APP_PUBLIC_IP_PROBE_TIMEOUT` | `4s` | Time limit for boot-time detection. |
+
+## Off-host heartbeat
+
+Pings sent while the control plane is healthy, and per-job pings. See [Off-host heartbeat](/heartbeat) and [Scheduled jobs](/scheduled-jobs#heartbeat-pings). Control plane. Source: `internal/heartbeat/config.go`, `internal/heartbeat/jobping.go`.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_HEARTBEAT_TIMEOUT` | `10s` | Timeout of one ping request. Env only: it is shared with the control plane heartbeat, which is read once at boot. |
+| `APP_HEARTBEAT_ALLOW_PRIVATE` | off | `1` allows loopback and private ping destinations. Env only: it widens what the server may call, so it is kept out of runtime settings. |
+| `APP_HEARTBEAT_JOB_MAX_ATTEMPTS` | `3` | Tries per job ping. Seeds the setting `heartbeat.job_max_attempts`; change it with `levelrail-cli settings runtime set heartbeat.job_max_attempts N`. |
+| `APP_HEARTBEAT_JOB_BACKOFF_BASE` | `2s` | First retry wait, doubled each retry. Seeds `heartbeat.job_backoff_base`. |
+| `APP_HEARTBEAT_JOB_BACKOFF_MAX` | `30s` | Cap on the retry wait. Seeds `heartbeat.job_backoff_max`. |
+| `APP_HEARTBEAT_JOB_QUEUE` | `64` | Job pings waiting to be sent. Seeds `heartbeat.job_queue`. |
 
 ## Certificates and request thresholds
 

@@ -83,6 +83,33 @@ Agent environment:
 
 Control plane: `APP_AGENT_CP_SILENCE_PUSH_EVERY` (default `30s`) is how often live sessions re-check the stored URL.
 
+## Per-job heartbeats
+
+A scheduled job can ping its own URL after each run, so a monitor such as Healthchecks.io alerts when a nightly job stops running or fails. See [Scheduled jobs](/scheduled-jobs#heartbeat-pings) for the commands.
+
+- A successful run sends a GET to the job's URL.
+- A failed or interrupted run sends a GET to the fail URL. If you set none, it is the ping URL with `/fail` appended to the path (the query is kept).
+- A skipped run or a run replaced by a newer one sends nothing, so the monitor's grace period decides.
+- The URLs are stored encrypted and only the host is shown. They need the master key, and they are included in control plane backups as ciphertext, so a restore needs the same master key.
+- A ping never changes the run result. Failed pings are retried, then dropped with a warning in the log that names the task and run, not the URL.
+
+The retry limits are runtime settings. Change them in the dashboard or with `levelrail-cli settings runtime`; a stored value wins and applies without a restart, and the `APP_HEARTBEAT_JOB_*` variables only seed the default.
+
+| Setting | Default | Seeded from | Meaning |
+| --- | --- | --- | --- |
+| `heartbeat.job_max_attempts` | `3` | `APP_HEARTBEAT_JOB_MAX_ATTEMPTS` | tries per ping before it is dropped |
+| `heartbeat.job_backoff_base` | `2s` | `APP_HEARTBEAT_JOB_BACKOFF_BASE` | first wait before a retry, doubled each retry |
+| `heartbeat.job_backoff_max` | `30s` | `APP_HEARTBEAT_JOB_BACKOFF_MAX` | cap on the retry wait |
+| `heartbeat.job_queue` | `64` | `APP_HEARTBEAT_JOB_QUEUE` | pings waiting to be sent; extra pings are dropped |
+
+```bash
+levelrail-cli settings runtime get heartbeat.job_max_attempts
+levelrail-cli settings runtime set heartbeat.job_max_attempts 5
+levelrail-cli settings runtime reset heartbeat.job_max_attempts
+```
+
+`APP_HEARTBEAT_TIMEOUT` and `APP_HEARTBEAT_ALLOW_PRIVATE` stay environment variables because they are shared with the control plane heartbeat above, which is read once at boot.
+
 ## What it catches that in-box alerts cannot
 
 Host power loss, kernel panic, OOM kill of the control plane, a full disk that stops the process, a cloud provider outage, a lost network route. It also catches a control plane that is running but wedged, because a stalled reconcile loop stops the pings.

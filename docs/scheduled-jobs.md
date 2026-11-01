@@ -165,6 +165,25 @@ with `--scheduled-task-id <job id>`:
 
 They use the same notification channels as every other alert.
 
+## Heartbeat pings
+
+A job can ping a monitor URL after every run. Set it when you create or update the job:
+
+```bash
+levelrail-cli jobs update web nightly-migrate --heartbeat-url https://hc-ping.com/YOUR-UUID
+levelrail-cli jobs update web nightly-migrate --heartbeat-url https://hc-ping.com/YOUR-UUID --heartbeat-fail-url https://hc-ping.com/YOUR-UUID/fail
+levelrail-cli jobs update web nightly-migrate --heartbeat-clear
+```
+
+`--heartbeat-url` is also accepted by `jobs create`. `--heartbeat-fail-url` needs `--heartbeat-url`.
+
+- Success sends a GET to the ping URL.
+- A failed or interrupted run sends a GET to the fail URL, which defaults to the ping URL plus `/fail`.
+- Skipped runs and runs replaced by a newer one send nothing.
+- The URL is stored encrypted, needs the master key, and only its host is shown. It is included in control plane backups as ciphertext, so restoring needs the same master key.
+
+Retry limits are runtime settings, listed in [Off-host heartbeat](/heartbeat#per-job-heartbeats).
+
 ## Limits and settings
 
 | Variable | Default | Meaning |

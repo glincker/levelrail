@@ -221,6 +221,7 @@
               "domains-and-ingress",
               "standalone-domains",
               "domains",
+              "dynamic-dns",
               "dns",
               "mail-dns",
               "mail-template",
