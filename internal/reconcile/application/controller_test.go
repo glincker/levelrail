@@ -4015,3 +4015,55 @@ func TestController_Reconcile_OtherIncarnationIsReplaced(t *testing.T) {
 		t.Errorf("incarnation label = %q, want life-b", got)
 	}
 }
+
+// A template's private publish of 25565 must not hold the host port a
+// stream listens on, and a settled pass must not recreate the container.
+func TestController_Reconcile_StreamOnPrivatePublishedPort_UsesEphemeralBinding(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "mc", Image: "img:v1", PublishedPorts: []store.PublishedPort{
+		{ContainerPort: 25565, HostPort: 25565, Protocol: store.PortProtocolTCP, Bind: "private"},
+	}}
+	c := New("mc", &fakeStore{svc: desired, streams: []store.AppStream{
+		{ID: "stream_a", ServiceName: "mc", ContainerPort: 25565, HostPort: 25565, Protocol: store.AppStreamProtocolTCP},
+	}}, rt)
+
+	for i := 0; i < 3; i++ {
+		if _, err := c.Reconcile(context.Background()); err != nil {
+			t.Fatalf("Reconcile() error = %v", err)
+		}
+	}
+	for _, p := range rt.lastCreateSpec.Ports {
+		if p.HostPort == 25565 {
+			t.Errorf("a binding still holds host port 25565: %+v", rt.lastCreateSpec.Ports)
+		}
+	}
+	if len(rt.lastCreateSpec.Ports) != 1 || rt.lastCreateSpec.Ports[0].HostIP != "127.0.0.1" {
+		t.Errorf("Ports = %+v, want one ephemeral loopback binding", rt.lastCreateSpec.Ports)
+	}
+	if rt.createCalls != 1 {
+		t.Errorf("settled passes created containers: createCalls = %d, want 1", rt.createCalls)
+	}
+}
+
+// Direct exposure of the same port as a template's private publish must
+// bind it once; the second binding made the start fail with address in use.
+func TestController_Reconcile_DirectExposureOnPrivatePublishedPort_BindsOnce(t *testing.T) {
+	rt := newFakeRuntime(25565)
+	hp := 25565
+	desired := &store.DesiredService{Name: "mc", Image: "img:v1", Port: 25565, HostPort: &hp, BindAddress: "public", PublishedPorts: []store.PublishedPort{
+		{ContainerPort: 25565, HostPort: 25565, Protocol: store.PortProtocolTCP, Bind: "private"},
+	}}
+	c := New("mc", &fakeStore{svc: desired}, rt)
+
+	for i := 0; i < 3; i++ {
+		if _, err := c.Reconcile(context.Background()); err != nil {
+			t.Fatalf("Reconcile() error = %v", err)
+		}
+	}
+	if n := len(rt.lastCreateSpec.Ports); n != 1 {
+		t.Errorf("Ports = %+v, want exactly the exposure binding", rt.lastCreateSpec.Ports)
+	}
+	if rt.createCalls != 1 {
+		t.Errorf("settled passes created containers: createCalls = %d, want 1", rt.createCalls)
+	}
+}

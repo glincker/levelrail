@@ -974,7 +974,8 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 	}
 
 	meshIP, _ := c.meshBindIP(ctx, desired)
-	if publishedPortDrifted(state, desired, meshIP) || publishedPortsDrifted(state, desired) {
+	streamPorts, _ := c.streamHostPorts(ctx, desired.Name) // a list error just skips this drift check
+	if publishedPortDrifted(state, desired, meshIP) || publishedPortsDrifted(state, effectiveDesired(desired, streamPorts), streamPorts) {
 		if err := c.removeContainer(ctx, state.ID); err != nil {
 			return replicaOutcome{reason: reasonPortDriftRecreate}, fmt.Errorf("remove %q to republish its changed port or bind address: %w", target, err)
 		}
@@ -1347,7 +1348,11 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 	if err := c.refuseRemotePublishedPorts(desired); err != nil {
 		return err
 	}
-	spec, err := toContainerSpec(name, desired)
+	streamHosts, err := c.streamHostPorts(ctx, desired.Name)
+	if err != nil {
+		return fmt.Errorf("app streams: %w", err)
+	}
+	spec, err := toContainerSpec(name, effectiveDesired(desired, streamHosts))
 	if err != nil {
 		return fmt.Errorf("container spec: %w", err)
 	}

@@ -900,8 +900,8 @@ func TestBuildRoutesConfig_HTTPRedirectAndACMEEvents(t *testing.T) {
 		wantEventsApp bool
 	}{
 		{"redirect off keeps port 80 closed", false, false, true, false},
-		{"redirect on lets caddy bind it", true, false, false, false},
-		{"acme tracks cert events", true, true, false, true},
+		{"redirect on is served by the cert-aware server", true, false, true, false},
+		{"acme tracks cert events", true, true, true, true},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -961,5 +961,28 @@ func TestBuildRoutesConfig_PlainHTTP(t *testing.T) {
 				t.Errorf("plain routes = %d, want the TLS server's %d", len(plain.Routes), len(cfg.Apps.HTTP.Servers["ingress"].Routes))
 			}
 		})
+	}
+}
+
+func TestBuildRoutesConfig_SelfBoundRedirectOnlyCertifiedHosts(t *testing.T) {
+	routes := []ProxyRoute{{Hosts: []string{"app.example.com"}, BackendDial: "127.0.0.1:9090"}}
+	cfg, err := BuildRoutesConfig(RoutesOptions{ServerName: "ingress", ListenAddr: ":443", TLS: true, HTTPRedirect: true, Routes: routes})
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv := cfg.Apps.HTTP.Servers["ingress-http"]
+	if srv == nil || len(srv.Listen) != 1 || srv.Listen[0] != ":80" {
+		t.Fatalf("redirect server = %+v, want one on :80", srv)
+	}
+	raw, _ := json.Marshal(srv)
+	if !strings.Contains(string(raw), "app.example.com") || !strings.Contains(string(raw), "No HTTPS certificate") {
+		t.Errorf("redirect server must redirect the certified host and explain the rest: %s", raw)
+	}
+	off, err := BuildRoutesConfig(RoutesOptions{ServerName: "ingress", ListenAddr: ":443", TLS: true, Routes: routes})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if off.Apps.HTTP.Servers["ingress-http"] != nil {
+		t.Error("redirect off must not add a port 80 server")
 	}
 }

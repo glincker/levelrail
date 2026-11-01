@@ -121,7 +121,13 @@ func (s *InheritedSockets) listenAddrs() []string {
 // gets a plain note, because a redirect there would end in a failed handshake.
 // With the redirect off the socket stays held so clients are not refused.
 func (s *InheritedSockets) redirectServer(redirect bool, hosts []string) *Server {
-	srv := &Server{AutomaticHTTPS: &AutoHTTPSConfig{Disabled: true}, Listen: []string{"fd/" + strconv.Itoa(s.HTTP)}}
+	return certRedirectServer("fd/"+strconv.Itoa(s.HTTP), &AutoHTTPSConfig{Disabled: true}, redirect, hosts)
+}
+
+// certRedirectServer is the port 80 server shared by the inherited and the
+// self-bound paths, so both redirect only hosts that hold a certificate.
+func certRedirectServer(listen string, auto *AutoHTTPSConfig, redirect bool, hosts []string) *Server {
+	srv := &Server{AutomaticHTTPS: auto, Listen: []string{listen}}
 	if !redirect {
 		return srv
 	}

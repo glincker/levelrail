@@ -786,6 +786,15 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		if !opts.HTTPRedirect || opts.Inherited.Active() {
 			server.AutomaticHTTPS = &AutoHTTPSConfig{DisableRedir: true}
 		}
+		if opts.HTTPRedirect && !opts.Inherited.Active() && (!opts.PlainHTTP || opts.HTTPPort == 0) {
+			// Caddy's own redirect covers every routed host; this one skips hosts with no certificate.
+			server.AutomaticHTTPS = &AutoHTTPSConfig{DisableRedir: true}
+			port := opts.HTTPPort
+			if port == 0 {
+				port = 80
+			}
+			cfg.Apps.HTTP.Servers[opts.ServerName+"-http"] = certRedirectServer(":"+strconv.Itoa(port), &AutoHTTPSConfig{DisableRedir: true}, true, tlsHosts)
+		}
 		wildcardHosts, regularHosts := splitWildcardHosts(allHosts)
 		switch {
 		case opts.ACMEEnabled:

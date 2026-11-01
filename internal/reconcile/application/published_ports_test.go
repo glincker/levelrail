@@ -61,13 +61,13 @@ func TestPublishedPortsDrifted(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			state := &docker.ContainerState{Running: true, Ports: tt.ports}
-			if got := publishedPortsDrifted(state, desired); got != tt.want {
+			if got := publishedPortsDrifted(state, desired, nil); got != tt.want {
 				t.Fatalf("publishedPortsDrifted() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 	stale := &docker.ContainerState{Running: true, Ports: []docker.PortBinding{tcp53, udp53}}
-	if !publishedPortsDrifted(stale, &store.DesiredService{Port: 53}) {
+	if !publishedPortsDrifted(stale, &store.DesiredService{Port: 53}, nil) {
 		t.Fatal("a removed udp port must read as drift")
 	}
 }

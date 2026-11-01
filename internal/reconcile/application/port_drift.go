@@ -56,7 +56,7 @@ func meshFlapBind(have, want string) bool {
 // publishedPortsDrifted reports a container whose direct host ports differ
 // from desired by (container port, host port, protocol), in either
 // direction. No reported bindings at all is unknown, not drifted.
-func publishedPortsDrifted(state *docker.ContainerState, desired *store.DesiredService) bool {
+func publishedPortsDrifted(state *docker.ContainerState, desired *store.DesiredService, streamHostPorts map[int]bool) bool {
 	if state == nil {
 		return false
 	}
@@ -76,6 +76,12 @@ func publishedPortsDrifted(state *docker.ContainerState, desired *store.DesiredS
 	}
 	want := map[store.PublishedPort]bool{}
 	for _, p := range desired.PublishedPorts {
+		if p.HostPort == 0 {
+			if ephemeralPublishDrifted(ports, p, streamHostPorts) {
+				return true
+			}
+			continue
+		}
 		key := store.PublishedPort{ContainerPort: p.ContainerPort, HostPort: p.HostPort, Protocol: p.EffectiveProtocol()}
 		want[key] = true
 		if !have[key] {
