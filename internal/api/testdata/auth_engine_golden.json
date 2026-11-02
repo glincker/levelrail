@@ -24,6 +24,7 @@
       "abilities": [
         "read"
       ],
+      "access": "read_only",
       "created_at": "\u003ccreated_at\u003e",
       "expires_at": "\u003cexpires_at\u003e",
       "id": "\u003cid\u003e",
@@ -39,6 +40,7 @@
         "read",
         "deploy"
       ],
+      "access": "can_change",
       "agent": {
         "description": "ci",
         "name": "claude"
@@ -59,6 +61,7 @@
           "read",
           "deploy"
         ],
+        "access": "can_change",
         "agent": {
           "description": "ci",
           "name": "claude"
@@ -72,6 +75,7 @@
         "abilities": [
           "read"
         ],
+        "access": "read_only",
         "created_at": "\u003ccreated_at\u003e",
         "expires_at": "\u003cexpires_at\u003e",
         "id": "\u003cid\u003e",
@@ -134,6 +138,7 @@
           "read",
           "deploy"
         ],
+        "access": "can_change",
         "agent": {
           "description": "ci",
           "name": "claude"
@@ -147,6 +152,7 @@
         "abilities": [
           "read"
         ],
+        "access": "read_only",
         "created_at": "\u003ccreated_at\u003e",
         "expires_at": "\u003cexpires_at\u003e",
         "id": "\u003cid\u003e",
@@ -226,6 +232,7 @@
         "write:sensitive",
         "deploy"
       ],
+      "access": "can_change",
       "created_at": "\u003ccreated_at\u003e",
       "expires_at": "\u003cexpires_at\u003e",
       "id": "\u003cid\u003e",

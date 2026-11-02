@@ -27,8 +27,7 @@ func (rt *Router) applyExposureOnTrial(w http.ResponseWriter, r *http.Request, w
 	window := rt.runtimeSettings.FirewallConfirmWindow(r.Context())
 	ch, err := rt.exposure.ApplyWithRevert(r.Context(), want, previous, window)
 	if err != nil {
-		rt.logger.Error("api: exposure trial apply failed", slog.Int("port", want.Port), slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "could not apply the rule: "+err.Error())
+		rt.internalError(w, "api: exposure trial apply failed", err, slog.Int("port", want.Port))
 		return
 	}
 	rt.auditExposure(r, "exposure_restrict_trial", want.Port, want.Protocol, want.Allow)
