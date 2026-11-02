@@ -23,12 +23,10 @@ import {
   DomainsTable,
   DomainsTableSkeleton,
 } from '../../components/DomainsTable'
-import { ProxySetupCard } from '../../components/ProxySetupCard'
-import { ServerAddressCard } from '../../components/domains/ServerAddressCard'
+import { DomainsStatusBar } from '../../components/domains/DomainsStatusBar'
 import { serverAddressQueryOptions } from '../../queries/serverAddress'
 import { useProxyIntegration } from '../../queries/proxyIntegration'
 import { proxyCertStatus } from '../../lib/certStatus'
-import { PlatformStatusStrip } from '../../components/platform/PlatformStatusStrip'
 import { DASHBOARD_URL_ANCHOR } from '../../components/DashboardUrlCard'
 import { HelpLink } from '../../components/HelpLink'
 import { PageBanner } from '../../components/PageBanner'
@@ -159,11 +157,7 @@ function DomainsPage() {
       }
       banners={<SetupStepHint step="app_domain" />}
     >
-      <PlatformStatusStrip />
-
-      <ProxySetupCard />
-
-      <ServerAddressCard />
+      <DomainsStatusBar />
 
       {noDomains ? null : (
         <DomainsTable

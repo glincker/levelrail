@@ -1700,6 +1700,10 @@
       "confirmAction": "Remove revoked tokens",
       "cleaned_one": "Removed {{count}} revoked token.",
       "cleaned_other": "Removed {{count}} revoked tokens."
+    },
+    "attention": {
+      "title_one": "1 token needs attention",
+      "title_other": "{{count}} token issues need attention"
     }
   },
   "usersPage": {

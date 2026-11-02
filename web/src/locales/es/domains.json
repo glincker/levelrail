@@ -1106,5 +1106,14 @@
       "reason": "Motivo",
       "logs": "Abrir registros"
     }
+  },
+  "statusBar": {
+    "label": "Estado de dominios",
+    "httpsOn": "HTTPS activado",
+    "httpsOff": "HTTPS no activado",
+    "address": "Servidor",
+    "fixHttps": "Arreglar: activar HTTPS",
+    "fixAddress": "Arreglar: revisar dirección",
+    "details": "Detalles de la dirección"
   }
 }

@@ -1106,5 +1106,14 @@
       "reason": "Reason",
       "logs": "Open logs"
     }
+  },
+  "statusBar": {
+    "label": "Domains status",
+    "httpsOn": "HTTPS enabled",
+    "httpsOff": "HTTPS not enabled",
+    "address": "Server",
+    "fixHttps": "Fix: enable HTTPS",
+    "fixAddress": "Fix: check address",
+    "details": "Address details"
   }
 }

@@ -710,7 +710,11 @@
       "schedule": "La eliminación se ejecuta con la limpieza programada, que debe estar activada y no en modo de vista previa.",
       "title": "Tokens revocados"
     },
-    "title": "Tokens de API"
+    "title": "Tokens de API",
+    "attention": {
+      "title_one": "1 token requiere atención",
+      "title_other": "{{count}} problemas de tokens requieren atención"
+    }
   },
   "usersPage": {
     "banner": {

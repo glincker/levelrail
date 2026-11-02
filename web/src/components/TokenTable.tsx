@@ -99,7 +99,10 @@ function TokenRows({ tokens, rotatableIds }: TokenTableProps) {
       header: t('tokens.name'),
       cell: (token) => (
         <div className="space-y-1">
-          <span className="font-medium break-all text-foreground">
+          <span
+            className="block max-w-64 min-w-32 truncate font-medium text-foreground"
+            title={token.name}
+          >
             {token.name}
           </span>
           {token.dev_fixture ? (
