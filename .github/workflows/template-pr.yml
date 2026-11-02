@@ -32,6 +32,7 @@ jobs:
     outputs:
       ids: ${{ steps.ids.outputs.ids }}
       any: ${{ steps.ids.outputs.any }}
+      bulk: ${{ steps.ids.outputs.bulk }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -42,15 +43,42 @@ jobs:
         id: ids
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          BULK_THRESHOLD: '20'
         run: |
           ids="$(git diff --name-only --diff-filter=AM "$BASE_SHA" "$GITHUB_SHA" -- internal/catalog/manifests \
             | awk -F/ 'NF >= 4 {print $4}' | sort -u | while read -r d; do [ -d "internal/catalog/manifests/$d" ] && echo "$d"; done)"
           echo "any=$([ -n "$ids" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          # A bulk change (a release) gets one loader-rules job instead of a job per template.
+          echo "bulk=$([ "$(printf '%s\n' "$ids" | grep -c .)" -gt "${BULK_THRESHOLD}" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
           echo "ids=$(printf '%s\n' "$ids" | jq -R . | jq -sc 'map(select(. != ""))')" >> "$GITHUB_OUTPUT"
+
+  admit-bulk:
+    needs: changed
+    if: needs.changed.outputs.bulk == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: go.mod
+
+      - name: Loader and submission rules for every changed template
+        env:
+          IDS: ${{ needs.changed.outputs.ids }}
+        run: |
+          fail=0
+          for id in $(echo "$IDS" | jq -r '.[]'); do
+            go run ./scripts/validate-templates -id "$id" || { echo "::error::$id failed"; fail=1; }
+          done
+          exit $fail
 
   admit:
     needs: changed
-    if: needs.changed.outputs.any == 'true'
+    if: needs.changed.outputs.any == 'true' && needs.changed.outputs.bulk != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -112,7 +140,7 @@ jobs:
 
   smoke:
     needs: [changed, admit]
-    if: needs.changed.outputs.any == 'true'
+    if: needs.changed.outputs.any == 'true' && needs.changed.outputs.bulk != 'true'
     strategy:
       fail-fast: false
       matrix:
