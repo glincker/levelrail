@@ -7,6 +7,7 @@ import { AppSleepCard } from '../../../components/AppSleepCard'
 import { AppAutoscaleCard } from '../../../components/AppAutoscaleCard'
 import { AppBudgetCard } from '../../../components/AppBudgetCard'
 import { AppScalePanel } from '../../../components/AppScalePanel'
+import { AppReplicaTable } from '../../../components/AppReplicaTable'
 import { AppCostChip } from '../../../components/usage/AppCostChip'
 
 // Also home to the sleep, autoscale and budget cards, moved off the
@@ -25,6 +26,7 @@ function ResourcesSection() {
     <div className="space-y-6">
       <AppCostChip appName={name} />
       <AppScalePanel app={app} />
+      <AppReplicaTable appName={name} />
       <OptimisePanel appName={name} />
       <ResourceLimitsEditor app={app} />
       <AppAutoscaleCard appName={name} />

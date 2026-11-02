@@ -186,9 +186,14 @@ func (rt *Router) setDatabasePoolerTuned(w http.ResponseWriter, r *http.Request,
 		rt.internalError(w, "api: set pooler: reload failed", err, slog.String("name", name))
 		return
 	}
-	rt.flagPoolerLinkedApps(r.Context(), name)
-	rt.nudgeReconciler()
+	rt.afterPoolerChange(r.Context(), name)
 	writeJSON(w, http.StatusOK, rt.poolerStatus(r.Context(), d))
+}
+
+// afterPoolerChange restarts linked apps onto the new address and wakes the reconciler.
+func (rt *Router) afterPoolerChange(ctx context.Context, name string) {
+	rt.flagPoolerLinkedApps(ctx, name)
+	rt.nudgeReconciler()
 }
 
 // flagPoolerLinkedApps latches env_dirty on apps linked to the database: their

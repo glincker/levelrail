@@ -145,5 +145,26 @@
       "autoscale": "Seguir la carga automáticamente: activa el autoescalado más abajo y elige un mínimo y un máximo. Está desactivado hasta que lo configures.",
       "biggerHost": "Pasa a un host más grande cuando el propio servidor se quede corto: la CPU o la memoria del host sigue alta tras ajustar el límite, o más réplicas ya no bajan la carga. Las réplicas de un servidor comparten ese servidor."
     }
+  },
+  "replicaTable": {
+    "title": "Réplicas",
+    "replica": "Réplica",
+    "address": "Dirección",
+    "health": "Estado",
+    "connections": "Conexiones",
+    "weight": "Peso",
+    "lastCheck": "Última comprobación",
+    "drain": "Drenar",
+    "never": "Sin comprobar aún",
+    "replicaRow": "Réplica {{n}}",
+    "drainReplica": "Drenar la réplica {{n}}",
+    "drainFailed": "No se pudo cambiar la réplica",
+    "state": {
+      "healthy": "Sana",
+      "unhealthy": "No sana",
+      "draining": "Drenando",
+      "disabled": "Deshabilitada",
+      "unknown": "Desconocido"
+    }
   }
 }

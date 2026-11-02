@@ -145,5 +145,26 @@
       "autoscale": "Let the app follow load: turn on autoscaling below and choose a minimum and a maximum. It is off until you set it up.",
       "biggerHost": "Move to a bigger host when the server itself runs short: CPU or memory stays high on the host after you resize, or adding replicas no longer lowers the load. Replicas on one server share that server."
     }
+  },
+  "replicaTable": {
+    "title": "Replicas",
+    "replica": "Replica",
+    "address": "Address",
+    "health": "Health",
+    "connections": "Connections",
+    "weight": "Weight",
+    "lastCheck": "Last check",
+    "drain": "Drain",
+    "never": "Not checked yet",
+    "replicaRow": "Replica {{n}}",
+    "drainReplica": "Drain replica {{n}}",
+    "drainFailed": "Could not change the replica",
+    "state": {
+      "healthy": "Healthy",
+      "unhealthy": "Unhealthy",
+      "draining": "Draining",
+      "disabled": "Disabled",
+      "unknown": "Unknown"
+    }
   }
 }

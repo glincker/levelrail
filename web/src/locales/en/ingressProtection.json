@@ -13,5 +13,23 @@
     "saved": "Cloudflare client IP is on",
     "savedOff": "Cloudflare client IP is off",
     "failed": "Could not change the Cloudflare client IP setting"
+  },
+  "fallbackCerts": {
+    "label": "Certificates for automatic addresses",
+    "helper": "Eager orders the certificate as soon as the route exists; lazy orders it at the first visit to the automatic address. Domains you add yourself are always eager.",
+    "options": {
+      "eager": "Eager",
+      "lazy": "Lazy"
+    },
+    "source": {
+      "default": "Default",
+      "env": "Set by environment",
+      "saved": "Saved"
+    },
+    "envHint": "Seeded from {{env}}. Saving a value here overrides it.",
+    "reset": "Reset to default",
+    "resetDone": "Fallback certificates reset to default",
+    "saved": "Fallback certificate mode saved",
+    "failed": "Could not change the fallback certificate mode"
   }
 }

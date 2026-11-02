@@ -1,7 +1,13 @@
 // Writes .br and .gz siblings next to compressible build output so the Go
 // server (web/static.go) serves them without compressing per request.
 import { brotliCompressSync, constants, gzipSync } from 'node:zlib'
-import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  readdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs'
 import path from 'node:path'
 import type { Plugin } from 'vite'
 
@@ -41,6 +47,8 @@ export function precompressPlugin(): Plugin {
     closeBundle: {
       order: 'post',
       handler() {
+        // A fresh checkout may not have created outDir yet.
+        if (!existsSync(outDir)) return
         for (const file of walk(outDir)) {
           if (!COMPRESSIBLE.has(path.extname(file).toLowerCase())) continue
           if (statSync(file).size < MIN_BYTES) continue

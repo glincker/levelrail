@@ -13,5 +13,23 @@
     "saved": "La IP de cliente de Cloudflare está activada",
     "savedOff": "La IP de cliente de Cloudflare está desactivada",
     "failed": "No se pudo cambiar el ajuste de IP de cliente de Cloudflare"
+  },
+  "fallbackCerts": {
+    "label": "Certificados para direcciones automáticas",
+    "helper": "Eager pide el certificado en cuanto existe la ruta; lazy lo pide en la primera visita a la dirección automática. Los dominios que añades tú siempre son eager.",
+    "options": {
+      "eager": "Inmediato (eager)",
+      "lazy": "Diferido (lazy)"
+    },
+    "source": {
+      "default": "Predeterminado",
+      "env": "Definido por el entorno",
+      "saved": "Guardado"
+    },
+    "envHint": "Valor inicial de {{env}}. Guardar un valor aquí lo sustituye.",
+    "reset": "Restablecer al valor predeterminado",
+    "resetDone": "Certificados de respaldo restablecidos",
+    "saved": "Modo de certificados de respaldo guardado",
+    "failed": "No se pudo cambiar el modo de certificados de respaldo"
   }
 }
