@@ -8,11 +8,11 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"os"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/dnsinspect"
 	"github.com/miekg/dns"
 )
 
@@ -24,6 +24,9 @@ type ResolverAnswer struct {
 	Error    string   `json:"error,omitempty"`
 	// TTL is the longest record TTL the resolver reported, in seconds.
 	TTL uint32 `json:"ttl,omitempty"`
+	// Authoritative marks an answer from the zone's own name server, which is
+	// never cached and is the source of truth.
+	Authoritative bool `json:"authoritative,omitempty"`
 }
 
 // CAARecord is one CAA resource record and the name it was found at.
@@ -75,10 +78,11 @@ func DefaultProbes() Probes {
 	return Probes{DNS: NetDNS{}, TLS: NetTLS{}, HTTP: NetHTTP{}}
 }
 
-// NetDNS queries the system resolver plus well known public resolvers.
+// NetDNS queries the system resolver, public resolvers and the zone's
+// authoritative servers.
 type NetDNS struct {
-	// Public lists resolver addresses (host:port); nil uses 1.1.1.1 and
-	// 8.8.8.8 unless APP_DNS_PUBLIC_RESOLVERS is off.
+	// Public lists resolver addresses (host:port); nil uses the list from
+	// APP_DNS_PUBLIC_RESOLVERS (default 1.1.1.1, 8.8.8.8, 9.9.9.9).
 	Public []string
 }
 
@@ -86,18 +90,20 @@ func (d NetDNS) public() []string {
 	if d.Public != nil {
 		return d.Public
 	}
-	if v := strings.ToLower(os.Getenv("APP_DNS_PUBLIC_RESOLVERS")); v == "off" || v == "false" || v == "0" {
-		return nil
-	}
-	return []string{"1.1.1.1:53", "8.8.8.8:53"}
+	return dnsinspect.PublicResolvers()
 }
 
 // Answers implements DNSProbe.
 func (d NetDNS) Answers(ctx context.Context, host string) []ResolverAnswer {
 	servers := d.public()
 	out := make([]ResolverAnswer, 1+len(servers))
+	var auth []ResolverAnswer
 	var wg sync.WaitGroup
-	wg.Add(len(out))
+	wg.Add(len(out) + 1)
+	go func() {
+		defer wg.Done()
+		auth = d.authoritativeAnswers(ctx, host, servers)
+	}()
 	go func() {
 		defer wg.Done()
 		out[0] = systemAnswer(ctx, host)
@@ -109,6 +115,28 @@ func (d NetDNS) Answers(ctx context.Context, host string) []ResolverAnswer {
 		}()
 	}
 	wg.Wait()
+	return append(out, auth...)
+}
+
+// authoritativeAnswers asks the zone's own servers, which show a changed
+// record at once because nothing caches there.
+func (d NetDNS) authoritativeAnswers(ctx context.Context, host string, servers []string) []ResolverAnswer {
+	if len(servers) == 0 {
+		return nil
+	}
+	insp := (&dnsinspect.Inspector{Public: servers}).Inspect(ctx, host)
+	var out []ResolverAnswer
+	for _, s := range insp.Authoritative {
+		a := ResolverAnswer{Resolver: "authoritative " + s.Name, TTL: s.TTL, Error: s.Error, Authoritative: true}
+		for _, ip := range s.Addresses {
+			if p := net.ParseIP(ip); p != nil && p.To4() != nil {
+				a.IPv4 = append(a.IPv4, ip)
+			} else {
+				a.IPv6 = append(a.IPv6, ip)
+			}
+		}
+		out = append(out, a)
+	}
 	return out
 }
 

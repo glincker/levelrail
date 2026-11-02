@@ -39,12 +39,18 @@ func (rn *run) checkResolves(ctx context.Context) Check {
 	rn.answers = rn.probes.DNS.Answers(pctx, rn.facts.Domain)
 	cancel()
 
-	answered, matching := 0, 0
+	// A stale cache on this host must not override what the zone's own
+	// servers say, so once they answer, this host's resolver is advisory.
+	authReady := rn.authoritativeMatches()
+	answered, matching, asked := 0, 0, 0
 	var parts []string
 	for _, a := range rn.answers {
 		addrs := append(slices.Clone(a.IPv4), a.IPv6...)
+		if !a.Authoritative || len(addrs) > 0 {
+			asked++
+		}
 		for _, ip := range addrs {
-			if !slices.Contains(rn.resolved, ip) {
+			if !slices.Contains(rn.resolved, ip) && (!authReady || a.Resolver != "this server") {
 				rn.resolved = append(rn.resolved, ip)
 			}
 		}
@@ -71,7 +77,12 @@ func (rn *run) checkResolves(ctx context.Context) Check {
 		} else {
 			c.Fix = &Fix{Summary: fmt.Sprintf("Add an A record for %s pointing at this server's public address; set APP_PUBLIC_HOST so the exact value can be shown.", rn.facts.Domain)}
 		}
-	case answered < len(rn.answers) || (matching > 0 && matching < answered):
+	case authReady:
+		c.State = StatePass
+		if matching < answered {
+			c.Detail += " (this server's own resolver still caches the old answer; the authoritative servers already point here)"
+		}
+	case answered < asked || (matching > 0 && matching < answered):
 		c.State = StateWarn
 		c.Title = "DNS is propagating"
 		c.Fix = &Fix{Summary: "Resolvers disagree. Wait for the old answer's TTL to pass, then check again."}
@@ -79,6 +90,17 @@ func (rn *run) checkResolves(ctx context.Context) Check {
 		c.State = StatePass
 	}
 	return c
+}
+
+// authoritativeMatches is true when a zone name server already answers with
+// one of this server's addresses.
+func (rn *run) authoritativeMatches() bool {
+	for _, a := range rn.answers {
+		if a.Authoritative && overlaps(append(slices.Clone(a.IPv4), a.IPv6...), rn.facts.ServerIPs) {
+			return true
+		}
+	}
+	return false
 }
 
 func (rn *run) checkPointsHere(context.Context) Check {

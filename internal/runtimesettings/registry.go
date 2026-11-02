@@ -82,6 +82,7 @@ const (
 	KeyRevokedTokenDays        = "retention.revoked_token_days" //nolint:gosec // setting key, not a credential
 	KeyExpiredTokenDays        = "retention.expired_token_days" //nolint:gosec // setting key, not a credential
 	KeyDesktopSessionTTL       = "desktop.session_ttl"
+	KeyDomainsDNSWaitBudget    = "domains.dns_wait_budget"
 )
 
 // Definition describes one setting. Default and values are in string form
@@ -252,6 +253,12 @@ func init() {
 		Description: "Upper bound on the wait between retries of a failed certificate authority switch.",
 	})
 	registerHeartbeatJobSettings()
+	Register(Definition{
+		Key: KeyDomainsDNSWaitBudget, Category: CategoryNetworking, Kind: KindDuration, Default: "10m",
+		Env: "APP_DOMAINS_DNS_WAIT_BUDGET", Apply: ApplyLive,
+		Title:       "DNS wait budget",
+		Description: "How long a domain may wait for DNS before the Domains page stops saying it is fine and lists concrete checks. It only changes the wording; it never blocks onboarding.",
+	})
 	Register(Definition{
 		Key: KeyDesktopSessionTTL, Category: CategorySecurity, Kind: KindDuration, Default: "12h",
 		Env: "APP_DESKTOP_SESSION_TTL", Apply: ApplyLive,

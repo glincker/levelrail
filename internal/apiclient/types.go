@@ -1024,6 +1024,32 @@ type DomainCheckResource struct {
 	Challenge   string       `json:"challenge,omitempty"`
 	DNSProvider string       `json:"dns_provider,omitempty"`
 	ACMEFailure *ACMEFailure `json:"acme_failure,omitempty"`
+	// Authoritative, Public and Local are the answers of the zone's name
+	// servers, public resolvers and this host's resolver.
+	Authoritative []DNSSource `json:"authoritative,omitempty"`
+	Public        []DNSSource `json:"public,omitempty"`
+	Local         []DNSSource `json:"local,omitempty"`
+	Verdict       string      `json:"verdict,omitempty"`
+	LocalStale    bool        `json:"local_stale,omitempty"`
+	RetryAt       string      `json:"retry_at,omitempty"`
+	Escalated     bool        `json:"escalated,omitempty"`
+	FlushCommand  string      `json:"flush_command,omitempty"`
+	Hints         []DNSHint   `json:"hints,omitempty"`
+	Zone          string      `json:"zone,omitempty"`
+}
+
+// DNSSource is one resolver's answer in a domain check.
+type DNSSource struct {
+	Name      string   `json:"name"`
+	Addresses []string `json:"addresses,omitempty"`
+	TTL       uint32   `json:"ttl,omitempty"`
+	Error     string   `json:"error,omitempty"`
+}
+
+// DNSHint is one piece of DNS guidance in a domain check.
+type DNSHint struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
 }
 
 // ACMEFailure mirrors internal/api's acmeFailureResource.

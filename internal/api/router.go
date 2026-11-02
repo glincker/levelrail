@@ -97,6 +97,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/cleanup"
+	"github.com/GLINCKER/levelrail/internal/dnsinspect"
 	"github.com/GLINCKER/levelrail/internal/dnszones"
 	"github.com/GLINCKER/levelrail/internal/janitor"
 	"github.com/GLINCKER/levelrail/internal/meshpath"
@@ -386,6 +387,9 @@ type Router struct {
 	lookupHost lookupHostFunc
 	// publicLookup asks public resolvers directly; nil uses queryPublicResolvers (tests stub it).
 	publicLookup func(ctx context.Context, host string) []resolverResult
+	// dnsInspector queries public and authoritative DNS; nil builds one from env (tests stub its Exchange).
+	dnsInspector    *dnsinspect.Inspector
+	dnsFlushCommand func() string
 	// domainChecks rate-limits handleCheckDomain's real DNS lookups per
 	// domain; always non-nil, constructed in NewRouter.
 	domainChecks *domainCheckCache

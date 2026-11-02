@@ -42,6 +42,8 @@ levelrail-cli domains check my-app my-app.example.com
 
 `domains check` reports whether the domain currently resolves to this control plane's advertised address.
 
+The check asks three groups and shows each answer with its TTL: the zone's own (authoritative) name servers, public resolvers (`APP_DNS_PUBLIC_RESOLVERS`, a comma separated list, default 1.1.1.1, 8.8.8.8 and 9.9.9.9) and this server's resolver. The authoritative answer decides: when those servers already return this server's address the verdict is `dns_ready` and onboarding, the live probe and certificate issuance continue even if this server's own resolver still caches an old answer. In that case the card shows when that cache should expire and, on hosts running systemd-resolved, the `resolvectl flush-caches` command to run yourself (the control plane never runs it). If the old record was a Cloudflare proxy, the card says so. After the wait budget (runtime setting `domains.dns_wait_budget`, default 10 minutes) the card stops saying nothing is wrong and lists concrete checks: the right zone, an AAAA record elsewhere, a flattened CNAME and a different authoritative DNS provider.
+
 </Step>
 <Step title="Add the domain to your app">
 

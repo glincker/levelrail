@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 // Top-level verb rather than get/set/clear: a single read-only DNS check, nothing to configure.
@@ -50,7 +53,40 @@ func printDomainCheckHuman(out io.Writer, r domainCheckResource) {
 	if len(r.ResolvedHosts) > 0 {
 		_, _ = fmt.Fprintf(out, "resolved: %v\n", r.ResolvedHosts)
 	}
+	printDomainDNSHuman(out, r)
 	printDomainWizardHuman(out, r)
+}
+
+func printDomainDNSHuman(out io.Writer, r domainCheckResource) {
+	if r.Verdict == "" {
+		return
+	}
+	_, _ = fmt.Fprintf(out, "dns verdict: %s\n", r.Verdict)
+	for _, g := range []struct {
+		label string
+		list  []apiclient.DNSSource
+	}{{"authoritative", r.Authoritative}, {"public", r.Public}, {"this server", r.Local}} {
+		for _, s := range g.list {
+			answer := strings.Join(s.Addresses, ", ")
+			if answer == "" {
+				answer = s.Error
+			}
+			ttl := ""
+			if s.TTL > 0 {
+				ttl = fmt.Sprintf(" (ttl %ds)", s.TTL)
+			}
+			_, _ = fmt.Fprintf(out, "  %-13s %-28s %s%s\n", g.label, s.Name, answer, ttl)
+		}
+	}
+	if r.RetryAt != "" {
+		_, _ = fmt.Fprintf(out, "this server's resolver is stale, retry after %s\n", r.RetryAt)
+	}
+	if r.FlushCommand != "" {
+		_, _ = fmt.Fprintf(out, "flush this server's DNS cache: %s\n", r.FlushCommand)
+	}
+	for _, h := range r.Hints {
+		_, _ = fmt.Fprintf(out, "hint: %s\n", h.Message)
+	}
 }
 
 func domainsCheckUsage(prog string) string {
@@ -59,8 +95,12 @@ func domainsCheckUsage(prog string) string {
 
 Runs a real DNS lookup for <domain> and reports whether it currently
 resolves to this control plane's own advertised address: one of
-"connected", "not_resolving", "resolves_elsewhere", or "unconfigured"
-(no APP_PUBLIC_HOST and no usable request host to infer one from).
+"connected", "not_resolving", "resolves_elsewhere", "propagating" or
+"unconfigured" (no APP_PUBLIC_HOST and no usable request host to infer one
+from). The zone's own name servers decide first, so a stale cache on this
+server never holds a correct record back; answers are printed per source
+(authoritative, public, this server) with TTLs, plus a retry time and a
+cache flush command when this server's resolver is behind.
 <domain> must already be one of <app>'s configured domains.
 
 Flags:
