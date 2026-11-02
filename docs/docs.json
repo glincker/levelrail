@@ -85,6 +85,7 @@
               "local-development",
               "desktop-runtime",
               "getting-started",
+              "zero-to-https",
               "quickstart-one-command",
               "tutorials/deploy-a-docker-app",
               "profiles",
