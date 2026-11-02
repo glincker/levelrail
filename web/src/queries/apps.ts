@@ -3,6 +3,7 @@
 // action can target the right keys precisely. Every route that needs app
 // data imports these instead of writing its own fetch call or query key.
 
+import { inlineErrorMeta, type InlineErrorOptions } from '@/lib/inlineError'
 import {
   queryOptions,
   useMutation,
@@ -142,10 +143,10 @@ export async function updateApp(app: AppDetail): Promise<AppDetail> {
 // response straight into the detail query's cache rather than
 // invalidating and refetching, since the PUT response already is the
 // new canonical AppDetail.
-export function useUpdateApp(name: string) {
+export function useUpdateApp(name: string, opts?: InlineErrorOptions) {
   const queryClient = useQueryClient()
   return useMutation({
-    meta: { errorToast: false },
+    meta: inlineErrorMeta(opts),
     mutationFn: updateApp,
     onSuccess: (updated) => {
       queryClient.setQueryData(appKeys.detail(name), updated)

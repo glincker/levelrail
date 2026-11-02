@@ -1,6 +1,7 @@
 // Scheduled upgrades, the automatic upgrade policy and the preflight fix
 // actions behind Settings > Updates (internal/api/updates_schedule.go).
 
+import { inlineErrorMeta, type InlineErrorOptions } from '@/lib/inlineError'
 import {
   queryOptions,
   useMutation,
@@ -245,10 +246,10 @@ export function useBackupNow() {
 
 // useRecheckPreflight re-runs the checks bypassing the release cache, which
 // is what clears a release that was still being published a moment ago.
-export function useRecheckPreflight() {
+export function useRecheckPreflight(opts?: InlineErrorOptions) {
   const queryClient = useQueryClient()
   return useMutation({
-    meta: { errorToast: false },
+    meta: inlineErrorMeta(opts),
     mutationFn: async (): Promise<UpdatePreflight> => {
       const res = await fetch('/api/v1/updates/preflight?refresh=1')
       if (!res.ok) throw await failure(res, 're-check upgrade preflight')

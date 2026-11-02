@@ -97,7 +97,7 @@ export function AppsBaseDomainCard() {
   const { t } = useTranslation('domains')
   const { data: settings } = useQuery(ingressSettingsQueryOptions())
   const automation = useDomainAutomation()
-  const update = useUpdateIngressSettings()
+  const update = useUpdateIngressSettings({ inlineError: true })
   const backfill = useBackfillBaseDomain()
   const [value, setValue] = useState(settings?.apps_base_domain ?? '')
   const debounced = useDebounced(value.trim().toLowerCase(), ZONE_HINT_DELAY_MS)

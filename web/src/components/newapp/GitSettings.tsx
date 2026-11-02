@@ -68,7 +68,7 @@ export function GitSettings({
   onOpenChange: (open: boolean) => void
 }) {
   const { t } = useTranslation('newApp')
-  const refresh = useRefreshGitRepos('')
+  const refresh = useRefreshGitRepos('', { inlineError: true })
   const connected = accounts.providers.filter((p) => p.connected)
 
   return (

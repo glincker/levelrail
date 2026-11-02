@@ -62,7 +62,7 @@ const STRATEGY_LABELS: Record<string, string> = {
 // unsaved edits in a sibling editor.
 export function DeployStrategyEditor({ app }: { app: AppDetail }) {
   const { t } = useTranslation('common')
-  const updateApp = useUpdateApp(app.name)
+  const updateApp = useUpdateApp(app.name, { inlineError: true })
   const { control, register, handleSubmit, formState } = useForm<
     DeployStrategyFormInput,
     unknown,

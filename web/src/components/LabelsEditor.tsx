@@ -74,7 +74,7 @@ function toFieldValues(
 // merge collision for no real gain, this editor is small enough that a
 // little duplicated row-editor boilerplate is the safer trade.
 export function LabelsEditor({ app }: { app: AppDetail }) {
-  const updateApp = useUpdateApp(app.name)
+  const updateApp = useUpdateApp(app.name, { inlineError: true })
   const { control, register, handleSubmit, formState } =
     useForm<LabelsFormValues>({
       resolver: zodResolver(labelsSchema),

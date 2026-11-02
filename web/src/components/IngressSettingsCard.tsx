@@ -195,7 +195,7 @@ export function IngressSettingsCard({
   settings: IngressSettings
   primaryCert?: CertificateStatus
 }) {
-  const updateSettings = useUpdateIngressSettings()
+  const updateSettings = useUpdateIngressSettings({ inlineError: true })
   const { control, register, handleSubmit, formState, watch, setValue } =
     useForm<IngressSettingsFormValues>({
       resolver: zodResolver(ingressSettingsSchema),

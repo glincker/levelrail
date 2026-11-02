@@ -114,7 +114,7 @@ function toFieldValues(app: AppDetail): PortFormInput {
 // sibling editor.
 export function PortEditor({ app }: { app: AppDetail }) {
   const { t } = useTranslation('https')
-  const updateApp = useUpdateApp(app.name)
+  const updateApp = useUpdateApp(app.name, { inlineError: true })
   const { control, register, handleSubmit, watch, setError, formState } =
     useForm<PortFormInput, unknown, PortFormOutput>({
       resolver: zodResolver(portSchema),

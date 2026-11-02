@@ -1,4 +1,5 @@
 // Matches internal/api/app_exposure.go: port and exposure of one app.
+import { inlineErrorMeta, type InlineErrorOptions } from '@/lib/inlineError'
 import {
   queryOptions,
   useMutation,
@@ -137,9 +138,9 @@ export function useSetExposure(app: string) {
   })
 }
 
-export function useCheckExposure(app: string) {
+export function useCheckExposure(app: string, opts?: InlineErrorOptions) {
   return useMutation({
-    meta: { errorToast: false },
+    meta: inlineErrorMeta(opts),
     mutationFn: () =>
       send<ExposureCheck>(
         `${base(app)}/check`,

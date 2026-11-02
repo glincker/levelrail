@@ -7,6 +7,7 @@ import {
   useMutation,
 } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { inlineErrorMeta, type InlineErrorOptions } from './inlineError'
 import { toastMutationError } from './mutationErrorToast'
 
 const toastAdd = vi.hoisted(() => vi.fn())
@@ -37,6 +38,23 @@ function ToastOnlyForm() {
   )
 }
 
+// Stands in for a shared hook such as useUpdateApp(name, opts).
+function useSharedSave(opts?: InlineErrorOptions) {
+  return useMutation({ meta: inlineErrorMeta(opts), mutationFn: fail })
+}
+
+function SharedSaveForm({ inline }: { inline: boolean }) {
+  const save = useSharedSave(inline ? { inlineError: true } : undefined)
+  return (
+    <div>
+      <button type="button" onClick={() => save.mutate()}>
+        save
+      </button>
+      {save.isError ? <p role="alert">{save.error.message}</p> : null}
+    </div>
+  )
+}
+
 function renderWith(node: React.ReactNode) {
   const client = new QueryClient({
     mutationCache: new MutationCache({
@@ -61,6 +79,19 @@ describe('default mutation error toast', () => {
 
   it('still fires for a mutation with no onError and no opt-out', async () => {
     renderWith(<ToastOnlyForm />)
+    await userEvent.click(screen.getByRole('button', { name: 'save' }))
+    await waitFor(() => expect(toastAdd).toHaveBeenCalledTimes(1))
+  })
+
+  it('a shared hook used with inlineError suppresses the toast', async () => {
+    renderWith(<SharedSaveForm inline />)
+    await userEvent.click(screen.getByRole('button', { name: 'save' }))
+    await screen.findByRole('alert')
+    expect(toastAdd).not.toHaveBeenCalled()
+  })
+
+  it('a shared hook used without the option still toasts', async () => {
+    renderWith(<SharedSaveForm inline={false} />)
     await userEvent.click(screen.getByRole('button', { name: 'save' }))
     await waitFor(() => expect(toastAdd).toHaveBeenCalledTimes(1))
   })

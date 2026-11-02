@@ -71,7 +71,7 @@ function toFieldValues(domains?: string[]): { value: string }[] {
 export function DomainEditor({ app }: { app: AppDetail }) {
   const { t } = useTranslation('domains')
   const [wizardOpen, setWizardOpen] = useState(false)
-  const updateApp = useUpdateApp(app.name)
+  const updateApp = useUpdateApp(app.name, { inlineError: true })
   const domainSchema = useMemo(() => buildDomainSchema(t), [t])
   const { data: certificates } = useCertificates()
   const { control, register, handleSubmit, formState } =

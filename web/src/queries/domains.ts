@@ -9,6 +9,7 @@
 // already keeps separate from queries/apps.ts despite both feeding
 // settings/general.tsx.
 
+import { inlineErrorMeta, type InlineErrorOptions } from '@/lib/inlineError'
 import {
   queryOptions,
   useMutation,
@@ -185,10 +186,10 @@ export async function updateIngressSettings(
 // (the PUT response already is the new canonical state), the same
 // pattern useUpdateApp (queries/apps.ts) already establishes, rather
 // than invalidating and refetching.
-export function useUpdateIngressSettings() {
+export function useUpdateIngressSettings(opts?: InlineErrorOptions) {
   const queryClient = useQueryClient()
   return useMutation({
-    meta: { errorToast: false },
+    meta: inlineErrorMeta(opts),
     mutationFn: updateIngressSettings,
     onSuccess: (updated) => {
       queryClient.setQueryData(ingressSettingsKeys.all, updated)

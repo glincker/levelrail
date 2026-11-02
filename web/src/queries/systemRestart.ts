@@ -1,3 +1,4 @@
+import { inlineErrorMeta, type InlineErrorOptions } from '@/lib/inlineError'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { beginRestart } from '../lib/restartTracker'
@@ -34,9 +35,9 @@ export function useSystemRestartInfo() {
   })
 }
 
-export function useRestartControlPlane() {
+export function useRestartControlPlane(opts?: InlineErrorOptions) {
   return useMutation({
-    meta: { errorToast: false },
+    meta: inlineErrorMeta(opts),
     mutationFn: async (): Promise<SystemRestartInfo> => {
       const res = await fetch(URL, { method: 'POST' })
       if (!res.ok && res.status !== 202) {

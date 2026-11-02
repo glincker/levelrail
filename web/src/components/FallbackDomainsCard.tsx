@@ -21,7 +21,7 @@ import { DnsProviderPicker } from './DnsProviderPicker'
 export function FallbackDomainsCard() {
   const { t } = useTranslation('https')
   const { data: settings } = useQuery(ingressSettingsQueryOptions())
-  const update = useUpdateIngressSettings()
+  const update = useUpdateIngressSettings({ inlineError: true })
   if (!settings) return null
 
   const enabled = settings.fallback_domains_enabled ?? true
