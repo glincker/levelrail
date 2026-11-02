@@ -578,7 +578,8 @@
         "waiting": "Waiting for the proxy to get a certificate",
         "waitingSince": "Waiting for the proxy to get a certificate (since {{time}})",
         "default": "Proxy is serving its default certificate: it could not get one",
-        "unwired": "Route not wired"
+        "unwired": "Route not wired",
+        "unreachable": "Route not answering"
       },
       "retry": "Retry certificate request",
       "retrying": "Retrying...",

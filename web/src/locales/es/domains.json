@@ -578,7 +578,8 @@
         "waiting": "Esperando que el proxy obtenga un certificado",
         "waitingSince": "Esperando que el proxy obtenga un certificado (desde {{time}})",
         "default": "El proxy sirve su certificado por defecto: no pudo obtener uno",
-        "unwired": "Ruta sin conectar"
+        "unwired": "Ruta sin conectar",
+        "unreachable": "La ruta no responde"
       },
       "retry": "Reintentar solicitud de certificado",
       "retrying": "Reintentando...",

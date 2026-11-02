@@ -103,15 +103,18 @@ describe('ProxySetupCard', () => {
           domain: 'bad.example.com',
           state: 'error',
           certificate: null,
+          reachable: false,
           last_error: 'The proxy returned 502',
         }),
       ],
     })
     stubFetch({ [`GET ${BASE}`]: () => jsonResponse(data) })
     renderWithProviders(<ProxySetupCard />)
-    expect(await screen.findByText('Live')).toBeInTheDocument()
-    expect(screen.getByText('Waiting for certificate')).toBeInTheDocument()
-    expect(screen.getByText('Error')).toBeInTheDocument()
+    expect(await screen.findByText('Certificate ready')).toBeInTheDocument()
+    expect(
+      screen.getByText('Waiting for the proxy to get a certificate'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Route not answering')).toBeInTheDocument()
     expect(screen.getByText(/Let's Encrypt, valid until/)).toBeInTheDocument()
     expect(
       screen.getAllByText('Proxy default certificate, waiting for issuance'),

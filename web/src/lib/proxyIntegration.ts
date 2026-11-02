@@ -53,7 +53,8 @@ export function findProxyDomain(
   return data?.domains.find((d) => d.domain === domain)
 }
 
-export type TlsSummaryKind = 'ready' | 'waiting' | 'default' | 'unwired'
+export type TlsSummaryKind =
+  'ready' | 'waiting' | 'default' | 'unwired' | 'unreachable'
 
 // One status for the whole TLS picture of a domain behind a proxy, so the
 // dashboard shows a single pill and a single next step.
@@ -63,6 +64,7 @@ export function tlsSummary(d: ProxyDomain): TlsSummaryKind {
   if (live === 'live') return 'ready'
   if (live === 'waiting' && d.diagnosis !== 'acme_failed') return 'waiting'
   if (!d.checked_at) return 'waiting'
+  if (!d.reachable) return 'unreachable'
   return 'default'
 }
 

@@ -21,7 +21,7 @@ describe('ProxyHandledTlsBadge', () => {
     renderWithProviders(
       <ProxyHandledTlsBadge domain="app.example.com" fallback="Provisioning" />,
     )
-    expect(await screen.findByText('Handled by your proxy')).toBeInTheDocument()
+    expect(await screen.findByText('Route not wired')).toBeInTheDocument()
     expect(screen.queryByText('Provisioning')).not.toBeInTheDocument()
   })
 

@@ -24,6 +24,7 @@ const SUMMARY_VARIANT: Record<TlsSummaryKind, BadgeVariant> = {
   waiting: 'warning',
   ready: 'success',
   default: 'destructive',
+  unreachable: 'destructive',
 }
 
 function formatClock(iso: string): string {
