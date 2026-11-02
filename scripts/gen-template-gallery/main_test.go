@@ -60,3 +60,34 @@ func TestGenerateWholeCatalog(t *testing.T) {
 		t.Error("generated data contains an em or en dash")
 	}
 }
+
+func TestTrustLevels(t *testing.T) {
+	signed := &catalog.SignedBy{Method: "keyless", Identity: "x"}
+	e := Entry{Images: []Image{{SourceClass: catalog.SourceUpstream, Signed: signed, Provenance: true}}}
+	hist := catalog.VerifiedRecord{Arches: []string{"arm64"}}
+	if got := trustFor(e, hist, true).Level; got != trustListed {
+		t.Errorf("historical local run = %q, want listed", got)
+	}
+	ci := catalog.VerifiedRecord{Arches: []string{"amd64"}, RunURL: "https://example.com/run/1"}
+	if got := trustFor(e, ci, true).Level; got != trustVerifiedSigned {
+		t.Errorf("signed CI run = %q, want verified_signed", got)
+	}
+	e.Images[0].Signed = nil
+	if got := trustFor(e, ci, true).Level; got != trustVerified {
+		t.Errorf("unsigned CI run = %q, want verified", got)
+	}
+	if got := trustFor(e, ci, false).Level; got != trustListed {
+		t.Errorf("no record = %q, want listed", got)
+	}
+}
+
+func TestArchStates(t *testing.T) {
+	imgs := []Image{{Platforms: []string{"linux/amd64"}}}
+	got := archStates(imgs, catalog.VerifiedRecord{Arches: []string{"amd64"}}, true)
+	if got["amd64"] != "tested" || got["arm64"] != "absent" {
+		t.Errorf("archStates = %v", got)
+	}
+	if archStates([]Image{{}}, catalog.VerifiedRecord{}, false)["amd64"] != "unknown" {
+		t.Error("unscanned image must be unknown")
+	}
+}

@@ -14,7 +14,7 @@ run() {
 }
 
 run go run ./scripts/gen-api-reference
-# Template generators feed docs/template-catalog.md, gen-template-gallery/templates.json
+# Template generators feed docs/template-catalog.md, gen-template-gallery/catalog-index.json
 # and docs/self-host. CODEGEN_SKIP_TEMPLATES=1 opts out for local iteration.
 if [ "${CODEGEN_SKIP_TEMPLATES:-off}" != on ]; then
 	run go run ./scripts/gen-template-catalog-docs

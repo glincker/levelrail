@@ -91,6 +91,7 @@ func (m Manifest) Validate() error {
 	if m.RecommendedMemoryBytes <= 0 {
 		errs = append(errs, fmt.Errorf("recommended_memory_bytes must be positive"))
 	}
+	errs = append(errs, m.validateMarketplaceFields()...)
 	errs = append(errs, m.validatePrompts()...)
 	if len(errs) == 0 {
 		errs = append(errs, m.validateRender()...)

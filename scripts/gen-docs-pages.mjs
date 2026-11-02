@@ -3,7 +3,7 @@
 import fs from 'node:fs'
 
 const kindLabel = { generated: 'Generated at deploy', required: 'You must provide', preset: 'Preset in the template' }
-const templates = JSON.parse(fs.readFileSync('scripts/gen-template-gallery/templates.json', 'utf8'))
+const templates = JSON.parse(fs.readFileSync('scripts/gen-template-gallery/catalog-index.json', 'utf8')).templates
 const esc = (s) => String(s).replace(/\|/g, '\\|').replace(/[<>{}]/g, (c) => `&#${c.charCodeAt(0)};`)
 const q = (s) => JSON.stringify(String(s))
 
@@ -56,7 +56,7 @@ What Levelrail adds around it:
 
 ${req.protections.map((p) => `- ${esc(p.label)}.`).join('\n')}
 `
-  const cmd = t.needsConfig
+  const cmd = t.needs_config
     ? `levelrail-cli templates get ${t.id} --output json | jq -r .compose > ${t.id}.compose.yaml\n# edit ${t.id}.compose.yaml to set the variables you must provide\nlevelrail-cli apps deploy-compose my-${t.id} --file ${t.id}.compose.yaml`
     : `levelrail-cli templates deploy ${t.id} --name my-${t.id}`
   const out = `---
@@ -68,8 +68,8 @@ description: ${q(t.slogan)}
 
 ${esc(t.slogan)}
 
-This page describes the Levelrail template for ${esc(t.name)} (${esc(t.category)}). It deploys the services below as one Docker Compose app on your own server.${t.docUrl ? ` Project site: ${t.docUrl}.` : ''}
-${t.memoryMiB ? `\nRecommended memory: about ${t.memoryMiB} MiB.\n` : ''}${t.gpu ? '\n<Warning>This template reserves an NVIDIA GPU, so it needs a node with a GPU and the NVIDIA container runtime.</Warning>\n' : ''}
+This page describes the Levelrail template for ${esc(t.name)} (${esc(t.category)}). It deploys the services below as one Docker Compose app on your own server.${t.documentation_url ? ` Project site: ${t.documentation_url}.` : ''}
+${t.memory_mib ? `\nRecommended memory: about ${t.memory_mib} MiB.\n` : ''}${t.requires_gpu ? '\n<Warning>This template reserves an NVIDIA GPU, so it needs a node with a GPU and the NVIDIA container runtime.</Warning>\n' : ''}
 ## Services, ports and volumes
 
 | Service | Image | Container ports | Volumes |
@@ -82,7 +82,7 @@ ${env}
 
 Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
 
-${reqSection}${t.needsConfig ? '\n<Warning>This template needs configuration before it can deploy. Open it in the dashboard, set each variable marked "You must provide" in the Compose body, then deploy.</Warning>\n' : ''}
+${reqSection}${t.needs_config ? '\n<Warning>This template needs configuration before it can deploy. Open it in the dashboard, set each variable marked "You must provide" in the Compose body, then deploy.</Warning>\n' : ''}
 ## Deploy ${esc(t.name)} with Levelrail
 
 In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select ${esc(t.name)}. Review the Compose body and deploy.

@@ -377,6 +377,7 @@
               "template-catalog",
               "deploy-button",
               "templates-status",
+              "catalog-index",
               "arm-compatibility",
               "templates"
             ],

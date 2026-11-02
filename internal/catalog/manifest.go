@@ -21,12 +21,25 @@ var generateKinds = map[string]string{
 
 // Manifest is one template directory: template.yaml plus the compose file it names.
 type Manifest struct {
-	ID                     string               `yaml:"id" json:"id"`
-	Name                   string               `yaml:"name" json:"name"`
-	Description            string               `yaml:"description" json:"description"`
-	Icon                   string               `yaml:"icon" json:"icon,omitempty"`
-	Category               string               `yaml:"category" json:"category"`
-	DocumentationURL       string               `yaml:"documentation_url" json:"documentation_url"`
+	ID               string `yaml:"id" json:"id"`
+	Name             string `yaml:"name" json:"name"`
+	Description      string `yaml:"description" json:"description"`
+	Icon             string `yaml:"icon" json:"icon,omitempty"`
+	Category         string `yaml:"category" json:"category"`
+	DocumentationURL string `yaml:"documentation_url" json:"documentation_url"`
+	// Marketplace listing fields. All optional for entries that predate the
+	// marketplace; ValidateSubmission requires them for new manifests.
+	SourceRepo             string               `yaml:"source_repo" json:"source_repo,omitempty"`
+	License                string               `yaml:"license" json:"license,omitempty"`
+	LicenseClass           string               `yaml:"license_class" json:"license_class,omitempty"`
+	LicenseURL             string               `yaml:"license_url" json:"license_url,omitempty"`
+	HostedUse              string               `yaml:"hosted_use" json:"hosted_use,omitempty"`
+	Listing                *ManifestListing     `yaml:"listing" json:"listing,omitempty"`
+	Status                 string               `yaml:"status" json:"status,omitempty"`
+	StatusReason           string               `yaml:"status_reason" json:"status_reason,omitempty"`
+	ReplacedBy             string               `yaml:"replaced_by" json:"replaced_by,omitempty"`
+	Aliases                []string             `yaml:"aliases" json:"aliases,omitempty"`
+	FirstRun               []string             `yaml:"first_run" json:"first_run,omitempty"`
 	ComposeFile            string               `yaml:"compose_file" json:"-"`
 	RecommendedMemoryBytes int64                `yaml:"recommended_memory_bytes" json:"recommended_memory_bytes,omitempty"`
 	Env                    []EnvPrompt          `yaml:"env" json:"env,omitempty"`
@@ -61,6 +74,17 @@ type ManifestHealthcheck struct {
 	Service string `yaml:"service" json:"service"`
 	Port    int    `yaml:"port" json:"port"`
 	Path    string `yaml:"path" json:"path"`
+	// Expect is the status the path answers when it is not 200 to 399 (401 or 403 behind a login).
+	Expect int `yaml:"expect" json:"expect,omitempty"`
+	// Kind is http (default) or tcp for services with no HTTP surface.
+	Kind string `yaml:"kind" json:"kind,omitempty"`
+}
+
+// ManifestListing says who stands behind the entry.
+type ManifestListing struct {
+	By        string `yaml:"by" json:"by"`
+	VendorOrg string `yaml:"vendor_org" json:"vendor_org,omitempty"`
+	Proof     string `yaml:"proof" json:"proof,omitempty"`
 }
 
 // InstallInput is what an operator supplies when installing a manifest.
