@@ -651,8 +651,35 @@
     "checking": "Comprobando...",
     "checkedAt": "Comprobado a las {{time}}",
     "noAnswer": "sin respuesta",
-    "propagatingHelp": "El DNS público ya apunta este dominio a este servidor. El resolver propio de este servidor conserva durante un tiempo una respuesta de \"no encontrado\" (a menudo hasta 30 minutos), así que se conectará solo. No hay ningún problema.",
-    "notFoundHelp": "Ningún resolver tiene este registro todavía. Revisa el registro en tu proveedor de DNS (tipo, nombre, valor) y dale un minuto. Un registro nuevo suele verse en pocos minutos."
+    "propagatingHelp": "El DNS público ya apunta este dominio a este servidor. Algunos resolvers aún se están poniendo al día; la lista de arriba muestra cuáles y cuándo reintentar.",
+    "notFoundHelp": "Ningún resolver tiene este registro todavía. Revisa el registro en tu proveedor de DNS (tipo, nombre, valor) y dale un minuto. Un registro nuevo suele verse en pocos minutos.",
+    "ttl": "(ttl {{seconds}}s)",
+    "groups": {
+      "authoritative": "Servidores de nombres autoritativos (fuente de verdad)",
+      "public": "Resolvers públicos",
+      "local": "Resolver de este servidor"
+    },
+    "verdict": {
+      "dns_ready": "El DNS está listo",
+      "public_ready": "El DNS público está listo",
+      "not_found": "Registro no encontrado",
+      "points_elsewhere": "Apunta a otro sitio",
+      "unknown": "Sin comprobar"
+    },
+    "retryAt": "El resolver de este servidor podrá reintentar a las {{time}}.",
+    "countdown": "(faltan {{left}})",
+    "flushIntro": "Para vaciar ahora la caché DNS de este servidor, ejecuta esto en el host:",
+    "copyFlush": "Copiar el comando para vaciar la caché",
+    "hints": {
+      "local_stale": "El DNS es correcto en los servidores autoritativos. El resolver de este servidor aún conserva la respuesta antigua; nada más está bloqueado.",
+      "local_stale_long": "El resolver de este servidor conserva la respuesta antigua más de lo esperado. El DNS es correcto, así que ni los visitantes ni los certificados se ven afectados; vacía la caché o reinicia el resolver.",
+      "was_cloudflare_proxy": "Este dominio estaba detrás del proxy de Cloudflare; tu DNS ahora apunta directamente al servidor, así que los visitantes llegan al servidor directamente (la IP de origen ya no está oculta).",
+      "waiting": "El registro aún no aparece en los servidores autoritativos. Los registros nuevos suelen verse en pocos minutos.",
+      "check_zone": "Comprueba que el registro está en la zona DNS correcta y con el nombre exacto.",
+      "check_aaaa": "Comprueba que no hay un registro AAAA que apunte a otro sitio.",
+      "check_cname": "Comprueba que el apex no es un CNAME que tu proveedor aplana a otra dirección.",
+      "check_nameservers": "Comprueba que otro proveedor de DNS no sea el autoritativo: los servidores de nombres de tu registrador deben ser los que contienen este registro."
+    }
   },
   "goLive": {
     "loading": "Comprobando el progreso...",

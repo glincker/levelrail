@@ -651,8 +651,35 @@
     "checking": "Checking...",
     "checkedAt": "Checked at {{time}}",
     "noAnswer": "no answer",
-    "propagatingHelp": "Public DNS already points this domain at this server. This server's own resolver keeps a \"not found\" answer for a while (often up to 30 minutes), so it will connect on its own. Nothing is wrong.",
-    "notFoundHelp": "No resolver has this record yet. Check the record at your DNS provider (type, name, value) and give it a minute. A new record is usually visible within a few minutes."
+    "propagatingHelp": "Public DNS already points this domain at this server. Some resolvers are still catching up; the list above shows which ones and when to try again.",
+    "notFoundHelp": "No resolver has this record yet. Check the record at your DNS provider (type, name, value) and give it a minute. A new record is usually visible within a few minutes.",
+    "ttl": "(ttl {{seconds}}s)",
+    "groups": {
+      "authoritative": "Authoritative name servers (source of truth)",
+      "public": "Public resolvers",
+      "local": "This server's resolver"
+    },
+    "verdict": {
+      "dns_ready": "DNS is ready",
+      "public_ready": "Public DNS is ready",
+      "not_found": "Record not found",
+      "points_elsewhere": "Points elsewhere",
+      "unknown": "Not checked"
+    },
+    "retryAt": "This server's resolver is ready to retry at {{time}}.",
+    "countdown": "({{left}} left)",
+    "flushIntro": "To clear this server's DNS cache now, run this on the host:",
+    "copyFlush": "Copy the flush command",
+    "hints": {
+      "local_stale": "DNS is correct at the authoritative servers. This server's own resolver still holds the old answer; nothing else is blocked.",
+      "local_stale_long": "This server's own resolver holds the old answer longer than expected. DNS is correct, so visitors and certificates are not affected; flush the cache or restart the resolver.",
+      "was_cloudflare_proxy": "This domain was proxied by Cloudflare; your DNS now points straight at the server, so visitors reach the server directly (the origin IP is no longer hidden).",
+      "waiting": "The record has not appeared on the authoritative servers yet. New records usually show within a few minutes.",
+      "check_zone": "Check the record is in the right DNS zone and spelled exactly.",
+      "check_aaaa": "Check there is no AAAA record pointing somewhere else.",
+      "check_cname": "Check the apex is not a CNAME that your provider flattens to a different address.",
+      "check_nameservers": "Check another DNS provider is not authoritative: the name servers at your registrar must be the ones holding this record."
+    }
   },
   "goLive": {
     "loading": "Checking progress...",
