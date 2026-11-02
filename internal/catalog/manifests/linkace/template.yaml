@@ -4,6 +4,10 @@ description: A self-hosted bookmark archive with tags, lists, link checks and a 
 icon: link
 category: Productivity
 documentation_url: https://www.linkace.org/docs/
+source_repo: https://github.com/Kovah/LinkAce
+license: GPL-3.0-only
+license_class: copyleft
+license_url: https://github.com/Kovah/LinkAce/blob/2.x/LICENSE.md
 recommended_memory_bytes: 268435456
 env:
   - key: TZ

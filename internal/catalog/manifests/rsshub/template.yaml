@@ -4,6 +4,10 @@ description: Turns sites without a feed into RSS feeds, with thousands of ready-
 icon: rss
 category: Productivity
 documentation_url: https://docs.rsshub.app/deploy/
+source_repo: https://github.com/DIYgod/RSSHub
+license: AGPL-3.0-only
+license_class: network-copyleft
+license_url: https://github.com/DIYgod/RSSHub/blob/master/LICENSE
 recommended_memory_bytes: 536870912
 domains:
   - service: rsshub

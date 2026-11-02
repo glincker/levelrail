@@ -4,6 +4,10 @@ description: An open-source Kanban board with swimlanes, checklists and webhooks
 icon: kanban
 category: Productivity
 documentation_url: https://github.com/wekan/wekan/wiki
+source_repo: https://github.com/wekan/wekan
+license: MIT
+license_class: permissive
+license_url: https://github.com/wekan/wekan/blob/main/LICENSE
 recommended_memory_bytes: 805306368
 domains:
   - service: wekan

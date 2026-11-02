@@ -4,6 +4,10 @@ description: A CPU text-to-speech server with an OpenAI-compatible /v1/audio/spe
 icon: speaker-high
 category: AI
 documentation_url: https://github.com/remsky/Kokoro-FastAPI
+source_repo: https://github.com/remsky/Kokoro-FastAPI
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/remsky/Kokoro-FastAPI/blob/master/LICENSE
 recommended_memory_bytes: 1610612736
 env:
   - key: TZ

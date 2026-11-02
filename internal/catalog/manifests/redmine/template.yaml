@@ -4,6 +4,10 @@ description: A mature project management and issue tracker with Gantt charts, wi
 icon: ticket
 category: Productivity
 documentation_url: https://www.redmine.org/projects/redmine/wiki/Guide
+source_repo: https://github.com/redmine/redmine
+license: GPL-2.0-or-later
+license_class: copyleft
+license_url: https://github.com/redmine/redmine/blob/master/LICENSE.txt
 recommended_memory_bytes: 536870912
 env:
   - key: DB_PASSWORD

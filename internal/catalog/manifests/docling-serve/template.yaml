@@ -4,6 +4,10 @@ description: An API server that converts PDFs, Office files and images into Mark
 icon: file-text
 category: AI
 documentation_url: https://github.com/docling-project/docling-serve
+source_repo: https://github.com/docling-project/docling-serve
+license: MIT
+license_class: permissive
+license_url: https://github.com/docling-project/docling-serve/blob/main/LICENSE
 recommended_memory_bytes: 3221225472
 env:
   - key: TZ

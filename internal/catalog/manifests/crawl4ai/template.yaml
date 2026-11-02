@@ -4,6 +4,10 @@ description: An open source web crawler API that turns pages into clean Markdown
 icon: spider
 category: AI
 documentation_url: https://docs.crawl4ai.com/core/docker-deployment/
+source_repo: https://github.com/unclecode/crawl4ai
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/unclecode/crawl4ai/blob/main/LICENSE
 recommended_memory_bytes: 2147483648
 env:
   - key: API_TOKEN

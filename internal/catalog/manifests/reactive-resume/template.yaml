@@ -4,6 +4,10 @@ description: A free resume builder with live preview, templates and PDF export, 
 icon: file-text
 category: Productivity
 documentation_url: https://docs.rxresu.me/
+source_repo: https://github.com/reactive-resume/reactive-resume
+license: MIT
+license_class: permissive
+license_url: https://github.com/reactive-resume/reactive-resume/blob/main/LICENSE
 recommended_memory_bytes: 805306368
 env:
   - key: DB_PASSWORD

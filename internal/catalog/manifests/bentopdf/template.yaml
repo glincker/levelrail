@@ -4,6 +4,10 @@ description: A privacy-first PDF toolkit that merges, splits, converts and edits
 icon: file
 category: Productivity
 documentation_url: https://github.com/alam00000/bentopdf
+source_repo: https://github.com/alam00000/bentopdf
+license: AGPL-3.0-only
+license_class: network-copyleft
+license_url: https://github.com/alam00000/bentopdf/blob/main/LICENSE
 recommended_memory_bytes: 134217728
 domains:
   - service: bentopdf

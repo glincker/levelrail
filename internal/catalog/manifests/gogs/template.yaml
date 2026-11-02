@@ -4,6 +4,10 @@ description: A painless self-hosted Git service written in Go, light enough to r
 icon: git-branch
 category: Developer Tools
 documentation_url: https://gogs.io/docs
+source_repo: https://github.com/gogs/gogs
+license: MIT
+license_class: permissive
+license_url: https://github.com/gogs/gogs/blob/main/LICENSE
 recommended_memory_bytes: 268435456
 domains:
   - service: gogs
