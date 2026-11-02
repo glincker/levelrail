@@ -89,6 +89,69 @@ Read the deploy safety guide or try it on a spare server.
 
 [Read deploy safety](/deploy-safety) | [View on GitHub](https://github.com/glincker/levelrail)
 
+## Probe a redeploy under load
+
+`scripts/zero-downtime-load/run.sh` checks the cutover order above with real traffic. It starts a throwaway dev-mode control plane, creates one app from `traefik/whoami`, sends requests to it at a steady rate through the HTTPS ingress, and redeploys the app while the requests continue. It then reports how many requests failed.
+
+It needs a checkout of this repository (it builds `./cmd/levelrail` from the repo root), Go, a Docker daemon reachable through the current Docker context, and `curl`, `awk` and `sort`. It uses its own ports and never touches the dev app on port 8080. Dev mode and the fixed dev token are for local use only.
+
+```bash
+scripts/zero-downtime-load/run.sh -r 20 -d 3 -s 8
+```
+
+Flags:
+
+| Flag | Default | Meaning |
+| --- | --- | --- |
+| `-r` | `20` | Requests per second. Each request runs in the background, so a slow one does not delay the schedule. |
+| `-d` | `5` | Number of redeploys. The script defines four image tags, so use `3` or less. The default asks for a tag that does not exist, so pass `-d` explicitly. |
+| `-s` | `8` | Seconds to wait after each redeploy before the next one. |
+
+The app starts on tag `v1.10.3`. Redeploy 1 uses `v1.10.2`, redeploy 2 uses `v1.10.1` and redeploy 3 uses `v1.10.0`.
+
+Environment variables:
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `ZDL_DIR` | a directory under `/private/tmp` | Work directory for the binary, data, load log and control plane log. |
+| `ZDL_API_PORT` | `18480` | Port of the throwaway control plane API. |
+| `ZDL_INGRESS_PORT` | `18482` | HTTPS port of the throwaway ingress, host `zdl.localhost`. |
+| `ZDL_ENV` | empty | Extra `KEY=VAL` pairs for the control plane, separated by spaces. |
+| `ZDL_IMAGE` | `traefik/whoami` | Image repository to deploy. |
+
+The script removes the app and any containers named `zdl-` when it exits.
+
+### Reading the output
+
+The script prints these lines, in order:
+
+1. `create: <status>`, the HTTP status of the create call.
+2. For each redeploy, `deploy N: <status>` and then either `deploy N: new release answering` or `deploy N: NEVER CUT OVER`. The second means the route did not move to the new release within the wait limit of 360 polls, about three minutes.
+3. `requests N`, the number of requests sent, failed ones included.
+4. `failures N`, the number of requests that did not return a 2xx status. A request that got no response is counted with status `000`.
+5. `latency p50 ... p95 ... p99 ...`, measured over 2xx responses only.
+6. `longest gap between 2xx`, in seconds. At the default rate, requests are 0.05 s apart, so a gap of a second or more means no 2xx response arrived for that long.
+7. Only when there are failures: `failing window`, the first and last failing timestamps as epoch seconds, and a count per status code.
+8. `control plane log:`, the path to the server log.
+
+The exit status is `0` when every request returned 2xx. It is `1` when any request failed, when the build fails, or when the app never answers.
+
+Read the `deploy N` lines together with the exit status. Zero failures is not a pass if a deploy says `NEVER CUT OVER`: in that case the requests only reached the old release.
+
+### Recorded result
+
+One recorded run exists. Two of three redeploys cut over without failed requests. The third is unexplained and still open.
+
+Everything else is `pending run`:
+
+- Rates other than 20 requests per second.
+- Settle times other than 8 seconds.
+- Images other than `traefik/whoami`.
+- Rollbacks while requests are running.
+- A real VPS, a public domain or more than one node.
+
+This section does not show zero downtime on a host. It shows what the probe measures and what it has measured once.
+
 ## Troubleshooting
 
 For issues with zero-downtime deploys, readiness gates, or rollbacks, see [Deploy safety](deploy-safety.md) for safety mechanisms and [Deploying apps](deploying-apps.md) for deploy troubleshooting. Check [Deploy failures](deploy-failures.md) for structured failure codes and what each one means.

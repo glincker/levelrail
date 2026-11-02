@@ -32,7 +32,7 @@ Goal: fewer steps between a first deploy and a repeatable setup.
 - Release snapshots and environment bindings: pin a set of app versions and settings as a snapshot, and bind it to an environment so promotion moves a known set. Status: planned, builds on environment promotion and cloning.
 - Schema-driven config scaffold: generate starter `app.yaml` and stack files from the embedded JSON Schema, so field names and types come from one source. Status: planned, builds on `stack init` and the [app spec reference](/app-spec-reference).
 - MCP audit coverage: every MCP tool call, including read-only ones, shows up in the audit log with the token and the tool name, and a test fails when a new tool skips it. Status: planned. See [MCP tool surface](/mcp-tool-surface).
-- Template coverage: deploy more of the roughly 360 templates in e2e tests. Status: open.
+- Template coverage: deploy more of the templates in e2e tests. Status: open.
 - Load and failover numbers: publish the first results from `levelrail-cli bench run`. Status: harness exists, no published results, see [benchmarks](/benchmarks).
 
 ### Later (Q2 2027)
@@ -74,7 +74,7 @@ Phase 5 (chaos testing, upgrade and downgrade testing across versions, security 
 - Embedded Caddy ingress: automatic TLS (internal issuer by default, public ACME toggleable), zero-config `sslip.io` hostnames, per-domain bring-your-own certificates. See [domains and ingress](/domains-and-ingress).
 - Envelope-encrypted secrets with master-key rotation. See [security](/security).
 - Container exec and an interactive terminal (dashboard or `apps exec --interactive`), gated to root-level tokens.
-- [Service template](/templates-and-registry) catalog: about 360 entries (see [template catalog](/template-catalog)), reversing the original non-goal in [ADR 015](https://github.com/glincker/levelrail/blob/main/adr/015-service-template-catalog-reversal.md).
+- [Service template](/templates-and-registry) catalog: all entries are listed in the [template catalog](/template-catalog), reversing the original non-goal in [ADR 015](https://github.com/glincker/levelrail/blob/main/adr/015-service-template-catalog-reversal.md).
 - Ingress abuse defense with per-app rate limits and address and User-Agent deny lists, starting in log only mode with a replay before enforcing. See [ingress abuse defense](/abuse-defense).
 - A chaos test matrix that maps daemon, disk, agent, image and OOM failures to the test that proves each one converges. See [chaos test coverage](/chaos-coverage).
 
@@ -134,7 +134,7 @@ These exist and are tested, but are gated or carry a beta label. See [feature st
 - Multi-node on real hosts: the WireGuard mesh and cross-host remote transport are unverified outside fakes and local Docker daemons.
 - Idle footprint on Linux: measured in a Docker Desktop container (not bare metal) with a harness and opt-in regression guard. A bare metal or VPS number is still open. See [performance](/performance).
 - Load and failover numbers: the harness exists (`levelrail-cli bench run`), no published results yet. See [benchmarks](/benchmarks).
-- Template coverage: a sample of the roughly 360 templates is deployed by e2e tests, not the whole catalog.
+- Template coverage: a sample of the templates is deployed by e2e tests, not the whole catalog.
 - Other database engines: PITR covers Postgres, MySQL and MariaDB only (MongoDB has no oplog here), and the remaining engines have no TLS by default.
 - Stable release: none yet. Upgrade and downgrade testing across versions with real data is part of Phase 5.
 - Real pause or scale-to-zero for spend caps: `pause` serves a maintenance response and does not stop containers. A real pause needs an ADR first.
