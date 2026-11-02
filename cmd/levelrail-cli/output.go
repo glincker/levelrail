@@ -760,9 +760,20 @@ func printSystemDoctorHuman(out io.Writer, d systemDoctorResource) {
 	if d.Silenced > 0 {
 		_, _ = fmt.Fprintf(out, "\nSilenced: %d (see status silences)\n", d.Silenced)
 	}
-	if d.OK {
+	warnings := 0
+	for _, c := range d.Checks {
+		if c.Status == "warn" {
+			warnings++
+		}
+	}
+	switch {
+	case d.OK && warnings == 1:
+		_, _ = fmt.Fprintln(out, "\nNo checks failed, 1 warning. See above.")
+	case d.OK && warnings > 1:
+		_, _ = fmt.Fprintf(out, "\nNo checks failed, %d warnings. See above.\n", warnings)
+	case d.OK:
 		_, _ = fmt.Fprintln(out, "\nAll checks passed.")
-	} else {
+	default:
 		_, _ = fmt.Fprintln(out, "\nOne or more checks failed. See above.")
 	}
 }

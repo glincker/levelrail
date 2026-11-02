@@ -439,6 +439,7 @@ var Tree = map[string]*Node{
 		"ai-assistant": {Subs: map[string]*Node{"get": nil, "use": nil, "usage": nil,
 			"providers": {Subs: map[string]*Node{"list": nil, "set": nil, "test": nil, "remove": nil, "models": nil}},
 			"fallback":  {Subs: map[string]*Node{"set": nil}}}},
+		"deploy-url-copies": {Subs: map[string]*Node{"get": nil, "set": nil}},
 		"updates":           {Subs: map[string]*Node{"get": nil, "set": nil}},
 		"deploy-freeze":     {Subs: map[string]*Node{"show": nil, "set": nil, "clear": nil}},
 		"domain-automation": {Subs: map[string]*Node{"get": nil, "set": nil}},

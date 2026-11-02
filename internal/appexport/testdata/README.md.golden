@@ -14,7 +14,8 @@ Named volumes start empty. To restore a volume from a tar archive of its content
 
 ```
 docker compose create
-docker run --rm -v <project>_<volume>:/data -v "$PWD":/backup alpine tar xzf /backup/<volume>.tar.gz -C /data
+docker run --rm -v shop_shop_db:/data -v "$PWD":/backup alpine tar xzf /backup/shop_db.tar.gz -C /data
+docker run --rm -v shop_shop_uploads:/data -v "$PWD":/backup alpine tar xzf /backup/shop_uploads.tar.gz -C /data
 ```
 
 - volume shop_db (db, mounted at /var/lib/postgresql/data)

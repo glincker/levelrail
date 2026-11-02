@@ -13,6 +13,11 @@ import (
 func TestRun_Status_DockerConnected(t *testing.T) {
 	var gotMethod, gotPath string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/v1/updates" {
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(updatesResource{CurrentVersion: "v1.2.3"})
+			return
+		}
 		gotMethod, gotPath = r.Method, r.URL.Path
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(systemStatusResource{
@@ -30,6 +35,9 @@ func TestRun_Status_DockerConnected(t *testing.T) {
 	}
 	if !strings.Contains(stdout, "docker:              connected") {
 		t.Errorf("stdout = %q, want docker connected line", stdout)
+	}
+	if !strings.Contains(stdout, "server version:      v1.2.3") {
+		t.Errorf("stdout = %q, want server version line", stdout)
 	}
 }
 

@@ -240,3 +240,15 @@ func TestRun_Doctor_FixWithoutYesNeedsTerminal(t *testing.T) {
 		t.Errorf("applied %v without confirmation", fs.applied)
 	}
 }
+
+func TestPrintSystemDoctorHuman_WarningsNotAllPassed(t *testing.T) {
+	var buf strings.Builder
+	printSystemDoctorHuman(&buf, systemDoctorResource{OK: true, Checks: []doctorCheckResource{
+		{Code: "a", Name: "A", Status: "warn", Message: "m"},
+		{Code: "b", Name: "B", Status: "warn", Message: "m"},
+	}})
+	out := buf.String()
+	if strings.Contains(out, "All checks passed.") || !strings.Contains(out, "2 warnings") {
+		t.Errorf("out = %q", out)
+	}
+}

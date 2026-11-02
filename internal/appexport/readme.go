@@ -35,7 +35,11 @@ func renderReadme(app string, svcs []Service) string {
 	b.WriteString("Exported from Levelrail. Nothing here needs Levelrail to run.\n\n")
 	b.WriteString("## Start\n\n1. `cp .env.example .env`\n2. Replace every `CHANGE_ME` in `.env`. Secrets are never exported; re-enter them or restore them from your own backup.\n3. `docker compose up -d`\n\n")
 	b.WriteString("## Data\n\nNamed volumes start empty. To restore a volume from a tar archive of its contents (for example one made with a Levelrail backup download):\n\n")
-	b.WriteString("```\ndocker compose create\ndocker run --rm -v <project>_<volume>:/data -v \"$PWD\":/backup alpine tar xzf /backup/<volume>.tar.gz -C /data\n```\n\n")
+	b.WriteString("```\ndocker compose create\n")
+	for _, v := range volumeNames(svcs) {
+		fmt.Fprintf(&b, "docker run --rm -v %s_%s:/data -v \"$PWD\":/backup alpine tar xzf /backup/%s.tar.gz -C /data\n", projectName(app), v, v)
+	}
+	b.WriteString("```\n\n")
 	var vols []string
 	for _, s := range svcs {
 		for _, v := range s.Volumes {
@@ -94,4 +98,19 @@ func renderReadme(app string, svcs []Service) string {
 	}
 	b.WriteString("## Not exported\n\nSecret values, backup data, TLS certificates, and Levelrail features such as previews, auto-sleep and deploy hooks. Private registry logins must be redone with `docker login`.\n")
 	return b.String()
+}
+
+func volumeNames(svcs []Service) []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, s := range svcs {
+		for _, v := range s.Volumes {
+			if k := volumeKey(v.Name); !seen[k] {
+				seen[k] = true
+				out = append(out, k)
+			}
+		}
+	}
+	sort.Strings(out)
+	return out
 }

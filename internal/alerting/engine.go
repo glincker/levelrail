@@ -338,6 +338,9 @@ func (e *Engine) Tick(ctx context.Context) error {
 	}
 
 	for _, r := range rules {
+		if ctx.Err() != nil {
+			break
+		}
 		var next Rule
 		var certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, nodeNotices []string
 		var taskFailureNotice, backupMissingNoticeText, sloNotice, versionSkewNotice string
@@ -883,13 +886,22 @@ func (e *Engine) Run(ctx context.Context, interval time.Duration) error {
 			}
 			return ctx.Err()
 		case <-ticker.C:
-			start := time.Now()
-			err := e.Tick(ctx)
-			loop.Observe(start, err)
-			if err != nil {
-				e.logger.Warn("alerting: evaluation tick had errors", slog.String("error", err.Error()))
-			}
+			e.runTick(ctx, loop)
 		}
+	}
+}
+
+// runTick skips a tick that lost the race with cancellation and never logs
+// errors caused by shutdown, so a stopping process stays quiet.
+func (e *Engine) runTick(ctx context.Context, loop *footprint.Loop) {
+	if ctx.Err() != nil {
+		return
+	}
+	start := time.Now()
+	err := e.Tick(ctx)
+	loop.Observe(start, err)
+	if err != nil && ctx.Err() == nil {
+		e.logger.Warn("alerting: evaluation tick had errors", slog.String("error", err.Error()))
 	}
 }
 

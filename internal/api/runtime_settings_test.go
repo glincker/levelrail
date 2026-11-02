@@ -292,7 +292,6 @@ func TestRuntimeSettings_ResetThatWeakensNeedsConfirm(t *testing.T) {
 		key, strong, env, envVal string
 	}{
 		{KeyMCPDefaultTokenScope, "read_only", EnvMCPDefaultTokenScope, "read_write"},
-		{"security.build_network", "none", "", ""},
 	}
 	for _, tc := range cases {
 		t.Run(tc.key, func(t *testing.T) {
@@ -312,5 +311,31 @@ func TestRuntimeSettings_ResetThatWeakensNeedsConfirm(t *testing.T) {
 				t.Fatalf("confirmed reset = %d %s", rec.Code, rec.Body.String())
 			}
 		})
+	}
+}
+
+func TestRuntimeSettings_ResetToDefaultNeedsNoConfirm(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	path := rsBase + "/security.build_network"
+	if rec := rsDo(t, rt, cookie, http.MethodPut, path, `{"value":"none"}`); rec.Code != http.StatusOK {
+		t.Fatalf("save strong value = %d %s", rec.Code, rec.Body.String())
+	}
+	if rec := rsDo(t, rt, cookie, http.MethodDelete, path, ""); rec.Code != http.StatusOK {
+		t.Fatalf("reset to default = %d %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestRuntimeSettings_ResetWeakeningWordsCLIFlag(t *testing.T) {
+	t.Setenv(EnvMCPDefaultTokenScope, "read_write")
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	path := rsBase + "/" + KeyMCPDefaultTokenScope
+	if rec := rsDo(t, rt, cookie, http.MethodPut, path, `{"value":"read_only"}`); rec.Code != http.StatusOK {
+		t.Fatalf("save = %d %s", rec.Code, rec.Body.String())
+	}
+	rec := rsDo(t, rt, cookie, http.MethodDelete, path, "")
+	if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "--confirm-weakening") {
+		t.Fatalf("reset = %d %s, want 400 naming --confirm-weakening", rec.Code, rec.Body.String())
 	}
 }

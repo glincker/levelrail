@@ -16,6 +16,12 @@ func runSettings(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	case "-h", "--help", "help":
 		_, _ = fmt.Fprint(stdout, settingsUsage(prog))
 		return exitOK
+	case "heartbeat":
+		return runSettingsHeartbeat(prog, args[1:], stdout, stderr, lookupEnv)
+	case "ddns":
+		return runSettingsDDNS(prog, args[1:], stdout, stderr, lookupEnv)
+	case "runtime":
+		return runSettingsRuntime(prog, args[1:], stdout, stderr, lookupEnv)
 	case "oauth":
 		return runSettingsOAuth(prog, args[1:], stdout, stderr, lookupEnv)
 	case "email":

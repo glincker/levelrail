@@ -203,11 +203,21 @@ func (s *bootState) startAlerting() {
 	startDeployWatch(ctx, gate, deployWatchDeps{db: db, local: client, registry: agentRegistry, localNodeID: meshLocalNodeID(meshCfg),
 		restarts: restartTracker, metrics: alertingFederator, sampleEvery: metricsCollectionInterval, nudger: engine, dispatcher: deployDispatcher, logger: logger,
 		windows: func(c context.Context) deploysafety.Windows { return deployWindowsFrom(c, apiRouter.RuntimeSettings()) }})
+	alertingDone := make(chan struct{})
 	go func() {
+		defer close(alertingDone)
 		if err := alertingEngine.Run(ctx, alertEvaluationInterval); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("alerting engine stopped", slog.String("error", err.Error()))
 		}
 	}()
+	// Registered after the stores open, so it runs before they close.
+	s.later(func() {
+		select {
+		case <-alertingDone:
+		case <-time.After(httpShutdownTimeout):
+			logger.Warn("alerting engine did not stop before the stores closed")
+		}
+	})
 	s.alertingEngine = alertingEngine
 }
 

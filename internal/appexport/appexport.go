@@ -88,6 +88,7 @@ type File struct {
 }
 
 var (
+	composeName  = regexp.MustCompile(`[^a-z0-9_-]+`)
 	safeKey      = regexp.MustCompile(`[^A-Za-z0-9_]`)
 	envNameRe    = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 	serviceKeyRe = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_.-]*$`)
@@ -281,6 +282,7 @@ func renderCompose(app string, svcs []Service, vars map[string][]envVar) string 
 	var b strings.Builder
 	fmt.Fprintf(&b, "# Exported from Levelrail app %q. Plain Docker Compose, no Levelrail needed.\n", app)
 	b.WriteString("# Domains are kept as x-domains so you can map them in your own proxy.\n")
+	fmt.Fprintf(&b, "name: %s\n", ys(projectName(app)))
 	b.WriteString("services:\n")
 	volumes := map[string]bool{}
 	for _, s := range svcs {
@@ -301,6 +303,15 @@ func renderCompose(app string, svcs []Service, vars map[string][]envVar) string 
 		}
 	}
 	return b.String()
+}
+
+// projectName is the Compose project name, which prefixes every named volume.
+func projectName(app string) string {
+	n := strings.Trim(composeName.ReplaceAllString(strings.ToLower(app), "-"), "-_")
+	if n == "" {
+		return "app"
+	}
+	return n
 }
 
 func volumeKey(name string) string {
@@ -331,10 +342,13 @@ func writeService(b *strings.Builder, s Service, vars []envVar) {
 		}
 	}
 	var ports []string
-	if s.Port > 0 && len(s.Domains) > 0 {
-		ports = append(ports, fmt.Sprintf("%d:%d", s.Port, s.Port))
+	if s.Port > 0 {
+		ports = append(ports, fmt.Sprintf("127.0.0.1:%d:%d", s.Port, s.Port))
 	}
 	for _, p := range s.Ports {
+		if p.HostPort == s.Port && p.ContainerPort == s.Port && (p.Protocol == "" || p.Protocol == "tcp") {
+			continue
+		}
 		proto := p.Protocol
 		if proto == "" {
 			proto = "tcp"
@@ -342,6 +356,9 @@ func writeService(b *strings.Builder, s Service, vars []envVar) {
 		ports = append(ports, fmt.Sprintf("%d:%d/%s", p.HostPort, p.ContainerPort, proto))
 	}
 	if len(ports) > 0 {
+		if s.Port > 0 {
+			b.WriteString("    # Bound to loopback so the app answers on this host without editing; put a proxy in front or change the bind to expose it.\n")
+		}
 		b.WriteString("    ports:\n")
 		for _, p := range ports {
 			fmt.Fprintf(b, "      - %s\n", ys(p))

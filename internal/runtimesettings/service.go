@@ -344,7 +344,8 @@ func (s *Service) Reset(ctx context.Context, key string) (Setting, error) {
 }
 
 // WeakensOnReset reports whether deleting the saved value would leave a weaker
-// effective value (the env seed or the default) than the one in force now.
+// environment seed than the one in force now. Returning to the built-in default
+// never needs confirmation, so only an explicit env seed is compared.
 func (s *Service) WeakensOnReset(ctx context.Context, key string) bool {
 	d, ok := s.definition(key)
 	if !ok || d.Risk != RiskWeakensSecurity {
@@ -354,11 +355,13 @@ func (s *Service) WeakensOnReset(ctx context.Context, key string) bool {
 	if cur.source != SourceSaved {
 		return false
 	}
-	target := d.Default
-	if v, ok := s.lookupEnv(d.Env); ok && v != "" {
-		if c, err := canonicalEnv(d, v); err == nil {
-			target = c
-		}
+	v, ok := s.lookupEnv(d.Env)
+	if !ok || v == "" {
+		return false
+	}
+	target, err := canonicalEnv(d, v)
+	if err != nil {
+		return false
 	}
 	c, err := canonicalFromString(d, target)
 	if err != nil {

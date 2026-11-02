@@ -774,7 +774,7 @@ func (rt *Router) handleGetApp(w http.ResponseWriter, r *http.Request) {
 
 	svc, err := rt.apps.GetDesiredService(r.Context(), name)
 	if errors.Is(err, store.ErrServiceNotFound) {
-		writeError(w, http.StatusNotFound, "app not found")
+		rt.writeAppNotFound(r.Context(), w, name)
 		return
 	}
 	if err != nil {
@@ -1228,7 +1228,7 @@ func (rt *Router) handleStopApp(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if err := rt.apps.UpdateServiceSuspended(r.Context(), name, true); errors.Is(err, store.ErrServiceNotFound) {
-		writeError(w, http.StatusNotFound, "app not found")
+		rt.writeAppNotFound(r.Context(), w, name)
 		return
 	} else if err != nil {
 		rt.internalError(w, "api: stop app failed", err, slog.String("name", name))

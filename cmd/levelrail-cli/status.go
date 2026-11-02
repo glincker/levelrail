@@ -33,7 +33,13 @@ func runStatus(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get system status: %w", err))
 	}
 
-	if err := renderResult(stdout, of.Format, of.Query, status, func() { printSystemStatusHuman(stdout, status) }); err != nil {
+	if err := renderResult(stdout, of.Format, of.Query, status, func() {
+		printSystemStatusHuman(stdout, status)
+		// Best effort: an older server or a restricted token just omits the line.
+		if up, err := client.GetUpdates(context.Background()); err == nil && up.CurrentVersion != "" {
+			_, _ = fmt.Fprintf(stdout, "server version:      %s (cli %s)\n", up.CurrentVersion, displayCLIVersion(localVersionInfo()))
+		}
+	}); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)
 	}
