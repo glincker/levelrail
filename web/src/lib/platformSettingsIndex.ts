@@ -36,8 +36,8 @@ export const PLATFORM_ANCHORS = {
   appsBaseDomain: 'apps-base-domain',
   fallbackDomains: 'fallback-domains',
   domainAutomation: 'domain-automation',
-  cloudflareDns: 'cloudflare-dns',
-  route53Dns: 'route53-dns',
+  cloudflareDns: 'cloudflare',
+  route53Dns: 'route53',
   googleCloudDns: 'google-cloud-dns',
 } as const
 

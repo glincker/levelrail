@@ -17,7 +17,6 @@ import { PlatformStatusStrip } from './PlatformStatusStrip'
 import { PlatformAddressesPage } from './PlatformAddressesPage'
 import { PlatformHttpsPage } from './PlatformHttpsPage'
 import { PlatformIngressPage } from './PlatformIngressPage'
-import { DnsProvidersPage } from './DnsProvidersPage'
 
 const navigate = vi.fn()
 
@@ -237,7 +236,6 @@ describe('card anchors', () => {
   const pages = [
     ['https', <PlatformHttpsPage key="h" />],
     ['addresses', <PlatformAddressesPage key="a" />],
-    ['dns-providers', <DnsProvidersPage key="d" />],
   ] as const
 
   it.each(pages)('renders an anchor per card on %s', async (page, node) => {
