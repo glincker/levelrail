@@ -83,6 +83,7 @@
               "install-on-cloud",
               "install-on-oracle-cloud",
               "local-development",
+              "desktop-runtime",
               "getting-started",
               "quickstart-one-command",
               "tutorials/deploy-a-docker-app",
