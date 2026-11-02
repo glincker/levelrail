@@ -1,7 +1,15 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ApiError } from '../../lib/apiError'
 import type { AppVisitors } from '../../queries/appVisitors'
-import { VisitorsBody } from './VisitorsCard'
+import { VisitorsBody, VisitorsCard } from './VisitorsCard'
+
+const useAppVisitors = vi.hoisted(() => vi.fn())
+vi.mock('../../queries/appVisitors', async (orig) => ({
+  ...(await orig<typeof import('../../queries/appVisitors')>()),
+  useAppVisitors,
+}))
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -52,5 +60,39 @@ describe('VisitorsBody', () => {
   it('shows the empty state with no requests', () => {
     render(<VisitorsBody data={{ ...base, requests: 0 }} />)
     expect(screen.getByText('visitors.empty')).toBeTruthy()
+  })
+})
+
+describe('VisitorsCard states', () => {
+  const refetch = vi.fn()
+  beforeEach(() => {
+    refetch.mockReset()
+  })
+
+  it('renders nothing when the edge access log is not wired (501)', () => {
+    useAppVisitors.mockReturnValue({
+      data: undefined,
+      isPending: false,
+      isError: true,
+      error: new ApiError(501, 'not implemented'),
+      refetch,
+    })
+    const { container } = render(<VisitorsCard appName="web" />)
+    expect(container).toBeEmptyDOMElement()
+  })
+
+  it('shows the error with a retry button on other failures', async () => {
+    const user = userEvent.setup()
+    useAppVisitors.mockReturnValue({
+      data: undefined,
+      isPending: false,
+      isError: true,
+      error: new ApiError(500, 'boom'),
+      refetch,
+    })
+    render(<VisitorsCard appName="web" />)
+    expect(screen.getByText('visitors.loadError')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'visitors.retry' }))
+    expect(refetch).toHaveBeenCalledTimes(1)
   })
 })

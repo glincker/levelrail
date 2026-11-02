@@ -25,6 +25,9 @@ const (
 // parkedLookupConcurrency bounds simultaneous DNS checks so a long list stays polite to resolvers.
 const parkedLookupConcurrency = 8
 
+// parkedLookupTimeout is a variable only so tests can shrink it.
+var parkedLookupTimeout = domainCheckLookupTimeout
+
 type parkedDNSState struct {
 	Status    string `json:"status"`
 	CheckedAt string `json:"checked_at,omitempty"`
@@ -55,7 +58,7 @@ func parkedDNSFromCheck(status string) string {
 }
 
 // parkedStateFor looks up DNS and certificate state for one domain. A lookup
-// that overruns domainCheckLookupTimeout reports unknown instead of blocking.
+// that overruns parkedLookupTimeout reports unknown instead of blocking.
 func (rt *Router) parkedStateFor(ctx context.Context, r *http.Request, domain string) parkedDomainState {
 	st := parkedDomainState{
 		DNS: parkedDNSState{Status: parkedDNSUnknown, CheckedAt: time.Now().UTC().Format(time.RFC3339)},
@@ -66,7 +69,7 @@ func (rt *Router) parkedStateFor(ctx context.Context, r *http.Request, domain st
 	}
 
 	expected, inferred := advertisedHost(r, rt.advertisedPublicHost(ctx))
-	dctx, cancel := context.WithTimeout(ctx, domainCheckLookupTimeout)
+	dctx, cancel := context.WithTimeout(ctx, parkedLookupTimeout)
 	defer cancel()
 	done := make(chan domainCheckResponse, 1)
 	go func() { done <- rt.runDomainCheckOpts(dctx, domain, expected, inferred, false) }()

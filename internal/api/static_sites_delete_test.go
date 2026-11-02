@@ -149,3 +149,34 @@ func TestSweepOrphanStaticSites(t *testing.T) {
 		t.Errorf("orphan tree survived: %v", err)
 	}
 }
+
+func TestHandleDeleteStaticSite_DenyRefs(t *testing.T) {
+	for _, tc := range []struct {
+		name, resource string
+		want           int
+	}{
+		{"static site deny", "static_site:orphan", http.StatusNotFound},
+		{"app deny", "app:orphan", http.StatusForbidden},
+		{"unrelated deny", "static_site:other", http.StatusNoContent},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			rt, db := newTestRouter(t)
+			bootstrapTestAdmin(t, db)
+			root := t.TempDir()
+			rt.staticRootDir = root
+			seedStaticSite(t, db, root, "orphan")
+			user := storeUserWithAbilitiesForTest(t, db, "scoped@example.com", []string{AbilityRoot})
+			attachTestPolicy(t, db, "deny-one", "Deny", "*", tc.resource, store.PrincipalTypeUser, user.ID)
+			cookie := sessionCookieForTest(t, rt, user.ID)
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/static-sites/orphan", ""))
+			if rec.Code != tc.want {
+				t.Fatalf("delete = %d %s, want %d", rec.Code, rec.Body.String(), tc.want)
+			}
+			_, err := db.GetStaticSite(context.Background(), "orphan")
+			if (tc.want == http.StatusNoContent) == (err == nil) {
+				t.Errorf("row presence after delete wrong, err = %v", err)
+			}
+		})
+	}
+}

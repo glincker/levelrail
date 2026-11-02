@@ -24,10 +24,12 @@ const (
 type iamInventory struct {
 	apps      []string
 	databases []string
-	appEnv    map[string]*store.EnvironmentRef
-	dbEnv     map[string]*store.EnvironmentRef
-	envs      []store.EnvironmentWithCounts
-	projects  []store.Project
+	// staticSites have no environment, so only the app of the same name does.
+	staticSites []string
+	appEnv      map[string]*store.EnvironmentRef
+	dbEnv       map[string]*store.EnvironmentRef
+	envs        []store.EnvironmentWithCounts
+	projects    []store.Project
 }
 
 func (rt *Router) loadIAMInventory(ctx context.Context) (*iamInventory, error) {
@@ -46,6 +48,16 @@ func (rt *Router) loadIAMInventory(ctx context.Context) (*iamInventory, error) {
 	for _, d := range dbs {
 		inv.databases = append(inv.databases, d.Name)
 	}
+	if rt.staticSites != nil {
+		sites, err := rt.staticSites.ListStaticSites(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("iam inventory: list static sites: %w", err)
+		}
+		for _, s := range sites {
+			inv.staticSites = append(inv.staticSites, s.Name)
+		}
+	}
+	sort.Strings(inv.staticSites)
 	sort.Strings(inv.apps)
 	sort.Strings(inv.databases)
 	if db := rt.accessDB(); db != nil {
@@ -70,8 +82,11 @@ func (rt *Router) loadIAMInventory(ctx context.Context) (*iamInventory, error) {
 }
 
 func (inv *iamInventory) envFor(prefix, name string) *store.EnvironmentRef {
-	if prefix == resourcePrefixDatabase {
+	switch prefix {
+	case resourcePrefixDatabase:
 		return inv.dbEnv[name]
+	case resourcePrefixStaticSite:
+		return nil
 	}
 	return inv.appEnv[name]
 }
@@ -82,6 +97,8 @@ func (inv *iamInventory) resourceExists(r string) bool {
 	switch {
 	case strings.HasPrefix(r, resourcePrefixApp):
 		return slices.Contains(inv.apps, strings.TrimPrefix(r, resourcePrefixApp))
+	case strings.HasPrefix(r, resourcePrefixStaticSite):
+		return slices.Contains(inv.staticSites, strings.TrimPrefix(r, resourcePrefixStaticSite))
 	case strings.HasPrefix(r, resourcePrefixDatabase):
 		return slices.Contains(inv.databases, strings.TrimPrefix(r, resourcePrefixDatabase))
 	case strings.HasPrefix(r, resourcePrefixEnvironmentKind):
@@ -94,11 +111,12 @@ func (inv *iamInventory) resourceExists(r string) bool {
 }
 
 type resourceMatch struct {
-	Pattern   string   `json:"pattern"`
-	Apps      int      `json:"apps"`
-	Databases int      `json:"databases"`
-	Sample    []string `json:"sample"`
-	Error     string   `json:"error,omitempty"`
+	Pattern     string   `json:"pattern"`
+	Apps        int      `json:"apps"`
+	Databases   int      `json:"databases"`
+	StaticSites int      `json:"static_sites"`
+	Sample      []string `json:"sample"`
+	Error       string   `json:"error,omitempty"`
 }
 
 // matchPattern counts what one resource pattern selects, through the same
@@ -129,6 +147,7 @@ func (inv *iamInventory) matchPattern(pattern string) resourceMatch {
 	}
 	m.Apps = scan(resourcePrefixApp, inv.apps)
 	m.Databases = scan(resourcePrefixDatabase, inv.databases)
+	m.StaticSites = scan(resourcePrefixStaticSite, inv.staticSites)
 	return m
 }
 
@@ -137,6 +156,7 @@ type iamResourcesResponse struct {
 	Environments []iamEnvironmentRef `json:"environments"`
 	Apps         []iamResourceRef    `json:"apps"`
 	Databases    []iamResourceRef    `json:"databases"`
+	StaticSites  []iamResourceRef    `json:"static_sites"`
 }
 
 type iamProjectRef struct {
@@ -161,7 +181,7 @@ type iamResourceRef struct {
 }
 
 func (inv *iamInventory) resourcesResponse() iamResourcesResponse {
-	out := iamResourcesResponse{Projects: []iamProjectRef{}, Environments: []iamEnvironmentRef{}, Apps: []iamResourceRef{}, Databases: []iamResourceRef{}}
+	out := iamResourcesResponse{Projects: []iamProjectRef{}, Environments: []iamEnvironmentRef{}, Apps: []iamResourceRef{}, Databases: []iamResourceRef{}, StaticSites: []iamResourceRef{}}
 	for _, e := range inv.envs {
 		out.Environments = append(out.Environments, iamEnvironmentRef{ID: e.ID, Name: e.Name, Kind: e.Kind, ProjectID: e.ProjectID, Apps: e.AppCount, Databases: e.DatabaseCount})
 	}
@@ -179,6 +199,9 @@ func (inv *iamInventory) resourcesResponse() iamResourcesResponse {
 	}
 	for _, n := range inv.databases {
 		out.Databases = append(out.Databases, resourceRefFor(n, inv.dbEnv[n]))
+	}
+	for _, n := range inv.staticSites {
+		out.StaticSites = append(out.StaticSites, iamResourceRef{Name: n})
 	}
 	return out
 }

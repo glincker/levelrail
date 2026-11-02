@@ -92,6 +92,7 @@
         "environment_kind": "Un tipo de entorno",
         "app": "Una app concreta",
         "database": "Una base de datos concreta",
+        "static_site": "Un sitio estático concreto",
         "pattern": "Un patrón de nombre"
       },
       "patternPlaceholder": "app:web-*",
@@ -103,7 +104,9 @@
       "matchApps_one": "{{count}} app",
       "matchApps_other": "{{count}} apps",
       "matchDatabases_one": "{{count}} base de datos",
-      "matchDatabases_other": "{{count}} bases de datos"
+      "matchDatabases_other": "{{count}} bases de datos",
+      "matchStaticSites_one": "{{count}} sitio estático",
+      "matchStaticSites_other": "{{count}} sitios estáticos"
     },
     "conditions": {
       "title": "Condiciones",

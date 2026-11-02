@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -395,5 +396,44 @@ func TestParkedDomainsAPI_DeniedOriginHidesAndBlocksRow(t *testing.T) {
 				t.Fatalf("delete open row = %d %s", rec.Code, rec.Body.String())
 			}
 		})
+	}
+}
+
+// Not parallel: it shrinks the package-level lookup timeout.
+func TestParkedStates_SlowLookupReportsUnknownWithoutDelayingOthers(t *testing.T) {
+	rt, _ := newTestRouter(t)
+	rt.publicHost = "203.0.113.7"
+	rt.detectPublicIPs = func(context.Context) []string { return nil }
+	rt.publicLookup = func(context.Context, string) []resolverResult { return nil }
+	release := make(chan struct{})
+	t.Cleanup(func() { close(release) })
+	// The slow fake ignores ctx so the timeout path, not a ctx error, decides the verdict.
+	rt.lookupHost = func(_ context.Context, host string) ([]string, error) {
+		if strings.Contains(host, "slow") {
+			<-release
+		}
+		return []string{"203.0.113.7"}, nil
+	}
+	old := parkedLookupTimeout
+	parkedLookupTimeout = 300 * time.Millisecond
+	t.Cleanup(func() { parkedLookupTimeout = old })
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/domains/parked", nil)
+	domains := []string{"slow1.example.com", "slow2.example.com", "slow3.example.com", "fast.example.com"}
+	start := time.Now()
+	got := rt.parkedStates(context.Background(), req, domains)
+	elapsed := time.Since(start)
+
+	for _, d := range domains[:3] {
+		if got[d].DNS.Status != parkedDNSUnknown {
+			t.Fatalf("%s dns = %q, want unknown", d, got[d].DNS.Status)
+		}
+	}
+	if got["fast.example.com"].DNS.Status != parkedDNSPointing {
+		t.Fatalf("fast dns = %q, want pointing", got["fast.example.com"].DNS.Status)
+	}
+	// Sequential lookups would take about three timeouts.
+	if elapsed >= 700*time.Millisecond {
+		t.Fatalf("lookups were serialized: %v", elapsed)
 	}
 }

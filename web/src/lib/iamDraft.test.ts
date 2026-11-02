@@ -30,6 +30,20 @@ describe('iamDraft', () => {
     ).toEqual(['environment:e1', 'environment:e2'])
   })
 
+  it('maps static sites to static_site patterns and back', () => {
+    expect(selectionToResources({ kind: 'static_site', name: 'docs' })).toEqual(
+      ['static_site:docs'],
+    )
+    expect(resourceToSelection('static_site:docs')).toEqual({
+      kind: 'static_site',
+      name: 'docs',
+    })
+    expect(resourceToSelection('static_site:doc*')).toEqual({
+      kind: 'pattern',
+      value: 'static_site:doc*',
+    })
+  })
+
   it('round trips a document through the draft model', () => {
     const doc = {
       Statement: [

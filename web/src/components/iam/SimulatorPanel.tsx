@@ -184,6 +184,10 @@ export function SimulatorPanel({
         value: `database:${d.name}`,
         label: `database:${d.name}`,
       })),
+      ...(resources.data?.static_sites ?? []).map((s) => ({
+        value: `static_site:${s.name}`,
+        label: `static_site:${s.name}`,
+      })),
     ],
     [resources.data],
   )
