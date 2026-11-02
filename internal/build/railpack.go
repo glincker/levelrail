@@ -64,6 +64,8 @@ type RailpackRequest struct {
 
 	// CgroupParent places every build step in a pre-sized cgroup. Set by the Limiter; local builds only.
 	CgroupParent string
+	// NodeHeapMB, when positive, sets NODE_OPTIONS=--max-old-space-size for Node builds that did not set NODE_OPTIONS.
+	NodeHeapMB int
 	// Network is the RUN step policy; the Client fills it from APP_BUILD_NETWORK.
 	Network NetworkMode
 	// Env is build-time env, as Railpack's own --env does. Callers pass only
@@ -399,6 +401,10 @@ func (c *Client) solveRailpack(ctx context.Context, req RailpackRequest, out io.
 		return nil, err
 	}
 
+	if _, userSet := req.Env["NODE_OPTIONS"]; req.NodeHeapMB > 0 && !userSet && len(result.DetectedProviders) > 0 && result.DetectedProviders[0] == "node" {
+		progress(ProgressEvent{Step: "memory guard", Log: applyNodeHeap(result.Plan, req.NodeHeapMB), Stream: "stdout"})
+	}
+
 	def, solveOpt, err := newRailpackSolveOpt(ctx, result.Plan, req, nopWriteCloser{out})
 	if err != nil {
 		return nil, err
@@ -456,4 +462,28 @@ func railpackSession(env map[string]string) []session.Attachable {
 		m[k] = []byte(v)
 	}
 	return []session.Attachable{secretsprovider.FromMap(m)}
+}
+
+// applyNodeHeap sets NODE_OPTIONS on the install and build steps unless the plan already sets it, and returns the log line (keys only).
+func applyNodeHeap(plan *rpplan.BuildPlan, heapMB int) string {
+	for i := range plan.Steps {
+		st := &plan.Steps[i]
+		if st.Name != "install" && st.Name != "build" {
+			continue
+		}
+		if _, set := st.Variables["NODE_OPTIONS"]; set {
+			return "build memory: NODE_OPTIONS is already set for this build, left unchanged"
+		}
+	}
+	for i := range plan.Steps {
+		st := &plan.Steps[i]
+		if st.Name != "install" && st.Name != "build" {
+			continue
+		}
+		if st.Variables == nil {
+			st.Variables = map[string]string{}
+		}
+		st.Variables["NODE_OPTIONS"] = fmt.Sprintf("--max-old-space-size=%d", heapMB)
+	}
+	return fmt.Sprintf("build memory: NODE_OPTIONS set to --max-old-space-size=%d to stay inside the build memory limit; set NODE_OPTIONS yourself to override", heapMB)
 }

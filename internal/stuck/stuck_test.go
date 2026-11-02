@@ -21,6 +21,7 @@ func TestExplain(t *testing.T) {
 		{"image pull by reason", Input{Kind: KindApp, Conditions: notReady("ImagePullFailed", "denied", 20*time.Minute)}, CauseImagePull, true, ""},
 		{"disk critical beats others", Input{Kind: KindApp, Conditions: notReady("CreateFailed", "x", time.Minute), Ctx: Context{DiskCritical: true, DiskDetail: "/var/lib/docker 2% free"}}, CauseDiskFull, false, "disk.reclaim"},
 		{"node offline by context", Input{Kind: KindDatabase, Conditions: notReady("StartFailed", "x", time.Hour), Ctx: Context{NodeStatus: "offline"}}, CauseNodeOffline, true, ""},
+		{"build out of memory by text", Input{Kind: KindApp, Conditions: notReady("BuildFailed", "build exceeded its memory limit (512 MB): see builds.memory_limit_mb", time.Hour)}, CauseBuildOOM, true, ""},
 		{"port conflict by text only", Input{Kind: KindApp, Conditions: notReady("StartFailed", "bind: address already in use", time.Hour)}, CausePortConflict, true, ""},
 		{"readiness", Input{Kind: KindApp, Conditions: notReady("ReadinessFailed", "", 2*time.Minute)}, CauseReadiness, false, ""},
 		{"dependency by context", Input{Kind: KindApp, Conditions: notReady("Pending", "", time.Hour), Ctx: Context{DependencyNotReady: "database/main"}}, CauseDependency, true, ""},

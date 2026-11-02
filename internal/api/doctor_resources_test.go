@@ -97,3 +97,22 @@ func TestDoctorCheckCPU(t *testing.T) {
 		})
 	}
 }
+
+func TestDoctorCheckBuildMemory(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		total int64
+		want  string
+	}{
+		{"1 GB warns", 1 << 30, doctorStatusWarn},
+		{"4 GB ok", 4 << 30, doctorStatusOK},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			rt, _ := newDoctorTestRouter(t)
+			rt.doctorHostMemory = func() (int64, int64, error) { return tt.total, tt.total, nil }
+			if c := rt.doctorCheckBuildMemory(); c.Status != tt.want {
+				t.Errorf("status = %q, want %q", c.Status, tt.want)
+			}
+		})
+	}
+}

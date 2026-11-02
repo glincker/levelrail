@@ -234,7 +234,9 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 	}
 
 	router := build.NewRouter(buildClient, buildNodeSource(db, agentRegistry), agent.NewBuildDispatcher(agentRegistry), build.WithRouterLogger(logger))
-	limiter := build.NewLimiter(router, api.BuildLimitsSource(db, build.LimitsFromEnv(os.LookupEnv)),
+	memGuard := build.MemGuardFromEnv(os.LookupEnv)
+	limiter := build.NewLimiter(router, api.BuildLimitsSourceWithMemory(db, build.LimitsFromEnv(os.LookupEnv), buildMemoryCap(memGuard)),
+		build.WithMemoryGuard(memGuard, hostMemoryMB),
 		build.WithRunRecorder(api.BuildRunRecorder(db)), build.WithLimiterLogger(logger),
 		build.WithNodeResolver(router.SelectedNode), build.WithImageSizer(router.ImageSize),
 		build.WithCgroupProvisioner(build.NewCgroupProvisioner(os.Getenv(build.EnvBuildCgroupRoot))))

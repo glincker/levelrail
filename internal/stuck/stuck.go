@@ -39,6 +39,7 @@ const (
 	CauseNodePending     = "NODE_PENDING"
 	CauseImagePull       = "IMAGE_PULL_FAILED"
 	CausePortConflict    = "PORT_CONFLICT"
+	CauseBuildOOM        = "BUILD_OUT_OF_MEMORY"
 	CauseReadiness       = "READINESS_FAILING"
 	CauseCrashloop       = "CRASHLOOP"
 	CauseMissingSecret   = "MISSING_SECRET"
@@ -202,6 +203,15 @@ var table = []row{
 		actions: func(in Input) []Action {
 			link := []Action{{Type: ActionLink, Label: "Check registry credentials", Href: href(in, "registries", "/settings")}}
 			return join(link, retryApp(in), []Action{recheck()})
+		},
+	},
+	{
+		code: CauseBuildOOM, title: "The build ran out of memory",
+		explanation: "The build was killed by the out of memory killer. Raise builds.memory_limit_mb, use a builds-only node, add swap, or build elsewhere.",
+		reasons:     []string{"BuildMemoryLimit", "memory_limit"},
+		patterns:    []string{"build exceeded its memory limit", "builds.memory_limit_mb"},
+		actions: func(in Input) []Action {
+			return join([]Action{{Type: ActionLink, Label: "Open build settings", Href: href(in, "builds", "/settings")}}, retryApp(in), []Action{recheck()})
 		},
 	},
 	{

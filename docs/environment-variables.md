@@ -66,6 +66,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_INGRESS_CA_RETRY_BACKOFF_MAX` | [`ingress.ca_switch_retry_max`](/runtime-settings#networking) | `1h` |
 | `APP_INGRESS_DNS01_ALL_HOSTS` | [`ingress.dns01_all_hosts`](/runtime-settings#networking) | `false` |
 | `APP_TRUST_LOOPBACK_FORWARDED` | [`security.trust_loopback_forwarded_headers`](/runtime-settings#networking) | `true` |
+| `APP_BUILD_MEMORY_MB` | [`builds.memory_limit_mb`](/runtime-settings#deploys) | `0` |
 | `APP_COMPOSE_DEPENDS_ON_TIMEOUT` | [`compose.depends_on_timeout`](/runtime-settings#deploys) | `120s` |
 | `APP_CONTAINERS_RESTART_POLICY` | [`containers.restart_policy`](/runtime-settings#deploys) | `unless-stopped` |
 | `APP_DEPLOY_MAX_CONCURRENT` | [`deploy.max_concurrent`](/runtime-settings#deploys) | `0` |
@@ -125,7 +126,10 @@ The control plane builds images with BuildKit. By default each build starts from
 | `APP_BUILD_CACHE_REGISTRY_INSECURE` | unset (off) | Set to exactly `true` to allow a plain-HTTP or self-signed cache registry. Only applies when `APP_BUILD_CACHE_REGISTRY` is set. Control plane. |
 | `APP_BUILD_TIMEOUT` | `30m` | How long one build may run before it is stopped and marked timed out. A Go duration such as `45m`; `0` means no limit. A value saved in the dashboard or with `apps build-limits set` wins. Control plane. |
 | `APP_BUILD_MAX_CONCURRENT` | `2` | Builds allowed to run at once; the rest wait in a queue. `0` means no limit. A saved override wins. Control plane. |
-| `APP_BUILD_MEMORY_MB` | `0` | Memory one build may use, in MB. `0` means no limit. A saved global or per-app override wins. Control plane, Linux cgroup v2. |
+| `APP_BUILD_MEMORY_MB` | `0` | Seeds the `builds.memory_limit_mb` setting: memory one build may use, in MiB. `0` means auto (60 percent of host memory, minus a reserve). A saved setting or per-app override wins. Control plane, Linux cgroup v2. |
+| `APP_BUILD_MEMORY_PERCENT` | `60` | Share of host memory the auto build cap uses. Control plane. |
+| `APP_BUILD_MEMORY_RESERVE_MB` | `512` | Host memory in MiB the auto build cap always leaves free. Control plane. |
+| `APP_BUILD_NODE_HEAP_PERCENT` | `75` | Share of the build cap given to `--max-old-space-size` for Node builds. Control plane. |
 | `APP_BUILD_CPU_MILLIS` | `0` | CPU one build may use, in thousandths of a core (`1500` is 1.5 cores). `0` means no limit. A saved override wins. Control plane, Linux cgroup v2. |
 | `APP_BUILD_CGROUP_ROOT` | `/sys/fs/cgroup` | Where the control plane creates the per-build cgroups that enforce the memory and CPU limits. |
 | `APP_REGISTRY_ALLOW_PRIVATE_NETWORKS` | unset (off) | Registries on private LAN ranges (RFC 1918, `fc00::/7`) work by default when you add or browse a registry credential. Set to `true` to also allow loopback registries. Link-local and cloud metadata addresses are always refused. Control plane. |

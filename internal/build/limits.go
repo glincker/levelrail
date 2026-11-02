@@ -121,6 +121,11 @@ func WithImageSizer(s ImageSizer) LimiterOption { return func(l *Limiter) { l.si
 // WithCgroupProvisioner enforces the CPU and memory limits through a cgroup per build.
 func WithCgroupProvisioner(c CgroupProvisioner) LimiterOption { return func(l *Limiter) { l.cg = c } }
 
+// WithMemoryGuard sets the node heap share and a host memory reader (MiB) used for warnings and OOM messages.
+func WithMemoryGuard(g MemGuard, hostMB func() int) LimiterOption {
+	return func(l *Limiter) { l.guard, l.host = g, hostMB }
+}
+
 // Limiter queues builds past the per-node concurrency limit, stops builds past the
 // time limit, and records each outcome with its cache hit counts.
 type Limiter struct {
@@ -133,6 +138,8 @@ type Limiter struct {
 	node  NodeResolver
 	sizer ImageSizer
 	cg    CgroupProvisioner
+	guard MemGuard
+	host  func() int
 
 	mu    sync.Mutex
 	slots map[string]*nodeSlots
@@ -146,7 +153,7 @@ type nodeSlots struct {
 
 // NewLimiter wraps inner. limits is read once per build.
 func NewLimiter(inner Builder, limits LimitsSource, opts ...LimiterOption) *Limiter {
-	l := &Limiter{inner: inner, limits: limits, clock: realClock{}, log: slog.Default(), slots: map[string]*nodeSlots{}}
+	l := &Limiter{inner: inner, limits: limits, guard: MemGuard{NodeHeapPercent: DefaultNodeHeapPercent}, clock: realClock{}, log: slog.Default(), slots: map[string]*nodeSlots{}}
 	for _, o := range opts {
 		o(l)
 	}
@@ -155,7 +162,7 @@ func NewLimiter(inner Builder, limits LimitsSource, opts ...LimiterOption) *Limi
 
 // Build implements the deploy pipeline's ImageBuilder.
 func (l *Limiter) Build(ctx context.Context, req Request, progress func(ProgressEvent)) (*Result, error) {
-	return l.run(ctx, req.Tag, progress, func(c context.Context, p func(ProgressEvent), cg string) (*Result, error) {
+	return l.run(ctx, req.Tag, req.ContextDir, progress, func(c context.Context, p func(ProgressEvent), cg string, _ int) (*Result, error) {
 		req.CgroupParent = cg
 		return l.inner.Build(c, req, p)
 	})
@@ -163,13 +170,14 @@ func (l *Limiter) Build(ctx context.Context, req Request, progress func(Progress
 
 // BuildRailpack implements the deploy pipeline's ImageBuilder.
 func (l *Limiter) BuildRailpack(ctx context.Context, req RailpackRequest, progress func(ProgressEvent)) (*Result, error) {
-	return l.run(ctx, req.Tag, progress, func(c context.Context, p func(ProgressEvent), cg string) (*Result, error) {
+	return l.run(ctx, req.Tag, req.SourceDir, progress, func(c context.Context, p func(ProgressEvent), cg string, heapMB int) (*Result, error) {
 		req.CgroupParent = cg
+		req.NodeHeapMB = heapMB
 		return l.inner.BuildRailpack(c, req, p)
 	})
 }
 
-func (l *Limiter) run(ctx context.Context, tag string, progress func(ProgressEvent), do func(context.Context, func(ProgressEvent), string) (*Result, error)) (*Result, error) {
+func (l *Limiter) run(ctx context.Context, tag, srcDir string, progress func(ProgressEvent), do func(context.Context, func(ProgressEvent), string, int) (*Result, error)) (*Result, error) {
 	lim := l.limits(ctx, AppFromTag(tag))
 	queued := l.clock.Now()
 	nodeID := ""
@@ -219,7 +227,19 @@ func (l *Limiter) run(ctx context.Context, tag string, progress func(ProgressEve
 		}
 	}
 
-	res, err := do(bctx, wrapped, cgroupParent)
+	hostMB := 0
+	if l.host != nil {
+		hostMB = l.host()
+	}
+	if w := LowMemoryWarning(DetectBuildFramework(srcDir), hostMB); w != "" && progress != nil {
+		progress(ProgressEvent{Step: "memory guard", Log: w, Stream: "stderr"})
+	}
+	heapMB := 0
+	if nodeID == "" {
+		heapMB = NodeHeapMB(lim.MemoryMB, l.guard.NodeHeapPercent)
+	}
+
+	res, err := do(bctx, wrapped, cgroupParent, heapMB)
 	run.Duration = l.clock.Now().Sub(started)
 	smu.Lock()
 	run.CachedSteps, run.TotalSteps = steps.cached, steps.total()
@@ -238,7 +258,7 @@ func (l *Limiter) run(ctx context.Context, tag string, progress func(ProgressEve
 		run.Status = RunCanceled
 	case lim.MemoryMB > 0 && isMemoryKill(err):
 		run.Status = RunMemoryLimit
-		err = fmt.Errorf("%w (%d MB): %w", ErrBuildMemoryLimit, lim.MemoryMB, err)
+		err = fmt.Errorf("%w (%d MB): %s: %w", ErrBuildMemoryLimit, lim.MemoryMB, MemoryKillMessage(lim.MemoryMB, hostMB), err)
 	default:
 		run.Status = RunFailed
 	}
