@@ -10,6 +10,8 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"sync"
 
 	"github.com/GLINCKER/levelrail/internal/tokenhash"
@@ -35,8 +37,9 @@ type Tokens struct {
 	sum string
 }
 
-// NewTokens loads the stored hash, or creates a token on first use. A missing
-// handoff file also mints a fresh token, since the host could not read the old one.
+// NewTokens loads the stored hash, or creates a token on first use. A handoff file that is
+// missing, not a plain 0600 file, or not matching the hash (a crash between the two writes)
+// mints a fresh token, since the host could not use the old one.
 func NewTokens(dataDir string) (*Tokens, error) {
 	t := &Tokens{dir: dataDir}
 	raw, err := os.ReadFile(hashPath(dataDir))
@@ -46,8 +49,7 @@ func NewTokens(dataDir string) (*Tokens, error) {
 	case !errors.Is(err, fs.ErrNotExist):
 		return nil, fmt.Errorf("desktopmode: read token hash: %w", err)
 	}
-	_, statErr := os.Stat(TokenPath(dataDir))
-	if t.sum == "" || errors.Is(statErr, fs.ErrNotExist) {
+	if t.sum == "" || !handoffIntact(dataDir, t.sum) {
 		if err := t.Rotate(); err != nil {
 			return nil, err
 		}
@@ -88,7 +90,8 @@ func (t *Tokens) Rotate() error {
 	return nil
 }
 
-// Revoke deletes the token and its hash; exchange fails until the next boot or rotation.
+// Revoke deletes the token and its hash. It lasts until the next boot, which creates a
+// fresh token like a first run; to keep desktop mode closed, turn APP_DESKTOP_MODE off.
 func (t *Tokens) Revoke() error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
@@ -133,4 +136,21 @@ func writeAtomic(path string, data []byte) error {
 		return fmt.Errorf("desktopmode: rename token file: %w", err)
 	}
 	return nil
+}
+
+// handoffIntact reports whether the token file is a regular, unshared 0600 file whose hash is sum.
+func handoffIntact(dataDir, sum string) bool {
+	p := TokenPath(dataDir)
+	st, err := os.Lstat(p)
+	if err != nil || !st.Mode().IsRegular() {
+		return false
+	}
+	if runtime.GOOS != "windows" && st.Mode().Perm() != 0o600 {
+		return false
+	}
+	raw, err := os.ReadFile(p) //nolint:gosec // fixed name inside the data dir
+	if err != nil {
+		return false
+	}
+	return tokenhash.Matches(strings.TrimSpace(string(raw)), sum)
 }

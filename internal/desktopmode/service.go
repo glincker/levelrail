@@ -3,11 +3,11 @@ package desktopmode
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/authengine"
@@ -26,7 +26,7 @@ const (
 
 // Sessions is the slice of the auth library desktop mode needs.
 type Sessions interface {
-	IssueSession(ctx context.Context, u authengine.LegacyUser, userAgent, ip string) (string, error)
+	IssueSessionTTL(ctx context.Context, u authengine.LegacyUser, userAgent, ip string, ttl time.Duration) (string, error)
 	Revoke(ctx context.Context, token string)
 	RevokeAll(ctx context.Context, legacyUserID string) error
 }
@@ -43,11 +43,11 @@ type Config struct {
 	Audit  func(ctx context.Context, e store.AuditEntry)
 	Logger *slog.Logger
 	// Ports are the dashboard ports (guest and host side) the Host header may carry.
-	Ports       []string
-	RatePerMin  int
-	MaxFailures int
-	Lockout     time.Duration
-	Now         func() time.Time
+	Ports []string
+	// FailuresPerMin bad tokens from one peer start a block of Block; 0 disables the limit.
+	FailuresPerMin int
+	Block          time.Duration
+	Now            func() time.Time
 	// AllowRemotePeer lifts the loopback peer requirement; tests only.
 	AllowRemotePeer bool
 }
@@ -58,10 +58,6 @@ type Service struct {
 	hosts map[string]bool
 	lim   *limiter
 	now   func() time.Time
-
-	mu      sync.Mutex
-	expires map[string]time.Time // issued session token -> expiry, to cut a session at the setting's TTL
-	adminID string
 }
 
 // New builds a Service.
@@ -75,8 +71,7 @@ func New(cfg Config) *Service {
 	}
 	return &Service{
 		cfg: cfg, hosts: AllowedHosts(cfg.Ports), now: now,
-		lim:     &limiter{rpm: cfg.RatePerMin, maxFailures: cfg.MaxFailures, lockout: cfg.Lockout, now: now},
-		expires: make(map[string]time.Time),
+		lim: &limiter{cap: cfg.FailuresPerMin, block: cfg.Block, now: now},
 	}
 }
 
@@ -91,7 +86,6 @@ func (s *Service) Wrap(next http.Handler) http.Handler {
 			http.Error(w, "origin not allowed", http.StatusForbidden)
 			return
 		}
-		s.expireSession(r)
 		switch r.URL.Path {
 		case ExchangePath:
 			s.route(w, r, s.exchange)
@@ -118,23 +112,19 @@ func (s *Service) route(w http.ResponseWriter, r *http.Request, h func(http.Resp
 	h(w, r)
 }
 
-// authorize rate-limits, then checks the bearer token, counting failures toward lockout.
+// authorize checks the bearer token first, in constant time, so a valid token is never
+// delayed by someone else's bad attempts. Only failures are limited, per peer.
 func (s *Service) authorize(w http.ResponseWriter, r *http.Request, action string) bool {
-	ok, wait := s.lim.allow()
-	if !ok {
+	presented, found := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
+	if found && s.cfg.Tokens.Verify(strings.TrimSpace(presented)) {
+		return true
+	}
+	blocked, wait := s.lim.fail(peerHost(r))
+	s.audit(r, action+"_failed", http.StatusUnauthorized, map[string]any{"blocked": blocked})
+	if blocked {
 		w.Header().Set("Retry-After", strconv.Itoa(int(wait.Seconds())+1))
 		http.Error(w, "too many attempts", http.StatusTooManyRequests)
 		return false
-	}
-	presented, found := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
-	if found && s.cfg.Tokens.Verify(strings.TrimSpace(presented)) {
-		s.lim.success()
-		return true
-	}
-	locked := s.lim.fail()
-	s.audit(r, action+"_failed", http.StatusUnauthorized, map[string]any{"locked_out": locked})
-	if locked {
-		s.cfg.Logger.Warn("desktop mode: too many bad tokens, locked out", slog.String("action", action))
 	}
 	http.Error(w, "invalid token", http.StatusUnauthorized)
 	return false
@@ -146,21 +136,22 @@ func (s *Service) exchange(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx := r.Context()
 	admin, err := s.cfg.Admin(ctx)
+	if errors.Is(err, ErrNotSingleUser) {
+		http.Error(w, "desktop mode needs a single-user install", http.StatusForbidden)
+		return
+	}
 	if err != nil {
 		http.Error(w, "no admin account yet", http.StatusConflict)
 		return
 	}
-	token, err := s.cfg.Sessions.IssueSession(ctx, admin, r.UserAgent(), r.RemoteAddr)
+	ttl := s.cfg.TTL(ctx)
+	token, err := s.cfg.Sessions.IssueSessionTTL(ctx, admin, r.UserAgent(), r.RemoteAddr, ttl)
 	if err != nil {
 		s.cfg.Logger.Error("desktop mode: issue session failed", slog.String("error", err.Error()))
 		http.Error(w, "session unavailable", http.StatusInternalServerError)
 		return
 	}
-	exp := s.now().Add(s.cfg.TTL(ctx))
-	s.mu.Lock()
-	s.adminID = admin.ID
-	s.expires[token] = exp
-	s.mu.Unlock()
+	exp := s.now().Add(ttl)
 	// Secure follows the transport: the loopback dashboard is plain http, where a Secure cookie would be dropped.
 	http.SetCookie(w, &http.Cookie{ //nolint:gosec // Secure only over TLS, see above
 		Name: sessionCookie, Value: token, Path: "/", Expires: exp,
@@ -200,41 +191,14 @@ func (s *Service) revoke(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// revokeSessions ends every session of the admin, not only those this process issued.
+// revokeSessions ends every session of the admin, whichever process issued it.
 func (s *Service) revokeSessions(ctx context.Context) {
-	s.mu.Lock()
-	id := s.adminID
-	s.expires = make(map[string]time.Time)
-	s.mu.Unlock()
-	if id == "" && s.cfg.Admin != nil {
-		if a, err := s.cfg.Admin(ctx); err == nil {
-			id = a.ID
-		}
-	}
-	if id == "" {
+	a, err := s.cfg.Admin(ctx)
+	if err != nil {
 		return
 	}
-	if err := s.cfg.Sessions.RevokeAll(ctx, id); err != nil {
+	if err := s.cfg.Sessions.RevokeAll(ctx, a.ID); err != nil {
 		s.cfg.Logger.Warn("desktop mode: revoke sessions failed", slog.String("error", err.Error()))
-	}
-}
-
-// expireSession revokes a session this process issued once the setting's TTL passed.
-func (s *Service) expireSession(r *http.Request) {
-	c, err := r.Cookie(sessionCookie)
-	if err != nil || c.Value == "" {
-		return
-	}
-	s.mu.Lock()
-	exp, tracked := s.expires[c.Value]
-	if tracked && !s.now().Before(exp) {
-		delete(s.expires, c.Value)
-	} else {
-		tracked = false
-	}
-	s.mu.Unlock()
-	if tracked {
-		s.cfg.Sessions.Revoke(r.Context(), c.Value)
 	}
 }
 
@@ -260,8 +224,20 @@ func (s *Service) audit(r *http.Request, action string, status int, detail map[s
 	})
 }
 
-// Enabled reports whether getenv switches desktop mode on (off when unset or invalid).
-func Enabled(getenv func(string) string) bool {
-	v, err := strconv.ParseBool(strings.TrimSpace(getenv("APP_DESKTOP_MODE")))
-	return err == nil && v
+// ErrNotSingleUser means the install has several users, which desktop mode does not support.
+var ErrNotSingleUser = errors.New("desktopmode: install is not single-user")
+
+// Mode reads APP_DESKTOP_MODE. Unset is off; a value that is not a usual boolean is an
+// error so the caller can fail closed instead of silently dropping the checks.
+func Mode(getenv func(string) string) (bool, error) {
+	switch v := strings.ToLower(strings.TrimSpace(getenv("APP_DESKTOP_MODE"))); v {
+	case "":
+		return false, nil
+	case "1", "true", "yes", "on", "y", "t":
+		return true, nil
+	case "0", "false", "no", "off", "n", "f":
+		return false, nil
+	default:
+		return false, errors.New("desktopmode: APP_DESKTOP_MODE must be a boolean")
+	}
 }

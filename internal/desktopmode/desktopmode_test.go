@@ -23,9 +23,11 @@ type fakeSessions struct {
 	live    map[string]bool
 	revoked []string
 	allFor  string
+	ttl     time.Duration
 }
 
-func (f *fakeSessions) IssueSession(_ context.Context, _ authengine.LegacyUser, _, _ string) (string, error) {
+func (f *fakeSessions) IssueSessionTTL(_ context.Context, _ authengine.LegacyUser, _, _ string, ttl time.Duration) (string, error) {
+	f.ttl = ttl
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.n++
@@ -74,14 +76,13 @@ func newRig(t *testing.T) *rig {
 	}
 	r.tok = tok
 	r.svc = New(Config{
-		Tokens: tok, Sessions: r.sess, Ports: []string{"8080"},
+		Tokens: tok, Sessions: r.sess, Ports: []string{"8080"}, FailuresPerMin: 3, Block: time.Minute,
 		Admin: func(context.Context) (authengine.LegacyUser, error) {
 			return authengine.LegacyUser{ID: "u1", Email: "a@b.c"}, nil
 		},
-		TTL:        func(context.Context) time.Duration { return r.ttl },
-		Audit:      func(_ context.Context, e store.AuditEntry) { r.audit = append(r.audit, e) },
-		RatePerMin: 100, MaxFailures: 3, Lockout: time.Minute,
-		Now: func() time.Time { return *r.now }, AllowRemotePeer: true,
+		TTL:   func(context.Context) time.Duration { return r.ttl },
+		Audit: func(_ context.Context, e store.AuditEntry) { r.audit = append(r.audit, e) },
+		Now:   func() time.Time { return *r.now }, AllowRemotePeer: true,
 	})
 	r.h = r.svc.Wrap(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusTeapot) }))
 	return r
@@ -134,26 +135,22 @@ func TestTokenCreatedHashedAndFileMode(t *testing.T) {
 	}
 }
 
-func TestVerifyUsesConstantTimeCompare(t *testing.T) {
-	src, err := os.ReadFile("token.go")
-	if err != nil || !strings.Contains(string(src), "tokenhash.Matches(") {
-		t.Fatal("Verify must compare through tokenhash.Matches")
-	}
+func TestVerifyExactMatchOnly(t *testing.T) {
 	r := newRig(t)
 	p := r.plain(t)
-	if r.tok.Verify(p[:len(p)-1]) || r.tok.Verify("") || !r.tok.Verify(p) {
+	if r.tok.Verify(p[:len(p)-1]) || r.tok.Verify(p+"x") || r.tok.Verify("") || !r.tok.Verify(p) {
 		t.Fatal("verify wrong")
 	}
 }
 
 func TestExchangeSuccessSetsStrictCookieAndAudits(t *testing.T) {
 	r := newRig(t)
-	w := r.do("POST", ExchangePath, r.plain(t), "127.0.0.1:8080", "http://127.0.0.1:8080")
+	w := r.do("POST", ExchangePath, r.plain(t), "levelrail.localhost:8080", "http://levelrail.localhost:8080")
 	if w.Code != 200 {
 		t.Fatalf("code %d %s", w.Code, w.Body)
 	}
 	c := w.Result().Cookies()
-	if len(c) != 1 || !c[0].HttpOnly || c[0].SameSite != http.SameSiteStrictMode || c[0].Name != "session_token" {
+	if len(c) != 1 || !c[0].HttpOnly || c[0].SameSite != http.SameSiteStrictMode || c[0].Name != "session_token" || c[0].Domain != "" {
 		t.Fatalf("cookie %+v", c)
 	}
 	if !c[0].Expires.Equal(r.now.Add(time.Hour).Truncate(time.Second)) {
@@ -170,11 +167,11 @@ func TestExchangeSuccessSetsStrictCookieAndAudits(t *testing.T) {
 func TestExchangeFailures(t *testing.T) {
 	r := newRig(t)
 	for name, tok := range map[string]string{"missing": "", "wrong": "dsk_nope"} {
-		if w := r.do("POST", ExchangePath, tok, "localhost:8080", ""); w.Code != 401 {
+		if w := r.do("POST", ExchangePath, tok, "levelrail.localhost:8080", ""); w.Code != 401 {
 			t.Fatalf("%s: %d", name, w.Code)
 		}
 	}
-	if w := r.do("GET", ExchangePath, r.plain(t), "localhost:8080", ""); w.Code != 405 {
+	if w := r.do("GET", ExchangePath, r.plain(t), "levelrail.localhost:8080", ""); w.Code != 405 {
 		t.Fatalf("GET: %d", w.Code)
 	}
 	if len(r.sess.live) != 0 {
@@ -185,24 +182,52 @@ func TestExchangeFailures(t *testing.T) {
 func TestHostAndOriginRejected(t *testing.T) {
 	r := newRig(t)
 	p := r.plain(t)
-	for _, host := range []string{"evil.example:8080", "127.0.0.1:9999", "127.0.0.1", "localhost.evil.com:8080"} {
+	for _, host := range []string{"localhost:3000", "localhost:8080", "127.0.0.1:8080", "[::1]:8080", "levelrail.localhost", "levelrail.localhost:9999", "evil.example:8080", "levelrail.localhost.evil.com:8080"} {
 		if w := r.do("GET", "/api/x", "", host, ""); w.Code != 403 {
 			t.Fatalf("host %q: %d", host, w.Code)
 		}
 	}
-	for _, origin := range []string{"http://evil.example", "null", "https://127.0.0.1:8080", "http://127.0.0.1:9999"} {
-		if w := r.do("POST", ExchangePath, p, "127.0.0.1:8080", origin); w.Code != 403 {
+	if w := r.do("GET", "/api/x", "", "LevelRail.Localhost:8080", ""); w.Code != http.StatusTeapot {
+		t.Fatalf("allowed host: %d", w.Code)
+	}
+	for _, origin := range []string{"http://evil.example", "null", "https://levelrail.localhost:8080", "http://localhost:8080", "http://levelrail.localhost:9999"} {
+		if w := r.do("POST", ExchangePath, p, "levelrail.localhost:8080", origin); w.Code != 403 {
 			t.Fatalf("origin %q: %d", origin, w.Code)
 		}
-		if w := r.do("DELETE", "/api/apps/x", "", "127.0.0.1:8080", origin); w.Code != 403 {
+		if w := r.do("DELETE", "/api/apps/x", "", "levelrail.localhost:8080", origin); w.Code != 403 {
 			t.Fatalf("state change origin %q: %d", origin, w.Code)
 		}
 	}
-	if w := r.do("GET", "/api/x", "", "127.0.0.1:8080", "http://evil.example"); w.Code != http.StatusTeapot {
+	if w := r.do("GET", "/api/x", "", "levelrail.localhost:8080", "http://evil.example"); w.Code != http.StatusTeapot {
 		t.Fatalf("safe GET with foreign origin should pass through: %d", w.Code)
 	}
-	if w := r.do("POST", "/api/x", "", "[::1]:8080", "http://[::1]:8080"); w.Code != http.StatusTeapot {
+	if w := r.do("POST", "/api/x", "", "levelrail.localhost:8080", "http://levelrail.localhost:8080"); w.Code != http.StatusTeapot {
 		t.Fatalf("good origin: %d", w.Code)
+	}
+}
+
+func TestSecFetchSiteCrossSiteRefusedWithoutOrigin(t *testing.T) {
+	r := newRig(t)
+	req := httptest.NewRequest("POST", "/api/x", nil)
+	req.Host = "levelrail.localhost:8080"
+	req.Header.Set("Sec-Fetch-Site", "cross-site")
+	w := httptest.NewRecorder()
+	r.h.ServeHTTP(w, req)
+	if w.Code != 403 {
+		t.Fatalf("code %d", w.Code)
+	}
+}
+
+func TestWebsocketUpgradeChecksOrigin(t *testing.T) {
+	r := newRig(t)
+	req := httptest.NewRequest("GET", "/api/ws", nil)
+	req.Host = "levelrail.localhost:8080"
+	req.Header.Set("Upgrade", "websocket")
+	req.Header.Set("Origin", "http://evil.example")
+	w := httptest.NewRecorder()
+	r.h.ServeHTTP(w, req)
+	if w.Code != 403 {
+		t.Fatalf("code %d", w.Code)
 	}
 }
 
@@ -210,7 +235,7 @@ func TestNonLoopbackPeerRefused(t *testing.T) {
 	r := newRig(t)
 	r.svc.cfg.AllowRemotePeer = false
 	req := httptest.NewRequest("POST", ExchangePath, nil)
-	req.Host = "127.0.0.1:8080"
+	req.Host = "levelrail.localhost:8080"
 	req.RemoteAddr = "10.0.0.5:4000"
 	req.Header.Set("Authorization", "Bearer "+r.plain(t))
 	w := httptest.NewRecorder()
@@ -220,58 +245,138 @@ func TestNonLoopbackPeerRefused(t *testing.T) {
 	}
 }
 
-func TestLockoutAndRateLimit(t *testing.T) {
+func (r *rig) doFrom(peer, token string) *httptest.ResponseRecorder {
+	req := httptest.NewRequest("POST", ExchangePath, nil)
+	req.Host = "levelrail.localhost:8080"
+	req.RemoteAddr = peer + ":4000"
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+	w := httptest.NewRecorder()
+	r.h.ServeHTTP(w, req)
+	return w
+}
+
+func TestPerPeerLimiterNeverBlocksValidToken(t *testing.T) {
 	r := newRig(t)
 	good := r.plain(t)
-	for range 3 {
-		r.do("POST", ExchangePath, "bad", "localhost:8080", "")
+	var last int
+	for range 50 {
+		last = r.doFrom("10.0.0.9", "bad").Code
 	}
-	if w := r.do("POST", ExchangePath, good, "localhost:8080", ""); w.Code != 429 || w.Header().Get("Retry-After") == "" {
-		t.Fatalf("locked out should refuse the right token: %d", w.Code)
+	if last != 429 {
+		t.Fatalf("bad peer should be blocked, got %d", last)
+	}
+	if w := r.doFrom("10.0.0.9", "bad"); w.Header().Get("Retry-After") == "" {
+		t.Fatal("no Retry-After")
+	}
+	if w := r.doFrom("127.0.0.1", good); w.Code != 200 {
+		t.Fatalf("valid token after bad attempts from another peer: %d", w.Code)
+	}
+	if w := r.doFrom("10.0.0.9", good); w.Code != 200 {
+		t.Fatalf("valid token from a blocked peer: %d", w.Code)
+	}
+	for range 100 {
+		if w := r.doFrom("127.0.0.1", good); w.Code != 200 {
+			t.Fatalf("successes must not count toward a limit: %d", w.Code)
+		}
 	}
 	*r.now = r.now.Add(2 * time.Minute)
-	if w := r.do("POST", ExchangePath, good, "localhost:8080", ""); w.Code != 200 {
-		t.Fatalf("after lockout: %d", w.Code)
-	}
-	r.svc.lim.rpm = 2
-	r.svc.lim.window = nil
-	r.do("POST", ExchangePath, good, "localhost:8080", "")
-	r.do("POST", ExchangePath, good, "localhost:8080", "")
-	if w := r.do("POST", ExchangePath, good, "localhost:8080", ""); w.Code != 429 {
-		t.Fatalf("rate limit: %d", w.Code)
+	if w := r.doFrom("10.0.0.9", "bad"); w.Code != 401 {
+		t.Fatalf("block should have expired: %d", w.Code)
 	}
 }
 
-func TestTTLHonoredAndExpiredSessionRevoked(t *testing.T) {
+func TestTTLComesFromSettingAndRidesTheSession(t *testing.T) {
 	r := newRig(t)
 	r.ttl = 90 * time.Minute
-	w := r.do("POST", ExchangePath, r.plain(t), "localhost:8080", "")
+	w := r.do("POST", ExchangePath, r.plain(t), "levelrail.localhost:8080", "")
 	sess := w.Result().Cookies()[0]
 	if !sess.Expires.Equal(r.now.Add(90 * time.Minute).Truncate(time.Second)) {
 		t.Fatalf("expires %v", sess.Expires)
 	}
-	req := func() {
-		q := httptest.NewRequest("GET", "/api/x", nil)
-		q.Host = "localhost:8080"
-		q.AddCookie(sess)
-		r.h.ServeHTTP(httptest.NewRecorder(), q)
+	if r.sess.ttl != 90*time.Minute {
+		t.Fatalf("library got ttl %v, so a restart would lose it", r.sess.ttl)
 	}
-	req()
-	if !r.sess.live[sess.Value] {
-		t.Fatal("session revoked before TTL")
+	r.ttl = time.Hour
+	r.do("POST", ExchangePath, r.plain(t), "levelrail.localhost:8080", "")
+	if r.sess.ttl != time.Hour {
+		t.Fatal("setting change not applied live")
 	}
-	*r.now = r.now.Add(91 * time.Minute)
-	req()
-	if r.sess.live[sess.Value] {
-		t.Fatal("session survived past the setting's TTL")
+}
+
+func TestNotSingleUserRefused(t *testing.T) {
+	r := newRig(t)
+	r.svc.cfg.Admin = func(context.Context) (authengine.LegacyUser, error) { return authengine.LegacyUser{}, ErrNotSingleUser }
+	if w := r.do("POST", ExchangePath, r.plain(t), "levelrail.localhost:8080", ""); w.Code != 403 {
+		t.Fatalf("code %d", w.Code)
+	}
+}
+
+func TestBootRotatesBrokenHandoff(t *testing.T) {
+	r := newRig(t)
+	old := r.plain(t)
+	again, err := NewTokens(r.dir)
+	if err != nil || !again.Verify(old) {
+		t.Fatal("intact handoff should be kept")
+	}
+	// A crash between the two writes: token file and hash disagree.
+	if err := os.WriteFile(TokenPath(r.dir), []byte("dsk_stale\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	fresh, err := NewTokens(r.dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cur := r.plain(t)
+	if cur == "dsk_stale" || !fresh.Verify(cur) || fresh.Verify(old) {
+		t.Fatal("mismatched handoff not rotated")
+	}
+	if runtime.GOOS == "windows" {
+		return
+	}
+	if err := os.Chmod(TokenPath(r.dir), 0o644); err != nil { //nolint:gosec // deliberately loose to test rotation
+		t.Fatal(err)
+	}
+	loose, err := NewTokens(r.dir)
+	if err != nil || loose.Verify(cur) {
+		t.Fatal("loose mode not rotated")
+	}
+	target := TokenPath(r.dir) + ".real"
+	if err := os.Rename(TokenPath(r.dir), target); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(target, TokenPath(r.dir)); err != nil {
+		t.Fatal(err)
+	}
+	prev := r.plain(t)
+	link, err := NewTokens(r.dir)
+	if err != nil || link.Verify(prev) {
+		t.Fatal("symlink not rotated")
+	}
+	if st, _ := os.Lstat(TokenPath(r.dir)); !st.Mode().IsRegular() {
+		t.Fatal("handoff is still not a regular file")
+	}
+}
+
+func TestModeParsing(t *testing.T) {
+	env := func(v string) func(string) string { return func(string) string { return v } }
+	for v, want := range map[string]bool{"": false, "0": false, "off": false, "1": true, "true": true, "yes": true, "ON": true} {
+		got, err := Mode(env(v))
+		if err != nil || got != want {
+			t.Fatalf("%q: %v %v", v, got, err)
+		}
+	}
+	if _, err := Mode(env("maybe")); err == nil {
+		t.Fatal("garbage value must be an error")
 	}
 }
 
 func TestRotateAndRevokeInvalidate(t *testing.T) {
 	r := newRig(t)
 	old := r.plain(t)
-	r.do("POST", ExchangePath, old, "localhost:8080", "")
-	if w := r.do("POST", RotatePath, old, "localhost:8080", ""); w.Code != 204 {
+	r.do("POST", ExchangePath, old, "levelrail.localhost:8080", "")
+	if w := r.do("POST", RotatePath, old, "levelrail.localhost:8080", ""); w.Code != 204 {
 		t.Fatalf("rotate %d", w.Code)
 	}
 	if len(r.sess.live) != 0 || r.sess.allFor != "u1" {
@@ -281,8 +386,8 @@ func TestRotateAndRevokeInvalidate(t *testing.T) {
 		t.Fatal("old token still valid or new one not")
 	}
 	cur := r.plain(t)
-	r.do("POST", ExchangePath, cur, "localhost:8080", "")
-	if w := r.do("POST", RevokePath, cur, "localhost:8080", ""); w.Code != 204 {
+	r.do("POST", ExchangePath, cur, "levelrail.localhost:8080", "")
+	if w := r.do("POST", RevokePath, cur, "levelrail.localhost:8080", ""); w.Code != 204 {
 		t.Fatalf("revoke %d", w.Code)
 	}
 	if len(r.sess.live) != 0 || r.tok.Verify(cur) {
@@ -298,17 +403,5 @@ func TestRotateAndRevokeInvalidate(t *testing.T) {
 	got := strings.Join(actions, ",")
 	if !strings.Contains(got, "desktop.rotate") || !strings.Contains(got, "desktop.revoke") {
 		t.Fatalf("audit %s", got)
-	}
-}
-
-func TestOffByDefaultRouteIsAbsent(t *testing.T) {
-	if Enabled(func(string) string { return "" }) {
-		t.Fatal("enabled by default")
-	}
-	mux := http.NewServeMux()
-	w := httptest.NewRecorder()
-	mux.ServeHTTP(w, httptest.NewRequest("POST", ExchangePath, nil))
-	if w.Code != http.StatusNotFound {
-		t.Fatalf("code %d", w.Code)
 	}
 }

@@ -16,25 +16,24 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// desktopModeEnabled reads APP_DESKTOP_MODE. It is a bootstrap env, not a runtime
-// setting: the Host and Origin checks must wrap the server before settings load.
-func desktopModeEnabled() bool {
-	return desktopmode.Enabled(os.Getenv)
-}
-
-// wrapDesktopMode returns next unchanged unless desktop mode is on. When it is on
-// and cannot start, it fails closed with 503 rather than serving without the checks.
+// wrapDesktopMode returns next unchanged unless APP_DESKTOP_MODE is on. It is a bootstrap
+// env, not a runtime setting: the Host and Origin checks must wrap the server before settings
+// load. When it is on but unusable, or set to something unparsable, it fails closed with 503.
 func wrapDesktopMode(logger *slog.Logger, db *store.DB, rt *api.Router, next http.Handler) http.Handler {
-	if !desktopModeEnabled() {
+	on, err := desktopmode.Mode(os.Getenv)
+	if err != nil {
+		return desktopRefuse(logger, err)
+	}
+	if !on {
 		return next
+	}
+	if _, err := desktopAdmin(context.Background(), db); errors.Is(err, desktopmode.ErrNotSingleUser) {
+		return desktopRefuse(logger, err)
 	}
 	dir := dataDirFromEnv()
 	tokens, err := desktopmode.NewTokens(dir)
 	if err != nil {
-		logger.Error("desktop mode: token unavailable, serving nothing", slog.String("error", err.Error()))
-		return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			http.Error(w, "desktop mode unavailable", http.StatusServiceUnavailable)
-		})
+		return desktopRefuse(logger, err)
 	}
 	settings := rt.RuntimeSettings()
 	if settings == nil {
@@ -53,11 +52,10 @@ func wrapDesktopMode(logger *slog.Logger, db *store.DB, rt *api.Router, next htt
 				logger.Warn("desktop mode: save audit entry failed", slog.String("error", err.Error()))
 			}
 		},
-		Logger:      logger,
-		Ports:       ports,
-		RatePerMin:  apiRateLimitRPM(logger, "APP_DESKTOP_EXCHANGE_RPM", 30),
-		MaxFailures: apiRateLimitRPM(logger, "APP_DESKTOP_MAX_FAILURES", 5),
-		Lockout:     envDurationOr(logger, "APP_DESKTOP_LOCKOUT", 5*time.Minute),
+		Logger:         logger,
+		Ports:          ports,
+		FailuresPerMin: apiRateLimitRPM(logger, "APP_DESKTOP_EXCHANGE_RPM", 10),
+		Block:          envDurationOr(logger, "APP_DESKTOP_LOCKOUT", 30*time.Second),
 	})
 	logger.Info("desktop mode: on", slog.String("token_file", desktopmode.TokenPath(dir)))
 	return svc.Wrap(next)
@@ -72,12 +70,17 @@ func desktopAdmin(ctx context.Context, db *store.DB) (authengine.LegacyUser, err
 	if len(users) == 0 {
 		return authengine.LegacyUser{}, errors.New("no users")
 	}
-	pick := users[0]
-	for _, u := range users {
-		if u.IsFirstUser {
-			pick = u
-			break
-		}
+	// Desktop mode hands the root admin session to the app, so any second user would be reachable from it.
+	if len(users) > 1 || !users[0].IsFirstUser {
+		return authengine.LegacyUser{}, desktopmode.ErrNotSingleUser
 	}
-	return toLibraryUser(pick), nil
+	return toLibraryUser(users[0]), nil
+}
+
+// desktopRefuse serves 503 for everything, so a broken desktop setup never runs unguarded.
+func desktopRefuse(logger *slog.Logger, err error) http.Handler {
+	logger.Error("desktop mode: refusing to serve", slog.String("error", err.Error()))
+	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, "desktop mode unavailable", http.StatusServiceUnavailable)
+	})
 }
