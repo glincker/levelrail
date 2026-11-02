@@ -56,7 +56,9 @@ Static presets have no port: the built-in web server serves the files directly a
 
 ### Next.js
 
-Set `output: 'standalone'` in `next.config` for the smallest runtime image. The preset mounts a volume at `/app/.next/cache` so ISR pages and optimized images survive a redeploy. `NEXT_PUBLIC_*` values are inlined at build time, so pass them as build args, not runtime env. `levelrail-cli build frameworks nextjs --dockerfile` prints a multi-stage Dockerfile with a non-root user.
+Next.js (App Router and Pages Router) builds with Railpack, which starts the app with `npm run start`. Set `output: 'standalone'` in `next.config` when you use your own Dockerfile and want the smallest image; a Railpack build serves it through `next start`, which works but logs a warning that it does not use the standalone output. The preset mounts a volume at `/app/.next/cache` so ISR pages and optimized images survive a redeploy. `levelrail-cli build frameworks nextjs --dockerfile` prints a multi-stage Dockerfile with a non-root user.
+
+Set `NEXT_PUBLIC_*` values as plain (non-secret) app env before the first deploy: Next.js inlines them at `next build`. Every framework build receives the literal, non-secret app env vars whose names start with `NEXT_PUBLIC_`, `VITE_`, `PUBLIC_`, `REACT_APP_`, `NUXT_PUBLIC_`, `GATSBY_` or `EXPO_PUBLIC_` (the list is `APP_STATIC_BUILD_ENV_PREFIXES`). With a Dockerfile, a value is passed only when the Dockerfile declares `ARG NAME`, and explicit `build.args` win. Secrets, `from` references and vault values are never passed to a build; use `build.secrets` for a Dockerfile build that needs one. The build log has a `build env` line naming the keys passed (never the values), so a missing variable is easy to spot. Changing a value needs a new build, not just a restart. `sharp` on arm64 ships in the standalone trace (unverified on a real arm64 host).
 
 ### Next.js static export
 

@@ -10,16 +10,48 @@ services:
       - name: api-cron-daily
         schedule: 0 5 * * *
         command:
-          - curl
-          - -fsS
+          - sh
+          - -c
+          - |-
+            u="$1"
+            if command -v curl >/dev/null 2>&1; then
+              if [ -n "$CRON_SECRET" ]; then exec curl -fsS -H "Authorization: Bearer $CRON_SECRET" "$u"; fi
+              exec curl -fsS "$u"
+            fi
+            if command -v wget >/dev/null 2>&1; then
+              if [ -n "$CRON_SECRET" ]; then exec wget -q -O- --header="Authorization: Bearer $CRON_SECRET" "$u"; fi
+              exec wget -q -O- "$u"
+            fi
+            if command -v node >/dev/null 2>&1; then
+              exec node -e 'const h={};if(process.env.CRON_SECRET)h.authorization="Bearer "+process.env.CRON_SECRET;fetch(process.argv[1],{headers:h}).then(r=>process.exit(r.ok?0:1),()=>process.exit(1))' "$u"
+            fi
+            echo "cron call needs curl, wget or node in the image" >&2
+            exit 127
+          - cron
           - http://127.0.0.1:3000/api/cron/daily
         timezone: UTC
         mode: exec
       - name: api-cron-daily-2
         schedule: 0 6 * * *
         command:
-          - curl
-          - -fsS
+          - sh
+          - -c
+          - |-
+            u="$1"
+            if command -v curl >/dev/null 2>&1; then
+              if [ -n "$CRON_SECRET" ]; then exec curl -fsS -H "Authorization: Bearer $CRON_SECRET" "$u"; fi
+              exec curl -fsS "$u"
+            fi
+            if command -v wget >/dev/null 2>&1; then
+              if [ -n "$CRON_SECRET" ]; then exec wget -q -O- --header="Authorization: Bearer $CRON_SECRET" "$u"; fi
+              exec wget -q -O- "$u"
+            fi
+            if command -v node >/dev/null 2>&1; then
+              exec node -e 'const h={};if(process.env.CRON_SECRET)h.authorization="Bearer "+process.env.CRON_SECRET;fetch(process.argv[1],{headers:h}).then(r=>process.exit(r.ok?0:1),()=>process.exit(1))' "$u"
+            fi
+            echo "cron call needs curl, wget or node in the image" >&2
+            exit 127
+          - cron
           - http://127.0.0.1:3000/api/cron/daily?full=1
         timezone: UTC
         mode: exec

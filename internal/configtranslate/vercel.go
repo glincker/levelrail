@@ -107,8 +107,11 @@ func translateVercel(files map[string][]byte, o options) (Fragment, []Finding) {
 	}
 
 	if len(v.Build.Env) > 0 {
-		add("vercel.build.env", SeverityWarn, "build.env", "build-time env is not passed to Railpack builds",
-			"Commit a .env.production for NEXT_PUBLIC_* style values, or use a Dockerfile with build args.")
+		add("vercel.build.env", SeverityWarn, "build.env", "vercel.json build.env is not read, only app env vars with a public prefix (NEXT_PUBLIC_, VITE_ and similar) reach a build",
+			"Set the NEXT_PUBLIC_* values as plain app env before the first deploy; secrets are never passed to a build.")
+	}
+	if edge := edgeSourceFiles(files); len(edge) > 0 {
+		fs = append(fs, edgeSourceFinding(edge))
 	}
 	if len(v.Builds) > 0 || len(v.Routes) > 0 {
 		add("vercel.legacy", SeverityWarn, "builds/routes", "legacy builds and routes keys are not translated", "Port them to the current rewrites, redirects and headers keys first.")
@@ -319,11 +322,11 @@ func vercelCrons(svc *Service, v vercelJSON, isStatic bool, o options) []Finding
 		used[name] = true
 		svc.Jobs = append(svc.Jobs, Job{
 			Name: name, Schedule: c.Schedule, Timezone: "UTC", Mode: "exec",
-			Command: []string{"curl", "-fsS", fmt.Sprintf("http://127.0.0.1:%d%s", o.nodePort, c.Path)},
+			Command: cronCommand(o.nodePort, c.Path),
 		})
 		fs = append(fs, Finding{Code: "vercel.cron.http", Severity: SeverityWarn, Source: fileVercel, Subject: c.Path,
-			Message: "Vercel cron makes an HTTP call, a Levelrail task runs a command in the container, so curl is proposed",
-			Fix:     "Confirm curl exists in the image and the port is right, or call the code directly with a script."})
+			Message: "Vercel cron makes an HTTP call, a Levelrail task runs a command in the container, so a curl, wget or node call is proposed that sends Authorization: Bearer $CRON_SECRET when CRON_SECRET is set",
+			Fix:     "Set CRON_SECRET as an app secret if the route checks it, and confirm the port is right."})
 	}
 	return fs
 }

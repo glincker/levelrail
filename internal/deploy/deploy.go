@@ -318,12 +318,14 @@ func (p *Pipeline) deployDockerfile(ctx context.Context, req Request, progress f
 	}
 
 	s3Cache, progress, cacheDone := p.prepareBuildCache(ctx, req.ServiceName, progress)
+	buildArgs := dockerfileBuildArgs(req.Service.Env, req.Service.Build.Args, dockerfilePathOrDefault(buildRoot, dockerfilePath), StaticBuildEnvPrefixes())
+	emitBuildEnvKeys(progress, "dockerfile", buildArgs, len(req.Service.Env))
 	buildReq := build.Request{
 		ContextDir:     buildRoot,
 		DockerfilePath: dockerfilePath,
 		RootDir:        req.SourceDir,
 		Tag:            tag,
-		BuildArgs:      req.Service.Build.Args,
+		BuildArgs:      buildArgs,
 		S3Cache:        s3Cache,
 		Attest:         p.attest,
 		NoCache:        req.NoCache,
@@ -372,9 +374,12 @@ func (p *Pipeline) deployRailpack(ctx context.Context, req Request, progress fun
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
 	}
 
+	buildEnv := staticBuildArgs(req.Service.Env, nil, StaticBuildEnvPrefixes())
+	emitBuildEnvKeys(progress, "railpack", buildEnv, len(req.Service.Env))
 	res, err := p.builder.BuildRailpack(ctx, build.RailpackRequest{
 		SourceDir: buildRoot,
 		Tag:       tag,
+		Env:       buildEnv,
 	}, progress)
 	if err != nil {
 		var unsupported *build.UnsupportedProviderError

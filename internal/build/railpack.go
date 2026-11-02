@@ -2,16 +2,21 @@ package build
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
 	bkclient "github.com/moby/buildkit/client"
 	"github.com/moby/buildkit/client/llb"
+	"github.com/moby/buildkit/session"
+	"github.com/moby/buildkit/session/secrets/secretsprovider"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 	rpbuildkit "github.com/railwayapp/railpack/buildkit"
 	"github.com/railwayapp/railpack/buildkit/build_llb"
@@ -61,6 +66,9 @@ type RailpackRequest struct {
 	CgroupParent string
 	// Network is the RUN step policy; the Client fills it from APP_BUILD_NETWORK.
 	Network NetworkMode
+	// Env is build-time env, as Railpack's own --env does. Callers pass only
+	// public-prefix literals; it reaches every build step as an env var.
+	Env map[string]string
 }
 
 // ErrRailpackSourceDirRequired and ErrRailpackTagRequired are returned by
@@ -154,7 +162,7 @@ func generateRailpackPlan(req RailpackRequest) (*core.BuildResult, error) {
 	if err != nil {
 		return nil, fmt.Errorf("build: railpack: read source dir %q: %w", req.SourceDir, err)
 	}
-	env := rpapp.NewEnvironment(nil)
+	env := rpapp.NewEnvironment(&req.Env)
 
 	result, err := core.GenerateBuildPlan(app, env, &core.GenerateBuildPlanOptions{
 		RailpackVersion: "levelrail",
@@ -218,12 +226,13 @@ func newRailpackSolveOpt(ctx context.Context, plan *rpplan.BuildPlan, req Railpa
 	// see that function's doc comment for why. image is unaffected.
 	_, image, err := rpbuildkit.ConvertPlanToLLB(plan, rpbuildkit.ConvertPlanOptions{
 		BuildPlatform: platform,
+		SecretsHash:   railpackEnvHash(req.Env),
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("build: railpack: convert plan to LLB: %w", err)
 	}
 
-	llbState, err := deployStateWithoutMerge(plan, platform)
+	llbState, err := deployStateWithoutMerge(plan, platform, railpackEnvHash(req.Env))
 	if err != nil {
 		return nil, nil, fmt.Errorf("build: railpack: assemble deploy image: %w", err)
 	}
@@ -251,6 +260,7 @@ func newRailpackSolveOpt(ctx context.Context, plan *rpplan.BuildPlan, req Railpa
 		LocalMounts: map[string]fsutil.FS{
 			"context": contextFS,
 		},
+		Session: railpackSession(req.Env),
 		Exports: []bkclient.ExportEntry{
 			{
 				Type: bkclient.ExporterDocker,
@@ -277,7 +287,7 @@ func newRailpackSolveOpt(ctx context.Context, plan *rpplan.BuildPlan, req Railpa
 // only unblocking on context cancellation). ConvertPlanOptions has no
 // field to opt out, so this reimplements just that one step with the same
 // exported build_llb building blocks ConvertPlanToLLB itself uses.
-func deployStateWithoutMerge(plan *rpplan.BuildPlan, platform specs.Platform) (*llb.State, error) {
+func deployStateWithoutMerge(plan *rpplan.BuildPlan, platform specs.Platform, secretsHash string) (*llb.State, error) {
 	localOpts := []llb.LocalOption{
 		llb.SharedKeyHint("local"),
 		llb.WithCustomName("loading ."),
@@ -287,7 +297,7 @@ func deployStateWithoutMerge(plan *rpplan.BuildPlan, platform specs.Platform) (*
 	}
 	localState := llb.Local("context", localOpts...)
 
-	graph, err := build_llb.NewBuildGraph(plan, &localState, build_llb.NewBuildKitCacheStore(""), "", &platform, "", false)
+	graph, err := build_llb.NewBuildGraph(plan, &localState, build_llb.NewBuildKitCacheStore(""), secretsHash, &platform, "", false)
 	if err != nil {
 		return nil, fmt.Errorf("build: railpack: build graph: %w", err)
 	}
@@ -415,4 +425,35 @@ func (c *Client) solveRailpack(ctx context.Context, req RailpackRequest, out io.
 		return nil, err
 	}
 	return newResult(req.Tag, start, solveResp), nil
+}
+
+// railpackEnvHash changes whenever a build env value does, so a cached
+// layer built with an old NEXT_PUBLIC_ value is not reused.
+func railpackEnvHash(env map[string]string) string {
+	if len(env) == 0 {
+		return ""
+	}
+	keys := make([]string, 0, len(env))
+	for k := range env {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	h := sha256.New()
+	for _, k := range keys {
+		_, _ = fmt.Fprintf(h, "%s=%s\n", k, env[k])
+	}
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+// railpackSession serves the env values as BuildKit secrets, the channel
+// Railpack's plan reads them from.
+func railpackSession(env map[string]string) []session.Attachable {
+	if len(env) == 0 {
+		return nil
+	}
+	m := make(map[string][]byte, len(env))
+	for k, v := range env {
+		m[k] = []byte(v)
+	}
+	return []session.Attachable{secretsprovider.FromMap(m)}
 }

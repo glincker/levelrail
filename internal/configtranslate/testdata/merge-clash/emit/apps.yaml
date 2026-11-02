@@ -32,7 +32,7 @@ spec:
     jobs:
       - name: api-tick
         schedule: 0 * * * *
-        command: [curl, -fsS, 'http://127.0.0.1:3000/api/tick']
+        command: [sh, -c, "u=\"$1\"\nif command -v curl >/dev/null 2>&1; then\n  if [ -n \"$CRON_SECRET\" ]; then exec curl -fsS -H \"Authorization: Bearer $CRON_SECRET\" \"$u\"; fi\n  exec curl -fsS \"$u\"\nfi\nif command -v wget >/dev/null 2>&1; then\n  if [ -n \"$CRON_SECRET\" ]; then exec wget -q -O- --header=\"Authorization: Bearer $CRON_SECRET\" \"$u\"; fi\n  exec wget -q -O- \"$u\"\nfi\nif command -v node >/dev/null 2>&1; then\n  exec node -e 'const h={};if(process.env.CRON_SECRET)h.authorization=\"Bearer \"+process.env.CRON_SECRET;fetch(process.argv[1],{headers:h}).then(r=>process.exit(r.ok?0:1),()=>process.exit(1))' \"$u\"\nfi\necho \"cron call needs curl, wget or node in the image\" >&2\nexit 127", cron, 'http://127.0.0.1:3000/api/tick']
         mode: exec
         timezone: UTC
 ---

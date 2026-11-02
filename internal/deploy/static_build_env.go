@@ -10,12 +10,12 @@ import (
 
 // defaultStaticBuildEnvPrefixes are the conventions frameworks use for values
 // that are meant to end up in the published bundle.
-const defaultStaticBuildEnvPrefixes = "VITE_,NEXT_PUBLIC_,PUBLIC_,GATSBY_"
+const defaultStaticBuildEnvPrefixes = "VITE_,NEXT_PUBLIC_,PUBLIC_,GATSBY_,REACT_APP_,NUXT_PUBLIC_,EXPO_PUBLIC_"
 
 var staticBuildEnvName = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
 // StaticBuildEnvPrefixes reads APP_STATIC_BUILD_ENV_PREFIXES, the name prefixes
-// of app env vars that reach a static build. Empty after trimming turns the
+// of app env vars that reach every framework build (static, Railpack, Dockerfile). Empty after trimming turns the
 // feature off.
 func StaticBuildEnvPrefixes() []string {
 	raw, ok := os.LookupEnv("APP_STATIC_BUILD_ENV_PREFIXES")
