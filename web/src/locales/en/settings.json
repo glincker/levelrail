@@ -715,6 +715,16 @@
     },
     "search": "Search settings",
     "back": "Back",
+    "pins": {
+      "group": "Pinned",
+      "pin": "Pin {{label}}",
+      "unpin": "Unpin {{label}}",
+      "limit": "Pin limit reached ({{max}}). Unpin one first."
+    },
+    "expandAll": "Expand all groups",
+    "collapseAll": "Collapse all groups",
+    "oneAtATime": "Open one group at a time",
+    "groupCount": "{{count}} pages",
     "noMatchTitle": "No settings match \"{{query}}\"",
     "noMatchDescription": "Try a different word, or clear the search to see every area.",
     "title": "Settings",

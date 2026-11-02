@@ -326,6 +326,16 @@
     },
     "search": "Buscar en la configuración",
     "back": "Volver",
+    "pins": {
+      "group": "Fijados",
+      "pin": "Fijar {{label}}",
+      "unpin": "Quitar {{label}} de fijados",
+      "limit": "Límite de fijados alcanzado ({{max}}). Quita uno primero."
+    },
+    "expandAll": "Expandir todos los grupos",
+    "collapseAll": "Contraer todos los grupos",
+    "oneAtATime": "Abrir un solo grupo a la vez",
+    "groupCount": "{{count}} páginas",
     "noMatchTitle": "Ninguna configuración coincide con \"{{query}}\"",
     "noMatchDescription": "Prueba con otra palabra o borra la búsqueda para ver todas las áreas.",
     "title": "Configuración",

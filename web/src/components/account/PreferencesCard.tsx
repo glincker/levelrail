@@ -1,22 +1,29 @@
-import { useMemo, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
+import {
+  BellGlassIcon,
+  DatabaseGlassIcon,
+  GaugeGlassIcon,
+  InfoGlassIcon,
+  LayersGlassIcon,
+  RocketGlassIcon,
+  RotateCcwGlassIcon,
+  TriangleAlertGlassIcon,
+  UserGlassIcon,
+} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import {
-  Field,
-  FieldDescription,
-  FieldGroup,
-  FieldLabel,
-} from '@/components/ui/field'
+import { SearchSelect } from '@/components/ui/search-select'
+import { SettingRow, SettingRows } from '@/components/ui/setting-row'
 import {
   Select,
   SelectContent,
@@ -26,221 +33,283 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { SettingsCardSkeleton } from '../settings/SettingsSkeletons'
-import { UserAvatar } from './UserAvatar'
+import { useTheme } from '../ThemeProvider'
+import { DEFAULT_PREFERENCES } from './preferenceDefaults'
+import { ThemeChoice, type ThemeValue } from './ThemeChoice'
 import {
   preferencesQueryOptions,
   useSavePreferences,
   type Preferences,
 } from '../../queries/accountSelf'
-import { useSession } from '../../queries/security'
 import { browserTimezone, supportedTimezones } from '../../lib/userPreferences'
 import { supportedLanguages } from '../../lib/languages'
+import { buildZoneOptions } from '../../lib/timezoneOptions'
 
 const DEFAULT = ''
-const LANDING_KEYS = {
-  '': 'preferences.landingDefault',
-  '/apps': 'preferences.landingApps',
-  '/databases': 'preferences.landingDatabases',
-  '/deployments': 'preferences.landingDeployments',
-  '/alerts': 'preferences.landingAlerts',
-  '/settings/account': 'preferences.landingAccount',
+
+const LANDING = {
+  '': {
+    label: 'preferences.landingDefault',
+    hint: 'preferences.landingDefaultHint',
+    icon: <GaugeGlassIcon size="1.4em" aria-hidden="true" />,
+  },
+  '/apps': {
+    label: 'preferences.landingApps',
+    hint: 'preferences.landingAppsHint',
+    icon: <LayersGlassIcon size="1.4em" aria-hidden="true" />,
+  },
+  '/databases': {
+    label: 'preferences.landingDatabases',
+    hint: 'preferences.landingDatabasesHint',
+    icon: <DatabaseGlassIcon size="1.4em" aria-hidden="true" />,
+  },
+  '/deployments': {
+    label: 'preferences.landingDeployments',
+    hint: 'preferences.landingDeploymentsHint',
+    icon: <RocketGlassIcon size="1.4em" aria-hidden="true" />,
+  },
+  '/alerts': {
+    label: 'preferences.landingAlerts',
+    hint: 'preferences.landingAlertsHint',
+    icon: <BellGlassIcon size="1.4em" aria-hidden="true" />,
+  },
+  '/settings/account': {
+    label: 'preferences.landingAccount',
+    hint: 'preferences.landingAccountHint',
+    icon: <UserGlassIcon size="1.4em" aria-hidden="true" />,
+  },
 } as const
 
-type LandingPath = keyof typeof LANDING_KEYS
+function landingFor(path: string): (typeof LANDING)[keyof typeof LANDING] {
+  return path in LANDING ? LANDING[path as keyof typeof LANDING] : LANDING['']
+}
 
-function isLanding(v: string): v is LandingPath {
-  return v in LANDING_KEYS
+function englishLanguageName(code: string): string {
+  try {
+    return new Intl.DisplayNames(['en'], { type: 'language' }).of(code) ?? code
+  } catch {
+    return code
+  }
 }
 
 function PreferencesForm({ saved }: { saved: Preferences }) {
   const { t, i18n } = useTranslation('account')
-  const { data: session } = useSession()
   const save = useSavePreferences()
+  const { setTheme } = useTheme()
   const [draft, setDraft] = useState<Preferences>(saved)
-  const zones = useMemo(() => supportedTimezones(), [])
-  const languages = useMemo(() => supportedLanguages(i18n), [i18n])
-  const dirty = JSON.stringify(draft) !== JSON.stringify(saved)
-  const patch = (next: Partial<Preferences>) =>
-    setDraft((d) => ({ ...d, ...next }))
+  const [now, setNow] = useState(() => new Date())
+  const themeLabelId = useId()
+  const zoneId = useId()
+  const languageId = useId()
+  const landingId = useId()
+  const gravatarId = useId()
 
-  const submit = () => {
-    save.mutate(draft, {
-      onSuccess: () =>
-        toast.add({ title: t('preferences.saved'), type: 'success' }),
-      onError: (e) =>
+  const zoneOptions = useMemo(
+    () => [
+      {
+        value: DEFAULT,
+        label: t('preferences.timezoneDefault', { zone: browserTimezone() }),
+      },
+      ...buildZoneOptions(supportedTimezones(), now),
+    ],
+    [now, t],
+  )
+  const languageOptions = useMemo(
+    () => [
+      { value: DEFAULT, label: t('preferences.languageDefault') },
+      ...supportedLanguages(i18n).map((l) => {
+        const english = englishLanguageName(l.code)
+        return {
+          value: l.code,
+          label: l.name,
+          trailing: english === l.name ? undefined : english,
+          keywords: `${english} ${l.code}`,
+        }
+      }),
+    ],
+    [i18n, t],
+  )
+
+  // Each change saves at once; the theme is also applied before the round trip.
+  const apply = (next: Preferences) => {
+    setDraft(next)
+    if (next.theme !== draft.theme && next.theme !== '') setTheme(next.theme)
+    save.mutate(next, {
+      onError: (e) => {
+        setDraft(saved)
         toast.add({
           title: t('preferences.saveFailed'),
           description: e.message,
           type: 'error',
-        }),
+        })
+      },
     })
   }
+  const patch = (next: Partial<Preferences>) => apply({ ...draft, ...next })
+  const isDefault =
+    JSON.stringify(draft) === JSON.stringify(DEFAULT_PREFERENCES)
+
+  const themeValue: ThemeValue = draft.theme === '' ? 'system' : draft.theme
+  const rowCls = 'py-3 xl:grid-cols-[minmax(0,1fr)_20rem]'
 
   return (
-    <form
-      className="space-y-5"
-      onSubmit={(e) => {
-        e.preventDefault()
-        if (dirty) submit()
-      }}
-    >
-      <div className="flex items-center gap-4">
-        <UserAvatar
-          name={session.display_name || session.username}
-          seed={session.username}
-          email={session.username}
-          gravatar={draft.gravatar}
-          size="lg"
-        />
-        <div className="space-y-0.5 text-sm">
-          <p className="font-medium">{t('preferences.avatarLabel')}</p>
-          <p className="text-muted-foreground">{t('preferences.avatarHint')}</p>
-        </div>
-      </div>
-      <FieldGroup>
-        <Field>
-          <FieldLabel htmlFor="pref-timezone">
-            {t('preferences.timezone')}
-          </FieldLabel>
-          <Select
-            value={draft.timezone}
-            onValueChange={(v) => patch({ timezone: v ?? DEFAULT })}
+    <>
+      <CardHeader>
+        <CardTitle>{t('preferences.title')}</CardTitle>
+        <CardDescription>{t('preferences.description')}</CardDescription>
+        <CardAction className="flex items-center gap-2">
+          <span
+            role="status"
+            aria-live="polite"
+            className="text-xs text-muted-foreground"
           >
-            <SelectTrigger id="pref-timezone" className="w-full max-w-md">
-              <SelectValue>
-                {(v: string) =>
-                  v === DEFAULT
-                    ? t('preferences.timezoneDefault', {
-                        zone: browserTimezone(),
-                      })
-                    : v
-                }
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={DEFAULT}>
-                {t('preferences.timezoneDefault', { zone: browserTimezone() })}
-              </SelectItem>
-              {zones.map((z) => (
-                <SelectItem key={z} value={z}>
-                  {z}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <FieldDescription>{t('preferences.timezoneHint')}</FieldDescription>
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="pref-language">
-            {t('preferences.language')}
-          </FieldLabel>
-          <Select
-            value={draft.language}
-            onValueChange={(v) => patch({ language: v ?? DEFAULT })}
+            {save.isPending
+              ? t('preferences.saving')
+              : save.isSuccess
+                ? t('preferences.saved')
+                : ''}
+          </span>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            disabled={isDefault || save.isPending}
+            onClick={() => apply(DEFAULT_PREFERENCES)}
           >
-            <SelectTrigger id="pref-language" className="w-full max-w-md">
-              <SelectValue>
-                {(v: string) =>
-                  v === DEFAULT
-                    ? t('preferences.languageDefault')
-                    : (languages.find((l) => l.code === v)?.name ?? v)
-                }
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={DEFAULT}>
-                {t('preferences.languageDefault')}
-              </SelectItem>
-              {languages.map((l) => (
-                <SelectItem key={l.code} value={l.code}>
-                  {l.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="pref-theme">{t('preferences.theme')}</FieldLabel>
-          <Select
-            value={draft.theme}
-            onValueChange={(v) => {
-              if (v === 'light' || v === 'dark' || v === 'system') {
-                patch({ theme: v })
-              } else {
-                patch({ theme: '' })
-              }
-            }}
+            <RotateCcwGlassIcon size="1.4em" aria-hidden="true" />
+            {t('preferences.reset')}
+          </Button>
+        </CardAction>
+      </CardHeader>
+      <CardContent>
+        <SettingRows>
+          <SettingRow
+            className={rowCls}
+            title={<label htmlFor={zoneId}>{t('preferences.timezone')}</label>}
+            description={t('preferences.timezoneHint')}
           >
-            <SelectTrigger id="pref-theme" className="w-full max-w-md">
-              <SelectValue>{(v: string) => themeLabel(v, t)}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {['', 'light', 'dark', 'system'].map((v) => (
-                <SelectItem key={v || 'default'} value={v}>
-                  {themeLabel(v, t)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="pref-landing">
-            {t('preferences.landing')}
-          </FieldLabel>
-          <Select
-            value={isLanding(draft.landing_page) ? draft.landing_page : ''}
-            onValueChange={(v) => patch({ landing_page: v ?? DEFAULT })}
+            <SearchSelect
+              id={zoneId}
+              options={zoneOptions}
+              value={draft.timezone}
+              onValueChange={(v) => patch({ timezone: v })}
+              groupLabels={{
+                common: t('preferences.zonesCommon'),
+                all: t('preferences.zonesAll'),
+              }}
+              searchPlaceholder={t('preferences.zoneSearch')}
+              emptyMessage={t('preferences.zoneEmpty')}
+              onOpenChange={(open) => {
+                if (open) setNow(new Date())
+              }}
+            />
+          </SettingRow>
+          <SettingRow
+            className={rowCls}
+            title={
+              <label htmlFor={languageId}>{t('preferences.language')}</label>
+            }
+            description={t('preferences.languageHint')}
           >
-            <SelectTrigger id="pref-landing" className="w-full max-w-md">
-              <SelectValue>
-                {(v: string) => t(LANDING_KEYS[isLanding(v) ? v : ''])}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {(Object.keys(LANDING_KEYS) as LandingPath[]).map((path) => (
-                <SelectItem key={path || 'default'} value={path}>
-                  {t(LANDING_KEYS[path])}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
-        <Field orientation="horizontal">
-          <Switch
-            id="pref-gravatar"
-            checked={draft.gravatar}
-            onCheckedChange={(checked) => patch({ gravatar: checked })}
-          />
-          <div className="space-y-1">
-            <FieldLabel htmlFor="pref-gravatar">
-              {t('preferences.gravatar')}
-            </FieldLabel>
-            <FieldDescription>{t('preferences.gravatarHint')}</FieldDescription>
-          </div>
-        </Field>
-      </FieldGroup>
-      <Button type="submit" disabled={!dirty || save.isPending} writeAction>
-        {save.isPending ? t('preferences.saving') : t('preferences.save')}
-      </Button>
-    </form>
+            <SearchSelect
+              id={languageId}
+              options={languageOptions}
+              value={draft.language}
+              onValueChange={(v) => patch({ language: v })}
+              searchPlaceholder={t('preferences.languageSearch')}
+              emptyMessage={t('preferences.languageEmpty')}
+            />
+          </SettingRow>
+          <SettingRow
+            className={rowCls}
+            title={<span id={themeLabelId}>{t('preferences.theme')}</span>}
+            description={t('preferences.themeHint')}
+          >
+            <ThemeChoice
+              value={themeValue}
+              labelledBy={themeLabelId}
+              onChange={(v) => patch({ theme: v })}
+            />
+          </SettingRow>
+          <SettingRow
+            className={rowCls}
+            title={
+              <label htmlFor={landingId}>{t('preferences.landing')}</label>
+            }
+            description={t('preferences.landingHint')}
+          >
+            <Select
+              value={draft.landing_page in LANDING ? draft.landing_page : ''}
+            >
+              <SelectTrigger id={landingId} className="h-9 w-full">
+                <SelectValue>
+                  {(v: string) => {
+                    const item = landingFor(v)
+                    return (
+                      <span className="flex items-center gap-2">
+                        {item.icon}
+                        {t(item.label)}
+                      </span>
+                    )
+                  }}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(LANDING).map(([path, item]) => (
+                  <SelectItem key={path || 'default'} value={path}>
+                    <span className="flex items-center gap-2">
+                      {item.icon}
+                      <span className="flex flex-col">
+                        <span>{t(item.label)}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {t(item.hint)}
+                        </span>
+                      </span>
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </SettingRow>
+          <SettingRow
+            className={rowCls}
+            title={
+              <label htmlFor={gravatarId}>{t('preferences.gravatar')}</label>
+            }
+            description={
+              <span className="inline-flex items-center gap-1">
+                {t('preferences.gravatarShort')}
+                <Tooltip>
+                  <TooltipTrigger
+                    type="button"
+                    aria-label={t('preferences.gravatarMore')}
+                    className="rounded-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <InfoGlassIcon size="1.4em" aria-hidden="true" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {t('preferences.gravatarHint')}
+                  </TooltipContent>
+                </Tooltip>
+              </span>
+            }
+          >
+            <Switch
+              id={gravatarId}
+              checked={draft.gravatar}
+              onCheckedChange={(checked) => patch({ gravatar: checked })}
+            />
+          </SettingRow>
+        </SettingRows>
+      </CardContent>
+    </>
   )
-}
-
-function themeLabel(
-  v: string,
-  t: ReturnType<typeof useTranslation<'account'>>['t'],
-): string {
-  switch (v) {
-    case 'light':
-      return t('preferences.themeLight')
-    case 'dark':
-      return t('preferences.themeDark')
-    case 'system':
-      return t('preferences.themeSystem')
-    default:
-      return t('preferences.themeDefault')
-  }
 }
 
 export function PreferencesCard() {
@@ -248,14 +317,13 @@ export function PreferencesCard() {
   const prefs = useQuery(preferencesQueryOptions())
 
   if (prefs.isPending) return <SettingsCardSkeleton rows={4} />
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('preferences.title')}</CardTitle>
-        <CardDescription>{t('preferences.description')}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {prefs.isError ? (
+  if (prefs.isError) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('preferences.title')}</CardTitle>
+        </CardHeader>
+        <CardContent>
           <Alert variant="destructive">
             <TriangleAlertGlassIcon
               className="text-tone-warning"
@@ -273,13 +341,13 @@ export function PreferencesCard() {
               </Button>
             </AlertDescription>
           </Alert>
-        ) : (
-          <PreferencesForm
-            key={JSON.stringify(prefs.data)}
-            saved={prefs.data}
-          />
-        )}
-      </CardContent>
+        </CardContent>
+      </Card>
+    )
+  }
+  return (
+    <Card>
+      <PreferencesForm saved={prefs.data} />
     </Card>
   )
 }
