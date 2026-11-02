@@ -1,0 +1,82 @@
+#!/bin/bash
+# Boot-time isolation self-check. Writes the result to a file the host reads over limactl.
+set -u
+STATUS_FILE="{{.StatusPath}}"
+GW="{{.HostGateway}}"
+DNS_PROBE="{{index .DNSServers 0}}"
+LAN_PROBE="{{.LANProbe}}"
+TIMEOUT="${LR_PROBE_TIMEOUT:-{{.ProbeTimeoutSec}}}"
+EXPECTED_SHARES="{{.ExpectedShares}}"
+NS=lrchk
+results=""
+overall=pass
+
+add() { # name result detail
+  results="${results:+$results,}{\"name\":\"$1\",\"result\":\"$2\",\"detail\":\"$3\"}"
+  [ "$2" = pass ] || overall=fail
+}
+
+cleanup() {
+  ip netns del $NS 2>/dev/null
+  ip link del lrchk0 2>/dev/null
+  nft delete table ip lr_check 2>/dev/null
+}
+trap cleanup EXIT
+cleanup
+
+# rc 124 means the packet was silently dropped, anything else means the host answered.
+probe() {
+  ip netns exec $NS timeout "$TIMEOUT" bash -c "exec 3<>/dev/tcp/$1/$2" 2>/dev/null
+  [ $? -ne 124 ]
+}
+
+if nft list chain inet lr_isolation forward 2>/dev/null | grep -q "ip daddr $GW drop"; then
+  add rules_loaded pass ok
+else
+  add rules_loaded fail missing
+fi
+
+if grep -q '"ip": "{{.PublishIP}}"' /etc/docker/daemon.json 2>/dev/null; then
+  add publish_loopback pass ok
+else
+  add publish_loopback fail daemon_json
+fi
+
+if ss -H -ltnp 2>/dev/null | awk '$4 ~ /^(0\.0\.0\.0|\[::\]|\*):/' | grep -q docker-proxy; then
+  add no_wildcard_publish fail docker_proxy_wildcard
+else
+  add no_wildcard_publish pass ok
+fi
+
+if ss -H -ltn 2>/dev/null | grep -qE ':(2375|2376)\b'; then
+  add no_docker_tcp fail listening
+else
+  add no_docker_tcp pass ok
+fi
+
+mounts=$(grep -cE ' (virtiofs|9p|fuse\.sshfs) ' /proc/mounts)
+if [ "$mounts" -eq "$EXPECTED_SHARES" ]; then
+  add host_mounts pass "$mounts"
+else
+  add host_mounts fail "$mounts"
+fi
+
+if ip netns add $NS && ip link add lrchk0 type veth peer name lrchk1 && ip link set lrchk1 netns $NS \
+  && ip addr add 10.99.99.1/24 dev lrchk0 && ip link set lrchk0 up \
+  && ip netns exec $NS sh -c 'ip addr add 10.99.99.2/24 dev lrchk1 && ip link set lrchk1 up && ip link set lo up && ip route add default via 10.99.99.1' \
+  && sysctl -qw net.ipv4.ip_forward=1 \
+  && nft add table ip lr_check \
+  && nft add chain ip lr_check post '{ type nat hook postrouting priority 100; }' \
+  && nft add rule ip lr_check post ip saddr 10.99.99.0/24 masquerade; then
+  if probe "$DNS_PROBE" 53; then add dns_allowed pass ok; else add dns_allowed fail probe_control; fi
+  if probe "$GW" 22; then add host_unreachable fail reached; else add host_unreachable pass dropped; fi
+  if probe "$LAN_PROBE" 80; then add lan_unreachable fail reached; else add lan_unreachable pass dropped; fi
+else
+  add probe_setup fail netns
+fi
+
+mkdir -p "$(dirname "$STATUS_FILE")"
+printf '{"result":"%s","checked_at":"%s","checks":[%s]}\n' "$overall" "$(date -u +%FT%TZ)" "$results" > "$STATUS_FILE.tmp"
+chmod 0644 "$STATUS_FILE.tmp"
+mv "$STATUS_FILE.tmp" "$STATUS_FILE"
+[ "$overall" = pass ]

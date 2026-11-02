@@ -1,0 +1,14 @@
+[Unit]
+Description=Levelrail guest egress isolation baseline
+DefaultDependencies=no
+After=network-pre.target
+Before=network.target docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/sbin/nft -f /etc/levelrail/lr-egress.nft
+ExecStop=/usr/sbin/nft delete table inet lr_isolation
+
+[Install]
+WantedBy=multi-user.target
