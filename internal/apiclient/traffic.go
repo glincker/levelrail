@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/domaincutover"
 )
 
 // DomainReachability is one entry of AppEnvironmentDomains.Reachability.
@@ -193,5 +195,30 @@ func (c *Client) DomainActivity(ctx context.Context, domain string, limit int, b
 	}
 	var out ActivityPage
 	err := c.do(ctx, http.MethodGet, path, nil, &out)
+	return out, err
+}
+
+// DomainCutoverResult is the test-before-you-switch checklist.
+type DomainCutoverResult = domaincutover.Result
+
+// CutoverCertificate is the progress of the pre-switch certificate request.
+type CutoverCertificate struct {
+	State       string `json:"state"`
+	Issuer      string `json:"issuer,omitempty"`
+	Error       string `json:"error,omitempty"`
+	Explanation string `json:"explanation,omitempty"`
+}
+
+// DomainCutover calls GET /api/v1/domains/{domain}/cutover.
+func (c *Client) DomainCutover(ctx context.Context, domain string) (DomainCutoverResult, error) {
+	var out DomainCutoverResult
+	err := c.do(ctx, http.MethodGet, "/api/v1/domains/"+PathEscape(domain)+"/cutover", nil, &out)
+	return out, err
+}
+
+// DomainCutoverCertificate calls POST /api/v1/domains/{domain}/cutover/certificate.
+func (c *Client) DomainCutoverCertificate(ctx context.Context, domain string) (CutoverCertificate, error) {
+	var out CutoverCertificate
+	err := c.do(ctx, http.MethodPost, "/api/v1/domains/"+PathEscape(domain)+"/cutover/certificate", nil, &out)
 	return out, err
 }

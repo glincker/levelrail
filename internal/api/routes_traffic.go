@@ -15,6 +15,10 @@ func (rt *Router) registerTrafficRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/domains/{domain}/cert/preflight", rt.requireAbility(AbilityRead, rt.handleCertPreflight))
 	mux.HandleFunc("GET /api/v1/domains/{domain}/cert/status", rt.requireAbility(AbilityRead, rt.handleCertStatus))
 	mux.HandleFunc("POST /api/v1/domains/{domain}/cert", rt.requireAbility(AbilityRoot, rt.handleGetCert))
+	// Test before you switch: the move-a-domain checklist, and the DNS-01
+	// certificate request that runs before DNS points here. The probe dials only this server.
+	mux.HandleFunc("GET /api/v1/domains/{domain}/cutover", rt.requireAbility(AbilityRead, rt.handleDomainCutover))
+	mux.HandleFunc("POST /api/v1/domains/{domain}/cutover/certificate", rt.requireAbility(AbilityRoot, rt.handleCutoverCertificate))
 	// Same doctor addressed by domain alone, as one JSON report or a
 	// stream of checks; the owning app is looked up and visibility enforced.
 	mux.HandleFunc("POST /api/v1/domains/{domain}/diagnose", rt.requireAbility(AbilityRead, rt.handleDomainDiagnose))

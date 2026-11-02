@@ -471,6 +471,8 @@ levelrail-cli settings ingress dns01 disable
 
 API: `GET` and `PUT /api/v1/settings/ingress/dns01`. Enabling is refused while no DNS provider is connected (see below). This path is not yet verified against a real CA.
 
+Moving a live domain from another server? DNS-01 lets the certificate be issued before DNS changes: see [Move a domain with no downtime](/move-a-domain-with-no-downtime).
+
 ## Wildcard domains: DNS-01 providers
 
 Wildcard domains like `*.example.com` need ACME's DNS-01 challenge (HTTP-01 cannot validate wildcards). DNS-01 works by creating a short-lived TXT record at your DNS provider, so you must grant API access.

@@ -36,6 +36,8 @@ type domainAutoSeams struct {
 	httpProbe     func(ctx context.Context, rawURL, dialAddr string) (int, error)
 	proxy         func(ctx context.Context, r *http.Request) *proxyIntegrationView
 	pluginDNS     dnsPluginCaller
+	// authoritative answers how many of the zone's own name servers return want, for the cutover checklist.
+	authoritative func(ctx context.Context, domain string, want []string) (known bool, hit, total int)
 
 	handlerMu sync.Mutex
 	handler   http.Handler

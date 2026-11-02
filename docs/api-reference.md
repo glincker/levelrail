@@ -1181,6 +1181,8 @@ Endpoints for:
 | POST | /api/v1/registry-credentials/{id}/refresh | AbilityWriteSensitive | handleRefreshRegistryCredential |
 | GET | /api/v1/domains/dns-provider | AbilityRead | handleDomainDNSProvider |
 | GET | /api/v1/domains/dns-status | AbilityRead | handleDomainDNSStatus |
+| GET | /api/v1/domains/{domain}/cutover | AbilityRead | handleDomainCutover |
+| POST | /api/v1/domains/{domain}/cutover/certificate | AbilityRoot | handleCutoverCertificate |
 
 ## Built-in Container Registry
 
