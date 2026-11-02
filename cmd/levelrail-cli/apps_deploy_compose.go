@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 	"github.com/GLINCKER/levelrail/internal/compose"
 )
 
@@ -43,6 +45,7 @@ func runAppsDeployCompose(prog string, args []string, stdout, stderr io.Writer, 
 	result, err := client.DeployCompose(context.Background(), name, data)
 	if err != nil {
 		printComposeFileWarnings(stderr, file, data)
+		printMissingVariables(stderr, prog, name, err)
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("deploy compose to app %q: %w", name, err))
 	}
 	// The API's notices win; the local parse only covers an older server.
@@ -110,4 +113,16 @@ Flags:
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
+}
+
+// printMissingVariables lists every unset required variable with its message
+// and the command that sets it. Names and messages only, never values.
+func printMissingVariables(stderr io.Writer, prog, app string, err error) {
+	var apiErr *apiclient.APIError
+	if !errors.As(err, &apiErr) {
+		return
+	}
+	for _, v := range apiErr.MissingVariables {
+		_, _ = fmt.Fprintf(stderr, "missing %s: %s\n  fix: %s apps env set %s %s=...\n", v.Name, v.Message, prog, app, v.Name)
+	}
 }

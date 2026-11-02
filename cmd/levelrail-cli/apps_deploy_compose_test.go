@@ -209,3 +209,24 @@ func TestRun_AppsDeployCompose_APINoticesPrintedOnce(t *testing.T) {
 		t.Errorf("stderr = %q, want only the API warning", stderr.String())
 	}
 }
+
+func TestRun_AppsDeployCompose_MissingVariables(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":"required variable(s) not set: DB_PASSWORD, API_KEY","code":"bad_request","missing_variables":[{"name":"API_KEY","message":"set an api key"},{"name":"DB_PASSWORD","message":"set a database password"}]}`))
+	}))
+	defer srv.Close()
+
+	file := writeComposeFixture(t)
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail", []string{"apps", "deploy-compose", "myapp", "--file", file, "--api-url", srv.URL}, &stdout, &stderr, envMap())
+	if got == exitOK {
+		t.Fatalf("exit = %d, want non-zero", got)
+	}
+	for _, want := range []string{"missing API_KEY: set an api key", "levelrail apps env set myapp API_KEY=...", "missing DB_PASSWORD: set a database password", "levelrail apps env set myapp DB_PASSWORD=..."} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Errorf("stderr missing %q: %s", want, stderr.String())
+		}
+	}
+}

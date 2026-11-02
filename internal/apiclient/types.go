@@ -4548,6 +4548,14 @@ type apiErrorBody struct {
 	Code      string          `json:"code,omitempty"`
 	RequestID string          `json:"request_id,omitempty"`
 	Fix       json.RawMessage `json:"fix,omitempty"`
+	// MissingVariables lists unset required compose variables (names and messages only).
+	MissingVariables []MissingVariable `json:"missing_variables,omitempty"`
+}
+
+// MissingVariable is one required compose variable with no value.
+type MissingVariable struct {
+	Name    string `json:"name"`
+	Message string `json:"message"`
 }
 
 // fixText flattens the fix field, a plain string or an object with a label.
@@ -4588,6 +4596,8 @@ type APIError struct {
 	// RequestID and Fix are the server's correlation id and suggested remedy, when sent.
 	RequestID string
 	Fix       string
+	// MissingVariables is set on a deploy refused for unset required variables.
+	MissingVariables []MissingVariable
 }
 
 // Error renders the server message, appending a retry hint when RetryAfter is set.
