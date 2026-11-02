@@ -1180,5 +1180,14 @@
     "topReferrersCaption": "Top 10 referrers in this window",
     "unavailable": "Visitor numbers need the edge access log, which is not enabled on this install.",
     "chartHeading": "Requests over time"
+  },
+  "overviewHero": {
+    "addressInfo": "About this address",
+    "addTag": "Add tag...",
+    "addTagTitle": "Add a tag",
+    "tagName": "Tag name",
+    "tagAdd": "Add tag",
+    "tagAdding": "Adding...",
+    "removeTag": "Remove tag {{name}}"
   }
 }
