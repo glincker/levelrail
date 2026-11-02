@@ -218,6 +218,14 @@ func renderDomainEnv(rev store.ComposeRevision, runtime map[string]string) (map[
 		}
 		file.Services[svcKey] = svc
 	}
+	// Other values are never read here, and a ${V:?m} in one must not abort the rerender.
+	for _, svc := range file.Services {
+		for envKey, tmpl := range svc.Environment {
+			if !onlyDomainVars(tmpl) {
+				delete(svc.Environment, envKey)
+			}
+		}
+	}
 	noGen := func(string, string, int) (string, error) { return "", nil }
 	noPersist := func(string, string, string) error { return nil }
 	_, unresolved, err := compose.ResolveMagicVars(file, noGen, noPersist)

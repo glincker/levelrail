@@ -83,11 +83,19 @@ Cycles are rejected at import with the path. A dependency that is not ready with
 
 ### Variable interpolation in env values
 
-Environment values (not `command:` or `healthcheck:`, which the container shell expands itself) accept the standard compose forms for variables the app knows (its env and saved env keys):
+Environment values (not `command:` or `healthcheck:`, which the container shell expands itself) accept the standard compose forms for variables the app knows. The scope is exactly the plain env keys already saved on the app's own services (set with `apps env set` or the Env tab, merged across its services). It never includes the control plane's own environment, another app's env, or secret-typed values, which stay out of plain desired state. A template's install-form values are written into the compose body at render time, so they need no lookup. The stored revision keeps the original `${...}` text, so the next deploy re-resolves it against the then-current env:
 
 - `${VAR}` the value; `${VAR:-d}` the default when unset or empty; `${VAR-d}` the default only when unset.
 - `${VAR:+alt}` and `${VAR+alt}` the alternative when set; `${VAR:?msg}` and `${VAR?msg}` fail the import with `msg` when missing.
 - `$$` is a literal `$`.
+
+```yaml
+environment:
+  DB_PASSWORD: ${DB_PASSWORD:?set a database password}
+  PORT: ${PORT:-8080}
+```
+
+With `DB_PASSWORD` missing from the app env the deploy fails with `set a database password`; once it is set, the next deploy uses it. Messages and warnings name variables only, never values.
 
 A plain `${VAR}` with no value is left as written and reported as a warning (names only, never values). `SERVICE_*` tokens behave exactly as before.
 - Anything else has no value and is reported as unresolved. A template with an unresolved token is marked `requires_configuration`, and the one-click route refuses it. Deploy it through the dashboard's Compose editor, or with `apps deploy-compose`, after filling the value in.

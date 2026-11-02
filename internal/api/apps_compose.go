@@ -122,6 +122,32 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 		return composeDeployResponse{}, false
 	}
 
+	// Loaded before this deploy writes anything: staleComposeServices
+	// below needs the previous member list to diff against, and name is
+	// already this app's own ID (App.ID == App.Name, same convention
+	// this handler's own SaveApp call below relies on), so this is safe
+	// to look up even on a first-ever deploy (ListServicesByApp on an
+	// app with no row yet just returns none).
+	previousServices, err := rt.appGroups.ListServicesByApp(r.Context(), name)
+	if err != nil {
+		rt.internalError(w, "api: deploy compose: list previous services failed", err, slog.String("name", name))
+		return composeDeployResponse{}, false
+	}
+	file.InterpVars = appInterpVars(previousServices)
+	for k, v := range opts.interpEnv {
+		file.InterpVars[k] = v
+	}
+	if missing := compose.MissingRequired(file, file.InterpVars); len(missing) > 0 {
+		names := make([]string, len(missing))
+		for i, m := range missing {
+			names[i] = m.Name
+		}
+		writeJSON(w, http.StatusBadRequest, missingVariablesError{
+			apiError:         apiError{Error: "required variable(s) not set: " + strings.Join(names, ", "), Code: errorCodeForStatus(http.StatusBadRequest), RequestID: w.Header().Get(requestIDHeader)},
+			MissingVariables: missing,
+		})
+		return composeDeployResponse{}, false
+	}
 	secretEnv, unresolved, err := compose.ResolveMagicVars(file, rt.generateComposeSecret(r.Context(), name), rt.persistComposeSecret(r.Context(), name))
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
@@ -160,17 +186,6 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 		services[i].TemplateID = opts.templateID
 	}
 
-	// Loaded before this deploy writes anything: staleComposeServices
-	// below needs the previous member list to diff against, and name is
-	// already this app's own ID (App.ID == App.Name, same convention
-	// this handler's own SaveApp call below relies on), so this is safe
-	// to look up even on a first-ever deploy (ListServicesByApp on an
-	// app with no row yet just returns none).
-	previousServices, err := rt.appGroups.ListServicesByApp(r.Context(), name)
-	if err != nil {
-		rt.internalError(w, "api: deploy compose: list previous services failed", err, slog.String("name", name))
-		return composeDeployResponse{}, false
-	}
 	portsRelease, portsOK := rt.admitPublishedPorts(w, r, name, previousServices, services)
 	if !portsOK {
 		return composeDeployResponse{}, false
@@ -224,6 +239,30 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 	revision := rt.recordComposeRevision(r, name, body, opts)
 	rt.nudgeReconciler()
 	return composeDeployResponse{AppID: name, Services: out, Notices: notices, Revision: revision, Skipped: skipped}, true
+}
+
+// missingVariablesError is the 400 body listing every unset required variable.
+type missingVariablesError struct {
+	apiError
+	MissingVariables []compose.MissingVar `json:"missing_variables"`
+}
+
+// appInterpVars is the only variable scope compose interpolation sees: the
+// plain env of this app's own services. Secret values, other apps and the
+// control plane's process environment are never read, so nothing secret can
+// be copied into plain desired state.
+func appInterpVars(services []store.DesiredService) map[string]string {
+	sorted := slices.Clone(services)
+	slices.SortFunc(sorted, func(a, b store.DesiredService) int { return strings.Compare(a.Name, b.Name) })
+	vars := map[string]string{}
+	for _, svc := range sorted {
+		for k, v := range svc.Env {
+			if _, seen := vars[k]; !seen {
+				vars[k] = v
+			}
+		}
+	}
+	return vars
 }
 
 // composeConfigChanged reports whether next differs from prev in a field that
