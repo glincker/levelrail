@@ -55,6 +55,8 @@ The server installs on Linux only. macOS and Windows are CLI-only targets.
 
 You need a Linux server (`amd64` or `arm64`) with systemd and root. The installer adds Docker if it is missing. Open ports 80 and 443 to the internet. Port 8080 (the dashboard, plain HTTP) stays closed to the internet: reach it through an SSH tunnel, or open it to your own IP only. See [Dashboard port 8080](docs/installing.md#dashboard-port-8080).
 
+New here? Start with [first 15 minutes](docs/first-15-minutes.md).
+
 ### 1. Install the server
 
 ```bash
