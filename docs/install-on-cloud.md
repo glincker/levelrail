@@ -25,7 +25,7 @@ Cloud boot hooks run as root, so the script does not need `sudo`. Pass `--domain
 
 ## Firewall ports
 
-Open these inbound ports in the cloud firewall, security group or network rules before you test the dashboard.
+Open these inbound ports in the cloud firewall, security group or network rules before you test the dashboard. The installer never changes them. Copy-paste rules for each provider are in [Cloud firewall rules](/cloud-firewall-rules).
 
 | Port | Protocol | Why |
 | --- | --- | --- |

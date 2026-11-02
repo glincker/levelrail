@@ -81,6 +81,7 @@
               "installing",
               "container-runtimes",
               "install-on-cloud",
+              "cloud-firewall-rules",
               "install-on-oracle-cloud",
               "local-development",
               "desktop-runtime",
