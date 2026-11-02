@@ -34,6 +34,8 @@ type tokenResource struct {
 	Agent *agentIdentity `json:"agent,omitempty"`
 	// Scope is set when the token is limited to one team.
 	Scope *tokenScopeResource `json:"scope,omitempty"`
+	// Access is read_only when no ability can change anything, else can_change.
+	Access string `json:"access"`
 	// InstanceID is the server the token is bound to; LastIP is where it was last seen.
 	InstanceID string `json:"instance_id,omitempty"`
 	LastIP     string `json:"last_ip,omitempty"`
@@ -52,6 +54,7 @@ func toTokenResource(t store.APIToken) tokenResource {
 		ID:         t.ID,
 		Name:       t.Name,
 		Abilities:  t.Abilities,
+		Access:     tokenAccess(t.Abilities),
 		CreatedAt:  t.CreatedAt,
 		LastUsedAt: t.LastUsedAt,
 		ExpiresAt:  t.ExpiresAt,
@@ -69,6 +72,9 @@ type createTokenRequest struct {
 	NoExpiry      bool `json:"no_expiry,omitempty"`
 	// Agent optionally labels the token as issued to an AI agent.
 	Agent *agentIdentity `json:"agent,omitempty"`
+	// AllowChanges opts a token with no explicit abilities into read and write
+	// instead of the read-only default.
+	AllowChanges bool `json:"allow_changes,omitempty"`
 	tokenScopeRequest
 }
 
@@ -91,6 +97,12 @@ func (rt *Router) handleCreateToken(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Name == "" {
 		writeError(w, http.StatusBadRequest, "name is required")
+		return
+	}
+	if len(req.Abilities) == 0 {
+		req.Abilities = rt.defaultTokenAbilities(r.Context(), req.AllowChanges)
+	} else if req.AllowChanges {
+		writeError(w, http.StatusBadRequest, "allow_changes only applies when abilities is omitted")
 		return
 	}
 	if err := validateTokenAbilities(req.Abilities); err != nil {

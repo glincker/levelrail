@@ -27,6 +27,8 @@ By default a session lists about 2,400 estimated tokens: a small core (list and 
 
 ## Tools follow the token's abilities
 
+New tokens are read only unless you opt in to changes, see [Connect an AI assistant safely](/mcp-safe-setup).
+
 `tools/list` offers only the tools the connected token can call. A `read` token sees read tools, a `read,deploy` token also sees the deploy tier (`deploy_app`, `deploy_template`, `rollback_app`, `restart_app` and the canary tools) but not `set_app_env` or `set_app_domains`, a `write` or `write:sensitive` token sees the write tools, and `root` sees everything its mode lists. `enable_toolset` and `list_toolsets` apply the same filter, so a toolset with nothing the token can call is not offered. The filter only narrows the list and costs no extra tokens. It is skipped, and the full mode list is shown, when the token's abilities cannot be read or when IAM policies are attached to it, since a policy can grant access to one resource beyond the base abilities. The server still decides every call.
 
 A call the server refuses for a missing ability returns a short structured error such as `forbidden: {"missing_ability":"write:sensitive","use_instead":"plan_change"}`: the ability to ask for, and a read-only tool to call instead. Refusals from AI control or step-up keep their own message.

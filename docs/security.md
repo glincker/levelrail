@@ -294,6 +294,8 @@ The built-in assistant cannot change anything on its own. The server, not the mo
 
 This lives in `internal/ai` (`classify.go`, `engine.go`). See [AI assistant](/ai-assistant) and [AI control](/ai-control).
 
+External MCP clients do not enforce that taint tracking, so the protection lives in the token: new tokens are read only by default and writing is a per-token opt-in. See [Connect an AI assistant safely](/mcp-safe-setup).
+
 ## Production hardening checklist
 
 1. Set an `https://` dashboard URL and serve it through the ingress. Sign-in over plain HTTP is then refused.

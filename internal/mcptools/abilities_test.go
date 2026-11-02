@@ -159,3 +159,19 @@ func TestAbilityTokenCounts(t *testing.T) {
 		}
 	}
 }
+
+func TestAbilityAllows_SensitiveReadNeedsReadSensitive(t *testing.T) {
+	m, ok := toolTable["list_database_users"]
+	if !ok || m.Class != ClassRead || !m.Sensitive() {
+		t.Fatalf("list_database_users meta = %+v, want a sensitive read tool", m)
+	}
+	if abilityAllows([]string{"read"}, "list_database_users", m) {
+		t.Error("a plain read token must not see a credential-bearing read tool")
+	}
+	if !abilityAllows([]string{"read", "read:sensitive"}, "list_database_users", m) {
+		t.Error("read:sensitive should expose it")
+	}
+	if !abilityAllows([]string{"read"}, "list_apps", toolTable["list_apps"]) {
+		t.Error("a plain read token keeps ordinary read tools")
+	}
+}

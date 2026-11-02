@@ -67,14 +67,37 @@ func TestRun_TokensCreate(t *testing.T) {
 	}
 }
 
-func TestRun_TokensCreate_MissingAbilities(t *testing.T) {
-	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"tokens", "create", "--name", "ci", "--username", "admin", "--password", "x"}, &stdout, &stderr, envMap())
-	if got != exitValidation {
-		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitValidation, stdout.String(), stderr.String())
+func TestRun_TokensCreate_DefaultsToServerReadOnly(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		extra []string
+		want  bool
+	}{{"default", nil, false}, {"allow changes", []string{"--allow-changes"}, true}} {
+		t.Run(tc.name, func(t *testing.T) {
+			var gotReq createTokenRequest
+			srv := fakeSessionAuthServer(t, "POST", "/api/v1/auth/tokens", func(w http.ResponseWriter, r *http.Request) {
+				_ = json.NewDecoder(r.Body).Decode(&gotReq)
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusCreated)
+				_ = json.NewEncoder(w).Encode(createTokenResponse{tokenResource: tokenResource{ID: "t", Name: gotReq.Name, Access: "read_only", CreatedAt: time.Now()}, Token: "v"})
+			})
+			var stdout, stderr bytes.Buffer
+			args := append([]string{"tokens", "create", "--name", "mcp", "--username", "admin", "--password", "x", "--api-url", srv.URL}, tc.extra...)
+			if got := run("levelrail-cli-test", args, &stdout, &stderr, envMap()); got != exitOK {
+				t.Fatalf("exit = %d (stderr=%q)", got, stderr.String())
+			}
+			if len(gotReq.Abilities) != 0 || gotReq.AllowChanges != tc.want {
+				t.Errorf("request = %+v, want no abilities and allow_changes=%v", gotReq, tc.want)
+			}
+		})
 	}
-	if !strings.Contains(stderr.String(), "--abilities is required") {
-		t.Errorf("stderr = %q, want a missing-abilities validation error", stderr.String())
+}
+
+func TestRun_TokensCreate_AllowChangesConflictsWithAbilities(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"tokens", "create", "--name", "ci", "--abilities", "read", "--allow-changes", "--username", "admin", "--password", "x"}, &stdout, &stderr, envMap())
+	if got != exitValidation || !strings.Contains(stderr.String(), "--allow-changes only applies") {
+		t.Fatalf("exit = %d stderr = %q, want a validation error", got, stderr.String())
 	}
 }
 

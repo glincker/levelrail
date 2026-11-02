@@ -51,6 +51,10 @@ func requiredAbilities(name string, m Meta) []string {
 		return []string{abilityRoot}
 	}
 	if m.Class == ClassRead {
+		// Credential-bearing reads stay hidden from a plain read token.
+		if m.Sensitive() {
+			return []string{abilityReadSensitive}
+		}
 		return []string{abilityRead, abilityReadSensitive}
 	}
 	if _, ok := deployTierTools[name]; ok {

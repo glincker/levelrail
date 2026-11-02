@@ -412,6 +412,7 @@
             "pages": [
               "ai-assistant",
               "mcp",
+              "mcp-safe-setup",
               "mcp-recipes",
               "ai-assistant-chat",
               "ai-models",

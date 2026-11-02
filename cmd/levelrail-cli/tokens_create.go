@@ -16,9 +16,10 @@ func runTokensCreate(prog string, args []string, stdout, stderr io.Writer, looku
 	var name, abilitiesFlag, agentName, agentDescription, presetFlag string
 	var scopeTeam, scopeProject, scopeRole string
 	var expiresInDays int
-	var noExpiry bool
+	var noExpiry, allowChanges bool
 	fs.StringVar(&name, "name", "", "name for the new token (required)")
-	fs.StringVar(&abilitiesFlag, "abilities", "", "comma-separated ability list, e.g. \"read,deploy\" (required; valid: read, read:sensitive, write, write:sensitive, deploy, root, signin:approve)")
+	fs.StringVar(&abilitiesFlag, "abilities", "", "comma-separated ability list, e.g. \"read,deploy\" (default: read only; valid: read, read:sensitive, write, write:sensitive, deploy, root, signin:approve)")
+	fs.BoolVar(&allowChanges, "allow-changes", false, "with no --abilities or --preset, also grant write instead of the read-only default")
 	fs.StringVar(&presetFlag, "preset", "", "ability preset instead of --abilities: observer (read), deployer (read, deploy) or operator (everything except root)")
 	fs.IntVar(&expiresInDays, "expires-in-days", 0, "token lifetime in days (default: 90)")
 	fs.BoolVar(&noExpiry, "no-expiry", false, "create a token that never expires (root only; refused when the security policy caps token lifetime)")
@@ -57,8 +58,8 @@ func runTokensCreate(prog string, args []string, stdout, stderr io.Writer, looku
 		}
 		abilities = append([]string(nil), preset...)
 	}
-	if len(abilities) == 0 {
-		return reportError(stdout, stderr, jsonOut, newValidationError("--abilities is required (or use --preset)"))
+	if allowChanges && len(abilities) > 0 {
+		return reportError(stdout, stderr, jsonOut, newValidationError("--allow-changes only applies when --abilities and --preset are omitted"))
 	}
 	if len(abilities) > 1 && slices.Contains(abilities, "root") {
 		return reportError(stdout, stderr, jsonOut, newValidationError("root cannot be combined with other abilities"))
@@ -92,13 +93,13 @@ func runTokensCreate(prog string, args []string, stdout, stderr io.Writer, looku
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 
-	created, err := sessionClient.CreateToken(ctx, createTokenRequest{Name: name, Abilities: abilities, ExpiresInDays: expiresInDays, NoExpiry: noExpiry, Agent: agent, TeamID: scopeTeam, ProjectID: scopeProject, TeamRole: scopeRole})
+	created, err := sessionClient.CreateToken(ctx, createTokenRequest{Name: name, Abilities: abilities, AllowChanges: allowChanges, ExpiresInDays: expiresInDays, NoExpiry: noExpiry, Agent: agent, TeamID: scopeTeam, ProjectID: scopeProject, TeamRole: scopeRole})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("create token %q: %w", name, err))
 	}
 
 	return writeScheduledTaskResult(stdout, stderr, of, created, func() {
-		_, _ = fmt.Fprintf(stdout, "token %q (id %s) created\n", created.Name, created.ID)
+		_, _ = fmt.Fprintf(stdout, "token %q (id %s) created, access %s\n", created.Name, created.ID, created.Access)
 		_, _ = fmt.Fprintf(stdout, "token value (shown once, not recoverable again): %s\n", created.Token)
 	})
 }
@@ -112,7 +113,11 @@ var agentPresets = map[string][]string{
 
 func tokensCreateUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s tokens create --name NAME (--abilities LIST | --preset NAME) [flags]
+  %[1]s tokens create --name NAME [--abilities LIST | --preset NAME | --allow-changes] [flags]
+
+With no abilities the token is read only (the control plane's default token
+scope policy, "settings runtime get mcp.default_token_scope"). Writing is an
+explicit opt-in: --allow-changes, --preset or --abilities.
 
 Mints a new API token, printed once (never recoverable from the server
 again after this call). Requires a live session: --username/--password
@@ -128,7 +133,8 @@ when you change or reset your password or sign out your other sessions.
 
 Flags:
   --name string                 name for the new token (required)
-  --abilities string           comma-separated ability list (required; valid: read, read:sensitive, write, write:sensitive, deploy, root, signin:approve)
+  --allow-changes             with no abilities named, grant read and write instead of read only
+  --abilities string           comma-separated ability list (default read only; valid: read, read:sensitive, write, write:sensitive, deploy, root, signin:approve)
   --preset string              ability preset instead of --abilities: observer (read), deployer (read, deploy) or operator (everything except root)
   --expires-in-days int      token lifetime in days (default: 90)
   --no-expiry                create a token that never expires (root only)
