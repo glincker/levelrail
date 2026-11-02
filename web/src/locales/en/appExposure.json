@@ -83,5 +83,16 @@
     "portLabel": "Container port {{port}}",
     "copy": "Copy tunnel command for port {{port}}",
     "copied": "Copied"
+  },
+  "game": {
+    "title": "Game server",
+    "online": "Online",
+    "offline": "Offline",
+    "players": "{{online}}/{{max}} players",
+    "latency": "{{ms}} ms",
+    "copy": "Copy join address",
+    "copied": "Copied",
+    "notExposed": "Not public yet: publish the port to get a join address.",
+    "noPublicHost": "Join on port {{port}} at this server's public address."
   }
 }

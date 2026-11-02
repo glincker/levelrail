@@ -19,6 +19,7 @@ import { MoveToThisServerButton, PlacementLabel } from './PlacementLabel'
 import { useEnvironmentListOptional } from '../queries/environments'
 import { PinnedDigestBadge } from './PinnedDigestBadge'
 import { digestOfImage, unpinnedImage } from '../lib/imageDigest'
+import { GameStatusCard } from './apps/GameStatusCard'
 import { TunnelHint } from './apps/TunnelHint'
 
 // i18n keys for internal/spec's three strategy constants.
@@ -190,6 +191,7 @@ export function AppOverview({ app }: { app: AppDetail }) {
             probe={app.health?.liveness}
           />
         </div>
+        <GameStatusCard appName={app.name} />
         <TunnelHint
           appName={app.name}
           port={app.port}

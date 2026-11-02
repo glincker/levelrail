@@ -83,5 +83,16 @@
     "portLabel": "Puerto de contenedor {{port}}",
     "copy": "Copiar el comando de túnel para el puerto {{port}}",
     "copied": "Copiado"
+  },
+  "game": {
+    "title": "Servidor de juego",
+    "online": "En línea",
+    "offline": "Sin conexión",
+    "players": "{{online}}/{{max}} jugadores",
+    "latency": "{{ms}} ms",
+    "copy": "Copiar dirección de unión",
+    "copied": "Copiado",
+    "notExposed": "Aún no es público: publica el puerto para obtener una dirección de unión.",
+    "noPublicHost": "Únete por el puerto {{port}} en la dirección pública de este servidor."
   }
 }
