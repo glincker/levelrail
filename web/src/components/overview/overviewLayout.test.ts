@@ -19,6 +19,7 @@ describe('computeOverviewLayout', () => {
     const l = computeOverviewLayout(healthy)
     expect(l.sections).toEqual([
       'kpis',
+      'failure',
       'activity',
       'access',
       'health',
@@ -46,6 +47,7 @@ describe('computeOverviewLayout', () => {
       const l = computeOverviewLayout({ ...healthy, attentionCount })
       expect(l.sections[0]).toBe('attention')
       expect(l.sections[1]).toBe('kpis')
+      expect(l.sections.indexOf('failure')).toBeGreaterThan(1)
     }
   })
 

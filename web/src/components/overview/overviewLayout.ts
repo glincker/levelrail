@@ -1,5 +1,12 @@
 export type OverviewSection =
-  'attention' | 'access' | 'kpis' | 'health' | 'activity' | 'details' | 'setup'
+  | 'attention'
+  | 'failure'
+  | 'access'
+  | 'kpis'
+  | 'health'
+  | 'activity'
+  | 'details'
+  | 'setup'
 
 export interface OverviewLayoutInput {
   /** Failing signals: failed deploy, crashloop, unhealthy, high errors, cert errors, OOM. */
@@ -32,8 +39,16 @@ export function computeOverviewLayout(i: OverviewLayoutInput): OverviewLayout {
   const setupVisible = !i.setupDismissed && i.setupRemaining > 0
 
   const sections: OverviewSection[] = failing
-    ? ['attention', 'kpis', 'activity', 'access', 'health', 'details']
-    : ['kpis', 'activity', 'access', 'health', 'details']
+    ? [
+        'attention',
+        'kpis',
+        'failure',
+        'activity',
+        'access',
+        'health',
+        'details',
+      ]
+    : ['kpis', 'failure', 'activity', 'access', 'health', 'details']
   if (setupVisible) sections.splice(sections.indexOf('details'), 0, 'setup')
 
   return {

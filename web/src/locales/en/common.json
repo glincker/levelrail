@@ -292,6 +292,8 @@
   "recommended": {
     "title": "Recommended next",
     "dismiss": "Dismiss: {{title}}",
+    "more": "+{{count}} more",
+    "less": "Show fewer",
     "failed_deploy": {
       "title": "The last deploy failed",
       "button": "View the build log"

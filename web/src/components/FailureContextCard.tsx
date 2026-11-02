@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
   CheckGlassIcon,
+  ChevronDownGlassIcon,
   CopyGlassIcon,
   OctagonAlertGlassIcon,
 } from '@thesvg/ui-react'
@@ -21,6 +22,8 @@ function FailureBody({
 }) {
   const { t } = useTranslation('observability')
   const [copied, setCopied] = useState(false)
+  const [open, setOpen] = useState(false)
+  const detailId = useId()
   const crash = ctx.state === 'crashlooping'
   const minutes = Math.max(1, Math.round(ctx.window_seconds / 60))
   // The last non-empty line is the likeliest cause, so it leads the card.
@@ -29,7 +32,7 @@ function FailureBody({
   return (
     <section
       aria-label={t('failure.title')}
-      className="rounded-xl border border-tone-danger-border bg-card p-4"
+      className="rounded-xl border border-tone-danger-border bg-card px-4 py-3"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -96,56 +99,85 @@ function FailureBody({
           </Link>
         </div>
       </div>
-      {lastLine ? (
-        <p className="mt-3 rounded-lg border border-tone-danger-border bg-tone-danger-soft px-3 py-2 font-mono text-xs break-words text-foreground">
+      {!open && lastLine ? (
+        <p className="mt-2 truncate font-mono text-xs text-foreground">
           <span className="mr-2 font-sans font-medium text-tone-danger">
             {t('failure.lastLine')}
           </span>
           {lastLine.message}
         </p>
       ) : null}
-      {ctx.exit ? (
-        <div className="mt-3">
-          <ContainerExitBanner
-            exitCode={ctx.exit.exit_code}
-            oomKilled={ctx.exit.oom_killed}
-            finishedAt={ctx.exit.finished_at ?? ctx.exit.captured_at}
-            message={ctx.exit.message}
-            reason={ctx.exit.reason}
-            showHint
-          />
+      <Button
+        type="button"
+        variant="ghost"
+        size="xs"
+        className="mt-2"
+        aria-expanded={open}
+        aria-controls={detailId}
+        onClick={() => {
+          setOpen(!open)
+        }}
+      >
+        <ChevronDownGlassIcon
+          className={`size-4 ${open ? 'rotate-180' : ''}`}
+          aria-hidden="true"
+        />
+        {open ? t('failure.collapse') : t('failure.expand')}
+      </Button>
+      {open ? (
+        <div id={detailId}>
+          {lastLine ? (
+            <p className="mt-3 rounded-lg border border-tone-danger-border bg-tone-danger-soft px-3 py-2 font-mono text-xs break-words text-foreground">
+              <span className="mr-2 font-sans font-medium text-tone-danger">
+                {t('failure.lastLine')}
+              </span>
+              {lastLine.message}
+            </p>
+          ) : null}
+          {ctx.exit ? (
+            <div className="mt-3">
+              <ContainerExitBanner
+                exitCode={ctx.exit.exit_code}
+                oomKilled={ctx.exit.oom_killed}
+                finishedAt={ctx.exit.finished_at ?? ctx.exit.captured_at}
+                message={ctx.exit.message}
+                reason={ctx.exit.reason}
+                showHint
+              />
+            </div>
+          ) : null}
+          {ctx.lines.length === 0 ? (
+            <p className="mt-3 text-sm text-muted-foreground">
+              {t('failure.noLines')}
+            </p>
+          ) : (
+            <>
+              <p className="mt-3 text-xs text-muted-foreground">
+                {t('failure.showing', {
+                  shown: ctx.lines.length,
+                  total: ctx.total_lines,
+                })}
+              </p>
+              <pre
+                tabIndex={0}
+                aria-label={t('failure.linesLabel')}
+                className="mt-1 max-h-72 overflow-auto rounded-lg border border-neutral-800 bg-neutral-950 p-3 font-mono text-xs leading-5 text-neutral-200"
+              >
+                {ctx.lines.map((l, i) => (
+                  <span
+                    key={`${l.timestamp}-${i}`}
+                    className={`block whitespace-pre-wrap ${
+                      l.stream === 'stderr' ? 'text-red-400' : ''
+                    }`}
+                  >
+                    {l.message}
+                  </span>
+                ))}
+              </pre>
+            </>
+          )}
         </div>
       ) : null}
-      {ctx.lines.length === 0 ? (
-        <p className="mt-3 text-sm text-muted-foreground">
-          {t('failure.noLines')}
-        </p>
-      ) : (
-        <>
-          <p className="mt-3 text-xs text-muted-foreground">
-            {t('failure.showing', {
-              shown: ctx.lines.length,
-              total: ctx.total_lines,
-            })}
-          </p>
-          <pre
-            tabIndex={0}
-            aria-label={t('failure.linesLabel')}
-            className="mt-1 max-h-72 overflow-auto rounded-lg border border-neutral-800 bg-neutral-950 p-3 font-mono text-xs leading-5 text-neutral-200"
-          >
-            {ctx.lines.map((l, i) => (
-              <span
-                key={`${l.timestamp}-${i}`}
-                className={`block whitespace-pre-wrap ${
-                  l.stream === 'stderr' ? 'text-red-400' : ''
-                }`}
-              >
-                {l.message}
-              </span>
-            ))}
-          </pre>
-        </>
-      )}
     </section>
   )
 }
