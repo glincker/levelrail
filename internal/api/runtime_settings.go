@@ -170,6 +170,7 @@ func (rt *Router) handleSetRuntimeSetting(w http.ResponseWriter, r *http.Request
 		return
 	}
 	rt.recordSettingChange(r, before, after)
+	rt.nudgeIfRenderedSetting(key)
 	writeJSON(w, http.StatusOK, after)
 }
 
@@ -196,6 +197,7 @@ func (rt *Router) handleResetRuntimeSetting(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	rt.recordSettingChange(r, before, after)
+	rt.nudgeIfRenderedSetting(key)
 	writeJSON(w, http.StatusOK, after)
 }
 

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"log/slog"
 	"os"
 	"sync"
@@ -91,6 +92,8 @@ type dynamicSourceDeps struct {
 	// janitor runs scheduled cleanup passes on the local node.
 	janitor     *janitor.Engine
 	ingressEdge ingressEdge
+	// runtimeSettings is read each pass so a saved ingress body cap lands without a restart.
+	runtimeSettings func() *runtimesettings.Service
 	// lbRegistry is shared with the API so it can report live upstream status.
 	lbRegistry *loadbalancer.Registry
 	// proxySyncer is shared with the API so passes on one directory serialise.
@@ -148,7 +151,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			// Routes remote apps to their node's mesh address.
 			ingressreconcile.WithMeshPaths(newMeshPathResolver(deps.meshCfg, deps.db)),
 		}
-		ingressOpts = append(ingressOpts, deps.ingressEdge.options(ctx, deps.db, deps.logger)...)
+		ingressOpts = append(ingressOpts, deps.ingressEdge.options(ctx, deps.db, deps.logger, deps.settingsService())...)
 		if experimental.Enabled(experimental.AIModels) {
 			ingressOpts = append(ingressOpts, ingressreconcile.WithModelHosts(models.HostLister{Store: deps.db, Hosts: deps.models.hosts}))
 		}
@@ -595,4 +598,11 @@ func agentVersionLookup(deps dynamicSourceDeps) database.AgentVersionLookup {
 		}
 		return n.AgentVersion, true, nil
 	}
+}
+
+func (d dynamicSourceDeps) settingsService() *runtimesettings.Service {
+	if d.runtimeSettings == nil {
+		return nil
+	}
+	return d.runtimeSettings()
 }

@@ -369,6 +369,7 @@ func (s *bootState) startReconciler() {
 		orphanReaper:                 orphanReaper,
 		janitor:                      janitorEngine,
 		ingressEdge:                  edge,
+		runtimeSettings:              func() *runtimesettings.Service { return s.apiRouter.RuntimeSettings() },
 		db:                           db,
 		runtime:                      client,
 		driver:                       ingressDriver,

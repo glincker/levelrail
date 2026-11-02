@@ -169,3 +169,23 @@ func TestBodyLimit_DirectAssetUploadIsExempt(t *testing.T) {
 		}
 	}
 }
+
+func TestLimitSettings_IngressBodyNudgesReconciler(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	nudge := &fakeNudge{}
+	rt.reconcileNudger = nudge
+	if code := putLimit(t, rt, cookie, runtimesettings.KeyIngressMaxBodyBytes, "2097152"); code != http.StatusOK || nudge.count != 1 {
+		t.Fatalf("put = %d nudges %d", code, nudge.count)
+	}
+	if got := rt.runtimeSettings.Limit(t.Context(), runtimesettings.KeyIngressMaxBodyBytes); got != 2<<20 {
+		t.Fatalf("limit = %d", got)
+	}
+	if code := putLimit(t, rt, cookie, runtimesettings.KeyIngressMaxBodyBytes, "100"); code == http.StatusOK || nudge.count != 1 {
+		t.Fatalf("below the floor = %d nudges %d", code, nudge.count)
+	}
+	rsDo(t, rt, cookie, http.MethodDelete, rsBase+"/"+runtimesettings.KeyIngressMaxBodyBytes+"?confirm_weakening=true", "")
+	if nudge.count != 2 {
+		t.Fatalf("reset nudges = %d", nudge.count)
+	}
+}
