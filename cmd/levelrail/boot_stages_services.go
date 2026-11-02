@@ -404,6 +404,9 @@ func (s *bootState) startReconciler() {
 		restartPolicy: func(c context.Context) string {
 			return s.apiRouter.RuntimeSettings().String(c, runtimesettings.KeyContainersRestartPolicy)
 		},
+		dependsOnTimeout: func(c context.Context) time.Duration {
+			return s.apiRouter.RuntimeSettings().Duration(c, runtimesettings.KeyComposeDependsOnTimeout)
+		},
 	}
 	s.setupDNS01Check()
 	engine.SetSource(dynamicSource(sourceDeps))

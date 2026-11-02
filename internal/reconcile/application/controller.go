@@ -294,9 +294,12 @@ type Controller struct {
 	gateTick            time.Duration
 	drain               *DrainTracker
 	pinner              RollbackPinner
-	exitRecorder        ExitRecorder  // nil is valid: exits are only reported, not captured
-	startupWatch        time.Duration // see WithStartupWatch
-	nodeRecovering      bool          // see WithNodeRecovering
+	exitRecorder        ExitRecorder                        // nil is valid: exits are only reported, not captured
+	startupWatch        time.Duration                       // see WithStartupWatch
+	nodeRecovering      bool                                // see WithNodeRecovering
+	dependsOnTimeout    func(context.Context) time.Duration // nil waits forever, see WithDependsOnTimeout
+	dependsOnMu         sync.Mutex
+	dependsOnSince      map[string]time.Time // first pass a service waited on a dependency
 }
 
 // Option configures optional Controller behavior.

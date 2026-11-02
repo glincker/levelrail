@@ -99,6 +99,8 @@ type dynamicSourceDeps struct {
 	dns01AllHosts func(context.Context) bool
 	// restartPolicy reads the live container restart policy setting.
 	restartPolicy func(context.Context) string
+	// dependsOnTimeout reads the live compose depends_on wait limit.
+	dependsOnTimeout func(context.Context) time.Duration
 }
 
 func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
@@ -288,6 +290,9 @@ func appOptionsFor(deps dynamicSourceDeps) []application.Option {
 	}
 	if deps.restartPolicy != nil {
 		appOpts = append(appOpts, application.WithRestartPolicy(deps.restartPolicy))
+	}
+	if deps.dependsOnTimeout != nil {
+		appOpts = append(appOpts, application.WithDependsOnTimeout(deps.dependsOnTimeout))
 	}
 	if deps.retainedDeploys != nil {
 		appOpts = append(appOpts, application.WithRetainedDeploys(deps.retainedDeploys))

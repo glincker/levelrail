@@ -63,6 +63,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_INGRESS_CA_RETRY_BACKOFF_MAX` | [`ingress.ca_switch_retry_max`](/runtime-settings#networking) | `1h` |
 | `APP_INGRESS_DNS01_ALL_HOSTS` | [`ingress.dns01_all_hosts`](/runtime-settings#networking) | `false` |
 | `APP_TRUST_LOOPBACK_FORWARDED` | [`security.trust_loopback_forwarded_headers`](/runtime-settings#networking) | `true` |
+| `APP_COMPOSE_DEPENDS_ON_TIMEOUT` | [`compose.depends_on_timeout`](/runtime-settings#deploys) | `120s` |
 | `APP_CONTAINERS_RESTART_POLICY` | [`containers.restart_policy`](/runtime-settings#deploys) | `unless-stopped` |
 | `APP_DEPLOY_MAX_CONCURRENT` | [`deploy.max_concurrent`](/runtime-settings#deploys) | `0` |
 | `APP_DISK_CRITICAL_FREE_MB` | [`disk.critical_free_mb`](/runtime-settings#observability) | `512` |

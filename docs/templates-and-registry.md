@@ -71,6 +71,16 @@ Templates use `$SERVICE_<KIND>_<NAME>` tokens in place of literal secrets. At de
 - `$SERVICE_FQDN_<NAME>` resolves to the service's own assigned domain as a bare host, and `$SERVICE_URL_<NAME>` to `https://` plus that host. The suffix is ignored: both always mean this service's own domain. With no domain assigned, write a default such as `${SERVICE_URL_APP:-http://localhost:5678}`. Adding, changing or removing a domain re-renders these values and recreates the service.
 - Any token written with a default (`${SERVICE_FOO:-value}`) uses that default.
 
+### Start order with depends_on
+
+`depends_on` is honoured in list and map form. A service is created only after its dependencies are ready:
+
+- `service_started` (and the list form): a container of the dependency is running.
+- `service_healthy`: the dependency's health check has passed. The dependency needs a `healthcheck`; shell-less images cannot use `CMD-SHELL`, use `CMD` with the binary's own check.
+- `service_completed_successfully`: the one-shot dependency exited 0. A nonzero exit fails the deploy and names the dependency.
+
+Cycles are rejected at import with the path. A dependency that is not ready within the runtime setting `compose.depends_on_timeout` (default 120s, 5s to 1h, env seed `APP_COMPOSE_DEPENDS_ON_TIMEOUT`, applies live) fails the service with the dependency's name; it still starts if the dependency comes up later. Services without `depends_on` start as before. Recreating one member does not wait for dependencies that are already up.
+
 ### Variable interpolation in env values
 
 Environment values (not `command:` or `healthcheck:`, which the container shell expands itself) accept the standard compose forms for variables the app knows (its env and saved env keys):
