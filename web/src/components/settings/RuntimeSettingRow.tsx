@@ -1,6 +1,6 @@
 import { useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { RotateCcwGlassIcon } from '@thesvg/ui-react'
+import { CopyGlassIcon, RotateCcwGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -21,6 +21,7 @@ import { toast } from '@/components/ui/toast'
 import {
   draftOf,
   needsConfirm,
+  settingItemId,
   toWrite,
   valueLabelKey,
 } from '../../lib/runtimeSettings'
@@ -55,7 +56,14 @@ export function RuntimeSettingRow({
   const [syncedFrom, setSyncedFrom] = useState(setting.value)
   const [confirming, setConfirming] = useState<RuntimeSettingWrite | null>(null)
   const [confirmingReset, setConfirmingReset] = useState(false)
-  const title = setting.title || setting.key
+  const itemId = settingItemId(setting.key)
+  // Locale item first, then the API text, so a new registry key still reads.
+  const title = t(`items.${itemId}.title`, {
+    defaultValue: setting.title || setting.key,
+  })
+  const description = t(`items.${itemId}.description`, {
+    defaultValue: setting.description,
+  })
   const busy = save.isPending || reset.isPending
 
   if (syncedFrom !== setting.value) {
@@ -125,26 +133,28 @@ export function RuntimeSettingRow({
 
   const badges = (
     <>
-      <Badge
-        variant={
-          setting.source === 'saved'
-            ? 'info'
-            : setting.source === 'env'
-              ? 'accent'
-              : 'muted'
-        }
-      >
-        {t(`source.${setting.source}`)}
-      </Badge>
-      {setting.pending_restart ? (
-        <Badge variant="warning">{t('badges.restart')}</Badge>
+      {setting.risk === 'weakens_security' ? (
+        <Badge variant="destructive">{t('badges.weakens')}</Badge>
+      ) : null}
+      {setting.source !== 'default' ? (
+        <Badge
+          title={t('row.defaultHint', { value: valueText(setting.default) })}
+          variant={setting.source === 'saved' ? 'info' : 'accent'}
+        >
+          {t(`source.${setting.source}`)}
+        </Badge>
+      ) : null}
+      {setting.apply === 'restart' || setting.pending_restart ? (
+        <Badge variant={setting.pending_restart ? 'warning' : 'muted'}>
+          {t('badges.restart')}
+        </Badge>
       ) : null}
     </>
   )
 
   return (
-    <SettingRow title={title} description={setting.description} badge={badges}>
-      <div className="space-y-2" data-setting={setting.key}>
+    <SettingRow title={title} description={description} badge={badges}>
+      <div className="space-y-1" data-setting={setting.key}>
         {setting.kind === 'bool' ? (
           <div className="flex items-center gap-3">
             <Switch
@@ -161,7 +171,7 @@ export function RuntimeSettingRow({
             </span>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="flex flex-wrap items-start gap-2">
             {setting.kind === 'duration' ? (
               <DurationInput
                 id={fieldId}
@@ -225,9 +235,6 @@ export function RuntimeSettingRow({
                 }}
               />
             )}
-            {intInvalid ? (
-              <p className="text-xs text-destructive">{t('row.invalid')}</p>
-            ) : null}
             {canEdit ? (
               <Button
                 type="button"
@@ -239,6 +246,11 @@ export function RuntimeSettingRow({
               >
                 {save.isPending ? t('row.saving') : t('row.save')}
               </Button>
+            ) : null}
+            {intInvalid ? (
+              <p className="w-full text-xs text-destructive">
+                {t('row.invalid')}
+              </p>
             ) : null}
           </div>
         )}
@@ -253,7 +265,18 @@ export function RuntimeSettingRow({
             </span>
           ) : null}
           {setting.env ? (
-            <span>{t('row.envHint', { env: setting.env })}</span>
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 font-mono text-[11px] text-muted-foreground/70 hover:text-foreground"
+              title={t('row.envCopy', { env: setting.env })}
+              aria-label={t('row.envCopy', { env: setting.env })}
+              onClick={() => {
+                void navigator.clipboard.writeText(setting.env)
+              }}
+            >
+              {setting.env}
+              <CopyGlassIcon size="1.2em" aria-hidden="true" />
+            </button>
           ) : null}
           {setting.source === 'saved' && setting.updated_by ? (
             <span>{t('row.updatedBy', { actor: setting.updated_by })}</span>

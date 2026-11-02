@@ -22,7 +22,8 @@
     "saved": "Saved"
   },
   "badges": {
-    "restart": "Restart required"
+    "restart": "Restart required",
+    "weakens": "Weakens security"
   },
   "options": {
     "open": "Open (no restriction)",
@@ -42,7 +43,6 @@
     }
   },
   "row": {
-    "envHint": "Environment variable: {{env}}",
     "defaultHint": "Default: {{value}}",
     "updatedBy": "Saved by {{actor}}",
     "on": "On",
@@ -53,7 +53,8 @@
     "saving": "Saving",
     "reset": "Reset to default",
     "resetting": "Resetting",
-    "invalid": "Enter a whole number."
+    "invalid": "Enter a whole number.",
+    "envCopy": "Copy {{env}}"
   },
   "toast": {
     "saved": "{{title}} saved.",
@@ -117,5 +118,15 @@
       "metricsAndLogs": "Metrics and logs",
       "pipelineArtifacts": "Pipeline artifacts"
     }
+  },
+  "toolbar": {
+    "searchLabel": "Search settings",
+    "searchPlaceholder": "Search by name, description or environment variable",
+    "changedOnly": "Changed from default",
+    "clear": "Clear filters",
+    "count": "{{shown}} of {{total}}",
+    "jumpLabel": "Jump to a category",
+    "noMatchTitle": "No settings match",
+    "noMatchBody": "Try a shorter search, or clear the filters to see every setting."
   }
 }
