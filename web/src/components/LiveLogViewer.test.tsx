@@ -5,6 +5,7 @@ import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import observabilityEn from '../locales/en/observability.json'
 import { parseRunStatus } from '../hooks/useLogStream'
+import type { ReconcileCondition } from '../types/deploy'
 import { LiveLogViewer } from './LiveLogViewer'
 
 vi.mock('@tanstack/react-router', () => ({
@@ -63,11 +64,11 @@ function source(): StubEventSource {
   return s
 }
 
-function renderViewer() {
+function renderViewer(conditions?: ReconcileCondition[]) {
   vi.stubGlobal('EventSource', StubEventSource)
   render(
     <I18nextProvider i18n={testI18n}>
-      <LiveLogViewer appName="web" />
+      <LiveLogViewer appName="web" conditions={conditions} />
     </I18nextProvider>,
   )
 }
@@ -132,6 +133,24 @@ describe('LiveLogViewer', () => {
     expect(
       screen.queryByText('Waiting for log output...'),
     ).not.toBeInTheDocument()
+  })
+
+  it('says No container instead of Connecting when none exists', () => {
+    renderViewer([
+      {
+        Type: 'Ready',
+        Status: 'False',
+        Reason: 'ImagePullFailed',
+        Message: 'pull failed',
+        LastTransitionTime: '2026-10-14T12:00:00Z',
+      },
+    ])
+    expect(screen.getByText('No container')).toBeInTheDocument()
+    expect(screen.queryByText('Connecting...')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('Waiting for log output...'),
+    ).not.toBeInTheDocument()
+    expect(screen.getByText('Show last deploy log')).toBeInTheDocument()
   })
 
   it('names an OOM kill', () => {

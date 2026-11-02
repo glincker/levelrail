@@ -426,7 +426,8 @@
       "allNormal": "Todos los sistemas funcionan con normalidad",
       "issues_one": "{{count}} problema requiere atención",
       "issues_other": "{{count}} problemas requieren atención"
-    }
+    },
+    "headerMore": "Más controles de la cabecera"
   },
   "login": {
     "signInTitle": "Iniciar sesión",
@@ -719,10 +720,52 @@
     "copyRequestId": "Copiar ID de solicitud",
     "fixFailed": "La corrección no funcionó.",
     "fixing": "Corrigiendo...",
+    "friendly": {
+      "generic": {
+        "action": "Inténtalo de nuevo y cita el ID de solicitud si sigue fallando."
+      },
+      "docker": {
+        "message": "Docker no responde en este host.",
+        "action": "Inicia Docker y vuelve a comprobar."
+      },
+      "unauthorized": {
+        "message": "Tu sesión ha terminado.",
+        "action": "Inicia sesión de nuevo para continuar."
+      },
+      "forbidden": {
+        "message": "Tu cuenta no tiene permiso para hacer esto.",
+        "action": "Pide acceso a un propietario o administrador."
+      },
+      "conflict": {
+        "message": "Esto entra en conflicto con algo que ya existe.",
+        "action": "Cámbiale el nombre o elimina el existente y reintenta."
+      },
+      "validation": {
+        "message": "Algunos valores no son válidos.",
+        "action": "Revisa los campos e inténtalo de nuevo."
+      },
+      "rateLimited": {
+        "message": "Demasiadas solicitudes en poco tiempo.",
+        "action": "Espera un momento e inténtalo de nuevo."
+      },
+      "diskFull": {
+        "message": "El servidor se ha quedado sin espacio en disco.",
+        "action": "Libera espacio en Ajustes, Limpieza, y reintenta."
+      },
+      "unreachable": {
+        "message": "El plano de control no responde.",
+        "action": "Espera unos segundos y reintenta."
+      },
+      "network": {
+        "message": "No se puede conectar con el servidor.",
+        "action": "Comprueba tu conexión y reintenta."
+      }
+    },
     "generic": "Algo salió mal en el servidor.",
     "recheckDocker": "Volver a comprobar Docker",
     "rechecking": "Comprobando...",
-    "requestId": "ID de solicitud: {{id}}"
+    "requestId": "ID de solicitud: {{id}}",
+    "toastTitle": "No se pudo completar"
   },
   "appPower": {
     "applying": "Aplicando los cambios.",

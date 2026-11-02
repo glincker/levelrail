@@ -11,6 +11,7 @@ import { HelpMenu } from '../HelpMenu'
 import { ThemeToggle } from '../ThemeToggle'
 import { CliModal } from '../cli/CliModal'
 import { CliStatusBadge } from '../cli/CliStatusBadge'
+import { HeaderOverflow } from './HeaderOverflow'
 import { InboxBadge } from './InboxBadge'
 import { NotificationCenter } from './NotificationCenter'
 import { StatusChip } from './StatusChip'
@@ -71,7 +72,7 @@ export function AppHeader({ onSearch }: { onSearch: () => void }) {
               <Kbd keys={[isMac ? '⌘' : 'Ctrl', 'K']} />
             </span>
           </Button>
-          <div className="order-last w-full empty:hidden @5xl:order-none @5xl:w-auto">
+          <div className="order-last w-full empty:hidden max-@md:hidden @5xl:order-none @5xl:w-auto">
             <ScopePicker />
           </div>
           {pageTitle ? (
@@ -83,17 +84,20 @@ export function AppHeader({ onSearch }: { onSearch: () => void }) {
             </span>
           ) : null}
           <div className="ml-auto flex items-center gap-1 @xl:gap-2">
-            <TeamSwitcher />
-            <CliStatusBadge />
+            <div className="flex items-center gap-1 max-@md:hidden @xl:gap-2">
+              <TeamSwitcher />
+              <CliStatusBadge />
+            </div>
             <StatusChip />
             <InboxBadge />
-            <NotificationCenter />
-            <div className="hidden @md:block">
+            <div className="flex items-center gap-1 max-@md:hidden @xl:gap-2">
+              <NotificationCenter />
               <WhatsNewPanel />
+              <DockToggle />
+              <HelpMenu />
+              <ThemeToggle />
             </div>
-            <DockToggle />
-            <HelpMenu />
-            <ThemeToggle />
+            <HeaderOverflow />
           </div>
         </div>
       </header>

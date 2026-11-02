@@ -496,7 +496,8 @@
       "allCaughtUp": "What's new: all caught up",
       "empty": "No release notes available yet."
     },
-    "navAttention": "{{count}} need attention"
+    "navAttention": "{{count}} need attention",
+    "headerMore": "More header controls"
   },
   "cliConsole": {
     "title": "Console",
@@ -970,7 +971,49 @@
     "requestId": "Request ID: {{id}}",
     "copyRequestId": "Copy request ID",
     "copied": "Copied",
-    "generic": "Something went wrong on the server."
+    "generic": "Something went wrong on the server.",
+    "toastTitle": "That did not work",
+    "friendly": {
+      "generic": {
+        "action": "Try again, and quote the request ID if it keeps failing."
+      },
+      "docker": {
+        "message": "Docker is not reachable on this host.",
+        "action": "Start Docker, then re-check."
+      },
+      "unauthorized": {
+        "message": "Your session has ended.",
+        "action": "Sign in again to continue."
+      },
+      "forbidden": {
+        "message": "Your account is not allowed to do this.",
+        "action": "Ask an owner or admin to grant access."
+      },
+      "conflict": {
+        "message": "This conflicts with something that already exists.",
+        "action": "Rename it or remove the existing one, then retry."
+      },
+      "validation": {
+        "message": "Some of the values are not valid.",
+        "action": "Check the fields and try again."
+      },
+      "rateLimited": {
+        "message": "Too many requests in a short time.",
+        "action": "Wait a moment and try again."
+      },
+      "diskFull": {
+        "message": "The server is out of disk space.",
+        "action": "Free space in Settings, Cleanup, then retry."
+      },
+      "unreachable": {
+        "message": "The control plane is not responding.",
+        "action": "Wait a few seconds and retry."
+      },
+      "network": {
+        "message": "Cannot reach the server.",
+        "action": "Check your connection and retry."
+      }
+    }
   },
   "notFound": {
     "requested": "Requested: {{name}}",

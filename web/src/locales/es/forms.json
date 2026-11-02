@@ -1,0 +1,188 @@
+{
+  "title": "Formularios",
+  "description": "Recibe los envíos de los formularios HTML de tu sitio estático. Cada formulario tiene un endpoint público al que enviar.",
+  "loading": "Cargando formularios",
+  "loadError": "No se pudieron cargar los formularios.",
+  "retry": "Reintentar",
+  "new": "Nuevo formulario",
+  "create": {
+    "title": "Nuevo formulario",
+    "description": "Elige un nombre corto. Pasa a formar parte de la dirección del endpoint y no se puede cambiar después.",
+    "name": "Nombre del formulario",
+    "namePlaceholder": "contacto",
+    "submit": "Crear formulario",
+    "submitting": "Creando"
+  },
+  "empty": {
+    "title": "Aún no hay formularios",
+    "description": "Crea un formulario, diseña sus campos, pega el fragmento en tu sitio y los envíos llegan aquí.",
+    "cta": "Crea tu primer formulario"
+  },
+  "endpoint": "Endpoint",
+  "snippet": "Fragmento HTML",
+  "copy": "Copiar",
+  "copied": "Copiado",
+  "copyFailed": "No se pudo copiar",
+  "counts": "{{total}} envíos, {{spam}} spam",
+  "settings": {
+    "title": "Ajustes",
+    "redirect": "Redirección tras el envío",
+    "redirectHint": "Los navegadores se envían aquí después de un envío. Déjalo vacío para mostrar una página de agradecimiento sencilla.",
+    "honeypot": "Campo trampa para spam",
+    "honeypotHint": "Un campo oculto que los visitantes reales dejan vacío. Los envíos que lo rellenan se guardan como spam y nunca te avisan.",
+    "channels": "Avisar de nuevos envíos",
+    "noChannels": "Todavía no hay canales de notificación configurados. Añade uno en Alertas para que te avisen de los nuevos envíos.",
+    "save": "Guardar ajustes",
+    "saving": "Guardando",
+    "saved": "Ajustes del formulario guardados."
+  },
+  "delete": {
+    "button": "Eliminar formulario",
+    "title": "¿Eliminar este formulario?",
+    "description": "El endpoint deja de aceptar envíos de inmediato.",
+    "consequence": "Todos los envíos almacenados de este formulario se eliminan y no se pueden recuperar.",
+    "confirm": "Eliminar formulario",
+    "pending": "Eliminando"
+  },
+  "retention": "Los envíos se eliminan después de {{days}} días. Solo se almacena un hash con sal de la dirección del remitente, nunca la dirección.",
+  "inbox": {
+    "title": "Bandeja de entrada",
+    "search": "Buscar envíos",
+    "filterAll": "Todos",
+    "filterInbox": "Sin spam",
+    "filterSpam": "Spam",
+    "export": "Exportar CSV",
+    "loading": "Cargando envíos",
+    "loadError": "No se pudieron cargar los envíos.",
+    "emptyTitle": "Aún no hay envíos",
+    "emptyDescription": "Envía al endpoint de arriba, o manda una prueba desde tu sitio, y aparecerá aquí.",
+    "noMatchTitle": "Nada coincide",
+    "noMatchDescription": "Prueba con otra búsqueda o filtro.",
+    "spamBadge": "Spam",
+    "markSpam": "Marcar como spam",
+    "markNotSpam": "No es spam",
+    "remove": "Eliminar",
+    "removeConfirm": "¿Eliminar este envío?",
+    "actionFailed": "Ese cambio no se guardó.",
+    "loadMore": "Cargar más",
+    "reason": {
+      "honeypot": "Rellenó el campo trampa",
+      "too_many_links": "Demasiados enlaces",
+      "empty": "Sin campos",
+      "manual": "Marcado por ti"
+    },
+    "testBadge": "Prueba"
+  },
+  "betaHint": "Beta: la captura de formularios funciona, pero su diseñador y sus límites aún están cambiando.",
+  "intro": "Los sitios estáticos no pueden ejecutar código de servidor. Formularios da a tu sitio un endpoint público que almacena los envíos.",
+  "howItWorks": "Cómo funciona",
+  "hero": {
+    "alt": "Un visitante rellena un formulario en tu sitio y pulsa Enviar. El envío viaja a tu endpoint de Levelrail, aparece en la bandeja de entrada y dispara una notificación.",
+    "caption": "Diseña un formulario, pégalo en tu sitio estático y lee los envíos aquí.",
+    "site": "Tu sitio",
+    "endpoint": "Endpoint",
+    "inbox": "Bandeja de entrada",
+    "notice": "Nuevo envío"
+  },
+  "steps": {
+    "design": {
+      "title": "Diseña tu formulario",
+      "body": "Elige los campos, las etiquetas y el mensaje de éxito."
+    },
+    "embed": {
+      "title": "Pega el fragmento en tu sitio",
+      "body": "Copia el HTML o JavaScript en tu página."
+    },
+    "read": {
+      "title": "Lee los envíos aquí",
+      "body": "Recibe un aviso cuando alguien envíe uno."
+    }
+  },
+  "notStatic": {
+    "title": "Los formularios son para sitios estáticos",
+    "description": "Esta app ejecuta su propio código de servidor, así que puede gestionar los envíos de formularios por sí misma. Formularios recoge envíos para apps que se despliegan como sitio estático.",
+    "back": "Volver a la app"
+  },
+  "sections": {
+    "design": {
+      "title": "Diseño",
+      "help": "Elige los campos que rellenan los visitantes y lo que ven después de enviar."
+    },
+    "embed": {
+      "title": "Insertar",
+      "help": "Copia esto en tu sitio estático. Sigue tu diseño a medida que lo editas."
+    },
+    "submissions": {
+      "title": "Envíos",
+      "help": "Todo lo que envían los visitantes llega aquí. Expórtalo como CSV cuando quieras."
+    },
+    "settings": {
+      "title": "Ajustes",
+      "help": "A dónde van los visitantes después, la protección contra spam y a quién se avisa."
+    }
+  },
+  "designer": {
+    "label": "Etiqueta",
+    "name": "Nombre del campo",
+    "type": "Tipo",
+    "types": {
+      "text": "Texto",
+      "email": "Correo electrónico",
+      "textarea": "Texto largo",
+      "select": "Desplegable",
+      "checkbox": "Casilla",
+      "number": "Número",
+      "url": "Dirección web",
+      "hidden": "Oculto"
+    },
+    "placeholder": "Marcador de posición",
+    "minLength": "Longitud mínima",
+    "maxLength": "Longitud máxima",
+    "options": "Opciones",
+    "optionsHint": "Una opción por línea.",
+    "default": "Valor",
+    "required": "Obligatorio",
+    "moveUp": "Subir",
+    "moveDown": "Bajar",
+    "remove": "Quitar campo",
+    "addField": "Añadir campo",
+    "customize": "Personalizar campos",
+    "usingDefault": "Este formulario usa los campos predeterminados: nombre, correo y mensaje. Personalízalos para diseñar los tuyos.",
+    "success": "Mensaje de éxito",
+    "successDefault": "Gracias, hemos recibido tu envío.",
+    "successLabel": "Después de enviar",
+    "origins": "Sitios permitidos (opcional)",
+    "originsHint": "Una dirección por línea, como https://example.com. Se rechazan los navegadores de otros sitios. Vacío permite cualquier sitio.",
+    "preview": "Vista previa en vivo",
+    "send": "Enviar",
+    "save": "Guardar diseño",
+    "saving": "Guardando",
+    "saved": "Diseño del formulario guardado.",
+    "reset": "Volver a los campos predeterminados"
+  },
+  "embed": {
+    "noPublicUrl": {
+      "title": "No hay URL pública configurada",
+      "body": "No hay URL pública configurada, este endpoint solo funciona desde esta máquina. Los visitantes de tu sitio en vivo no pueden alcanzarlo.",
+      "fix": "Configurar la URL pública"
+    },
+    "variants": {
+      "html": "HTML",
+      "fetch": "JavaScript",
+      "minimal": "Mínimo"
+    },
+    "variantHint": {
+      "html": "Fragmento HTML",
+      "fetch": "HTML con un script fetch (se queda en la página)",
+      "minimal": "Marcado mínimo (sin etiquetas, aporta tu propio estilo)"
+    }
+  },
+  "test": {
+    "button": "Enviar un envío de prueba",
+    "sending": "Enviando",
+    "sent": "Envío de prueba {{id}} almacenado",
+    "ok": "Está marcado como prueba en la bandeja de entrada de abajo.",
+    "flagged": "Se marcó como spam.",
+    "failed": "No se pudo enviar la prueba."
+  }
+}

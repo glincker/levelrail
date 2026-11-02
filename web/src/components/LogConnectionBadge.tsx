@@ -6,7 +6,7 @@ import type { LogStreamConnectionState } from '../hooks/useLogStream'
 // logs and running-app container logs). notRunning overrides the
 // connection state: an open stream with no running container is not "Live".
 
-type BadgeState = LogStreamConnectionState | 'notRunning'
+type BadgeState = LogStreamConnectionState | 'notRunning' | 'noContainer'
 
 const CONNECTION_LABEL_KEY: Record<
   BadgeState,
@@ -14,11 +14,13 @@ const CONNECTION_LABEL_KEY: Record<
   | 'connection.open'
   | 'connection.error'
   | 'connection.notRunning'
+  | 'connection.noContainer'
 > = {
   connecting: 'connection.connecting',
   open: 'connection.open',
   error: 'connection.error',
   notRunning: 'connection.notRunning',
+  noContainer: 'connection.noContainer',
 }
 
 const CONNECTION_VARIANT: Record<
@@ -29,6 +31,7 @@ const CONNECTION_VARIANT: Record<
   open: 'success',
   error: 'warning',
   notRunning: 'destructive',
+  noContainer: 'warning',
 }
 
 // The dot pulses only while genuinely live; a still dot reads as "not live".
@@ -37,17 +40,22 @@ const CONNECTION_DOT_CLASS: Record<BadgeState, string> = {
   open: 'bg-green-600 dark:bg-green-400',
   error: 'bg-amber-600 dark:bg-amber-400',
   notRunning: 'bg-tone-danger-solid',
+  noContainer: 'bg-amber-600 dark:bg-amber-400',
 }
 
 export function LogConnectionBadge({
   state,
   notRunning = false,
+  noContainer = false,
 }: {
   state: LogStreamConnectionState
   notRunning?: boolean
+  noContainer?: boolean
 }) {
   const { t } = useTranslation('observability')
-  const shown: BadgeState = notRunning ? 'notRunning' : state
+  let shown: BadgeState = state
+  if (noContainer) shown = 'noContainer'
+  else if (notRunning) shown = 'notRunning'
   return (
     <Badge variant={CONNECTION_VARIANT[shown]} className="gap-1.5 rounded-full">
       <span className="relative inline-flex size-2" aria-hidden="true">

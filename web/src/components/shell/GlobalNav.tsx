@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useState, type KeyboardEvent } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
 import { PinGlassIcon } from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
@@ -68,6 +68,7 @@ function PinButton({
           ? 'peer-data-active/menu-button:text-sidebar-active-foreground'
           : undefined
       }
+      tabIndex={-1}
       aria-pressed={pin.pinned}
       aria-label={t('shell.pins.pin', { label })}
       aria-disabled={blocked || undefined}
@@ -79,6 +80,18 @@ function PinButton({
       <PinGlassIcon size="1.4em" aria-hidden="true" />
     </SidebarMenuAction>
   )
+}
+
+// P on a focused row pins it, so the pin buttons can stay out of the tab order.
+function pinKeyDown(item: GlobalNavItem, pin?: PinControl) {
+  if (!pin) return undefined
+  return (e: KeyboardEvent<HTMLLIElement>) => {
+    if (e.key.toLowerCase() !== 'p' || e.ctrlKey || e.metaKey || e.altKey)
+      return
+    if (!(e.target instanceof HTMLAnchorElement)) return
+    e.preventDefault()
+    if (!(pin.full && !pin.pinned)) pin.onToggle(item.id)
+  }
 }
 
 const TRAFFIC_BADGE_KEYS = {
@@ -100,7 +113,7 @@ function LockedNavLinkItem({
   const describedBy = useId()
   const label = tc(`shell.nav.${item.id}`, { defaultValue: item.label })
   return (
-    <SidebarMenuItem>
+    <SidebarMenuItem onKeyDown={pinKeyDown(item, pin)}>
       <SidebarMenuButton
         render={
           <Link
@@ -156,9 +169,14 @@ function NavLinkItem({
           ? `${String(count)} unread in inbox`
           : `${String(count)} failing apps`
   return (
-    <SidebarMenuItem>
+    <SidebarMenuItem onKeyDown={pinKeyDown(item, pin)}>
       <SidebarMenuButton
-        render={<Link to={linkTarget(item)} />}
+        render={
+          <Link
+            to={linkTarget(item)}
+            aria-keyshortcuts={pin ? 'P' : undefined}
+          />
+        }
         isActive={isGlobalItemActive(pathname, item)}
         tooltip={{
           children: (

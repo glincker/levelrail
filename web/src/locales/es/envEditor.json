@@ -1,0 +1,207 @@
+{
+  "title": "Entorno",
+  "description": "Variables que tu app lee al arrancar. Los valores sensibles permanecen enmascarados en todas partes; revelar uno te pide confirmar que eres tú y queda registrado en el registro de auditoría.",
+  "guide": "Guía de secretos",
+  "columns": {
+    "key": "Clave",
+    "value": "Valor",
+    "type": "Tipo",
+    "scope": "Ámbito",
+    "actions": "Acciones"
+  },
+  "types": {
+    "plain": "Simple",
+    "secret": "Secreto",
+    "vault": "Vault"
+  },
+  "scope": {
+    "own": "Valor propio",
+    "inherited": "Desde {{tier}}",
+    "overrides": "Sobrescribe {{tier}}",
+    "tiers": {
+      "organization": "organización",
+      "project": "proyecto",
+      "environment": "entorno"
+    }
+  },
+  "value": {
+    "masked": "Valor oculto",
+    "secretStored": "Cifrado, almacenado",
+    "secretNew": "Valor nuevo",
+    "empty": "Vacío",
+    "vaultPath": "Ruta en Vault",
+    "vaultKey": "Campo",
+    "hidesIn": "Se oculta en {{seconds}}s",
+    "replacePlaceholder": "Valor nuevo",
+    "valuePlaceholder": "Valor"
+  },
+  "sensitive": {
+    "badge": "Sensible",
+    "convertHint": "Parece una credencial guardada como texto simple"
+  },
+  "actions": {
+    "reveal": "Revelar",
+    "hide": "Ocultar",
+    "copy": "Copiar",
+    "copied": "Copiado al portapapeles",
+    "replace": "Reemplazar",
+    "cancelReplace": "Mantener el actual",
+    "remove": "Quitar",
+    "undoRemove": "Deshacer quitar",
+    "override": "Sobrescribir",
+    "rowMenu": "Acciones para {{key}}",
+    "markSensitive": "Marcar como sensible",
+    "markPlain": "Mostrar el valor a los lectores",
+    "useAutomatic": "Usar detección automática",
+    "convert": "Convertir en secreto"
+  },
+  "toolbar": {
+    "add": "Añadir variable",
+    "bulk": "Editar como .env",
+    "table": "Editar como tabla",
+    "import": "Importar archivo .env",
+    "export": "Exportar",
+    "exportMasked": "Exportar con valores enmascarados",
+    "exportFull": "Exportar todos los valores (.env)",
+    "exportFullJson": "Exportar todos los valores (JSON)",
+    "review": "Revisar cambios",
+    "discard": "Descartar",
+    "protection": "Protección"
+  },
+  "add": {
+    "keyLabel": "Nombre de la variable nueva",
+    "valueLabel": "Valor de la variable nueva",
+    "typeLabel": "Tipo de variable",
+    "suggestSecret": "Este nombre parece sensible. Guárdalo como Secreto para que el valor se cifre en reposo.",
+    "add": "Añadir",
+    "cancel": "Cancelar",
+    "duplicate": "{{key}} ya existe",
+    "invalidKey": "Usa letras, dígitos y guiones bajos, sin empezar por un dígito",
+    "secretsOff": "Los secretos necesitan una clave maestra en el plano de control"
+  },
+  "bulk": {
+    "label": "Variables como texto .env, una CLAVE=valor por línea",
+    "hint": "Los valores enmascarados (••••••••) conservan lo almacenado. Borra una línea para quitar una variable. Las variables de Vault se editan en la tabla.",
+    "apply": "Aplicar a la tabla"
+  },
+  "review": {
+    "title": "Revisar cambios",
+    "description": "No se guarda nada hasta que lo confirmes. Los valores sensibles nunca se muestran aquí.",
+    "added": "Añadidas",
+    "changed": "Modificadas",
+    "removed": "Eliminadas",
+    "hiddenValue": "valor oculto",
+    "none": "No hay cambios que guardar.",
+    "save": "Guardar cambios",
+    "saving": "Guardando...",
+    "back": "Volver a editar",
+    "scan": {
+      "title": "Estos valores parecen credenciales",
+      "description": "Las variables simples las ve cualquiera que pueda leer esta app. Guárdalas como Secretos para que permanezcan cifradas.",
+      "finding": "{{key}}: {{rule}}",
+      "makeSecret": "Guardar como secretos"
+    }
+  },
+  "saved": "Entorno guardado.",
+  "redeploy": {
+    "title": "Hace falta redesplegar",
+    "description": "El contenedor en ejecución todavía tiene los valores antiguos. Reinicia la app para aplicarlos.",
+    "restart": "Reiniciar ahora",
+    "restarting": "Reiniciando {{name}}."
+  },
+  "inherited": {
+    "title": "Variables heredadas",
+    "description": "Definidas en la organización, el proyecto o el entorno. Sobrescribe una para darle a esta app su propio valor."
+  },
+  "empty": {
+    "title": "Aún no hay variables",
+    "description": "Añade una variable o importa un archivo .env. Los valores que parecen credenciales se enmascaran automáticamente."
+  },
+  "stepUp": {
+    "title": "Confirma que eres tú",
+    "descriptionReveal": "Revelar {{key}} en {{app}} queda registrado en el registro de auditoría. No se te volverá a pedir durante {{minutes}} minutos.",
+    "descriptionExport": "Exportar todos los valores de {{app}} queda registrado en el registro de auditoría.",
+    "descriptionManage": "Hacer visibles valores o desbloquear secretos en {{app}} necesita una confirmación reciente.",
+    "password": "Contraseña",
+    "code": "Código del autenticador",
+    "codeHint": "Tu cuenta usa autenticación en dos pasos, así que introduce también el código de 6 dígitos.",
+    "confirm": "Confirmar",
+    "confirming": "Comprobando...",
+    "passkey": "Usar una passkey",
+    "or": "o",
+    "invalid": "Esa contraseña o código no es correcto.",
+    "locked": "Demasiados intentos. Espera unos minutos y vuelve a intentarlo.",
+    "noMethods": "Esta cuenta no tiene contraseña ni passkey con la que confirmar. Define primero una contraseña en los ajustes de tu cuenta."
+  },
+  "policy": {
+    "disabledTitle": "Los valores secretos son de solo escritura en este servidor",
+    "disabledBody": "El servidor se ejecuta con APP_SECRET_REVEAL=disabled, así que nadie puede volver a leer un valor almacenado. Un administrador puede definirlo como step_up para permitir revelaciones confirmadas.",
+    "allowTitle": "Revelar sin confirmación está activado",
+    "allowBody": "APP_SECRET_REVEAL=allow permite que cualquiera con read:sensitive vea los valores sin contraseña. Usa step_up fuera de un laboratorio de un solo administrador.",
+    "writeOnlyTitle": "Los secretos son de solo escritura para esta app",
+    "writeOnlyBody": "El propietario de la app bloqueó las revelaciones y las exportaciones completas. Aún puedes reemplazar valores.",
+    "writeOnlyToggle": "Los secretos son de solo escritura para esta app",
+    "writeOnlyToggleHint": "Bloquea toda revelación y exportación completa de los valores de esta app. Desactivarlo te pide confirmar que eres tú.",
+    "invalidTitle": "La política de revelación no se reconoce",
+    "invalidBody": "APP_SECRET_REVEAL tiene un valor desconocido, así que las revelaciones siguen desactivadas hasta que se corrija."
+  },
+  "convert": {
+    "title": "¿Convertir {{key}} en un secreto?",
+    "description": "El valor pasa al almacenamiento cifrado del servidor y se elimina de las variables simples. Nunca pasa por tu navegador.",
+    "consequence": "La app en ejecución conserva la variable anterior hasta que la reinicies o la vuelvas a desplegar.",
+    "confirm": "Convertir",
+    "pending": "Convirtiendo...",
+    "done": "{{key}} ahora es un secreto."
+  },
+  "errors": {
+    "revealDisabled": "Revelar está desactivado en este servidor.",
+    "writeOnly": "Los secretos de esta app son de solo escritura.",
+    "importFailed": "No se pudo leer ese archivo."
+  },
+  "advanced": {
+    "title": "Comparación de vista previa, rama y entorno",
+    "description": "Valores usados solo por los despliegues de vista previa y las compilaciones por rama, además de una comparación con otros entornos."
+  },
+  "bound": {
+    "title": "Recursos conectados",
+    "description": "Variables inyectadas al arrancar el contenedor desde vínculos de bases de datos y bindings de buckets. Aquí son de solo lectura; cámbialas en la base de datos o el bucket.",
+    "key": "Clave",
+    "source": "Origen",
+    "value": "Valor",
+    "database": "Base de datos {{name}} ({{field}})",
+    "bucket": "Bucket {{name}}",
+    "masked": "Enmascarado",
+    "loadFailed": "No se pudieron cargar los recursos conectados.",
+    "retry": "Reintentar"
+  },
+  "health": {
+    "title": "Salud de las variables",
+    "description": "Problemas encontrados en las variables de esta app y qué variables se añadieron, modificaron o eliminaron. Los valores nunca se registran.",
+    "recheck": "Volver a comprobar",
+    "loading": "Comprobando variables...",
+    "clean": "No se encontraron problemas.",
+    "loadFailed": "No se pudieron comprobar las variables. Vuelve a comprobar para reintentar.",
+    "fixed": "{{key}} corregida",
+    "historyTitle": "Cambios recientes",
+    "historyEmpty": "Aún no hay cambios registrados. Las ediciones a partir de ahora aparecen aquí.",
+    "byActor": "por {{actor}}",
+    "kinds": {
+      "empty_value": "Valor vacío. Quítala o dale un valor.",
+      "shadowed": "Gana un secreto o un binding de base de datos con el mismo nombre, así que este valor simple nunca se usa.",
+      "case_duplicate": "Nombres que solo difieren en mayúsculas y minúsculas: {{detail}}. La mayoría de los programas los tratan como variables distintas.",
+      "missing_secret": "Un secreto obligatorio aún no tiene valor. Defínelo en la sección de secretos.",
+      "dangling_database": "Vinculada a la base de datos {{detail}}, que ya no existe."
+    },
+    "fixes": {
+      "remove_key": "Quitar variable",
+      "remove_database_ref": "Quitar binding",
+      "set_secret": "Definir un valor arriba",
+      "rename": "Renombrar una de ellas"
+    },
+    "actions": {
+      "added": "Añadida",
+      "changed": "Modificada",
+      "removed": "Eliminada"
+    }
+  }
+}

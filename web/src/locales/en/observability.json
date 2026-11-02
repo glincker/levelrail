@@ -151,13 +151,14 @@
     "lastOutput": "{{count}} lines: the last output of the stopped container",
     "waiting": "Waiting for log output...",
     "noContainer": "No container is running to produce logs: {{reason}}",
-    "viewDeploys": "View deploy history to troubleshoot"
+    "viewDeploys": "Show last deploy log"
   },
   "connection": {
     "connecting": "Connecting...",
     "open": "Live",
     "error": "Reconnecting...",
-    "notRunning": "Not running"
+    "notRunning": "Not running",
+    "noContainer": "No container"
   },
   "databaseRule": {
     "kind": {
