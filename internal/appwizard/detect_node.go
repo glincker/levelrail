@@ -3,6 +3,8 @@ package appwizard
 import (
 	"encoding/json"
 	"regexp"
+	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -11,6 +13,7 @@ type pkgJSON struct {
 	Dependencies    map[string]string `json:"dependencies"`
 	DevDependencies map[string]string `json:"devDependencies"`
 	Engines         map[string]string `json:"engines"`
+	Workspaces      json.RawMessage   `json:"workspaces"`
 }
 
 type nodePkg struct {
@@ -121,6 +124,7 @@ func detectNode(f *files) (found, bool) {
 		g.framework, g.buildType = "Next.js", buildRailpack
 		g.why("package.json", "package.json has next in dependencies")
 		nextDetails(f, &g)
+		nextProfile(f, n, &g)
 		static = g.output != "" && g.start == ""
 		setPort(3000, "Next.js default port")
 	case n.dep("nuxt") || n.dep("nuxt3"):
@@ -299,4 +303,169 @@ func orStr(a, b string) string {
 		return a
 	}
 	return b
+}
+
+// EnvMaxNextScanFiles bounds how many source files one Next.js scan reads.
+const EnvMaxNextScanFiles = "APP_WIZARD_NEXT_SCAN_FILES"
+
+var (
+	nextCommentRe     = regexp.MustCompile(`(?s)/\*.*?\*/|(^|[\s;,{(])//[^\n]*`)
+	nextHandlerRe     = regexp.MustCompile(`\bcacheHandlers?\s*:`)
+	nextMaxMemRe      = regexp.MustCompile(`\bcacheMaxMemorySize\s*:\s*(\d+)`)
+	nextTracingRe     = regexp.MustCompile(`\boutputFileTracingRoot\b`)
+	nextPublicRe      = regexp.MustCompile(`\bNEXT_PUBLIC_[A-Z0-9_]+`)
+	nextRevalidateRe  = regexp.MustCompile(`\brevalidate\s*=\s*[1-9]|\brevalidate\s*:\s*[1-9]|\b(revalidatePath|revalidateTag|unstable_cache|cacheLife)\b|\bgetStaticProps\b`)
+	nextVersionRe     = regexp.MustCompile(`(\d+)(?:\.(\d+))?(?:\.(\d+))?`)
+	nextSourceExtRe   = regexp.MustCompile(`\.(js|jsx|ts|tsx|mjs|cjs)$`)
+	nextExperimentals = []string{"cacheComponents", "dynamicIO", "ppr", "useCache", "reactCompiler", "inlineCss"}
+	nextExperimentRes = func() map[string]*regexp.Regexp {
+		m := map[string]*regexp.Regexp{}
+		for _, k := range nextExperimentals {
+			m[k] = regexp.MustCompile(`\b` + k + `\s*:\s*(true|['"]incremental['"]|\{)`)
+		}
+		return m
+	}()
+)
+
+// nextProfile fills the Next.js profile and its hints. It reads text only,
+// so a hostile config cannot run anything.
+func nextProfile(f *files, n *nodePkg, g *found) {
+	p := &NextProfile{Output: "none", Experimental: []string{}}
+	if n.parsed {
+		p.Version, p.Major = nextVersion(firstNonEmpty(n.pkg.Dependencies["next"], n.pkg.DevDependencies["next"]))
+		w := strings.TrimSpace(string(n.pkg.Workspaces))
+		p.Monorepo = w != "" && w != "null"
+	}
+	p.Sharp = n.dep("sharp")
+	if f.dir != "" || f.present["pnpm-workspace.yaml"] {
+		p.Monorepo = true
+	}
+	if cfgName, ok := f.anyOf("next.config.js", "next.config.mjs", "next.config.ts", "next.config.cjs"); ok {
+		cfg, _ := f.text(cfgName)
+		cfg = nextCommentRe.ReplaceAllString(cfg, "$1")
+		if m := nextOutputRe.FindStringSubmatch(cfg); m != nil {
+			p.Output = m[1]
+		}
+		p.CacheHandler = nextHandlerRe.MatchString(cfg)
+		if m := nextMaxMemRe.FindStringSubmatch(cfg); m != nil {
+			p.CacheMaxMemory, _ = strconv.ParseInt(m[1], 10, 64)
+		}
+		p.TracingRoot = nextTracingRe.MatchString(cfg)
+		for _, k := range nextExperimentals {
+			if nextExperimentRes[k].MatchString(cfg) {
+				p.Experimental = append(p.Experimental, k)
+				if k == "cacheComponents" {
+					p.CacheComponents = true
+				}
+			}
+		}
+	}
+	for _, name := range []string{"middleware.ts", "middleware.js", "proxy.ts", "proxy.js", "src/middleware.ts", "src/middleware.js", "src/proxy.ts", "src/proxy.js"} {
+		if f.has(name) {
+			p.Middleware = name
+			break
+		}
+	}
+	scanNextSources(f, p)
+	p.MultiReplicaRisk = (p.UsesRevalidate || p.CacheComponents) && !p.CacheHandler && p.Output != "export"
+	g.next = p
+	g.nextHints = nextHints(p)
+}
+
+// scanNextSources counts NEXT_PUBLIC_ names and spots ISR style caching in a
+// bounded, sorted sample of source files.
+func scanNextSources(f *files, p *NextProfile) {
+	var names []string
+	for k := range f.present {
+		rel := k
+		if f.dir != "" {
+			if !strings.HasPrefix(k, f.dir+"/") {
+				continue
+			}
+			rel = strings.TrimPrefix(k, f.dir+"/")
+		}
+		if strings.Contains(rel, "node_modules/") || strings.HasPrefix(rel, ".next/") || !nextSourceExtRe.MatchString(rel) {
+			continue
+		}
+		top := strings.SplitN(rel, "/", 2)[0]
+		switch top {
+		case "app", "pages", "src", "components", "lib", "utils":
+			names = append(names, rel)
+		}
+	}
+	sort.Strings(names)
+	limit := envInt(EnvMaxNextScanFiles, 200)
+	if len(names) > limit {
+		names = names[:limit]
+	}
+	public := map[string]bool{}
+	for _, rel := range names {
+		s, ok := f.text(rel)
+		if !ok {
+			continue
+		}
+		for _, v := range nextPublicRe.FindAllString(s, -1) {
+			public[v] = true
+		}
+		if !p.UsesRevalidate && nextRevalidateRe.MatchString(s) {
+			p.UsesRevalidate = true
+		}
+	}
+	for _, name := range []string{".env.example", ".env.sample", ".env.template"} {
+		if s, ok := f.text(name); ok {
+			for _, v := range nextPublicRe.FindAllString(s, -1) {
+				public[v] = true
+			}
+		}
+	}
+	p.PublicVars = len(public)
+}
+
+func nextHints(p *NextProfile) []Warning {
+	var out []Warning
+	add := func(code, msg string) { out = append(out, Warning{Code: code, Message: msg}) }
+	if p.Output == "none" {
+		add(HintNextNoOutput, "next.config has no output mode; output: 'standalone' gives a smaller image that starts with node server.js")
+	}
+	if p.Output == "standalone" && !p.Sharp && p.Major > 0 && p.Major < 15 {
+		add(HintNextSharp, "this Next.js version needs sharp installed for image optimization in standalone mode")
+	}
+	if p.Monorepo && p.Output == "standalone" && !p.TracingRoot {
+		add(HintNextTracingRoot, "this looks like a monorepo; set outputFileTracingRoot so the standalone build includes files from the workspace root")
+	}
+	if p.Middleware != "" && p.Output == "export" {
+		add(HintNextExportServer, p.Middleware+" does not run with output: 'export'; the static build ignores it")
+	}
+	if p.MultiReplicaRisk {
+		add(HintNextMultiReplica, "revalidate or cache components are used without a shared cacheHandler; replicas keep separate caches, so keep one replica or add a shared cache handler")
+	}
+	if p.PublicVars > 0 {
+		add(HintNextPublicVars, strconv.Itoa(p.PublicVars)+" NEXT_PUBLIC_ variables are inlined at build time; set them as build variables, not only at runtime")
+	}
+	return out
+}
+
+func nextVersion(spec string) (string, int) {
+	m := nextVersionRe.FindStringSubmatch(spec)
+	if m == nil {
+		return "", 0
+	}
+	v := m[1]
+	for _, part := range m[2:] {
+		if part == "" {
+			break
+		}
+		v += "." + part
+	}
+	major, _ := strconv.Atoi(m[1])
+	return v, major
+}
+
+func firstNonEmpty(vals ...string) string {
+	for _, v := range vals {
+		if v != "" {
+			return v
+		}
+	}
+	return ""
 }

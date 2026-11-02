@@ -24,6 +24,35 @@ const (
 	WarnDirectoryMissing = "directory_missing"
 )
 
+// Next.js hint codes. They are advice only and never change a default.
+const (
+	HintNextMultiReplica = "next_multi_replica_cache"
+	HintNextNoOutput     = "next_no_standalone_output"
+	HintNextSharp        = "next_sharp_missing"
+	HintNextTracingRoot  = "next_tracing_root"
+	HintNextPublicVars   = "next_public_build_time"
+	HintNextExportServer = "next_export_with_middleware"
+)
+
+// NextProfile is what static scanning learned about a Next.js app. Config
+// files are read as text and never executed.
+type NextProfile struct {
+	Version          string   `json:"version,omitempty"`
+	Major            int      `json:"major,omitempty"`
+	Output           string   `json:"output"`
+	CacheHandler     bool     `json:"cache_handler"`
+	CacheMaxMemory   int64    `json:"cache_max_memory_size,omitempty"`
+	CacheComponents  bool     `json:"cache_components"`
+	Experimental     []string `json:"experimental"`
+	Middleware       string   `json:"middleware,omitempty"`
+	Sharp            bool     `json:"sharp"`
+	Monorepo         bool     `json:"monorepo"`
+	TracingRoot      bool     `json:"tracing_root"`
+	PublicVars       int      `json:"public_vars"`
+	UsesRevalidate   bool     `json:"uses_revalidate"`
+	MultiReplicaRisk bool     `json:"multi_replica_risk"`
+}
+
 // Stack is the detected runtime and framework.
 type Stack struct {
 	Runtime   string `json:"runtime"`
