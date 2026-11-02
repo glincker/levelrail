@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -26,10 +27,11 @@ export function GitSourceBuildPackField({
   onBuildType: (v: GitSourceBuildType) => void
   onBuildPath: (v: string) => void
 }) {
+  const { t } = useTranslation('gitSource')
   return (
     <Field>
       <FieldLabel htmlFor="git-source-build-type">
-        {/* i18n-ignore */}Build pack
+        {t('buildPack.label')}
       </FieldLabel>
       <Tabs
         value={buildType}
@@ -42,20 +44,19 @@ export function GitSourceBuildPackField({
           className="grid w-full grid-cols-3"
         >
           <TabsTrigger value="railpack" disabled={disabled}>
-            Auto-detect
+            {t('buildPack.autoDetect')}
           </TabsTrigger>
           <TabsTrigger value="dockerfile" disabled={disabled}>
-            Dockerfile
+            {t('buildPack.dockerfile')}
           </TabsTrigger>
           <TabsTrigger value="static" disabled={disabled}>
-            Static site
+            {t('buildPack.static')}
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="railpack" className="space-y-2 pt-2">
           <FieldDescription>
-            Recommended. Levelrail detects your framework from the repository
-            and builds it automatically, no Dockerfile needed.
+            {t('buildPack.autoDetectDescription')}
           </FieldDescription>
           <div className="flex flex-wrap gap-2">
             {AUTO_DETECT_STACKS.map((stack) => (
@@ -73,7 +74,7 @@ export function GitSourceBuildPackField({
         <TabsContent value="dockerfile" className="pt-2">
           <Field>
             <FieldLabel htmlFor="git-source-build-path">
-              Dockerfile path (optional)
+              {t('buildPack.dockerfilePath')}
             </FieldLabel>
             <Input
               id="git-source-build-path"
@@ -92,7 +93,7 @@ export function GitSourceBuildPackField({
 
         <TabsContent value="static" className="pt-2">
           <FieldDescription>
-            Served directly by the embedded Caddy ingress, no container.
+            {t('buildPack.staticDescription')}
           </FieldDescription>
         </TabsContent>
       </Tabs>

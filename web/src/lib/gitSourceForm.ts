@@ -7,29 +7,15 @@ import type {
   GitSourceTriggerMode,
 } from '../types/gitSource'
 
-export const BUILD_PACKS: { value: GitSourceBuildType; label: string }[] = [
-  { value: 'railpack', label: 'Auto-detect (Railpack)' },
-  { value: 'dockerfile', label: 'Dockerfile' },
-  { value: 'static', label: 'Static site' },
+// Labels live in the gitSource namespace under buildPacks.<value>.
+export const BUILD_PACKS: GitSourceBuildType[] = [
+  'railpack',
+  'dockerfile',
+  'static',
 ]
 
-export const TRIGGER_MODES: {
-  value: GitSourceTriggerMode
-  label: string
-  description: string
-}[] = [
-  {
-    value: 'push',
-    label: 'Every push',
-    description: 'Deploy on every push to the target branch.',
-  },
-  {
-    value: 'release',
-    label: 'Tags & releases',
-    description:
-      'Deploy only on a tag push, or (GitHub only) a published release. Branch pushes never deploy.',
-  },
-]
+// Labels live in the gitSource namespace under triggers.<value>.
+export const TRIGGER_MODES: GitSourceTriggerMode[] = ['push', 'release']
 
 // Rows are an array, not a Record, so a name can be edited mid-typing without key collisions.
 export interface AdditionalServiceRow {
@@ -193,12 +179,9 @@ export function servicesSpecYaml(rows: ServiceSpecRow[]): string {
   return lines.join('\n')
 }
 
-// Builds the "Row 1, 2 are missing a service name." message shown when
-// rows were started but never named.
-export function incompleteRowsMessage(incomplete: number[]): string {
-  const rowLabel = incomplete.length === 1 ? 'Row' : 'Rows'
-  const rowNumbers = incomplete.map((index) => index + 1).join(', ')
-  return `${rowLabel} ${rowNumbers} ${incomplete.length === 1 ? 'is' : 'are'} missing a service name.`
+// 1-based row numbers for the "rows are missing a service name" message.
+export function incompleteRowNumbers(incomplete: number[]): string {
+  return incomplete.map((index) => index + 1).join(', ')
 }
 
 export function isBuildTypeValue(v: unknown): v is GitSourceBuildType {

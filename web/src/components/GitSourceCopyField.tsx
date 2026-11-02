@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { CheckGlassIcon, CopyGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
@@ -16,6 +17,7 @@ export function GitSourceCopyField({
   value: string
   description?: ReactNode
 }) {
+  const { t } = useTranslation('gitSource')
   const [copied, setCopied] = useState(false)
   return (
     <Field>
@@ -42,7 +44,7 @@ export function GitSourceCopyField({
           ) : (
             <CopyGlassIcon size="1.4em" />
           )}
-          {copied ? 'Copied' : 'Copy'}
+          {copied ? t('copy.copied') : t('copy.copy')}
         </Button>
       </div>
       {description ? <FieldDescription>{description}</FieldDescription> : null}

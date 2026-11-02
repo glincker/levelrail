@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   GitBranchGlassIcon,
   LoaderGlassIcon,
@@ -17,7 +18,7 @@ import {
   emptyForm,
   formFromResource,
   incompleteRowIndexes,
-  incompleteRowsMessage,
+  incompleteRowNumbers,
   type FormState,
 } from '../lib/gitSourceForm'
 import { connectGitSource } from '../lib/gitSourceConnect'
@@ -47,6 +48,7 @@ import { GitSourceJustConnected } from './GitSourceJustConnected'
 // the same way the wizard does, instead of only ever producing a manual,
 // paste-the-webhook-by-hand connection.
 export function GitSourceCard({ app }: { app: AppDetail }) {
+  const { t } = useTranslation('gitSource')
   const query = useGitSource(app.name)
   const queryClient = useQueryClient()
   const connectMutation = useMutation({
@@ -90,21 +92,26 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
 
   // Returns the first problem with the fan-out rows, or null when they are fine.
   function rowsProblem(): string | null {
+    const missingNames = (incomplete: number[]) =>
+      incomplete.length > 0
+        ? t('card.rowsMissingName', {
+            count: incomplete.length,
+            rows: incompleteRowNumbers(incomplete),
+          })
+        : null
     if (form.fanoutMode === 'services') {
       if (!form.services.some((row) => row.serviceName.trim())) {
-        return 'Add at least one service, or switch back to single service.'
+        return t('card.needService')
       }
-      const incomplete = incompleteRowIndexes(form.services)
-      return incomplete.length > 0 ? incompleteRowsMessage(incomplete) : null
+      return missingNames(incompleteRowIndexes(form.services))
     }
-    const incomplete = incompleteRowIndexes(form.additionalServices)
-    return incomplete.length > 0 ? incompleteRowsMessage(incomplete) : null
+    return missingNames(incompleteRowIndexes(form.additionalServices))
   }
 
   function submit() {
     if (!form.repoUrl.trim()) {
       toast.add({
-        title: 'Pick a repository or paste a URL first.',
+        title: t('card.pickRepoFirst'),
         type: 'error',
       })
       return
@@ -126,12 +133,12 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
             setWebhookAutoRegistered(result.autoRegistered)
             setWebhookError(result.webhookError)
           } else {
-            toast.add({ title: 'Git source updated.', type: 'success' })
+            toast.add({ title: t('card.updated'), type: 'success' })
           }
         },
         onError: (error) => {
           toast.add({
-            title: 'Could not save git source.',
+            title: t('card.saveFailed'),
             description: error.message,
             type: 'error',
           })
@@ -144,11 +151,11 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
     deleteGitSource.mutate(undefined, {
       onSuccess: () => {
         setJustConnected(null)
-        toast.add({ title: 'Git source disconnected.', type: 'success' })
+        toast.add({ title: t('card.disconnected'), type: 'success' })
       },
       onError: (error) => {
         toast.add({
-          title: 'Could not disconnect git source.',
+          title: t('card.disconnectFailed'),
           description: error.message,
           type: 'error',
         })
@@ -161,14 +168,14 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <GitBranchGlassIcon className="size-5 text-muted-foreground" />
-          Git source
+          {t('card.title')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {query.isLoading ? (
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
             <LoaderGlassIcon className="size-5 animate-spin" />
-            Loading...
+            {t('card.loading')}
           </p>
         ) : null}
 

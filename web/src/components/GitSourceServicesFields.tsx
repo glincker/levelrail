@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { PlusGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -29,17 +30,11 @@ export function AdditionalServicesField({
   onUpdate: (index: number, patch: Partial<AdditionalServiceRow>) => void
   onRemove: (index: number) => void
 }) {
+  const { t } = useTranslation('gitSource')
   return (
     <Field>
-      <FieldLabel>{/* i18n-ignore */}Additional services (optional)</FieldLabel>
-      <FieldDescription>
-        Also rebuild these sibling services from the same push, for a monorepo
-        with more than one service. Each needs its own already-existing service
-        name and build config. Saving with any row filled in always uses the
-        direct git-source connection, even for a picked provider repo, since
-        automatic webhook registration doesn&apos;t support monorepo fan-out
-        yet.
-      </FieldDescription>
+      <FieldLabel>{t('services.additionalLabel')}</FieldLabel>
+      <FieldDescription>{t('services.additionalDescription')}</FieldDescription>
       <div className="space-y-2">
         {rows.map((row, index) => (
           <GitSourceServiceRow
@@ -49,7 +44,7 @@ export function AdditionalServicesField({
             pathPlaceholder="./worker/Dockerfile"
             withPort={false}
             disabled={disabled}
-            removeLabel="Remove additional service"
+            removeLabel={t('services.removeAdditional')}
             onChange={(patch) => {
               onUpdate(index, patch)
             }}
@@ -66,7 +61,7 @@ export function AdditionalServicesField({
           onClick={onAdd}
         >
           <PlusGlassIcon size="1.4em" />
-          Add service
+          {t('services.add')}
         </Button>
       </div>
       <FieldError errors={errorsFor(error)} />
@@ -99,16 +94,12 @@ export function ServicesMapField({
   onUpdate: (index: number, patch: Partial<ServiceSpecRow>) => void
   onRemove: (index: number) => void
 }) {
+  const { t } = useTranslation('gitSource')
   return (
     <Field>
-      <FieldLabel>{/* i18n-ignore */}Services (app.yaml-style)</FieldLabel>
+      <FieldLabel>{t('services.mapLabel')}</FieldLabel>
       <FieldDescription>
-        Every push fans out into an independent build and deploy per service,
-        the same POST .../deploy-spec fan-out a manual multi-service deploy
-        uses, under one app named <span className="font-mono">{appName}</span>.
-        Replaces the single-service build above; each service key becomes its
-        own real service named{' '}
-        <span className="font-mono">{appName}-&lt;key&gt;</span>.
+        {t('services.mapDescription', { appName })}
       </FieldDescription>
       <div className="space-y-2">
         {rows.map((row, index) => {
@@ -127,7 +118,7 @@ export function ServicesMapField({
                 disabled={disabled}
                 invalid={hasRowProblem}
                 describedBy={hasRowProblem ? rowErrorId : undefined}
-                removeLabel="Remove service"
+                removeLabel={t('services.remove')}
                 onChange={(patch) => {
                   onUpdate(index, patch)
                 }}
@@ -141,7 +132,7 @@ export function ServicesMapField({
                   role="alert"
                   className="text-xs text-destructive"
                 >
-                  Another row already uses this service name.
+                  {t('services.duplicate')}
                 </p>
               ) : rowIssues.length > 0 ? (
                 <ul id={rowErrorId} role="alert" className="space-y-0.5">
@@ -163,11 +154,11 @@ export function ServicesMapField({
           onClick={onAdd}
         >
           <PlusGlassIcon size="1.4em" />
-          Add service
+          {t('services.add')}
         </Button>
         {checking ? (
           <p className="text-xs text-muted-foreground" aria-live="polite">
-            Checking against the app spec schema...
+            {t('services.checking')}
           </p>
         ) : null}
         {unmatchedIssues.length > 0 ? (

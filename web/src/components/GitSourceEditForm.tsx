@@ -1,4 +1,5 @@
 import { useMemo, type Dispatch, type SetStateAction } from 'react'
+import { useTranslation } from 'react-i18next'
 import { LoaderGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
@@ -56,6 +57,7 @@ export function GitSourceEditForm({
   onSubmit: () => void
   onCancel: () => void
 }) {
+  const { t } = useTranslation('gitSource')
   // Live validation for the services rows: the same checks a deploy-spec
   // call would hit, debounced so it fires once typing settles.
   const servicesYaml = useMemo(
@@ -102,16 +104,11 @@ export function GitSourceEditForm({
     <div className="space-y-4">
       {!notConnected ? (
         <p className="text-sm text-muted-foreground">
-          Currently connected to{' '}
-          <span className="font-mono">{form.repoUrl}</span> @{' '}
-          <span className="font-mono">{form.branch}</span>. Pick a different
-          repository below to re-point it, or leave it as is to only update the
-          build settings.
+          {t('edit.connectedTo', { repo: form.repoUrl, branch: form.branch })}
         </p>
       ) : (
         <p className="text-sm text-muted-foreground">
-          Connect a repository so a push to its target branch auto-deploys this
-          app.
+          {t('edit.connectIntro')}
         </p>
       )}
 
@@ -142,7 +139,7 @@ export function GitSourceEditForm({
 
       <Field>
         <FieldLabel htmlFor="git-source-trigger-mode">
-          Deploy trigger
+          {t('edit.deployTrigger')}
         </FieldLabel>
         <Select
           value={form.triggerMode}
@@ -157,23 +154,20 @@ export function GitSourceEditForm({
           </SelectTrigger>
           <SelectContent>
             {TRIGGER_MODES.map((mode) => (
-              <SelectItem key={mode.value} value={mode.value}>
-                {mode.label}
+              <SelectItem key={mode} value={mode}>
+                {t(`triggers.${mode}.label`)}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
         <FieldDescription>
-          {
-            TRIGGER_MODES.find((mode) => mode.value === form.triggerMode)
-              ?.description
-          }
+          {t(`triggers.${form.triggerMode}.description`)}
         </FieldDescription>
       </Field>
 
       <Field>
         <FieldLabel htmlFor="git-source-fanout-mode">
-          Multi-service fan-out
+          {t('edit.fanoutMode')}
         </FieldLabel>
         <Tabs
           value={form.fanoutMode}
@@ -189,10 +183,10 @@ export function GitSourceEditForm({
             className="grid w-full grid-cols-2"
           >
             <TabsTrigger value="additional" disabled={pending}>
-              Additional services
+              {t('edit.fanoutAdditional')}
             </TabsTrigger>
             <TabsTrigger value="services" disabled={pending}>
-              Services map
+              {t('edit.fanoutServices')}
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -263,7 +257,7 @@ export function GitSourceEditForm({
       <div className="flex gap-2">
         <Button type="button" size="sm" disabled={pending} onClick={onSubmit}>
           {pending ? <LoaderGlassIcon className="size-5 animate-spin" /> : null}
-          {notConnected ? 'Connect' : 'Save'}
+          {notConnected ? t('edit.connect') : t('edit.save')}
         </Button>
         {!notConnected ? (
           <Button
@@ -273,7 +267,7 @@ export function GitSourceEditForm({
             disabled={pending}
             onClick={onCancel}
           >
-            Cancel
+            {t('edit.cancel')}
           </Button>
         ) : null}
       </div>

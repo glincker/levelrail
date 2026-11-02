@@ -1,9 +1,11 @@
+import { Suspense } from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { GitSourceCard } from './GitSourceCard'
 import type { AppDetail } from '../types/appDetail'
+import { AllI18n } from '../test/allI18n'
 import { createTestQueryClient } from '@/test/testQueryClient'
 
 // GitRepoSourcePicker itself (its provider status suspense queries, its
@@ -164,9 +166,13 @@ function callsTo(
 function renderCard() {
   const queryClient = createTestQueryClient()
   render(
-    <QueryClientProvider client={queryClient}>
-      <GitSourceCard app={app} />
-    </QueryClientProvider>,
+    <AllI18n>
+      <QueryClientProvider client={queryClient}>
+        <Suspense fallback={<div>loading</div>}>
+          <GitSourceCard app={app} />
+        </Suspense>
+      </QueryClientProvider>
+    </AllI18n>,
   )
 }
 
@@ -527,9 +533,10 @@ describe('GitSourceCard', () => {
     await user.click(screen.getByRole('button', { name: 'Edit' }))
 
     // Editing shows what stays connected unless a new pick is made.
-    await screen.findByText(/Currently connected to/)
     expect(
-      screen.getByText('https://example.com/repo.git', { selector: 'span' }),
+      await screen.findByText(
+        /Currently connected to https:\/\/example\.com\/repo\.git @ main/,
+      ),
     ).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Save' }))

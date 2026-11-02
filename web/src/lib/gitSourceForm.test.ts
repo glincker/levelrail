@@ -3,7 +3,7 @@ import {
   additionalServicesPayload,
   duplicateServiceNames,
   incompleteRowIndexes,
-  incompleteRowsMessage,
+  incompleteRowNumbers,
   servicesPayload,
   servicesSpecYaml,
 } from './gitSourceForm'
@@ -22,11 +22,9 @@ describe('gitSourceForm helpers', () => {
     )
   })
 
-  it('formats the missing-name message for one or many rows', () => {
-    expect(incompleteRowsMessage([0])).toBe('Row 1 is missing a service name.')
-    expect(incompleteRowsMessage([0, 2])).toBe(
-      'Rows 1, 3 are missing a service name.',
-    )
+  it('lists 1-based row numbers for the missing-name message', () => {
+    expect(incompleteRowNumbers([0])).toBe('1')
+    expect(incompleteRowNumbers([0, 2])).toBe('1, 3')
   })
 
   it('omits empty payloads and trims names', () => {

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type {
   FieldErrors,
   UseFormRegister,
@@ -30,33 +31,29 @@ export function CreateAppFromGitNetworkFields({
   healthCheckEnabled: boolean
   locked: boolean
 }) {
+  const { t } = useTranslation('gitSource')
   return (
     <>
       <div className="space-y-4">
-        <FieldSectionLabel>{/* i18n-ignore */}Networking</FieldSectionLabel>
+        <FieldSectionLabel>{t('network.networking')}</FieldSectionLabel>
         <Field>
-          <FieldLabel htmlFor="git-app-port">
-            {/* i18n-ignore */}Port
-          </FieldLabel>
+          <FieldLabel htmlFor="git-app-port">{t('network.port')}</FieldLabel>
           <Input
             id="git-app-port"
             type="number"
             step="1"
             min="1"
-            placeholder="e.g. 3000" // i18n-ignore
+            placeholder={t('network.portPlaceholder')}
             disabled={locked}
             {...register('port')}
           />
-          <FieldHint>
-            The port your app listens on inside its container, e.g. 3000 for a
-            typical Next.js app.
-          </FieldHint>
+          <FieldHint>{t('network.portHint')}</FieldHint>
           <FieldError errors={[formState.errors.port]} />
         </Field>
 
         <Field>
           <FieldLabel htmlFor="git-app-domain">
-            {/* i18n-ignore */}Domain (optional)
+            {t('network.domain')}
           </FieldLabel>
           <Input
             id="git-app-domain"
@@ -68,15 +65,12 @@ export function CreateAppFromGitNetworkFields({
             {...register('domain')}
           />
           <FieldError errors={[formState.errors.domain]} />
-          <FieldDescription>
-            Routed once its DNS record points here. A TLS certificate is issued
-            automatically, or add this later from the app&apos;s Domains tab.
-          </FieldDescription>
+          <FieldDescription>{t('network.domainDescription')}</FieldDescription>
         </Field>
       </div>
 
       <div className="space-y-4">
-        <FieldSectionLabel>{/* i18n-ignore */}Health check</FieldSectionLabel>
+        <FieldSectionLabel>{t('network.healthCheck')}</FieldSectionLabel>
         <Field orientation="horizontal">
           <Switch
             id="git-app-health-enabled"
@@ -87,13 +81,13 @@ export function CreateAppFromGitNetworkFields({
             disabled={locked}
           />
           <FieldLabel htmlFor="git-app-health-enabled">
-            Enable a health check
+            {t('network.healthEnable')}
           </FieldLabel>
         </Field>
         {healthCheckEnabled ? (
           <Field>
             <FieldLabel htmlFor="git-app-health-path">
-              {/* i18n-ignore */}Path
+              {t('network.healthPath')}
             </FieldLabel>
             <Input
               id="git-app-health-path"
@@ -102,11 +96,7 @@ export function CreateAppFromGitNetworkFields({
               disabled={locked}
               {...register('healthCheckPath')}
             />
-            <FieldHint>
-              Checked before cutting traffic to a new container, and to detect a
-              crashed one afterward. Railpack-detected apps that don&rsquo;t
-              serve this path should turn it off.
-            </FieldHint>
+            <FieldHint>{t('network.healthHint')}</FieldHint>
             <FieldError errors={[formState.errors.healthCheckPath]} />
           </Field>
         ) : null}

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { TrashGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -41,6 +42,7 @@ export function GitSourceServiceRow({
   onChange: (patch: Partial<RowValue>) => void
   onRemove: () => void
 }) {
+  const { t } = useTranslation('gitSource')
   return (
     <div className="flex items-start gap-2">
       <Input
@@ -53,7 +55,7 @@ export function GitSourceServiceRow({
           onChange({ serviceName: e.target.value })
         }}
         disabled={disabled}
-        aria-label="Service name" // i18n-ignore
+        aria-label={t('services.serviceName')}
         aria-invalid={invalid}
         aria-describedby={describedBy}
       />
@@ -65,14 +67,14 @@ export function GitSourceServiceRow({
       >
         <SelectTrigger
           className="w-40 shrink-0"
-          aria-label="Build type" // i18n-ignore
+          aria-label={t('services.buildType')}
         >
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
           {BUILD_PACKS.map((pack) => (
-            <SelectItem key={pack.value} value={pack.value}>
-              {pack.label}
+            <SelectItem key={pack} value={pack}>
+              {t(`buildPacks.${pack}`)}
             </SelectItem>
           ))}
         </SelectContent>
@@ -87,7 +89,7 @@ export function GitSourceServiceRow({
           onChange({ buildPath: e.target.value })
         }}
         disabled={disabled || row.buildType === 'railpack'}
-        aria-label="Build path" // i18n-ignore
+        aria-label={t('services.buildPath')}
       />
       {withPort ? (
         <Input
@@ -99,7 +101,7 @@ export function GitSourceServiceRow({
             onChange({ port: e.target.value })
           }}
           disabled={disabled}
-          aria-label="Port" // i18n-ignore
+          aria-label={t('services.port')}
         />
       ) : null}
       <Button

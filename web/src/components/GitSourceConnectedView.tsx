@@ -1,4 +1,5 @@
 import { Suspense, lazy } from 'react'
+import { useTranslation } from 'react-i18next'
 import { LoaderGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import type { AppDetail } from '../types/appDetail'
@@ -29,30 +30,34 @@ export function GitSourceConnectedView({
   onEdit: () => void
   onDisconnect: () => void
 }) {
+  const { t } = useTranslation('gitSource')
   const additional = Object.keys(source.additional_services ?? {})
   const services = Object.keys(source.services ?? {})
   return (
     <div className="space-y-3">
       <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1.5 text-sm">
-        <dt className="text-muted-foreground">{/* i18n-ignore */}Repository</dt>
+        <dt className="text-muted-foreground">{t('connected.repository')}</dt>
         <dd className="min-w-0 truncate font-mono">{source.repo_url}</dd>
-        <dt className="text-muted-foreground">{/* i18n-ignore */}Branch</dt>
+        <dt className="text-muted-foreground">{t('connected.branch')}</dt>
         <dd className="font-mono">{source.branch}</dd>
         <dt className="text-muted-foreground">
-          {/* i18n-ignore */}Deploy trigger
+          {t('connected.deployTrigger')}
         </dt>
         <dd>
-          {TRIGGER_MODES.find((m) => m.value === source.trigger_mode)?.label ??
-            source.trigger_mode}
+          {TRIGGER_MODES.includes(source.trigger_mode)
+            ? t(`triggers.${source.trigger_mode}.label`)
+            : source.trigger_mode}
         </dd>
-        <dt className="text-muted-foreground">
-          {/* i18n-ignore */}Deploy token
-        </dt>
-        <dd>{source.has_token ? 'Configured' : 'Not set (public repo)'}</dd>
+        <dt className="text-muted-foreground">{t('connected.deployToken')}</dt>
+        <dd>
+          {source.has_token
+            ? t('connected.tokenConfigured')
+            : t('connected.tokenNotSet')}
+        </dd>
         {additional.length > 0 ? (
           <>
             <dt className="text-muted-foreground">
-              {/* i18n-ignore */}Also deploys
+              {t('connected.alsoDeploys')}
             </dt>
             <dd className="font-mono">{additional.join(', ')}</dd>
           </>
@@ -60,7 +65,7 @@ export function GitSourceConnectedView({
         {services.length > 0 ? (
           <>
             <dt className="text-muted-foreground">
-              {/* i18n-ignore */}Services fan-out
+              {t('connected.servicesFanout')}
             </dt>
             <dd className="font-mono">{services.join(', ')}</dd>
           </>
@@ -75,14 +80,14 @@ export function GitSourceConnectedView({
 
       <GitSourceCopyField
         id="git-source-webhook-url-connected"
-        label="Webhook URL" // i18n-ignore
+        label={t('connected.webhookUrl')}
         value={`${window.location.origin}${source.webhook_url}`}
-        description="The webhook secret was only ever shown once, at connect time. Rotate it below to mint a new one, or disconnect and reconnect to also change the repository or branch." // i18n-ignore
+        description={t('connected.webhookNote')}
       />
 
       <div className="flex gap-2">
         <Button type="button" size="sm" variant="outline" onClick={onEdit}>
-          Edit
+          {t('connected.edit')}
         </Button>
         <RotateWebhookSecretDialog appName={app.name} />
         <Button
@@ -95,7 +100,7 @@ export function GitSourceConnectedView({
           {disconnecting ? (
             <LoaderGlassIcon className="size-5 animate-spin" />
           ) : null}
-          Disconnect
+          {t('connected.disconnect')}
         </Button>
       </div>
       <GitAccessValidate

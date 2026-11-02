@@ -1,0 +1,102 @@
+{
+  "card": {
+    "title": "Origen Git",
+    "loading": "Cargando...",
+    "pickRepoFirst": "Elige un repositorio o pega una URL primero.",
+    "updated": "Origen Git actualizado.",
+    "saveFailed": "No se pudo guardar el origen Git.",
+    "disconnected": "Origen Git desconectado.",
+    "disconnectFailed": "No se pudo desconectar el origen Git.",
+    "needService": "Añade al menos un servicio o vuelve al modo de servicio único.",
+    "rowsMissingName_one": "A la fila {{rows}} le falta el nombre del servicio.",
+    "rowsMissingName_other": "A las filas {{rows}} les falta el nombre del servicio."
+  },
+  "triggers": {
+    "push": {
+      "label": "Cada push",
+      "description": "Despliega en cada push a la rama de destino."
+    },
+    "release": {
+      "label": "Tags y releases",
+      "description": "Despliega solo con un push de tag o (solo en GitHub) una release publicada. Los push de rama nunca despliegan."
+    }
+  },
+  "buildPacks": {
+    "railpack": "Detección automática (Railpack)",
+    "dockerfile": "Dockerfile",
+    "static": "Sitio estático"
+  },
+  "connected": {
+    "repository": "Repositorio",
+    "branch": "Rama",
+    "deployTrigger": "Disparador de despliegue",
+    "deployToken": "Token de despliegue",
+    "tokenConfigured": "Configurado",
+    "tokenNotSet": "Sin definir (repositorio público)",
+    "alsoDeploys": "También despliega",
+    "servicesFanout": "Despliegue multiservicio",
+    "webhookUrl": "URL del webhook",
+    "webhookNote": "El secreto del webhook solo se mostró una vez, al conectar. Rótalo abajo para generar uno nuevo, o desconecta y vuelve a conectar para cambiar también el repositorio o la rama.",
+    "edit": "Editar",
+    "disconnect": "Desconectar"
+  },
+  "justConnected": {
+    "autoRegistered": "Origen Git conectado. Se registró un webhook de push automáticamente, sin configuración manual.",
+    "secretOnce": "Este secreto del webhook no se volverá a mostrar. Pega ambos valores ahora en la configuración de webhooks del repositorio.",
+    "webhookUrl": "URL del webhook",
+    "webhookSecret": "Secreto del webhook",
+    "secretHint": "Úsalo como secreto en un webhook \"Push\" de GitHub que apunte a la URL de arriba, con tipo de contenido application/json.",
+    "done": "Listo"
+  },
+  "copy": {
+    "copy": "Copiar",
+    "copied": "Copiado"
+  },
+  "edit": {
+    "connectedTo": "Conectado actualmente a {{repo}} @ {{branch}}. Elige otro repositorio abajo para redirigirlo, o déjalo como está para actualizar solo los ajustes de compilación.",
+    "connectIntro": "Conecta un repositorio para que un push a su rama de destino despliegue esta app automáticamente.",
+    "deployTrigger": "Disparador de despliegue",
+    "fanoutMode": "Despliegue multiservicio",
+    "fanoutAdditional": "Servicios adicionales",
+    "fanoutServices": "Mapa de servicios",
+    "connect": "Conectar",
+    "save": "Guardar",
+    "cancel": "Cancelar"
+  },
+  "buildPack": {
+    "label": "Paquete de compilación",
+    "autoDetect": "Detección automática",
+    "dockerfile": "Dockerfile",
+    "static": "Sitio estático",
+    "autoDetectDescription": "Recomendado. Levelrail detecta tu framework a partir del repositorio y lo compila automáticamente, sin necesidad de Dockerfile.",
+    "dockerfilePath": "Ruta del Dockerfile (opcional)",
+    "staticDescription": "Lo sirve directamente el ingress Caddy integrado, sin contenedor."
+  },
+  "services": {
+    "additionalLabel": "Servicios adicionales (opcional)",
+    "additionalDescription": "Recompila también estos servicios hermanos con el mismo push, para un monorepo con más de un servicio. Cada uno necesita el nombre de un servicio ya existente y su propia configuración de compilación. Guardar con cualquier fila rellena usa siempre la conexión directa de origen Git, incluso con un repositorio elegido de un proveedor, ya que el registro automático del webhook aún no admite el despliegue multiservicio de monorepos.",
+    "mapLabel": "Servicios (estilo app.yaml)",
+    "mapDescription": "Cada push se divide en una compilación y un despliegue independientes por servicio, el mismo reparto POST .../deploy-spec que usa un despliegue manual multiservicio, bajo una app llamada {{appName}}. Sustituye la compilación de servicio único de arriba; cada clave de servicio pasa a ser un servicio real llamado {{appName}}-[clave].",
+    "add": "Añadir servicio",
+    "removeAdditional": "Quitar servicio adicional",
+    "remove": "Quitar servicio",
+    "duplicate": "Otra fila ya usa este nombre de servicio.",
+    "checking": "Comprobando con el esquema de la especificación de la app...",
+    "serviceName": "Nombre del servicio",
+    "buildType": "Tipo de compilación",
+    "buildPath": "Ruta de compilación",
+    "port": "Puerto"
+  },
+  "network": {
+    "networking": "Red",
+    "port": "Puerto",
+    "portPlaceholder": "p. ej. 3000",
+    "portHint": "El puerto en el que escucha tu app dentro del contenedor, p. ej. 3000 para una app típica de Next.js.",
+    "domain": "Dominio (opcional)",
+    "domainDescription": "Se enruta cuando su registro DNS apunte aquí. Se emite un certificado TLS automáticamente, o añádelo más tarde desde la pestaña Dominios de la app.",
+    "healthCheck": "Comprobación de salud",
+    "healthEnable": "Activar una comprobación de salud",
+    "healthPath": "Ruta",
+    "healthHint": "Se comprueba antes de pasar el tráfico a un contenedor nuevo, y para detectar después uno caído. Las apps detectadas por Railpack que no sirvan esta ruta deberían desactivarla."
+  }
+}
