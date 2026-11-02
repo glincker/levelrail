@@ -13,7 +13,7 @@ describe('DomainTLSCertControl', () => {
     vi.unstubAllGlobals()
   })
 
-  it('is collapsed by default and expands on demand', async () => {
+  it('shows state and hint always and opens the form on Edit', async () => {
     const user = userEvent.setup()
     stubFetch({
       'GET /api/v1/apps/web/domains/app.example.com/tls-cert': () =>
@@ -23,7 +23,7 @@ describe('DomainTLSCertControl', () => {
       <DomainTLSCertControl appName="web" domain="app.example.com" />,
     )
     const toggle = await screen.findByRole('button', {
-      name: /I have my own certificate/,
+      name: 'Add certificate',
     })
     expect(toggle).toHaveAttribute('aria-expanded', 'false')
     expect(

@@ -323,7 +323,13 @@
       "recheck": "Re-check DNS",
       "automatic": "Automatic",
       "wildcard": "Wildcard",
-      "wildcardHint": "Matches every single label under this domain. Exact domains on other apps still win."
+      "wildcardHint": "Matches every single label under this domain. Exact domains on other apps still win.",
+      "details": "Domain settings",
+      "setPrimary": "Set as primary",
+      "move": "Move to another app",
+      "park": "Disconnect (park)",
+      "delete": "Delete domain",
+      "primary": "Primary"
     },
     "flag": {
       "waf": "WAF enabled",
@@ -641,7 +647,11 @@
       "revertConfirm": "Revert",
       "reverting": "Reverting...",
       "revertedToast": "Reverted {{domain}} to automatic TLS.",
-      "revertFailed": "Could not revert to automatic TLS."
+      "revertFailed": "Could not revert to automatic TLS.",
+      "automatic": "Automatic TLS",
+      "add": "Add certificate",
+      "replace": "Replace",
+      "close": "Close"
     }
   },
   "ingressUpstream": {
@@ -1205,5 +1215,67 @@
         "FAIL": "Failed"
       }
     }
+  },
+  "lifecycle": {
+    "pending": "Working...",
+    "park": {
+      "title": "Park {{domain}}?",
+      "body": "{{app}} stops serving this domain. It stays registered with its DNS and certificate state in the Parked group and can be attached to any app later.",
+      "dropsSettings": "Parking drops this domain's own settings: WAF and rate limit, own certificate and basic auth are removed and are not restored on attach.",
+      "keepsDnsCert": "DNS records and the automatic certificate state are kept. To keep the settings, move the domain to another app instead.",
+      "confirm": "Park domain",
+      "done": "{{domain}} is parked"
+    },
+    "move": {
+      "title": "Move {{domain}}",
+      "body": "Move this domain from {{app}} to another app. A collision check runs first.",
+      "keepsSettings": "Moving keeps the domain's own settings: WAF, own certificate and basic auth go with it.",
+      "target": "Move to",
+      "check": "Check and move",
+      "confirm": "Confirm move",
+      "needsConfirm": "Traffic for this domain changes owner. Confirm to continue.",
+      "done": "{{domain}} moved to {{app}}"
+    },
+    "delete": {
+      "title": "Delete {{domain}}?",
+      "body": "Removes the domain from {{app}} entirely. Type the domain to confirm.",
+      "confirm": "Delete",
+      "done": "{{domain}} deleted"
+    },
+    "attach": {
+      "title": "Attach {{domain}}",
+      "body": "Choose the app that should serve this parked domain.",
+      "confirm": "Attach",
+      "done": "{{domain}} attached to {{app}}"
+    },
+    "deleteParked": {
+      "title": "Delete parked domain {{domain}}?",
+      "body": "Forgets the domain and its parked DNS and certificate state. Type the domain to confirm."
+    }
+  },
+  "parked": {
+    "title": "Parked",
+    "hint": "Registered but routed by no app. Attach one to an app to serve it again.",
+    "from": "Parked from {{app}}",
+    "attach": "Attach",
+    "delete": "Delete {{domain}}"
+  },
+  "detail": {
+    "description": "Settings for this domain on {{app}}.",
+    "allSettings": "All settings",
+    "routing": "Routing",
+    "security": "Security",
+    "pages": "Pages",
+    "seo": "SEO",
+    "tls": "TLS"
+  },
+  "waf": {
+    "add": "Add WAF / rate limit",
+    "edit": "Edit",
+    "close": "Close",
+    "summaryWaf": "WAF: {{mode}}",
+    "summaryWafOff": "WAF off",
+    "summaryRate": "Rate limit {{rps}}/s, burst {{burst}}",
+    "summaryRateOff": "No rate limit"
   }
 }

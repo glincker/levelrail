@@ -82,6 +82,12 @@ func runDomains(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runDomainsCache(prog, args[1:], stdout, stderr, lookupEnv)
 	case "redirects":
 		return runDomainsRedirects(prog, args[1:], stdout, stderr, lookupEnv)
+	case "park":
+		return runDomainsPark(prog, args[1:], stdout, stderr, lookupEnv)
+	case "move":
+		return runDomainsMove(prog, args[1:], stdout, stderr, lookupEnv)
+	case "parked":
+		return runDomainsParked(prog, args[1:], stdout, stderr, lookupEnv)
 	case "standalone":
 		return runDomainsStandalone(prog, args[1:], stdout, stderr, lookupEnv)
 	case "ports":
@@ -125,6 +131,9 @@ func domainsUsage(prog string) string {
   %[1]s domains go-live <app> <domain> [flags]  create the DNS record and watch the domain go live
   %[1]s domains go-live runs|undo [flags]       automation history and one-step undo
   %[1]s domains backfill-base-domain [flags]    give existing apps without a domain <app>.<base domain>
+  %[1]s domains park <app> <domain> [flags]     take a domain off an app but keep it registered
+  %[1]s domains move <domain> --from A --to B   hand a domain to another app (collision check, --confirm)
+  %[1]s domains parked <verb> [flags]           list, attach or delete parked domains
   %[1]s domains standalone <verb> [flags]       proxy a domain to a port, address or URL without an app
   %[1]s domains provider <verb> [flags]       choose the free wildcard-DNS provider for automatic hostnames
 %[2]s

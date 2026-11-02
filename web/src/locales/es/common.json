@@ -1143,5 +1143,26 @@
     "memoryNote": "Este límite es el doble de la memoria recomendada de la plantilla, para dejar margen. Edítalo aquí para cambiarlo.",
     "recreateDowntime": "Recrear detiene el contenedor anterior antes de iniciar el nuevo, así que cada despliegue tiene una breve interrupción. Un despliegue que no pasa su comprobación de disponibilidad vuelve a la imagen anterior.",
     "strategyReason": "Definido por la plantilla: {{reason}}"
+  },
+  "visitors": {
+    "title": "Visitantes",
+    "windowLabel": "Ventana de tiempo",
+    "window": { "1h": "1 h", "24h": "24 h", "7d": "7 d" },
+    "requests": "Solicitudes",
+    "visitorsLabel": "Visitantes únicos",
+    "visitorsHint": "Visitantes únicos, contados de nuevo tras cada reinicio de privacidad de {{period}}. No son únicos de por vida.",
+    "trend": "Solicitudes en la ventana elegida",
+    "statusLabel": "Respuestas por clase",
+    "details": "Páginas y orígenes principales",
+    "topPaths": "Páginas principales",
+    "topReferrers": "Orígenes principales",
+    "none": "Sin registros",
+    "byDomain": "Por dominio",
+    "domainRow": "{{requests}} solicitudes, {{visitors}} visitantes",
+    "partial": "Los datos empiezan {{when}}, después del inicio de esta ventana, así que las cifras pueden ser parciales.",
+    "empty": "Aún no hay solicitudes en esta ventana.",
+    "loadError": "Las cifras de visitantes no están disponibles ahora.",
+    "retry": "Reintentar",
+    "viewTraffic": "Detalle de tráfico"
   }
 }

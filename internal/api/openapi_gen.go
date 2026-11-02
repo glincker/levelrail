@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1927 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1933 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -430,6 +430,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/uploads", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleUploadSource", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/urls", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppURLs", Description: "Exposure: port, direct host port and its tagged firewall rule. The write opens a host port, so it is AbilityWriteSensitive like firewall rules."},
 	{Method: "POST", Path: "/api/v1/apps/{name}/validate-spec", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleValidateSpec", Description: "Live app.yaml validation (apps_validate_spec.go): read-only, same AbilityRead/POST shape as preflight above. Never saves or deploys anything, only runs the submitted body through internal/spec's own Parse-time checks for an editor's earlier, friendlier feedback."},
+	{Method: "GET", Path: "/api/v1/apps/{name}/visitors", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppVisitors", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/watch", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppWatch", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/watch/stop", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleStopAppWatch", Description: ""},
 	{Method: "GET", Path: "/api/v1/deploys/failed", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListFailedDeploys", Description: ""},
@@ -1810,6 +1811,11 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/domains/automation/runs/{id}/undo", Ability: "AbilityRoot", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleUndoAutomationRun", Description: ""},
 	{Method: "GET", Path: "/api/v1/domains/dns-provider", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDomainDNSProvider", Description: "Not under /mail/, so the mail flag does not gate it: the Domains page uses it too."},
 	{Method: "GET", Path: "/api/v1/domains/dns-status", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDomainDNSStatus", Description: ""},
+	{Method: "POST", Path: "/api/v1/domains/move", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleMoveDomain", Description: ""},
+	{Method: "POST", Path: "/api/v1/domains/park", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleParkDomain", Description: ""},
+	{Method: "GET", Path: "/api/v1/domains/parked", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleListParkedDomains", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/domains/parked/{domain}", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDeleteParkedDomain", Description: ""},
+	{Method: "POST", Path: "/api/v1/domains/parked/{domain}/attach", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleAttachParkedDomain", Description: ""},
 	{Method: "GET", Path: "/api/v1/domains/standalone", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleListStandaloneDomains", Description: ""},
 	{Method: "POST", Path: "/api/v1/domains/standalone", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleCreateStandaloneDomain", Description: ""},
 	{Method: "GET", Path: "/api/v1/domains/standalone/candidates", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleStandaloneCandidates", Description: ""},

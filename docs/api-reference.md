@@ -684,6 +684,7 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/cdn/resync | AbilityWriteSensitive | handleResyncAppCDN |
 | GET | /api/v1/apps/{name}/game-status | AbilityRead | handleGetAppGameStatus |
 | GET | /api/v1/apps/{name}/export | AbilityRead | handleExportApp |
+| GET | /api/v1/apps/{name}/visitors | AbilityRead | handleAppVisitors |
 
 </Accordion>
 
@@ -1190,6 +1191,11 @@ Endpoints for:
 | POST | /api/v1/domains/{domain}/cutover/certificate | AbilityRoot | handleCutoverCertificate |
 | DELETE | /api/v1/domains/{domain}/cutover/certificate | AbilityRoot | handleCutoverCertificateRevert |
 | GET | /api/v1/domains/{domain}/verify | AbilityRead | handleDomainCutoverVerify |
+| GET | /api/v1/domains/parked | AbilityRead | handleListParkedDomains |
+| POST | /api/v1/domains/park | AbilityWriteSensitive | handleParkDomain |
+| POST | /api/v1/domains/move | AbilityWriteSensitive | handleMoveDomain |
+| POST | /api/v1/domains/parked/{domain}/attach | AbilityWriteSensitive | handleAttachParkedDomain |
+| DELETE | /api/v1/domains/parked/{domain} | AbilityWriteSensitive | handleDeleteParkedDomain |
 
 ## Built-in Container Registry
 

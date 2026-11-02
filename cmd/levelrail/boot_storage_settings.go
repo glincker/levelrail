@@ -44,6 +44,9 @@ func (s *bootState) wireStorageSettings() {
 	ingressdriver.DefaultAccessLog().SetRetentionSource(func() time.Duration {
 		return rs().AccessLogRetention(context.Background())
 	})
+	ingressdriver.DefaultAccessLog().SetVisitorRotationSource(func() time.Duration {
+		return rs().VisitorSaltRotation(context.Background())
+	})
 	backup.SetLocalRootSource(func() string {
 		return rs().String(context.Background(), runtimesettings.KeyBackupLocalRoot)
 	})

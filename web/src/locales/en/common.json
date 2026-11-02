@@ -1143,5 +1143,26 @@
     "tip": "Approval deploys exactly this image even if the tag moves.",
     "copy": "Copy full image digest",
     "copied": "Image digest copied"
+  },
+  "visitors": {
+    "title": "Visitors",
+    "windowLabel": "Time window",
+    "window": { "1h": "1h", "24h": "24h", "7d": "7d" },
+    "requests": "Requests",
+    "visitorsLabel": "Unique visitors",
+    "visitorsHint": "Unique visitors, counted again after each {{period}} privacy reset. Not lifetime uniques.",
+    "trend": "Requests over the selected window",
+    "statusLabel": "Responses by class",
+    "details": "Top pages and referrers",
+    "topPaths": "Top pages",
+    "topReferrers": "Top referrers",
+    "none": "None recorded",
+    "byDomain": "By domain",
+    "domainRow": "{{requests}} requests, {{visitors}} visitors",
+    "partial": "Data starts {{when}}, later than this window, so the numbers may be partial.",
+    "empty": "No requests in this window yet.",
+    "loadError": "Visitor numbers are unavailable right now.",
+    "retry": "Retry",
+    "viewTraffic": "Traffic details"
   }
 }

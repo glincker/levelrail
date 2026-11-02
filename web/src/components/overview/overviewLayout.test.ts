@@ -15,18 +15,17 @@ const healthy: OverviewLayoutInput = {
 }
 
 describe('computeOverviewLayout', () => {
-  it('healthy with traffic: access then metrics, no setup', () => {
+  it('healthy with traffic: metrics, activity, then access, no setup', () => {
     const l = computeOverviewLayout(healthy)
     expect(l.sections).toEqual([
-      'access',
       'kpis',
       'activity',
+      'access',
       'health',
       'details',
     ])
     expect(l.traffic).toBe('full')
     expect(l.setup).toBe('hidden')
-    expect(l.pairAttentionWithAccess).toBe(false)
   })
 
   it('healthy without traffic collapses the traffic block and sinks setup', () => {
@@ -46,10 +45,7 @@ describe('computeOverviewLayout', () => {
     for (const attentionCount of [1, 3]) {
       const l = computeOverviewLayout({ ...healthy, attentionCount })
       expect(l.sections[0]).toBe('attention')
-      expect(l.sections.indexOf('health')).toBeLessThan(
-        l.sections.indexOf('activity'),
-      )
-      expect(l.pairAttentionWithAccess).toBe(true)
+      expect(l.sections[1]).toBe('kpis')
     }
   })
 

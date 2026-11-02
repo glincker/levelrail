@@ -87,6 +87,9 @@ vi.mock('./DomainSearchVisibilityControl', () => ({
 }))
 vi.mock('./DomainTLSCertControl', () => ({ DomainTLSCertControl: () => null }))
 vi.mock('./DomainWafControl', () => ({ DomainWafControl: () => null }))
+vi.mock('./domains/DomainRowTools', () => ({
+  DomainRowTools: () => <div data-testid="row-tools" />,
+}))
 
 const testI18n = i18next.createInstance()
 void testI18n.use(initReactI18next).init({
@@ -134,7 +137,7 @@ describe('DomainEditor', () => {
       )
     })
     expect(screen.getByText('proxy tls')).toBeInTheDocument()
-    expect(screen.getByTestId('basic-auth')).toBeInTheDocument()
+    expect(screen.getByTestId('row-tools')).toBeInTheDocument()
   })
 
   it('adds an empty row and removes a row', async () => {

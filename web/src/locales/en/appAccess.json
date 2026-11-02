@@ -75,6 +75,11 @@
     "server": "This server only",
     "apps": "Other apps on this server"
   },
+  "dot": {
+    "ok": "Answering",
+    "down": "Not answering",
+    "unknown": "Not checked yet"
+  },
   "others": {
     "title": "Other ways in"
   },

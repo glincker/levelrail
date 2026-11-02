@@ -323,7 +323,13 @@
       "recheck": "Volver a comprobar el DNS",
       "automatic": "Automático",
       "wildcard": "Comodín",
-      "wildcardHint": "Coincide con cada etiqueta individual bajo este dominio. Los dominios exactos de otras aplicaciones siguen teniendo prioridad."
+      "wildcardHint": "Coincide con cada etiqueta individual bajo este dominio. Los dominios exactos de otras aplicaciones siguen teniendo prioridad.",
+      "details": "Ajustes del dominio",
+      "setPrimary": "Definir como principal",
+      "move": "Mover a otra app",
+      "park": "Desconectar (aparcar)",
+      "delete": "Eliminar dominio",
+      "primary": "Principal"
     },
     "flag": {
       "waf": "WAF activado",
@@ -641,7 +647,11 @@
       "revertConfirm": "Volver",
       "reverting": "Volviendo...",
       "revertedToast": "{{domain}} volvió a TLS automático.",
-      "revertFailed": "No se pudo volver a TLS automático."
+      "revertFailed": "No se pudo volver a TLS automático.",
+      "automatic": "TLS automático",
+      "add": "Añadir certificado",
+      "replace": "Reemplazar",
+      "close": "Cerrar"
     }
   },
   "ingressUpstream": {
@@ -1205,5 +1215,67 @@
         "FAIL": "Fallido"
       }
     }
+  },
+  "lifecycle": {
+    "pending": "Trabajando...",
+    "park": {
+      "title": "¿Aparcar {{domain}}?",
+      "body": "{{app}} deja de servir este dominio. Sigue registrado con su DNS y certificado en el grupo Aparcados y se puede asociar a cualquier app más tarde.",
+      "dropsSettings": "Aparcar elimina los ajustes propios del dominio: WAF y límite de peticiones, certificado propio y autenticación básica se borran y no se restauran al asociarlo.",
+      "keepsDnsCert": "Se conservan los registros DNS y el estado del certificado automático. Para conservar los ajustes, mueve el dominio a otra app.",
+      "confirm": "Aparcar dominio",
+      "done": "{{domain}} aparcado"
+    },
+    "move": {
+      "title": "Mover {{domain}}",
+      "body": "Mueve este dominio de {{app}} a otra app. Antes se comprueban colisiones.",
+      "keepsSettings": "Mover conserva los ajustes propios del dominio: WAF, certificado propio y autenticación básica se van con él.",
+      "target": "Mover a",
+      "check": "Comprobar y mover",
+      "confirm": "Confirmar movimiento",
+      "needsConfirm": "El tráfico de este dominio cambia de dueño. Confirma para continuar.",
+      "done": "{{domain}} movido a {{app}}"
+    },
+    "delete": {
+      "title": "¿Eliminar {{domain}}?",
+      "body": "Quita el dominio de {{app}} por completo. Escribe el dominio para confirmar.",
+      "confirm": "Eliminar",
+      "done": "{{domain}} eliminado"
+    },
+    "attach": {
+      "title": "Asociar {{domain}}",
+      "body": "Elige la app que debe servir este dominio aparcado.",
+      "confirm": "Asociar",
+      "done": "{{domain}} asociado a {{app}}"
+    },
+    "deleteParked": {
+      "title": "¿Eliminar el dominio aparcado {{domain}}?",
+      "body": "Olvida el dominio y su estado de DNS y certificado. Escribe el dominio para confirmar."
+    }
+  },
+  "parked": {
+    "title": "Aparcados",
+    "hint": "Registrados pero sin app que los sirva. Asocia uno a una app para servirlo de nuevo.",
+    "from": "Aparcado desde {{app}}",
+    "attach": "Asociar",
+    "delete": "Eliminar {{domain}}"
+  },
+  "detail": {
+    "description": "Ajustes de este dominio en {{app}}.",
+    "allSettings": "Todos los ajustes",
+    "routing": "Enrutamiento",
+    "security": "Seguridad",
+    "pages": "Páginas",
+    "seo": "SEO",
+    "tls": "TLS"
+  },
+  "waf": {
+    "add": "Añadir WAF / límite de tasa",
+    "edit": "Editar",
+    "close": "Cerrar",
+    "summaryWaf": "WAF: {{mode}}",
+    "summaryWafOff": "WAF desactivado",
+    "summaryRate": "Límite {{rps}}/s, ráfaga {{burst}}",
+    "summaryRateOff": "Sin límite de tasa"
   }
 }

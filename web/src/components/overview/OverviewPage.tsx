@@ -39,6 +39,7 @@ import { ResourceTiles } from './ResourceTiles'
 import { useResourceReading } from './useResourceReading'
 import { isImageDeploy } from './suggestions'
 import { TrafficTiles } from './TrafficTiles'
+import { VisitorsCard } from './VisitorsCard'
 import { useAppUrl } from './useAppUrl'
 import { useOverviewActions } from './useOverviewActions'
 import { useOverviewHotkeys } from './useOverviewHotkeys'
@@ -156,21 +157,26 @@ export function OverviewPage({
       />
     ),
     access: (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <AppAccessCard appName={app.name} />
         <AppAccessDetails app={app} />
       </div>
     ),
     kpis: (
-      <section
-        aria-label="Live traffic and resources"
-        className="grid grid-cols-[repeat(auto-fit,minmax(10.5rem,1fr))] gap-3"
-      >
-        {layout.containerMetrics ? <ResourceTiles reading={reading} /> : null}
+      <div className="space-y-4">
+        <section
+          aria-label="Live traffic and resources"
+          className="grid grid-cols-[repeat(auto-fit,minmax(10.5rem,1fr))] gap-3"
+        >
+          {layout.containerMetrics ? <ResourceTiles reading={reading} /> : null}
+          {layout.traffic !== 'hidden' ? (
+            <TrafficTiles appName={app.name} url={url} />
+          ) : null}
+        </section>
         {layout.traffic !== 'hidden' ? (
-          <TrafficTiles appName={app.name} url={url} />
+          <VisitorsCard appName={app.name} />
         ) : null}
-      </section>
+      </div>
     ),
     health: <AppHealthScorePanel appName={app.name} />,
     activity: (
@@ -206,10 +212,8 @@ export function OverviewPage({
     ),
     details: <DetailsSection app={app} conditions={conditions} />,
   }
-  const pairing = layout.pairAttentionWithAccess
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {actions.confirmDialog}
       <OverviewHero
         app={app}
@@ -227,26 +231,9 @@ export function OverviewPage({
       />
       <FailureContextCard appName={app.name} />
       <RecommendedNextCard app={app} latest={latest} />
-      {pairing ? (
-        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
-          <div className="space-y-6">
-            {sections.attention}
-            {sections.kpis}
-          </div>
-          {sections.access}
-        </div>
-      ) : null}
-      {layout.sections
-        .filter(
-          (id) =>
-            !(
-              pairing &&
-              (id === 'attention' || id === 'access' || id === 'kpis')
-            ),
-        )
-        .map((id) => (
-          <Fragment key={id}>{sections[id]}</Fragment>
-        ))}
+      {layout.sections.map((id) => (
+        <Fragment key={id}>{sections[id]}</Fragment>
+      ))}
       <DeploySheet
         appName={app.name}
         tab={deployTab}

@@ -11,14 +11,19 @@ const (
 	KeyIngressMaxBodyBytes  = "ingress.max_body_bytes"
 	KeyAccessLogRetention   = "telemetry.access_log_retention"
 	KeyIngressFallbackCerts = "ingress.fallback_certs"
+	// KeyVisitorSaltRotation sets how often the salt behind visitor hashes changes.
+	KeyVisitorSaltRotation = "telemetry.visitor_salt_rotation"
 	// FallbackCertsEager and FallbackCertsLazy are the accepted ingress.fallback_certs values.
-	FallbackCertsEager        = "eager"
-	FallbackCertsLazy         = "lazy"
-	ingressBodyCeiling        = 10 << 30
-	ingressBodyDefault        = 1 << 30
-	minAccessLogRetention     = time.Hour
-	maxAccessLogRetention     = 365 * 24 * time.Hour
-	defaultAccessLogRetention = maxAccessLogRetention
+	FallbackCertsEager         = "eager"
+	FallbackCertsLazy          = "lazy"
+	ingressBodyCeiling         = 10 << 30
+	ingressBodyDefault         = 1 << 30
+	minAccessLogRetention      = time.Hour
+	maxAccessLogRetention      = 365 * 24 * time.Hour
+	defaultAccessLogRetention  = maxAccessLogRetention
+	minVisitorSaltRotation     = time.Hour
+	maxVisitorSaltRotation     = 30 * 24 * time.Hour
+	defaultVisitorSaltRotation = 24 * time.Hour
 )
 
 func init() {
@@ -39,6 +44,24 @@ func init() {
 		Title:       "Access log retention",
 		Description: "How long the recent-requests view keeps a request, from 1h to 8760h; the ring still holds only the latest entries per route. The next read uses a changed value. An environment value of 0 now means the maximum.",
 	})
+	Register(Definition{
+		Key: KeyVisitorSaltRotation, Category: CategoryObservability, Kind: KindDuration, Default: defaultVisitorSaltRotation.String(),
+		Env: "APP_VISITOR_SALT_ROTATION", Apply: ApplyLive, CheckValue: durationRangeCheck(minVisitorSaltRotation, maxVisitorSaltRotation),
+		Title:       "Visitor hash salt rotation",
+		Description: "How often the salt used to hash client addresses for the visitor counts changes, from 1h to 720h. Addresses are never stored; the same person is counted once per salt period, so a shorter period is more private and counts a returning visitor more than once. The next read uses a changed value.",
+	})
+}
+
+// VisitorSaltRotation returns the salt period forced into its range.
+func (s *Service) VisitorSaltRotation(ctx context.Context) time.Duration {
+	d := s.Duration(ctx, KeyVisitorSaltRotation)
+	switch {
+	case d < minVisitorSaltRotation:
+		return defaultVisitorSaltRotation
+	case d > maxVisitorSaltRotation:
+		return maxVisitorSaltRotation
+	}
+	return d
 }
 
 // AccessLogRetention returns the access log window forced into its range, so a stray env seed can never hide every record.

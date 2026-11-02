@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { GlobeGlassIcon, PlusGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import { DOMAIN_PATTERN } from '../lib/domainWizard'
 import { DomainEnvironmentTabs } from './DomainEnvironmentTabs'
+import { DomainRowTools } from './domains/DomainRowTools'
 import { DomainStepper } from './domains/DomainStepper'
 import type { AppDetail } from '../types/appDetail'
 import { useUpdateApp } from '../queries/apps'
@@ -15,15 +16,6 @@ import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { AutomaticDomainRow } from './AutomaticDomainRow'
 import { DomainDnsCheck } from './DomainDnsCheck'
 import { ProxyDomainStatus, ProxyHandledTlsBadge } from './ProxyDomainStatus'
-import { DomainDnsRecordsControl } from './DomainDnsRecordsControl'
-import { DomainBasicAuthControl } from './DomainBasicAuthControl'
-import { DomainAuthGateControl } from './DomainAuthGateControl'
-import { DomainErrorPagesControl } from './DomainErrorPagesControl'
-import { DomainMaintenanceControl } from './DomainMaintenanceControl'
-import { DomainRedirectControl } from './DomainRedirectControl'
-import { DomainSearchVisibilityControl } from './DomainSearchVisibilityControl'
-import { DomainTLSCertControl } from './DomainTLSCertControl'
-import { DomainWafControl } from './DomainWafControl'
 import { certRenewalBadge } from '../lib/certStatus'
 import { certTruth } from '../lib/certTruth'
 import { CertTruthBadge } from './CertTruthBadge'
@@ -234,39 +226,7 @@ export function DomainEditor({ app }: { app: AppDetail }) {
                                 appName={app.name}
                                 domain={domain}
                               />
-                              <DomainDnsRecordsControl
-                                appName={app.name}
-                                domain={domain}
-                              />
-                              <DomainBasicAuthControl
-                                appName={app.name}
-                                domain={domain}
-                              />
-                              <DomainAuthGateControl
-                                appName={app.name}
-                                domain={domain}
-                              />
-                              <DomainMaintenanceControl
-                                appName={app.name}
-                                domain={domain}
-                              />
-                              <DomainRedirectControl
-                                appName={app.name}
-                                domain={domain}
-                              />
-                              <DomainTLSCertControl
-                                appName={app.name}
-                                domain={domain}
-                              />
-                              <DomainWafControl
-                                appName={app.name}
-                                domain={domain}
-                              />
-                              <DomainErrorPagesControl
-                                appName={app.name}
-                                domain={domain}
-                              />
-                              <DomainSearchVisibilityControl
+                              <DomainRowTools
                                 appName={app.name}
                                 domain={domain}
                               />

@@ -144,11 +144,10 @@ export function AppAccessCard({ appName }: { appName: string }) {
 
   return (
     <Card aria-label={t('title')}>
-      <CardHeader>
-        <CardTitle>{t('title')}</CardTitle>
-        <p className="text-sm text-muted-foreground">{t('description')}</p>
+      <CardHeader className="pb-0">
+        <CardTitle className="text-sm">{t('title')}</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-2">
         {isPending ? (
           <div className="space-y-2" aria-hidden="true">
             {Array.from({ length: 3 }, (_, i) => (
@@ -193,7 +192,7 @@ export function AppAccessCard({ appName }: { appName: string }) {
             ) : null}
             {model.others.length > 0 ? (
               <section aria-label={t('others.title')}>
-                <h3 className="text-sm font-semibold">{t('others.title')}</h3>
+                <h3 className="sr-only">{t('others.title')}</h3>
                 <ul className="divide-y divide-border">
                   {model.others.map(row)}
                 </ul>

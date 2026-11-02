@@ -75,6 +75,11 @@
     "server": "Solo este servidor",
     "apps": "Otras aplicaciones de este servidor"
   },
+  "dot": {
+    "ok": "Responde",
+    "down": "No responde",
+    "unknown": "Sin comprobar"
+  },
   "others": {
     "title": "Otras formas de entrar"
   },

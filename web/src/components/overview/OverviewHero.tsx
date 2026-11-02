@@ -6,7 +6,6 @@ import type { ReconcileCondition } from '../../types/deploy'
 import type { DeployAttempt } from '../../types/deployAttempt'
 import { computeDeployStages } from '../../lib/deployStages'
 import { deriveHeroStatus, phaseWords } from './heroStatus'
-import { DeployPreviewThumb } from '../DeployPreviewThumb'
 import { HeroActions } from './HeroActions'
 import { ReleaseLine } from './ReleaseLine'
 import { TagChips } from './TagChips'
@@ -59,10 +58,10 @@ export function OverviewHero({
   return (
     <section
       aria-label="App summary"
-      className="flex flex-col gap-4 rounded-[var(--glinui-radius-lg)] border border-border bg-card p-4 lg:flex-row lg:items-start lg:justify-between"
+      className="flex flex-col gap-2 rounded-[var(--glinui-radius-lg)] border border-border bg-card px-4 py-3 lg:flex-row lg:items-center lg:justify-between lg:gap-4"
     >
-      <div className="min-w-0 space-y-3">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+      <div className="min-w-0 space-y-1.5">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <Display as="h1" size="page" className="truncate">
             {app.name}
           </Display>
@@ -72,6 +71,7 @@ export function OverviewHero({
             live={status.live}
             title={status.title}
           />
+          <AppLiveBadge app={app.name} />
           {runningStage && latestAttempt ? (
             <Link
               to="/apps/$name/deploys/$deployId/logs"
@@ -82,27 +82,17 @@ export function OverviewHero({
             </Link>
           ) : null}
         </div>
-        <UrlLine appName={app.name} url={url} />
-        <AppLiveBadge app={app.name} />
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          <UrlLine appName={app.name} url={url} />
+          <ReleaseLine app={app} latest={released ?? latestAttempt} />
+        </div>
         <AutoUrlBetaNote appName={app.name} />
         <AutoUrlTlsNote appName={app.name} />
-        <ReleaseLine app={app} latest={released ?? latestAttempt} />
         <TagChips appName={app.name} tags={app.tags} />
       </div>
-      <div className="flex shrink-0 flex-col gap-3 lg:items-end">
+      <div className="flex shrink-0 flex-wrap items-center gap-2 lg:justify-end">
         <AppHeaderBadges app={app} attentionCount={attentionCount} />
         <HeroActions app={app} url={url} onDeploy={onDeploy} />
-        {released ? (
-          <DeployPreviewThumb
-            appName={app.name}
-            deploymentId={released.id}
-            imageUrl={released.preview_image_url}
-            commitSha={released.commit_sha}
-            canRecapture
-            size="md"
-            hideWhenEmpty
-          />
-        ) : null}
       </div>
     </section>
   )

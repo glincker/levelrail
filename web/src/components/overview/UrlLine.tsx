@@ -37,7 +37,7 @@ export function UrlLine({
         href={url}
         target="_blank"
         rel="noreferrer"
-        className="inline-flex min-w-0 items-center gap-1.5 truncate text-base font-medium text-primary hover:underline"
+        className="inline-flex min-w-0 items-center gap-1.5 truncate text-sm font-medium text-primary hover:underline"
       >
         <GlobeGlassIcon className="size-5 shrink-0" aria-hidden="true" />
         <span className="truncate">{url.replace(/^https?:\/\//, '')}</span>

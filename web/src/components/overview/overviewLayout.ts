@@ -15,8 +15,6 @@ export interface OverviewLayoutInput {
 
 export interface OverviewLayout {
   sections: OverviewSection[]
-  /** Attention and Access share one row at lg and up. */
-  pairAttentionWithAccess: boolean
   containerMetrics: boolean
   traffic: 'full' | 'hint' | 'hidden'
   setup: 'hidden' | 'collapsed'
@@ -34,13 +32,12 @@ export function computeOverviewLayout(i: OverviewLayoutInput): OverviewLayout {
   const setupVisible = !i.setupDismissed && i.setupRemaining > 0
 
   const sections: OverviewSection[] = failing
-    ? ['attention', 'access', 'kpis', 'health', 'activity', 'details']
-    : ['access', 'kpis', 'activity', 'health', 'details']
+    ? ['attention', 'kpis', 'activity', 'access', 'health', 'details']
+    : ['kpis', 'activity', 'access', 'health', 'details']
   if (setupVisible) sections.splice(sections.indexOf('details'), 0, 'setup')
 
   return {
     sections,
-    pairAttentionWithAccess: failing,
     containerMetrics,
     traffic,
     setup: setupVisible ? 'collapsed' : 'hidden',

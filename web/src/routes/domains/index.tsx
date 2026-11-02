@@ -23,6 +23,7 @@ import {
   DomainsTable,
   DomainsTableSkeleton,
 } from '../../components/DomainsTable'
+import { ParkedDomainsGroup } from '../../components/domains/ParkedDomainsGroup'
 import { DomainsStatusBar } from '../../components/domains/DomainsStatusBar'
 import { serverAddressQueryOptions } from '../../queries/serverAddress'
 import { useProxyIntegration } from '../../queries/proxyIntegration'
@@ -169,6 +170,8 @@ function DomainsPage() {
           }}
         />
       )}
+
+      <ParkedDomainsGroup />
 
       <AddDomainsDialog
         open={addOpen}

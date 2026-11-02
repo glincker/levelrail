@@ -22,3 +22,9 @@ export const TRAFFIC_WINDOW_MINUTES = numberFromEnv(
 )
 
 export const TRAFFIC_REFETCH_MS = 15_000
+
+/** Visitors card refresh; the source is an in-memory ring, so a slow poll is enough. */
+export const VISITORS_REFETCH_MS = numberFromEnv(
+  import.meta.env.VITE_OVERVIEW_VISITORS_REFETCH_MS,
+  60_000,
+)
