@@ -221,6 +221,7 @@ export async function createDatabase(
 export function useCreateDatabase() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: createDatabase,
     onSuccess: (created) => {
       queryClient.setQueryData(databaseKeys.detail(created.name), created)
@@ -265,6 +266,7 @@ export async function deleteDatabase({
 export function useDeleteDatabase() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: deleteDatabase,
     onSuccess: (_data, { name }) => {
       queryClient.removeQueries({ queryKey: databaseKeys.detail(name) })
@@ -568,6 +570,7 @@ export async function setDatabaseResources(
 export function useSetDatabaseResources() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: ({
       name,
       resources,
@@ -608,6 +611,7 @@ export async function setDatabaseVersion(
 export function useSetDatabaseVersion() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: ({ name, version }: { name: string; version: string }) =>
       setDatabaseVersion(name, version),
     onSuccess: (updated) => {
@@ -674,6 +678,7 @@ export async function setDatabaseBackupSchedule({
 export function useSetDatabaseBackupSchedule() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: setDatabaseBackupSchedule,
     onSuccess: (result) => {
       queryClient.setQueryData(

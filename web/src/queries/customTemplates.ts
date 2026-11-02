@@ -112,6 +112,7 @@ export function useCustomTemplates() {
 export function useSaveAppAsTemplate() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: ({
       appName,
       request,
@@ -130,6 +131,7 @@ export function useSaveAppAsTemplate() {
 export function useDeleteCustomTemplate() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (id: string) => deleteCustomTemplate(id),
     onSuccess: (_data, id) => {
       void queryClient.invalidateQueries({

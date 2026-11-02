@@ -46,8 +46,12 @@ export function CodeLoginForm({
   const [mfaToken, setMfaToken] = useState<string | null>(null)
   const [expiresAt, setExpiresAt] = useState<number | null>(null)
   const [now, setNow] = useState(() => Date.now())
-  const request = useMutation({ mutationFn: requestLoginCode })
+  const request = useMutation({
+    meta: { errorToast: false },
+    mutationFn: requestLoginCode,
+  })
   const redeem = useMutation<LoginResult, Error, string>({
+    meta: { errorToast: false },
     mutationFn: redeemLoginCode,
     onSuccess: (result) => {
       if (isMFARequired(result)) {

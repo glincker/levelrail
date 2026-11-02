@@ -56,6 +56,7 @@ export async function rotateMasterKey(
 export function useRotateMasterKey() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: rotateMasterKey,
     onSettled: () =>
       queryClient.invalidateQueries({ queryKey: secretBindingKeys.status }),

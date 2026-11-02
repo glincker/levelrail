@@ -104,6 +104,7 @@ export function useDdnsStatus() {
 export function useUpdateDdnsSettings() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async (update: DdnsUpdate) =>
       readJSON<DdnsSettings>(
         await fetch('/api/v1/settings/ddns', {

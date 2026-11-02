@@ -164,6 +164,7 @@ export function useBuildLimits() {
 export function useSetBuildLimits() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (req: BuildLimitsRequest) =>
       requestJson<BuildLimits>(
         '/api/v1/build-limits',
@@ -183,6 +184,7 @@ export function useSetBuildLimits() {
 export function useResetBuildLimits() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: () =>
       requestJson<BuildLimits>(
         '/api/v1/build-limits',
@@ -215,6 +217,7 @@ export function useAppBuildLimits(app: string) {
 export function useSetAppBuildLimits(app: string) {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (req: BuildLimitsRequest) =>
       requestJson<AppBuildLimits>(
         appLimitsUrl(app),

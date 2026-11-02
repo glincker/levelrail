@@ -101,6 +101,7 @@ export async function deploySpec(
 export function useDeploySpec(appName: string) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (input: DeploySpecInput) => deploySpec(appName, input),
     onSuccess: () => {
       void queryClient.invalidateQueries({

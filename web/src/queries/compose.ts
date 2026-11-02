@@ -51,6 +51,7 @@ export async function deployCompose(
 export function useDeployCompose() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: ({
       name,
       composeYaml,

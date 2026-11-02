@@ -89,6 +89,7 @@ export function useModelCache() {
 export function usePruneModelCache() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (vars: { dryRun: boolean; volumes?: string[] }) =>
       requestJson<CachePruneResult>(
         '/api/v1/model-cache/prune',

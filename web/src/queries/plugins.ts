@@ -193,6 +193,7 @@ export function useInstallPlugin() {
 
 export function useInspectPlugin() {
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (input: InstallPluginInput) =>
       send<PluginPreview>('POST', '/api/v1/plugins/inspect', input),
   })

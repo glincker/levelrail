@@ -145,6 +145,7 @@ export async function updateApp(app: AppDetail): Promise<AppDetail> {
 export function useUpdateApp(name: string) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: updateApp,
     onSuccess: (updated) => {
       queryClient.setQueryData(appKeys.detail(name), updated)
@@ -236,6 +237,7 @@ export async function createApp(req: CreateAppRequest): Promise<AppDetail> {
 export function useCreateApp() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: createApp,
     onSuccess: (created) => {
       queryClient.setQueryData(appKeys.detail(created.name), created)
@@ -343,6 +345,7 @@ export async function setAppEnvironment(
 export function useSetAppEnvironment() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: ({
       name,
       environmentId,
@@ -662,6 +665,7 @@ export async function restartApp(name: string): Promise<AppDetail> {
 export function useRestartApp() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: restartApp,
     onSuccess: (updated) => {
       queryClient.setQueryData(appKeys.detail(updated.name), updated)
@@ -703,6 +707,7 @@ async function startApp(name: string): Promise<AppDetail> {
 export function useStopApp() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: stopApp,
     onSuccess: (updated) => {
       queryClient.setQueryData(appKeys.detail(updated.name), updated)
@@ -797,6 +802,7 @@ export async function cloneApp(
 export function useCloneApp() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: ({
       name,
       newName,
@@ -861,6 +867,7 @@ export async function deleteApp(
 export function useDeleteApp() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: deleteApp,
     onSuccess: (_data, input) => {
       const name = typeof input === 'string' ? input : input.name

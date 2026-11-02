@@ -116,6 +116,7 @@ export async function setSharedEnvSecret(
 export function useSetSharedEnvSecret(scope: SharedEnvScope, id: string) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (input: SetSharedEnvSecretInput) =>
       setSharedEnvSecret(scope, id, input),
     onSuccess: () => {
@@ -151,6 +152,7 @@ export async function deleteSharedEnvSecret(
 export function useDeleteSharedEnvSecret(scope: SharedEnvScope, id: string) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (key: string) => deleteSharedEnvSecret(scope, id, key),
     onSuccess: () => {
       void queryClient.invalidateQueries({

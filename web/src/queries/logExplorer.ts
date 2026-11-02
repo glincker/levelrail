@@ -115,6 +115,7 @@ export function useSavedLogQueries(appName: string) {
 export function useSaveLogQuery(appName: string) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async (req: SavedLogQueryRequest): Promise<SavedLogQuery> => {
       const res = await fetch('/api/v1/logs/queries', {
         method: 'POST',

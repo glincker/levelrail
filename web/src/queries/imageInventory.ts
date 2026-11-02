@@ -125,6 +125,7 @@ export function useImageLayers(node: string, id: string | null) {
 export function useImageGC(node: string) {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async (dryRun: boolean): Promise<ImageGCResult> =>
       json<ImageGCResult>(
         await fetch('/api/v1/images/gc', {
@@ -159,6 +160,7 @@ export interface ImageSignaturePolicyResult {
 
 export function useValidateSignaturePolicy() {
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async (ref: string): Promise<ImageSignaturePolicyResult> =>
       json<ImageSignaturePolicyResult>(
         await fetch('/api/v1/images/signature-policy/validate', {

@@ -268,6 +268,7 @@ export async function deleteSecretValue(
 export function useConvertToSecret(app: string) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (key: string) =>
       postJSON<undefined>(
         `${appPath(app)}/env/${encodeURIComponent(key)}/convert-to-secret`,

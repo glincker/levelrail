@@ -161,6 +161,7 @@ export function useBuildAction(action: 'cancel' | 'retry') {
 export function usePruneBuildCache(node: string) {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async (apply: boolean): Promise<BuildCachePrune> =>
       json<BuildCachePrune>(
         await fetch('/api/v1/builds/cache/prune', {

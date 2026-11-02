@@ -116,6 +116,7 @@ export function usePrivateNetworkMap() {
 function useInvalidating<V, R>(fn: (v: V) => Promise<R>) {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: fn,
     onSuccess: () => qc.invalidateQueries({ queryKey: privateNetworkKeys.all }),
   })

@@ -49,6 +49,7 @@ export async function setAppPreviewEnvOverride(
 export function useSetAppPreviewEnvOverride(appName: string) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (input: SetAppPreviewEnvOverrideInput) =>
       setAppPreviewEnvOverride(appName, input),
     onSuccess: (saved) => {

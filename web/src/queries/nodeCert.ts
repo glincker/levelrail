@@ -26,7 +26,10 @@ export async function createNodeReenrollToken(
 }
 
 export function useCreateNodeReenrollToken() {
-  return useMutation({ mutationFn: createNodeReenrollToken })
+  return useMutation({
+    meta: { errorToast: false },
+    mutationFn: createNodeReenrollToken,
+  })
 }
 
 export async function revokeNodeCert(id: string): Promise<NodeResource> {
@@ -46,6 +49,7 @@ export async function revokeNodeCert(id: string): Promise<NodeResource> {
 export function useRevokeNodeCert() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: revokeNodeCert,
     onSuccess: (updated) => {
       queryClient.setQueryData(nodeKeys.detail(updated.id), updated)

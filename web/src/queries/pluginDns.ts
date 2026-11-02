@@ -50,6 +50,7 @@ export function useDnsProviderPlugin() {
 export function useSetDnsProviderPlugin() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (plugin: string) =>
       call<DnsProviderPlugin>('PUT', SETTING_URL, { plugin }),
     onSuccess: (data) => {

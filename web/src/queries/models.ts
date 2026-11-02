@@ -116,6 +116,7 @@ export function useGpuNodes() {
 export function useCreateModel() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (req: CreateModelRequest) =>
       requestJson<CreateModelResponse>(
         '/api/v1/models',

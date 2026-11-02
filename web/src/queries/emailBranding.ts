@@ -72,6 +72,7 @@ export function useEmailBranding() {
 export function useUpdateEmailBranding() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (b: EmailBranding) =>
       send<EmailBranding>('PUT', '/api/v1/settings/email/branding', b),
     onSuccess: (saved) => {

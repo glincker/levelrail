@@ -61,6 +61,7 @@ export async function setProjectEnv(
 export function useSetProjectEnv(id: string) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (vars: Record<string, string>) => setProjectEnv(id, vars),
     onSuccess: (updated) => {
       queryClient.setQueryData(projectEnvQueryKey(id), updated)

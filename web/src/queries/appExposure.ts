@@ -112,6 +112,7 @@ export function useAppExposure(app: string) {
 
 export function usePreviewExposure(app: string) {
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (req: ExposureRequest) =>
       send<ExposurePlan>(
         `${base(app)}/preview`,
@@ -125,6 +126,7 @@ export function usePreviewExposure(app: string) {
 export function useSetExposure(app: string) {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (req: ExposureRequest) =>
       send<AppExposure>(base(app), 'PUT', req, 'update exposure'),
     onSuccess: (data) => {
@@ -137,6 +139,7 @@ export function useSetExposure(app: string) {
 
 export function useCheckExposure(app: string) {
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: () =>
       send<ExposureCheck>(
         `${base(app)}/check`,

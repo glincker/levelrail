@@ -466,6 +466,7 @@ export function CreateAppFromGitFields({
   // queries/builds.ts's triggerBuild() directly instead of using that
   // module's useTriggerBuild(appName) hook.
   const buildMutation = useMutation({
+    meta: { errorToast: false },
     mutationFn: ({ name, input }: { name: string; input: TriggerBuildInput }) =>
       triggerBuild(name, input),
     onSuccess: (_result, variables) => {
@@ -489,6 +490,7 @@ export function CreateAppFromGitFields({
   // session (isSuccess), so a build-only retry never re-registers a
   // second webhook on GitLab/Bitbucket.
   const connectSourceMutation = useMutation({
+    meta: { errorToast: false },
     mutationFn: ({ name, values }: { name: string; values: FormOutput }) =>
       connectGitSourceFor(name, values, source),
     onSuccess: (result, variables) => {

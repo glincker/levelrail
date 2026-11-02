@@ -81,6 +81,7 @@ async function updateDockerGuard(
 export function useUpdateDockerGuard() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: updateDockerGuard,
     onSuccess: (data) => {
       queryClient.setQueryData(dockerGuardKeys.all, data)

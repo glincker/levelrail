@@ -42,6 +42,7 @@ function useFailureMutation<V>(
 ) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: run,
     onSuccess: (status) => {
       queryClient.setQueryData(failureKey(id), status)

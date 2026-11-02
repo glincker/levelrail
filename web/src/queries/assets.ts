@@ -128,6 +128,7 @@ export function assetUrlsQueryOptions(id: string, key: string) {
 export function useCreateAssetBucket() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (input: CreateAssetBucketInput) =>
       request<AssetBucket>(root, json('POST', input), 'connect bucket'),
     onSuccess: () =>
@@ -138,6 +139,7 @@ export function useCreateAssetBucket() {
 export function useUpdateAssetBucket(id: string) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (input: UpdateAssetBucketInput) =>
       request<AssetBucket>(base(id), json('PATCH', input), 'save bucket'),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: assetKeys.all }),
@@ -147,6 +149,7 @@ export function useUpdateAssetBucket(id: string) {
 export function useDeleteAssetBucket() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (id: string) =>
       request<unknown>(base(id), { method: 'DELETE' }, 'disconnect bucket'),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: assetKeys.all }),
@@ -156,6 +159,7 @@ export function useDeleteAssetBucket() {
 export function useDeleteAsset(id: string) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (key: string) =>
       request<unknown>(
         `${base(id)}/objects?key=${encodeURIComponent(key)}`,
@@ -168,6 +172,7 @@ export function useDeleteAsset(id: string) {
 
 export function useProbeAssetBucket(id: string) {
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (fixCors: boolean) =>
       request<AssetProbe>(
         `${base(id)}/probe`,

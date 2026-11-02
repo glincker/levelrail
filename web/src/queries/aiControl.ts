@@ -69,6 +69,7 @@ export async function updateAiControl(
 export function useUpdateAiControl() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: updateAiControl,
     onSuccess: (data) => {
       queryClient.setQueryData(aiControlKeys.all, data)
@@ -87,6 +88,7 @@ export async function revokeAgentTokens(): Promise<{ revoked: number }> {
 export function useRevokeAgentTokens() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: revokeAgentTokens,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: aiControlKeys.all })

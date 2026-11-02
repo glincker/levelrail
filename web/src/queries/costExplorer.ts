@@ -82,6 +82,7 @@ export function useCostBudgets() {
 export function useCreateCostBudget() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (body: CostBudgetInput) =>
       request<CostBudget>(
         '/api/v1/costs/budgets',
@@ -95,6 +96,7 @@ export function useCreateCostBudget() {
 export function useUpdateCostBudget() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: ({ id, body }: { id: string; body: CostBudgetInput }) =>
       request<CostBudget>(
         `/api/v1/costs/budgets/${encodeURIComponent(id)}`,
@@ -108,6 +110,7 @@ export function useUpdateCostBudget() {
 export function useDeleteCostBudget() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (id: string) =>
       request<void>(
         `/api/v1/costs/budgets/${encodeURIComponent(id)}`,

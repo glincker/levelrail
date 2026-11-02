@@ -86,6 +86,7 @@ export async function createToken(
 export function useCreateToken() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: createToken,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: tokenKeys.list() })
@@ -109,6 +110,7 @@ export async function revokeToken(id: string): Promise<void> {
 export function useRevokeToken() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: revokeToken,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: tokenKeys.list() })
@@ -140,6 +142,7 @@ export async function cleanupTokens(
 export function useCleanupTokens() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: cleanupTokens,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: tokenKeys.list() })

@@ -85,6 +85,7 @@ function useInvalidate() {
 export function useSetRuntimeSetting() {
   const invalidate = useInvalidate()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async (v: {
       key: string
       value: RuntimeSettingWrite
@@ -137,6 +138,7 @@ export function useResetRuntimeSetting() {
 
 export function useApplyRuntimeSettings() {
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async () =>
       json<SystemRestartInfo>(
         await fetch(`${BASE}/apply`, send('POST')),

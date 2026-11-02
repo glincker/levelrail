@@ -23,6 +23,7 @@ export function ConnectSourcePanel({
   const queryClient = useQueryClient()
   const [picked, setPicked] = useState<GitRepoSourceValue | null>(null)
   const connect = useMutation({
+    meta: { errorToast: false },
     mutationFn: (value: GitRepoSourceValue) =>
       connectPickedRepo(appName, value),
     onSuccess: (resource) => {

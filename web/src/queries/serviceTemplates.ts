@@ -210,6 +210,7 @@ export async function deployServiceTemplateNow(
 export function useDeployServiceTemplateNow() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: deployServiceTemplateNow,
     onSuccess: (result) => {
       for (const service of result.services) {

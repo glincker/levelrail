@@ -126,7 +126,10 @@ export function ImportPlanEditor({
   const environmentId =
     envPick ?? (open.length === 1 ? (open[0]?.id ?? '') : '')
 
-  const mutation = useMutation({ mutationFn: applyRepoImport })
+  const mutation = useMutation({
+    meta: { errorToast: false },
+    mutationFn: applyRepoImport,
+  })
   const included = rows.filter((r) => r.include)
 
   function update(directory: string, patch: Partial<RowState>) {

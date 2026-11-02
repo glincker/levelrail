@@ -93,6 +93,7 @@ async function setNodeProviderCredential(
 export function useSetNodeProviderCredential() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: setNodeProviderCredential,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: nodeProviderKeys.list() })
@@ -126,6 +127,7 @@ async function testNodeProvider(input: {
 export function useTestNodeProvider() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: testNodeProvider,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: nodeProviderKeys.list() })
@@ -152,6 +154,7 @@ async function disconnectNodeProvider(provider: string): Promise<void> {
 export function useDisconnectNodeProvider() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: disconnectNodeProvider,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: nodeProviderKeys.list() })
@@ -255,7 +258,10 @@ async function createNodeProvision(
 }
 
 export function useCreateNodeProvision() {
-  return useMutation({ mutationFn: createNodeProvision })
+  return useMutation({
+    meta: { errorToast: false },
+    mutationFn: createNodeProvision,
+  })
 }
 
 async function fetchNodeProvision(id: string): Promise<NodeProvisionResource> {

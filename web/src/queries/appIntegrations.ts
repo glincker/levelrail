@@ -110,6 +110,7 @@ export async function attachAppIntegration(
 export function useAttachAppIntegration(appName: string) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (req: AttachAppIntegrationRequest) =>
       attachAppIntegration(appName, req),
     onSuccess: () => {

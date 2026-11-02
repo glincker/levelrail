@@ -104,6 +104,7 @@ export function useGitRepoList(
 export function useRefreshGitRepos(provider: GitRepoProvider | '') {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: () => fetchGitRepoList(provider, { refresh: true }),
     onSettled: () =>
       queryClient.invalidateQueries({

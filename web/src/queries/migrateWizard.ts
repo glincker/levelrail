@@ -181,6 +181,7 @@ async function post<T>(url: string, body: unknown, what: string): Promise<T> {
 
 export function usePlanMigration() {
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (req: MigrateRequest) =>
       post<MigrateReport>('/api/v1/migration/plan', req, 'plan'),
   })
@@ -189,6 +190,7 @@ export function usePlanMigration() {
 export function useImportMigration() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (req: MigrateRequest) =>
       post<MigrateReport>('/api/v1/migration/import', req, 'import'),
     onSuccess: (_report, req) => {

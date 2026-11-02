@@ -76,6 +76,7 @@ export async function rotatePipelineOIDCKey(
 export function useRotatePipelineOIDCKey() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: rotatePipelineOIDCKey,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: pipelineOidcKeys.all })

@@ -190,6 +190,7 @@ export const testMailStorage = (app: string) =>
 export function useRunMailBackup(app: string | undefined) {
   const invalidate = useInvalidateMail()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: () => runMailBackup(app ?? ''),
     onSuccess: () => invalidate(),
   })

@@ -188,6 +188,7 @@ export async function updateIngressSettings(
 export function useUpdateIngressSettings() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: updateIngressSettings,
     onSuccess: (updated) => {
       queryClient.setQueryData(ingressSettingsKeys.all, updated)

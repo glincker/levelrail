@@ -72,6 +72,7 @@ export async function attachAppTag(
 export function useAttachAppTag(appName: string) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (tagName: string) => attachAppTag(appName, tagName),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: appKeys.detail(appName) })

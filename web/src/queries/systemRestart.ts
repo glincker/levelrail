@@ -36,6 +36,7 @@ export function useSystemRestartInfo() {
 
 export function useRestartControlPlane() {
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async (): Promise<SystemRestartInfo> => {
       const res = await fetch(URL, { method: 'POST' })
       if (!res.ok && res.status !== 202) {

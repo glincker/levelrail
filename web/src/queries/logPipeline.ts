@@ -76,6 +76,7 @@ export interface PreviewInput {
 
 export function usePreviewLogPipeline(app: string) {
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async (input: PreviewInput) => {
       const res = await fetch(`${base(app)}/preview`, {
         method: 'POST',

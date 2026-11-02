@@ -185,6 +185,7 @@ async function sendJson(
 export function useSaveAiProvider() {
   const refresh = useRefreshAi()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async (vars: { id: string; update: AiProviderUpdate }) => {
       await sendJson(
         'PUT',
@@ -200,6 +201,7 @@ export function useSaveAiProvider() {
 export function useDisconnectAiProvider() {
   const refresh = useRefreshAi()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async (id: string) => {
       await sendJson(
         'DELETE',
@@ -231,6 +233,7 @@ export function useTestAiProvider() {
 export function useUpdateAiRouting() {
   const refresh = useRefreshAi()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async (body: {
       active?: AiSelection
       fallback?: AiSelection[]

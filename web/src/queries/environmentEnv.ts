@@ -66,6 +66,7 @@ export async function setEnvironmentEnv(
 export function useSetEnvironmentEnv(id: string) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (vars: Record<string, string>) => setEnvironmentEnv(id, vars),
     onSuccess: (updated) => {
       queryClient.setQueryData(environmentEnvQueryKey(id), updated)

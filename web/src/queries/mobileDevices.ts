@@ -86,6 +86,7 @@ export async function createMobilePairingCode(): Promise<MobilePairingCode> {
 export function useRevokeMobileDevice() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async (id: string): Promise<void> => {
       const res = await fetch(
         `/api/v1/mobile/devices/${encodeURIComponent(id)}`,

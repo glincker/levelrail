@@ -116,6 +116,7 @@ export async function setAppBranchEnvOverride(
 export function useSetAppBranchEnvOverride(appName: string) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (input: SetAppBranchEnvOverrideInput) =>
       setAppBranchEnvOverride(appName, input),
     onSuccess: () => {

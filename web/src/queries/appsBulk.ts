@@ -53,6 +53,7 @@ export async function postBulk(req: BulkRequest): Promise<BulkResponse> {
 export function useBulkApps() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: postBulk,
     onSuccess: (data) => {
       if (!data.dry_run) {

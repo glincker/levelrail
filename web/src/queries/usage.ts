@@ -84,6 +84,7 @@ export function useUsageSettings() {
 export function useSaveUsageSettings() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (update: UsageSettingsUpdate) =>
       request<UsageSettings>(
         '/api/v1/usage/settings',
@@ -110,6 +111,7 @@ export function useUsageBudgets() {
 export function useSaveUsageBudget() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (b: {
       scope: 'project' | 'team'
       scope_id: string

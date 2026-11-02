@@ -168,6 +168,7 @@ async function putUpdateSettings(
 export function useSetUpdateSettings() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: putUpdateSettings,
     onSuccess: (updated) => {
       queryClient.setQueryData([...updatesKeys.all, 'settings'], updated)

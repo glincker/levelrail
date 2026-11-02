@@ -137,6 +137,7 @@ export interface RunQueryInput {
 export function useRunDatabaseQuery() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: ({ name, sql, mode, analyze, confirm }: RunQueryInput) => {
       const path =
         mode === 'write'
@@ -202,6 +203,7 @@ export function useSavedQueries(name: string) {
 export function useSaveQuery(name: string) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (input: { name: string; sql: string }) =>
       request<DbSavedQuery>(
         `${base(name)}/saved-queries`,

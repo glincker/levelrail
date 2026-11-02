@@ -133,6 +133,7 @@ export function useApplyPreview(id: string, enabled: boolean) {
 export function useApplyFinding() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (id: string) =>
       request<AdvisorApplyResult>(
         `/api/v1/resource-advisor/findings/${encodeURIComponent(id)}/apply`,

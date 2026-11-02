@@ -133,6 +133,7 @@ export async function applyPending(appName: string): Promise<void> {
 export function useApplyPending(appName: string) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: () => applyPending(appName),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: appKeys.detail(appName) })

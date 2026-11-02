@@ -114,6 +114,7 @@ export function useCreateControlPlaneBackup() {
 export function useDeleteControlPlaneBackup() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: deleteControlPlaneBackup,
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: controlPlaneBackupKeys.all }),

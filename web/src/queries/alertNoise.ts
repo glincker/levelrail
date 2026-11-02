@@ -139,6 +139,7 @@ export function useMaintenanceWindows() {
 export function useSaveMaintenanceWindow() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (w: MaintenanceWindow) =>
       request<MaintenanceWindow>(
         w.id

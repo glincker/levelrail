@@ -299,6 +299,7 @@ export function previewMailTemplate(
 
 export function useSendMailTest(key: string) {
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: () =>
       call<{ sent_to: string }>(
         'POST',
@@ -421,6 +422,7 @@ export function planMailBroadcast(
 export function useSendMailBroadcast() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (input: MailBroadcastInput) =>
       call<MailBroadcast>('POST', '/api/v1/mail/broadcasts', input),
     onSuccess: () => {
@@ -431,6 +433,7 @@ export function useSendMailBroadcast() {
 
 export function useSendMailBroadcastTest() {
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (draft: { subject: string; body: string }) =>
       call<{ sent_to: string }>('POST', '/api/v1/mail/broadcasts/test', draft),
   })

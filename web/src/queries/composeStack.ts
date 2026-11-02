@@ -100,6 +100,7 @@ function useStackMutation<TVars, TResult>(
 ) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: fn,
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: composeKeys.all })
@@ -150,6 +151,7 @@ export function useComposeDown(appId: string) {
 export function useInstallTemplate(templateId: string) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (input: TemplateInstallInput) =>
       request<ComposeDeployResponse>(
         `/api/v1/service-templates/${encodeURIComponent(templateId)}/install`,

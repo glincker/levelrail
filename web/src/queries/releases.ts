@@ -143,6 +143,7 @@ export function doctorQueryOptions() {
 export function useStartRollback() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async (
       version: string,
     ): Promise<{ status: string; target_version: string }> => {
