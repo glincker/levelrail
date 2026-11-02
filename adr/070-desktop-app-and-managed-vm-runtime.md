@@ -127,7 +127,9 @@ S6 after a license and maintenance check; none is chosen here.
 Lima details:
 
 - A private Lima home under the app data directory, so the user's own Lima
-  instances and ours never mix.
+  instances and ours never mix. Lima merges `_config/override.yaml` into the
+  instance and it wins over our template (measured), so `lima.CheckHome` is
+  mandatory.
 - Lima is downloaded at `vm init` from its release, pinned by version and
   SHA-256 in our source, and stored in the data directory. No Homebrew
   requirement. A signed app may bundle it later (licensing, decision 6).
@@ -154,7 +156,8 @@ live where possible):
   unverified). Egress rules and port forwards apply live.
 - 8 GB laptop budget: the default VM memory is 3 GiB, which leaves the host
   about 5 GB and fits the control plane plus OpenClaw (2 GiB recommended).
-  These are planning figures, not measurements. `vm init` refuses a memory
+  Idle use at 2 GiB is measured (see Real boot results); the 3 GiB default is
+  a planning figure. `vm init` refuses a memory
   value above a percent of host RAM and warns below a floor.
 - On Windows the memory limit for WSL is global to all distros and needs a
   full WSL shutdown to change, so we never edit the user's WSL config.
@@ -185,10 +188,12 @@ choose to share.
   the host. Apps are reached through ingress at `<app>.localhost` and get
   the normal ingress shield and auth.
 - **Network egress.** A guest firewall baseline, installed as a systemd
-  unit before Docker starts, denies container traffic to the host and to
-  private, link-local and LAN ranges, allows DNS through the VM gateway,
-  and leaves the internet open. A template test asserts the rules exist;
-  the real check runs on a real Mac on every Lima pin bump. A per-app
+  unit before Docker starts, has output, input and forward chains. It denies
+  guest and container traffic to the host (including through the gateway
+  192.168.5.2) and to private, link-local and LAN ranges, allows DNS to the
+  gateway on port 53 only, and leaves the internet open. The residual is
+  that DNS uses the host resolver path. A template test asserts the rules
+  exist; the real check runs on a real Mac on every Lima pin bump. A per-app
   "allow LAN" or "allow host" exception (for a local model server on the
   host) is an explicit, audited setting, off by default.
 - **Control channel.** The CLI and the desktop app talk to the control
@@ -239,7 +244,8 @@ First run in the tray app: a short screen that states what runs locally,
 the memory it will use, and that nothing is reachable from other machines;
 then `vm init` with progress; then the dashboard opens. The first run
 downloads Lima (macOS), the guest image and container images, so it needs a
-network connection and takes minutes, not seconds (not measured).
+network connection and takes minutes, not seconds. A cached-image boot to
+READY took 154 s on the owner's Mac (see Real boot results).
 
 Upgrades:
 
@@ -333,6 +339,45 @@ then S4 and S5 in parallel, then S6, S7, S8. S9, S10 and S11 are
 independent. No slice needs Opus to write code; Opus reviews S1 and S3
 once before the beta.
 
+## Real boot results (2026-11-01)
+
+Measured on the owner's Mac with Lima 2.2.1, vz, aarch64, 2048 MiB, 2 CPUs
+and 10 GiB, a private Lima home and the pinned image (SHA-256 matches the
+pin). A fresh instance reached READY in 154 s with the image cached. A
+reboot (stop and start) took 24 s. Idle with Docker up, the guest had 1950
+MiB total and about 1525 MiB available.
+
+All eight isolation checks passed on a fresh boot and again after a reboot:
+`rules_loaded`, `publish_loopback`, `no_wildcard_publish`, `no_docker_tcp`,
+`host_mounts`, `host_unreachable`, `lan_unreachable` and `dns_allowed`.
+Guest and container traffic to the Mac loopback through 192.168.5.2 was
+blocked, as was `--network host`. Internet access and container DNS worked.
+
+The smoke run changed the design:
+
+- A guest process reached the Mac loopback through 192.168.5.2 while the nft
+  table had only a forward hook. The egress policy now needs output and input
+  chains as well as forward, or guest processes and host-network containers
+  are not covered.
+- `_config/override.yaml` in the Lima home merged into the instance and won
+  over our template (a home mount, agent forwarding and a 0.0.0.0 range
+  forward all became effective). A private Lima home and `lima.CheckHome`
+  are mandatory.
+- The isolation self-check first passed for the wrong reason. Docker's FORWARD
+  policy dropped the probes, so they failed with or without our rules. Probes
+  now use a real listener and are accepted in DOCKER-USER.
+- The vz network has no resolver at 192.168.5.3. The only DNS server is the
+  gateway 192.168.5.2, accepted on port 53 only. The residual is that this
+  is the host resolver path.
+
+Still open:
+
+- The deployer must deny or reject `network_mode: host`.
+- The guest sshd listens on 0.0.0.0:22 and is protected only by the input
+  chain.
+- Share mounts, amd64 images and Lima's ssh control path with the sidecar
+  were not tested.
+
 ## Alternatives rejected
 
 - **Electron shell.** Bundles a browser engine and a Node runtime the team
@@ -393,8 +438,9 @@ once before the beta.
   owner's machine.
 - Anything on Windows: no Windows machine is available. The WSL2 slice is
   design only until one is.
-- Real memory use of the VM idle, with OpenClaw, and with one streamed
-  desktop on an 8 GB machine. All budgets above are planning figures.
+- Real memory use with OpenClaw, and with one streamed desktop on an 8 GB
+  machine. Idle use at 2 GiB is measured; the other budgets above are
+  planning figures.
 - Gatekeeper and SmartScreen behavior for an unsigned app installed by the
   install script on current OS versions.
 - Signing prices and eligibility.
