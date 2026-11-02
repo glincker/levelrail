@@ -38,11 +38,16 @@ func (c *Controller) dependencyBlock(ctx context.Context, desired *store.Desired
 		return res
 	}
 	limit := c.dependsOnTimeout(ctx)
-	since := c.dependencyWaitStart(desired.Name)
+	if slices.Contains(desired.DependsOnCompleted(), dep) {
+		// A one-shot may legitimately run for its own budget, longer than a start wait.
+		budget := c.effectiveCompletionBudget(c.dependencySpec(ctx, desired.AppID+"-"+dep))
+		limit = max(limit, budget)
+	}
+	since := c.dependencyWaitStart(desired)
 	if limit <= 0 || c.clock().Sub(since) < limit {
 		return res
 	}
-	msg := fmt.Sprintf("dependency %q did not become ready within %s (setting compose.depends_on_timeout)", dep, limit)
+	msg := fmt.Sprintf("dependency %q did not become ready within %s (the larger of compose.depends_on_timeout and the one-shot budget for a completion wait)", dep, limit)
 	c.traceDependencyWait(ctx, desired, dep, reasonDependencyTimeout, msg)
 	return &reconcile.Result{Conditions: []reconcile.Condition{{
 		Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionFalse, Reason: reasonDependencyTimeout, Message: msg,
@@ -55,18 +60,35 @@ func WithDependsOnTimeout(get func(context.Context) time.Duration) Option {
 	return func(ctrl *Controller) { ctrl.dependsOnTimeout = get }
 }
 
-func (c *Controller) dependencyWaitStart(name string) time.Time {
+// dependencyWaitStart returns when this spec first waited. A changed spec
+// (new image, restart nonce) starts a fresh clock so a fixed redeploy is not
+// judged by the failed one.
+func (c *Controller) dependencyWaitStart(desired *store.DesiredService) time.Time {
+	fp := desired.Image + "\x00" + desired.RestartNonce + "\x00" + NameImage(*desired)
 	c.dependsOnMu.Lock()
 	defer c.dependsOnMu.Unlock()
 	if c.dependsOnSince == nil {
-		c.dependsOnSince = map[string]time.Time{}
+		c.dependsOnSince = map[string]dependencyWait{}
 	}
-	if t, ok := c.dependsOnSince[name]; ok {
-		return t
+	if w, ok := c.dependsOnSince[desired.Name]; ok && w.spec == fp {
+		return w.since
 	}
 	t := c.clock()
-	c.dependsOnSince[name] = t
+	c.dependsOnSince[desired.Name] = dependencyWait{since: t, spec: fp}
 	return t
+}
+
+// dependencySpec loads the dependency's desired service, or an empty one so the default budget applies.
+func (c *Controller) dependencySpec(ctx context.Context, depName string) *store.DesiredService {
+	if dep, err := c.store.GetDesiredService(ctx, depName); err == nil && dep != nil {
+		return dep
+	}
+	return &store.DesiredService{}
+}
+
+type dependencyWait struct {
+	since time.Time
+	spec  string
 }
 
 func (c *Controller) clearDependencyWait(name string) {

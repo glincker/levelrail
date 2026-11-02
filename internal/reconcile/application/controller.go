@@ -299,7 +299,7 @@ type Controller struct {
 	nodeRecovering      bool                                // see WithNodeRecovering
 	dependsOnTimeout    func(context.Context) time.Duration // nil waits forever, see WithDependsOnTimeout
 	dependsOnMu         sync.Mutex
-	dependsOnSince      map[string]time.Time // first pass a service waited on a dependency
+	dependsOnSince      map[string]dependencyWait // first pass a service waited on a dependency
 }
 
 // Option configures optional Controller behavior.

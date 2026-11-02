@@ -225,8 +225,8 @@ var table = []row{
 	},
 	{
 		code: CauseDependency, title: "A dependency is not ready",
-		explanation: "This resource waits on another resource that is not ready yet.",
-		reasons:     []string{"DependencyNotReady", "WaitingForDependency"},
+		explanation: "This resource waits on another resource that is not ready yet. If the reason is DependencyTimeout, the wait outlasted compose.depends_on_timeout: check the dependency's health check and logs, or raise the setting.",
+		reasons:     []string{"DependencyNotReady", "WaitingForDependency", "DependencyTimeout"},
 		ctxMatch: func(c Context) (string, bool) {
 			return "waiting on " + c.DependencyNotReady, c.DependencyNotReady != ""
 		},

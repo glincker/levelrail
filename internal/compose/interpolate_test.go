@@ -3,6 +3,7 @@ package compose
 import (
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestInterpolateValueForms(t *testing.T) {
@@ -86,4 +87,45 @@ func mustParseReq(t *testing.T) *File {
 		t.Fatal(err)
 	}
 	return f
+}
+
+func TestInterpolateBoundsNestingAndLength(t *testing.T) {
+	deep := strings.Repeat("${A:-", 100_000) + "x" + strings.Repeat("}", 100_000)
+	start := time.Now()
+	_, err := interpolateValue(deep, nil, func(string) {})
+	if err == nil {
+		t.Fatal("100k nesting must be rejected")
+	}
+	took := time.Since(start)
+	t.Logf("100k nesting rejected in %s: %v", took, err)
+	if took > 100*time.Millisecond {
+		t.Fatalf("took %s, want under 100ms", took)
+	}
+
+	// 10k levels fit under the length cap, so this one reaches the depth check.
+	under := strings.Repeat("${A:-", 10_000) + "x" + strings.Repeat("}", 10_000)
+	start = time.Now()
+	if _, err := interpolateValue(under, nil, func(string) {}); err == nil || !strings.Contains(err.Error(), "nesting") {
+		t.Fatalf("10k nesting: want a depth error, got %v", err)
+	}
+	t.Logf("10k nesting rejected in %s", time.Since(start))
+	if time.Since(start) > 100*time.Millisecond {
+		t.Fatal("deep nesting too slow")
+	}
+
+	ok := strings.Repeat("${A:-", maxInterpolationDepth) + "x" + strings.Repeat("}", maxInterpolationDepth)
+	if got, err := interpolateValue(ok, nil, func(string) {}); err != nil || got != "x" {
+		t.Fatalf("depth at the cap: %q, %v", got, err)
+	}
+	long := strings.Repeat("a", maxInterpolatedLen)
+	if got, err := interpolateValue(long, nil, func(string) {}); err != nil || len(got) != maxInterpolatedLen {
+		t.Fatalf("value at the cap: %v", err)
+	}
+	if _, err := interpolateValue(long+"a", nil, func(string) {}); err == nil {
+		t.Fatal("value over the cap must fail")
+	}
+	big := map[string]string{"B": strings.Repeat("b", 40<<10)}
+	if _, err := interpolateValue("${B}${B}", big, func(string) {}); err == nil {
+		t.Fatal("expansion over the cap must fail")
+	}
 }

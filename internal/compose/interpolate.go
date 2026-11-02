@@ -22,6 +22,23 @@ func unescapeDollar(s string) string {
 // stays as written (the container shell may own it) and is warned about.
 // Messages carry names only, never values.
 func interpolateValue(s string, vars map[string]string, warn func(string)) (string, error) {
+	if len(s) > maxInterpolatedLen {
+		return "", fmt.Errorf("value is longer than the %d byte interpolation limit", maxInterpolatedLen)
+	}
+	return interpolateDepth(s, vars, warn, 0, "")
+}
+
+// Caps keep a hostile compose body from pinning a core or the stack: each
+// nesting level rescans its operand, so work grows with depth times length.
+const (
+	maxInterpolationDepth = 16
+	maxInterpolatedLen    = 64 << 10
+)
+
+func interpolateDepth(s string, vars map[string]string, warn func(string), depth int, parent string) (string, error) {
+	if depth > maxInterpolationDepth {
+		return "", fmt.Errorf("variable %s: ${...} nesting is deeper than the limit of %d", parent, maxInterpolationDepth)
+	}
 	if !strings.Contains(s, "$") {
 		return s, nil
 	}
@@ -54,11 +71,14 @@ func interpolateValue(s string, vars map[string]string, warn func(string)) (stri
 			i += cut + 1
 			continue
 		}
-		out, err := expandVar(name, rest, vars, warn)
+		out, err := expandVar(name, rest, vars, warn, depth)
 		if err != nil {
 			return "", err
 		}
 		b.WriteString(out)
+		if b.Len() > maxInterpolatedLen {
+			return "", fmt.Errorf("variable %s: expanded value is longer than the %d byte limit", name, maxInterpolatedLen)
+		}
 		i = end + 1
 	}
 	return b.String(), nil
@@ -95,7 +115,7 @@ func splitVarName(body string) (name, rest string) {
 	return body[:n], body[n:]
 }
 
-func expandVar(name, rest string, vars map[string]string, warn func(string)) (string, error) {
+func expandVar(name, rest string, vars map[string]string, warn func(string), depth int) (string, error) {
 	val, set := vars[name]
 	nonEmpty := set && val != ""
 	if rest == "" {
@@ -119,10 +139,10 @@ func expandVar(name, rest string, vars map[string]string, warn func(string)) (st
 		if present {
 			return val, nil
 		}
-		return interpolateValue(arg, vars, warn)
+		return interpolateDepth(arg, vars, warn, depth+1, name)
 	case "+":
 		if present {
-			return interpolateValue(arg, vars, warn)
+			return interpolateDepth(arg, vars, warn, depth+1, name)
 		}
 		return "", nil
 	case "?":
