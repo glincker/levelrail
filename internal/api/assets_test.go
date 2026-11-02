@@ -124,12 +124,12 @@ func TestAssetBucketLifecycleAndExposureAudit(t *testing.T) {
 }
 
 func TestAssetPresignedUploadConfirmAndDelete(t *testing.T) {
-	t.Setenv(envAssetsUploadMaxBytes, "2048")
+	t.Setenv("APP_ASSETS_UPLOAD_MAX_BYTES", "1048576")
 	e, d := newAssetEnv(t)
 	b := e.createAssetBucket(t, d.ID, `,"prefix":"site"`)
 	base := "/api/v1/assets/buckets/" + b.ID
 
-	if rec := e.do(t, http.MethodPost, base+"/uploads", `{"key":"a.png","content_type":"image/png","size":4096}`); rec.Code != http.StatusRequestEntityTooLarge {
+	if rec := e.do(t, http.MethodPost, base+"/uploads", `{"key":"a.png","content_type":"image/png","size":2097152}`); rec.Code != http.StatusRequestEntityTooLarge {
 		t.Fatalf("oversize = %d, want 413", rec.Code)
 	}
 	if rec := e.do(t, http.MethodPost, base+"/uploads", `{"key":"a.png","content_type":"image/png"}`); rec.Code != http.StatusBadRequest {
@@ -181,7 +181,7 @@ func TestAssetPresignedUploadConfirmAndDelete(t *testing.T) {
 		t.Fatalf("direct upload = %d: %s", direct.Code, direct.Body.String())
 	}
 	big := httptest.NewRecorder()
-	e.rt.Handler().ServeHTTP(big, authedRequest(t, e.cookie, http.MethodPut, base+"/objects?key=big.bin", strings.Repeat("x", 3000)))
+	e.rt.Handler().ServeHTTP(big, authedRequest(t, e.cookie, http.MethodPut, base+"/objects?key=big.bin", strings.Repeat("x", 1<<20+1)))
 	if big.Code != http.StatusRequestEntityTooLarge {
 		t.Fatalf("oversize direct upload = %d, want 413", big.Code)
 	}

@@ -98,7 +98,7 @@ func sessionLinkTTL() time.Duration {
 
 // applySessionsConfig layers the sessions-area settings onto tcfg. It only
 // runs when the area is active, so legacy behavior is untouched.
-func applySessionsConfig(tcfg *theauth.Config, s *Sessions, throttle theauth.LoginThrottleStore) {
+func applySessionsConfig(tcfg *theauth.Config, s *Sessions, throttle theauth.LoginThrottleStore, perEmail int) {
 	ttl := envDuration(EnvSessionTTL, defaultSessionTTL)
 	if ttl <= 0 {
 		ttl = defaultSessionTTL
@@ -125,6 +125,9 @@ func applySessionsConfig(tcfg *theauth.Config, s *Sessions, throttle theauth.Log
 		tcfg.RateLimitPerIP = defaultRatePerMinute
 	}
 	tcfg.RateLimitPerEmail = envPositiveInt(EnvRateLimitPerEmail, defaultRatePerMinute)
+	if perEmail > 0 {
+		tcfg.RateLimitPerEmail = perEmail
+	}
 	if tcfg.Bootstrap == nil {
 		tcfg.Bootstrap = &theauth.BootstrapConfig{SuppressSetupTokenLog: true}
 	}

@@ -41,23 +41,25 @@ const (
 
 // Config is everything New needs beyond the database.
 type Config struct {
-	BaseURL         string
-	PathPrefix      string
-	SetupToken      string
-	TokenPrefix     string
-	TOTPIssuer      string
-	EncryptionKey   []byte
-	PollInterval    time.Duration
-	RateLimitPerIP  int
-	MinPasswordLen  int
-	Directory       *Directory
-	DeviceVerifyURL string
-	DeviceTokenTTL  time.Duration
-	DeviceCodeTTL   time.Duration
-	Sessions        SessionsHooks
-	MFA             MFAConfig
-	OAuth           *OAuthWiring
-	SAML            SAMLKeyPair
+	BaseURL        string
+	PathPrefix     string
+	SetupToken     string
+	TokenPrefix    string
+	TOTPIssuer     string
+	EncryptionKey  []byte
+	PollInterval   time.Duration
+	RateLimitPerIP int
+	// RateLimitPerEmail, when above zero, wins over the environment seed; the caller resolves the saved setting.
+	RateLimitPerEmail int
+	MinPasswordLen    int
+	Directory         *Directory
+	DeviceVerifyURL   string
+	DeviceTokenTTL    time.Duration
+	DeviceCodeTTL     time.Duration
+	Sessions          SessionsHooks
+	MFA               MFAConfig
+	OAuth             *OAuthWiring
+	SAML              SAMLKeyPair
 }
 
 // ConfigFromEnv applies the env overrides on top of base and fills defaults.
@@ -73,7 +75,7 @@ func ConfigFromEnv(base Config) Config {
 			base.PollInterval = d
 		}
 	}
-	if v := os.Getenv(EnvRateLimitIP); v != "" {
+	if v := os.Getenv(EnvRateLimitIP); v != "" && base.RateLimitPerIP == 0 {
 		if n, err := strconv.Atoi(v); err == nil && n > 0 {
 			base.RateLimitPerIP = n
 		}
@@ -172,7 +174,7 @@ func New(db *sql.DB, cfg Config) (*Engine, error) {
 		tcfg.TOTP = &theauth.TOTPConfig{Issuer: cfg.TOTPIssuer}
 	}
 	sess := newSessions(db, cfg.Sessions)
-	applySessionsConfig(&tcfg, sess, store.ThrottleStore())
+	applySessionsConfig(&tcfg, sess, store.ThrottleStore(), cfg.RateLimitPerEmail)
 	applyMFA(&tcfg, cfg)
 	oauthRT := applyOAuth(&tcfg, cfg, db)
 	applyEnterprise(&tcfg, cfg)

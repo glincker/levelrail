@@ -28,6 +28,22 @@ type apiRateLimiter struct {
 	now           func() time.Time
 	lastSweep     time.Time
 	order         uint64 // fixed lock order for allowAll
+	// source, when set, supplies the live capacity; it is read before the lock and a value <= 0 is ignored so a bad setting never disables the limiter.
+	source func() int
+}
+
+// refresh adopts the live capacity and returns the current one. Buckets are kept, so a change never forgives a drained caller.
+func (l *apiRateLimiter) refresh() float64 {
+	var n int
+	if l.source != nil {
+		n = l.source()
+	}
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if n > 0 {
+		l.ratePerMinute = float64(n)
+	}
+	return l.ratePerMinute
 }
 
 var limiterOrder atomic.Uint64
@@ -52,7 +68,7 @@ func newWindowRateLimiter(capacity int, window time.Duration) *apiRateLimiter {
 // allow reports whether key may proceed right now, and if not, how long
 // until its next token is available.
 func (l *apiRateLimiter) allow(key string) (ok bool, retryAfter time.Duration) {
-	if l.ratePerMinute <= 0 {
+	if l.refresh() <= 0 {
 		return true, 0
 	}
 	l.mu.Lock()
@@ -66,7 +82,7 @@ func (l *apiRateLimiter) allow(key string) (ok bool, retryAfter time.Duration) {
 
 // peek reports whether key has a token left without spending it.
 func (l *apiRateLimiter) peek(key string) bool {
-	if l.ratePerMinute <= 0 {
+	if l.refresh() <= 0 {
 		return true
 	}
 	l.mu.Lock()
@@ -77,7 +93,7 @@ func (l *apiRateLimiter) peek(key string) bool {
 
 // spend takes one token from key unconditionally, for callers that count only failures.
 func (l *apiRateLimiter) spend(key string) {
-	if l.ratePerMinute <= 0 {
+	if l.refresh() <= 0 {
 		return
 	}
 	l.mu.Lock()
@@ -162,7 +178,7 @@ func allowAll(checks ...limiterCheck) (ok bool, retryAfter time.Duration) {
 	need := make(map[limiterCheck]float64, len(checks))
 	var limiters []*apiRateLimiter
 	for _, c := range checks {
-		if c.l.ratePerMinute <= 0 {
+		if c.l.refresh() <= 0 {
 			continue
 		}
 		if !slices.Contains(limiters, c.l) {
@@ -232,19 +248,20 @@ func (l *apiRateLimit) admit(w http.ResponseWriter, ability, key string) (ok boo
 
 // setRateLimitHeaders reports the budget, tokens left and seconds until the bucket is full again (Reset is a delta, not an epoch).
 func (l *apiRateLimiter) setRateLimitHeaders(w http.ResponseWriter, key string) {
-	if l.ratePerMinute <= 0 {
+	rate := l.refresh()
+	if rate <= 0 {
 		return
 	}
 	l.mu.Lock()
-	tokens := l.ratePerMinute
+	tokens := rate
 	if b := l.refilled(key, l.now()); b != nil {
 		tokens = b.tokens
 	}
 	l.mu.Unlock()
 	remaining := max(int(tokens), 0)
-	reset := int(math.Ceil((l.ratePerMinute - tokens) / l.ratePerMinute * l.window.Seconds()))
+	reset := int(math.Ceil((rate - tokens) / rate * l.window.Seconds()))
 	h := w.Header()
-	h.Set("X-RateLimit-Limit", strconv.Itoa(int(l.ratePerMinute)))
+	h.Set("X-RateLimit-Limit", strconv.Itoa(int(rate)))
 	h.Set("X-RateLimit-Remaining", strconv.Itoa(remaining))
 	h.Set("X-RateLimit-Reset", strconv.Itoa(max(reset, 0)))
 }

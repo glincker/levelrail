@@ -9,7 +9,7 @@ import (
 )
 
 func TestBodyLimitMiddleware(t *testing.T) {
-	t.Setenv(envMaxBodyBytes, "")
+	t.Setenv("APP_API_MAX_BODY_BYTES", "")
 	h := (&Router{}).bodyLimitMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if _, err := io.Copy(io.Discard, r.Body); err != nil {
 			w.WriteHeader(http.StatusRequestEntityTooLarge)

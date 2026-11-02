@@ -2,16 +2,10 @@ package api
 
 import (
 	"net/http"
-	"os"
-	"strconv"
 	"strings"
 )
 
 const (
-	// envMaxBodyBytes raises or lowers the backstop for every API request body.
-	envMaxBodyBytes = "APP_API_MAX_BODY_BYTES"
-	// defaultMaxBodyBytes sits above the largest per-handler cap (8 MiB).
-	defaultMaxBodyBytes int64 = 16 << 20
 	// preAuthMaxBodyBytes bounds routes an anonymous caller can reach.
 	preAuthMaxBodyBytes int64 = 1 << 20
 )
@@ -19,10 +13,6 @@ const (
 // bodyLimitMiddleware caps request bodies before any handler decodes them, so
 // an unauthenticated client cannot buffer an unbounded JSON string.
 func (rt *Router) bodyLimitMiddleware(next http.Handler) http.Handler {
-	backstop := defaultMaxBodyBytes
-	if v, err := strconv.ParseInt(strings.TrimSpace(os.Getenv(envMaxBodyBytes)), 10, 64); err == nil && v > 0 {
-		backstop = v
-	}
 	enginePrefix := ""
 	if rt.authEngine != nil {
 		enginePrefix = rt.authEngine.Prefix()
@@ -33,7 +23,7 @@ func (rt *Router) bodyLimitMiddleware(next http.Handler) http.Handler {
 			return
 		}
 		if r.Body != nil && r.Body != http.NoBody {
-			limit := backstop
+			limit := rt.maxBodyBytes(r.Context())
 			if isPreAuthPath(r.URL.Path, enginePrefix) && preAuthMaxBodyBytes < limit {
 				limit = preAuthMaxBodyBytes
 			}

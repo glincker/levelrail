@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -284,7 +285,7 @@ func TestRegistryDefaultsAreValidAndSecure(t *testing.T) {
 			t.Errorf("%s not secure by default", d.Key)
 		}
 	}
-	if len(Definitions()) != 39 {
+	if len(Definitions()) != 47 {
 		t.Fatalf("registry size = %d", len(Definitions()))
 	}
 }
@@ -307,7 +308,7 @@ func TestMaskSensitive(t *testing.T) {
 func TestRegistryMarksCredentialSettingsSensitive(t *testing.T) {
 	credential := regexp.MustCompile(`(?i)secret|token|password|api[_.-]?key`)
 	for _, d := range Definitions() {
-		if d.Category != CategoryRetention && (credential.MatchString(d.Key) || credential.MatchString(d.Env)) && !d.Sensitive {
+		if d.Category != CategoryRetention && !strings.HasSuffix(d.Key, "_rpm") && (credential.MatchString(d.Key) || credential.MatchString(d.Env)) && !d.Sensitive {
 			t.Errorf("setting %s looks like a credential but is not marked Sensitive, so its value would reach API responses and the audit log", d.Key)
 		}
 	}

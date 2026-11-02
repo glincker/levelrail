@@ -8,6 +8,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/brand"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -43,6 +44,7 @@ func authEngineOptions(ctx context.Context, logger *slog.Logger, b *brand.Brand,
 		sdb := &store.DB{DB: db}
 		cfg.OAuth = &authengine.OAuthWiring{Settings: sdb, Secrets: mgr, Users: sdb, Logger: logger, TrustedPeer: api.PeerIsTrustedProxy}
 	}
+	applySavedAuthRateLimits(ctx, db, &cfg)
 	eng, err := authengine.New(db, authengine.ConfigFromEnv(cfg))
 	if err != nil {
 		return nil, err
@@ -68,4 +70,12 @@ func importLegacyTokens(ctx context.Context, logger *slog.Logger, eng *authengin
 	if sum.Migrated > 0 || sum.Skipped > 0 {
 		logger.Info("legacy tokens migrated", slog.Int("migrated", sum.Migrated), slog.Int("skipped", sum.Skipped))
 	}
+}
+
+// applySavedAuthRateLimits resolves the stored credential limits (saved, then env seed, then default),
+// forced above the floor, because the auth library fixes them at construction.
+func applySavedAuthRateLimits(ctx context.Context, db *sql.DB, cfg *authengine.Config) {
+	svc := runtimesettings.New(&store.DB{DB: db}, nil)
+	cfg.RateLimitPerIP = svc.Limit(ctx, runtimesettings.KeyAuthRateLimitPerIP)
+	cfg.RateLimitPerEmail = svc.Limit(ctx, runtimesettings.KeyAuthRateLimitPerEmail)
 }

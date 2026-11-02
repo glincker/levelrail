@@ -1110,6 +1110,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		rt.sourceCache = sourcecache.New(sourcecache.ConfigFromEnv(""), logger)
 	}
 	rt.attachRuntimeSettings(s)
+	rt.attachLiveLimits()
 	rt.attachRepoCache(s)
 	rt.attachGitConnStore(s)
 	rt.attachGitReliability(s)
