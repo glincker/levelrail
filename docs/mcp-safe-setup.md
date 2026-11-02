@@ -32,7 +32,7 @@ You can only grant what you hold yourself. A user with only `read` cannot create
 | `deploy` | Deploy, roll back and restart. |
 | `root` | Everything. Never use it for an assistant. |
 
-`tools/list` only offers tools the token can call, and the server checks every call again, so a hidden tool is also a refused tool.
+`tools/list` only offers tools the token can call, and `tools/call` refuses the same tools with a `forbidden` tool error naming the missing ability, so a hidden tool is also a refused tool. The server checks every call again on top of that.
 
 ## The default policy is a setting
 

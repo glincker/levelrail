@@ -24,7 +24,14 @@ import (
 func newTestSession(t *testing.T, apiHandler http.HandlerFunc) *mcp.ClientSession {
 	t.Helper()
 
-	apiSrv := httptest.NewServer(apiHandler)
+	// The ability probe is answered 404 (fail open) so handlers only see the tool's own requests.
+	apiSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/v1/auth/my-access" {
+			http.NotFound(w, r)
+			return
+		}
+		apiHandler(w, r)
+	}))
 	t.Cleanup(apiSrv.Close)
 
 	client := apiclient.NewClient(apiSrv.URL, "test-token")
