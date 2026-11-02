@@ -602,6 +602,8 @@
               "self-host/espocrm",
               "self-host/ghost",
               "self-host/glpi",
+              "self-host/grav",
+              "self-host/huginn",
               "self-host/joomla",
               "self-host/kutt",
               "self-host/lowcoder",
@@ -725,6 +727,7 @@
             "pages": [
               "self-host/appsmith",
               "self-host/appwrite",
+              "self-host/athens",
               "self-host/browserless",
               "self-host/bytestash",
               "self-host/code-server",
@@ -760,6 +763,7 @@
               "self-host/mailhog",
               "self-host/mailpit",
               "self-host/marimo",
+              "self-host/mazanoke",
               "self-host/meilisearch",
               "self-host/nocobase",
               "self-host/onedev",
@@ -842,6 +846,12 @@
             ]
           },
           {
+            "group": "Mail",
+            "pages": [
+              "self-host/maildev"
+            ]
+          },
+          {
             "group": "Media",
             "pages": [
               "self-host/audiobookshelf",
@@ -863,6 +873,7 @@
               "self-host/owncast",
               "self-host/photoprism",
               "self-host/photoview",
+              "self-host/pigallery2",
               "self-host/pinchflat",
               "self-host/plex",
               "self-host/prowlarr",
@@ -880,6 +891,7 @@
             "pages": [
               "self-host/alertmanager",
               "self-host/beszel",
+              "self-host/blackbox-exporter",
               "self-host/bugsink",
               "self-host/changedetection",
               "self-host/checkmate",
@@ -889,6 +901,7 @@
               "self-host/glitchtip",
               "self-host/grafana",
               "self-host/grafana-postgres",
+              "self-host/grafana-alloy",
               "self-host/loki",
               "self-host/healthchecks",
               "self-host/hyperdx",
@@ -896,8 +909,11 @@
               "self-host/jellystat",
               "self-host/librespeed",
               "self-host/netdata",
+              "self-host/node-exporter",
               "self-host/openobserve",
+              "self-host/openspeedtest",
               "self-host/prometheus",
+              "self-host/pushgateway",
               "self-host/smokeping",
               "self-host/speedtest-tracker",
               "self-host/statusnook",
@@ -905,7 +921,8 @@
               "self-host/uptime-kuma",
               "self-host/uptime-kuma-mariadb",
               "self-host/victoriametrics",
-              "self-host/zabbix"
+              "self-host/zabbix",
+              "self-host/zipkin"
             ]
           },
           {

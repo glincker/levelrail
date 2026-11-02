@@ -1,0 +1,25 @@
+id: grafana-alloy
+name: Grafana Alloy
+description: A telemetry collector that scrapes metrics and ships them to Prometheus-compatible, Loki or Tempo backends. This starts with a small pipeline that scrapes its own metrics and logs them; edit the config to forward data elsewhere.
+icon: activity
+category: Monitoring
+documentation_url: https://grafana.com/docs/alloy/latest/
+source_repo: https://github.com/grafana/alloy
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/grafana/alloy/blob/main/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Open the page to see the component graph, then replace the config with your own pipeline and redeploy.
+domains:
+  - service: alloy
+    port: 12345
+    description: Public address of the Grafana Alloy web interface.
+healthcheck:
+  service: alloy
+  port: 12345
+  path: /-/ready

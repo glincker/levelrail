@@ -1,0 +1,62 @@
+---
+title: "Self-host MAZANOKE with Docker"
+sidebarTitle: "MAZANOKE"
+description: "A private image optimizer that compresses and converts photos in the browser. Images are processed on the visitor device and never uploaded to the server."
+"og:url": "https://docs.levelrail.com/self-host/mazanoke"
+---
+
+A private image optimizer that compresses and converts photos in the browser. Images are processed on the visitor device and never uploaded to the server.
+
+This page describes the Levelrail template for MAZANOKE (Developer Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/civilblur/mazanoke.
+
+Recommended memory: about 32 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `mazanoke` | `ghcr.io/civilblur/mazanoke:v1.1.7` | 80 | none |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Nothing beyond a standard container: no extra privileges, host mounts or published ports.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy MAZANOKE with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select MAZANOKE. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy mazanoke --name my-mazanoke
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Developer Tools templates
+
+- [Appsmith](/self-host/appsmith)
+- [Appwrite](/self-host/appwrite)
+- [Athens](/self-host/athens)
+- [Browserless](/self-host/browserless)
+- [ByteStash](/self-host/bytestash)
+
+All templates are listed in the [self-host gallery](/self-host).

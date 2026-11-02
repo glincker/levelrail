@@ -2709,6 +2709,123 @@
    }
   },
   {
+   "id": "athens",
+   "aliases": [],
+   "name": "Athens",
+   "slogan": "A Go module proxy that caches modules from upstream so builds stay fast and repeatable. Point GOPROXY at it from your CI or developer machines.",
+   "description": "A Go module proxy that caches modules from upstream so builds stay fast and repeatable. Point GOPROXY at it from your CI or developer machines.",
+   "first_run": [
+    "Set GOPROXY to the public address of this app, then run go build. Modules are cached on first request."
+   ],
+   "category": "Developer Tools",
+   "status": "active",
+   "source_repo": "https://github.com/gomods/athens",
+   "documentation_url": "https://docs.gomods.io/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/gomods/athens/blob/main/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "athens",
+     "image": "gomods/athens",
+     "tag": "v0.20.0",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "athens",
+     "image": "gomods/athens:v0.20.0",
+     "ports": [
+      3000
+     ],
+     "volumes": [
+      "storage -> /var/lib/athens"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "athens",
+     "name": "ATHENS_DISK_STORAGE_ROOT",
+     "kind": "preset"
+    },
+    {
+     "service": "athens",
+     "name": "ATHENS_PORT",
+     "kind": "preset"
+    },
+    {
+     "service": "athens",
+     "name": "ATHENS_STORAGE_TYPE",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "athens"
+      ],
+      "detail": "storage",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "audiobookshelf",
    "aliases": [],
    "name": "Audiobookshelf",
@@ -4106,6 +4223,91 @@
      {
       "code": "volume_backups",
       "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "blackbox-exporter",
+   "aliases": [],
+   "name": "Blackbox Exporter",
+   "slogan": "A Prometheus exporter that probes endpoints over HTTP, HTTPS, DNS, TCP and ICMP and reports the results as metrics. It ships with the standard probe modules.",
+   "description": "A Prometheus exporter that probes endpoints over HTTP, HTTPS, DNS, TCP and ICMP and reports the results as metrics. It ships with the standard probe modules.",
+   "first_run": [
+    "Probe a target with /probe?target=https://example.org&module=http_2xx and scrape it from Prometheus."
+   ],
+   "category": "Monitoring",
+   "status": "active",
+   "source_repo": "https://github.com/prometheus/blackbox_exporter",
+   "documentation_url": "https://github.com/prometheus/blackbox_exporter",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/prometheus/blackbox_exporter/blob/master/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "blackbox",
+     "image": "prom/blackbox-exporter",
+     "tag": "v0.29.1",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 64,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "blackbox",
+     "image": "prom/blackbox-exporter:v0.29.1",
+     "ports": [
+      9115
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
      },
      {
       "code": "health_gated_deploy",
@@ -19351,6 +19553,107 @@
    }
   },
   {
+   "id": "grafana-alloy",
+   "aliases": [],
+   "name": "Grafana Alloy",
+   "slogan": "A telemetry collector that scrapes metrics and ships them to Prometheus-compatible, Loki or Tempo backends. This starts with a small pipeline that scrapes its own metrics and logs them; edit the config to forward data elsewhere.",
+   "description": "A telemetry collector that scrapes metrics and ships them to Prometheus-compatible, Loki or Tempo backends. This starts with a small pipeline that scrapes its own metrics and logs them; edit the config to forward data elsewhere.",
+   "first_run": [
+    "Open the page to see the component graph, then replace the config with your own pipeline and redeploy."
+   ],
+   "category": "Monitoring",
+   "status": "active",
+   "source_repo": "https://github.com/grafana/alloy",
+   "documentation_url": "https://grafana.com/docs/alloy/latest/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/grafana/alloy/blob/main/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "alloy",
+     "image": "grafana/alloy",
+     "tag": "v1.21.3",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "alloy",
+     "image": "grafana/alloy:v1.21.3",
+     "ports": [
+      12345
+     ],
+     "volumes": [
+      "alloy_data -> /var/lib/alloy/data"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "alloy"
+      ],
+      "detail": "alloy_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "grafana-postgres",
    "aliases": [],
    "name": "Grafana (Postgres)",
@@ -19716,6 +20019,130 @@
      {
       "code": "secret_masking",
       "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "grav",
+   "aliases": [],
+   "name": "Grav",
+   "slogan": "A flat-file CMS that stores pages as Markdown files, so there is no database to run. Edit content in the admin panel or directly on the volume.",
+   "description": "A flat-file CMS that stores pages as Markdown files, so there is no database to run. Edit content in the admin panel or directly on the volume.",
+   "first_run": [
+    "Open /admin on the public address and create the first administrator account before anyone else does."
+   ],
+   "category": "Applications",
+   "status": "active",
+   "source_repo": "https://github.com/getgrav/grav",
+   "documentation_url": "https://learn.getgrav.org/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/getgrav/grav/blob/develop/LICENSE.txt"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "grav",
+     "image": "lscr.io/linuxserver/grav",
+     "tag": "2.2.21-ls293",
+     "source_class": "rebuilder",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TZ",
+      "label": "Time zone",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "grav",
+     "image": "lscr.io/linuxserver/grav:2.2.21-ls293",
+     "ports": [
+      80
+     ],
+     "volumes": [
+      "config -> /config"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "grav",
+     "name": "PGID",
+     "kind": "preset"
+    },
+    {
+     "service": "grav",
+     "name": "PUID",
+     "kind": "preset"
+    },
+    {
+     "service": "grav",
+     "name": "TZ",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "grav"
+      ],
+      "detail": "config",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
      },
      {
       "code": "volume_backups",
@@ -22187,6 +22614,136 @@
        "db"
       ],
       "detail": "hoppscotch_db_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "huginn",
+   "aliases": [],
+   "name": "Huginn",
+   "slogan": "A tool that builds agents which watch the web and act for you, such as tracking a page, filtering a feed or sending an email when something changes. This image bundles its own MySQL, so it is one container.",
+   "description": "A tool that builds agents which watch the web and act for you, such as tracking a page, filtering a feed or sending an email when something changes. This image bundles its own MySQL, so it is one container.",
+   "first_run": [
+    "Sign in with the default admin account and change its password right away (see the Huginn docs for the default user)."
+   ],
+   "category": "Applications",
+   "status": "active",
+   "source_repo": "https://github.com/huginn/huginn",
+   "documentation_url": "https://github.com/huginn/huginn/wiki",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/huginn/huginn/blob/master/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "huginn",
+     "image": "huginn/huginn",
+     "tag": "v2026.11.01",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 1024,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "huginn",
+     "image": "huginn/huginn:v2026.11.01",
+     "ports": [
+      3000
+     ],
+     "volumes": [
+      "mysql -> /var/lib/mysql"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "huginn",
+     "name": "APP_SECRET_TOKEN",
+     "kind": "generated"
+    },
+    {
+     "service": "huginn",
+     "name": "DOMAIN",
+     "kind": "preset"
+    },
+    {
+     "service": "huginn",
+     "name": "FORCE_SSL",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "huginn"
+      ],
+      "detail": "APP_SECRET_TOKEN",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "huginn"
+      ],
+      "detail": "mysql",
       "message": "Stores data in named volumes"
      }
     ],
@@ -32077,6 +32634,92 @@
    }
   },
   {
+   "id": "maildev",
+   "aliases": [],
+   "name": "MailDev",
+   "slogan": "A local SMTP server that catches outgoing mail and shows it in a web inbox, for testing mail from your apps. Mail sent to maildev:1025 from other services in this project appears in the web page and is never delivered.",
+   "description": "A local SMTP server that catches outgoing mail and shows it in a web inbox, for testing mail from your apps. Mail sent to maildev:1025 from other services in this project appears in the web page and is never delivered.",
+   "first_run": [
+    "Point your app SMTP host at maildev, port 1025, with no login, then open the page to read caught mail."
+   ],
+   "category": "Mail",
+   "status": "active",
+   "source_repo": "https://github.com/maildev/maildev",
+   "documentation_url": "https://maildev.github.io/maildev/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/maildev/maildev/blob/master/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "maildev",
+     "image": "maildev/maildev",
+     "tag": "2.2.1",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "maildev",
+     "image": "maildev/maildev:2.2.1",
+     "ports": [
+      1080,
+      1025
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "mailhog",
    "aliases": [],
    "name": "MailHog",
@@ -33385,6 +34028,91 @@
      {
       "code": "volume_backups",
       "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mazanoke",
+   "aliases": [],
+   "name": "MAZANOKE",
+   "slogan": "A private image optimizer that compresses and converts photos in the browser. Images are processed on the visitor device and never uploaded to the server.",
+   "description": "A private image optimizer that compresses and converts photos in the browser. Images are processed on the visitor device and never uploaded to the server.",
+   "first_run": [
+    "Open the address and drop images onto the page. Nothing leaves your browser."
+   ],
+   "category": "Developer Tools",
+   "status": "active",
+   "source_repo": "https://github.com/civilblur/mazanoke",
+   "documentation_url": "https://github.com/civilblur/mazanoke",
+   "license": {
+    "spdx": "GPL-3.0",
+    "class": "copyleft",
+    "url": "https://github.com/civilblur/mazanoke/blob/main/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "mazanoke",
+     "image": "ghcr.io/civilblur/mazanoke",
+     "tag": "v1.1.7",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 32,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "mazanoke",
+     "image": "ghcr.io/civilblur/mazanoke:v1.1.7",
+     "ports": [
+      80
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
      },
      {
       "code": "health_gated_deploy",
@@ -39505,6 +40233,91 @@
    }
   },
   {
+   "id": "node-exporter",
+   "aliases": [],
+   "name": "Node Exporter",
+   "slogan": "A Prometheus exporter for hardware and OS metrics of the host it runs on. It serves plain metrics at /metrics for a Prometheus server to scrape.",
+   "description": "A Prometheus exporter for hardware and OS metrics of the host it runs on. It serves plain metrics at /metrics for a Prometheus server to scrape.",
+   "first_run": [
+    "Add node-exporter:9100 as a scrape target in your Prometheus config. The page serves metrics only."
+   ],
+   "category": "Monitoring",
+   "status": "active",
+   "source_repo": "https://github.com/prometheus/node_exporter",
+   "documentation_url": "https://prometheus.io/docs/guides/node-exporter/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/prometheus/node_exporter/blob/master/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "node-exporter",
+     "image": "prom/node-exporter",
+     "tag": "v1.12.1",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 64,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "node-exporter",
+     "image": "prom/node-exporter:v1.12.1",
+     "ports": [
+      9100
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "node-postgres-starter",
    "aliases": [],
    "name": "Node.js API + PostgreSQL",
@@ -42755,6 +43568,91 @@
      {
       "code": "volume_backups",
       "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "openspeedtest",
+   "aliases": [],
+   "name": "OpenSpeedTest",
+   "slogan": "A browser speed test you host yourself. It measures download and upload speed between a visitor and this server, with no account and no stored results.",
+   "description": "A browser speed test you host yourself. It measures download and upload speed between a visitor and this server, with no account and no stored results.",
+   "first_run": [
+    "Open the address and press Start. Results reflect the path between your browser and this server."
+   ],
+   "category": "Monitoring",
+   "status": "active",
+   "source_repo": "https://github.com/openspeedtest/Speed-Test",
+   "documentation_url": "https://openspeedtest.com/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/openspeedtest/Speed-Test/blob/main/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "openspeedtest",
+     "image": "openspeedtest/latest",
+     "tag": "v2.0.8",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 64,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "openspeedtest",
+     "image": "openspeedtest/latest:v2.0.8",
+     "ports": [
+      3000
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
      },
      {
       "code": "health_gated_deploy",
@@ -46476,6 +47374,116 @@
    }
   },
   {
+   "id": "pigallery2",
+   "aliases": [],
+   "name": "PiGallery2",
+   "slogan": "A directory-first photo gallery that shows your folders as they are on disk, with search, maps and thumbnails. Photos are read from a volume, so you copy them in or mount a folder.",
+   "description": "A directory-first photo gallery that shows your folders as they are on disk, with search, maps and thumbnails. Photos are read from a volume, so you copy them in or mount a folder.",
+   "first_run": [
+    "Open the address, create the admin account, then add photos to the images volume and rescan from the settings."
+   ],
+   "category": "Media",
+   "status": "active",
+   "source_repo": "https://github.com/bpatrik/pigallery2",
+   "documentation_url": "https://bpatrik.github.io/pigallery2/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/bpatrik/pigallery2/blob/master/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "pigallery2",
+     "image": "bpatrik/pigallery2",
+     "tag": "3.5.2-alpine",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "pigallery2",
+     "image": "bpatrik/pigallery2:3.5.2-alpine",
+     "ports": [
+      80
+     ],
+     "volumes": [
+      "config -> /app/data/config",
+      "db -> /app/data/db",
+      "images -> /app/data/images",
+      "tmp -> /app/data/tmp"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "pigallery2",
+     "name": "NODE_ENV",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "pigallery2"
+      ],
+      "detail": "config, db, images, tmp",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "pinchflat",
    "aliases": [],
    "name": "Pinchflat",
@@ -49371,6 +50379,107 @@
      {
       "code": "secret_masking",
       "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "pushgateway",
+   "aliases": [],
+   "name": "Pushgateway",
+   "slogan": "A Prometheus Pushgateway that holds metrics pushed by short-lived batch jobs so a Prometheus server can scrape them. Pushed groups are kept on a persistent volume.",
+   "description": "A Prometheus Pushgateway that holds metrics pushed by short-lived batch jobs so a Prometheus server can scrape them. Pushed groups are kept on a persistent volume.",
+   "first_run": [
+    "Push metrics from jobs to /metrics/job/NAME and add pushgateway:9091 as a Prometheus scrape target."
+   ],
+   "category": "Monitoring",
+   "status": "active",
+   "source_repo": "https://github.com/prometheus/pushgateway",
+   "documentation_url": "https://prometheus.io/docs/practices/pushing/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/prometheus/pushgateway/blob/master/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "pushgateway",
+     "image": "prom/pushgateway",
+     "tag": "v1.11.4",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 64,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "pushgateway",
+     "image": "prom/pushgateway:v1.11.4",
+     "ports": [
+      9091
+     ],
+     "volumes": [
+      "pushgateway_data -> /data"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "pushgateway"
+      ],
+      "detail": "pushgateway_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
      },
      {
       "code": "health_gated_deploy",
@@ -66620,6 +67729,97 @@
      {
       "code": "volume_backups",
       "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "zipkin",
+   "aliases": [],
+   "name": "Zipkin",
+   "slogan": "A distributed tracing system that collects timing data from your services and shows request traces. This uses in-memory storage, so traces reset when the container restarts.",
+   "description": "A distributed tracing system that collects timing data from your services and shows request traces. This uses in-memory storage, so traces reset when the container restarts.",
+   "first_run": [
+    "Send spans to /api/v2/spans from your tracing library, then open the page to search traces."
+   ],
+   "category": "Monitoring",
+   "status": "active",
+   "source_repo": "https://github.com/openzipkin/zipkin",
+   "documentation_url": "https://zipkin.io/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/openzipkin/zipkin/blob/master/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "zipkin",
+     "image": "openzipkin/zipkin",
+     "tag": "3.6.1",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "zipkin",
+     "image": "openzipkin/zipkin:3.6.1",
+     "ports": [
+      9411
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [
+    {
+     "service": "zipkin",
+     "name": "JAVA_OPTS",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
      },
      {
       "code": "health_gated_deploy",

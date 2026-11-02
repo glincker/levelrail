@@ -4,7 +4,7 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 "og:url": "https://docs.levelrail.com/self-host"
 ---
 
-418 open-source apps you can run on your own server with a Levelrail template. Each page lists the services, ports, volumes and environment variables the template sets up, and how to deploy it. For how templates work, see the [service template catalog](/templates-and-registry).
+430 open-source apps you can run on your own server with a Levelrail template. Each page lists the services, ports, volumes and environment variables the template sets up, and how to deploy it. For how templates work, see the [service template catalog](/templates-and-registry).
 
 ## AI
 
@@ -68,6 +68,8 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 - [EspoCRM](/self-host/espocrm): An open-source CRM for managing sales, support, and customer relationships end to end.
 - [Ghost](/self-host/ghost): A fast, modern publishing platform for blogs and newsletters, with built-in memberships.
 - [GLPI](/self-host/glpi): An IT asset and service management platform with helpdesk ticketing built in.
+- [Grav](/self-host/grav): A flat-file CMS that stores pages as Markdown files, so there is no database to run. Edit content in the admin panel or directly on the volume.
+- [Huginn](/self-host/huginn): A tool that builds agents which watch the web and act for you, such as tracking a page, filtering a feed or sending an email when something changes. This image bundles its own MySQL, so it is one container.
 - [Joomla](/self-host/joomla): A long-established CMS with a large extension ecosystem for business sites, portals, and communities.
 - [Kutt](/self-host/kutt): A modern URL shortener with custom domains, link analytics and an API, backed by Postgres and Redis.
 - [Lowcoder](/self-host/lowcoder): An open-source low-code platform for building internal apps, dashboards, and workflows with drag-and-drop.
@@ -185,6 +187,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 
 - [Appsmith](/self-host/appsmith): A low-code platform for building internal tools and admin panels on top of your own data.
 - [Appwrite](/self-host/appwrite): An open-source backend-as-a-service with auth, databases, storage, and functions behind one API.
+- [Athens](/self-host/athens): A Go module proxy that caches modules from upstream so builds stay fast and repeatable. Point GOPROXY at it from your CI or developer machines.
 - [Browserless](/self-host/browserless): A headless Chrome browser exposed as an HTTP/WebSocket API for scraping and PDF rendering.
 - [ByteStash](/self-host/bytestash): A fast, self-hosted code snippet manager with syntax highlighting, tagging, and a built-in MCP endpoint for AI assistants.
 - [code-server](/self-host/code-server): Run VS Code in the browser, on your own hardware, from any device with a tab open.
@@ -220,6 +223,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [MailHog](/self-host/mailhog): An SMTP test server that catches outgoing mail from your apps and shows it in a web inbox.
 - [Mailpit](/self-host/mailpit): A local SMTP server and web inbox for catching and inspecting outgoing email during development.
 - [marimo](/self-host/marimo): A reactive Python notebook that is reproducible, git-friendly, and shareable as an app.
+- [MAZANOKE](/self-host/mazanoke): A private image optimizer that compresses and converts photos in the browser. Images are processed on the visitor device and never uploaded to the server.
 - [Meilisearch](/self-host/meilisearch): A fast, typo-tolerant search engine API you can drop into any app's search bar.
 - [NocoBase](/self-host/nocobase): An extensible no-code/low-code platform for building internal tools and databases.
 - [OneDev](/self-host/onedev): A self-hosted Git server with built-in CI/CD, issue tracking and code search, in one container.
@@ -292,6 +296,10 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [Home Assistant](/self-host/home-assistant): Open-source home automation that puts local control and privacy first.
 - [Traccar](/self-host/traccar): An open-source GPS tracking platform supporting over 170 device protocols.
 
+## Mail
+
+- [MailDev](/self-host/maildev): A local SMTP server that catches outgoing mail and shows it in a web inbox, for testing mail from your apps. Mail sent to maildev:1025 from other services in this project appears in the web page and is never delivered.
+
 ## Media
 
 - [Audiobookshelf](/self-host/audiobookshelf): A self-hosted server for your audiobooks and podcasts, with sync across every device.
@@ -313,6 +321,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [Owncast](/self-host/owncast): Run your own live video streaming server with built-in chat, no third-party platform required.
 - [PhotoPrism](/self-host/photoprism): An AI-powered photo management app that indexes and organizes your library as you own it.
 - [Photoview](/self-host/photoview): A fast, simple photo gallery that indexes an existing folder tree without importing or duplicating files.
+- [PiGallery2](/self-host/pigallery2): A directory-first photo gallery that shows your folders as they are on disk, with search, maps and thumbnails. Photos are read from a volume, so you copy them in or mount a folder.
 - [Pinchflat](/self-host/pinchflat): Automatically download and organize YouTube channels and playlists into your media library.
 - [Plex](/self-host/plex): A media server that organizes your movies, TV, and music and streams them to any device.
 - [Prowlarr](/self-host/prowlarr): An indexer manager that syncs your torrent and Usenet indexers across the whole Arr stack.
@@ -328,6 +337,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 
 - [Alertmanager](/self-host/alertmanager): Prometheus Alertmanager: groups, deduplicates and routes alerts to email, Slack, webhooks and on-call tools.
 - [Beszel](/self-host/beszel): A lightweight server monitoring hub with historical stats for CPU, memory, disk, and network.
+- [Blackbox Exporter](/self-host/blackbox-exporter): A Prometheus exporter that probes endpoints over HTTP, HTTPS, DNS, TCP and ICMP and reports the results as metrics. It ships with the standard probe modules.
 - [Bugsink](/self-host/bugsink): A self-hosted, lightweight error tracking server with a Sentry-compatible SDK ingestion API.
 - [Changedetection.io](/self-host/changedetection): Monitor any webpage for changes and get notified the moment content updates.
 - [Checkmate](/self-host/checkmate): An open-source uptime and server monitoring app with incident history and status pages.
@@ -337,6 +347,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [GlitchTip](/self-host/glitchtip): A lightweight, self-hosted error tracking service compatible with the Sentry SDK.
 - [Grafana](/self-host/grafana): Dashboards and exploration for metrics, logs, and traces from any data source.
 - [Grafana (Postgres)](/self-host/grafana-postgres): Grafana backed by Postgres instead of its default embedded SQLite, for multi-instance or external-DB setups.
+- [Grafana Alloy](/self-host/grafana-alloy): A telemetry collector that scrapes metrics and ships them to Prometheus-compatible, Loki or Tempo backends. This starts with a small pipeline that scrapes its own metrics and logs them; edit the config to forward data elsewhere.
 - [Grafana Loki](/self-host/loki): A horizontally scalable log aggregation system that indexes labels, not full text, to keep storage cheap.
 - [Healthchecks](/self-host/healthchecks): Cron job and scheduled task monitoring: get alerted the moment a periodic job stops checking in.
 - [HyperDX](/self-host/hyperdx): An observability platform that brings logs, traces, metrics and session replays together in one search UI. MIT licensed. Runs the all-in-one image with its bundled ClickHouse, MongoDB and OpenTelemetry collector, so it needs about 2 GB of memory. On first open, the setup page asks you to create the admin login.
@@ -344,8 +355,11 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [Jellystat](/self-host/jellystat): A statistics and history dashboard for Jellyfin with watch time, library and user insights, backed by Postgres. MIT licensed. Create the admin user on first open, then add your Jellyfin URL and an API key.
 - [LibreSpeed](/self-host/librespeed): A lightweight, self-hosted internet speed test with no ads, tracking, or Flash required.
 - [Netdata](/self-host/netdata): Per-second infrastructure metrics with zero configuration and a live dashboard out of the box.
+- [Node Exporter](/self-host/node-exporter): A Prometheus exporter for hardware and OS metrics of the host it runs on. It serves plain metrics at /metrics for a Prometheus server to scrape.
 - [OpenObserve](/self-host/openobserve): A lightweight, single-binary observability platform for logs, metrics, and traces with a built-in UI.
+- [OpenSpeedTest](/self-host/openspeedtest): A browser speed test you host yourself. It measures download and upload speed between a visitor and this server, with no account and no stored results.
 - [Prometheus](/self-host/prometheus): A metrics time-series database and alerting engine built for pull-based scraping.
+- [Pushgateway](/self-host/pushgateway): A Prometheus Pushgateway that holds metrics pushed by short-lived batch jobs so a Prometheus server can scrape them. Pushed groups are kept on a persistent volume.
 - [SmokePing](/self-host/smokeping): A latency and packet loss monitor that pings your targets and graphs jitter over time. GPL-2.0 licensed. Targets live in the Targets file under the config volume. There is no login, so keep it private or behind an auth proxy.
 - [Speedtest Tracker](/self-host/speedtest-tracker): Runs Ookla speed tests on a schedule and charts your connection's throughput, latency, and jitter over time.
 - [Statusnook](/self-host/statusnook): Deploy a status page and start monitoring endpoints in minutes.
@@ -354,6 +368,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [Uptime Kuma (MariaDB)](/self-host/uptime-kuma-mariadb): Uptime Kuma with a MariaDB sidecar provisioned, for the setups that opt out of its default SQLite file.
 - [VictoriaMetrics](/self-host/victoriametrics): A fast, resource-frugal time-series database that speaks the Prometheus query and remote-write APIs. Has no authentication, so point Prometheus-style senders at victoriametrics:8428 from other services in this project, or attach a domain only behind Basic Auth. Not published on the host.
 - [Zabbix](/self-host/zabbix): Enterprise-grade network, server, and application monitoring with alerting and trend graphs.
+- [Zipkin](/self-host/zipkin): A distributed tracing system that collects timing data from your services and shows request traces. This uses in-memory storage, so traces reset when the container restarts.
 
 ## Productivity
 

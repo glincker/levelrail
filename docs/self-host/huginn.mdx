@@ -1,0 +1,69 @@
+---
+title: "Self-host Huginn with Docker"
+sidebarTitle: "Huginn"
+description: "A tool that builds agents which watch the web and act for you, such as tracking a page, filtering a feed or sending an email when something changes. This image bundles its own MySQL, so it is one container."
+"og:url": "https://docs.levelrail.com/self-host/huginn"
+---
+
+A tool that builds agents which watch the web and act for you, such as tracking a page, filtering a feed or sending an email when something changes. This image bundles its own MySQL, so it is one container.
+
+This page describes the Levelrail template for Huginn (Applications). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/huginn/huginn/wiki.
+
+Recommended memory: about 1024 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `huginn` | `huginn/huginn:v2026.11.01` | 3000 | `mysql -&#62; /var/lib/mysql` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `huginn` | `APP_SECRET_TOKEN` | Generated at deploy |
+| `huginn` | `DOMAIN` | Preset in the template |
+| `huginn` | `FORCE_SSL` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`huginn`): APP_SECRET_TOKEN.
+- Stores data in named volumes (`huginn`): mysql.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Huginn with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Huginn. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy huginn --name my-huginn
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Applications templates
+
+- [Budibase](/self-host/budibase)
+- [Cleanuparr](/self-host/cleanuparr)
+- [Cockpit CMS](/self-host/cockpit-cms)
+- [Deluge](/self-host/deluge)
+- [Drupal](/self-host/drupal)
+
+All templates are listed in the [self-host gallery](/self-host).

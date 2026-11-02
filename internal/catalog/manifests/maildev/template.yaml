@@ -1,0 +1,25 @@
+id: maildev
+name: MailDev
+description: A local SMTP server that catches outgoing mail and shows it in a web inbox, for testing mail from your apps. Mail sent to maildev:1025 from other services in this project appears in the web page and is never delivered.
+icon: mail-send
+category: Mail
+documentation_url: https://maildev.github.io/maildev/
+source_repo: https://github.com/maildev/maildev
+license: MIT
+license_class: permissive
+license_url: https://github.com/maildev/maildev/blob/master/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 134217728
+first_run:
+  - Point your app SMTP host at maildev, port 1025, with no login, then open the page to read caught mail.
+domains:
+  - service: maildev
+    port: 1080
+    description: Public address of the MailDev web interface.
+healthcheck:
+  service: maildev
+  port: 1080
+  path: /

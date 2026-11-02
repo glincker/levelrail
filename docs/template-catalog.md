@@ -25,29 +25,30 @@ Set the optional `Description` field on a Go template (manifest templates reuse 
 
 {/* BEGIN GENERATED CATALOG TABLE */}
 
-Generated from `internal/catalog.Templates` (418 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
+Generated from `internal/catalog.Templates` (430 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
 
 | Category | Templates |
 | --- | --- |
 | [AI](#ai) | 36 |
 | [Analytics](#analytics) | 10 |
-| [Applications](#applications) | 32 |
+| [Applications](#applications) | 34 |
 | [Automation](#automation) | 8 |
 | [Communication](#communication) | 20 |
 | [Dashboard](#dashboard) | 8 |
 | [Database Tools](#database-tools) | 30 |
-| [Developer Tools](#developer-tools) | 60 |
+| [Developer Tools](#developer-tools) | 62 |
 | [Finance](#finance) | 11 |
 | [Games](#games) | 5 |
 | [Infrastructure](#infrastructure) | 17 |
 | [IoT](#iot) | 3 |
-| [Media](#media) | 29 |
-| [Monitoring](#monitoring) | 28 |
+| [Media](#media) | 30 |
+| [Monitoring](#monitoring) | 34 |
 | [Productivity](#productivity) | 78 |
 | [Security](#security) | 19 |
 | [Starter Kits](#starter-kits) | 7 |
 | [Storage](#storage) | 16 |
 | [Backups](#backups) | 1 |
+| [Mail](#mail) | 1 |
 
 ## AI
 
@@ -117,6 +118,8 @@ Generated from `internal/catalog.Templates` (418 entries as of this build). Run 
 | [EspoCRM](https://docs.espocrm.com) | An open-source CRM for managing sales, support, and customer relationships end to end. | `espocrm` |  |
 | [Ghost](https://ghost.org/docs/) | A fast, modern publishing platform for blogs and newsletters, with built-in memberships. | `ghost` |  |
 | [GLPI](https://glpi-project.org/documentation/) | An IT asset and service management platform with helpdesk ticketing built in. | `glpi` |  |
+| [Grav](https://learn.getgrav.org/) | A flat-file CMS that stores pages as Markdown files, so there is no database to run. Edit content in the admin panel or directly on the volume. | `grav` |  |
+| [Huginn](https://github.com/huginn/huginn/wiki) | A tool that builds agents which watch the web and act for you, such as tracking a page, filtering a feed or sending an email when something changes. This image bundles its own MySQL, so it is one container. | `huginn` |  |
 | [Joomla](https://docs.joomla.org) | A long-established CMS with a large extension ecosystem for business sites, portals, and communities. | `joomla` |  |
 | [Kutt](https://docs.kutt.it/) | A modern URL shortener with custom domains, link analytics and an API, backed by Postgres and Redis. | `kutt` |  |
 | [Lowcoder](https://docs.lowcoder.cloud) | An open-source low-code platform for building internal apps, dashboards, and workflows with drag-and-drop. | `lowcoder` |  |
@@ -240,6 +243,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | --- | --- | --- | --- |
 | [Appsmith](https://docs.appsmith.com) | A low-code platform for building internal tools and admin panels on top of your own data. | `appsmith` |  |
 | [Appwrite](https://appwrite.io/docs) | An open-source backend-as-a-service with auth, databases, storage, and functions behind one API. | `appwrite` |  |
+| [Athens](https://docs.gomods.io/) | A Go module proxy that caches modules from upstream so builds stay fast and repeatable. Point GOPROXY at it from your CI or developer machines. | `athens` |  |
 | [Browserless](https://docs.browserless.io) | A headless Chrome browser exposed as an HTTP/WebSocket API for scraping and PDF rendering. | `browserless` |  |
 | [ByteStash](https://github.com/jordan-dalby/ByteStash) | A fast, self-hosted code snippet manager with syntax highlighting, tagging, and a built-in MCP endpoint for AI assistants. | `bytestash` |  |
 | [code-server](https://coder.com/docs/code-server) | Run VS Code in the browser, on your own hardware, from any device with a tab open. | `code-server` |  |
@@ -275,6 +279,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [MailHog](https://github.com/mailhog/MailHog) | An SMTP test server that catches outgoing mail from your apps and shows it in a web inbox. | `mailhog` |  |
 | [Mailpit](https://mailpit.axllent.org/docs/) | A local SMTP server and web inbox for catching and inspecting outgoing email during development. | `mailpit` |  |
 | [marimo](https://marimo.io/) | A reactive Python notebook that is reproducible, git-friendly, and shareable as an app. | `marimo` |  |
+| [MAZANOKE](https://github.com/civilblur/mazanoke) | A private image optimizer that compresses and converts photos in the browser. Images are processed on the visitor device and never uploaded to the server. | `mazanoke` |  |
 | [Meilisearch](https://www.meilisearch.com/docs) | A fast, typo-tolerant search engine API you can drop into any app's search bar. | `meilisearch` |  |
 | [NocoBase](https://docs.nocobase.com/) | An extensible no-code/low-code platform for building internal tools and databases. | `nocobase` |  |
 | [OneDev](https://docs.onedev.io/installation-guide/run-as-docker-container) | A self-hosted Git server with built-in CI/CD, issue tracking and code search, in one container. | `onedev` |  |
@@ -378,6 +383,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Owncast](https://owncast.online/docs) | Run your own live video streaming server with built-in chat, no third-party platform required. | `owncast` |  |
 | [PhotoPrism](https://docs.photoprism.app/getting-started/docker-compose/) | An AI-powered photo management app that indexes and organizes your library as you own it. | `photoprism` |  |
 | [Photoview](https://photoview.github.io/docs/) | A fast, simple photo gallery that indexes an existing folder tree without importing or duplicating files. | `photoview` |  |
+| [PiGallery2](https://bpatrik.github.io/pigallery2/) | A directory-first photo gallery that shows your folders as they are on disk, with search, maps and thumbnails. Photos are read from a volume, so you copy them in or mount a folder. | `pigallery2` |  |
 | [Pinchflat](https://github.com/kieraneglin/pinchflat/wiki) | Automatically download and organize YouTube channels and playlists into your media library. | `pinchflat` |  |
 | [Plex](https://docs.linuxserver.io/images/docker-plex/) | A media server that organizes your movies, TV, and music and streams them to any device. | `plex` |  |
 | [Prowlarr](https://wiki.servarr.com/prowlarr) | An indexer manager that syncs your torrent and Usenet indexers across the whole Arr stack. | `prowlarr` |  |
@@ -395,6 +401,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | --- | --- | --- | --- |
 | [Alertmanager](https://prometheus.io/docs/alerting/latest/alertmanager/) | Prometheus Alertmanager: groups, deduplicates and routes alerts to email, Slack, webhooks and on-call tools. | `alertmanager` |  |
 | [Beszel](https://beszel.dev/guide/getting-started) | A lightweight server monitoring hub with historical stats for CPU, memory, disk, and network. | `beszel` |  |
+| [Blackbox Exporter](https://github.com/prometheus/blackbox_exporter) | A Prometheus exporter that probes endpoints over HTTP, HTTPS, DNS, TCP and ICMP and reports the results as metrics. It ships with the standard probe modules. | `blackbox-exporter` |  |
 | [Bugsink](https://www.bugsink.com/docs/) | A self-hosted, lightweight error tracking server with a Sentry-compatible SDK ingestion API. | `bugsink` |  |
 | [Changedetection.io](https://github.com/dgtlmoon/changedetection.io/wiki) | Monitor any webpage for changes and get notified the moment content updates. | `changedetection` |  |
 | [Checkmate](https://docs.checkmate.so) | An open-source uptime and server monitoring app with incident history and status pages. | `checkmate` |  |
@@ -404,6 +411,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [GlitchTip](https://glitchtip.com/documentation) | A lightweight, self-hosted error tracking service compatible with the Sentry SDK. | `glitchtip` |  |
 | [Grafana](https://grafana.com/docs/grafana/latest/) | Dashboards and exploration for metrics, logs, and traces from any data source. | `grafana` |  |
 | [Grafana (Postgres)](https://grafana.com/docs/grafana/latest/) | Grafana backed by Postgres instead of its default embedded SQLite, for multi-instance or external-DB setups. | `grafana-postgres` |  |
+| [Grafana Alloy](https://grafana.com/docs/alloy/latest/) | A telemetry collector that scrapes metrics and ships them to Prometheus-compatible, Loki or Tempo backends. This starts with a small pipeline that scrapes its own metrics and logs them; edit the config to forward data elsewhere. | `grafana-alloy` |  |
 | [Grafana Loki](https://grafana.com/docs/loki/latest) | A horizontally scalable log aggregation system that indexes labels, not full text, to keep storage cheap. | `loki` |  |
 | [Healthchecks](https://healthchecks.io/docs/self_hosted/) | Cron job and scheduled task monitoring: get alerted the moment a periodic job stops checking in. | `healthchecks` |  |
 | [HyperDX](https://clickhouse.com/docs/use-cases/observability/clickstack) | An observability platform that brings logs, traces, metrics and session replays together in one search UI. MIT licensed. Runs the all-in-one image with its bundled ClickHouse, MongoDB and OpenTelemetry collector, so it needs about 2 GB of memory. On first open, the setup page asks you to create the admin login. | `hyperdx` |  |
@@ -411,8 +419,11 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Jellystat](https://github.com/CyferShepard/Jellystat) | A statistics and history dashboard for Jellyfin with watch time, library and user insights, backed by Postgres. MIT licensed. Create the admin user on first open, then add your Jellyfin URL and an API key. | `jellystat` |  |
 | [LibreSpeed](https://github.com/librespeed/speedtest) | A lightweight, self-hosted internet speed test with no ads, tracking, or Flash required. | `librespeed` |  |
 | [Netdata](https://learn.netdata.cloud) | Per-second infrastructure metrics with zero configuration and a live dashboard out of the box. | `netdata` |  |
+| [Node Exporter](https://prometheus.io/docs/guides/node-exporter/) | A Prometheus exporter for hardware and OS metrics of the host it runs on. It serves plain metrics at /metrics for a Prometheus server to scrape. | `node-exporter` |  |
 | [OpenObserve](https://openobserve.ai/docs) | A lightweight, single-binary observability platform for logs, metrics, and traces with a built-in UI. | `openobserve` |  |
+| [OpenSpeedTest](https://openspeedtest.com/) | A browser speed test you host yourself. It measures download and upload speed between a visitor and this server, with no account and no stored results. | `openspeedtest` |  |
 | [Prometheus](https://prometheus.io/docs/introduction/overview/) | A metrics time-series database and alerting engine built for pull-based scraping. | `prometheus` |  |
+| [Pushgateway](https://prometheus.io/docs/practices/pushing/) | A Prometheus Pushgateway that holds metrics pushed by short-lived batch jobs so a Prometheus server can scrape them. Pushed groups are kept on a persistent volume. | `pushgateway` |  |
 | [SmokePing](https://oss.oetiker.ch/smokeping/doc/index.en.html) | A latency and packet loss monitor that pings your targets and graphs jitter over time. GPL-2.0 licensed. Targets live in the Targets file under the config volume. There is no login, so keep it private or behind an auth proxy. | `smokeping` |  |
 | [Speedtest Tracker](https://docs.speedtest-tracker.dev) | Runs Ookla speed tests on a schedule and charts your connection's throughput, latency, and jitter over time. | `speedtest-tracker` |  |
 | [Statusnook](https://statusnook.com) | Deploy a status page and start monitoring endpoints in minutes. | `statusnook` |  |
@@ -421,6 +432,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Uptime Kuma (MariaDB)](https://github.com/louislam/uptime-kuma/wiki) | Uptime Kuma with a MariaDB sidecar provisioned, for the setups that opt out of its default SQLite file. | `uptime-kuma-mariadb` |  |
 | [VictoriaMetrics](https://docs.victoriametrics.com) | A fast, resource-frugal time-series database that speaks the Prometheus query and remote-write APIs. Has no authentication, so point Prometheus-style senders at victoriametrics:8428 from other services in this project, or attach a domain only behind Basic Auth. Not published on the host. | `victoriametrics` |  |
 | [Zabbix](https://www.zabbix.com/documentation/current/en/manual/installation/containers) | Enterprise-grade network, server, and application monitoring with alerting and trend graphs. | `zabbix` |  |
+| [Zipkin](https://zipkin.io/) | A distributed tracing system that collects timing data from your services and shows request traces. This uses in-memory storage, so traces reset when the container restarts. | `zipkin` |  |
 
 ## Productivity
 
@@ -567,6 +579,12 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | Template | Slogan | ID | Notes |
 | --- | --- | --- | --- |
 | [Backrest](https://garethgeorge.github.io/backrest/) | A web UI for restic backups with scheduled snapshots, retention policies and restore browsing (GPL-3.0). Create the admin user on first visit, before exposing the address publicly. | `backrest` |  |
+
+## Mail
+
+| Template | Slogan | ID | Notes |
+| --- | --- | --- | --- |
+| [MailDev](https://maildev.github.io/maildev/) | A local SMTP server that catches outgoing mail and shows it in a web inbox, for testing mail from your apps. Mail sent to maildev:1025 from other services in this project appears in the web page and is never delivered. | `maildev` |  |
 
 {/* END GENERATED CATALOG TABLE */}
 

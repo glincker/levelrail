@@ -1,0 +1,25 @@
+id: mazanoke
+name: MAZANOKE
+description: A private image optimizer that compresses and converts photos in the browser. Images are processed on the visitor device and never uploaded to the server.
+icon: image
+category: Developer Tools
+documentation_url: https://github.com/civilblur/mazanoke
+source_repo: https://github.com/civilblur/mazanoke
+license: GPL-3.0
+license_class: copyleft
+license_url: https://github.com/civilblur/mazanoke/blob/main/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 33554432
+first_run:
+  - Open the address and drop images onto the page. Nothing leaves your browser.
+domains:
+  - service: mazanoke
+    port: 80
+    description: Public address of the optimizer.
+healthcheck:
+  service: mazanoke
+  port: 80
+  path: /

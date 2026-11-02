@@ -290,6 +290,12 @@ export const TEMPLATE_LOGO_LOADERS: Record<
   '2fauth': () => import('@thesvg/react/2fauth'),
   activepieces: () => import('@thesvg/react/activepieces'),
   alertmanager: () => import('@thesvg/react/alertmanager'),
+  grav: () => import('@thesvg/react/grav'),
+  openspeedtest: () => import('@thesvg/react/openspeedtest'),
+  'grafana-alloy': () => import('@thesvg/react/grafana'),
+  'node-exporter': () => import('@thesvg/react/prometheus'),
+  pushgateway: () => import('@thesvg/react/prometheus'),
+  'blackbox-exporter': () => import('@thesvg/react/prometheus'),
   anythingllm: () => import('@thesvg/react/anythingllm'),
   appflowy: () => import('@thesvg/react/appflowy'),
   'apprise-api': () => import('@thesvg/react/apprise-api'),
@@ -509,6 +515,6 @@ export const COMPOSITE_LOGOS: Record<string, [TechLogoKey, TechLogoKey?]> = {
 
 // No thesvg mark exists for these products yet; they render the monogram tile.
 export const KNOWN_MISSING_LOGOS: readonly string[] =
-  'diun gotenberg lldap campfire once-campfire bugsink imgcompress embystat budge proxyscotch kutt metamcp archivebox backrest crawl4ai headscale open-notebook radicale gatus mail-mox factorio palworld terraria seerr wizarr maintainerr sabnzbd lubelogger spoolman shaarli reactive-resume spliit jellystat gitness questdb opensearch redash cleanuparr docling-serve kokoro-fastapi lychee meshcentral multi-scrobbler mylar3 ombi smokeping tinyauth imgproxy rss-bridge opengist ackee hyperdx romm flagsmith yourls pgweb'.split(
+  'diun gotenberg lldap campfire once-campfire bugsink imgcompress embystat budge proxyscotch kutt metamcp archivebox backrest crawl4ai headscale open-notebook radicale gatus mail-mox factorio palworld terraria seerr wizarr maintainerr sabnzbd lubelogger spoolman shaarli reactive-resume spliit jellystat gitness questdb opensearch redash cleanuparr docling-serve kokoro-fastapi lychee meshcentral multi-scrobbler mylar3 ombi smokeping tinyauth imgproxy rss-bridge opengist ackee hyperdx romm flagsmith yourls pgweb zipkin maildev pigallery2 athens mazanoke huginn'.split(
     ' ',
   )

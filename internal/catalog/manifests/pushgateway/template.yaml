@@ -1,0 +1,25 @@
+id: pushgateway
+name: Pushgateway
+description: A Prometheus Pushgateway that holds metrics pushed by short-lived batch jobs so a Prometheus server can scrape them. Pushed groups are kept on a persistent volume.
+icon: upload
+category: Monitoring
+documentation_url: https://prometheus.io/docs/practices/pushing/
+source_repo: https://github.com/prometheus/pushgateway
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/prometheus/pushgateway/blob/master/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 67108864
+first_run:
+  - Push metrics from jobs to /metrics/job/NAME and add pushgateway:9091 as a Prometheus scrape target.
+domains:
+  - service: pushgateway
+    port: 9091
+    description: Public address of the Pushgateway web interface.
+healthcheck:
+  service: pushgateway
+  port: 9091
+  path: /-/healthy
