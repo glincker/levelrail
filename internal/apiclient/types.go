@@ -1507,6 +1507,24 @@ type TriggerCloneRestoreRequest struct {
 	Resources *ServiceResources `json:"resources,omitempty"`
 }
 
+// CreateDatabaseBranchRequest mirrors internal/api's databaseBranchRequest.
+type CreateDatabaseBranchRequest struct {
+	Name      string `json:"name"`
+	BackupID  string `json:"backup_id,omitempty"`
+	At        string `json:"at,omitempty"`
+	ProjectID string `json:"project_id,omitempty"`
+}
+
+// DatabaseBranchResource mirrors internal/api's databaseBranchResource.
+type DatabaseBranchResource struct {
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	BranchedFrom string `json:"branched_from"`
+	BackupID     string `json:"backup_id,omitempty"`
+	At           string `json:"at,omitempty"`
+	Status       string `json:"status"`
+}
+
 // VolumeCloneRestoreResource mirrors internal/api's
 // volumeCloneRestoreResource (internal/api/app_volume_clone_restore.go):
 // one "restore as new volume" attempt.

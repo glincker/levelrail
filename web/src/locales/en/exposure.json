@@ -61,6 +61,7 @@
     "confirm": "I understand this traffic will be dropped",
     "persistence": "Persistence",
     "lockoutTitle": "Lockout risk",
+    "callerWarningTitle": "Your address was not checked",
     "forceLockout": "I accept the risk and want to apply it anyway",
     "autoRevert": "This rule is applied on trial and rolls back on its own unless you keep it in the next step.",
     "trialTitle": "Restriction applied on trial",

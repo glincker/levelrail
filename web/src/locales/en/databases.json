@@ -561,7 +561,8 @@
     "delete": "Delete...",
     "stopToast": "Stopping \"{{name}}\".",
     "startToast": "Starting \"{{name}}\".",
-    "backToList": "Back to databases"
+    "backToList": "Back to databases",
+    "branch": "Branch"
   },
   "connection": {
     "forApps": "For apps (over the mesh)",
@@ -926,5 +927,21 @@
       "failed": "Failed",
       "unknown": "Starting"
     }
+  },
+  "branch": {
+    "title": "Branch this database",
+    "description": "Creates a new, independent database from a backup or a point in time. \"{{name}}\" is not changed, and the branch gets its own credentials.",
+    "name": "Branch name",
+    "from": "Start from",
+    "fromBackup": "A backup",
+    "fromTime": "A point in time",
+    "backup": "Backup",
+    "noBackups": "No succeeded backups yet",
+    "time": "Time",
+    "cancel": "Cancel",
+    "submit": "Create branch",
+    "starting": "Starting...",
+    "started": "Branch \"{{name}}\" is being created.",
+    "action": "Branch"
   }
 }

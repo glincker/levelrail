@@ -61,6 +61,7 @@
     "confirm": "Entiendo que este tráfico se descartará",
     "persistence": "Persistencia",
     "lockoutTitle": "Riesgo de bloqueo",
+    "callerWarningTitle": "No se comprobó tu dirección",
     "forceLockout": "Acepto el riesgo y quiero aplicarla de todos modos",
     "autoRevert": "Esta regla se aplica a prueba y se revierte sola si no la conservas en el siguiente paso.",
     "trialTitle": "Restricción aplicada a prueba",

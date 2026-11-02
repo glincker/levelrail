@@ -107,8 +107,10 @@ type ExposurePlan struct {
 	Warnings    []string `json:"warnings"`
 	Applied     bool     `json:"applied"`
 	Lockout     []string `json:"lockout,omitempty"`
-	Pending     bool     `json:"pending,omitempty"`
-	RevertAt    string   `json:"revert_at,omitempty"`
+	// CallerWarning is set when the caller address could not be checked.
+	CallerWarning string `json:"caller_warning,omitempty"`
+	Pending       bool   `json:"pending,omitempty"`
+	RevertAt      string `json:"revert_at,omitempty"`
 }
 
 // GetExposure calls GET /api/v1/firewall/exposure.

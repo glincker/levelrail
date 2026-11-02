@@ -1912,6 +1912,14 @@ func (c *Client) TriggerCloneRestore(ctx context.Context, name string, req Trigg
 	return out, err
 }
 
+// CreateDatabaseBranch calls POST /api/v1/databases/{name}/branches: a new
+// independent database from a backup or point in time. The source is never written.
+func (c *Client) CreateDatabaseBranch(ctx context.Context, name string, req CreateDatabaseBranchRequest) (DatabaseBranchResource, error) {
+	var out DatabaseBranchResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/branches", req, &out)
+	return out, err
+}
+
 // TriggerVolumeCloneRestore calls
 // POST /api/v1/apps/{name}/volumes/{volume}/restore-as-new: the app
 // service volume counterpart of TriggerCloneRestore. Creates a brand-new,

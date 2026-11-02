@@ -331,3 +331,47 @@ func TestExposureTrialRevertsAndConfirmStores(t *testing.T) {
 		t.Fatal("confirm not audited")
 	}
 }
+
+func TestExposureKeepEndsTrialAndRecordsCreator(t *testing.T) {
+	ipt := &fakeIptables{rules: []string{"-j RETURN"}}
+	rt, cookie, mgr, timers := exposureTrialRouter(t, ipt, nil)
+	path := "/api/v1/firewall/exposure/restrictions/tcp/8108"
+	if code, _ := exposureCall(t, rt, cookie, http.MethodPut, path, `{"allow":["192.0.2.1"],"confirm":true,"auto_revert":true}`); code != http.StatusOK {
+		t.Fatalf("trial = %d", code)
+	}
+	if code, out := exposureCall(t, rt, cookie, http.MethodPut, path, `{"allow":["192.0.2.1","10.0.0.0/8"],"confirm":true}`); code != http.StatusOK {
+		t.Fatalf("keep = %d %s", code, out)
+	}
+	if len(mgr.Pending()) != 0 {
+		t.Fatalf("trial still pending after keep: %v", mgr.Pending())
+	}
+	(*timers)[0]() // the old trial timer must not strip the kept rule
+	if len(ipt.rules) != 4 {
+		t.Fatalf("kept rule stripped by trial timer: %v", ipt.rules)
+	}
+	if code, _ := exposureCall(t, rt, cookie, http.MethodPost, path+"/confirm", ""); code != http.StatusNotFound {
+		t.Fatalf("confirm after keep = %d, want 404", code)
+	}
+	rows, err := rt.exposureStore.ListExposureRestrictions(context.Background())
+	if err != nil || len(rows) != 1 || len(rows[0].Allow) != 2 || rows[0].CreatedBy == "" {
+		t.Fatalf("stored = %+v, %v", rows, err)
+	}
+}
+
+func TestExposureWarnsWhenCallerCannotBeChecked(t *testing.T) {
+	ipt := &fakeIptables{}
+	rt, cookie, _, _ := exposureTrialRouter(t, ipt, nil)
+	path := "/api/v1/firewall/exposure/restrictions/tcp/8108"
+	for _, addr := range []string{"127.0.0.1:5000", "[2001:db8::7]:5000"} {
+		req := authedRequest(t, cookie, http.MethodPut, path, `{"allow":["192.0.2.1"],"confirm":true,"auto_revert":true}`)
+		req.RemoteAddr = addr
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, req)
+		if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"caller_warning"`) {
+			t.Fatalf("%s: %d %s", addr, rec.Code, rec.Body.String())
+		}
+	}
+	if code, out := exposureCall(t, rt, cookie, http.MethodPost, "/api/v1/firewall/exposure/preview", `{"port":8108,"allow":["192.0.2.1"]}`); code != http.StatusOK || strings.Contains(out, "caller_warning") {
+		t.Fatalf("checked caller warned: %d %s", code, out)
+	}
+}

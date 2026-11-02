@@ -331,6 +331,19 @@ clone-restore "clr_h4t9wpq2m" of database "main" from backup "bkh_p93kd7z1q" int
 
 On the dashboard, **Restore** and **Restore as new** sit side by side on every succeeded row of the backup history table. They are separate buttons, not a mode toggle, so the safe action never looks as dangerous as the destructive one. Past attempts show in their own history tables on the same card, and `levelrail-cli backups clone-restores <database>` lists them on the CLI. A failed restore-as-new leaves the new database in place in whatever state the failure left it: delete it and retry.
 
+### Branch a database
+
+```bash
+levelrail-cli databases branch create <source> <new-name> --from-backup <id>
+levelrail-cli databases branch create <source> <new-name> --at 2026-11-01T09:30:00Z
+```
+
+`POST /api/v1/databases/{name}/branches` creates a new, independent database from a succeeded backup of the source, or, with `--at`, from a point in time. It reuses the restore-as-new path, so it takes minutes and reads from the backup bucket. The source is never changed.
+
+The branch has the source's engine, version and size preset. It gets its own generated credentials (nothing is copied from the source), no linked apps and no pooler until you enable one. The name must be new and valid, and the usual database quota and free disk checks apply. It needs `write:sensitive`, like restore-as-new.
+
+`--at` needs point-in-time recovery enabled on the source and a time inside its recoverable window. It is available for MySQL and MariaDB; for Postgres, branch from a backup. On the dashboard, the **Branch** button on the database page opens a dialog where you name the branch and pick a backup or a time.
+
 ### Restore safety checks
 
 A Postgres restore replays the dump in one transaction with `ON_ERROR_STOP`: a failing statement rolls everything back and the restore reports failure, so a damaged or partial dump leaves existing data untouched.

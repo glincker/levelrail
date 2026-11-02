@@ -170,6 +170,9 @@ func printExposurePlan(out io.Writer, p apiclient.ExposurePlan, applied bool) {
 	for _, l := range p.Lockout {
 		_, _ = fmt.Fprintf(out, "Lockout risk: %s\n", l)
 	}
+	if p.CallerWarning != "" {
+		_, _ = fmt.Fprintf(out, "Warning: %s\n", p.CallerWarning)
+	}
 	if p.Pending {
 		_, _ = fmt.Fprintf(out, "Rolls back at %s unless you run \"firewall confirm --port %d\".\n", p.RevertAt, p.Port)
 	}

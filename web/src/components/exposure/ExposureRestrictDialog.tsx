@@ -199,6 +199,12 @@ export function ExposureRestrictDialog({
                   <AlertDescription>{l}</AlertDescription>
                 </Alert>
               ))}
+              {plan.caller_warning ? (
+                <Alert variant="destructive">
+                  <AlertTitle>{t('dialog.callerWarningTitle')}</AlertTitle>
+                  <AlertDescription>{plan.caller_warning}</AlertDescription>
+                </Alert>
+              ) : null}
               {lockout.length > 0 ? (
                 <label className="flex items-center gap-2">
                   <Checkbox

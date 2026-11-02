@@ -14,6 +14,8 @@ import (
 // applyExposureOnTrial installs the rule without storing it, so it vanishes on
 // its own after the confirm window or when the control plane restarts.
 func (rt *Router) applyExposureOnTrial(w http.ResponseWriter, r *http.Request, want exposure.Restriction, plan exposure.Plan, lockout []string) {
+	rt.exposureMu.Lock()
+	defer rt.exposureMu.Unlock()
 	var previous *exposure.Restriction
 	if rows, err := rt.exposureStore.ListExposureRestrictions(r.Context()); err == nil {
 		for _, row := range rows {
@@ -32,7 +34,7 @@ func (rt *Router) applyExposureOnTrial(w http.ResponseWriter, r *http.Request, w
 	rt.auditExposure(r, "exposure_restrict_trial", want.Port, want.Protocol, want.Allow)
 	writeJSON(w, http.StatusOK, exposurePlanResource{
 		Plan: plan, Port: want.Port, Protocol: want.Protocol, Allow: want.Allow, Warnings: rt.exposureWarnings(r, want.Allow),
-		Applied: true, Lockout: lockout, Pending: true, RevertAt: ch.ExpiresAt.Format(time.RFC3339),
+		Applied: true, Lockout: lockout, CallerWarning: exposure.CallerWarning(clientIP(r)), Pending: true, RevertAt: ch.ExpiresAt.Format(time.RFC3339),
 	})
 }
 
@@ -43,6 +45,8 @@ func (rt *Router) handleExposureConfirm(w http.ResponseWriter, r *http.Request) 
 	if !ok {
 		return
 	}
+	rt.exposureMu.Lock()
+	defer rt.exposureMu.Unlock()
 	ch, found := rt.exposure.Confirm(proto, port)
 	if !found {
 		writeError(w, http.StatusNotFound, "no restriction is waiting for confirmation on this port; it may have been rolled back already")

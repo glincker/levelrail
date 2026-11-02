@@ -40,6 +40,8 @@ type exposurePlanResource struct {
 	Applied  bool     `json:"applied"`
 	// Lockout lists why this rule could cut the operator off; empty when safe.
 	Lockout []string `json:"lockout,omitempty"`
+	// CallerWarning is set when the caller's address could not be checked against the allow-list.
+	CallerWarning string `json:"caller_warning,omitempty"`
 	// Pending is true while the rule awaits confirmation; RevertAt is when it rolls back.
 	Pending  bool   `json:"pending,omitempty"`
 	RevertAt string `json:"revert_at,omitempty"`
@@ -142,7 +144,7 @@ func (rt *Router) handleExposurePreview(w http.ResponseWriter, r *http.Request) 
 	}
 	writeJSON(w, http.StatusOK, exposurePlanResource{
 		Plan: plan, Port: want.Port, Protocol: want.Protocol, Allow: want.Allow, Warnings: rt.exposureWarnings(r, want.Allow),
-		Lockout: rt.exposure.Guard(r.Context(), want, clientIP(r)),
+		Lockout: rt.exposure.Guard(r.Context(), want, clientIP(r)), CallerWarning: exposure.CallerWarning(clientIP(r)),
 	})
 }
 
@@ -180,12 +182,17 @@ func (rt *Router) handleExposureRestrict(w http.ResponseWriter, r *http.Request)
 		rt.applyExposureOnTrial(w, r, want, plan, lockout)
 		return
 	}
+	// Keeping a rule ends any trial on the port, or its timer could later strip
+	// or overwrite the kept rule. The lock orders this against confirm.
+	rt.exposureMu.Lock()
+	defer rt.exposureMu.Unlock()
+	rt.exposure.Forget(proto, port)
 	if _, err := rt.exposure.Apply(r.Context(), want); err != nil {
 		rt.logger.Error("api: exposure restrict failed", slog.Int("port", port), slog.String("protocol", proto), slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "could not apply the rule: "+err.Error())
 		return
 	}
-	row := store.ExposureRestriction{Port: want.Port, Protocol: want.Protocol, Allow: want.Allow, CreatedAt: time.Now().UTC().Format(time.RFC3339)}
+	row := store.ExposureRestriction{Port: want.Port, Protocol: want.Protocol, Allow: want.Allow, CreatedBy: rt.accessActor(r).name, CreatedAt: time.Now().UTC().Format(time.RFC3339)}
 	if err := rt.exposureStore.SaveExposureRestriction(r.Context(), row); err != nil {
 		_ = rt.exposure.Remove(r.Context(), want.Port, want.Protocol)
 		rt.internalError(w, "api: exposure restrict: save failed, rule rolled back", err, slog.Int("port", port))
@@ -195,7 +202,7 @@ func (rt *Router) handleExposureRestrict(w http.ResponseWriter, r *http.Request)
 	rt.auditExposure(r, "exposure_restrict", want.Port, want.Protocol, want.Allow)
 	rt.nudgeReconciler()
 	writeJSON(w, http.StatusOK, exposurePlanResource{
-		Plan: plan, Port: want.Port, Protocol: want.Protocol, Allow: want.Allow, Warnings: rt.exposureWarnings(r, want.Allow), Applied: true, Lockout: lockout,
+		Plan: plan, Port: want.Port, Protocol: want.Protocol, Allow: want.Allow, Warnings: rt.exposureWarnings(r, want.Allow), Applied: true, Lockout: lockout, CallerWarning: exposure.CallerWarning(clientIP(r)),
 	})
 }
 
@@ -205,6 +212,8 @@ func (rt *Router) handleExposureUnrestrict(w http.ResponseWriter, r *http.Reques
 	if !ok {
 		return
 	}
+	rt.exposureMu.Lock()
+	defer rt.exposureMu.Unlock()
 	rt.exposure.Forget(proto, port)
 	if err := rt.exposureStore.DeleteExposureRestriction(r.Context(), port, proto); err != nil {
 		rt.internalError(w, "api: exposure unrestrict: delete failed", err, slog.Int("port", port))

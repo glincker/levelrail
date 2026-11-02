@@ -3,6 +3,8 @@ package exposure
 import (
 	"context"
 	"errors"
+	"fmt"
+	"sync"
 	"testing"
 	"time"
 )
@@ -150,5 +152,92 @@ LISTEN 0 128 [::]:2200 [::]:* users:(("sshd",pid=1,fd=4))
 LISTEN 0 128 0.0.0.0:5432 0.0.0.0:* users:(("postgres",pid=2,fd=5))`
 	if got := parseSSListeners(ss); len(got) != 2 || got[0] != 2200 {
 		t.Fatalf("ss ports = %v", got)
+	}
+}
+
+func TestReplacedTrialTimerCannotRevertNewerTrial(t *testing.T) {
+	f := &fakeChain{rules: []string{"-j RETURN"}}
+	m, tm := trialManager(f)
+	ctx := context.Background()
+	if _, err := m.ApplyWithRevert(ctx, Restriction{Port: 8108, Allow: []string{"10.0.0.2"}}, nil, time.Minute); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.ApplyWithRevert(ctx, Restriction{Port: 8108, Allow: []string{"10.0.0.9"}}, nil, time.Minute); err != nil {
+		t.Fatal(err)
+	}
+	tm.fns[0]() // the first timer fired just as it was replaced
+	if len(m.Pending()) != 1 || len(f.rules) != 3 {
+		t.Fatalf("stale timer reverted the newer trial: pending=%v rules=%v", m.Pending(), f.rules)
+	}
+	tm.fns[1]()
+	if len(f.rules) != 1 || len(m.Pending()) != 0 {
+		t.Fatalf("current timer did not revert: %v", f.rules)
+	}
+}
+
+func TestConcurrentTrialsOnOnePortSerialize(t *testing.T) {
+	f := &fakeChain{rules: []string{"-j RETURN"}}
+	m, _ := trialManager(f)
+	var wg sync.WaitGroup
+	for i := 0; i < 8; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			r := Restriction{Port: 8108, Allow: []string{fmt.Sprintf("10.0.0.%d", i+2)}}
+			if _, err := m.ApplyWithRevert(context.Background(), r, nil, time.Minute); err != nil {
+				t.Errorf("trial %d: %v", i, err)
+			}
+		}(i)
+	}
+	wg.Wait()
+	if len(m.Pending()) != 1 || len(f.rules) != 3 {
+		t.Fatalf("pending=%v rules=%v, want one trial and one rule set", m.Pending(), f.rules)
+	}
+}
+
+func TestForgetCancelsTrialWithoutTouchingKeptRule(t *testing.T) {
+	f := &fakeChain{rules: []string{"-j RETURN"}}
+	m, tm := trialManager(f)
+	ctx := context.Background()
+	if _, err := m.ApplyWithRevert(ctx, Restriction{Port: 8108, Allow: []string{"10.0.0.2"}}, nil, time.Minute); err != nil {
+		t.Fatal(err)
+	}
+	m.Forget("tcp", 8108)
+	if _, err := m.Apply(ctx, Restriction{Port: 8108, Allow: []string{"10.0.0.9"}}); err != nil {
+		t.Fatal(err)
+	}
+	tm.fns[0]()
+	rules := m.tagged(m.ReadChain(ctx), m.tag("tcp", 8108))
+	if len(rules) != 2 || rules[0].Source != "10.0.0.9/32" || tm.stopped != 1 {
+		t.Fatalf("kept rule was changed by the old timer: %v stopped=%d", f.rules, tm.stopped)
+	}
+}
+
+func TestSyncReassertsPendingRuleAfterFlush(t *testing.T) {
+	f := &fakeChain{rules: []string{"-j RETURN"}}
+	m, _ := trialManager(f)
+	if _, err := m.ApplyWithRevert(context.Background(), Restriction{Port: 8108, Allow: []string{"10.0.0.2"}}, nil, time.Minute); err != nil {
+		t.Fatal(err)
+	}
+	f.rules = []string{"-j RETURN"} // Docker restarted and rebuilt DOCKER-USER
+	res := m.Sync(context.Background(), nil)
+	if res.Applied != 1 || len(f.rules) != 3 || len(m.Pending()) != 1 {
+		t.Fatalf("pending rule not re-applied: %+v rules=%v", res, f.rules)
+	}
+	if again := m.Sync(context.Background(), nil); again.Applied != 0 {
+		t.Fatalf("second pass changed things: %+v", again)
+	}
+}
+
+func TestCallerWarning(t *testing.T) {
+	for _, c := range []string{"127.0.0.1", "::1", "2001:db8::1", "", "not-an-ip"} {
+		if CallerWarning(c) == "" {
+			t.Errorf("caller %q got no warning", c)
+		}
+	}
+	for _, c := range []string{"10.1.1.1", "203.0.113.5", "::ffff:10.1.1.1"} {
+		if w := CallerWarning(c); w != "" {
+			t.Errorf("caller %q warned: %s", c, w)
+		}
 	}
 }

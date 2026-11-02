@@ -60,6 +60,7 @@ describe('ExposureRestrictDialog', () => {
               warnings: [],
               applied: false,
               lockout: ['port 2222 is where sshd listens'],
+              caller_warning: 'you are connected from this host (127.0.0.1)',
             }
           : { applied: true, pending: true, revert_at: '2026-01-01T00:01:00Z' }
         return Promise.resolve({
@@ -88,6 +89,7 @@ describe('ExposureRestrictDialog', () => {
     await userEvent.click(
       screen.getByRole('checkbox', { name: /I understand this traffic/ }),
     )
+    expect(screen.getByText(/connected from this host/)).toBeInTheDocument()
     const apply = screen.getByRole('button', { name: 'Apply restriction' })
     expect(apply).toBeDisabled()
     await userEvent.click(

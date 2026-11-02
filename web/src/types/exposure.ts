@@ -61,6 +61,7 @@ export interface ExposurePlan {
   warnings: string[]
   applied: boolean
   lockout?: string[]
+  caller_warning?: string
   pending?: boolean
   revert_at?: string
 }

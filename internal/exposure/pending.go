@@ -25,6 +25,7 @@ type pendingEntry struct {
 type pendingState struct {
 	mu       sync.Mutex
 	entries  map[string]*pendingEntry
+	locks    map[string]*sync.Mutex
 	now      func() time.Time
 	after    func(time.Duration, func()) func() bool
 	onRevert func(Change, error)
@@ -42,6 +43,22 @@ func (p *pendingState) schedule(d time.Duration, f func()) func() bool {
 		return p.after(d, f)
 	}
 	return time.AfterFunc(d, f).Stop
+}
+
+// portLock serializes trials, rollbacks and keeps on one port, so two changes
+// never interleave their iptables edits.
+func (p *pendingState) portLock(key string) *sync.Mutex {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.locks == nil {
+		p.locks = map[string]*sync.Mutex{}
+	}
+	l, ok := p.locks[key]
+	if !ok {
+		l = &sync.Mutex{}
+		p.locks[key] = l
+	}
+	return l
 }
 
 func pendingKey(proto string, port int) string { return proto + "/" + strconv.Itoa(port) }
@@ -85,6 +102,9 @@ func (m *Manager) ApplyWithRevert(ctx context.Context, r Restriction, previous *
 		return Change{}, errors.New("exposure: revert window must be positive")
 	}
 	key := pendingKey(r.Protocol, r.Port)
+	lock := m.pend.portLock(key)
+	lock.Lock()
+	defer lock.Unlock()
 	m.pend.mu.Lock()
 	if old, ok := m.pend.entries[key]; ok {
 		// A second change keeps the original rollback target.
@@ -97,23 +117,30 @@ func (m *Manager) ApplyWithRevert(ctx context.Context, r Restriction, previous *
 		return Change{}, err
 	}
 	ch := Change{Port: r.Port, Protocol: r.Protocol, Allow: r.Allow, ExpiresAt: m.pend.clock().Add(window).UTC()}
+	e := &pendingEntry{change: ch, previous: previous}
 	m.pend.mu.Lock()
 	defer m.pend.mu.Unlock()
 	if m.pend.entries == nil {
 		m.pend.entries = map[string]*pendingEntry{}
 	}
-	m.pend.entries[key] = &pendingEntry{change: ch, previous: previous, stop: m.pend.schedule(window, func() { m.revert(key) })}
+	m.pend.entries[key] = e
+	e.stop = m.pend.schedule(window, func() { m.revert(key, e) })
 	return ch, nil
 }
 
-func (m *Manager) revert(key string) {
+// revert rolls back entry e only while it is still the pending one, so a timer
+// that was replaced by a newer trial cannot undo it.
+func (m *Manager) revert(key string, e *pendingEntry) {
+	lock := m.pend.portLock(key)
+	lock.Lock()
+	defer lock.Unlock()
 	m.pend.mu.Lock()
-	e, ok := m.pend.entries[key]
-	delete(m.pend.entries, key)
-	m.pend.mu.Unlock()
-	if !ok {
+	if m.pend.entries[key] != e {
+		m.pend.mu.Unlock()
 		return
 	}
+	delete(m.pend.entries, key)
+	m.pend.mu.Unlock()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	var err error
@@ -141,8 +168,12 @@ func (m *Manager) Confirm(proto string, port int) (Change, bool) {
 	return e.change, true
 }
 
-// Forget cancels a pending rollback without touching the rules.
+// Forget cancels a pending rollback without touching the rules. It waits for a
+// rollback already running on the port, so the caller's next Apply comes last.
 func (m *Manager) Forget(proto string, port int) {
+	lock := m.pend.portLock(pendingKey(proto, port))
+	lock.Lock()
+	defer lock.Unlock()
 	m.Confirm(proto, port)
 }
 

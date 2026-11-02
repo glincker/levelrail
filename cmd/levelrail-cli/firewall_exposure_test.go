@@ -42,3 +42,19 @@ func TestRun_FirewallRestrictTrialKeepForceAndConfirm(t *testing.T) {
 		t.Errorf("confirm call = %q", got)
 	}
 }
+
+func TestRun_FirewallRestrictPrintsCallerWarning(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"commands":[],"port":8108,"protocol":"tcp","applied":true,"caller_warning":"you are connected from this host (127.0.0.1)"}`))
+	}))
+	defer srv.Close()
+	var stdout, stderr bytes.Buffer
+	args := []string{"firewall", "restrict", "--port", "8108", "--allow", "10.0.0.2", "--apply", "--api-url", srv.URL}
+	if got := run("levelrail-cli-test", args, &stdout, &stderr, envMap()); got != exitOK {
+		t.Fatalf("exit = %d (stderr=%q)", got, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Warning: you are connected from this host") {
+		t.Errorf("out = %q, want the caller warning", stdout.String())
+	}
+}

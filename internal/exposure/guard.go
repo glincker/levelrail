@@ -38,6 +38,25 @@ func (m *Manager) Guard(ctx context.Context, r Restriction, caller string) []str
 	return out
 }
 
+// CallerWarning explains why Guard cannot protect the caller's address: a
+// loopback, IPv6 or unreadable address is never checked against the allow-list.
+// It returns "" when the address was checked.
+func CallerWarning(caller string) string {
+	caller = strings.TrimSpace(caller)
+	ip, err := netip.ParseAddr(caller)
+	if err != nil {
+		return "your address could not be determined, so the lockout check could not confirm you keep access"
+	}
+	ip = ip.Unmap()
+	switch {
+	case ip.IsLoopback():
+		return "you are connected from this host (" + ip.String() + "), so the lockout check could not confirm that remote access keeps working"
+	case !ip.Is4():
+		return fmt.Sprintf("your address %s is IPv6 and the allow-list only holds IPv4 sources, so the lockout check could not confirm you keep access", ip)
+	}
+	return ""
+}
+
 func coversAddr(allow []string, ip netip.Addr) bool {
 	for _, a := range allow {
 		if p, err := netip.ParsePrefix(a); err == nil && p.Contains(ip) {

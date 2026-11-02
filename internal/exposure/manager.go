@@ -342,7 +342,7 @@ func (m *Manager) Sync(ctx context.Context, want []Restriction) SyncResult {
 	chain := m.ReadChain(ctx)
 	if !chain.Readable {
 		// Nothing to enforce means a missing chain is not worth reporting.
-		if chain.NoChain && len(want) == 0 {
+		if chain.NoChain && len(want) == 0 && len(m.Pending()) == 0 {
 			return res
 		}
 		res.Errors = append(res.Errors, chain.Reason)
@@ -367,6 +367,17 @@ func (m *Manager) Sync(ctx context.Context, want []Restriction) SyncResult {
 			res.Applied++
 		}
 	}
+	// A trial rule is not stored, but a flushed chain must not leave it undone
+	// for the rest of its window.
+	for _, c := range m.Pending() {
+		changed, err := m.reassertPending(ctx, c)
+		switch {
+		case err != nil:
+			res.Errors = append(res.Errors, fmt.Sprintf("%d/%s: %v", c.Port, c.Protocol, err))
+		case changed:
+			res.Applied++
+		}
+	}
 	stale := map[string]bool{}
 	for _, r := range chain.Rules {
 		if strings.HasPrefix(r.Comment, m.prefix+tagInfix) && !wanted[r.Comment] && !m.isPendingTag(r.Comment) {
@@ -386,4 +397,17 @@ func (m *Manager) Sync(ctx context.Context, want []Restriction) SyncResult {
 		res.Removed++
 	}
 	return res
+}
+
+// reassertPending re-applies a trial rule unless it was confirmed or rolled
+// back while waiting for the port lock.
+func (m *Manager) reassertPending(ctx context.Context, c Change) (bool, error) {
+	key := pendingKey(c.Protocol, c.Port)
+	lock := m.pend.portLock(key)
+	lock.Lock()
+	defer lock.Unlock()
+	if !m.isPending(c.Protocol, c.Port) {
+		return false, nil
+	}
+	return m.Apply(ctx, Restriction{Port: c.Port, Protocol: c.Protocol, Allow: c.Allow})
 }

@@ -143,6 +143,8 @@ func (rt *Router) registerBackupRoutes(mux *http.ServeMux) {
 	// same boundary the in-place restore history route above draws.
 	mux.HandleFunc("POST /api/v1/databases/{name}/restore-as-new", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleCloneRestore))
 	mux.HandleFunc("GET /api/v1/databases/{name}/clone-restores", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleListCloneRestores))
+	// Branch (database_branch.go): a new independent database from a backup or point in time, same tier as restore-as-new.
+	mux.HandleFunc("POST /api/v1/databases/{name}/branches", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleBranchDatabase))
 
 	// Object-storage attachment per app: AbilityWriteSensitive, it decides which bucket credentials
 	// the container receives. No GET: handleGetApp already returns storage_target_id.
