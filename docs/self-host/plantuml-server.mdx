@@ -1,0 +1,62 @@
+---
+title: "Self-host PlantUML Server with Docker"
+sidebarTitle: "PlantUML Server"
+description: "Turns PlantUML text into UML diagrams as images over HTTP. It has no database and no login, so restrict who can reach it."
+"og:url": "https://docs.levelrail.com/self-host/plantuml-server"
+---
+
+Turns PlantUML text into UML diagrams as images over HTTP. It has no database and no login, so restrict who can reach it.
+
+This page describes the Levelrail template for PlantUML Server (Developer Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/plantuml/plantuml-server.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `plantuml-server` | `plantuml/plantuml-server:v1.2026.9` | 8080 | none |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Nothing beyond a standard container: no extra privileges, host mounts or published ports.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy PlantUML Server with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select PlantUML Server. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy plantuml-server --name my-plantuml-server
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Developer Tools templates
+
+- [Appsmith](/self-host/appsmith)
+- [Appwrite](/self-host/appwrite)
+- [Athens](/self-host/athens)
+- [Browserless](/self-host/browserless)
+- [ByteStash](/self-host/bytestash)
+
+All templates are listed in the [self-host gallery](/self-host).

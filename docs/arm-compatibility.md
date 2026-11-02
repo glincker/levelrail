@@ -16,7 +16,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 
 **Verified on Arm:** `openclaw` (`ghcr.io/openclaw/openclaw:2026.10.5`), tested 2026-11-02 in the managed desktop VM (4096 MiB, 2 CPUs) on an Apple silicon Mac. The image runs natively on arm64, the container used about 0.9 to 1.27 GiB and the guest 1.6 GiB of 3.9 GiB. A 2048 MiB VM is too tight. See [Desktop runtime](/desktop-runtime#openclaw).
 
-**393 listed, 15 amd64 only, 27 unknown** of 435 templates.
+**393 listed, 15 amd64 only, 32 unknown** of 440 templates.
 
 | Template | arm64 in manifest | Smoke run on Arm host |
 | --- | --- | --- |
@@ -174,6 +174,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `influxdb` | listed | pass |
 | `inngest` | listed | not tested |
 | `invoice-ninja` | listed | not tested |
+| `isso` | unknown | not tested |
 | `it-tools` | listed | pass |
 | `jackett` | listed | not tested |
 | `jaeger` | listed | not tested |
@@ -327,6 +328,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `pingvin-share` | listed | not tested |
 | `plane` | listed | not tested |
 | `planka` | listed | not tested |
+| `plantuml-server` | unknown | not tested |
 | `plausible` | listed | pass |
 | `plex` | listed | not tested |
 | `plunk` | listed | not tested |
@@ -358,6 +360,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `redlib` | listed | fail |
 | `redmine` | listed | not tested |
 | `registry` | listed | not tested |
+| `remark42` | unknown | not tested |
 | `rocketchat` | listed | pass |
 | `romm` | listed | not tested |
 | `roundcube` | listed | not tested |
@@ -399,6 +402,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `superset` | listed | not tested |
 | `supertokens` | listed | not tested |
 | `sure` | listed | not tested |
+| `swagger-ui` | unknown | not tested |
 | `syncthing` | listed | pass |
 | `tandoor-recipes` | listed | not tested |
 | `tautulli` | listed | pass |
@@ -446,6 +450,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `whoogle` | listed | not tested |
 | `wikijs` | listed | not tested |
 | `windmill` | listed | not tested |
+| `wiremock` | unknown | not tested |
 | `wizarr` | listed | not tested |
 | `woodpecker` | listed | fail |
 | `wordpress` | listed | pass |

@@ -24335,6 +24335,105 @@
    }
   },
   {
+   "id": "isso",
+   "aliases": [],
+   "name": "Isso",
+   "slogan": "A lightweight self-hosted comment server for static sites with a small JavaScript embed. Comments live in a SQLite file on a volume.",
+   "description": "A lightweight self-hosted comment server for static sites with a small JavaScript embed. Comments live in a SQLite file on a volume.",
+   "first_run": [],
+   "category": "Productivity",
+   "status": "active",
+   "source_repo": "https://github.com/isso-comments/isso",
+   "documentation_url": "https://github.com/isso-comments/isso",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/isso-comments/isso/blob/master/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "isso",
+     "image": "ghcr.io/isso-comments/isso",
+     "tag": "0.14.0",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "isso",
+     "image": "ghcr.io/isso-comments/isso:0.14.0",
+     "ports": [
+      8080
+     ],
+     "volumes": [
+      "db -> /db"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "isso"
+      ],
+      "detail": "db",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "it-tools",
    "aliases": [],
    "name": "IT Tools",
@@ -48616,6 +48715,89 @@
    }
   },
   {
+   "id": "plantuml-server",
+   "aliases": [],
+   "name": "PlantUML Server",
+   "slogan": "Turns PlantUML text into UML diagrams as images over HTTP. It has no database and no login, so restrict who can reach it.",
+   "description": "Turns PlantUML text into UML diagrams as images over HTTP. It has no database and no login, so restrict who can reach it.",
+   "first_run": [],
+   "category": "Developer Tools",
+   "status": "active",
+   "source_repo": "https://github.com/plantuml/plantuml-server",
+   "documentation_url": "https://github.com/plantuml/plantuml-server",
+   "license": {
+    "spdx": "GPL-3.0",
+    "class": "copyleft",
+    "url": "https://github.com/plantuml/plantuml-server/blob/master/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "plantuml-server",
+     "image": "plantuml/plantuml-server",
+     "tag": "v1.2026.9",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "plantuml-server",
+     "image": "plantuml/plantuml-server:v1.2026.9",
+     "ports": [
+      8080
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "plausible",
    "aliases": [],
    "name": "Plausible Analytics",
@@ -53335,6 +53517,149 @@
      {
       "code": "https_ingress",
       "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "remark42",
+   "aliases": [],
+   "name": "Remark42",
+   "slogan": "A privacy friendly comment engine for blogs and static sites, with social login and anonymous comments. Comments are stored in a file database on a volume.",
+   "description": "A privacy friendly comment engine for blogs and static sites, with social login and anonymous comments. Comments are stored in a file database on a volume.",
+   "first_run": [],
+   "category": "Productivity",
+   "status": "active",
+   "source_repo": "https://github.com/umputun/remark42",
+   "documentation_url": "https://github.com/umputun/remark42",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/umputun/remark42/blob/master/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "remark42",
+     "image": "umputun/remark42",
+     "tag": "v1.18.0",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "remark42",
+     "image": "umputun/remark42:v1.18.0",
+     "ports": [
+      8080
+     ],
+     "volumes": [
+      "data -> /srv/var"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "remark42",
+     "name": "AUTH_ANON",
+     "kind": "preset"
+    },
+    {
+     "service": "remark42",
+     "name": "BACKUP_PATH",
+     "kind": "preset"
+    },
+    {
+     "service": "remark42",
+     "name": "REMARK_URL",
+     "kind": "preset"
+    },
+    {
+     "service": "remark42",
+     "name": "SECRET",
+     "kind": "generated"
+    },
+    {
+     "service": "remark42",
+     "name": "SITE",
+     "kind": "preset"
+    },
+    {
+     "service": "remark42",
+     "name": "STORE_BOLT_PATH",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "remark42"
+      ],
+      "detail": "SECRET",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "remark42"
+      ],
+      "detail": "data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
      },
      {
       "code": "volume_backups",
@@ -59636,6 +59961,95 @@
      {
       "code": "volume_backups",
       "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "swagger-ui",
+   "aliases": [],
+   "name": "Swagger UI",
+   "slogan": "Renders an OpenAPI description as interactive API documentation you can try from the browser. It is static, has no login and no database.",
+   "description": "Renders an OpenAPI description as interactive API documentation you can try from the browser. It is static, has no login and no database.",
+   "first_run": [],
+   "category": "Developer Tools",
+   "status": "active",
+   "source_repo": "https://github.com/swagger-api/swagger-ui",
+   "documentation_url": "https://github.com/swagger-api/swagger-ui",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/swagger-api/swagger-ui/blob/master/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "swagger-ui",
+     "image": "swaggerapi/swagger-ui",
+     "tag": "v5.34.1",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 64,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "swagger-ui",
+     "image": "swaggerapi/swagger-ui:v5.34.1",
+     "ports": [
+      8080
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [
+    {
+     "service": "swagger-ui",
+     "name": "URL",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
      },
      {
       "code": "health_gated_deploy",
@@ -66936,6 +67350,105 @@
      {
       "code": "secret_masking",
       "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "wiremock",
+   "aliases": [],
+   "name": "WireMock",
+   "slogan": "An HTTP mock server that stubs and records API responses for development and tests. Stubs are managed through its admin API, so restrict who can reach it.",
+   "description": "An HTTP mock server that stubs and records API responses for development and tests. Stubs are managed through its admin API, so restrict who can reach it.",
+   "first_run": [],
+   "category": "Developer Tools",
+   "status": "active",
+   "source_repo": "https://github.com/wiremock/wiremock",
+   "documentation_url": "https://github.com/wiremock/wiremock",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/wiremock/wiremock/blob/master/LICENSE.txt"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "wiremock",
+     "image": "wiremock/wiremock",
+     "tag": "3.13.2",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "wiremock",
+     "image": "wiremock/wiremock:3.13.2",
+     "ports": [
+      8080
+     ],
+     "volumes": [
+      "mappings -> /home/wiremock"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "wiremock"
+      ],
+      "detail": "mappings",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
      },
      {
       "code": "volume_backups",

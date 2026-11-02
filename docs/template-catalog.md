@@ -25,7 +25,7 @@ Set the optional `Description` field on a Go template (manifest templates reuse 
 
 {/* BEGIN GENERATED CATALOG TABLE */}
 
-Generated from `internal/catalog.Templates` (435 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
+Generated from `internal/catalog.Templates` (440 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
 
 | Category | Templates |
 | --- | --- |
@@ -36,14 +36,14 @@ Generated from `internal/catalog.Templates` (435 entries as of this build). Run 
 | [Communication](#communication) | 21 |
 | [Dashboard](#dashboard) | 8 |
 | [Database Tools](#database-tools) | 31 |
-| [Developer Tools](#developer-tools) | 63 |
+| [Developer Tools](#developer-tools) | 66 |
 | [Finance](#finance) | 11 |
 | [Games](#games) | 5 |
 | [Infrastructure](#infrastructure) | 17 |
 | [IoT](#iot) | 3 |
 | [Media](#media) | 30 |
 | [Monitoring](#monitoring) | 34 |
-| [Productivity](#productivity) | 80 |
+| [Productivity](#productivity) | 82 |
 | [Security](#security) | 19 |
 | [Starter Kits](#starter-kits) | 7 |
 | [Storage](#storage) | 16 |
@@ -288,6 +288,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [OneDev](https://docs.onedev.io/installation-guide/run-as-docker-container) | A self-hosted Git server with built-in CI/CD, issue tracking and code search, in one container. | `onedev` |  |
 | [Opengist](https://opengist.io/docs) | A self-hosted pastebin powered by Git, for sharing snippets and gists with revisions, topics and search. AGPL-3.0 licensed. Uses SQLite in one container. SSH Git access is off, so clone and push over HTTPS. The first account you register becomes the admin. | `opengist` |  |
 | [Pgweb](https://github.com/sosedoff/pgweb/wiki) | A small web client for browsing and querying PostgreSQL databases, with a table browser, query editor and export. Runs as one container with no storage of its own. Sign in with the username and password from the install form, then enter the connection details of your database. | `pgweb` |  |
+| [PlantUML Server](https://github.com/plantuml/plantuml-server) | Turns PlantUML text into UML diagrams as images over HTTP. It has no database and no login, so restrict who can reach it. | `plantuml-server` |  |
 | [PocketBase](https://pocketbase.io/docs/) | An open-source backend in one file: embedded database, auth, file storage, and realtime API. | `pocketbase` |  |
 | [Proxyscotch](https://github.com/hoppscotch/proxyscotch) | A small CORS proxy that lets Hoppscotch call APIs from the browser. | `proxyscotch` |  |
 | [Semaphore UI](https://docs.semaphoreui.com) | A modern web UI for running Ansible, Terraform, and shell tasks with schedules, history, and access control. | `semaphore` |  |
@@ -296,6 +297,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [SonarQube Community](https://docs.sonarsource.com/sonarqube-community-build) | Continuous code quality and security analysis across 30+ languages, with quality gates for every pull request. | `sonarqube` |  |
 | [Sonatype Nexus Repository](https://help.sonatype.com/en/sonatype-nexus-repository.html) | A universal artifact repository for Maven, npm, Docker, PyPI, and more, with proxying and caching. | `nexus` |  |
 | [Strapi](https://docs.strapi.io/) | An open-source headless CMS with a customizable admin panel and a REST/GraphQL content API. | `strapi` |  |
+| [Swagger UI](https://github.com/swagger-api/swagger-ui) | Renders an OpenAPI description as interactive API documentation you can try from the browser. It is static, has no login and no database. | `swagger-ui` |  |
 | [Termix](https://github.com/LukeGus/Termix) | A web-based SSH, RDP, and VNC terminal manager for organizing and connecting to every server from one dashboard. | `termix` |  |
 | [Tolgee](https://tolgee.io/platform) | A localization management platform where developers and translators work in one shared UI. | `tolgee` |  |
 | [TrailBase](https://trailbase.io/) | A fast Rust and SQLite application server with type-safe APIs and auth. | `trailbase` |  |
@@ -305,6 +307,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Wakapi](https://wakapi.dev) | A self-hosted, WakaTime-compatible backend for tracking coding time and stats. | `wakapi` |  |
 | [Web Check](https://github.com/lissy93/web-check) | An all-in-one OSINT tool for inspecting a website's DNS, headers, certs, and security posture. | `web-check` |  |
 | [Weblate](https://docs.weblate.org) | A continuous localization system for translating software with a web-based editor and review flow. | `weblate` |  |
+| [WireMock](https://github.com/wiremock/wiremock) | An HTTP mock server that stubs and records API responses for development and tests. Stubs are managed through its admin API, so restrict who can reach it. | `wiremock` |  |
 | [Woodpecker CI](https://woodpecker-ci.org/docs) | A simple, container-native CI engine with a server and an agent, driven by pipelines in your repo. | `woodpecker` |  |
 
 ## Finance
@@ -470,6 +473,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [HedgeDoc](https://docs.hedgedoc.org) | Real-time collaborative markdown notes you can host yourself. | `hedgedoc` |  |
 | [HeyForm](https://docs.heyform.net/open-source/installation) | A form builder for surveys, quizzes and lead capture, with conversational forms and a MongoDB backend. | `heyform` |  |
 | [Homebox](https://homebox.software/en/quick-start/install/) | A home inventory and organization system for tracking what you own and where it is. | `homebox` |  |
+| [Isso](https://github.com/isso-comments/isso) | A lightweight self-hosted comment server for static sites with a small JavaScript embed. Comments live in a SQLite file on a volume. | `isso` |  |
 | [Joplin Server](https://github.com/laurent22/joplin/blob/dev/packages/server/README.md) | A self-hosted sync server for the Joplin note-taking app, keeping notes off third-party clouds. | `joplin` |  |
 | [Joplin Server](https://joplinapp.org/help/api/server_config/) | A self-hosted sync target for the Joplin note-taking app, replacing Dropbox or OneDrive sync. | `joplin-server` |  |
 | [Kanboard](https://docs.kanboard.org) | A minimalist, keyboard-friendly kanban board for personal and team task tracking. | `kanboard` |  |
@@ -501,6 +505,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Reactive Resume](https://docs.rxresu.me/) | A free resume builder with live preview, templates and PDF export, backed by Postgres. MIT licensed. Register an account on first open, uploads are stored on a local volume. | `reactive-resume` |  |
 | [Readeck](https://readeck.org/en/docs/) | Save the readable content of web pages you want to keep, free of ads and clutter. | `readeck` |  |
 | [Redmine](https://www.redmine.org/projects/redmine/wiki/Guide) | A mature project management and issue tracker with Gantt charts, wikis and time tracking, backed by Postgres. | `redmine` |  |
+| [Remark42](https://github.com/umputun/remark42) | A privacy friendly comment engine for blogs and static sites, with social login and anonymous comments. Comments are stored in a file database on a volume. | `remark42` |  |
 | [RSSHub](https://docs.rsshub.app/deploy/) | Turns sites without a feed into RSS feeds, with thousands of ready-made routes (AGPL-3.0). The instance is open to anyone who can reach it, so restrict access. | `rsshub` |  |
 | [Ryot](https://github.com/ignisda/ryot) | A self-hosted tracker for media, fitness, and other parts of life. | `ryot` |  |
 | [Shaarli](https://shaarli.readthedocs.io/) | A minimalist personal bookmark manager, link sharer and microblog with no database. zlib licensed. On first open, the install page asks you to create the admin login. | `shaarli` |  |

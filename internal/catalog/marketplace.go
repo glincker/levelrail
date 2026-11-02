@@ -81,6 +81,7 @@ var (
 		"node-exporter":     "the project publishes its image under the Docker Hub org prom, while its source org is prometheus",
 		"pushgateway":       "the project publishes its image under the Docker Hub org prom, while its source org is prometheus",
 		"blackbox-exporter": "the project publishes its image under the Docker Hub org prom, while its source org is prometheus",
+		"swagger-ui":        "the project publishes its image under its own Docker Hub org swaggerapi, while its source org is swagger-api",
 	}
 	fetchExceptions = map[string]string{}
 )

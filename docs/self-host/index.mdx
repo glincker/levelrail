@@ -4,7 +4,7 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 "og:url": "https://docs.levelrail.com/self-host"
 ---
 
-435 open-source apps you can run on your own server with a Levelrail template. Each page lists the services, ports, volumes and environment variables the template sets up, and how to deploy it. For how templates work, see the [service template catalog](/templates-and-registry).
+440 open-source apps you can run on your own server with a Levelrail template. Each page lists the services, ports, volumes and environment variables the template sets up, and how to deploy it. For how templates work, see the [service template catalog](/templates-and-registry).
 
 ## AI
 
@@ -232,6 +232,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [OneDev](/self-host/onedev): A self-hosted Git server with built-in CI/CD, issue tracking and code search, in one container.
 - [Opengist](/self-host/opengist): A self-hosted pastebin powered by Git, for sharing snippets and gists with revisions, topics and search. AGPL-3.0 licensed. Uses SQLite in one container. SSH Git access is off, so clone and push over HTTPS. The first account you register becomes the admin.
 - [Pgweb](/self-host/pgweb): A small web client for browsing and querying PostgreSQL databases, with a table browser, query editor and export. Runs as one container with no storage of its own. Sign in with the username and password from the install form, then enter the connection details of your database.
+- [PlantUML Server](/self-host/plantuml-server): Turns PlantUML text into UML diagrams as images over HTTP. It has no database and no login, so restrict who can reach it.
 - [PocketBase](/self-host/pocketbase): An open-source backend in one file: embedded database, auth, file storage, and realtime API.
 - [Proxyscotch](/self-host/proxyscotch): A small CORS proxy that lets Hoppscotch call APIs from the browser.
 - [Semaphore UI](/self-host/semaphore): A modern web UI for running Ansible, Terraform, and shell tasks with schedules, history, and access control.
@@ -240,6 +241,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [SonarQube Community](/self-host/sonarqube): Continuous code quality and security analysis across 30+ languages, with quality gates for every pull request.
 - [Sonatype Nexus Repository](/self-host/nexus): A universal artifact repository for Maven, npm, Docker, PyPI, and more, with proxying and caching.
 - [Strapi](/self-host/strapi): An open-source headless CMS with a customizable admin panel and a REST/GraphQL content API.
+- [Swagger UI](/self-host/swagger-ui): Renders an OpenAPI description as interactive API documentation you can try from the browser. It is static, has no login and no database.
 - [Termix](/self-host/termix): A web-based SSH, RDP, and VNC terminal manager for organizing and connecting to every server from one dashboard.
 - [Tolgee](/self-host/tolgee): A localization management platform where developers and translators work in one shared UI.
 - [TrailBase](/self-host/trailbase): A fast Rust and SQLite application server with type-safe APIs and auth.
@@ -249,6 +251,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [Wakapi](/self-host/wakapi): A self-hosted, WakaTime-compatible backend for tracking coding time and stats.
 - [Web Check](/self-host/web-check): An all-in-one OSINT tool for inspecting a website's DNS, headers, certs, and security posture.
 - [Weblate](/self-host/weblate): A continuous localization system for translating software with a web-based editor and review flow.
+- [WireMock](/self-host/wiremock): An HTTP mock server that stubs and records API responses for development and tests. Stubs are managed through its admin API, so restrict who can reach it.
 - [Woodpecker CI](/self-host/woodpecker): A simple, container-native CI engine with a server and an agent, driven by pipelines in your repo.
 
 ## Finance
@@ -404,6 +407,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [HedgeDoc](/self-host/hedgedoc): Real-time collaborative markdown notes you can host yourself.
 - [HeyForm](/self-host/heyform): A form builder for surveys, quizzes and lead capture, with conversational forms and a MongoDB backend.
 - [Homebox](/self-host/homebox): A home inventory and organization system for tracking what you own and where it is.
+- [Isso](/self-host/isso): A lightweight self-hosted comment server for static sites with a small JavaScript embed. Comments live in a SQLite file on a volume.
 - [Joplin Server](/self-host/joplin): A self-hosted sync server for the Joplin note-taking app, keeping notes off third-party clouds.
 - [Joplin Server](/self-host/joplin-server): A self-hosted sync target for the Joplin note-taking app, replacing Dropbox or OneDrive sync.
 - [Kanboard](/self-host/kanboard): A minimalist, keyboard-friendly kanban board for personal and team task tracking.
@@ -435,6 +439,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [Reactive Resume](/self-host/reactive-resume): A free resume builder with live preview, templates and PDF export, backed by Postgres. MIT licensed. Register an account on first open, uploads are stored on a local volume.
 - [Readeck](/self-host/readeck): Save the readable content of web pages you want to keep, free of ads and clutter.
 - [Redmine](/self-host/redmine): A mature project management and issue tracker with Gantt charts, wikis and time tracking, backed by Postgres.
+- [Remark42](/self-host/remark42): A privacy friendly comment engine for blogs and static sites, with social login and anonymous comments. Comments are stored in a file database on a volume.
 - [RSSHub](/self-host/rsshub): Turns sites without a feed into RSS feeds, with thousands of ready-made routes (AGPL-3.0). The instance is open to anyone who can reach it, so restrict access.
 - [Ryot](/self-host/ryot): A self-hosted tracker for media, fitness, and other parts of life.
 - [Shaarli](/self-host/shaarli): A minimalist personal bookmark manager, link sharer and microblog with no database. zlib licensed. On first open, the install page asks you to create the admin login.

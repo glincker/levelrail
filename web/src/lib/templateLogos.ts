@@ -515,6 +515,6 @@ export const COMPOSITE_LOGOS: Record<string, [TechLogoKey, TechLogoKey?]> = {
 
 // No thesvg mark exists for these products yet; they render the monogram tile.
 export const KNOWN_MISSING_LOGOS: readonly string[] =
-  'diun gotenberg lldap campfire once-campfire bugsink imgcompress embystat budge proxyscotch kutt metamcp archivebox backrest crawl4ai headscale open-notebook radicale gatus mail-mox factorio palworld terraria seerr wizarr maintainerr sabnzbd lubelogger spoolman shaarli reactive-resume spliit jellystat gitness questdb opensearch redash cleanuparr docling-serve kokoro-fastapi lychee meshcentral multi-scrobbler mylar3 ombi smokeping tinyauth imgproxy rss-bridge opengist ackee hyperdx romm flagsmith yourls pgweb zipkin maildev pigallery2 athens mazanoke huginn thelounge mafl redis-commander kroki commafeed'.split(
+  'diun gotenberg lldap campfire once-campfire bugsink imgcompress embystat budge proxyscotch kutt metamcp archivebox backrest crawl4ai headscale open-notebook radicale gatus mail-mox factorio palworld terraria seerr wizarr maintainerr sabnzbd lubelogger spoolman shaarli reactive-resume spliit jellystat gitness questdb opensearch redash cleanuparr docling-serve kokoro-fastapi lychee meshcentral multi-scrobbler mylar3 ombi smokeping tinyauth imgproxy rss-bridge opengist ackee hyperdx romm flagsmith yourls pgweb zipkin maildev pigallery2 athens mazanoke huginn thelounge mafl redis-commander kroki commafeed swagger-ui remark42 wiremock plantuml-server isso'.split(
     ' ',
   )

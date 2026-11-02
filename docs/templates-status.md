@@ -145,7 +145,7 @@ Fixed in the wave N pass: `valkey` interpolated its password from the host shell
 
 Generated from the registry scan in `internal/catalog/platforms.json` (`scripts/scan-catalog-platforms`), not from the smoke run. A template is `yes` only when every image it uses lists `linux/arm64` in its manifest. `not checked` means unknown, not unsupported: the scan could not read a manifest or the image tag is set at install time.
 
-Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 27 not checked** of 435 templates.
+Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 32 not checked** of 440 templates.
 
 | Template | arm64 | Verified platforms |
 | --- | --- | --- |
@@ -303,6 +303,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 27 not checked** of 4
 | `influxdb` | yes | linux/amd64, linux/arm64 |
 | `inngest` | yes | linux/amd64, linux/arm64 |
 | `invoice-ninja` | yes | linux/amd64, linux/arm64 |
+| `isso` | not checked | - |
 | `it-tools` | yes | linux/amd64, linux/arm64 |
 | `jackett` | yes | linux/amd64, linux/arm64 |
 | `jaeger` | yes | linux/amd64, linux/arm64, linux/ppc64le, linux/s390x |
@@ -456,6 +457,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 27 not checked** of 4
 | `pingvin-share` | yes | linux/amd64, linux/arm64 |
 | `plane` | yes | linux/amd64, linux/arm64 |
 | `planka` | yes | linux/amd64, linux/arm64 |
+| `plantuml-server` | not checked | - |
 | `plausible` | yes | linux/amd64, linux/arm64 |
 | `plex` | yes | linux/amd64, linux/arm64 |
 | `plunk` | yes | linux/amd64, linux/arm64 |
@@ -487,6 +489,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 27 not checked** of 4
 | `redlib` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `redmine` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/riscv64, linux/s390x |
 | `registry` | yes | linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/s390x |
+| `remark42` | not checked | - |
 | `rocketchat` | yes | linux/amd64, linux/arm64 |
 | `romm` | yes | linux/amd64, linux/arm64 |
 | `roundcube` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
@@ -528,6 +531,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 27 not checked** of 4
 | `superset` | yes | linux/amd64, linux/arm64 |
 | `supertokens` | yes | linux/amd64, linux/arm64 |
 | `sure` | yes | linux/amd64, linux/arm64 |
+| `swagger-ui` | not checked | - |
 | `syncthing` | yes | linux/amd64, linux/arm64 |
 | `tandoor-recipes` | yes | linux/amd64, linux/arm64 |
 | `tautulli` | yes | linux/amd64, linux/arm64 |
@@ -575,6 +579,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 27 not checked** of 4
 | `whoogle` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `wikijs` | yes | linux/amd64, linux/arm64 |
 | `windmill` | yes | linux/amd64, linux/arm64 |
+| `wiremock` | not checked | - |
 | `wizarr` | yes | linux/amd64, linux/arm64 |
 | `woodpecker` | yes | freebsd/amd64, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/riscv64 |
 | `wordpress` | yes | linux/amd64, linux/arm64 |
