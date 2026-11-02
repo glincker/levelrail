@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   ChevronDownGlassIcon,
+  TagGlassIcon,
   CopyGlassIcon,
   EllipsisGlassIcon,
   ExternalLinkGlassIcon,
@@ -16,6 +18,7 @@ import {
 import { ActionMenu, Kbd } from '@/components/kit'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { AddTagDialog } from '../AddTagDialog'
 import { CloneAppDialog } from '../CloneAppDialog'
 import { DeleteAppDialog } from '../DeleteAppDialog'
 import { PromoteAppDialog } from '../PromoteAppDialog'
@@ -38,6 +41,8 @@ export function HeroActions({
   const [cloneOpen, setCloneOpen] = useState(false)
   const [saveAsTemplateOpen, setSaveAsTemplateOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [tagOpen, setTagOpen] = useState(false)
+  const { t } = useTranslation('common')
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -144,6 +149,12 @@ export function HeroActions({
             onSelect: actions.copyUrl,
           },
           {
+            id: 'add-tag',
+            label: t('overviewHero.addTag'),
+            icon: <TagGlassIcon size="1.4em" />,
+            onSelect: () => setTagOpen(true),
+          },
+          {
             id: 'promote',
             label: 'Promote...',
             icon: <RocketGlassIcon size="1.4em" />,
@@ -172,6 +183,13 @@ export function HeroActions({
       />
 
       {actions.confirmDialog}
+      {tagOpen ? (
+        <AddTagDialog
+          appName={app.name}
+          open={tagOpen}
+          onOpenChange={setTagOpen}
+        />
+      ) : null}
       <PromoteAppDialog
         appName={app.name}
         projectId={app.project_id}

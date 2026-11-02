@@ -1180,5 +1180,14 @@
     "topReferrersCaption": "Los 10 orígenes principales en esta ventana",
     "unavailable": "Las cifras de visitantes necesitan el registro de acceso del borde, que no está activado en esta instalación.",
     "chartHeading": "Solicitudes en el tiempo"
+  },
+  "overviewHero": {
+    "addressInfo": "Sobre esta dirección",
+    "addTag": "Añadir etiqueta...",
+    "addTagTitle": "Añadir una etiqueta",
+    "tagName": "Nombre de la etiqueta",
+    "tagAdd": "Añadir etiqueta",
+    "tagAdding": "Añadiendo...",
+    "removeTag": "Quitar la etiqueta {{name}}"
   }
 }

@@ -9,8 +9,7 @@ import { deriveHeroStatus, phaseWords } from './heroStatus'
 import { HeroActions } from './HeroActions'
 import { ReleaseLine } from './ReleaseLine'
 import { TagChips } from './TagChips'
-import { AutoUrlTlsNote } from './AutoUrlTlsNote'
-import { AutoUrlBetaNote } from './AutoUrlBetaNote'
+import { AutoUrlInfo } from './AutoUrlInfo'
 import { UrlLine } from './UrlLine'
 import { AppLiveBadge } from '../golive/GoLiveBadge'
 import { AppHeaderBadges } from '../apps/AppHeaderBadges'
@@ -83,11 +82,12 @@ export function OverviewHero({
           ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-          <UrlLine appName={app.name} url={url} />
+          <div className="flex min-w-0 items-center gap-0.5">
+            <UrlLine appName={app.name} url={url} />
+            <AutoUrlInfo appName={app.name} />
+          </div>
           <ReleaseLine app={app} latest={released ?? latestAttempt} />
         </div>
-        <AutoUrlBetaNote appName={app.name} />
-        <AutoUrlTlsNote appName={app.name} />
         <TagChips appName={app.name} tags={app.tags} />
       </div>
       <div className="flex shrink-0 flex-wrap items-center gap-2 lg:justify-end">

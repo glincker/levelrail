@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import type { LiveBadgeEntry } from '../../queries/goLiveChecklist'
-import { pickAppLiveEntry } from './liveState'
+import {
+  isAutomaticAddress,
+  pickAppLiveEntry,
+  showsLiveState,
+} from './liveState'
 
 const e = (
   app: string,
@@ -28,5 +32,41 @@ describe('pickAppLiveEntry', () => {
       'web',
     )
     expect(got?.state).toBe('needs_attention')
+  })
+})
+
+describe('automatic addresses', () => {
+  it('detects wildcard-DNS hosts', () => {
+    expect(isAutomaticAddress('app.1-2-3-4.sslip.io')).toBe(true)
+    expect(isAutomaticAddress('glinr.com')).toBe(false)
+  })
+
+  it('never reports waiting for DNS for an automatic address', () => {
+    expect(showsLiveState('a.1-2-3-4.sslip.io', 'waiting_dns')).toBe(false)
+    expect(showsLiveState('a.1-2-3-4.sslip.io', 'waiting_certificate')).toBe(
+      false,
+    )
+    expect(showsLiveState('a.1-2-3-4.sslip.io', 'live')).toBe(true)
+    expect(showsLiveState('x.com', 'waiting_dns', true)).toBe(false)
+    expect(showsLiveState('x.com', 'waiting_dns')).toBe(true)
+  })
+
+  it('shows nothing for an app whose only address is automatic and waiting', () => {
+    const got = pickAppLiveEntry(
+      [e('web', 'web.1-2-3-4.sslip.io', 'waiting_dns')],
+      'web',
+    )
+    expect(got).toBeUndefined()
+  })
+
+  it('lets a custom domain speak for the app next to an automatic one', () => {
+    const got = pickAppLiveEntry(
+      [
+        e('web', 'web.1-2-3-4.sslip.io', 'waiting_dns'),
+        e('web', 'a.com', 'waiting_dns'),
+      ],
+      'web',
+    )
+    expect(got?.domain).toBe('a.com')
   })
 })

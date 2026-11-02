@@ -225,7 +225,11 @@ function CertCell({
         <GetCertificateButton domain={domain.domain} />
       ) : null}
       {isStandaloneDomain(domain) ? null : (
-        <GoLiveBadge app={domain.service_name} domain={domain.domain} />
+        <GoLiveBadge
+          app={domain.service_name}
+          domain={domain.domain}
+          automatic={domain.automatic}
+        />
       )}
     </span>
   )

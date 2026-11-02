@@ -1,15 +1,9 @@
-import { useState } from 'react'
-import { PlusGlassIcon, XGlassIcon } from '@thesvg/ui-react'
-import { useAttachAppTag, useDetachAppTag, useTags } from '../../queries/tags'
+import { useTranslation } from 'react-i18next'
+import { XGlassIcon } from '@thesvg/ui-react'
+import { useDetachAppTag, useTags } from '../../queries/tags'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
 
+/** TagChips lists the app's tags; adding one lives in the overflow menu. */
 export function TagChips({
   appName,
   tags,
@@ -17,27 +11,15 @@ export function TagChips({
   appName: string
   tags?: string[]
 }) {
-  const [value, setValue] = useState('')
-  const [open, setOpen] = useState(false)
+  const { t } = useTranslation('common')
   const { data: allTags } = useTags()
-  const attachTag = useAttachAppTag(appName)
   const detachTag = useDetachAppTag(appName)
-  const idByName = new Map((allTags ?? []).map((t) => [t.name, t.id]))
-
-  const add = () => {
-    const name = value.trim()
-    if (!name) return
-    attachTag.mutate(name, {
-      onSuccess: () => {
-        setValue('')
-        setOpen(false)
-      },
-    })
-  }
+  const idByName = new Map((allTags ?? []).map((tag) => [tag.name, tag.id]))
+  if (!tags || tags.length === 0) return null
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      {(tags ?? []).map((name) => {
+      {tags.map((name) => {
         const id = idByName.get(name)
         return (
           <Badge key={name} variant="outline" className="gap-1 pr-1">
@@ -51,53 +33,13 @@ export function TagChips({
               }}
             >
               <XGlassIcon className="size-4.5" aria-hidden="true" />
-              <span className="sr-only">Remove tag {name}</span>
+              <span className="sr-only">
+                {t('overviewHero.removeTag', { name })}
+              </span>
             </button>
           </Badge>
         )
       })}
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger
-          render={<Button variant="ghost" size="icon-xs" />}
-          aria-label="Add tag"
-        >
-          <PlusGlassIcon className="size-4.5" aria-hidden="true" />
-        </PopoverTrigger>
-        <PopoverContent align="start" className="w-56 gap-2">
-          <Input
-            autoFocus
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                add()
-              }
-            }}
-            placeholder="Tag name"
-            list="overview-tag-suggestions"
-            aria-label="New tag name"
-            className="h-8 text-sm"
-          />
-          <datalist id="overview-tag-suggestions">
-            {(allTags ?? []).map((t) => (
-              <option key={t.id} value={t.name} />
-            ))}
-          </datalist>
-          <Button
-            size="sm"
-            disabled={!value.trim() || attachTag.isPending}
-            onClick={add}
-          >
-            {attachTag.isPending ? 'Adding...' : 'Add tag'}
-          </Button>
-          {attachTag.isError ? (
-            <p className="text-xs text-destructive">
-              {attachTag.error.message}
-            </p>
-          ) : null}
-        </PopoverContent>
-      </Popover>
     </div>
   )
 }
