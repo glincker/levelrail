@@ -274,6 +274,7 @@ type Controller struct {
 	previousReleaseHold time.Duration                              // 0 removes the previous release at cutover
 	deployWindows       func(context.Context) deploysafety.Windows // live override of the timings, see WithDeployWindows
 	restartPolicy       func(context.Context) string               // stored runtime setting, read per container create
+	policySwept         sync.Map                                   // container IDs already brought to the desired restart policy
 	applied             AppliedConfigRecorder                      // nil is valid: pending changes just aren't tracked
 	lastHeldUntil       time.Time
 	now                 func() time.Time // nil uses time.Now; tests step a fake clock
@@ -1112,6 +1113,7 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 		if err := c.connectExternalNetworks(ctx, desired, target); err != nil {
 			return replicaOutcome{reason: "DatabaseNetworkConnectFailed"}, err
 		}
+		c.sweepRestartPolicy(ctx, state, desired)
 		return c.confirmedOutcome(ctx, target, state, desired, false)
 	}
 

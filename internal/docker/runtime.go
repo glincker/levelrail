@@ -138,6 +138,13 @@ type BindMount struct {
 	ReadOnly      bool
 }
 
+// RestartPolicySyncer is implemented by runtimes that can change a live
+// container's restart policy without recreating it. SyncRestartPolicy
+// reports whether it had to change anything.
+type RestartPolicySyncer interface {
+	SyncRestartPolicy(ctx context.Context, id, want string) (changed bool, err error)
+}
+
 // ContainerSpec is desired state for a container a controller wants to
 // exist.
 //
