@@ -35,6 +35,8 @@ func runDoctor(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 			return runDoctorPaths(prog, args[1:], stdout, stderr, lookupEnv)
 		case "reachability":
 			return runDoctorReachability(prog, args[1:], stdout, stderr, lookupEnv)
+		case "explain":
+			return runDoctorExplain(prog, args[1:], stdout, stderr, lookupEnv)
 		}
 	}
 	diskOnly := len(args) > 0 && args[0] == "disk"
@@ -182,6 +184,7 @@ func doctorUsage(prog string) string {
   %[1]s doctor disk [flags]
   %[1]s doctor paths [flags]
   %[1]s doctor reachability [flags]
+  %[1]s doctor explain <check-id> [flags]
 
 Runs the control plane's health checks: Docker, disk and inodes, ports,
 firewall, clock, DNS, certificates, backups and restore drills, node agents,

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1944 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1945 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1111,6 +1111,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/dns/zones/{zone}/records/export", Ability: "AbilityRead", Group: "Other", Handler: "handleExportDNSZoneRecords", Description: ""},
 	{Method: "POST", Path: "/api/v1/dns/zones/{zone}/records/import", Ability: "AbilityRoot", Group: "Other", Handler: "handleImportDNSZoneRecords", Description: ""},
 	{Method: "POST", Path: "/api/v1/dns/zones/{zone}/templates/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleApplyDNSTemplate", Description: ""},
+	{Method: "GET", Path: "/api/v1/doctor/explain", Ability: "AbilityRead", Group: "Other", Handler: "handleDoctorExplain", Description: ""},
 	{Method: "GET", Path: "/api/v1/doctor/reachability", Ability: "AbilityRead", Group: "Other", Handler: "handleDoctorReachability", Description: ""},
 	{Method: "POST", Path: "/api/v1/event-webhook-deliveries/{id}/replay", Ability: "AbilityRoot", Group: "Other", Handler: "handleReplayEventWebhookDelivery", Description: ""},
 	{Method: "GET", Path: "/api/v1/event-webhook-types", Ability: "AbilityRoot", Group: "Other", Handler: "handleListEventWebhookTypes", Description: ""},

@@ -2168,6 +2168,7 @@ Routes that do not fit an existing group.
 | POST | /api/v1/firewall/exposure/restrictions/{protocol}/{port}/confirm | AbilityRoot | handleExposureConfirm |
 | GET | /api/v1/tokens/unused | Session | handleUnusedTokens |
 | GET | /api/v1/doctor/reachability | AbilityRead | handleDoctorReachability |
+| GET | /api/v1/doctor/explain | AbilityRead | handleDoctorExplain |
 | POST | /mcp | Public |  |
 
 ## See also
