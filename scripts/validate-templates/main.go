@@ -38,13 +38,14 @@ func run(args []string, stdout, stderr io.Writer) int {
 	fs.SetOutput(stderr)
 	dir := fs.String("dir", "internal/catalog/manifests", "directory of <id>/template.yaml manifests")
 	composeDir := fs.String("compose-dir", "", "optional directory of raw compose files (*.yaml, *.yml) to check")
+	only := fs.String("id", "", "check only this template id, including the marketplace submission rules")
 	asJSON := fs.Bool("json", false, "print results as JSON")
 	strict := fs.Bool("strict", false, "fail when any raw compose file fails, not only manifests")
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
 
-	results := validateManifests(*dir)
+	results := validateManifests(*dir, *only)
 	if *composeDir != "" {
 		raw, err := validateComposeDir(*composeDir)
 		if err != nil {
@@ -63,7 +64,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 	return 0
 }
 
-func validateManifests(dir string) []result {
+func validateManifests(dir, only string) []result {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return []result{{Kind: "manifest", Name: dir, Reason: err.Error()}}
@@ -71,11 +72,15 @@ func validateManifests(dir string) []result {
 	fsys := os.DirFS(dir)
 	var out []result
 	for _, e := range entries {
-		if !e.IsDir() {
+		if !e.IsDir() || (only != "" && e.Name() != only) {
 			continue
 		}
 		r := result{Kind: "manifest", Name: e.Name(), OK: true}
-		if _, err := catalog.LoadManifest(fsys, e.Name()); err != nil {
+		m, err := catalog.LoadManifest(fsys, e.Name())
+		if err == nil && !catalog.LegacyManifestIDs()[m.ID] {
+			err = m.ValidateSubmission()
+		}
+		if err != nil {
 			r.OK, r.Reason = false, flatten(err)
 		}
 		out = append(out, r)

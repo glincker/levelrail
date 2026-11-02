@@ -54,3 +54,5 @@ The admission wording is: no known-exploited vulnerability (CISA KEV) in this im
 - `internal/catalog/verified.json`: smoke records, written by the smoke tooling (`id` to `{tag, images, digest, arches, http_status, run_url}`).
 - `internal/catalog/images.lock.json`: digests and signals resolved by CI, never written by hand.
 - `internal/catalog/platforms.json`: the registry platform scan.
+
+To list your own product, see [Add a template](/add-a-template).

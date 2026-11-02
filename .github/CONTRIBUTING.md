@@ -231,6 +231,8 @@ it separately if you think the set should change.
 
 ## Adding a service template
 
+To list a product or app in the marketplace catalog, follow [Add a template](https://docs.levelrail.com/add-a-template): two files under `internal/catalog/manifests/<id>/`, checked locally with `scripts/template-lint.sh <id>`. The notes below describe the older single-file path, which is frozen for new entries.
+
 The service catalog (`internal/catalog`, served by
 `GET /api/v1/service-templates`) has two sources, merged into one list
 everywhere it's used:
