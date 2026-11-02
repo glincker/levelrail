@@ -9,18 +9,21 @@ A distributed file and object store with an S3 gateway, built for billions of sm
 
 This page describes the Levelrail template for SeaweedFS (Storage). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/seaweedfs/seaweedfs/wiki.
 
-Recommended memory: about 1024 MiB (the S3 gateway adds little on top).
+Recommended memory: about 1024 MiB.
 
 ## Services, ports and volumes
 
 | Service | Image | Container ports | Volumes |
 | --- | --- | --- | --- |
-| `seaweedfs` | `chrislusf/seaweedfs:3.99` | 9333, 8888 | `seaweedfs_data -&#62; /data` |
 | `s3` | `chrislusf/seaweedfs:3.99` | 8333 | none |
+| `seaweedfs` | `chrislusf/seaweedfs:3.99` | 9333, 8888 | `seaweedfs_data -&#62; /data` |
 
 ## Environment variables
 
-The `s3` service reads a generated access key (`S3_ACCESS_KEY`) and secret key (`S3_SECRET_KEY`). Both are created at deploy time and stored as secrets.
+| Service | Variable | Value |
+| --- | --- | --- |
+| `s3` | `S3_ACCESS_KEY` | Generated at deploy |
+| `s3` | `S3_SECRET_KEY` | Generated at deploy |
 
 Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
 
@@ -30,13 +33,14 @@ Level: **Standard**.
 
 What this template needs:
 
-- Publishes ports directly on the host (`s3`): 8333:8333.
-- Publishes ports directly on the host (`seaweedfs`): 8888:8888, 9333:9333.
+- Publishes ports directly on the host (`s3`, `seaweedfs`): 8333:8333, 8888:8888, 9333:9333.
+- Passwords and keys are generated at deploy time (`s3`): S3_ACCESS_KEY, S3_SECRET_KEY.
 - Stores data in named volumes (`seaweedfs`): seaweedfs_data.
 
 What Levelrail adds around it:
 
 - Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
 - Named volumes can be backed up and restored.
 - Deploys are gated on the health check before traffic switches.
 - One-step rollback to the previous revision.
