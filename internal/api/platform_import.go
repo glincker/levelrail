@@ -370,7 +370,6 @@ func (a *importApplier) CreateApp(ctx context.Context, p platformimport.AppPlan)
 		desired.Domains = nil
 		err = rt.apps.SaveDesiredService(ctx, desired)
 	}
-	unlockName()
 	if err != nil {
 		return warnings, fmt.Errorf("save app: %w", err)
 	}
@@ -379,9 +378,11 @@ func (a *importApplier) CreateApp(ctx context.Context, p platformimport.AppPlan)
 			return warnings, fmt.Errorf("assign project: %w", err)
 		}
 	}
+	// Linking stays under the lock: a delete's orphan sweep must not drop the App row between lookup and link.
 	if _, err := rt.ensureAppLinked(ctx, p.Name, p.Name); err != nil {
 		return warnings, fmt.Errorf("link app: %w", err)
 	}
+	unlockName()
 	warnings = append(warnings, a.createImportedJobs(ctx, p.Name, p.Crons)...)
 	if a.sessionID != "" {
 		staged, err := a.finishStaging(ctx, p)

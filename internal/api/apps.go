@@ -1440,7 +1440,11 @@ func (rt *Router) deleteApp(ctx context.Context, name string) (teardownErr, err 
 		}
 	}
 	if existing.AppID != "" {
-		if rt.deleteAppIfOrphaned(ctx, existing.AppID) && finalizer != nil && teardownErr == nil {
+		// Under the name lock so a concurrent create cannot link to an App row this sweep is dropping.
+		unlockSweep := lockAppName(name)
+		orphaned := rt.deleteAppIfOrphaned(ctx, existing.AppID)
+		unlockSweep()
+		if orphaned && finalizer != nil && teardownErr == nil {
 			nctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), rt.deleteTeardownTimeout())
 			if err := finalizer.RemoveAppNetwork(nctx, existing.AppID, existing.NodeID); err != nil {
 				rt.logger.Warn("api: delete app: remove app network failed, GC will retry", slog.String("error", err.Error()), slog.String("app_id", existing.AppID))

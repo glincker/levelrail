@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/platformimport"
 )
@@ -30,10 +31,13 @@ func TestImportCreateAppSurvivesParallelDelete(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			var err error
-			for try := 0; try < 2000; try++ {
+			// Bounded by time, not attempts: the delete may legitimately take a while to commit.
+			deadline := time.Now().Add(10 * time.Second)
+			for time.Now().Before(deadline) {
 				if _, err = applier.CreateApp(ctx, plan); err == nil {
 					return
 				}
+				time.Sleep(time.Millisecond)
 			}
 			t.Errorf("re-create never succeeded: %v", err)
 		}()
