@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"slices"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 func mintToken(t *testing.T, rt *Router, cookie *http.Cookie, body string) (int, createTokenResponse) {
@@ -125,6 +127,26 @@ func TestTokenAccess(t *testing.T) {
 	} {
 		if got := tokenAccess(tc.abilities); got != tc.want {
 			t.Errorf("tokenAccess(%v) = %q, want %q", tc.abilities, got, tc.want)
+		}
+	}
+}
+
+func TestTokenListAccess_PolicyAttachedIsCanChange(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	_, tk := mintToken(t, rt, cookie, `{"name":"scoped"}`)
+	if tk.Access != tokenAccessReadOnly {
+		t.Fatalf("fresh token access = %q", tk.Access)
+	}
+	attachTestPolicy(t, db, "allow-write", "Allow", "apps:write", "*", store.PrincipalTypeToken, tk.ID)
+	rec := rsDo(t, rt, cookie, http.MethodGet, "/api/v1/auth/tokens", "")
+	var list []tokenResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &list); err != nil {
+		t.Fatal(err)
+	}
+	for _, got := range list {
+		if got.ID == tk.ID && got.Access != tokenAccessCanChange {
+			t.Fatalf("token with an attached policy shows %q, want can_change", got.Access)
 		}
 	}
 }

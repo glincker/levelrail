@@ -18,7 +18,7 @@ levelrail-cli tokens create --name ci --abilities read,deploy      # explicit ab
 
 In the dashboard, Settings > Tokens > Create token starts with read only selected. Turn on "Allow changes" to add write, and read the warning first. The API takes the same choice: omit `abilities` for the default, send `"allow_changes": true` to opt in, or list `abilities` explicitly (`allow_changes` and `abilities` together are refused).
 
-Every token shows an access label in `tokens list`, the dashboard and the API (`access`): `read_only` when nothing it holds can change anything, `can_change` otherwise. Tokens that existed before this default keep exactly the abilities they had; only the label is new, so you can spot the ones that can write.
+Every token shows an access label in `tokens list`, the dashboard and the API (`access`): `read_only` when nothing it holds can change anything, `can_change` otherwise. A token with an IAM policy attached always shows `can_change`, because a policy can allow changes its base abilities do not. Tokens that existed before this default keep exactly the abilities they had; only the label is new, so you can spot the ones that can write.
 
 You can only grant what you hold yourself. A user with only `read` cannot create a token with `--allow-changes`.
 

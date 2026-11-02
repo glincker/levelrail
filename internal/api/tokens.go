@@ -34,7 +34,7 @@ type tokenResource struct {
 	Agent *agentIdentity `json:"agent,omitempty"`
 	// Scope is set when the token is limited to one team.
 	Scope *tokenScopeResource `json:"scope,omitempty"`
-	// Access is read_only when no ability can change anything, else can_change.
+	// Access is read_only when no ability or attached policy can change anything, else can_change.
 	Access string `json:"access"`
 	// InstanceID is the server the token is bound to; LastIP is where it was last seen.
 	InstanceID string `json:"instance_id,omitempty"`

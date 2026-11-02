@@ -132,7 +132,7 @@ func (rt *Router) libraryCreateToken(w http.ResponseWriter, r *http.Request, req
 		return
 	}
 	rt.recordAudit(r.Context(), r, AbilityWrite, auditActorSession, ownerID, "", http.StatusCreated)
-	res := toTokenResource(legacy)
+	res := rt.withPolicyAccess(r.Context(), toTokenResource(legacy))
 	res.Scope = rt.tokenScopeOf(r.Context(), legacyID)
 	writeJSON(w, http.StatusCreated, createTokenResponse{tokenResource: res, Token: raw})
 }
@@ -180,7 +180,7 @@ func (rt *Router) libraryListTokens(ctx context.Context, callerID string, admin 
 		if spentAITurnToken(t, now) {
 			continue
 		}
-		res := toTokenResource(t)
+		res := rt.withPolicyAccess(ctx, toTokenResource(t))
 		res.Scope = rt.tokenScopeOf(ctx, t.ID)
 		res.InstanceID, res.LastIP = bindings[t.ID].InstanceID, bindings[t.ID].LastIP
 		out = append(out, res)

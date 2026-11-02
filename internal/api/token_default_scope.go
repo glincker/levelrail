@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 // Default scope policy for tokens minted without explicit abilities, the way an
@@ -64,4 +65,18 @@ func tokenAccess(abilities []string) string {
 		}
 	}
 	return tokenAccessReadOnly
+}
+
+// withPolicyAccess upgrades a read_only label to can_change when IAM policies are
+// attached, since a policy can allow changes the base abilities do not. A failed
+// lookup also upgrades, so the label never understates access.
+func (rt *Router) withPolicyAccess(ctx context.Context, res tokenResource) tokenResource {
+	if res.Access != tokenAccessReadOnly || rt.policies == nil {
+		return res
+	}
+	attached, err := rt.policies.ListPoliciesForPrincipal(ctx, store.PrincipalTypeToken, res.ID)
+	if err != nil || len(attached) > 0 {
+		res.Access = tokenAccessCanChange
+	}
+	return res
 }
