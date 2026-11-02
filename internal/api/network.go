@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -75,7 +76,7 @@ func (rt *Router) handleGetAppNetwork(w http.ResponseWriter, r *http.Request) {
 	if ierr == nil {
 		resp.FallbackEnabled = !ing.FallbackDomainsDisabled
 	}
-	if len(svc.Domains) == 0 && resp.FallbackEnabled {
+	if len(svc.Domains) == 0 && resp.FallbackEnabled && ingress.ServesHTTP(*svc) {
 		if fallback, ok := rt.autoHost(r.Context(), svc.Name); ok {
 			resp.FallbackURL = rt.ingressHTTPSURL(ing, fallback)
 		}

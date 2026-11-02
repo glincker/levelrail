@@ -844,7 +844,7 @@ type appWithRequests struct {
 // fallbackURLFor returns the automatic https URL for svc, or "" when it has
 // a configured domain, the toggle is off, or no public IP is known.
 func (rt *Router) fallbackURLFor(ctx context.Context, svc store.DesiredService) string {
-	if len(svc.Domains) > 0 {
+	if len(svc.Domains) > 0 || !ingress.ServesHTTP(svc) {
 		return ""
 	}
 	s, err := rt.ingressSettings.GetIngressSettings(ctx)

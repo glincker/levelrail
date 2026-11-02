@@ -829,3 +829,47 @@ func TestController_Reconcile_CustomListenAddrs_AppliedToConfig(t *testing.T) {
 		t.Errorf("Apps.HTTP.HTTPPort = %d, want 8080", applier.lastCfg.Apps.HTTP.HTTPPort)
 	}
 }
+
+// A TCP-only app (a game server) has no web port, so it gets no sslip.io
+// host and therefore no route or certificate request.
+func TestController_Reconcile_NoDomains_TCPOnlyApp_NoFallbackRoute(t *testing.T) {
+	desired := store.DesiredService{
+		Name: "mc", Image: "img:v1",
+		PublishedPorts: []store.PublishedPort{{ContainerPort: 25565, HostPort: 25565, Protocol: "tcp"}},
+	}
+	target := application.ContainerName(desired.Name, desired.Image, "")
+	rt := newFakeRuntime()
+	rt.seedRunning(target, 34567)
+
+	st := &fakeStore{services: []store.DesiredService{desired}}
+	applier := &fakeApplier{}
+	c := New(st, rt, applier, WithLogger(discardLogger()), WithPublicHost("203.0.113.5"))
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if routes := applier.routes(t); len(routes) != 0 {
+		t.Errorf("applied routes = %v, want none for a TCP-only app", routes)
+	}
+}
+
+// An operator-configured domain still routes even when the app also
+// publishes a TCP port.
+func TestController_Reconcile_TCPPublishedWithDomain_StillRouted(t *testing.T) {
+	desired := store.DesiredService{
+		Name: "panel", Image: "img:v1", Port: 80, Domains: []string{"panel.example.com"},
+		PublishedPorts: []store.PublishedPort{{ContainerPort: 25565, HostPort: 25565, Protocol: "tcp"}},
+	}
+	target := application.ContainerName(desired.Name, desired.Image, "")
+	rt := newFakeRuntime()
+	rt.seedRunning(target, 34567)
+
+	st := &fakeStore{services: []store.DesiredService{desired}}
+	applier := &fakeApplier{}
+	c := New(st, rt, applier, WithLogger(discardLogger()), WithPublicHost("203.0.113.5"))
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if routes := applier.routes(t); len(routes) != 1 {
+		t.Errorf("applied routes = %v, want 1", routes)
+	}
+}

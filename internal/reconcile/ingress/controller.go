@@ -867,7 +867,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			// c.publicHost, and none of the domain-scoped features below
 			// (basic auth, WAF, BYO TLS, maintenance mode, the DNS-check
 			// endpoint) make sense for a hostname nobody configured.
-			if settings.FallbackDomainsDisabled {
+			if settings.FallbackDomainsDisabled || !ingress.ServesHTTP(svc) {
 				continue
 			}
 			fallback, ok := fallbackResolver.Domain(svc.Name)
