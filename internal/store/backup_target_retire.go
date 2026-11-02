@@ -24,17 +24,11 @@ func (e *BackupTargetInUseError) Error() string {
 // returns how many history rows were detached and how many failed attempts of
 // deleted resources were pruned.
 func (db *DB) RetireBackupTarget(ctx context.Context, id string) (RetireResult, error) {
-	var res RetireResult
 	detached, pruned, err := db.retireBackupTarget(ctx, id)
-	res.Detached, res.Pruned = detached, pruned
 	if err != nil {
 		return RetireResult{}, err
 	}
-	// A retired target cannot come back, so its stored credentials go with it.
-	if err := db.DeleteServiceSecrets(ctx, BackupTargetSecretsKey(id)); err != nil {
-		return res, fmt.Errorf("store: wipe credentials of backup target %q: %w", id, err)
-	}
-	return res, nil
+	return RetireResult{Detached: detached, Pruned: pruned}, nil
 }
 
 // RetireResult reports what a retire changed besides the target row.
@@ -97,6 +91,11 @@ func (db *DB) retireBackupTarget(ctx context.Context, id string) (int, int, erro
 		}
 	} else if _, err := tx.ExecContext(ctx, `UPDATE backup_targets SET deleted_at = ? WHERE id = ?`, time.Now().UTC().Format(time.RFC3339), id); err != nil {
 		return 0, 0, fmt.Errorf("store: retire backup target %q: %w", id, err)
+	}
+	// A retired target cannot come back, so its credentials go in the same
+	// transaction: either both happen or neither does.
+	if err := deleteServiceSecretsTx(ctx, tx, BackupTargetSecretsKey(id)); err != nil {
+		return 0, 0, err
 	}
 	if err := tx.Commit(); err != nil {
 		return 0, 0, fmt.Errorf("store: retire backup target %q: %w", id, err)

@@ -41,7 +41,6 @@ type BackupTargetStore interface {
 	GetBackupTarget(ctx context.Context, id string) (store.BackupTarget, error)
 	ListBackupTargets(ctx context.Context) ([]store.BackupTarget, error)
 	UpdateBackupTarget(ctx context.Context, id, name, provider, endpoint, region, bucket string) error
-	DeleteBackupTarget(ctx context.Context, id string) error
 	RetireBackupTarget(ctx context.Context, id string) (store.RetireResult, error)
 }
 
@@ -362,15 +361,8 @@ func (rt *Router) handleUpdateBackupTarget(w http.ResponseWriter, r *http.Reques
 // handleDeleteBackupTarget handles DELETE /api/v1/backup-targets/{id}.
 // AbilityWriteSensitive, same as create: deleting the row that gates
 // access to a set of live bucket credentials is a sensitive operation
-// even though this handler itself never touches the credential values.
-//
-// Known gap, left honest rather than silently incomplete:
-// internal/secrets.Manager has no delete/revoke operation today (only
-// SetValue/Resolve/Exists), so the access_key_id/secret_access_key this
-// target's SetValue calls wrote remain in the secrets store,
-// unreferenced and unreachable through this API but not actually erased
-// at rest. Adding secret deletion is its own change to
-// internal/secrets, deliberately not bundled into this one.
+// even though this handler itself never reads the credential values.
+// The retire wipes the stored credentials in the same transaction.
 func (rt *Router) handleDeleteBackupTarget(w http.ResponseWriter, r *http.Request) {
 	rt.retireBackupTarget(w, r, r.PathValue("id"), "backup target")
 }
@@ -385,7 +377,7 @@ func (rt *Router) retireBackupTarget(w http.ResponseWriter, r *http.Request, id,
 		writeError(w, http.StatusNotFound, noun+" not found")
 		return
 	case errors.As(err, &inUse):
-		writeError(w, http.StatusConflict, noun+" is still in use by "+strings.Join(inUse.Blockers, "; ")+"; remove those first")
+		writeError(w, http.StatusConflict, noun+" is still in use by "+strings.Join(inUse.Blockers, "; ")+"; remove or delete those first (for backup history, delete the listed backups or the database itself)")
 		return
 	case err != nil && strings.Contains(err.Error(), "FOREIGN KEY"):
 		writeError(w, http.StatusConflict, noun+" is still referenced by other records; remove those first")

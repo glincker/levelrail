@@ -3,7 +3,7 @@ package store
 import (
 	"context"
 	"errors"
-	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -214,10 +214,14 @@ func TestRetireBackupTarget_KeepsHistoryOfDeletedResources(t *testing.T) {
 
 func TestRetireBackupTarget_BlockedByOtherUsers(t *testing.T) {
 	cases := map[string]string{
-		"bucket":  `INSERT INTO storage_buckets (id, name, target_id, prefix, created_at) VALUES ('b1', 'media', '%s', 'p/', 'now')`,
-		"dr":      `UPDATE control_plane_dr_settings SET escrow_target_id = '%s' WHERE id = 1`,
-		"copy":    `UPDATE backup_copy_settings SET target_id = '%s' WHERE id = 1`,
-		"predepl": `INSERT INTO app_predeploy_snapshot_settings (app, mode, target_id) VALUES ('web', 'on', '%s')`,
+		"bucket":      `INSERT INTO storage_buckets (id, name, target_id, prefix, created_at) VALUES ('b1', 'media', '%s', 'p/', 'now')`,
+		"dr":          `UPDATE control_plane_dr_settings SET escrow_target_id = '%s' WHERE id = 1`,
+		"copy":        `UPDATE backup_copy_settings SET target_id = '%s' WHERE id = 1`,
+		"predepl":     `INSERT INTO app_predeploy_snapshot_settings (app, mode, target_id) VALUES ('web', 'on', '%s')`,
+		"drtarget":    `INSERT OR IGNORE INTO control_plane_dr_settings (id) VALUES (1); UPDATE control_plane_dr_settings SET target_id = '%s' WHERE id = 1`,
+		"basebackup":  `INSERT INTO base_backup_history (id, database_name, target_id, object_key, status, started_at) VALUES ('bb1', 'db', '%s', 'k', 'running', 'now')`,
+		"drill":       `INSERT INTO backup_drills (id, backup_history_id, resource_kind, target_id, status, started_at) VALUES ('d1', 'h1', 'database', '%s', 'running', 'now')`,
+		"copy-queued": `INSERT INTO backup_targets (id, name, provider, bucket, created_at) VALUES ('bkt_other', 'o', 'aws', 'b', 'now'); INSERT INTO backup_history (id, database_name, target_id, object_key, status, started_at, finished_at) VALUES ('h2', 'gone', 'bkt_other', 'k', 'succeeded', 'now', 'now'); INSERT INTO backup_copies (backup_history_id, target_id, status, queued_at) VALUES ('h2', '%s', 'pending', 'now')`,
 	}
 	for name, stmt := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -229,8 +233,10 @@ func TestRetireBackupTarget_BlockedByOtherUsers(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			if _, err := db.ExecContext(ctx, fmt.Sprintf(stmt, target.ID)); err != nil {
-				t.Fatalf("seed: %v", err)
+			for _, one := range strings.Split(strings.ReplaceAll(stmt, "%s", target.ID), "; ") {
+				if _, err := db.ExecContext(ctx, one); err != nil {
+					t.Fatalf("seed %q: %v", one, err)
+				}
 			}
 			_, err := db.RetireBackupTarget(ctx, target.ID)
 			var inUse *BackupTargetInUseError
@@ -289,5 +295,31 @@ func TestRetireBackupTarget_PruneScopeAndCredentials(t *testing.T) {
 	}
 	if ok, _ := db.HasSecretValue(ctx, BackupTargetSecretsKey(target.ID), "secret_access_key"); ok {
 		t.Fatal("credentials survived the retire")
+	}
+}
+
+func TestRetireBackupTarget_WipeIsAtomic(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	target := seedBackupTarget(t, db)
+	key := BackupTargetSecretsKey(target.ID)
+	if err := db.SaveServiceDEK(ctx, key, []byte("dek")); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SaveSecretValue(ctx, key, "secret_access_key", []byte("sealed")); err != nil {
+		t.Fatal(err)
+	}
+	// A failure inside the transaction, after the target row is gone, must undo everything.
+	if _, err := db.ExecContext(ctx, `CREATE TRIGGER fail_dek_delete BEFORE DELETE ON service_secrets BEGIN SELECT RAISE(ABORT, 'boom'); END`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.RetireBackupTarget(ctx, target.ID); err == nil {
+		t.Fatal("RetireBackupTarget() error = nil, want the injected failure")
+	}
+	if _, err := db.GetBackupTarget(ctx, target.ID); err != nil {
+		t.Fatalf("target must survive a failed retire: %v", err)
+	}
+	if ok, _ := db.HasSecretValue(ctx, key, "secret_access_key"); !ok {
+		t.Fatal("credentials deleted by a failed retire")
 	}
 }

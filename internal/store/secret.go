@@ -267,11 +267,8 @@ func (db *DB) DeleteServiceSecrets(ctx context.Context, serviceName string) erro
 		_ = tx.Rollback() // no-op if Commit already succeeded
 	}()
 
-	if _, err := tx.ExecContext(ctx, `DELETE FROM service_secret_values WHERE service_name = ?`, serviceName); err != nil {
-		return fmt.Errorf("store: delete service secret values for %q: %w", serviceName, err)
-	}
-	if _, err := tx.ExecContext(ctx, `DELETE FROM service_secrets WHERE service_name = ?`, serviceName); err != nil {
-		return fmt.Errorf("store: delete service DEK for %q: %w", serviceName, err)
+	if err := deleteServiceSecretsTx(ctx, tx, serviceName); err != nil {
+		return err
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -466,6 +463,17 @@ func (db *DB) SetSecretBuildTime(ctx context.Context, serviceName, envKey string
 	}
 	if n == 0 {
 		return ErrSecretValueNotFound
+	}
+	return nil
+}
+
+// deleteServiceSecretsTx removes a service's values and DEK inside the caller's transaction.
+func deleteServiceSecretsTx(ctx context.Context, tx *sql.Tx, serviceName string) error {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM service_secret_values WHERE service_name = ?`, serviceName); err != nil {
+		return fmt.Errorf("store: delete service secret values for %q: %w", serviceName, err)
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM service_secrets WHERE service_name = ?`, serviceName); err != nil {
+		return fmt.Errorf("store: delete service DEK for %q: %w", serviceName, err)
 	}
 	return nil
 }

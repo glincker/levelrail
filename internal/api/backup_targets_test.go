@@ -667,3 +667,26 @@ func TestHandleDeleteBackupTarget_BoundBucketIs409(t *testing.T) {
 		t.Fatalf("target must stay live: %v", err)
 	}
 }
+
+type failingAuditStore struct{ AuditStore }
+
+func (failingAuditStore) SaveAuditEntry(context.Context, store.AuditEntry) error {
+	return errors.New("audit down")
+}
+
+func TestHandleDeleteBackupTarget_AuditFailureStaysSuccess(t *testing.T) {
+	t.Parallel()
+	rt, db := newTestRouterWithBackupSecrets(t, &fakeBackupSecretsSetter{})
+	cookie := loginTestSession(t, rt, db)
+	id := createRetireTarget(t, rt, cookie)
+	rt.auditLog = failingAuditStore{rt.auditLog}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/backup-targets/"+id, ""))
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("delete = %d, body = %s, want 204 for a committed delete", rec.Code, rec.Body.String())
+	}
+	if _, err := db.GetBackupTarget(context.Background(), id); !errors.Is(err, store.ErrBackupTargetNotFound) {
+		t.Fatalf("target should be gone, err = %v", err)
+	}
+}
