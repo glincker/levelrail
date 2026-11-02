@@ -308,4 +308,7 @@ export interface AppListEntry extends AppDetail {
 export interface AppStatusSummary {
   label: string
   variant: 'muted' | 'destructive' | 'success'
+  // First failing condition, set only when the app needs attention.
+  reason?: string
+  message?: string
 }

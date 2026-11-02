@@ -131,6 +131,7 @@
     "openDeployLogs": "Open deploy logs",
     "openLogs": "Open full logs",
     "noLines": "No log lines were captured for this failure.",
+    "lastLine": "Last line:",
     "showing": "Showing the last {{shown}} of {{total}} lines.",
     "linesLabel": "Last log lines of the failing container"
   },

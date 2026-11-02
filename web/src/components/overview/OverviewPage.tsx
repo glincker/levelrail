@@ -13,6 +13,9 @@ import { registerPageActions } from '../../lib/pageActions'
 import type { AppDetail } from '../../types/appDetail'
 import type { ReconcileCondition } from '../../types/deploy'
 import type { DeployAttempt } from '../../types/deployAttempt'
+import { FailureContextCard } from '../FailureContextCard'
+import { RecommendedNextCard } from './RecommendedNextCard'
+import { useFailureContext } from '../../queries/investigate'
 import { AppHealthScorePanel } from '../AppHealthScorePanel'
 import { ActivityTimeline } from './ActivityTimeline'
 import { DeploySheet, type DeployTab } from './DeploySheet'
@@ -60,7 +63,23 @@ export function OverviewPage({
   const isStatic = useIsStaticSite(app.name)
   const uploadAttempt = git.data ? undefined : latestUpload(attempts)
   const appStatus = useAppStatus(app.name).data
-  const suggestions = useOverviewSuggestions(app, reading, latest, conditions)
+  const rawSuggestions = useOverviewSuggestions(
+    app,
+    reading,
+    latest,
+    conditions,
+  )
+  const failureCtx = useFailureContext(app.name).data
+  const failureShown = Boolean(failureCtx && failureCtx.state !== 'healthy')
+  // The failure card already states the failure, so its twin suggestion is dropped.
+  const suggestions = failureShown
+    ? {
+        ...rawSuggestions,
+        attention: rawSuggestions.attention.filter(
+          (d) => d.id !== 'failed_deploy' && d.id !== 'unhealthy',
+        ),
+      }
+    : rawSuggestions
   const setup = useSetupDismissed(app.name)
   const { data: traffic } = useAppTraffic(app.name)
   const setupState = computeSetup({
@@ -206,6 +225,8 @@ export function OverviewPage({
         }
         onDeploy={setDeployTab}
       />
+      <FailureContextCard appName={app.name} />
+      <RecommendedNextCard app={app} latest={latest} />
       {pairing ? (
         <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
           <div className="space-y-6">

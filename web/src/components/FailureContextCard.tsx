@@ -23,6 +23,8 @@ function FailureBody({
   const [copied, setCopied] = useState(false)
   const crash = ctx.state === 'crashlooping'
   const minutes = Math.max(1, Math.round(ctx.window_seconds / 60))
+  // The last non-empty line is the likeliest cause, so it leads the card.
+  const lastLine = [...ctx.lines].reverse().find((l) => l.message.trim() !== '')
 
   return (
     <section
@@ -94,6 +96,14 @@ function FailureBody({
           </Link>
         </div>
       </div>
+      {lastLine ? (
+        <p className="mt-3 rounded-lg border border-tone-danger-border bg-tone-danger-soft px-3 py-2 font-mono text-xs break-words text-foreground">
+          <span className="mr-2 font-sans font-medium text-tone-danger">
+            {t('failure.lastLine')}
+          </span>
+          {lastLine.message}
+        </p>
+      ) : null}
       {ctx.exit ? (
         <div className="mt-3">
           <ContainerExitBanner

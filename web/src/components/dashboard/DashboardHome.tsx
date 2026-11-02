@@ -216,7 +216,14 @@ export function DashboardHome({
       </div>
     )
     // Keep the board tabs reachable before the first app so Metrics and saved boards are not hidden.
-    return <DashboardViews start={firstRun} hasApps={hasApps} board={board} />
+    return (
+      <DashboardViews
+        start={firstRun}
+        hasApps={hasApps}
+        appCount={summary.total}
+        board={board}
+      />
+    )
   }
 
   return (
@@ -224,6 +231,7 @@ export function DashboardHome({
       <DashboardViews
         start={<StartView summary={summary} sample={sample} />}
         hasApps
+        appCount={summary.total}
         board={board}
       />
     </DashboardHero>

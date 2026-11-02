@@ -6,6 +6,7 @@ import { STATUS_DOT_COLOR, STATUS_TEXT_COLOR } from '../lib/appStatus'
 import { TONE } from '@/components/kit/tone'
 import { cn } from '@/lib/utils'
 import { statusBucket } from '../lib/appsListView'
+import { failureReason } from '../lib/failureReason'
 import { AppLogo, AppMetaChips } from './apps/AppMetaChips'
 import {
   ErrorCell,
@@ -60,6 +61,7 @@ export function AppRow({
         </Link>
         <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
           <StatusLabel status={app.status} />
+          <FailureReason status={app.status} />
           <AppMetaChips app={app} />
           <ManagedByStackTag stack={app.managed_by_stack} />
         </span>
@@ -126,6 +128,20 @@ export function StatusLabel({ status }: { status: AppStatusSummary }) {
       >
         {status.label}
       </span>
+    </span>
+  )
+}
+
+function FailureReason({ status }: { status: AppStatusSummary }) {
+  const text = failureReason(status)
+  if (!text) return null
+  const firstLine = text.split('\n')[0]
+  return (
+    <span
+      className="max-w-full min-w-0 truncate text-xs text-muted-foreground"
+      title={text}
+    >
+      {firstLine}
     </span>
   )
 }

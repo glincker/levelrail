@@ -12,11 +12,15 @@ import {
   savedTabId,
 } from '@/lib/dashboardTabs'
 import { useDashboards } from '@/queries/customDashboards'
+import { useSetupGuide } from '@/queries/setupGuide'
 import { DashboardTabBar } from './DashboardTabBar'
 import { ManageMenu } from './ManageMenu'
 import { NewDashboardDialog } from './NewDashboardDialog'
 import { RenameBoardDialog } from './RenameBoardDialog'
 import { useBoardActions } from './useBoardActions'
+
+const MIN_APPS_FOR_BOARDS = 2
+const FULL_PERCENT = 100
 
 // Non-Start tabs stay out of the home route chunk until selected.
 const DashboardView = lazy(() =>
@@ -32,19 +36,28 @@ const MetricsView = lazy(() =>
 export function DashboardViews({
   start,
   hasApps,
+  appCount = 0,
   board,
 }: {
   start: ReactNode
   hasApps: boolean
+  /** Total apps; fewer than two keeps Start as the landing tab. */
+  appCount?: number
   /** From ?board=: a saved board id, or "start" / "metrics". */
   board?: string
 }) {
   const { t } = useTranslation('dashboard')
   const list = useDashboards()
   const rows = list.data ?? []
+  const guide = useSetupGuide()
+  const onboarding =
+    hasApps &&
+    ((appCount > 0 && appCount < MIN_APPS_FOR_BOARDS) ||
+      (guide.data !== undefined && guide.data.ready_percent < FULL_PERCENT))
   const tabs = useDashboardTabs(
     rows.map((d) => d.id),
     hasApps,
+    onboarding,
   )
   const [starterOpen, setStarterOpen] = useState(false)
   const [renaming, setRenaming] = useState(false)
@@ -68,8 +81,10 @@ export function DashboardViews({
   // Saved tabs and the apps-based default stay unresolved until the list
   // arrives; avoid flashing the wrong tab.
   const waiting =
-    list.isLoading &&
-    (savedDashboardId(tabs.storedTab) !== null || (!tabs.hasStored && hasApps))
+    (list.isLoading &&
+      (savedDashboardId(tabs.storedTab) !== null ||
+        (!tabs.hasStored && hasApps))) ||
+    (hasApps && appCount >= MIN_APPS_FOR_BOARDS && guide.isLoading)
   const current = rows.find((d) => d.id === savedDashboardId(tabs.selected))
 
   let body: ReactNode = start

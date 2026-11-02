@@ -170,6 +170,7 @@
   "first": {
     "title": "Despliega tu primera aplicación",
     "titleLive": "Tu primera aplicación está en ejecución",
+    "primary": "Elegir cómo desplegar",
     "subtitle": "Elige un camino. Cada uno termina con una aplicación en ejecución y un enlace que puedes abrir.",
     "sample": {
       "title": "Aplicación de ejemplo",

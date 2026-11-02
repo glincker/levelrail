@@ -154,8 +154,9 @@ function AppListPage() {
     filteredApps.every((app) => selected.includes(app.name))
   const narrowed = filtersActive(filters) || status !== null
 
+  // Hide the count until the first page lands so it never reads "0 apps" mid-load.
   const countLabel =
-    totalApps === 0
+    totalApps === 0 || pages.isPending
       ? undefined
       : t('appsList.count', {
           defaultValue: '{{count}} apps',

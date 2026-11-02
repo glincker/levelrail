@@ -147,11 +147,19 @@ afterEach(() => {
 describe('DashboardHome', () => {
   it('lands on Metrics when apps exist and no tab was chosen', async () => {
     routeFetch({})
-    renderHome([makeApp('web', true)], null)
+    renderHome([makeApp('web', true), makeApp('api', true)], null)
     expect(
       await screen.findByRole('tab', { name: 'Metrics', selected: true }),
     ).toBeInTheDocument()
     expect(screen.queryByText('Deploy sample app')).not.toBeInTheDocument()
+  })
+
+  it('lands on Start while onboarding even if Metrics was stored', async () => {
+    routeFetch({})
+    renderHome([makeApp('web', true)], 'metrics')
+    expect(
+      await screen.findByRole('tab', { name: 'Start', selected: true }),
+    ).toBeInTheDocument()
   })
 
   it('keeps the last chosen tab over the apps default', async () => {
