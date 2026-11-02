@@ -117,3 +117,5 @@ A plain compose stack usually sits behind your own reverse proxy. Point DNS at t
 ## Choose to stay if
 
 One VM and one compose file already do the job, and you do not need TLS automation, backups or rollback beyond what you built. A compose file is a fine deployment. Move when you want those things managed. See the [comparison](/comparison).
+
+Leaving later is just as simple: [export any app back to plain Compose](/leave-anytime).

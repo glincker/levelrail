@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1914 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1915 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -245,6 +245,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/exec", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleExecApp", Description: "One-off exec: AbilityRoot, not AbilityDeploy, because it can read the plaintext env secrets that no other route ever returns."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/exec-access", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetExecAccess", Description: "Exec access opt-out: a second gate checked by exec and terminal on top of AbilityRoot. GET is AbilityRead; PUT is AbilityRoot, since re-enabling hands back a root capability."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/exec-access", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetExecAccess", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/export", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleExportApp", Description: "Compose export (leave-anytime): AbilityRead like the app view itself, since it carries only non-secret env; each call writes an app.export audit event."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/exposure", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppExposure", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/exposure", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppExposure", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/exposure/check", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCheckAppExposure", Description: ""},

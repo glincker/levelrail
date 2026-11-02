@@ -362,6 +362,7 @@ levelrail-cli apps exec-access enable|disable|status <name> [flags]
 ```
 levelrail-cli apps exec <name> -- <command> [args...] [flags]
 levelrail-cli apps console <name> [-- <command> [args...]] [flags]
+levelrail-cli apps export <name> [--format compose] [--out DIR|-] [flags]
 levelrail-cli apps logs <name> [flags]
 levelrail-cli apps metrics <name> --metric NAME [flags]
 levelrail-cli apps requests <name> [flags]

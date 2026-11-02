@@ -65,6 +65,10 @@ func (rt *Router) registerAppRuntimeRoutes(mux *http.ServeMux) {
 	// telemetry.QueryLogs call, nothing more sensitive than either.
 	mux.HandleFunc("GET /api/v1/apps/{name}/logs/download", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleDownloadLogs))
 
+	// Compose export (leave-anytime): AbilityRead like the app view itself,
+	// since it carries only non-secret env; each call writes an app.export audit event.
+	mux.HandleFunc("GET /api/v1/apps/{name}/export", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleExportApp))
+
 	// Alerting: threshold and crashloop rules scoped
 	// to one app, fanned through a *alerting.DB when configured (see
 	// WithAlertRules).

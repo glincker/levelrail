@@ -141,6 +141,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsExposure(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "network":
 		return runAppsNetwork(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
+	case "export":
+		return runAppsExport(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "logs":
 		return runAppsLogs(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "metrics":
@@ -347,6 +349,7 @@ func appsUsage(prog string) string {
   %[1]s apps cost <name> [flags]   estimate what this app's CPU/memory would cost under reference providers (not a real bill)
   %[1]s apps network <name> [flags]   show the live traffic path: container port, host port, running
   %[1]s apps exposure <name> [--mode proxied|direct] [--host-port N] [--port N] [--preview] [check]   change container port or direct host-port exposure, probe reachability
+  %[1]s apps export <name> [--format compose] [--out DIR|-]   write the app as plain docker-compose.yml, .env.example and README.md (no secret values)
   %[1]s apps logs <name> [flags]     search an app's stored log entries, or --follow to stream live
   %[1]s apps metrics <name> --metric NAME [flags]   query an app's metric time series
   %[1]s apps requests <name> [flags]                show request rate, errors and latency from the ingress

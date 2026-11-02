@@ -1,0 +1,41 @@
+# shop on plain Docker Compose
+
+Exported from Levelrail. Nothing here needs Levelrail to run.
+
+## Start
+
+1. `cp .env.example .env`
+2. Replace every `CHANGE_ME` in `.env`. Secrets are never exported; re-enter them or restore them from your own backup.
+3. `docker compose up -d`
+
+## Data
+
+Named volumes start empty. To restore a volume from a tar archive of its contents (for example one made with a Levelrail backup download):
+
+```
+docker compose create
+docker run --rm -v <project>_<volume>:/data -v "$PWD":/backup alpine tar xzf /backup/<volume>.tar.gz -C /data
+```
+
+- volume shop_db (db, mounted at /var/lib/postgresql/data)
+- volume shop_uploads (web, mounted at /uploads)
+
+## Databases
+
+The database services keep the same engine and version tag as before. Dump on the old host, restore on the new one:
+
+```
+# db (postgres:16.4)
+docker compose exec -T db pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" > db.sql
+docker compose exec -T db psql -U "$POSTGRES_USER" "$POSTGRES_DB" < db.sql
+```
+
+## Domains and TLS
+
+- web: shop.example.com (port 3000)
+
+Certificates are not exported. Point these names at your host and put any reverse proxy with automatic TLS in front of the published port. The `x-domains` field in the compose file is ignored by Docker.
+
+## Not exported
+
+Secret values, backup data, TLS certificates, and Levelrail features such as previews, auto-sleep and deploy hooks. Private registry logins must be redone with `docker login`.

@@ -89,6 +89,7 @@ var Tree = map[string]*Node{
 		"preflight":               nil,
 		"resource-recommendation": nil,
 		"cost":                    nil,
+		"export":                  nil,
 		"deploys":                 {Subs: map[string]*Node{"list": nil, "show": nil, "wait": nil, "compare": nil, "release-notes": nil, "url": nil, "logs": nil, "failed": nil, "steps": nil, "probes": nil, "cancel": nil, "rollback-to": nil, "promote": nil, "gate": nil, "status": nil}},
 		"ci":                      {Subs: map[string]*Node{"token": nil, "workflow": nil, "trust": {Subs: map[string]*Node{"list": nil, "add": nil, "remove": nil}}}},
 		"github-actions":          {Subs: map[string]*Node{"get": nil, "set": nil, "start": nil, "finish": nil, "workflow": nil, "token": nil, "trust": {Subs: map[string]*Node{"list": nil, "add": nil, "remove": nil}}}},

@@ -681,6 +681,7 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/cdn | AbilityWriteSensitive | handlePutAppCDN |
 | POST | /api/v1/apps/{name}/cdn/resync | AbilityWriteSensitive | handleResyncAppCDN |
 | GET | /api/v1/apps/{name}/game-status | AbilityRead | handleGetAppGameStatus |
+| GET | /api/v1/apps/{name}/export | AbilityRead | handleExportApp |
 
 </Accordion>
 
