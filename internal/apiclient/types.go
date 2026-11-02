@@ -4291,6 +4291,15 @@ type DashboardURLResource struct {
 	DashboardURL string `json:"dashboard_url"`
 }
 
+// DeployURLCopiesResource mirrors internal/api's deployURLCopiesResource
+// (GET/PUT /api/v1/settings/deploy-url-copies). Source is stored, env or default.
+type DeployURLCopiesResource struct {
+	Mode    string   `json:"mode"`
+	Source  string   `json:"source"`
+	Default string   `json:"default"`
+	Modes   []string `json:"modes"`
+}
+
 // UpdateSettingsResource mirrors internal/api's updateSettingsResource
 // (GET/PUT /api/v1/updates/settings): which release channel to compare
 // against and whether to check for it in the background.

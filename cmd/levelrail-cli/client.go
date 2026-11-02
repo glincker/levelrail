@@ -336,6 +336,7 @@ type (
 	enableHTTPSRequest                 = apiclient.EnableHTTPSRequest
 	dashboardURLResource               = apiclient.DashboardURLResource
 	updateSettingsResource             = apiclient.UpdateSettingsResource
+	deployURLCopiesResource            = apiclient.DeployURLCopiesResource
 	aiAssistantSettingsResource        = apiclient.AIAssistantSettingsResource
 	appStorageResource                 = apiclient.AppStorageResource
 	certificateResource                = apiclient.CertificateResource

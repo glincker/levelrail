@@ -325,7 +325,7 @@ func (s *bootState) startSchedulers() {
 	}()
 
 	deployURLSyncer := &deployurls.Syncer{
-		Store: db, Config: deployurls.FromProcessEnv(), HostFor: apiRouter.DeployURLHost,
+		Store: db, Config: deployurls.FromProcessEnv(), Mode: storedDeployURLMode(db), HostFor: apiRouter.DeployURLHost,
 		Remove: apiRouter.RemoveDeployURLService, Nudge: apiRouter.NudgeReconcilers, Logger: logger,
 	}
 	go func() {
@@ -497,4 +497,17 @@ func (s *bootState) serve() error {
 		return nil // Ctrl+C / SIGTERM is a clean shutdown, not a failure
 	}
 	return engineErr
+}
+
+// storedDeployURLMode reads the stored copies mode each pass; "" lets the env seed apply.
+func storedDeployURLMode(db interface {
+	GetDeployURLCopiesMode(context.Context) (string, error)
+}) func(context.Context) string {
+	return func(ctx context.Context) string {
+		m, err := db.GetDeployURLCopiesMode(ctx)
+		if err != nil {
+			return ""
+		}
+		return m
+	}
 }

@@ -35,7 +35,28 @@ const (
 	EnvMinFreeMemoryMB = "APP_DEPLOY_URL_MIN_FREE_MEMORY_MB"
 	// EnvMaxMemoryPercent skips an app whose memory limit exceeds this share of host RAM; 0 turns the check off.
 	EnvMaxMemoryPercent = "APP_DEPLOY_URL_MAX_MEMORY_PERCENT"
+	// EnvCopies seeds the copies mode (off, private, public) until a stored value overrides it.
+	EnvCopies = "APP_DEPLOY_URL_COPIES"
 )
+
+// Copies modes. Private keeps each copy asleep with no hostname, so no route or
+// certificate exists for it until the mode is set to public.
+const (
+	ModeOff     = "off"
+	ModePrivate = "private"
+	ModePublic  = "public"
+	// DefaultMode is what an install gets when neither a stored value nor the env seed is set.
+	DefaultMode = ModePrivate
+)
+
+// ParseMode normalizes s to a copies mode; ok is false for anything else, including "".
+func ParseMode(s string) (mode string, ok bool) {
+	switch m := strings.ToLower(strings.TrimSpace(s)); m {
+	case ModeOff, ModePrivate, ModePublic:
+		return m, true
+	}
+	return "", false
+}
 
 // Defaults for the variables above.
 const (
@@ -58,12 +79,17 @@ type Config struct {
 	MaxCopies   int
 	MinFreeMB   int
 	MaxMemPct   int
+	// Mode is the env-seeded copies mode; a stored setting wins over it (see Syncer.Mode).
+	Mode string
 }
 
 // ConfigFromEnv reads the Env* variables, using defaults for anything missing or malformed.
 func ConfigFromEnv(getenv func(string) string) Config {
 	cfg := Config{Keep: DefaultKeep, IdleMinutes: DefaultIdleMinutes, Interval: DefaultInterval,
-		MaxCopies: DefaultMaxCopies, MinFreeMB: DefaultMinFreeMB, MaxMemPct: DefaultMaxMemPct}
+		MaxCopies: DefaultMaxCopies, MinFreeMB: DefaultMinFreeMB, MaxMemPct: DefaultMaxMemPct, Mode: DefaultMode}
+	if m, ok := ParseMode(getenv(EnvCopies)); ok {
+		cfg.Mode = m
+	}
 	if n, err := strconv.Atoi(strings.TrimSpace(getenv(EnvMaxCopies))); err == nil && n >= 0 {
 		cfg.MaxCopies = n
 	}
@@ -159,12 +185,14 @@ func Plan(app store.DesiredService, attempts []store.DeployAttempt, pins []store
 // Clone is the retained service for w: the app's config restored to that
 // attempt, running the pinned image, with no volumes, host ports, hooks or
 // automatic rollback, so an old deploy cannot touch live data or fight the app.
+// It carries the host only in public mode (host is "" otherwise), so a private
+// copy has no route and no certificate order.
 func Clone(app store.DesiredService, w Wanted, host string) store.DesiredService {
 	svc, ref, _ := deploy.RollbackDesired(app, w.Attempt, w.Pin)
 	svc.Name = w.ServiceName
 	svc.Image = ref
 	svc.ImageID, svc.ImageIDRef = "", ""
-	svc.Domains = []string{host}
+	svc.Domains = domainsFor(host)
 	svc.Replicas = 1
 	svc.Volumes, svc.BindMounts = nil, nil
 	svc.HostPort, svc.PublishedPorts = nil, nil
@@ -173,6 +201,13 @@ func Clone(app store.DesiredService, w Wanted, host string) store.DesiredService
 	svc.AutoRollbackOnCrashloop, svc.AutoRollbackOnSLOBurn = false, ""
 	svc.ExecEnabled = false
 	return svc
+}
+
+func domainsFor(host string) []string {
+	if host == "" {
+		return nil
+	}
+	return []string{host}
 }
 
 // Store is what the syncer needs; *store.DB satisfies it.
@@ -198,6 +233,8 @@ type Store interface {
 type Syncer struct {
 	Store  Store
 	Config Config
+	// Mode returns the stored copies mode, or "" to fall back to Config.Mode.
+	Mode func(ctx context.Context) string
 	// HostFor returns the hostname for a retained service, or "" when none can be formed.
 	HostFor func(ctx context.Context, serviceName string) string
 	// Remove deletes a retained service and tears its containers down.
@@ -210,6 +247,21 @@ type Syncer struct {
 	Logger     *slog.Logger
 
 	existing map[string]bool
+	byName   map[string]store.DesiredService
+	mode     string
+}
+
+// effectiveMode is the stored mode when valid, else the env seed, else the default.
+func (s *Syncer) effectiveMode(ctx context.Context) string {
+	if s.Mode != nil {
+		if m, ok := ParseMode(s.Mode(ctx)); ok {
+			return m
+		}
+	}
+	if m, ok := ParseMode(s.Config.Mode); ok {
+		return m
+	}
+	return DefaultMode
 }
 
 func (s *Syncer) now() time.Time {
@@ -250,6 +302,11 @@ func (s *Syncer) Sync(ctx context.Context) error {
 		existing[svc.Name] = true
 	}
 	s.existing = existing
+	s.byName = make(map[string]store.DesiredService, len(services))
+	for _, svc := range services {
+		s.byName[svc.Name] = svc
+	}
+	s.mode = s.effectiveMode(ctx)
 	s.pruneOrphanSleep(ctx, sleeps, existing)
 	changed := false
 	for _, svc := range services {
@@ -301,7 +358,7 @@ func (s *Syncer) removeRow(ctx context.Context, r store.DeployURL) bool {
 
 func (s *Syncer) syncApp(ctx context.Context, app store.DesiredService, have map[string]store.DeployURL) (bool, error) {
 	var wanted []Wanted
-	if s.Config.Keep > 0 && !app.Suspended && ExcludeReason(app) == "" {
+	if s.Config.Keep > 0 && s.mode != ModeOff && !app.Suspended && ExcludeReason(app) == "" {
 		attempts, err := s.Store.ListDeployAttempts(ctx, app.Name)
 		if err != nil {
 			return false, fmt.Errorf("list attempts: %w", err)
@@ -326,11 +383,8 @@ func (s *Syncer) syncApp(ctx context.Context, app store.DesiredService, have map
 			s.Logger.InfoContext(ctx, "deploy urls: copy skipped, host memory is tight", slog.String("app", app.Name))
 			continue
 		}
-		host := ""
-		if s.HostFor != nil {
-			host = s.HostFor(ctx, w.ServiceName)
-		}
-		if host == "" {
+		host := s.hostFor(ctx, w.ServiceName)
+		if s.mode == ModePublic && host == "" {
 			continue
 		}
 		if err := s.create(ctx, app, w, host); err != nil {
@@ -344,9 +398,47 @@ func (s *Syncer) syncApp(ctx context.Context, app store.DesiredService, have map
 			if s.removeRow(ctx, row) {
 				changed = true
 			}
+			continue
+		}
+		if s.realign(ctx, row) {
+			changed = true
 		}
 	}
 	return changed, nil
+}
+
+func (s *Syncer) hostFor(ctx context.Context, serviceName string) string {
+	if s.mode != ModePublic || s.HostFor == nil {
+		return ""
+	}
+	return s.HostFor(ctx, serviceName)
+}
+
+// realign moves an existing copy to the current mode by adding or dropping its
+// hostname; the sleep state and suspended flag are left as they are.
+func (s *Syncer) realign(ctx context.Context, row store.DeployURL) bool {
+	svc, ok := s.byName[row.ServiceName]
+	if !ok {
+		return false
+	}
+	host := s.hostFor(ctx, row.ServiceName)
+	if s.mode == ModePublic && host == "" {
+		return false
+	}
+	if row.Host == host {
+		return false
+	}
+	svc.Domains = domainsFor(host)
+	if err := s.Store.SaveDesiredService(ctx, svc); err != nil {
+		s.Logger.WarnContext(ctx, "deploy urls: realign failed", slog.String("service", row.ServiceName), slog.String("error", err.Error()))
+		return false
+	}
+	row.Host = host
+	if err := s.Store.SaveDeployURL(ctx, row); err != nil {
+		s.Logger.WarnContext(ctx, "deploy urls: realign row failed", slog.String("service", row.ServiceName), slog.String("error", err.Error()))
+		return false
+	}
+	return true
 }
 
 func wantedLive(wanted []Wanted, name string) bool {
@@ -380,12 +472,6 @@ func (s *Syncer) create(ctx context.Context, app store.DesiredService, w Wanted,
 
 // Run syncs every Config.Interval until ctx ends.
 func (s *Syncer) Run(ctx context.Context) error {
-	if !s.Config.Enabled() {
-		if err := s.Sync(ctx); err != nil {
-			s.Logger.WarnContext(ctx, "deploy urls: cleanup pass failed", slog.String("error", err.Error()))
-		}
-		return nil
-	}
 	t := time.NewTicker(s.Config.Interval)
 	defer t.Stop()
 	for {

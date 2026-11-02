@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1920 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1922 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -594,6 +594,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/settings/ddns/status", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDDNSStatus", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/deploy-freeze", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetGlobalDeployFreeze", Description: "OAuth settings: GET is AbilityRead, PUT is AbilityRoot, matching /api/v1/settings/ingress's own tiers. Global deploy freeze windows apply to every app, so writing them is root-only."},
 	{Method: "PUT", Path: "/api/v1/settings/deploy-freeze", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePutGlobalDeployFreeze", Description: ""},
+	{Method: "GET", Path: "/api/v1/settings/deploy-url-copies", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetDeployURLCopies", Description: ""},
+	{Method: "PUT", Path: "/api/v1/settings/deploy-url-copies", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePutDeployURLCopies", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/dns-provider", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetDNSProvider", Description: ""},
 	{Method: "PUT", Path: "/api/v1/settings/dns-provider", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleSetDNSProvider", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/dns-provider-plugin", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetDNSProviderPlugin", Description: ""},

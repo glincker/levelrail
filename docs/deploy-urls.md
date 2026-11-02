@@ -51,6 +51,21 @@ no certificate is requested for a copy. Copies that already exist are not
 removed when you switch automatic hostnames off; they keep their hostname until
 they age out of the retention window or `APP_DEPLOY_URL_KEEP` is set to 0.
 
+## Copies mode
+
+The setting `deploy.url_copies` decides whether a copy is reachable. A stored value
+wins; `APP_DEPLOY_URL_COPIES` only seeds the default. Change it with
+`levelrail-cli settings deploy-url-copies set <mode>`, through
+`PUT /api/v1/settings/deploy-url-copies`, and it applies on the next sync pass.
+
+| Mode | Behavior |
+| --- | --- |
+| `private` (default) | Copies are kept suspended with no hostname, so no route and no certificate exists for them. |
+| `public` | Copies get their own hostname and certificate, and the Visit button appears. |
+| `off` | No copies are kept and existing ones are removed. |
+
+Switching between `private` and `public` updates existing copies in place.
+
 ## Retention
 
 | Setting | Default | Meaning |

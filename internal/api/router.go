@@ -427,6 +427,8 @@ type Router struct {
 	// updateSettings is the update_settings store surface (migrations/0258),
 	// always set, same "core Store interface" shape as ingressSettings above.
 	updateSettings UpdateSettingsStore
+	// deployURLSettings is the deploy URL copies mode; nil when the store lacks it.
+	deployURLSettings DeployURLSettingsStore
 	// upgradeFetchers is the beta/edge channel lookup, defaulted to
 	// upgrade.DefaultFetchers in NewRouter, overridable in tests the
 	// same way fetchLatestRelease is above.
@@ -1056,6 +1058,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		fetchLatestRelease:          defaultFetchLatestRelease,
 		updatesCache:                newUpdatesCache(),
 		updateSettings:              s,
+		deployURLSettings:           deployURLSettingsOf(s),
 		upgradeFetchers:             upgrade.DefaultFetchers(b.RepoSlug()),
 		channelUpdatesCache:         upgrade.NewCache(),
 		releaseHist:                 newReleaseHistorySource(b.RepoSlug()),

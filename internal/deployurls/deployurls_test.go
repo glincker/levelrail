@@ -214,7 +214,7 @@ func TestSyncRetention(t *testing.T) {
 	}
 	nudged := 0
 	s := &Syncer{
-		Store: f, Config: Config{Keep: 3, IdleMinutes: 5, Interval: time.Minute, MaxCopies: 2},
+		Store: f, Config: Config{Keep: 3, IdleMinutes: 5, Interval: time.Minute, MaxCopies: 2, Mode: ModePublic},
 		HostFor: func(_ context.Context, name string) string { return name + ".apps.example.com" },
 		Remove:  f.remove, Nudge: func() { nudged++ }, Now: func() time.Time { return t0 },
 		Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
@@ -267,7 +267,7 @@ func TestSyncRetention(t *testing.T) {
 	}
 }
 
-var dflt = Config{Keep: 3, IdleMinutes: 5, Interval: time.Minute, MaxCopies: 1, MinFreeMB: 1024, MaxMemPct: 25}
+var dflt = Config{Keep: 3, IdleMinutes: 5, Interval: time.Minute, MaxCopies: 1, MinFreeMB: 1024, MaxMemPct: 25, Mode: ModePrivate}
 
 func withKeep(c Config, n int) Config { c.Keep = n; return c }
 
@@ -281,7 +281,7 @@ func TestConfigFromEnv(t *testing.T) {
 		{"defaults", nil, dflt},
 		{"keep zero disables", map[string]string{EnvKeep: "0"}, withKeep(dflt, 0)},
 		{"malformed falls back", map[string]string{EnvKeep: "x", EnvIdleMinutes: "-1", EnvInterval: "soon"}, dflt},
-		{"custom", map[string]string{EnvKeep: "5", EnvIdleMinutes: "9", EnvInterval: "30s", EnvMaxCopies: "2", EnvMinFreeMemoryMB: "512", EnvMaxMemoryPercent: "10"}, Config{Keep: 5, IdleMinutes: 9, Interval: 30 * time.Second, MaxCopies: 2, MinFreeMB: 512, MaxMemPct: 10}},
+		{"custom", map[string]string{EnvKeep: "5", EnvIdleMinutes: "9", EnvInterval: "30s", EnvMaxCopies: "2", EnvMinFreeMemoryMB: "512", EnvMaxMemoryPercent: "10"}, Config{Keep: 5, IdleMinutes: 9, Interval: 30 * time.Second, MaxCopies: 2, MinFreeMB: 512, MaxMemPct: 10, Mode: ModePrivate}},
 	}
 	for _, tc := range tests {
 		if got := ConfigFromEnv(get(tc.env)); got != tc.want {
@@ -306,7 +306,7 @@ func TestCloneDropsHostBindings(t *testing.T) {
 
 func newSyncer(f *fakeStore, cfg Config) *Syncer {
 	return &Syncer{
-		Store: f, Config: cfg,
+		Store: f, Config: cfg, Mode: func(context.Context) string { return ModePublic },
 		HostFor: func(_ context.Context, name string) string { return name + ".apps.example.com" },
 		Remove:  f.remove, Now: func() time.Time { return t0 },
 		HostMemory: func() (int64, int64, error) { return 8 << 30, 6 << 30, nil },
@@ -494,7 +494,7 @@ func TestSyncNoHostCreatesNoCopy(t *testing.T) {
 		attempt(2, store.DeployAttemptStatusSucceeded, "ccccccc"),
 	}
 	s := &Syncer{
-		Store: f, Config: Config{Keep: 3, IdleMinutes: 5, Interval: time.Minute, MaxCopies: 2},
+		Store: f, Config: Config{Keep: 3, IdleMinutes: 5, Interval: time.Minute, MaxCopies: 2, Mode: ModePublic},
 		HostFor: func(context.Context, string) string { return "" },
 		Remove:  f.remove, Nudge: func() {}, Now: func() time.Time { return t0 },
 		Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
@@ -504,5 +504,97 @@ func TestSyncNoHostCreatesNoCopy(t *testing.T) {
 	}
 	if len(f.rows) != 0 || len(f.services) != 1 || len(f.services[0].Domains) != 0 {
 		t.Fatalf("rows = %+v services = %+v, want no copy and no domain", f.rows, f.services)
+	}
+}
+
+func urlCopiesSyncer(f *fakeStore, stored *string, hostCalls *int) *Syncer {
+	s := newSyncer(f, withKeep(dflt, 3))
+	s.Mode = func(context.Context) string { return *stored }
+	s.HostFor = func(_ context.Context, name string) string {
+		*hostCalls++
+		return name + ".apps.example.com"
+	}
+	return s
+}
+
+func urlCopiesFixture() *fakeStore {
+	f := newFake()
+	f.services = []store.DesiredService{{Name: "web", Image: "web:ccccccc", Port: 80}}
+	f.attempts["web"] = []store.DeployAttempt{
+		attempt(1, store.DeployAttemptStatusSucceeded, "aaaaaaa"),
+		attempt(3, store.DeployAttemptStatusSucceeded, "ccccccc"),
+	}
+	return f
+}
+
+func copyOf(f *fakeStore) store.DesiredService {
+	for _, svc := range f.services {
+		if svc.Name == "web-aaaaaaa" {
+			return svc
+		}
+	}
+	return store.DesiredService{}
+}
+
+// Private mode must create the copy with no domain, so the ingress has no route
+// and no certificate order to make for it, while it is still born asleep.
+func TestURLCopiesPrivateCreatesNoPublicHost(t *testing.T) {
+	f := urlCopiesFixture()
+	stored, hostCalls := "", 0
+	s := urlCopiesSyncer(f, &stored, &hostCalls)
+	ctx := context.Background()
+
+	if err := s.Sync(ctx); err != nil {
+		t.Fatal(err)
+	}
+	c := copyOf(f)
+	if c.Name == "" || len(c.Domains) != 0 {
+		t.Fatalf("copy = %+v, want a copy with no domains", c)
+	}
+	if hostCalls != 0 || f.rows["web-aaaaaaa"].Host != "" {
+		t.Fatalf("hostCalls = %d row = %+v, private mode must not form a host", hostCalls, f.rows["web-aaaaaaa"])
+	}
+	if err := s.Sync(ctx); err != nil || len(f.services) != 2 {
+		t.Fatalf("second pass: err=%v services=%d, want no change", err, len(f.services))
+	}
+}
+
+func TestURLCopiesModeSwitch(t *testing.T) {
+	f := urlCopiesFixture()
+	stored, hostCalls := "public", 0
+	s := urlCopiesSyncer(f, &stored, &hostCalls)
+	ctx := context.Background()
+
+	if err := s.Sync(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if c := copyOf(f); len(c.Domains) != 1 {
+		t.Fatalf("public copy = %+v, want routed", c)
+	}
+
+	stored = "private"
+	if err := s.Sync(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if c := copyOf(f); len(c.Domains) != 0 || f.rows["web-aaaaaaa"].Host != "" {
+		t.Fatalf("private copy = %+v row = %+v, want unrouted", c, f.rows["web-aaaaaaa"])
+	}
+
+	stored = "public"
+	if err := s.Sync(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if c := copyOf(f); len(c.Domains) != 1 || f.rows["web-aaaaaaa"].Host == "" {
+		t.Fatalf("reopened copy = %+v row = %+v, want routed again", c, f.rows["web-aaaaaaa"])
+	}
+
+	stored = "off"
+	if err := s.Sync(ctx); err != nil || len(f.rows) != 0 {
+		t.Fatalf("off must remove copies: err=%v rows=%+v", err, f.rows)
+	}
+
+	stored = "bogus"
+	if got := s.effectiveMode(ctx); got != ModePrivate {
+		t.Fatalf("invalid stored value fell back to %q, want the env seed", got)
 	}
 }

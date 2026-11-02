@@ -4322,6 +4322,20 @@ func (c *Client) EnableHTTPS(ctx context.Context, req EnableHTTPSRequest) (HTTPS
 	return out, err
 }
 
+// GetDeployURLCopies calls GET /api/v1/settings/deploy-url-copies.
+func (c *Client) GetDeployURLCopies(ctx context.Context) (DeployURLCopiesResource, error) {
+	var out DeployURLCopiesResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/deploy-url-copies", nil, &out)
+	return out, err
+}
+
+// SetDeployURLCopies calls PUT /api/v1/settings/deploy-url-copies; an empty mode clears the stored value.
+func (c *Client) SetDeployURLCopies(ctx context.Context, mode string) (DeployURLCopiesResource, error) {
+	var out DeployURLCopiesResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/settings/deploy-url-copies", map[string]string{"mode": mode}, &out)
+	return out, err
+}
+
 // GetUpdateSettings calls GET /api/v1/updates/settings.
 func (c *Client) GetUpdateSettings(ctx context.Context) (UpdateSettingsResource, error) {
 	var out UpdateSettingsResource

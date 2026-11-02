@@ -311,6 +311,8 @@ Endpoints for:
 | GET | /api/v1/settings/ddns | AbilityRoot | handleGetDDNS |
 | PUT | /api/v1/settings/ddns | AbilityRoot | handlePutDDNS |
 | GET | /api/v1/settings/ddns/status | AbilityRoot | handleDDNSStatus |
+| GET | /api/v1/settings/deploy-url-copies | AbilityRead | handleGetDeployURLCopies |
+| PUT | /api/v1/settings/deploy-url-copies | AbilityRoot | handlePutDeployURLCopies |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |

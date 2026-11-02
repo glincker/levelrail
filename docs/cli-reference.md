@@ -1957,6 +1957,7 @@ levelrail-cli settings runtime reset KEY [--confirm-weakening] [flags]
 levelrail-cli settings runtime apply [flags]
 levelrail-cli settings updates get [flags]
 levelrail-cli settings updates set --channel CHANNEL [--auto-update] [flags]
+levelrail-cli settings deploy-url-copies get|set <off|private|public|default> [flags]
 levelrail-cli settings deploy-freeze show [flags]
 levelrail-cli settings deploy-freeze set --cron EXPR --duration D [flags]
 levelrail-cli settings deploy-freeze clear [flags]
@@ -1970,7 +1971,7 @@ levelrail-cli settings ai-assistant get|set|clear [flags]
 - `edge get|set|fix` shows and changes request limits and the trusted proxy list; `fix` detects the proxy in front of this server and trusts it. `levelrail-cli ingress-limits show|set|clear APP` is the per-app request body cap. See [Domains and ingress](/domains-and-ingress#edge-limits-client-ips-and-failover).
 - `dashboard-url set` sets the public dashboard URL; once it is `https://`, sign in over plain HTTP is refused (`--url ""` clears it).
 - `dashboard-url fix` switches the URL to `https://` on the primary domain once it answers over https with a valid certificate. The same Fix button sits in Settings, General (Settings health) and Security. CLI and MCP gating of beta features follows the Settings switches (`APP_EXPERIMENTAL` stays an override).
-- `updates` configures the release channel and auto update checking. `deploy-freeze` manages fleet wide freeze windows; per app windows are under `apps freeze`.
+- `deploy-url-copies` sets whether retained deploy copies are off, private (suspended, no public host or certificate, the default) or public; a stored value wins over `APP_DEPLOY_URL_COPIES` and applies without a restart. `updates` configures the release channel and auto update checking. `deploy-freeze` manages fleet wide freeze windows; per app windows are under `apps freeze`.
 - `ai-assistant` is experimental (`APP_EXPERIMENTAL=ai-chat`): `get` shows the active model, the fallback chain and the limits (keys are never returned), `providers list|set|test|remove|models` manages provider keys, `use <provider> <model>` picks the active model, `fallback set` sets the fallback chain, and `usage` shows token use.
 
 ## Git integrations
