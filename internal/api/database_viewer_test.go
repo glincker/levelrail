@@ -301,3 +301,18 @@ func TestDatabaseSavedQueries_RoundTrip(t *testing.T) {
 		t.Errorf("delete status = %d", rec.Code)
 	}
 }
+
+func TestDatabaseQuery_RejectsMaskedHistoryReplay(t *testing.T) {
+	for _, path := range []string{"/api/v1/databases/main/query", "/api/v1/databases/main/query/write"} {
+		rt, db, fake := newViewerTestRouter(t, store.EnginePostgres)
+		cookie := loginTestSession(t, rt, db)
+		body := `{"sql":"update creds set token = '[redacted]' where id = 1","confirm":"main"}`
+		rec := viewerDo(t, rt, cookie, http.MethodPost, path, body)
+		if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), `"code":"masked_query"`) {
+			t.Fatalf("%s: status = %d, body = %s", path, rec.Code, rec.Body.String())
+		}
+		if fake.calls != 0 {
+			t.Errorf("%s: masked statement reached the database", path)
+		}
+	}
+}
