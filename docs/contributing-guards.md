@@ -5,6 +5,19 @@ description: For contributors. The repo-wide guard tests and scripts, what each 
 
 Most of these checks scan the whole tree, so a scoped test run does not reach them. If you touch the area in the first column, run the command in the third before you push. CI mechanics are in [CI](/ci), and the system the guards protect is described in [Architecture](/architecture).
 
+## Preflight: run only the guards your diff needs
+
+`scripts/preflight.sh` maps the files you changed to the fast guards below and runs just those, in parallel where safe, printing one line per guard (ran or skipped, pass or fail, seconds). It exits non-zero on a failure. The `pre-push` hook runs it, and agents and contributors should run it before pushing.
+
+```bash
+scripts/preflight.sh                  # diff against origin/release/v0.9.0, plus staged and unstaged
+scripts/preflight.sh --base origin/main
+scripts/preflight.sh --all            # every guard
+scripts/preflight.sh --plan           # only list the guards the diff selects
+```
+
+The mapping is a table at the top of the script, so a new guard is one `RULES` line plus one case in `guard_cmd`. `scripts/preflight_test.sh` checks the mapping against fixture file lists. The generated-files guard rewrites tracked files, so it runs alone after the others, and it is skipped with a message when the run has already passed `PREFLIGHT_BUDGET_SECONDS` (default 90). A guard that needs `web/node_modules` prints a hint and is reported as skipped when the folder is missing.
+
 | Guard | Fails when | Run it |
 | --- | --- | --- |
 | Exec gate | A non-test Go file starts a host process and is not listed | `go test ./test/execgate` |
@@ -166,7 +179,7 @@ Four tests in `cmd/levelrail-cli` keep the CLI, its help text, completion and ma
 
 - `pre-commit` runs on staged files only: gofmt, migration version check (when a migration is staged), gitleaks (skipped with a notice if not installed), go vet and golangci-lint on the changed packages (new issues only), kit and Terraform provider builds, the dash sweep, conflict markers, a limit on long new comment blocks, eslint and prettier for staged web files, and the icon library sweep. It does not run the test suite.
 - `commit-msg` requires `<type>(<scope>): <description>` with a type from feat, fix, perf, refactor, docs, test, chore, ci, security, and rejects dashes and AI attribution trailers.
-- `pre-push` checks migration versions, regenerates the API reference when routes changed, builds, and runs `go test -short` on the packages your branch changed (not their dependents) plus `tsc -b` for web changes. The base is the nearest `origin/release/*` or `origin/main`.
+- `pre-push` checks migration versions, runs `scripts/preflight.sh` (the guards that match your changed files), builds, and runs `go test -short` on the packages your branch changed (not their dependents) plus `tsc -b` for web changes. The base is the nearest `origin/release/*` or `origin/main`.
 
 Environment flags for `pre-push`, all read from the script:
 
@@ -176,6 +189,7 @@ Environment flags for `pre-push`, all read from the script:
 | `LEVELRAIL_PUSH_SCOPE=affected` | Also test dependents of the changed packages, instead of the default `fast`. |
 | `LEVELRAIL_PUSH_COVERAGE=on` | Run the coverage gates (70 percent aggregate for `internal/`, 50 percent for changed lines). Off by default, CI runs them. |
 | `LEVELRAIL_PUSH_WEB_TESTS=on` | Run vitest for related changed web files. |
+| `LEVELRAIL_PUSH_PREFLIGHT=off` | Emergency opt-out for the preflight guards. It prints a loud notice and CI still runs every guard, so use it for an outage, not to land a failing change. |
 | `LEVELRAIL_PUSH_BASE` | Override the base ref used to find changed files. |
 | `LEVELRAIL_PUSH_TEST_TIMEOUT` | Go test timeout, default 30m. |
 | `LEVELRAIL_PREPUSH_API_SHARDS` | Shard count for `internal/api`, default min(4, cores). |

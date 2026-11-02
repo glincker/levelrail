@@ -27,6 +27,11 @@ forum on the [GLINR Discord](https://discord.gg/Ar5pcaZB99).
   [`good first issue`](https://github.com/glincker/levelrail/labels/good%20first%20issue)
   or [`help wanted`](https://github.com/glincker/levelrail/labels/help%20wanted).
 
+- Run `scripts/preflight.sh` before you push. It picks the repo-wide guards
+  that match your changed files (CLI tree, template logos, generated files,
+  fan-in, execgate, locales, docs, dashes). Agent briefs should include this
+  step. See [Which guard catches what](../docs/contributing-guards.md).
+
 ## Branches and commits
 
 - Branch names: `type/short-description`, e.g. `fix/rollback-image-gc`
