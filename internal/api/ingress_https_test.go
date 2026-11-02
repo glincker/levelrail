@@ -248,6 +248,26 @@ func TestWithHSTS(t *testing.T) {
 	}
 }
 
+func TestHTTPSStatusCarriesCASwitchNotice(t *testing.T) {
+	db := openTestDB(t)
+	rt := NewRouter(discardLogger(), testBrand(), db, WithPublicHost("203.0.113.5"))
+	const want = "a previous CA switch failed, retrying after 1m0s"
+	rt.caSwitchNotice = func() string { return want }
+	cookie := loginTestSession(t, rt, db)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/settings/ingress/https", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status read: %d %s", rec.Code, rec.Body.String())
+	}
+	var body map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := body["notice"].(string); got != want {
+		t.Fatalf("notice = %q, want %q (body %s)", got, want, rec.Body.String())
+	}
+}
+
 func TestEnableHTTPSUsesStoredEmail(t *testing.T) {
 	db := openTestDB(t)
 	rt := NewRouter(discardLogger(), testBrand(), db, WithPublicHost("203.0.113.5"))

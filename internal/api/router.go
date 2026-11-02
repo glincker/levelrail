@@ -851,6 +851,9 @@ type Router struct {
 	// external_reachability_*. nil means "use
 	// (&net.Dialer{}).DialContext", the real default.
 	doctorDialContext doctorDialContextFunc
+	// caSwitchNotice reports a failed CA switch awaiting retry. nil means
+	// ingress.CASwitchNotice; tests inject it because that state is process-wide.
+	caSwitchNotice func() string
 	// doctorNumCPU reports this host's CPU core count for the cpu check.
 	// nil means "use runtime.NumCPU".
 	doctorNumCPU func() int

@@ -248,8 +248,16 @@ func (rt *Router) buildHTTPSStatus(r *http.Request) (httpsStatusResource, error)
 		out.DashboardURL = u
 	}
 	out.DefaultEmail = rt.defaultACMEEmail(r)
-	out.Notice = ingress.CASwitchNotice()
+	out.Notice = rt.caSwitchNoticeOrDefault()
 	return out, nil
+}
+
+// caSwitchNoticeOrDefault reads the live driver notice unless a test injected one.
+func (rt *Router) caSwitchNoticeOrDefault() string {
+	if rt.caSwitchNotice != nil {
+		return rt.caSwitchNotice()
+	}
+	return ingress.CASwitchNotice()
 }
 
 // defaultACMEEmail is the caller's own account email when it is a real address, else the first admin's.
