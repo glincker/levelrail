@@ -47,10 +47,12 @@ jobs:
         run: |
           ids="$(git diff --name-only --diff-filter=AM "$BASE_SHA" "$GITHUB_SHA" -- internal/catalog/manifests \
             | awk -F/ 'NF >= 4 {print $4}' | sort -u | while read -r d; do [ -d "internal/catalog/manifests/$d" ] && echo "$d"; done)"
-          echo "any=$([ -n "$ids" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
           # A bulk change (a release) gets one loader-rules job instead of a job per template.
-          echo "bulk=$([ "$(printf '%s\n' "$ids" | grep -c .)" -gt "${BULK_THRESHOLD}" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
-          echo "ids=$(printf '%s\n' "$ids" | jq -R . | jq -sc 'map(select(. != ""))')" >> "$GITHUB_OUTPUT"
+          {
+            echo "any=$([ -n "$ids" ] && echo true || echo false)"
+            echo "bulk=$([ "$(printf '%s\n' "$ids" | grep -c .)" -gt "${BULK_THRESHOLD}" ] && echo true || echo false)"
+            echo "ids=$(printf '%s\n' "$ids" | jq -R . | jq -sc 'map(select(. != ""))')"
+          } >> "$GITHUB_OUTPUT"
 
   admit-bulk:
     needs: changed
@@ -116,7 +118,7 @@ jobs:
         run: |
           curl -fsSL "$KEV_URL" | jq -r '.vulnerabilities[].cveID' | sort -u > out/kev.txt
           fail=0
-          while read -r ref digest; do
+          while read -r ref _digest; do
             name="$(echo "$ref" | tr '/:' '__')"
             docker run --rm -v "$PWD/out:/out" "$TRIVY_IMAGE" image --scanners vuln,secret --format json --output "/out/trivy-$name.json" "$ref"
             jq -r '[.Results[]?.Vulnerabilities[]?.VulnerabilityID] | unique[]' "out/trivy-$name.json" | sort -u > "out/cves-$name.txt"
