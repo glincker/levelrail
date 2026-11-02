@@ -97,6 +97,8 @@ type dynamicSourceDeps struct {
 	proxySyncer *proxyroutes.Syncer
 	// dns01AllHosts reads the live DNS-01-for-every-host setting.
 	dns01AllHosts func(context.Context) bool
+	// restartPolicy reads the live container restart policy setting.
+	restartPolicy func(context.Context) string
 }
 
 func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
@@ -283,6 +285,9 @@ func appOptionsFor(deps dynamicSourceDeps) []application.Option {
 	appOpts = append(appOpts, deps.deployGate.appOptions(deps.db)...)
 	if reconcile.WorkersFromEnv(os.Getenv) > 1 {
 		appOpts = append(appOpts, application.WithReadinessRequeue(pendingReadiness(), application.ReadinessRequeueFromEnv(os.Getenv)))
+	}
+	if deps.restartPolicy != nil {
+		appOpts = append(appOpts, application.WithRestartPolicy(deps.restartPolicy))
 	}
 	if deps.retainedDeploys != nil {
 		appOpts = append(appOpts, application.WithRetainedDeploys(deps.retainedDeploys))

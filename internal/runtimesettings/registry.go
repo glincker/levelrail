@@ -76,6 +76,7 @@ const (
 	KeyHeartbeatJobBackoffBase = "heartbeat.job_backoff_base"
 	KeyHeartbeatJobBackoffMax  = "heartbeat.job_backoff_max"
 	KeyHeartbeatJobQueue       = "heartbeat.job_queue"
+	KeyContainersRestartPolicy = "containers.restart_policy"
 	KeyRevokedTokenDays        = "retention.revoked_token_days" //nolint:gosec // setting key, not a credential
 	KeyExpiredTokenDays        = "retention.expired_token_days" //nolint:gosec // setting key, not a credential
 )
@@ -200,6 +201,13 @@ func init() {
 		TitleKey: "runtimeSettings:items.bindAllowedRoots.title", DescKey: "runtimeSettings:items.bindAllowedRoots.description",
 		Title:       "Allowed bind-mount roots",
 		Description: "When not empty, bind mounts must sit inside one of these directories.",
+	})
+	Register(Definition{
+		Key: KeyContainersRestartPolicy, Category: CategoryDeploys, Kind: KindString, Default: "unless-stopped",
+		Env: "APP_CONTAINERS_RESTART_POLICY", Apply: ApplyLive, AllowedStrings: []string{"unless-stopped", "on-failure", "no"},
+		TitleKey: "runtimeSettings:items.containersRestartPolicy.title", DescKey: "runtimeSettings:items.containersRestartPolicy.description",
+		Title:       "Container restart policy",
+		Description: "Docker restart policy for long-running app containers, so apps come back after a host reboot or Docker restart. On a small host (1 GB) many apps starting at boot at once compete for memory; use no to rely on the control plane's sequential start. Applies to containers created on the next deploy or recreate; existing containers keep their old policy.",
 	})
 	Register(Definition{
 		Key: KeyTrustLoopbackForwarded, Category: CategoryNetworking, Kind: KindBool, Default: "true",

@@ -24,7 +24,7 @@ Stopped until recovery:
 - Alerts and notifications, and scheduled backups.
 - Wake of sleeping apps and the maintenance responses held by the control plane.
 
-Known gap: containers use restart policy `no`, so a host reboot during an outage leaves apps down ([Feature status](/feature-status)).
+New containers get restart policy `unless-stopped` (setting `containers.restart_policy`), so apps return after a host reboot during an outage. Containers created earlier keep `no` until redeployed ([Feature status](/feature-status)).
 
 ## What a backup holds
 

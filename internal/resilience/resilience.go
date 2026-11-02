@@ -159,7 +159,7 @@ func nodeChecks(now time.Time, n NodeInput) []Check {
 	}
 	return []Check{
 		link,
-		{ID: CheckContainers, Status: StatusWarn, Detail: "Running containers keep serving without the control plane. The container restart policy is off by design (Docker and Podman alike), so after a host reboot during an outage they stay down until the control plane returns."},
+		{ID: CheckContainers, Status: StatusWarn, Detail: "Running containers keep serving without the control plane. New containers get the Docker restart policy unless-stopped (setting containers.restart_policy), so apps come back after a host reboot without it. Containers created before this default keep restart policy no until redeployed."},
 		{ID: CheckTelemetry, Status: StatusPass, Detail: "Metrics and logs are stored on the node and pulled on demand, so nothing is lost or buffered while disconnected."},
 	}
 }

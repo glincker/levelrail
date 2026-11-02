@@ -400,6 +400,9 @@ func (s *bootState) startReconciler() {
 		dns01AllHosts: func(c context.Context) bool {
 			return s.apiRouter.RuntimeSettings().Bool(c, runtimesettings.KeyIngressDNS01AllHosts)
 		},
+		restartPolicy: func(c context.Context) string {
+			return s.apiRouter.RuntimeSettings().String(c, runtimesettings.KeyContainersRestartPolicy)
+		},
 	}
 	s.setupDNS01Check()
 	engine.SetSource(dynamicSource(sourceDeps))

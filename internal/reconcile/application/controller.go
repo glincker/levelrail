@@ -268,11 +268,12 @@ type Controller struct {
 	egressReadyBudget       time.Duration
 	egressReadyPollInterval time.Duration
 
-	rollouts            RolloutRecorder       // nil is valid: rollout state just isn't recorded
-	servingImageID      string                // image ID of the last replica proven ready this pass
-	stopGrace           time.Duration         // 0 uses defaultStopGrace
-	previousReleaseHold time.Duration         // 0 removes the previous release at cutover
-	applied             AppliedConfigRecorder // nil is valid: pending changes just aren't tracked
+	rollouts            RolloutRecorder              // nil is valid: rollout state just isn't recorded
+	servingImageID      string                       // image ID of the last replica proven ready this pass
+	stopGrace           time.Duration                // 0 uses defaultStopGrace
+	previousReleaseHold time.Duration                // 0 removes the previous release at cutover
+	restartPolicy       func(context.Context) string // stored runtime setting, read per container create
+	applied             AppliedConfigRecorder        // nil is valid: pending changes just aren't tracked
 	lastHeldUntil       time.Time
 	now                 func() time.Time // nil uses time.Now; tests step a fake clock
 	unconfirmedMu       sync.Mutex
@@ -1366,6 +1367,7 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 	if err != nil {
 		return fmt.Errorf("container spec: %w", err)
 	}
+	spec.RestartPolicy = c.restartPolicyFor(ctx, desired)
 	c.applyMeshBind(ctx, desired, &spec)
 	streamPorts, err := c.streamPortBindings(ctx, desired.Name)
 	if err != nil {
