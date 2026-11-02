@@ -353,13 +353,14 @@ func scanAIChatMessage(row rowScanner) (AIChatMessage, error) {
 	return m, nil
 }
 
-// SaveAIChatConfirmation inserts a new, pending confirmation row.
+// SaveAIChatConfirmation inserts a new, pending confirmation row. The input
+// stays unmasked while pending because approving executes it; Resolve masks it.
 func (db *DB) SaveAIChatConfirmation(ctx context.Context, c AIChatConfirmation) error {
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO ai_chat_confirmations
 			(id, session_id, message_id, tool_use_id, tool_name, tool_input, status, created_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-	`, c.ID, c.SessionID, c.MessageID, c.ToolUseID, c.ToolName, secretmask.Mask(string(c.ToolInput)), c.Status, c.CreatedAt)
+	`, c.ID, c.SessionID, c.MessageID, c.ToolUseID, c.ToolName, string(c.ToolInput), c.Status, c.CreatedAt)
 	if err != nil {
 		return fmt.Errorf("store: save ai chat confirmation: %w", err)
 	}
@@ -410,6 +411,14 @@ func (db *DB) ListPendingAIChatConfirmations(ctx context.Context, messageID stri
 	return out, nil
 }
 
+// ForDisplay returns a copy whose input and result are masked, for any
+// reader that is not the executor of a pending confirmation.
+func (c AIChatConfirmation) ForDisplay() AIChatConfirmation {
+	c.ToolInput = maskJSONBytes(c.ToolInput)
+	c.Result = maskJSONBytes(c.Result)
+	return c
+}
+
 func scanAIChatConfirmation(row rowScanner) (AIChatConfirmation, error) {
 	var c AIChatConfirmation
 	var toolInput string
@@ -437,9 +446,14 @@ func scanAIChatConfirmation(row rowScanner) (AIChatConfirmation, error) {
 // caller (internal/ai) is what enforces "only once" by checking Status
 // before calling this.
 func (db *DB) ResolveAIChatConfirmation(ctx context.Context, id, status string, result json.RawMessage, resolvedAt time.Time) error {
+	// Once resolved the real input is no longer needed, so persist it masked.
+	var rawInput sql.NullString
+	if err := db.QueryRowContext(ctx, `SELECT tool_input FROM ai_chat_confirmations WHERE id = ?`, id).Scan(&rawInput); err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return fmt.Errorf("store: resolve ai chat confirmation: read input: %w", err)
+	}
 	res, err := db.ExecContext(ctx, `
-		UPDATE ai_chat_confirmations SET status = ?, result = ?, resolved_at = ? WHERE id = ?
-	`, status, nullableJSON(maskJSONBytes(result)), resolvedAt, id)
+		UPDATE ai_chat_confirmations SET status = ?, result = ?, tool_input = ?, resolved_at = ? WHERE id = ?
+	`, status, nullableJSON(maskJSONBytes(result)), secretmask.Mask(rawInput.String), resolvedAt, id)
 	if err != nil {
 		return fmt.Errorf("store: resolve ai chat confirmation: %w", err)
 	}

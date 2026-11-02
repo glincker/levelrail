@@ -72,6 +72,16 @@ func TestAIChatRowsMaskRegisteredSecrets(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
+	// Pending: approving executes the stored input, so it must stay real.
+	pending, err := db.GetAIChatConfirmation(ctx, "aiconf_1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(pending.ToolInput), sinkSecret) {
+		t.Fatalf("pending input lost the real value: %s", pending.ToolInput)
+	}
+	hasAll(t, "pending display", string(pending.ForDisplay().ToolInput), sinkSecret, "keep-args")
+
 	result := json.RawMessage(`{"echo":"` + sinkSecret + `","ok":true}`)
 	if err := db.ResolveAIChatConfirmation(ctx, "aiconf_1", "approved", result, now); err != nil {
 		t.Fatal(err)
