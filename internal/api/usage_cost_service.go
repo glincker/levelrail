@@ -47,6 +47,15 @@ type usageCostState struct {
 	lastRollup time.Time
 	liveAt     time.Time
 	live       []usagecost.DailyCost
+	// clock is only set by tests that pin the month window.
+	clock func() time.Time
+}
+
+func (rt *Router) usageClock() time.Time {
+	if rt.usageCost.clock != nil {
+		return rt.usageCost.clock()
+	}
+	return time.Now()
 }
 
 func (rt *Router) usageStore() usageCostStore {
@@ -404,7 +413,7 @@ func (rt *Router) BudgetStatuses(ctx context.Context) ([]usagecost.BudgetStatus,
 	if err != nil || len(budgets) == 0 {
 		return nil, err
 	}
-	return rt.budgetStatuses(ctx, st, budgets, time.Now())
+	return rt.budgetStatuses(ctx, st, budgets, rt.usageClock())
 }
 
 func (rt *Router) budgetStatuses(ctx context.Context, st usageCostStore, budgets []usagecost.Budget, now time.Time) ([]usagecost.BudgetStatus, error) {

@@ -38,6 +38,13 @@ type usageFixture struct {
 // node billed 310 a month.
 func newUsageFixture(t *testing.T) *usageFixture {
 	t.Helper()
+	return newUsageFixtureAt(t, time.Now())
+}
+
+// newUsageFixtureAt seeds the usage days relative to anchor so month
+// boundary behavior can be tested without depending on the wall clock.
+func newUsageFixtureAt(t *testing.T, anchor time.Time) *usageFixture {
+	t.Helper()
 	db := openTestDB(t)
 	tdb := newTestTelemetryDB(t)
 	rt := NewRouter(discardLogger(), testBrand(), db, WithTelemetryQuerier(telemetry.NewLocalFederator(tdb)))
@@ -56,7 +63,7 @@ func newUsageFixture(t *testing.T) *usageFixture {
 		must(db.SaveDesiredService(ctx, store.DesiredService{Name: s.app, Image: "nginx:1", Port: 80}))
 		must(db.UpdateServiceProject(ctx, s.app, s.proj))
 	}
-	today := usagecost.StartOfDay(time.Now())
+	today := usagecost.StartOfDay(anchor)
 	var samples []telemetry.Sample
 	for _, app := range []string{usageAppA, usageAppB} {
 		for d := 1; d <= usageSeedDays; d++ {
@@ -173,19 +180,37 @@ func TestUsageReport_IdleSpreadAllocatesWholeBill(t *testing.T) {
 }
 
 func TestUsageBudget_FiresThroughAlertRule(t *testing.T) {
-	f := newUsageFixture(t)
-	f.configureNode(t, 0)
-	body := jsonBody(t, map[string]any{"scope": "project", "scope_id": usageProjA, "monthly": 0.01})
-	if rec := f.do(t, f.admin, http.MethodPut, "/api/v1/usage/budgets", body); rec.Code != http.StatusOK {
-		t.Fatalf("put budget = %d: %s", rec.Code, rec.Body.String())
+	cases := []struct {
+		name   string
+		now    time.Time
+		firing bool
+	}{
+		{"mid month", time.Date(2026, 10, 20, 12, 0, 0, 0, time.UTC), true},
+		{"last minute of month", time.Date(2026, 10, 31, 23, 59, 0, 0, time.UTC), true},
+		// Nothing has been billed yet in the new month, so no budget can be over.
+		{"first minutes of month", time.Date(2026, 11, 1, 0, 15, 0, 0, time.UTC), false},
 	}
-	rule := alerting.Rule{ID: "r1", Kind: alerting.KindBudgetThreshold, Name: "budgets", Enabled: true}
-	next, notices, keys, err := alerting.EvaluateBudgetThreshold(context.Background(), f.rt, rule, time.Now())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !next.Firing || len(notices) == 0 || !strings.Contains(notices[0], "over budget") {
-		t.Fatalf("firing = %v notices = %v keys = %v", next.Firing, notices, keys)
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			f := newUsageFixtureAt(t, c.now)
+			f.rt.usageCost.clock = func() time.Time { return c.now }
+			f.configureNode(t, 0)
+			body := jsonBody(t, map[string]any{"scope": "project", "scope_id": usageProjA, "monthly": 0.01})
+			if rec := f.do(t, f.admin, http.MethodPut, "/api/v1/usage/budgets", body); rec.Code != http.StatusOK {
+				t.Fatalf("put budget = %d: %s", rec.Code, rec.Body.String())
+			}
+			rule := alerting.Rule{ID: "r1", Kind: alerting.KindBudgetThreshold, Name: "budgets", Enabled: true}
+			next, notices, keys, err := alerting.EvaluateBudgetThreshold(context.Background(), f.rt, rule, c.now)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if next.Firing != c.firing {
+				t.Fatalf("firing = %v want %v notices = %v keys = %v", next.Firing, c.firing, notices, keys)
+			}
+			if c.firing && (len(notices) == 0 || !strings.Contains(notices[0], "over budget")) {
+				t.Fatalf("notices = %v", notices)
+			}
+		})
 	}
 }
 
