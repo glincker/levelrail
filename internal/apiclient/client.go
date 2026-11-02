@@ -2307,8 +2307,30 @@ func (c *Client) PromoteApp(ctx context.Context, name string, req PromoteAppRequ
 // ListServiceTemplates calls GET /api/v1/service-templates: the full
 // catalog, without each entry's Compose body (see ServiceTemplateListItem).
 func (c *Client) ListServiceTemplates(ctx context.Context) ([]ServiceTemplateListItem, error) {
+	return c.ListServiceTemplatesFiltered(ctx, TemplateListFilter{})
+}
+
+// ListServiceTemplatesFiltered is ListServiceTemplates with the server side filters.
+func (c *Client) ListServiceTemplatesFiltered(ctx context.Context, f TemplateListFilter) ([]ServiceTemplateListItem, error) {
+	q := url.Values{}
+	if f.LicenseClass != "" {
+		q.Set("license_class", f.LicenseClass)
+	}
+	if f.VerifiedOnly {
+		q.Set("verified", "true")
+	}
+	if f.Arch != "" {
+		q.Set("arch", f.Arch)
+	}
+	if f.HideDeprecated {
+		q.Set("include_deprecated", "false")
+	}
+	path := "/api/v1/service-templates"
+	if len(q) > 0 {
+		path += "?" + q.Encode()
+	}
 	var out []ServiceTemplateListItem
-	err := c.do(ctx, http.MethodGet, "/api/v1/service-templates", nil, &out)
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
 	return out, err
 }
 

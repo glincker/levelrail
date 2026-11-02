@@ -61,47 +61,6 @@ func TestGenerateWholeCatalog(t *testing.T) {
 	}
 }
 
-func TestTrustLevels(t *testing.T) {
-	signed := &catalog.SignedBy{Method: "keyless", Identity: "x"}
-	e := Entry{Images: []Image{{SourceClass: catalog.SourceUpstream, Signed: signed, Provenance: true}}}
-	hist := catalog.VerifiedRecord{Arches: []string{"arm64"}}
-	got := trustFor(e, hist, true)
-	if got.Level != trustVerifiedSigned || got.EvidenceURL != statusPageURL {
-		t.Errorf("arm64 local pass = %+v, want signed with status page evidence", got)
-	}
-	e.Images[0].Signed = nil
-	got = trustFor(e, hist, true)
-	if got.Level != trustVerified {
-		t.Errorf("arm64 local pass unsigned = %q, want verified", got.Level)
-	}
-	if got := trustFor(e, catalog.VerifiedRecord{}, true).Level; got != trustListed {
-		t.Errorf("record without arches = %q, want listed", got)
-	}
-	e.Images[0].Signed = signed
-	ci := catalog.VerifiedRecord{Arches: []string{"amd64"}, RunURL: "https://example.com/run/1"}
-	if got := trustFor(e, ci, true).Level; got != trustVerifiedSigned {
-		t.Errorf("signed CI run = %q, want verified_signed", got)
-	}
-	e.Images[0].Signed = nil
-	if got := trustFor(e, ci, true).Level; got != trustVerified {
-		t.Errorf("unsigned CI run = %q, want verified", got)
-	}
-	if got := trustFor(e, ci, false).Level; got != trustListed {
-		t.Errorf("no record = %q, want listed", got)
-	}
-}
-
-func TestArchStates(t *testing.T) {
-	imgs := []Image{{Platforms: []string{"linux/amd64"}}}
-	got := archStates(imgs, catalog.VerifiedRecord{Arches: []string{"amd64"}}, true)
-	if got["amd64"] != "tested" || got["arm64"] != "absent" {
-		t.Errorf("archStates = %v", got)
-	}
-	if archStates([]Image{{}}, catalog.VerifiedRecord{}, false)["amd64"] != "unknown" {
-		t.Error("unscanned image must be unknown")
-	}
-}
-
 func TestInstallFor(t *testing.T) {
 	if in := installFor(nil); in.Kind != "deploy" || len(in.Fields) != 0 {
 		t.Errorf("nil manifest = %+v", in)

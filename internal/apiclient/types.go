@@ -1694,6 +1694,54 @@ type ServiceTemplateListItem struct {
 	RecommendedMemoryBytes int64  `json:"recommended_memory_bytes,omitempty"`
 	RequiresGPU            bool   `json:"requires_gpu,omitempty"`
 	Verified               bool   `json:"verified"`
+	TemplateFacts
+}
+
+// TemplateFacts mirrors internal/api's templateFacts: the marketplace
+// facts every catalog entry carries. All fields are optional.
+type TemplateFacts struct {
+	License      *TemplateLicense      `json:"license,omitempty"`
+	Listing      *TemplateListing      `json:"listing,omitempty"`
+	Trust        *TemplateTrust        `json:"trust,omitempty"`
+	Verification *TemplateVerification `json:"verification,omitempty"`
+	Arch         map[string]string     `json:"arch,omitempty"`
+	Status       string                `json:"status,omitempty"`
+	StatusReason string                `json:"status_reason,omitempty"`
+	ReplacedBy   string                `json:"replaced_by,omitempty"`
+}
+
+// TemplateLicense is the stated license and its class.
+type TemplateLicense struct {
+	SPDX  string `json:"spdx"`
+	Class string `json:"class"`
+	URL   string `json:"url,omitempty"`
+}
+
+// TemplateListing says who stands behind an entry.
+type TemplateListing struct {
+	By        string `json:"by"`
+	VendorOrg string `json:"vendor_org,omitempty"`
+}
+
+// TemplateTrust is the composite trust level: listed, verified or verified_signed.
+type TemplateTrust struct {
+	Level       string `json:"level"`
+	EvidenceURL string `json:"evidence_url,omitempty"`
+}
+
+// TemplateVerification is the smoke record bound to an image tag.
+type TemplateVerification struct {
+	Tag    string   `json:"tag"`
+	Arches []string `json:"arches"`
+	RunURL string   `json:"run_url,omitempty"`
+}
+
+// TemplateListFilter narrows ListServiceTemplates server side. Zero value lists everything.
+type TemplateListFilter struct {
+	LicenseClass   string
+	VerifiedOnly   bool
+	Arch           string
+	HideDeprecated bool
 }
 
 // ServiceTemplateDetail mirrors internal/api's serviceTemplateDetail:
@@ -1716,6 +1764,7 @@ type ServiceTemplateDetail struct {
 	RequiresConfiguration  bool                 `json:"requires_configuration,omitempty"`
 	Requirements           TemplateRequirements `json:"requirements"`
 	Manifest               *TemplateManifest    `json:"manifest,omitempty"`
+	TemplateFacts
 }
 
 // TemplateManifest carries only the manifest fields the CLI acts on.

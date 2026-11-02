@@ -53,47 +53,19 @@ type Install struct {
 // for a breaking change; additive fields keep the version.
 const SchemaVersion = 1
 
-// Image is one service image with the facts tied to its pinned tag.
-type Image struct {
-	Service     string            `json:"service"`
-	Image       string            `json:"image"`
-	Tag         string            `json:"tag"`
-	Digest      string            `json:"digest,omitempty"`
-	SourceClass string            `json:"source_class"`
-	Platforms   []string          `json:"platforms,omitempty"`
-	Signed      *catalog.SignedBy `json:"signed"`
-	Provenance  bool              `json:"provenance"`
-	SBOM        bool              `json:"sbom"`
-	NonRoot     bool              `json:"non_root"`
-}
-
-// License is the stated license and its class.
-type License struct {
-	SPDX  string `json:"spdx"`
-	Class string `json:"class"`
-	URL   string `json:"url,omitempty"`
-}
+// Shared with the product API so the site and the dashboard never disagree.
+type (
+	Image        = catalog.ImageFact
+	License      = catalog.License
+	Trust        = catalog.Trust
+	Verification = catalog.Verification
+)
 
 // Listing says who stands behind an entry.
 type Listing struct {
 	By        string `json:"by"`
 	VendorOrg string `json:"vendor_org,omitempty"`
 	Proof     string `json:"proof,omitempty"`
-}
-
-// Trust is the composite level and the CI run that backs it.
-type Trust struct {
-	Level       string `json:"level"`
-	EvidenceURL string `json:"evidence_url,omitempty"`
-}
-
-// Verification is the smoke record, bound to a tag and digest, with no dates.
-type Verification struct {
-	Tag        string   `json:"tag"`
-	Digest     string   `json:"digest,omitempty"`
-	HTTPStatus int      `json:"http_status,omitempty"`
-	Arches     []string `json:"arches"`
-	RunURL     string   `json:"run_url,omitempty"`
 }
 
 // Entry is one template in the catalog index.
@@ -134,16 +106,6 @@ type Index struct {
 	Tombstones    []catalog.TombstoneEntry `json:"tombstones"`
 }
 
-// Trust levels. Every entry is at least listed.
-const (
-	trustListed         = "listed"
-	trustVerified       = "verified"
-	trustVerifiedSigned = "verified_signed"
-)
-
-// statusPageURL records smoke passes that predate CI run links.
-const statusPageURL = "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
-
 const (
 	installKind   = "install"
 	deployKind    = "deploy"
@@ -181,7 +143,7 @@ func buildEntry(t catalog.Template) (Entry, error) {
 		Status:           catalog.StatusActive,
 		DocumentationURL: t.DocumentationURL,
 		HostedUse:        "unknown",
-		Trust:            Trust{Level: trustListed},
+		Trust:            Trust{Level: catalog.TrustListed},
 		Images:           []Image{},
 		MemoryMiB:        t.RecommendedMemoryBytes / (1 << 20),
 		RequiresGPU:      t.RequiresGPU,
@@ -190,20 +152,21 @@ func buildEntry(t catalog.Template) (Entry, error) {
 		Requirements:     catalog.ComputeRequirements(t.Compose),
 	}
 	e.Install = installFor(t.Manifest)
-	if m := t.Manifest; m != nil {
-		applyManifest(&e, m)
-	} else if meta, ok := catalog.MetaFor(t.ID); ok {
-		applyMeta(&e, meta)
+	mp := catalog.MarketplaceFor(t)
+	e.SourceRepo, e.License, e.HostedUse, e.Aliases = mp.SourceRepo, mp.License, mp.HostedUse, mp.Aliases
+	e.Status, e.StatusReason, e.ReplacedBy = mp.Status, sanitize(mp.StatusReason), mp.ReplacedBy
+	if t.Manifest == nil && e.Description == "" {
+		if meta, ok := catalog.MetaFor(t.ID); ok {
+			e.Description = sanitize(meta.Description)
+		}
 	}
-	l := catalog.ListingFor(t)
-	e.Listing = Listing{By: l.By, VendorOrg: l.VendorOrg, Proof: l.Proof}
-	if ad, ok := catalog.Lock().Admission[t.ID]; ok {
-		e.Admission = &ad
+	if t.Manifest != nil {
+		for _, s := range t.Manifest.FirstRun {
+			e.FirstRun = append(e.FirstRun, sanitize(s))
+		}
 	}
-	rec, verified := catalog.VerifiedFor(t)
-	if verified {
-		e.Verification = &Verification{Tag: rec.Tag, Digest: rec.Digest, HTTPStatus: rec.HTTPStatus, Arches: append([]string{}, rec.Arches...), RunURL: rec.RunURL}
-	}
+	e.Listing = Listing{By: mp.Listing.By, VendorOrg: mp.Listing.VendorOrg, Proof: mp.Listing.Proof}
+	e.Admission, e.Verification, e.Images, e.Arch, e.Trust = mp.Admission, mp.Verification, mp.Images, mp.Arch, mp.Trust
 	f, err := compose.Parse([]byte(t.Compose))
 	if err != nil {
 		return e, fmt.Errorf("parse %s: %w", t.ID, err)
@@ -221,11 +184,7 @@ func buildEntry(t catalog.Template) (Entry, error) {
 			s.Volumes = append(s.Volumes, src+" -> "+v.ContainerPath)
 		}
 		e.Services = append(e.Services, s)
-		e.Images = append(e.Images, imageFor(name, svc.Image, e.SourceRepo))
 	}
-	sort.Slice(e.Images, func(i, j int) bool { return e.Images[i].Service < e.Images[j].Service })
-	e.Arch = archStates(e.Images, rec, verified)
-	e.Trust = trustFor(e, rec, verified)
 	sort.Slice(e.Services, func(i, j int) bool { return e.Services[i].Name < e.Services[j].Name })
 
 	f2, err := compose.Parse([]byte(t.Compose))
@@ -264,35 +223,6 @@ func buildEntry(t catalog.Template) (Entry, error) {
 	return e, nil
 }
 
-// archesOf keeps the linux arches the catalog tracks. Empty means the
-// registry scan has not checked the template, never a claim.
-func archesOf(platforms []string) []string {
-	var out []string
-	for _, a := range []string{"amd64", "arm64"} {
-		for _, p := range platforms {
-			if p == "linux/"+a {
-				out = append(out, a)
-			}
-		}
-	}
-	return out
-}
-
-// applyMeta fills the marketplace fields of a Go-literal template from the
-// recorded metadata, never overriding text the template already carries.
-func applyMeta(e *Entry, m catalog.TemplateMeta) {
-	e.SourceRepo = m.SourceRepo
-	if m.License != "" {
-		e.License = &License{SPDX: m.License, Class: m.LicenseClass, URL: m.LicenseURL}
-	}
-	if e.Description == "" {
-		e.Description = sanitize(m.Description)
-	}
-	if m.Status != "" {
-		e.Status, e.StatusReason, e.ReplacedBy = m.Status, sanitize(m.StatusReason), m.ReplacedBy
-	}
-}
-
 // installFor mirrors the CLI: a manifest with an env form is set up with
 // "templates install", everything else with "templates deploy".
 func installFor(m *catalog.Manifest) *Install {
@@ -316,114 +246,6 @@ func installFor(m *catalog.Manifest) *Install {
 		in.Fields = append(in.Fields, f)
 	}
 	return in
-}
-
-func applyManifest(e *Entry, m *catalog.Manifest) {
-	e.SourceRepo = m.SourceRepo
-	if m.License != "" {
-		e.License = &License{SPDX: m.License, Class: m.LicenseClass, URL: m.LicenseURL}
-	}
-	if m.HostedUse != "" {
-		e.HostedUse = m.HostedUse
-	}
-	if m.Status != "" {
-		e.Status, e.StatusReason, e.ReplacedBy = m.Status, sanitize(m.StatusReason), m.ReplacedBy
-	}
-	if len(m.Aliases) > 0 {
-		e.Aliases = append([]string{}, m.Aliases...)
-	}
-	for _, s := range m.FirstRun {
-		e.FirstRun = append(e.FirstRun, sanitize(s))
-	}
-}
-
-var platformsByRef = func() map[string][]string {
-	out := map[string][]string{}
-	for _, p := range catalog.PlatformsData().Images {
-		out[p.Ref()] = p.Platforms
-	}
-	return out
-}()
-
-func imageFor(service, ref, sourceRepo string) Image {
-	img, tag := catalog.SplitImageRef(ref)
-	im := Image{Service: service, Image: img, Tag: tag, SourceClass: catalog.ImageSourceClass(ref, sourceRepo), Platforms: platformsByRef[ref]}
-	if l, ok := catalog.Lock().Images[ref]; ok {
-		im.Digest, im.Signed, im.Provenance, im.SBOM, im.NonRoot = l.Digest, l.Signed, l.Provenance, l.SBOM, l.NonRoot
-	}
-	return im
-}
-
-// archStates reports tested (a recorded passing run on that arch), published
-// (every image lists it), absent (the scan found a missing image) or unknown.
-func archStates(images []Image, rec catalog.VerifiedRecord, verified bool) map[string]string {
-	out := map[string]string{}
-	for _, a := range []string{"amd64", "arm64"} {
-		state := "published"
-		for _, im := range images {
-			switch {
-			case len(im.Platforms) == 0:
-				state = "unknown"
-			case !hasPlatform(im.Platforms, "linux/"+a) && state != "unknown":
-				state = "absent"
-			}
-		}
-		if len(images) == 0 {
-			state = "unknown"
-		}
-		if verified {
-			for _, ra := range rec.Arches {
-				if ra == a {
-					state = "tested"
-				}
-			}
-		}
-		out[a] = state
-	}
-	return out
-}
-
-func hasPlatform(list []string, p string) bool {
-	for _, v := range list {
-		if v == p {
-			return true
-		}
-	}
-	return false
-}
-
-// trustFor: verified needs a recorded smoke pass on the pinned images; the
-// tested architectures are disclosed in verification.arches. Signed adds a
-// cosign identity and provenance on every upstream image.
-func trustFor(e Entry, rec catalog.VerifiedRecord, verified bool) Trust {
-	tr := Trust{Level: trustListed}
-	if e.Admission != nil {
-		tr.EvidenceURL = e.Admission.RunURL
-	}
-	if !verified || len(rec.Arches) == 0 {
-		return tr
-	}
-	// Without a CI run link the public status page is the evidence of record.
-	evidence := rec.RunURL
-	if evidence == "" {
-		evidence = statusPageURL
-	}
-	tr = Trust{Level: trustVerified, EvidenceURL: evidence}
-	upstream := 0
-	for _, im := range e.Images {
-		if im.SourceClass != catalog.SourceUpstream {
-			continue
-		}
-		upstream++
-		if im.Signed == nil || !im.Provenance {
-			return tr
-		}
-	}
-	if upstream == 0 {
-		return tr
-	}
-	tr.Level = trustVerifiedSigned
-	return tr
 }
 
 func generate(templates []catalog.Template) ([]byte, error) {

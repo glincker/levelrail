@@ -578,6 +578,17 @@ Every entry here passed the same structural checks the rest of the catalog gets 
 
 Templates that came up healthy in the last live smoke run (see [template status](/templates-status)) carry a Verified badge in the dashboard, a `verified` field in `GET /api/v1/service-templates`, and show up under `levelrail-cli templates list --verified`. The dashboard has a "Verified only" filter on the templates page.
 
+## License, trust and verification
+
+The same facts the public catalog shows are part of every template in your own Levelrail, in the dashboard, the CLI and the API.
+
+- **License**: the SPDX id and its class (permissive, copyleft, network-copyleft, source-available, proprietary). A template with no recorded license shows nothing, never a guess.
+- **Trust**: `listed`, `verified` or `verified_signed`. Verified means the smoke run passed for the exact image tag pinned in the template, on the architectures it names. It carries no date.
+- **Architectures**: `tested` (a recorded passing run), `published` (every image lists it), `absent` or `unknown`.
+- **Deprecated**: the entry stays listed and installable, with the reason and, when there is one, a link to the replacement.
+
+`GET /api/v1/service-templates` returns these as optional fields (`license`, `listing`, `trust`, `verification`, `arch`, `status`, `status_reason`, `replaced_by`) and accepts the filters `license_class`, `verified=true`, `arch` (amd64 or arm64) and `include_deprecated=false`. Nothing is hidden unless you ask. In the CLI, `levelrail-cli templates list --license-class permissive --arch arm64` filters the same way, and `templates get <id>` prints the license, trust, verification and any deprecation notice. The dashboard templates page has matching badges and a license and architecture filter.
+
 ## Added 2026-10-27
 
 New templates, each booted under the platform's hardening flags (cap-drop ALL, no-new-privileges, pids limit) with a working health or login check:
