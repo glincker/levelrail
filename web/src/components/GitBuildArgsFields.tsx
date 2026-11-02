@@ -14,7 +14,7 @@ import {
   FieldLabel,
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import type { FormInput, FormOutput } from './CreateAppFromGitFields'
+import type { FormInput, FormOutput } from '../lib/createAppFromGit'
 
 // Same add/remove-row pattern LabelsEditor.tsx uses for Docker labels,
 // bound to the create-app form's own control/register.

@@ -48,6 +48,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_API_RATE_LIMIT_READ_RPM` | [`api.rate_limit_read_rpm`](/runtime-settings#security) | `600` |
 | `APP_API_RATE_LIMIT_TOKEN_REDEEM_RPM` | [`api.rate_limit_redeem_rpm`](/runtime-settings#security) | `10` |
 | `APP_API_RATE_LIMIT_WRITE_RPM` | [`api.rate_limit_write_rpm`](/runtime-settings#security) | `120` |
+| `APP_AUDIT_ANCHOR_WEBHOOK_SECRET` | [`audit.anchor_webhook_secret`](/runtime-settings#security) | empty |
+| `APP_AUDIT_ANCHOR_WEBHOOK_URL` | [`audit.anchor_webhook_url`](/runtime-settings#security) | empty |
 | `APP_AUTH_ENGINE_RATE_LIMIT_PER_EMAIL` | [`auth.engine_rate_limit_per_email`](/runtime-settings#security) | `60` |
 | `APP_AUTH_ENGINE_RATE_LIMIT_PER_IP` | [`auth.engine_rate_limit_per_ip`](/runtime-settings#security) | `60` |
 | `APP_DESKTOP_SESSION_TTL` | [`desktop.session_ttl`](/runtime-settings#security) | `12h` |

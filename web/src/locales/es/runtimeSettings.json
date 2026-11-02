@@ -315,6 +315,7 @@
     "count": "{{shown}} de {{total}}",
     "jumpLabel": "Ir a una categoría",
     "noMatchTitle": "Ningún ajuste coincide",
-    "noMatchBody": "Prueba con una búsqueda más corta o quita los filtros para ver todos los ajustes."
+    "noMatchBody": "Prueba con una búsqueda más corta o quita los filtros para ver todos los ajustes.",
+    "allCategories": "Todas las categorías"
   }
 }

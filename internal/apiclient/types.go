@@ -4003,6 +4003,19 @@ type AuditAnchor struct {
 	Sig     string `json:"sig"`
 }
 
+// AuditAnchorStatus mirrors auditanchor.Status: the webhook export state.
+type AuditAnchorStatus struct {
+	Enabled         bool   `json:"enabled"`
+	LastExportedSeq int64  `json:"last_exported_seq"`
+	LastExportedAt  string `json:"last_exported_at,omitempty"`
+	LastError       string `json:"last_error,omitempty"`
+	LastErrorAt     string `json:"last_error_at,omitempty"`
+	Exported        int64  `json:"exported"`
+	Failed          int64  `json:"failed"`
+	Dropped         int64  `json:"dropped"`
+	Queued          int    `json:"queued"`
+}
+
 // AuditAnchorReport mirrors store.AuditAnchorReport.
 type AuditAnchorReport struct {
 	OK         bool                `json:"ok"`

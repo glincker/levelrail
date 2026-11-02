@@ -315,6 +315,7 @@
     "count": "{{shown}} of {{total}}",
     "jumpLabel": "Jump to a category",
     "noMatchTitle": "No settings match",
-    "noMatchBody": "Try a shorter search, or clear the filters to see every setting."
+    "noMatchBody": "Try a shorter search, or clear the filters to see every setting.",
+    "allCategories": "All categories"
   }
 }

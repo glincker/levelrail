@@ -76,6 +76,8 @@ export function settingItemId(key: string): string {
 export interface RuntimeSettingFilter {
   query: string
   changedOnly: boolean
+  /** Limits the list to one category; omit for all. */
+  category?: RuntimeSettingCategory
 }
 
 /** Pure filter: matches title, description, key and env name; changedOnly keeps non-default sources. */
@@ -87,6 +89,7 @@ export function filterSettings(
   const needle = filter.query.trim().toLowerCase()
   return settings.filter((s) => {
     if (filter.changedOnly && s.source === 'default') return false
+    if (filter.category && s.category !== filter.category) return false
     if (needle === '') return true
     const { title, description } = text(s)
     return [title, description, s.key, s.env].some((v) =>
@@ -97,3 +100,33 @@ export function filterSettings(
 
 export const categoryAnchor = (category: RuntimeSettingCategory) =>
   `runtime-cat-${category}`
+
+/** parseCategory validates a URL search value; anything unknown means all categories. */
+export function parseCategory(
+  raw: unknown,
+): RuntimeSettingCategory | undefined {
+  return CATEGORY_ORDER.find((c) => c === raw)
+}
+
+export interface TextPart {
+  text: string
+  match: boolean
+}
+
+/** Splits text around case-insensitive occurrences of the query, for highlighting. */
+export function splitMatches(text: string, query: string): TextPart[] {
+  const needle = query.trim().toLowerCase()
+  if (needle === '') return [{ text, match: false }]
+  const lower = text.toLowerCase()
+  const parts: TextPart[] = []
+  let from = 0
+  for (;;) {
+    const at = lower.indexOf(needle, from)
+    if (at < 0) break
+    if (at > from) parts.push({ text: text.slice(from, at), match: false })
+    parts.push({ text: text.slice(at, at + needle.length), match: true })
+    from = at + needle.length
+  }
+  if (from < text.length) parts.push({ text: text.slice(from), match: false })
+  return parts.length > 0 ? parts : [{ text, match: false }]
+}

@@ -722,43 +722,108 @@
     "fixing": "Corrigiendo...",
     "friendly": {
       "generic": {
-        "action": "Inténtalo de nuevo y cita el ID de solicitud si sigue fallando."
+        "action": "Inténtalo de nuevo y cita el ID de solicitud si sigue fallando.",
+        "title": "Algo salió mal"
       },
       "docker": {
         "message": "Docker no responde en este host.",
-        "action": "Inicia Docker y vuelve a comprobar."
+        "action": "Inicia Docker y vuelve a comprobar.",
+        "title": "Docker no está en marcha"
       },
       "unauthorized": {
         "message": "Tu sesión ha terminado.",
-        "action": "Inicia sesión de nuevo para continuar."
+        "action": "Inicia sesión de nuevo para continuar.",
+        "title": "Sesión cerrada"
       },
       "forbidden": {
         "message": "Tu cuenta no tiene permiso para hacer esto.",
-        "action": "Pide acceso a un propietario o administrador."
+        "action": "Pide acceso a un propietario o administrador.",
+        "title": "No permitido"
       },
       "conflict": {
         "message": "Esto entra en conflicto con algo que ya existe.",
-        "action": "Cámbiale el nombre o elimina el existente y reintenta."
+        "action": "Cámbiale el nombre o elimina el existente y reintenta.",
+        "title": "Ya existe"
       },
       "validation": {
         "message": "Algunos valores no son válidos.",
-        "action": "Revisa los campos e inténtalo de nuevo."
+        "action": "Revisa los campos e inténtalo de nuevo.",
+        "title": "Revisa los datos"
       },
       "rateLimited": {
         "message": "Demasiadas solicitudes en poco tiempo.",
-        "action": "Espera un momento e inténtalo de nuevo."
+        "action": "Espera un momento e inténtalo de nuevo.",
+        "title": "Demasiadas solicitudes"
       },
       "diskFull": {
         "message": "El servidor se ha quedado sin espacio en disco.",
-        "action": "Libera espacio en Ajustes, Limpieza, y reintenta."
+        "action": "Libera espacio en Ajustes, Limpieza, y reintenta.",
+        "title": "Sin espacio en disco"
       },
       "unreachable": {
         "message": "El plano de control no responde.",
-        "action": "Espera unos segundos y reintenta."
+        "action": "Espera unos segundos y reintenta.",
+        "title": "El servidor no responde"
       },
       "network": {
         "message": "No se puede conectar con el servidor.",
-        "action": "Comprueba tu conexión y reintenta."
+        "action": "Comprueba tu conexión y reintenta.",
+        "title": "No se puede conectar"
+      },
+      "missingAbility": {
+        "title": "Falta un permiso",
+        "message": "Esto requiere la capacidad {{ability}}.",
+        "action": "Usa un token o rol que la tenga, o pídela a un administrador."
+      },
+      "timeout": {
+        "title": "La solicitud caducó",
+        "message": "El servidor tardó demasiado en responder.",
+        "action": "Espera un momento y reintenta."
+      },
+      "notFound": {
+        "title": "No encontrado",
+        "message": "Ese elemento ya no existe.",
+        "action": "Actualiza la página. Puede haberse renombrado o eliminado."
+      },
+      "tooLarge": {
+        "title": "Demasiado grande",
+        "message": "La subida supera lo que acepta el servidor.",
+        "action": "Usa un archivo más pequeño y reintenta."
+      },
+      "serverError": {
+        "title": "Error del servidor",
+        "message": "Algo salió mal en el servidor.",
+        "action": "Inténtalo de nuevo en un momento y cita el ID de solicitud si sigue fallando."
+      },
+      "needsConfirmation": {
+        "title": "Hace falta confirmación",
+        "message": "Este cambio necesita tu confirmación primero.",
+        "action": "Revisa el aviso, confirma y reintenta."
+      },
+      "domainTaken": {
+        "title": "Dominio en uso",
+        "message": "Otra app ya usa este dominio.",
+        "action": "Elige otro dominio o quítalo de la otra app."
+      },
+      "emailTaken": {
+        "title": "Correo en uso",
+        "message": "Ese correo pertenece a otra cuenta.",
+        "action": "Usa otra dirección de correo."
+      },
+      "stepUp": {
+        "title": "Confirma que eres tú",
+        "message": "Esta acción necesita una verificación de identidad reciente.",
+        "action": "Introduce tu código o passkey cuando se pida y reintenta."
+      },
+      "portConflict": {
+        "title": "Puerto ya publicado",
+        "message": "Otro servicio ya publica este puerto.",
+        "action": "Elige un puerto libre y reintenta."
+      },
+      "emailNotConfigured": {
+        "title": "El correo no está configurado",
+        "message": "Todavía no hay un proveedor de correo configurado.",
+        "action": "Añade uno en Ajustes, Correo, y reintenta."
       }
     },
     "generic": "Algo salió mal en el servidor.",

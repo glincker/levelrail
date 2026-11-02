@@ -426,6 +426,10 @@ func (s *bootState) startSchedulers() {
 	if cfg := auditanchor.ConfigFromEnv(os.LookupEnv); cfg.Enabled() {
 		go auditanchor.New(cfg, db, logger).Run(ctx)
 	}
+	// Webhook export of each new checkpoint; the URL is a live runtime setting and empty means off.
+	anchorExp := auditanchor.NewExporter(auditanchor.ExportConfigFromEnv(os.LookupEnv), auditanchor.ConfigFromEnv(os.LookupEnv).Interval, db, apiRouter.RuntimeSettings(), logger)
+	apiRouter.SetAnchorStatus(anchorExp.Status)
+	go anchorExp.Run(ctx)
 
 	// Moves cold audit, deploy and pipeline rows into archive bundles when the policy is on.
 	go func() {

@@ -46687,6 +46687,74 @@
         "x-required-ability": "root"
       }
     },
+    "/api/v1/audit-log/anchor-status": {
+      "get": {
+        "description": "Webhook export state: last exported sequence and last error, never the URL or secret.\n\nRequires the `root` ability.",
+        "operationId": "handleGetAuditAnchorStatus",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "root"
+            ]
+          }
+        ],
+        "summary": "Webhook export state: last exported sequence and last error, never the URL or secret.",
+        "tags": [
+          "Audit Log / Log Drain"
+        ],
+        "x-required-ability": "root"
+      }
+    },
     "/api/v1/audit-log/export": {
       "get": {
         "description": "Requires the `root` ability.",

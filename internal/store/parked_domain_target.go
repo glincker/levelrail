@@ -53,11 +53,9 @@ func editTargetClaimTx(ctx context.Context, tx *sql.Tx, t DomainTarget, edit fun
 	if err != nil {
 		return fmt.Errorf("store: read domains for static site %q: %w", t.Name, err)
 	}
-	var cur []string
-	if raw != "" {
-		if err := json.Unmarshal([]byte(raw), &cur); err != nil {
-			return fmt.Errorf("store: decode domains for static site %q: %w", t.Name, err)
-		}
+	cur, err := decodeDomainList(raw)
+	if err != nil {
+		return fmt.Errorf("store: decode domains for static site %q: %w", t.Name, err)
 	}
 	next, err := edit(slices.Clone(cur))
 	if err != nil {

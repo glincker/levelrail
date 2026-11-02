@@ -1351,6 +1351,7 @@ Endpoints for:
 | GET | /api/v1/audit-log/verify | AbilityRoot | handleVerifyAuditLog |
 | GET | /api/v1/audit-log/anchor | AbilityRoot | handleGetAuditAnchor |
 | POST | /api/v1/audit-log/anchor-check | AbilityRoot | handleCheckAuditAnchors |
+| GET | /api/v1/audit-log/anchor-status | AbilityRoot | handleGetAuditAnchorStatus |
 
 `GET /api/v1/audit-log` accepts optional query params: `limit`, `before` (RFC3339 cursor), `path`, `method`, `client_kind` (exact match), `q` (case-insensitive substring across actor name, ability, method, path and remote address), `status=failed` (only `status_code >= 400`), and `format=csv`. All filters combine with AND and the CSV export honors them.
 

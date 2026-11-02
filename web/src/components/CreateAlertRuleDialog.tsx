@@ -7,21 +7,7 @@ import {
   type Control,
   type FieldErrors,
 } from 'react-hook-form'
-import { z } from 'zod'
-import {
-  ArchiveGlassIcon,
-  CirclePlusGlassIcon,
-  CountdownGlassIcon,
-  CpuGlassIcon,
-  GaugeGlassIcon,
-  GlobeGlassIcon,
-  MailGlassIcon,
-  RocketGlassIcon,
-  RotateCcwGlassIcon,
-  ServerGlassIcon,
-  ShieldAlertGlassIcon,
-  WrenchGlassIcon,
-} from '@thesvg/ui-react'
+import { CirclePlusGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
   DialogContent,
@@ -67,25 +53,19 @@ import {
   BackupMissingFields,
   type BackupMissingFormShape,
 } from './BackupMissingFields'
-import type {
-  AlertRuleKind,
-  Comparator,
-  CreateAlertRuleRequest,
-} from '../types/alerts'
+import type {} from '../types/alerts'
 import { isScheduledTaskKind } from '../types/alerts'
 import { SloRuleFields, type SloFormShape } from './SloRuleFields'
-import { sloConfigFromForm } from '../queries/sloPreview'
+import {
+  ALERT_COMPARATOR_OPTIONS,
+  ALERT_KIND_OPTIONS,
+  alertRuleFormSchema,
+  buildAlertRuleRequest,
+  ALERT_RULE_DEFAULT_VALUES,
+  type AlertRuleFormInput,
+  type AlertRuleFormOutput,
+} from '@/lib/alertRuleForm'
 import type { AppVolume } from '../types/appDetail'
-
-// Sanity-check regex for a Go `time.Duration` string ("2m", "30s",
-// "1h30m", "500ms"), not a real parser: `time.ParseDuration` only runs
-// server-side (internal/api/alerts.go's parseOptionalDuration), so this
-// is the same class of "catch the obviously wrong input before a round
-// trip" check the task asked for, not a guarantee the server will
-// accept it. The server's own error message is still surfaced on submit
-// failure below for whatever this regex lets through that the server
-// rejects anyway.
-const GO_DURATION_REGEX = /^-?(\d+(\.\d+)?(ns|us|µs|ms|s|m|h))+$/
 
 // DEFAULT_PATCH_STATUS_THRESHOLD mirrors
 // internal/alerting.DefaultPatchStatusThreshold: display-only copy for
@@ -103,361 +83,6 @@ const DEFAULT_PATCH_STATUS_THRESHOLD = 1
 // raw bytes, purely for readability here; the env var itself is bytes.
 const DEFAULT_NODE_CPU_THRESHOLD_PERCENT = 80
 const DEFAULT_NODE_MEMORY_THRESHOLD_GIB = 4
-
-const KIND_OPTIONS: {
-  value: AlertRuleKind
-  label?: string
-  Icon: typeof GaugeGlassIcon
-}[] = [
-  { value: 'threshold', label: 'Threshold', Icon: GaugeGlassIcon },
-  { value: 'crashloop', label: 'Crashloop', Icon: RotateCcwGlassIcon },
-  {
-    value: 'cert_expiry',
-    label: 'Certificate expiry',
-    Icon: ShieldAlertGlassIcon,
-  },
-  { value: 'patch_status', label: 'Node patch status', Icon: WrenchGlassIcon },
-  {
-    value: 'scheduled_task_failure',
-    label: 'Job failure',
-    Icon: CountdownGlassIcon,
-  },
-  {
-    value: 'scheduled_task_missed',
-    label: 'Job missed a run',
-    Icon: CountdownGlassIcon,
-  },
-  {
-    value: 'scheduled_task_running_long',
-    label: 'Job running too long',
-    Icon: CountdownGlassIcon,
-  },
-  { value: 'node_disk_space', Icon: ServerGlassIcon },
-  {
-    value: 'node_resource_usage',
-    label: 'Node CPU/memory usage',
-    Icon: CpuGlassIcon,
-  },
-  { value: 'domain_health', label: 'Domain health', Icon: GlobeGlassIcon },
-  { value: 'backup_missing', label: 'Backup missing', Icon: ArchiveGlassIcon },
-  {
-    value: 'database_disk_high',
-    Icon: ArchiveGlassIcon,
-  },
-  {
-    value: 'database_connections_high',
-    Icon: ArchiveGlassIcon,
-  },
-  {
-    value: 'database_down',
-    Icon: ArchiveGlassIcon,
-  },
-  {
-    value: 'database_backup_stale',
-    Icon: ArchiveGlassIcon,
-  },
-  { value: 'node_offline', label: 'Node offline', Icon: ServerGlassIcon },
-  {
-    value: 'node_cert_expiring',
-    label: 'Node agent certificate expiring',
-    Icon: ServerGlassIcon,
-  },
-  {
-    value: 'control_plane_backup_stale',
-    label: 'Control plane backup stale',
-    Icon: ArchiveGlassIcon,
-  },
-  {
-    value: 'log_archive_stale',
-    label: 'Log archive stale',
-    Icon: ArchiveGlassIcon,
-  },
-  { value: 'slo_burn', label: 'SLO burn rate', Icon: GaugeGlassIcon },
-  {
-    value: 'version_skew',
-    label: 'Version update available',
-    Icon: RocketGlassIcon,
-  },
-  {
-    value: 'budget_threshold',
-    label: 'Budget threshold',
-    Icon: GaugeGlassIcon,
-  },
-  {
-    value: 'email_delivery_failing',
-    Icon: MailGlassIcon,
-  },
-  { value: 'deploy_failed', Icon: RocketGlassIcon },
-  { value: 'monitor_down', Icon: GlobeGlassIcon },
-]
-
-const COMPARATOR_OPTIONS: { value: Comparator; label: string }[] = [
-  { value: '>', label: '> (greater than)' },
-  { value: '<', label: '< (less than)' },
-  { value: '>=', label: '>= (greater or equal)' },
-  { value: '<=', label: '<= (less or equal)' },
-]
-
-// One flat form model covering both rule kinds rather than a
-// zod.discriminatedUnion, so every field stays registered regardless of
-// the selected kind (matching EnvEditor's plain-object-plus-superRefine
-// shape): the kind-specific fields simply aren't rendered or validated
-// when the other kind is selected, and onSubmit below picks which of
-// them actually go into the request body.
-const createAlertRuleSchema = z
-  .object({
-    name: z.string().trim().min(1, 'Name is required'),
-    kind: z.enum([
-      'threshold',
-      'crashloop',
-      'cert_expiry',
-      'patch_status',
-      'scheduled_task_failure',
-      'scheduled_task_missed',
-      'scheduled_task_running_long',
-      'node_disk_space',
-      'node_resource_usage',
-      'domain_health',
-      'backup_missing',
-      'database_disk_high',
-      'database_connections_high',
-      'database_down',
-      'database_backup_stale',
-      'node_offline',
-      'node_cert_expiring',
-      'control_plane_backup_stale',
-      'log_archive_stale',
-      'slo_burn',
-      'version_skew',
-      'budget_threshold',
-      'email_delivery_failing',
-      'deploy_failed',
-      'monitor_down',
-    ]),
-    metric: z.string().trim(),
-    comparator: z.enum(['>', '<', '>=', '<=']),
-    threshold: z.coerce.number({ error: 'Must be a number' }),
-    forDuration: z.string().trim(),
-    restartCountThreshold: z.coerce.number({ error: 'Must be a number' }),
-    restartWindow: z.string().trim(),
-    scheduledTaskId: z.string(),
-    backupResourceKind: z.enum(['database', 'volume', '']),
-    backupDatabaseName: z.string(),
-    backupVolumeName: z.string(),
-    sloObjective: z.enum(['availability', 'latency']),
-    sloTarget: z.coerce.number({ error: 'Must be a number' }),
-    sloLatencyMs: z.coerce.number({ error: 'Must be a number' }),
-    channelId: z.string(),
-    enabled: z.boolean(),
-  })
-  .superRefine((data, ctx) => {
-    // cert_expiry, patch_status, node_disk_space, and node_resource_usage
-    // need none of the threshold/crashloop fields: they watch every
-    // certificate, every node's patch status, every node's disk usage, or
-    // every node's CPU/memory usage, on the control plane platform-wide,
-    // not a metric or a restart count.
-    if (
-      data.kind === 'cert_expiry' ||
-      data.kind === 'patch_status' ||
-      data.kind === 'node_disk_space' ||
-      data.kind === 'node_resource_usage' ||
-      data.kind === 'node_offline' ||
-      data.kind === 'node_cert_expiring' ||
-      data.kind === 'control_plane_backup_stale' ||
-      data.kind === 'log_archive_stale' ||
-      data.kind === 'version_skew' ||
-      data.kind === 'email_delivery_failing' ||
-      data.kind === 'deploy_failed' ||
-      data.kind === 'monitor_down' ||
-      data.kind === 'budget_threshold'
-    ) {
-      return
-    }
-
-    if (data.kind === 'threshold') {
-      if (!data.metric) {
-        ctx.addIssue({
-          code: 'custom',
-          message: 'Metric is required',
-          path: ['metric'],
-        })
-      }
-      if (data.forDuration && !GO_DURATION_REGEX.test(data.forDuration)) {
-        ctx.addIssue({
-          code: 'custom',
-          message: 'Must look like a duration, e.g. "2m" or "30s"',
-          path: ['forDuration'],
-        })
-      }
-      return
-    }
-
-    // domain_health needs no required fields either: it watches every
-    // domain already configured on this app. for_duration is still
-    // optional here, the same debounce threshold's own uses.
-    if (data.kind === 'domain_health') {
-      if (data.forDuration && !GO_DURATION_REGEX.test(data.forDuration)) {
-        ctx.addIssue({
-          code: 'custom',
-          message: 'Must look like a duration, e.g. "2m" or "30s"',
-          path: ['forDuration'],
-        })
-      }
-      return
-    }
-
-    if (data.kind === 'slo_burn') {
-      if (!(data.sloTarget >= 50 && data.sloTarget < 100)) {
-        ctx.addIssue({
-          code: 'custom',
-          message: 'Must be at least 50 and below 100, e.g. 99.9',
-          path: ['sloTarget'],
-        })
-      }
-      if (data.sloObjective === 'latency' && !(data.sloLatencyMs >= 5)) {
-        ctx.addIssue({
-          code: 'custom',
-          message: 'Must be at least 5 ms',
-          path: ['sloLatencyMs'],
-        })
-      }
-      return
-    }
-
-    if (isScheduledTaskKind(data.kind)) {
-      if (!data.scheduledTaskId) {
-        ctx.addIssue({
-          code: 'custom',
-          message: 'Choose which scheduled task to watch',
-          path: ['scheduledTaskId'],
-        })
-      }
-      if (
-        !Number.isInteger(data.restartCountThreshold) ||
-        data.restartCountThreshold <= 0
-      ) {
-        ctx.addIssue({
-          code: 'custom',
-          message: 'Must be a positive whole number',
-          path: ['restartCountThreshold'],
-        })
-      }
-      return
-    }
-
-    if (isDatabaseRuleKind(data.kind)) {
-      if (!data.backupDatabaseName) {
-        ctx.addIssue({
-          code: 'custom',
-          message: 'Choose which database to watch',
-          path: ['backupDatabaseName'],
-        })
-      }
-      const max = data.kind === 'database_backup_stale' ? 8760 : 100
-      if (
-        data.kind !== 'database_down' &&
-        (data.threshold < 0 || data.threshold > max)
-      ) {
-        ctx.addIssue({
-          code: 'custom',
-          message: `Must be between 0 and ${max}`,
-          path: ['threshold'],
-        })
-      }
-      return
-    }
-
-    if (data.kind === 'backup_missing') {
-      if (!data.backupResourceKind) {
-        ctx.addIssue({
-          code: 'custom',
-          message: 'Choose what this rule watches',
-          path: ['backupResourceKind'],
-        })
-      } else if (
-        data.backupResourceKind === 'database' &&
-        !data.backupDatabaseName
-      ) {
-        ctx.addIssue({
-          code: 'custom',
-          message: 'Choose which database to watch',
-          path: ['backupDatabaseName'],
-        })
-      } else if (
-        data.backupResourceKind === 'volume' &&
-        !data.backupVolumeName
-      ) {
-        ctx.addIssue({
-          code: 'custom',
-          message: 'Choose which volume to watch',
-          path: ['backupVolumeName'],
-        })
-      }
-      if (data.forDuration && !GO_DURATION_REGEX.test(data.forDuration)) {
-        ctx.addIssue({
-          code: 'custom',
-          message: 'Must look like a duration, e.g. "6h"',
-          path: ['forDuration'],
-        })
-      }
-      return
-    }
-
-    if (
-      !Number.isInteger(data.restartCountThreshold) ||
-      data.restartCountThreshold <= 0
-    ) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'Must be a positive whole number',
-        path: ['restartCountThreshold'],
-      })
-    }
-    if (!data.restartWindow) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'Restart window is required',
-        path: ['restartWindow'],
-      })
-    } else if (!GO_DURATION_REGEX.test(data.restartWindow)) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'Must look like a duration, e.g. "5m"',
-        path: ['restartWindow'],
-      })
-    }
-  })
-
-// z.coerce.number() has a wider input type (unknown, since it accepts
-// whatever a raw <input type="number"> gives it) than output type
-// (number), so the form's field-value type (what register/defaultValues
-// bind to) and its post-validation submit type have to be declared
-// separately: z.input for the former, z.output for the latter. Passing
-// only z.infer (the output type) to useForm's generic, which is what
-// every other form in this codebase does, does not typecheck here
-// because none of those other forms coerce a string input to a number.
-type CreateAlertRuleFormInput = z.input<typeof createAlertRuleSchema>
-type CreateAlertRuleFormOutput = z.output<typeof createAlertRuleSchema>
-
-const DEFAULT_VALUES: CreateAlertRuleFormInput = {
-  name: '',
-  kind: 'threshold',
-  metric: '',
-  comparator: '>',
-  threshold: 80,
-  forDuration: '2m',
-  restartCountThreshold: 5,
-  restartWindow: '5m',
-  scheduledTaskId: '',
-  backupResourceKind: '',
-  backupDatabaseName: '',
-  backupVolumeName: '',
-  sloObjective: 'availability',
-  sloTarget: 99.9,
-  sloLatencyMs: 300,
-  channelId: '',
-  enabled: true,
-}
 
 // Create-via-dialog flow for a new alert rule, following
 // CreateTokenDialog's shape: a trigger button, a form inside
@@ -485,9 +110,9 @@ export function CreateAlertRuleDialog({
   const monitorsEnabled = Boolean(useMonitors().data)
   const databases = databasesQuery.data ?? []
   const { control, register, handleSubmit, formState, reset, watch, setValue } =
-    useForm<CreateAlertRuleFormInput, unknown, CreateAlertRuleFormOutput>({
-      resolver: zodResolver(createAlertRuleSchema),
-      defaultValues: DEFAULT_VALUES,
+    useForm<AlertRuleFormInput, unknown, AlertRuleFormOutput>({
+      resolver: zodResolver(alertRuleFormSchema),
+      defaultValues: ALERT_RULE_DEFAULT_VALUES,
     })
   const kind = watch('kind')
   const selectedChannelId = watch('channelId')
@@ -499,61 +124,13 @@ export function CreateAlertRuleDialog({
   function handleOpenChange(next: boolean) {
     setOpen(next)
     if (!next) {
-      reset(DEFAULT_VALUES)
+      reset(ALERT_RULE_DEFAULT_VALUES)
       createRule.reset()
     }
   }
 
   const onSubmit = handleSubmit((values) => {
-    const req: CreateAlertRuleRequest = {
-      name: values.name.trim(),
-      kind: values.kind,
-      channel_id: values.channelId || undefined,
-      enabled: values.enabled,
-    }
-    if (values.kind === 'threshold') {
-      req.metric = values.metric.trim()
-      req.comparator = values.comparator
-      req.threshold = values.threshold
-      req.for_duration = values.forDuration.trim() || undefined
-    } else if (values.kind === 'crashloop') {
-      req.restart_count_threshold = values.restartCountThreshold
-      req.restart_window = values.restartWindow.trim()
-    } else if (isScheduledTaskKind(values.kind)) {
-      req.scheduled_task_id = values.scheduledTaskId
-      req.restart_count_threshold = values.restartCountThreshold
-    } else if (
-      values.kind === 'domain_health' ||
-      values.kind === 'control_plane_backup_stale' ||
-      values.kind === 'log_archive_stale'
-    ) {
-      req.for_duration = values.forDuration.trim() || undefined
-    } else if (values.kind === 'slo_burn') {
-      req.slo = sloConfigFromForm(
-        values.sloObjective,
-        values.sloTarget,
-        values.sloLatencyMs,
-      )
-    } else if (isDatabaseRuleKind(values.kind)) {
-      req.backup_database_name = values.backupDatabaseName
-      if (values.kind !== 'database_down') {
-        req.threshold = values.threshold
-      }
-    } else if (values.kind === 'backup_missing') {
-      req.backup_resource_kind = values.backupResourceKind || undefined
-      req.for_duration = values.forDuration.trim() || undefined
-      if (values.backupResourceKind === 'database') {
-        req.backup_database_name = values.backupDatabaseName
-      } else if (values.backupResourceKind === 'volume') {
-        // A volume's owning service is always this same app in this
-        // codebase's single-service-per-app model, so backup_service_name
-        // is set here rather than exposed as its own form field.
-        req.backup_service_name = appName
-        req.backup_volume_name = values.backupVolumeName
-      }
-    }
-    // cert_expiry, patch_status, node_disk_space, and node_resource_usage
-    // send no kind-specific fields at all.
+    const req = buildAlertRuleRequest(values, appName)
     createRule.mutate(req, {
       onSuccess: () => {
         handleOpenChange(false)
@@ -631,7 +208,7 @@ export function CreateAlertRuleDialog({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {KIND_OPTIONS.filter(
+                    {ALERT_KIND_OPTIONS.filter(
                       (option) =>
                         option.value !== 'monitor_down' ||
                         monitorsEnabled ||
@@ -810,7 +387,7 @@ export function CreateAlertRuleDialog({
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {COMPARATOR_OPTIONS.map((option) => (
+                          {ALERT_COMPARATOR_OPTIONS.map((option) => (
                             <SelectItem key={option.value} value={option.value}>
                               {option.label}
                             </SelectItem>

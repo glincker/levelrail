@@ -37,40 +37,13 @@ type parkedSettingsSnapshot struct {
 func snapshotDomainSettingsTx(ctx context.Context, tx *sql.Tx, domain string) (string, error) {
 	snap := parkedSettingsSnapshot{Tables: map[string][]map[string]any{}}
 	for _, table := range parkedSettingTables {
-		rows, err := tx.QueryContext(ctx, `SELECT * FROM `+table+` WHERE domain = ?`, domain) //nolint:gosec // table is from the fixed parkedSettingTables list
+		rows, err := snapshotTableTx(ctx, tx, table, domain)
 		if err != nil {
-			return "", fmt.Errorf("store: snapshot %s for %q: %w", table, domain, err)
+			return "", err
 		}
-		cols, err := rows.Columns()
-		if err != nil {
-			_ = rows.Close()
-			return "", fmt.Errorf("store: snapshot %s columns: %w", table, err)
+		if len(rows) > 0 {
+			snap.Tables[table] = rows
 		}
-		for rows.Next() {
-			vals := make([]any, len(cols))
-			ptrs := make([]any, len(cols))
-			for i := range vals {
-				ptrs[i] = &vals[i]
-			}
-			if err := rows.Scan(ptrs...); err != nil {
-				_ = rows.Close()
-				return "", fmt.Errorf("store: snapshot %s scan: %w", table, err)
-			}
-			row := make(map[string]any, len(cols))
-			for i, c := range cols {
-				if b, ok := vals[i].([]byte); ok {
-					row[c] = string(b)
-					continue
-				}
-				row[c] = vals[i]
-			}
-			snap.Tables[table] = append(snap.Tables[table], row)
-		}
-		if err := rows.Err(); err != nil {
-			_ = rows.Close()
-			return "", fmt.Errorf("store: snapshot %s rows: %w", table, err)
-		}
-		_ = rows.Close()
 	}
 	if len(snap.Tables) == 0 {
 		return "", nil
@@ -80,6 +53,43 @@ func snapshotDomainSettingsTx(ctx context.Context, tx *sql.Tx, domain string) (s
 		return "", fmt.Errorf("store: encode settings snapshot for %q: %w", domain, err)
 	}
 	return string(enc), nil
+}
+
+// snapshotTableTx reads domain's rows of one settings table as column maps.
+func snapshotTableTx(ctx context.Context, tx *sql.Tx, table, domain string) ([]map[string]any, error) {
+	rows, err := tx.QueryContext(ctx, `SELECT * FROM `+table+` WHERE domain = ?`, domain) //nolint:gosec // table is from the fixed parkedSettingTables list
+	if err != nil {
+		return nil, fmt.Errorf("store: snapshot %s for %q: %w", table, domain, err)
+	}
+	defer func() { _ = rows.Close() }()
+	cols, err := rows.Columns()
+	if err != nil {
+		return nil, fmt.Errorf("store: snapshot %s columns: %w", table, err)
+	}
+	var out []map[string]any
+	for rows.Next() {
+		vals := make([]any, len(cols))
+		ptrs := make([]any, len(cols))
+		for i := range vals {
+			ptrs[i] = &vals[i]
+		}
+		if err := rows.Scan(ptrs...); err != nil {
+			return nil, fmt.Errorf("store: snapshot %s scan: %w", table, err)
+		}
+		row := make(map[string]any, len(cols))
+		for i, c := range cols {
+			if b, ok := vals[i].([]byte); ok {
+				row[c] = string(b)
+				continue
+			}
+			row[c] = vals[i]
+		}
+		out = append(out, row)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: snapshot %s rows: %w", table, err)
+	}
+	return out, nil
 }
 
 // restoreDomainSettingsTx writes a snapshot back for a domain whose

@@ -4125,6 +4125,13 @@ func (c *Client) CheckAuditAnchors(ctx context.Context, anchors []AuditAnchor) (
 	return out, err
 }
 
+// AuditAnchorStatus calls GET /api/v1/audit-log/anchor-status.
+func (c *Client) AuditAnchorStatus(ctx context.Context) (AuditAnchorStatus, error) {
+	var out AuditAnchorStatus
+	err := c.do(ctx, http.MethodGet, "/api/v1/audit-log/anchor-status", nil, &out)
+	return out, err
+}
+
 // DeployAttemptFilter narrows ListDeployAttemptsFiltered; empty fields are ignored.
 type DeployAttemptFilter struct {
 	Branch string

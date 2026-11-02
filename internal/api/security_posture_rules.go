@@ -86,6 +86,8 @@ type postureInput struct {
 	CodeLoginAdmins   *bool
 	Exposure          *postureExposure
 	OffBoxBackups     *bool
+	PlainOffsite      []string
+	OffsiteKnown      bool
 	AuditAnchor       *bool
 	MasterKey         bool
 	MasterKeyRotated  *time.Time
@@ -217,6 +219,7 @@ func evaluatePosture(in postureInput) []postureItem {
 		exposureRule(in, true),
 		recommendUntilLive(in, boolRule("offbox_backup_off", postureHigh, in.OffBoxBackups, false, &postureFix{Kind: postureFixLink, Link: "/settings/control-plane-backup", CLI: "control-plane-backups schedule show"})),
 		recommendUntilLive(in, boolRule("audit_anchor_off", postureMedium, in.AuditAnchor, false, &postureFix{Kind: postureFixLink, Link: "/settings/audit-log", CLI: auditanchor.EnvDir + "=/var/lib/levelrail-anchors"})),
+		offsiteEncryptionRule(in),
 		masterKeyRule(in),
 		staleSecretsRule(in),
 		tlsRule(in),

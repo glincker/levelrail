@@ -42,11 +42,9 @@ func editServiceDomainsTx(ctx context.Context, tx *sql.Tx, name string, edit fun
 	if err != nil {
 		return nil, false, fmt.Errorf("store: edit domains for %q: read: %w", name, err)
 	}
-	var current []string
-	if raw != "" {
-		if err := json.Unmarshal([]byte(raw), &current); err != nil {
-			return nil, false, fmt.Errorf("store: edit domains for %q: decode: %w", name, err)
-		}
+	current, err := decodeDomainList(raw)
+	if err != nil {
+		return nil, false, fmt.Errorf("store: edit domains for %q: decode: %w", name, err)
 	}
 	next, err := edit(slices.Clone(current))
 	if err != nil {

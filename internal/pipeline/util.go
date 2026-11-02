@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 	"github.com/GLINCKER/levelrail/kit/ids"
 )
 
@@ -109,15 +110,19 @@ func (m *masker) add(v string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.vals = append(m.vals, v)
+	secretmask.Add(v)
 }
 
 func (m *masker) mask(s string) string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	for _, v := range m.vals {
+	// Longest first so a short secret cannot split a longer one that contains it.
+	vals := append([]string(nil), m.vals...)
+	sort.Slice(vals, func(i, j int) bool { return len(vals[i]) > len(vals[j]) })
+	for _, v := range vals {
 		s = strings.ReplaceAll(s, v, "***")
 	}
-	return s
+	return secretmask.Mask(s)
 }
 
 // values returns a copy of the registered secret values.

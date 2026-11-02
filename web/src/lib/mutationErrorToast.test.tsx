@@ -6,8 +6,10 @@ import {
   QueryClientProvider,
   useMutation,
 } from '@tanstack/react-query'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import i18n from '../i18n'
 import { inlineErrorMeta, type InlineErrorOptions } from './inlineError'
+import { ApiError } from './apiError'
 import { toastMutationError } from './mutationErrorToast'
 
 const toastAdd = vi.hoisted(() => vi.fn())
@@ -65,6 +67,11 @@ function renderWith(node: React.ReactNode) {
 }
 
 describe('default mutation error toast', () => {
+  beforeAll(async () => {
+    await i18n.changeLanguage('en')
+    await i18n.loadNamespaces('common')
+  })
+
   afterEach(() => {
     cleanup()
     toastAdd.mockClear()
@@ -94,5 +101,40 @@ describe('default mutation error toast', () => {
     renderWith(<SharedSaveForm inline={false} />)
     await userEvent.click(screen.getByRole('button', { name: 'save' }))
     await waitFor(() => expect(toastAdd).toHaveBeenCalledTimes(1))
+  })
+
+  it('uses the friendly title and next step', async () => {
+    const client = new QueryClient({
+      mutationCache: new MutationCache({
+        onError: (error, _v, _c, m) => toastMutationError(error, m),
+      }),
+    })
+    function Form() {
+      const save = useMutation({
+        mutationFn: () => Promise.reject(new ApiError(429, 'slow')),
+      })
+      return (
+        <button type="button" onClick={() => save.mutate()}>
+          save
+        </button>
+      )
+    }
+    render(
+      <QueryClientProvider client={client}>
+        <Form />
+      </QueryClientProvider>,
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'save' }))
+    await waitFor(() => expect(toastAdd).toHaveBeenCalledTimes(1))
+    const arg = toastAdd.mock.calls[0]?.[0] as { title: string }
+    expect(arg.title).toBe('Too many requests')
+  })
+
+  it('stays silent for a 401', () => {
+    toastMutationError(new ApiError(401, 'no'), {
+      options: {},
+      meta: undefined,
+    } as never)
+    expect(toastAdd).not.toHaveBeenCalled()
   })
 })

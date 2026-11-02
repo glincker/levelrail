@@ -7,6 +7,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { DurationInput } from '@/components/ui/duration-input'
 import { Input } from '@/components/ui/input'
 import { SettingRow } from '@/components/ui/setting-row'
+import { HighlightedText } from './HighlightedText'
 import { RetentionDaysSelect } from './RetentionDaysSelect'
 import {
   Select,
@@ -42,11 +43,14 @@ export function RuntimeSettingRow({
   setting,
   canEdit,
   showDefault = false,
+  highlight = '',
 }: {
   setting: RuntimeSetting
   canEdit: boolean
   /** Onboarding shows the safe default under the control. */
   showDefault?: boolean
+  /** Search text to mark inside the title, description and key. */
+  highlight?: string
 }) {
   const { t } = useTranslation('runtimeSettings')
   const fieldId = useId()
@@ -157,7 +161,11 @@ export function RuntimeSettingRow({
   )
 
   return (
-    <SettingRow title={title} description={description} badge={badges}>
+    <SettingRow
+      title={<HighlightedText text={title} query={highlight} />}
+      description={<HighlightedText text={description} query={highlight} />}
+      badge={badges}
+    >
       <div className="space-y-1" data-setting={setting.key}>
         {setting.kind === 'bool' ? (
           <div className="flex items-center gap-3">
@@ -269,6 +277,9 @@ export function RuntimeSettingRow({
                 : t('row.defaultHint', { value: valueText(setting.default) })}
             </span>
           ) : null}
+          <code className="font-mono text-[11px] text-muted-foreground/70">
+            <HighlightedText text={setting.key} query={highlight} />
+          </code>
           {setting.env ? (
             <button
               type="button"

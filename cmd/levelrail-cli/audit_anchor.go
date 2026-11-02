@@ -133,3 +133,24 @@ func parseAnchorExport(raw []byte) ([]apiclient.AuditAnchor, error) {
 	}
 	return out, nil
 }
+
+func runAuditAnchorStatus(client *apiclient.Client, jsonOut bool, of outputFlags, stdout, stderr io.Writer) int {
+	st, err := client.AuditAnchorStatus(context.Background())
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("read anchor status: %w", err))
+	}
+	if err := renderResult(stdout, of.Format, of.Query, st, func() {
+		if !st.Enabled {
+			_, _ = fmt.Fprintln(stdout, "anchor webhook export is off (set audit.anchor_webhook_url to turn it on)")
+			return
+		}
+		_, _ = fmt.Fprintf(stdout, "last exported sequence: %d (%d exported, %d failed, %d deferred, %d queued)\n", st.LastExportedSeq, st.Exported, st.Failed, st.Dropped, st.Queued)
+		if st.LastError != "" {
+			_, _ = fmt.Fprintf(stdout, "last error at %s: %s\n", st.LastErrorAt, st.LastError)
+		}
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
+	}
+	return exitOK
+}

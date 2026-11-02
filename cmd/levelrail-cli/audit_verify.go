@@ -10,6 +10,8 @@ func runAuditVerify(prog string, args []string, stdout, stderr io.Writer, lookup
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "audit-verify", "print the verification report as JSON to stdout and nothing else", stderr)
 	var anchorFlag string
 	fs.StringVar(&anchorFlag, "anchor", "", "anchor export (file path or https URL) to check the live chain against")
+	var statusFlag bool
+	fs.BoolVar(&statusFlag, "anchor-status", false, "show the anchor webhook export state instead of verifying")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, auditVerifyUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -18,6 +20,9 @@ func runAuditVerify(prog string, args []string, stdout, stderr io.Writer, lookup
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	if statusFlag {
+		return runAuditAnchorStatus(client, jsonOut, of, stdout, stderr)
+	}
 	report, err := client.VerifyAuditLog(context.Background())
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("verify audit log: %w", err))
@@ -58,6 +63,7 @@ Requires an admin/root-scoped token, the same as "%[1]s audit-log".
 
 Flags:
   --anchor string         anchor export (file path or https URL) from APP_AUDIT_ANCHOR_*; also checks that the live chain still contains every anchored head
+  --anchor-status         show the anchor webhook export state (last exported sequence, last error) and exit
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")

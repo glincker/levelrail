@@ -252,32 +252,60 @@ func scanParkedDomain(r rowScanner) (ParkedDomain, error) {
 }
 
 func requireServiceTx(ctx context.Context, tx *sql.Tx, name string) error {
+	return requireRowTx(ctx, tx, `SELECT 1 FROM desired_services WHERE name = ?`, name, ErrServiceNotFound, "app")
+}
+
+func requireEnvironmentTx(ctx context.Context, tx *sql.Tx, id string) error {
+	return requireRowTx(ctx, tx, `SELECT 1 FROM environments WHERE id = ?`, id, ErrEnvironmentNotFound, "environment")
+}
+
+// requireRowTx returns notFound when query matches no row for key.
+func requireRowTx(ctx context.Context, tx *sql.Tx, query, key string, notFound error, what string) error {
 	var one int
-	err := tx.QueryRowContext(ctx, `SELECT 1 FROM desired_services WHERE name = ?`, name).Scan(&one)
+	err := tx.QueryRowContext(ctx, query, key).Scan(&one)
 	if errors.Is(err, sql.ErrNoRows) {
-		return ErrServiceNotFound
+		return notFound
 	}
 	if err != nil {
-		return fmt.Errorf("store: check app %q: %w", name, err)
+		return fmt.Errorf("store: check %s %q: %w", what, key, err)
 	}
 	return nil
+}
+
+// decodeDomainList parses a stored domains JSON column; empty means no domains.
+func decodeDomainList(raw string) ([]string, error) {
+	var cur []string
+	if raw == "" {
+		return cur, nil
+	}
+	if err := json.Unmarshal([]byte(raw), &cur); err != nil {
+		return nil, err
+	}
+	return cur, nil
+}
+
+// readServiceDomainsTx returns name's default domain list, or ErrServiceNotFound.
+func readServiceDomainsTx(ctx context.Context, tx *sql.Tx, name string) ([]string, error) {
+	var raw string
+	if err := tx.QueryRowContext(ctx, `SELECT domains FROM desired_services WHERE name = ?`, name).Scan(&raw); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrServiceNotFound
+		}
+		return nil, fmt.Errorf("store: read domains for %q: %w", name, err)
+	}
+	cur, err := decodeDomainList(raw)
+	if err != nil {
+		return nil, fmt.Errorf("store: decode domains for %q: %w", name, err)
+	}
+	return cur, nil
 }
 
 // rewriteDomainsTx writes name's domain JSON without touching service_domains,
 // for callers that manage the claim row themselves.
 func rewriteDomainsTx(ctx context.Context, tx *sql.Tx, name string, edit func([]string) ([]string, error)) error {
-	var raw string
-	if err := tx.QueryRowContext(ctx, `SELECT domains FROM desired_services WHERE name = ?`, name).Scan(&raw); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return ErrServiceNotFound
-		}
-		return fmt.Errorf("store: read domains for %q: %w", name, err)
-	}
-	var cur []string
-	if raw != "" {
-		if err := json.Unmarshal([]byte(raw), &cur); err != nil {
-			return fmt.Errorf("store: decode domains for %q: %w", name, err)
-		}
+	cur, err := readServiceDomainsTx(ctx, tx, name)
+	if err != nil {
+		return err
 	}
 	next, err := edit(cur)
 	if err != nil {
@@ -293,63 +321,9 @@ func rewriteDomainsTx(ctx context.Context, tx *sql.Tx, name string, edit func([]
 	return nil
 }
 
-func requireEnvironmentTx(ctx context.Context, tx *sql.Tx, id string) error {
-	var one int
-	err := tx.QueryRowContext(ctx, `SELECT 1 FROM environments WHERE id = ?`, id).Scan(&one)
-	if errors.Is(err, sql.ErrNoRows) {
-		return ErrEnvironmentNotFound
-	}
-	if err != nil {
-		return fmt.Errorf("store: check environment %q: %w", id, err)
-	}
-	return nil
-}
-
-// editDomainSetClaimTx edits one domain set and re-syncs the app's claims,
-// so a removed domain is released and an added one is collision-checked.
-func editDomainSetClaimTx(ctx context.Context, tx *sql.Tx, app, envID string, edit func([]string) ([]string, error)) error {
-	if envID == "" {
-		_, _, err := editServiceDomainsTx(ctx, tx, app, edit)
-		return err
-	}
-	if err := requireServiceTx(ctx, tx, app); err != nil {
-		return err
-	}
-	if err := requireEnvironmentTx(ctx, tx, envID); err != nil {
-		return err
-	}
-	cur, err := envDomainsTx(ctx, tx, app, envID)
-	if err != nil {
-		return err
-	}
-	next, err := edit(slices.Clone(cur))
-	if err != nil {
-		return err
-	}
-	if err := replaceEnvDomainsTx(ctx, tx, app, envID, nonNilSlice(next)); err != nil {
-		return err
-	}
-	var raw string
-	if err := tx.QueryRowContext(ctx, `SELECT domains FROM desired_services WHERE name = ?`, app).Scan(&raw); err != nil {
-		return fmt.Errorf("store: read domains for %q: %w", app, err)
-	}
-	var base []string
-	if raw != "" {
-		if err := json.Unmarshal([]byte(raw), &base); err != nil {
-			return fmt.Errorf("store: decode domains for %q: %w", app, err)
-		}
-	}
-	if err := claimServiceDomains(ctx, tx, app, base); err != nil {
-		return fmt.Errorf("store: edit environment domains for %q: %w", app, err)
-	}
-	return nil
-}
-
-// rewriteDomainSetTx edits one domain set without touching service_domains.
-func rewriteDomainSetTx(ctx context.Context, tx *sql.Tx, app, envID string, edit func([]string) ([]string, error)) error {
-	if envID == "" {
-		return rewriteDomainsTx(ctx, tx, app, edit)
-	}
+// rewriteEnvDomainsTx edits one environment's domain set after checking the
+// app and environment exist.
+func rewriteEnvDomainsTx(ctx context.Context, tx *sql.Tx, app, envID string, edit func([]string) ([]string, error)) error {
 	if err := requireServiceTx(ctx, tx, app); err != nil {
 		return err
 	}
@@ -365,4 +339,32 @@ func rewriteDomainSetTx(ctx context.Context, tx *sql.Tx, app, envID string, edit
 		return err
 	}
 	return replaceEnvDomainsTx(ctx, tx, app, envID, nonNilSlice(next))
+}
+
+// editDomainSetClaimTx edits one domain set and re-syncs the app's claims,
+// so a removed domain is released and an added one is collision-checked.
+func editDomainSetClaimTx(ctx context.Context, tx *sql.Tx, app, envID string, edit func([]string) ([]string, error)) error {
+	if envID == "" {
+		_, _, err := editServiceDomainsTx(ctx, tx, app, edit)
+		return err
+	}
+	if err := rewriteEnvDomainsTx(ctx, tx, app, envID, edit); err != nil {
+		return err
+	}
+	base, err := readServiceDomainsTx(ctx, tx, app)
+	if err != nil {
+		return err
+	}
+	if err := claimServiceDomains(ctx, tx, app, base); err != nil {
+		return fmt.Errorf("store: edit environment domains for %q: %w", app, err)
+	}
+	return nil
+}
+
+// rewriteDomainSetTx edits one domain set without touching service_domains.
+func rewriteDomainSetTx(ctx context.Context, tx *sql.Tx, app, envID string, edit func([]string) ([]string, error)) error {
+	if envID == "" {
+		return rewriteDomainsTx(ctx, tx, app, edit)
+	}
+	return rewriteEnvDomainsTx(ctx, tx, app, envID, edit)
 }
