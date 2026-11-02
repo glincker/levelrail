@@ -45,7 +45,7 @@ Init creates these files and folders, all under `~/Library/Application Support/L
 - `levelrail.yaml`: the VM template, mode `0600`.
 - `lima/`: a private Lima home. The VM instance lives in `lima/levelrail`.
 
-The first admin password is printed once, in the init output, in the form `First admin: admin / <password>`. The same password is kept in `admin-credentials`, which only your user can read. The file is written once, so running init again does not print it again.
+The first admin password is not printed by default, so it stays out of terminal history and logs. Init prints the path of `admin-credentials` (mode `0600`, readable only by your user) and the command to show it, `cat <path>`. Scripts can pass `--print-password` to also get `First admin password: <password>` once. The file is written once, so running init again prints nothing.
 
 When the dashboard answers, `vm start` and `vm status` print its address:
 
@@ -66,6 +66,25 @@ levelrail-cli vm stop
 ```
 
 `vm shell` opens a shell inside the guest. The guest user has passwordless sudo, because the VM is the security boundary, not the user inside it.
+
+## OpenClaw
+
+The `openclaw` template (`ghcr.io/openclaw/openclaw:2026.10.5`) runs natively on arm64 in the VM. Give the VM at least 4096 MiB (`levelrail-cli vm set memory 4096`, 2 CPUs): the container uses about 0.9 to 1.27 GiB and the guest about 1.6 GiB of 3.9 GiB, so a 2048 MiB VM is too tight. The template's container limit stays at 2 GiB.
+
+Apps are reached from your Mac through the ingress forward, at:
+
+```text
+http://<app>.levelrail.localhost:<ingress port>
+```
+
+Give the app that host name with this line in its compose file:
+
+```yaml
+x-levelrail-domains:
+  openclaw-gateway: openclaw.levelrail.localhost
+```
+
+The install form does this when you set the domain. OpenClaw refuses proxied requests until `gateway.trustedProxies` lists the ingress network, so the template writes it on first start to `openclaw.json` from its `TRUSTED_PROXY_CIDR` setting (default `172.30.0.0/15`, the VM app network pool). Keep that setting equal to `APP_NETWORK_POOL`.
 
 ## Resources and limits
 

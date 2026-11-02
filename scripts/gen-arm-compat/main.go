@@ -82,6 +82,7 @@ func page(templates []catalog.Template, scannedAt string, smoke map[string]strin
 	b.WriteString("- **amd64 only**: at least one image lists no `linux/arm64`, so the template has no native Arm image.\n")
 	b.WriteString("- **unknown**: the scan could not read a manifest, or the image tag is chosen at install time. This is not a claim either way.\n\n")
 	b.WriteString("The smoke column is the result recorded on the Arm test host in [Template status](/templates-status). `not tested` means no recorded run, not a failure.\n\n")
+	b.WriteString("**Verified on Arm:** `openclaw` (`ghcr.io/openclaw/openclaw:2026.10.5`), tested 2026-11-02 in the managed desktop VM (4096 MiB, 2 CPUs) on an Apple silicon Mac. The image runs natively on arm64, the container used about 0.9 to 1.27 GiB and the guest 1.6 GiB of 3.9 GiB. A 2048 MiB VM is too tight. See [Desktop runtime](/desktop-runtime#openclaw).\n\n")
 	fmt.Fprintf(&b, "**%d listed, %d amd64 only, %d unknown** of %d templates.\n\n", counts["listed"], counts["amd64 only"], counts["unknown"], len(ts))
 	b.WriteString("| Template | arm64 in manifest | Smoke run on Arm host |\n| --- | --- | --- |\n")
 	b.WriteString(rows.String())

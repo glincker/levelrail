@@ -166,6 +166,11 @@ func TestVMInitSeedsFromEnvAndStarts(t *testing.T) {
 	if !f.did("copy "+e.adminPath()) || strings.Contains(out, "APP_ADMIN_PASSWORD") {
 		t.Fatalf("admin env not installed in the guest, or leaked: %v", f.calls)
 	}
+	creds, _ := os.ReadFile(e.adminPath())
+	pw := strings.TrimSpace(strings.SplitN(strings.SplitN(string(creds), "APP_ADMIN_PASSWORD=", 2)[1], "\n", 2)[0])
+	if pw == "" || strings.Contains(out, pw) || !strings.Contains(out, e.adminPath()) {
+		t.Fatalf("init must print the credentials path and not the password: %q", out)
+	}
 	yaml, _ := os.ReadFile(filepath.Join(e.dataDir, "levelrail.yaml"))
 	if !strings.Contains(string(yaml), "APP_DESKTOP_ALLOWED_PORTS") {
 		t.Fatal("sidecar unit lacks allowed ports")
@@ -174,6 +179,18 @@ func TestVMInitSeedsFromEnvAndStarts(t *testing.T) {
 		if !strings.Contains(string(yaml), want) {
 			t.Fatalf("sidecar unit lacks %q", want)
 		}
+	}
+}
+
+func TestVMInitPrintPasswordFlag(t *testing.T) {
+	e, _ := testVM(t)
+	bin := filepath.Join(t.TempDir(), "levelrail-linux")
+	_ = os.WriteFile(bin, []byte("x"), 0o600)
+	code, out, errs := runVMCmd(e, nil, "init", "--print-password", "--control-plane-bin", bin)
+	creds, _ := os.ReadFile(e.adminPath())
+	pw := strings.TrimSpace(strings.SplitN(strings.SplitN(string(creds), "APP_ADMIN_PASSWORD=", 2)[1], "\n", 2)[0])
+	if code != 0 || !strings.Contains(out, "First admin password: "+pw) {
+		t.Fatalf("code=%d err=%s out=%q", code, errs, out)
 	}
 }
 

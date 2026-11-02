@@ -76,7 +76,7 @@ func (e *vmEnv) limaDir() string {
 func (e *vmEnv) instanceDir() string { return filepath.Join(e.limaDir(), vmInstance) }
 
 const vmUsage = `Usage:
-  %[1]s vm init [--memory MiB] [--cpus N] [--disk GiB] [--dashboard-port P] [--ingress-port P] [--control-plane-bin PATH] [--no-start]
+  %[1]s vm init [--memory MiB] [--cpus N] [--disk GiB] [--dashboard-port P] [--ingress-port P] [--control-plane-bin PATH] [--no-start] [--print-password]
   %[1]s vm start [--control-plane-bin PATH]
   %[1]s vm stop
   %[1]s vm status [--json]
@@ -99,6 +99,7 @@ Flags:
   --ingress-port P         host loopback app ingress port (env APP_VM_INGRESS_PORT, default: first free)
   --control-plane-bin PATH linux control plane binary to copy into the guest
   --no-start               init: create the VM but do not boot it
+  --print-password         init: also print the first admin password (for scripts; off by default)
   --json                   status: print JSON
 
   --encrypt RECIPIENT      export: encrypt with an age X25519 public key (age1...)
@@ -149,7 +150,7 @@ func vmExperimental(env vmruntime.Lookup) bool {
 type vmFlags struct {
 	memory, cpus, disk, dashPort, ingPort int
 	bin                                   string
-	noStart, jsonOut                      bool
+	noStart, jsonOut, printPassword       bool
 	yes, keepCreds, check, exchange       bool
 	encrypt, cookieJar                    string
 }
@@ -165,6 +166,7 @@ func parseVMFlags(prog, sub string, args []string, stderr io.Writer) (vmFlags, [
 		fs.IntVar(&f.disk, "disk", 0, "VM disk in GiB (env APP_VM_DISK_GIB, default 30)")
 		fs.IntVar(&f.dashPort, "dashboard-port", 0, "host loopback dashboard port (env APP_VM_DASHBOARD_PORT)")
 		fs.IntVar(&f.ingPort, "ingress-port", 0, "host loopback app ingress port (env APP_VM_INGRESS_PORT)")
+		fs.BoolVar(&f.printPassword, "print-password", false, "print the first admin password on the terminal")
 		fs.BoolVar(&f.noStart, "no-start", false, "create the VM but do not boot it")
 		fs.StringVar(&f.bin, "control-plane-bin", "", "linux control plane binary to copy into the guest")
 	case "start":
@@ -448,7 +450,10 @@ func (e *vmEnv) init(ctx context.Context, f vmFlags, stdout io.Writer, lookupEnv
 		return err
 	}
 	if adminPW != "" {
-		_, _ = fmt.Fprintf(stdout, "First admin: %s / %s (shown once; stored in %s)\n", vmAdminName, adminPW, e.adminPath())
+		_, _ = fmt.Fprintf(stdout, "First admin: %s. The password is in %s (mode 0600); show it with: cat %s\n", vmAdminName, e.adminPath(), e.adminPath())
+		if f.printPassword {
+			_, _ = fmt.Fprintf(stdout, "First admin password: %s\n", adminPW)
+		}
 	}
 	tmpl := filepath.Join(e.dataDir, "levelrail.yaml")
 	if err := os.WriteFile(tmpl, yaml, 0o600); err != nil {
