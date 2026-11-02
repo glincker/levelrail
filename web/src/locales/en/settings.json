@@ -682,7 +682,7 @@
       },
       "certificates": {
         "title": "TLS certificates",
-        "description": "Every domain’s certificate in one place: expiry, issuer, renew now, and custom certificate upload."
+        "description": "Every domain’s certificate in one place: expiry, issuer, renew now, custom certificate upload and the issuance budget."
       },
       "infrastructure": {
         "title": "Infrastructure as code",

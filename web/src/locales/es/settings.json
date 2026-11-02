@@ -293,7 +293,7 @@
       },
       "certificates": {
         "title": "Certificados TLS",
-        "description": "El certificado de cada dominio en un solo lugar: vencimiento, emisor, renovar ahora y carga de certificados propios."
+        "description": "El certificado de cada dominio en un solo lugar: vencimiento, emisor, renovar ahora, carga de certificados propios y presupuesto de emisión."
       },
       "infrastructure": {
         "title": "Infraestructura como código",

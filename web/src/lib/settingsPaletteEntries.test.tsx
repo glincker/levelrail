@@ -90,6 +90,17 @@ describe('settings palette entries', () => {
     ).toContain('settings-email-log')
   })
 
+  it.each([
+    ['appearance', 'settings-appearance'],
+    ['api tokens', 'settings-tokens'],
+    ['certificate budget', 'settings-certificates'],
+  ])('finds %s', (query, key) => {
+    const { result } = renderHook(() => useSettingsPaletteEntries())
+    expect(
+      rankItems(result.current, query, (e) => e.keywords).map((e) => e.key),
+    ).toContain(key)
+  })
+
   it('does not list a nav destination twice', () => {
     const { result } = renderHook(() => useSettingsPaletteEntries())
     const tos = mergeSettingsEntries(result.current)
