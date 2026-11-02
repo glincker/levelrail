@@ -207,6 +207,7 @@ type CutoverCertificate struct {
 	Issuer      string `json:"issuer,omitempty"`
 	Error       string `json:"error,omitempty"`
 	Explanation string `json:"explanation,omitempty"`
+	Challenge   string `json:"challenge,omitempty"`
 }
 
 // DomainCutover calls GET /api/v1/domains/{domain}/cutover.
@@ -220,5 +221,12 @@ func (c *Client) DomainCutover(ctx context.Context, domain string) (DomainCutove
 func (c *Client) DomainCutoverCertificate(ctx context.Context, domain string) (CutoverCertificate, error) {
 	var out CutoverCertificate
 	err := c.do(ctx, http.MethodPost, "/api/v1/domains/"+PathEscape(domain)+"/cutover/certificate", nil, &out)
+	return out, err
+}
+
+// DomainCutoverRevertChallenge calls DELETE /api/v1/domains/{domain}/cutover/certificate.
+func (c *Client) DomainCutoverRevertChallenge(ctx context.Context, domain string) (CutoverCertificate, error) {
+	var out CutoverCertificate
+	err := c.do(ctx, http.MethodDelete, "/api/v1/domains/"+PathEscape(domain)+"/cutover/certificate", nil, &out)
 	return out, err
 }

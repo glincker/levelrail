@@ -301,6 +301,7 @@ type Router struct {
 	gateEvents             gateEventCounter            // coalesced gate events awaiting flush
 	domainRedirect         DomainRedirectStore         // always set, same "core Store interface" shape as domainMaintenance above; no secrets dependency either
 	domainSearchVisibility DomainSearchVisibilityStore // always set, core Store
+	domainACME             DomainACMEChallengeStore    // per-host DNS-01 flag, domain_cutover_cert.go
 	domainPolicy           domainPolicyDeps            // per-domain traffic controls, domain_policies.go
 	cachePurges            CachePurgeStore             // purge history, cache_app.go
 	edgeFW                 edgeFirewallDeps            // ingress firewall rules, settings and live engine, firewall_edge.go
@@ -948,6 +949,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		domainRedirect:              s,
 		domainErrorPages:            s,
 		domainSearchVisibility:      s,
+		domainACME:                  s,
 		domainPolicy:                domainPolicyDeps{store: s},
 		cachePurges:                 s,
 		edgeFW:                      edgeFirewallDeps{store: s, engine: edgefw.Default()},

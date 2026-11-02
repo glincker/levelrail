@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import {
   domainCutoverQueryOptions,
   useCutoverCertificate,
+  useRevertCutoverChallenge,
   type CutoverState,
   type CutoverStep,
   type DomainCutover,
@@ -41,11 +42,15 @@ function Step({
 }) {
   const { t } = useTranslation('domains')
   const cert = useCutoverCertificate(data.domain)
+  const revert = useRevertCutoverChallenge(data.domain)
   const { icon: Icon, className } = STATE_ICON[step.state]
   const canPreIssue =
     step.id === 'certificate' &&
     step.action?.kind === 'request' &&
+    step.action.api?.startsWith('POST') === true &&
     step.state !== 'pass'
+  const canRevert =
+    step.id === 'certificate' && step.action?.api?.startsWith('DELETE') === true
   return (
     <li className="flex gap-2 py-2">
       <Icon
@@ -86,8 +91,28 @@ function Step({
             {t('cutover.getCertificate')}
           </Button>
         ) : null}
-        {step.id === 'certificate' && cert.error ? (
-          <p className="text-xs text-destructive">{cert.error.message}</p>
+        {canRevert ? (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={revert.isPending}
+            onClick={() => {
+              revert.mutate()
+            }}
+          >
+            {t('cutover.revertChallenge')}
+          </Button>
+        ) : null}
+        {step.id === 'certificate' && data.certificate.challenge === 'dns01' ? (
+          <p className="text-xs text-muted-foreground">
+            {t('cutover.dns01ThisDomain')}
+          </p>
+        ) : null}
+        {step.id === 'certificate' && (cert.error ?? revert.error) ? (
+          <p className="text-xs text-destructive">
+            {(cert.error ?? revert.error)?.message}
+          </p>
         ) : null}
         {step.id === 'certificate' &&
         step.state !== 'pass' &&

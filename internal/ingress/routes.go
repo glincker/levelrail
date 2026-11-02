@@ -449,6 +449,9 @@ type RoutesOptions struct {
 	// wildcards, so servers behind CGNAT or a closed port 80 can still
 	// issue. It needs DNSProvider; without one the build fails closed.
 	DNS01AllHosts bool
+	// DNS01Hosts are single hosts that use DNS-01 while every other host
+	// keeps its own challenge. Ignored when no DNSProvider is set.
+	DNS01Hosts []string
 	// AdminListen overrides Caddy's admin API bind address. Empty keeps
 	// Caddy's own default (localhost:2019).
 	AdminListen string

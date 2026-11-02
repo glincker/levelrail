@@ -1165,6 +1165,8 @@
     "error": "No se pudo cargar la lista de migración.",
     "eta": "unos {{minutes}} min",
     "getCertificate": "Obtener el certificado antes de cambiar el DNS",
+    "revertChallenge": "Volver a HTTP-01 para este dominio",
+    "dns01ThisDomain": "Solo este dominio usa DNS-01 para su certificado. Los demás dominios de este servidor mantienen su propio desafío.",
     "noProvider": "No hay un proveedor de DNS conectado, así que HTTP-01 solo funciona después del cambio. Baja el TTL del registro a {{ttl}} segundos antes, o conecta Cloudflare, Route53 o Google Cloud DNS.",
     "runbook": "Guía del certificado",
     "guide": "Mover un dominio sin tiempo de inactividad",

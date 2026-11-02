@@ -65,3 +65,42 @@ func TestDNS01SingleHosts(t *testing.T) {
 		}
 	})
 }
+
+func TestDNS01SingleHostPolicyOnly(t *testing.T) {
+	a := ProxyRoute{Hosts: []string{"a.example.com"}, BackendDial: "127.0.0.1:9001"}
+	b := ProxyRoute{Hosts: []string{"b.example.com"}, BackendDial: "127.0.0.1:9002"}
+	o := dns01SingleOpts(false, true, a, b)
+	o.DNS01Hosts = []string{"A.example.com"}
+	cfg, err := BuildRoutesConfig(o)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pols := cfg.Apps.TLS.Automation.Policies
+	if len(pols) != 2 || len(pols[0].Subjects) != 1 || pols[0].Subjects[0] != "a.example.com" || len(pols[1].Subjects) != 1 || pols[1].Subjects[0] != "b.example.com" {
+		t.Fatalf("policies = %+v", pols)
+	}
+	first, _ := json.Marshal(pols[0])
+	rest, _ := json.Marshal(pols[1])
+	if !strings.Contains(string(first), "dns") || strings.Contains(string(rest), `"dns"`) {
+		t.Fatalf("only the listed host may use DNS-01: %s / %s", first, rest)
+	}
+	t.Run("no provider ignores the list", func(t *testing.T) {
+		o := dns01SingleOpts(false, false, a, b)
+		o.DNS01Hosts = []string{"a.example.com"}
+		cfg, err := BuildRoutesConfig(o)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if n := len(cfg.Apps.TLS.Automation.Policies); n != 1 {
+			t.Fatalf("policies = %d, want the single HTTP-01 policy", n)
+		}
+	})
+	t.Run("only listed host", func(t *testing.T) {
+		o := dns01SingleOpts(false, true, a)
+		o.DNS01Hosts = []string{"a.example.com"}
+		cfg, err := BuildRoutesConfig(o)
+		if err != nil || len(cfg.Apps.TLS.Automation.Policies) != 1 {
+			t.Fatalf("err=%v cfg=%+v", err, cfg.Apps.TLS)
+		}
+	})
+}

@@ -342,7 +342,9 @@ type Controller struct {
 	certStorage any
 	servedHosts ServedHostsRecorder
 	domainConds DomainConditionsRecorder
-	issues      domainIssues
+	// dns01Hosts lists hosts that use DNS-01 on their own, read every pass.
+	dns01Hosts DNS01HostLister
+	issues     domainIssues
 
 	// auditRecorder, if set via WithAuditRecorder, is attached to the
 	// same SQLiteStorage certStore builds, so a certificate issuance or
@@ -538,6 +540,36 @@ type DomainConditionsRecorder interface {
 // domain list can show why instead of the pass only logging a warning.
 func WithDomainConditionsRecorder(r DomainConditionsRecorder) Option {
 	return func(c *Controller) { c.domainConds = r }
+}
+
+// DNS01HostLister returns the hosts switched to DNS-01 one by one.
+type DNS01HostLister interface {
+	ListDNS01Domains(ctx context.Context) ([]string, error)
+}
+
+// WithDNS01HostLister lets single hosts use DNS-01 without the all-hosts switch.
+func WithDNS01HostLister(l DNS01HostLister) Option {
+	return func(c *Controller) { c.dns01Hosts = l }
+}
+
+// perHostDNS01 keeps only listed hosts this pass really serves, so a stale
+// row for a removed domain changes nothing.
+func (c *Controller) perHostDNS01(ctx context.Context, claimed map[string]string) []string {
+	if c.dns01Hosts == nil {
+		return nil
+	}
+	list, err := c.dns01Hosts.ListDNS01Domains(ctx)
+	if err != nil {
+		c.logger.WarnContext(ctx, "ingress: list per-host dns01 failed", slog.String("error", err.Error()))
+		return nil
+	}
+	var out []string
+	for _, h := range list {
+		if _, ok := claimed[h]; ok {
+			out = append(out, h)
+		}
+	}
+	return out
 }
 
 // WithAuditRecorder records a system-actor audit_log row for every
@@ -1138,6 +1170,12 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			}
 		}
 	}
+	if dnsProvider == nil {
+		for _, host := range c.perHostDNS01(ctx, claimedHosts) {
+			c.issues.note(host, store.DomainCondDNS01Unavailable, store.DomainConditionDegraded,
+				"this domain asked for a DNS-01 certificate but no DNS provider is enabled, so HTTP-01 is used")
+		}
+	}
 	for host, why := range standalonePlan.unrouted {
 		if !c.issues.has(host, store.DomainConditionDropped) {
 			c.issues.note(host, store.DomainCondTargetUnavailable, store.DomainConditionDropped, why)
@@ -1170,6 +1208,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		ACMEDirectoryURL:     settings.ACMEDirectoryURL,
 		DNSProvider:          dnsProvider,
 		DNS01AllHosts:        c.dns01AllHostsOn(ctx),
+		DNS01Hosts:           c.perHostDNS01(ctx, claimedHosts),
 		TLSCertificates:      tlsCertOverrides,
 		RequestStats:         c.requestStats,
 		Firewall:             c.firewall,

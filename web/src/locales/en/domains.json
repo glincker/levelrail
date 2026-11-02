@@ -1165,6 +1165,8 @@
     "error": "Could not load the cutover checklist.",
     "eta": "about {{minutes}} min",
     "getCertificate": "Get certificate before switching DNS",
+    "revertChallenge": "Switch back to HTTP-01 for this domain",
+    "dns01ThisDomain": "Only this domain uses DNS-01 for its certificate. Other domains on this server keep their own challenge.",
     "noProvider": "No DNS provider is connected, so HTTP-01 works only after the switch. Lower the record TTL to {{ttl}} seconds beforehand, or connect Cloudflare, Route53 or Google Cloud DNS.",
     "runbook": "Certificate runbook",
     "guide": "Move a domain with no downtime",

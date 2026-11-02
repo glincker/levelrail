@@ -35,7 +35,9 @@ Without a certificate, the first visitors after the switch see a browser warning
 2. On the Cutover card press **Get certificate before switching DNS**, or run `levelrail-cli domains cutover shop.example.com --get-certificate`.
 3. Wait for step 2 to turn green. The certificate is requested through a DNS-01 challenge, which only needs a TXT record in your zone, so the old server keeps serving traffic meanwhile.
 
-This turns on the `ingress.dns01_all_hosts` runtime setting, so every host on this server uses DNS-01 from then on. It needs a contact email in the ingress settings and a provider that manages the domain's zone. If the CA refuses, the card shows its message; see the [ACME verification runbook](/acme-verification-runbook) for what each message means.
+Only this domain switches to DNS-01. Every other host on the server keeps its own challenge, and the `ingress.dns01_all_hosts` setting is not touched, so a broken DNS credential later cannot stop renewals for hosts you never moved. It needs a contact email in the ingress settings and a provider that manages the domain's zone. If the CA refuses, the card shows its message; see the [ACME verification runbook](/acme-verification-runbook) for what each message means.
+
+Once DNS points at this server and the certificate exists, press **Switch back to HTTP-01 for this domain** (or run `levelrail-cli domains cutover shop.example.com --revert-challenge`). The issued certificate stays; later renewals use HTTP-01 again. The same button appears if the DNS-01 request failed. If the DNS provider is disconnected while the domain is still on DNS-01, the domain falls back to HTTP-01 and shows a warning instead of breaking the other hosts.
 
 ### No DNS provider connected
 
@@ -51,7 +53,7 @@ If the name answers from Cloudflare addresses, the card says so. The cutover wor
 
 ## API
 
-`GET /api/v1/domains/{domain}/cutover` (read ability) returns `risk` (`none`, `likely` or `unknown`), `ready_to_switch`, the `steps`, the current `dns` view with the exact `records`, and the `certificate` state. `POST /api/v1/domains/{domain}/cutover/certificate` (root ability) requests the certificate through the connected DNS provider. The probe only dials this server's own ingress until the name already points here or at Cloudflare, and results are cached for a few seconds per domain.
+`GET /api/v1/domains/{domain}/cutover` (read ability) returns `risk` (`none`, `likely` or `unknown`), `ready_to_switch`, the `steps`, the current `dns` view with the exact `records`, and the `certificate` state. `POST /api/v1/domains/{domain}/cutover/certificate` (root ability) requests this domain's certificate through the connected DNS provider, and `DELETE` on the same path switches the domain back to HTTP-01. The probe only dials this server's own ingress until the name already points here or at Cloudflare, and results are cached for a few seconds per domain.
 
 | Setting | Default | Meaning |
 | --- | --- | --- |
@@ -61,4 +63,4 @@ If the name answers from Cloudflare addresses, the card says so. The cutover wor
 | `APP_CUTOVER_MIN_INTERVAL` | 3s | Minimum time between probe runs for one domain |
 | `APP_CUTOVER_NS_LIMIT` | 4 | Name servers asked in step 5 |
 
-The DNS-01 path for a single host is not yet verified against a real CA and DNS zone. If it fails for your zone, fall back to lowering the TTL and switching.
+The per-domain DNS-01 path is covered by tests of the generated configuration but not yet verified against a real CA and DNS zone. If it fails for your zone, switch back to HTTP-01 and fall back to lowering the TTL.

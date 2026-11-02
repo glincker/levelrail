@@ -1185,6 +1185,7 @@ Endpoints for:
 | GET | /api/v1/domains/dns-status | AbilityRead | handleDomainDNSStatus |
 | GET | /api/v1/domains/{domain}/cutover | AbilityRead | handleDomainCutover |
 | POST | /api/v1/domains/{domain}/cutover/certificate | AbilityRoot | handleCutoverCertificate |
+| DELETE | /api/v1/domains/{domain}/cutover/certificate | AbilityRoot | handleCutoverCertificateRevert |
 
 ## Built-in Container Registry
 

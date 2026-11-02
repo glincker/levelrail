@@ -129,3 +129,23 @@ func TestSummaryWording(t *testing.T) {
 		t.Errorf("summary = %q", got)
 	}
 }
+
+func TestRevertActionOnlyForDNS01Host(t *testing.T) {
+	f := Facts{Domain: "glinr.com", CertState: CertIssued, DNS01Host: true, DNSStatus: DNSConnected}
+	if a := Evaluate(f, Options{}).Steps[1].Action; a == nil || a.API != "DELETE /api/v1/domains/glinr.com/cutover/certificate" {
+		t.Fatalf("want revert action once DNS points here, got %+v", a)
+	}
+	f.DNSStatus = ""
+	if a := Evaluate(f, Options{}).Steps[1].Action; a != nil {
+		t.Fatalf("no revert before DNS points here, got %+v", a)
+	}
+	f.DNS01Host = false
+	f.DNSStatus = DNSConnected
+	if a := Evaluate(f, Options{}).Steps[1].Action; a != nil {
+		t.Fatalf("no revert for a host on the default challenge, got %+v", a)
+	}
+	f.DNS01Host, f.CertState = true, CertFailed
+	if a := Evaluate(f, Options{}).Steps[1].Action; a == nil {
+		t.Fatal("a failed DNS-01 request must offer the way back")
+	}
+}

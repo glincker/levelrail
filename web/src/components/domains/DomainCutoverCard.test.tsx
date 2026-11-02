@@ -93,6 +93,31 @@ describe('CutoverChecklist', () => {
     ).toBeTruthy()
   })
 
+  it('offers the way back to HTTP-01 once the certificate exists', () => {
+    const d = data({})
+    d.certificate.challenge = 'dns01'
+    d.steps = d.steps.map((s) =>
+      s.id === 'certificate'
+        ? {
+            ...s,
+            state: 'pass',
+            action: { kind: 'request', label: 'x', api: 'DELETE /x' },
+          }
+        : s,
+    )
+    view(d)
+    expect(
+      screen.getByRole('button', {
+        name: 'Switch back to HTTP-01 for this domain',
+      }),
+    ).toBeTruthy()
+    expect(
+      screen.queryByRole('button', {
+        name: 'Get certificate before switching DNS',
+      }),
+    ).toBeNull()
+  })
+
   it('is green only when the verdict is none and links the Cloudflare docs when proxied', () => {
     view(data({ risk: 'none', proxied: true, proxy_docs: '/cdn-and-caching' }))
     expect(screen.getByText('No downtime expected')).toBeTruthy()

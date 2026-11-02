@@ -97,6 +97,8 @@ type Facts struct {
 	CertError         string
 	CertExplanation   string
 	ProviderConnected bool
+	// DNS01Host is true when this host alone was switched to DNS-01.
+	DNS01Host bool
 
 	DNSStatus    string
 	Resolved     []string
@@ -168,7 +170,9 @@ type CertView struct {
 	Error             string `json:"error,omitempty"`
 	Explanation       string `json:"explanation,omitempty"`
 	ProviderConnected bool   `json:"provider_connected"`
-	RunbookHref       string `json:"runbook_href"`
+	// Challenge is "dns01" while this host alone uses DNS-01, else empty.
+	Challenge   string `json:"challenge,omitempty"`
+	RunbookHref string `json:"runbook_href"`
 }
 
 // Result is the full checklist.
@@ -203,7 +207,7 @@ func Evaluate(f Facts, o Options) Result {
 	res.Steps = []Step{app, cert, dns, sw, auth, live}
 	res.DNS = view
 	res.Certificate = CertView{State: certStateOf(f), Issuer: f.CertIssuer, Error: f.CertError, Explanation: f.CertExplanation,
-		ProviderConnected: f.ProviderConnected, RunbookHref: RunbookHref}
+		ProviderConnected: f.ProviderConnected, Challenge: challengeOf(f), RunbookHref: RunbookHref}
 	res.CLI = []string{"levelrail-cli domains cutover " + f.Domain}
 	if f.ProviderConnected && cert.State != StatePass && cert.State != StateSkip {
 		res.CLI = append(res.CLI, "levelrail-cli domains cutover "+f.Domain+" --get-certificate")
@@ -268,6 +272,23 @@ func appStep(f Facts) Step {
 	return s
 }
 
+func challengeOf(f Facts) string {
+	if f.DNS01Host {
+		return "dns01"
+	}
+	return ""
+}
+
+// revertAction offers HTTP-01 again once the name points here and the
+// certificate exists, or when the DNS-01 request failed.
+func revertAction(f Facts, passed bool) *Action {
+	if !f.DNS01Host || (passed && pointsOf(f) != PointsThis) {
+		return nil
+	}
+	return &Action{Kind: "request", Label: "Switch back to HTTP-01 for this domain",
+		API: "DELETE /api/v1/domains/" + f.Domain + "/cutover/certificate", CLI: "levelrail-cli domains cutover " + f.Domain + " --revert-challenge"}
+}
+
 func certStateOf(f Facts) string {
 	if f.CertState == "" {
 		return CertOff
@@ -284,11 +305,14 @@ func certStep(f Facts, o Options) Step {
 	switch {
 	case f.App.CertTrusted:
 		s.State, s.Detail = StatePass, "a trusted certificate issued by "+notEmpty(f.App.CertIssuer, "a public CA")+" is served for "+f.Domain
+		s.Action = revertAction(f, true)
 	case certStateOf(f) == CertIssued:
 		s.State, s.Detail = StatePass, "certificate issued by "+notEmpty(f.CertIssuer, "a public CA")
+		s.Action = revertAction(f, true)
 	case certStateOf(f) == CertFailed:
 		s.State = StateFail
 		s.Detail = notEmpty(f.CertExplanation, notEmpty(f.CertError, "the CA refused the request"))
+		s.Action = revertAction(f, false)
 	case certStateOf(f) == CertPending:
 		s.State, s.ETASeconds, s.Detail = StateWait, o.CertETA, "the certificate is being requested"
 	default:

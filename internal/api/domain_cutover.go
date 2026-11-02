@@ -14,7 +14,6 @@ import (
 	"github.com/GLINCKER/levelrail/internal/certflow"
 	"github.com/GLINCKER/levelrail/internal/domaincutover"
 	"github.com/GLINCKER/levelrail/internal/domaindoctor"
-	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 )
 
 // Env knobs of the cutover checklist.
@@ -89,6 +88,7 @@ func (rt *Router) cutoverFacts(ctx context.Context, r *http.Request, domain stri
 		f.CertState, f.CertIssuer, f.CertError, f.CertExplanation = st.State, st.Issuer, st.Error, st.Explanation
 	}
 	f.ProviderConnected = rt.dns01ProviderCheck != nil && rt.dns01ProviderCheck(ctx)
+	f.DNS01Host, _, _ = rt.domainACME.DomainDNS01(ctx, domain)
 
 	expectedHost, inferred := advertisedHost(r, rt.advertisedPublicHost(ctx))
 	check := rt.runDomainCheckOpts(ctx, domain, expectedHost, inferred, false)
@@ -216,8 +216,8 @@ func (rt *Router) cutoverTTL(ctx context.Context, domain string) int {
 	return ttl
 }
 
-// cutoverAuthoritative asks the zone's own name servers directly, skipping
-// every cache. Name servers on private ranges are never queried.
+// cutoverAuthoritative asks the zone's own name servers directly through the
+// shared inspector (public-address rule included), skipping every cache.
 func (rt *Router) cutoverAuthoritative(ctx context.Context, domain string, want []string) (known bool, hit, total int) {
 	if rt.domainAuto.authoritative != nil {
 		return rt.domainAuto.authoritative(ctx, domain, want)
@@ -225,44 +225,19 @@ func (rt *Router) cutoverAuthoritative(ctx context.Context, domain string, want 
 	actx, cancel := context.WithTimeout(ctx, cutoverStepBudget)
 	defer cancel()
 	limit := envIntDefault(envCutoverNSLimit, defaultCutoverNSLimit)
-	ns := nameServersFor(actx, domain)
-	for _, name := range ns {
+	for _, src := range rt.dnsInspectorOrDefault().Inspect(actx, domain).Authoritative {
 		if total >= limit {
 			break
 		}
-		ips, err := net.DefaultResolver.LookupHost(actx, name)
-		if err != nil || len(ips) == 0 || !publicUnicast(ips[0]) {
+		if src.Error == "no answer" || src.Error == "no usable address" {
 			continue
 		}
 		total++
-		got, err := lookupVia(actx, net.JoinHostPort(ips[0], "53"), domain)
-		if err == nil && hostsOverlap(got, want) {
+		if hostsOverlap(src.Addresses, want) {
 			hit++
 		}
 	}
 	return total > 0, hit, total
-}
-
-// nameServersFor walks up the labels to the first zone that publishes NS records.
-func nameServersFor(ctx context.Context, domain string) []string {
-	labels := strings.Split(strings.Trim(domain, "."), ".")
-	for i := 0; i+1 < len(labels); i++ {
-		recs, err := net.DefaultResolver.LookupNS(ctx, strings.Join(labels[i:], "."))
-		if err != nil || len(recs) == 0 {
-			continue
-		}
-		out := make([]string, 0, len(recs))
-		for _, n := range recs {
-			out = append(out, strings.TrimSuffix(n.Host, "."))
-		}
-		return out
-	}
-	return nil
-}
-
-func publicUnicast(s string) bool {
-	ip := net.ParseIP(s)
-	return ip != nil && ip.IsGlobalUnicast() && !ip.IsPrivate() && !ip.IsLoopback() && !ip.IsLinkLocalUnicast()
 }
 
 type cutoverCertBlocked struct {
@@ -272,10 +247,16 @@ type cutoverCertBlocked struct {
 	Alternative []string `json:"alternatives,omitempty"`
 }
 
+// DomainACMEChallengeStore keeps the per-host DNS-01 flag.
+type DomainACMEChallengeStore interface {
+	DomainDNS01(ctx context.Context, domain string) (bool, time.Time, error)
+	SetDomainDNS01(ctx context.Context, domain string, on bool) error
+}
+
 // handleCutoverCertificate handles POST /api/v1/domains/{domain}/cutover/certificate:
-// requests the host's certificate through the connected DNS provider (DNS-01)
-// so it exists before DNS moves. It reuses the all-hosts DNS-01 setting and
-// the guided certificate request; progress is read from the cutover checklist.
+// requests this host's certificate through the connected DNS provider (DNS-01)
+// so it exists before DNS moves. Only this host changes challenge; the
+// all-hosts setting is never touched. Progress is read from the checklist.
 func (rt *Router) handleCutoverCertificate(w http.ResponseWriter, r *http.Request) {
 	app, domain := rt.diagnoseOwner(w, r)
 	if app == "" || !rt.runtimeSettingsOr501(w) {
@@ -319,11 +300,9 @@ func (rt *Router) handleCutoverCertificate(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusBadRequest, "set an ACME contact email first (ingress settings), then run this again")
 		return
 	}
-	if !rt.runtimeSettings.Bool(ctx, runtimesettings.KeyIngressDNS01AllHosts) {
-		if err := rt.setDNS01AllHosts(r, true); err != nil {
-			rt.writeSettingError(w, "api: cutover certificate: enable dns01", err)
-			return
-		}
+	if err := rt.domainACME.SetDomainDNS01(ctx, domain, true); err != nil {
+		rt.internalError(w, "api: cutover certificate: store challenge", err)
+		return
 	}
 	if err := rt.applyPublicCert(ctx, domain, email, false); err != nil {
 		var rep *certflow.ReplaceError
@@ -334,6 +313,31 @@ func (rt *Router) handleCutoverCertificate(w http.ResponseWriter, r *http.Reques
 		rt.internalError(w, "api: cutover certificate: apply", err)
 		return
 	}
+	rt.cutoverCertDone(ctx, w, domain, http.StatusAccepted)
+}
+
+// handleCutoverCertificateRevert handles DELETE /api/v1/domains/{domain}/cutover/certificate:
+// the host goes back to the default challenge. The issued certificate stays.
+func (rt *Router) handleCutoverCertificateRevert(w http.ResponseWriter, r *http.Request) {
+	app, domain := rt.diagnoseOwner(w, r)
+	if app == "" {
+		return
+	}
+	ctx := r.Context()
+	if err := rt.domainACME.SetDomainDNS01(ctx, domain, false); err != nil {
+		rt.internalError(w, "api: cutover certificate: revert", err)
+		return
+	}
+	rt.nudgeReconciler()
+	rt.cutoverCertDone(ctx, w, domain, http.StatusOK)
+}
+
+type cutoverCertResponse struct {
+	domainCertStatusResource
+	Challenge string `json:"challenge,omitempty"`
+}
+
+func (rt *Router) cutoverCertDone(ctx context.Context, w http.ResponseWriter, domain string, code int) {
 	cutoverCache.Lock()
 	delete(cutoverCache.m, domain)
 	cutoverCache.Unlock()
@@ -342,20 +346,9 @@ func (rt *Router) handleCutoverCertificate(w http.ResponseWriter, r *http.Reques
 		rt.internalError(w, "api: cutover certificate: status", err)
 		return
 	}
-	writeJSON(w, http.StatusAccepted, out)
-}
-
-// setDNS01AllHosts stores the all-hosts DNS-01 switch as the PUT endpoint does.
-func (rt *Router) setDNS01AllHosts(r *http.Request, on bool) error {
-	ctx := r.Context()
-	before, err := rt.runtimeSettings.Get(ctx, runtimesettings.KeyIngressDNS01AllHosts)
-	if err != nil {
-		return err
+	res := cutoverCertResponse{domainCertStatusResource: out}
+	if on, _, err := rt.domainACME.DomainDNS01(ctx, domain); err == nil && on {
+		res.Challenge = "dns01"
 	}
-	after, err := rt.runtimeSettings.Set(ctx, runtimesettings.KeyIngressDNS01AllHosts, []byte(strconv.FormatBool(on)), rt.eventActor(r))
-	if err != nil {
-		return err
-	}
-	rt.recordSettingChange(r, before, after)
-	return nil
+	writeJSON(w, code, res)
 }

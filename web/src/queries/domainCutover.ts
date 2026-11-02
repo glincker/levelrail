@@ -62,6 +62,7 @@ export interface DomainCutover {
     error?: string
     explanation?: string
     provider_connected: boolean
+    challenge?: 'dns01'
     runbook_href: string
   }
   cli: string[]
@@ -93,13 +94,13 @@ export function domainCutoverQueryOptions(domain: string) {
   })
 }
 
-export function useCutoverCertificate(domain: string) {
+function useCutoverChallenge(domain: string, method: 'POST' | 'DELETE') {
   const queryClient = useQueryClient()
   return useMutation<unknown, ApiError, void>({
     mutationFn: async () => {
       const res = await fetch(
         `/api/v1/domains/${encodeURIComponent(domain)}/cutover/certificate`,
-        { method: 'POST' },
+        { method },
       )
       if (!res.ok) {
         throw new ApiError(
@@ -118,4 +119,13 @@ export function useCutoverCertificate(domain: string) {
       })
     },
   })
+}
+
+export function useCutoverCertificate(domain: string) {
+  return useCutoverChallenge(domain, 'POST')
+}
+
+// Puts this one domain back on HTTP-01; the issued certificate stays.
+export function useRevertCutoverChallenge(domain: string) {
+  return useCutoverChallenge(domain, 'DELETE')
 }

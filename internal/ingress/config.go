@@ -818,6 +818,47 @@ func internalIssuerTLSApp(hosts []string) *TLSApp {
 // is on (for hosts whose port 80 is unreachable). Every policy ends in the
 // internal issuer, so a failed challenge leaves a locally signed certificate.
 func acmeWithFallbackTLSApp(opts RoutesOptions, wildcardHosts, regularHosts []string) (*TLSApp, error) {
+	perHost, wildcardHosts, regularHosts := splitPerHostDNS01(opts, wildcardHosts, regularHosts)
+	app, err := acmeGlobalTLSApp(opts, wildcardHosts, regularHosts)
+	if err != nil || len(perHost) == 0 {
+		return app, err
+	}
+	// Caddy applies the first matching policy, so the per-host one goes first.
+	dns := NewDNSACMEIssuer(opts.ACMEEmail, opts.ACMEDirectoryURL, opts.DNSProvider)
+	first := AutomationPolicy{Subjects: perHost, Issuers: withInternalFallback(dns, opts.FallbackCertLifetime)}
+	if len(wildcardHosts)+len(regularHosts) == 0 {
+		app.Automation.Policies = []AutomationPolicy{first}
+		return app, nil
+	}
+	app.Automation.Policies = append([]AutomationPolicy{first}, app.Automation.Policies...)
+	return app, nil
+}
+
+// splitPerHostDNS01 takes the hosts that asked for DNS-01 out of the other
+// lists. Without a provider the request is ignored so one lost credential
+// cannot fail the whole build; the host falls back to HTTP-01.
+func splitPerHostDNS01(opts RoutesOptions, wildcardHosts, regularHosts []string) (perHost, wild, regular []string) {
+	if opts.DNS01AllHosts || opts.DNSProvider == nil || len(opts.DNS01Hosts) == 0 {
+		return nil, wildcardHosts, regularHosts
+	}
+	want := make(map[string]bool, len(opts.DNS01Hosts))
+	for _, h := range opts.DNS01Hosts {
+		want[strings.ToLower(h)] = true
+	}
+	pick := func(in []string) (kept []string) {
+		for _, h := range in {
+			if want[strings.ToLower(h)] {
+				perHost = append(perHost, h)
+			} else {
+				kept = append(kept, h)
+			}
+		}
+		return kept
+	}
+	return perHost, pick(wildcardHosts), pick(regularHosts)
+}
+
+func acmeGlobalTLSApp(opts RoutesOptions, wildcardHosts, regularHosts []string) (*TLSApp, error) {
 	acme := NewACMEIssuer(opts.ACMEEmail, opts.ACMEDirectoryURL, opts.HTTPPort)
 	if opts.DNS01AllHosts {
 		if opts.DNSProvider == nil {
