@@ -13727,6 +13727,139 @@
    }
   },
   {
+   "id": "filebrowser-quantum",
+   "aliases": [],
+   "name": "FileBrowser Quantum",
+   "slogan": "A web file manager with a fast index, search, sharing links and per-user access. Apache-2.0 fork of FileBrowser. Runs in one container; the admin password is generated and shown in the service environment settings.",
+   "description": "A web file manager with a fast index, search, sharing links and per-user access. Apache-2.0 fork of FileBrowser. Runs in one container; the admin password is generated and shown in the service environment settings.",
+   "first_run": [
+    "Sign in as admin with the generated password from the service environment settings."
+   ],
+   "category": "Storage",
+   "status": "active",
+   "source_repo": "https://github.com/gtsteffaniak/filebrowser",
+   "documentation_url": "https://github.com/gtsteffaniak/filebrowser/wiki",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/gtsteffaniak/filebrowser/blob/main/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
+   },
+   "arch": {
+    "amd64": "published",
+    "arm64": "tested"
+   },
+   "verification": {
+    "tag": "2.0.2-stable",
+    "http_status": 200,
+    "arches": [
+     "arm64"
+    ]
+   },
+   "images": [
+    {
+     "service": "filebrowser",
+     "image": "ghcr.io/gtsteffaniak/filebrowser",
+     "tag": "2.0.2-stable",
+     "source_class": "upstream",
+     "platforms": [
+      "linux/amd64",
+      "linux/arm64"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "filebrowser",
+     "image": "ghcr.io/gtsteffaniak/filebrowser:2.0.2-stable",
+     "ports": [
+      80
+     ],
+     "volumes": [
+      "data -> /home/filebrowser/data",
+      "files -> /srv"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "filebrowser",
+     "name": "FILEBROWSER_ADMIN_PASSWORD",
+     "kind": "generated"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "filebrowser"
+      ],
+      "detail": "FILEBROWSER_ADMIN_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "filebrowser"
+      ],
+      "detail": "data, files",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "firefly-iii",
    "aliases": [],
    "name": "Firefly III",
@@ -50033,6 +50166,159 @@
    }
   },
   {
+   "id": "rustfs",
+   "aliases": [],
+   "name": "RustFS",
+   "slogan": "An S3-compatible object storage server written in Rust, with a web console. One container serves the S3 API on port 9000 and the console on port 9001. Access and secret keys are generated at install time.",
+   "description": "An S3-compatible object storage server written in Rust, with a web console. One container serves the S3 API on port 9000 and the console on port 9001. Access and secret keys are generated at install time.",
+   "first_run": [
+    "Sign in to the console with the access key and secret key from the service environment settings."
+   ],
+   "category": "Storage",
+   "status": "active",
+   "source_repo": "https://github.com/rustfs/rustfs",
+   "documentation_url": "https://docs.rustfs.com/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/rustfs/rustfs/blob/main/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
+   },
+   "arch": {
+    "amd64": "published",
+    "arm64": "tested"
+   },
+   "verification": {
+    "tag": "1.0.4",
+    "http_status": 200,
+    "arches": [
+     "arm64"
+    ]
+   },
+   "images": [
+    {
+     "service": "rustfs",
+     "image": "rustfs/rustfs",
+     "tag": "1.0.4",
+     "source_class": "upstream",
+     "platforms": [
+      "linux/amd64",
+      "linux/arm64"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "rustfs",
+     "image": "rustfs/rustfs:1.0.4",
+     "ports": [
+      9001,
+      9000
+     ],
+     "volumes": [
+      "data -> /data"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "rustfs",
+     "name": "RUSTFS_ACCESS_KEY",
+     "kind": "generated"
+    },
+    {
+     "service": "rustfs",
+     "name": "RUSTFS_ADDRESS",
+     "kind": "preset"
+    },
+    {
+     "service": "rustfs",
+     "name": "RUSTFS_CONSOLE_ADDRESS",
+     "kind": "preset"
+    },
+    {
+     "service": "rustfs",
+     "name": "RUSTFS_CONSOLE_ENABLE",
+     "kind": "preset"
+    },
+    {
+     "service": "rustfs",
+     "name": "RUSTFS_SECRET_KEY",
+     "kind": "generated"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "rustfs"
+      ],
+      "detail": "RUSTFS_ACCESS_KEY, RUSTFS_SECRET_KEY",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "rustfs"
+      ],
+      "detail": "data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "ryot",
    "aliases": [],
    "name": "Ryot",
@@ -57256,6 +57542,152 @@
        "db"
       ],
       "detail": "pgdata",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tinyauth",
+   "aliases": [],
+   "name": "Tinyauth",
+   "slogan": "A small login screen and forward-auth server that protects other apps behind your reverse proxy with username and password or OAuth. Runs on SQLite in one container. Users are set with a bcrypt hash in the install form.",
+   "description": "A small login screen and forward-auth server that protects other apps behind your reverse proxy with username and password or OAuth. Runs on SQLite in one container. Users are set with a bcrypt hash in the install form.",
+   "first_run": [
+    "Open the app address and sign in with the user you set in the install form."
+   ],
+   "category": "Security",
+   "status": "active",
+   "source_repo": "https://github.com/tinyauthapp/tinyauth",
+   "documentation_url": "https://tinyauth.app/docs/getting-started",
+   "license": {
+    "spdx": "AGPL-3.0",
+    "class": "network-copyleft",
+    "url": "https://github.com/tinyauthapp/tinyauth/blob/main/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "published",
+    "arm64": "published"
+   },
+   "images": [
+    {
+     "service": "tinyauth",
+     "image": "ghcr.io/tinyauthapp/tinyauth",
+     "tag": "v5.2.0",
+     "source_class": "upstream",
+     "platforms": [
+      "linux/amd64",
+      "linux/arm64"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 64,
+   "needs_config": true,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TINYAUTH_USERS",
+      "label": "Users",
+      "required": true,
+      "default_kind": "none"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "tinyauth",
+     "image": "ghcr.io/tinyauthapp/tinyauth:v5.2.0",
+     "ports": [
+      3000
+     ],
+     "volumes": [
+      "data -> /data"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "tinyauth",
+     "name": "TINYAUTH_ANALYTICS_ENABLED",
+     "kind": "preset"
+    },
+    {
+     "service": "tinyauth",
+     "name": "TINYAUTH_APPURL",
+     "kind": "preset"
+    },
+    {
+     "service": "tinyauth",
+     "name": "TINYAUTH_AUTH_SECURECOOKIE",
+     "kind": "preset"
+    },
+    {
+     "service": "tinyauth",
+     "name": "TINYAUTH_AUTH_USERS",
+     "kind": "required"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "required_secrets",
+      "severity": "info",
+      "services": [
+       "tinyauth"
+      ],
+      "detail": "TINYAUTH_AUTH_USERS",
+      "message": "You must provide one or more secrets before it can deploy"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "tinyauth"
+      ],
+      "detail": "data",
       "message": "Stores data in named volumes"
      }
     ],

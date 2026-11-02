@@ -4,7 +4,7 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 "og:url": "https://docs.levelrail.com/self-host"
 ---
 
-397 open-source apps you can run on your own server with a Levelrail template. Each page lists the services, ports, volumes and environment variables the template sets up, and how to deploy it. For how templates work, see the [service template catalog](/templates-and-registry).
+400 open-source apps you can run on your own server with a Levelrail template. Each page lists the services, ports, volumes and environment variables the template sets up, and how to deploy it. For how templates work, see the [service template catalog](/templates-and-registry).
 
 ## AI
 
@@ -435,6 +435,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [Pocket ID](/self-host/pocket-id): A simple, secure OIDC provider that authenticates with passkeys instead of passwords.
 - [PrivateBin](/self-host/privatebin): A minimalist, encrypted pastebin where the server has zero knowledge of what you paste.
 - [SuperTokens](/self-host/supertokens): A self-hosted authentication backend with session management, social login, and passwordless, backed by Postgres.
+- [Tinyauth](/self-host/tinyauth): A small login screen and forward-auth server that protects other apps behind your reverse proxy with username and password or OAuth. Runs on SQLite in one container. Users are set with a bcrypt hash in the install form.
 - [Vault](/self-host/vault): HashiCorp Vault for secrets storage, encryption as a service, and dynamic credentials, in file-storage mode.
 - [Vaultwarden](/self-host/vaultwarden): A lightweight, self-hosted password manager server compatible with the Bitwarden clients.
 - [Whoogle Search](/self-host/whoogle): A privacy-focused front end for Google search results, with no tracking, ads, or JavaScript required.
@@ -456,10 +457,12 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [copyparty](/self-host/copyparty): A portable file server with resumable uploads, a media player, and search, in a single small image.
 - [Duplicati](/self-host/duplicati): Scheduled, encrypted backups of your files to local storage, network shares, or cloud storage.
 - [File Browser](/self-host/filebrowser): A simple web UI for browsing, uploading, and sharing files from your own storage.
+- [FileBrowser Quantum](/self-host/filebrowser-quantum): A web file manager with a fast index, search, sharing links and per-user access. Apache-2.0 fork of FileBrowser. Runs in one container; the admin password is generated and shown in the service environment settings.
 - [Kopia](/self-host/kopia): Fast, incremental, encrypted backups to a repository, driven from a web UI instead of a cron script.
 - [MinIO](/self-host/minio): S3-compatible object storage you run yourself, with a built-in web console.
 - [ownCloud](/self-host/owncloud): The classic self-hosted file sync and share platform, with MariaDB and Redis for metadata and locking.
 - [Pingvin Share](/self-host/pingvin-share): A self-hosted, ad-free alternative to WeTransfer for sending files with expiring links.
+- [RustFS](/self-host/rustfs): An S3-compatible object storage server written in Rust, with a web console. One container serves the S3 API on port 9000 and the console on port 9001. Access and secret keys are generated at install time.
 - [Seafile](/self-host/seafile): Self-hosted file sync and share with real file-level versioning and client-side encryption options.
 - [SeaweedFS](/self-host/seaweedfs): A distributed file and object store with an S3 gateway, built for billions of small files.
 - [SFTPGo](/self-host/sftpgo): An SFTP, FTP/S, and WebDAV server with a web admin UI and per-user storage backends.

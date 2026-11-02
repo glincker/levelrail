@@ -25,7 +25,7 @@ Set the optional `Description` field on a Go template (manifest templates reuse 
 
 {/* BEGIN GENERATED CATALOG TABLE */}
 
-Generated from `internal/catalog.Templates` (397 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
+Generated from `internal/catalog.Templates` (400 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
 
 | Category | Templates |
 | --- | --- |
@@ -44,9 +44,9 @@ Generated from `internal/catalog.Templates` (397 entries as of this build). Run 
 | [Media](#media) | 28 |
 | [Monitoring](#monitoring) | 27 |
 | [Productivity](#productivity) | 77 |
-| [Security](#security) | 18 |
+| [Security](#security) | 19 |
 | [Starter Kits](#starter-kits) | 7 |
-| [Storage](#storage) | 14 |
+| [Storage](#storage) | 16 |
 | [Backups](#backups) | 1 |
 
 ## AI
@@ -506,6 +506,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Pocket ID](https://pocket-id.org/docs/setup/installation) | A simple, secure OIDC provider that authenticates with passkeys instead of passwords. | `pocket-id` |  |
 | [PrivateBin](https://github.com/PrivateBin/PrivateBin/blob/master/doc/README.md) | A minimalist, encrypted pastebin where the server has zero knowledge of what you paste. | `privatebin` |  |
 | [SuperTokens](https://supertokens.com/docs/) | A self-hosted authentication backend with session management, social login, and passwordless, backed by Postgres. | `supertokens` |  |
+| [Tinyauth](https://tinyauth.app/docs/getting-started) | A small login screen and forward-auth server that protects other apps behind your reverse proxy with username and password or OAuth. Runs on SQLite in one container. Users are set with a bcrypt hash in the install form. | `tinyauth` |  |
 | [Vault](https://developer.hashicorp.com/vault/docs/deploy/run-container) | HashiCorp Vault for secrets storage, encryption as a service, and dynamic credentials, in file-storage mode. | `vault` |  |
 | [Vaultwarden](https://github.com/dani-garcia/vaultwarden/wiki) | A lightweight, self-hosted password manager server compatible with the Bitwarden clients. | `vaultwarden` |  |
 | [Whoogle Search](https://github.com/benbusby/whoogle-search) | A privacy-focused front end for Google search results, with no tracking, ads, or JavaScript required. | `whoogle` |  |
@@ -531,10 +532,12 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [copyparty](https://github.com/9001/copyparty) | A portable file server with resumable uploads, a media player, and search, in a single small image. | `copyparty` |  |
 | [Duplicati](https://duplicati.readthedocs.io) | Scheduled, encrypted backups of your files to local storage, network shares, or cloud storage. | `duplicati` |  |
 | [File Browser](https://filebrowser.org) | A simple web UI for browsing, uploading, and sharing files from your own storage. | `filebrowser` |  |
+| [FileBrowser Quantum](https://github.com/gtsteffaniak/filebrowser/wiki) | A web file manager with a fast index, search, sharing links and per-user access. Apache-2.0 fork of FileBrowser. Runs in one container; the admin password is generated and shown in the service environment settings. | `filebrowser-quantum` |  |
 | [Kopia](https://kopia.io/docs/installation/#quick-setup-using-docker) | Fast, incremental, encrypted backups to a repository, driven from a web UI instead of a cron script. | `kopia` |  |
 | [MinIO](https://min.io/docs/minio/linux/index.html) | S3-compatible object storage you run yourself, with a built-in web console. | `minio` |  |
 | [ownCloud](https://doc.owncloud.com/server/) | The classic self-hosted file sync and share platform, with MariaDB and Redis for metadata and locking. | `owncloud` |  |
 | [Pingvin Share](https://github.com/stonith404/pingvin-share) | A self-hosted, ad-free alternative to WeTransfer for sending files with expiring links. | `pingvin-share` |  |
+| [RustFS](https://docs.rustfs.com/) | An S3-compatible object storage server written in Rust, with a web console. One container serves the S3 API on port 9000 and the console on port 9001. Access and secret keys are generated at install time. | `rustfs` |  |
 | [Seafile](https://manual.seafile.com) | Self-hosted file sync and share with real file-level versioning and client-side encryption options. | `seafile` |  |
 | [SeaweedFS](https://github.com/seaweedfs/seaweedfs/wiki) | A distributed file and object store with an S3 gateway, built for billions of small files. | `seaweedfs` |  |
 | [SFTPGo](https://docs.sftpgo.com/latest/) | An SFTP, FTP/S, and WebDAV server with a web admin UI and per-user storage backends. | `sftpgo` |  |

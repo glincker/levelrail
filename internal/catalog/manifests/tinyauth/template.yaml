@@ -1,0 +1,31 @@
+id: tinyauth
+name: Tinyauth
+description: A small login screen and forward-auth server that protects other apps behind your reverse proxy with username and password or OAuth. Runs on SQLite in one container. Users are set with a bcrypt hash in the install form.
+icon: lock
+category: Security
+documentation_url: https://tinyauth.app/docs/getting-started
+source_repo: https://github.com/tinyauthapp/tinyauth
+license: AGPL-3.0
+license_class: network-copyleft
+license_url: https://github.com/tinyauthapp/tinyauth/blob/main/LICENSE
+hosted_use: unknown
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 67108864
+first_run:
+  - Open the app address and sign in with the user you set in the install form.
+env:
+  - key: TINYAUTH_USERS
+    label: Users
+    description: Comma-separated list of username:bcrypt-hash pairs. Create a hash with the tinyauth user create command.
+    required: true
+    secret: true
+domains:
+  - service: tinyauth
+    port: 3000
+    description: Public address of the Tinyauth login screen.
+healthcheck:
+  service: tinyauth
+  port: 3000
+  path: /api/healthz

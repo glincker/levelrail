@@ -201,6 +201,16 @@
       "arm64"
     ]
   },
+  "filebrowser-quantum": {
+    "tag": "2.0.2-stable",
+    "images": [
+      "ghcr.io/gtsteffaniak/filebrowser:2.0.2-stable"
+    ],
+    "arches": [
+      "arm64"
+    ],
+    "http_status": 200
+  },
   "firefly-iii": {
     "tag": "version-6.2.3",
     "images": [
@@ -741,6 +751,16 @@
     "arches": [
       "arm64"
     ]
+  },
+  "rustfs": {
+    "tag": "1.0.4",
+    "images": [
+      "rustfs/rustfs:1.0.4"
+    ],
+    "arches": [
+      "arm64"
+    ],
+    "http_status": 200
   },
   "searxng": {
     "tag": "7-alpine",

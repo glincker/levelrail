@@ -14,7 +14,7 @@ Registry scan date: 2026-11-01T23:30:55Z. This page is generated, so it only say
 
 The smoke column is the result recorded on the Arm test host in [Template status](/templates-status). `not tested` means no recorded run, not a failure.
 
-**380 listed, 15 amd64 only, 2 unknown** of 397 templates.
+**383 listed, 15 amd64 only, 2 unknown** of 400 templates.
 
 | Template | arm64 in manifest | Smoke run on Arm host |
 | --- | --- | --- |
@@ -106,6 +106,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `fastapi-postgres-starter` | listed | not tested |
 | `fider` | listed | not tested |
 | `filebrowser` | listed | pass |
+| `filebrowser-quantum` | listed | pass |
 | `firefly-iii` | listed | pass |
 | `firefox-browser` | listed | not tested |
 | `flame` | amd64 only | fail |
@@ -330,6 +331,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `roundcube` | listed | not tested |
 | `rsshub` | listed | pass |
 | `rustdesk-server` | listed | not tested |
+| `rustfs` | listed | pass |
 | `ryot` | listed | not tested |
 | `sabnzbd` | listed | not tested |
 | `seafile` | listed | not tested |
@@ -376,6 +378,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `text-embeddings-inference` | amd64 only | not tested |
 | `text-generation-inference` | amd64 only | not tested |
 | `tianji` | listed | not tested |
+| `tinyauth` | listed | not tested |
 | `tolgee` | listed | not tested |
 | `traccar` | listed | not tested |
 | `trailbase` | listed | not tested |

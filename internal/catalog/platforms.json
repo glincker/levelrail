@@ -360,15 +360,6 @@
       "checked_at": "2026-10-31T23:53:56Z"
     },
     {
-      "image": "chibisafe/chibisafe-server",
-      "tag": "v6.5.5",
-      "platforms": [
-        "linux/amd64",
-        "linux/arm64"
-      ],
-      "checked_at": "2026-11-01T00:10:24Z"
-    },
-    {
       "image": "chibisafe/chibisafe",
       "tag": "v6.5.5",
       "platforms": [
@@ -376,6 +367,15 @@
         "linux/arm64"
       ],
       "checked_at": "2026-10-31T23:53:56Z"
+    },
+    {
+      "image": "chibisafe/chibisafe-server",
+      "tag": "v6.5.5",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-11-01T00:10:24Z"
     },
     {
       "image": "chrislusf/seaweedfs",
@@ -1207,6 +1207,15 @@
       "checked_at": "2026-10-31T23:54:42Z"
     },
     {
+      "image": "ghcr.io/gtsteffaniak/filebrowser",
+      "tag": "2.0.2-stable",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-11-01T23:30:55Z"
+    },
+    {
       "image": "ghcr.io/hargata/lubelogger",
       "tag": "v1.7.4",
       "platforms": [
@@ -1574,6 +1583,15 @@
       "checked_at": "2026-10-31T23:54:42Z"
     },
     {
+      "image": "ghcr.io/teableio/teable",
+      "tag": "latest",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
       "image": "ghcr.io/teableio/teable-db-migrate",
       "tag": "latest",
       "platforms": [
@@ -1583,13 +1601,13 @@
       "checked_at": "2026-10-31T23:54:42Z"
     },
     {
-      "image": "ghcr.io/teableio/teable",
-      "tag": "latest",
+      "image": "ghcr.io/tinyauthapp/tinyauth",
+      "tag": "v5.2.0",
       "platforms": [
         "linux/amd64",
         "linux/arm64"
       ],
-      "checked_at": "2026-10-31T23:54:42Z"
+      "checked_at": "2026-11-01T23:30:55Z"
     },
     {
       "image": "ghcr.io/toeverything/affine",
@@ -2179,15 +2197,6 @@
       "checked_at": "2026-10-31T23:54:42Z"
     },
     {
-      "image": "langfuse/langfuse-worker",
-      "tag": "3.225.11",
-      "platforms": [
-        "linux/amd64",
-        "linux/arm64"
-      ],
-      "checked_at": "2026-11-01T00:10:24Z"
-    },
-    {
       "image": "langfuse/langfuse",
       "tag": "3.225.11",
       "platforms": [
@@ -2195,6 +2204,15 @@
         "linux/arm64"
       ],
       "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "langfuse/langfuse-worker",
+      "tag": "3.225.11",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-11-01T00:10:24Z"
     },
     {
       "image": "leantime/leantime",
@@ -2830,21 +2848,21 @@
       "checked_at": "2026-10-31T23:54:42Z"
     },
     {
-      "image": "mongo-express",
-      "tag": "1.0.2-20-alpine3.19",
-      "platforms": [
-        "linux/amd64",
-        "linux/arm64"
-      ],
-      "checked_at": "2026-10-31T23:54:42Z"
-    },
-    {
       "image": "mongo",
       "tag": "7",
       "platforms": [
         "linux/amd64",
         "linux/arm64",
         "windows/amd64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "mongo-express",
+      "tag": "1.0.2-20-alpine3.19",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
       ],
       "checked_at": "2026-10-31T23:54:42Z"
     },
@@ -3576,15 +3594,6 @@
       "checked_at": "2026-10-31T23:54:42Z"
     },
     {
-      "image": "redis/redisinsight",
-      "tag": "2.70",
-      "platforms": [
-        "linux/amd64",
-        "linux/arm64"
-      ],
-      "checked_at": "2026-10-31T23:54:42Z"
-    },
-    {
       "image": "redis",
       "tag": "7-alpine",
       "platforms": [
@@ -3666,6 +3675,15 @@
       "checked_at": "2026-10-31T23:54:42Z"
     },
     {
+      "image": "redis/redisinsight",
+      "tag": "2.70",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
       "image": "redmine",
       "tag": "6-alpine",
       "platforms": [
@@ -3676,15 +3694,6 @@
         "linux/ppc64le",
         "linux/riscv64",
         "linux/s390x"
-      ],
-      "checked_at": "2026-10-31T23:54:42Z"
-    },
-    {
-      "image": "registry.supertokens.io/supertokens/supertokens-postgresql",
-      "tag": "latest",
-      "platforms": [
-        "linux/amd64",
-        "linux/arm64"
       ],
       "checked_at": "2026-10-31T23:54:42Z"
     },
@@ -3710,6 +3719,15 @@
         "linux/ppc64le",
         "linux/riscv64",
         "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "registry.supertokens.io/supertokens/supertokens-postgresql",
+      "tag": "latest",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
       ],
       "checked_at": "2026-10-31T23:54:42Z"
     },
@@ -3743,6 +3761,15 @@
         "linux/arm64"
       ],
       "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "rustfs/rustfs",
+      "tag": "1.0.4",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-11-01T23:30:55Z"
     },
     {
       "image": "ryshe/terraria",
@@ -4684,6 +4711,10 @@
     "filebrowser": [
       "linux/amd64",
       "linux/arm",
+      "linux/arm64"
+    ],
+    "filebrowser-quantum": [
+      "linux/amd64",
       "linux/arm64"
     ],
     "firefly-iii": [
@@ -5705,6 +5736,10 @@
       "linux/arm",
       "linux/arm64"
     ],
+    "rustfs": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
     "ryot": [
       "linux/amd64",
       "linux/arm64"
@@ -5897,6 +5932,10 @@
       "linux/amd64"
     ],
     "tianji": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "tinyauth": [
       "linux/amd64",
       "linux/arm64"
     ],

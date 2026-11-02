@@ -1,0 +1,67 @@
+---
+title: "Self-host FileBrowser Quantum with Docker"
+sidebarTitle: "FileBrowser Quantum"
+description: "A web file manager with a fast index, search, sharing links and per-user access. Apache-2.0 fork of FileBrowser. Runs in one container; the admin password is generated and shown in the service environment settings."
+"og:url": "https://docs.levelrail.com/self-host/filebrowser-quantum"
+---
+
+A web file manager with a fast index, search, sharing links and per-user access. Apache-2.0 fork of FileBrowser. Runs in one container; the admin password is generated and shown in the service environment settings.
+
+This page describes the Levelrail template for FileBrowser Quantum (Storage). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/gtsteffaniak/filebrowser/wiki.
+
+Recommended memory: about 128 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `filebrowser` | `ghcr.io/gtsteffaniak/filebrowser:2.0.2-stable` | 80 | `data -&#62; /home/filebrowser/data`<br />`files -&#62; /srv` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `filebrowser` | `FILEBROWSER_ADMIN_PASSWORD` | Generated at deploy |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`filebrowser`): FILEBROWSER_ADMIN_PASSWORD.
+- Stores data in named volumes (`filebrowser`): data, files.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy FileBrowser Quantum with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select FileBrowser Quantum. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy filebrowser-quantum --name my-filebrowser-quantum
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Storage templates
+
+- [Chibisafe](/self-host/chibisafe)
+- [Cloudreve](/self-host/cloudreve)
+- [copyparty](/self-host/copyparty)
+- [Duplicati](/self-host/duplicati)
+- [File Browser](/self-host/filebrowser)
+
+All templates are listed in the [self-host gallery](/self-host).

@@ -36,6 +36,7 @@ Last run: 2026-10-25, plus eight templates booted by hand on 2026-10-27 under th
 | `etcd` | pass | 8 |  |
 | `excalidraw` | pass | 33 |  |
 | `filebrowser` | pass | 8 |  |
+| `filebrowser-quantum` | pass | 26 |  |
 | `firefly-iii` | pass | 28 |  |
 | `flame` | fail | 5 | image is amd64 only (exec format error), host limit on arm64 |
 | `flatnotes` | pass | 9 |  |
@@ -100,6 +101,7 @@ Last run: 2026-10-25, plus eight templates booted by hand on 2026-10-27 under th
 | `redlib` | fail | 33 | upstream OAuth to Reddit returns 401 so the server never listens |
 | `rocketchat` | pass | 43 |  |
 | `rsshub` | pass | 0 | booted with cap-drop ALL, no-new-privileges, pids limit; service proof checked |
+| `rustfs` | pass | 26 |  |
 | `searxng` | pass | 34 |  |
 | `shiori` | pass | 1 |  |
 | `silverbullet` | pass | 14 |  |
@@ -143,7 +145,7 @@ Fixed in the wave N pass: `valkey` interpolated its password from the host shell
 
 Generated from the registry scan in `internal/catalog/platforms.json` (`scripts/scan-catalog-platforms`), not from the smoke run. A template is `yes` only when every image it uses lists `linux/arm64` in its manifest. `not checked` means unknown, not unsupported: the scan could not read a manifest or the image tag is set at install time.
 
-Last scan: 2026-11-01T23:30:55Z. **380 yes, 15 amd64 only, 2 not checked** of 397 templates.
+Last scan: 2026-11-01T23:30:55Z. **383 yes, 15 amd64 only, 2 not checked** of 400 templates.
 
 | Template | arm64 | Verified platforms |
 | --- | --- | --- |
@@ -235,6 +237,7 @@ Last scan: 2026-11-01T23:30:55Z. **380 yes, 15 amd64 only, 2 not checked** of 39
 | `fastapi-postgres-starter` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/riscv64, linux/s390x |
 | `fider` | yes | linux/amd64, linux/arm64 |
 | `filebrowser` | yes | linux/amd64, linux/arm, linux/arm64 |
+| `filebrowser-quantum` | yes | linux/amd64, linux/arm64 |
 | `firefly-iii` | yes | linux/amd64, linux/arm64 |
 | `firefox-browser` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
 | `flame` | amd64 only | linux/amd64 |
@@ -459,6 +462,7 @@ Last scan: 2026-11-01T23:30:55Z. **380 yes, 15 amd64 only, 2 not checked** of 39
 | `roundcube` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
 | `rsshub` | yes | linux/amd64, linux/arm64 |
 | `rustdesk-server` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
+| `rustfs` | yes | linux/amd64, linux/arm64 |
 | `ryot` | yes | linux/amd64, linux/arm64 |
 | `sabnzbd` | yes | linux/amd64, linux/arm64 |
 | `seafile` | yes | linux/amd64, linux/arm64 |
@@ -505,6 +509,7 @@ Last scan: 2026-11-01T23:30:55Z. **380 yes, 15 amd64 only, 2 not checked** of 39
 | `text-embeddings-inference` | amd64 only | linux/amd64 |
 | `text-generation-inference` | amd64 only | linux/amd64 |
 | `tianji` | yes | linux/amd64, linux/arm64 |
+| `tinyauth` | yes | linux/amd64, linux/arm64 |
 | `tolgee` | yes | linux/amd64, linux/arm64 |
 | `traccar` | yes | linux/amd64, linux/arm64 |
 | `trailbase` | yes | linux/amd64, linux/arm64 |
