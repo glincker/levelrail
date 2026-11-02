@@ -169,3 +169,22 @@ func TestPlanAndApply(t *testing.T) {
 		}
 	})
 }
+
+func TestInputFiltered(t *testing.T) {
+	nftJump := "table ip filter {\n\tchain INPUT {\n\t\ttype filter hook input priority filter; policy accept;\n\t\tjump ufw-input\n\t}\n\tchain ufw-input {\n\t\ttcp dport 5432 drop\n\t}\n\tchain DOCKER-ISOLATION {\n\t\tdrop\n\t}\n}\n"
+	nftForwardOnly := "table ip filter {\n\tchain INPUT {\n\t\ttype filter hook input priority filter; policy accept;\n\t}\n\tchain DOCKER-ISOLATION {\n\t\tdrop\n\t}\n}\n"
+	for name, tc := range map[string]struct {
+		got, want bool
+	}{
+		"nft jump to dropping chain":  {NftInputFiltered(nftJump), true},
+		"nft drop only outside input": {NftInputFiltered(nftForwardOnly), false},
+		"ipt policy drop":             {IptablesInputFiltered("-P INPUT DROP\n"), true},
+		"ipt rule drop":               {IptablesInputFiltered("-P INPUT ACCEPT\n-A INPUT -p tcp --dport 5432 -j DROP\n"), true},
+		"ipt jump to dropping chain":  {IptablesInputFiltered("-P INPUT ACCEPT\n-N f\n-A INPUT -j f\n-A f -j REJECT\n"), true},
+		"ipt accept all":              {IptablesInputFiltered("-P INPUT ACCEPT\n-A FORWARD -j DROP\n"), false},
+	} {
+		if tc.got != tc.want {
+			t.Errorf("%s: got %v want %v", name, tc.got, tc.want)
+		}
+	}
+}

@@ -63,3 +63,20 @@ func TestAccessLogRetentionSetting(t *testing.T) {
 		t.Fatalf("env 1s gives %s, want the floor", got)
 	}
 }
+
+func TestFallbackCertsSetting(t *testing.T) {
+	ctx := t.Context()
+	svc := New(newFakeStore(), envOf(nil))
+	if got := svc.String(ctx, KeyIngressFallbackCerts); got != FallbackCertsEager {
+		t.Fatalf("default = %q, want eager", got)
+	}
+	if _, err := svc.Set(ctx, KeyIngressFallbackCerts, json.RawMessage(`"off"`), "t"); err == nil {
+		t.Error("unknown mode accepted")
+	}
+	if _, err := svc.Set(ctx, KeyIngressFallbackCerts, json.RawMessage(`"lazy"`), "t"); err != nil {
+		t.Fatal(err)
+	}
+	if got := svc.String(ctx, KeyIngressFallbackCerts); got != FallbackCertsLazy {
+		t.Errorf("after set = %q, want lazy", got)
+	}
+}

@@ -10,11 +10,16 @@ export interface HostFirewallPublishedPort extends HostFirewallPort {
   service?: string
   bind_address: string
   allowed: boolean
+  // false when no firewall filters incoming traffic
+  filtered?: boolean
 }
 
 export interface HostFirewall {
   installed: boolean
   active: boolean
+  backend?: 'ufw' | 'firewalld' | 'nftables' | 'iptables' | 'none'
+  managed?: boolean
+  detail?: string
   default_incoming?: string
   required: HostFirewallPort[]
   published_ports?: HostFirewallPublishedPort[]

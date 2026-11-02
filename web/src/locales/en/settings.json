@@ -260,7 +260,6 @@
     "description": "Turns this server's ufw firewall on or off. Turning it on first allows SSH, the control plane ports and HTTP/3, so you cannot lock yourself out.",
     "statusOn": "On",
     "statusOff": "Off",
-    "statusMissing": "ufw not installed",
     "defaultIncoming": "Default for incoming traffic: {{policy}}",
     "required": "Ports kept open",
     "turnOn": "Turn on firewall",
@@ -279,7 +278,13 @@
     "published": "Published ports",
     "allowed": "Allowed",
     "notAllowed": "Not allowed",
-    "localOnly": "Local only"
+    "localOnly": "Local only",
+    "notFiltered": "Not filtered",
+    "notChecked": "Not checked",
+    "statusUnmanaged": "{{backend}} (read only)",
+    "statusNone": "No firewall",
+    "unmanagedHelp": "Levelrail only manages ufw, so it will not change this firewall. The ports below are what your rules need to allow.",
+    "noneHelp": "No firewall tool was found that this process can read, so every published port is reachable unless your cloud provider filters it. Install ufw here to manage it from this page."
   },
   "setupNext": {
     "heading": "Next steps",

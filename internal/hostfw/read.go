@@ -356,3 +356,91 @@ func readIptables(ctx context.Context, run Runner) Status {
 	}
 	return st
 }
+
+var (
+	nftJumpRe    = regexp.MustCompile(`\b(?:jump|goto)\s+(\S+)`)
+	nftVerdictRe = regexp.MustCompile(`\b(?:drop|reject)\b`)
+	iptNewChain  = regexp.MustCompile(`^-A (\S+) .*-j (\S+)`)
+)
+
+// NftInputFiltered reports whether an `nft list ruleset` dump has an input hook
+// that drops by policy or by rule. Docker's NAT, raw and forward rules do not count.
+func NftInputFiltered(ruleset string) bool {
+	rules := map[string][]string{} // "family table chain" -> rule lines
+	var hooks []string
+	var prefix, key string
+	for _, line := range strings.Split(ruleset, "\n") {
+		if m := nftTableRe.FindStringSubmatch(line); m != nil {
+			prefix, key = m[1]+" "+m[2]+" ", ""
+			continue
+		}
+		if m := nftChainRe.FindStringSubmatch(line); m != nil {
+			key = prefix + m[1]
+			rules[key] = nil
+			continue
+		}
+		if key == "" {
+			continue
+		}
+		if m := nftHookRe.FindStringSubmatch(line); m != nil {
+			if strings.EqualFold(m[1], "drop") {
+				return true
+			}
+			hooks = append(hooks, key)
+			continue
+		}
+		rules[key] = append(rules[key], line)
+	}
+	seen := map[string]bool{}
+	queue := hooks
+	for len(queue) > 0 {
+		c := queue[0]
+		queue = queue[1:]
+		if seen[c] {
+			continue
+		}
+		seen[c] = true
+		base := c[:strings.LastIndex(c, " ")+1]
+		for _, r := range rules[c] {
+			if nftVerdictRe.MatchString(r) {
+				return true
+			}
+			if m := nftJumpRe.FindStringSubmatch(r); m != nil {
+				queue = append(queue, base+m[1])
+			}
+		}
+	}
+	return false
+}
+
+// IptablesInputFiltered reports whether `iptables -S` output drops inbound
+// traffic on INPUT by policy, by rule, or through a user chain INPUT jumps to.
+func IptablesInputFiltered(dump string) bool {
+	chains := map[string][]string{} // chain -> jump or verdict targets
+	for _, line := range strings.Split(dump, "\n") {
+		line = strings.TrimSpace(line)
+		if m := iptPolicy.FindStringSubmatch(line); m != nil && (m[1] == "DROP" || m[1] == "REJECT") {
+			return true
+		}
+		if m := iptNewChain.FindStringSubmatch(line); m != nil {
+			chains[m[1]] = append(chains[m[1]], m[2])
+		}
+	}
+	seen := map[string]bool{}
+	queue := []string{"INPUT"}
+	for len(queue) > 0 {
+		c := queue[0]
+		queue = queue[1:]
+		if seen[c] {
+			continue
+		}
+		seen[c] = true
+		for _, t := range chains[c] {
+			if t == "DROP" || t == "REJECT" {
+				return true
+			}
+			queue = append(queue, t)
+		}
+	}
+	return false
+}

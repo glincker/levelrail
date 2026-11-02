@@ -363,6 +363,8 @@ type Controller struct {
 	dnsTokens CloudflareDNSTokenResolver
 	// dns01AllHosts is read every pass so the stored setting applies without a restart; nil means off.
 	dns01AllHosts func(context.Context) bool
+	// fallbackCerts returns the ingress.fallback_certs mode; nil means eager.
+	fallbackCerts func(context.Context) string
 
 	// route53Creds, if set via WithRoute53DNSCredentials, is resolved
 	// fresh every Reconcile pass whenever store.Route53DNSSettings.
@@ -639,6 +641,15 @@ func WithDNS01AllHosts(fn func(context.Context) bool) Option {
 	return func(c *Controller) { c.dns01AllHosts = fn }
 }
 
+// WithFallbackCerts supplies the live ingress.fallback_certs mode, resolved on each pass.
+func WithFallbackCerts(fn func(context.Context) string) Option {
+	return func(c *Controller) { c.fallbackCerts = fn }
+}
+
+func (c *Controller) lazyFallbackCerts(ctx context.Context) bool {
+	return c.fallbackCerts != nil && c.fallbackCerts(ctx) == "lazy"
+}
+
 func (c *Controller) dns01AllHostsOn(ctx context.Context) bool {
 	return c.dns01AllHosts != nil && c.dns01AllHosts(ctx)
 }
@@ -868,6 +879,8 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	canaries := c.activeCanaries(ctx, services)
 	envDomainSets := c.environmentDomainSets(ctx)
 	fallbackResolver := ingress.LoadFallbackResolver(ctx, c.store, c.publicHost)
+	lazyFallback := c.lazyFallbackCerts(ctx)
+	var lazyCertHosts []string
 	maintenanceSettings, err = c.applySpendCaps(ctx, services, envDomainSets, settings.FallbackDomainsDisabled, fallbackResolver, now, maintenanceByDomain, maintenanceSettings, wafByDomain)
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: apply spend caps: %w", err)
@@ -907,6 +920,9 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 				continue
 			}
 			hosts = []string{fallback}
+			if lazyFallback {
+				lazyCertHosts = append(lazyCertHosts, fallback)
+			}
 		}
 		if owner, host, dup := firstDuplicateHost(svc.Name, hosts, claimedHosts); dup {
 			// store.SaveDesiredService now rejects a save
@@ -1188,6 +1204,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		HTTPPort:             httpPortFromAddr(c.httpListenAddr),
 		HTTPRedirect:         c.httpRedirect && !settings.TLSTerminatedUpstream,
 		FallbackCertLifetime: fallbackLifetimeString(c.fallbackCertLifetime),
+		LazyCertHosts:        lazyCertHosts,
 		PlainHTTP:            settings.TLSTerminatedUpstream,
 		HTTPBindHost:         hostFromAddr(c.httpListenAddr),
 		Routes:               routes,

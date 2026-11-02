@@ -873,3 +873,44 @@ func TestController_Reconcile_TCPPublishedWithDomain_StillRouted(t *testing.T) {
 		t.Errorf("applied routes = %v, want 1", routes)
 	}
 }
+
+func TestController_Reconcile_FallbackCertsMode(t *testing.T) {
+	desired := store.DesiredService{Name: "web", Image: "img:v1", Port: 80}
+	target := application.ContainerName(desired.Name, desired.Image, "")
+	host := "web.203-0-113-5.sslip.io"
+
+	for _, tc := range []struct {
+		name     string
+		mode     func(context.Context) string
+		wantLazy bool
+	}{
+		{"unset is eager", nil, false},
+		{"eager", func(context.Context) string { return "eager" }, false},
+		{"lazy", func(context.Context) string { return "lazy" }, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			rt := newFakeRuntime()
+			rt.seedRunning(target, 34567)
+			applier := &fakeApplier{}
+			c := New(&fakeStore{services: []store.DesiredService{desired}}, rt, applier,
+				WithLogger(discardLogger()), WithPublicHost("203.0.113.5"), WithFallbackCerts(tc.mode))
+			if _, err := c.Reconcile(context.Background()); err != nil {
+				t.Fatalf("Reconcile() error = %v", err)
+			}
+			var eager, lazy []string
+			for _, p := range applier.lastCfg.Apps.TLS.Automation.Policies {
+				if p.OnDemand {
+					lazy = append(lazy, p.Subjects...)
+				} else {
+					eager = append(eager, p.Subjects...)
+				}
+			}
+			if tc.wantLazy && (len(lazy) != 1 || lazy[0] != host || len(eager) != 0) {
+				t.Errorf("lazy=%v eager=%v, want only %s on demand", lazy, eager, host)
+			}
+			if !tc.wantLazy && (len(lazy) != 0 || len(eager) != 1 || eager[0] != host) {
+				t.Errorf("lazy=%v eager=%v, want only %s eager", lazy, eager, host)
+			}
+		})
+	}
+}

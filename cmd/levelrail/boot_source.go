@@ -102,6 +102,8 @@ type dynamicSourceDeps struct {
 	proxySyncer *proxyroutes.Syncer
 	// dns01AllHosts reads the live DNS-01-for-every-host setting.
 	dns01AllHosts func(context.Context) bool
+	// fallbackCerts reads the live ingress.fallback_certs mode.
+	fallbackCerts func(context.Context) string
 	// deployWindows reads the live drain, stable, watch and hold timings.
 	deployWindows func(context.Context) deploysafety.Windows
 	// restartPolicy reads the live container restart policy setting.
@@ -191,7 +193,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		}
 		ingressOpts = append(ingressOpts, ingressreconcile.WithAppWake(deps.db, dashboardDialAddr(httpAddr()), appWakeToken()))
 		ingressOpts = append(ingressOpts, ingressreconcile.WithCanaries(deps.db), ingressreconcile.WithCanaryDials(canary.DefaultDials()))
-		ingressOpts = append(ingressOpts, ingressreconcile.WithDNS01AllHosts(deps.dns01AllHosts))
+		ingressOpts = append(ingressOpts, ingressreconcile.WithDNS01AllHosts(deps.dns01AllHosts), ingressreconcile.WithFallbackCerts(deps.fallbackCerts))
 		controllers = append(controllers, ingressreconcile.New(deps.db, deps.runtime, deps.driver, ingressOpts...))
 		if deps.proxySyncer != nil {
 			controllers = append(controllers, proxyroutesreconcile.New(deps.proxySyncer))

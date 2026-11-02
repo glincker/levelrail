@@ -404,6 +404,9 @@ func (s *bootState) startReconciler() {
 		dns01AllHosts: func(c context.Context) bool {
 			return s.apiRouter.RuntimeSettings().Bool(c, runtimesettings.KeyIngressDNS01AllHosts)
 		},
+		fallbackCerts: func(c context.Context) string {
+			return s.apiRouter.RuntimeSettings().String(c, runtimesettings.KeyIngressFallbackCerts)
+		},
 		deployWindows: func(c context.Context) deploysafety.Windows {
 			return deployWindowsFrom(c, s.apiRouter.RuntimeSettings())
 		},

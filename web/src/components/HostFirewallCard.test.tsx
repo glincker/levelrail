@@ -130,13 +130,71 @@ describe('HostFirewallCard', () => {
     )
   })
 
-  it('explains when ufw is not installed and offers no switch', async () => {
+  it('keeps the port lists read only when no firewall tool is found', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(() => Promise.resolve(json({ ...off, installed: false }))),
+      vi.fn(() =>
+        Promise.resolve(
+          json({
+            ...off,
+            installed: false,
+            managed: false,
+            backend: 'none',
+            published_ports: [
+              {
+                port: 25,
+                protocol: 'tcp',
+                app: 'mail',
+                bind_address: '0.0.0.0',
+                allowed: false,
+                filtered: false,
+              },
+            ],
+          }),
+        ),
+      ),
     )
     renderCard()
-    expect(await screen.findByText('ufw not installed')).toBeInTheDocument()
+    expect(await screen.findByText('No firewall')).toBeInTheDocument()
+    expect(screen.getByText(/No firewall tool was found/)).toBeInTheDocument()
+    expect(screen.getByText('22/tcp, 443/udp')).toBeInTheDocument()
+    expect(screen.getByText('Not filtered')).toBeInTheDocument()
+    expect(screen.queryByText('Allowed')).toBeNull()
+    expect(
+      screen.queryByRole('button', { name: 'Turn on firewall' }),
+    ).toBeNull()
+  })
+
+  it('explains an unmanaged backend and offers no switch', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(
+          json({
+            ...off,
+            installed: false,
+            active: true,
+            managed: false,
+            backend: 'firewalld',
+            detail: 'firewalld is running',
+            published_ports: [
+              {
+                port: 25,
+                protocol: 'tcp',
+                app: 'mail',
+                bind_address: '0.0.0.0',
+                allowed: false,
+                filtered: true,
+              },
+            ],
+          }),
+        ),
+      ),
+    )
+    renderCard()
+    expect(await screen.findByText('firewalld (read only)')).toBeInTheDocument()
+    expect(screen.getByText(/only manages ufw/)).toBeInTheDocument()
+    expect(screen.getByText('Not checked')).toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'Turn on firewall' }),
     ).toBeNull()

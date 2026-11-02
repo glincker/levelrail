@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
+	"github.com/GLINCKER/levelrail/internal/hostfw"
 )
 
 const (
@@ -35,11 +36,19 @@ type hostFirewallPublishedPort struct {
 	Service     string `json:"service"`
 	BindAddress string `json:"bind_address"`
 	Allowed     bool   `json:"allowed"`
+	// Filtered is false when no firewall filters incoming traffic, so Allowed
+	// says nothing about reachability.
+	Filtered bool `json:"filtered"`
 }
 
 type hostFirewallResource struct {
-	Installed       bool                        `json:"installed"`
-	Active          bool                        `json:"active"`
+	Installed bool `json:"installed"`
+	Active    bool `json:"active"`
+	// Backend is the firewall tool found on the host; only ufw is managed here.
+	Backend hostfw.Backend `json:"backend"`
+	Managed bool           `json:"managed"`
+	// Detail explains, read only, what the detected backend is doing.
+	Detail          string                      `json:"detail,omitempty"`
 	DefaultIncoming string                      `json:"default_incoming,omitempty"`
 	Required        []hostFirewallPort          `json:"required"`
 	Commands        []string                    `json:"commands"`
@@ -225,6 +234,9 @@ func (rt *Router) hostFirewallStatus(ctx context.Context) hostFirewallResource {
 			text = string(out)
 		}
 	}
+	det := hostfw.Detect(ctx, rt.hostFirewallDeps())
+	res.Backend, res.Detail = det.Backend, det.Detail
+	res.Managed = res.Installed
 	res.Active = strings.Contains(text, "Status: active")
 	for _, line := range strings.Split(text, "\n") {
 		fields := strings.Fields(strings.TrimSpace(line))
@@ -232,10 +244,15 @@ func (rt *Router) hostFirewallStatus(ctx context.Context) hostFirewallResource {
 			res.DefaultIncoming = fields[1]
 		}
 	}
-	// Nothing filters while ufw is absent, inactive or defaulting to allow.
-	open := !res.Active || res.DefaultIncoming == "allow"
+	// ufw is the only backend read per port; another active backend filters
+	// traffic but its rules are not interpreted here.
+	filtered := res.Active && res.DefaultIncoming != "allow"
+	if !res.Active && det.Backend != hostfw.BackendUFW && det.Active {
+		res.Active, filtered = true, true
+	}
 	for i, row := range res.PublishedPorts {
-		res.PublishedPorts[i].Allowed = open || ufwAllowed(text, row.Port, row.Protocol)
+		res.PublishedPorts[i].Filtered = filtered
+		res.PublishedPorts[i].Allowed = filtered && res.Managed && ufwAllowed(text, row.Port, row.Protocol)
 	}
 	return res
 }

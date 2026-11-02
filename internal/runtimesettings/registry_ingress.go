@@ -8,8 +8,12 @@ import (
 
 // Registered keys for the ingress body cap and the in-memory access log window.
 const (
-	KeyIngressMaxBodyBytes    = "ingress.max_body_bytes"
-	KeyAccessLogRetention     = "telemetry.access_log_retention"
+	KeyIngressMaxBodyBytes  = "ingress.max_body_bytes"
+	KeyAccessLogRetention   = "telemetry.access_log_retention"
+	KeyIngressFallbackCerts = "ingress.fallback_certs"
+	// FallbackCertsEager and FallbackCertsLazy are the accepted ingress.fallback_certs values.
+	FallbackCertsEager        = "eager"
+	FallbackCertsLazy         = "lazy"
 	ingressBodyCeiling        = 10 << 30
 	ingressBodyDefault        = 1 << 30
 	minAccessLogRetention     = time.Hour
@@ -23,6 +27,12 @@ func init() {
 		Title:       "Ingress request body limit",
 		Description: "Largest request body in bytes the ingress accepts for each route before answering HTTP 413, from 1 MiB to 10 GiB. A saved change re-renders the ingress config at once, with no restart; a per-app override still applies. An environment value below the minimum is raised to it and 0 no longer disables the cap.",
 	}, bodyLimitFloor, ingressBodyCeiling)
+	Register(Definition{
+		Key: KeyIngressFallbackCerts, Category: CategoryNetworking, Kind: KindString, Default: FallbackCertsEager,
+		Env: "APP_INGRESS_FALLBACK_CERTS", Apply: ApplyLive, AllowedStrings: []string{FallbackCertsEager, FallbackCertsLazy},
+		Title:       "Fallback domain certificates",
+		Description: "When an app has no domain and gets an automatic sslip.io style hostname, eager orders its certificate as soon as the route exists (today's behavior) and lazy orders it on the first TLS request for that hostname. Lazy keeps a burst of new apps from spending certificate rate limits on hosts nobody opens. A saved change re-renders the ingress config at once, with no restart; domains you configured yourself are always eager.",
+	})
 	Register(Definition{
 		Key: KeyAccessLogRetention, Category: CategoryObservability, Kind: KindDuration, Default: defaultAccessLogRetention.String(),
 		Env: "APP_ACCESS_LOG_RETENTION", Apply: ApplyLive, CheckValue: durationRangeCheck(minAccessLogRetention, maxAccessLogRetention),

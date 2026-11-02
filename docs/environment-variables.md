@@ -70,6 +70,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CLOUDFLARE_IPS_REFRESH` | [`ingress.cloudflare_ips_refresh`](/runtime-settings#networking) | `24h` |
 | `APP_CLOUDFLARE_IPS_TIMEOUT` | [`ingress.cloudflare_ips_timeout`](/runtime-settings#networking) | `15s` |
 | `APP_INGRESS_DNS01_ALL_HOSTS` | [`ingress.dns01_all_hosts`](/runtime-settings#networking) | `false` |
+| `APP_INGRESS_FALLBACK_CERTS` | [`ingress.fallback_certs`](/runtime-settings#networking) | `eager` |
 | `APP_INGRESS_MAX_BODY_BYTES` | [`ingress.max_body_bytes`](/runtime-settings#networking) | `1073741824` |
 | `APP_PROXY_CERT_WAIT` | [`ingress.proxy_cert_wait`](/runtime-settings#networking) | `5m0s` |
 | `APP_INGRESS_TRUSTED_PROXY_PRESET` | [`ingress.trusted_proxy_preset`](/runtime-settings#networking) | `none` |

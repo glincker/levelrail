@@ -34,6 +34,10 @@ func (f *fakeUFW) run(_ context.Context, name string, args ...string) ([]byte, e
 		}
 		return []byte("Status: inactive\n"), nil
 	}
+	if name != "ufw" {
+		// hostfw.Detect read-only probes of other backends.
+		return nil, nil
+	}
 	f.calls = append(f.calls, call)
 	if f.failOn != "" && strings.Contains(call, f.failOn) {
 		return []byte("boom"), errors.New("exit status 1")
@@ -198,10 +202,10 @@ func TestHostFirewallStatus_ListsUDPPublishedPorts(t *testing.T) {
 		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
 	}
 	want := []hostFirewallPublishedPort{
-		{Port: 8080, Protocol: "tcp", App: "dns", Service: "dns-server", BindAddress: bindaddr.Public, Allowed: true},
-		{Port: 53, Protocol: "udp", App: "dns", Service: "dns-server", BindAddress: bindaddr.Public, Allowed: true},
-		{Port: 51820, Protocol: "udp", App: "dns", Service: "dns-server", BindAddress: bindaddr.Public, Allowed: false},
-		{Port: 5353, Protocol: "udp", App: "local", Service: "local", BindAddress: bindaddr.Private, Allowed: false},
+		{Port: 8080, Protocol: "tcp", App: "dns", Service: "dns-server", BindAddress: bindaddr.Public, Allowed: true, Filtered: true},
+		{Port: 53, Protocol: "udp", App: "dns", Service: "dns-server", BindAddress: bindaddr.Public, Allowed: true, Filtered: true},
+		{Port: 51820, Protocol: "udp", App: "dns", Service: "dns-server", BindAddress: bindaddr.Public, Allowed: false, Filtered: true},
+		{Port: 5353, Protocol: "udp", App: "local", Service: "local", BindAddress: bindaddr.Private, Allowed: false, Filtered: true},
 	}
 	for _, w := range want {
 		if !slices.Contains(res.PublishedPorts, w) {
@@ -227,5 +231,45 @@ func TestUFWAllowed(t *testing.T) {
 		if got := ufwAllowed(text, c.port, c.proto); got != c.want {
 			t.Errorf("ufwAllowed(%d/%s) = %v, want %v", c.port, c.proto, got, c.want)
 		}
+	}
+}
+
+func TestHostFirewallStatus_NoFilterIsNotAllowed(t *testing.T) {
+	f := &fakeUFW{}
+	db := openTestDB(t)
+	rt := NewRouter(discardLogger(), testBrand(), db,
+		WithHostFirewallRunner(f.run, f.lookPath))
+	if err := db.SaveDesiredService(t.Context(), store.DesiredService{Name: "web", Image: "img", Port: 80, BindAddress: bindaddr.Public, PublishedPorts: []store.PublishedPort{{ContainerPort: 25, HostPort: 25, Protocol: "tcp"}}}); err != nil {
+		t.Fatal(err)
+	}
+	res := rt.hostFirewallStatus(t.Context())
+	if res.Backend != "none" || res.Managed || res.Active {
+		t.Errorf("backend=%q managed=%v active=%v, want none/false/false", res.Backend, res.Managed, res.Active)
+	}
+	if len(res.Required) == 0 || len(res.PublishedPorts) != 1 {
+		t.Fatalf("required=%v published=%v, want both lists kept", res.Required, res.PublishedPorts)
+	}
+	if p := res.PublishedPorts[0]; p.Allowed || p.Filtered {
+		t.Errorf("published port %+v, want allowed=false filtered=false", p)
+	}
+}
+
+func TestHostFirewallStatus_OtherBackendIsReadOnly(t *testing.T) {
+	look := func(n string) (string, error) {
+		if n == "firewall-cmd" {
+			return "/usr/bin/firewall-cmd", nil
+		}
+		return "", errors.New("not found")
+	}
+	run := func(_ context.Context, _ string, args ...string) ([]byte, error) {
+		if len(args) > 0 && args[0] == "--state" {
+			return []byte("running\n"), nil
+		}
+		return []byte(""), nil
+	}
+	rt := NewRouter(discardLogger(), testBrand(), openTestDB(t), WithHostFirewallRunner(run, look))
+	res := rt.hostFirewallStatus(t.Context())
+	if res.Backend != "firewalld" || res.Managed || res.Installed || !res.Active {
+		t.Errorf("backend=%q managed=%v installed=%v active=%v", res.Backend, res.Managed, res.Installed, res.Active)
 	}
 }

@@ -356,6 +356,8 @@ type RoutesOptions struct {
 	// served while public ACME issuance fails lives, so the public CA is
 	// retried on that cadence. Empty keeps Caddy's default (12h).
 	FallbackCertLifetime string
+	// LazyCertHosts get their certificate on the first TLS handshake instead of when the config loads.
+	LazyCertHosts []string
 	// PlainHTTP serves the same routes over unencrypted HTTP on HTTPPort,
 	// for a proxy in front that terminates TLS and dials this port.
 	PlainHTTP bool
@@ -817,6 +819,8 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 			cfg.Apps.TLS = internalIssuerTLSApp(allHosts)
 			cfg.Apps.PKI = newInternalPKIApp()
 		}
+
+		deferHostCerts(cfg.Apps.TLS, opts.LazyCertHosts)
 
 		if opts.Inherited.Active() {
 			disableHTTPChallenge(cfg.Apps.TLS)

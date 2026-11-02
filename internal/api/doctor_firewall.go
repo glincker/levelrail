@@ -5,6 +5,8 @@ import (
 	"errors"
 	"os/exec"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/hostfw"
 )
 
 // doctorCheckFirewallCtx wraps doctorCheckFirewall with the real
@@ -166,6 +168,10 @@ func doctorCheckFirewalld(ctx context.Context, lookPath func(string) (string, er
 	return doctorCheckResource{Code: "firewall", Name: name, Status: doctorStatusOK, Message: "running, http and https services open"}, true
 }
 
+// doctorNoInboundFilterMsg is shared by the nft and iptables checks: published
+// ports on this host are reachable unless a provider firewall filters them.
+const doctorNoInboundFilterMsg = "INPUT accepts everything: nothing on this host filters inbound traffic, so published ports are reachable unless your provider filters them"
+
 func doctorCheckNftables(ctx context.Context, lookPath func(string) (string, error), run firewallCommandRunner) (doctorCheckResource, bool) {
 	const name = "Firewall (nftables)"
 	if _, err := lookPath("nft"); err != nil {
@@ -185,8 +191,15 @@ func doctorCheckNftables(ctx context.Context, lookPath func(string) (string, err
 			Message: "nftables installed but no rules are loaded", Fix: fix, DocsPath: doctorFirewallDocsPath,
 		}, true
 	}
+	// Docker's own NAT rules mention 80/443, so only an input hook that drops counts as a filter.
+	if !hostfw.NftInputFiltered(text) {
+		return doctorCheckResource{
+			Code: "firewall", Name: name, Status: doctorStatusWarn,
+			Message: doctorNoInboundFilterMsg, Fix: fix, DocsPath: doctorFirewallDocsPath,
+		}, true
+	}
 	if strings.Contains(text, "80") && strings.Contains(text, "443") {
-		return doctorCheckResource{Code: "firewall", Name: name, Status: doctorStatusOK, Message: "rules loaded, ports 80/443 referenced in the ruleset"}, true
+		return doctorCheckResource{Code: "firewall", Name: name, Status: doctorStatusOK, Message: "input chain filters, ports 80/443 referenced in the ruleset"}, true
 	}
 	return doctorCheckResource{
 		Code: "firewall", Name: name, Status: doctorStatusWarn,
@@ -206,6 +219,14 @@ func doctorCheckIptables(ctx context.Context, lookPath func(string) (string, err
 	}
 
 	text := string(out)
+	if !hostfw.IptablesInputFiltered(text) {
+		return doctorCheckResource{
+			Code: "firewall", Name: name, Status: doctorStatusWarn,
+			Message:  doctorNoInboundFilterMsg,
+			Fix:      "allow SSH, 80 and 443 with iptables -A INPUT, then sudo iptables -P INPUT DROP (persist with iptables-persistent or your distribution's equivalent)",
+			DocsPath: doctorFirewallDocsPath,
+		}, true
+	}
 	if strings.Contains(text, "--dport 80") && strings.Contains(text, "--dport 443") {
 		return doctorCheckResource{Code: "firewall", Name: name, Status: doctorStatusOK, Message: "rules present, ports 80/443 referenced"}, true
 	}

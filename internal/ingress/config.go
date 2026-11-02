@@ -462,6 +462,44 @@ type Automation struct {
 type AutomationPolicy struct {
 	Subjects []string `json:"subjects,omitempty"`
 	Issuers  []any    `json:"issuers,omitempty"`
+	// OnDemand defers issuance to the first TLS handshake for a subject. Subjects here are exact hosts, which is the allowlist.
+	OnDemand bool `json:"on_demand,omitempty"`
+}
+
+// deferHostCerts moves hosts into an on-demand policy that keeps the issuers they had, so no certificate is ordered until a handshake asks for one.
+func deferHostCerts(app *TLSApp, hosts []string) {
+	if app == nil || app.Automation == nil || len(hosts) == 0 {
+		return
+	}
+	lazy := make(map[string]bool, len(hosts))
+	for _, h := range hosts {
+		lazy[strings.ToLower(h)] = true
+	}
+	var moved []string
+	var issuers []any
+	kept := app.Automation.Policies[:0:0]
+	for _, p := range app.Automation.Policies {
+		var rest []string
+		for _, s := range p.Subjects {
+			if lazy[strings.ToLower(s)] {
+				moved = append(moved, s)
+				if issuers == nil {
+					issuers = p.Issuers
+				}
+				continue
+			}
+			rest = append(rest, s)
+		}
+		if len(rest) > 0 {
+			p.Subjects = rest
+			kept = append(kept, p)
+		}
+	}
+	if len(moved) == 0 {
+		return
+	}
+	// Caddy applies the first matching policy, so the on-demand one goes first.
+	app.Automation.Policies = append([]AutomationPolicy{{Subjects: moved, Issuers: issuers, OnDemand: true}}, kept...)
 }
 
 // InternalIssuer is Caddy's "internal" TLS issuer (tls.issuance.internal):
