@@ -265,3 +265,49 @@ func TestDeployURLCopyWakeIgnoresAutomatedTraffic(t *testing.T) {
 		t.Fatal("a browser visit must wake the copy")
 	}
 }
+
+func TestDeployURLCopyWakeWithoutFetchMetadataOverHTTPS(t *testing.T) {
+	rt, db, _ := newSafetyRouter(t, stubResolver{digest: newDigest})
+	rt.wakeToken = "tok"
+	ctx := context.Background()
+	for _, n := range []string{"web", "web-bbbbbbb"} {
+		if err := db.SaveDesiredService(ctx, store.DesiredService{Name: n, Image: "nginx:1", Port: 80, Domains: []string{n + ".example.com"}}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := db.SaveDeployURL(ctx, store.DeployURL{ServiceName: "web-bbbbbbb", AppName: "web", AttemptID: "da_2", Host: "web-bbbbbbb.example.com"}); err != nil {
+		t.Fatal(err)
+	}
+	sleepCopy := func() {
+		if err := db.SetAppSleepIdle(ctx, "web-bbbbbbb", 5, time.Now()); err != nil {
+			t.Fatal(err)
+		}
+		if err := db.UpdateServiceSuspended(ctx, "web-bbbbbbb", true); err != nil {
+			t.Fatal(err)
+		}
+		if err := db.SetAppSleeping(ctx, "web-bbbbbbb", true, time.Now()); err != nil {
+			t.Fatal(err)
+		}
+	}
+	hit := func(ua string) bool {
+		sleepCopy()
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/hooks/wake", nil)
+		req.Header.Set("X-Wake-Token", "tok")
+		req.Header.Set("X-Wake-App", "web-bbbbbbb")
+		req.Header.Set("X-Wake-Uri", "/")
+		req.Header.Set("X-Forwarded-Proto", "https")
+		req.Header.Set("Accept", "text/html,application/xhtml+xml")
+		req.Header.Set("User-Agent", ua)
+		rt.handleWakeHook(httptest.NewRecorder(), req)
+		a, _ := db.GetAppSleep(ctx, "web-bbbbbbb")
+		return !a.Sleeping
+	}
+	if !hit("Mozilla/5.0 (Macintosh) AppleWebKit/605.1.15 Version/15.6 Safari/605.1.15") {
+		t.Fatal("older Safari without Sec-Fetch-Mode over https must wake the copy")
+	}
+	for _, ua := range []string{"curl/8.4.0", "Googlebot/2.1", "Mozilla/5.0 HeadlessChrome/120.0"} {
+		if hit(ua) {
+			t.Fatalf("%q must not wake the copy", ua)
+		}
+	}
+}
