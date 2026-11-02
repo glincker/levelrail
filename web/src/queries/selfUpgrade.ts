@@ -142,11 +142,29 @@ export interface ServerReadiness {
 
 export const UPGRADE_POLL_MS = 3_000
 
+// Worker heartbeat for the running attempt, or a summary of the last
+// finished one. Every field is optional so an older server still works.
+export interface UpgradeProgress {
+  attempt_id?: string
+  step?: string
+  bytes_downloaded?: number
+  total_bytes?: number | null
+  last_progress_at?: string
+  started_at?: string
+  stalled?: boolean
+  stall_seconds?: number
+  can_cancel?: boolean
+  can_retry?: boolean
+  cancel_requested?: boolean
+  message?: string
+}
+
 export interface SelfUpgradeStatus {
   current_version: string
   running: SelfUpgradeAttempt | null
   last_finished: SelfUpgradeAttempt | null
   verified: boolean
+  progress?: UpgradeProgress | null
 }
 
 export class UpgradeRunningError extends ApiError {

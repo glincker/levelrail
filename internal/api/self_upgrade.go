@@ -92,6 +92,7 @@ var hostEnvPassthrough = []string{
 	"APP_DATA_DIR", "APP_BRAND_FILE", "APP_HTTP_ADDR", "APP_INSTALL_VERIFY",
 	"APP_UPGRADE_RESTORE_POINTS", "APP_UPGRADE_RESTORE_POINTS_MAX_MB", "APP_UPGRADE_VERIFY_WINDOW",
 	"LEVELRAIL_RELEASE_BASE_URL", "LEVELRAIL_INSECURE_MIRROR",
+	selfupgrade.EnvDownloadStall, selfupgrade.EnvDownloadDeadline, selfupgrade.EnvHeartbeat, selfupgrade.EnvOrphanAfter,
 }
 
 // systemdRunArgs builds the systemd-run argv. A transient unit starts with an
@@ -399,6 +400,7 @@ func (rt *Router) handleSelfUpgradeStart(w http.ResponseWriter, r *http.Request)
 		writeJSON(w, http.StatusConflict, map[string]any{"error": "breaking changes need acknowledgement", "missing_ack": ids})
 		return
 	}
+	rt.reapUpgrades(r.Context())
 	if id := rt.runningSelfUpgradeID(); id != "" {
 		writeJSON(w, http.StatusConflict, map[string]any{"error": "an upgrade is already running", "running_attempt_id": id})
 		return
@@ -493,9 +495,7 @@ func (rt *Router) handleSelfUpgradeAttempts(w http.ResponseWriter, r *http.Reque
 	live := map[string]selfupgrade.Attempt{}
 	if rt.dataDir != "" {
 		j := selfupgrade.NewJournal(rt.dataDir)
-		if _, err := selfupgrade.ImportJournal(r.Context(), j, rt.selfUpgrade.store); err != nil {
-			rt.logger.Warn("api: import self-upgrade journal failed", slog.String("error", err.Error()))
-		}
+		rt.reapUpgrades(r.Context())
 		if list, err := j.List(); err == nil {
 			for _, a := range list {
 				live[a.ID] = a

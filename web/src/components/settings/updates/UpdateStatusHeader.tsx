@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/components/ui/toast'
@@ -12,6 +12,21 @@ import {
   selfUpgradeStatusQueryOptions,
   type SelfUpgradeAttempt,
 } from '@/queries/selfUpgrade'
+import { ATTEMPTS_SECTION_ID } from '@/lib/updatesAnchors'
+import { deriveActions, isStalled, useLastChange } from '@/lib/upgradeControl'
+import { useNow } from '@/lib/upgradeTime'
+import { useCancelUpgrade, useRetryUpgrade } from '@/queries/upgradeControl'
+import { useRestartControlPlane } from '@/queries/systemRestart'
+import {
+  selfUpgradePlanQueryOptions,
+  UpgradeRunningError,
+  useStartSelfUpgrade,
+} from '@/queries/selfUpgrade'
+import { UpgradeConfirmDialog } from '../UpgradeConfirmDialog'
+import { UpgradeFailureNote } from './UpgradeFailureNote'
+import { RestartServerDialog } from './RestartServerDialog'
+import { UpdateActionBar } from './UpdateActionBar'
+import { UpgradeLiveProgress } from './UpgradeLiveProgress'
 import { markSeen, useSeen } from '@/lib/upgradeSeen'
 import { UpgradeResultCard } from './UpgradeResultCard'
 import { scheduleQueryOptions } from '@/queries/upgradeSchedule'
@@ -90,6 +105,81 @@ export function UpdateStatusHeader({ initial }: { initial: UpdateStatus }) {
     attempt: running,
   })
 
+  const plan = useQuery(selfUpgradePlanQueryOptions(''))
+  const start = useStartSelfUpgrade()
+  const cancel = useCancelUpgrade()
+  const retry = useRetryUpgrade()
+  const restart = useRestartControlPlane({ inlineError: true })
+  const [updateOpen, setUpdateOpen] = useState(false)
+  const [restartOpen, setRestartOpen] = useState(false)
+  const live = upgradeStatus.data?.progress ?? null
+  const runningAttempt = upgradeStatus.data?.running ?? running ?? null
+  const isRunning = runningAttempt !== null
+  const now = useNow(isRunning)
+  const lastChangeAt = useLastChange(
+    [
+      live?.bytes_downloaded ?? '',
+      runningAttempt?.current_step ?? '',
+      runningAttempt?.steps.length ?? 0,
+      runningAttempt?.log.length ?? 0,
+    ].join('|'),
+    isRunning,
+  )
+  const stalled =
+    isRunning &&
+    isStalled({
+      serverStalled: live?.stalled,
+      lastProgressAt: live?.last_progress_at,
+      lastChangeAt,
+      now,
+    })
+  const lastFinished = upgradeStatus.data?.last_finished ?? recentDone ?? null
+  const lastOutcome = lastFinished?.outcome
+  const failedNow =
+    !isRunning && (lastOutcome === 'failed' || lastOutcome === 'rolled_back')
+  const actions = deriveActions({
+    running: isRunning,
+    stalled,
+    failed: failedNow && !showCard,
+    updateAvailable: status.update_available && !edge,
+    canApply: plan.data?.can_apply === true && !preflight.data?.blocked,
+    step: runningAttempt?.current_step ?? '',
+    canCancel: live?.can_cancel,
+    canRetry: live?.can_retry,
+    cancelRequested: live?.cancel_requested,
+  })
+  const busy = cancel.isPending || retry.isPending || restart.isPending
+  const startedAtMs = Date.parse(
+    live?.started_at ?? runningAttempt?.started_at ?? '',
+  )
+  const lastProgressRaw = live?.last_progress_at
+    ? Date.parse(live.last_progress_at)
+    : 0
+  const failing = upgradeStatus.isError || upgradeStatus.failureCount > 0
+
+  const fail = (e: Error) => toast.add({ title: e.message, type: 'error' })
+  const attemptId = live?.attempt_id ?? runningAttempt?.id ?? ''
+  const retryAfterCancel = useRef(false)
+  const cancelRun = () => cancel.mutate(attemptId, { onError: fail })
+  // The server retries only a failed attempt, so a stuck run is cancelled
+  // first and retried once it has failed.
+  const retryFailedId = failedNow ? (lastFinished?.id ?? '') : ''
+  useEffect(() => {
+    if (!retryAfterCancel.current || retryFailedId === '') return
+    retryAfterCancel.current = false
+    retry.mutate(retryFailedId, { onError: fail })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [retryFailedId])
+  const onRetry = () => {
+    if (isRunning) {
+      retryAfterCancel.current = true
+      cancelRun()
+    } else if (retryFailedId !== '' && live?.can_retry !== false) {
+      retry.mutate(retryFailedId, { onError: fail })
+    } else setUpdateOpen(true)
+  }
+  const [skipBackup, setSkipBackup] = useState(false)
+
   const check = () => {
     setChecking(true)
     setManualCheckAt(Date.now())
@@ -119,7 +209,76 @@ export function UpdateStatusHeader({ initial }: { initial: UpdateStatus }) {
       errorMessage={query.error?.message}
       releaseUrl={status.release_url}
       onCheck={check}
+      hideActions
     >
+      <UpdateActionBar
+        actions={actions}
+        targetVersion={plan.data?.target_version ?? status.latest_version ?? ''}
+        checking={checking}
+        busy={busy}
+        releaseUrl={status.release_url}
+        onCheck={check}
+        onUpdate={() => setUpdateOpen(true)}
+        onCancel={cancelRun}
+        onRetry={onRetry}
+        onRestart={() => setRestartOpen(true)}
+        onViewLogs={() =>
+          document
+            .getElementById(ATTEMPTS_SECTION_ID)
+            ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      />
+      {isRunning ? (
+        <UpgradeLiveProgress
+          step={runningAttempt.current_step}
+          startedAtMs={Number.isNaN(startedAtMs) ? now : startedAtMs}
+          lastProgressMs={Math.max(lastProgressRaw, lastChangeAt)}
+          now={now}
+          downloadedBytes={live?.bytes_downloaded}
+          totalBytes={live?.total_bytes ?? undefined}
+          stalled={stalled}
+          reconnecting={failing}
+          actions={actions}
+          busy={busy}
+          onCancel={cancelRun}
+          onRetry={onRetry}
+          onRestart={() => setRestartOpen(true)}
+          onRetryNow={() => void upgradeStatus.refetch()}
+        />
+      ) : null}
+      <RestartServerDialog
+        open={restartOpen}
+        onOpenChange={setRestartOpen}
+        pending={restart.isPending}
+        error={restart.isError ? restart.error.message : undefined}
+        onConfirm={() =>
+          restart.mutate(undefined, { onSuccess: () => setRestartOpen(false) })
+        }
+      />
+      {plan.data ? (
+        <UpgradeConfirmDialog
+          open={updateOpen}
+          onOpenChange={setUpdateOpen}
+          plan={plan.data}
+          pending={start.isPending}
+          error={start.isError ? start.error.message : undefined}
+          onConfirm={(ack) =>
+            start.mutate(
+              {
+                target: plan.data.target_version,
+                ack,
+                ...(skipBackup ? { skip_backup: true } : {}),
+              },
+              {
+                onSuccess: () => setUpdateOpen(false),
+                onError: (err) => {
+                  if (err instanceof UpgradeRunningError) setUpdateOpen(false)
+                },
+              },
+            )
+          }
+        />
+      ) : null}
       {hideStepper ? null : <UpgradeStepper steps={steps} />}
       {showCard && last ? (
         <UpgradeResultCard
@@ -134,7 +293,16 @@ export function UpdateStatusHeader({ initial }: { initial: UpdateStatus }) {
         />
       ) : null}
       {showChanges ? <UpdateChanges status={status} /> : null}
-      <UpgradeNow />
+      {failedNow && !showCard && lastFinished?.failure ? (
+        <UpgradeFailureNote failure={lastFinished.failure} />
+      ) : null}
+      <UpgradeNow
+        externalActions
+        skipBackup={skipBackup}
+        onSkipBackupChange={setSkipBackup}
+        onRequestUpgrade={() => setUpdateOpen(true)}
+        stalled={stalled}
+      />
     </UpdateStatusView>
   )
 }

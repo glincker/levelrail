@@ -118,6 +118,7 @@ System endpoints for:
 | POST | /api/v1/system/proxy-integration/install | AbilityRoot | handleInstallProxy |
 | GET | /api/v1/updates/self-upgrade/status | AbilityRead | handleSelfUpgradeStatus |
 | GET | /api/v1/system/footprint | AbilityRead | handleGetIdleFootprint |
+| POST | /api/v1/updates/self-upgrade/attempts/{id}/cancel | AbilityWrite | handleSelfUpgradeAttemptCancel |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 

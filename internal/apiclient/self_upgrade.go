@@ -200,10 +200,40 @@ func (c *Client) ListSelfUpgradeAttempts(ctx context.Context) (SelfUpgradeAttemp
 
 // SelfUpgradeStatus is GET /api/v1/updates/self-upgrade/status' response.
 type SelfUpgradeStatus struct {
-	CurrentVersion string              `json:"current_version"`
-	Running        *SelfUpgradeAttempt `json:"running"`
-	LastFinished   *SelfUpgradeAttempt `json:"last_finished"`
-	Verified       bool                `json:"verified"`
+	CurrentVersion string               `json:"current_version"`
+	Running        *SelfUpgradeAttempt  `json:"running"`
+	LastFinished   *SelfUpgradeAttempt  `json:"last_finished"`
+	Verified       bool                 `json:"verified"`
+	Progress       *SelfUpgradeProgress `json:"progress"`
+}
+
+// SelfUpgradeProgress is the live progress and valid buttons of the newest attempt.
+type SelfUpgradeProgress struct {
+	AttemptID       string `json:"attempt_id"`
+	Step            string `json:"step"`
+	BytesDownloaded int64  `json:"bytes_downloaded"`
+	TotalBytes      *int64 `json:"total_bytes"`
+	LastProgressAt  string `json:"last_progress_at"`
+	StartedAt       string `json:"started_at"`
+	Stalled         bool   `json:"stalled"`
+	StallSeconds    int    `json:"stall_seconds"`
+	CanCancel       bool   `json:"can_cancel"`
+	CanRetry        bool   `json:"can_retry"`
+	CancelRequested bool   `json:"cancel_requested"`
+	Message         string `json:"message,omitempty"`
+}
+
+// SelfUpgradeCancelled is the reply of the cancel route.
+type SelfUpgradeCancelled struct {
+	Status    string `json:"status"`
+	AttemptID string `json:"attempt_id"`
+}
+
+// CancelSelfUpgradeAttempt calls POST .../self-upgrade/attempts/{id}/cancel.
+func (c *Client) CancelSelfUpgradeAttempt(ctx context.Context, id string) (SelfUpgradeCancelled, error) {
+	var out SelfUpgradeCancelled
+	err := c.do(ctx, http.MethodPost, "/api/v1/updates/self-upgrade/attempts/"+url.PathEscape(id)+"/cancel", nil, &out)
+	return out, err
 }
 
 // GetSelfUpgradeStatus calls GET /api/v1/updates/self-upgrade/status.

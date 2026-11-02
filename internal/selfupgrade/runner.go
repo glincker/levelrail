@@ -2,11 +2,14 @@ package selfupgrade
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
+	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -14,17 +17,117 @@ type runner struct {
 	d             Deps
 	a             *Attempt
 	healthTimeout time.Duration
+
+	ctx    context.Context
+	cancel context.CancelCauseFunc
+	// commitMu orders a cancel request against the first host-changing step:
+	// once committed is set the attempt can no longer be cancelled.
+	commitMu  sync.Mutex
+	committed bool
+	cur       atomic.Value
+	bytes     atomic.Int64
+	total     atomic.Int64
+	progress  atomic.Int64
+}
+
+func (r *runner) onProgress(p Progress) {
+	r.bytes.Store(p.Bytes)
+	r.total.Store(p.Total)
+	r.progress.Store(r.d.now().UnixNano())
+}
+
+// tryCancel stops the attempt unless it already started changing the host.
+func (r *runner) tryCancel() bool {
+	r.commitMu.Lock()
+	defer r.commitMu.Unlock()
+	if r.committed || r.cancel == nil {
+		return false
+	}
+	r.cancel(ErrCancelled)
+	return true
+}
+
+// commit marks the point of no return and reports a cancel that won the race.
+func (r *runner) commit() error {
+	r.commitMu.Lock()
+	defer r.commitMu.Unlock()
+	r.committed = true
+	if r.ctx != nil && context.Cause(r.ctx) != nil {
+		return context.Cause(r.ctx)
+	}
+	return nil
+}
+
+// begin wires cancellation, progress and the heartbeat to the attempt and
+// returns the context the steps must use plus a function that ends them.
+func (r *runner) begin(parent context.Context, l Limits) (context.Context, func()) {
+	ctx, cancel := context.WithCancelCause(parent)
+	r.ctx, r.cancel = ctx, cancel
+	ctx = WithProgress(ctx, r.onProgress)
+	done := make(chan struct{})
+	var wg sync.WaitGroup
+	if j := r.d.Journal; j != nil {
+		beat := func() {
+			step, _ := r.cur.Load().(string)
+			hb := Heartbeat{At: r.d.now(), Step: step, Bytes: r.bytes.Load(), Total: r.total.Load()}
+			if p := r.progress.Load(); p > 0 {
+				hb.ProgressAt = time.Unix(0, p)
+			}
+			if err := j.WriteHeartbeat(r.a.ID, hb); err != nil {
+				r.d.log().Warn("self-upgrade heartbeat write failed", slog.String("attempt", r.a.ID), slog.String("error", err.Error()))
+			}
+			if j.CancelRequested(r.a.ID) {
+				r.tryCancel()
+			}
+		}
+		beat()
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			t := time.NewTicker(max(l.Heartbeat, time.Millisecond))
+			defer t.Stop()
+			for {
+				select {
+				case <-done:
+					return
+				case <-t.C:
+					beat()
+				}
+			}
+		}()
+	}
+	return ctx, func() {
+		close(done)
+		wg.Wait()
+		cancel(nil)
+		if r.d.Journal != nil {
+			r.d.Journal.ClearSignals(r.a.ID)
+		}
+	}
 }
 
 // step runs fn, records it on the timeline and journals the attempt before
 // returning, so a crash right after leaves the journal at the right step.
 func (r *runner) step(name string, fn func() (string, error)) error {
 	start := r.d.now()
+	if !Cancellable(name) {
+		if err := r.commit(); err != nil {
+			return err
+		}
+	} else if r.ctx != nil && context.Cause(r.ctx) != nil {
+		return r.recordStep(name, start, "", context.Cause(r.ctx))
+	}
+	r.cur.Store(name)
 	r.a.Current = name
 	r.a.AddLog(start, name, "started")
 	r.save()
 	detail, err := fn()
+	return r.recordStep(name, start, detail, err)
+}
+
+func (r *runner) recordStep(name string, start time.Time, detail string, err error) error {
 	r.a.Current = ""
+	r.cur.Store("")
 	rec := StepRecord{Name: name, Status: StatusOK, Detail: detail, At: start, DurationMS: r.d.now().Sub(start).Milliseconds()}
 	if err != nil {
 		rec.Status, rec.Detail = StatusFailed, err.Error()
@@ -63,6 +166,15 @@ func (r *runner) close(outcome, step string, err error) (Attempt, error) {
 func (r *runner) finishRefused(err error) (Attempt, error) {
 	_ = os.RemoveAll(r.d.WorkDir)
 	return r.close(OutcomeRefused, r.a.lastStep(), err)
+}
+
+// refuseOrCancel closes a check failure as refused, or as failed when the
+// operator cancelled, so a cancelled attempt can be retried.
+func (r *runner) refuseOrCancel(err error) (Attempt, error) {
+	if errors.Is(err, ErrCancelled) {
+		return r.cleanFail(r.a.lastStep(), err)
+	}
+	return r.finishRefused(err)
 }
 
 // cleanFail closes an attempt that failed before the stop step: the service

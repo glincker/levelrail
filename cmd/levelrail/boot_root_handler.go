@@ -406,6 +406,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		opts = append(opts, api.WithGitHubAppManifestConfig(manifestCfg))
 	}
 	opts = append(opts, api.WithChangelog(loadChangelog(logger)), api.WithUpgradeHistory(db), api.WithSelfUpgrade(db, nil))
+	reapAbandonedUpgrades(dataDir, db, logger)
 
 	modelSvc, modelGateway, _ := modelWiring(db, secretsManager)
 	wireModelPreflight(modelSvc, client, b.ShortName, logger)

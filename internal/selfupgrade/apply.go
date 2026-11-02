@@ -62,7 +62,9 @@ type Deps struct {
 	RestoreUnit func(ctx context.Context, savedPath string) error
 	// RestoreDB puts the snapshot in place of the live database and returns
 	// where the replaced database was kept.
-	RestoreDB   func(ctx context.Context, snapshotPath string) (string, error)
+	RestoreDB func(ctx context.Context, snapshotPath string) (string, error)
+	// Limits bound progress and liveness; the zero value uses the defaults.
+	Limits      Limits
 	WriteMarker func(ctx context.Context, a Attempt) error
 	ClearMarker func()
 	Audit       func(ctx context.Context, detail string) error
@@ -99,8 +101,14 @@ func Apply(ctx context.Context, d Deps, req Request) (Attempt, error) {
 		Outcome: OutcomeRunning, Acked: req.Acked, FromSchema: -1, ToSchema: -1, StartedAt: d.now(), Steps: []StepRecord{},
 	}
 	r := &runner{d: d, a: &a, healthTimeout: req.HealthTimeout}
+	limits := d.Limits
+	if limits.Heartbeat <= 0 {
+		limits = DefaultLimits()
+	}
+	ctx, endRun := r.begin(ctx, limits)
+	defer endRun()
 	if err := r.step(StepGuard, func() (string, error) { return guard(req) }); err != nil {
-		return r.finishRefused(err)
+		return r.refuseOrCancel(err)
 	}
 	if schema, err := d.DBSchema(ctx); err == nil {
 		a.FromSchema = schema
@@ -117,12 +125,12 @@ func Apply(ctx context.Context, d Deps, req Request) (Attempt, error) {
 	if err := r.step(StepChecksum, func() (string, error) {
 		return "sha256 matches checksums.txt", VerifyChecksum(fetched.BinaryPath, fetched.ChecksumsPath, d.Asset)
 	}); err != nil {
-		return r.finishRefused(err)
+		return r.refuseOrCancel(err)
 	}
 	if err := r.step(StepSignature, func() (string, error) {
 		return d.VerifySig(ctx, fetched.ChecksumsPath, fetched.BundlePath)
 	}); err != nil {
-		return r.finishRefused(err)
+		return r.refuseOrCancel(err)
 	}
 	var probe ProbeInfo
 	if err := r.step(StepProbe, func() (string, error) {
@@ -140,7 +148,7 @@ func Apply(ctx context.Context, d Deps, req Request) (Attempt, error) {
 		}
 		return fmt.Sprintf("%s, schema %d", probe.Version, probe.Schema), nil
 	}); err != nil {
-		return r.finishRefused(err)
+		return r.refuseOrCancel(err)
 	}
 	var backup BackupInfo
 	if err := r.step(StepBackup, func() (string, error) {
@@ -197,7 +205,7 @@ func Apply(ctx context.Context, d Deps, req Request) (Attempt, error) {
 
 	d.audit(ctx, "self-upgrade "+a.FromVersion+" -> "+a.ToVersion+" started, backup "+backup.Name)
 	if err := r.step(StepStop, func() (string, error) { return "", d.Stop(ctx) }); err != nil {
-		_ = d.Start(ctx)
+		_ = d.Start(context.WithoutCancel(ctx))
 		return r.cleanFail(StepStop, err)
 	}
 	if err := r.step(StepSwap, func() (string, error) {

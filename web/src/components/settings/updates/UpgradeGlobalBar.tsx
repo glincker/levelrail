@@ -1,6 +1,7 @@
 import '../../../styles/upgradeMotion.css'
 import { useEffect } from 'react'
 import { Link } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
   CircleCheckGlassIcon,
@@ -14,6 +15,8 @@ import { usePrefersReducedMotion } from '../../../hooks/usePrefersReducedMotion'
 import { clearUpgrade } from '../../../lib/upgradeTracker'
 import { markSeen } from '../../../lib/upgradeSeen'
 import { formatElapsed, useNow } from '../../../lib/upgradeTime'
+import { isStalled, useLastChange } from '../../../lib/upgradeControl'
+import { selfUpgradeStatusQueryOptions } from '../../../queries/selfUpgrade'
 import { scaleClass } from './progressScale'
 
 const COLLAPSE_MS = 2_500
@@ -29,6 +32,23 @@ export function UpgradeGlobalBar() {
   const raw = s.attempt?.outcome
   const outcome = raw && raw !== 'running' ? raw : undefined
   const finished = s.state === 'finished'
+  const progress = useQuery({
+    ...selfUpgradeStatusQueryOptions(),
+    enabled: live,
+  }).data?.progress
+  const lastChangeAt = useLastChange(
+    `${progress?.bytes_downloaded ?? ''}|${s.view.currentStep}|${s.view.stepIndex}`,
+    live,
+  )
+  const stuck =
+    s.state === 'running' &&
+    isStalled({
+      serverStalled: progress?.stalled,
+      lastProgressAt: progress?.last_progress_at,
+      lastChangeAt,
+      now,
+    })
+  const cancelling = live && progress?.cancel_requested === true
 
   useEffect(() => {
     if (!finished) return
@@ -52,16 +72,20 @@ export function UpgradeGlobalBar() {
   if (s.state === 'idle') return null
   const reconnecting = s.state === 'reconnecting'
   const ok = outcome === 'succeeded'
-  const amber = finished && !ok
+  const amber = (finished && !ok) || stuck
   const percent = finished ? 100 : s.view.percent
   const step = s.view.currentStep || s.lastStep
-  const stage = reconnecting
-    ? t('pipeline.bar.reconnecting')
-    : finished
-      ? t(`progress.end.${outcome ?? 'failed'}`, { version: s.target })
-      : step
-        ? t(`selfUpgrade.step.${step}`, { defaultValue: step })
-        : t('progress.waiting')
+  const stage = cancelling
+    ? t('control.cancelling')
+    : stuck
+      ? t('control.stuckShort')
+      : reconnecting
+        ? t('pipeline.bar.reconnecting')
+        : finished
+          ? t(`progress.end.${outcome ?? 'failed'}`, { version: s.target })
+          : step
+            ? t(`selfUpgrade.step.${step}`, { defaultValue: step })
+            : t('progress.waiting')
   const begin = s.startedAt ?? now
 
   return (
@@ -84,6 +108,11 @@ export function UpgradeGlobalBar() {
               aria-hidden
             />
           )
+        ) : stuck ? (
+          <TriangleAlertGlassIcon
+            className="size-6 text-tone-warning"
+            aria-hidden
+          />
         ) : (
           <RefreshCwGlassIcon
             className={cn('size-5 text-primary', motion && 'animate-spin')}
@@ -134,12 +163,12 @@ export function UpgradeGlobalBar() {
             percent === null
               ? cn(
                   'bg-[repeating-linear-gradient(45deg,var(--primary)_0_8px,transparent_8px_14px)]',
-                  motion && 'upg-stripe',
+                  motion && !stuck && 'upg-stripe',
                 )
               : scaleClass(percent),
           )}
         />
-        {motion && live ? (
+        {motion && live && !stuck ? (
           <div className="upg-sheen absolute inset-y-0 left-0 w-1/6 bg-gradient-to-r from-transparent via-white/60 to-transparent" />
         ) : null}
         {motion && finished && ok ? (

@@ -149,7 +149,9 @@ func runSelfUpgrade(ctx context.Context, args []string, dataDir string, stdin io
 	if !f.asJSON {
 		_, _ = fmt.Fprintln(stdout, "Applying. Do not close this session: interrupts are ignored until it finishes.")
 	}
-	deps.Fetch = selfupgrade.Fetcher{BaseURL: base, AllowHTTP: os.Getenv(envInsecureMirror) == "1"}.Fetch
+	limits := selfupgrade.LimitsFromEnv(os.Getenv)
+	deps.Limits = limits
+	deps.Fetch = selfupgrade.Fetcher{BaseURL: base, AllowHTTP: os.Getenv(envInsecureMirror) == "1", Stall: limits.Stall, Deadline: limits.Deadline}.Fetch
 	deps.Asset = fmt.Sprintf("%s-linux-%s", name, runtime.GOARCH)
 	notice := stdout
 	if f.asJSON {

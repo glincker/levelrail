@@ -11,6 +11,7 @@ interface Props {
   index: number
   selected: boolean
   motion: boolean
+  stalled?: boolean
   panelId: string
   onSelect: () => void
 }
@@ -42,12 +43,14 @@ export function UpgradeStageNode({
   index,
   selected,
   motion,
+  stalled = false,
   panelId,
   onSelect,
 }: Props) {
   const { t } = useTranslation('updates')
   const fx = useTransitionEffect(phase.state)
-  const running = phase.state === 'running'
+  // A stalled run must not keep animating as if it were progressing.
+  const running = phase.state === 'running' && !stalled
   const label = t(`pipeline.phase.${phase.id}`)
   const status = t(`pipeline.state.${phase.state}`)
   return (
