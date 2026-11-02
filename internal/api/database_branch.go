@@ -107,7 +107,7 @@ func (rt *Router) handleBranchDatabase(w http.ResponseWriter, r *http.Request) {
 	if projectID == "" {
 		projectID = sourceDB.ProjectID
 	}
-	if !rt.createDesiredDatabase(w, r, databaseResource{Name: req.Name, Engine: sourceDB.Engine, Version: sourceDB.Version, ProjectID: projectID}) {
+	if !rt.createDesiredDatabase(w, r, databaseResource{Name: req.Name, Engine: sourceDB.Engine, Version: sourceDB.Version, ProjectID: projectID, Resources: copyResources(sourceDB.Resources)}) {
 		return
 	}
 	if !rt.finishBranchSetup(w, r, sourceDB, req.Name) {
@@ -150,6 +150,9 @@ func (rt *Router) prepareBranchFromBackup(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusConflict, fmt.Sprintf("backup %q has status %q, only a succeeded backup can be branched from", req.BackupID, b.Status))
 		return false
 	}
+	if refuseForeignBackup(w, sourceDB, b.ID, b.InstanceID, b.StartedAt) {
+		return false
+	}
 	return true
 }
 
@@ -186,7 +189,7 @@ func (rt *Router) prepareBranchAtTime(w http.ResponseWriter, r *http.Request, so
 	var bestAt time.Time
 	for _, b := range bases {
 		finished, perr := time.Parse(time.RFC3339, b.FinishedAt)
-		if b.Status != store.BackupStatusSucceeded || perr != nil || finished.After(target) {
+		if b.Status != store.BackupStatusSucceeded || perr != nil || finished.After(target) || !sourceDB.OwnsBackup(b.InstanceID, b.StartedAt) {
 			continue
 		}
 		if best.ID == "" || finished.After(bestAt) {
@@ -200,21 +203,13 @@ func (rt *Router) prepareBranchAtTime(w http.ResponseWriter, r *http.Request, so
 	return target, best.ID, true
 }
 
-// finishBranchSetup copies the source's size preset and keeps the pooler off: a
-// branch starts with no pooler until someone enables it.
+// finishBranchSetup keeps the pooler off: a branch starts with no pooler until
+// someone enables it. The size preset is copied at create so quota covers it.
 func (rt *Router) finishBranchSetup(w http.ResponseWriter, r *http.Request, sourceDB *store.DesiredDatabase, name string) bool {
 	desired, err := rt.databases.GetDesiredDatabase(r.Context(), name)
 	if err != nil {
 		rt.internalError(w, "api: branch database: reload new database failed", err, slog.String("name", name))
 		return false
-	}
-	if sourceDB.Resources != nil {
-		res := *sourceDB.Resources
-		desired.Resources = &res
-		if err := rt.databases.SaveDesiredDatabase(r.Context(), *desired); err != nil {
-			rt.internalError(w, "api: branch database: set resources failed", err, slog.String("name", name))
-			return false
-		}
 	}
 	if ps, ok := rt.databases.(databasePoolerStore); ok && desired.PoolerEnabled {
 		if err := ps.SetDatabasePooler(r.Context(), name, false); err != nil {
@@ -222,4 +217,13 @@ func (rt *Router) finishBranchSetup(w http.ResponseWriter, r *http.Request, sour
 		}
 	}
 	return true
+}
+
+// copyResources returns an independent copy so the new database never aliases the source's.
+func copyResources(r *store.ServiceResources) *store.ServiceResources {
+	if r == nil {
+		return nil
+	}
+	c := *r
+	return &c
 }

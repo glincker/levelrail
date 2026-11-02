@@ -421,6 +421,14 @@
           "description": "Give each preview an isolated credential on this database (Postgres and Redis).",
           "type": "boolean"
         },
+        "seedFrom": {
+          "default": "none",
+          "description": "Start an ephemeral preview instance from the latest succeeded backup (latest) or empty (none). Used with ephemeralInPreviews.",
+          "enum": [
+            "latest",
+            "none"
+          ]
+        },
         "version": {
           "description": "Engine version.",
           "minLength": 1,

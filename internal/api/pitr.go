@@ -468,6 +468,9 @@ func (rt *Router) handleTriggerPITRRestore(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusBadRequest, "base_backup_id is required")
 		return
 	}
+	if rt.refuseForeignBaseBackup(w, r, db, req.BaseBackupID) {
+		return
+	}
 	target, err := time.Parse(time.RFC3339, req.TargetTime)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "target_time must be an RFC3339 timestamp")

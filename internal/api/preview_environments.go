@@ -188,8 +188,10 @@ func (rt *Router) deployPreviewEnvironmentInner(ctx context.Context, appName str
 		return http.StatusInternalServerError, "deploy failed\n"
 	}
 
+	var seedNotes []string
 	if len(gs.Databases) > 0 && !static {
-		provisioned := rt.provisionEphemeralDatabases(ctx, preview.ID, previewName, gs.Databases)
+		var provisioned []store.PreviewEphemeralDatabase
+		provisioned, seedNotes = rt.provisionEphemeralDatabases(ctx, preview.ID, previewName, gs.Databases)
 		if len(gs.Services) == 0 && len(provisioned) == 1 {
 			rt.attachEphemeralDatabase(ctx, previewName, provisioned[0])
 		}
@@ -220,6 +222,7 @@ func (rt *Router) deployPreviewEnvironmentInner(ctx context.Context, appName str
 		notes = rt.finishStaticPreviewExposure(ctx, appName, previewName, usedDomain, policy)
 	} else {
 		notes = rt.finishPreviewExposure(ctx, appName, previewName, usedDomain, policy)
+		notes = append(notes, seedNotes...)
 		notes = append(notes, rt.applyPreviewDatabaseStrategy(ctx, preview, appName, previewName, gs, policy)...)
 	}
 

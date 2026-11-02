@@ -308,7 +308,11 @@ func (rt *Router) createDesiredDatabase(w http.ResponseWriter, r *http.Request, 
 	}
 	defer quotaRelease()
 
-	if err := rt.databases.SaveDesiredDatabase(r.Context(), req.toDesiredDatabase()); err != nil {
+	if err := rt.insertDesiredDatabase(r.Context(), req.toDesiredDatabase()); err != nil {
+		if errors.Is(err, store.ErrDatabaseExists) {
+			writeError(w, http.StatusConflict, "a database with this name already exists")
+			return false
+		}
 		rt.logger.Error("api: create database failed", slog.String("error", err.Error()), slog.String("name", req.Name))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return false
@@ -343,6 +347,18 @@ func (rt *Router) createDesiredDatabase(w http.ResponseWriter, r *http.Request, 
 	}
 	rt.beginProvision(r.Context(), req.Name)
 	return true
+}
+
+// databaseCreator is the atomic insert the real store offers; stores without it fall back to a plain save.
+type databaseCreator interface {
+	CreateDesiredDatabase(ctx context.Context, d store.DesiredDatabase) error
+}
+
+func (rt *Router) insertDesiredDatabase(ctx context.Context, d store.DesiredDatabase) error {
+	if c, ok := rt.databases.(databaseCreator); ok {
+		return c.CreateDesiredDatabase(ctx, d)
+	}
+	return rt.databases.SaveDesiredDatabase(ctx, d)
 }
 
 // handleCreateDatabase rejects an existing name and treats an explicit node_id as a placement override.

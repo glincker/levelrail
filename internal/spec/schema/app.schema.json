@@ -528,7 +528,8 @@
         "version": { "description": "Engine version.", "type": "string", "minLength": 1 },
         "backup": { "description": "Backup schedule.", "$ref": "#/$defs/backup" },
         "ephemeralInPreviews": { "description": "Give each preview its own disposable instance.", "default": false, "type": "boolean" },
-        "isolatedInPreviews": { "description": "Give each preview an isolated credential on this database (Postgres and Redis).", "default": false, "type": "boolean" }
+        "isolatedInPreviews": { "description": "Give each preview an isolated credential on this database (Postgres and Redis).", "default": false, "type": "boolean" },
+        "seedFrom": { "description": "Start an ephemeral preview instance from the latest succeeded backup (latest) or empty (none). Used with ephemeralInPreviews.", "default": "none", "enum": ["latest", "none"] }
       }
     },
     "backup": {

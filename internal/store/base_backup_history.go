@@ -28,6 +28,8 @@ type BaseBackupHistory struct {
 	Error        string
 	StartedAt    string
 	FinishedAt   string
+	// InstanceID is the database instance that took the backup, empty for rows from before it was recorded.
+	InstanceID string
 }
 
 // StartBaseBackupHistory records a base backup attempt beginning, status
@@ -36,9 +38,9 @@ type BaseBackupHistory struct {
 // logical dumps.
 func (db *DB) StartBaseBackupHistory(ctx context.Context, h BaseBackupHistory) error {
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO base_backup_history (id, database_name, target_id, object_key, size_bytes, status, error, started_at, finished_at)
-		VALUES (?, ?, ?, ?, 0, ?, '', ?, '')
-	`, h.ID, h.DatabaseName, h.TargetID, h.ObjectKey, BackupStatusRunning, h.StartedAt)
+		INSERT INTO base_backup_history (id, database_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, instance_id)
+		VALUES (?, ?, ?, ?, 0, ?, '', ?, '', COALESCE((SELECT instance_id FROM desired_databases WHERE name = ?), ''))
+	`, h.ID, h.DatabaseName, h.TargetID, h.ObjectKey, BackupStatusRunning, h.StartedAt, h.DatabaseName)
 	if err != nil {
 		return fmt.Errorf("store: start base backup history %q: %w", h.ID, err)
 	}
@@ -165,13 +167,13 @@ func (db *DB) GetLatestBaseBackupBefore(ctx context.Context, databaseName string
 	return h, true, nil
 }
 
-const baseBackupHistoryColumns = "id, database_name, target_id, object_key, lsn, size_bytes, status, error, started_at, finished_at"
+const baseBackupHistoryColumns = "id, database_name, target_id, object_key, lsn, size_bytes, status, error, started_at, finished_at, instance_id"
 
 // baseBackupHistoryScanArgs returns Scan destinations matching
 // baseBackupHistoryColumns' order exactly, shared by every query above so
 // that column list and scan order can never drift apart silently.
 func baseBackupHistoryScanArgs(h *BaseBackupHistory) []any {
-	return []any{&h.ID, &h.DatabaseName, &h.TargetID, &h.ObjectKey, &h.LSN, &h.SizeBytes, &h.Status, &h.Error, &h.StartedAt, &h.FinishedAt}
+	return []any{&h.ID, &h.DatabaseName, &h.TargetID, &h.ObjectKey, &h.LSN, &h.SizeBytes, &h.Status, &h.Error, &h.StartedAt, &h.FinishedAt, &h.InstanceID}
 }
 
 // DeleteBaseBackupHistory removes one base backup row, used after its

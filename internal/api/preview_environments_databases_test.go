@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -282,5 +283,113 @@ func TestTeardownPreviewEphemeralDatabase_HalfSucceeded_ThenRetrySucceeds(t *tes
 	}
 	if _, err := db.GetPreviewEphemeralDatabaseByPreviewAndKey(context.Background(), preview.ID, "main"); !errors.Is(err, store.ErrPreviewEphemeralDatabaseNotFound) {
 		t.Errorf("GetPreviewEphemeralDatabaseByPreviewAndKey() after retry error = %v, want ErrPreviewEphemeralDatabaseNotFound", err)
+	}
+}
+
+func setUpSeedFromPreview(t *testing.T, seedFrom string, withBackup bool) (*Router, *store.DB, string, *fakeCloneRestoreRunner) {
+	t.Helper()
+	rt, db, secret, _ := setUpPreviewApp(t)
+	ctx := context.Background()
+	cookie := loginTestSession(t, rt, db)
+	body := `{"repo_url":"https://github.com/org/web.git","branch":"main","databases":{"main":{"engine":"postgres","version":"16","ephemeralInPreviews":true,"seedFrom":"` + seedFrom + `"}}}`
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/web/git-source", body))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("connect git source: status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	if err := db.SaveDesiredDatabase(ctx, store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16"}); err != nil {
+		t.Fatalf("seed parent: %v", err)
+	}
+	if err := db.SaveServiceDEK(ctx, "main", []byte("dek")); err != nil {
+		t.Fatalf("seed parent dek: %v", err)
+	}
+	if err := db.SaveSecretValue(ctx, "main", "postgres_password", []byte("parent-secret")); err != nil {
+		t.Fatalf("seed parent secret: %v", err)
+	}
+	if withBackup {
+		seedSucceededBackupForCloneRestore(t, db, "main")
+	}
+	runner := newFakeCloneRestoreRunner()
+	rt.cloneRestoreRunner = runner
+	rt.execRuntime = func(string) (docker.Runtime, error) { return newFakePreviewDBRuntime(), nil }
+	return rt, db, secret, runner
+}
+
+func previewReason(t *testing.T, db *store.DB) string {
+	t.Helper()
+	p, err := db.GetPreviewEnvironmentByAppAndPR(context.Background(), "web", 42)
+	if err != nil {
+		t.Fatalf("GetPreviewEnvironmentByAppAndPR() error = %v", err)
+	}
+	return p.StatusReason
+}
+
+func TestSeedFromLatest_RestoresParentBackupWithoutCopyingSecrets(t *testing.T) {
+	rt, db, secret, runner := setUpSeedFromPreview(t, "latest", true)
+	rec := sendPullRequestWebhook(rt, secret, githubPullRequestBody("opened", 42, "sha1", "main"))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	call := runner.awaitCall(t)
+	if call.sourceDatabaseName != "main" || call.newDatabaseName != "web-pr-42-db-main" || call.backupHistoryID != "bkh_1" || call.engine != store.EnginePostgres {
+		t.Errorf("restore call = %+v", call)
+	}
+	if has, _ := db.HasSecretValue(context.Background(), "web-pr-42-db-main", "postgres_password"); has {
+		t.Error("preview database carries a copied secret, want it generated at provision")
+	}
+	if got := previewReason(t, db); !strings.Contains(got, "seeding web-pr-42-db-main from the latest backup of main") {
+		t.Errorf("status reason = %q", got)
+	}
+
+	// A synchronize push must not restore over a database that already has data.
+	sendPullRequestWebhook(rt, secret, githubPullRequestBody("synchronize", 42, "sha2", "main"))
+	select {
+	case c := <-runner.calls:
+		t.Errorf("redeploy restored again: %+v", c)
+	case <-time.After(200 * time.Millisecond):
+	}
+}
+
+func TestSeedFromLatest_NoBackupFallsBackToEmpty(t *testing.T) {
+	rt, db, secret, runner := setUpSeedFromPreview(t, "latest", false)
+	sendPullRequestWebhook(rt, secret, githubPullRequestBody("opened", 42, "sha1", "main"))
+	if _, err := db.GetDesiredDatabase(context.Background(), "web-pr-42-db-main"); err != nil {
+		t.Fatalf("preview database missing: %v", err)
+	}
+	if got := previewReason(t, db); !strings.Contains(got, "no succeeded backup of main exists, the preview database is empty") {
+		t.Errorf("status reason = %q", got)
+	}
+	select {
+	case c := <-runner.calls:
+		t.Errorf("restore started without a backup: %+v", c)
+	default:
+	}
+}
+
+func TestSeedFromNone_StartsEmpty(t *testing.T) {
+	rt, db, secret, runner := setUpSeedFromPreview(t, "none", true)
+	sendPullRequestWebhook(rt, secret, githubPullRequestBody("opened", 42, "sha1", "main"))
+	select {
+	case c := <-runner.calls:
+		t.Errorf("seedFrom none restored: %+v", c)
+	case <-time.After(200 * time.Millisecond):
+	}
+	if got := previewReason(t, db); strings.Contains(got, "seed") {
+		t.Errorf("status reason = %q, want no seed note", got)
+	}
+}
+
+func TestSeedFromLatest_LowDiskFallsBackToEmpty(t *testing.T) {
+	t.Setenv("APP_DATA_DIR", t.TempDir())
+	t.Setenv("APP_MIN_BACKUP_DISK_MB", "999999999")
+	rt, db, secret, runner := setUpSeedFromPreview(t, "latest", true)
+	sendPullRequestWebhook(rt, secret, githubPullRequestBody("opened", 42, "sha1", "main"))
+	select {
+	case c := <-runner.calls:
+		t.Errorf("restore started on a full disk: %+v", c)
+	case <-time.After(200 * time.Millisecond):
+	}
+	if got := previewReason(t, db); !strings.Contains(got, "not enough free disk") {
+		t.Errorf("status reason = %q", got)
 	}
 }

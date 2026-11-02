@@ -69,6 +69,9 @@ func (s *Spec) Validate() error {
 		if !supportedSpecEngines[db.Engine] {
 			return fmt.Errorf("spec: database %q: engine %q is not supported (supports %s)", name, db.Engine, supportedSpecEngineList())
 		}
+		if db.SeedFrom != "" && db.SeedFrom != SeedFromNone && db.SeedFrom != SeedFromLatest {
+			return fmt.Errorf("spec: database %q: seedFrom %q is not one of %s, %s", name, db.SeedFrom, SeedFromLatest, SeedFromNone)
+		}
 		if db.Engine == EngineMemcached && db.Backup != nil {
 			return fmt.Errorf("spec: database %q: memcached keeps no data on disk, so it cannot have a backup block", name)
 		}

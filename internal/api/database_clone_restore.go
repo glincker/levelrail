@@ -145,6 +145,10 @@ func (rt *Router) handleCloneRestore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if refuseForeignBackup(w, sourceDB, backup.ID, backup.InstanceID, backup.StartedAt) {
+		return
+	}
+
 	version := req.Version
 	if version == "" {
 		// Same version as the source database today, the closest
@@ -159,30 +163,11 @@ func (rt *Router) handleCloneRestore(w http.ResponseWriter, r *http.Request) {
 		Engine:    sourceDB.Engine,
 		Version:   version,
 		ProjectID: req.ProjectID,
+		// Resources go through the create path so the quota check reserves them up front.
+		Resources: req.Resources,
 	}
 	if !rt.createDesiredDatabase(w, r, newDB) {
 		return
-	}
-
-	if req.Resources != nil {
-		// Mirrors handleSetDatabaseResources' own body (databases.go):
-		// resources are ordinary desired state but, like every other
-		// new database, aren't accepted directly by createDesiredDatabase
-		// (see databaseResource.Resources' own field doc comment), so
-		// this is the identical trailing step that endpoint would take,
-		// applied once up front instead of via a second operator call.
-		desired, err := rt.databases.GetDesiredDatabase(r.Context(), req.NewName)
-		if err != nil {
-			rt.logger.Error("api: clone restore: reload new database failed", slog.String("error", err.Error()), slog.String("name", req.NewName))
-			writeError(w, http.StatusInternalServerError, "internal error")
-			return
-		}
-		desired.Resources = req.Resources
-		if err := rt.databases.SaveDesiredDatabase(r.Context(), *desired); err != nil {
-			rt.logger.Error("api: clone restore: set new database resources failed", slog.String("error", err.Error()), slog.String("name", req.NewName))
-			writeError(w, http.StatusInternalServerError, "internal error")
-			return
-		}
 	}
 
 	historyID, err := randomCloneRestoreID()

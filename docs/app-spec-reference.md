@@ -372,6 +372,7 @@ If Vault is unreachable, not configured, or the secret/field doesn't exist, the 
 | `backup` | `Backup` | no | none | Backup schedule. |
 | `ephemeralInPreviews` | boolean | no | `false` | Provision a full, disposable database of its own for every pull-request preview, destroyed with the preview and with no restore path. Only meaningful once the app's git source has preview environments enabled; see [Git integrations](/git-integrations) and [Deploy previews](/deploy-previews). |
 | `isolatedInPreviews` | boolean | no | `false` | Give each preview its own credential on the existing database (a Postgres role or a Redis ACL user scoped to its own key prefix) instead of a new instance. Postgres and Redis only. Ignored when `ephemeralInPreviews` is also set. |
+| `seedFrom` | string | no | `none` | With `ephemeralInPreviews`, `latest` restores the newest succeeded backup of the database with the same key as the preview's starting data, with fresh credentials (the source's secrets are never copied). `none` starts empty. With no backup, no restore runner, a different engine or too little free disk, the preview database starts empty and the preview status says why. |
 
 ### `Backup`
 

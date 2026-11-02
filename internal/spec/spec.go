@@ -393,7 +393,18 @@ type Database struct {
 	// already has its own credentials. Postgres and Redis only today.
 	// Off by default.
 	IsolatedInPreviews bool `yaml:"isolatedInPreviews,omitempty"`
+	// SeedFrom picks what an ephemeral preview instance starts with:
+	// "latest" restores the newest succeeded backup of the database
+	// named by this entry's key, "none" (the default) starts empty.
+	// Only read when EphemeralInPreviews is set.
+	SeedFrom string `yaml:"seedFrom,omitempty"`
 }
+
+// Values SeedFrom accepts; empty means SeedFromNone.
+const (
+	SeedFromNone   = "none"
+	SeedFromLatest = "latest"
+)
 
 // Backup describes a database's backup schedule.
 type Backup struct {

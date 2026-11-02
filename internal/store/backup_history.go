@@ -69,6 +69,8 @@ type BackupHistory struct {
 	ManifestDigest string
 	ManifestFiles  int64
 	ManifestBytes  int64
+	// InstanceID is the database instance that took the backup, empty for rows from before it was recorded.
+	InstanceID string
 }
 
 // StartBackupHistory records a backup attempt beginning, status
@@ -84,9 +86,9 @@ func (db *DB) StartBackupHistory(ctx context.Context, h BackupHistory) error {
 		kind = BackupResourceKindDatabase
 	}
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO backup_history (id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, '', ?, '')
-	`, h.ID, h.DatabaseName, kind, h.ServiceName, h.VolumeName, h.TargetID, h.ObjectKey, BackupStatusRunning, h.StartedAt)
+		INSERT INTO backup_history (id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, instance_id)
+		VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, '', ?, '', COALESCE((SELECT instance_id FROM desired_databases WHERE name = ?), ''))
+	`, h.ID, h.DatabaseName, kind, h.ServiceName, h.VolumeName, h.TargetID, h.ObjectKey, BackupStatusRunning, h.StartedAt, h.DatabaseName)
 	if err != nil {
 		return fmt.Errorf("store: start backup history %q: %w", h.ID, err)
 	}
@@ -130,10 +132,10 @@ func (db *DB) FinishBackupHistory(ctx context.Context, id, status string, sizeBy
 func (db *DB) GetBackupHistory(ctx context.Context, id string) (BackupHistory, error) {
 	var h BackupHistory
 	err := db.QueryRowContext(ctx, `
-		SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256, codec, manifest_digest, manifest_files, manifest_bytes
+		SELECT id, database_name, resource_kind, service_name, volume_name, target_id, object_key, size_bytes, status, error, started_at, finished_at, checksum_sha256, codec, manifest_digest, manifest_files, manifest_bytes, instance_id
 		FROM backup_history
 		WHERE id = ?
-	`, id).Scan(&h.ID, &h.DatabaseName, &h.ResourceKind, &h.ServiceName, &h.VolumeName, &h.TargetID, &h.ObjectKey, &h.SizeBytes, &h.Status, &h.Error, &h.StartedAt, &h.FinishedAt, &h.ChecksumSHA256, &h.Codec, &h.ManifestDigest, &h.ManifestFiles, &h.ManifestBytes)
+	`, id).Scan(&h.ID, &h.DatabaseName, &h.ResourceKind, &h.ServiceName, &h.VolumeName, &h.TargetID, &h.ObjectKey, &h.SizeBytes, &h.Status, &h.Error, &h.StartedAt, &h.FinishedAt, &h.ChecksumSHA256, &h.Codec, &h.ManifestDigest, &h.ManifestFiles, &h.ManifestBytes, &h.InstanceID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return BackupHistory{}, ErrBackupHistoryNotFound
 	}

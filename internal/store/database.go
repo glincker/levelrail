@@ -2,10 +2,13 @@ package store
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 )
 
 // Supported managed database engines. internal/spec's own engine list
@@ -62,6 +65,11 @@ type DesiredDatabase struct {
 	Name    string
 	Engine  string
 	Version string
+	// InstanceID and CreatedAt identify this incarnation of the name, so a
+	// later database reusing the name cannot restore this one's backups.
+	// Set once on insert and never changed by SaveDesiredDatabase.
+	InstanceID string
+	CreatedAt  string
 	// NodeID: see DesiredService.NodeID's own doc comment, identical
 	// meaning and identical "SaveDesiredDatabase never writes it, only
 	// UpdateDatabaseNode does" exception below.
@@ -193,21 +201,78 @@ func (db *DB) SaveDesiredDatabase(ctx context.Context, d DesiredDatabase) error 
 	if err != nil {
 		return fmt.Errorf("store: marshal resources for database %q: %w", d.Name, err)
 	}
+	instanceID, err := newDatabaseInstanceID()
+	if err != nil {
+		return fmt.Errorf("store: save desired database %q: %w", d.Name, err)
+	}
 
 	_, err = db.ExecContext(ctx, `
-		INSERT INTO desired_databases (name, engine, version, resources, node_id, project_id, existing_volume, volume_resolved, updated_at)
-		VALUES (?, ?, ?, ?, '', NULL, ?, 0, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		INSERT INTO desired_databases (name, engine, version, resources, node_id, project_id, existing_volume, volume_resolved, instance_id, created_at, updated_at)
+		VALUES (?, ?, ?, ?, '', NULL, ?, 0, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (name) DO UPDATE SET
 			engine = excluded.engine,
 			version = excluded.version,
 			resources = excluded.resources,
 			existing_volume = CASE WHEN excluded.existing_volume <> '' THEN excluded.existing_volume ELSE desired_databases.existing_volume END,
 			updated_at = excluded.updated_at
-	`, d.Name, d.Engine, d.Version, string(resourcesJSON), d.ExistingVolume)
+	`, d.Name, d.Engine, d.Version, string(resourcesJSON), d.ExistingVolume, instanceID)
 	if err != nil {
 		return fmt.Errorf("store: save desired database %q: %w", d.Name, err)
 	}
 	return nil
+}
+
+// ErrDatabaseExists is returned by CreateDesiredDatabase when the name is taken.
+var ErrDatabaseExists = errors.New("store: database already exists")
+
+// CreateDesiredDatabase inserts a new database and fails with ErrDatabaseExists
+// if the name is taken, so two concurrent creates cannot both win.
+func (db *DB) CreateDesiredDatabase(ctx context.Context, d DesiredDatabase) error {
+	resourcesJSON, err := json.Marshal(d.Resources)
+	if err != nil {
+		return fmt.Errorf("store: marshal resources for database %q: %w", d.Name, err)
+	}
+	instanceID, err := newDatabaseInstanceID()
+	if err != nil {
+		return fmt.Errorf("store: create desired database %q: %w", d.Name, err)
+	}
+	res, err := db.ExecContext(ctx, `
+		INSERT INTO desired_databases (name, engine, version, resources, node_id, project_id, existing_volume, volume_resolved, instance_id, created_at, updated_at)
+		VALUES (?, ?, ?, ?, '', NULL, ?, 0, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		ON CONFLICT (name) DO NOTHING
+	`, d.Name, d.Engine, d.Version, string(resourcesJSON), d.ExistingVolume, instanceID)
+	if err != nil {
+		return fmt.Errorf("store: create desired database %q: %w", d.Name, err)
+	}
+	if n, err := res.RowsAffected(); err == nil && n == 0 {
+		return ErrDatabaseExists
+	}
+	return nil
+}
+
+func newDatabaseInstanceID() (string, error) {
+	b := make([]byte, 8)
+	if _, err := rand.Read(b); err != nil {
+		return "", fmt.Errorf("generate instance id: %w", err)
+	}
+	return hex.EncodeToString(b), nil
+}
+
+// OwnsBackup reports whether a backup row belongs to this database instance.
+// A row stamped with an instance id must match it. A row from before instance
+// ids existed has none, so it matches only when the database was created at or before
+// the backup started (a backup cannot predate its database); unparsable times
+// are refused.
+func (d DesiredDatabase) OwnsBackup(instanceID, startedAt string) bool {
+	if instanceID != "" {
+		return d.InstanceID != "" && instanceID == d.InstanceID
+	}
+	created, err1 := time.Parse(time.RFC3339, d.CreatedAt)
+	started, err2 := time.Parse(time.RFC3339, startedAt)
+	if err1 != nil || err2 != nil {
+		return false
+	}
+	return !started.Before(created)
 }
 
 // UpdateDatabaseNode is DesiredDatabase's counterpart to
@@ -706,7 +771,7 @@ func (db *DB) ListScheduledDatabases(ctx context.Context) ([]DesiredDatabase, er
 // ListDesiredDatabasesByNode, ListDesiredDatabasesByProject,
 // ListScheduledDatabases), the database-kind counterpart to
 // desiredServiceColumns in service.go.
-const desiredDatabaseColumns = "name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, public_bind_address, resources, suspended, pitr_enabled, pitr_enabled_at, existing_volume, volume_resolved, pooler_enabled, pooler_pool_size, pooler_max_client_conn, base_backup_schedule, base_backup_target_id"
+const desiredDatabaseColumns = "name, engine, version, instance_id, created_at, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, public_bind_address, resources, suspended, pitr_enabled, pitr_enabled_at, existing_volume, volume_resolved, pooler_enabled, pooler_pool_size, pooler_max_client_conn, base_backup_schedule, base_backup_target_id"
 
 // scanDesiredDatabase reads the column shape desiredDatabaseColumns
 // selects, via either row.Scan or rows.Scan (same signature), so the
@@ -724,7 +789,7 @@ func scanDesiredDatabase(scan func(dest ...any) error) (*DesiredDatabase, error)
 		suspended                 bool
 		pitrEnabled               bool
 	)
-	if err := scan(&d.Name, &d.Engine, &d.Version, &d.NodeID, &projectID, &backupTargetID, &d.BackupSchedule, &d.BackupRetain, &d.BackupRetainDays, &publiclyAccessible, &publicPort, &publicBindAddress, &resourcesJSON, &suspended, &pitrEnabled, &d.PITREnabledAt, &d.ExistingVolume, &d.VolumeResolved, &d.PoolerEnabled, &d.PoolerPoolSize, &d.PoolerMaxClientConn, &d.BaseBackupSchedule, &d.BaseBackupTargetID); err != nil {
+	if err := scan(&d.Name, &d.Engine, &d.Version, &d.InstanceID, &d.CreatedAt, &d.NodeID, &projectID, &backupTargetID, &d.BackupSchedule, &d.BackupRetain, &d.BackupRetainDays, &publiclyAccessible, &publicPort, &publicBindAddress, &resourcesJSON, &suspended, &pitrEnabled, &d.PITREnabledAt, &d.ExistingVolume, &d.VolumeResolved, &d.PoolerEnabled, &d.PoolerPoolSize, &d.PoolerMaxClientConn, &d.BaseBackupSchedule, &d.BaseBackupTargetID); err != nil {
 		return nil, err
 	}
 	d.Suspended = suspended
