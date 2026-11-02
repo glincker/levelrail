@@ -58,6 +58,7 @@ var Tree = map[string]*Node{
 		"abuse":                   {Subs: map[string]*Node{"get": nil, "set": nil, "dry-run": nil}},
 		"access":                  nil,
 		"urls":                    nil,
+		"game-status":             nil,
 		"tree":                    nil,
 		"traces":                  {Subs: map[string]*Node{"list": nil, "get": nil}},
 		"log-budget":              {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil, "trim": nil}},
