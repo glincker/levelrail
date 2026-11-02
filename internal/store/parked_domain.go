@@ -29,6 +29,8 @@ type ParkedDomain struct {
 	Note       string
 	ParkedBy   string
 	ParkedAt   time.Time
+	// HasSettings is true when the park kept the domain's per-domain settings.
+	HasSettings bool
 }
 
 // ParkServiceDomain removes domain from app's default domain list and
@@ -39,6 +41,11 @@ func (db *DB) ParkServiceDomain(ctx context.Context, app, domain, by, note strin
 		return fmt.Errorf("store: park domain %q: begin: %w", domain, err)
 	}
 	defer func() { _ = tx.Rollback() }()
+	// Releasing the claim deletes the settings, so they are read first.
+	snap, err := snapshotDomainSettingsTx(ctx, tx, domain)
+	if err != nil {
+		return err
+	}
 	if _, _, err := editServiceDomainsTx(ctx, tx, app, func(cur []string) ([]string, error) {
 		if !slices.Contains(cur, domain) {
 			return nil, ErrDomainNotOnApp
@@ -47,8 +54,8 @@ func (db *DB) ParkServiceDomain(ctx context.Context, app, domain, by, note strin
 	}); err != nil {
 		return err
 	}
-	if _, err := tx.ExecContext(ctx, `INSERT INTO parked_domains (domain, parked_from, note, parked_by, parked_at)
-		VALUES (?, ?, ?, ?, ?)`, domain, app, note, by, time.Now().UTC().Format(time.RFC3339Nano)); err != nil {
+	if _, err := tx.ExecContext(ctx, `INSERT INTO parked_domains (domain, parked_from, note, parked_by, parked_at, settings)
+		VALUES (?, ?, ?, ?, ?, ?)`, domain, app, note, by, time.Now().UTC().Format(time.RFC3339Nano), snap); err != nil {
 		return fmt.Errorf("store: park domain %q: %w", domain, err)
 	}
 	if err := tx.Commit(); err != nil {
@@ -57,30 +64,48 @@ func (db *DB) ParkServiceDomain(ctx context.Context, app, domain, by, note strin
 	return nil
 }
 
-// AttachParkedDomain gives a parked domain to app. It returns
-// ErrParkedDomainNotFound, ErrServiceNotFound or *ErrDomainTaken.
+// AttachParkedDomain gives a parked domain to app and restores its kept
+// settings. It returns ErrParkedDomainNotFound, ErrServiceNotFound or
+// *ErrDomainTaken.
 func (db *DB) AttachParkedDomain(ctx context.Context, domain, app string) error {
+	_, err := db.AttachParkedDomainWith(ctx, domain, app, true)
+	return err
+}
+
+// AttachParkedDomainWith is AttachParkedDomain with a choice: restore false
+// drops the kept settings. It returns the settings tables restored.
+func (db *DB) AttachParkedDomainWith(ctx context.Context, domain, app string, restore bool) ([]string, error) {
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("store: attach domain %q: begin: %w", domain, err)
+		return nil, fmt.Errorf("store: attach domain %q: begin: %w", domain, err)
 	}
 	defer func() { _ = tx.Rollback() }()
-	res, err := tx.ExecContext(ctx, `DELETE FROM parked_domains WHERE domain = ?`, domain)
-	if err != nil {
-		return fmt.Errorf("store: attach domain %q: %w", domain, err)
+	var snap string
+	err = tx.QueryRowContext(ctx, `SELECT settings FROM parked_domains WHERE domain = ?`, domain).Scan(&snap)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrParkedDomainNotFound
 	}
-	if n, _ := res.RowsAffected(); n == 0 {
-		return ErrParkedDomainNotFound
+	if err != nil {
+		return nil, fmt.Errorf("store: attach domain %q: %w", domain, err)
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM parked_domains WHERE domain = ?`, domain); err != nil {
+		return nil, fmt.Errorf("store: attach domain %q: %w", domain, err)
 	}
 	if _, _, err := editServiceDomainsTx(ctx, tx, app, func(cur []string) ([]string, error) {
 		return append(cur, domain), nil
 	}); err != nil {
-		return err
+		return nil, err
+	}
+	var restored []string
+	if restore {
+		if restored, err = restoreDomainSettingsTx(ctx, tx, domain, snap); err != nil {
+			return nil, err
+		}
 	}
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("store: attach domain %q: commit: %w", domain, err)
+		return nil, fmt.Errorf("store: attach domain %q: commit: %w", domain, err)
 	}
-	return nil
+	return restored, nil
 }
 
 // MoveServiceDomain hands domain from one app to another. The
@@ -137,7 +162,7 @@ func (db *DB) DomainOwnerOf(ctx context.Context, domain string) (owner string, f
 
 // GetParkedDomain returns one parked domain or ErrParkedDomainNotFound.
 func (db *DB) GetParkedDomain(ctx context.Context, domain string) (ParkedDomain, error) {
-	row := db.QueryRowContext(ctx, `SELECT domain, parked_from, note, parked_by, parked_at FROM parked_domains WHERE domain = ?`, domain)
+	row := db.QueryRowContext(ctx, `SELECT domain, parked_from, note, parked_by, parked_at, settings <> '' FROM parked_domains WHERE domain = ?`, domain)
 	p, err := scanParkedDomain(row)
 	if errors.Is(err, sql.ErrNoRows) {
 		return ParkedDomain{}, ErrParkedDomainNotFound
@@ -150,7 +175,7 @@ func (db *DB) GetParkedDomain(ctx context.Context, domain string) (ParkedDomain,
 
 // ListParkedDomains returns every parked domain ordered by domain.
 func (db *DB) ListParkedDomains(ctx context.Context) ([]ParkedDomain, error) {
-	rows, err := db.QueryContext(ctx, `SELECT domain, parked_from, note, parked_by, parked_at FROM parked_domains ORDER BY domain`)
+	rows, err := db.QueryContext(ctx, `SELECT domain, parked_from, note, parked_by, parked_at, settings <> '' FROM parked_domains ORDER BY domain`)
 	if err != nil {
 		return nil, fmt.Errorf("store: list parked domains: %w", err)
 	}
@@ -184,7 +209,7 @@ func (db *DB) DeleteParkedDomain(ctx context.Context, domain string) error {
 func scanParkedDomain(r rowScanner) (ParkedDomain, error) {
 	var p ParkedDomain
 	var at string
-	if err := r.Scan(&p.Domain, &p.ParkedFrom, &p.Note, &p.ParkedBy, &at); err != nil {
+	if err := r.Scan(&p.Domain, &p.ParkedFrom, &p.Note, &p.ParkedBy, &at, &p.HasSettings); err != nil {
 		return p, err
 	}
 	p.ParkedAt, _ = time.Parse(time.RFC3339Nano, at)

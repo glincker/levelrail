@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 	"strings"
 	"time"
@@ -13,12 +14,12 @@ var visitorWindows = map[string]time.Duration{"1h": time.Hour, "24h": 24 * time.
 
 // VisitorSource summarizes edge traffic for an app without exposing any client detail.
 type VisitorSource interface {
-	AppVisitors(app string, o ingress.VisitorSummaryOptions) ingress.VisitorSummary
+	AppVisitors(ctx context.Context, app string, o ingress.VisitorSummaryOptions) ingress.VisitorSummary
 }
 
 // AppVisitors implements VisitorSource.
-func (e EdgeAccess) AppVisitors(app string, o ingress.VisitorSummaryOptions) ingress.VisitorSummary {
-	return e.Log.Summarize(e.Stats.KeysForApp(app), o)
+func (e EdgeAccess) AppVisitors(ctx context.Context, app string, o ingress.VisitorSummaryOptions) ingress.VisitorSummary {
+	return e.Log.SummarizeWithHistory(ctx, app, e.Stats.KeysForApp(app), o)
 }
 
 // AppVisitorsResponse is the body of GET /api/v1/apps/{name}/visitors.
@@ -31,6 +32,8 @@ type AppVisitorsResponse struct {
 	ingress.VisitorSummary
 }
 
+// handleAppVisitors returns the privacy-safe visitor summary for an app. Windows of 1h, 24h, 7d and 30d
+// merge stored hourly rollups with the live ring, so history survives a restart while the retention setting allows it.
 func (rt *Router) handleAppVisitors(w http.ResponseWriter, r *http.Request) {
 	src, ok := rt.access.(VisitorSource)
 	if !ok {
@@ -49,7 +52,7 @@ func (rt *Router) handleAppVisitors(w http.ResponseWriter, r *http.Request) {
 	}
 	now := time.Now().UTC()
 	domain := strings.TrimSpace(q.Get("domain"))
-	sum := src.AppVisitors(r.PathValue("name"), ingress.VisitorSummaryOptions{Domain: domain, Since: now.Add(-span), Until: now})
+	sum := src.AppVisitors(r.Context(), r.PathValue("name"), ingress.VisitorSummaryOptions{Domain: domain, Since: now.Add(-span), Until: now})
 	w.Header().Set("Cache-Control", "no-store")
 	writeJSON(w, http.StatusOK, AppVisitorsResponse{
 		App: r.PathValue("name"), Domain: domain, Window: window, Since: now.Add(-span), GeneratedAt: now, VisitorSummary: sum,

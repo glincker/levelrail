@@ -10,17 +10,16 @@ import {
   useAppVisitors,
   type AppVisitors,
   type VisitorCount,
+  type VisitorsWindow,
 } from '../../queries/appVisitors'
+import {
+  STATUS_CLASSES,
+  STATUS_TEXT_TONE as STATUS_TONE,
+  isPartialData,
+  statusPercent,
+} from '../../lib/visitorsView'
 
-type CardWindow = '1h' | '24h' | '7d'
-const WINDOWS: CardWindow[] = ['1h', '24h', '7d']
-const STATUS_CLASSES = ['2xx', '3xx', '4xx', '5xx'] as const
-const STATUS_TONE: Record<(typeof STATUS_CLASSES)[number], string> = {
-  '2xx': 'text-tone-success',
-  '3xx': 'text-muted-foreground',
-  '4xx': 'text-tone-warning',
-  '5xx': 'text-tone-danger',
-}
+const WINDOWS: VisitorsWindow[] = ['1h', '24h', '7d', '30d']
 const TOP_LIMIT = 5
 
 function TopList({ title, rows }: { title: string; rows: VisitorCount[] }) {
@@ -52,10 +51,7 @@ function TopList({ title, rows }: { title: string; rows: VisitorCount[] }) {
 
 export function VisitorsBody({ data }: { data: AppVisitors }) {
   const { t } = useTranslation('common')
-  const total = STATUS_CLASSES.reduce((s, c) => s + (data.status[c] ?? 0), 0)
-  const partial =
-    data.oldest_record !== undefined &&
-    Date.parse(data.oldest_record) > Date.parse(data.since)
+  const partial = isPartialData(data)
 
   if (data.requests === 0) {
     return (
@@ -95,11 +91,7 @@ export function VisitorsBody({ data }: { data: AppVisitors }) {
         >
           {STATUS_CLASSES.map((c) => (
             <li key={c} className={STATUS_TONE[c]}>
-              {c}{' '}
-              {total > 0
-                ? Math.round(((data.status[c] ?? 0) / total) * 100)
-                : 0}
-              %
+              {c} {statusPercent(data.status, c)}%
             </li>
           ))}
         </ul>
@@ -160,7 +152,7 @@ export function VisitorsBody({ data }: { data: AppVisitors }) {
 
 export function VisitorsCard({ appName }: { appName: string }) {
   const { t } = useTranslation('common')
-  const [win, setWin] = useState<CardWindow>('24h')
+  const [win, setWin] = useState<VisitorsWindow>('24h')
   const { data, isPending, isError, error, refetch } = useAppVisitors(
     appName,
     win,

@@ -11,6 +11,7 @@ import {
   useDomainBasicAuth,
   useSetDomainBasicAuth,
 } from '../queries/domainBasicAuth'
+import { SettingSummary } from './domains/SettingSummary'
 import { EnforcedBadge, EnforcementNote } from './domains/EnforcementGate'
 
 // HTTP Basic Auth protection for one already-saved domain, enforced by
@@ -77,126 +78,116 @@ export function DomainBasicAuthControl({
   }
 
   return (
-    <div className="rounded-md border border-border bg-muted/30 p-3 text-sm">
-      <div className="flex items-center justify-between gap-2">
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className="flex items-center gap-1.5 text-left"
-        >
-          {protectedNow ? (
-            <EnforcedBadge domain={domain} control="basic_auth">
-              <Badge variant="success" className="shrink-0">
-                <LockGlassIcon className="size-4.5" />
-                Basic auth on
-              </Badge>
-            </EnforcedBadge>
-          ) : (
-            <Badge variant="muted" className="shrink-0">
-              <LockOpenGlassIcon className="size-4.5" />
-              Not protected
+    <SettingSummary
+      status={
+        protectedNow ? (
+          <EnforcedBadge domain={domain} control="basic_auth">
+            <Badge variant="success" className="shrink-0">
+              <LockGlassIcon className="size-4.5" />
+              Basic auth on
             </Badge>
-          )}
-        </button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => setOpen((v) => !v)}
-        >
-          <LockGlassIcon className="size-5" />
-          {open ? 'Hide' : protectedNow ? 'Manage' : 'Protect with basic auth'}
-        </Button>
-      </div>
-      <EnforcementNote
-        domain={domain}
-        control="basic_auth"
-        active={protectedNow}
-      />
+          </EnforcedBadge>
+        ) : (
+          <Badge variant="muted" className="shrink-0">
+            <LockOpenGlassIcon className="size-4.5" />
+            Not protected
+          </Badge>
+        )
+      }
+      summary={auth?.username || undefined}
+      note={
+        <EnforcementNote
+          domain={domain}
+          control="basic_auth"
+          active={protectedNow}
+        />
+      }
+      editLabel={protectedNow ? 'Manage' : 'Protect with basic auth'}
+      closeLabel="Hide"
+      editing={open}
+      onEditingChange={setOpen}
+    >
+      <form
+        onSubmit={(e) => {
+          handleSubmit(e)
+        }}
+        className="mt-3 space-y-3"
+      >
+        <Field>
+          <FieldLabel htmlFor={`basic-auth-username-${domain}`}>
+            Username
+          </FieldLabel>
+          <Input
+            id={`basic-auth-username-${domain}`}
+            autoComplete="off"
+            value={username}
+            onChange={(e) => {
+              setUsernameEdit(e.target.value)
+              setUsernameTouched(true)
+            }}
+            disabled={pending}
+            placeholder="operator"
+          />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor={`basic-auth-password-${domain}`}>
+            Password
+          </FieldLabel>
+          <Input
+            id={`basic-auth-password-${domain}`}
+            type="password"
+            autoComplete="off"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={pending}
+            placeholder={
+              auth?.has_password ? '••••••••••••' : 'Choose a password'
+            }
+          />
+          <FieldDescription>
+            {auth?.has_password
+              ? 'A password is already set. Leave blank to keep it.'
+              : 'Anyone visiting this domain will be asked for these credentials.'}
+          </FieldDescription>
+        </Field>
 
-      {open ? (
-        <form
-          onSubmit={(e) => {
-            handleSubmit(e)
-          }}
-          className="mt-3 space-y-3"
-        >
-          <Field>
-            <FieldLabel htmlFor={`basic-auth-username-${domain}`}>
-              Username
-            </FieldLabel>
-            <Input
-              id={`basic-auth-username-${domain}`}
-              autoComplete="off"
-              value={username}
-              onChange={(e) => {
-                setUsernameEdit(e.target.value)
-                setUsernameTouched(true)
+        {formError ? (
+          <Alert variant="destructive">
+            <AlertDescription>{formError}</AlertDescription>
+          </Alert>
+        ) : null}
+        {setAuth.isError ? (
+          <Alert variant="destructive">
+            <AlertDescription>{setAuth.error.message}</AlertDescription>
+          </Alert>
+        ) : null}
+        {clearAuth.isError ? (
+          <Alert variant="destructive">
+            <AlertDescription>{clearAuth.error.message}</AlertDescription>
+          </Alert>
+        ) : null}
+
+        <div className="flex items-center gap-2">
+          <Button type="submit" size="sm" disabled={pending}>
+            {setAuth.isPending ? 'Saving...' : 'Save'}
+          </Button>
+          {protectedNow ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={pending}
+              onClick={() => {
+                clearAuth.mutate(undefined, {
+                  onSuccess: () => setPassword(''),
+                })
               }}
-              disabled={pending}
-              placeholder="operator"
-            />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor={`basic-auth-password-${domain}`}>
-              Password
-            </FieldLabel>
-            <Input
-              id={`basic-auth-password-${domain}`}
-              type="password"
-              autoComplete="off"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={pending}
-              placeholder={
-                auth?.has_password ? '••••••••••••' : 'Choose a password'
-              }
-            />
-            <FieldDescription>
-              {auth?.has_password
-                ? 'A password is already set. Leave blank to keep it.'
-                : 'Anyone visiting this domain will be asked for these credentials.'}
-            </FieldDescription>
-          </Field>
-
-          {formError ? (
-            <Alert variant="destructive">
-              <AlertDescription>{formError}</AlertDescription>
-            </Alert>
-          ) : null}
-          {setAuth.isError ? (
-            <Alert variant="destructive">
-              <AlertDescription>{setAuth.error.message}</AlertDescription>
-            </Alert>
-          ) : null}
-          {clearAuth.isError ? (
-            <Alert variant="destructive">
-              <AlertDescription>{clearAuth.error.message}</AlertDescription>
-            </Alert>
-          ) : null}
-
-          <div className="flex items-center gap-2">
-            <Button type="submit" size="sm" disabled={pending}>
-              {setAuth.isPending ? 'Saving...' : 'Save'}
+            >
+              {clearAuth.isPending ? 'Removing...' : 'Remove protection'}
             </Button>
-            {protectedNow ? (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={pending}
-                onClick={() => {
-                  clearAuth.mutate(undefined, {
-                    onSuccess: () => setPassword(''),
-                  })
-                }}
-              >
-                {clearAuth.isPending ? 'Removing...' : 'Remove protection'}
-              </Button>
-            ) : null}
-          </div>
-        </form>
-      ) : null}
-    </div>
+          ) : null}
+        </div>
+      </form>
+    </SettingSummary>
   )
 }

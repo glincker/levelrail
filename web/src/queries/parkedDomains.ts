@@ -17,6 +17,22 @@ export interface ParkedDomain {
   note?: string
   parked_by?: string
   parked_at?: string
+  // False for rows parked before settings snapshots existed.
+  has_settings?: boolean
+  dns?: ParkedDns
+  tls?: ParkedTls
+}
+
+export interface ParkedDns {
+  status: 'pointing' | 'not_pointing' | 'unknown'
+  checked_at?: string
+}
+
+// An expired certificate reads as issued with a negative days_left.
+export interface ParkedTls {
+  state: 'issued' | 'pending' | 'none'
+  not_after?: string
+  days_left?: number
 }
 
 export interface DomainLifecycleResult {
@@ -26,6 +42,10 @@ export interface DomainLifecycleResult {
   applied: boolean
   requires_confirmation?: boolean
   message?: string
+}
+
+export interface AttachResult extends DomainLifecycleResult {
+  restored_settings?: string[]
 }
 
 export interface MoveInput {
@@ -123,11 +143,15 @@ export function useAttachParkedDomain() {
   const invalidate = useInvalidateLifecycle()
   return useMutation({
     meta: { errorToast: false },
-    mutationFn: (input: { domain: string; app: string }) =>
-      send<DomainLifecycleResult>(
+    mutationFn: (input: {
+      domain: string
+      app: string
+      discardSettings?: boolean
+    }) =>
+      send<AttachResult>(
         `${BASE}/parked/${encodeURIComponent(input.domain)}/attach`,
         'POST',
-        { app: input.app },
+        { app: input.app, discard_settings: input.discardSettings === true },
         'attach domain',
       ),
     onSuccess: invalidate,

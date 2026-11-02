@@ -41,19 +41,25 @@ export interface AppVisitors {
   salt_period: string
 }
 
-export const visitorsKey = (app: string, window: VisitorsWindow) =>
-  ['apps', app, 'visitors', window] as const
+export const visitorsKey = (app: string, window: VisitorsWindow, domain = '') =>
+  ['apps', app, 'visitors', window, domain] as const
 
 export function isVisitorsUnavailable(err: unknown): boolean {
   return err instanceof ApiError && err.status === 501
 }
 
-export function appVisitorsQueryOptions(app: string, window: VisitorsWindow) {
+export function appVisitorsQueryOptions(
+  app: string,
+  window: VisitorsWindow,
+  domain = '',
+) {
   return queryOptions({
-    queryKey: visitorsKey(app, window),
+    queryKey: visitorsKey(app, window, domain),
     queryFn: async (): Promise<AppVisitors> => {
+      const qs = new URLSearchParams({ window })
+      if (domain) qs.set('domain', domain)
       const res = await fetch(
-        `/api/v1/apps/${encodeURIComponent(app)}/visitors?window=${window}`,
+        `/api/v1/apps/${encodeURIComponent(app)}/visitors?${qs.toString()}`,
       )
       if (!res.ok) {
         throw new ApiError(
@@ -70,6 +76,10 @@ export function appVisitorsQueryOptions(app: string, window: VisitorsWindow) {
   })
 }
 
-export function useAppVisitors(app: string, window: VisitorsWindow) {
-  return useQuery(appVisitorsQueryOptions(app, window))
+export function useAppVisitors(
+  app: string,
+  window: VisitorsWindow,
+  domain = '',
+) {
+  return useQuery(appVisitorsQueryOptions(app, window, domain))
 }

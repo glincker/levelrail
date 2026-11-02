@@ -17,3 +17,8 @@ export function isPrimaryDomain(
 ): boolean {
   return !!primary && primary.toLowerCase() === domain.toLowerCase()
 }
+
+// Fallback label for a restored-settings kind the locale has no entry for.
+export function humanizeSettingKind(kind: string): string {
+  return kind.replace(/[_-]+/g, ' ').trim()
+}

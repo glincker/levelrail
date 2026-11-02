@@ -98,13 +98,13 @@ export function DomainWafControl({
           <EnforcedBadge domain={domain} control="waf">
             <Badge variant="success" className="shrink-0">
               <ShieldCheckGlassIcon className="size-4.5 text-tone-success" />
-              WAF/rate limit on
+              {t('waf.badgeOn')}
             </Badge>
           </EnforcedBadge>
         ) : (
           <Badge variant="muted" className="shrink-0">
             <ShieldGlassIcon className="size-4.5" />
-            Not protected
+            {t('waf.badgeOff')}
           </Badge>
         )
       }
@@ -113,7 +113,7 @@ export function DomainWafControl({
       actions={
         <HelpLink
           path="/domains-and-ingress#opt-in-waf-and-rate-limiting"
-          label="WAF and rate limiting guide"
+          label={t('waf.helpLabel')}
         />
       }
       editLabel={active ? t('waf.edit') : t('waf.add')}
@@ -129,7 +129,7 @@ export function DomainWafControl({
       >
         <Field orientation="horizontal">
           <FieldLabel htmlFor={`waf-enabled-${domain}`}>
-            OWASP Coraza WAF
+            {t('waf.wafLabel')}
           </FieldLabel>
           <Switch
             id={`waf-enabled-${domain}`}
@@ -141,7 +141,9 @@ export function DomainWafControl({
 
         {effectiveWafEnabled ? (
           <Field>
-            <FieldLabel htmlFor={`waf-mode-${domain}`}>Mode</FieldLabel>
+            <FieldLabel htmlFor={`waf-mode-${domain}`}>
+              {t('waf.modeLabel')}
+            </FieldLabel>
             <Select
               value={effectiveMode}
               onValueChange={(value) => setWafMode(value)}
@@ -151,24 +153,18 @@ export function DomainWafControl({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="detect">
-                  Detect (log only, recommended to start)
-                </SelectItem>
-                <SelectItem value="block">
-                  Block (reject matching requests)
-                </SelectItem>
+                <SelectItem value="detect">{t('waf.modeDetect')}</SelectItem>
+                <SelectItem value="block">{t('waf.modeBlock')}</SelectItem>
               </SelectContent>
             </Select>
             <FieldDescription>
               {effectiveMode === 'detect' ? (
                 <span className="flex items-center gap-1">
                   <ShieldAlertGlassIcon className="size-5 shrink-0 text-tone-warning" />
-                  Requests matching OWASP CRS rules are logged, never rejected.
-                  Switch to Block once you have reviewed logs for false
-                  positives.
+                  {t('waf.helpDetect')}
                 </span>
               ) : (
-                'Requests matching OWASP CRS rules are rejected with an error.'
+                t('waf.helpBlock')
               )}
             </FieldDescription>
           </Field>
@@ -176,7 +172,7 @@ export function DomainWafControl({
 
         <Field>
           <FieldLabel htmlFor={`waf-rps-${domain}`}>
-            Rate limit (requests/sec per IP)
+            {t('waf.rpsLabel')}
           </FieldLabel>
           <Input
             id={`waf-rps-${domain}`}
@@ -186,17 +182,15 @@ export function DomainWafControl({
             value={effectiveRps}
             onChange={(e) => setRps(e.target.value)}
             disabled={pending}
-            placeholder="0 (disabled)"
+            placeholder={t('waf.rpsPlaceholder')}
           />
-          <FieldDescription>
-            0 disables rate limiting for this domain.
-          </FieldDescription>
+          <FieldDescription>{t('waf.rpsHelp')}</FieldDescription>
         </Field>
 
         {Number.parseInt(effectiveRps, 10) > 0 ? (
           <Field>
             <FieldLabel htmlFor={`waf-burst-${domain}`}>
-              Burst allowance
+              {t('waf.burstLabel')}
             </FieldLabel>
             <Input
               id={`waf-burst-${domain}`}
@@ -206,12 +200,9 @@ export function DomainWafControl({
               value={effectiveBurst}
               onChange={(e) => setBurst(e.target.value)}
               disabled={pending}
-              placeholder="0 (no extra burst)"
+              placeholder={t('waf.burstPlaceholder')}
             />
-            <FieldDescription>
-              Requests allowed in a single second beyond the sustained rate
-              above. Leave at 0 for a strict cap.
-            </FieldDescription>
+            <FieldDescription>{t('waf.burstHelp')}</FieldDescription>
           </Field>
         ) : null}
 
@@ -228,7 +219,7 @@ export function DomainWafControl({
 
         <div className="flex items-center gap-2">
           <Button type="submit" size="sm" disabled={pending}>
-            {setWaf.isPending ? 'Saving...' : 'Save'}
+            {setWaf.isPending ? t('waf.saving') : t('waf.save')}
           </Button>
           {active ? (
             <Button
@@ -247,7 +238,7 @@ export function DomainWafControl({
                 })
               }}
             >
-              {clearWaf.isPending ? 'Removing...' : 'Turn off'}
+              {clearWaf.isPending ? t('waf.removing') : t('waf.turnOff')}
             </Button>
           ) : null}
         </div>

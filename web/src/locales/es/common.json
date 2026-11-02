@@ -1147,7 +1147,12 @@
   "visitors": {
     "title": "Visitantes",
     "windowLabel": "Ventana de tiempo",
-    "window": { "1h": "1 h", "24h": "24 h", "7d": "7 d" },
+    "window": {
+      "1h": "1 h",
+      "24h": "24 h",
+      "7d": "7 d",
+      "30d": "30 d"
+    },
     "requests": "Solicitudes",
     "visitorsLabel": "Visitantes únicos",
     "visitorsHint": "Visitantes únicos, contados de nuevo tras cada reinicio de privacidad de {{period}}. No son únicos de por vida.",
@@ -1163,6 +1168,17 @@
     "empty": "Aún no hay solicitudes en esta ventana.",
     "loadError": "Las cifras de visitantes no están disponibles ahora.",
     "retry": "Reintentar",
-    "viewTraffic": "Detalle de tráfico"
+    "viewTraffic": "Detalle de tráfico",
+    "section": "Visitantes",
+    "domainLabel": "Dominio",
+    "allDomains": "Todos los dominios",
+    "statusSplit": "Reparto de estados",
+    "pathHeader": "Página",
+    "referrerHeader": "Origen",
+    "countHeader": "Solicitudes",
+    "topPathsCaption": "Las 10 páginas principales en esta ventana",
+    "topReferrersCaption": "Los 10 orígenes principales en esta ventana",
+    "unavailable": "Las cifras de visitantes necesitan el registro de acceso del borde, que no está activado en esta instalación.",
+    "chartHeading": "Solicitudes en el tiempo"
   }
 }

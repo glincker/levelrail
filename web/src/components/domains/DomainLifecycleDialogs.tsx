@@ -13,7 +13,7 @@ import {
   useMoveDomain,
   useParkDomain,
 } from '../../queries/parkedDomains'
-import { moveTargets } from '../../lib/domainLifecycle'
+import { humanizeSettingKind, moveTargets } from '../../lib/domainLifecycle'
 
 interface Props {
   open: boolean
@@ -24,7 +24,7 @@ function errorText(e: unknown): string | null {
   return e instanceof Error ? e.message : null
 }
 
-// Parking drops the per-domain settings, so the dialog says so before it acts.
+// Parking snapshots the per-domain settings; attach restores them unless discarded.
 export function ParkDomainDialog({
   app,
   domain,
@@ -40,12 +40,11 @@ export function ParkDomainDialog({
       title={t('lifecycle.park.title', { domain })}
       description={t('lifecycle.park.body', { app })}
       consequences={[
-        t('lifecycle.park.dropsSettings'),
+        t('lifecycle.park.savesSettings'),
         t('lifecycle.park.keepsDnsCert'),
       ]}
       confirmLabel={t('lifecycle.park.confirm')}
       pendingLabel={t('lifecycle.pending')}
-      tone="destructive"
       focusCancel
       pending={park.isPending}
       error={errorText(park.error)}
@@ -162,7 +161,7 @@ export function DeleteDomainDialog({
       onOpenChange={onOpenChange}
       title={t('lifecycle.delete.title', { domain })}
       description={t('lifecycle.delete.body', { app })}
-      consequences={[t('lifecycle.park.dropsSettings')]}
+      consequences={[t('lifecycle.delete.dropsSettings')]}
       confirmLabel={t('lifecycle.delete.confirm')}
       pendingLabel={t('lifecycle.pending')}
       tone="destructive"
@@ -189,12 +188,14 @@ export function DeleteDomainDialog({
 
 export function AttachParkedDialog({
   domain,
+  hasSettings = false,
   open,
   onOpenChange,
-}: Props & { domain: string }) {
+}: Props & { domain: string; hasSettings?: boolean }) {
   const { t } = useTranslation('domains')
   const { data: apps = [] } = useQuery(appListQueryOptions())
   const [to, setTo] = useState('')
+  const [fresh, setFresh] = useState(false)
   const attach = useAttachParkedDomain()
   const target = to || apps[0]?.name || ''
   return (
@@ -210,11 +211,22 @@ export function AttachParkedDialog({
       error={errorText(attach.error)}
       onConfirm={() => {
         attach.mutate(
-          { domain, app: target },
+          { domain, app: target, discardSettings: hasSettings && fresh },
           {
-            onSuccess: () => {
+            onSuccess: (result) => {
+              const kinds = (result.restored_settings ?? []).map((k) =>
+                t(`lifecycle.attach.kinds.${k}`, {
+                  defaultValue: humanizeSettingKind(k),
+                }),
+              )
               toast.add({
                 title: t('lifecycle.attach.done', { domain, app: target }),
+                description:
+                  kinds.length > 0
+                    ? t('lifecycle.attach.restored', {
+                        kinds: kinds.join(', '),
+                      })
+                    : undefined,
                 type: 'success',
               })
               onOpenChange(false)
@@ -241,6 +253,34 @@ export function AttachParkedDialog({
           ))}
         </NativeSelect>
       </div>
+      {hasSettings ? (
+        <fieldset className="space-y-1">
+          <legend className="text-sm font-medium">
+            {t('lifecycle.attach.settingsLegend')}
+          </legend>
+          {[false, true].map((discard) => (
+            <label
+              key={String(discard)}
+              className="flex items-start gap-2 text-sm"
+            >
+              <input
+                type="radio"
+                name="attach-settings"
+                className="mt-1"
+                checked={fresh === discard}
+                onChange={() => {
+                  setFresh(discard)
+                }}
+              />
+              <span>
+                {discard
+                  ? t('lifecycle.attach.startFresh')
+                  : t('lifecycle.attach.restore')}
+              </span>
+            </label>
+          ))}
+        </fieldset>
+      ) : null}
     </ConfirmDialog>
   )
 }

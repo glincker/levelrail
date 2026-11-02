@@ -19,6 +19,7 @@ import {
   useDomainErrorPages,
   useSetDomainErrorPage,
 } from '../queries/domainErrorPages'
+import { SettingSummary } from './domains/SettingSummary'
 import { EnforcedBadge, EnforcementNote } from './domains/EnforcementGate'
 
 // Replace Caddy's bare default error text (or whatever the backend
@@ -76,136 +77,130 @@ export function DomainErrorPagesControl({
   }
 
   return (
-    <div className="rounded-md border border-border bg-muted/30 p-3 text-sm">
-      <div className="flex items-center justify-between gap-2">
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className="flex items-center gap-1.5 text-left"
-        >
-          {active ? (
-            <EnforcedBadge domain={domain} control="error_pages">
-              <Badge variant="success" className="shrink-0">
-                <FileCodeGlassIcon className="size-4.5" />
-                {pages.length} custom error page{pages.length === 1 ? '' : 's'}
-              </Badge>
-            </EnforcedBadge>
-          ) : (
-            <Badge variant="muted" className="shrink-0">
+    <SettingSummary
+      status={
+        active ? (
+          <EnforcedBadge domain={domain} control="error_pages">
+            <Badge variant="success" className="shrink-0">
               <FileCodeGlassIcon className="size-4.5" />
-              No custom error pages
+              {pages.length} custom error page{pages.length === 1 ? '' : 's'}
             </Badge>
-          )}
-        </button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => setOpen((v) => !v)}
-        >
-          <FileCodeGlassIcon className="size-5" />
-          {open ? 'Hide' : active ? 'Manage' : 'Add error page'}
-        </Button>
-      </div>
-      <EnforcementNote domain={domain} control="error_pages" active={active} />
-
-      {open ? (
-        <div className="mt-3 space-y-3">
-          {pages.map((page) => (
-            <div
-              key={page.status_code}
-              className="flex items-center justify-between gap-2 rounded border border-border bg-background px-2.5 py-1.5"
+          </EnforcedBadge>
+        ) : (
+          <Badge variant="muted" className="shrink-0">
+            <FileCodeGlassIcon className="size-4.5" />
+            No custom error pages
+          </Badge>
+        )
+      }
+      summary={active ? pages.map((p) => p.status_code).join(', ') : undefined}
+      note={
+        <EnforcementNote
+          domain={domain}
+          control="error_pages"
+          active={active}
+        />
+      }
+      editLabel={active ? 'Manage' : 'Add error page'}
+      closeLabel="Hide"
+      editing={open}
+      onEditingChange={setOpen}
+    >
+      <div className="mt-3 space-y-3">
+        {pages.map((page) => (
+          <div
+            key={page.status_code}
+            className="flex items-center justify-between gap-2 rounded border border-border bg-background px-2.5 py-1.5"
+          >
+            <span className="font-mono text-xs">
+              {page.status_code} · {page.body.length} bytes
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={clearPage.isPending}
+              onClick={() => clearPage.mutate(page.status_code)}
             >
-              <span className="font-mono text-xs">
-                {page.status_code} · {page.body.length} bytes
-              </span>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={clearPage.isPending}
-                onClick={() => clearPage.mutate(page.status_code)}
+              Remove
+            </Button>
+          </div>
+        ))}
+
+        {availableCodes.length > 0 ? (
+          <form onSubmit={handleAdd} className="space-y-3">
+            <Field>
+              <FieldLabel htmlFor={`error-page-code-${domain}`}>
+                Status code
+              </FieldLabel>
+              <Select
+                value={draftCode ?? undefined}
+                onValueChange={(value) => setDraftCode(value)}
+                disabled={setPage.isPending}
               >
-                Remove
-              </Button>
-            </div>
-          ))}
+                <SelectTrigger id={`error-page-code-${domain}`}>
+                  <SelectValue placeholder="Choose a status code" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableCodes.map((code) => (
+                    <SelectItem key={code} value={String(code)}>
+                      {code}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
 
-          {availableCodes.length > 0 ? (
-            <form onSubmit={handleAdd} className="space-y-3">
-              <Field>
-                <FieldLabel htmlFor={`error-page-code-${domain}`}>
-                  Status code
-                </FieldLabel>
-                <Select
-                  value={draftCode ?? undefined}
-                  onValueChange={(value) => setDraftCode(value)}
-                  disabled={setPage.isPending}
-                >
-                  <SelectTrigger id={`error-page-code-${domain}`}>
-                    <SelectValue placeholder="Choose a status code" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableCodes.map((code) => (
-                      <SelectItem key={code} value={String(code)}>
-                        {code}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
+            <Field>
+              <FieldLabel htmlFor={`error-page-body-${domain}`}>
+                Custom HTML
+              </FieldLabel>
+              <Textarea
+                id={`error-page-body-${domain}`}
+                value={draftBody}
+                onChange={(e) => setDraftBody(e.target.value)}
+                disabled={setPage.isPending}
+                placeholder="<html>...</html>"
+                rows={5}
+              />
+              <FieldDescription>
+                Served with the same status code, replacing whatever the backend
+                (or Caddy itself, if the container is unreachable) would
+                otherwise return.
+              </FieldDescription>
+            </Field>
 
-              <Field>
-                <FieldLabel htmlFor={`error-page-body-${domain}`}>
-                  Custom HTML
-                </FieldLabel>
-                <Textarea
-                  id={`error-page-body-${domain}`}
-                  value={draftBody}
-                  onChange={(e) => setDraftBody(e.target.value)}
-                  disabled={setPage.isPending}
-                  placeholder="<html>...</html>"
-                  rows={5}
+            {setPage.isError ? (
+              <Alert variant="destructive">
+                <TriangleAlertGlassIcon
+                  className="text-tone-warning"
+                  size="1.7em"
                 />
-                <FieldDescription>
-                  Served with the same status code, replacing whatever the
-                  backend (or Caddy itself, if the container is unreachable)
-                  would otherwise return.
-                </FieldDescription>
-              </Field>
+                <AlertDescription>{setPage.error.message}</AlertDescription>
+              </Alert>
+            ) : null}
+            {clearPage.isError ? (
+              <Alert variant="destructive">
+                <TriangleAlertGlassIcon
+                  className="text-tone-warning"
+                  size="1.7em"
+                />
+                <AlertDescription>{clearPage.error.message}</AlertDescription>
+              </Alert>
+            ) : null}
 
-              {setPage.isError ? (
-                <Alert variant="destructive">
-                  <TriangleAlertGlassIcon
-                    className="text-tone-warning"
-                    size="1.7em"
-                  />
-                  <AlertDescription>{setPage.error.message}</AlertDescription>
-                </Alert>
-              ) : null}
-              {clearPage.isError ? (
-                <Alert variant="destructive">
-                  <TriangleAlertGlassIcon
-                    className="text-tone-warning"
-                    size="1.7em"
-                  />
-                  <AlertDescription>{clearPage.error.message}</AlertDescription>
-                </Alert>
-              ) : null}
-
-              <Button
-                type="submit"
-                size="sm"
-                disabled={
-                  setPage.isPending || !draftCode || draftBody.length === 0
-                }
-              >
-                {setPage.isPending ? 'Saving...' : 'Save'}
-              </Button>
-            </form>
-          ) : null}
-        </div>
-      ) : null}
-    </div>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={
+                setPage.isPending || !draftCode || draftBody.length === 0
+              }
+            >
+              {setPage.isPending ? 'Saving...' : 'Save'}
+            </Button>
+          </form>
+        ) : null}
+      </div>
+    </SettingSummary>
   )
 }

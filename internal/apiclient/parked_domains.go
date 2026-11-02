@@ -14,6 +14,24 @@ type ParkedDomain struct {
 	Note       string `json:"note,omitempty"`
 	ParkedBy   string `json:"parked_by,omitempty"`
 	ParkedAt   string `json:"parked_at,omitempty"`
+	// HasSettings is true when attach can restore the settings kept by park.
+	HasSettings bool `json:"has_settings,omitempty"`
+	// DNS and TLS are the live state computed when the list is read.
+	DNS *ParkedDNS `json:"dns,omitempty"`
+	TLS *ParkedTLS `json:"tls,omitempty"`
+}
+
+// ParkedDNS is whether a parked domain still points at this server.
+type ParkedDNS struct {
+	Status    string `json:"status"`
+	CheckedAt string `json:"checked_at,omitempty"`
+}
+
+// ParkedTLS is a parked domain's certificate state; DaysLeft is negative once expired.
+type ParkedTLS struct {
+	State    string `json:"state"`
+	NotAfter string `json:"not_after,omitempty"`
+	DaysLeft *int   `json:"days_left,omitempty"`
 }
 
 // DomainLifecycleRequest is the body of park, move and attach.
@@ -24,6 +42,8 @@ type DomainLifecycleRequest struct {
 	To      string `json:"to,omitempty"`
 	Note    string `json:"note,omitempty"`
 	Confirm bool   `json:"confirm,omitempty"`
+	// DiscardSettings makes attach drop the settings kept by park.
+	DiscardSettings bool `json:"discard_settings,omitempty"`
 }
 
 // DomainLifecycleResult mirrors internal/api's domainLifecycleResponse.
@@ -32,6 +52,8 @@ type DomainLifecycleResult struct {
 	From    string `json:"from,omitempty"`
 	To      string `json:"to,omitempty"`
 	Applied bool   `json:"applied"`
+	// RestoredSettings names the settings kinds an attach restored.
+	RestoredSettings []string `json:"restored_settings,omitempty"`
 }
 
 // ListParkedDomains calls GET /api/v1/domains/parked.
@@ -56,9 +78,9 @@ func (c *Client) MoveDomain(ctx context.Context, req DomainLifecycleRequest) (Do
 }
 
 // AttachParkedDomain calls POST /api/v1/domains/parked/{domain}/attach.
-func (c *Client) AttachParkedDomain(ctx context.Context, domain, app string) (DomainLifecycleResult, error) {
+func (c *Client) AttachParkedDomain(ctx context.Context, domain, app string, discardSettings bool) (DomainLifecycleResult, error) {
 	var out DomainLifecycleResult
-	err := c.do(ctx, http.MethodPost, "/api/v1/domains/parked/"+url.PathEscape(domain)+"/attach", DomainLifecycleRequest{App: app}, &out)
+	err := c.do(ctx, http.MethodPost, "/api/v1/domains/parked/"+url.PathEscape(domain)+"/attach", DomainLifecycleRequest{App: app, DiscardSettings: discardSettings}, &out)
 	return out, err
 }
 

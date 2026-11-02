@@ -42,6 +42,8 @@ import {
   isInternalCert,
   isProxyManagedCert,
 } from '../lib/certStatus'
+import { cn } from '../lib/utils'
+import { TLS_TONE_CLASS, tlsDaysText, tlsTone } from '../lib/domainTls'
 import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
 import { certTruth } from '../lib/certTruth'
 import { CertTruthBadge } from './CertTruthBadge'
@@ -229,8 +231,31 @@ function CertCell({
   )
 }
 
-function ExpiryCell({ cert }: { cert?: CertificateStatus }) {
+function TlsDaysLine({ daysLeft }: { daysLeft: number }) {
   const { t } = useTranslation('domains')
+  const { key, count } = tlsDaysText(daysLeft)
+  return (
+    <span className={cn('truncate', TLS_TONE_CLASS[tlsTone(daysLeft)])}>
+      {t(key, { count })}
+    </span>
+  )
+}
+
+function ExpiryCell({
+  cert,
+  daysLeft,
+}: {
+  cert?: CertificateStatus
+  daysLeft?: number
+}) {
+  const { t } = useTranslation('domains')
+  if (!cert && daysLeft !== undefined) {
+    return (
+      <span className="flex min-w-0 flex-col text-xs">
+        <TlsDaysLine daysLeft={daysLeft} />
+      </span>
+    )
+  }
   if (!cert) return <span className="text-xs text-muted-foreground/60">-</span>
   if (isInternalCert(cert)) {
     return (
@@ -253,7 +278,11 @@ function ExpiryCell({ cert }: { cert?: CertificateStatus }) {
       <span className="truncate text-foreground">
         {certExpiryDate(cert.not_after)}
       </span>
-      <span className="truncate">{certExpiryLabel(cert.not_after)}</span>
+      {daysLeft !== undefined ? (
+        <TlsDaysLine daysLeft={daysLeft} />
+      ) : (
+        <span className="truncate">{certExpiryLabel(cert.not_after)}</span>
+      )}
       <span className="truncate text-muted-foreground/70">{renews}</span>
     </span>
   )
@@ -514,7 +543,23 @@ export function DomainExpiryCell({
   domain: Domain
   cert?: CertificateStatus
 }) {
-  return <ExpiryCell cert={effectiveDomainCert(domain, cert)} />
+  return (
+    <ExpiryCell
+      cert={effectiveDomainCert(domain, cert)}
+      daysLeft={domain.tls_days_left}
+    />
+  )
+}
+
+export function DomainEnvironmentCell({ domain }: { domain: Domain }) {
+  if (!domain.environment) {
+    return <span className="text-xs text-muted-foreground/60">-</span>
+  }
+  return (
+    <span className="block truncate text-xs" title={domain.environment}>
+      {domain.environment}
+    </span>
+  )
 }
 
 export { SearchVisibilityCell as DomainVisibilityCell }

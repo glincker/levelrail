@@ -1147,7 +1147,12 @@
   "visitors": {
     "title": "Visitors",
     "windowLabel": "Time window",
-    "window": { "1h": "1h", "24h": "24h", "7d": "7d" },
+    "window": {
+      "1h": "1h",
+      "24h": "24h",
+      "7d": "7d",
+      "30d": "30d"
+    },
     "requests": "Requests",
     "visitorsLabel": "Unique visitors",
     "visitorsHint": "Unique visitors, counted again after each {{period}} privacy reset. Not lifetime uniques.",
@@ -1163,6 +1168,17 @@
     "empty": "No requests in this window yet.",
     "loadError": "Visitor numbers are unavailable right now.",
     "retry": "Retry",
-    "viewTraffic": "Traffic details"
+    "viewTraffic": "Traffic details",
+    "section": "Visitors",
+    "domainLabel": "Domain",
+    "allDomains": "All domains",
+    "statusSplit": "Status split",
+    "pathHeader": "Page",
+    "referrerHeader": "Referrer",
+    "countHeader": "Requests",
+    "topPathsCaption": "Top 10 pages in this window",
+    "topReferrersCaption": "Top 10 referrers in this window",
+    "unavailable": "Visitor numbers need the edge access log, which is not enabled on this install.",
+    "chartHeading": "Requests over time"
   }
 }

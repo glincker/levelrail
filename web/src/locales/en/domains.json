@@ -271,6 +271,7 @@
       "app": "App",
       "dns": "DNS",
       "certificate": "Certificate",
+      "environment": "Environment",
       "expires": "Expires",
       "visibility": "Search"
     },
@@ -304,7 +305,12 @@
       "failed": "Request failed",
       "renewsAuto": "Renews automatically",
       "renewsProxy": "Renews automatically via your proxy",
-      "renewsManual": "Uploaded certificate: renew it before it expires"
+      "renewsManual": "Uploaded certificate: renew it before it expires",
+      "daysLeft_one": "{{count}} day left",
+      "daysLeft_other": "{{count}} days left",
+      "expiresToday": "Expires today",
+      "expiredAgo_one": "Expired {{count}} day ago",
+      "expiredAgo_other": "Expired {{count}} days ago"
     },
     "visibility": {
       "toggle": "Allow search engines to index {{domain}}",
@@ -1221,10 +1227,10 @@
     "park": {
       "title": "Park {{domain}}?",
       "body": "{{app}} stops serving this domain. It stays registered with its DNS and certificate state in the Parked group and can be attached to any app later.",
-      "dropsSettings": "Parking drops this domain's own settings: WAF and rate limit, own certificate and basic auth are removed and are not restored on attach.",
-      "keepsDnsCert": "DNS records and the automatic certificate state are kept. To keep the settings, move the domain to another app instead.",
+      "keepsDnsCert": "DNS records and the automatic certificate state are kept too.",
       "confirm": "Park domain",
-      "done": "{{domain}} is parked"
+      "done": "{{domain}} is parked",
+      "savesSettings": "Parking saves this domain's own settings (WAF and rate limit, own certificate, basic auth, auth gate, maintenance, redirect, error pages, search visibility, traffic policies) with the parked domain. They are restored when it is attached."
     },
     "move": {
       "title": "Move {{domain}}",
@@ -1240,13 +1246,30 @@
       "title": "Delete {{domain}}?",
       "body": "Removes the domain from {{app}} entirely. Type the domain to confirm.",
       "confirm": "Delete",
-      "done": "{{domain}} deleted"
+      "done": "{{domain}} deleted",
+      "dropsSettings": "Deleting removes this domain's own settings: WAF and rate limit, own certificate and basic auth are dropped."
     },
     "attach": {
       "title": "Attach {{domain}}",
       "body": "Choose the app that should serve this parked domain.",
       "confirm": "Attach",
-      "done": "{{domain}} attached to {{app}}"
+      "done": "{{domain}} attached to {{app}}",
+      "settingsLegend": "Saved settings",
+      "restore": "Restore saved settings (default)",
+      "startFresh": "Start fresh and discard them",
+      "restored": "Restored: {{kinds}}",
+      "kinds": {
+        "domain_waf": "WAF",
+        "gate_access_rules": "rate limit",
+        "domain_tls_cert": "certificate",
+        "domain_basic_auth": "basic auth",
+        "domain_auth_gate": "auth gate",
+        "domain_maintenance": "maintenance",
+        "domain_redirect": "redirect",
+        "domain_error_page": "error pages",
+        "domain_search_visibility": "search visibility",
+        "domain_traffic_policies": "traffic policies"
+      }
     },
     "deleteParked": {
       "title": "Delete parked domain {{domain}}?",
@@ -1258,7 +1281,17 @@
     "hint": "Registered but routed by no app. Attach one to an app to serve it again.",
     "from": "Parked from {{app}}",
     "attach": "Attach",
-    "delete": "Delete {{domain}}"
+    "delete": "Delete {{domain}}",
+    "settingsSaved": "Settings saved",
+    "dns": {
+      "pointing": "DNS pointing",
+      "not_pointing": "DNS not pointing",
+      "unknown": "DNS unknown"
+    },
+    "tls": {
+      "pending": "Certificate pending",
+      "none": "No certificate"
+    }
   },
   "detail": {
     "description": "Settings for this domain on {{app}}.",
@@ -1276,6 +1309,25 @@
     "summaryWaf": "WAF: {{mode}}",
     "summaryWafOff": "WAF off",
     "summaryRate": "Rate limit {{rps}}/s, burst {{burst}}",
-    "summaryRateOff": "No rate limit"
+    "summaryRateOff": "No rate limit",
+    "badgeOn": "WAF/rate limit on",
+    "badgeOff": "Not protected",
+    "helpLabel": "WAF and rate limiting guide",
+    "wafLabel": "OWASP Coraza WAF",
+    "modeLabel": "Mode",
+    "modeDetect": "Detect (log only, recommended to start)",
+    "modeBlock": "Block (reject matching requests)",
+    "helpDetect": "Requests matching OWASP CRS rules are logged, never rejected. Switch to Block once you have reviewed logs for false positives.",
+    "helpBlock": "Requests matching OWASP CRS rules are rejected with an error.",
+    "rpsLabel": "Rate limit (requests/sec per IP)",
+    "rpsPlaceholder": "0 (disabled)",
+    "rpsHelp": "0 disables rate limiting for this domain.",
+    "burstLabel": "Burst allowance",
+    "burstPlaceholder": "0 (no extra burst)",
+    "burstHelp": "Requests allowed in a single second beyond the sustained rate above. Leave at 0 for a strict cap.",
+    "save": "Save",
+    "saving": "Saving...",
+    "turnOff": "Turn off",
+    "removing": "Removing..."
   }
 }

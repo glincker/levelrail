@@ -2,9 +2,11 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -62,5 +64,103 @@ func TestParkedDomainsAPI_Lifecycle(t *testing.T) {
 	rec = sdReq(t, rt, cookie, http.MethodDelete, "/api/v1/domains/parked/a.example.com", "")
 	if rec.Code != http.StatusNotFound {
 		t.Fatalf("second delete = %d, want 404", rec.Code)
+	}
+}
+
+func TestParkedDomainsAPI_AttachSettings(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+	for _, svc := range []store.DesiredService{
+		{Name: "web", Image: "img:v1", Port: 80, Domains: []string{"a.example.com", "b.example.com"}},
+		{Name: "api", Image: "img:v1", Port: 80},
+	} {
+		if err := db.SaveDesiredService(ctx, svc); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, d := range []string{"a.example.com", "b.example.com"} {
+		if err := db.SetDomainWAF(ctx, d, true, store.DomainWAFModeBlock, 5, 5); err != nil {
+			t.Fatal(err)
+		}
+		if rec := sdReq(t, rt, cookie, http.MethodPost, "/api/v1/domains/park", `{"app":"web","domain":"`+d+`"}`); rec.Code != http.StatusOK {
+			t.Fatalf("park = %d %s", rec.Code, rec.Body.String())
+		}
+	}
+	rec := sdReq(t, rt, cookie, http.MethodGet, "/api/v1/domains/parked", "")
+	if !strings.Contains(rec.Body.String(), `"has_settings":true`) {
+		t.Fatalf("list = %s, want has_settings", rec.Body.String())
+	}
+	rec = sdReq(t, rt, cookie, http.MethodPost, "/api/v1/domains/parked/a.example.com/attach", `{"app":"api"}`)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"restored_settings":["domain_waf"]`) {
+		t.Fatalf("attach = %d %s, want waf restored", rec.Code, rec.Body.String())
+	}
+	rec = sdReq(t, rt, cookie, http.MethodPost, "/api/v1/domains/parked/b.example.com/attach", `{"app":"api","discard_settings":true}`)
+	if rec.Code != http.StatusOK || strings.Contains(rec.Body.String(), "restored_settings") {
+		t.Fatalf("discard attach = %d %s", rec.Code, rec.Body.String())
+	}
+	if _, found, _ := db.GetDomainWAF(ctx, "b.example.com"); found {
+		t.Fatal("discarded settings came back")
+	}
+}
+
+func TestParkedDomainsAPI_LiveState(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+	rt.publicHost = "203.0.113.7"
+	rt.detectPublicIPs = func(context.Context) []string { return nil }
+	rt.publicLookup = func(context.Context, string) []resolverResult { return nil }
+	rt.lookupHost = func(_ context.Context, host string) ([]string, error) {
+		switch host {
+		case "ok.example.com":
+			return []string{"203.0.113.7"}, nil
+		case "far.example.com":
+			return []string{"198.51.100.4"}, nil
+		}
+		return []string{"203.0.113.7"}, nil
+	}
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "img:v1", Port: 80,
+		Domains: []string{"ok.example.com", "far.example.com", "old.example.com"}}); err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now()
+	seedCert(t, db, "ok.example.com", now.Add(-24*time.Hour), now.Add(10*24*time.Hour))
+	seedCert(t, db, "old.example.com", now.Add(-90*24*time.Hour), now.Add(-2*24*time.Hour))
+	for _, d := range []string{"ok.example.com", "far.example.com", "old.example.com"} {
+		if rec := sdReq(t, rt, cookie, http.MethodPost, "/api/v1/domains/park", `{"app":"web","domain":"`+d+`"}`); rec.Code != http.StatusOK {
+			t.Fatalf("park %s = %d %s", d, rec.Code, rec.Body.String())
+		}
+	}
+
+	rec := sdReq(t, rt, cookie, http.MethodGet, "/api/v1/domains/parked", "")
+	var got []parkedDomainResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode %s: %v", rec.Body.String(), err)
+	}
+	by := map[string]parkedDomainResource{}
+	for _, p := range got {
+		by[p.Domain] = p
+	}
+	if p := by["ok.example.com"]; p.DNS == nil || p.DNS.Status != parkedDNSPointing || p.TLS == nil || p.TLS.State != parkedTLSIssued || p.TLS.DaysLeft == nil || *p.TLS.DaysLeft < 9 {
+		t.Fatalf("ok row = %+v", p)
+	}
+	if p := by["far.example.com"]; p.DNS.Status != parkedDNSNotPointing || p.TLS.State != parkedTLSNone || p.TLS.DaysLeft != nil {
+		t.Fatalf("far row (no cert) = %+v %+v", p.DNS, p.TLS)
+	}
+	if p := by["old.example.com"]; p.TLS.State != parkedTLSIssued || p.TLS.DaysLeft == nil || *p.TLS.DaysLeft >= 0 {
+		t.Fatalf("old row (expired) = %+v", p.TLS)
+	}
+}
+
+func TestParkedDNSFromCheck(t *testing.T) {
+	for in, want := range map[string]string{
+		domainCheckStatusConnected: parkedDNSPointing, domainCheckStatusPropagating: parkedDNSPointing,
+		domainCheckStatusNotResolving: parkedDNSNotPointing, domainCheckStatusResolvesElsewhere: parkedDNSNotPointing,
+		domainCheckStatusUnconfigured: parkedDNSUnknown, "": parkedDNSUnknown,
+	} {
+		if got := parkedDNSFromCheck(in); got != want {
+			t.Errorf("%q = %q, want %q", in, got, want)
+		}
 	}
 }

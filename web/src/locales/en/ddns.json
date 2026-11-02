@@ -41,6 +41,7 @@
     "quorum": "Probe quorum",
     "probeUrls": "Probe URLs (one per line)",
     "allowPrivate": "Allow private addresses",
+    "summary": "Every {{interval}}s, timeout {{timeout}}s, quorum {{quorum}}, alert after {{failAlertAfter}} failures",
     "allowInsecureHttp": "Allow plain HTTP"
   },
   "last": {

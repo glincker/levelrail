@@ -15,14 +15,16 @@ func domainsParkUsage(prog string) string {
   %[1]s domains park <app> <domain> [--note TEXT]
   %[1]s domains move <domain> --from APP --to APP [--confirm]
   %[1]s domains parked list
-  %[1]s domains parked attach <domain> --app APP
+  %[1]s domains parked attach <domain> --app APP [--discard-settings]
   %[1]s domains parked delete <domain>
 
 park takes a domain off an app but keeps it registered, with its DNS records
 and certificate untouched, so it can be attached to any app later. move hands
 a domain to another app with its per-domain settings; without --confirm it
 only runs the collision check. parked delete forgets the registration and
-never touches DNS.
+never touches DNS. park keeps the domain's settings (WAF, rate limit, TLS
+certificate reference, basic auth, auth gate, maintenance, redirect, error
+pages, search settings); attach restores them unless --discard-settings.
 `, prog)
 }
 
@@ -122,9 +124,9 @@ func runDomainsParkedList(prog string, args []string, stdout, stderr io.Writer, 
 			return
 		}
 		tw := tabwriter.NewWriter(stdout, 0, 2, 2, ' ', 0)
-		_, _ = fmt.Fprintln(tw, "DOMAIN\tPARKED FROM\tPARKED AT\tNOTE")
+		_, _ = fmt.Fprintln(tw, "DOMAIN\tPARKED FROM\tPARKED AT\tDNS\tTLS\tNOTE")
 		for _, p := range list {
-			_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", p.Domain, p.ParkedFrom, p.ParkedAt, p.Note)
+			_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\n", p.Domain, p.ParkedFrom, p.ParkedAt, parkedDNSCell(p), parkedTLSCell(p), p.Note)
 		}
 		_ = tw.Flush()
 	})
@@ -133,6 +135,7 @@ func runDomainsParkedList(prog string, args []string, stdout, stderr io.Writer, 
 func runDomainsParkedAttach(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenP, apiURLP, profileP, jsonP, outputP, queryP := apiFlagSet(prog, "domains parked attach", "print the result as JSON", stderr)
 	app := fs.String("app", "", "app that should serve the domain")
+	discard := fs.Bool("discard-settings", false, "drop the settings kept by park instead of restoring them")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, domainsParkUsage(prog)+"\nFlags:\n"); fs.PrintDefaults() }
 	token, apiURL, profile, jsonOut, of, code, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenP, apiURLP, profileP, jsonP, outputP, queryP}, prog, stderr)
 	if !ok {
@@ -147,12 +150,15 @@ func runDomainsParkedAttach(prog string, args []string, stdout, stderr io.Writer
 		return exitUsage
 	}
 	client := apiClientFromFlags(prog, apiURL, token, profile, lookupEnv)
-	res, err := client.AttachParkedDomain(context.Background(), domain, *app)
+	res, err := client.AttachParkedDomain(context.Background(), domain, *app, *discard)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("attach parked domain %q: %w", domain, err))
 	}
 	return writeScheduledTaskResult(stdout, stderr, of, res, func() {
 		_, _ = fmt.Fprintf(stdout, "attached %s to %s\n", res.Domain, res.To)
+		if len(res.RestoredSettings) > 0 {
+			_, _ = fmt.Fprintf(stdout, "restored settings: %s\n", strings.Join(res.RestoredSettings, ", "))
+		}
 	})
 }
 
@@ -174,4 +180,24 @@ func runDomainsParkedDelete(prog string, args []string, stdout, stderr io.Writer
 		_, _ = fmt.Fprintf(stdout, "deleted parked domain %s; its DNS records and certificate were not touched\n", domain)
 	}
 	return exitOK
+}
+
+func parkedDNSCell(p apiclient.ParkedDomain) string {
+	if p.DNS == nil || p.DNS.Status == "" {
+		return "unknown"
+	}
+	return p.DNS.Status
+}
+
+func parkedTLSCell(p apiclient.ParkedDomain) string {
+	if p.TLS == nil || p.TLS.State == "" {
+		return "none"
+	}
+	if p.TLS.DaysLeft == nil {
+		return p.TLS.State
+	}
+	if *p.TLS.DaysLeft < 0 {
+		return p.TLS.State + " (expired)"
+	}
+	return fmt.Sprintf("%s (%dd)", p.TLS.State, *p.TLS.DaysLeft)
 }

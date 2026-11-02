@@ -505,6 +505,9 @@ func (s *bootState) serve() error {
 	if serveErr := <-serveErrs; serveErr != nil {
 		logger.Error("http server error", slog.String("error", serveErr.Error()))
 	}
+	if err := ingressdriver.DefaultAccessLog().FlushVisitorHistoryFinal(); err != nil {
+		logger.Warn("final visitor history flush failed", slog.String("error", err.Error()))
+	}
 
 	if errors.Is(engineErr, context.Canceled) {
 		if s.restartRequested.Load() {

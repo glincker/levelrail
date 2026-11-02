@@ -19,6 +19,7 @@ import {
   useSetDomainRedirect,
   type SetDomainRedirectRequest,
 } from '../queries/domainRedirect'
+import { SettingSummary } from './domains/SettingSummary'
 import { EnforcedBadge, EnforcementNote } from './domains/EnforcementGate'
 
 // Redirect one already-saved domain to a target URL, enforced by the
@@ -71,136 +72,126 @@ export function DomainRedirectControl({
   }
 
   return (
-    <div className="rounded-md border border-border bg-muted/30 p-3 text-sm">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className="flex items-center gap-1.5 text-left"
-        >
-          {active ? (
-            <EnforcedBadge domain={domain} control="redirect">
-              <Badge variant="success" className="shrink-0">
-                <SignpostGlassIcon className="size-4.5" />
-                Redirecting to {redirect?.target_url}
-              </Badge>
-            </EnforcedBadge>
-          ) : (
-            <Badge variant="muted" className="shrink-0">
+    <SettingSummary
+      status={
+        active ? (
+          <EnforcedBadge domain={domain} control="redirect">
+            <Badge variant="success" className="shrink-0">
               <SignpostGlassIcon className="size-4.5" />
-              No redirect
+              Redirecting to {redirect?.target_url}
             </Badge>
-          )}
-        </button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => setOpen((v) => !v)}
-        >
-          <SignpostGlassIcon className="size-5" />
-          {open ? 'Hide' : active ? 'Manage' : 'Add redirect'}
-        </Button>
-      </div>
-      <EnforcementNote domain={domain} control="redirect" active={active} />
+          </EnforcedBadge>
+        ) : (
+          <Badge variant="muted" className="shrink-0">
+            <SignpostGlassIcon className="size-4.5" />
+            No redirect
+          </Badge>
+        )
+      }
+      summary={active ? String(redirect?.status_code ?? 301) : undefined}
+      note={
+        <EnforcementNote domain={domain} control="redirect" active={active} />
+      }
+      editLabel={active ? 'Manage' : 'Add redirect'}
+      closeLabel="Hide"
+      editing={open}
+      onEditingChange={setOpen}
+    >
+      <form
+        onSubmit={(e) => {
+          handleSubmit(e)
+        }}
+        className="mt-3 space-y-3"
+      >
+        <Field>
+          <FieldLabel htmlFor={`redirect-target-${domain}`}>
+            Target URL
+          </FieldLabel>
+          <Input
+            id={`redirect-target-${domain}`}
+            type="url"
+            value={effectiveTargetURL}
+            onChange={(e) => setTargetURL(e.target.value)}
+            disabled={pending}
+            placeholder="https://example.com"
+          />
+          <FieldDescription>
+            Every request to {domain} is redirected here instead of reaching its
+            container.
+          </FieldDescription>
+        </Field>
 
-      {open ? (
-        <form
-          onSubmit={(e) => {
-            handleSubmit(e)
-          }}
-          className="mt-3 space-y-3"
-        >
-          <Field>
-            <FieldLabel htmlFor={`redirect-target-${domain}`}>
-              Target URL
-            </FieldLabel>
-            <Input
-              id={`redirect-target-${domain}`}
-              type="url"
-              value={effectiveTargetURL}
-              onChange={(e) => setTargetURL(e.target.value)}
-              disabled={pending}
-              placeholder="https://example.com"
+        <Field>
+          <FieldLabel htmlFor={`redirect-status-${domain}`}>
+            Redirect type
+          </FieldLabel>
+          <Select
+            value={effectiveStatusCode}
+            onValueChange={(value) => setStatusCode(value)}
+            disabled={pending}
+          >
+            <SelectTrigger id={`redirect-status-${domain}`}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="301">301 Permanent (recommended)</SelectItem>
+              <SelectItem value="302">302 Temporary</SelectItem>
+            </SelectContent>
+          </Select>
+          <FieldDescription>
+            {effectiveStatusCode === '301'
+              ? 'Browsers and search engines remember this redirect and stop checking the original domain.'
+              : 'Browsers re-check the original domain on future visits, for a redirect you expect to undo.'}
+          </FieldDescription>
+        </Field>
+
+        {setRedirect.isError ? (
+          <Alert variant="destructive">
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.7em"
             />
-            <FieldDescription>
-              Every request to {domain} is redirected here instead of reaching
-              its container.
-            </FieldDescription>
-          </Field>
+            <AlertDescription>{setRedirect.error.message}</AlertDescription>
+          </Alert>
+        ) : null}
+        {clearRedirect.isError ? (
+          <Alert variant="destructive">
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.7em"
+            />
+            <AlertDescription>{clearRedirect.error.message}</AlertDescription>
+          </Alert>
+        ) : null}
 
-          <Field>
-            <FieldLabel htmlFor={`redirect-status-${domain}`}>
-              Redirect type
-            </FieldLabel>
-            <Select
-              value={effectiveStatusCode}
-              onValueChange={(value) => setStatusCode(value)}
-              disabled={pending}
-            >
-              <SelectTrigger id={`redirect-status-${domain}`}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="301">301 Permanent (recommended)</SelectItem>
-                <SelectItem value="302">302 Temporary</SelectItem>
-              </SelectContent>
-            </Select>
-            <FieldDescription>
-              {effectiveStatusCode === '301'
-                ? 'Browsers and search engines remember this redirect and stop checking the original domain.'
-                : 'Browsers re-check the original domain on future visits, for a redirect you expect to undo.'}
-            </FieldDescription>
-          </Field>
-
-          {setRedirect.isError ? (
-            <Alert variant="destructive">
-              <TriangleAlertGlassIcon
-                className="text-tone-warning"
-                size="1.7em"
-              />
-              <AlertDescription>{setRedirect.error.message}</AlertDescription>
-            </Alert>
-          ) : null}
-          {clearRedirect.isError ? (
-            <Alert variant="destructive">
-              <TriangleAlertGlassIcon
-                className="text-tone-warning"
-                size="1.7em"
-              />
-              <AlertDescription>{clearRedirect.error.message}</AlertDescription>
-            </Alert>
-          ) : null}
-
-          <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
+          <Button
+            type="submit"
+            size="sm"
+            disabled={pending || effectiveTargetURL.length === 0}
+          >
+            {setRedirect.isPending ? 'Saving...' : 'Save'}
+          </Button>
+          {active ? (
             <Button
-              type="submit"
+              type="button"
               size="sm"
-              disabled={pending || effectiveTargetURL.length === 0}
+              variant="outline"
+              disabled={pending}
+              onClick={() => {
+                clearRedirect.mutate(undefined, {
+                  onSuccess: () => {
+                    setTargetURL(null)
+                    setStatusCode(null)
+                  },
+                })
+              }}
             >
-              {setRedirect.isPending ? 'Saving...' : 'Save'}
+              {clearRedirect.isPending ? 'Removing...' : 'Remove redirect'}
             </Button>
-            {active ? (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={pending}
-                onClick={() => {
-                  clearRedirect.mutate(undefined, {
-                    onSuccess: () => {
-                      setTargetURL(null)
-                      setStatusCode(null)
-                    },
-                  })
-                }}
-              >
-                {clearRedirect.isPending ? 'Removing...' : 'Remove redirect'}
-              </Button>
-            ) : null}
-          </div>
-        </form>
-      ) : null}
-    </div>
+          ) : null}
+        </div>
+      </form>
+    </SettingSummary>
   )
 }

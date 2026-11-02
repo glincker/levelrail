@@ -271,6 +271,7 @@
       "app": "Aplicación",
       "dns": "DNS",
       "certificate": "Certificado",
+      "environment": "Entorno",
       "expires": "Vence",
       "visibility": "Búsqueda"
     },
@@ -304,7 +305,12 @@
       "failed": "Falló la solicitud",
       "renewsAuto": "Se renueva automáticamente",
       "renewsProxy": "Se renueva automáticamente mediante tu proxy",
-      "renewsManual": "Certificado subido: renuévalo antes de que venza"
+      "renewsManual": "Certificado subido: renuévalo antes de que venza",
+      "daysLeft_one": "Queda {{count}} día",
+      "daysLeft_other": "Quedan {{count}} días",
+      "expiresToday": "Caduca hoy",
+      "expiredAgo_one": "Caducó hace {{count}} día",
+      "expiredAgo_other": "Caducó hace {{count}} días"
     },
     "visibility": {
       "toggle": "Permitir que los buscadores indexen {{domain}}",
@@ -1221,10 +1227,10 @@
     "park": {
       "title": "¿Aparcar {{domain}}?",
       "body": "{{app}} deja de servir este dominio. Sigue registrado con su DNS y certificado en el grupo Aparcados y se puede asociar a cualquier app más tarde.",
-      "dropsSettings": "Aparcar elimina los ajustes propios del dominio: WAF y límite de peticiones, certificado propio y autenticación básica se borran y no se restauran al asociarlo.",
-      "keepsDnsCert": "Se conservan los registros DNS y el estado del certificado automático. Para conservar los ajustes, mueve el dominio a otra app.",
+      "keepsDnsCert": "También se conservan los registros DNS y el estado del certificado automático.",
       "confirm": "Aparcar dominio",
-      "done": "{{domain}} aparcado"
+      "done": "{{domain}} aparcado",
+      "savesSettings": "Aparcar guarda los ajustes propios del dominio (WAF y límite de peticiones, certificado propio, autenticación básica, acceso protegido, mantenimiento, redirección, páginas de error, visibilidad en buscadores, políticas de tráfico) junto al dominio aparcado. Se restauran al asociarlo."
     },
     "move": {
       "title": "Mover {{domain}}",
@@ -1240,13 +1246,30 @@
       "title": "¿Eliminar {{domain}}?",
       "body": "Quita el dominio de {{app}} por completo. Escribe el dominio para confirmar.",
       "confirm": "Eliminar",
-      "done": "{{domain}} eliminado"
+      "done": "{{domain}} eliminado",
+      "dropsSettings": "Eliminar quita los ajustes propios del dominio: WAF y límite de peticiones, certificado propio y autenticación básica se borran."
     },
     "attach": {
       "title": "Asociar {{domain}}",
       "body": "Elige la app que debe servir este dominio aparcado.",
       "confirm": "Asociar",
-      "done": "{{domain}} asociado a {{app}}"
+      "done": "{{domain}} asociado a {{app}}",
+      "settingsLegend": "Ajustes guardados",
+      "restore": "Restaurar los ajustes guardados (por defecto)",
+      "startFresh": "Empezar de cero y descartarlos",
+      "restored": "Restaurado: {{kinds}}",
+      "kinds": {
+        "domain_waf": "WAF",
+        "gate_access_rules": "límite de peticiones",
+        "domain_tls_cert": "certificado",
+        "domain_basic_auth": "autenticación básica",
+        "domain_auth_gate": "acceso protegido",
+        "domain_maintenance": "mantenimiento",
+        "domain_redirect": "redirección",
+        "domain_error_page": "páginas de error",
+        "domain_search_visibility": "visibilidad en buscadores",
+        "domain_traffic_policies": "políticas de tráfico"
+      }
     },
     "deleteParked": {
       "title": "¿Eliminar el dominio aparcado {{domain}}?",
@@ -1258,7 +1281,17 @@
     "hint": "Registrados pero sin app que los sirva. Asocia uno a una app para servirlo de nuevo.",
     "from": "Aparcado desde {{app}}",
     "attach": "Asociar",
-    "delete": "Eliminar {{domain}}"
+    "delete": "Eliminar {{domain}}",
+    "settingsSaved": "Ajustes guardados",
+    "dns": {
+      "pointing": "DNS apunta",
+      "not_pointing": "DNS no apunta",
+      "unknown": "DNS desconocido"
+    },
+    "tls": {
+      "pending": "Certificado pendiente",
+      "none": "Sin certificado"
+    }
   },
   "detail": {
     "description": "Ajustes de este dominio en {{app}}.",
@@ -1276,6 +1309,25 @@
     "summaryWaf": "WAF: {{mode}}",
     "summaryWafOff": "WAF desactivado",
     "summaryRate": "Límite {{rps}}/s, ráfaga {{burst}}",
-    "summaryRateOff": "Sin límite de tasa"
+    "summaryRateOff": "Sin límite de tasa",
+    "badgeOn": "WAF/límite de tasa activo",
+    "badgeOff": "Sin protección",
+    "helpLabel": "Guía de WAF y límite de tasa",
+    "wafLabel": "WAF OWASP Coraza",
+    "modeLabel": "Modo",
+    "modeDetect": "Detectar (solo registra, recomendado para empezar)",
+    "modeBlock": "Bloquear (rechaza las solicitudes que coinciden)",
+    "helpDetect": "Las solicitudes que coinciden con las reglas OWASP CRS se registran, nunca se rechazan. Cambia a Bloquear cuando hayas revisado los registros en busca de falsos positivos.",
+    "helpBlock": "Las solicitudes que coinciden con las reglas OWASP CRS se rechazan con un error.",
+    "rpsLabel": "Límite de tasa (solicitudes/s por IP)",
+    "rpsPlaceholder": "0 (desactivado)",
+    "rpsHelp": "0 desactiva el límite de tasa para este dominio.",
+    "burstLabel": "Ráfaga permitida",
+    "burstPlaceholder": "0 (sin ráfaga extra)",
+    "burstHelp": "Solicitudes permitidas en un segundo por encima de la tasa sostenida. Déjalo en 0 para un tope estricto.",
+    "save": "Guardar",
+    "saving": "Guardando...",
+    "turnOff": "Desactivar",
+    "removing": "Quitando..."
   }
 }

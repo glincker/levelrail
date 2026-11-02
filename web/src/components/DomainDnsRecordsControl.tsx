@@ -52,9 +52,7 @@ export function ConnectNsProvider({ provider }: { provider?: string }) {
 // A/AAAA/CNAME/TXT/MX/SRV/CAA records (not just this one domain's own
 // host) from whichever ACME DNS-01 provider is already configured, with
 // add/edit/delete and a live resolved/pending/mismatch check per record.
-// Collapsed by default, the same pattern DomainWafControl establishes
-// for another per-domain panel that shouldn't dominate DomainEditor's
-// list when a domain has nothing unusual configured.
+// The count and records are always visible; only the add form is toggled.
 export function DomainDnsRecordsControl({
   appName,
   domain,
@@ -63,7 +61,7 @@ export function DomainDnsRecordsControl({
   domain: string
 }) {
   const { t } = useTranslation('dns')
-  const [open, setOpen] = useState(false)
+  const [showAdd, setShowAdd] = useState(false)
   const { data, isLoading, isError, error } = useDnsRecords(appName, domain)
   const { data: check } = useDomainCheck(appName, domain)
   const createRecord = useCreateDnsRecord(appName, domain)
@@ -88,61 +86,37 @@ export function DomainDnsRecordsControl({
     overscan: 10,
   })
 
-  if (!open) {
-    return (
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-muted/30 p-3 text-sm">
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          aria-expanded={false}
-          className="flex items-center gap-1.5 text-left"
-        >
-          <Badge variant="muted" className="shrink-0">
-            <GlobeGlassIcon className="size-4.5" aria-hidden="true" />
-            {isLoading
-              ? t('recordsControl.title')
-              : notConfigured
-                ? t('recordsControl.titleNoProvider')
-                : t('recordsControl.count', { count: records.length })}
-          </Badge>
-        </button>
-        {notConfigured ? (
-          <ConnectNsProvider provider={check?.nameserver_provider} />
-        ) : null}
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          aria-expanded={false}
-          onClick={() => setOpen(true)}
-        >
-          <GlobeGlassIcon className="size-5" aria-hidden="true" />
-          {t('recordsControl.manage')}
-        </Button>
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-3 rounded-md border border-border bg-muted/30 p-3 text-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="flex items-center gap-1.5 font-medium text-foreground">
+        <span className="flex flex-wrap items-center gap-2 font-medium text-foreground">
           <GlobeGlassIcon className="size-5" aria-hidden="true" />
           {data?.zone
             ? t('recordsControl.titleForZone', {
                 zone: data.zone.replace(/\.$/, ''),
               })
             : t('recordsControl.title')}
+          {isLoading ? null : (
+            <Badge variant="muted">
+              {notConfigured
+                ? t('recordsControl.titleNoProvider')
+                : t('recordsControl.count', { count: records.length })}
+            </Badge>
+          )}
         </span>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          aria-expanded={true}
-          onClick={() => setOpen(false)}
-        >
-          {t('recordsControl.hide')}
-        </Button>
+        {isLoading || notConfigured || isError ? null : (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            aria-expanded={showAdd}
+            onClick={() => setShowAdd((v) => !v)}
+          >
+            {showAdd
+              ? t('recordsControl.closeAdd')
+              : t('recordsControl.addRecord')}
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
@@ -240,60 +214,74 @@ export function DomainDnsRecordsControl({
             </div>
           )}
 
-          <div className="space-y-2 border-t border-border pt-3">
-            <FieldLabel className="text-xs">
-              {t('recordsControl.addRecord')}
-            </FieldLabel>
-            <Field orientation="horizontal" className="items-start">
-              <RecordFields
-                draft={addDraft}
-                onChange={setAddDraft}
-                idPrefix="add"
-              />
-              <Button
-                type="button"
-                size="icon-sm"
-                disabled={
-                  adding ||
-                  createRecord.isPending ||
-                  addDraft.value.trim().length === 0
-                }
-                onClick={() => {
-                  setAdding(true)
-                  createRecord.mutate(toRecord(addDraft), {
-                    onSuccess: () => {
-                      setAddDraft(EMPTY_DRAFT)
-                    },
-                    onSettled: () => setAdding(false),
-                  })
-                }}
-              >
-                <PlusGlassIcon size="1.4em" aria-hidden="true" />
-                <span className="sr-only">{t('recordsControl.addRecord')}</span>
-              </Button>
-            </Field>
-            {createRecord.isError ? (
-              <Alert variant="destructive">
-                <AlertDescription>
-                  {createRecord.error.message}
-                </AlertDescription>
-              </Alert>
-            ) : null}
-            {updateRecord.isError ? (
-              <Alert variant="destructive">
-                <AlertDescription>
-                  {updateRecord.error.message}
-                </AlertDescription>
-              </Alert>
-            ) : null}
-            {deleteRecord.isError ? (
-              <Alert variant="destructive">
-                <AlertDescription>
-                  {deleteRecord.error.message}
-                </AlertDescription>
-              </Alert>
-            ) : null}
-          </div>
+          {showAdd ? (
+            <div className="space-y-2 border-t border-border pt-3">
+              <FieldLabel className="text-xs">
+                {t('recordsControl.addRecord')}
+              </FieldLabel>
+              <Field orientation="horizontal" className="items-start">
+                <RecordFields
+                  draft={addDraft}
+                  onChange={setAddDraft}
+                  idPrefix="add"
+                />
+                <Button
+                  type="button"
+                  size="icon-sm"
+                  disabled={
+                    adding ||
+                    createRecord.isPending ||
+                    addDraft.value.trim().length === 0
+                  }
+                  onClick={() => {
+                    setAdding(true)
+                    createRecord.mutate(toRecord(addDraft), {
+                      onSuccess: () => {
+                        setAddDraft(EMPTY_DRAFT)
+                      },
+                      onSettled: () => setAdding(false),
+                    })
+                  }}
+                >
+                  <PlusGlassIcon size="1.4em" aria-hidden="true" />
+                  <span className="sr-only">
+                    {t('recordsControl.addRecord')}
+                  </span>
+                </Button>
+              </Field>
+              {createRecord.isError ? (
+                <Alert variant="destructive">
+                  <AlertDescription>
+                    {createRecord.error.message}
+                  </AlertDescription>
+                </Alert>
+              ) : null}
+              {updateRecord.isError ? (
+                <Alert variant="destructive">
+                  <AlertDescription>
+                    {updateRecord.error.message}
+                  </AlertDescription>
+                </Alert>
+              ) : null}
+              {deleteRecord.isError ? (
+                <Alert variant="destructive">
+                  <AlertDescription>
+                    {deleteRecord.error.message}
+                  </AlertDescription>
+                </Alert>
+              ) : null}
+            </div>
+          ) : null}
+          {updateRecord.isError && !showAdd ? (
+            <Alert variant="destructive">
+              <AlertDescription>{updateRecord.error.message}</AlertDescription>
+            </Alert>
+          ) : null}
+          {deleteRecord.isError && !showAdd ? (
+            <Alert variant="destructive">
+              <AlertDescription>{deleteRecord.error.message}</AlertDescription>
+            </Alert>
+          ) : null}
         </>
       )}
     </div>

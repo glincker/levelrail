@@ -106,3 +106,21 @@ describe('DomainsTable', () => {
     expect(screen.getByLabelText('Filter domains')).toHaveValue('')
   })
 })
+
+describe('DomainsTable environment and TLS', () => {
+  it('shows the environment and a tone-marked TLS days left', () => {
+    renderTable({
+      domains: [
+        makeDomain({
+          environment: 'staging',
+          environment_id: 'env_1',
+          tls_days_left: -2,
+        }),
+      ],
+      appCount: 1,
+    })
+    expect(screen.getAllByText('staging').length).toBeGreaterThan(0)
+    const days = screen.getAllByText('Expired 2 days ago')[0]
+    expect(days?.className).toContain('text-tone-danger')
+  })
+})

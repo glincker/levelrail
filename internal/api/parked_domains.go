@@ -24,7 +24,7 @@ const (
 
 type parkedDomainStore interface {
 	ParkServiceDomain(ctx context.Context, app, domain, by, note string) error
-	AttachParkedDomain(ctx context.Context, domain, app string) error
+	AttachParkedDomainWith(ctx context.Context, domain, app string, restore bool) ([]string, error)
 	MoveServiceDomain(ctx context.Context, domain, from, to string) error
 	DomainOwnerOf(ctx context.Context, domain string) (string, bool, error)
 	GetParkedDomain(ctx context.Context, domain string) (store.ParkedDomain, error)
@@ -45,10 +45,15 @@ type parkedDomainResource struct {
 	Note       string `json:"note,omitempty"`
 	ParkedBy   string `json:"parked_by,omitempty"`
 	ParkedAt   string `json:"parked_at,omitempty"`
+	// HasSettings is true when attach can restore the per-domain settings the park kept.
+	HasSettings bool `json:"has_settings,omitempty"`
+	// DNS and TLS are the live state, so the list shows whether a parked domain is still worth keeping.
+	DNS *parkedDNSState `json:"dns,omitempty"`
+	TLS *parkedTLSState `json:"tls,omitempty"`
 }
 
 func toParkedDomainResource(p store.ParkedDomain) parkedDomainResource {
-	res := parkedDomainResource{Domain: p.Domain, Kind: "parked", ParkedFrom: p.ParkedFrom, Note: p.Note, ParkedBy: p.ParkedBy}
+	res := parkedDomainResource{Domain: p.Domain, Kind: "parked", ParkedFrom: p.ParkedFrom, Note: p.Note, ParkedBy: p.ParkedBy, HasSettings: p.HasSettings}
 	if !p.ParkedAt.IsZero() {
 		res.ParkedAt = p.ParkedAt.UTC().Format(time.RFC3339)
 	}
@@ -64,6 +69,8 @@ type domainMoveRequest struct {
 	Note   string `json:"note,omitempty"`
 	// Confirm acknowledges that traffic for the domain changes owner.
 	Confirm bool `json:"confirm,omitempty"`
+	// DiscardSettings makes attach drop the settings kept by park instead of restoring them.
+	DiscardSettings bool `json:"discard_settings,omitempty"`
 }
 
 // domainLifecycleResponse reports what a park, move or attach did, or with
@@ -75,6 +82,8 @@ type domainLifecycleResponse struct {
 	Applied              bool   `json:"applied"`
 	RequiresConfirmation bool   `json:"requires_confirmation,omitempty"`
 	Message              string `json:"message,omitempty"`
+	// RestoredSettings names the per-domain settings kinds an attach restored.
+	RestoredSettings []string `json:"restored_settings,omitempty"`
 }
 
 func decodeDomainMove(w http.ResponseWriter, r *http.Request) (domainMoveRequest, bool) {
@@ -101,9 +110,18 @@ func (rt *Router) handleListParkedDomains(w http.ResponseWriter, r *http.Request
 		rt.internalError(w, "api: list parked domains", err)
 		return
 	}
+	domains := make([]string, 0, len(rows))
+	for _, p := range rows {
+		domains = append(domains, p.Domain)
+	}
+	states := rt.parkedStates(r.Context(), r, domains)
 	out := make([]parkedDomainResource, 0, len(rows))
 	for _, p := range rows {
-		out = append(out, toParkedDomainResource(p))
+		res := toParkedDomainResource(p)
+		if st, ok := states[strings.ToLower(p.Domain)]; ok {
+			res.DNS, res.TLS = &st.DNS, &st.TLS
+		}
+		out = append(out, res)
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -232,11 +250,13 @@ func (rt *Router) handleAttachParkedDomain(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	before := svc.Domains
-	if !rt.writeLifecycleError(w, st.AttachParkedDomain(r.Context(), domain, req.App), domain) {
+	restored, err := st.AttachParkedDomainWith(r.Context(), domain, req.App, !req.DiscardSettings)
+	if !rt.writeLifecycleError(w, err, domain) {
 		return
 	}
-	rt.afterDomainLifecycle(r, auditActionDomainAttached, domain, req.App, before)
-	writeJSON(w, http.StatusOK, domainLifecycleResponse{Domain: domain, To: req.App, Applied: true})
+	detail, _ := json.Marshal(map[string]any{"settings_discarded": req.DiscardSettings, "settings_restored": restored})
+	rt.afterDomainLifecycle(r, auditActionDomainAttached, domain, req.App, before, string(detail))
+	writeJSON(w, http.StatusOK, domainLifecycleResponse{Domain: domain, To: req.App, Applied: true, RestoredSettings: restored})
 }
 
 // handleDeleteParkedDomain handles DELETE /api/v1/domains/parked/{domain}. It
@@ -288,17 +308,17 @@ func (rt *Router) writeLifecycleError(w http.ResponseWriter, err error, domain s
 
 // afterDomainLifecycle records the app event, re-renders domain-derived env,
 // nudges the reconciler and writes the audit entry.
-func (rt *Router) afterDomainLifecycle(r *http.Request, action, domain, app string, before []string) {
+func (rt *Router) afterDomainLifecycle(r *http.Request, action, domain, app string, before []string, detail ...string) {
 	next := rt.appDomainList(r.Context(), app)
 	if ev, ok := domainChangeEvent(app, before, next); ok {
 		rt.recordAppEvent(r, ev)
 	}
 	rt.rerenderDomainEnv(r, app, before)
 	rt.nudgeReconciler()
-	rt.recordDomainLifecycleAudit(r, action, domain)
+	rt.recordDomainLifecycleAudit(r, action, domain, detail...)
 }
 
-func (rt *Router) recordDomainLifecycleAudit(r *http.Request, action, domain string) {
+func (rt *Router) recordDomainLifecycleAudit(r *http.Request, action, domain string, detail ...string) {
 	pt, actorID, _, err := rt.callerPrincipal(r)
 	if err != nil {
 		return
@@ -314,6 +334,9 @@ func (rt *Router) recordDomainLifecycleAudit(r *http.Request, action, domain str
 		Ability: AbilityWriteSensitive, Method: r.Method, Path: r.URL.Path,
 		StatusCode: http.StatusOK, RemoteAddr: clientIP(r), CreatedAt: store.FormatAuditTime(time.Now()),
 		ClientKind: clientKindFromUserAgent(r.Header.Get("User-Agent")), Action: action,
+	}
+	if len(detail) > 0 {
+		entry.Detail = detail[0]
 	}
 	if err := rt.auditLog.SaveAuditEntry(r.Context(), entry); err != nil {
 		rt.logger.Warn("api: save domain lifecycle audit entry", slog.String("domain", domain), slog.String("error", err.Error()))

@@ -20,6 +20,7 @@ import type { Domain } from '../queries/domains'
 import {
   DomainCertCell,
   DomainDnsCell,
+  DomainEnvironmentCell,
   DomainExpiryCell,
   DomainNameCell,
   DomainRowActions,
@@ -28,7 +29,7 @@ import {
 } from './DomainRow'
 
 export function DomainsTableSkeleton() {
-  return <TableSkeleton columnCount={6} rowCount={6} />
+  return <TableSkeleton columnCount={7} rowCount={6} />
 }
 
 export function DomainsTable({
@@ -79,6 +80,13 @@ export function DomainsTable({
         header: t('page.col.app'),
         width: 'w-44',
         cell: (d) => <DomainTargetCell domain={d} />,
+      },
+      {
+        id: 'environment',
+        header: t('page.col.environment'),
+        priority: 3,
+        width: 'w-28',
+        cell: (d) => <DomainEnvironmentCell domain={d} />,
       },
       {
         id: 'dns',

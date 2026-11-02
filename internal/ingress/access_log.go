@@ -110,6 +110,8 @@ type AccessLog struct {
 	secretOnce  sync.Once
 	secret      []byte
 
+	hist visitorHistory
+
 	subs    atomic.Pointer[[]accessSub]
 	capture atomic.Bool
 	subMu   sync.Mutex
@@ -233,6 +235,9 @@ func accessCapacityFromEnv() int {
 func (l *AccessLog) Record(key string, rec AccessRecord) {
 	if l == nil {
 		return
+	}
+	if l.hist.on.Load() {
+		l.trackRollup(key, rec)
 	}
 	if l.cap <= 0 {
 		l.notify(key, rec)
