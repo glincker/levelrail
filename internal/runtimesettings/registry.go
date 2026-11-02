@@ -77,6 +77,8 @@ const (
 	KeyHeartbeatJobBackoffMax  = "heartbeat.job_backoff_max"
 	KeyHeartbeatJobQueue       = "heartbeat.job_queue"
 	KeyContainersRestartPolicy = "containers.restart_policy"
+	KeyGameStatusTimeout       = "games.status_timeout"
+	KeyGameStatusCache         = "games.status_cache"
 	KeyRevokedTokenDays        = "retention.revoked_token_days" //nolint:gosec // setting key, not a credential
 	KeyExpiredTokenDays        = "retention.expired_token_days" //nolint:gosec // setting key, not a credential
 	KeyDesktopSessionTTL       = "desktop.session_ttl"
@@ -211,6 +213,18 @@ func init() {
 		TitleKey: "runtimeSettings:items.containersRestartPolicy.title", DescKey: "runtimeSettings:items.containersRestartPolicy.description",
 		Title:       "Container restart policy",
 		Description: "Docker restart policy for long-running app containers, so apps come back after a host reboot or Docker restart. On a small host (1 GB) many apps starting at boot at once compete for memory; use no to rely on the control plane's sequential start. Applies to containers created on the next deploy or recreate; existing containers keep their old policy.",
+	})
+	Register(Definition{
+		Key: KeyGameStatusTimeout, Category: CategoryNetworking, Kind: KindDuration, Default: "3s",
+		Env: "APP_GAME_STATUS_TIMEOUT", Apply: ApplyLive,
+		Title:       "Game status ping timeout",
+		Description: "How long the game server status ping waits for a game port to answer before reporting it offline. Values under 200ms are raised to 200ms.",
+	})
+	Register(Definition{
+		Key: KeyGameStatusCache, Category: CategoryNetworking, Kind: KindDuration, Default: "5s",
+		Env: "APP_GAME_STATUS_CACHE", Apply: ApplyLive,
+		Title:       "Game status cache time",
+		Description: "How long one game server status answer is reused, so many dashboards and CLI calls ping a game port at most once in this time. 0s turns the cache off.",
 	})
 	Register(Definition{
 		Key: KeyTrustLoopbackForwarded, Category: CategoryNetworking, Kind: KindBool, Default: "true",

@@ -60,6 +60,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_WEBHOOK_REPLAY_WINDOW` | [`security.webhook_replay_window`](/runtime-settings#security) | `10m` |
 | `APP_API_MAX_BODY_BYTES` | [`api.max_body_bytes`](/runtime-settings#networking) | `16777216` |
 | `APP_ASSETS_UPLOAD_MAX_BYTES` | [`assets.upload_max_bytes`](/runtime-settings#networking) | `1073741824` |
+| `APP_GAME_STATUS_CACHE` | [`games.status_cache`](/runtime-settings#networking) | `5s` |
+| `APP_GAME_STATUS_TIMEOUT` | [`games.status_timeout`](/runtime-settings#networking) | `3s` |
 | `APP_INGRESS_CA_RETRY_BACKOFF` | [`ingress.ca_switch_retry_base`](/runtime-settings#networking) | `1m` |
 | `APP_INGRESS_CA_RETRY_BACKOFF_MAX` | [`ingress.ca_switch_retry_max`](/runtime-settings#networking) | `1h` |
 | `APP_INGRESS_DNS01_ALL_HOSTS` | [`ingress.dns01_all_hosts`](/runtime-settings#networking) | `false` |

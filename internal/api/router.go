@@ -860,11 +860,12 @@ type Router struct {
 	// doctorHostMemory reads this host's total/available memory for the
 	// ram check. nil means "use telemetry.HostMemoryBytes".
 	doctorHostMemory       func() (totalBytes, availableBytes int64, err error)
-	doctorNetworkTimeout   time.Duration // 0 means "use defaultDoctorNetworkTimeout", set via WithDoctorNetworkTimeout
-	doctorPublicIPEndpoint string        // "" means "use defaultDoctorPublicIPEndpoint", set via WithDoctorPublicIPEndpoint
-	doctorClockSkewWarnAge time.Duration // 0 means "use defaultDoctorClockSkewWarnAge", set via WithDoctorClockSkewWarnAge
-	doctorMinRAMBytes      int64         // 0 means "use defaultDoctorMinRAMBytes", set via WithDoctorMinRAMBytes
-	doctorMinCPUCount      int           // 0 means "use defaultDoctorMinCPUCount", set via WithDoctorMinCPUCount
+	gameStatus             gameStatusCache // per-app game status answers, see game_status.go
+	doctorNetworkTimeout   time.Duration   // 0 means "use defaultDoctorNetworkTimeout", set via WithDoctorNetworkTimeout
+	doctorPublicIPEndpoint string          // "" means "use defaultDoctorPublicIPEndpoint", set via WithDoctorPublicIPEndpoint
+	doctorClockSkewWarnAge time.Duration   // 0 means "use defaultDoctorClockSkewWarnAge", set via WithDoctorClockSkewWarnAge
+	doctorMinRAMBytes      int64           // 0 means "use defaultDoctorMinRAMBytes", set via WithDoctorMinRAMBytes
+	doctorMinCPUCount      int             // 0 means "use defaultDoctorMinCPUCount", set via WithDoctorMinCPUCount
 	// doctorAgentAdvertiseHost/doctorAgentAdvertisePort are the
 	// APP_AGENT_ADVERTISE_HOST/APP_AGENT_ADDR-derived address agents dial
 	// to reach this control plane, set via WithDoctorAgentAdvertise. Empty

@@ -65,6 +65,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsSleep(prog, args[1:], stdout, stderr, lookupEnv)
 	case "urls":
 		return runAppsURLs(prog, args[1:], stdout, stderr, lookupEnv)
+	case "game-status":
+		return runAppsGameStatus(prog, args[1:], stdout, stderr, lookupEnv)
 	case "cdn":
 		return runAppsCDN(prog, args[1:], stdout, stderr, lookupEnv)
 	case "abuse":
@@ -302,6 +304,7 @@ func appsUsage(prog string) string {
   %[1]s apps sleep enable|disable|status|wake|now|history <name> [flags]   stop an idle app and wake it on the next request
   %[1]s apps sleep list [flags]       apps with sleep on, which are asleep, and the memory freed
   %[1]s apps urls <name> [flags]   where the app can be reached now: ports, local and LAN addresses, domains, internal DNS name
+  %[1]s apps game-status <name> [flags]   game server online state, players, latency and the address players join
   %[1]s apps cdn get|set|resync <name> [flags]    per app Cloudflare proxy setting, with a safe re-sync of existing DNS records
   %[1]s apps abuse get|set|dry-run <name> [flags]   per app rate limit and deny lists, log_only first, with a replay of recent traffic
   %[1]s apps access <name> [--slow-ms N] [--min-status N] [flags]   recent edge requests with request and trace ids

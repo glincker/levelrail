@@ -36,6 +36,14 @@ Direct game ports do not go through the HTTP reverse proxy, and the Minecraft an
 
 To make a TCP game port such as Minecraft's 25565 public, use a stream: `levelrail-cli apps streams create <app> --host-port 25565 --container-port 25565`, then `levelrail-cli apps restart <app> --wait`. The template's private bind then moves to a random loopback port so the stream can listen on 25565 itself. `apps exposure <app> --mode direct --host-port 25565 --port 25565` also works, and the template's private bind is dropped in favour of it. Both are covered by reconciler tests only; they have not yet been proven from the internet on a real host. UDP games publish as `/udp` and are not affected by this; UDP exposure is also not host-proven. After making a port public, open it in both firewall layers below.
 
+## Status and join address
+
+`levelrail-cli apps game-status <app>` (and the status card on the app page in the dashboard) shows whether the server answers, its version, players online and the round-trip time, plus the address your players type in. For Minecraft Java it speaks the server list ping; for any other TCP game port it only checks that a connection opens, so it reports online without players or version. UDP games (Bedrock, Palworld) are not probed.
+
+The join address is your server's public host and the public port, from a stream, a public published port or a direct exposure. It needs `APP_PUBLIC_HOST` (or the detected public IP) to be known; with a private port it says so instead of showing an address. The API is `GET /api/v1/apps/{name}/game-status`.
+
+The ping only ever connects to the app's own port on the same host (loopback), never to an address you supply, so it cannot be pointed at other machines. It proves the game answers on this host, not that the internet can reach it: still test a join from another network. Answers are reused for a few seconds so several viewers do not ping the server each time. Two [runtime settings](/runtime-settings#networking) tune it: `games.status_timeout` (default `3s`, seeded by `APP_GAME_STATUS_TIMEOUT`) and `games.status_cache` (default `5s`, seeded by `APP_GAME_STATUS_CACHE`). This has not yet been checked against a real Minecraft client on a real host.
+
 ## Two firewall layers
 
 Players can connect only if both layers allow the port:

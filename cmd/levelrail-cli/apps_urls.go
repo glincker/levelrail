@@ -42,5 +42,9 @@ func runAppsURLs(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 			_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\n", a.Kind, addr, a.ReachableHint)
 		}
 		_ = tw.Flush()
+		// Best effort: a game port also has a join address, shown only when it is public.
+		if gs, gerr := c.client.GetAppGameStatus(context.Background(), app); gerr == nil && gs.JoinPort > 0 {
+			_, _ = fmt.Fprintln(stdout, joinLine(gs))
+		}
 	})
 }
