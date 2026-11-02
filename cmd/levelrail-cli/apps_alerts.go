@@ -237,7 +237,7 @@ func validateAppsAlertsCreateKind(kind, metric, comparator string, restartCountT
 		// Platform-wide; --for-duration optionally overrides APP_BACKUP_COPY_LAG_ALERT.
 	case "slo_burn":
 		// --slo is validated by sloFlags.apply.
-	case "domain_health", "cert_expiring", "cert_renewal_stalled", "domain_not_resolving":
+	case "domain_health", "cert_expiring", "cert_renewal_stalled", "domain_not_resolving", "domain_traffic_drop", "parked_domain_cert_expiry":
 		// No required flags; see trafficAlertCondition for what each watches.
 	case "backup_missing":
 		switch backupResourceKind {
@@ -253,9 +253,9 @@ func validateAppsAlertsCreateKind(kind, metric, comparator string, restartCountT
 			return newValidationError("--backup-resource-kind must be \"database\" or \"volume\" for --kind backup_missing")
 		}
 	case "":
-		return newValidationError("--kind is required (threshold, crashloop, cert_expiry, cert_expiring, cert_renewal_stalled, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, domain_not_resolving, backup_missing, node_offline, node_cert_expiring, control_plane_backup_stale, log_archive_stale, export_behind, backup_copy_behind, or slo_burn)")
+		return newValidationError("--kind is required (threshold, crashloop, cert_expiry, cert_expiring, cert_renewal_stalled, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, domain_not_resolving, domain_traffic_drop, parked_domain_cert_expiry, backup_missing, node_offline, node_cert_expiring, control_plane_backup_stale, log_archive_stale, export_behind, backup_copy_behind, or slo_burn)")
 	default:
-		return newValidationError("--kind %q is not valid: must be threshold, crashloop, cert_expiry, cert_expiring, cert_renewal_stalled, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, domain_not_resolving, backup_missing, node_offline, node_cert_expiring, control_plane_backup_stale, log_archive_stale, export_behind, backup_copy_behind, or slo_burn", kind)
+		return newValidationError("--kind %q is not valid: must be threshold, crashloop, cert_expiry, cert_expiring, cert_renewal_stalled, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, domain_not_resolving, domain_traffic_drop, parked_domain_cert_expiry, backup_missing, node_offline, node_cert_expiring, control_plane_backup_stale, log_archive_stale, export_behind, backup_copy_behind, or slo_burn", kind)
 	}
 	return nil
 }
@@ -302,7 +302,7 @@ func runAppsAlertsCreate(prog string, args []string, stdout, stderr io.Writer, l
 		disabled                                    bool
 	)
 	fs.StringVar(&name, "name", "", "display name for the rule (required)")
-	fs.StringVar(&kind, "kind", "", "rule kind: threshold, crashloop, cert_expiry, cert_expiring, cert_renewal_stalled, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, domain_not_resolving, backup_missing, node_offline, node_cert_expiring, control_plane_backup_stale, log_archive_stale, export_behind, backup_copy_behind, slo_burn (required)")
+	fs.StringVar(&kind, "kind", "", "rule kind: threshold, crashloop, cert_expiry, cert_expiring, cert_renewal_stalled, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, domain_not_resolving, domain_traffic_drop, parked_domain_cert_expiry, backup_missing, node_offline, node_cert_expiring, control_plane_backup_stale, log_archive_stale, export_behind, backup_copy_behind, slo_burn (required)")
 	fs.StringVar(&metric, "metric", "", "metric name (--kind threshold only, required for that kind)")
 	fs.StringVar(&comparator, "comparator", "", "one of >, <, >=, <= (--kind threshold only, required for that kind)")
 	fs.Float64Var(&threshold, "threshold", 0, "threshold value (--kind threshold), or days for --kind cert_expiring (default 14)")
@@ -409,7 +409,7 @@ backup trails that schedule's own expected interval by more than
 
 Flags:
   --name string                        display name for the rule (required)
-  --kind string                        threshold, crashloop, cert_expiry, cert_expiring, cert_renewal_stalled, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, domain_not_resolving, backup_missing, node_offline, node_cert_expiring, control_plane_backup_stale, log_archive_stale, export_behind, backup_copy_behind, or slo_burn (required)
+  --kind string                        threshold, crashloop, cert_expiry, cert_expiring, cert_renewal_stalled, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, domain_not_resolving, domain_traffic_drop, parked_domain_cert_expiry, backup_missing, node_offline, node_cert_expiring, control_plane_backup_stale, log_archive_stale, export_behind, backup_copy_behind, or slo_burn (required)
   --metric string                      metric name (--kind threshold only)
   --comparator string                  >, <, >=, or <= (--kind threshold only)
   --threshold float                    threshold value (--kind threshold only)
@@ -449,7 +449,7 @@ func runAppsAlertsUpdate(prog string, args []string, stdout, stderr io.Writer, l
 		disabled                                    bool
 	)
 	fs.StringVar(&name, "name", "", "display name for the rule (required)")
-	fs.StringVar(&kind, "kind", "", "rule kind: threshold, crashloop, cert_expiry, cert_expiring, cert_renewal_stalled, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, domain_not_resolving, backup_missing, node_offline, node_cert_expiring, control_plane_backup_stale, log_archive_stale, export_behind, backup_copy_behind, slo_burn (required)")
+	fs.StringVar(&kind, "kind", "", "rule kind: threshold, crashloop, cert_expiry, cert_expiring, cert_renewal_stalled, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, domain_not_resolving, domain_traffic_drop, parked_domain_cert_expiry, backup_missing, node_offline, node_cert_expiring, control_plane_backup_stale, log_archive_stale, export_behind, backup_copy_behind, slo_burn (required)")
 	fs.StringVar(&metric, "metric", "", "metric name (--kind threshold only, required for that kind)")
 	fs.StringVar(&comparator, "comparator", "", "one of >, <, >=, <= (--kind threshold only, required for that kind)")
 	fs.Float64Var(&threshold, "threshold", 0, "threshold value (--kind threshold), or days for --kind cert_expiring (default 14)")
@@ -538,7 +538,7 @@ help for what each kind needs.
 
 Flags:
   --name string                        display name for the rule (required)
-  --kind string                        threshold, crashloop, cert_expiry, cert_expiring, cert_renewal_stalled, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, domain_not_resolving, backup_missing, node_offline, node_cert_expiring, control_plane_backup_stale, log_archive_stale, export_behind, backup_copy_behind, or slo_burn (required)
+  --kind string                        threshold, crashloop, cert_expiry, cert_expiring, cert_renewal_stalled, patch_status, scheduled_task_failure, node_disk_space, node_resource_usage, domain_health, domain_not_resolving, domain_traffic_drop, parked_domain_cert_expiry, backup_missing, node_offline, node_cert_expiring, control_plane_backup_stale, log_archive_stale, export_behind, backup_copy_behind, or slo_burn (required)
   --metric string                      metric name (--kind threshold only)
   --comparator string                  >, <, >=, or <= (--kind threshold only)
   --threshold float                    threshold value (--kind threshold only)

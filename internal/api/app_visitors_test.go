@@ -1,10 +1,12 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
 	"log/slog"
 	"net/http"
 	"net/netip"
+	"strings"
 	"testing"
 	"time"
 
@@ -119,3 +121,57 @@ func TestAppVisitors_HistorySurvivesRestart(t *testing.T) {
 }
 
 var _ ingress.VisitorHistoryStore = (*store.DB)(nil)
+
+func TestCSVSafeField(t *testing.T) {
+	t.Parallel()
+	for in, want := range map[string]string{"=1+1": "'=1+1", "+x": "'+x", "-x": "'-x", "@s": "'@s", "\tx": "'\tx", "\rx": "'\rx", "/ok": "/ok", "": ""} {
+		if got := csvSafeField(in); got != want {
+			t.Errorf("csvSafeField(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestWriteVisitorsCSVEscapes(t *testing.T) {
+	t.Parallel()
+	var res AppVisitorsResponse
+	res.Window = "24h"
+	res.TopPaths = []ingress.CountedItem{{Label: `/a,"b"`, Count: 2}, {Label: "=cmd", Count: 1}}
+	var buf bytes.Buffer
+	if err := writeVisitorsCSV(&buf, res); err != nil {
+		t.Fatal(err)
+	}
+	out := buf.String()
+	if !strings.HasPrefix(out, "section,key,requests,visitors,extra\n") || !strings.Contains(out, "path,\"/a,\"\"b\"\"\",2,0,\n") || !strings.Contains(out, "path,'=cmd,1,0,\n") {
+		t.Fatalf("csv = %q", out)
+	}
+}
+
+func TestAppVisitorsExportCSV(t *testing.T) {
+	t.Parallel()
+	log := ingress.NewAccessLog(100)
+	now := time.Now()
+	log.Record("web.example.com", ingress.AccessRecord{Time: now.Add(-time.Minute), Host: "web.example.com", Path: "/", Status: 200, Client: netip.MustParseAddr("192.0.2.1")})
+	rt, cookie := visitorsRouter(t, log)
+	rec := doPolicy(t, rt, cookie, http.MethodGet, "/api/v1/apps/web/visitors/export?window=7d", "")
+	if rec.Code != http.StatusOK || !strings.HasPrefix(rec.Header().Get("Content-Type"), "text/csv") ||
+		rec.Header().Get("Content-Disposition") != `attachment; filename="visitors-web-7d.csv"` {
+		t.Fatalf("status %d headers %v", rec.Code, rec.Header())
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "summary,total,1,1,window=7d\n") || !strings.Contains(body, "status,2xx,1,0,\n") || !strings.Contains(body, "path,/,1,0,\n") {
+		t.Fatalf("body = %q", body)
+	}
+	if rec = doPolicy(t, rt, cookie, http.MethodGet, "/api/v1/apps/web/visitors/export?window=90d", ""); rec.Code != http.StatusBadRequest {
+		t.Fatalf("bad window = %d", rec.Code)
+	}
+}
+
+func TestAppVisitorsExportNotImplementedWithoutAccessLog(t *testing.T) {
+	t.Parallel()
+	rt, db := newTestRouter(t)
+	seedApp(t, db, "web")
+	cookie := loginTestSession(t, rt, db)
+	if rec := doPolicy(t, rt, cookie, http.MethodGet, "/api/v1/apps/web/visitors/export", ""); rec.Code != http.StatusNotImplemented {
+		t.Fatalf("status = %d", rec.Code)
+	}
+}

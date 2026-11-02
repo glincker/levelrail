@@ -33,6 +33,8 @@ func runDoctor(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		switch args[0] {
 		case "paths":
 			return runDoctorPaths(prog, args[1:], stdout, stderr, lookupEnv)
+		case "reachability":
+			return runDoctorReachability(prog, args[1:], stdout, stderr, lookupEnv)
 		}
 	}
 	diskOnly := len(args) > 0 && args[0] == "disk"
@@ -179,6 +181,7 @@ func doctorUsage(prog string) string {
   %[1]s doctor [flags]
   %[1]s doctor disk [flags]
   %[1]s doctor paths [flags]
+  %[1]s doctor reachability [flags]
 
 Runs the control plane's health checks: Docker, disk and inodes, ports,
 firewall, clock, DNS, certificates, backups and restore drills, node agents,
@@ -191,6 +194,8 @@ With no control plane configured, only local checks run (Docker, disk, ports).
 data dir and Docker root, Docker image, build cache, volume and container
 sizes, the top consumers) and a suggested cleanup command it never runs.
 The warning level comes from APP_DOCTOR_DISK_WARN_FREE_PCT (percent free).
+
+"doctor reachability" lists the listening ports and, if the dial-back setting is on, which the internet cannot reach.
 
 "doctor paths" is offline: it prints the binary, releases dir, data dir and
 systemd unit locations on this host and the APP_HTTP_ADDR the unit binds.

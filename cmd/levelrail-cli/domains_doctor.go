@@ -203,6 +203,24 @@ func trafficAlertCondition(r alertRuleResource) string {
 			window = "30m"
 		}
 		return "a domain not resolving for " + window
+	case "domain_traffic_drop":
+		window, pct, minReq := r.ForDuration, int(r.Threshold), r.RestartCountThreshold
+		if window == "" {
+			window = "1h"
+		}
+		if pct <= 0 {
+			pct = 50
+		}
+		if minReq <= 0 {
+			minReq = 20
+		}
+		return fmt.Sprintf("requests in %s under %d%% of the same window yesterday (baseline of at least %d)", window, pct, minReq)
+	case "parked_domain_cert_expiry":
+		days := int(r.Threshold)
+		if days <= 0 {
+			days = 14
+		}
+		return fmt.Sprintf("a parked domain certificate with fewer than %d days left", days)
 	}
 	return "-"
 }

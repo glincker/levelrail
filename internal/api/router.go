@@ -773,6 +773,7 @@ type Router struct {
 	heartbeatSvc                 *heartbeat.Service       // nil serves 501 on /settings/heartbeat
 	jobPings                     *heartbeat.JobPinger     // nil rejects per-job heartbeat URLs
 	monitors                     MonitorService           // nil is valid: monitor routes return 404 (APP_MONITORS_ENABLED off)
+	parkedRetention              parkedRetentionState     // last retention run, for the dry run's next_run
 	runtimeSettings              *runtimesettings.Service // nil only in unit tests of other packages; nil serves env then default
 	webhookDeliveries            WebhookDeliveryStore     // always set, same "core Store interface" shape as deployAttempts above
 	policies                     PolicyStore              // always set, same "core Store interface" shape as certs above: iam_policies/iam_policy_attachments always exist, empty is a valid, non-error result

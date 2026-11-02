@@ -20,6 +20,7 @@ func domainsParkUsage(prog string) string {
   %[1]s domains parked attach <domain> --app APP [--env ENV] [--discard-settings]
   %[1]s domains parked attach <domain> --static-site SITE
   %[1]s domains parked delete <domain>
+  %[1]s domains parked retention
 
 park takes a domain off an app but keeps it registered, with its DNS records
 and certificate untouched, so it can be attached to any app later. move hands
@@ -27,7 +28,8 @@ a domain to another app with its per-domain settings; without --confirm it
 only runs the collision check. parked delete forgets the registration and
 never touches DNS. park keeps the domain's settings (WAF, rate limit, TLS
 certificate reference, basic auth, auth gate, maintenance, redirect, error
-pages, search settings); attach restores them unless --discard-settings.
+pages, search settings); parked retention prints the dry run of the
+automatic cleanup (setting domains.parked_retention_days, 0 = off); attach restores them unless --discard-settings.
 Static sites work the same way through --static-site, --from-static-site and
 --to-static-site. A static site has no per-domain settings, so a domain that
 moves to or from one, or is attached to one, does not keep them.
@@ -135,6 +137,8 @@ func runDomainsParked(prog string, args []string, stdout, stderr io.Writer, look
 		return runDomainsParkedList(prog, args[1:], stdout, stderr, lookupEnv)
 	case "attach":
 		return runDomainsParkedAttach(prog, args[1:], stdout, stderr, lookupEnv)
+	case "retention":
+		return runDomainsParkedRetention(prog, args[1:], stdout, stderr, lookupEnv)
 	case "delete":
 		return runDomainsParkedDelete(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
@@ -246,4 +250,37 @@ func parkedTLSCell(p apiclient.ParkedDomain) string {
 		return p.TLS.State + " (expired)"
 	}
 	return fmt.Sprintf("%s (%dd)", p.TLS.State, *p.TLS.DaysLeft)
+}
+
+func runDomainsParkedRetention(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenP, apiURLP, profileP, jsonP, outputP, queryP := apiFlagSet(prog, "domains parked retention", "print the dry run as JSON", stderr)
+	token, apiURL, profile, jsonOut, of, code, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenP, apiURLP, profileP, jsonP, outputP, queryP}, prog, stderr)
+	if !ok {
+		return code
+	}
+	client := apiClientFromFlags(prog, apiURL, token, profile, lookupEnv)
+	plan, err := client.ParkedRetention(context.Background())
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("parked retention dry run: %w", err))
+	}
+	return writeScheduledTaskResult(stdout, stderr, of, plan, func() {
+		if plan.RetentionDays == 0 {
+			_, _ = fmt.Fprintln(stdout, "parked domain cleanup is off (domains.parked_retention_days = 0)")
+			return
+		}
+		_, _ = fmt.Fprintf(stdout, "parked domains older than %d days are deleted; next run %s\n", plan.RetentionDays, plan.NextRun)
+		if len(plan.WouldDelete) == 0 {
+			_, _ = fmt.Fprintln(stdout, "nothing to delete now")
+			return
+		}
+		tw := tabwriter.NewWriter(stdout, 0, 2, 2, ' ', 0)
+		_, _ = fmt.Fprintln(tw, "DOMAIN\tPARKED AT\tAGE DAYS")
+		for _, p := range plan.WouldDelete {
+			_, _ = fmt.Fprintf(tw, "%s\t%s\t%d\n", p.Domain, p.ParkedAt, p.AgeDays)
+		}
+		_ = tw.Flush()
+		if plan.TotalEligible > len(plan.WouldDelete) {
+			_, _ = fmt.Fprintf(stdout, "%d more are due and go in later runs\n", plan.TotalEligible-len(plan.WouldDelete))
+		}
+	})
 }

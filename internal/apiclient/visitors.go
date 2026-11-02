@@ -62,3 +62,15 @@ func (c *Client) GetVisitors(ctx context.Context, app, domain, window string) (V
 	err := c.do(ctx, http.MethodGet, path, nil, &out)
 	return out, err
 }
+
+// ExportVisitorsCSV calls GET /api/v1/apps/{name}/visitors/export and returns the CSV bytes.
+func (c *Client) ExportVisitorsCSV(ctx context.Context, app, domain, window string) ([]byte, error) {
+	q := url.Values{"format": {"csv"}}
+	if domain != "" {
+		q.Set("domain", domain)
+	}
+	if window != "" {
+		q.Set("window", window)
+	}
+	return c.downloadRaw(ctx, "/api/v1/apps/"+PathEscape(app)+"/visitors/export?"+q.Encode())
+}

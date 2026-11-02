@@ -89,7 +89,7 @@ func IsPlatformKind(k Kind) bool {
 	switch k {
 	case KindCertExpiry, KindPatchStatus, KindNodeDiskSpace, KindNodeHostGuardrail, KindNodeResourceUsage, KindNodeOffline,
 		KindNodeCertExpiring, KindControlPlaneBackupStale, KindLogArchiveStale, KindExportBehind, KindBackupCopyBehind, KindRegistryRefreshFailing, KindRestoreDrillFailed,
-		KindCertExpiring, KindCertRenewalStalled, KindBudgetThreshold:
+		KindCertExpiring, KindCertRenewalStalled, KindBudgetThreshold, KindParkedDomainCertExpiry:
 		return true
 	default:
 		return false

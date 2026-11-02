@@ -7,6 +7,7 @@ import "net/http"
 // every write is AbilityWriteSensitive and tenant-only members get 403.
 func (rt *Router) registerParkedDomainRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/domains/parked", rt.requireAbility(AbilityRead, rt.handleListParkedDomains))
+	mux.HandleFunc("GET /api/v1/domains/parked/retention", rt.requireAbility(AbilityRead, rt.handleParkedRetention))
 	mux.HandleFunc("POST /api/v1/domains/park", rt.requireAbility(AbilityWriteSensitive, rt.handleParkDomain))
 	mux.HandleFunc("POST /api/v1/domains/batch", rt.requireAbility(AbilityWriteSensitive, rt.handleDomainsBatch))
 	mux.HandleFunc("POST /api/v1/domains/move", rt.requireAbility(AbilityWriteSensitive, rt.handleMoveDomain))

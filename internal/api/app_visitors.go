@@ -35,10 +35,21 @@ type AppVisitorsResponse struct {
 // handleAppVisitors returns the privacy-safe visitor summary for an app. Windows of 1h, 24h, 7d and 30d
 // merge stored hourly rollups with the live ring, so history survives a restart while the retention setting allows it.
 func (rt *Router) handleAppVisitors(w http.ResponseWriter, r *http.Request) {
+	res, ok := rt.visitorSummary(w, r)
+	if !ok {
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	writeJSON(w, http.StatusOK, res)
+}
+
+// visitorSummary validates the query and computes the summary shared by the JSON and CSV endpoints.
+// It writes the error response itself and reports false when the request cannot be served.
+func (rt *Router) visitorSummary(w http.ResponseWriter, r *http.Request) (AppVisitorsResponse, bool) {
 	src, ok := rt.access.(VisitorSource)
 	if !ok {
 		writeError(w, http.StatusNotImplemented, "edge access log is not configured on this control plane")
-		return
+		return AppVisitorsResponse{}, false
 	}
 	q := r.URL.Query()
 	window := q.Get("window")
@@ -48,13 +59,12 @@ func (rt *Router) handleAppVisitors(w http.ResponseWriter, r *http.Request) {
 	span, ok := visitorWindows[window]
 	if !ok {
 		writeError(w, http.StatusBadRequest, "window must be 1h, 24h, 7d or 30d")
-		return
+		return AppVisitorsResponse{}, false
 	}
 	now := time.Now().UTC()
 	domain := strings.TrimSpace(q.Get("domain"))
 	sum := src.AppVisitors(r.Context(), r.PathValue("name"), ingress.VisitorSummaryOptions{Domain: domain, Since: now.Add(-span), Until: now})
-	w.Header().Set("Cache-Control", "no-store")
-	writeJSON(w, http.StatusOK, AppVisitorsResponse{
+	return AppVisitorsResponse{
 		App: r.PathValue("name"), Domain: domain, Window: window, Since: now.Add(-span), GeneratedAt: now, VisitorSummary: sum,
-	})
+	}, true
 }

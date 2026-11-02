@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -56,5 +58,30 @@ func TestAppsVisitorsHelpNamesAllWindows(t *testing.T) {
 	_, out, errOut := runVisitors(t, "-h")
 	if !strings.Contains(out+errOut, "1h, 24h, 7d or 30d") {
 		t.Errorf("help = %q %q", out, errOut)
+	}
+}
+
+func TestAppsVisitorsExportWritesFile(t *testing.T) {
+	var gotQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotQuery = r.URL.Path + "?" + r.URL.RawQuery
+		w.Header().Set("Content-Type", "text/csv")
+		_, _ = w.Write([]byte("section,key,requests,visitors,extra\n"))
+	}))
+	t.Cleanup(srv.Close)
+	file := filepath.Join(t.TempDir(), "v.csv")
+	code, _, errOut := runVisitors(t, "web", "--export", "csv", "--window", "7d", "--out", file, "--api-url", srv.URL)
+	if code != exitOK {
+		t.Fatalf("exit = %d, stderr = %q", code, errOut)
+	}
+	data, err := os.ReadFile(file) //nolint:gosec // test temp path
+	if err != nil || !strings.HasPrefix(string(data), "section,key") {
+		t.Fatalf("file = %q, err %v", data, err)
+	}
+	if !strings.Contains(gotQuery, "/visitors/export?") || !strings.Contains(gotQuery, "window=7d") {
+		t.Errorf("request = %s", gotQuery)
+	}
+	if code, _, _ := runVisitors(t, "web", "--export", "xml", "--api-url", srv.URL); code != exitUsage {
+		t.Errorf("bad format exit = %d", code)
 	}
 }

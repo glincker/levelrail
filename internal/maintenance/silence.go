@@ -26,7 +26,7 @@ const (
 // the maintenance 503 would trip them. Threshold rules are narrowed to
 // request-path metrics (alerting.RequestPathMetrics); crashloops, CPU, memory and disk still alert.
 var silencedKinds = []string{
-	string(alerting.KindDomainHealth), string(alerting.KindDomainNotResolving),
+	string(alerting.KindDomainHealth), string(alerting.KindDomainNotResolving), string(alerting.KindDomainTrafficDrop),
 	string(alerting.KindCertExpiry), string(alerting.KindCertExpiring), string(alerting.KindCertRenewalStalled),
 	string(alerting.KindThreshold),
 }

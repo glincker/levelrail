@@ -87,6 +87,29 @@ func (c *Client) ListParkedDomains(ctx context.Context) ([]ParkedDomain, error) 
 	return out, err
 }
 
+// ParkedRetentionItem is one parked domain the retention job would delete.
+type ParkedRetentionItem struct {
+	Domain   string `json:"domain"`
+	ParkedAt string `json:"parked_at"`
+	AgeDays  int    `json:"age_days"`
+}
+
+// ParkedRetentionPlan is the dry run of the parked domain retention job.
+type ParkedRetentionPlan struct {
+	RetentionDays int                   `json:"retention_days"`
+	WouldDelete   []ParkedRetentionItem `json:"would_delete"`
+	TotalEligible int                   `json:"total_eligible"`
+	BatchLimit    int                   `json:"batch_limit"`
+	NextRun       string                `json:"next_run,omitempty"`
+}
+
+// ParkedRetention calls GET /api/v1/domains/parked/retention.
+func (c *Client) ParkedRetention(ctx context.Context) (ParkedRetentionPlan, error) {
+	var out ParkedRetentionPlan
+	err := c.do(ctx, http.MethodGet, "/api/v1/domains/parked/retention", nil, &out)
+	return out, err
+}
+
 // ParkDomain calls POST /api/v1/domains/park.
 func (c *Client) ParkDomain(ctx context.Context, req DomainLifecycleRequest) (DomainLifecycleResult, error) {
 	var out DomainLifecycleResult

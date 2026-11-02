@@ -153,6 +153,7 @@ func (s *bootState) startAlerting() {
 	alertingEngine.SetCertExpiryPolicy(certPolicy)
 	alertingEngine.SetVersionSkew(db, upgrade.DefaultFetchers(b.RepoSlug()))
 	alertingEngine.SetBudgets(apiRouter)
+	alertingEngine.SetDomainTraffic(apiRouter)
 	alertingEngine.SetEmailDelivery(db)
 	alertingEngine.SetDatabaseHealth(apiRouter)
 	if src := s.deployDispatcher.Outcomes(); src != nil {
@@ -450,6 +451,13 @@ func (s *bootState) startSchedulers() {
 	go func() {
 		if err := apiRouter.RunWebhookDeliverySweeper(ctx, webhookDeliverySweepInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("webhook delivery sweeper stopped", slog.String("error", err.Error()))
+		}
+	}()
+
+	// Forgets parked domains older than domains.parked_retention_days; does nothing while that is 0.
+	go func() {
+		if err := apiRouter.RunParkedRetentionSweeper(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("parked domain retention sweeper stopped", slog.String("error", err.Error()))
 		}
 	}()
 

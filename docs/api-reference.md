@@ -688,6 +688,7 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/visitors | AbilityRead | handleAppVisitors |
 | GET | /api/v1/apps/{name}/auto-host | AbilityRead | handleGetAppAutoHost |
 | PUT | /api/v1/apps/{name}/auto-host | AbilityWriteSensitive | handleSetAppAutoHost |
+| GET | /api/v1/apps/{name}/visitors/export | AbilityRead | handleAppVisitorsExport |
 
 </Accordion>
 
@@ -1202,6 +1203,7 @@ Endpoints for:
 | POST | /api/v1/domains/parked/{domain}/attach | AbilityWriteSensitive | handleAttachParkedDomain |
 | DELETE | /api/v1/domains/parked/{domain} | AbilityWriteSensitive | handleDeleteParkedDomain |
 | POST | /api/v1/domains/batch | AbilityWriteSensitive | handleDomainsBatch |
+| GET | /api/v1/domains/parked/retention | AbilityRead | handleParkedRetention |
 
 ## Built-in Container Registry
 
@@ -2165,6 +2167,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/dns/zones/{provider}/{id} | AbilityRead | handleGetDNSZoneDetail |
 | POST | /api/v1/firewall/exposure/restrictions/{protocol}/{port}/confirm | AbilityRoot | handleExposureConfirm |
 | GET | /api/v1/tokens/unused | Session | handleUnusedTokens |
+| GET | /api/v1/doctor/reachability | AbilityRead | handleDoctorReachability |
 | POST | /mcp | Public |  |
 
 ## See also

@@ -140,27 +140,7 @@ func (rt *Router) handleListParkedDomains(w http.ResponseWriter, r *http.Request
 		rt.internalError(w, "api: list parked domains", err)
 		return
 	}
-	allowed, err := rt.authorizeRefPredicate(r, AbilityWriteSensitive)
-	if err != nil {
-		rt.internalError(w, "api: parked domains authz", err)
-		return
-	}
-	rows = slices.DeleteFunc(rows, func(p store.ParkedDomain) bool {
-		if p.ParkedFrom == "" || err != nil {
-			return false
-		}
-		refs, _ := domainTargetRefs(store.DomainTarget{Kind: kindOrAppName(p.ParkedFromKind), Name: p.ParkedFrom})
-		for _, ref := range refs {
-			ok, e := allowed(ref)
-			if e != nil {
-				err = e
-			}
-			if e != nil || !ok {
-				return true
-			}
-		}
-		return false
-	})
+	rows, err = rt.filterParkedByAuthz(r, rows)
 	if err != nil {
 		rt.internalError(w, "api: parked domains authz", err)
 		return
@@ -183,6 +163,31 @@ func (rt *Router) handleListParkedDomains(w http.ResponseWriter, r *http.Request
 		out = append(out, res)
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+// filterParkedByAuthz drops parked domains whose origin the caller may not manage.
+func (rt *Router) filterParkedByAuthz(r *http.Request, rows []store.ParkedDomain) ([]store.ParkedDomain, error) {
+	allowed, err := rt.authorizeRefPredicate(r, AbilityWriteSensitive)
+	if err != nil {
+		return nil, err
+	}
+	rows = slices.DeleteFunc(rows, func(p store.ParkedDomain) bool {
+		if p.ParkedFrom == "" || err != nil {
+			return false
+		}
+		refs, _ := domainTargetRefs(store.DomainTarget{Kind: kindOrAppName(p.ParkedFromKind), Name: p.ParkedFrom})
+		for _, ref := range refs {
+			ok, e := allowed(ref)
+			if e != nil {
+				err = e
+			}
+			if e != nil || !ok {
+				return true
+			}
+		}
+		return false
+	})
+	return rows, err
 }
 
 // handleParkDomain handles POST /api/v1/domains/park: the domain leaves the
