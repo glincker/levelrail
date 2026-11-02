@@ -1,6 +1,13 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LinkGlassIcon, TrashGlassIcon } from '@thesvg/ui-react'
+import {
+  resolveSelection,
+  selectAllState,
+  setKeys,
+  toggleKey,
+  type BatchAction,
+} from '../../lib/domainsBatch'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { tlsDaysText, tlsTone } from '../../lib/domainTls'
@@ -9,6 +16,8 @@ import {
   type ParkedDns,
   type ParkedTls,
 } from '../../queries/parkedDomains'
+import { DomainsBatchDialog } from './DomainsBatchDialog'
+import { DomainsBulkBar, RowSelectBox, SelectAllBox } from './DomainsBulkBar'
 import {
   AttachParkedDialog,
   DeleteParkedDialog,
@@ -68,7 +77,16 @@ export function ParkedDomainsGroup() {
   const { t } = useTranslation('domains')
   const { data: parked = [] } = useParkedDomains()
   const [action, setAction] = useState<Action | null>(null)
+  const [selected, setSelected] = useState<ReadonlySet<string>>(new Set())
+  const [batchAction, setBatchAction] = useState<BatchAction | null>(null)
   if (parked.length === 0) return null
+  const keys = parked.map((p) => p.domain)
+  const chosen = resolveSelection(
+    selected,
+    parked,
+    (p) => p.domain,
+    () => true,
+  )
   return (
     <section aria-labelledby="parked-domains-heading" className="space-y-2">
       <div className="flex items-center gap-2">
@@ -76,7 +94,40 @@ export function ParkedDomainsGroup() {
           {t('parked.title')}
         </h2>
         <Badge variant="muted">{parked.length}</Badge>
+        <span className="ml-auto">
+          <SelectAllBox
+            state={selectAllState(selected, keys)}
+            onChange={(on) => {
+              setSelected((s) => setKeys(s, keys, on))
+            }}
+          />
+        </span>
       </div>
+      <DomainsBulkBar
+        count={chosen.length}
+        actions={[
+          {
+            id: 'attach',
+            label: t('bulk.attach'),
+            icon: <LinkGlassIcon size="1.4em" aria-hidden="true" />,
+            onClick: () => {
+              setBatchAction('attach')
+            },
+          },
+          {
+            id: 'delete',
+            label: t('bulk.delete'),
+            destructive: true,
+            icon: <TrashGlassIcon size="1.4em" aria-hidden="true" />,
+            onClick: () => {
+              setBatchAction('delete_parked')
+            },
+          },
+        ]}
+        onClear={() => {
+          setSelected(new Set())
+        }}
+      />
       <p className="text-xs text-muted-foreground">{t('parked.hint')}</p>
       <ul className="divide-y divide-border rounded-lg border border-border">
         {parked.map((p) => (
@@ -84,6 +135,13 @@ export function ParkedDomainsGroup() {
             key={p.domain}
             className="flex flex-wrap items-center gap-2 px-3 py-2"
           >
+            <RowSelectBox
+              domain={p.domain}
+              checked={selected.has(p.domain)}
+              onChange={() => {
+                setSelected((s) => toggleKey(s, p.domain))
+              }}
+            />
             <span className="min-w-0 flex-1 truncate font-mono text-sm">
               {p.domain}
             </span>
@@ -150,6 +208,23 @@ export function ParkedDomainsGroup() {
           open
           onOpenChange={(o) => {
             if (!o) setAction(null)
+          }}
+        />
+      ) : null}
+      {batchAction ? (
+        <DomainsBatchDialog
+          action={batchAction}
+          subjects={chosen.map((p) => ({
+            domain: p.domain,
+            service_name: p.parked_from ?? '',
+            has_settings: p.has_settings,
+          }))}
+          open
+          onOpenChange={(o) => {
+            if (!o) setBatchAction(null)
+          }}
+          onDone={(ok) => {
+            setSelected((s) => setKeys(s, ok, false))
           }}
         />
       ) : null}

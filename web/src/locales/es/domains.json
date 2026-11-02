@@ -1343,5 +1343,67 @@
     "saving": "Guardando...",
     "turnOff": "Desactivar",
     "removing": "Quitando..."
+  },
+  "bulk": {
+    "barLabel": "Acciones en lote",
+    "selected_one": "{{count}} seleccionado",
+    "selected_other": "{{count}} seleccionados",
+    "clear": "Limpiar",
+    "selectAll": "Seleccionar todos los dominios filtrados",
+    "select": "Seleccionar",
+    "selectRow": "Seleccionar {{domain}}",
+    "blockedAutomatic": "Los nombres automáticos no se pueden aparcar ni mover",
+    "blockedStandalone": "Los dominios independientes no se pueden aparcar ni mover",
+    "park": "Aparcar",
+    "move": "Mover a app",
+    "attach": "Asociar",
+    "delete": "Eliminar",
+    "title": {
+      "park": "Aparcar {{count}} dominios",
+      "move": "Mover {{count}} dominios",
+      "attach": "Asociar {{count}} dominios aparcados",
+      "delete_parked": "Eliminar {{count}} dominios aparcados"
+    },
+    "body": {
+      "park": "Cada dominio deja de ser servido por su app y pasa al grupo Aparcados.",
+      "move": "Elige el destino de estos dominios. Primero se comprueban colisiones.",
+      "attach": "Elige la app o el sitio estático que debe servir estos dominios aparcados.",
+      "delete_parked": "Olvida estos dominios y su estado de DNS y certificado aparcado. No se puede deshacer."
+    },
+    "confirm": {
+      "park": "Aparcar {{count}}",
+      "move": "Comprobar y mover {{count}}",
+      "attach": "Asociar {{count}}",
+      "delete_parked": "Eliminar {{count}}"
+    },
+    "attachTo": "Asociar a",
+    "parkKeeps": "Los ajustes se guardan con cada dominio aparcado y se conserva el estado de DNS y certificado.",
+    "discard": "Empezar de cero y descartar los ajustes guardados",
+    "previewLabel": "Qué ocurrirá",
+    "preview": {
+      "park": "Aparcar desde {{app}}",
+      "move": "Mover de {{from}} a {{to}}",
+      "attach": "Asociar a {{app}}",
+      "delete": "Eliminar dominio aparcado",
+      "noop": "Ya está allí, se omite"
+    },
+    "resultsLabel": "Resultados",
+    "col": {
+      "domain": "Dominio",
+      "result": "Resultado"
+    },
+    "status": {
+      "ok": "Hecho",
+      "failed": "Falló",
+      "needsConfirmation": "Requiere confirmación",
+      "failedGeneric": "Falló",
+      "needsConfirmationBody": "El tráfico de este dominio cambia de propietario. Confirma para continuar.",
+      "okBody": "Hecho"
+    },
+    "summary": "{{ok}} hechos, {{failed}} fallidos, {{waiting}} requieren confirmación",
+    "confirmThese_one": "Confirmar este {{count}}",
+    "confirmThese_other": "Confirmar estos {{count}}",
+    "cancel": "Cancelar",
+    "done": "Cerrar"
   }
 }

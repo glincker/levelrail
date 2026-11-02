@@ -5,8 +5,6 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Label } from '@/components/ui/label'
 import { NativeSelect } from '@/components/ui/native-select'
 import { toast } from '@/components/ui/toast'
-import { appListQueryOptions } from '../../queries/apps'
-import { staticSitesQueryOptions } from '../../queries/staticSites'
 import {
   appEnvironmentDomainsQueryOptions,
   useEditAppDomains,
@@ -22,33 +20,28 @@ import {
   attachDropsSettings,
   decodeTarget,
   encodeTarget,
-  groupedTargets,
   humanizeSettingKind,
   isNoopMove,
   moveDropsSettings,
   type TargetOption,
 } from '../../lib/domainLifecycle'
+import { firstTarget, useTargetGroups } from './useTargetGroups'
 
 interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
-// Static sites live in their own list; a failed read just hides the group.
-function useTargetGroups(source: TargetOption, allowSame: boolean) {
-  const { data: apps = [] } = useQuery(appListQueryOptions())
-  const { data: sites = [] } = useQuery(staticSitesQueryOptions())
-  return groupedTargets(apps, sites, source, allowSame)
-}
-
-function TargetSelect({
+export function TargetSelect({
   id,
   value,
   groups,
+  label,
   onChange,
 }: {
   id: string
   value: string
+  label?: string
   groups: { apps: TargetOption[]; sites: TargetOption[] }
   onChange: (value: string) => void
 }) {
@@ -62,7 +55,7 @@ function TargetSelect({
   return (
     <div className="flex items-center gap-2">
       <Label htmlFor={id} className="shrink-0">
-        {t('lifecycle.move.target')}
+        {label ?? t('lifecycle.move.target')}
       </Label>
       <NativeSelect
         id={id}
@@ -86,16 +79,9 @@ function TargetSelect({
   )
 }
 
-function firstTarget(groups: {
-  apps: TargetOption[]
-  sites: TargetOption[]
-}): TargetOption | null {
-  return groups.apps[0] ?? groups.sites[0] ?? null
-}
-
 // Environment choice for a target app: the default list first, then each
 // environment of that app by ID.
-function EnvironmentTargetSelect({
+export function EnvironmentTargetSelect({
   id,
   app,
   value,

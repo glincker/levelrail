@@ -1343,5 +1343,67 @@
     "saving": "Saving...",
     "turnOff": "Turn off",
     "removing": "Removing..."
+  },
+  "bulk": {
+    "barLabel": "Bulk actions",
+    "selected_one": "{{count}} selected",
+    "selected_other": "{{count}} selected",
+    "clear": "Clear",
+    "selectAll": "Select all filtered domains",
+    "select": "Select",
+    "selectRow": "Select {{domain}}",
+    "blockedAutomatic": "Automatic hostnames cannot be parked or moved",
+    "blockedStandalone": "Standalone domains cannot be parked or moved",
+    "park": "Park",
+    "move": "Move to app",
+    "attach": "Attach",
+    "delete": "Delete",
+    "title": {
+      "park": "Park {{count}} domains",
+      "move": "Move {{count}} domains",
+      "attach": "Attach {{count}} parked domains",
+      "delete_parked": "Delete {{count}} parked domains"
+    },
+    "body": {
+      "park": "Each domain stops being served by its app and moves to the Parked group.",
+      "move": "Choose where these domains should go. A collision check runs first.",
+      "attach": "Choose the app or static site that should serve these parked domains.",
+      "delete_parked": "Forgets these domains and their parked DNS and certificate state. This cannot be undone."
+    },
+    "confirm": {
+      "park": "Park {{count}}",
+      "move": "Check and move {{count}}",
+      "attach": "Attach {{count}}",
+      "delete_parked": "Delete {{count}}"
+    },
+    "attachTo": "Attach to",
+    "parkKeeps": "Settings are saved with each parked domain, and DNS and certificate state are kept.",
+    "discard": "Start fresh and discard saved settings",
+    "previewLabel": "What will happen",
+    "preview": {
+      "park": "Park from {{app}}",
+      "move": "Move from {{from}} to {{to}}",
+      "attach": "Attach to {{app}}",
+      "delete": "Delete parked domain",
+      "noop": "Already there, skipped"
+    },
+    "resultsLabel": "Results",
+    "col": {
+      "domain": "Domain",
+      "result": "Result"
+    },
+    "status": {
+      "ok": "Done",
+      "failed": "Failed",
+      "needsConfirmation": "Needs confirmation",
+      "failedGeneric": "Failed",
+      "needsConfirmationBody": "Traffic for this domain changes owner. Confirm to continue.",
+      "okBody": "Done"
+    },
+    "summary": "{{ok}} done, {{failed}} failed, {{waiting}} need confirmation",
+    "confirmThese_one": "Confirm this {{count}}",
+    "confirmThese_other": "Confirm these {{count}}",
+    "cancel": "Cancel",
+    "done": "Close"
   }
 }

@@ -2,7 +2,9 @@ import { Link } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
+  ArrowLeftRightGlassIcon,
   GlobeGlassIcon,
+  PauseGlassIcon,
   PlusGlassIcon,
   SearchGlassIcon,
 } from '@thesvg/ui-react'
@@ -15,8 +17,22 @@ import {
 } from '@/components/ui/responsive-table'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { sortByCertAttention } from '../lib/certStatus'
+import { canParkOrMove } from '../lib/domainLifecycle'
+import {
+  resolveSelection,
+  selectAllState,
+  setKeys,
+  toggleKey,
+  type BatchAction,
+} from '../lib/domainsBatch'
 import type { CertificateStatus } from '../queries/certificates'
 import type { Domain } from '../queries/domains'
+import { DomainsBatchDialog } from './domains/DomainsBatchDialog'
+import {
+  DomainsBulkBar,
+  RowSelectBox,
+  SelectAllBox,
+} from './domains/DomainsBulkBar'
 import {
   DomainCertCell,
   DomainDnsCell,
@@ -45,6 +61,8 @@ export function DomainsTable({
 }) {
   const { t } = useTranslation('domains')
   const [query, setQuery] = useState('')
+  const [selected, setSelected] = useState<ReadonlySet<string>>(new Set())
+  const [batchAction, setBatchAction] = useState<BatchAction | null>(null)
 
   // Problem certificates first so they surface without scrolling.
   const sorted = useMemo(
@@ -65,8 +83,48 @@ export function DomainsTable({
     [sorted, needle],
   )
 
+  const selectable = useMemo(
+    () => visible.filter(canParkOrMove).map((d) => d.domain),
+    [visible],
+  )
+  const chosenRows = useMemo(
+    () => resolveSelection(selected, domains, (d) => d.domain, canParkOrMove),
+    [selected, domains],
+  )
+  const headerState = selectAllState(selected, selectable)
+
   const columns = useMemo<ResponsiveColumn<Domain>[]>(
     () => [
+      {
+        id: 'select',
+        header: (
+          <SelectAllBox
+            state={headerState}
+            disabled={selectable.length === 0}
+            onChange={(on) => {
+              setSelected((s) => setKeys(s, selectable, on))
+            }}
+          />
+        ),
+        cardLabel: t('bulk.select'),
+        width: 'w-10',
+        cell: (d) => (
+          <RowSelectBox
+            domain={d.domain}
+            checked={selected.has(d.domain)}
+            blocked={
+              canParkOrMove(d)
+                ? undefined
+                : d.automatic
+                  ? t('bulk.blockedAutomatic')
+                  : t('bulk.blockedStandalone')
+            }
+            onChange={() => {
+              setSelected((s) => toggleKey(s, d.domain))
+            }}
+          />
+        ),
+      },
       {
         id: 'domain',
         primary: true,
@@ -121,7 +179,7 @@ export function DomainsTable({
         cell: (d) => <DomainVisibilityCell domain={d} />,
       },
     ],
-    [t, certByDomain],
+    [t, certByDomain, selected, selectable, headerState],
   )
 
   if (domains.length === 0) {
@@ -181,6 +239,31 @@ export function DomainsTable({
         </span>
       </div>
 
+      <DomainsBulkBar
+        count={chosenRows.length}
+        actions={[
+          {
+            id: 'park',
+            label: t('bulk.park'),
+            icon: <PauseGlassIcon size="1.4em" aria-hidden="true" />,
+            onClick: () => {
+              setBatchAction('park')
+            },
+          },
+          {
+            id: 'move',
+            label: t('bulk.move'),
+            icon: <ArrowLeftRightGlassIcon size="1.4em" aria-hidden="true" />,
+            onClick: () => {
+              setBatchAction('move')
+            },
+          },
+        ]}
+        onClear={() => {
+          setSelected(new Set())
+        }}
+      />
+
       {visible.length === 0 ? (
         <EmptyState
           icon={<SearchGlassIcon className="size-6" />}
@@ -208,6 +291,19 @@ export function DomainsTable({
           estimateRowHeight={60}
         />
       )}
+      {batchAction ? (
+        <DomainsBatchDialog
+          action={batchAction}
+          subjects={chosenRows}
+          open
+          onOpenChange={(o) => {
+            if (!o) setBatchAction(null)
+          }}
+          onDone={(ok) => {
+            setSelected((s) => setKeys(s, ok, false))
+          }}
+        />
+      ) : null}
     </div>
   )
 }
