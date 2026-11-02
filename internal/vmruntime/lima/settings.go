@@ -3,7 +3,9 @@ package lima
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/vmruntime/guest"
@@ -27,7 +29,7 @@ const (
 )
 
 // Home subtrees that hold credentials; never shareable even read-only.
-var sensitiveHomeDirs = []string{".ssh", ".aws", ".gnupg", ".kube", ".docker", ".config"}
+var sensitiveHomeDirs = []string{".ssh", ".aws", ".gnupg", ".kube", ".docker", ".config", "Library", ".netrc", ".npmrc"}
 
 // Share is one explicit host folder exposed to the guest. It is always read-only.
 type Share struct {
@@ -157,9 +159,58 @@ func (sh Share) guestPath() string {
 	return "/mnt/shares/" + filepath.Base(sh.HostPath)
 }
 
+// resolve follows symlinks for the longest existing prefix, so a share that does
+// not exist yet is still compared by its real parent. Case is folded.
+func resolve(p string) string {
+	rest := ""
+	cur := filepath.Clean(p)
+	for {
+		if r, err := filepath.EvalSymlinks(cur); err == nil {
+			cur = r
+			break
+		}
+		parent := filepath.Dir(cur)
+		if parent == cur {
+			break
+		}
+		rest = filepath.Join(filepath.Base(cur), rest)
+		cur = parent
+	}
+	out := filepath.Join(cur, rest)
+	// /var and /tmp are links into /private on macOS; make both spellings equal.
+	if runtime.GOOS == "darwin" {
+		out = strings.TrimPrefix(out, "/private")
+	}
+	// Fold case everywhere: stricter on case-sensitive disks, required on macOS.
+	return strings.ToLower(out)
+}
+
 func within(parent, child string) bool {
 	rel, err := filepath.Rel(parent, child)
 	return err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))
+}
+
+// CheckHome refuses a Lima home that carries default.yaml or override.yaml: Lima
+// merges them into every instance and override wins, so they could add mounts,
+// wildcard forwards or agent forwarding. Call it before create and start.
+func CheckHome(dir string) error {
+	if dir == "" {
+		return fmt.Errorf("lima home must be set to a private directory")
+	}
+	entries, err := os.ReadDir(filepath.Join(dir, "_config"))
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	for _, e := range entries {
+		switch strings.ToLower(e.Name()) {
+		case "default.yaml", "default.yml", "override.yaml", "override.yml":
+			return fmt.Errorf("lima home %s contains _config/%s, which would be merged into the VM", dir, e.Name())
+		}
+	}
+	return nil
 }
 
 func (sh Share) validate(l Limits) error {
@@ -170,20 +221,29 @@ func (sh Share) validate(l Limits) error {
 	if g := sh.guestPath(); !strings.HasPrefix(g, "/mnt/") || filepath.Clean(g) != g || strings.ContainsAny(g, " \t\r\n'\"$`\\:") {
 		return fmt.Errorf("share guest path %q must be a clean path under /mnt", g)
 	}
+	rp := resolve(p)
+	if rp == "/" {
+		return fmt.Errorf("share %q resolves to the root", p)
+	}
 	// The home directory and any parent of it or of the data directory are off limits.
 	for _, guard := range []string{l.HomeDir, l.DataDir} {
-		if guard != "" && within(p, guard) {
+		if guard != "" && within(rp, resolve(guard)) {
 			return fmt.Errorf("share %q contains a protected directory (%s)", p, guard)
 		}
 	}
-	if l.DataDir != "" && within(l.DataDir, p) {
+	if l.DataDir != "" && within(resolve(l.DataDir), rp) {
 		return fmt.Errorf("share %q is inside the VM data directory", p)
 	}
 	if l.HomeDir != "" {
+		home := resolve(l.HomeDir)
 		for _, d := range sensitiveHomeDirs {
-			if within(filepath.Join(l.HomeDir, d), p) {
+			if within(resolve(filepath.Join(l.HomeDir, d)), rp) {
 				return fmt.Errorf("share %q is inside a credentials directory", p)
 			}
+		}
+		// Any top-level dotfile or dot-directory of home may hold tokens.
+		if rel, err := filepath.Rel(home, rp); err == nil && !strings.HasPrefix(rel, "..") && strings.HasPrefix(rel, ".") {
+			return fmt.Errorf("share %q is inside a hidden home entry", p)
 		}
 	}
 	return nil

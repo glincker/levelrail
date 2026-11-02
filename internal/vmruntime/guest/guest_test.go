@@ -16,7 +16,8 @@ func TestEgressRulesBlockedRangesAndOrder(t *testing.T) {
 	for _, want := range []string{
 		"ip daddr 192.168.5.2 drop", "10.0.0.0/8", "192.168.0.0/16", "169.254.0.0/16",
 		"100.64.0.0/10", "127.0.0.0/8", "ip daddr 172.16.0.0/12 ip daddr != 172.28.0.0/14 drop",
-		"fc00::/7", "fe80::/10", "hook forward priority -10",
+		"fc00::/7", "fe80::/10", "hook forward priority -10", "hook output priority -10", "hook input priority -10",
+		"ip saddr 172.28.0.0/14 drop", "ip6 daddr { fc00::/7 } drop",
 	} {
 		if !strings.Contains(rules, want) {
 			t.Errorf("rules lack %q", want)
@@ -86,6 +87,15 @@ func TestOptionsAndSidecarRejects(t *testing.T) {
 		"bridge":       func(o *Options) { o.DockerBridge = "172.20.0.1/16" },
 		"publish ip":   func(o *Options) { o.PublishIP = "0.0.0.0" },
 		"zero timeout": func(o *Options) { o.ProbeTimeoutSec = 0 },
+		"gw zone":      func(o *Options) { o.HostGateway = "fe80::1%\"; touch /x #" },
+		"gw v6":        func(o *Options) { o.HostGateway = "fe80::1" },
+		"gw newline":   func(o *Options) { o.HostGateway = "192.168.5.2\nflush ruleset" },
+		"probe zone":   func(o *Options) { o.LANProbe = "fe80::1%eth0" },
+		"probe range":  func(o *Options) { o.LANProbe = "10.255.255.254" },
+		"publish zone": func(o *Options) { o.PublishIP = "::1%lo" },
+		"publish v6":   func(o *Options) { o.PublishIP = "::1" },
+		"bridge v6":    func(o *Options) { o.DockerBridge = "fe80::1/64" },
+		"pool base nl": func(o *Options) { o.DockerPoolBase = "172.29.0.0/16\nx" },
 	}
 	for name, mut := range bad {
 		o := DefaultOptions()
@@ -106,19 +116,24 @@ func TestOptionsAndSidecarRejects(t *testing.T) {
 }
 
 func TestParseStatus(t *testing.T) {
-	ok := `{"result":"pass","checked_at":"x","checks":[{"name":"a","result":"pass","detail":"ok"}]}`
-	s, err := ParseStatus([]byte(ok))
+	ok := `{"result":"pass","boot_id":"b1","checked_at":"x","checks":[{"name":"a","result":"pass","detail":"ok"}]}`
+	s, err := ParseStatus([]byte(ok), "b1\n")
 	if err != nil || !s.Passed() {
 		t.Fatalf("pass status: %v %+v", err, s)
 	}
-	mixed := `{"result":"pass","checks":[{"name":"a","result":"fail","detail":""}]}`
-	if s, _ := ParseStatus([]byte(mixed)); s.Passed() {
+	if s, _ := ParseStatus([]byte(`{"result":"pass","boot_id":"b1","checked_at":"x","checks":[{"name":"a","result":"fail","detail":""}]}`), "b1"); s.Passed() {
 		t.Error("a failed check must not pass")
 	}
-	if _, err := ParseStatus([]byte(`{"result":"maybe"}`)); err == nil {
+	if _, err := ParseStatus([]byte(`{"result":"maybe"}`), "b1"); err == nil {
 		t.Error("unknown result must fail closed")
 	}
-	if _, err := ParseStatus([]byte(`garbage`)); err == nil {
+	if _, err := ParseStatus([]byte(ok), "other"); err == nil {
+		t.Error("a status from another boot must be rejected")
+	}
+	if _, err := ParseStatus([]byte(`{"result":"pass","boot_id":"b1","checks":[]}`), "b1"); err == nil {
+		t.Error("missing checked_at must be rejected")
+	}
+	if _, err := ParseStatus([]byte(`garbage`), "b1"); err == nil {
 		t.Error("garbage must fail")
 	}
 }

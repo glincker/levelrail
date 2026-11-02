@@ -143,7 +143,7 @@ func TestProvisionContainsFirewallAndOrder(t *testing.T) {
 			t.Errorf("rendered template lacks %q", want)
 		}
 	}
-	fw := strings.Index(raw, "enable --now lr-isolation.service")
+	fw := strings.Index(raw, "systemctl restart lr-isolation.service")
 	dk := strings.Index(raw, "install -y --no-install-recommends docker.io")
 	if fw < 0 || dk < 0 || fw > dk {
 		t.Error("firewall unit must be enabled before Docker is installed")
@@ -237,3 +237,92 @@ func TestLimaValidate(t *testing.T) {
 
 // Matches a bare 0.0.0.0 but not 10.0.0.0/8.
 var wildcard = regexp.MustCompile(`(^|[^0-9.])0\.0\.0\.0`)
+
+func TestRenderForwardOrderAndSSHDefaults(t *testing.T) {
+	s := testSettings()
+	s.Shares = []Share{{HostPath: "/Users/test/Documents/notes"}}
+	m, _ := renderMap(t, s, RenderOptions{})
+	fw := m["portForwards"].([]any)
+	if len(fw) != 3 {
+		t.Fatalf("want 3 forward entries, got %d", len(fw))
+	}
+	last := fw[2].(map[string]any)
+	rng, _ := last["guestPortRange"].([]any)
+	if last["ignore"] != true || len(rng) != 2 || rng[0] != 1 || rng[1] != 65535 {
+		t.Errorf("catch-all ignore must come last with [1,65535]: %v", last)
+	}
+	ssh := m["ssh"].(map[string]any)
+	for _, k := range []string{"forwardAgent", "forwardX11", "loadDotSSHPubKeys"} {
+		if v, ok := ssh[k]; !ok || v != false {
+			t.Errorf("ssh.%s must be explicitly false, got %v", k, v)
+		}
+	}
+}
+
+func TestCheckHome(t *testing.T) {
+	dir := t.TempDir()
+	if err := CheckHome(dir); err != nil {
+		t.Fatalf("clean home rejected: %v", err)
+	}
+	// Lima writes networks.yaml and the user key itself, so those are fine.
+	cfg := filepath.Join(dir, "_config")
+	if err := os.MkdirAll(cfg, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(cfg, "networks.yaml"), []byte("{}"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := CheckHome(dir); err != nil {
+		t.Fatalf("networks.yaml must be allowed: %v", err)
+	}
+	for _, name := range []string{"override.yaml", "default.yaml", "Override.YAML"} {
+		p := filepath.Join(cfg, name)
+		if err := os.WriteFile(p, []byte("plain: false\n"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		if err := CheckHome(dir); err == nil {
+			t.Errorf("%s must be refused", name)
+		}
+		_ = os.Remove(p)
+	}
+	if err := CheckHome(""); err == nil {
+		t.Error("empty home must be refused")
+	}
+}
+
+func TestShareRejectsSymlinksCaseAndDotfiles(t *testing.T) {
+	root := t.TempDir()
+	home := filepath.Join(root, "home")
+	data := filepath.Join(root, "data")
+	for _, d := range []string{filepath.Join(home, ".ssh"), filepath.Join(home, "Library", "Keychains"), filepath.Join(home, ".hidden"), filepath.Join(home, "ok"), data, filepath.Join(root, "outside")} {
+		if err := os.MkdirAll(d, 0o750); err != nil {
+			t.Fatal(err)
+		}
+	}
+	l := DefaultLimits(16384, 8, 0, home, data)
+	link := filepath.Join(root, "outside", "innocent")
+	if err := os.Symlink(filepath.Join(home, ".ssh"), link); err != nil {
+		t.Fatal(err)
+	}
+	cases := map[string]string{
+		"symlink to ssh":     link,
+		"library":            filepath.Join(home, "Library", "Keychains"),
+		"top level dotdir":   filepath.Join(home, ".hidden"),
+		"home itself":        home,
+		"parent of home":     root,
+		"data dir":           data,
+		"mixed case ssh":     filepath.Join(home, ".SSH"),
+		"mixed case library": filepath.Join(home, "LIBRARY"),
+	}
+	for name, p := range cases {
+		if err := (Share{HostPath: p}).validate(l); err == nil {
+			t.Errorf("%s: %s must be rejected", name, p)
+		}
+	}
+	if err := (Share{HostPath: filepath.Join(home, "ok")}).validate(l); err != nil {
+		t.Errorf("plain folder rejected: %v", err)
+	}
+	if err := (Share{HostPath: filepath.Join(home, "ok") + "/"}).validate(l); err == nil {
+		t.Error("trailing slash path must be rejected as not clean")
+	}
+}

@@ -32,13 +32,13 @@ const (
 
 // Defaults block: the only place guest network numbers live.
 const (
+	// The vz user network has no separate resolver: DNS is the gateway itself, port 53 only.
 	defaultHostGateway     = "192.168.5.2"
-	defaultDNSServer2      = "192.168.5.3"
 	defaultDockerPool      = "172.28.0.0/14"
 	defaultDockerBridge    = "172.28.0.1/16"
 	defaultDockerPoolBase  = "172.29.0.0/16"
 	defaultPublishIP       = "127.0.0.1"
-	defaultLANProbe        = "10.255.255.254"
+	defaultLANProbe        = "10.99.98.2"
 	defaultProbeTimeoutSec = 2
 )
 
@@ -61,7 +61,7 @@ type Options struct {
 func DefaultOptions() Options {
 	return Options{
 		HostGateway:     defaultHostGateway,
-		DNSServers:      []string{defaultHostGateway, defaultDNSServer2},
+		DNSServers:      []string{defaultHostGateway},
 		DockerPool:      defaultDockerPool,
 		DockerBridge:    defaultDockerBridge,
 		DockerPoolBase:  defaultDockerPoolBase,
@@ -88,14 +88,14 @@ type File struct {
 
 // Validate rejects values that could break out of the rendered files.
 func (o Options) Validate() error {
-	if _, err := netip.ParseAddr(o.HostGateway); err != nil {
+	if err := plainIPv4(o.HostGateway); err != nil {
 		return fmt.Errorf("host gateway: %w", err)
 	}
 	if len(o.DNSServers) == 0 {
 		return fmt.Errorf("at least one DNS server is required")
 	}
 	for _, d := range o.DNSServers {
-		if a, err := netip.ParseAddr(d); err != nil || !a.Is4() {
+		if err := plainIPv4(d); err != nil {
 			return fmt.Errorf("dns server %q is not an IPv4 address", d)
 		}
 	}
@@ -109,21 +109,38 @@ func (o Options) Validate() error {
 	}
 	for name, v := range map[string]string{"bridge": o.DockerBridge, "pool base": o.DockerPoolBase} {
 		p, err := netip.ParsePrefix(v)
-		if err != nil || !pool.Contains(p.Addr()) {
+		if err != nil || !p.Addr().Is4() || p.Addr().Zone() != "" || !pool.Contains(p.Addr()) {
 			return fmt.Errorf("docker %s %q must sit inside %s", name, v, o.DockerPool)
 		}
 	}
-	if a, err := netip.ParseAddr(o.PublishIP); err != nil || !a.IsLoopback() {
-		return fmt.Errorf("publish ip %q must be a loopback address", o.PublishIP)
+	if a, err := netip.ParseAddr(o.PublishIP); err != nil || !a.Is4() || a.Zone() != "" || !a.IsLoopback() {
+		return fmt.Errorf("publish ip %q must be a plain IPv4 loopback address", o.PublishIP)
 	}
-	if _, err := netip.ParseAddr(o.LANProbe); err != nil {
+	if err := plainIPv4(o.LANProbe); err != nil {
 		return fmt.Errorf("lan probe: %w", err)
+	}
+	// The self-check builds a throwaway listener here, behind 10.99.98.1.
+	if lan := netip.MustParseAddr(o.LANProbe); !netip.MustParsePrefix("10.99.98.0/24").Contains(lan) || lan.As4()[3] <= 1 || lan.As4()[3] == 255 {
+		return fmt.Errorf("lan probe %q must be a host address in 10.99.98.0/24 above .1", o.LANProbe)
 	}
 	if o.ProbeTimeoutSec < 1 {
 		return fmt.Errorf("probe timeout must be at least 1 second")
 	}
 	if o.ExpectedShares < 0 {
 		return fmt.Errorf("expected shares must not be negative")
+	}
+	return nil
+}
+
+// plainIPv4 rejects IPv6 and zoned values: a zone is free text that would reach
+// root shell and nft files unescaped.
+func plainIPv4(v string) error {
+	a, err := netip.ParseAddr(v)
+	if err != nil {
+		return err
+	}
+	if !a.Is4() || a.Zone() != "" {
+		return fmt.Errorf("%q must be a plain IPv4 address", v)
 	}
 	return nil
 }
@@ -251,7 +268,8 @@ func ProvisionScript(o Options, sc Sidecar) (string, error) {
 	}
 	b.WriteString("export DEBIAN_FRONTEND=noninteractive\n")
 	b.WriteString("apt-get update -y\napt-get install -y --no-install-recommends nftables iproute2\n")
-	b.WriteString("systemctl daemon-reload\nsystemctl enable --now " + IsolationUnit + "\n")
+	// restart, not enable --now: an already active unit would keep stale rules.
+	b.WriteString("systemctl daemon-reload\nsystemctl enable " + IsolationUnit + "\nsystemctl restart " + IsolationUnit + "\n")
 	b.WriteString("apt-get install -y --no-install-recommends docker.io\n")
 	b.WriteString("systemctl enable --now docker.service\n")
 	if sc.UnitContent != "" {
@@ -287,7 +305,8 @@ func UserData(o Options, sc Sidecar) (string, error) {
 	}
 	cc.RunCmd = [][]string{
 		{"systemctl", "daemon-reload"},
-		{"systemctl", "enable", "--now", IsolationUnit},
+		{"systemctl", "enable", IsolationUnit},
+		{"systemctl", "restart", IsolationUnit},
 		{"apt-get", "install", "-y", "--no-install-recommends", "docker.io"},
 		{"systemctl", "enable", "--now", "docker.service"},
 		{"systemctl", "enable", "--now", CheckUnit},
@@ -312,6 +331,7 @@ type Check struct {
 // Status is the parsed self-check file.
 type Status struct {
 	Result    string  `json:"result"`
+	BootID    string  `json:"boot_id"`
 	CheckedAt string  `json:"checked_at"`
 	Checks    []Check `json:"checks"`
 }
@@ -329,14 +349,22 @@ func (s Status) Passed() bool {
 	return true
 }
 
-// ParseStatus parses the file read from StatusPath. Unknown shapes fail closed.
-func ParseStatus(raw []byte) (Status, error) {
+// ParseStatus parses the file read from StatusPath and requires it to belong to
+// the current boot (bootID is /proc/sys/kernel/random/boot_id read over limactl).
+// It only catches stale files: root inside the guest can write any status.
+func ParseStatus(raw []byte, bootID string) (Status, error) {
 	var s Status
 	if err := json.Unmarshal(raw, &s); err != nil {
 		return Status{}, fmt.Errorf("isolation status: %w", err)
 	}
 	if s.Result != "pass" && s.Result != "fail" {
 		return Status{}, fmt.Errorf("isolation status: unknown result %q", s.Result)
+	}
+	if s.CheckedAt == "" {
+		return Status{}, fmt.Errorf("isolation status: missing checked_at")
+	}
+	if bootID == "" || s.BootID != strings.TrimSpace(bootID) {
+		return Status{}, fmt.Errorf("isolation status: boot id %q does not match the running guest", s.BootID)
 	}
 	return s, nil
 }
