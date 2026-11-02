@@ -445,6 +445,7 @@
               "cli-kubectl-parity",
               "cli-tui",
               "environment-variables",
+              "runtime-settings",
               "environment-and-secrets",
               "api-reference",
               "api-v2",
