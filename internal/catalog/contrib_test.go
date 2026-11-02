@@ -142,3 +142,18 @@ func TestContribTemplates_MergedIntoCatalog(t *testing.T) {
 		}
 	}
 }
+
+// The contrib path is frozen: new templates are manifests. Adding a file here
+// must be a deliberate change to this list.
+func TestContribDirIsFrozen(t *testing.T) {
+	entries, err := contribFS.ReadDir("contrib")
+	if err != nil {
+		t.Fatal(err)
+	}
+	frozen := map[string]bool{"bytestash.yaml": true, "openclaw.yaml": true}
+	for _, e := range entries {
+		if !frozen[e.Name()] {
+			t.Errorf("contrib/%s is new; add the template as a manifest instead", e.Name())
+		}
+	}
+}

@@ -55,7 +55,7 @@ An app started with the one-click **Deploy now** route is a trial: its pages sho
 
 ## How templates are defined
 
-The built-in catalog is compiled into the control plane binary and served from memory: there is no catalog table and no admin screen. Adding or changing a built-in template means shipping a new control plane build. Each entry has an ID, name, slogan, category, documentation link, a Compose body, and two optional hints:
+The built-in catalog is compiled into the control plane binary and served from memory: there is no catalog table and no admin screen. Adding or changing a built-in template means shipping a new control plane build. New entries are two files under `internal/catalog/manifests/<id>/`, described in [Add a template](/add-a-template). Each entry has an ID, name, slogan, category, documentation link, a Compose body, and two optional hints:
 
 - Recommended memory: a static hint shown as a badge (for example "~6 GiB RAM recommended"). It is a rule of thumb and is not checked against any node's free memory. When you deploy a template, the container memory limit is set to twice this value so the app has headroom for peaks; you can change it under Resources.
 - Requires GPU: the entry reserves an NVIDIA GPU through `deploy.resources.reservations.devices`. It needs a node with a GPU and the NVIDIA container runtime; see [AI models](/ai-models#gpu-nodes).
