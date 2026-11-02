@@ -219,7 +219,7 @@
       },
       "spaces": {
         "name": "DigitalOcean Spaces",
-        "hint": "Simple S3 with a CDN"
+        "hint": "S3-compatible storage with a CDN"
       },
       "hetzner": {
         "name": "Hetzner Object Storage",
@@ -247,7 +247,7 @@
       }
     },
     "localRootHint": "Stored under {{root}}. Enter a folder inside it.",
-    "localWarning": "Backups stored on this machine's own disk are lost with the machine. They protect against a bad deploy or a deleted table, not against a dead disk, a ransomware hit or a deleted server. Use this to try things out, then add an off-site destination.",
+    "localWarning": "Backups stored on this machine's own disk are lost with the machine. They protect against a bad deploy or a deleted table, not against a dead disk, ransomware or a deleted server. Use this to try things out, then add an off-site destination.",
     "field": {
       "name": "Name",
       "bucket": "Bucket",

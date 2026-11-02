@@ -1,3 +1,7 @@
+import {
+  SelectedMark,
+  selectableCardClass,
+} from '@/components/ui/selectable-card'
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import {
@@ -228,12 +232,13 @@ function WizardBody({ onClose }: { onClose: () => void }) {
                 key={s.id}
                 type="button"
                 onClick={() => setSize(s.id)}
-                className={`flex w-full items-center justify-between rounded-lg border p-3 text-left text-sm transition-colors hover:bg-muted/50 ${
-                  size === s.id
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border'
-                }`}
+                aria-pressed={size === s.id}
+                className={selectableCardClass(
+                  size === s.id,
+                  'flex w-full items-center justify-between rounded-lg p-3 pr-7 text-left text-sm',
+                )}
               >
+                <SelectedMark selected={size === s.id} />
                 <span>
                   {s.name} &middot; {s.vcpus} vCPU &middot;{' '}
                   {(s.memory_mb / 1024).toFixed(0)} GB RAM &middot; {s.disk_gb}{' '}

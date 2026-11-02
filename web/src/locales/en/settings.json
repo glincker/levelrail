@@ -711,6 +711,10 @@
       "benchmarks": {
         "title": "Benchmarks",
         "description": "Stored benchmark runs with host, build, limits and a compare view."
+      },
+      "appearance": {
+        "title": "Appearance",
+        "description": "Theme, accent, font, width and density."
       }
     },
     "search": "Search settings",
@@ -1227,7 +1231,14 @@
       "wide": "Wide",
       "wideHint": "Fuller use of big screens",
       "full": "Full width",
-      "fullHint": "Edge to edge"
+      "fullHint": "Edge to edge",
+      "compact": "Compact",
+      "compactHint": "Narrow column for reading"
+    },
+    "appearanceLink": {
+      "title": "Appearance",
+      "description": "Theme, font, page width and density now live in one place.",
+      "open": "Open appearance"
     }
   },
   "emailPage": {
@@ -3476,6 +3487,111 @@
       "title": "Make deploy copies public?",
       "description": "Every retained copy gets its own public hostname and certificate. Anyone with the address can reach old versions of your apps.",
       "confirm": "Make public"
+    }
+  },
+  "appearancePage": {
+    "title": "Appearance",
+    "description": "Theme base, accent, font, text size, page width, side padding and density. Changes apply as you pick them.",
+    "savedHere": "Saved on this browser only. Other browsers and devices keep their own choices.",
+    "reset": "Reset to defaults",
+    "defaultBadge": "Default",
+    "recommendedBadge": "Recommended",
+    "presets": {
+      "title": "Presets",
+      "description": "One click sets several options at once.",
+      "default": "Default",
+      "defaultHint": "The stock look",
+      "focusDark": "Focus dark",
+      "focusDarkHint": "Graphite, roomy padding, comfortable density",
+      "oled": "OLED",
+      "oledHint": "True black, wide pages, compact density",
+      "paper": "Paper",
+      "paperHint": "Warm light, readable font, narrow pages"
+    },
+    "theme": {
+      "title": "Color mode",
+      "description": "Light, dark or follow the browser."
+    },
+    "darkBase": {
+      "title": "Dark base",
+      "description": "The surface color used in dark mode.",
+      "soft": "Soft dark",
+      "softHint": "Calm near-black",
+      "black": "True black",
+      "blackHint": "OLED, saves power",
+      "graphite": "Graphite",
+      "graphiteHint": "Neutral, easy on the eyes",
+      "midnight": "Midnight",
+      "midnightHint": "Blue tint"
+    },
+    "lightBase": {
+      "title": "Light base",
+      "description": "The surface color used in light mode.",
+      "white": "White",
+      "whiteHint": "Classic, highest brightness",
+      "grey": "Soft grey",
+      "greyHint": "Less glare, white cards",
+      "paper": "Paper",
+      "paperHint": "Warm tint",
+      "cool": "Cool grey",
+      "coolHint": "Slight blue tint"
+    },
+    "accent": {
+      "title": "Accent",
+      "description": "Used for the active page, selected cards, links and focus.",
+      "teal": "Teal blue",
+      "indigo": "Indigo",
+      "violet": "Violet",
+      "green": "Green",
+      "amber": "Amber",
+      "rose": "Rose"
+    },
+    "font": {
+      "title": "Font",
+      "description": "Local fonts only, nothing is downloaded.",
+      "system": "System",
+      "systemHint": "Your device font",
+      "rounded": "Rounded",
+      "roundedHint": "Soft letter shapes",
+      "serif": "Serif",
+      "serifHint": "Classic, text-like",
+      "mono": "Mono",
+      "monoHint": "Fixed width",
+      "readable": "Readable",
+      "readableHint": "Wide letters, more line spacing"
+    },
+    "textSize": {
+      "title": "Text size",
+      "description": "Scales all text and spacing."
+    },
+    "width": {
+      "title": "Page width",
+      "description": "How wide page content gets on large screens. Screens under 1024px are not affected."
+    },
+    "gutter": {
+      "title": "Side padding",
+      "description": "Space left and right of the page content from tablet size up.",
+      "tight": "Tight",
+      "tightHint": "More room for content",
+      "normal": "Normal",
+      "normalHint": "Balanced",
+      "roomy": "Roomy",
+      "roomyHint": "Calmer, more margin"
+    },
+    "density": {
+      "description": "How much spacing cards, lists and forms use.",
+      "compactHint": "Fits more on screen",
+      "comfortableHint": "More breathing room"
+    },
+    "preview": {
+      "title": "Live preview",
+      "description": "A sample of your choices.",
+      "navActive": "Overview",
+      "navOther": "Deploys",
+      "cardTitle": "Web app",
+      "cardBody": "Running on 2 nodes",
+      "primary": "Deploy",
+      "secondary": "Logs"
     }
   }
 }

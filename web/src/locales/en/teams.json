@@ -86,7 +86,7 @@
     "title": "You do not have access here",
     "body": "Your current team role does not allow this, or it belongs to another team.",
     "switch": "Switch team",
-    "teams": "Open Teams",
+    "teams": "Open teams",
     "home": "Back to dashboard"
   },
   "accept": {
@@ -133,6 +133,6 @@
     "readOnly": "Only team admins and owners can change these limits."
   },
   "errors": {
-    "generic": "Something went wrong: {{message}}"
+    "generic": "The request failed: {{message}}"
   }
 }

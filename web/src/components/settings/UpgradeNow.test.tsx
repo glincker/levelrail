@@ -251,7 +251,7 @@ describe('UpgradeNow', () => {
   it('explains that the next upgrade verifies and pins, with no command to run', async () => {
     setup({ preflight: green, plan: { ...plan, signature_pinned: false } })
     expect(
-      await screen.findByText(/The next upgrade checks the signature/),
+      await screen.findByText(/After the next upgrade checks the signature/),
     ).toBeInTheDocument()
     expect(screen.queryByText(/cosign/i)).not.toBeInTheDocument()
   })

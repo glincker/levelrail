@@ -2,7 +2,7 @@
   "prefill": {
     "loading": "Opening {{slug}}",
     "notFoundTitle": "Template not found",
-    "notFoundDescription": "This instance has no template named \"{{slug}}\". It may be spelled differently or not in this version's catalog.",
+    "notFoundDescription": "This instance has no template named \"{{slug}}\". It may be misspelled or missing from this version's catalog.",
     "errorTitle": "Could not open the template",
     "browse": "Browse templates"
   },
@@ -37,7 +37,7 @@
       "roleSupport": "Supporting service",
       "dependsOn": "Starts after {{names}}",
       "loading": "Reading the template",
-      "unavailable": "The service breakdown is not available for this template right now. Deploying it still works."
+      "unavailable": "The service breakdown is not available for this template right now. You can still deploy it."
     },
     "env": {
       "title": "Environment variables",
@@ -54,7 +54,7 @@
       "now": "Deploy now",
       "deploying": "Deploying...",
       "configure": "Configure and deploy",
-      "trial": "Deploys as a trial instance you can stop and delete anytime from its own page.",
+      "trial": "Deploys as a trial instance. You can stop and delete it any time from its own page.",
       "configureHint": "This template needs a few values from you before it can start."
     }
   },
@@ -114,7 +114,7 @@
     }
   },
   "requirements": {
-    "title": "What this needs, and what Levelrail adds",
+    "title": "What this needs and what Levelrail adds",
     "level": {
       "standard": "Standard",
       "review": "Review",
@@ -145,7 +145,7 @@
       "no_healthcheck": "No health check, so a deploy is judged by the process starting",
       "persistent_data": "Stores data in named volumes",
       "gpu": "Reserves an NVIDIA GPU",
-      "unparsed": "The Compose body could not be analyzed, review it before deploying"
+      "unparsed": "The Compose body could not be analyzed. Review it before deploying"
     },
     "protection": {
       "https_ingress": "Automatic HTTPS and an ingress shield in front of every domain",
@@ -158,7 +158,7 @@
     }
   },
   "banner": {
-    "description": "Pick from the catalog, set a few values, and the app runs on your own server.",
+    "description": "Pick from the catalog, set a few values and the app runs on your own server.",
     "diagram": {
       "catalog": "catalog",
       "oneClick": "one click",
@@ -217,7 +217,7 @@
     },
     "name": {
       "label": "App name",
-      "hint": "Lowercase letters, digits and dashes. Leave empty to pick one for you."
+      "hint": "Lowercase letters, digits and dashes. Leave empty and we pick one."
     },
     "errors": {
       "required": "{{field}} is required",
@@ -240,7 +240,7 @@
     "deploying": "Deploying...",
     "searchPlaceholder": "Search templates...",
     "searchLabel": "Search templates",
-    "noMatch": "No templates match “{{search}}”."
+    "noMatch": "No templates match \"{{search}}\"."
   },
   "install": {
     "title": "What this installs",
@@ -268,7 +268,7 @@
     "tagHint": "A version tag can still be re-pushed upstream",
     "floating_one": "{{count}} image on a floating tag",
     "floating_other": "{{count}} images on a floating tag",
-    "floatingHint": "The latest tag or no tag: the image can change between deploys"
+    "floatingHint": "The latest tag or no tag. The image can change between deploys"
   },
   "stackFile": {
     "title": "View as stack file",
@@ -319,7 +319,7 @@
     "name": "Name",
     "namePlaceholder": "e.g. my-stack",
     "nameHint": "Groups every service this template defines under one app name.",
-    "composeHint": "Pre-filled from the template. Edit it if you need to before deploying.",
+    "composeHint": "Prefilled from the template. Edit it before deploying if you need to.",
     "deploying": "Deploying...",
     "deploy": "Deploy"
   },

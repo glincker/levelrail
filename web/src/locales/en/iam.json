@@ -331,6 +331,6 @@
     "deleted": "Policy {{name}} deleted"
   },
   "errors": {
-    "generic": "Something went wrong. Try again."
+    "generic": "The request failed. Try again."
   }
 }

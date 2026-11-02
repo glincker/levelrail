@@ -121,7 +121,7 @@
     "title": "Confirm it's you",
     "descriptionReveal": "Revealing {{key}} on {{app}} is recorded in the audit log. You won't be asked again for {{minutes}} minutes.",
     "descriptionExport": "Exporting every value of {{app}} is recorded in the audit log.",
-    "descriptionManage": "Making values visible or unlocking secrets on {{app}} needs a fresh confirmation.",
+    "descriptionManage": "Making values visible or revealing secrets on {{app}} needs a fresh confirmation.",
     "password": "Password",
     "code": "Authenticator code",
     "codeHint": "Your account uses two-factor authentication, so enter the 6 digit code too.",

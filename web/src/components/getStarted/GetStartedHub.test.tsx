@@ -111,7 +111,7 @@ describe('GetStartedHub', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(g)))
     renderHub()
     const ship = await screen.findByText('Ship your first app')
-    const ready = screen.getByText('Make it production ready')
+    const ready = screen.getByText('Get ready for production')
     expect(
       ship.compareDocumentPosition(ready) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy()

@@ -270,7 +270,7 @@
   },
   "cascadeDelete": {
     "label": "Also delete everything inside",
-    "hint": "Removes every app and database in it and their containers. Volumes are kept. If something cannot be removed, nothing else is lost and you can run this again."
+    "hint": "Removes every app and database in it, and their containers. Volumes are kept. If something cannot be removed, nothing else is lost and you can run this again."
   },
   "loginHelp": {
     "lockedOut": "Locked out? On the server, run",
@@ -455,6 +455,7 @@
     },
     "newApp": "New app",
     "pageWidth": {
+      "compact": "Compact width",
       "comfortable": "Comfortable width",
       "wide": "Wide",
       "full": "Full width"
@@ -515,7 +516,7 @@
     "reconnectHint": "Press Enter to try again",
     "stepUpCancelled": "Confirmation cancelled.",
     "exitCode": "exit code {{code}}",
-    "genericError": "Something went wrong.",
+    "genericError": "Something went wrong. Try again.",
     "unknownCommand": "Unknown command: {{name}}",
     "helpIntro": "Available commands (Tab completes, help <command> lists subcommands):",
     "helpLocal": "Also: help, clear. Ctrl+C cancels a running command, Ctrl+L clears the screen.",
@@ -634,7 +635,7 @@
       "notConfiguredDescription": "Add a BYOK API key in Settings to start chatting.",
       "configure": "Configure AI Assistant",
       "experimentalOffTitle": "AI chat is turned off",
-      "experimentalOffDescription": "AI chat is a beta feature and is off by default. An administrator can turn it on in Settings, Beta features, no server access needed.",
+      "experimentalOffDescription": "AI chat is a beta feature and is off by default. An administrator can turn it on in Settings, Beta features. No server access needed.",
       "enableInSettings": "Turn on in Settings"
     }
   },
@@ -977,7 +978,7 @@
     "requestId": "Request ID: {{id}}",
     "copyRequestId": "Copy request ID",
     "copied": "Copied",
-    "generic": "Something went wrong on the server.",
+    "generic": "The server hit an error. Try again.",
     "toastTitle": "That did not work",
     "friendly": {
       "generic": {

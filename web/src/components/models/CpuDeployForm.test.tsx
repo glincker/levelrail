@@ -148,7 +148,7 @@ describe('CpuDeployForm', () => {
     expect(screen.getByText('Light')).toBeInTheDocument()
     expect(
       await screen.findByText(
-        /This will use up to 2 CPUs and 2\.0 GB of memory on this server and about 2\.0 GB of disk\. Other apps keep priority\./,
+        /This uses up to 2 CPUs and 2\.0 GB of memory on this server and about 2\.0 GB of disk\. Other apps keep priority\./,
       ),
     ).toBeInTheDocument()
     expect(

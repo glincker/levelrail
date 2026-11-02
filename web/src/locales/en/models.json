@@ -116,7 +116,7 @@
       "unload": "Unload when idle",
       "unloadHint": "Stops the engine after a while without requests and frees its memory. The next request starts it again.",
       "warnTitle": "This model shares your server",
-      "warn": "This will use up to {{cpus}} CPUs and {{memory}} of memory on this server and about {{disk}} of disk. Other apps keep priority.",
+      "warn": "This uses up to {{cpus}} CPUs and {{memory}} of memory on this server and about {{disk}} of disk. Other apps keep priority.",
       "diskUnknown": "some GB",
       "submit": "Deploy on CPU",
       "toast": "The weights are downloading from Hugging Face, then the model loads."

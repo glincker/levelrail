@@ -32,7 +32,7 @@ export function StepperNav({
               className={cn(
                 'flex min-h-11 items-center gap-1.5 rounded-md border px-2.5 text-xs transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none sm:min-h-8',
                 active
-                  ? 'border-primary bg-primary/10 text-foreground'
+                  ? 'border-state-selected-border bg-state-selected text-foreground'
                   : 'border-border text-muted-foreground',
                 i > reached && 'opacity-50',
               )}

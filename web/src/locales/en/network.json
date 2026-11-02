@@ -37,7 +37,7 @@
   "legend": {
     "title": "How to read this page",
     "server": "A server running Levelrail. The first card is the control plane itself.",
-    "internalName": "The internal name other apps use to reach this resource. Click the copy button to use it in a connection string.",
+    "internalName": "The internal name other apps use to reach this resource. Use the copy button to copy it in a connection string.",
     "local": "Local means the resource is on this server and reachable directly, no mesh needed.",
     "mesh": "With the mesh on, resources on other servers get a mesh address and the same internal name works across servers."
   },
@@ -57,7 +57,7 @@
       "on": "On",
       "enabling": "Restart needed",
       "disabling": "Restart needed to turn off",
-      "error": "Failed to start"
+      "error": "Could not start"
     },
     "pinned": "Set by {{envVar}} on the server. Unset it there to manage the mesh from here.",
     "readiness": "Readiness",

@@ -265,7 +265,7 @@
   },
   "shield": {
     "title": "Bot and abuse shield",
-    "help": "Per-client limits applied at the ingress before a request reaches your app. Limits are per client IP and cost nothing when traffic is normal.",
+    "help": "Per-client limits applied at the ingress before a request reaches your app. Limits are per client IP and have no effect when traffic is normal.",
     "enabled": "Enable the shield for this domain",
     "on": "On",
     "off": "Off",

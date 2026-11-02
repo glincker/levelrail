@@ -8,6 +8,7 @@ import {
 } from '@tanstack/react-query'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 import './index.css'
+import './lib/appearanceBoot'
 import './lib/density'
 import './lib/pageWidth'
 import { isUnauthorized } from './lib/apiError'

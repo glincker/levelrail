@@ -15,7 +15,7 @@
     "infoTipLabel": "About auto-rollback on crashloop",
     "helpLabel": "Auto-rollback guide",
     "enabledLabel": "Redeploy the last working image automatically",
-    "description": "When a crashloop alert fires for this app, automatically redeploy the most recent successful image older than the one that's crashlooping. Fires at most once per episode; with no older image to fall back to, the app is left to the alert alone.",
+    "description": "When a crashloop alert fires for this app, redeploy the most recent successful image older than the one that is crashlooping. This happens at most once per episode. If there is no older image, the alert is all you get.",
     "switchAriaLabel": "Auto-rollback on crashloop enabled",
     "toast": {
       "enabled": "Auto-rollback on crashloop enabled.",
@@ -73,19 +73,19 @@
     "modes": {
       "off": {
         "label": "Off",
-        "description": "Only alert; never act automatically."
+        "description": "Only alert. Never act automatically."
       },
       "auto": {
         "label": "Auto rollback",
-        "description": "Roll back immediately to the most recent successful image older than the one burning the error budget."
+        "description": "Roll back right away to the most recent successful image older than the one burning the error budget."
       },
       "dry_run": {
         "label": "Dry run",
-        "description": "Log what would have been rolled back, without ever deploying."
+        "description": "Log what would have been rolled back, without deploying."
       },
       "pause_for_human": {
         "label": "Pause for human",
-        "description": "Open a pending deploy approval for the rollback instead of deploying directly; a teammate approves or rejects it."
+        "description": "Open a pending deploy approval for the rollback instead of deploying directly. A teammate approves or rejects it."
       }
     },
     "toast": {
@@ -97,7 +97,7 @@
     "title": "Deploy status badge",
     "infoTipLabel": "About the deploy status badge",
     "enabledLabel": "Public README badge",
-    "description": "Serves a small public SVG showing this app's latest deploy status and when it happened, no authentication required. Leave this off for an app whose deploy status shouldn't be public.",
+    "description": "Serves a small public SVG showing this app's latest deploy status and when it happened. No authentication is required. Leave this off if the deploy status should not be public.",
     "switchAriaLabel": "Deploy status badge enabled",
     "embedLabel": "Embed in your README",
     "toast": {
@@ -154,7 +154,7 @@
     "webhookCreate": "Create webhook URL",
     "webhookRotate": "Replace webhook URL",
     "webhookUrlLabel": "Registry webhook URL",
-    "webhookShownOnce": "Copy this now, it is not shown again. Paste it as a webhook (POST) in your registry; the URL itself is the secret."
+    "webhookShownOnce": "Copy this now. It is not shown again. Paste it as a webhook (POST) in your registry. The URL itself is the secret."
   },
   "canary": {
     "title": "Canary release",
@@ -221,7 +221,7 @@
       "succeeded": "Upgrade finished and the app is healthy",
       "rolled_back": "Upgrade failed and was rolled back",
       "rollback_failed": "Upgrade failed and the rollback was refused",
-      "refused": "Upgrade was refused, nothing changed"
+      "refused": "Upgrade was refused. Nothing changed."
     },
     "risk": {
       "none": "No changes",
@@ -246,7 +246,7 @@
     "differs": "Differs:",
     "secret": "(secret)",
     "secretOneSide": "(secret on one side only)",
-    "summary": "{{count}} keys identical. Secret values are never read, secrets match by key only.",
+    "summary": "{{count}} keys identical. Secret values are never read. Secrets match by key only.",
     "tableLabel": "Environment differences",
     "colKey": "Key",
     "colStatus": "Status",
@@ -259,7 +259,7 @@
   "appSleep": {
     "title": "Sleep when idle",
     "infoTipLabel": "About sleeping apps",
-    "description": "Stop this app after it has had no requests for a while, so it uses no memory or CPU. The next request to its domain starts it and shows a short waking-up page that retries on its own, so the first visitor waits for the cold start.",
+    "description": "Stop this app after a while with no requests, so it uses no memory or CPU. The next request to its domain starts it and shows a short waking-up page that retries on its own. The first visitor waits for the cold start.",
     "enabledLabel": "Sleep when idle",
     "switchAriaLabel": "Sleep when idle enabled",
     "minutesLabel": "Custom minutes ({{min}} to {{max}})",
@@ -276,7 +276,7 @@
       "ignoreUpdated": "Ignored paths updated."
     },
     "holdLabel": "Hold requests while waking (function mode)",
-    "holdHelp": "A request that arrives while the app is asleep waits for it to start and is then replayed, instead of showing a waking-up page. Use for API callers.",
+    "holdHelp": "A request that arrives while the app is asleep waits for it to start and is then replayed, instead of showing a waking-up page. Use this for API callers.",
     "holdAriaLabel": "Hold requests while waking",
     "badgeAsleep": "Asleep",
     "fleetTitle": "Sleeping apps",
@@ -289,7 +289,7 @@
     "fleetBrowseApps": "Choose apps",
     "fleetAllAwake": "Every app with sleep on is awake right now.",
     "fleetMore": "and {{count}} more asleep",
-    "fleetNoLimits": "These apps have no memory limit, so the memory they free cannot be estimated. Set a limit on each app to see it here.",
+    "fleetNoLimits": "These apps have no memory limit, so the memory they free can't be estimated. Set a limit on each app to see it here.",
     "status": {
       "ready": "Ready to turn on",
       "blocked": "Blocked",
@@ -298,7 +298,7 @@
       "waking": "Waking"
     },
     "explain": {
-      "generic": "When nobody uses this app for a while it is stopped to free memory and CPU. The next visitor starts it again and waits for a cold start."
+      "generic": "When nobody uses this app for a while, it is stopped to free memory and CPU. The next visitor starts it again and waits for a cold start."
     },
     "wakeTiming": {
       "none": "No wakes measured yet, so there is no estimate of how long a wake takes.",
@@ -366,7 +366,7 @@
   "githubActions": {
     "title": "GitHub Actions reporting",
     "infoTipLabel": "About GitHub Actions reporting",
-    "description": "When the Levelrail deploy action runs in your workflow, it records a GitHub deployment and a check run on the commit so the result shows on the pull request. A failed report never fails the deploy.",
+    "description": "When the Levelrail deploy action runs in your workflow, it records a GitHub deployment and a check run on the commit, so the result shows on the pull request. A failed report never fails the deploy.",
     "environmentLabel": "GitHub environment name",
     "deploymentsLabel": "Record GitHub deployments",
     "checksLabel": "Post a check run",
@@ -380,7 +380,7 @@
   "ciDeploy": {
     "title": "Deploy from CI",
     "infoTipLabel": "About deploying from CI",
-    "description": "Trust a pipeline and ref, then paste the setup for your CI. The job swaps its identity (GitHub, GitLab or CircleCI) for a 15 minute token that can only deploy this app, so no long-lived secret is stored. A commit with [skip ci] does not deploy.",
+    "description": "Trust a pipeline and ref, then paste the setup into your CI. The job swaps its identity (GitHub, GitLab or CircleCI) for a 15 minute token that can only deploy this app, so no long-lived secret is stored. A commit with [skip ci] does not deploy.",
     "noTrusts": "No pipeline is trusted to deploy this app yet. Add one below.",
     "repositoryLabel": {
       "github": "GitHub repository",
@@ -429,10 +429,10 @@
     "orgIdPlaceholder": "Organization Settings > Overview",
     "issuerLabel": "Self-managed issuer",
     "issuerPlaceholder": "https://gitlab.com",
-    "issuerNote": "Leave the issuer empty for gitlab.com. A self-managed GitLab issuer can only be trusted by a root user, because whoever runs it can mint tokens.",
+    "issuerNote": "Leave the issuer empty for gitlab.com. Only a root user can trust a self-managed GitLab issuer, because whoever runs it can mint tokens.",
     "issuerShown": "Issuer {{issuer}}",
     "protectedOnly": "Only protected branches and tags",
-    "unprotectedWarning": "This trust accepts pipelines on unprotected branches and tags: any developer who can push a matching ref can deploy.",
+    "unprotectedWarning": "This trust accepts pipelines on unprotected branches and tags. Any developer who can push a matching ref can deploy.",
     "snippetTitle": {
       "github": "Job steps",
       "gitlab": "GitLab CI job",
@@ -458,7 +458,7 @@
     "confirmRevoke": "Confirm revoke",
     "copy": "Copy URL",
     "urlLabel": "Build hook URL",
-    "shownOnce": "URL for {{name}}. Copy it now, it is not shown again.",
+    "shownOnce": "URL for {{name}}. Copy it now. It is not shown again.",
     "toast": {
       "errorTitle": "Build hook request failed",
       "copied": "URL copied.",
@@ -467,7 +467,7 @@
   },
   "banner": {
     "title": "Deployments",
-    "description": "Every release across your apps, live while it builds, with one-click rollback. Deploy an app and it shows up here.",
+    "description": "Every release across your apps, live while it builds, with one-click rollback. Deploy an app and it appears here.",
     "compactDescription": "Releases across every app, with rollback.",
     "diagram": {
       "image": "image",
@@ -494,7 +494,7 @@
     "error": {
       "format": "Use a whole number or a percent, such as 1 or 25%.",
       "percent": "A percent must be between 0% and 100%.",
-      "bothZero": "Max surge and max unavailable cannot both be 0, the rollout could never progress."
+      "bothZero": "Max surge and max unavailable can't both be 0, or the rollout could never progress."
     }
   },
   "appOverview": {
@@ -538,7 +538,7 @@
     "noMatchHint": "Try removing a filter or widening your search.",
     "clearFilters": "Clear filters",
     "emptyTitle": "No deployments yet",
-    "emptyDescription": "Deploys show up here as soon as an app is built and released.",
+    "emptyDescription": "Deploys appear here as soon as an app is built and released.",
     "emptyAction": "Deploy an app"
   },
   "summary": {

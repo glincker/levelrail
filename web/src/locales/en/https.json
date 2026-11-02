@@ -9,13 +9,13 @@
     "emailLabel": "Email for certificate notices",
     "emailHelp": "Any inbox you read works. Certificates are free and renew on their own: Let's Encrypt only emails you if one is about to expire and could not renew.",
     "stagingLabel": "Test with Let's Encrypt staging first",
-    "stagingHelp": "Staging certificates are not trusted by browsers, but it has no meaningful rate limits. Use it to prove ports 80 and 443 are reachable.",
+    "stagingHelp": "Staging certificates are not trusted by browsers, but staging has no meaningful rate limits. Use it to prove ports 80 and 443 are reachable.",
     "enable": "Enable HTTPS",
     "enabling": "Requesting certificate",
     "retry": "Try again",
     "recheck": "Re-check",
     "rechecking": "Checking",
-    "recheckHelp": "If the address does not resolve to this server yet, fix it where the DNS or firewall is managed, then re-check. Nothing else needs to change here.",
+    "recheckHelp": "If the address does not resolve to this server yet, fix it where DNS or the firewall is managed, then re-check. Nothing else needs to change here.",
     "pending": "Requesting a certificate for {{domain}}. This usually takes under a minute.",
     "issued": "HTTPS is on for {{domain}}.",
     "issuedDetail": "Issued by {{issuer}}, expires {{date}}. Renewal is automatic.",
@@ -77,7 +77,7 @@
     "fixCustom": "Use your own domain",
     "digToggle": "Check by hand with dig",
     "confirmTitle": "Change the automatic hostname?",
-    "confirmBody": "This app is currently reachable at {{host}}.",
+    "confirmBody": "This app is reachable at {{host}}.",
     "confirmOldStops": "The old hostname stops working as soon as the new one is routed.",
     "confirmNoDowntime": "The route updates in place with no downtime. Bookmarks and webhooks using the old hostname need updating.",
     "confirmAction": "Change hostname"
@@ -90,7 +90,7 @@
     "offAction": "Turn them on",
     "noPublicHost": "No public IP is known for this server, so no automatic hostname can be built. Set APP_PUBLIC_HOST on the control plane.",
     "publishedPorts": "Published ports",
-    "portMapping": "{{host}} \u2192 {{container}}"
+    "portMapping": "{{host}} → {{container}}"
   },
   "wizard": {
     "ownDomainTitle": "Or use your own domain",

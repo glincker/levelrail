@@ -40,7 +40,10 @@ export function AbilitiesField({
             // has-data-checked:border-primary/30), so each ability gets a
             // bordered row that highlights on selection instead of a bare
             // checkbox + text line.
-            <FieldLabel key={option.value}>
+            <FieldLabel
+              key={option.value}
+              className="has-data-checked:border-state-selected-border has-data-checked:bg-state-selected dark:has-data-checked:border-state-selected-border dark:has-data-checked:bg-state-selected"
+            >
               <Field orientation="horizontal">
                 <Checkbox
                   checked={value.includes(option.value)}

@@ -61,7 +61,7 @@
     "title": "Metrics",
     "summary": "As of {{time}}. {{deploys}} deploys in this range. Dashed lines mark deploys (green succeeded, red failed, gray running) and amber lines mark container restarts.",
     "restarts": "Restarts: {{count}} in this range.",
-    "hint": "Click a chart to investigate that moment. Click a marker for the deploy details."
+    "hint": "Select a chart to investigate that moment. Select a marker for the deploy details."
   },
   "range": {
     "from": "From",

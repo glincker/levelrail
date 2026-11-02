@@ -143,6 +143,7 @@
       "nav-help": "Docs, shortcuts and support.",
       "settings-hub": "All instance settings in one place.",
       "settings-account": "Your profile and password.",
+      "settings-appearance": "Theme base, accent, font, page width and density.",
       "settings-security": "Sessions, two-factor sign-in and secrets policy.",
       "settings-tokens": "Create and revoke API tokens.",
       "settings-stacks": "Stacks kept in git: revisions, drift, plans and rollback.",

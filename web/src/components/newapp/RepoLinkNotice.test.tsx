@@ -18,7 +18,7 @@ describe('RepoLinkNotice', () => {
       </NewAppI18n>,
     )
     expect(
-      screen.getByText('Prefilled from a link, review before deploying'),
+      screen.getByText('Prefilled from a link. Review before deploying'),
     ).toBeTruthy()
     expect(screen.queryByText(/were ignored/)).toBeNull()
   })

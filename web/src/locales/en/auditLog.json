@@ -18,11 +18,11 @@
     "emptyNone": "No audited requests recorded yet."
   },
   "labels": {
-    "certIssued": "Issued Certificate",
-    "certRenewed": "Renewed Certificate",
-    "certRenewalRequested": "Requested Certificate Renewal",
-    "certUploaded": "Uploaded Certificate",
-    "certRemoved": "Removed Certificate",
+    "certIssued": "Issued certificate",
+    "certRenewed": "Renewed certificate",
+    "certRenewalRequested": "Requested certificate renewal",
+    "certUploaded": "Uploaded certificate",
+    "certRemoved": "Removed certificate",
     "deviceLoginApproved": "Approved CLI login",
     "deviceLoginDenied": "Denied CLI login",
     "deviceLoginExpired": "CLI login expired",

@@ -1,3 +1,4 @@
+import { selectableCardClass } from '@/components/ui/selectable-card'
 import { useState } from 'react'
 import {
   CircleCheckGlassIcon,
@@ -191,10 +192,10 @@ export function AppExposurePanel({ appName }: { appName: string }) {
             <label
               key={m}
               className={cn(
-                'flex cursor-pointer items-start gap-3 rounded-lg border p-3 text-sm',
-                modeValue === m
-                  ? 'border-primary bg-accent/40'
-                  : 'border-border',
+                selectableCardClass(
+                  modeValue === m,
+                  'flex cursor-pointer items-start gap-3 rounded-lg p-3 pr-7 text-sm has-focus-visible:ring-2 has-focus-visible:ring-state-accent',
+                ),
                 m === 'direct' && remoteOnly && 'cursor-not-allowed opacity-60',
               )}
             >

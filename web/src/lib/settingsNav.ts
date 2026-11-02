@@ -14,6 +14,7 @@ import {
   DatabaseGlassIcon,
   DownloadGlassIcon,
   FileCodeGlassIcon,
+  FileSearchGlassIcon,
   FlaskConicalGlassIcon,
   GaugeGlassIcon,
   GitBranchGlassIcon,
@@ -26,6 +27,7 @@ import {
   LayoutGridGlassIcon,
   LockGlassIcon,
   MailGlassIcon,
+  PackageGlassIcon,
   PlugGlassIcon,
   RestoreGlassIcon,
   SettingsGlassIcon,
@@ -40,6 +42,7 @@ import {
   TerminalGlassIcon,
   UniversityGlassIcon,
   UploadGlassIcon,
+  PaletteGlassIcon,
   UserGlassIcon,
   UsersGlassIcon,
   WebhookGlassIcon,
@@ -48,8 +51,12 @@ import {
 import type { ExperimentalFeature } from './experimental'
 
 import type settingsEn from '../locales/en/settings.json'
+import type paletteSettingsEn from '../locales/en/paletteSettings.json'
 
-export type SettingsItemId = keyof (typeof settingsEn)['nav']['items']
+// Pages whose labels live in the paletteSettings namespace instead of settings.
+export type PaletteSettingsItemId = keyof (typeof paletteSettingsEn)['items']
+export type SettingsItemId =
+  keyof (typeof settingsEn)['nav']['items'] | PaletteSettingsItemId
 export type SettingsAreaId = keyof (typeof settingsEn)['nav']['areas']
 
 export interface SettingsNavItem {
@@ -80,6 +87,11 @@ export const settingsNavSections: SettingsNavSection[] = [
         id: 'general',
         to: '/settings/general',
         icon: SettingsGlassIcon,
+      },
+      {
+        id: 'appearance',
+        to: '/settings/appearance',
+        icon: PaletteGlassIcon,
       },
       {
         id: 'organizations',
@@ -134,6 +146,11 @@ export const settingsNavSections: SettingsNavSection[] = [
         to: '/settings/roles',
         icon: IdCardLanyardGlassIcon,
         feature: 'access-roles',
+      },
+      {
+        id: 'iam-policies',
+        to: '/settings/iam-policies',
+        icon: ShieldCheckGlassIcon,
       },
       {
         id: 'sso',
@@ -281,6 +298,11 @@ export const settingsNavSections: SettingsNavSection[] = [
         icon: UploadGlassIcon,
       },
       {
+        id: 'network-shares',
+        to: '/settings/network-shares',
+        icon: DatabaseGlassIcon,
+      },
+      {
         id: 'control-plane-backup',
         to: '/settings/control-plane-backup',
         icon: DatabaseGlassIcon,
@@ -334,6 +356,11 @@ export const settingsNavSections: SettingsNavSection[] = [
         id: 'email-messages',
         to: '/settings/email-messages',
         icon: MailGlassIcon,
+      },
+      {
+        id: 'email-log',
+        to: '/settings/email-log',
+        icon: FileSearchGlassIcon,
       },
       {
         id: 'status-page',
@@ -394,6 +421,21 @@ export const settingsNavSections: SettingsNavSection[] = [
         id: 'bitbucket-server-app',
         to: '/settings/bitbucket-server-app',
         icon: GitBranchGlassIcon,
+      },
+      {
+        id: 'registry',
+        to: '/settings/registry',
+        icon: PackageGlassIcon,
+      },
+      {
+        id: 'registry-credentials',
+        to: '/settings/registry-credentials',
+        icon: KeyGlassIcon,
+      },
+      {
+        id: 'node-providers',
+        to: '/settings/node-providers',
+        icon: CloudCheckGlassIcon,
       },
     ],
   },

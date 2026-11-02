@@ -6,7 +6,10 @@ import {
 } from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/badge'
-import { cn } from '@/lib/utils'
+import {
+  SelectedMark,
+  selectableCardClass,
+} from '@/components/ui/selectable-card'
 import type { NormalizedRepoOption } from '../lib/gitRepoOptions'
 import { BrandIcon, isBrandIconName } from './BrandIcon'
 
@@ -39,11 +42,12 @@ export function GitRepoCard({
       type="button"
       aria-pressed={selected}
       onClick={onSelect}
-      className={cn(
-        'flex flex-col items-start gap-1.5 rounded-lg border border-border bg-card p-2.5 text-left transition-colors hover:border-primary/40 hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
-        selected && 'border-primary/50 bg-muted',
+      className={selectableCardClass(
+        selected,
+        'flex flex-col items-start gap-1.5 rounded-lg p-2.5 text-left',
       )}
     >
+      <SelectedMark selected={selected} />
       <span className="flex w-full items-center gap-1.5 text-sm font-medium text-foreground">
         <span className="truncate">
           <span className="text-muted-foreground">{owner}</span>

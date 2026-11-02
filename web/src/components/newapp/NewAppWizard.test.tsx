@@ -224,7 +224,7 @@ describe('NewAppWizard', () => {
 
     await user.click(screen.getByRole('button', { name: 'Deploy' }))
     expect(
-      screen.getByText('This variable is needed to start the app.'),
+      screen.getByText('The app needs this variable to start.'),
     ).toBeInTheDocument()
     expect(navigate).not.toHaveBeenCalled()
 

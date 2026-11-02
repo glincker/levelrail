@@ -1,3 +1,7 @@
+import {
+  SelectedMark,
+  selectableCardClass,
+} from '@/components/ui/selectable-card'
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
@@ -87,8 +91,12 @@ export function PipelineTemplatesDialog({ appName }: { appName: string }) {
                   type="button"
                   aria-pressed={pickedId === tpl.id}
                   onClick={() => pick(tpl)}
-                  className="h-full w-full rounded-lg border border-border p-3 text-left text-sm transition-colors hover:bg-muted aria-pressed:border-primary aria-pressed:bg-muted"
+                  className={selectableCardClass(
+                    pickedId === tpl.id,
+                    'h-full w-full rounded-lg p-3 pr-7 text-left text-sm',
+                  )}
                 >
+                  <SelectedMark selected={pickedId === tpl.id} />
                   <span className="flex items-center justify-between gap-2">
                     <span className="font-medium text-foreground">
                       {tpl.name}

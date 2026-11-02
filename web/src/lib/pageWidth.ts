@@ -1,14 +1,19 @@
 import { useSyncExternalStore } from 'react'
 
-export type PageWidth = 'comfortable' | 'wide' | 'full'
+export type PageWidth = 'compact' | 'comfortable' | 'wide' | 'full'
 
-export const PAGE_WIDTHS: PageWidth[] = ['comfortable', 'wide', 'full']
+export const PAGE_WIDTHS: PageWidth[] = [
+  'compact',
+  'comfortable',
+  'wide',
+  'full',
+]
 
 const STORAGE_KEY = 'ui-page-width'
 const listeners = new Set<() => void>()
 
 function isPageWidth(v: string | null): v is PageWidth {
-  return v === 'comfortable' || v === 'wide' || v === 'full'
+  return v === 'compact' || v === 'comfortable' || v === 'wide' || v === 'full'
 }
 
 function read(): PageWidth {

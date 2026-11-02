@@ -159,7 +159,7 @@
     "previewResult": "Would have blocked {{blocked}} of {{total}} recent requests ({{percent}}%)",
     "previewWindow": "over the last {{minutes}} min",
     "topClients": "Most affected clients: {{clients}}",
-    "enforceNeedsPreview": "Enforcing unlocks once the preview above has loaded.",
+    "enforceNeedsPreview": "Enforcing is available once the preview above has loaded.",
     "reasons": {
       "rate_limit": "Rate limited",
       "deny_cidr": "Blocked address",

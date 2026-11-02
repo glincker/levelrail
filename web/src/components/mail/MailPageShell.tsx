@@ -7,7 +7,7 @@ import { PageTemplate } from '@/components/shell/PageTemplate'
 export type MailSection = 'templates' | 'audiences' | 'messages'
 
 const TAB_CLASS =
-  'relative -mb-px border-b-2 border-transparent px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none aria-[current=page]:border-foreground aria-[current=page]:font-medium aria-[current=page]:text-foreground'
+  'relative -mb-px border-b-2 border-transparent px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none aria-[current=page]:border-state-active-bar aria-[current=page]:font-medium aria-[current=page]:text-foreground'
 
 /** MailPageShell is the hero and section links shared by the email templates, audiences and messages pages. */
 export function MailPageShell({

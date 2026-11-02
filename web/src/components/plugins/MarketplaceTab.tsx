@@ -202,7 +202,7 @@ export function MarketplaceTab() {
               className={cn(
                 'rounded-full border px-3 py-0.5 text-xs',
                 category === c
-                  ? 'border-primary bg-primary text-primary-foreground'
+                  ? 'border-state-selected-border bg-state-selected text-foreground'
                   : 'text-muted-foreground hover:text-foreground',
               )}
             >

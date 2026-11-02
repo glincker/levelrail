@@ -1,0 +1,12 @@
+{
+  "items": {
+    "email-log": {
+      "title": "Email delivery log",
+      "description": "Every outbound email attempt with its outcome."
+    },
+    "network-shares": {
+      "title": "Network shares",
+      "description": "Remote volume sources any app service can attach."
+    }
+  }
+}

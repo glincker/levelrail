@@ -31,7 +31,7 @@ export function SectionTabs({
           className={cn(
             '-mb-px flex shrink-0 items-center border-b-2 px-3 py-2 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/60',
             item.active
-              ? 'border-foreground text-foreground'
+              ? 'border-state-active-bar text-foreground'
               : 'border-transparent text-muted-foreground hover:text-foreground',
           )}
         >

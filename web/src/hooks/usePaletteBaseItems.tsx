@@ -6,7 +6,7 @@ import { usePageActions } from '@/lib/pageActions'
 import { openCliModal } from '@/lib/cliModalStore'
 import { useTheme, type Theme } from '../components/ThemeProvider'
 import {
-  ROUTE_ENTRIES,
+  mergeSettingsEntries,
   routeEntryItem,
   THEME_ACTION,
   type PaletteItem,
@@ -18,6 +18,7 @@ import {
 import { useMailPaletteItems } from '../components/mailPaletteItems'
 import { useResourcePaletteItems } from '../components/resourcePaletteItems'
 import { useAppTabPaletteItems } from '../components/apps/useAppTabPaletteItems'
+import { useSettingsPaletteEntries } from '../lib/settingsPaletteEntries'
 import { useExperimentalFeatures } from './useExperimental'
 
 const NEXT_THEME: Record<Theme, Theme> = {
@@ -49,6 +50,7 @@ export function usePaletteBaseItems(
   const resourceItems = useResourcePaletteItems()
   const appTabItems = useAppTabPaletteItems()
   const mailItems = useMailPaletteItems()
+  const settingsEntries = useSettingsPaletteEntries()
 
   return React.useMemo<PaletteItem[]>(() => {
     const go =
@@ -62,13 +64,14 @@ export function usePaletteBaseItems(
         void navigate(
           search ? { to, params, search, hash } : { to, params, hash },
         )
-    const items: PaletteItem[] = ROUTE_ENTRIES.map((e) =>
-      routeEntryItem(
-        e,
-        experimental,
-        go,
-        tCommon('shell.locked.paletteSubtitle'),
-      ),
+    const items: PaletteItem[] = mergeSettingsEntries(settingsEntries).map(
+      (e) =>
+        routeEntryItem(
+          e,
+          experimental,
+          go,
+          tCommon('shell.locked.paletteSubtitle'),
+        ),
     )
     for (const a of pageActions) items.push({ ...a, group: 'Actions' })
     items.push({ ...THEME_ACTION, run: () => setTheme(NEXT_THEME[theme]) })
@@ -102,6 +105,7 @@ export function usePaletteBaseItems(
     mailItems,
     onShowShortcuts,
     pageActions,
+    settingsEntries,
     experimental,
     t,
     tCommon,

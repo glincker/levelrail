@@ -29,7 +29,7 @@ describe('errorText', () => {
 
   it('replaces the bare internal error text', () => {
     expect(errorText(new ApiError(500, 'internal error')).message).toBe(
-      'Something went wrong on the server.',
+      'The server hit an error. Try again.',
     )
   })
 

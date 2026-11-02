@@ -110,7 +110,7 @@ describe('UpgradeProgress', () => {
     expect(screen.getByText(/Stopped at: Health check/)).toBeTruthy()
     expect(screen.getByText('not healthy')).toBeTruthy()
     expect(
-      screen.getByText(/Rolled back to v0.3.0, your data is intact/),
+      screen.getByText(/Rolled back to v0.3.0. Your data is intact/),
     ).toBeTruthy()
   })
 

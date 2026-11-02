@@ -383,6 +383,7 @@
     },
     "newApp": "Nueva aplicación",
     "pageWidth": {
+      "compact": "Ancho compacto",
       "comfortable": "Ancho cómodo",
       "wide": "Ancho",
       "full": "Ancho completo"

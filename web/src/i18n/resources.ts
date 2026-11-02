@@ -6,6 +6,7 @@ import type dashboards from '../locales/en/dashboards.json'
 import type passkeys from '../locales/en/passkeys.json'
 import type account from '../locales/en/account.json'
 import type palette from '../locales/en/palette.json'
+import type paletteSettings from '../locales/en/paletteSettings.json'
 import type rules from '../locales/en/rules.json'
 import type deploys from '../locales/en/deploys.json'
 import type settings from '../locales/en/settings.json'
@@ -28,6 +29,8 @@ import type environments from '../locales/en/environments.json'
 import type stacks from '../locales/en/stacks.json'
 import type statusPage from '../locales/en/statusPage.json'
 import type assets from '../locales/en/assets.json'
+import type uiShared from '../locales/en/uiShared.json'
+import type relatedLinks from '../locales/en/relatedLinks.json'
 import type exposure from '../locales/en/exposure.json'
 import type appExposure from '../locales/en/appExposure.json'
 import type appAccess from '../locales/en/appAccess.json'
@@ -153,6 +156,8 @@ declare module 'i18next' {
       stacks: typeof stacks
       statusPage: typeof statusPage
       assets: typeof assets
+      uiShared: typeof uiShared
+      relatedLinks: typeof relatedLinks
       exposure: typeof exposure
       appExposure: typeof appExposure
       appAccess: typeof appAccess
@@ -256,6 +261,7 @@ declare module 'i18next' {
       passkeys: typeof passkeys
       account: typeof account
       palette: typeof palette
+      paletteSettings: typeof paletteSettings
     }
   }
 }

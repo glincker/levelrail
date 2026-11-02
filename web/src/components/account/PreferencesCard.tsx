@@ -22,6 +22,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { SaveStatus } from '@/components/ui/save-status'
 import { SearchSelect } from '@/components/ui/search-select'
 import { SettingRow, SettingRows } from '@/components/ui/setting-row'
 import {
@@ -164,17 +165,11 @@ function PreferencesForm({ saved }: { saved: Preferences }) {
         <CardTitle>{t('preferences.title')}</CardTitle>
         <CardDescription>{t('preferences.description')}</CardDescription>
         <CardAction className="flex items-center gap-2">
-          <span
-            role="status"
-            aria-live="polite"
-            className="text-xs text-muted-foreground"
-          >
-            {save.isPending
-              ? t('preferences.saving')
-              : save.isSuccess
-                ? t('preferences.saved')
-                : ''}
-          </span>
+          <SaveStatus
+            state={
+              save.isPending ? 'saving' : save.isSuccess ? 'saved' : 'idle'
+            }
+          />
           <Button
             type="button"
             size="sm"

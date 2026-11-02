@@ -1,0 +1,28 @@
+{
+  "label": "Páginas relacionadas",
+  "heading": "Relacionado",
+  "links": {
+    "account": "Cuenta",
+    "alertRules": "Reglas de alerta",
+    "backups": "Copias de seguridad",
+    "certificates": "Certificados",
+    "cliAccess": "Acceso a la CLI",
+    "dataExport": "Exportación de datos",
+    "dns": "DNS",
+    "domains": "Dominios",
+    "drReport": "Informe de recuperación",
+    "environments": "Entornos",
+    "eventWebhooks": "Webhooks de eventos",
+    "firewall": "Cortafuegos",
+    "mobileDevices": "Dispositivos móviles",
+    "network": "Red",
+    "notificationChannels": "Canales de notificación",
+    "platformHttps": "HTTPS de la plataforma",
+    "privateNetworks": "Redes privadas",
+    "security": "Seguridad",
+    "sessionPolicy": "Política de sesiones",
+    "tokens": "Tokens de API",
+    "traffic": "Tráfico",
+    "vault": "Bóveda"
+  }
+}

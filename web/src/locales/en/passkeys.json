@@ -97,6 +97,6 @@
     "unavailable": "Passkeys are not set up on this server yet. Ask an administrator to set the dashboard URL.",
     "lastMethod": "This is your only way to sign in. Add another passkey, a password or two-factor first.",
     "network": "Could not reach the server. Check your connection and try again.",
-    "unknown": "Something went wrong with the passkey. Try again."
+    "unknown": "The passkey request failed. Try again."
   }
 }

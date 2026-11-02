@@ -114,8 +114,8 @@
   },
   "lockout": {
     "title": "This would block you",
-    "description": "{{ip}} is the address you are using right now. Blocking it will lock you out of this control plane until the entry is removed from the server.",
-    "ruleDescription": "This rule matches the address you are using right now. Saving it will lock you out of this control plane until the rule is removed from the server.",
+    "description": "{{ip}} is the address you are using right now. Blocking it locks you out of this control plane until the entry is removed from the server.",
+    "ruleDescription": "This rule matches the address you are using right now. Saving it locks you out of this control plane until the rule is removed from the server.",
     "confirm": "Block it anyway"
   },
   "error": {
@@ -242,7 +242,7 @@
     "bansDetail": "Ban a client for {{duration}} after {{strikes}} denials within {{window}}.",
     "saved": "Bot settings saved",
     "listTitle": "AI crawler list",
-    "listHelp": "One user agent substring per line, matched without regard to case. Remove everything and save to go back to the shipped list.",
+    "listHelp": "One user agent substring per line, case-insensitive. Remove everything and save to go back to the shipped list.",
     "listLabel": "AI crawler user agents",
     "listReset": "Reset to shipped list",
     "listCount_one": "{{count}} entry",

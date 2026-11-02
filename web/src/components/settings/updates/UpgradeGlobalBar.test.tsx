@@ -164,7 +164,7 @@ describe('UpgradePipeline', () => {
       </I18nextProvider>,
     )
     expect(
-      screen.getByText('Rolled back to v0.5.0, your data is intact.'),
+      screen.getByText('Rolled back to v0.5.0. Your data is intact.'),
     ).toBeInTheDocument()
   })
 })

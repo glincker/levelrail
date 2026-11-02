@@ -4,6 +4,8 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import palette from '../locales/en/palette.json'
 import common from '../locales/en/common.json'
+import settings from '../locales/en/settings.json'
+import paletteSettings from '../locales/en/paletteSettings.json'
 import type { SearchHit } from '../queries/search'
 import { appListQueryOptions } from '../queries/apps'
 import { CommandPalette } from './CommandPalette'
@@ -28,7 +30,12 @@ vi.mock('@tanstack/react-router', () => ({
 vi.mock('react-i18next', () => ({
   useTranslation: (ns?: string) => ({
     t: (key: string, opts?: Record<string, unknown>) => {
-      const table: unknown = ns === 'palette' ? palette : common
+      const tables: Record<string, unknown> = {
+        palette,
+        settings,
+        paletteSettings,
+      }
+      const table: unknown = tables[ns ?? ''] ?? common
       let cur: unknown = table
       for (const part of key.split('.')) {
         cur =

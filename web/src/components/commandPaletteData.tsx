@@ -1,7 +1,6 @@
 import * as React from 'react'
 import {
   ActivityGlassIcon,
-  ArrowUpGlassIcon,
   BellGlassIcon,
   BinaryTreeGlassIcon,
   BotGlassIcon,
@@ -15,16 +14,13 @@ import {
   FolderGlassIcon,
   GaugeGlassIcon,
   GavelGlassIcon,
-  GitBranchGlassIcon,
   GlobeGlassIcon,
   HammerGlassIcon,
   ImagesGlassIcon,
-  KeyGlassIcon,
   LayersGlassIcon,
   LayoutGridGlassIcon,
   LockGlassIcon,
   MailGlassIcon,
-  PackageGlassIcon,
   PlugGlassIcon,
   PlusGlassIcon,
   RestoreGlassIcon,
@@ -32,15 +28,9 @@ import {
   ServerGlassIcon,
   SettingsGlassIcon,
   ShieldCheckGlassIcon,
-  ShieldGlassIcon,
-  SocialGithubGlassIcon,
   SplitGlassIcon,
   TerminalGlassIcon,
-  UniversityGlassIcon,
   UploadGlassIcon,
-  UserGlassIcon,
-  UsersGlassIcon,
-  WebhookGlassIcon,
   ZapGlassIcon,
 } from '@thesvg/ui-react'
 import {
@@ -106,6 +96,10 @@ export interface RouteEntry {
   search?: Record<string, string>
   feature?: ExperimentalFeature
   hash?: string
+  /** Muted second line, e.g. the settings area the page belongs to. */
+  subtitle?: string
+  /** Extra match text ranked below the label. */
+  keywords?: string
 }
 
 export const GROUP_ORDER = [
@@ -348,13 +342,6 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
     'Settings',
   ),
   nav(
-    'settings-platform',
-    'Platform settings',
-    <SettingsGlassIcon size="1.4em" />,
-    '/settings/platform',
-    'Settings',
-  ),
-  nav(
     'settings-platform-https',
     'HTTPS settings',
     <LockGlassIcon size="1.4em" />,
@@ -464,160 +451,24 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
     'google-cloud-dns',
   ),
   nav(
-    'settings-account',
-    'Account',
-    <UserGlassIcon size="1.4em" />,
-    '/settings/account',
-    'Settings',
-  ),
-  nav(
-    'settings-security',
-    'Security',
-    <ShieldGlassIcon size="1.4em" />,
-    '/settings/security',
-    'Settings',
-  ),
-  nav(
-    'settings-tokens',
-    'API tokens',
-    <KeyGlassIcon size="1.4em" />,
-    '/settings/tokens',
-    'Settings',
-  ),
-  nav(
-    'settings-agents',
-    'Agents',
-    <PlugGlassIcon size="1.4em" />,
-    '/settings/agents',
-    'Settings',
-  ),
-  nav(
-    'settings-backup-targets',
-    'Backup targets',
-    <UploadGlassIcon size="1.4em" />,
-    '/settings/backup-targets',
-    'Settings',
-  ),
-  nav(
-    'settings-storage',
-    'Storage destinations',
-    <UploadGlassIcon size="1.4em" />,
-    '/settings/storage',
-    'Settings',
-  ),
-  nav(
-    'settings-git-connections',
-    'Git connections',
-    <GitBranchGlassIcon size="1.4em" />,
-    '/settings/git-connections',
-    'Settings',
-  ),
-  nav(
-    'settings-registry-credentials',
-    'Registry credentials',
-    <PackageGlassIcon size="1.4em" />,
-    '/settings/registry-credentials',
-    'Settings',
-  ),
-  nav(
-    'settings-status-page',
-    'Status page',
-    <ActivityGlassIcon size="1.4em" />,
-    '/settings/status-page',
-    'Settings',
-  ),
-  nav(
-    'settings-notification-channels',
-    'Notification channels',
-    <WebhookGlassIcon size="1.4em" />,
-    '/settings/notification-channels',
-    'Settings',
-  ),
-  nav(
-    'settings-github-app',
-    'GitHub App',
-    <SocialGithubGlassIcon size="1.4em" />,
-    '/settings/github-app',
-    'Settings',
-  ),
-  nav(
-    'settings-oauth',
-    'OAuth sign-in',
-    <KeyGlassIcon size="1.4em" />,
-    '/settings/oauth',
-    'Settings',
-  ),
-  nav(
-    'settings-organizations',
-    'Organizations',
-    <UniversityGlassIcon size="1.4em" />,
-    '/settings/organizations',
-    'Settings',
-  ),
-  nav(
-    'settings-users',
-    'Users',
-    <UsersGlassIcon size="1.4em" />,
-    '/settings/users',
-    'Settings',
-  ),
-  nav(
-    'settings-email',
-    'Email',
-    <MailGlassIcon size="1.4em" />,
-    '/settings/email',
-    'Settings',
-  ),
-  nav(
-    'settings-general',
-    'General',
-    <SettingsGlassIcon size="1.4em" />,
-    '/settings/general',
-    'Settings',
-  ),
-  nav(
-    'settings-updates',
-    'Updates',
-    <ArrowUpGlassIcon size="1.4em" />,
-    '/settings/updates',
-    'Settings',
-  ),
-  nav(
-    'settings-audit-log',
-    'Audit log',
-    <RestoreGlassIcon size="1.4em" />,
-    '/settings/audit-log',
-    'Settings',
-  ),
-  nav(
-    'settings-dr-report',
-    'Recovery report',
-    <ShieldCheckGlassIcon className="text-tone-success" size="1.4em" />,
-    '/settings/dr-report',
-    'Settings',
-  ),
-  nav(
     'settings-heartbeat',
     'Heartbeat',
     <ActivityGlassIcon size="1.4em" />,
     '/settings/notification-channels',
     'Settings',
   ),
-  nav(
-    'settings-deploy-policies',
-    'Deploy policies and CI gate',
-    <GavelGlassIcon size="1.4em" />,
-    '/settings/deploy-policies',
-    'Settings',
-  ),
-  nav(
-    'settings-cloudflare-tunnel',
-    'Cloudflare Tunnel',
-    <GlobeGlassIcon size="1.4em" />,
-    '/settings/cloudflare-tunnel',
-    'Settings',
-  ),
 ]
+
+// Settings pages come from settingsNav; a nav page whose destination is
+// already a top-level Navigate entry (e.g. Domains) is not listed twice.
+export function mergeSettingsEntries(
+  settings: readonly RouteEntry[],
+): RouteEntry[] {
+  const navigate = new Set(
+    ROUTE_ENTRIES.filter((e) => e.group === 'Navigate').map((e) => e.to),
+  )
+  return [...ROUTE_ENTRIES, ...settings.filter((e) => !navigate.has(e.to))]
+}
 
 // Always-available empty-query CTAs, independent of recents/app data.
 // Keys into ROUTE_ENTRIES/baseItems; order is the display order.
@@ -657,19 +508,21 @@ export function routeEntryItem(
     group: e.group,
     icon: e.icon,
     preview: { kind: 'page' as const, path: e.to },
+    ...(e.keywords ? { keywords: e.keywords } : {}),
   }
   if (isFeatureLocked(e.feature, enabled)) {
     return {
       ...base,
       run: go(BETA_FEATURES_PATH, undefined, { ...lockedSearch(e.feature) }),
       subtitle: lockedSubtitle,
-      keywords: 'beta locked',
+      keywords: `${e.keywords ?? ''} beta locked`.trim(),
       locked: true,
     }
   }
   return {
     ...base,
     run: go(e.to, undefined, e.search, e.hash),
+    ...(e.subtitle ? { subtitle: e.subtitle } : {}),
     hint: NO_HINT_KEYS.has(e.key) ? undefined : chordFor(e.to),
   }
 }

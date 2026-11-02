@@ -85,7 +85,11 @@
   --state-active-bg: color-mix(in oklab, var(--state-accent) 9%, transparent);
   --state-active-bar: var(--state-accent);
   --state-selected-bg: color-mix(in oklab, var(--state-accent) 9%, transparent);
-  --state-selected-border: color-mix(in oklab, var(--state-accent) 45%, transparent);
+  --state-selected-border: color-mix(
+    in oklab,
+    var(--state-accent) 45%,
+    transparent
+  );
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: var(--brand-accent);
 }
@@ -207,8 +211,16 @@ body {
   --state-accent: var(--brand-accent-dark);
   --state-active-bg: color-mix(in oklab, var(--state-accent) 13%, transparent);
   --state-active-bar: var(--state-accent);
-  --state-selected-bg: color-mix(in oklab, var(--state-accent) 13%, transparent);
-  --state-selected-border: color-mix(in oklab, var(--state-accent) 50%, transparent);
+  --state-selected-bg: color-mix(
+    in oklab,
+    var(--state-accent) 13%,
+    transparent
+  );
+  --state-selected-border: color-mix(
+    in oklab,
+    var(--state-accent) 50%,
+    transparent
+  );
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: var(--brand-accent-dark);
 }
@@ -536,6 +548,10 @@ body {
   --glinr-content-max: 88rem;
   --glinr-content-max-wide: 112rem;
 }
+:root[data-width='compact'] {
+  --glinr-content-max: 72rem;
+  --glinr-content-max-wide: 88rem;
+}
 :root[data-width='wide'] {
   --glinr-content-max: 104rem;
   --glinr-content-max-wide: 120rem;
@@ -713,4 +729,249 @@ body {
     inset 0 1px 0 var(--edge-top),
     inset 0 -24px 40px var(--pal-bloom),
     0 24px 56px -24px var(--edge-cast);
+}
+
+/* Appearance settings: data attributes on <html> set by lib/appearance.ts. Defaults set no attribute, so the stock theme above is untouched. */
+
+/* Dark bases (soft is the default and applies without an attribute). Values are contrast-checked in appearanceContrast.test.ts. */
+:root.dark {
+  --background: oklch(0.18 0.006 260);
+  --foreground: oklch(0.95 0.004 260);
+  --card: oklch(0.215 0.006 260);
+  --card-foreground: oklch(0.95 0.004 260);
+  --popover: oklch(0.215 0.006 260);
+  --popover-foreground: oklch(0.95 0.004 260);
+  --muted: oklch(0.255 0.007 260);
+  --secondary: oklch(0.255 0.007 260);
+  --accent: oklch(0.255 0.007 260);
+  --secondary-foreground: oklch(0.95 0.004 260);
+  --accent-foreground: oklch(0.95 0.004 260);
+  --muted-foreground: oklch(0.72 0.01 260);
+  --sidebar: oklch(0.16 0.006 260);
+  --sidebar-foreground: oklch(0.95 0.004 260);
+  --sidebar-accent: oklch(0.255 0.007 260);
+  --sidebar-accent-foreground: oklch(0.95 0.004 260);
+  --border: oklch(0.3 0.008 260);
+  --input: oklch(0.36 0.008 260);
+  --sidebar-border: oklch(0.3 0.008 260);
+}
+:root.dark[data-dark-base='black'] {
+  --background: oklch(0 0 0);
+  --foreground: oklch(0.96 0 0);
+  --card: oklch(0.165 0 0);
+  --card-foreground: oklch(0.96 0 0);
+  --popover: oklch(0.165 0 0);
+  --popover-foreground: oklch(0.96 0 0);
+  --muted: oklch(0.21 0 0);
+  --secondary: oklch(0.21 0 0);
+  --accent: oklch(0.21 0 0);
+  --secondary-foreground: oklch(0.96 0 0);
+  --accent-foreground: oklch(0.96 0 0);
+  --muted-foreground: oklch(0.7 0 0);
+  --sidebar: oklch(0.1 0 0);
+  --sidebar-foreground: oklch(0.96 0 0);
+  --sidebar-accent: oklch(0.21 0 0);
+  --sidebar-accent-foreground: oklch(0.96 0 0);
+  --border: oklch(0.27 0 0);
+  --input: oklch(0.33 0 0);
+  --sidebar-border: oklch(0.27 0 0);
+}
+:root.dark[data-dark-base='graphite'] {
+  --background: oklch(0.22 0.004 250);
+  --foreground: oklch(0.95 0.004 250);
+  --card: oklch(0.255 0.005 250);
+  --card-foreground: oklch(0.95 0.004 250);
+  --popover: oklch(0.255 0.005 250);
+  --popover-foreground: oklch(0.95 0.004 250);
+  --muted: oklch(0.295 0.006 250);
+  --secondary: oklch(0.295 0.006 250);
+  --accent: oklch(0.295 0.006 250);
+  --secondary-foreground: oklch(0.95 0.004 250);
+  --accent-foreground: oklch(0.95 0.004 250);
+  --muted-foreground: oklch(0.76 0.008 250);
+  --sidebar: oklch(0.195 0.004 250);
+  --sidebar-foreground: oklch(0.95 0.004 250);
+  --sidebar-accent: oklch(0.295 0.006 250);
+  --sidebar-accent-foreground: oklch(0.95 0.004 250);
+  --border: oklch(0.35 0.006 250);
+  --input: oklch(0.41 0.006 250);
+  --sidebar-border: oklch(0.35 0.006 250);
+}
+:root.dark[data-dark-base='midnight'] {
+  --background: oklch(0.16 0.025 265);
+  --foreground: oklch(0.95 0.008 265);
+  --card: oklch(0.2 0.027 265);
+  --card-foreground: oklch(0.95 0.008 265);
+  --popover: oklch(0.2 0.027 265);
+  --popover-foreground: oklch(0.95 0.008 265);
+  --muted: oklch(0.245 0.028 265);
+  --secondary: oklch(0.245 0.028 265);
+  --accent: oklch(0.245 0.028 265);
+  --secondary-foreground: oklch(0.95 0.008 265);
+  --accent-foreground: oklch(0.95 0.008 265);
+  --muted-foreground: oklch(0.73 0.02 265);
+  --sidebar: oklch(0.14 0.025 265);
+  --sidebar-foreground: oklch(0.95 0.008 265);
+  --sidebar-accent: oklch(0.245 0.028 265);
+  --sidebar-accent-foreground: oklch(0.95 0.008 265);
+  --border: oklch(0.3 0.03 265);
+  --input: oklch(0.36 0.03 265);
+  --sidebar-border: oklch(0.3 0.03 265);
+}
+
+/* Light bases (white is the stock theme above). */
+:root:not(.dark)[data-light-base='grey'] {
+  --background: oklch(0.965 0.003 250);
+  --foreground: oklch(0.21 0.01 250);
+  --card: oklch(0.995 0.002 250);
+  --card-foreground: oklch(0.21 0.01 250);
+  --popover: oklch(0.995 0.002 250);
+  --popover-foreground: oklch(0.21 0.01 250);
+  --muted: oklch(0.94 0.004 250);
+  --secondary: oklch(0.94 0.004 250);
+  --accent: oklch(0.94 0.004 250);
+  --secondary-foreground: oklch(0.21 0.01 250);
+  --accent-foreground: oklch(0.21 0.01 250);
+  --muted-foreground: oklch(0.5 0.01 250);
+  --sidebar: oklch(0.945 0.004 250);
+  --sidebar-foreground: oklch(0.21 0.01 250);
+  --sidebar-accent: oklch(0.94 0.004 250);
+  --sidebar-accent-foreground: oklch(0.21 0.01 250);
+  --border: oklch(0.89 0.005 250);
+  --input: oklch(0.84 0.006 250);
+  --sidebar-border: oklch(0.89 0.005 250);
+}
+:root:not(.dark)[data-light-base='paper'] {
+  --background: oklch(0.975 0.012 85);
+  --foreground: oklch(0.24 0.02 70);
+  --card: oklch(0.99 0.008 85);
+  --card-foreground: oklch(0.24 0.02 70);
+  --popover: oklch(0.99 0.008 85);
+  --popover-foreground: oklch(0.24 0.02 70);
+  --muted: oklch(0.95 0.014 85);
+  --secondary: oklch(0.95 0.014 85);
+  --accent: oklch(0.95 0.014 85);
+  --secondary-foreground: oklch(0.24 0.02 70);
+  --accent-foreground: oklch(0.24 0.02 70);
+  --muted-foreground: oklch(0.5 0.02 75);
+  --sidebar: oklch(0.955 0.014 85);
+  --sidebar-foreground: oklch(0.24 0.02 70);
+  --sidebar-accent: oklch(0.95 0.014 85);
+  --sidebar-accent-foreground: oklch(0.24 0.02 70);
+  --border: oklch(0.895 0.02 85);
+  --input: oklch(0.845 0.02 85);
+  --sidebar-border: oklch(0.895 0.02 85);
+}
+:root:not(.dark)[data-light-base='cool'] {
+  --background: oklch(0.97 0.006 250);
+  --foreground: oklch(0.22 0.02 255);
+  --card: oklch(0.99 0.004 250);
+  --card-foreground: oklch(0.22 0.02 255);
+  --popover: oklch(0.99 0.004 250);
+  --popover-foreground: oklch(0.22 0.02 255);
+  --muted: oklch(0.945 0.008 250);
+  --secondary: oklch(0.945 0.008 250);
+  --accent: oklch(0.945 0.008 250);
+  --secondary-foreground: oklch(0.22 0.02 255);
+  --accent-foreground: oklch(0.22 0.02 255);
+  --muted-foreground: oklch(0.5 0.02 255);
+  --sidebar: oklch(0.95 0.008 250);
+  --sidebar-foreground: oklch(0.22 0.02 255);
+  --sidebar-accent: oklch(0.945 0.008 250);
+  --sidebar-accent-foreground: oklch(0.22 0.02 255);
+  --border: oklch(0.89 0.01 250);
+  --input: oklch(0.84 0.01 250);
+  --sidebar-border: oklch(0.89 0.01 250);
+}
+
+/* Accent: overrides the --state-* chain's source token. Text on a solid dark-mode accent must be dark (oklch(0.15 0 0)). */
+:root[data-accent='indigo'] {
+  --state-accent: oklch(0.52 0.16 275);
+  --brand-link: var(--state-accent);
+  --sidebar-ring: var(--state-accent);
+}
+:root[data-accent='violet'] {
+  --state-accent: oklch(0.52 0.16 300);
+  --brand-link: var(--state-accent);
+  --sidebar-ring: var(--state-accent);
+}
+:root[data-accent='green'] {
+  --state-accent: oklch(0.52 0.13 155);
+  --brand-link: var(--state-accent);
+  --sidebar-ring: var(--state-accent);
+}
+:root[data-accent='amber'] {
+  --state-accent: oklch(0.52 0.14 70);
+  --brand-link: var(--state-accent);
+  --sidebar-ring: var(--state-accent);
+}
+:root[data-accent='rose'] {
+  --state-accent: oklch(0.52 0.17 10);
+  --brand-link: var(--state-accent);
+  --sidebar-ring: var(--state-accent);
+}
+:root.dark[data-accent='indigo'] {
+  --state-accent: oklch(0.76 0.16 275);
+}
+:root.dark[data-accent='violet'] {
+  --state-accent: oklch(0.76 0.16 300);
+}
+:root.dark[data-accent='green'] {
+  --state-accent: oklch(0.76 0.13 155);
+}
+:root.dark[data-accent='amber'] {
+  --state-accent: oklch(0.76 0.14 70);
+}
+:root.dark[data-accent='rose'] {
+  --state-accent: oklch(0.76 0.17 10);
+}
+:root.dark[data-accent] {
+  --sidebar-primary: var(--state-accent);
+}
+
+/* The body class hardcodes its own neutral, so any non-default base repaints it from the token. */
+:root.dark body,
+:root:not(.dark)[data-light-base] body {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+/* Fonts: local stacks only, no webfont downloads. */
+:root[data-font='rounded'] {
+  --font-sans:
+    ui-rounded, 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Quicksand,
+    Nunito, 'Segoe UI', system-ui, sans-serif;
+  --glinr-font-body: var(--font-sans);
+}
+:root[data-font='serif'] {
+  --font-sans:
+    ui-serif, 'New York', Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+  --glinr-font-body: var(--font-sans);
+}
+:root[data-font='mono'] {
+  --font-sans:
+    ui-monospace, 'SF Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+  --glinr-font-body: var(--font-sans);
+}
+:root[data-font='readable'] {
+  --font-sans: system-ui, 'Segoe UI', Roboto, Verdana, sans-serif;
+  --glinr-font-body: var(--font-sans);
+  line-height: 1.6;
+  letter-spacing: 0.01em;
+}
+
+/* Text size scales rem, so every Tailwind size follows. */
+:root[data-text-size='90'] {
+  font-size: 90%;
+}
+:root[data-text-size='110'] {
+  font-size: 110%;
+}
+
+/* Side padding of the page content area, read by the app shell main element. */
+:root[data-gutter='tight'] {
+  --glinr-page-pad-x: 0.75rem;
+}
+:root[data-gutter='roomy'] {
+  --glinr-page-pad-x: 2.5rem;
 }

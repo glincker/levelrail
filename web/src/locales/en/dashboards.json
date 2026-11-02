@@ -186,7 +186,7 @@
       "critical": "Critical",
       "warning": "Warning",
       "info": "Notice",
-      "viewAll": "Open Status",
+      "viewAll": "Open status",
       "more": "{{count}} more on Status"
     }
   }

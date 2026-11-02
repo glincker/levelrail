@@ -11,7 +11,7 @@
   },
   "facts": {
     "never": "It can never create, change, deploy or delete anything.",
-    "permissions": "It acts as you and never with more than your own permissions.",
+    "permissions": "It runs as you, with no more than your own permissions.",
     "expiry": "Access lasts {{access}} and renews for up to {{refresh}} unless you revoke it.",
     "revoke": "You can remove the client at any time from Settings, CLI access."
   },

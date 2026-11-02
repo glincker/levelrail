@@ -322,6 +322,10 @@
       "benchmarks": {
         "title": "Benchmarks",
         "description": "Ejecuciones de benchmark guardadas con host, compilación, límites y vista de comparación."
+      },
+      "appearance": {
+        "title": "Apariencia",
+        "description": "Tema, acento, fuente, ancho y densidad."
       }
     },
     "search": "Buscar en la configuración",
@@ -576,7 +580,14 @@
       "fullHint": "De borde a borde",
       "title": "Ancho de página",
       "wide": "Amplio",
-      "wideHint": "Mayor aprovechamiento de las pantallas grandes"
+      "wideHint": "Mayor aprovechamiento de las pantallas grandes",
+      "compact": "Compacta",
+      "compactHint": "Columna estrecha para leer"
+    },
+    "appearanceLink": {
+      "title": "Apariencia",
+      "description": "Tema, fuente, ancho de página y densidad ahora están en un solo lugar.",
+      "open": "Abrir apariencia"
     }
   },
   "securityPage": {
@@ -3445,5 +3456,110 @@
   },
   "vaultPage": {
     "description": "Resuelva en vivo el valor de una variable de entorno de app.yaml desde una instancia externa de HashiCorp Vault, como alternativa al almacenamiento de secretos cifrado por sobre de esta plataforma."
+  },
+  "appearancePage": {
+    "title": "Apariencia",
+    "description": "Base del tema, acento, fuente, tamaño de texto, ancho de página, relleno lateral y densidad. Los cambios se aplican al elegirlos.",
+    "savedHere": "Se guarda solo en este navegador. Otros navegadores y dispositivos conservan sus propias opciones.",
+    "reset": "Restablecer valores",
+    "defaultBadge": "Predeterminado",
+    "recommendedBadge": "Recomendado",
+    "presets": {
+      "title": "Ajustes rápidos",
+      "description": "Un clic establece varias opciones a la vez.",
+      "default": "Predeterminado",
+      "defaultHint": "El aspecto original",
+      "focusDark": "Oscuro de enfoque",
+      "focusDarkHint": "Grafito, relleno amplio, densidad cómoda",
+      "oled": "OLED",
+      "oledHint": "Negro puro, páginas anchas, densidad compacta",
+      "paper": "Papel",
+      "paperHint": "Claro cálido, fuente legible, páginas estrechas"
+    },
+    "theme": {
+      "title": "Modo de color",
+      "description": "Claro, oscuro o según el navegador."
+    },
+    "darkBase": {
+      "title": "Base oscura",
+      "description": "El color de superficie en modo oscuro.",
+      "soft": "Oscuro suave",
+      "softHint": "Casi negro, sereno",
+      "black": "Negro puro",
+      "blackHint": "OLED, ahorra batería",
+      "graphite": "Grafito",
+      "graphiteHint": "Neutro, cómodo para la vista",
+      "midnight": "Medianoche",
+      "midnightHint": "Tono azulado"
+    },
+    "lightBase": {
+      "title": "Base clara",
+      "description": "El color de superficie en modo claro.",
+      "white": "Blanco",
+      "whiteHint": "Clásico, máximo brillo",
+      "grey": "Gris suave",
+      "greyHint": "Menos brillo, tarjetas blancas",
+      "paper": "Papel",
+      "paperHint": "Tono cálido",
+      "cool": "Gris frío",
+      "coolHint": "Ligero tono azul"
+    },
+    "accent": {
+      "title": "Acento",
+      "description": "Se usa en la página activa, tarjetas seleccionadas, enlaces y foco.",
+      "teal": "Azul turquesa",
+      "indigo": "Índigo",
+      "violet": "Violeta",
+      "green": "Verde",
+      "amber": "Ámbar",
+      "rose": "Rosa"
+    },
+    "font": {
+      "title": "Fuente",
+      "description": "Solo fuentes locales, no se descarga nada.",
+      "system": "Sistema",
+      "systemHint": "La fuente de tu dispositivo",
+      "rounded": "Redondeada",
+      "roundedHint": "Formas suaves",
+      "serif": "Serif",
+      "serifHint": "Clásica, para texto",
+      "mono": "Monoespaciada",
+      "monoHint": "Ancho fijo",
+      "readable": "Legible",
+      "readableHint": "Letras anchas, más interlineado"
+    },
+    "textSize": {
+      "title": "Tamaño de texto",
+      "description": "Escala todo el texto y el espaciado."
+    },
+    "width": {
+      "title": "Ancho de página",
+      "description": "Qué tan ancho es el contenido en pantallas grandes. No afecta a pantallas menores de 1024px."
+    },
+    "gutter": {
+      "title": "Relleno lateral",
+      "description": "Espacio a izquierda y derecha del contenido desde tamaño tableta.",
+      "tight": "Ajustado",
+      "tightHint": "Más espacio para el contenido",
+      "normal": "Normal",
+      "normalHint": "Equilibrado",
+      "roomy": "Amplio",
+      "roomyHint": "Más sereno, más margen"
+    },
+    "density": {
+      "description": "Cuánto espacio usan tarjetas, listas y formularios.",
+      "compactHint": "Cabe más en pantalla",
+      "comfortableHint": "Más aire"
+    },
+    "preview": {
+      "title": "Vista previa",
+      "description": "Una muestra de tus opciones.",
+      "navActive": "Resumen",
+      "navOther": "Despliegues",
+      "cardTitle": "Aplicación web",
+      "cardBody": "En ejecución en 2 nodos",
+      "primary": "Desplegar",
+      "secondary": "Registros"
+    }
   }
 }

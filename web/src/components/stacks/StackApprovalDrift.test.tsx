@@ -175,7 +175,7 @@ describe('approval', () => {
   })
 
   it.each([
-    [409, 'The plan changed since it was reviewed. Request approval again.'],
+    [409, 'The plan changed after it was reviewed. Request approval again.'],
     [410, 'This approval request expired. Request approval again.'],
     [403, 'the requester cannot approve their own revision'],
   ])('shows the %s approve error', async (status, text) => {
@@ -238,7 +238,7 @@ describe('approval', () => {
       expect(add).toHaveBeenCalledWith(
         expect.objectContaining({
           title:
-            'Revision 5 is awaiting approval. Nothing was rolled back yet.',
+            'Revision 5 is awaiting approval. Nothing has been rolled back yet.',
           type: 'info',
         }),
       )

@@ -83,6 +83,8 @@ export const ITEM_KEYWORDS: Readonly<Record<string, string>> = {
   'settings-updates': 'update upgrade version release',
   'settings-audit-log': 'audit log history events who did compliance',
   'settings-general': 'general instance name url preferences',
+  'settings-appearance':
+    'theme dark light black oled font text size width padding density spacing accent color',
   'settings-account': 'profile password avatar me',
   'action-create-app': 'new app deploy launch service container',
   'action-new-app': 'create app deploy launch service container',

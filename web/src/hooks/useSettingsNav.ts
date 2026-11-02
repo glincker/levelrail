@@ -1,7 +1,10 @@
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import {
   visibleSettingsSections,
+  type PaletteSettingsItemId,
   type SettingsAreaId,
+  type SettingsItemId,
   type SettingsNavItem,
 } from '../lib/settingsNav'
 import { isFeatureLocked } from '../lib/experimental'
@@ -20,9 +23,36 @@ export interface LabelledSettingsSection {
   items: LabelledSettingsItem[]
 }
 
+const PALETTE_ITEM_IDS: ReadonlySet<string> = new Set<PaletteSettingsItemId>([
+  'email-log',
+  'network-shares',
+])
+
+function itemLabels(
+  id: SettingsItemId,
+  t: TFunction<'settings'>,
+  tExtra: TFunction<'paletteSettings'>,
+): { title: string; description: string } {
+  if (isPaletteItem(id)) {
+    return {
+      title: tExtra(`items.${id}.title`),
+      description: tExtra(`items.${id}.description`),
+    }
+  }
+  return {
+    title: t(`nav.items.${id}.title`),
+    description: t(`nav.items.${id}.description`),
+  }
+}
+
+function isPaletteItem(id: SettingsItemId): id is PaletteSettingsItemId {
+  return PALETTE_ITEM_IDS.has(id)
+}
+
 // Visible settings areas with their labels resolved through i18n.
 export function useSettingsNav(): LabelledSettingsSection[] {
   const { t } = useTranslation('settings')
+  const { t: tExtra } = useTranslation('paletteSettings')
   const experimental = useExperimentalFeatures()
   return visibleSettingsSections().map((section) => ({
     id: section.id,
@@ -31,8 +61,7 @@ export function useSettingsNav(): LabelledSettingsSection[] {
     items: section.items.map((item) => ({
       ...item,
       locked: isFeatureLocked(item.feature, experimental),
-      title: t(`nav.items.${item.id}.title`),
-      description: t(`nav.items.${item.id}.description`),
+      ...itemLabels(item.id, t, tExtra),
     })),
   }))
 }
