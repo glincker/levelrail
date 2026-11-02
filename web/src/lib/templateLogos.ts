@@ -203,6 +203,8 @@ export const TEMPLATE_LOGO_LOADERS: Record<
   netbox: () => import('@thesvg/react/netbox'),
   postiz: () => import('@thesvg/react/postiz'),
   zabbix: () => import('@thesvg/react/zabbix'),
+  deluge: () => import('@thesvg/react/deluge'),
+  linkace: () => import('@thesvg/react/linkace-badge'),
   // Email settings backends and SMTP provider presets.
   resend: () => import('@thesvg/react/resend'),
   'aws-ses': () => import('@thesvg/react/aws-amazon-simple-email-service'),
@@ -500,6 +502,6 @@ export const COMPOSITE_LOGOS: Record<string, [TechLogoKey, TechLogoKey?]> = {
 
 // No thesvg mark exists for these products yet; they render the monogram tile.
 export const KNOWN_MISSING_LOGOS: readonly string[] =
-  'diun gotenberg lldap campfire once-campfire bugsink imgcompress embystat budge proxyscotch kutt metamcp archivebox backrest crawl4ai headscale open-notebook radicale gatus mail-mox factorio palworld terraria seerr wizarr maintainerr sabnzbd lubelogger spoolman shaarli reactive-resume spliit jellystat gitness'.split(
+  'diun gotenberg lldap campfire once-campfire bugsink imgcompress embystat budge proxyscotch kutt metamcp archivebox backrest crawl4ai headscale open-notebook radicale gatus mail-mox factorio palworld terraria seerr wizarr maintainerr sabnzbd lubelogger spoolman shaarli reactive-resume spliit jellystat gitness cleanuparr docling-serve kokoro-fastapi lychee meshcentral multi-scrobbler mylar3 ombi smokeping'.split(
     ' ',
   )
