@@ -117,6 +117,25 @@ func (l *Ledger) Snapshot(domain string) Snapshot {
 	}
 }
 
+// IssuedSince counts production certificates issued in the last window across
+// every hostname, which is what a shared weekly budget is spent on.
+func (l *Ledger) IssuedSince(now time.Time, window time.Duration) int {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	n := 0
+	for _, ts := range l.issued {
+		for _, t := range ts {
+			if now.Sub(t) < window {
+				n++
+			}
+		}
+	}
+	return n
+}
+
+// BudgetWindow is the span the CA's duplicate and new-order limits are counted over.
+const BudgetWindow = duplicateWindow
+
 // RateLimit is the verdict on trying again now.
 type RateLimit struct {
 	Blocked bool

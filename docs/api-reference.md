@@ -685,6 +685,8 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/game-status | AbilityRead | handleGetAppGameStatus |
 | GET | /api/v1/apps/{name}/export | AbilityRead | handleExportApp |
 | GET | /api/v1/apps/{name}/visitors | AbilityRead | handleAppVisitors |
+| GET | /api/v1/apps/{name}/auto-host | AbilityRead | handleGetAppAutoHost |
+| PUT | /api/v1/apps/{name}/auto-host | AbilityWriteSensitive | handleSetAppAutoHost |
 
 </Accordion>
 
@@ -941,6 +943,7 @@ Endpoints for:
 | GET | /api/v1/projects/{id}/quota | AbilityRead | handleGetQuota |
 | PUT | /api/v1/projects/{id}/quota | AbilityWrite | handleSetQuota |
 | DELETE | /api/v1/projects/{id}/quota | AbilityWrite | handleDeleteQuota |
+| GET | /api/v1/projects/{id}/export | AbilityReadSensitive | handleExportProject |
 
 ## Nodes
 
@@ -1135,6 +1138,7 @@ Endpoints for:
 | PUT | /api/v1/settings/ingress/dns01 | AbilityRoot | handlePutIngressDNS01 |
 | GET | /api/v1/settings/ingress/cloudflare | AbilityRoot | handleGetIngressCloudflare |
 | PUT | /api/v1/settings/ingress/cloudflare | AbilityRoot | handlePutIngressCloudflare |
+| GET | /api/v1/certificates/budget | AbilityRead | handleGetCertBudget |
 
 </Accordion>
 

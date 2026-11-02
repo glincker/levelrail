@@ -41,6 +41,8 @@ func runAppsProjects(prog string, args []string, stdout, stderr io.Writer, looku
 		return runAppsProjectsEnvSet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "topology":
 		return runAppsProjectsTopology(prog, args[1:], stdout, stderr, lookupEnv)
+	case "export":
+		return runAppsProjectsExport(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps projects subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, appsProjectsUsage(prog))
@@ -60,6 +62,7 @@ func appsProjectsUsage(prog string) string {
   %[1]s apps projects env-get <id> [flags]                 show a project's shared env vars
   %[1]s apps projects env-set <id> --var KEY=VALUE [flags]   replace a project's shared env vars
   %[1]s apps projects topology <id> [flags]                diagram-ready graph of a project's apps, databases, and volumes
+  %[1]s apps projects export <name> [-o DIR|-] [flags]     write a project as plain docker-compose.yml, .env.example and volumes.json
 
 A project groups apps and databases (move one in with "%[1]s apps
 set-project" or "%[1]s databases set-project"); deleting a project

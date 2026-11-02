@@ -17,6 +17,13 @@ type FallbackResolver struct {
 	publicHost string
 	def        ProviderChoice
 	overrides  map[string]ProviderChoice
+	// optOut lists apps that get no automatic hostname, so no certificate is ordered for them.
+	optOut map[string]bool
+}
+
+// AutoHostOptOutSource is the optional store surface for per-app opt-outs; *store.DB implements it.
+type AutoHostOptOutSource interface {
+	ListAppAutoHostOptOuts(ctx context.Context) (map[string]bool, error)
 }
 
 // NewFallbackResolver builds a resolver from explicit choices.
@@ -27,6 +34,20 @@ func NewFallbackResolver(publicHost string, def ProviderChoice, overrides map[st
 // LoadFallbackResolver reads the choices from src. A source that does not implement ProviderSource, or a read
 // error, degrades to the built-in default so hostnames never disappear over a settings read.
 func LoadFallbackResolver(ctx context.Context, src any, publicHost string) FallbackResolver {
+	r := loadProviderChoices(ctx, src, publicHost)
+	// A failed read keeps today's behavior: hostnames never vanish over a settings read.
+	if oo, ok := src.(AutoHostOptOutSource); ok {
+		if m, err := oo.ListAppAutoHostOptOuts(ctx); err == nil {
+			r.optOut = m
+		}
+	}
+	return r
+}
+
+// OptedOut reports whether app has no automatic hostname by choice.
+func (r FallbackResolver) OptedOut(app string) bool { return r.optOut[app] }
+
+func loadProviderChoices(ctx context.Context, src any, publicHost string) FallbackResolver {
 	ps, ok := src.(ProviderSource)
 	if !ok {
 		return NewFallbackResolver(publicHost, ProviderChoice{}, nil)
@@ -57,6 +78,9 @@ func (r FallbackResolver) Choice(app string) (ProviderChoice, bool) {
 
 // Domain is the automatic hostname for app under its effective provider.
 func (r FallbackResolver) Domain(app string) (string, bool) {
+	if r.optOut[app] {
+		return "", false
+	}
 	c, _ := r.Choice(app)
 	return FallbackDomainFor(r.publicHost, app, c)
 }

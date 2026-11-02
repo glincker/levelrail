@@ -58,7 +58,7 @@ func TestExtractExportRejectsUnknownEntry(t *testing.T) {
 	_ = tw.WriteHeader(&tar.Header{Name: "../evil", Mode: 0o644, Size: 1})
 	_, _ = tw.Write([]byte("x"))
 	_ = tw.Close()
-	if _, err := extractExport(buf.Bytes(), t.TempDir()); err == nil {
+	if _, err := extractExport(buf.Bytes(), t.TempDir(), false); err == nil {
 		t.Fatal("want error")
 	}
 }

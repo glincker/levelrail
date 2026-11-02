@@ -34,6 +34,9 @@ func (rt *Router) registerProjectRoutes(mux *http.ServeMux) {
 	// this file's own package doc comment on why apps/databases stay
 	// client-filtered elsewhere): a graph's nodes and edges aren't a
 	// list page.
+	// Compose export (project_export.go): AbilityReadSensitive since env is
+	// read; include_secrets is gated again on write:sensitive in the handler.
+	mux.HandleFunc("GET /api/v1/projects/{id}/export", rt.requireAbility(AbilityReadSensitive, rt.handleExportProject))
 	mux.HandleFunc("GET /api/v1/projects/{id}/topology", rt.requireAbility(AbilityRead, rt.handleGetProjectTopology))
 
 	// Organizations (organizations.go): groups projects, same ordinary

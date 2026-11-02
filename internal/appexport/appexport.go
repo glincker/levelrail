@@ -73,6 +73,12 @@ type Service struct {
 	NanoCPUs         int64
 	PullPolicy       string
 	FilePaths        []string
+	// Unsupported lists settings the caller could not express in compose; a
+	// project export prints them in its header instead of dropping them.
+	Unsupported []string
+	// SecretValues holds opt-in plaintext for secret keys, used only by a
+	// project export that was explicitly asked to include secrets.
+	SecretValues map[string]string
 }
 
 // Input is everything one export needs.
@@ -148,7 +154,11 @@ func Render(in Input) ([]File, error) {
 func WriteTar(w io.Writer, files []File) error {
 	tw := tar.NewWriter(w)
 	for _, f := range files {
-		h := &tar.Header{Name: f.Name, Mode: 0o644, Size: int64(len(f.Content)), Typeflag: tar.TypeReg}
+		mode := int64(0o644)
+		if f.Name == ".env" {
+			mode = 0o600
+		}
+		h := &tar.Header{Name: f.Name, Mode: mode, Size: int64(len(f.Content)), Typeflag: tar.TypeReg}
 		if err := tw.WriteHeader(h); err != nil {
 			return err
 		}

@@ -118,7 +118,8 @@ var Tree = map[string]*Node{
 			"create": nil, "list": nil, "get": nil, "delete": nil,
 			"set-project": nil, "clear-project": nil, "env-get": nil, "env-set": nil,
 		}},
-		"projects":          {Subs: map[string]*Node{"create": nil, "list": nil, "get": nil, "delete": nil, "stop": nil, "start": nil, "restart": nil, "env-get": nil, "env-set": nil, "topology": nil}},
+		"auto-host":         nil,
+		"projects":          {Subs: map[string]*Node{"create": nil, "list": nil, "get": nil, "delete": nil, "stop": nil, "start": nil, "restart": nil, "env-get": nil, "env-set": nil, "topology": nil, "export": nil}},
 		"environments":      {Subs: map[string]*Node{"create": nil, "list": nil, "update": nil, "delete": nil, "env-get": nil, "env-set": nil, "env-diff": nil, "clone-preview": nil, "clone": nil}},
 		"set-environment":   nil,
 		"move-env":          nil,
@@ -304,6 +305,7 @@ var Tree = map[string]*Node{
 	"environments": {Subs: map[string]*Node{"list": nil, "create": nil, "update": nil, "delete": nil}},
 	"deployments":  {Subs: map[string]*Node{"list": nil, "watch": nil, "summary": nil, "timeline": nil}},
 	"lb":           {Subs: map[string]*Node{"list": nil, "show": nil, "set": nil, "clear": nil, "status": nil, "check": nil, "history": nil, "upstream": nil, "export": nil, "import": nil}},
+	"certs":        {Subs: map[string]*Node{"budget": nil}},
 	"tags":         {Subs: map[string]*Node{"list": nil, "create": nil, "delete": nil, "apps": nil}},
 	"nodes": {Subs: map[string]*Node{
 		"list": nil, "get": nil, "delete": nil, "join-token": nil, "join-tokens": nil, "revoke-join-token": nil,

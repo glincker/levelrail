@@ -128,6 +128,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runMail(prog, args[1:], stdout, stderr, lookupEnv)
 	case "dns":
 		return runDNS(prog, args[1:], stdout, stderr, lookupEnv)
+	case "certs":
+		return runCerts(prog, args[1:], stdout, stderr, lookupEnv)
 	case "domains":
 		return runDomains(prog, args[1:], stdout, stderr, lookupEnv)
 	case "backups":
@@ -431,6 +433,7 @@ Usage:
   %[1]s databases get <name> [flags]   show one database
   %[1]s functions deploy|list|invoke|delete|settings|versions|rollback [flags]   image apps that sleep when idle and wake on the first request
   %[1]s models list|get|deploy|logs|delete|restart|rotate-key|gpus [flags]   AI models on GPU nodes
+  %[1]s certs budget [flags]           certificates issued in the last 7 days against the warning level
   %[1]s domains list [flags]           list every app's domains in one call
   %[1]s dns zones|records|check|health-checks ...   DNS zones, records, delegation and propagation at Cloudflare or Route53
   %[1]s preview status|enable|disable|capture|prune <app> [flags]   deploy preview screenshots (opt-in per app)

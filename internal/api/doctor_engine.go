@@ -101,6 +101,7 @@ func (rt *Router) doctorDefs() []doctorCheckDef {
 		many("exposure", doctorGroupNetwork, rt.doctorCheckExposure),
 		many("cloud", doctorGroupNetwork, rt.doctorCheckCloud),
 		one("certificates", doctorGroupNetwork, rt.doctorCheckCertExpiry),
+		one("certificate_budget", doctorGroupNetwork, rt.doctorCheckCertBudget),
 
 		one("master_key_rotation", doctorGroupSecurity, rt.doctorCheckMasterKeyRotation),
 		one("secret_binding", doctorGroupSecurity, rt.doctorCheckSecretBinding),
