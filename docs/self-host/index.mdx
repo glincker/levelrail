@@ -37,7 +37,7 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 - [Ollama: Qwen 2.5 7B](/self-host/ollama-qwen): Alibaba's Qwen 2.5 7B model, served locally through Ollama's HTTP API.
 - [Open Notebook](/self-host/open-notebook): An open source, self-hosted alternative to NotebookLM for researching with your own sources, with podcasts and chat. Add model provider keys in the app after install.
 - [Open WebUI](/self-host/open-webui): A self-hosted chat interface for running local large language models through Ollama.
-- [OpenClaw](/self-host/openclaw): A self-hosted personal AI agent gateway that connects chat apps and tools to the model provider you choose.
+- [OpenClaw](/self-host/openclaw): A self-hosted personal AI agent gateway that connects chat apps and tools to the model provider you choose. Recommended container limit is 2 GiB. Measured use is 0.9 to 1.3 GiB, so a Levelrail VM needs at least 4096 MiB. The gateway trusts the ingress proxy through gateway.trustedProxies, written once to openclaw.json in the data volume.
 - [Speaches](/self-host/speaches): An OpenAI-compatible speech server: Whisper transcription and text-to-speech behind one API.
 - [Stable Diffusion WebUI](/self-host/stable-diffusion-webui): A browser interface for generating and editing images with Stable Diffusion checkpoints.
 - [Text Embeddings Inference](/self-host/text-embeddings-inference): A lean server that turns text into embeddings with popular open models, on CPU with no extra setup.

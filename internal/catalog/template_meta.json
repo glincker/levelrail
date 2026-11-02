@@ -1326,13 +1326,6 @@
   "license_url": "https://github.com/open-webui/open-webui/blob/main/LICENSE",
   "description": "A self-hosted chat interface for running local large language models through Ollama. Runs 2 containers (ollama, open-webui), with open-webui listening on port 8080; data is kept in named volumes."
  },
- "openclaw": {
-  "source_repo": "https://github.com/openclaw/openclaw",
-  "license": "MIT",
-  "license_class": "permissive",
-  "license_url": "https://github.com/openclaw/openclaw/blob/main/LICENSE",
-  "description": "A self-hosted personal AI agent gateway that connects chat apps and tools to the model provider you choose. Runs as a single container from the openclaw image, listening on port 18789; data is kept in named volumes."
- },
  "openobserve": {
   "source_repo": "https://github.com/openobserve/openobserve",
   "license": "AGPL-3.0",

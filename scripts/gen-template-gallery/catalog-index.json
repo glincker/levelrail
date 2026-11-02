@@ -41753,9 +41753,11 @@
    "id": "openclaw",
    "aliases": [],
    "name": "OpenClaw",
-   "slogan": "A self-hosted personal AI agent gateway that connects chat apps and tools to the model provider you choose.",
-   "description": "A self-hosted personal AI agent gateway that connects chat apps and tools to the model provider you choose. Runs as a single container from the openclaw image, listening on port 18789; data is kept in named volumes.",
-   "first_run": [],
+   "slogan": "A self-hosted personal AI agent gateway that connects chat apps and tools to the model provider you choose. Recommended container limit is 2 GiB. Measured use is 0.9 to 1.3 GiB, so a Levelrail VM needs at least 4096 MiB. The gateway trusts the ingress proxy through gateway.trustedProxies, written once to openclaw.json in the data volume.",
+   "description": "A self-hosted personal AI agent gateway that connects chat apps and tools to the model provider you choose. Recommended container limit is 2 GiB. Measured use is 0.9 to 1.3 GiB, so a Levelrail VM needs at least 4096 MiB. The gateway trusts the ingress proxy through gateway.trustedProxies, written once to openclaw.json in the data volume.",
+   "first_run": [
+    "Open the app address, then paste the generated gateway token (OPENCLAW_GATEWAY_TOKEN in the deployment variables) to sign in."
+   ],
    "category": "AI",
    "status": "active",
    "source_repo": "https://github.com/openclaw/openclaw",
@@ -41795,8 +41797,15 @@
    "memory_mib": 2048,
    "needs_config": false,
    "install": {
-    "kind": "deploy",
-    "fields": []
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TRUSTED_PROXY_CIDR",
+      "label": "Trusted proxy network",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
    },
    "services": [
     {
