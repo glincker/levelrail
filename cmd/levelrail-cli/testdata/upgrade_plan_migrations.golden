@@ -1,0 +1,9 @@
+upgrade v0.9.0 -> v0.9.1
+no breaking changes declared
+database schema 3034 -> 3036 (2 migrations will run)
+pending migrations:
+  3035 alpha_table
+  3036 beta_index
+  (listed from the running binary's embedded migrations, not the release)
+steps: download, health (automatic rollback if the new release is not healthy)
+a control plane backup is taken before the swap; the upgrade is refused if it fails (override: --skip-backup)

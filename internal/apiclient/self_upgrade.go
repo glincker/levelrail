@@ -25,14 +25,24 @@ type SelfUpgradePlan struct {
 	Command        string                `json:"command"`
 	Steps          []string              `json:"steps"`
 	// Schema fields are absent when the database or the target manifest is unreadable.
-	DBSchemaVersion     *int              `json:"db_schema_version,omitempty"`
-	TargetSchemaVersion *int              `json:"target_schema_version,omitempty"`
-	PendingMigrations   *int              `json:"pending_migrations,omitempty"`
-	RollbackCommands    []string          `json:"rollback_commands,omitempty"`
-	Disk                SelfUpgradeDisk   `json:"disk"`
-	DowntimeSeconds     int               `json:"downtime_seconds"`
-	Restart             string            `json:"restart_behaviour"`
-	Backup              SelfUpgradeBackup `json:"backup"`
+	DBSchemaVersion     *int `json:"db_schema_version,omitempty"`
+	TargetSchemaVersion *int `json:"target_schema_version,omitempty"`
+	PendingMigrations   *int `json:"pending_migrations,omitempty"`
+	// PendingMigrationList names the migrations in order; the source says whose list it is.
+	PendingMigrationList   []PendingMigration `json:"pending_migration_list,omitempty"`
+	PendingMigrationSource string             `json:"pending_migration_source,omitempty"`
+	PendingMigrationNote   string             `json:"pending_migration_note,omitempty"`
+	RollbackCommands       []string           `json:"rollback_commands,omitempty"`
+	Disk                   SelfUpgradeDisk    `json:"disk"`
+	DowntimeSeconds        int                `json:"downtime_seconds"`
+	Restart                string             `json:"restart_behaviour"`
+	Backup                 SelfUpgradeBackup  `json:"backup"`
+}
+
+// PendingMigration is one database migration an upgrade will run.
+type PendingMigration struct {
+	Version int    `json:"version"`
+	Name    string `json:"name"`
 }
 
 // SelfUpgradeDisk is whether the data dir has room for the upgrade.

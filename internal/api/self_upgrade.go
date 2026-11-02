@@ -192,8 +192,12 @@ type selfUpgradePlanResource struct {
 	DBSchemaVersion     *int `json:"db_schema_version,omitempty"`
 	TargetSchemaVersion *int `json:"target_schema_version,omitempty"`
 	// PendingMigrations is how many migrations the upgrade will run, when known.
-	PendingMigrations *int     `json:"pending_migrations,omitempty"`
-	RollbackCommands  []string `json:"rollback_commands,omitempty"`
+	PendingMigrations *int `json:"pending_migrations,omitempty"`
+	// PendingMigrationList names them in order; the source says whose list it is.
+	PendingMigrationList   []store.PendingMigration `json:"pending_migration_list,omitempty"`
+	PendingMigrationSource string                   `json:"pending_migration_source,omitempty"`
+	PendingMigrationNote   string                   `json:"pending_migration_note,omitempty"`
+	RollbackCommands       []string                 `json:"rollback_commands,omitempty"`
 	// Disk, downtime and backup describe what the upgrade touches, so a dry run is a full report.
 	Disk            selfupgrade.DiskReport `json:"disk"`
 	DowntimeSeconds int                    `json:"downtime_seconds"`
@@ -262,6 +266,9 @@ func (rt *Router) fillPlanSchema(ctx context.Context, plan *selfUpgradePlanResou
 	if db >= 0 && target >= 0 {
 		if n, err := store.MigrationsBetween(db, target); err == nil {
 			plan.PendingMigrations = &n
+		}
+		if mp, err := selfupgrade.PlanMigrations(db, target); err == nil && len(mp.Pending) > 0 {
+			plan.PendingMigrationList, plan.PendingMigrationSource, plan.PendingMigrationNote = mp.Pending, mp.Source, mp.Note
 		}
 	}
 	plan.RollbackCommands = []string{

@@ -160,6 +160,7 @@ func printUpgradePlan(out io.Writer, p apiclient.SelfUpgradePlan) {
 		}
 		_, _ = fmt.Fprintln(out)
 	}
+	printPendingMigrations(out, p)
 	_, _ = fmt.Fprintf(out, "steps: %s (automatic rollback if the new release is not healthy)\n", strings.Join(p.Steps, ", "))
 	printUpgradeHostPlan(out, p)
 	if len(p.RollbackCommands) > 0 {
@@ -210,5 +211,22 @@ func printUpgradeHostPlan(out io.Writer, p apiclient.SelfUpgradePlan) {
 	}
 	if p.Backup.RestoreCommand != "" {
 		_, _ = fmt.Fprintf(out, "restore the backup with (NAME is the backup file the upgrade reports):\n  %s\n", p.Backup.RestoreCommand)
+	}
+}
+
+// printPendingMigrations lists the migrations the upgrade runs, by number and name.
+func printPendingMigrations(out io.Writer, p apiclient.SelfUpgradePlan) {
+	if len(p.PendingMigrationList) == 0 {
+		return
+	}
+	_, _ = fmt.Fprintln(out, "pending migrations:")
+	for _, m := range p.PendingMigrationList {
+		_, _ = fmt.Fprintf(out, "  %04d %s\n", m.Version, m.Name)
+	}
+	if p.PendingMigrationSource == "running_binary" {
+		_, _ = fmt.Fprintln(out, "  (listed from the running binary's embedded migrations, not the release)")
+	}
+	if p.PendingMigrationNote != "" {
+		_, _ = fmt.Fprintf(out, "  note: %s\n", p.PendingMigrationNote)
 	}
 }
