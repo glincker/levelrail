@@ -40,7 +40,7 @@ function build(err: unknown, tr: Translate): ErrorText {
   const raw = err instanceof Error ? err.message.trim() : ''
   const kind = kindOf(err, raw)
   const safe = isSafeServerText(raw)
-  const generic = tr('apiError.generic', 'Something went wrong on the server.')
+  const generic = tr('apiError.generic', 'The server hit an error. Try again.')
   const retry = tr(
     'apiError.friendly.generic.action',
     'Try again, and quote the request ID if it keeps failing.',

@@ -1056,7 +1056,7 @@
       },
       "serverError": {
         "title": "Server error",
-        "message": "Something went wrong on the server.",
+        "message": "The server hit an error. Try again.",
         "action": "Try again in a moment, and quote the request ID if it keeps failing."
       },
       "needsConfirmation": {

@@ -54,7 +54,7 @@ describe('errorText', () => {
 
   it('hides unsafe server text', () => {
     const out = errorText(new ApiError(418, 'panic: boom at main.go:12'))
-    expect(out.message).toBe('Something went wrong on the server.')
+    expect(out.message).toBe('The server hit an error. Try again.')
   })
 
   it('maps a timeout abort', () => {
