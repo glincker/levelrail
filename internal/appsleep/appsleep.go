@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/backup"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
@@ -439,6 +440,9 @@ func Wake(ctx context.Context, sleep interface {
 	}
 	if !a.Sleeping {
 		return false, nil
+	}
+	if err := backup.CheckNoImport(name); err != nil {
+		return false, err
 	}
 	// Clear the sleeping mark first: the reconciler keeps a sleeping deploy copy down.
 	if err := sleep.SetAppSleeping(ctx, name, false, now); err != nil {

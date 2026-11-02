@@ -17,6 +17,7 @@ import { toast } from '@/components/ui/toast'
 import type { ExposureFinding, ExposurePlan } from '../../types/exposure'
 import {
   useApplyRestriction,
+  useConfirmRestriction,
   usePreviewRestriction,
 } from '../../queries/exposure'
 
@@ -42,19 +43,25 @@ export function ExposureRestrictDialog({
   const [local, setLocal] = useState(false)
   const [plan, setPlan] = useState<ExposurePlan | null>(null)
   const [confirmed, setConfirmed] = useState(false)
+  const [force, setForce] = useState(false)
+  const [trial, setTrial] = useState<ExposurePlan | null>(null)
   const preview = usePreviewRestriction()
   const apply = useApplyRestriction()
+  const keep = useConfirmRestriction()
 
   const input = {
     port: finding.host_port,
     protocol: finding.protocol,
     allow: parseSources(text),
     local_containers: local,
+    force_lockout: force,
   }
+  const lockout = plan?.lockout ?? []
   const hasSources = input.allow.length > 0 || local
 
   function onPreview() {
     setConfirmed(false)
+    setForce(false)
     preview.mutate(input, {
       onSuccess: setPlan,
       onError: (err) => {
@@ -70,7 +77,11 @@ export function ExposureRestrictDialog({
 
   function onApply() {
     apply.mutate(input, {
-      onSuccess: () => {
+      onSuccess: (res) => {
+        if (res.pending) {
+          setTrial(res)
+          return
+        }
         toast.add({ title: t('appliedToast'), type: 'success' })
         onOpenChange(false)
       },
@@ -82,6 +93,51 @@ export function ExposureRestrictDialog({
         })
       },
     })
+  }
+
+  function onKeep() {
+    keep.mutate(
+      { port: finding.host_port, protocol: finding.protocol },
+      {
+        onSuccess: () => {
+          toast.add({ title: t('dialog.keptToast'), type: 'success' })
+          setTrial(null)
+          onOpenChange(false)
+        },
+        onError: (err) => {
+          toast.add({
+            title: t('failedToast'),
+            description: err.message,
+            type: 'error',
+          })
+        },
+      },
+    )
+  }
+
+  if (trial) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('dialog.trialTitle')}</DialogTitle>
+            <DialogDescription>
+              {t('dialog.trialBody', {
+                time: new Date(trial.revert_at ?? '').toLocaleTimeString(),
+              })}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              {t('dialog.letRevert')}
+            </Button>
+            <Button disabled={keep.isPending} onClick={onKeep}>
+              {t('dialog.keep')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    )
   }
 
   return (
@@ -137,6 +193,24 @@ export function ExposureRestrictDialog({
               <p className="text-xs text-muted-foreground">
                 {t('dialog.persistence')}: {plan.persistence}
               </p>
+              {lockout.map((l) => (
+                <Alert key={l} variant="destructive">
+                  <AlertTitle>{t('dialog.lockoutTitle')}</AlertTitle>
+                  <AlertDescription>{l}</AlertDescription>
+                </Alert>
+              ))}
+              {lockout.length > 0 ? (
+                <label className="flex items-center gap-2">
+                  <Checkbox
+                    checked={force}
+                    onCheckedChange={(v) => setForce(v === true)}
+                  />
+                  <span>{t('dialog.forceLockout')}</span>
+                </label>
+              ) : null}
+              <p className="text-xs text-muted-foreground">
+                {t('dialog.autoRevert')}
+              </p>
               <label className="flex items-center gap-2">
                 <Checkbox
                   checked={confirmed}
@@ -159,7 +233,12 @@ export function ExposureRestrictDialog({
             {t('dialog.preview')}
           </Button>
           <Button
-            disabled={!plan || !confirmed || apply.isPending}
+            disabled={
+              !plan ||
+              !confirmed ||
+              apply.isPending ||
+              (lockout.length > 0 && !force)
+            }
             onClick={onApply}
           >
             {t('dialog.apply')}

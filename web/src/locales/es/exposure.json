@@ -59,6 +59,14 @@
     "apply": "Aplicar restricción",
     "cancel": "Cancelar",
     "confirm": "Entiendo que este tráfico se descartará",
-    "persistence": "Persistencia"
+    "persistence": "Persistencia",
+    "lockoutTitle": "Riesgo de bloqueo",
+    "forceLockout": "Acepto el riesgo y quiero aplicarla de todos modos",
+    "autoRevert": "Esta regla se aplica a prueba y se revierte sola si no la conservas en el siguiente paso.",
+    "trialTitle": "Restricción aplicada a prueba",
+    "trialBody": "Comprueba que sigues llegando a lo que necesitas. La regla se revierte a las {{time}} si no la conservas.",
+    "keep": "Conservar esta regla",
+    "letRevert": "Dejar que se revierta",
+    "keptToast": "Restricción conservada"
   }
 }

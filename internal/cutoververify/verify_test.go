@@ -214,7 +214,7 @@ func TestHSTSMaxAge(t *testing.T) {
 }
 
 func TestIsPublicIP(t *testing.T) {
-	for _, ip := range []string{"127.0.0.1", "::1", "10.0.0.5", "172.16.0.1", "192.168.1.1", "fd00::1", "fe80::1", "169.254.169.254", "0.0.0.0", "::", "224.0.0.1", "ff02::1", "100.100.100.200", "::ffff:127.0.0.1", "fd00:ec2::254", "nope"} {
+	for _, ip := range []string{"127.0.0.1", "::1", "10.0.0.5", "172.16.0.1", "192.168.1.1", "fd00::1", "fe80::1", "169.254.169.254", "0.0.0.0", "::", "224.0.0.1", "ff02::1", "100.100.100.200", "::ffff:127.0.0.1", "fd00:ec2::254", "168.63.129.16", "64:ff9b::7f00:1", "64:ff9b::a00:1", "64:ff9b:1::1", "nope"} {
 		if IsPublicIP(ip) {
 			t.Errorf("%s must not be public", ip)
 		}
@@ -364,5 +364,24 @@ func TestVerify_NonPublicRedirectTargetIsHidden(t *testing.T) {
 	}
 	if loc, ok := safeLocation("/login"); !ok || loc != "/login" {
 		t.Errorf("relative location = %q %v", loc, ok)
+	}
+}
+
+func TestVerify_NeverListsNonPublicAddresses(t *testing.T) {
+	res := fakeResolver{hosts: map[string][]string{
+		"example.com":     {"10.0.0.7", "203.0.113.10"},
+		"www.example.com": {"192.168.1.9", "203.0.113.10"},
+	}}
+	rep := Verify(context.Background(), deps(res, healthyProber()), "example.com", []string{"203.0.113.10"}, opts)
+	if len(rep.Resolved) != 1 || rep.Resolved[0] != "203.0.113.10" {
+		t.Errorf("resolved = %v", rep.Resolved)
+	}
+	for _, l := range rep.Lines {
+		if strings.Contains(l.Detail, "10.0.0.7") || strings.Contains(l.Detail, "192.168.1.9") {
+			t.Errorf("line %s leaks a private address: %q", l.ID, l.Detail)
+		}
+	}
+	if got := line(t, rep, LinePair); !strings.Contains(got.Detail, "private or reserved") {
+		t.Errorf("pair = %+v", got)
 	}
 }

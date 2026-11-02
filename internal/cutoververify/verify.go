@@ -117,7 +117,7 @@ func Verify(ctx context.Context, d Deps, domain string, serverIPs []string, o Op
 	rep := Report{Domain: domain, ServerIPs: serverIPs, CheckedAt: d.Now().UTC()}
 
 	v.resolve(ctx)
-	rep.Resolved, rep.CNAME = v.resolved, v.cname
+	rep.Resolved, rep.CNAME = publicOnly(v.resolved), v.cname
 	v.dnsLine()
 	reachable := (v.pointsHere || v.proxiedIP) && !v.nonPublic
 	if reachable {
@@ -430,10 +430,34 @@ func (v *verifier) pairLine(ctx context.Context) {
 	slices.Sort(got)
 	switch {
 	case !slices.Equal(got, v.resolved):
-		v.add(LinePair, Warn, title, other+" resolves to "+strings.Join(got, ", ")+", not the same as "+v.domain, "Point "+other+" at the same place.")
+		v.add(LinePair, Warn, title, other+" resolves to "+describeAddrs(got)+", not the same as "+v.domain, "Point "+other+" at the same place.")
 	default:
 		v.add(LinePair, Pass, title, other+" resolves to the same addresses", "Nothing to do.")
 	}
+}
+
+// publicOnly drops addresses that must not be shown or probed, so a report
+// never reveals what a private or internal name resolves to.
+func publicOnly(ips []string) []string {
+	var out []string
+	for _, ip := range ips {
+		if IsPublicIP(ip) {
+			out = append(out, ip)
+		}
+	}
+	return out
+}
+
+// describeAddrs lists the public addresses and masks the rest.
+func describeAddrs(ips []string) string {
+	pub := publicOnly(ips)
+	if len(pub) == len(ips) {
+		return strings.Join(ips, ", ")
+	}
+	if len(pub) == 0 {
+		return "a private or reserved address"
+	}
+	return strings.Join(pub, ", ") + " and a private or reserved address"
 }
 
 // counterpart maps www.x to x and a two-label name to www.x.

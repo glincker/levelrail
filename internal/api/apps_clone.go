@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -92,6 +93,13 @@ func (rt *Router) handleCloneApp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	clone := cloneDesiredService(*source, req.NewName, deriveCloneDomains(source.Domains, cloneDomains))
+	if other, err := rt.cloneVolumeConflict(r.Context(), clone); err != nil {
+		rt.internalError(w, "api: clone app: check volume owners failed", err, slog.String("new_name", req.NewName))
+		return
+	} else if other != "" {
+		writeError(w, http.StatusConflict, fmt.Sprintf("a volume of the clone is also held by app %q: pick another name", other))
+		return
+	}
 	if err := rt.apps.SaveDesiredService(r.Context(), clone); err != nil {
 		var domainTaken *store.ErrDomainTaken
 		if errors.As(err, &domainTaken) {

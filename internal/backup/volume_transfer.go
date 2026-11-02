@@ -140,6 +140,8 @@ type ImportOptions struct {
 	Overwrite bool
 	// SpoolDir holds the staged archive; empty uses the system temp dir.
 	SpoolDir string
+	// Limits bounds entry names; zero fields use the defaults.
+	Limits EntryLimits
 	// BeforeMount runs after the archive is staged and just before the volume
 	// is mounted, so the caller can re-check that the owning app is still stopped.
 	BeforeMount func(ctx context.Context) error
@@ -164,7 +166,7 @@ func (t *VolumeTransfer) Import(ctx context.Context, volume string, archive io.R
 		_ = spool.Close()
 		_ = os.Remove(spool.Name())
 	}()
-	stats, err := sanitizeArchive(archive, spool, opts.MaxBytes)
+	stats, err := sanitizeArchiveCtx(ctx, archive, spool, opts.MaxBytes, opts.Limits)
 	if err != nil {
 		return TransferStats{}, err
 	}
@@ -242,6 +244,9 @@ func (t *VolumeTransfer) execOutput(ctx context.Context, id string, cmd []string
 const tarBlock = 512
 
 func unsafeEntry(name, why string) error {
+	if len(name) > 256 {
+		name = name[:256] + "..."
+	}
 	return fmt.Errorf("%w: %q %s", ErrUnsafeArchive, name, why)
 }
 
@@ -255,6 +260,13 @@ type archiveState struct {
 // sanitizeArchive copies a tar.gz to dst as a plain tar, refusing any entry that
 // could land outside the volume.
 func sanitizeArchive(src io.Reader, dst io.Writer, maxBytes int64) (TransferStats, error) {
+	return sanitizeArchiveCtx(context.Background(), src, dst, maxBytes, EntryLimits{})
+}
+
+// sanitizeArchiveCtx is sanitizeArchive with a context checked once per entry
+// and explicit name limits.
+func sanitizeArchiveCtx(ctx context.Context, src io.Reader, dst io.Writer, maxBytes int64, lim EntryLimits) (TransferStats, error) {
+	lim = lim.withDefaults()
 	var st TransferStats
 	zr, err := gzip.NewReader(src)
 	if err != nil {
@@ -272,8 +284,14 @@ func sanitizeArchive(src io.Reader, dst io.Writer, maxBytes int64) (TransferStat
 		if err != nil {
 			return st, fmt.Errorf("backup: read archive: %w", err)
 		}
+		if err := ctx.Err(); err != nil {
+			return st, err
+		}
 		if hdr.Typeflag == tar.TypeXGlobalHeader {
 			continue
+		}
+		if err := lim.check(hdr); err != nil {
+			return st, err
 		}
 		name, err := cleanEntryName(hdr.Name)
 		if err != nil {
@@ -286,13 +304,17 @@ func sanitizeArchive(src io.Reader, dst io.Writer, maxBytes int64) (TransferStat
 			return st, err
 		}
 		st.Entries++
-		st.Bytes += tarBlock + hdr.Size
+		st.Bytes += tarBlock + hdr.Size + int64(len(hdr.Name)+len(hdr.Linkname)) + paxBytes(hdr.PAXRecords)
 		if st.Bytes > maxBytes {
 			return st, ErrTransferTooLarge
 		}
-		out := *hdr
-		out.Name = name
-		out.Format = tar.FormatPAX
+		// Only basic fields are copied, so extended attributes and vendor records never reach the volume.
+		out := tar.Header{
+			Typeflag: hdr.Typeflag, Name: name, Linkname: hdr.Linkname, Size: hdr.Size, Mode: hdr.Mode,
+			Uid: hdr.Uid, Gid: hdr.Gid, Uname: hdr.Uname, Gname: hdr.Gname,
+			ModTime: hdr.ModTime, AccessTime: hdr.AccessTime, ChangeTime: hdr.ChangeTime,
+			Format: tar.FormatPAX,
+		}
 		// Setuid and setgid bits on files from an outside archive are never wanted.
 		out.Mode &^= 0o6000
 		if err := tw.WriteHeader(&out); err != nil {
@@ -315,6 +337,52 @@ func sanitizeArchive(src io.Reader, dst io.Writer, maxBytes int64) (TransferStat
 		return st, fmt.Errorf("backup: finish archive: %w", err)
 	}
 	return st, nil
+}
+
+// Defaults for EntryLimits, used when a field is left at zero.
+const (
+	DefaultMaxEntryNameBytes = 4096
+	DefaultMaxEntryDepth     = 128
+)
+
+// EntryLimits bounds one archive entry's name and link target.
+type EntryLimits struct {
+	// MaxNameBytes caps the byte length of a name or link target; 0 uses the default.
+	MaxNameBytes int
+	// MaxDepth caps the path components of a name or link target; 0 uses the default.
+	MaxDepth int
+}
+
+func (l EntryLimits) withDefaults() EntryLimits {
+	if l.MaxNameBytes <= 0 {
+		l.MaxNameBytes = DefaultMaxEntryNameBytes
+	}
+	if l.MaxDepth <= 0 {
+		l.MaxDepth = DefaultMaxEntryDepth
+	}
+	return l
+}
+
+// check rejects an oversized name or link target before any path parsing.
+func (l EntryLimits) check(hdr *tar.Header) error {
+	for _, p := range []string{hdr.Name, hdr.Linkname} {
+		if len(p) > l.MaxNameBytes {
+			return unsafeEntry(p, "has a name or link target that is too long")
+		}
+		if strings.Count(p, "/")+1 > l.MaxDepth {
+			return unsafeEntry(p, "is nested too deeply")
+		}
+	}
+	return nil
+}
+
+// paxBytes sizes extended header records so they count against the transfer cap.
+func paxBytes(recs map[string]string) int64 {
+	var n int64
+	for k, v := range recs {
+		n += int64(len(k) + len(v))
+	}
+	return n
 }
 
 // cleanEntryName rejects absolute names and any ".." element, then normalizes.

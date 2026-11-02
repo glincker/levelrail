@@ -136,17 +136,17 @@ func TestVerifyLimiter(t *testing.T) {
 	}
 	var held []func()
 	for i := range verifyMaxConcurrent {
-		r, _ := l.acquire("c", "d"+strconv.Itoa(i)+".example.com", time.Second, t0.Add(time.Hour))
+		r, _ := l.acquire("c"+strconv.Itoa(i), "d"+strconv.Itoa(i)+".example.com", time.Second, t0.Add(time.Hour))
 		if r == nil {
 			t.Fatalf("run %d refused below the cap", i)
 		}
 		held = append(held, r)
 	}
-	if r, _ := l.acquire("c", "over.example.com", time.Second, t0.Add(time.Hour)); r != nil {
+	if r, _ := l.acquire("cx", "over.example.com", time.Second, t0.Add(time.Hour)); r != nil {
 		t.Error("run above the concurrency cap must be refused")
 	}
 	held[0]()
-	if r, _ := l.acquire("c", "over.example.com", time.Second, t0.Add(time.Hour)); r == nil {
+	if r, _ := l.acquire("cx", "over.example.com", time.Second, t0.Add(time.Hour)); r == nil {
 		t.Error("slot not released")
 	}
 }

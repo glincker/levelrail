@@ -204,3 +204,31 @@ func TestImportErrorStatus_Guards(t *testing.T) {
 		t.Fatalf("busy = %d", s)
 	}
 }
+
+func TestWakeAndStartPaths_RefusedDuringImport(t *testing.T) {
+	f := &transferRuntime{}
+	rt, _, cookie := transferRouter(t, f)
+	release, err := rt.volumeTransfers.beginImport("web", "app-web-data", 1, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer release()
+	if rec := do(t, rt, cookie, http.MethodPost, "/api/v1/apps/web/move-with-volumes", `{"node_id":"n2"}`); rec.Code == http.StatusAccepted {
+		t.Fatalf("volume move during import = %d, want refusal", rec.Code)
+	}
+	ex := &moveExecutor{rt: rt}
+	if err := ex.Resume(context.Background(), store.NodeMoveKindApp, "web"); !errors.Is(err, backup.ErrImportInProgress) {
+		t.Fatalf("node move resume during import = %v", err)
+	}
+}
+
+func TestCloneRejectsForeignVolumeNameCollision(t *testing.T) {
+	f := &transferRuntime{}
+	rt, db, _ := transferRouter(t, f)
+	saveVolumeApp(t, db, "a-b", "c")
+	clash := store.DesiredService{Name: "a", Image: "x:1", Volumes: []store.ServiceVolume{{Name: "app-a-b-c", ContainerPath: "/d"}}}
+	other, err := rt.cloneVolumeConflict(context.Background(), clash)
+	if err != nil || other != "a-b" {
+		t.Fatalf("other=%q err=%v, want a-b", other, err)
+	}
+}

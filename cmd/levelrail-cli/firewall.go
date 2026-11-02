@@ -28,6 +28,8 @@ func runFirewall(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runFirewallExposure(prog, args[1:], stdout, stderr, lookupEnv)
 	case "restrict":
 		return runFirewallRestrict(prog, args[1:], stdout, stderr, lookupEnv)
+	case "confirm":
+		return runFirewallConfirm(prog, args[1:], stdout, stderr, lookupEnv)
 	case "unrestrict":
 		return runFirewallUnrestrict(prog, args[1:], stdout, stderr, lookupEnv)
 	case "list":
@@ -52,6 +54,7 @@ func firewallUsage(prog string) string {
   %[1]s firewall disable [--dry-run] [flags]                             turn ufw off
   %[1]s firewall exposure [--node N] [--probe] [flags]                   audit which published container ports are reachable from outside
   %[1]s firewall restrict --port N --allow CIDR[,CIDR] --dry-run|--apply   limit a published port to an allow-list (DOCKER-USER)
+  %[1]s firewall confirm --port N [flags]                                 keep a restriction that is waiting for confirmation
   %[1]s firewall unrestrict --port N [flags]                              remove a restriction Levelrail added
   %[1]s firewall list [flags]                                            list configured firewall rules
   %[1]s firewall allow --port N [--protocol tcp|udp] [--source-cidr CIDR] [--label TEXT] [flags]   add an allow rule

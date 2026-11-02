@@ -60,6 +60,9 @@ export interface ExposurePlan {
   allow: string[]
   warnings: string[]
   applied: boolean
+  lockout?: string[]
+  pending?: boolean
+  revert_at?: string
 }
 
 export interface ExposureRestrictInput {
@@ -67,4 +70,5 @@ export interface ExposureRestrictInput {
   protocol: string
   allow: string[]
   local_containers: boolean
+  force_lockout?: boolean
 }

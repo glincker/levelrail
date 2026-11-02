@@ -52,12 +52,18 @@ type Manager struct {
 	run       Runner
 	lookPath  func(string) (string, error)
 	goos      string
+
+	// sshProbe lists the ports sshd listens on; nil means none are detected.
+	sshProbe func(context.Context) []int
+	pend     pendingState
 }
 
 // NewManager builds a Manager over the real iptables binary. protected lists
 // ports that must never be restricted (control plane, ingress, SSH).
 func NewManager(prefix string, protected []int) *Manager {
-	return &Manager{prefix: prefix, protected: protected, run: realRunner, lookPath: exec.LookPath, goos: runtime.GOOS}
+	m := &Manager{prefix: prefix, protected: protected, run: realRunner, lookPath: exec.LookPath, goos: runtime.GOOS}
+	m.sshProbe = m.probeSSHPorts
+	return m
 }
 
 // NewFakeManager builds a Manager over fake seams for tests.
@@ -350,6 +356,9 @@ func (m *Manager) Sync(ctx context.Context, want []Restriction) SyncResult {
 			continue
 		}
 		wanted[m.tag(n.Protocol, n.Port)] = true
+		if m.isPending(n.Protocol, n.Port) {
+			continue
+		}
 		changed, err := m.Apply(ctx, n)
 		switch {
 		case err != nil:
@@ -360,7 +369,7 @@ func (m *Manager) Sync(ctx context.Context, want []Restriction) SyncResult {
 	}
 	stale := map[string]bool{}
 	for _, r := range chain.Rules {
-		if strings.HasPrefix(r.Comment, m.prefix+tagInfix) && !wanted[r.Comment] {
+		if strings.HasPrefix(r.Comment, m.prefix+tagInfix) && !wanted[r.Comment] && !m.isPendingTag(r.Comment) {
 			stale[r.Comment] = true
 		}
 	}

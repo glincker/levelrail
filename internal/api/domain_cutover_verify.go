@@ -20,13 +20,15 @@ const (
 	// verifyMaxConcurrent caps verifier runs in flight; each makes outbound
 	// requests, so a burst must not turn this server into a request cannon.
 	verifyMaxConcurrent = 4
-	verifyLimiterMax    = 1024
+	// verifyMaxPerActor keeps one actor from holding every global slot.
+	verifyMaxPerActor = 2
+	verifyLimiterMax  = 1024
 )
 
 var verifyNow = time.Now
 
 // verifyLimit is shared by every request so the caps hold per server.
-var verifyLimit = &verifyLimiter{lastActor: map[string]time.Time{}, lastDomain: map[string]time.Time{}}
+var verifyLimit = &verifyLimiter{lastActor: map[string]time.Time{}, lastDomain: map[string]time.Time{}, inflight: map[string]int{}}
 
 // verifyLimiter spaces runs per actor and domain, and per domain across actors
 // at a quarter of that gap, and bounds how many run at once.
@@ -35,6 +37,7 @@ type verifyLimiter struct {
 	lastActor  map[string]time.Time
 	lastDomain map[string]time.Time
 	running    int
+	inflight   map[string]int
 }
 
 // acquire returns a release func, or nil and how long to wait.
@@ -51,23 +54,49 @@ func (l *verifyLimiter) acquire(actor, domain string, interval time.Duration, no
 	if l.running >= verifyMaxConcurrent {
 		return nil, time.Second
 	}
-	if len(l.lastActor) >= verifyLimiterMax || len(l.lastDomain) >= verifyLimiterMax {
-		clear(l.lastActor)
-		clear(l.lastDomain)
+	if l.inflight[actor] >= verifyMaxPerActor {
+		return nil, time.Second
 	}
+	// Evict the oldest records rather than all of them, so a flood of new keys
+	// cannot wipe the spacing of everyone else.
+	evictOldest(l.lastActor, verifyLimiterMax)
+	evictOldest(l.lastDomain, verifyLimiterMax)
 	l.lastActor[key], l.lastDomain[domain] = now, now
 	l.running++
+	if l.inflight == nil {
+		l.inflight = map[string]int{}
+	}
+	l.inflight[actor]++
 	return func() {
 		l.mu.Lock()
 		l.running--
+		if l.inflight[actor]--; l.inflight[actor] <= 0 {
+			delete(l.inflight, actor)
+		}
 		l.mu.Unlock()
 	}, 0
+}
+
+// evictOldest removes the oldest entries until m has room for one more.
+func evictOldest(m map[string]time.Time, limit int) {
+	for len(m) >= limit {
+		var oldest string
+		var at time.Time
+		first := true
+		for k, t := range m {
+			if first || t.Before(at) {
+				oldest, at, first = k, t, false
+			}
+		}
+		delete(m, oldest)
+	}
 }
 
 func (l *verifyLimiter) reset() {
 	l.mu.Lock()
 	clear(l.lastActor)
 	clear(l.lastDomain)
+	clear(l.inflight)
 	l.running = 0
 	l.mu.Unlock()
 }

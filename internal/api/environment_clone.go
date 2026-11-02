@@ -462,6 +462,11 @@ func (rt *Router) cloneOneApp(ctx context.Context, source store.DesiredService, 
 	// Serialized with deleteApp so a same-name delete cannot wipe the secrets copied below.
 	defer lockAppName(newName)()
 	desired := cloneDesiredService(source, newName, domains)
+	if other, err := rt.cloneVolumeConflict(ctx, desired); err != nil {
+		return store.DesiredService{}, fmt.Errorf("check volume owners: %w", err)
+	} else if other != "" {
+		return store.DesiredService{}, fmt.Errorf("a volume of %q is also held by app %q", newName, other)
+	}
 
 	if err := rt.apps.SaveDesiredService(ctx, desired); err != nil {
 		return store.DesiredService{}, fmt.Errorf("save desired service: %w", err)

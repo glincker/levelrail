@@ -404,6 +404,9 @@ func (p *Pipeline) finishDeploy(ctx context.Context, req Request, res *build.Res
 	if err != nil {
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
 	}
+	if err := checkVolumeOwners(ctx, p.store, desired); err != nil {
+		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
+	}
 	resolution := p.buildResolution(ctx, res.Tag, res.ExporterResponse)
 	resolution.apply(&desired)
 
@@ -448,6 +451,9 @@ func (p *Pipeline) deployImage(ctx context.Context, req Request) (string, error)
 
 	desired, err := toDesiredService(req.ServiceName, req.Service.Build.Image, req.Service)
 	if err != nil {
+		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
+	}
+	if err := checkVolumeOwners(ctx, p.store, desired); err != nil {
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
 	}
 	if req.Service.Build.RegistryCredential != "" {

@@ -29,6 +29,9 @@ func WithExposure(m *exposure.Manager, s ExposureStore) Option {
 	return func(rt *Router) {
 		rt.exposure = m
 		rt.exposureStore = s
+		if m != nil {
+			m.OnRevert(rt.auditExposureRevert)
+		}
 	}
 }
 

@@ -996,3 +996,25 @@ func TestBuildFailure_NoDoubledPrefix(t *testing.T) {
 		}
 	}
 }
+
+type listingServiceStore struct {
+	*fakeServiceStore
+	all []store.DesiredService
+}
+
+func (l *listingServiceStore) ListDesiredServices(context.Context) ([]store.DesiredService, error) {
+	return l.all, nil
+}
+
+func TestPipeline_Deploy_VolumeNameCollisionRejected(t *testing.T) {
+	svc := imageService()
+	svc.Volumes = []spec.Volume{{Name: "b-c", Path: "/data"}}
+	// App "a-b" already holds the Docker volume "app-a-b-c" that "a" + "b-c" resolves to.
+	other := store.DesiredService{Name: "a-b", Volumes: []store.ServiceVolume{{Name: "app-a-b-c", ContainerPath: "/d"}}}
+	inner := &fakeServiceStore{}
+	p := New(&fakeBuilder{}, &listingServiceStore{fakeServiceStore: inner, all: []store.DesiredService{other}})
+	_, err := p.Deploy(context.Background(), Request{ServiceName: "a", Service: svc}, nil)
+	if !errors.Is(err, ErrVolumeNameClaimed) || inner.saveCalls != 0 {
+		t.Fatalf("err = %v saves = %d, want ErrVolumeNameClaimed and no save", err, inner.saveCalls)
+	}
+}

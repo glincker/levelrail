@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1925 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1926 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1155,6 +1155,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/firewall/exposure/preview", Ability: "AbilityRoot", Group: "Other", Handler: "handleExposurePreview", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/firewall/exposure/restrictions/{protocol}/{port}", Ability: "AbilityRoot", Group: "Other", Handler: "handleExposureUnrestrict", Description: ""},
 	{Method: "PUT", Path: "/api/v1/firewall/exposure/restrictions/{protocol}/{port}", Ability: "AbilityRoot", Group: "Other", Handler: "handleExposureRestrict", Description: ""},
+	{Method: "POST", Path: "/api/v1/firewall/exposure/restrictions/{protocol}/{port}/confirm", Ability: "AbilityRoot", Group: "Other", Handler: "handleExposureConfirm", Description: ""},
 	{Method: "GET", Path: "/api/v1/firewall/host", Ability: "AbilityRead", Group: "Other", Handler: "handleHostFirewallStatus", Description: ""},
 	{Method: "POST", Path: "/api/v1/firewall/host/disable", Ability: "AbilityRoot", Group: "Other", Handler: "handleDisableHostFirewall", Description: ""},
 	{Method: "POST", Path: "/api/v1/firewall/host/enable", Ability: "AbilityRoot", Group: "Other", Handler: "handleEnableHostFirewall", Description: ""},

@@ -91,6 +91,8 @@ type ExposureRestrictRequest struct {
 	Allow           []string `json:"allow"`
 	LocalContainers bool     `json:"local_containers,omitempty"`
 	Confirm         bool     `json:"confirm,omitempty"`
+	ForceLockout    bool     `json:"force_lockout,omitempty"`
+	AutoRevert      bool     `json:"auto_revert,omitempty"`
 }
 
 // ExposurePlan mirrors internal/api's exposurePlanResource.
@@ -104,6 +106,9 @@ type ExposurePlan struct {
 	Allow       []string `json:"allow"`
 	Warnings    []string `json:"warnings"`
 	Applied     bool     `json:"applied"`
+	Lockout     []string `json:"lockout,omitempty"`
+	Pending     bool     `json:"pending,omitempty"`
+	RevertAt    string   `json:"revert_at,omitempty"`
 }
 
 // GetExposure calls GET /api/v1/firewall/exposure.
@@ -148,4 +153,11 @@ func (c *Client) ApplyExposureRestriction(ctx context.Context, req ExposureRestr
 // RemoveExposureRestriction calls DELETE .../exposure/restrictions/{protocol}/{port}.
 func (c *Client) RemoveExposureRestriction(ctx context.Context, protocol string, port int) error {
 	return c.do(ctx, http.MethodDelete, exposureRestrictionPath(protocol, port), nil, nil)
+}
+
+// ConfirmExposureRestriction calls POST .../exposure/restrictions/{protocol}/{port}/confirm.
+func (c *Client) ConfirmExposureRestriction(ctx context.Context, protocol string, port int) (ExposurePlan, error) {
+	var out ExposurePlan
+	err := c.do(ctx, http.MethodPost, exposureRestrictionPath(protocol, port)+"/confirm", nil, &out)
+	return out, err
 }

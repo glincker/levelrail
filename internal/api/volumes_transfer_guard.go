@@ -45,7 +45,9 @@ func (g *volumeTransferGuard) beginImport(app, volume string, maxConcurrent int,
 	g.volumes[volume] = true
 	g.apps[app]++
 	g.active++
+	clearMark := backup.MarkImport(app)
 	return func() {
+		clearMark()
 		g.mu.Lock()
 		defer g.mu.Unlock()
 		delete(g.volumes, volume)

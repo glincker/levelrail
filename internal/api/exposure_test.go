@@ -9,9 +9,11 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/exposure"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 type exposureLister struct{ states []docker.ContainerState }
@@ -121,7 +123,7 @@ func TestExposureRestrictRequiresConfirmAndIsReversible(t *testing.T) {
 	ipt := &fakeIptables{rules: []string{"-j RETURN"}}
 	rt, cookie := exposureRouter(t, ipt, []docker.ContainerState{typesenseState})
 	path := "/api/v1/firewall/exposure/restrictions/tcp/8108"
-	body := `{"allow":["10.0.0.2"]}`
+	body := `{"allow":["192.0.2.1"]}`
 
 	if code, out := exposureCall(t, rt, cookie, http.MethodPut, path, body); code != http.StatusBadRequest || !strings.Contains(out, "confirmation required") {
 		t.Fatalf("unconfirmed = %d %s", code, out)
@@ -129,7 +131,7 @@ func TestExposureRestrictRequiresConfirmAndIsReversible(t *testing.T) {
 	if len(ipt.rules) != 1 {
 		t.Fatalf("rules changed without confirmation: %v", ipt.rules)
 	}
-	if code, out := exposureCall(t, rt, cookie, http.MethodPut, path, `{"allow":["10.0.0.2"],"confirm":true}`); code != http.StatusOK {
+	if code, out := exposureCall(t, rt, cookie, http.MethodPut, path, `{"allow":["192.0.2.1"],"confirm":true}`); code != http.StatusOK {
 		t.Fatalf("apply = %d %s", code, out)
 	}
 	if len(ipt.rules) != 3 {
@@ -226,5 +228,106 @@ func TestExposureReportIncludesDrift(t *testing.T) {
 	})
 	if len(rows) != 1 || rows[0].Status != doctorStatusWarn {
 		t.Fatalf("doctor rows = %+v", rows)
+	}
+}
+
+func exposureTrialRouter(t *testing.T, ipt *fakeIptables, ssh []int) (*Router, *http.Cookie, *exposure.Manager, *[]func()) {
+	t.Helper()
+	db := openTestDB(t)
+	mgr := exposure.NewFakeManager("acme:", []int{22, 8080, 9443, 80, 443}, ipt.run,
+		func(string) (string, error) { return "/sbin/iptables", nil }, "linux")
+	mgr.SetSSHProbe(func(context.Context) []int { return ssh })
+	var timers []func()
+	mgr.SetClock(time.Now, func(_ time.Duration, f func()) func() bool {
+		timers = append(timers, f)
+		return func() bool { return true }
+	})
+	rt := NewRouter(discardLogger(), testBrand(), db, WithExposure(mgr, db), WithContainerLister(exposureLister{nil}))
+	return rt, loginTestSession(t, rt, db), mgr, &timers
+}
+
+func exposureAuditActions(t *testing.T, rt *Router) string {
+	t.Helper()
+	entries, err := rt.auditLog.ListAuditEntries(context.Background(), 50, nil, store.AuditEntryFilter{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var b strings.Builder
+	for _, e := range entries {
+		b.WriteString(e.Action + " " + e.Detail + "\n")
+	}
+	return b.String()
+}
+
+func TestExposureRestrictRefusesDetectedSSHPortUnlessForced(t *testing.T) {
+	ipt := &fakeIptables{}
+	rt, cookie, _, _ := exposureTrialRouter(t, ipt, []int{2222})
+	path := "/api/v1/firewall/exposure/restrictions/tcp/2222"
+	code, out := exposureCall(t, rt, cookie, http.MethodPut, path, `{"allow":["192.0.2.1"],"confirm":true}`)
+	if code != http.StatusConflict || !strings.Contains(out, "sshd") || len(ipt.rules) != 0 {
+		t.Fatalf("sshd port = %d %s rules=%v", code, out, ipt.rules)
+	}
+	if code, out := exposureCall(t, rt, cookie, http.MethodPost, "/api/v1/firewall/exposure/preview", `{"port":2222,"allow":["192.0.2.1"]}`); code != http.StatusOK || !strings.Contains(out, `"lockout"`) {
+		t.Fatalf("preview should warn, got %d %s", code, out)
+	}
+	if code, out := exposureCall(t, rt, cookie, http.MethodPut, path, `{"allow":["192.0.2.1"],"confirm":true,"force_lockout":true}`); code != http.StatusOK {
+		t.Fatalf("forced = %d %s", code, out)
+	}
+	if len(ipt.rules) != 2 {
+		t.Fatalf("rules = %v", ipt.rules)
+	}
+}
+
+func TestExposureRestrictRefusesRuleThatCutsCaller(t *testing.T) {
+	ipt := &fakeIptables{}
+	rt, cookie, _, _ := exposureTrialRouter(t, ipt, nil)
+	path := "/api/v1/firewall/exposure/restrictions/tcp/8108"
+	code, out := exposureCall(t, rt, cookie, http.MethodPut, path, `{"allow":["10.0.0.2"],"confirm":true}`)
+	if code != http.StatusConflict || !strings.Contains(out, "your own address") || len(ipt.rules) != 0 {
+		t.Fatalf("excluded caller = %d %s rules=%v", code, out, ipt.rules)
+	}
+	if code, out := exposureCall(t, rt, cookie, http.MethodPut, path, `{"allow":["10.0.0.2"],"confirm":true,"force_lockout":true}`); code != http.StatusOK {
+		t.Fatalf("forced = %d %s", code, out)
+	}
+}
+
+func TestExposureTrialRevertsAndConfirmStores(t *testing.T) {
+	ipt := &fakeIptables{rules: []string{"-j RETURN"}}
+	rt, cookie, mgr, timers := exposureTrialRouter(t, ipt, nil)
+	path := "/api/v1/firewall/exposure/restrictions/tcp/8108"
+	body := `{"allow":["192.0.2.1"],"confirm":true,"auto_revert":true}`
+
+	code, out := exposureCall(t, rt, cookie, http.MethodPut, path, body)
+	if code != http.StatusOK || !strings.Contains(out, `"pending":true`) || !strings.Contains(out, `"revert_at"`) {
+		t.Fatalf("trial = %d %s", code, out)
+	}
+	if rows, _ := rt.exposureStore.ListExposureRestrictions(context.Background()); len(rows) != 0 {
+		t.Fatalf("trial rule was stored before confirmation: %v", rows)
+	}
+	(*timers)[0]()
+	if len(ipt.rules) != 1 || len(mgr.Pending()) != 0 {
+		t.Fatalf("not reverted: %v", ipt.rules)
+	}
+	audit := exposureAuditActions(t, rt)
+	if !strings.Contains(audit, "exposure_restrict_trial") || !strings.Contains(audit, "exposure_revert ") || !strings.Contains(audit, `"port":8108`) || !strings.Contains(audit, "192.0.2.1") {
+		t.Fatalf("audit = %s", audit)
+	}
+
+	if code, _ := exposureCall(t, rt, cookie, http.MethodPut, path, body); code != http.StatusOK {
+		t.Fatalf("second trial = %d", code)
+	}
+	if code, out := exposureCall(t, rt, cookie, http.MethodPost, path+"/confirm", ""); code != http.StatusOK {
+		t.Fatalf("confirm = %d %s", code, out)
+	}
+	(*timers)[1]()
+	rows, err := rt.exposureStore.ListExposureRestrictions(context.Background())
+	if err != nil || len(rows) != 1 || len(ipt.rules) != 3 {
+		t.Fatalf("after confirm rows=%v rules=%v err=%v", rows, ipt.rules, err)
+	}
+	if code, _ := exposureCall(t, rt, cookie, http.MethodPost, path+"/confirm", ""); code != http.StatusNotFound {
+		t.Fatalf("repeat confirm = %d, want 404", code)
+	}
+	if !strings.Contains(exposureAuditActions(t, rt), "exposure_confirm") {
+		t.Fatal("confirm not audited")
 	}
 }

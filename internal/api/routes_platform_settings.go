@@ -202,6 +202,7 @@ func (rt *Router) registerSettingsRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/firewall/exposure/preview", rt.requireAbility(AbilityRoot, rt.handleExposurePreview))
 	mux.HandleFunc("PUT /api/v1/firewall/exposure/restrictions/{protocol}/{port}", rt.requireAbility(AbilityRoot, rt.handleExposureRestrict))
 	mux.HandleFunc("DELETE /api/v1/firewall/exposure/restrictions/{protocol}/{port}", rt.requireAbility(AbilityRoot, rt.handleExposureUnrestrict))
+	mux.HandleFunc("POST /api/v1/firewall/exposure/restrictions/{protocol}/{port}/confirm", rt.requireAbility(AbilityRoot, rt.handleExposureConfirm))
 
 	// Registry credential browsing (registry_catalog.go): repository/tag
 	// lookup for a stored external credential, the same generic catalog

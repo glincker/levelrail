@@ -18,6 +18,11 @@ var reservedPrefixes = []netip.Prefix{
 	netip.MustParsePrefix("100.64.0.0/10"),
 	netip.MustParsePrefix("192.0.0.0/24"),
 	netip.MustParsePrefix("240.0.0.0/4"),
+	// Azure virtual public IP (DNS, DHCP and health probes), never a tenant server.
+	netip.MustParsePrefix("168.63.129.16/32"),
+	// NAT64 translation prefixes can embed any IPv4 address, private ones included.
+	netip.MustParsePrefix("64:ff9b::/96"),
+	netip.MustParsePrefix("64:ff9b:1::/48"),
 }
 
 // IsPublicAddr reports whether ip may be probed: not loopback, private (RFC1918
