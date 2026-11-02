@@ -680,7 +680,6 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: create app failed", err, slog.String("name", req.Name))
 		return
 	}
-	unlockName()
 
 	if req.ProjectID != "" {
 		if err := rt.apps.UpdateServiceProject(r.Context(), req.Name, req.ProjectID); err != nil {
@@ -710,6 +709,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req.AppID = appID
+	unlockName()
 
 	// Skip the git-build path's ":pending" placeholder (cmd/levelrail-cli's
 	// pendingImageTag): its own POST .../builds call records the real
@@ -1440,7 +1440,7 @@ func (rt *Router) deleteApp(ctx context.Context, name string) (teardownErr, err 
 		}
 	}
 	if existing.AppID != "" {
-		// Under the name lock so a concurrent create cannot link to an App row this sweep is dropping.
+		// Name lock covers the window where a same-name create has saved its row but not yet linked it.
 		unlockSweep := lockAppName(name)
 		orphaned := rt.deleteAppIfOrphaned(ctx, existing.AppID)
 		unlockSweep()
@@ -1569,19 +1569,12 @@ func (rt *Router) teardownServiceContainers(name, nodeID string) {
 // self-healing problem, not one that should make an otherwise-successful
 // delete request fail.
 func (rt *Router) deleteAppIfOrphaned(ctx context.Context, appID string) bool {
-	remaining, err := rt.appGroups.ListServicesByApp(ctx, appID)
+	deleted, err := rt.appGroups.DeleteAppIfOrphaned(ctx, appID)
 	if err != nil {
-		rt.logger.Error("api: delete app: check remaining siblings failed", slog.String("error", err.Error()), slog.String("app_id", appID))
-		return false
-	}
-	if len(remaining) > 0 {
-		return false
-	}
-	if err := rt.appGroups.DeleteApp(ctx, appID); err != nil && !errors.Is(err, store.ErrAppNotFound) {
 		rt.logger.Error("api: delete app: delete orphaned app row failed", slog.String("error", err.Error()), slog.String("app_id", appID))
 		return false
 	}
-	return true
+	return deleted
 }
 
 // reservedSecretNamespace reports names the control plane seals its own settings under; an app with

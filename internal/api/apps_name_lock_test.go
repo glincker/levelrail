@@ -42,6 +42,9 @@ func TestImportCreateAppSurvivesParallelDelete(t *testing.T) {
 			t.Errorf("re-create never succeeded: %v", err)
 		}()
 		wg.Wait()
+		if svc, err := rt.apps.GetDesiredService(ctx, "web"); err != nil || svc.AppID == "" {
+			t.Fatalf("iteration %d: new app missing or unlinked: %v", i, err)
+		}
 		if got, err := manager.Resolve(ctx, "web", "K"); err != nil || got != "v" {
 			t.Fatalf("iteration %d: new app lost its secret: %q %v", i, got, err)
 		}
