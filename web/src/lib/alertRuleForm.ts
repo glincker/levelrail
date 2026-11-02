@@ -13,6 +13,13 @@ import {
   WrenchGlassIcon,
 } from '@thesvg/ui-react'
 import { isDatabaseRuleKind } from '@/lib/databaseRuleKinds'
+import {
+  PARKED_CERT_KIND,
+  TRAFFIC_DROP_KIND,
+  domainFromResourceId,
+  isTrafficWindowValid,
+  trafficResourceId,
+} from '@/lib/alertTrafficKinds'
 import { sloConfigFromForm } from '../queries/sloPreview'
 import { isScheduledTaskKind } from '../types/alerts'
 import type {
@@ -111,6 +118,8 @@ export const ALERT_KIND_OPTIONS: {
   },
   { value: 'deploy_failed', Icon: RocketGlassIcon },
   { value: 'monitor_down', Icon: GlobeGlassIcon },
+  { value: 'domain_traffic_drop', Icon: GaugeGlassIcon },
+  { value: 'parked_domain_cert_expiry', Icon: ShieldAlertGlassIcon },
 ]
 
 export const ALERT_COMPARATOR_OPTIONS: { value: Comparator; label: string }[] =
@@ -152,6 +161,8 @@ export const alertRuleFormSchema = z
       'email_delivery_failing',
       'deploy_failed',
       'monitor_down',
+      'domain_traffic_drop',
+      'parked_domain_cert_expiry',
     ]),
     metric: z.string().trim(),
     comparator: z.enum(['>', '<', '>=', '<=']),
@@ -159,6 +170,7 @@ export const alertRuleFormSchema = z
     forDuration: z.string().trim(),
     restartCountThreshold: z.coerce.number({ error: 'Must be a number' }),
     restartWindow: z.string().trim(),
+    trafficDomain: z.string().trim(),
     scheduledTaskId: z.string(),
     backupResourceKind: z.enum(['database', 'volume', '']),
     backupDatabaseName: z.string(),
@@ -190,6 +202,45 @@ export const alertRuleFormSchema = z
       data.kind === 'monitor_down' ||
       data.kind === 'budget_threshold'
     ) {
+      return
+    }
+
+    if (data.kind === PARKED_CERT_KIND) {
+      if (!Number.isInteger(data.threshold) || data.threshold < 1) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Must be a positive whole number of days',
+          path: ['threshold'],
+        })
+      }
+      return
+    }
+
+    if (data.kind === TRAFFIC_DROP_KIND) {
+      if (data.forDuration && !isTrafficWindowValid(data.forDuration)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Must be a duration from 0 to 24h, e.g. "1h" or "30m"',
+          path: ['forDuration'],
+        })
+      }
+      if (!(data.threshold >= 0 && data.threshold <= 100)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Must be between 0 and 100',
+          path: ['threshold'],
+        })
+      }
+      if (
+        !Number.isInteger(data.restartCountThreshold) ||
+        data.restartCountThreshold < 1
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Must be a positive whole number',
+          path: ['restartCountThreshold'],
+        })
+      }
       return
     }
 
@@ -369,6 +420,7 @@ export const ALERT_RULE_DEFAULT_VALUES: AlertRuleFormInput = {
   forDuration: '2m',
   restartCountThreshold: 5,
   restartWindow: '5m',
+  trafficDomain: '',
   scheduledTaskId: '',
   backupResourceKind: '',
   backupDatabaseName: '',
@@ -394,7 +446,14 @@ export function buildAlertRuleRequest(
     enabled: values.enabled,
     ...extra,
   }
-  if (values.kind === 'threshold') {
+  if (values.kind === TRAFFIC_DROP_KIND) {
+    req.resource_id = trafficResourceId(appName, values.trafficDomain)
+    req.for_duration = values.forDuration.trim() || undefined
+    req.threshold = values.threshold
+    req.restart_count_threshold = values.restartCountThreshold
+  } else if (values.kind === PARKED_CERT_KIND) {
+    req.threshold = values.threshold
+  } else if (values.kind === 'threshold') {
     req.metric = values.metric.trim()
     req.comparator = values.comparator
     req.threshold = values.threshold
@@ -448,6 +507,7 @@ export function alertRuleToFormValues(rule: AlertRule): AlertRuleFormInput {
     forDuration: rule.for_duration ?? '',
     restartCountThreshold: rule.restart_count_threshold,
     restartWindow: rule.restart_window ?? '',
+    trafficDomain: domainFromResourceId(rule.resource_id),
     scheduledTaskId: rule.scheduled_task_id ?? '',
     backupResourceKind: rule.backup_resource_kind ?? '',
     backupDatabaseName: rule.backup_database_name ?? '',

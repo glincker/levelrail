@@ -16,6 +16,7 @@ import {
   type ParkedDns,
   type ParkedTls,
 } from '../../queries/parkedDomains'
+import { ParkedRetentionStrip } from './ParkedRetentionStrip'
 import { DomainsBatchDialog } from './DomainsBatchDialog'
 import { DomainsBulkBar, RowSelectBox, SelectAllBox } from './DomainsBulkBar'
 import {
@@ -128,6 +129,7 @@ export function ParkedDomainsGroup() {
           setSelected(new Set())
         }}
       />
+      <ParkedRetentionStrip parked={parked} />
       <p className="text-xs text-muted-foreground">{t('parked.hint')}</p>
       <ul className="divide-y divide-border rounded-lg border border-border">
         {parked.map((p) => (

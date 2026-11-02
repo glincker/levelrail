@@ -1405,5 +1405,73 @@
     "confirmThese_other": "Confirmar estos {{count}}",
     "cancel": "Cancelar",
     "done": "Cerrar"
+  },
+  "retention": {
+    "title": "Limpieza automática",
+    "summaryOff": "Desactivada. Los dominios aparcados se conservan hasta que los elimines.",
+    "summaryOn": "Elimina los dominios aparcados tras {{days}} días. Pendientes ahora: {{due}}. Próxima ejecución: {{next}}",
+    "preview": "Vista previa",
+    "turnOn": "Activar",
+    "turnOff": "Desactivar",
+    "turnOnDays": "Activar con {{count}} días",
+    "close": "Cerrar",
+    "previewTitle": "Vista previa de la limpieza automática",
+    "previewBody": "Consulta qué dominios aparcados eliminaría un período de retención.",
+    "daysLabel": "Período de retención",
+    "days_one": "{{count}} día",
+    "days_other": "{{count}} días",
+    "custom": "Personalizado",
+    "customLabel": "Número de días personalizado",
+    "estimate": "Estimación a partir de la lista de aparcados. La lista exacta aparece cuando la limpieza está activa.",
+    "exact": "Lista exacta del servidor para el ajuste guardado.",
+    "dueNow_one": "Se eliminaría {{count}} dominio ahora.",
+    "dueNow_other": "Se eliminarían {{count}} dominios ahora.",
+    "age_one": "aparcado hace {{count}} día",
+    "age_other": "aparcado hace {{count}} días",
+    "batchNote": "Cada ejecución horaria elimina como máximo {{limit}}, los más antiguos primero. El resto sigue en ejecuciones posteriores.",
+    "confirmTitle_one": "¿Eliminar dominios aparcados tras {{count}} día?",
+    "confirmTitle_other": "¿Eliminar dominios aparcados tras {{count}} días?",
+    "confirmBody": "{{due}} pendientes ahora, {{first}} se eliminan en la primera ejecución (límite por lote {{limit}}).",
+    "consequenceDns": "Solo se elimina el registro del dominio aparcado. Los registros DNS y los certificados no se tocan.",
+    "consequenceBatch": "Se eliminan como máximo {{limit}} dominios por ejecución horaria, los más antiguos primero.",
+    "offTitle": "¿Desactivar la limpieza automática?",
+    "offBody": "Los dominios aparcados se conservarán hasta que los elimines. Desactivarla no elimina nada.",
+    "savedOn_one": "Limpieza automática activada: {{count}} día",
+    "savedOn_other": "Limpieza automática activada: {{count}} días",
+    "savedOff": "Limpieza automática desactivada",
+    "saveFailed": "No se pudo guardar el ajuste"
+  },
+  "reachability": {
+    "title": "Alcanzabilidad",
+    "loading": "Comprobando puertos",
+    "recheck": "Comprobar de nuevo",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "forbidden": "Necesitas acceso de lectura para ver la comprobación de alcanzabilidad.",
+    "errorTitle": "No se pudo ejecutar la comprobación de alcanzabilidad",
+    "errorBody": "El servidor no respondió. Inténtalo de nuevo en un momento.",
+    "dialbackError": "Falló la comprobación desde internet: {{error}}",
+    "firewall": "Cortafuegos local: {{state}}",
+    "dialbackOn": "La comprobación desde internet está activa: un servicio auxiliar intenta conectar con la IP pública de este servidor y tus puertos abiertos desde fuera.",
+    "dialbackOff": "La comprobación desde internet está desactivada, así que solo se hicieron comprobaciones locales. Activarla envía la IP pública de este servidor y su lista de puertos a la URL que indiques en doctor.reachability_dialback_url.",
+    "settingLink": "Abrir ajustes de ejecución",
+    "pillOk": "Los puertos parecen alcanzables",
+    "pillWarn": "Un puerto necesita atención",
+    "openChecklist": "Abrir la lista de comprobación",
+    "listening": {
+      "yes": "Escuchando",
+      "no": "Sin escuchar"
+    },
+    "external": {
+      "not_checked": "Sin comprobar desde fuera",
+      "reachable": "Alcanzable desde internet",
+      "unreachable": "Bloqueado desde internet",
+      "unknown": "Desconocido desde fuera"
+    },
+    "ports": {
+      "dashboard": "Panel",
+      "http": "HTTP",
+      "https": "HTTPS"
+    }
   }
 }

@@ -55,6 +55,8 @@ export type AlertRuleKind =
   | 'database_connections_high'
   | 'database_down'
   | 'database_backup_stale'
+  | 'domain_traffic_drop'
+  | 'parked_domain_cert_expiry'
 
 // log_pattern and log_level_rate only (internal/alerting.LogRuleConfig).
 export interface LogRuleConfig {
@@ -166,13 +168,15 @@ export interface AlertRule {
 }
 
 // POST /api/v1/apps/{name}/alerts request body. No `id` or
-// `resource_id`: the server mints/derives both itself
+// `resource_id` (except domain_traffic_drop, below): the server mints/derives both itself
 // (alerting.NewRuleID, resourceIDForApp(name)) and discards anything a
 // caller puts in those fields, so this app never sends them in the
 // first place.
 export interface CreateAlertRuleRequest {
   name: string
   kind: AlertRuleKind
+  // Only domain_traffic_drop sends it: service:<app> or domain:<name>.
+  resource_id?: string
   metric?: string
   comparator?: Comparator
   threshold?: number

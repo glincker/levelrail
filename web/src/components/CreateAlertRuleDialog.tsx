@@ -42,6 +42,17 @@ import { useDatabases } from '../queries/databases'
 import { useMonitors } from '../queries/monitors'
 import { DatabaseRuleFields } from './DatabaseRuleFields'
 import {
+  TrafficRuleFields,
+  type TrafficRuleFormShape,
+} from './TrafficRuleFields'
+import {
+  PARKED_CERT_DEFAULT_DAYS,
+  PARKED_CERT_KIND,
+  TRAFFIC_DROP_DEFAULTS,
+  TRAFFIC_DROP_KIND,
+  isTrafficKind,
+} from '@/lib/alertTrafficKinds'
+import {
   isDatabaseRuleKind,
   type DatabaseRuleFormShape,
 } from '@/lib/databaseRuleKinds'
@@ -103,6 +114,7 @@ export function CreateAlertRuleDialog({
   const channelsQuery = useNotificationChannelsOptional()
   const channels = channelsQuery.data ?? []
   const { t } = useTranslation('observability')
+  const { t: tAlert } = useTranslation('alertSetup')
   const scheduledTasksQuery = useScheduledTasks(appName)
   const scheduledTasks = scheduledTasksQuery.data ?? []
   const databasesQuery = useDatabases()
@@ -197,6 +209,16 @@ export function CreateAlertRuleDialog({
                     if (next === 'control_plane_backup_stale') {
                       setValue('forDuration', '72h')
                     }
+                    if (next === TRAFFIC_DROP_KIND) {
+                      setValue('forDuration', TRAFFIC_DROP_DEFAULTS.window)
+                      setValue('threshold', TRAFFIC_DROP_DEFAULTS.percent)
+                      setValue(
+                        'restartCountThreshold',
+                        TRAFFIC_DROP_DEFAULTS.minRequests,
+                      )
+                    }
+                    if (next === PARKED_CERT_KIND)
+                      setValue('threshold', PARKED_CERT_DEFAULT_DAYS)
                     if (next === 'database_disk_high') setValue('threshold', 85)
                     if (next === 'database_connections_high')
                       setValue('threshold', 80)
@@ -219,9 +241,17 @@ export function CreateAlertRuleDialog({
                           className="size-4.5 text-muted-foreground"
                           aria-hidden="true"
                         />
-                        {isAlertKindCopyKind(option.value)
-                          ? alertKindLabel(t, option.value)
-                          : option.label}
+                        {isTrafficKind(option.value)
+                          ? option.value === 'domain_traffic_drop'
+                            ? tAlert(
+                                'trafficKinds.kind.domain_traffic_drop.label',
+                              )
+                            : tAlert(
+                                'trafficKinds.kind.parked_domain_cert_expiry.label',
+                              )
+                          : isAlertKindCopyKind(option.value)
+                            ? alertKindLabel(t, option.value)
+                            : option.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -230,7 +260,18 @@ export function CreateAlertRuleDialog({
             />
           </Field>
 
-          {kind === 'cert_expiry' ? (
+          {isTrafficKind(kind) ? (
+            <TrafficRuleFields
+              idPrefix="rule"
+              kind={kind}
+              appName={appName}
+              control={control as unknown as Control<TrafficRuleFormShape>}
+              errors={
+                formState.errors as unknown as FieldErrors<TrafficRuleFormShape>
+              }
+              register={register}
+            />
+          ) : kind === 'cert_expiry' ? (
             <p className="text-sm text-muted-foreground">
               Watches every certificate on the whole control plane, not just
               this app&apos;s own domains, and fires as soon as any of them is

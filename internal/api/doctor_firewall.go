@@ -62,6 +62,7 @@ func doctorCheckFirewall(ctx context.Context, lookPath func(string) (string, err
 	}
 	return doctorCheckResource{
 		Code: "firewall", Name: "Firewall", Status: doctorStatusUnknown,
+		Fix:     doctorFirewallOptionsFix(),
 		Message: "no supported firewall tool (ufw, firewalld, nftables, iptables) found; if you rely on a different firewall (cloud security groups), this is expected",
 	}
 }
@@ -241,3 +242,13 @@ func doctorCheckIptables(ctx context.Context, lookPath func(string) (string, err
 
 // lookPathReal lets files outside the process-spawning allowlist resolve a binary.
 func lookPathReal(name string) (string, error) { return exec.LookPath(name) }
+
+// doctorFirewallOptionsFix lists every backend's command for the web ports, for
+// a host where none could be detected; the operator picks the one that matches.
+func doctorFirewallOptionsFix() string {
+	var parts []string
+	for _, c := range hostfw.OpenCommands(hostfw.BackendNone, hostfw.WebPorts) {
+		parts = append(parts, "("+string(c.Backend)+") "+c.Command)
+	}
+	return strings.Join(parts, "; ")
+}

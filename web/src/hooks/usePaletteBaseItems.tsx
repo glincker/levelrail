@@ -7,6 +7,7 @@ import { openCliModal } from '@/lib/cliModalStore'
 import { useTheme, type Theme } from '../components/ThemeProvider'
 import {
   mergeSettingsEntries,
+  navModelEntries,
   routeEntryItem,
   THEME_ACTION,
   type PaletteItem,
@@ -64,14 +65,17 @@ export function usePaletteBaseItems(
         void navigate(
           search ? { to, params, search, hash } : { to, params, hash },
         )
-    const items: PaletteItem[] = mergeSettingsEntries(settingsEntries).map(
-      (e) =>
-        routeEntryItem(
-          e,
-          experimental,
-          go,
-          tCommon('shell.locked.paletteSubtitle'),
-        ),
+    const merged = mergeSettingsEntries(settingsEntries)
+    const navEntries = navModelEntries(merged, (id, fallback) =>
+      tCommon(`shell.nav.${id}`, { defaultValue: fallback }),
+    )
+    const items: PaletteItem[] = [...merged, ...navEntries].map((e) =>
+      routeEntryItem(
+        e,
+        experimental,
+        go,
+        tCommon('shell.locked.paletteSubtitle'),
+      ),
     )
     for (const a of pageActions) items.push({ ...a, group: 'Actions' })
     items.push({ ...THEME_ACTION, run: () => setTheme(NEXT_THEME[theme]) })

@@ -42,6 +42,11 @@ import { useDatabases } from '../queries/databases'
 import { useMonitors } from '../queries/monitors'
 import { DatabaseRuleFields } from './DatabaseRuleFields'
 import {
+  TrafficRuleFields,
+  type TrafficRuleFormShape,
+} from './TrafficRuleFields'
+import { isTrafficKind } from '@/lib/alertTrafficKinds'
+import {
   isDatabaseRuleKind,
   type DatabaseRuleFormShape,
 } from '@/lib/databaseRuleKinds'
@@ -85,6 +90,7 @@ export function EditAlertRuleDialog({
   volumes?: AppVolume[]
 }) {
   const { t } = useTranslation('observability')
+  const { t: tAlert } = useTranslation('alertSetup')
   const [open, setOpen] = useState(false)
   const updateRule = useUpdateAlertRule(appName)
   const channelsQuery = useNotificationChannelsOptional()
@@ -198,9 +204,17 @@ export function EditAlertRuleDialog({
                           className="size-4.5 text-muted-foreground"
                           aria-hidden="true"
                         />
-                        {isAlertKindCopyKind(option.value)
-                          ? alertKindLabel(t, option.value)
-                          : option.label}
+                        {isTrafficKind(option.value)
+                          ? option.value === 'domain_traffic_drop'
+                            ? tAlert(
+                                'trafficKinds.kind.domain_traffic_drop.label',
+                              )
+                            : tAlert(
+                                'trafficKinds.kind.parked_domain_cert_expiry.label',
+                              )
+                          : isAlertKindCopyKind(option.value)
+                            ? alertKindLabel(t, option.value)
+                            : option.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -209,7 +223,18 @@ export function EditAlertRuleDialog({
             />
           </Field>
 
-          {kind === 'node_disk_space' ? (
+          {isTrafficKind(kind) ? (
+            <TrafficRuleFields
+              idPrefix="edit-rule"
+              kind={kind}
+              appName={appName}
+              control={control as unknown as Control<TrafficRuleFormShape>}
+              errors={
+                formState.errors as unknown as FieldErrors<TrafficRuleFormShape>
+              }
+              register={register}
+            />
+          ) : kind === 'node_disk_space' ? (
             <AlertKindGuidance kind="node_disk_space" />
           ) : kind === 'email_delivery_failing' ? (
             <AlertKindGuidance kind="email_delivery_failing" />

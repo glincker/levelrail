@@ -67,6 +67,7 @@ export type GlobalTo =
   | '/images'
   | '/builds'
   | '/projects'
+  | '/templates'
   | '/databases'
   | '/backups'
   | '/assets'
@@ -190,6 +191,12 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         label: 'Projects',
         to: '/projects',
         icon: <FolderGlassIcon size="1.4em" />,
+      },
+      {
+        id: 'templates',
+        label: 'Templates',
+        to: '/templates',
+        icon: <LayoutGridGlassIcon size="1.4em" />,
       },
       {
         id: 'images',

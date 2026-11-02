@@ -19,6 +19,7 @@ import { useServerAddress } from '../../queries/serverAddress'
 import { useProxyIntegration } from '../../queries/proxyIntegration'
 import { usePlatformStatus } from '../platform/usePlatformStatus'
 import { ProxySetupCard } from '../ProxySetupCard'
+import { ReachabilityPill } from './ReachabilityPill'
 import { ServerAddressCard } from './ServerAddressCard'
 
 // One row for HTTPS, server address and the single thing to fix. The
@@ -98,6 +99,7 @@ export function DomainsStatusBar() {
               {t('statusBar.fixAddress')}
             </Button>
           ) : null}
+          {httpsOff ? <ReachabilityPill /> : null}
           <CollapsibleTrigger className="ml-auto flex w-auto items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
             {t('statusBar.details')}
             <ChevronDownGlassIcon className="size-4.5" aria-hidden="true" />

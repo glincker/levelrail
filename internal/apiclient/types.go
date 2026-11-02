@@ -2560,11 +2560,20 @@ type HostFirewallPort struct {
 
 // HostFirewallResource mirrors internal/api's hostFirewallResource.
 type HostFirewallResource struct {
-	Installed       bool               `json:"installed"`
-	Active          bool               `json:"active"`
-	DefaultIncoming string             `json:"default_incoming,omitempty"`
-	Required        []HostFirewallPort `json:"required"`
-	Commands        []string           `json:"commands"`
+	Installed       bool                      `json:"installed"`
+	Active          bool                      `json:"active"`
+	DefaultIncoming string                    `json:"default_incoming,omitempty"`
+	Required        []HostFirewallPort        `json:"required"`
+	Commands        []string                  `json:"commands"`
+	OpenCommands    []HostFirewallOpenCommand `json:"open_commands"`
+}
+
+// HostFirewallOpenCommand mirrors internal/hostfw's OpenCommand.
+type HostFirewallOpenCommand struct {
+	Port    int    `json:"port"`
+	Backend string `json:"backend"`
+	Command string `json:"command"`
+	Note    string `json:"note,omitempty"`
 }
 
 // HostFirewallActionRequest mirrors internal/api's hostFirewallActionRequest.

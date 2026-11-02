@@ -1405,5 +1405,73 @@
     "confirmThese_other": "Confirm these {{count}}",
     "cancel": "Cancel",
     "done": "Close"
+  },
+  "retention": {
+    "title": "Auto cleanup",
+    "summaryOff": "Off. Parked domains are kept until you delete them.",
+    "summaryOn": "Deletes parked domains after {{days}} days. Due now: {{due}}. Next run: {{next}}",
+    "preview": "Preview",
+    "turnOn": "Turn on",
+    "turnOff": "Turn off",
+    "turnOnDays": "Turn on at {{count}} days",
+    "close": "Close",
+    "previewTitle": "Preview auto cleanup",
+    "previewBody": "See which parked domains a retention period would delete.",
+    "daysLabel": "Retention period",
+    "days_one": "{{count}} day",
+    "days_other": "{{count}} days",
+    "custom": "Custom",
+    "customLabel": "Custom number of days",
+    "estimate": "Estimate from the parked list. The exact list is shown once cleanup is on.",
+    "exact": "Exact list from the server for the saved setting.",
+    "dueNow_one": "{{count}} domain would be deleted now.",
+    "dueNow_other": "{{count}} domains would be deleted now.",
+    "age_one": "parked {{count}} day ago",
+    "age_other": "parked {{count}} days ago",
+    "batchNote": "Each hourly run deletes at most {{limit}}, oldest first. The rest follow in later runs.",
+    "confirmTitle_one": "Delete parked domains after {{count}} day?",
+    "confirmTitle_other": "Delete parked domains after {{count}} days?",
+    "confirmBody": "{{due}} due now, {{first}} deleted in the first run (batch limit {{limit}}).",
+    "consequenceDns": "Only the parked registration is deleted. DNS records and certificates are not touched.",
+    "consequenceBatch": "At most {{limit}} domains are deleted per hourly run, oldest first.",
+    "offTitle": "Turn off auto cleanup?",
+    "offBody": "Parked domains will be kept until you delete them. Nothing is deleted by turning this off.",
+    "savedOn_one": "Auto cleanup on: {{count}} day",
+    "savedOn_other": "Auto cleanup on: {{count}} days",
+    "savedOff": "Auto cleanup off",
+    "saveFailed": "Could not save the setting"
+  },
+  "reachability": {
+    "title": "Reachability",
+    "loading": "Checking ports",
+    "recheck": "Check again",
+    "copy": "Copy",
+    "copied": "Copied",
+    "forbidden": "You need read access to see the reachability check.",
+    "errorTitle": "Could not run the reachability check",
+    "errorBody": "The server did not answer. Try again in a moment.",
+    "dialbackError": "The internet check failed: {{error}}",
+    "firewall": "Local firewall: {{state}}",
+    "dialbackOn": "Internet check is on: a helper service dials this server's public IP and your open ports from outside.",
+    "dialbackOff": "Internet check is off, so only local checks ran. Turning it on sends this server's public IP and its port list to the URL you set in doctor.reachability_dialback_url.",
+    "settingLink": "Open runtime settings",
+    "pillOk": "Ports look reachable",
+    "pillWarn": "Port needs attention",
+    "openChecklist": "Open the checklist",
+    "listening": {
+      "yes": "Listening",
+      "no": "Not listening"
+    },
+    "external": {
+      "not_checked": "Not checked from outside",
+      "reachable": "Reachable from the internet",
+      "unreachable": "Blocked from the internet",
+      "unknown": "Unknown from outside"
+    },
+    "ports": {
+      "dashboard": "Dashboard",
+      "http": "HTTP",
+      "https": "HTTPS"
+    }
   }
 }

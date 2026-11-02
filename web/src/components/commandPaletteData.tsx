@@ -40,7 +40,7 @@ import {
   type ExperimentalFeature,
 } from '../lib/experimental'
 import type { SearchSpan } from '../queries/search'
-import { chordFor } from './shell/navModel'
+import { allGlobalItems, chordFor } from './shell/navModel'
 
 export interface PaletteItem {
   key: string
@@ -468,6 +468,54 @@ export function mergeSettingsEntries(
     ROUTE_ENTRIES.filter((e) => e.group === 'Navigate').map((e) => e.to),
   )
   return [...ROUTE_ENTRIES, ...settings.filter((e) => !navigate.has(e.to))]
+}
+
+// Pages that have a route but no sidebar entry of their own.
+const EXTRA_PAGES: readonly {
+  id: string
+  to: string
+  icon: React.ReactNode
+}[] = [
+  {
+    id: 'get-started',
+    to: '/get-started',
+    icon: <RocketGlassIcon size="1.4em" />,
+  },
+  { id: 'migrate', to: '/migrate', icon: <UploadGlassIcon size="1.4em" /> },
+]
+
+// Sidebar destinations the hand-kept list lacks, derived from the nav model so
+// the two cannot drift; labels reuse the translated sidebar strings.
+export function navModelEntries(
+  existing: readonly RouteEntry[],
+  label: (id: string, fallback: string) => string,
+): RouteEntry[] {
+  const taken = new Set([...existing.map((e) => e.to), '/settings'])
+  const out: RouteEntry[] = []
+  const add = (
+    id: string,
+    to: string,
+    icon: React.ReactNode,
+    fallback: string,
+    feature?: ExperimentalFeature,
+  ) => {
+    if (taken.has(to)) return
+    taken.add(to)
+    out.push({
+      key: `nav-${id}`,
+      label: label(id, fallback),
+      group: 'Navigate',
+      icon,
+      to,
+      feature,
+    })
+  }
+  for (const i of allGlobalItems()) {
+    if (i.requiresRoute) continue
+    add(i.id, i.to, i.icon, i.label, i.feature)
+  }
+  for (const p of EXTRA_PAGES) add(p.id, p.to, p.icon, p.id)
+  return out
 }
 
 // Always-available empty-query CTAs, independent of recents/app data.

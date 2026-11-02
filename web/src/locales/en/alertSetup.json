@@ -65,5 +65,29 @@
     "ruleName": "{{target}}% availability SLO",
     "created": "SLO alert rule created.",
     "createFailed": "Could not create the SLO rule."
+  },
+  "trafficKinds": {
+    "kind": {
+      "domain_traffic_drop": {
+        "label": "Domain traffic drop",
+        "help": "Fires when requests in the window fall below a share of the same window yesterday. It stays quiet until there is enough traffic yesterday to compare against."
+      },
+      "parked_domain_cert_expiry": {
+        "label": "Parked domain certificate expiry",
+        "help": "Fires when a parked domain has fewer days of certificate left than the limit. Covers every parked domain on the platform."
+      }
+    },
+    "scopeLabel": "Domain",
+    "scopeApp": "App: {{app}}",
+    "scopeAll": "All domains of this app",
+    "scopeHelp": "Watch every domain of this app, or just one.",
+    "windowLabel": "Window",
+    "windowHelp": "How long a stretch to compare with the same stretch yesterday. 0 to 24h.",
+    "percentLabel": "Drop below percent of yesterday",
+    "percentHelp": "Fires when traffic is below this percent of yesterday. 50 means half.",
+    "minRequestsLabel": "Minimum requests yesterday",
+    "minRequestsHelp": "Skip the check when yesterday had fewer requests than this, so quiet domains do not alert.",
+    "daysLabel": "Days left",
+    "daysHelp": "Fires when a parked domain's certificate has fewer days left than this."
   }
 }

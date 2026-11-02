@@ -11,7 +11,7 @@ import {
   pinnedGlobalItems,
   resolveOpen,
 } from './navModel'
-import { ROUTE_ENTRIES } from '../commandPaletteData'
+import { ROUTE_ENTRIES, navModelEntries } from '../commandPaletteData'
 import { isBoolRecord, readJson, writeJson } from './persist'
 
 const EXPECTED_GLOBAL = [
@@ -21,6 +21,7 @@ const EXPECTED_GLOBAL = [
   '/deployments',
   '/functions',
   '/projects',
+  '/templates',
   '/databases',
   '/backups',
   '/assets',
@@ -245,5 +246,38 @@ describe('static routing rules nav item', () => {
   it('appears only for static sites', () => {
     expect(slugs(true)).toContain('static-routes')
     expect(slugs(false)).not.toContain('static-routes')
+  })
+})
+
+describe('palette entries derived from the nav model', () => {
+  const entries = navModelEntries(ROUTE_ENTRIES, (id) => id)
+  const tos = [...ROUTE_ENTRIES, ...entries].map((e) => e.to)
+
+  it('makes templates, inbox, images and the other pages reachable', () => {
+    for (const to of [
+      '/templates',
+      '/inbox',
+      '/images',
+      '/resources',
+      '/resource-advisor',
+      '/network',
+      '/cdn',
+      '/network/proxy',
+      '/get-started',
+      '/migrate',
+    ]) {
+      expect(tos, to).toContain(to)
+    }
+  })
+
+  it('adds no duplicate destinations or keys', () => {
+    const keys = [...ROUTE_ENTRIES, ...entries].map((e) => e.key)
+    expect(new Set(keys).size).toBe(keys.length)
+    expect(new Set(entries.map((e) => e.to)).size).toBe(entries.length)
+    expect(
+      entries
+        .map((e) => e.to)
+        .filter((to) => ROUTE_ENTRIES.some((r) => r.to === to)),
+    ).toEqual([])
   })
 })

@@ -15,6 +15,7 @@ import { PageHeader } from '@/components/shell/PageHeader'
 import { DoctorFixAll } from '@/components/doctor/DoctorFixAll'
 import { DoctorGroupCard } from '@/components/doctor/DoctorGroupCard'
 import { DoctorToolbar } from '@/components/doctor/DoctorToolbar'
+import { ReachabilityCard } from '@/components/doctor/ReachabilityCard'
 import {
   buildDiagnostics,
   filterGroups,
@@ -164,6 +165,7 @@ function DoctorPage() {
       {groups.map((g) => (
         <DoctorGroupCard key={g.id} group={g} recheck={recheck} />
       ))}
+      <ReachabilityCard />
       <DiskResilienceCard />
       <ResilienceReportCard />
     </div>
