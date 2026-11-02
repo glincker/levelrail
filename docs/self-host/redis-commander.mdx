@@ -1,0 +1,71 @@
+---
+title: "Self-host Redis Commander with Docker"
+sidebarTitle: "Redis Commander"
+description: "A web interface to browse and edit Redis keys. It comes with its own Redis service, and both the Redis password and the web login password are generated for you and shown in the deployment variables."
+"og:url": "https://docs.levelrail.com/self-host/redis-commander"
+---
+
+A web interface to browse and edit Redis keys. It comes with its own Redis service, and both the Redis password and the web login password are generated for you and shown in the deployment variables.
+
+This page describes the Levelrail template for Redis Commander (Database Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/joeferner/redis-commander.
+
+Recommended memory: about 128 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `redis` | `redis:7.4.7-alpine` | none | `redis_data -&#62; /data` |
+| `redis-commander` | `ghcr.io/joeferner/redis-commander:0.9.0` | 8081 | none |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `redis` | `REDISCLI_AUTH` | Generated at deploy |
+| `redis-commander` | `HTTP_PASSWORD` | Generated at deploy |
+| `redis-commander` | `HTTP_USER` | Preset in the template |
+| `redis-commander` | `REDIS_HOSTS` | Generated at deploy |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`redis`, `redis-commander`): HTTP_PASSWORD, REDIS_HOSTS, REDISCLI_AUTH.
+- Stores data in named volumes (`redis`): redis_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Redis Commander with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Redis Commander. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy redis-commander --name my-redis-commander
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Database Tools templates
+
+- [Adminer](/self-host/adminer)
+- [Baserow](/self-host/baserow)
+- [Bytebase](/self-host/bytebase)
+- [Chroma](/self-host/chroma)
+- [ClickHouse](/self-host/clickhouse)
+
+All templates are listed in the [self-host gallery](/self-host).

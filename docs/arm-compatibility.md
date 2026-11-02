@@ -16,7 +16,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 
 **Verified on Arm:** `openclaw` (`ghcr.io/openclaw/openclaw:2026.10.5`), tested 2026-11-02 in the managed desktop VM (4096 MiB, 2 CPUs) on an Apple silicon Mac. The image runs natively on arm64, the container used about 0.9 to 1.27 GiB and the guest 1.6 GiB of 3.9 GiB. A 2048 MiB VM is too tight. See [Desktop runtime](/desktop-runtime#openclaw).
 
-**393 listed, 15 amd64 only, 22 unknown** of 430 templates.
+**393 listed, 15 amd64 only, 27 unknown** of 435 templates.
 
 | Template | arm64 in manifest | Smoke run on Arm host |
 | --- | --- | --- |
@@ -73,6 +73,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `cockpit-cms` | listed | not tested |
 | `code-server` | listed | not tested |
 | `comfyui` | amd64 only | not tested |
+| `commafeed` | unknown | not tested |
 | `consul` | listed | pass |
 | `convertx` | listed | not tested |
 | `convertx-app` | listed | not tested |
@@ -195,6 +196,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `kokoro-fastapi` | listed | not tested |
 | `komga` | listed | not tested |
 | `kopia` | listed | pass |
+| `kroki` | unknown | not tested |
 | `kutt` | listed | not tested |
 | `label-studio` | listed | not tested |
 | `langflow` | listed | not tested |
@@ -222,6 +224,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `lowcoder` | listed | not tested |
 | `lubelogger` | listed | not tested |
 | `lychee` | listed | not tested |
+| `mafl` | unknown | not tested |
 | `mage-ai` | listed | not tested |
 | `mail-mox` | listed | not tested |
 | `maildev` | unknown | not tested |
@@ -349,6 +352,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `readeck` | listed | pass |
 | `redash` | unknown | not tested |
 | `redis-cache-starter` | listed | not tested |
+| `redis-commander` | unknown | not tested |
 | `redis-insight` | listed | not tested |
 | `redisinsight` | listed | not tested |
 | `redlib` | listed | fail |
@@ -406,6 +410,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `terraria` | listed | not tested |
 | `text-embeddings-inference` | amd64 only | not tested |
 | `text-generation-inference` | amd64 only | not tested |
+| `thelounge` | unknown | not tested |
 | `tianji` | listed | not tested |
 | `timescaledb` | unknown | not tested |
 | `tinyauth` | listed | not tested |

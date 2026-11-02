@@ -8488,6 +8488,107 @@
    }
   },
   {
+   "id": "commafeed",
+   "aliases": [],
+   "name": "CommaFeed",
+   "slogan": "A fast self-hosted RSS reader with a clean web client and keyboard shortcuts. It uses an embedded database kept on a volume.",
+   "description": "A fast self-hosted RSS reader with a clean web client and keyboard shortcuts. It uses an embedded database kept on a volume.",
+   "first_run": [
+    "Sign in with the default admin account shown in the project docs and change the password right away."
+   ],
+   "category": "Productivity",
+   "status": "active",
+   "source_repo": "https://github.com/Athou/commafeed",
+   "documentation_url": "https://github.com/Athou/commafeed",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/Athou/commafeed/blob/master/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "commafeed",
+     "image": "athou/commafeed",
+     "tag": "6.0.0-h2",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "commafeed",
+     "image": "athou/commafeed:6.0.0-h2",
+     "ports": [
+      8082
+     ],
+     "volumes": [
+      "data -> /commafeed/data"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "commafeed"
+      ],
+      "detail": "data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "consul",
    "aliases": [],
    "name": "Consul",
@@ -27502,6 +27603,91 @@
    }
   },
   {
+   "id": "kroki",
+   "aliases": [],
+   "name": "Kroki",
+   "slogan": "An API that turns diagram text such as Mermaid, PlantUML and Graphviz into images. It has no database and no login, so restrict who can reach it.",
+   "description": "An API that turns diagram text such as Mermaid, PlantUML and Graphviz into images. It has no database and no login, so restrict who can reach it.",
+   "first_run": [
+    "Send diagram text to the address followed by /mermaid/svg or another format path to get an image."
+   ],
+   "category": "Developer Tools",
+   "status": "active",
+   "source_repo": "https://github.com/yuzutech/kroki",
+   "documentation_url": "https://docs.kroki.io/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/yuzutech/kroki/blob/main/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "kroki",
+     "image": "yuzutech/kroki",
+     "tag": "0.28.0",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "kroki",
+     "image": "yuzutech/kroki:0.28.0",
+     "ports": [
+      8000
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "kutt",
    "aliases": [],
    "name": "Kutt",
@@ -32247,6 +32433,107 @@
      {
       "code": "secret_masking",
       "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mafl",
+   "aliases": [],
+   "name": "Mafl",
+   "slogan": "A minimal homepage that lists your services as a tidy grid of links. It is configured from a single YAML file, and the starter file is created for you.",
+   "description": "A minimal homepage that lists your services as a tidy grid of links. It is configured from a single YAML file, and the starter file is created for you.",
+   "first_run": [
+    "Edit the config file in the deployment configs to list your own services, then redeploy."
+   ],
+   "category": "Productivity",
+   "status": "active",
+   "source_repo": "https://github.com/hywax/mafl",
+   "documentation_url": "https://mafl.hywax.space/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/hywax/mafl/blob/main/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "mafl",
+     "image": "hywax/mafl",
+     "tag": "v0.15.4",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "mafl",
+     "image": "hywax/mafl:v0.15.4",
+     "ports": [
+      3000
+     ],
+     "volumes": [
+      "data -> /app/data/icons"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "mafl"
+      ],
+      "detail": "data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
      },
      {
       "code": "volume_backups",
@@ -52241,6 +52528,158 @@
    }
   },
   {
+   "id": "redis-commander",
+   "aliases": [],
+   "name": "Redis Commander",
+   "slogan": "A web interface to browse and edit Redis keys. It comes with its own Redis service, and both the Redis password and the web login password are generated for you and shown in the deployment variables.",
+   "description": "A web interface to browse and edit Redis keys. It comes with its own Redis service, and both the Redis password and the web login password are generated for you and shown in the deployment variables.",
+   "first_run": [
+    "Sign in as admin with the generated password. To browse another Redis, change REDIS_HOSTS in the deployment settings."
+   ],
+   "category": "Database Tools",
+   "status": "active",
+   "source_repo": "https://github.com/joeferner/redis-commander",
+   "documentation_url": "https://github.com/joeferner/redis-commander",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/joeferner/redis-commander/blob/master/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "redis",
+     "image": "redis",
+     "tag": "7.4.7-alpine",
+     "source_class": "official",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "redis-commander",
+     "image": "ghcr.io/joeferner/redis-commander",
+     "tag": "0.9.0",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "redis",
+     "image": "redis:7.4.7-alpine",
+     "ports": [],
+     "volumes": [
+      "redis_data -> /data"
+     ]
+    },
+    {
+     "name": "redis-commander",
+     "image": "ghcr.io/joeferner/redis-commander:0.9.0",
+     "ports": [
+      8081
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [
+    {
+     "service": "redis",
+     "name": "REDISCLI_AUTH",
+     "kind": "generated"
+    },
+    {
+     "service": "redis-commander",
+     "name": "HTTP_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "redis-commander",
+     "name": "HTTP_USER",
+     "kind": "preset"
+    },
+    {
+     "service": "redis-commander",
+     "name": "REDIS_HOSTS",
+     "kind": "generated"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "redis",
+       "redis-commander"
+      ],
+      "detail": "HTTP_PASSWORD, REDIS_HOSTS, REDISCLI_AUTH",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "redis"
+      ],
+      "detail": "redis_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "redis-insight",
    "aliases": [],
    "name": "Redis Insight",
@@ -60958,6 +61397,107 @@
        "tgi"
       ],
       "message": "Reserves an NVIDIA GPU"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "thelounge",
+   "aliases": [],
+   "name": "The Lounge",
+   "slogan": "A modern web IRC client that stays connected for you, so you can read what you missed from any device. Users are created from the command line, and chat history is kept on a volume.",
+   "description": "A modern web IRC client that stays connected for you, so you can read what you missed from any device. Users are created from the command line, and chat history is kept on a volume.",
+   "first_run": [
+    "Create your first user from the container terminal with thelounge add followed by a username, then sign in at the address."
+   ],
+   "category": "Communication",
+   "status": "active",
+   "source_repo": "https://github.com/thelounge/thelounge",
+   "documentation_url": "https://thelounge.chat/docs",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/thelounge/thelounge/blob/master/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "thelounge",
+     "image": "thelounge/thelounge",
+     "tag": "4.5.2",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "thelounge",
+     "image": "thelounge/thelounge:4.5.2",
+     "ports": [
+      9000
+     ],
+     "volumes": [
+      "config -> /var/opt/thelounge"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "thelounge"
+      ],
+      "detail": "config",
+      "message": "Stores data in named volumes"
      }
     ],
     "protections": [

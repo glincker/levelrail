@@ -1,0 +1,25 @@
+id: redis-commander
+name: Redis Commander
+description: A web interface to browse and edit Redis keys. It comes with its own Redis service, and both the Redis password and the web login password are generated for you and shown in the deployment variables.
+icon: database
+category: Database Tools
+documentation_url: https://github.com/joeferner/redis-commander
+source_repo: https://github.com/joeferner/redis-commander
+license: MIT
+license_class: permissive
+license_url: https://github.com/joeferner/redis-commander/blob/master/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 134217728
+first_run:
+  - Sign in as admin with the generated password. To browse another Redis, change REDIS_HOSTS in the deployment settings.
+domains:
+  - service: redis-commander
+    port: 8081
+    description: Public address of Redis Commander.
+healthcheck:
+  service: redis-commander
+  port: 8081
+  path: /

@@ -145,7 +145,7 @@ Fixed in the wave N pass: `valkey` interpolated its password from the host shell
 
 Generated from the registry scan in `internal/catalog/platforms.json` (`scripts/scan-catalog-platforms`), not from the smoke run. A template is `yes` only when every image it uses lists `linux/arm64` in its manifest. `not checked` means unknown, not unsupported: the scan could not read a manifest or the image tag is set at install time.
 
-Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 22 not checked** of 430 templates.
+Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 27 not checked** of 435 templates.
 
 | Template | arm64 | Verified platforms |
 | --- | --- | --- |
@@ -202,6 +202,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 22 not checked** of 4
 | `cockpit-cms` | yes | linux/amd64, linux/arm64 |
 | `code-server` | yes | linux/amd64, linux/arm64 |
 | `comfyui` | amd64 only | linux/amd64 |
+| `commafeed` | not checked | - |
 | `consul` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
 | `convertx` | yes | linux/amd64, linux/arm64 |
 | `convertx-app` | yes | linux/amd64, linux/arm64 |
@@ -324,6 +325,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 22 not checked** of 4
 | `kokoro-fastapi` | yes | linux/amd64, linux/arm64 |
 | `komga` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `kopia` | yes | linux/amd64, linux/arm, linux/arm64 |
+| `kroki` | not checked | - |
 | `kutt` | yes | linux/amd64, linux/arm64 |
 | `label-studio` | yes | linux/amd64, linux/arm64 |
 | `langflow` | yes | linux/amd64, linux/arm64 |
@@ -351,6 +353,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 22 not checked** of 4
 | `lowcoder` | yes | linux/amd64, linux/arm64 |
 | `lubelogger` | yes | linux/amd64, linux/arm64 |
 | `lychee` | yes | linux/amd64, linux/arm64 |
+| `mafl` | not checked | - |
 | `mage-ai` | yes | linux/amd64, linux/arm64 |
 | `mail-mox` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/s390x |
 | `maildev` | not checked | - |
@@ -478,6 +481,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 22 not checked** of 4
 | `readeck` | yes | linux/amd64, linux/arm64 |
 | `redash` | not checked | - |
 | `redis-cache-starter` | yes | linux/amd64, linux/arm, linux/arm64, linux/s390x |
+| `redis-commander` | not checked | - |
 | `redis-insight` | yes | linux/amd64, linux/arm64 |
 | `redisinsight` | yes | linux/amd64, linux/arm64 |
 | `redlib` | yes | linux/amd64, linux/arm, linux/arm64 |
@@ -535,6 +539,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 22 not checked** of 4
 | `terraria` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le |
 | `text-embeddings-inference` | amd64 only | linux/amd64 |
 | `text-generation-inference` | amd64 only | linux/amd64 |
+| `thelounge` | not checked | - |
 | `tianji` | yes | linux/amd64, linux/arm64 |
 | `timescaledb` | not checked | - |
 | `tinyauth` | yes | linux/amd64, linux/arm64 |

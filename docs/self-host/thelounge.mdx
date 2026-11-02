@@ -1,0 +1,63 @@
+---
+title: "Self-host The Lounge with Docker"
+sidebarTitle: "The Lounge"
+description: "A modern web IRC client that stays connected for you, so you can read what you missed from any device. Users are created from the command line, and chat history is kept on a volume."
+"og:url": "https://docs.levelrail.com/self-host/thelounge"
+---
+
+A modern web IRC client that stays connected for you, so you can read what you missed from any device. Users are created from the command line, and chat history is kept on a volume.
+
+This page describes the Levelrail template for The Lounge (Communication). It deploys the services below as one Docker Compose app on your own server. Project site: https://thelounge.chat/docs.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `thelounge` | `thelounge/thelounge:4.5.2` | 9000 | `config -&#62; /var/opt/thelounge` |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`thelounge`): config.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy The Lounge with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select The Lounge. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy thelounge --name my-thelounge
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Communication templates
+
+- [Apache Answer](/self-host/answer)
+- [Apprise API](/self-host/apprise-api)
+- [Campfire](/self-host/campfire)
+- [Chatwoot](/self-host/chatwoot)
+- [Element Web](/self-host/element-web)
+
+All templates are listed in the [self-host gallery](/self-host).

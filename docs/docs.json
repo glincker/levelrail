@@ -671,7 +671,8 @@
               "self-host/postiz",
               "self-host/rocketchat",
               "self-host/roundcube",
-              "self-host/stalwart"
+              "self-host/stalwart",
+              "self-host/thelounge"
             ]
           },
           {
@@ -715,6 +716,7 @@
               "self-host/postgres",
               "self-host/qdrant",
               "self-host/questdb",
+              "self-host/redis-commander",
               "self-host/redis-insight",
               "self-host/redisinsight",
               "self-host/timescaledb",
@@ -758,6 +760,7 @@
               "self-host/jenkins",
               "self-host/jupyter-notebook",
               "self-host/jupyter-notebook-python",
+              "self-host/kroki",
               "self-host/libretranslate",
               "self-host/mage-ai",
               "self-host/mailhog",
@@ -935,6 +938,7 @@
               "self-host/bentopdf",
               "self-host/bookstack",
               "self-host/calcom",
+              "self-host/commafeed",
               "self-host/convertx-app",
               "self-host/docmost",
               "self-host/documenso",
@@ -969,6 +973,7 @@
               "self-host/linkding",
               "self-host/linkding-plus",
               "self-host/linkwarden",
+              "self-host/mafl",
               "self-host/mealie",
               "self-host/memos",
               "self-host/miniflux",

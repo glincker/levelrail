@@ -1,0 +1,25 @@
+id: mafl
+name: Mafl
+description: A minimal homepage that lists your services as a tidy grid of links. It is configured from a single YAML file, and the starter file is created for you.
+icon: home
+category: Productivity
+documentation_url: https://mafl.hywax.space/
+source_repo: https://github.com/hywax/mafl
+license: MIT
+license_class: permissive
+license_url: https://github.com/hywax/mafl/blob/main/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 134217728
+first_run:
+  - Edit the config file in the deployment configs to list your own services, then redeploy.
+domains:
+  - service: mafl
+    port: 3000
+    description: Public address of Mafl.
+healthcheck:
+  service: mafl
+  port: 3000
+  path: /

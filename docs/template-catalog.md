@@ -25,7 +25,7 @@ Set the optional `Description` field on a Go template (manifest templates reuse 
 
 {/* BEGIN GENERATED CATALOG TABLE */}
 
-Generated from `internal/catalog.Templates` (430 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
+Generated from `internal/catalog.Templates` (435 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
 
 | Category | Templates |
 | --- | --- |
@@ -33,17 +33,17 @@ Generated from `internal/catalog.Templates` (430 entries as of this build). Run 
 | [Analytics](#analytics) | 10 |
 | [Applications](#applications) | 34 |
 | [Automation](#automation) | 8 |
-| [Communication](#communication) | 20 |
+| [Communication](#communication) | 21 |
 | [Dashboard](#dashboard) | 8 |
-| [Database Tools](#database-tools) | 30 |
-| [Developer Tools](#developer-tools) | 62 |
+| [Database Tools](#database-tools) | 31 |
+| [Developer Tools](#developer-tools) | 63 |
 | [Finance](#finance) | 11 |
 | [Games](#games) | 5 |
 | [Infrastructure](#infrastructure) | 17 |
 | [IoT](#iot) | 3 |
 | [Media](#media) | 30 |
 | [Monitoring](#monitoring) | 34 |
-| [Productivity](#productivity) | 78 |
+| [Productivity](#productivity) | 80 |
 | [Security](#security) | 19 |
 | [Starter Kits](#starter-kits) | 7 |
 | [Storage](#storage) | 16 |
@@ -188,6 +188,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Rocket.Chat](https://docs.rocket.chat) | A full-featured, self-hosted team chat platform with video calls and app integrations. | `rocketchat` |  |
 | [Roundcube Webmail](https://roundcube.net/about) | A browser-based IMAP email client with a clean interface, address books, and plugin support. | `roundcube` |  |
 | [Stalwart Mail Server](https://stalw.art/docs/install/platform/docker/) | An all-in-one SMTP, IMAP, JMAP, and WebDAV mail server in a single lightweight container. | `stalwart` |  |
+| [The Lounge](https://thelounge.chat/docs) | A modern web IRC client that stays connected for you, so you can read what you missed from any device. Users are created from the command line, and chat history is kept on a volume. | `thelounge` |  |
 
 ## Dashboard
 
@@ -231,6 +232,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [PostgreSQL](https://www.postgresql.org/docs/17/) | The PostgreSQL relational database server on the official Alpine image, with a persistent volume and a generated password. It is not published on the host, so reach it from other services in this project at postgres:5432. | `postgres` |  |
 | [Qdrant](https://qdrant.tech/documentation/) | A vector similarity search engine for storing, searching, and managing embeddings. | `qdrant` |  |
 | [QuestDB](https://questdb.com/docs/) | A fast time series database with SQL, a web console, the PostgreSQL wire protocol on 8812 and InfluxDB line protocol ingestion on 9009. The console and the PostgreSQL port share one generated password. Only the console is offered a domain. | `questdb` |  |
+| [Redis Commander](https://github.com/joeferner/redis-commander) | A web interface to browse and edit Redis keys. It comes with its own Redis service, and both the Redis password and the web login password are generated for you and shown in the deployment variables. | `redis-commander` |  |
 | [Redis Insight](https://redis.io/docs/latest/operate/redisinsight/) | A GUI for exploring keys, running commands, and profiling workloads on any Redis-compatible server. | `redis-insight` |  |
 | [RedisInsight](https://redis.io/docs/latest/operate/redisinsight/) | A GUI for browsing keys, running commands, and profiling performance on any Redis instance. | `redisinsight` |  |
 | [TimescaleDB](https://docs.timescale.com/) | PostgreSQL with the TimescaleDB extension for time series data, with a persistent volume and a generated password. The core is Apache-2.0 and some features fall under the Timescale License. It is not published on the host, so reach it from other services in this project at timescaledb:5432. | `timescaledb` |  |
@@ -274,6 +276,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Jenkins](https://www.jenkins.io/doc) | The long-running automation server for building, testing, and deploying with thousands of plugins. | `jenkins` |  |
 | [Jupyter Notebook](https://jupyter.org/) | A Jupyter Notebook server for interactive Python data work, protected by a generated access token. | `jupyter-notebook` |  |
 | [Jupyter Notebook](https://jupyter.org/documentation) | A web-based notebook environment for interactive Python, data analysis, and visualization. | `jupyter-notebook-python` |  |
+| [Kroki](https://docs.kroki.io/) | An API that turns diagram text such as Mermaid, PlantUML and Graphviz into images. It has no database and no login, so restrict who can reach it. | `kroki` |  |
 | [LibreTranslate](https://github.com/LibreTranslate/LibreTranslate) | A free and open machine translation API that runs entirely on your own hardware. | `libretranslate` |  |
 | [Mage AI](https://docs.mage.ai/getting-started/setup) | A data pipeline tool for building, running and monitoring ETL, streaming and dbt workflows in notebooks and a UI. | `mage-ai` |  |
 | [MailHog](https://github.com/mailhog/MailHog) | An SMTP test server that catches outgoing mail from your apps and shows it in a web inbox. | `mailhog` |  |
@@ -445,6 +448,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [BentoPDF](https://github.com/alam00000/bentopdf) | A privacy-first PDF toolkit that merges, splits, converts and edits files entirely in the browser, with no uploads. | `bentopdf` |  |
 | [BookStack](https://www.bookstackapp.com/docs/) | A simple, self-hosted platform for organizing documentation into books, chapters, and pages. | `bookstack` |  |
 | [Cal.com](https://cal.com/docs/self-hosting/installation) | Open-source scheduling infrastructure for booking meetings without the back-and-forth. | `calcom` |  |
+| [CommaFeed](https://github.com/Athou/commafeed) | A fast self-hosted RSS reader with a clean web client and keyboard shortcuts. It uses an embedded database kept on a volume. | `commafeed` |  |
 | [ConvertX](https://github.com/C4illin/ConvertX) | A self-hosted online file converter supporting over a thousand formats. | `convertx-app` |  |
 | [Docmost](https://docmost.com/docs) | An open-source, Notion-style collaborative wiki and documentation workspace. | `docmost` |  |
 | [Documenso](https://docs.documenso.com/) | An open-source document signing platform, a self-hosted alternative to DocuSign. | `documenso` |  |
@@ -466,8 +470,8 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [HedgeDoc](https://docs.hedgedoc.org) | Real-time collaborative markdown notes you can host yourself. | `hedgedoc` |  |
 | [HeyForm](https://docs.heyform.net/open-source/installation) | A form builder for surveys, quizzes and lead capture, with conversational forms and a MongoDB backend. | `heyform` |  |
 | [Homebox](https://homebox.software/en/quick-start/install/) | A home inventory and organization system for tracking what you own and where it is. | `homebox` |  |
-| [Joplin Server](https://joplinapp.org/help/api/server_config/) | A self-hosted sync target for the Joplin note-taking app, replacing Dropbox or OneDrive sync. | `joplin-server` |  |
 | [Joplin Server](https://github.com/laurent22/joplin/blob/dev/packages/server/README.md) | A self-hosted sync server for the Joplin note-taking app, keeping notes off third-party clouds. | `joplin` |  |
+| [Joplin Server](https://joplinapp.org/help/api/server_config/) | A self-hosted sync target for the Joplin note-taking app, replacing Dropbox or OneDrive sync. | `joplin-server` |  |
 | [Kanboard](https://docs.kanboard.org) | A minimalist, keyboard-friendly kanban board for personal and team task tracking. | `kanboard` |  |
 | [Karakeep](https://docs.karakeep.app) | A self-hosted bookmark, note, and read-it-later manager with full-text search and tagging. | `karakeep` |  |
 | [Kimai](https://www.kimai.org/documentation/) | A self-hosted time tracking tool for freelancers and teams, with invoicing and reporting. | `kimai` |  |
@@ -479,6 +483,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Linkding](https://linkding.link) | A minimal, fast bookmark manager built for keeping a personal link archive. | `linkding` |  |
 | [Linkding Plus](https://linkding.link) | Linkding's extended image with full-page snapshot archiving bundled in, for bookmarks that must survive link rot. | `linkding-plus` |  |
 | [Linkwarden](https://docs.linkwarden.app/self-hosting/setup) | A bookmark manager that archives full page snapshots, not just links, so pages stay readable. | `linkwarden` |  |
+| [Mafl](https://mafl.hywax.space/) | A minimal homepage that lists your services as a tidy grid of links. It is configured from a single YAML file, and the starter file is created for you. | `mafl` |  |
 | [Mealie](https://docs.mealie.io) | A self-hosted recipe manager and meal planner with a clean web UI and API. | `mealie` |  |
 | [Memos](https://www.usememos.com/docs) | A lightweight, privacy-first note-taking service for jotting down quick thoughts. | `memos` |  |
 | [Miniflux](https://miniflux.app/docs/) | A minimalist, fast RSS/Atom feed reader with no bloat and a keyboard-driven UI. | `miniflux` |  |
