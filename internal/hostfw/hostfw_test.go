@@ -188,3 +188,28 @@ func TestInputFiltered(t *testing.T) {
 		}
 	}
 }
+
+func TestInputFilteredByBackend(t *testing.T) {
+	jump := "table ip filter {\n\tchain INPUT {\n\t\ttype filter hook input priority filter; policy accept;\n\t\tjump ufw-input\n\t}\n\tchain ufw-input {\n\t\ttcp dport 5432 drop\n\t}\n}\n"
+	open := "table ip filter {\n\tchain INPUT {\n\t\ttype filter hook input priority filter; policy accept;\n\t}\n}\n"
+	cases := []struct {
+		name        string
+		b           Backend
+		out         string
+		err         error
+		filt, known bool
+	}{
+		{"nft filtered by rule", BackendNftables, jump, nil, true, true},
+		{"nft unfiltered", BackendNftables, open, nil, false, true},
+		{"nft unreadable", BackendNftables, "", errors.New("denied"), false, false},
+		{"iptables policy drop", BackendIptables, "-P INPUT DROP\n", nil, true, true},
+		{"ufw is not classified here", BackendUFW, "", nil, false, false},
+	}
+	for _, c := range cases {
+		run := func(context.Context, string, ...string) ([]byte, error) { return []byte(c.out), c.err }
+		f, k := InputFiltered(context.Background(), run, c.b)
+		if f != c.filt || k != c.known {
+			t.Errorf("%s: got %v,%v want %v,%v", c.name, f, k, c.filt, c.known)
+		}
+	}
+}

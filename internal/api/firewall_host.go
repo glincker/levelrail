@@ -220,13 +220,52 @@ func allowArgs(p hostFirewallPort) []string {
 	return []string{"allow", fmt.Sprintf("%d/%s", p.Port, p.Protocol)}
 }
 
+func hostFirewallUnmanagedMessage(s hostFirewallResource) string {
+	if s.Installed {
+		return "ufw is not the firewall in use on this host (" + string(s.Backend) + "), so it is left alone"
+	}
+	return "ufw is not installed on this host"
+}
+
+// hostFirewallCommands returns the commands for the detected backend: the ufw
+// enable sequence when ufw is managed, otherwise read-only guidance to run by hand.
+func hostFirewallCommands(b hostfw.Backend, filtering bool, required []hostFirewallPort) []string {
+	out := []string{}
+	switch b {
+	case hostfw.BackendUFW:
+		for _, p := range required {
+			out = append(out, "ufw "+strings.Join(allowArgs(p), " "))
+		}
+		return append(out, "ufw --force enable")
+	case hostfw.BackendNftables:
+		out = append(out, "nft list ruleset")
+		if filtering {
+			for _, p := range required {
+				out = append(out, fmt.Sprintf("nft add rule inet filter input %s dport %d accept", p.Protocol, p.Port))
+			}
+		}
+	case hostfw.BackendIptables:
+		out = append(out, "iptables -S")
+		if filtering {
+			for _, p := range required {
+				out = append(out, fmt.Sprintf("iptables -A INPUT -p %s --dport %d -j ACCEPT", p.Protocol, p.Port))
+			}
+		}
+	case hostfw.BackendFirewalld:
+		out = append(out, "firewall-cmd --list-all")
+		if filtering {
+			for _, p := range required {
+				out = append(out, fmt.Sprintf("firewall-cmd --permanent --add-port=%d/%s", p.Port, p.Protocol))
+			}
+			out = append(out, "firewall-cmd --reload")
+		}
+	}
+	return out
+}
+
 func (rt *Router) hostFirewallStatus(ctx context.Context) hostFirewallResource {
 	rows := rt.publishedHostPortRows(ctx)
 	res := hostFirewallResource{Required: rt.hostFirewallRequiredFor(ctx, rows), Commands: []string{}, PublishedPorts: rows}
-	for _, p := range res.Required {
-		res.Commands = append(res.Commands, "ufw "+strings.Join(allowArgs(p), " "))
-	}
-	res.Commands = append(res.Commands, "ufw --force enable")
 	text := ""
 	if _, err := rt.hostFirewallLookPath("ufw"); err == nil {
 		res.Installed = true
@@ -236,7 +275,7 @@ func (rt *Router) hostFirewallStatus(ctx context.Context) hostFirewallResource {
 	}
 	det := hostfw.Detect(ctx, rt.hostFirewallDeps())
 	res.Backend, res.Detail = det.Backend, det.Detail
-	res.Managed = res.Installed
+	res.Managed = res.Installed && det.Backend == hostfw.BackendUFW
 	res.Active = strings.Contains(text, "Status: active")
 	for _, line := range strings.Split(text, "\n") {
 		fields := strings.Fields(strings.TrimSpace(line))
@@ -244,12 +283,20 @@ func (rt *Router) hostFirewallStatus(ctx context.Context) hostFirewallResource {
 			res.DefaultIncoming = fields[1]
 		}
 	}
-	// ufw is the only backend read per port; another active backend filters
-	// traffic but its rules are not interpreted here.
+	// ufw is the only backend read per port; another backend is classified
+	// as filtering or not, but its rules are not interpreted per port.
 	filtered := res.Active && res.DefaultIncoming != "allow"
-	if !res.Active && det.Backend != hostfw.BackendUFW && det.Active {
-		res.Active, filtered = true, true
+	if det.Backend != hostfw.BackendUFW {
+		res.Active = det.Active
+		if f, known := hostfw.InputFiltered(ctx, hostfw.Runner(rt.hostFirewallRun), det.Backend); known {
+			res.Active = f
+			if f && !det.Active {
+				res.Detail = string(det.Backend) + " has an input chain that filters incoming traffic; its rules are not checked per port here"
+			}
+		}
+		filtered = res.Active
 	}
+	res.Commands = hostFirewallCommands(det.Backend, res.Active, res.Required)
 	for i, row := range res.PublishedPorts {
 		res.PublishedPorts[i].Filtered = filtered
 		res.PublishedPorts[i].Allowed = filtered && res.Managed && ufwAllowed(text, row.Port, row.Protocol)
@@ -280,8 +327,8 @@ func (rt *Router) handleEnableHostFirewall(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	status := rt.hostFirewallStatus(r.Context())
-	if !status.Installed {
-		writeError(w, http.StatusConflict, "ufw is not installed on this host")
+	if !status.Managed {
+		writeError(w, http.StatusConflict, hostFirewallUnmanagedMessage(status))
 		return
 	}
 	if req.DryRun {
@@ -312,8 +359,8 @@ func (rt *Router) handleDisableHostFirewall(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	status := rt.hostFirewallStatus(r.Context())
-	if !status.Installed {
-		writeError(w, http.StatusConflict, "ufw is not installed on this host")
+	if !status.Managed {
+		writeError(w, http.StatusConflict, hostFirewallUnmanagedMessage(status))
 		return
 	}
 	if req.DryRun {

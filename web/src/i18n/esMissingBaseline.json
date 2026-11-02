@@ -483,6 +483,7 @@
     "settings:hostFirewall.disabledToast",
     "settings:hostFirewall.enabledToast",
     "settings:hostFirewall.failedToast",
+    "settings:hostFirewall.guidance",
     "settings:hostFirewall.localOnly",
     "settings:hostFirewall.missingHelp",
     "settings:hostFirewall.noneHelp",

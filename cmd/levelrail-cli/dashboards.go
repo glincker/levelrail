@@ -33,7 +33,7 @@ func dashboardsUsage(prog string) string {
   %[1]s dashboards delete <id|name> [flags]        delete a dashboard
 
 Templates: app-health, fleet-overview, cost. App templates need --target APP.
-`+dashboardsHelpFlags, prog, envAPIToken, apiURLEnvHelp, defaultAPIURL)
+`+dashboardsHelpFlags, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }
 
 func runDashboards(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {

@@ -199,4 +199,63 @@ describe('HostFirewallCard', () => {
       screen.queryByRole('button', { name: 'Turn on firewall' }),
     ).toBeNull()
   })
+
+  it.each([
+    [
+      'nftables',
+      'nft list ruleset',
+      'nft add rule inet filter input tcp dport 22 accept',
+    ],
+    [
+      'iptables',
+      'iptables -S',
+      'iptables -A INPUT -p tcp --dport 22 -j ACCEPT',
+    ],
+    [
+      'firewalld',
+      'firewall-cmd --list-all',
+      'firewall-cmd --permanent --add-port=22/tcp',
+    ],
+  ] as const)(
+    'shows %s guidance and no ufw commands',
+    async (backend, inspect, allow) => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve(
+            json({
+              ...off,
+              installed: false,
+              active: true,
+              managed: false,
+              backend,
+              detail: `${backend} has an input chain that filters incoming traffic`,
+              commands: [inspect, allow],
+            }),
+          ),
+        ),
+      )
+      renderCard()
+      expect(
+        await screen.findByText(`${backend} (read only)`),
+      ).toBeInTheDocument()
+      expect(screen.getByText(/Commands to review/)).toBeInTheDocument()
+      expect(
+        screen.getByText(new RegExp(inspect.replace(/[-]/g, '\\-'))),
+      ).toBeInTheDocument()
+      expect(screen.queryByText(/ufw (allow|--force)/)).toBeNull()
+    },
+  )
+
+  it('shows no guidance block when ufw manages the firewall', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(json(off))),
+    )
+    renderCard()
+    expect(
+      await screen.findByRole('button', { name: 'Turn on firewall' }),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/Commands to review/)).toBeNull()
+  })
 })

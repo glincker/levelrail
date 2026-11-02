@@ -37,7 +37,7 @@ A profile is a named section of the credentials file at
 --profile NAME or the %[4]s env var; omitting both reads "%[5]s".
 
 Run "%[1]s profile <subcommand> -h" for a subcommand's own flags.
-`, prog, apiURLEnvHelp, envAPIToken, envProfile, defaultProfile)
+`, prog, apiURLEnvHelp, apiTokenEnvHelp, envProfile, defaultProfile)
 }
 
 // Prints profile names and API URLs only, never tokens.

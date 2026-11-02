@@ -345,7 +345,7 @@ Flags:
   --output string         output format: json, table, or text
   --query string          JMESPath expression to filter the result
   -h, --help              show this help
-`, prog, synopsis, about, envAPIToken, apiURLEnvHelp, defaultAPIURL)
+`, prog, synopsis, about, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }
 
 // addWithPreflight prints the join command, then waits for the node and

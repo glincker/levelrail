@@ -61,7 +61,7 @@ Flags:
   --profile string     named credentials profile to read
   --json               print the result as JSON to stdout, nothing else
   -h, --help           show this help
-`, prog, envAPIToken, apiURLEnvHelp, defaultAPIURL, envDDNSTarget)
+`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL, envDDNSTarget)
 }
 
 type ddnsFlags struct {

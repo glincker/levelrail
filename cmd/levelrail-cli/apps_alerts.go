@@ -198,7 +198,7 @@ Flags:
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
-`, prog, envAPIToken, apiURLEnvHelp, defaultAPIURL)
+`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }
 
 // Split out of runAppsAlertsCreate to keep its cognitive complexity under the lint limit.
@@ -433,7 +433,7 @@ Flags:
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
-`, prog, envAPIToken, apiURLEnvHelp, defaultAPIURL)
+`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }
 
 // Full replace: every field the rule keeps must be passed again, there is no partial update.
@@ -562,7 +562,7 @@ Flags:
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
-`, prog, envAPIToken, apiURLEnvHelp, defaultAPIURL)
+`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }
 
 func runAppsAlertsDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -608,5 +608,5 @@ Flags:
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
-`, prog, envAPIToken, apiURLEnvHelp, defaultAPIURL)
+`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }

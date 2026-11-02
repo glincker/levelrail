@@ -158,5 +158,5 @@ Flags:
   --output string            output format: json, table, or text
   --query string             JMESPath expression to filter the result
   -h, --help                 show this help
-`, prog, envAPIToken, apiURLEnvHelp, defaultAPIURL, envHFToken)
+`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL, envHFToken)
 }

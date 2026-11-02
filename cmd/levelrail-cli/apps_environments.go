@@ -118,7 +118,7 @@ Flags:
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
-`, prog, envAPIToken, apiURLEnvHelp, defaultAPIURL)
+`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }
 
 // protected is the only updatable field today.
@@ -163,7 +163,7 @@ Flags:
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
-`, prog, envAPIToken, apiURLEnvHelp, defaultAPIURL)
+`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }
 
 func runAppsEnvironmentsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -216,7 +216,7 @@ Flags:
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
-`, prog, envAPIToken, apiURLEnvHelp, defaultAPIURL)
+`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }
 
 // parseEnvironmentIDCommand parses the standard flag set plus the single
@@ -281,7 +281,7 @@ Flags:
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
-`, prog, envAPIToken, apiURLEnvHelp, defaultAPIURL)
+`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }
 
 func runAppsEnvironmentsEnvGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -317,7 +317,7 @@ Flags:
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
-`, prog, envAPIToken, apiURLEnvHelp, defaultAPIURL)
+`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }
 
 func runAppsEnvironmentsEnvSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -360,7 +360,7 @@ Flags:
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
-`, prog, envAPIToken, apiURLEnvHelp, defaultAPIURL)
+`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }
 
 // Secret-marked values are never shown, on either side of the diff.
@@ -453,5 +453,5 @@ Flags:
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
-`, prog, envAPIToken, apiURLEnvHelp, defaultAPIURL)
+`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }

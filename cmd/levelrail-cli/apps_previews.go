@@ -192,7 +192,7 @@ Flags:
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
-`, prog, envAPIToken, apiURLEnvHelp, defaultAPIURL)
+`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }
 
 func runAppsPreviewsTeardown(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -242,7 +242,7 @@ Flags:
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
-`, prog, envAPIToken, apiURLEnvHelp, defaultAPIURL)
+`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }
 
 func runAppsPreviewsSetEnabled(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), enabled bool) int {
@@ -289,7 +289,7 @@ Flags:
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
-`, prog, envAPIToken, apiURLEnvHelp, defaultAPIURL, verb)
+`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL, verb)
 }
 
 func appsPreviewsPRStatusUsage(prog string) string {
@@ -395,5 +395,5 @@ Flags:
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
-`, prog, envAPIToken, apiURLEnvHelp, defaultAPIURL)
+`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }

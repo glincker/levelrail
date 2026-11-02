@@ -15,7 +15,7 @@ func runTokensCleanup(prog string, args []string, stdout, stderr io.Writer, look
 	fs := flag.NewFlagSet(prog+" tokens cleanup", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	days := fs.Int("older-than-days", defaultTokenCleanupDays, "remove revoked tokens revoked more than this many days ago (0 removes every revoked token)")
-	tokenFlag := fs.String("token", "", "API token with root ability (overrides "+envAPIToken+" and the credentials file)")
+	tokenFlag := fs.String("token", "", "API token with root ability (overrides "+apiTokenEnvHelp+" and the credentials file)")
 	apiURLFlag := fs.String("api-url", "", "control plane API base URL (overrides "+apiURLEnvHelp+" and the credentials file, default "+defaultAPIURL+")")
 	profileFlag := fs.String("profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
 	yes := fs.Bool("yes", false, "confirm removing every revoked token (required with --older-than-days 0)")

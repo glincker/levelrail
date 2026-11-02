@@ -804,7 +804,7 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 		}
 	}
 
-	return fetchAndPrintCreatedApp(ctx, client, created.Name, stdout, stderr, of)
+	return fetchAndPrintCreatedApp(ctx, client, created.Name, prog, plan.Build == nil, stdout, stderr, of)
 }
 
 // validatePlanVolumes rejects bind mounts, which the volumes endpoint cannot take. Compose deploys carry them.
@@ -882,8 +882,8 @@ func runAppsCreateStatic(ctx context.Context, client *Client, plan *deploySpecCr
 
 // fetchAndPrintCreatedApp re-fetches name's now-final state and prints
 // it, the shared tail of every "apps create" path once the app (and, if
-// applicable, its build) already succeeded.
-func fetchAndPrintCreatedApp(ctx context.Context, client *Client, name string, stdout, stderr io.Writer, of outputFlags) int {
+// applicable, its build) already succeeded. stopped is true when no build was started, so nothing runs until a deploy.
+func fetchAndPrintCreatedApp(ctx context.Context, client *Client, name, prog string, stopped bool, stdout, stderr io.Writer, of outputFlags) int {
 	final, err := client.GetApp(ctx, name)
 	if err != nil {
 		// The app already exists here, so a failure only means the final state could not be shown. Still exits non-zero so scripts do not read it as success.
@@ -893,6 +893,9 @@ func fetchAndPrintCreatedApp(ctx context.Context, client *Client, name string, s
 
 	if err := renderResult(stdout, of.Format, of.Query, final, func() {
 		_, _ = fmt.Fprintf(stderr, "app %q created\n", final.Name)
+		if stopped {
+			_, _ = fmt.Fprintf(stderr, "app %q stays stopped until it is deployed: run \"%s apps deploy %s --image IMAGE\" or \"%s up\" from your project folder\n", final.Name, prog, final.Name, prog)
+		}
 		printAppHuman(stdout, final)
 		printSelfSignedNote(ctx, client, stdout, final.FallbackURL)
 	}); err != nil {
@@ -952,7 +955,7 @@ func parseCreateFlags(prog string, args []string, errOut io.Writer, tokenFlag, a
 	fs.BoolVar(&f.interactive, "interactive", false, "run a step-by-step wizard instead of specifying flags: prompts for name, source, port, domain, health check, resource limits, and optionally more services, then writes app.yaml or calls the API")
 	fs.BoolVar(&f.interactive, "i", false, "shorthand for --interactive")
 	fs.BoolVar(&f.jsonOut, "json", false, "print the created app as JSON to stdout and nothing else")
-	fs.StringVar(tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
+	fs.StringVar(tokenFlag, "token", "", "API token (overrides "+apiTokenEnvHelp+" and the credentials file)")
 	fs.StringVar(apiURLFlag, "api-url", "", "control plane API base URL (overrides "+apiURLEnvHelp+" and the credentials file, default "+defaultAPIURL+")")
 	fs.StringVar(profileFlag, "profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
 	outputFlagP, queryFlagP := bindOutputQueryFlags(fs)
@@ -1084,7 +1087,7 @@ Common flags:
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
-`, prog, envAPIToken, apiURLEnvHelp, defaultAPIURL)
+`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }
 
 // registerCreateHealthFlags adds the probe flags of "apps health set" under a readiness/liveness prefix, so both commands parse through probeFlags.toProbe.

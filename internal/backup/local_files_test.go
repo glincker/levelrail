@@ -94,3 +94,41 @@ func TestLocalUploadPrivateDirsAndDiskRefusal(t *testing.T) {
 		t.Fatal("refused upload must not leave an object")
 	}
 }
+
+func TestLocalRootCreatedLazilyAndSymlinkEscapeStillRefused(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "data", "backups")
+	r := Routed{LocalRoot: root}
+	d := Destination{Endpoint: LocalEndpointScheme, Bucket: "dumps"}
+	ctx := context.Background()
+
+	if err := r.Test(ctx, d); err != nil {
+		t.Fatalf("missing default root must be created on first use: %v", err)
+	}
+	if st, err := os.Stat(root); err != nil || st.Mode().Perm() != 0o700 {
+		t.Fatalf("root not created 0700: %v %v", st, err)
+	}
+
+	outside := t.TempDir()
+	if err := os.Symlink(outside, filepath.Join(root, "link")); err != nil {
+		t.Skip("symlinks unavailable")
+	}
+	err := r.Upload(ctx, Destination{Endpoint: LocalEndpointScheme, Bucket: "link"}, "k", strings.NewReader("x"), 1)
+	if !errors.Is(err, ErrLocalPathEscapes) || !strings.Contains(err.Error(), root) {
+		t.Fatalf("symlink escape must be refused naming the root, got %v", err)
+	}
+	if _, serr := os.Stat(filepath.Join(outside, "k")); serr == nil {
+		t.Fatal("file written outside root")
+	}
+}
+
+func TestLocalRootUncreatableNamesRoot(t *testing.T) {
+	file := filepath.Join(t.TempDir(), "f")
+	if err := os.WriteFile(file, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	r := Routed{LocalRoot: filepath.Join(file, "backups")}
+	err := r.Upload(context.Background(), Destination{Endpoint: LocalEndpointScheme, Bucket: "d"}, "k", strings.NewReader("x"), 1)
+	if err == nil || !strings.Contains(err.Error(), r.LocalRoot) {
+		t.Fatalf("want error naming root, got %v", err)
+	}
+}

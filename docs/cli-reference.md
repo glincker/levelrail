@@ -20,14 +20,14 @@ levelrail-cli auth login --device
 levelrail-cli auth whoami
 ```
 
-`--device` prints a short code that you approve in the dashboard, the same model as `gh auth login`. Credentials are saved to `~/.config/levelrail-cli/credentials`. `auth login` saves the new token to the credentials file and does not print it; add `--print-token` to see it once. Plain-http targets work on loopback. `up` on a folder without a git remote uploads it, like `deploy <dir>`. The API URL env var is `LEVELRAIL_API_URL` or `APP_API_URL` (the first wins). For CI, create an API token under **Settings, API tokens** and pass it with `--token` or `APP_API_TOKEN`.
+`--device` prints a short code that you approve in the dashboard, the same model as `gh auth login`. Credentials are saved to `~/.config/levelrail-cli/credentials`. `auth login` saves the new token to the credentials file and does not print it; add `--print-token` to see it once. Plain-http targets work on loopback. `up` on a folder without a git remote uploads it, like `deploy <dir>`. The API URL env var is `LEVELRAIL_API_URL` or `APP_API_URL` (the first wins). For CI, create an API token under **Settings, API tokens** and pass it with `--token`, `LEVELRAIL_TOKEN` or `APP_API_TOKEN`.
 
 Each command resolves its target in this order, and an explicit flag always wins:
 
 | Setting | Flag | Environment variable | Default |
 | --- | --- | --- | --- |
-| API token | `--token` | `APP_API_TOKEN` | the saved profile |
-| Control plane URL | `--api-url` | `APP_API_URL` | `http://localhost:8080` |
+| API token | `--token` | `LEVELRAIL_TOKEN` or `APP_API_TOKEN` | the saved profile |
+| Control plane URL | `--api-url` | `LEVELRAIL_API_URL` or `APP_API_URL` | `http://localhost:8080` |
 | Profile | `--profile` | `APP_PROFILE` | `default` |
 
 Login pins the server. `auth login` prints the server's name and fingerprint (compare it with the one on the approval page) and saves its identity in the profile. Every later request first checks that the URL still answers as that server and refuses to send the token otherwise, naming the fix: `auth login --reauth` to log in to the new server, or `auth trust-server` to pin the one now answering. A profile saved before pinning existed asks once to confirm the fingerprint (`--yes` or `APP_TRUST_SERVER=yes` for scripts). `APP_API_TOKEN` keeps working and only prints a warning when the profile pins a different server. `auth status` and `auth whoami` show the pinned server.
@@ -797,7 +797,7 @@ levelrail-cli tokens list [flags]
 levelrail-cli tokens revoke <id> [flags]
 levelrail-cli tokens cleanup [--older-than-days N] [--yes] [flags]
 ```
-Every `tokens` subcommand requires a username and password (prompted if omitted), because these routes are session only server side and a bearer token cannot call them. `create` mints a new API token; `--agent` labels it as issued to an AI agent so audit entries record the agent name. `list` never shows a secret. `cleanup` permanently removes revoked tokens that were revoked more than `--older-than-days` days ago (default 90 when the flag is omitted; `0` removes every revoked token and needs `--yes`) and prints how many it removed; unlike the other subcommands it takes a root API token (`--token` or the stored one) instead of a password, and it never touches an active token. The dashboard setting **Delete revoked API tokens after** (Settings, API tokens) does the same on a schedule.
+`tokens create` requires a username and password (prompted if omitted, never prompted in CI mode), because that route is session only server side. `revoke` first tries the API token from `--token`, `LEVELRAIL_TOKEN`, `APP_API_TOKEN` or the saved profile, and asks for `--username` and `--password` only when the server refuses a token. `create` mints a new API token; `--agent` labels it as issued to an AI agent so audit entries record the agent name. `list` never shows a secret. `cleanup` permanently removes revoked tokens that were revoked more than `--older-than-days` days ago (default 90 when the flag is omitted; `0` removes every revoked token and needs `--yes`) and prints how many it removed; unlike the other subcommands it takes a root API token (`--token` or the stored one) instead of a password, and it never touches an active token. The dashboard setting **Delete revoked API tokens after** (Settings, API tokens) does the same on a schedule.
 
 ## Domains
 
@@ -1148,10 +1148,11 @@ levelrail-cli backup-targets list [flags]
 levelrail-cli backup-targets get <id> [flags]
 levelrail-cli backup-targets create --name NAME --provider PROVIDER --bucket BUCKET --access-key-id ID --secret-access-key KEY [flags]
 levelrail-cli backup-targets update <id> --name NAME --provider PROVIDER --bucket BUCKET [flags]
-levelrail-cli backup-targets delete <id> [flags]
+levelrail-cli backup-targets delete <id> [--yes] [flags]
+levelrail-cli backups targets delete <id> [--yes] [flags]
 levelrail-cli backup-targets test <id> [flags]
 ```
-S3 compatible backup destinations. Valid `--provider` values are `aws`, `r2` and `custom`; `--endpoint` is required for `r2` and `custom`. `test` probes the bucket over its stored credentials without uploading or deleting anything. `delete` answers 409 and lists what uses the target (schedules, policies, running work, history of existing databases or apps); history of deleted resources is kept and shown as target deleted, but it cannot be restored from the console and creating a target again does not reattach it. Bucket objects stay in the bucket.
+S3 compatible backup destinations. Valid `--provider` values are `aws`, `r2` and `custom`; `--endpoint` is required for `r2` and `custom`. `test` probes the bucket over its stored credentials without uploading or deleting anything. `delete` asks for `--yes` when the target still has backup history, and answers 409 and lists what uses the target (schedules, policies, running work, history of existing databases or apps); history of deleted resources is kept and shown as target deleted, but it cannot be restored from the console and creating a target again does not reattach it. Bucket objects stay in the bucket.
 
 ## Storage
 

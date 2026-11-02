@@ -130,7 +130,7 @@ Flags:
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
-`, prog, envAPIToken, apiURLEnvHelp, defaultAPIURL)
+`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }
 
 // Omitting --to compares --from against the app's current desired state.
@@ -228,7 +228,7 @@ Flags:
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
-`, prog, envAPIToken, apiURLEnvHelp, defaultAPIURL)
+`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }
 
 // Without --follow this prints the saved log, so redirect the shell to save it.
@@ -304,5 +304,5 @@ Flags:
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    with --follow, print one JSON object per line instead of "stream line" text
   -h, --help               show this help
-`, prog, envAPIToken, apiURLEnvHelp, defaultAPIURL)
+`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }

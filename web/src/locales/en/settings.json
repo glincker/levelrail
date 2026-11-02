@@ -283,6 +283,7 @@
     "notChecked": "Not checked",
     "statusUnmanaged": "{{backend}} (read only)",
     "statusNone": "No firewall",
+    "guidance": "Commands to review and run yourself on this server. Levelrail does not run them.",
     "unmanagedHelp": "Levelrail only manages ufw, so it will not change this firewall. The ports below are what your rules need to allow.",
     "noneHelp": "No firewall tool was found that this process can read, so every published port is reachable unless your cloud provider filters it. Install ufw here to manage it from this page."
   },

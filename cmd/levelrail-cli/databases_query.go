@@ -44,6 +44,10 @@ func runDatabasesQuery(prog string, args []string, stdout, stderr io.Writer, loo
 		return reportError(stdout, stderr, jsonOut, newValidationError("--write requires --confirm %s", name))
 	}
 
+	if write && hasMultipleStatements(text) {
+		return reportError(stdout, stderr, jsonOut, newValidationError("--write runs exactly one statement; split the input and run each statement separately"))
+	}
+
 	req := apiclient.DatabaseQueryRequest{SQL: text, Analyze: analyze}
 	var result apiclient.DatabaseQueryResult
 	switch {
@@ -181,7 +185,7 @@ Flags:
   --file string      read the statement from a file, or - for stdin
   --explain          show the plan instead of running the statement
   --analyze          with --explain, execute the statement for real timings
-  --write            allow a write statement (admin only)
+  --write            allow one write statement (admin only, more than one is refused)
   --confirm string   the database name, required with --write
   --token, --api-url, --profile, --json, --output, --query  (as every command)
   -h, --help         show this help

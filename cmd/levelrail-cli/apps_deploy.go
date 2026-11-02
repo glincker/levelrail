@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
@@ -62,6 +63,11 @@ func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Write
 		fs.BoolVar(&src.fromCache, "from-cache", false, "rebuild from the control plane's source cache without contacting the git host (default commit: the last successful source deploy)")
 	}
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, cfg.usage(prog)) }
+
+	if cfg.fromSource && hasWaitFlag(args) {
+		_, _ = fmt.Fprintf(stderr, "%s: %s has no --wait flag; it returns once the deploy is accepted. Deploy, then block on the result with \"%s apps deploys wait <name>\"\n", prog, cfg.cmdLabel, prog)
+		return exitUsage
+	}
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
@@ -124,7 +130,7 @@ func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Write
 		image = previous
 	}
 	if image == "" && releaseID == "" {
-		return reportError(stdout, stderr, jsonOut, newValidationError("--image is required (or --pull to re-resolve the current tag)"))
+		return reportError(stdout, stderr, jsonOut, missingDeployImageError(ctx, client, prog, cfg.cmdLabel, name))
 	}
 	if cfg.knownImagesOnly && releaseID == "" {
 		resolved, err := checkRollbackTarget(ctx, client, prog, name, image)
@@ -157,6 +163,28 @@ func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Write
 		_, _ = fmt.Fprintf(stderr, cfg.successFormat, updated.Name, updated.Image, prog, updated.Name)
 		printAppHuman(stdout, updated)
 	})
+}
+
+func hasWaitFlag(args []string) bool {
+	for _, a := range args {
+		if a == "--wait" || a == "-wait" || strings.HasPrefix(a, "--wait=") {
+			return true
+		}
+	}
+	return false
+}
+
+// missingDeployImageError says what the deploy lacks and the exact next command, using the app's saved config when it can be read.
+func missingDeployImageError(ctx context.Context, client *Client, prog, cmdLabel, name string) error {
+	current, err := client.GetApp(ctx, name)
+	if err != nil {
+		return newValidationError("--image is required for %s: pass --image IMAGE (or --pull to re-resolve the current tag)", cmdLabel)
+	}
+	have := "no image has been deployed yet"
+	if current.Image != "" {
+		have = fmt.Sprintf("its saved image is %q but nothing is running from it", current.Image)
+	}
+	return newValidationError("app %q is stopped: %s, and %s was given no --image. Next: \"%s apps deploy %s --image IMAGE\" to run a prebuilt image, \"%s apps deploy %s --latest\" to build the connected git source, or \"%s up\" from your project folder", name, have, cmdLabel, prog, name, prog, name, prog)
 }
 
 func withRelease(req apiclient.DeployTriggerRequest, releaseID string) apiclient.DeployTriggerRequest {
@@ -217,5 +245,5 @@ Flags:
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
-`, prog, envAPIToken, apiURLEnvHelp, defaultAPIURL)
+`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }

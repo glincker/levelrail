@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { ShieldCheckGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { CodeBlock } from '@/components/ui/code-block'
 import { HostFirewallToggle } from './HostFirewallToggle'
 import { useHostFirewall } from '../queries/hostFirewall'
 import type { HostFirewallPublishedPort } from '../types/hostFirewall'
@@ -105,6 +106,14 @@ export function HostFirewallCard() {
                 </li>
               ))}
             </ul>
+          ) : null}
+          {!managed && data.commands?.length ? (
+            <div className="space-y-1.5">
+              <p className="text-xs text-muted-foreground">
+                {t('hostFirewall.guidance')}
+              </p>
+              <CodeBlock code={data.commands.join('\n')} language="bash" />
+            </div>
           ) : null}
           {managed ? (
             <p className="text-xs text-muted-foreground">

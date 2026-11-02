@@ -210,5 +210,5 @@ Flags:
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                    print one JSON object per stream event instead of text
   -h, --help               show this help
-`, prog, envAPIToken, apiURLEnvHelp, defaultAPIURL)
+`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }

@@ -79,7 +79,7 @@ Flags:
   --kind string           sign_in, security, sessions, tokens, token_use, account or failed
   --limit int             rows to show, 1 to 100 (default 25)
   --cursor string         continue after the next_cursor of a previous page
-`+accountFlagsUsage, prog, envAPIToken, apiURLEnvHelp, defaultAPIURL)
+`+accountFlagsUsage, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }
 
 // runAuthPreferences implements "auth preferences get|set".
@@ -152,7 +152,7 @@ Flags:
   --theme string          light, dark or system
   --landing-page string   dashboard path to open after sign-in, such as /apps
   --gravatar              use your Gravatar as avatar (off by default)
-`+accountFlagsUsage, prog, envAPIToken, apiURLEnvHelp, defaultAPIURL)
+`+accountFlagsUsage, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }
 
 // runAuthExport implements "auth export": request, wait for and save the zip.
@@ -210,7 +210,7 @@ providers and activity into a zip and saves it. The file is written 0600.
 
 Flags:
   --out string            file to write (default %[1]s-account-export.zip)
-`+accountFlagsUsage, prog, envAPIToken, apiURLEnvHelp, defaultAPIURL)
+`+accountFlagsUsage, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }
 
 // runAuthUnlink implements "auth unlink <provider>".
@@ -237,7 +237,7 @@ Removes a linked sign-in provider from your account. Refused when it is
 your only way to sign in: set a password or add a passkey first.
 
 Flags:
-`+accountFlagsUsage, prog, envAPIToken, apiURLEnvHelp, defaultAPIURL)
+`+accountFlagsUsage, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }
 
 // runAuthDeleteAccount implements "auth delete-account": permanent, so it

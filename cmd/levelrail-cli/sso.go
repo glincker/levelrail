@@ -27,7 +27,7 @@ func (c cliCtx) runAPI(label, usage string, args []string, setup func(*flag.Flag
 		setup(fs)
 	}
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(c.stderr, "Usage:\n  %[1]s "+usage+"\n"+rolesFlagsHelp, c.prog, envAPIToken, apiURLEnvHelp, defaultAPIURL)
+		_, _ = fmt.Fprintf(c.stderr, "Usage:\n  %[1]s "+usage+"\n"+rolesFlagsHelp, c.prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 		fs.PrintDefaults()
 	}
 	token, apiURL, profile, jsonOut, of, code, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenP, apiURLP, profileP, jsonP, outputP, queryP}, c.prog, c.stderr)

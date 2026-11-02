@@ -503,7 +503,7 @@ Flags:
 
 Example:
   %[1]s up --with postgres --domain app.example.com
-`, prog, envAPIToken, apiURLEnvHelp, defaultAPIURL, defaultDeployUploadWait, exitDeployNotHealthy, exitDeployTimeout)
+`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL, defaultDeployUploadWait, exitDeployNotHealthy, exitDeployTimeout)
 }
 
 // upUploadCompatible reports whether every flag given has an equivalent in the upload deploy.

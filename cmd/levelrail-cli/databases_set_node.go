@@ -81,7 +81,7 @@ func databaseMoveNodeFlagsUsage() string {
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
-`, envAPIToken, apiURLEnvHelp, defaultAPIURL)
+`, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }
 
 func databasesSetNodeUsage(prog string) string {

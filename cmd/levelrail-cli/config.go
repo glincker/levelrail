@@ -59,3 +59,6 @@ func listProfiles(prog string) ([]profileSummary, error) {
 
 // apiURLEnvHelp names both env vars in help text; LEVELRAIL_API_URL wins when both are set.
 const apiURLEnvHelp = envLevelrailAPIURL + " or " + envAPIURL
+
+// apiTokenEnvHelp names both token env vars in help text; LEVELRAIL_TOKEN wins when both are set.
+const apiTokenEnvHelp = envLevelrailToken + " or " + envAPIToken

@@ -77,11 +77,20 @@ func (r Routed) localPath(d Destination, key string) (string, error) {
 	if !within(r.LocalRoot, full) {
 		return "", ErrLocalPathEscapes
 	}
-	if resolved, rerr := filepath.EvalSymlinks(deepestExisting(full)); rerr == nil {
-		root, eerr := filepath.EvalSymlinks(r.LocalRoot)
-		if eerr != nil || !within(root, resolved) {
-			return "", ErrLocalPathEscapes
+	// The default root is not created at install time, so make it before resolving it.
+	if err := os.MkdirAll(r.LocalRoot, localDirMode); err != nil {
+		return "", fmt.Errorf("backup: local root %s cannot be created: %w", r.LocalRoot, err)
+	}
+	root, eerr := filepath.EvalSymlinks(r.LocalRoot)
+	if eerr != nil {
+		return "", fmt.Errorf("backup: local root %s cannot be resolved: %w", r.LocalRoot, eerr)
+	}
+	if resolved, rerr := filepath.EvalSymlinks(deepestExisting(full)); rerr == nil && !within(root, resolved) {
+		rel, relErr := filepath.Rel(r.LocalRoot, deepestExisting(full))
+		if relErr != nil {
+			rel = sub
 		}
+		return "", fmt.Errorf("%w %s: %s resolves outside it", ErrLocalPathEscapes, r.LocalRoot, rel)
 	}
 	return full, nil
 }

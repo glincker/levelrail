@@ -14,7 +14,7 @@ import (
 // Never returns token secrets.
 func runTokensList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs, usernameP, passwordP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := sessionFlagSet(prog, "tokens list", "print tokens as a JSON array to stdout and nothing else", stderr)
-	tokenFlagP := fs.String("token", "", "API token with root ability (skips the password prompt; overrides "+envAPIToken+" and the credentials file)")
+	tokenFlagP := fs.String("token", "", "API token with root ability (skips the password prompt; overrides "+apiTokenEnvHelp+" and the credentials file)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, tokensListUsage(prog)) }
 
 	if err := fs.Parse(args); err != nil {

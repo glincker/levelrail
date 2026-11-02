@@ -39,7 +39,7 @@ var tuiRun = func(ctx context.Context, api tui.API, opts tui.Options) error {
 func runTUI(prog string, args []string, _, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs := flag.NewFlagSet(prog+" tui", flag.ContinueOnError)
 	fs.SetOutput(stderr)
-	token := fs.String("token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
+	token := fs.String("token", "", "API token (overrides "+apiTokenEnvHelp+" and the credentials file)")
 	apiURL := fs.String("api-url", "", "control plane API base URL (overrides "+apiURLEnvHelp+" and the credentials file)")
 	profile := fs.String("profile", "", "named credentials profile to use (overrides "+envProfile+")")
 	readOnly := fs.Bool("read-only", false, "disable every action that changes state")
@@ -145,5 +145,5 @@ Flags:
   -h, --help              show this help
 
 Set NO_COLOR=1 to disable colours. Log buffer size: %[6]s (default 2000 lines).
-`, prog, envTUIRefresh, envAPIToken, apiURLEnvHelp, defaultAPIURL, envTUILogBuffer)
+`, prog, envTUIRefresh, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL, envTUILogBuffer)
 }

@@ -132,7 +132,7 @@ func parseQuietOnError(fs *flag.FlagSet, args []string, stderr io.Writer) error 
 func apiFlagSet(prog, cmdLabel, jsonUsage string, stderr io.Writer) (fs *flag.FlagSet, tokenFlag, apiURLFlag, profileFlag *string, jsonOut *bool, outputFlag, queryFlag *string) {
 	fs = flag.NewFlagSet(prog+" "+cmdLabel, flag.ContinueOnError)
 	fs.SetOutput(stderr)
-	tokenFlag = fs.String("token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
+	tokenFlag = fs.String("token", "", "API token (overrides "+apiTokenEnvHelp+" and the credentials file)")
 	apiURLFlag = fs.String("api-url", "", "control plane API base URL (overrides "+apiURLEnvHelp+" and the credentials file, default "+defaultAPIURL+")")
 	profileFlag = fs.String("profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
 	jsonOut = fs.Bool("json", false, jsonUsage)
