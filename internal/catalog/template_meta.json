@@ -1649,7 +1649,7 @@
   "license": "Apache-2.0",
   "license_class": "permissive",
   "license_url": "https://github.com/seaweedfs/seaweedfs/blob/master/LICENSE",
-  "description": "A distributed file and object store with an S3 gateway, built for billions of small files. Runs as a single container from the seaweedfs image, listening on port 9333 and keeps its data in named volumes."
+  "description": "A distributed file and object store with an S3 gateway, built for billions of small files. Runs 2 containers (s3, seaweedfs), with seaweedfs listening on port 9333 and the S3 API on its own route at port 8333; data is kept in named volumes."
  },
  "semaphore": {
   "source_repo": "https://github.com/semaphoreui/semaphore",

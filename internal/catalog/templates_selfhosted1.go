@@ -221,8 +221,8 @@ var selfhosted1Templates = []Template{
 		Compose: `services:
   seaweedfs:
     image: chrislusf/seaweedfs:3.99
-    command: ["server", "-dir=/data", "-filer", "-s3", "-master.volumeSizeLimitMB=1024"]
-    ports: ["9333:9333", "8888:8888", "8333:8333"]
+    command: ["server", "-dir=/data", "-filer", "-master.volumeSizeLimitMB=1024"]
+    ports: ["9333:9333", "8888:8888"]
     volumes:
       - seaweedfs_data:/data
     healthcheck:
@@ -231,6 +231,19 @@ var selfhosted1Templates = []Template{
       timeout: 5s
       retries: 3
       start_period: 30s
+  s3:
+    image: chrislusf/seaweedfs:3.99
+    environment:
+      S3_ACCESS_KEY: $SERVICE_USER_S3
+      S3_SECRET_KEY: $SERVICE_PASSWORD_S3
+    entrypoint: ["/bin/sh", "-c", "printf '{\"identities\":[{\"name\":\"levelrail\",\"credentials\":[{\"accessKey\":\"%s\",\"secretKey\":\"%s\"}],\"actions\":[\"Admin\",\"Read\",\"Write\",\"List\",\"Tagging\"]}]}' \"$S3_ACCESS_KEY\" \"$S3_SECRET_KEY\" > /tmp/s3.json && exec weed s3 -filer=seaweedfs:8888 -port=8333 -config=/tmp/s3.json"]
+    ports: ["8333:8333"]
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 8333 || curl -s -o /dev/null http://127.0.0.1:8333/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
 `,
 	},
 	{

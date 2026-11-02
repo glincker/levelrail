@@ -9,17 +9,18 @@ A distributed file and object store with an S3 gateway, built for billions of sm
 
 This page describes the Levelrail template for SeaweedFS (Storage). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/seaweedfs/seaweedfs/wiki.
 
-Recommended memory: about 1024 MiB.
+Recommended memory: about 1024 MiB (the S3 gateway adds little on top).
 
 ## Services, ports and volumes
 
 | Service | Image | Container ports | Volumes |
 | --- | --- | --- | --- |
-| `seaweedfs` | `chrislusf/seaweedfs:3.99` | 9333, 8888, 8333 | `seaweedfs_data -&#62; /data` |
+| `seaweedfs` | `chrislusf/seaweedfs:3.99` | 9333, 8888 | `seaweedfs_data -&#62; /data` |
+| `s3` | `chrislusf/seaweedfs:3.99` | 8333 | none |
 
 ## Environment variables
 
-This template sets no environment variables.
+The `s3` service reads a generated access key (`S3_ACCESS_KEY`) and secret key (`S3_SECRET_KEY`). Both are created at deploy time and stored as secrets.
 
 Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
 
@@ -29,7 +30,8 @@ Level: **Standard**.
 
 What this template needs:
 
-- Publishes ports directly on the host (`seaweedfs`): 8333:8333, 8888:8888, 9333:9333.
+- Publishes ports directly on the host (`s3`): 8333:8333.
+- Publishes ports directly on the host (`seaweedfs`): 8888:8888, 9333:9333.
 - Stores data in named volumes (`seaweedfs`): seaweedfs_data.
 
 What Levelrail adds around it:
@@ -40,6 +42,19 @@ What Levelrail adds around it:
 - One-step rollback to the previous revision.
 - Exposure report shows what is reachable from outside.
 - Host firewall rules managed for published ports.
+
+## Reach the S3 API and use it as a backup target
+
+The master UI (port 9333) is the `seaweedfs` service. The S3 API is its own `s3` service on port 8333, so give it a separate domain (for example `s3.example.com`) in the app's domain settings and it gets its own HTTPS route.
+
+To use it as a backup target, add a storage target with:
+
+- Endpoint: `https://s3.example.com` (or the private address `http://<host>:8333` on the same host; this needs `APP_NOTIFY_ALLOW_PRIVATE_NETWORKS=true`).
+- Access key and secret key: the generated `S3_ACCESS_KEY` and `S3_SECRET_KEY` of the `s3` service (read them from the app's secrets).
+- Path-style addressing on, region any value (for example `us-east-1`).
+- Create the bucket first, for example with `aws --endpoint-url https://s3.example.com s3 mb s3://backups`.
+
+See [Backups and storage](/backups-and-storage) for adding the target.
 
 ## Deploy SeaweedFS with Levelrail
 
