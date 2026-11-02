@@ -45,6 +45,10 @@ var knownLicenses = map[string]string{
 	"LGPL-2.1-only": ClassCopyleft, "LGPL-2.1-or-later": ClassCopyleft, "LGPL-3.0-only": ClassCopyleft, "LGPL-3.0-or-later": ClassCopyleft,
 	"MPL-2.0": ClassCopyleft, "EPL-2.0": ClassCopyleft,
 	"AGPL-3.0-only": ClassNetworkCopyleft, "AGPL-3.0-or-later": ClassNetworkCopyleft,
+	// Bare ids are the deprecated SPDX forms, kept for upstreams whose license text states no suffix.
+	"GPL-2.0": ClassCopyleft, "GPL-3.0": ClassCopyleft, "AGPL-3.0": ClassNetworkCopyleft,
+	"EUPL-1.2": ClassCopyleft, "PostgreSQL": ClassPermissive,
+	"SSPL-1.0": ClassSourceAvailable, "BUSL-1.1": ClassSourceAvailable, "Elastic-2.0": ClassSourceAvailable,
 }
 
 var (

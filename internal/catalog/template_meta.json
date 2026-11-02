@@ -132,7 +132,7 @@
  },
  "browserless": {
   "source_repo": "https://github.com/browserless/browserless",
-  "license": "LicenseRef-SSPL-1.0-Commercial",
+  "license": "SSPL-1.0 OR LicenseRef-Browserless-Commercial",
   "license_class": "source-available",
   "license_url": "https://github.com/browserless/browserless/blob/main/LICENSE",
   "description": "A headless Chrome browser exposed as an HTTP/WebSocket API for scraping and PDF rendering. Runs as a single container from the chromium image, listening on port 3000."
@@ -325,9 +325,9 @@
  },
  "directus": {
   "source_repo": "https://github.com/directus/directus",
-  "license": "LicenseRef-MSCL-1.0-GPL",
+  "license": "BUSL-1.1",
   "license_class": "source-available",
-  "license_url": "https://github.com/directus/directus/blob/main/license",
+  "license_url": "https://github.com/directus/directus/blob/v11.17.4/license",
   "description": "An open-source headless CMS and instant REST/GraphQL API layer over your own database. Runs 3 containers (db, directus, redis), with directus listening on port 8055; data is kept in named volumes."
  },
  "diun": {
@@ -601,7 +601,11 @@
   "description": "An IT asset and service management platform with helpdesk ticketing built in. Runs 2 containers (glpi, glpi-db), with glpi listening on port 80; data is kept in named volumes."
  },
  "goatcounter": {
-  "description": "A privacy-friendly, open-source web analytics platform that never tracks individual visitors. Runs as a single container from the goatcounter image, listening on port 8080 and keeps its data in named volumes."
+  "description": "A privacy-friendly, open-source web analytics platform that never tracks individual visitors. Runs as a single container from the goatcounter image, listening on port 8080 and keeps its data in named volumes.",
+  "source_repo": "https://github.com/arp242/goatcounter",
+  "license": "EUPL-1.2",
+  "license_class": "copyleft",
+  "license_url": "https://github.com/arp242/goatcounter/blob/main/LICENSE"
  },
  "gotenberg": {
   "source_repo": "https://github.com/gotenberg/gotenberg",
@@ -752,7 +756,7 @@
  },
  "invoice-ninja": {
   "source_repo": "https://github.com/invoiceninja/invoiceninja",
-  "license": "LicenseRef-Elastic-2.0",
+  "license": "Elastic-2.0",
   "license_class": "source-available",
   "license_url": "https://github.com/invoiceninja/invoiceninja/blob/v5-stable/LICENSE",
   "description": "Self-hosted invoicing, quotes, and payments for freelancers and small businesses. Runs 3 containers (db, invoiceninja, redis), with invoiceninja listening on port 80 and keeps its data in named volumes."
@@ -1345,7 +1349,7 @@
  },
  "outline": {
   "source_repo": "https://github.com/outline/outline",
-  "license": "LicenseRef-BUSL-1.1",
+  "license": "BUSL-1.1",
   "license_class": "source-available",
   "license_url": "https://github.com/outline/outline/blob/main/LICENSE",
   "description": "A fast, structured team wiki and knowledge base with real-time collaborative editing. Runs 3 containers (db, outline, redis), with outline listening on port 3000; data is kept in named volumes."
@@ -1392,7 +1396,11 @@
   "description": "A web UI for scheduling, encrypting, and restoring PostgreSQL backups. Runs 2 containers (pgbackweb, pgbackweb-db), with pgbackweb listening on port 8085; data is kept in named volumes."
  },
  "pgvector": {
-  "description": "PostgreSQL 17 with the pgvector extension preinstalled, for embeddings next to your relational data. Runs as a single container from the pgvector image, listening on port 5432; data is kept in named volumes."
+  "description": "PostgreSQL 17 with the pgvector extension preinstalled, for embeddings next to your relational data. Runs as a single container from the pgvector image, listening on port 5432; data is kept in named volumes.",
+  "source_repo": "https://github.com/pgvector/pgvector",
+  "license": "PostgreSQL",
+  "license_class": "permissive",
+  "license_url": "https://github.com/pgvector/pgvector/blob/master/LICENSE"
  },
  "photoprism": {
   "source_repo": "https://github.com/photoprism/photoprism",
@@ -1416,7 +1424,11 @@
   "description": "A web-based admin tool for MySQL and MariaDB, built for ad-hoc use against any reachable database. Runs as a single container from the phpmyadmin image, listening on port 80."
  },
  "pi-hole": {
-  "description": "Network-wide ad blocking that works as a DNS sinkhole for your whole network. Runs as a single container from the pihole image, listening on port 80 and keeps its data in named volumes."
+  "description": "Network-wide ad blocking that works as a DNS sinkhole for your whole network. Runs as a single container from the pihole image, listening on port 80 and keeps its data in named volumes.",
+  "source_repo": "https://github.com/pi-hole/pi-hole",
+  "license": "EUPL-1.2",
+  "license_class": "copyleft",
+  "license_url": "https://github.com/pi-hole/pi-hole/blob/master/LICENSE"
  },
  "pinchflat": {
   "source_repo": "https://github.com/kieraneglin/pinchflat",
@@ -1558,14 +1570,14 @@
  },
  "redis-insight": {
   "source_repo": "https://github.com/redis/RedisInsight",
-  "license": "LicenseRef-SSPL-1.0",
+  "license": "SSPL-1.0",
   "license_class": "source-available",
   "license_url": "https://github.com/redis/RedisInsight/blob/main/LICENSE",
   "description": "A GUI for exploring keys, running commands, and profiling workloads on any Redis-compatible server. Runs as a single container from the redisinsight image, listening on port 5540; data is kept in named volumes."
  },
  "redisinsight": {
   "source_repo": "https://github.com/redis/RedisInsight",
-  "license": "LicenseRef-SSPL-1.0",
+  "license": "SSPL-1.0",
   "license_class": "source-available",
   "license_url": "https://github.com/redis/RedisInsight/blob/main/LICENSE",
   "description": "A GUI for browsing keys, running commands, and profiling performance on any Redis instance. Runs as a single container from the redisinsight image, listening on port 5540; data is kept in named volumes."
@@ -1912,7 +1924,7 @@
  },
  "vault": {
   "source_repo": "https://github.com/hashicorp/vault",
-  "license": "LicenseRef-BUSL-1.1",
+  "license": "BUSL-1.1",
   "license_class": "source-available",
   "license_url": "https://github.com/hashicorp/vault/blob/main/LICENSE",
   "description": "HashiCorp Vault for secrets storage, encryption as a service, and dynamic credentials, in file-storage mode. Runs as a single container from the vault image, listening on port 8200 and keeps its data in named volumes."

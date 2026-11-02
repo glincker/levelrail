@@ -4066,7 +4066,7 @@
    "source_repo": "https://github.com/browserless/browserless",
    "documentation_url": "https://docs.browserless.io",
    "license": {
-    "spdx": "LicenseRef-SSPL-1.0-Commercial",
+    "spdx": "SSPL-1.0 OR LicenseRef-Browserless-Commercial",
     "class": "source-available",
     "url": "https://github.com/browserless/browserless/blob/main/LICENSE"
    },
@@ -7909,7 +7909,7 @@
    "source_repo": "https://github.com/hashicorp/consul",
    "documentation_url": "https://developer.hashicorp.com/consul/docs",
    "license": {
-    "spdx": "LicenseRef-BUSL-1.1",
+    "spdx": "BUSL-1.1",
     "class": "source-available",
     "url": "https://github.com/hashicorp/consul/blob/main/LICENSE"
    },
@@ -9276,9 +9276,9 @@
    "source_repo": "https://github.com/directus/directus",
    "documentation_url": "https://docs.directus.io",
    "license": {
-    "spdx": "LicenseRef-MSCL-1.0-GPL",
+    "spdx": "BUSL-1.1",
     "class": "source-available",
-    "url": "https://github.com/directus/directus/blob/main/license"
+    "url": "https://github.com/directus/directus/blob/v11.17.4/license"
    },
    "hosted_use": "unknown",
    "listing": {
@@ -17528,7 +17528,13 @@
    "first_run": [],
    "category": "Analytics",
    "status": "active",
+   "source_repo": "https://github.com/arp242/goatcounter",
    "documentation_url": "https://www.goatcounter.com/help",
+   "license": {
+    "spdx": "EUPL-1.2",
+    "class": "copyleft",
+    "url": "https://github.com/arp242/goatcounter/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -17552,7 +17558,7 @@
      "service": "goatcounter",
      "image": "arp242/goatcounter",
      "tag": "2.7",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -21826,7 +21832,7 @@
    "source_repo": "https://github.com/invoiceninja/invoiceninja",
    "documentation_url": "https://invoiceninja.github.io",
    "license": {
-    "spdx": "LicenseRef-Elastic-2.0",
+    "spdx": "Elastic-2.0",
     "class": "source-available",
     "url": "https://github.com/invoiceninja/invoiceninja/blob/v5-stable/LICENSE"
    },
@@ -40211,7 +40217,7 @@
    "source_repo": "https://github.com/outline/outline",
    "documentation_url": "https://docs.getoutline.com",
    "license": {
-    "spdx": "LicenseRef-BUSL-1.1",
+    "spdx": "BUSL-1.1",
     "class": "source-available",
     "url": "https://github.com/outline/outline/blob/main/LICENSE"
    },
@@ -42451,7 +42457,13 @@
    "first_run": [],
    "category": "Database Tools",
    "status": "active",
+   "source_repo": "https://github.com/pgvector/pgvector",
    "documentation_url": "https://github.com/pgvector/pgvector",
+   "license": {
+    "spdx": "PostgreSQL",
+    "class": "permissive",
+    "url": "https://github.com/pgvector/pgvector/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -42468,7 +42480,7 @@
      "service": "pgvector",
      "image": "pgvector/pgvector",
      "tag": "0.8.6-pg17-trixie",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -42967,7 +42979,13 @@
    "first_run": [],
    "category": "Infrastructure",
    "status": "active",
+   "source_repo": "https://github.com/pi-hole/pi-hole",
    "documentation_url": "https://docs.pi-hole.net",
+   "license": {
+    "spdx": "EUPL-1.2",
+    "class": "copyleft",
+    "url": "https://github.com/pi-hole/pi-hole/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -47006,7 +47024,7 @@
    "source_repo": "https://github.com/redis/RedisInsight",
    "documentation_url": "https://redis.io/docs/latest/operate/redisinsight/",
    "license": {
-    "spdx": "LicenseRef-SSPL-1.0",
+    "spdx": "SSPL-1.0",
     "class": "source-available",
     "url": "https://github.com/redis/RedisInsight/blob/main/LICENSE"
    },
@@ -47125,7 +47143,7 @@
    "source_repo": "https://github.com/redis/RedisInsight",
    "documentation_url": "https://redis.io/docs/latest/operate/redisinsight/",
    "license": {
-    "spdx": "LicenseRef-SSPL-1.0",
+    "spdx": "SSPL-1.0",
     "class": "source-available",
     "url": "https://github.com/redis/RedisInsight/blob/main/LICENSE"
    },
@@ -57271,7 +57289,7 @@
    "source_repo": "https://github.com/hashicorp/vault",
    "documentation_url": "https://developer.hashicorp.com/vault/docs/deploy/run-container",
    "license": {
-    "spdx": "LicenseRef-BUSL-1.1",
+    "spdx": "BUSL-1.1",
     "class": "source-available",
     "url": "https://github.com/hashicorp/vault/blob/main/LICENSE"
    },

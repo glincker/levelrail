@@ -5,7 +5,7 @@ icon: hard-drives
 category: Infrastructure
 documentation_url: https://developer.hashicorp.com/consul/docs
 source_repo: https://github.com/hashicorp/consul
-license: LicenseRef-BUSL-1.1
+license: BUSL-1.1
 license_class: source-available
 license_url: https://github.com/hashicorp/consul/blob/main/LICENSE
 recommended_memory_bytes: 268435456
