@@ -5,9 +5,12 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/platformimport/fakecoolify"
 )
 
 // fakeCoolifyServer returns an httptest.Server that answers the three
@@ -106,5 +109,44 @@ func TestRun_Migrate_UnknownSource(t *testing.T) {
 	}
 	if !strings.Contains(stderr.String(), "unknown migrate source") {
 		t.Errorf("stderr = %q, want an unknown-source message", stderr.String())
+	}
+}
+
+func TestRun_MigrateCoolify_StagesDiscoveredService(t *testing.T) {
+	base := fakecoolify.New().Handler()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/v1/applications" {
+			_, _ = w.Write([]byte("[]"))
+			return
+		}
+		if r.URL.Path == "/api/v1/services/"+fakecoolify.ServiceUUID {
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]string{"docker_compose_raw": "services:\n  plausible:\n    image: plausible/analytics:v2\n    environment:\n      - SERVICE_FQDN_PLAUSIBLE_8000\n      - SECRET_KEY=${SERVICE_PASSWORD_64_KEY}\n"})
+			return
+		}
+		base.ServeHTTP(w, r)
+	}))
+	defer srv.Close()
+
+	stage := filepath.Join(t.TempDir(), "compose")
+	var stdout, stderr bytes.Buffer
+	code := run("lr", []string{"migrate", "coolify", "--url", srv.URL, "--token", fakecoolify.Token,
+		"--out-dir", t.TempDir(), "--stage-dir", stage, "--domain-suffix", "apps.test", "--json"}, &stdout, &stderr, loopbackEnv())
+	if code != exitOK {
+		t.Fatalf("exit = %d, stderr = %q", code, stderr.String())
+	}
+	path := filepath.Join(stage, "plausible", "compose.yaml")
+	raw, err := os.ReadFile(path) //nolint:gosec // path is under a t.TempDir()
+	if err != nil {
+		t.Fatalf("service not staged: %v (stdout=%s)", err, stdout.String())
+	}
+	if hasRawMagicVar(string(raw)) || strings.Contains(string(raw), "SERVICE_PASSWORD") || !strings.Contains(string(raw), "plausible.apps.test") {
+		t.Errorf("staged compose not translated:\n%s", raw)
+	}
+	if !strings.Contains(stdout.String(), "levelrail compose deploy plausible -f "+path) {
+		t.Errorf("report lacks the deploy command: %s", stdout.String())
+	}
+	if strings.Contains(stdout.String(), "SECRET_KEY") {
+		t.Errorf("report leaks the compose body: %s", stdout.String())
 	}
 }

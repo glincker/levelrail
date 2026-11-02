@@ -169,3 +169,116 @@ func randomBase64Bytes(n int) (string, error) {
 	}
 	return base64.StdEncoding.EncodeToString(buf), nil
 }
+
+// Translation is the result of TranslateMagicVars. Generated names the
+// secret variables that got a fresh value; the values stay in Compose only.
+type Translation struct {
+	Compose     string
+	Generated   []string
+	Hosts       []string
+	Unsupported []string
+}
+
+var (
+	magicDeclList = regexp.MustCompile(`(?m)^(\s*-\s+)(SERVICE_[A-Za-z0-9_]+)[ \t]*$`)
+	magicDeclMap  = regexp.MustCompile(`(?m)^(\s*)(SERVICE_[A-Za-z0-9_]+):[ \t]*(?:""|'')?[ \t]*$`)
+)
+
+// TranslateMagicVars rewrites Coolify SERVICE_FQDN_*, SERVICE_URL_* and
+// generatable SERVICE_* tokens in a compose body into literal values, so the
+// result has no placeholder left. host maps a service key to its hostname.
+// Tokens that cannot be resolved stay untouched and are listed in Unsupported.
+func TranslateMagicVars(src string, host func(key string) string) (Translation, error) {
+	t := Translation{}
+	cache := map[string]string{}
+	seenGen, seenHost, seenBad := map[string]bool{}, map[string]bool{}, map[string]bool{}
+	var firstErr error
+
+	resolve := func(m MagicVar, raw string) (string, bool) {
+		switch m.Kind {
+		case "FQDN", "URL":
+			h := host(stripPortSuffix(m.Key))
+			if !seenHost[h] {
+				seenHost[h] = true
+				t.Hosts = append(t.Hosts, h)
+			}
+			if m.Kind == "URL" {
+				return "https://" + h, true
+			}
+			return h, true
+		}
+		if m.Generatable {
+			ck := m.Kind + "_" + m.Key
+			if v, ok := cache[ck]; ok {
+				return v, true
+			}
+			v, err := GenerateValue(m.Kind, m.Length)
+			if err != nil {
+				if firstErr == nil {
+					firstErr = err
+				}
+				return "", false
+			}
+			cache[ck] = v
+			if !seenGen[ck] {
+				seenGen[ck] = true
+				t.Generated = append(t.Generated, "SERVICE_"+m.Kind+"_"+m.Key)
+			}
+			return v, true
+		}
+		if m.HasDefault {
+			return m.Default, true
+		}
+		if !seenBad[raw] {
+			seenBad[raw] = true
+			t.Unsupported = append(t.Unsupported, raw)
+		}
+		return "", false
+	}
+
+	decl := func(re *regexp.Regexp, format string) {
+		src = re.ReplaceAllStringFunc(src, func(line string) string {
+			sub := re.FindStringSubmatch(line)
+			vars := FindMagicVars("$" + sub[2])
+			if len(vars) != 1 {
+				return line
+			}
+			v, ok := resolve(vars[0], sub[2])
+			if !ok {
+				return line
+			}
+			return fmt.Sprintf(format, sub[1], sub[2], v)
+		})
+	}
+	decl(magicDeclList, "%s%s=%s")
+	decl(magicDeclMap, "%s%s: %q")
+
+	src = magicVarPattern.ReplaceAllStringFunc(src, func(tok string) string {
+		vars := FindMagicVars(tok)
+		if len(vars) != 1 {
+			return tok
+		}
+		if v, ok := resolve(vars[0], strings.Trim(tok, "${}")); ok {
+			return v
+		}
+		return tok
+	})
+	if firstErr != nil {
+		return Translation{}, firstErr
+	}
+	t.Compose = src
+	return t, nil
+}
+
+// stripPortSuffix turns "APP_3000" into "APP"; Coolify appends the port a
+// domain should route to, which the host name does not carry.
+func stripPortSuffix(key string) string {
+	i := strings.LastIndex(key, "_")
+	if i < 0 {
+		return key
+	}
+	if _, err := strconv.Atoi(key[i+1:]); err != nil {
+		return key
+	}
+	return key[:i]
+}

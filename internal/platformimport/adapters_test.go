@@ -2,6 +2,7 @@ package platformimport
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -273,5 +274,102 @@ func TestComposeAndDokku(t *testing.T) {
 	}
 	if _, err := (DokkuEnvSource{}).Discover(context.Background()); err == nil {
 		t.Error("want error for empty app name")
+	}
+}
+
+func TestCoolifyReportsTasksBackupsAndDestinations(t *testing.T) {
+	srv := readOnlyServer(t, map[string]string{
+		"/api/v1/projects":                             "coolify/projects.json",
+		"/api/v1/projects/p1/environments":             "coolify/environments.json",
+		"/api/v1/projects/p1/production":               "coolify/env_resources.json",
+		"/api/v1/applications/app-web/envs":            "coolify/envs_web.json",
+		"/api/v1/applications/app-web/storages":        "coolify/storages_web.json",
+		"/api/v1/applications/app-web/scheduled-tasks": "coolify/tasks_web.json",
+		"/api/v1/applications/app-img/envs":            "coolify/empty_list.json",
+		"/api/v1/applications/app-img/storages":        "coolify/empty_storages.json",
+		"/api/v1/applications/app-img/scheduled-tasks": "coolify/empty_list.json",
+		"/api/v1/applications/app-nix/envs":            "coolify/empty_list.json",
+		"/api/v1/applications/app-nix/storages":        "coolify/empty_storages.json",
+		"/api/v1/applications/app-nix/scheduled-tasks": "coolify/empty_list.json",
+		"/api/v1/databases/db-pg/backups":              "coolify/backups_pg.json",
+	}, "", "Authorization", "Bearer tok-fixture")
+	src, err := NewCoolify(srv.URL, "tok-fixture", testOpts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	d, err := src.Discover(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	var manual []string
+	for _, n := range d.Apps[0].Notes {
+		manual = append(manual, n.Manual)
+	}
+	for _, u := range d.Unsupported {
+		manual = append(manual, u.Manual)
+	}
+	all := strings.Join(manual, "\n")
+	for _, want := range []string{
+		"levelrail-cli jobs create 'my-web-app' 'off' --schedule '* * * * *' -- sh -c 'true'",
+		"levelrail-cli backups schedule set 'main-db' --target <TARGET_ID> --cron '0 0 * * *'",
+		"levelrail-cli backup-targets create --name 's3-main' --provider custom --endpoint <S3_ENDPOINT> --bucket 'acme-backups'",
+	} {
+		if !strings.Contains(all, want) {
+			t.Errorf("missing %q in:\n%s", want, all)
+		}
+	}
+	if strings.Count(all, "backup-targets create") != 1 {
+		t.Errorf("destination should be listed once:\n%s", all)
+	}
+}
+
+func TestCoolifyServiceComposeMasked(t *testing.T) {
+	compose := "services:\n  plausible:\n    image: ghcr.io/plausible/community-edition:v2\n    environment:\n      - SECRET_KEY_BASE=hunter2-inline\n      - BASE_URL=${SERVICE_URL_PLAUSIBLE}\n"
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/v1/projects":
+			_, _ = w.Write([]byte(`[{"uuid":"p1","name":"Shop"}]`))
+		case "/api/v1/projects/p1/environments":
+			_, _ = w.Write([]byte(`[{"name":"production"}]`))
+		case "/api/v1/projects/p1/production":
+			_, _ = w.Write([]byte(`{"services":[{"uuid":"svc1","name":"plausible","service_type":"plausible"}]}`))
+		case "/api/v1/services/svc1":
+			b, _ := json.Marshal(map[string]string{"docker_compose_raw": compose})
+			_, _ = w.Write(b)
+		case "/api/v1/services/svc1/envs":
+			_, _ = w.Write([]byte(`[{"key":"POSTGRES_PASSWORD","value":"pg-pass-plain"},{"key":"SERVICE_FQDN_PLAUSIBLE","value":"stats.example.com"}]`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(srv.Close)
+	src, err := NewCoolify(srv.URL, "tok", testOpts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	d, err := src.Discover(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(d.Services) != 1 {
+		t.Fatalf("services: %+v", d.Services)
+	}
+	s := d.Services[0]
+	if !strings.Contains(s.Compose, "image: ghcr.io/plausible/community-edition:v2") || !strings.Contains(s.Compose, "${SERVICE_URL_PLAUSIBLE}") {
+		t.Errorf("compose not stored: %q", s.Compose)
+	}
+	if strings.Contains(s.Compose, "hunter2-inline") {
+		t.Errorf("inline secret leaked: %q", s.Compose)
+	}
+	for _, e := range s.Env {
+		if e.Key == "POSTGRES_PASSWORD" && (e.Value != SecretMask || !e.Secret) {
+			t.Errorf("password env not masked: %+v", e)
+		}
+		if e.Key == "SERVICE_FQDN_PLAUSIBLE" && e.Value != "stats.example.com" {
+			t.Errorf("plain env altered: %+v", e)
+		}
+	}
+	if len(d.Unsupported) != 1 {
+		t.Errorf("unsupported entry should remain: %+v", d.Unsupported)
 	}
 }

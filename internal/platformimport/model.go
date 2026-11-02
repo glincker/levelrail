@@ -150,6 +150,23 @@ type Database struct {
 	Backups    []BackupSchedule
 }
 
+// SecretMask replaces a secret value stored in a Service.
+const SecretMask = "********"
+
+// Service is a one-click service stack read from the source. Compose is the
+// stack's compose body with inline secret values masked; Env values of secret
+// keys are masked too. Both are empty when the source read failed softly.
+type Service struct {
+	SourceID    string
+	Name        string
+	Project     string
+	Environment string
+	Server      string
+	Type        string
+	Compose     string
+	Env         []Env
+}
+
 // Note is a per-item caveat found while reading the source.
 type Note struct {
 	// Area groups notes in the exit report, such as "webhook" or "command". Empty means general.
@@ -181,7 +198,9 @@ type Discovery struct {
 	Apps        []App
 	Databases   []Database
 	Unsupported []Unsupported
-	Servers     []Server
+	// Services holds each one-click service's masked compose body and env.
+	Services []Service
+	Servers  []Server
 	// Warnings are source reads that failed softly, so the plan lacks that detail.
 	Warnings []string
 }

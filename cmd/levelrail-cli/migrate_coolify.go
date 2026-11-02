@@ -21,6 +21,8 @@ type migrateCoolifyFlags struct {
 	insecureTLS         bool
 	allowPrivate        bool
 	only                string
+	stageDir            string
+	domainSuffix        string
 }
 
 // runMigrateCoolify implements "migrate coolify": writes app.yaml files and a report, or creates apps on a target with --apply.
@@ -44,6 +46,8 @@ func runMigrateCoolify(prog string, args []string, stdout, stderr io.Writer, loo
 	fs.StringVar(&f.only, "only", "", "comma-separated app names or Coolify ids, --dry-run and --verify only")
 	fs.BoolVar(&f.insecureTLS, "insecure-tls", false, "skip TLS verification of Coolify, --dry-run and --verify only")
 	fs.BoolVar(&f.allowPrivate, "allow-private", false, "allow a private-network Coolify address (--verify also needs APP_IMPORT_ALLOW_PRIVATE_NETWORKS=true on the control plane)")
+	fs.StringVar(&f.stageDir, "stage-dir", defaultStageDir, "directory to stage one-click services into as compose.yaml files; staging writes files only, nothing is deployed")
+	fs.StringVar(&f.domainSuffix, "domain-suffix", "", "parent domain for the hosts of staged services (default localhost, so nothing routes publicly)")
 	fs.BoolVar(&f.jsonOut, "json", false, "print the migration report as JSON to stdout and nothing else")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, migrateCoolifyUsage(prog)) }
 
@@ -81,10 +85,31 @@ func runMigrateCoolify(prog string, args []string, stdout, stderr io.Writer, loo
 		report.Apps = append(report.Apps, fetchAndMapApplication(ctx, coolify, summary, f.includeSecretValues))
 	}
 
+	report.Apps = append(report.Apps, discoverCoolifyServices(ctx, f, lookupEnv, stderr)...)
+
 	return runMigrationPipeline(ctx, &report, migratePipelineFlags{
-		apply: f.apply, outDir: f.outDir, jsonOut: f.jsonOut,
+		apply: f.apply, outDir: f.outDir, stageDir: f.stageDir, jsonOut: f.jsonOut,
 		targetToken: targetTokenFlag, targetAPIURL: targetAPIURLFlag, targetProfile: targetProfileFlag,
 	}, prog, stdout, stderr, lookupEnv)
+}
+
+// discoverCoolifyServices maps the one-click services Coolify runs. A read failure only
+// warns on stderr, so applications still migrate when the services read is not permitted.
+func discoverCoolifyServices(ctx context.Context, f migrateCoolifyFlags, lookupEnv func(string) (string, bool), stderr io.Writer) []mappedApp {
+	src, err := platformimport.NewCoolify(f.coolifyURL, f.coolifyToken, platformimport.ClientOptions{
+		Policy: platformimport.NetworkPolicy{AllowPrivate: f.allowPrivate, AllowLoopback: envIsTrue(lookupEnv, platformimport.AllowLoopbackEnv)}, Insecure: f.insecureTLS})
+	if err == nil {
+		var disc *platformimport.Discovery
+		if disc, err = src.Discover(ctx); err == nil {
+			out := make([]mappedApp, 0, len(disc.Services))
+			for _, svc := range disc.Services {
+				out = append(out, mapCoolifyService(svc, f.domainSuffix))
+			}
+			return out
+		}
+	}
+	_, _ = fmt.Fprintf(stderr, "warning: could not read Coolify services, they are not included: %v\n", err)
+	return nil
 }
 
 // fetchAndMapApplication maps one Coolify application. A fetch failure is a blocking issue for that app only, not the whole command.
@@ -111,12 +136,14 @@ directly on a target Levelrail instance instead of writing files.
 Flags:
   --url string                     Coolify instance base URL, e.g. https://coolify.example.com (required)
   --token string                   Coolify API bearer token (required)
+  --stage-dir string              directory for staged one-click services, default ./migrated/compose (written in both modes, never deployed)
+  --domain-suffix string      parent domain for staged service hosts, default localhost
   --out-dir string                directory for generated files, default ./migrated (file mode only)
   --apply                            create apps on the target Levelrail instance instead of writing files
   --dry-run                       print the exact plan, per-resource outcomes and cutover checklist; writes nothing
   --verify                         the same report from the target, so apps already imported show as imported
   --only string                   limit --dry-run and --verify to these app names or Coolify ids
-  --insecure-tls                  skip TLS verification of Coolify (--dry-run and --verify)
+  --insecure-tls                  skip TLS verification of Coolify (--dry-run and --verify, and the services read)
   --allow-private                 allow a private-network Coolify address
   --include-secret-values     fetch real env var values from Coolify (requires a Coolify token with the read:sensitive ability)
   --target-token string        Levelrail API token, --apply only (default: %[2]s env var, then the credentials file)
@@ -125,6 +152,9 @@ Flags:
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
+
+One-click services are staged as <stage-dir>/<name>/compose.yaml with generated
+secrets and the printed "compose deploy" command; unsupported keys are listed.
 
 --dry-run and --verify cover what this command's file and --apply modes do
 not: databases, volumes, scheduled tasks, webhooks, servers and a DNS

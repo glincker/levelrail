@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/compose"
+	"github.com/GLINCKER/levelrail/internal/platformimport"
 	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
@@ -50,6 +52,7 @@ type mappedApp struct {
 	RepoURL     string           `json:"repo_url,omitempty"`
 	Ref         string           `json:"ref,omitempty"`
 	Service     mappedService    `json:"service"`
+	Compose     *stagedCompose   `json:"compose,omitempty"`
 	Issues      []migrationIssue `json:"issues,omitempty"`
 	Blocking    bool             `json:"blocking"`
 
@@ -349,4 +352,93 @@ func mapEnv(envs []coolifyEnvVar, includeSecretValues bool, issues []migrationIs
 		issues = appendIssue(issues, "environment_variables", issueReview, fmt.Sprintf("no value returned by Coolify for %s even with --include-secret-values; the Coolify token likely lacks the read:sensitive ability", strings.Join(missing, ", ")))
 	}
 	return keys, literal, issues
+}
+
+// stagedCompose is a one-click service translated to a compose app. Yaml holds
+// generated secrets, so it is never serialized into the report.
+type stagedCompose struct {
+	Yaml        string   `json:"-"`
+	Generated   []string `json:"generated_secrets,omitempty"`
+	Hosts       []string `json:"hosts,omitempty"`
+	Volumes     []string `json:"volumes,omitempty"`
+	Unsupported []string `json:"unsupported,omitempty"`
+	StagedPath  string   `json:"staged_path,omitempty"`
+	Deploy      string   `json:"deploy_command,omitempty"`
+}
+
+var (
+	composeRefPattern  = regexp.MustCompile(`\$\{([A-Za-z_][A-Za-z0-9_]*)\}`)
+	composeVolumeEntry = regexp.MustCompile(`(?m)^\s*-\s+["']?([^\s"':]+):([^\s"']+)["']?\s*$`)
+	coolifyOnlyKey     = regexp.MustCompile(`(?m)^\s*(exclude_from_hc|x-coolify[A-Za-z0-9_-]*):|^\s*-\s+["']?coolify\.[^\s"']*`)
+)
+
+// mapCoolifyService translates a discovered one-click service into a compose
+// app that can be deployed later. domainSuffix is the parent domain for the
+// SERVICE_FQDN_* hosts and defaults to "localhost" so nothing routes publicly.
+func mapCoolifyService(s platformimport.Service, domainSuffix string) mappedApp {
+	var issues []migrationIssue
+	name, issues := mapServiceName("Coolify", s.Name, issues)
+	out := mappedApp{SourceName: s.Name, ServiceName: name}
+
+	if strings.TrimSpace(s.Compose) == "" {
+		out.Issues = appendIssue(issues, "compose", issueBlocking, "the service has no readable compose body, export it from Coolify and deploy it manually")
+		out.Blocking = true
+		return out
+	}
+	if domainSuffix == "" {
+		domainSuffix = "localhost"
+	}
+	host := func(key string) string {
+		return sanitizeServiceName(key) + "." + domainSuffix
+	}
+	tr, err := compose.TranslateMagicVars(s.Compose, host)
+	if err != nil {
+		out.Issues = appendIssue(issues, "compose", issueBlocking, fmt.Sprintf("could not generate a secret: %v", err))
+		out.Blocking = true
+		return out
+	}
+
+	sc := &stagedCompose{Yaml: tr.Compose, Generated: tr.Generated, Hosts: tr.Hosts, Unsupported: append([]string(nil), tr.Unsupported...)}
+	for _, tok := range tr.Unsupported {
+		issues = appendIssue(issues, tok, issueDropped, "magic variable has no Levelrail equivalent and was left in place, set a real value before deploying")
+	}
+	for _, m := range composeVolumeEntry.FindAllStringSubmatch(tr.Compose, -1) {
+		src := m[1]
+		if strings.HasPrefix(src, ".") || strings.HasPrefix(src, "/") || strings.HasPrefix(src, "~") {
+			sc.Unsupported = append(sc.Unsupported, "volume "+src+":"+m[2])
+			issues = appendIssue(issues, "volumes", issueReview, fmt.Sprintf("bind mount %q is a path on the Coolify server, copy its data over and use a named volume", src))
+			continue
+		}
+		sc.Volumes = append(sc.Volumes, src)
+	}
+	for _, m := range coolifyOnlyKey.FindAllString(tr.Compose, -1) {
+		key := strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(m), "- "))
+		sc.Unsupported = append(sc.Unsupported, key)
+		issues = appendIssue(issues, "compose", issueReview, fmt.Sprintf("Coolify only key %q is ignored", strings.Trim(key, `:"'`)))
+	}
+	if strings.Contains(tr.Compose, platformimport.SecretMask) {
+		sc.Unsupported = append(sc.Unsupported, "masked secret values")
+		issues = appendIssue(issues, "secrets", issueReview, "inline secret values were masked by the source read, replace "+platformimport.SecretMask+" with real values before deploying")
+	}
+	var refs []string
+	for _, m := range composeRefPattern.FindAllStringSubmatch(tr.Compose, -1) {
+		refs = append(refs, m[1])
+	}
+	sort.Strings(refs)
+	for i, r := range refs {
+		if i > 0 && refs[i-1] == r {
+			continue
+		}
+		issues = appendIssue(issues, r, issueReview, "compose references ${"+r+"} with no default, supply it in the app env before deploying")
+	}
+	sort.Strings(sc.Unsupported)
+	out.Compose = sc
+	out.Issues = issues
+	return out
+}
+
+// hasRawMagicVar reports whether a SERVICE_ token survived translation, which
+// the compose deploy would reject.
+func hasRawMagicVar(yaml string) bool {
+	return len(compose.FindMagicVars(yaml)) > 0
 }

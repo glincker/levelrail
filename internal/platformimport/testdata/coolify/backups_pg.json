@@ -1,0 +1,4 @@
+[
+  {"frequency": "daily", "enabled": true, "save_s3": true, "s3_storage_uuid": "s3-main", "s3_bucket": "acme-backups"},
+  {"frequency": "0 * * * *", "enabled": false, "save_s3": false}
+]

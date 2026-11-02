@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"regexp"
 	"strings"
 )
 
@@ -93,6 +94,9 @@ type coolifyBackup struct {
 	Frequency string `json:"frequency"`
 	Enabled   bool   `json:"enabled"`
 	SaveS3    bool   `json:"save_s3"`
+	// S3StorageUUID names the destination Coolify uploads to; its keys are never read.
+	S3StorageUUID string `json:"s3_storage_uuid"`
+	S3Bucket      string `json:"s3_bucket"`
 }
 
 type coolifyApp struct {
@@ -164,6 +168,12 @@ type coolifyService struct {
 			Name string `json:"name"`
 		} `json:"server"`
 	} `json:"destination"`
+}
+
+// ComposeRaw is the field name assumed from the Coolify API docs, not confirmed against a live instance.
+type coolifyServiceDetail struct {
+	ComposeRaw string `json:"docker_compose_raw"`
+	Compose    string `json:"docker_compose"`
 }
 
 type coolifyEnvVar struct {
@@ -249,11 +259,15 @@ func (c *CoolifySource) readDatabaseDetails(ctx context.Context, d *Discovery) m
 	return out
 }
 
-func (c *CoolifySource) readBackups(ctx context.Context, uuid string) []BackupSchedule {
+func (c *CoolifySource) readBackups(ctx context.Context, uuid string) []coolifyBackup {
 	var backups []coolifyBackup
 	if err := c.r.get(ctx, "/api/v1/databases/"+url.PathEscape(uuid)+"/backups", nil, &backups); err != nil {
 		return nil
 	}
+	return backups
+}
+
+func backupSchedules(backups []coolifyBackup) []BackupSchedule {
 	out := make([]BackupSchedule, 0, len(backups))
 	for _, b := range backups {
 		out = append(out, BackupSchedule{Schedule: NormalizeSchedule(b.Frequency), Enabled: b.Enabled, Remote: b.SaveS3})
@@ -284,7 +298,9 @@ func (c *CoolifySource) collect(ctx context.Context, d *Discovery, project, envi
 			if det, ok := details[db.UUID]; ok {
 				row.User, row.DBName, row.Public, row.PublicPort = det.user(), det.database(), det.IsPublic, det.PublicPort
 			}
-			row.Backups = c.readBackups(ctx, db.UUID)
+			backups := c.readBackups(ctx, db.UUID)
+			row.Backups = backupSchedules(backups)
+			reportBackups(d, row, backups)
 			d.Databases = append(d.Databases, row)
 		}
 	}
@@ -306,12 +322,113 @@ func (c *CoolifySource) collect(ctx context.Context, d *Discovery, project, envi
 		if server == "" {
 			server = s.ServerName
 		}
+		d.Services = append(d.Services, c.readService(ctx, d, project, environment, server, s))
 		d.Unsupported = append(d.Unsupported, Unsupported{
 			Kind: "service", SourceID: s.UUID, Name: s.Name, Project: project, Environment: environment, Server: server, Source: "service " + s.ServiceType,
 			Reason: "one-click service stacks are Docker Compose projects (" + s.ServiceType + ")",
 			Manual: "export the service's compose file from the source and deploy it with the compose deploy command",
 		})
 	}
+}
+
+var composeSecretLineRe = regexp.MustCompile(`^(\s*(?:-\s*)?["']?)([A-Za-z_][A-Za-z0-9_]*)(["']?\s*[:=]\s*)(.+)$`)
+
+// maskCompose hides inline values of secret-looking keys; ${VAR} references stay.
+func maskCompose(body string) string {
+	lines := strings.Split(body, "\n")
+	for i, l := range lines {
+		m := composeSecretLineRe.FindStringSubmatch(l)
+		if m == nil || !LooksSecret(m[2]) || strings.HasPrefix(strings.TrimSpace(m[4]), "$") {
+			continue
+		}
+		lines[i] = m[1] + m[2] + m[3] + SecretMask
+	}
+	return strings.Join(lines, "\n")
+}
+
+// readService fetches one service's compose body and env, read only; failures become warnings.
+func (c *CoolifySource) readService(ctx context.Context, d *Discovery, project, environment, server string, s coolifyService) Service {
+	out := Service{SourceID: s.UUID, Name: s.Name, Project: project, Environment: environment, Server: server, Type: s.ServiceType}
+	base := "/api/v1/services/" + url.PathEscape(s.UUID)
+	var det coolifyServiceDetail
+	if err := c.r.get(ctx, base, nil, &det); err != nil {
+		d.Warnings = append(d.Warnings, "could not read the compose of service "+s.Name+" ("+err.Error()+")")
+	} else {
+		body := det.ComposeRaw
+		if body == "" {
+			body = det.Compose
+		}
+		out.Compose = maskCompose(body)
+	}
+	var envs []coolifyEnvVar
+	if err := c.r.get(ctx, base+"/envs", nil, &envs); err != nil {
+		d.Warnings = append(d.Warnings, "could not read the environment of service "+s.Name+" ("+err.Error()+")")
+		return out
+	}
+	seen := map[string]bool{}
+	for _, e := range envs {
+		if e.IsPreview || seen[e.Key] {
+			continue
+		}
+		seen[e.Key] = true
+		val := e.RealValue
+		if val == "" {
+			val = e.Value
+		}
+		secret := e.IsShownOnce || LooksSecret(e.Key)
+		if secret && val != "" {
+			val = SecretMask
+		}
+		out.Env = append(out.Env, Env{Key: e.Key, Value: val, Secret: secret, BuildTime: e.IsBuildTime || e.IsBuildtime})
+	}
+	return out
+}
+
+// shellArg single-quotes a value so a printed command can be pasted as is.
+func shellArg(v string) string {
+	return "'" + strings.ReplaceAll(v, "'", `'\''`) + "'"
+}
+
+// reportBackups lists each backup schedule and S3 destination as a manual item,
+// since neither is created by the import and credentials are never read.
+func reportBackups(d *Discovery, db Database, backups []coolifyBackup) {
+	for _, b := range backups {
+		if b.SaveS3 && b.S3StorageUUID != "" {
+			reportS3Destination(d, db, b)
+		}
+		cron := NormalizeSchedule(b.Frequency)
+		state := ""
+		if !b.Enabled {
+			state = " (disabled in the source)"
+		}
+		d.Unsupported = append(d.Unsupported, Unsupported{
+			Kind: "backup-schedule", SourceID: db.SourceID, Name: db.Name + " backup " + cron, Project: db.Project, Environment: db.Environment, Source: "database backup schedule",
+			Reason: "backup schedules are not imported" + state,
+			Manual: "levelrail-cli backups schedule set " + shellArg(db.Name) + " --target <TARGET_ID> --cron " + shellArg(cron),
+		})
+	}
+}
+
+func reportS3Destination(d *Discovery, db Database, b coolifyBackup) {
+	for _, u := range d.Unsupported {
+		if u.Kind == "backup-destination" && u.SourceID == b.S3StorageUUID {
+			return
+		}
+	}
+	bucket := b.S3Bucket
+	if bucket == "" {
+		bucket = "<BUCKET>"
+	}
+	d.Unsupported = append(d.Unsupported, Unsupported{
+		Kind: "backup-destination", SourceID: b.S3StorageUUID, Name: "S3 destination " + b.S3StorageUUID, Project: db.Project, Environment: db.Environment, Source: "S3 storage",
+		Reason: "S3 destinations and their keys are not read or imported",
+		Manual: "levelrail-cli backup-targets create --name " + shellArg(b.S3StorageUUID) + " --provider custom --endpoint <S3_ENDPOINT> --bucket " + shellArg(bucket) + " --access-key-id <KEY_ID> --secret-access-key <SECRET>",
+	})
+}
+
+func taskNote(app App, t coolifyTask) Note {
+	cmd := "levelrail-cli jobs create " + shellArg(SanitizeName(app.Name)) + " " + shellArg(SanitizeJobName(t.Name)) + " --schedule " + shellArg(NormalizeSchedule(t.Frequency)) + " -- sh -c " + shellArg(t.Command)
+	return Note{Area: "task", Reason: "scheduled task " + t.Name + " is disabled in the source, so it was not imported", Manual: cmd}
 }
 
 func otherEngineTool(engine string) string {
@@ -457,9 +574,11 @@ func (c *CoolifySource) readDetails(ctx context.Context, app *App) {
 	var tasks []coolifyTask
 	if err := c.r.get(ctx, base+"/scheduled-tasks", nil, &tasks); err == nil {
 		for _, t := range tasks {
-			if t.Enabled {
-				app.Crons = append(app.Crons, Cron{Name: t.Name, Schedule: t.Frequency, Command: t.Command})
+			if !t.Enabled {
+				app.Notes = append(app.Notes, taskNote(*app, t))
+				continue
 			}
+			app.Crons = append(app.Crons, Cron{Name: t.Name, Schedule: t.Frequency, Command: t.Command})
 		}
 	}
 }
