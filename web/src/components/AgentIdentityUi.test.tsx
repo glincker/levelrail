@@ -179,9 +179,6 @@ describe('CreateTokenDialog agent name', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Create token' }))
     await userEvent.type(screen.getByLabelText('Name'), 'agent-tok')
     await userEvent.type(screen.getByLabelText(/Agent name/), 'Claude Code')
-    const readBox = screen.getAllByRole('checkbox')[0]
-    if (!readBox) throw new Error('no ability checkbox')
-    await userEvent.click(readBox)
     await userEvent.click(
       screen.getAllByRole('button', { name: 'Create token' }).at(-1)!,
     )
@@ -192,7 +189,12 @@ describe('CreateTokenDialog agent name', () => {
     const post = fetchMock.mock.calls.find((call) => call[1]?.method === 'POST')
     const rawBody = post?.[1]?.body
     if (typeof rawBody !== 'string') throw new Error('expected a JSON body')
-    const body = JSON.parse(rawBody) as { agent?: { name: string } }
+    const body = JSON.parse(rawBody) as {
+      agent?: { name: string }
+      abilities?: string[]
+    }
+    // The dialog is read-only by default, so no ability needs picking.
+    expect(body.abilities).toEqual(['read'])
     expect(body.agent).toEqual({ name: 'Claude Code' })
     expect(await screen.findByText('secret-1')).toBeInTheDocument()
   })
