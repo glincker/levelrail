@@ -51,6 +51,18 @@ HTTP-01 works only after the switch, so reduce how long caches hold the old answ
 
 If the name answers from Cloudflare addresses, the card says so. The cutover works with the proxy on or off: switch the record's target, keep the orange cloud as it is, and step 6 is verified through Cloudflare. If you turn the proxy off, set SSL mode to Full (strict) once the certificate is issued. See [CDN and caching](/cdn-and-caching).
 
+## Verify after the switch
+
+`levelrail-cli domains check --cutover <domain>...` (or `GET /api/v1/domains/{domain}/verify`, read ability) checks one or many domains that are moving here and ends with a PASS, WARN or FAIL per domain. Each line carries the next step: DNS against this host's public addresses (`--expect-ip` overrides them, for a host behind NAT), a proxy such as Cloudflare in front, the http to https redirect, certificate issuer and days left, HSTS, response status and time to first byte as seen from this host, and whether the www or apex partner points at the same place. The command only reads, accepts only domains this server already serves, and requests the name only once DNS points here or at a known proxy. The exit code is 1 when any domain has a FAIL, so it can gate a script.
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `APP_CUTOVER_VERIFY_CERT_WARN_DAYS` | 21 | Days left at or below which the certificate line warns |
+| `APP_CUTOVER_VERIFY_CERT_FAIL_DAYS` | 7 | Days left at or below which the certificate line fails |
+| `APP_CUTOVER_VERIFY_SLOW_TTFB` | 1.5s | Time to first byte above which the response line warns |
+| `APP_CUTOVER_VERIFY_HSTS_MIN_AGE_SECONDS` | 15552000 | Smallest HSTS max-age that counts as enabled |
+| `APP_CUTOVER_VERIFY_TIMEOUT` | 5s | Timeout of each request |
+
 ## API
 
 `GET /api/v1/domains/{domain}/cutover` (read ability) returns `risk` (`none`, `likely` or `unknown`), `ready_to_switch`, the `steps`, the current `dns` view with the exact `records`, and the `certificate` state. `POST /api/v1/domains/{domain}/cutover/certificate` (root ability) requests this domain's certificate through the connected DNS provider, and `DELETE` on the same path switches the domain back to HTTP-01. The probe only dials this server's own ingress until the name already points here or at Cloudflare, and results are cached for a few seconds per domain.

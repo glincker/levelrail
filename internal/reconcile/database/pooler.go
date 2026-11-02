@@ -97,11 +97,12 @@ func poolerEnv(user, password string, poolSize, maxClientConn int) map[string]st
 }
 
 // poolerConfigRevision hashes every setting except the password, so a label
-// never carries anything derived from a credential.
+// never carries anything derived from a credential. STATS_USERS is left out so
+// adding it does not recreate poolers that already run.
 func poolerConfigRevision(env map[string]string) string {
 	keys := make([]string, 0, len(env))
 	for k := range env {
-		if k != "DB_PASSWORD" {
+		if k != "DB_PASSWORD" && k != "STATS_USERS" {
 			keys = append(keys, k)
 		}
 	}

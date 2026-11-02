@@ -59,8 +59,8 @@ levelrail volumes import web data --in web-data.tar.gz
 ```
 
 - Export reads the volume through a short-lived helper container with a read-only mount. For a consistent copy of a busy app, stop it first.
-- Import needs the app stopped and the volume empty. `--force` replaces existing files, and only works after you turn on the `volumes.import_overwrite` runtime setting (off by default). Take a backup first.
-- Import refuses archives with absolute paths, `..` segments, links that leave the volume, or device files, and drops setuid and setgid bits. Nothing is unpacked from a rejected archive, though a bad entry later in the stream stops the import part way.
+- Import needs the app stopped and the volume empty. `--force` replaces existing files, and only works after you turn on the `volumes.import_overwrite` runtime setting (off by default). The whole archive is checked before the volume is cleared, so a rejected archive leaves the existing files untouched. Still take a backup first, since a failure while unpacking cannot be undone.
+- Import refuses archives with absolute paths, `..` segments, links that leave the volume, or device files, and drops setuid and setgid bits. The archive is validated end to end before anything is unpacked, so one bad entry anywhere rejects the whole import.
 - The size cap is the `volumes.transfer_max_bytes` runtime setting (10 GiB by default, 1 MiB minimum) and the time cap is `volumes.transfer_timeout` (30 minutes by default, 1 minute minimum). Both apply to the next transfer.
 - The routes are `GET /api/v1/apps/{name}/volumes/{volume}/export` and `POST /api/v1/apps/{name}/volumes/{volume}/import`. Both need the write-sensitive ability and write a `volume.export` or `volume.import` audit event with the app, volume, entry count and byte count, never file names or contents.
 - Volumes that hold the managed mail certificate or key are refused.

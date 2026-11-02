@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
@@ -13,6 +15,9 @@ import (
 )
 
 const databaseHealthTimeout = 10 * time.Second
+
+// poolerStatsLogged tracks databases whose pooler stats outage was already logged.
+var poolerStatsLogged sync.Map
 
 // databaseHealthTarget resolves a running database container, or ErrDatabaseHealthUnavailable.
 func (rt *Router) databaseHealthTarget(ctx context.Context, name string) (*store.DesiredDatabase, dbaccess.Exec, string, error) {
@@ -99,12 +104,28 @@ func (rt *Router) PoolerSaturation(ctx context.Context, name string) (int, float
 	if !database.PoolerActive(d) {
 		return 0, 0, alerting.ErrDatabaseHealthUnavailable
 	}
+	key, hasKey := database.PasswordSecretKey(d.Engine)
+	if !hasKey || rt.secrets == nil {
+		return 0, 0, alerting.ErrDatabaseHealthUnavailable
+	}
+	pw, rerr := rt.secrets.Resolve(ctx, name, key)
+	if rerr != nil || pw == "" {
+		return 0, 0, alerting.ErrDatabaseHealthUnavailable
+	}
 	pctx, cancel := context.WithTimeout(ctx, databaseHealthTimeout)
 	defer cancel()
-	out, err := dbaccess.ReadPoolerPools(pctx, ex, id, database.PoolerPort)
+	out, err := dbaccess.ReadPoolerPools(pctx, ex, id, database.PoolerPort, pw)
+	if errors.Is(err, dbaccess.ErrPoolerStatsUnavailable) {
+		// Logged once per outage so a stale credential does not flood the log.
+		if _, seen := poolerStatsLogged.LoadOrStore(name, struct{}{}); !seen {
+			rt.logger.Debug("pooler stats unavailable", slog.String("database", name))
+		}
+		return 0, 0, alerting.ErrDatabaseHealthUnavailable
+	}
 	if err != nil {
 		return 0, 0, err
 	}
+	poolerStatsLogged.Delete(name)
 	sat, perr := database.ParseShowPools(out)
 	if perr != nil {
 		return 0, 0, alerting.ErrDatabaseHealthUnavailable

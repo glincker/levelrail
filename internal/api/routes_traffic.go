@@ -18,6 +18,8 @@ func (rt *Router) registerTrafficRoutes(mux *http.ServeMux) {
 	// Test before you switch: the move-a-domain checklist, and the DNS-01
 	// certificate request that runs before DNS points here. The probe dials only this server.
 	mux.HandleFunc("GET /api/v1/domains/{domain}/cutover", rt.requireAbility(AbilityRead, rt.handleDomainCutover))
+	// Read-only verifier for a domain that already moved: DNS, proxy, redirect, certificate, HSTS, response, www/apex.
+	mux.HandleFunc("GET /api/v1/domains/{domain}/verify", rt.requireAbility(AbilityRead, rt.handleDomainCutoverVerify))
 	mux.HandleFunc("POST /api/v1/domains/{domain}/cutover/certificate", rt.requireAbility(AbilityRoot, rt.handleCutoverCertificate))
 	mux.HandleFunc("DELETE /api/v1/domains/{domain}/cutover/certificate", rt.requireAbility(AbilityRoot, rt.handleCutoverCertificateRevert))
 	// Same doctor addressed by domain alone, as one JSON report or a

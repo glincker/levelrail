@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1924 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1925 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1823,6 +1823,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/domains/{domain}/cutover/certificate", Ability: "AbilityRoot", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleCutoverCertificate", Description: ""},
 	{Method: "POST", Path: "/api/v1/domains/{domain}/diagnose", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDomainDiagnose", Description: "Same doctor addressed by domain alone, as one JSON report or a stream of checks; the owning app is looked up and visibility enforced."},
 	{Method: "GET", Path: "/api/v1/domains/{domain}/diagnose/stream", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDomainDiagnoseStream", Description: ""},
+	{Method: "GET", Path: "/api/v1/domains/{domain}/verify", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDomainCutoverVerify", Description: "Read-only verifier for a domain that already moved: DNS, proxy, redirect, certificate, HSTS, response, www/apex."},
 	{Method: "GET", Path: "/api/v1/registry-credentials", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleListRegistryCredentials", Description: "Registry credentials (registry_credentials.go): same ability tiers as backup targets just above, same reasoning (POST/PUT/DELETE handle live pull credentials)."},
 	{Method: "POST", Path: "/api/v1/registry-credentials", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleCreateRegistryCredential", Description: ""},
 	{Method: "POST", Path: "/api/v1/registry-credentials/presets/test", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleTestRegistryPreset", Description: ""},

@@ -902,6 +902,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			}
 		}
 		hosts := configuredHosts
+		fallbackHost := ""
 		if len(hosts) == 0 {
 			// No operator-configured domain: fall back to a zero-config
 			// sslip.io URL when this control plane's own APP_PUBLIC_HOST
@@ -920,9 +921,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 				continue
 			}
 			hosts = []string{fallback}
-			if lazyFallback {
-				lazyCertHosts = append(lazyCertHosts, fallback)
-			}
+			fallbackHost = fallback
 		}
 		if owner, host, dup := firstDuplicateHost(svc.Name, hosts, claimedHosts); dup {
 			// store.SaveDesiredService now rejects a save
@@ -940,6 +939,11 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 				slog.String("already_routed_to", owner),
 			)
 			continue
+		}
+		// Only a fallback that wins its host is issued lazily; a user domain
+		// of the same name stays eager.
+		if fallbackHost != "" && lazyFallback {
+			lazyCertHosts = append(lazyCertHosts, fallbackHost)
 		}
 
 		// A domain in maintenance mode is routed unconditionally, with

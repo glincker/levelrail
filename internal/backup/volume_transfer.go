@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"path"
 	"strings"
 
@@ -116,8 +117,9 @@ type ImportOptions struct {
 	Overwrite bool
 }
 
-// Import unpacks a tar.gz into a volume. The archive is re-written entry by entry
-// so nothing unvalidated reaches the extractor.
+// Import unpacks a tar.gz into a volume. The whole archive is validated and
+// re-written to a temp file before the volume is touched, so a rejected archive
+// leaves the volume as it was.
 func (t *VolumeTransfer) Import(ctx context.Context, volume string, archive io.Reader, opts ImportOptions) (TransferStats, error) {
 	id, err := t.helper(ctx, volume, "volimport", false)
 	if err != nil {
@@ -134,55 +136,40 @@ func (t *VolumeTransfer) Import(ctx context.Context, volume string, archive io.R
 		return TransferStats{}, ErrVolumeNotEmpty
 	}
 
-	type result struct {
-		stats TransferStats
-		err   error
+	// Validate and rewrite the whole archive first, so a bad late entry cannot
+	// leave a cleared volume behind.
+	spool, err := os.CreateTemp("", "levelrail-volimport-*.tar")
+	if err != nil {
+		return TransferStats{}, fmt.Errorf("backup: stage import archive: %w", err)
 	}
-	pr, pw := io.Pipe()
-	ready := make(chan struct{}, 1)
-	done := make(chan result, 1)
-	go func() {
-		st, serr := sanitizeArchive(archive, pw, opts.MaxBytes, func() { ready <- struct{}{} })
-		_ = pw.CloseWithError(serr)
-		done <- result{st, serr}
+	defer func() {
+		_ = spool.Close()
+		_ = os.Remove(spool.Name())
 	}()
-
-	// The first entry must validate before anything is wiped.
-	select {
-	case <-ready:
-	case r := <-done:
-		if r.err != nil {
-			return TransferStats{}, r.err
-		}
-		done <- r
-	case <-ctx.Done():
-		_ = pr.CloseWithError(ctx.Err())
-		return TransferStats{}, ctx.Err()
+	stats, err := sanitizeArchive(archive, spool, opts.MaxBytes)
+	if err != nil {
+		return TransferStats{}, err
 	}
+	if _, err := spool.Seek(0, io.SeekStart); err != nil {
+		return TransferStats{}, fmt.Errorf("backup: stage import archive: %w", err)
+	}
+
 	if populated {
 		wipe := []string{"sh", "-c", "cd " + volumeMountPath + " && rm -rf -- ..?* .[!.]* *"}
 		if _, err := t.execOutput(ctx, id, wipe); err != nil {
-			_ = pr.CloseWithError(err)
 			return TransferStats{}, fmt.Errorf("backup: clear volume %q: %w", volume, err)
 		}
 	}
 
-	rc, execErr := t.Runtime.ExecWithInput(ctx, id, []string{"tar", "-xf", "-", "-C", volumeMountPath}, pr)
-	if execErr == nil {
-		_, execErr = io.Copy(io.Discard, rc)
+	rc, err := t.Runtime.ExecWithInput(ctx, id, []string{"tar", "-xf", "-", "-C", volumeMountPath}, spool)
+	if err == nil {
+		_, err = io.Copy(io.Discard, rc)
 		_ = rc.Close()
 	}
-	if execErr != nil {
-		_ = pr.CloseWithError(execErr)
+	if err != nil {
+		return TransferStats{}, fmt.Errorf("backup: import into volume %q: %w", volume, err)
 	}
-	r := <-done
-	if r.err != nil {
-		return TransferStats{}, r.err
-	}
-	if execErr != nil {
-		return TransferStats{}, fmt.Errorf("backup: import into volume %q: %w", volume, execErr)
-	}
-	return r.stats, nil
+	return stats, nil
 }
 
 func (t *VolumeTransfer) execOutput(ctx context.Context, id string, cmd []string) (string, error) {
@@ -206,8 +193,8 @@ func unsafeEntry(name, why string) error {
 }
 
 // sanitizeArchive copies a tar.gz to dst as a plain tar, refusing any entry that
-// could land outside the volume. onFirst runs once the first entry passed.
-func sanitizeArchive(src io.Reader, dst io.Writer, maxBytes int64, onFirst func()) (TransferStats, error) {
+// could land outside the volume.
+func sanitizeArchive(src io.Reader, dst io.Writer, maxBytes int64) (TransferStats, error) {
 	var st TransferStats
 	zr, err := gzip.NewReader(src)
 	if err != nil {
@@ -217,13 +204,6 @@ func sanitizeArchive(src io.Reader, dst io.Writer, maxBytes int64, onFirst func(
 	tr := tar.NewReader(zr)
 	tw := tar.NewWriter(dst)
 	symlinks := map[string]bool{}
-	first := true
-	signal := func() {
-		if first {
-			first = false
-			onFirst()
-		}
-	}
 	for {
 		hdr, err := tr.Next()
 		if errors.Is(err, io.EOF) {
@@ -250,7 +230,6 @@ func sanitizeArchive(src io.Reader, dst io.Writer, maxBytes int64, onFirst func(
 		if st.Bytes > maxBytes {
 			return st, ErrTransferTooLarge
 		}
-		signal()
 		out := *hdr
 		out.Name = name
 		out.Format = tar.FormatPAX
@@ -265,7 +244,6 @@ func sanitizeArchive(src io.Reader, dst io.Writer, maxBytes int64, onFirst func(
 			}
 		}
 	}
-	signal()
 	if err := tw.Close(); err != nil {
 		return st, fmt.Errorf("backup: finish archive: %w", err)
 	}

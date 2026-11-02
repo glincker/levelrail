@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/cutoververify"
 	"github.com/GLINCKER/levelrail/internal/domaincutover"
 )
 
@@ -228,5 +229,24 @@ func (c *Client) DomainCutoverCertificate(ctx context.Context, domain string) (C
 func (c *Client) DomainCutoverRevertChallenge(ctx context.Context, domain string) (CutoverCertificate, error) {
 	var out CutoverCertificate
 	err := c.do(ctx, http.MethodDelete, "/api/v1/domains/"+PathEscape(domain)+"/cutover/certificate", nil, &out)
+	return out, err
+}
+
+// DomainVerifyReport is the read-only cutover verification of one domain.
+type DomainVerifyReport = cutoververify.Report
+
+// DomainVerify calls GET /api/v1/domains/{domain}/verify. expectIPs overrides
+// the addresses the domain must resolve to when this host's own cannot be read.
+func (c *Client) DomainVerify(ctx context.Context, domain string, expectIPs []string) (DomainVerifyReport, error) {
+	q := url.Values{}
+	for _, ip := range expectIPs {
+		q.Add("expect_ip", ip)
+	}
+	path := "/api/v1/domains/" + PathEscape(domain) + "/verify"
+	if len(q) > 0 {
+		path += "?" + q.Encode()
+	}
+	var out DomainVerifyReport
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
 	return out, err
 }

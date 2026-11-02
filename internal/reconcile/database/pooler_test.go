@@ -136,3 +136,12 @@ func TestParseShowPools(t *testing.T) {
 		t.Fatal("expected an error for output without a SHOW POOLS header")
 	}
 }
+
+func TestPoolerConfigRevision_IgnoresStatsUsers(t *testing.T) {
+	env := poolerEnv("main", "pw", 0, 0)
+	with := poolerConfigRevision(env)
+	delete(env, "STATS_USERS")
+	if got := poolerConfigRevision(env); got != with {
+		t.Errorf("revision changed when STATS_USERS was removed: %s vs %s", got, with)
+	}
+}

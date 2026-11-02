@@ -12,6 +12,10 @@ import (
 // Top-level verb rather than get/set/clear: a single read-only DNS check, nothing to configure.
 func runDomainsCheck(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "domains check", "print the check result as JSON to stdout and nothing else", stderr)
+	var cutover bool
+	var expectIPs stringList
+	fs.BoolVar(&cutover, "cutover", false, "verify domains that are moving here: DNS, proxy, redirect, certificate, HSTS, response and www/apex, with a PASS, WARN or FAIL")
+	fs.Var(&expectIPs, "expect-ip", "with --cutover: the address the domain must resolve to (repeatable), instead of this host's own")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, domainsCheckUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -19,6 +23,9 @@ func runDomainsCheck(prog string, args []string, stdout, stderr io.Writer, looku
 		return exitCode
 	}
 
+	if cutover {
+		return runDomainsVerify(fs, stdout, stderr, verifyArgs{prog: prog, apiURL: apiURLFlag, token: tokenFlag, profile: profileFlag, jsonOut: jsonOut, of: of, expectIPs: expectIPs}, lookupEnv)
+	}
 	rest, ok := requireArgs(fs, stderr, prog, "domains check", "an app name and a domain", 2)
 	if !ok {
 		return exitUsage
@@ -92,6 +99,7 @@ func printDomainDNSHuman(out io.Writer, r domainCheckResource) {
 func domainsCheckUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s domains check <app> <domain> [flags]
+  %[1]s domains check --cutover <domain>... [--expect-ip <ip>]... [flags]
 
 Runs a real DNS lookup for <domain> and reports whether it currently
 resolves to this control plane's own advertised address: one of
@@ -103,7 +111,17 @@ server never holds a correct record back; answers are printed per source
 cache flush command when this server's resolver is behind.
 <domain> must already be one of <app>'s configured domains.
 
+With --cutover the app name is dropped and any number of domains is verified
+for a move onto this server. Each gets a PASS, WARN or FAIL line, with the
+next step, for DNS against this host's public addresses (or --expect-ip),
+proxy in front, the http to https redirect, certificate issuer and days left,
+HSTS, response status and time to first byte as seen from this host, and the
+www or apex partner. It only reads. The name is requested only once DNS
+points here or at a known proxy. The exit code is 1 when any domain has a FAIL.
+
 Flags:
+  --cutover                verify domains moving here (see above)
+  --expect-ip string       with --cutover: required address, repeatable
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")

@@ -167,9 +167,11 @@ func TestImportRejectsUnsafeEntries(t *testing.T) {
 			if !errors.Is(err, ErrUnsafeArchive) {
 				t.Fatalf("want ErrUnsafeArchive, got %v", err)
 			}
+			if f.extracted != nil {
+				t.Fatal("nothing may be extracted from a rejected archive")
+			}
 			for _, c := range f.cmds {
-				// Only the first entry is checked before the clear; later ones fail the stream.
-				if name != "through symlink" && len(c) > 2 && strings.Contains(c[2], "rm -rf") {
+				if len(c) > 2 && strings.Contains(c[2], "rm -rf") {
 					t.Fatal("an unsafe first entry must not wipe the volume")
 				}
 			}
@@ -186,5 +188,38 @@ func TestImportSizeCapAndNotGzip(t *testing.T) {
 	_, err = (&VolumeTransfer{Runtime: &fakeTransferRuntime{}}).Import(context.Background(), "data", strings.NewReader("plain text"), ImportOptions{MaxBytes: 1024})
 	if err == nil || !strings.Contains(err.Error(), "not a gzip archive") {
 		t.Fatalf("want gzip error, got %v", err)
+	}
+}
+
+func wipedOrExtracted(f *fakeTransferRuntime) bool {
+	for _, c := range f.cmds {
+		if len(c) > 2 && strings.Contains(c[2], "rm -rf") {
+			return true
+		}
+	}
+	return f.extracted != nil
+}
+
+func TestImportBadLateEntryLeavesVolumeUntouched(t *testing.T) {
+	arc := buildArchive(t, []tarEntry{{name: "ok.txt", body: "fine"}, {name: "dir/", typ: tar.TypeDir}, {name: "dir/../../evil", body: "x"}})
+	f := &fakeTransferRuntime{listing: "old.txt\n"}
+	_, err := (&VolumeTransfer{Runtime: f}).Import(context.Background(), "data", bytes.NewReader(arc), ImportOptions{MaxBytes: 1 << 20, Overwrite: true})
+	if !errors.Is(err, ErrUnsafeArchive) {
+		t.Fatalf("want ErrUnsafeArchive, got %v", err)
+	}
+	if wipedOrExtracted(f) {
+		t.Fatal("a bad late entry must not clear or write the volume")
+	}
+}
+
+func TestImportSizeCapLateLeavesVolumeUntouched(t *testing.T) {
+	arc := buildArchive(t, []tarEntry{{name: "a", body: "x"}, {name: "big", body: strings.Repeat("x", 8192)}})
+	f := &fakeTransferRuntime{listing: "old.txt\n"}
+	_, err := (&VolumeTransfer{Runtime: f}).Import(context.Background(), "data", bytes.NewReader(arc), ImportOptions{MaxBytes: 2048, Overwrite: true})
+	if !errors.Is(err, ErrTransferTooLarge) {
+		t.Fatalf("want too large, got %v", err)
+	}
+	if wipedOrExtracted(f) {
+		t.Fatal("an over-cap archive must not clear or write the volume")
 	}
 }

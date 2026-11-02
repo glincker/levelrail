@@ -38,6 +38,7 @@ type domainAutoSeams struct {
 	pluginDNS     dnsPluginCaller
 	// authoritative answers how many of the zone's own name servers return want, for the cutover checklist.
 	authoritative func(ctx context.Context, domain string, want []string) (known bool, hit, total int)
+	verify        verifySeams
 
 	handlerMu sync.Mutex
 	handler   http.Handler

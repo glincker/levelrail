@@ -1188,6 +1188,7 @@ Endpoints for:
 | GET | /api/v1/domains/{domain}/cutover | AbilityRead | handleDomainCutover |
 | POST | /api/v1/domains/{domain}/cutover/certificate | AbilityRoot | handleCutoverCertificate |
 | DELETE | /api/v1/domains/{domain}/cutover/certificate | AbilityRoot | handleCutoverCertificateRevert |
+| GET | /api/v1/domains/{domain}/verify | AbilityRead | handleDomainCutoverVerify |
 
 ## Built-in Container Registry
 

@@ -805,6 +805,7 @@ Per domain settings take `<app> <domain>`, and the domain must already be one of
 ```
 levelrail-cli domains list [flags]
 levelrail-cli domains check <app> <domain> [flags]
+levelrail-cli domains check --cutover <domain>... [--expect-ip <ip>]... [--json]
 levelrail-cli domains doctor <app> <domain> [--json]
 levelrail-cli domains diagnose <domain> [--fix] [--json]
 levelrail-cli domains cutover <domain> [--get-certificate] [--revert-challenge] [--json]

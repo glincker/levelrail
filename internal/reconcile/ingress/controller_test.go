@@ -914,3 +914,39 @@ func TestController_Reconcile_FallbackCertsMode(t *testing.T) {
 		})
 	}
 }
+
+// A user domain equal to another service's fallback name keeps its eager
+// certificate: only a fallback that wins its host is deferred.
+func TestController_Reconcile_LazyFallback_UserDomainSameAsFallbackStaysEager(t *testing.T) {
+	const host = "web.203-0-113-5.sslip.io"
+	owner := store.DesiredService{Name: "owner", Image: "img:v1", Port: 80, Domains: []string{host}}
+	web := store.DesiredService{Name: "web", Image: "img:v1", Port: 80}
+
+	rt := newFakeRuntime()
+	rt.seedRunning(application.ContainerName(owner.Name, owner.Image, ""), 34567)
+	rt.seedRunning(application.ContainerName(web.Name, web.Image, ""), 34568)
+
+	st := &fakeStore{services: []store.DesiredService{owner, web}}
+	applier := &fakeApplier{}
+	c := New(st, rt, applier, WithLogger(discardLogger()), WithPublicHost("203.0.113.5"),
+		WithFallbackCerts(func(context.Context) string { return "lazy" }))
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+
+	applier.mu.Lock()
+	defer applier.mu.Unlock()
+	if applier.lastCfg == nil || applier.lastCfg.Apps.TLS == nil || applier.lastCfg.Apps.TLS.Automation == nil {
+		t.Fatalf("no TLS automation applied: %+v", applier.lastCfg)
+	}
+	for _, p := range applier.lastCfg.Apps.TLS.Automation.Policies {
+		if !p.OnDemand {
+			continue
+		}
+		for _, s := range p.Subjects {
+			if s == host {
+				t.Errorf("%s is on-demand, want eager for the user domain", host)
+			}
+		}
+	}
+}

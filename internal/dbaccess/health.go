@@ -2,11 +2,13 @@ package dbaccess
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"strconv"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -53,7 +55,11 @@ func dataPath(engine string) (string, bool) {
 }
 
 func runHealthScript(ctx context.Context, ex Exec, containerID, script string) (string, error) {
-	rc, err := ex.ExecWithInput(ctx, containerID, []string{"sh", "-c", script}, strings.NewReader(""))
+	return runHealthScriptInput(ctx, ex, containerID, script, "")
+}
+
+func runHealthScriptInput(ctx context.Context, ex Exec, containerID, script, stdin string) (string, error) {
+	rc, err := ex.ExecWithInput(ctx, containerID, []string{"sh", "-c", script}, strings.NewReader(stdin))
 	if err != nil {
 		return "", wrapExec(err)
 	}
@@ -108,8 +114,29 @@ func parseTwoInts(out string) (int, int, error) {
 	return a, b, nil
 }
 
+// ErrPoolerStatsUnavailable means the pooler admin console refused the stored owner password, for example while a rotation is still reaching the pooler.
+var ErrPoolerStatsUnavailable = errors.New("pooler stats unavailable")
+
 // ReadPoolerPools returns raw pgbouncer SHOW POOLS output, read through the database container's psql so no pooler image tooling is needed.
-func ReadPoolerPools(ctx context.Context, ex Exec, containerID string, port int) (string, error) {
-	return runHealthScript(ctx, ex, containerID, `PGPASSWORD="$POSTGRES_PASSWORD" exec psql -X -A -F '|' --no-password -h 127.0.0.1 -p `+
-		strconv.Itoa(port)+` -U "$POSTGRES_USER" pgbouncer -c 'SHOW POOLS'`)
+// The current stored owner password goes in on stdin, never argv and never the container env, which goes stale after a rotation.
+func ReadPoolerPools(ctx context.Context, ex Exec, containerID string, port int, password string) (string, error) {
+	if password == "" || strings.ContainsAny(password, "\r\n") {
+		return "", ErrPoolerStatsUnavailable
+	}
+	rc, err := ex.ExecWithInput(ctx, containerID, []string{"sh", "-c", `IFS= read -r PGPASSWORD; export PGPASSWORD; exec psql -X -A -F '|' --no-password -h 127.0.0.1 -p ` +
+		strconv.Itoa(port) + ` -U "$POSTGRES_USER" pgbouncer -c 'SHOW POOLS'`}, strings.NewReader(password+"\n"))
+	if err != nil {
+		// psql exits 2 when the server refuses the login, which is how a stale password shows.
+		var ee *docker.ExecExitError
+		if errors.As(err, &ee) && ee.ExitCode == 2 {
+			return "", ErrPoolerStatsUnavailable
+		}
+		return "", wrapExec(err)
+	}
+	defer func() { _ = rc.Close() }()
+	out, err := io.ReadAll(io.LimitReader(rc, 4096))
+	if err != nil {
+		return "", fmt.Errorf("read health probe output: %w", err)
+	}
+	return strings.TrimSpace(string(out)), nil
 }
