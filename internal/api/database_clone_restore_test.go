@@ -383,3 +383,37 @@ func TestHandleListCloneRestores_NoRunnerConfigured_StillWorks(t *testing.T) {
 		t.Fatalf("history = %+v, want exactly the seeded row", got)
 	}
 }
+
+func TestHandleCloneRestore_CopiesNodeAndTLSIntent(t *testing.T) {
+	t.Parallel()
+	runner := newFakeCloneRestoreRunner()
+	rt, db := newTestRouterWithCloneRestoreRunner(t, runner)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+	if err := db.SaveDesiredDatabase(ctx, store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16"}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	if err := db.UpdateDatabaseNode(ctx, "main", "node-a"); err != nil {
+		t.Fatalf("seed node: %v", err)
+	}
+	if err := db.SetDatabaseTLSMode(ctx, "main", store.DatabaseTLSModeOff); err != nil {
+		t.Fatalf("seed tls: %v", err)
+	}
+	seedSucceededBackupForCloneRestore(t, db, "main")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/databases/main/restore-as-new", `{"backup_id":"bkh_1","new_name":"main-copy"}`))
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	got, err := db.GetDesiredDatabase(ctx, "main-copy")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.NodeID != "node-a" {
+		t.Errorf("clone node = %q, want node-a", got.NodeID)
+	}
+	if mode, _ := db.GetDatabaseTLSMode(ctx, "main-copy"); mode != store.DatabaseTLSModeOff {
+		t.Errorf("clone tls mode = %q, want off", mode)
+	}
+}

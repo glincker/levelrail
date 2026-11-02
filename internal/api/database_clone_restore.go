@@ -163,12 +163,15 @@ func (rt *Router) handleCloneRestore(w http.ResponseWriter, r *http.Request) {
 		Engine:    sourceDB.Engine,
 		Version:   version,
 		ProjectID: req.ProjectID,
+		// The clone stays on the source's node; secrets and passwords are never copied.
+		NodeID: sourceDB.NodeID,
 		// Resources go through the create path so the quota check reserves them up front.
 		Resources: req.Resources,
 	}
 	if !rt.createDesiredDatabase(w, r, newDB) {
 		return
 	}
+	rt.copyDatabaseTLSMode(r.Context(), name, req.NewName)
 
 	historyID, err := randomCloneRestoreID()
 	if err != nil {
@@ -234,4 +237,23 @@ func randomCloneRestoreID() (string, error) {
 		return "", fmt.Errorf("api: generate clone restore id: %w", err)
 	}
 	return "clr_" + base64.RawURLEncoding.EncodeToString(buf), nil
+}
+
+// copyDatabaseTLSMode gives the clone the source's TLS intent. A failure only
+// logs: the clone keeps the create-time default.
+func (rt *Router) copyDatabaseTLSMode(ctx context.Context, source, clone string) {
+	modes, ok := rt.databases.(databaseTLSModeStore)
+	if !ok {
+		if modes, ok = rt.databaseTLSModeStore(); !ok {
+			return
+		}
+	}
+	mode, err := modes.GetDatabaseTLSMode(ctx, source)
+	if err != nil {
+		rt.logger.Warn("api: clone restore: read source tls mode failed", slog.String("source_database", source), slog.String("error", err.Error()))
+		return
+	}
+	if err := modes.SetDatabaseTLSMode(ctx, clone, mode); err != nil {
+		rt.logger.Warn("api: clone restore: copy tls mode failed", slog.String("new_database", clone), slog.String("error", err.Error()))
+	}
 }

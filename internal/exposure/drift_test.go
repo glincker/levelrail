@@ -2,6 +2,7 @@ package exposure
 
 import (
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -81,7 +82,7 @@ func TestCheckDrift(t *testing.T) {
 				Chain: ParseChain(""), Prefix: driftPrefix, Known: []int{22},
 				Findings: []Finding{{Protocol: "tcp", HostPort: 443, Class: ClassExposed, Owner: Owner{Kind: OwnerApp}}},
 				Listeners: []Listener{
-					{"tcp", "0.0.0.0", 22}, {"tcp", "0.0.0.0", 443}, {"tcp", "127.0.0.1", 9000}, {"tcp", "[::]", 5390},
+					{Protocol: "tcp", Address: "0.0.0.0", Port: 22}, {Protocol: "tcp", Address: "0.0.0.0", Port: 443}, {Protocol: "tcp", Address: "127.0.0.1", Port: 9000}, {Protocol: "tcp", Address: "[::]", Port: 5390},
 				},
 			},
 			[]string{"listener_undeclared:tcp/5390"},
@@ -118,5 +119,30 @@ tcp LISTEN 0 4096 *:8080 *:*
 	}
 	if publicAddr(got[2].Address) || !publicAddr(got[1].Address) || !publicAddr(got[3].Address) {
 		t.Fatal("publicAddr misclassified")
+	}
+}
+
+func TestListenerDriftNamesProcess(t *testing.T) {
+	out := `tcp LISTEN 0 4096 0.0.0.0:5390 0.0.0.0:* users:(("wg-helper",pid=811,fd=7))
+udp UNCONN 0 0 *:51820 *:* users:(("wireguard-go",pid=902,fd=3),("x",pid=1,fd=4))
+tcp LISTEN 0 4096 0.0.0.0:9999 0.0.0.0:*
+`
+	ls := ParseListeners(out)
+	if len(ls) != 3 || ls[0].Process != "wg-helper" || ls[0].PID != 811 || ls[1].Process != "wireguard-go" || ls[2].Process != "" {
+		t.Fatalf("process parse: %+v", ls)
+	}
+	got := CheckDrift(DriftInput{Listeners: ls, Prefix: driftPrefix})
+	if len(got) != 3 {
+		t.Fatalf("want 3 findings, got %+v", got)
+	}
+	byPort := map[int]DriftFinding{}
+	for _, f := range got {
+		byPort[f.Port] = f
+	}
+	if m := byPort[5390].Message; !strings.Contains(m, "process wg-helper (pid 811)") {
+		t.Errorf("named message = %q", m)
+	}
+	if m := byPort[9999].Message; !strings.HasPrefix(m, "something listens") {
+		t.Errorf("unknown owner must fall back, got %q", m)
 	}
 }

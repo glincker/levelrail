@@ -396,7 +396,7 @@ func (s *bootState) startReconciler() {
 		publicHost:                   publicHost(),
 		ingressHTTPSAddr:             ingressHTTPSAddr(),
 		ingressHTTPAddr:              ingressHTTPAddr(),
-		httpRedirect:                 httpRedirectEnabled(ingressHTTPAddr(), edge.inherited, logger),
+		httpRedirect:                 httpRedirectEnabled(ingressHTTPAddr(), edge.inherited, s.ingressDriver.OwnsPort, logger),
 		models:                       newModelDeps(),
 		lbRegistry:                   lbRegistry,
 		proxySyncer:                  proxySyncer,

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/api"
+	"github.com/GLINCKER/levelrail/internal/backup"
 	"github.com/GLINCKER/levelrail/internal/diskguard"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
@@ -42,6 +43,9 @@ func (s *bootState) wireStorageSettings() {
 	s.telemetryDB.SetRawRetentionSource(retentionSetting(s.apiRouter, runtimesettings.KeyMetricsRetention, profileRetention))
 	ingressdriver.DefaultAccessLog().SetRetentionSource(func() time.Duration {
 		return rs().AccessLogRetention(context.Background())
+	})
+	backup.SetLocalRootSource(func() string {
+		return rs().String(context.Background(), runtimesettings.KeyBackupLocalRoot)
 	})
 	telemetry.SetLogBudgetSource(func() int64 {
 		return int64(rs().Int(context.Background(), runtimesettings.KeyLogBudgetMB)) * mibBytes

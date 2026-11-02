@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -86,7 +85,7 @@ func toBackupTargetResource(t store.BackupTarget) backupTargetResource {
 	provider, endpoint, localRoot := t.Provider, t.Endpoint, ""
 	if strings.HasPrefix(t.Endpoint, store.LocalEndpointScheme) {
 		provider, endpoint = backupProviderLocal, ""
-		localRoot = backup.LocalRootFromEnv(os.LookupEnv)
+		localRoot = backup.ResolvedLocalRoot()
 	}
 	return backupTargetResource{
 		ID:           t.ID,
@@ -155,7 +154,7 @@ func validateCreateBackupTargetRequest(req createBackupTargetRequest) error {
 		if req.Name == "" {
 			return errors.New("name is required")
 		}
-		if backup.LocalRootFromEnv(os.LookupEnv) == "" {
+		if backup.ResolvedLocalRoot() == "" {
 			return errors.New("local targets need " + backup.EnvLocalRoot + " (or APP_DATA_DIR) set to an absolute directory on the control plane")
 		}
 		_, err := backup.CleanLocalPath(req.Bucket)

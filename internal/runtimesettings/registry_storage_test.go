@@ -49,3 +49,25 @@ func TestStorageSettings_RejectUnsafeValues(t *testing.T) {
 		}
 	}
 }
+
+func TestBackupLocalRootRejectsTraversal(t *testing.T) {
+	for _, bad := range []string{"/srv/../etc", "relative/dir", "/", "/a/b/.."} {
+		if backupRootCheck(bad) == nil {
+			t.Errorf("%q accepted", bad)
+		}
+	}
+	for _, ok := range []string{"", "/mnt/backups"} {
+		if err := backupRootCheck(ok); err != nil {
+			t.Errorf("%q rejected: %v", ok, err)
+		}
+	}
+}
+
+func TestBootRecheckFloors(t *testing.T) {
+	if bootRecheckItemCheck("500ms") == nil || bootRecheckItemCheck("3s") != nil {
+		t.Fatal("boot recheck item floor wrong")
+	}
+	if err := durationRangeCheck(minBootEventRecheck, time.Hour)("100ms"); err == nil {
+		t.Fatal("event recheck below floor accepted")
+	}
+}

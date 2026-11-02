@@ -40,7 +40,7 @@ func publicHostSource() string {
 // httpRedirectEnabled reads APP_INGRESS_HTTP_REDIRECT (true, false, or auto,
 // the default). Auto enables the redirect only when the HTTP address can be
 // bound right now, so a non-root dev run keeps working without port 80.
-func httpRedirectEnabled(addr string, inherited *ingressdriver.InheritedSockets, logger *slog.Logger) bool {
+func httpRedirectEnabled(addr string, inherited *ingressdriver.InheritedSockets, ownsPort func(int) bool, logger *slog.Logger) bool {
 	switch strings.ToLower(strings.TrimSpace(os.Getenv("APP_INGRESS_HTTP_REDIRECT"))) {
 	case "1", "true", "on", "yes":
 		return true
@@ -48,6 +48,10 @@ func httpRedirectEnabled(addr string, inherited *ingressdriver.InheritedSockets,
 		return false
 	}
 	if inherited.Active() && inherited.HTTP != 0 {
+		return true
+	}
+	// A restored route snapshot already serves this port, so a probe would hit ourselves.
+	if ownsPort != nil && ownsPort(ingressPortFromAddr(addr)) {
 		return true
 	}
 	ln, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", addr)

@@ -39,6 +39,9 @@ type Listener struct {
 	Protocol string
 	Address  string
 	Port     int
+	// Process is the owning process name from ss -p, empty when ss could not say.
+	Process string
+	PID     int
 }
 
 // DriftInput is everything a drift check compares. It is plain data so the
@@ -75,8 +78,8 @@ func CheckDrift(in DriftInput) []DriftFinding {
 		if publicAddr(l.Address) && !published[restrictionID(l.Protocol, l.Port)] && !slices.Contains(in.Known, l.Port) {
 			out = append(out, DriftFinding{
 				Kind: DriftListenerUndeclared, Severity: SeverityMedium, Port: l.Port, Protocol: l.Protocol, Subject: l.Address,
-				Message: fmt.Sprintf("something listens on %s:%d/%s and no container or platform service declares it", l.Address, l.Port, l.Protocol),
-				Fix:     "find the process with ss -ltnup, then stop it or bind it to a private address",
+				Message: fmt.Sprintf("%s listens on %s:%d/%s and no container or platform service declares it", listenerOwner(l), l.Address, l.Port, l.Protocol),
+				Fix:     listenerFix(l),
 			})
 		}
 	}
@@ -181,7 +184,47 @@ func publicAddr(a string) bool {
 	return !ip.IsLoopback() && !ip.IsPrivate() && !ip.IsLinkLocalUnicast()
 }
 
-// ParseListeners parses `ss -H -ltnu` output. Lines it cannot read are skipped.
+// listenerOwner names the owning process, or "something" when ss did not say.
+func listenerOwner(l Listener) string {
+	switch {
+	case l.Process != "" && l.PID > 0:
+		return fmt.Sprintf("process %s (pid %d)", l.Process, l.PID)
+	case l.Process != "":
+		return "process " + l.Process
+	}
+	return "something"
+}
+
+func listenerFix(l Listener) string {
+	if l.Process != "" {
+		return fmt.Sprintf("stop %s or bind it to a private address", l.Process)
+	}
+	return "find the process with ss -ltnup (as root), then stop it or bind it to a private address"
+}
+
+// parseSSProcess reads the first process entry (name and pid) of an ss -p line.
+func parseSSProcess(fields []string) (string, int) {
+	for _, f := range fields {
+		rest, ok := strings.CutPrefix(f, "users:((\"")
+		if !ok {
+			continue
+		}
+		name, tail, ok := strings.Cut(rest, "\"")
+		if !ok {
+			return "", 0
+		}
+		pid := 0
+		if _, after, ok := strings.Cut(tail, "pid="); ok {
+			digits, _, _ := strings.Cut(after, ",")
+			digits = strings.TrimRight(digits, ")")
+			pid, _ = strconv.Atoi(digits)
+		}
+		return name, pid
+	}
+	return "", 0
+}
+
+// ParseListeners parses `ss -H -ltnup` output, with or without the process column. Lines it cannot read are skipped.
 func ParseListeners(out string) []Listener {
 	var ls []Listener
 	for _, line := range strings.Split(out, "\n") {
@@ -197,7 +240,8 @@ func ParseListeners(out string) []Listener {
 		if err != nil {
 			continue
 		}
-		ls = append(ls, Listener{Protocol: f[0], Address: f[4][:i], Port: port})
+		proc, pid := parseSSProcess(f[5:])
+		ls = append(ls, Listener{Protocol: f[0], Address: f[4][:i], Port: port, Process: proc, PID: pid})
 	}
 	return ls
 }
@@ -210,7 +254,7 @@ func (m *Manager) ReadListeners(ctx context.Context) []Listener {
 	if _, err := m.lookPath("ss"); err != nil {
 		return nil
 	}
-	out, err := m.run(ctx, "ss", "-H", "-ltnu")
+	out, err := m.run(ctx, "ss", "-H", "-ltnup")
 	if err != nil {
 		return nil
 	}

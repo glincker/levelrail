@@ -53,6 +53,8 @@ type Routed struct {
 	Files NodeFiles
 	// LocalRoot confines local:// targets; empty disables them.
 	LocalRoot string
+	// LocalRootFn, when set, is read per operation and wins over LocalRoot.
+	LocalRootFn func() string
 }
 
 func (r Routed) files(d Destination) (NodeFiles, string, error) {

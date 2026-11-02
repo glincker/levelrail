@@ -484,7 +484,8 @@ func (s *bootState) serve() error {
 			logger.Info("closed live streams for shutdown", slog.Int("streams", n))
 		}
 	}()
-	engine.SetBootPasses(bootPassDelays(logger), envDurationOr(logger, bootEventRecheckEnv, defaultBootEventRecheck))
+	rs, rsCtx := s.apiRouter.RuntimeSettings(), context.Background()
+	engine.SetBootPasses(bootPassDelays(logger, rs.List(rsCtx, runtimesettings.KeyBootRechecks)), rs.Duration(rsCtx, runtimesettings.KeyBootEventRecheck))
 	engineErr := engine.Run(ctx, events, resyncInterval)
 
 	drainCtx, drainCancel := context.WithTimeout(context.Background(), envDurationOr(logger, shutdownDrainEnv, defaultShutdownDrain))
@@ -524,17 +525,13 @@ func storedDeployURLMode(db interface {
 	}
 }
 
-// bootPassDelays reads the comma separated offsets of the extra post-start passes.
-func bootPassDelays(logger *slog.Logger) []time.Duration {
-	raw := os.Getenv(bootRecheckEnv)
-	if raw == "" {
-		return []time.Duration{3 * time.Second, 10 * time.Second}
-	}
+// bootPassDelays parses the offsets of the extra post-start passes from the saved setting.
+func bootPassDelays(logger *slog.Logger, items []string) []time.Duration {
 	var out []time.Duration
-	for _, part := range strings.Split(raw, ",") {
+	for _, part := range items {
 		d, err := time.ParseDuration(strings.TrimSpace(part))
 		if err != nil || d < 0 {
-			logger.Warn("invalid boot pass delay, skipping", slog.String("key", bootRecheckEnv), slog.String("value", part))
+			logger.Warn("invalid boot pass delay, skipping", slog.String("key", runtimesettings.KeyBootRechecks), slog.String("value", part))
 			continue
 		}
 		out = append(out, d)
