@@ -1036,6 +1036,8 @@ type DomainCheckResource struct {
 	FlushCommand  string      `json:"flush_command,omitempty"`
 	Hints         []DNSHint   `json:"hints,omitempty"`
 	Zone          string      `json:"zone,omitempty"`
+	// NameserverProvider is cloudflare, route53, other or unknown.
+	NameserverProvider string `json:"nameserver_provider,omitempty"`
 }
 
 // DNSSource is one resolver's answer in a domain check.

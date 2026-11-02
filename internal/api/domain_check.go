@@ -164,6 +164,8 @@ type domainCheckResponse struct {
 	FlushCommand string                 `json:"flush_command,omitempty"`
 	Hints        []domaindoctor.DNSHint `json:"hints,omitempty"`
 	Zone         string                 `json:"zone,omitempty"`
+	// NameserverProvider is cloudflare, route53, other or unknown, read from the zone's NS hostnames.
+	NameserverProvider string `json:"nameserver_provider,omitempty"`
 }
 
 // Configured APP_PUBLIC_HOST wins: self-discovery breaks behind NAT, port mappings and load balancers.

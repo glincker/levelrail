@@ -331,7 +331,9 @@
     "colValue": "Valor",
     "colTtl": "TTL",
     "colStatus": "Estado",
-    "addRecord": "Añadir un registro"
+    "addRecord": "Añadir un registro",
+    "connect": "Conectar {{provider}}",
+    "nsHint": "Tu zona usa los servidores de nombres de {{provider}}."
   },
   "banner": {
     "description": "Conecta un proveedor de DNS para administrar aquí las zonas y los registros, y ver cuándo se han propagado los cambios de servidores de nombres.",

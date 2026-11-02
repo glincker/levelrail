@@ -1,6 +1,6 @@
 import { screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ProxyHandledTlsBadge } from './ProxyDomainStatus'
+import { ProxyDomainStatus, ProxyHandledTlsBadge } from './ProxyDomainStatus'
 import {
   jsonResponse,
   proxyDomain,
@@ -45,5 +45,28 @@ describe('ProxyHandledTlsBadge', () => {
     )
     expect(await screen.findByText('Provisioning')).toBeInTheDocument()
     expect(screen.queryByText('Handled by your proxy')).not.toBeInTheDocument()
+  })
+})
+
+describe('ProxyDomainStatus recheck', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('offers Recheck DNS only when the app is known', async () => {
+    const data = proxyIntegration({ domains: [proxyDomain()] })
+    stubFetch({ [`GET ${BASE}`]: () => jsonResponse(data) })
+    const view = renderWithProviders(
+      <ProxyDomainStatus domain="app.example.com" appName="web" />,
+    )
+    expect(
+      await screen.findByRole('button', { name: 'Recheck DNS' }),
+    ).toBeInTheDocument()
+    view.unmount()
+    renderWithProviders(<ProxyDomainStatus domain="app.example.com" />)
+    await screen.findByText(/Check|Verify/i)
+    expect(
+      screen.queryByRole('button', { name: 'Recheck DNS' }),
+    ).not.toBeInTheDocument()
   })
 })

@@ -97,6 +97,7 @@ export interface DomainCheckResult {
   flush_command?: string
   hints?: DnsHint[]
   zone?: string
+  nameserver_provider?: 'cloudflare' | 'route53' | 'other' | 'unknown'
 }
 
 export const domainCheckKeys = {

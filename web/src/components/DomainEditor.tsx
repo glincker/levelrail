@@ -230,7 +230,10 @@ export function DomainEditor({ app }: { app: AppDetail }) {
                                   />
                                 )}
                               </div>
-                              <ProxyDomainStatus domain={domain} />
+                              <ProxyDomainStatus
+                                appName={app.name}
+                                domain={domain}
+                              />
                               <DomainDnsRecordsControl
                                 appName={app.name}
                                 domain={domain}

@@ -331,7 +331,9 @@
     "colValue": "Value",
     "colTtl": "TTL",
     "colStatus": "Status",
-    "addRecord": "Add a record"
+    "addRecord": "Add a record",
+    "connect": "Connect {{provider}}",
+    "nsHint": "Your zone uses {{provider}} name servers."
   },
   "banner": {
     "description": "Connect a DNS provider to manage zones and records here, and see when name server changes have propagated.",

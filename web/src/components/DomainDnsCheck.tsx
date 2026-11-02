@@ -25,6 +25,18 @@ import {
   type ProxyCertificate,
   type TlsOwner,
 } from '../queries/domainCheck'
+import {
+  dnsCheckAnchor,
+  dnsPillState,
+  proxyCertTrusted,
+  type DnsPillState,
+} from '../lib/dnsPill'
+import { findProxyDomain } from '../lib/proxyIntegration'
+import {
+  proxyIntegrationQueryOptions,
+  type ProxyDomain,
+} from '../queries/proxyIntegration'
+import { useQuery } from '@tanstack/react-query'
 import { AcmeFailureHint } from './AcmeFailureHint'
 import { DnsProviderBadge } from './DnsProviderBadge'
 import { ProxyManagedCertNote } from './ProxyManagedCertNote'
@@ -124,7 +136,7 @@ function DnsRecordRow({ label, value }: { label: string; value: string }) {
 }
 
 const STATUS_META: Record<
-  DomainCheckStatus,
+  DnsPillState,
   {
     label: string
     variant: VariantProps<typeof badgeVariants>['variant']
@@ -154,6 +166,11 @@ const STATUS_META: Record<
   unconfigured: {
     label: 'Unable to check',
     variant: 'muted',
+    icon: CircleAlertGlassIcon,
+  },
+  cert_pending: {
+    label: '',
+    variant: 'warning',
     icon: CircleAlertGlassIcon,
   },
 }
@@ -356,15 +373,24 @@ export function DomainCheckPanel({
   data,
   isFetching,
   onRefetch,
+  proxyRow,
 }: {
   domain: string
   data?: DomainCheckPanelData
   isFetching: boolean
   onRefetch: () => void
+  proxyRow?: ProxyDomain
 }) {
   const { t } = useTranslation('domains')
   const proxyOwned = data?.tls_owner === 'proxy'
-  const meta = data ? STATUS_META[data.status] : undefined
+  const pill = data
+    ? dnsPillState(
+        data.status,
+        proxyOwned,
+        proxyCertTrusted(proxyRow, data.proxy_certificate),
+      )
+    : undefined
+  const meta = pill ? STATUS_META[pill] : undefined
   const StatusIcon = meta?.icon
   const options = data ? dnsRecordOptions(data) : []
   const [activeType, setActiveType] = useState<DnsRecordType | undefined>(
@@ -373,7 +399,10 @@ export function DomainCheckPanel({
   const active = options.find((o) => o.type === activeType) ?? options[0]
 
   return (
-    <div className="rounded-md border border-border bg-muted/30 p-3 text-sm">
+    <div
+      id={dnsCheckAnchor(domain)}
+      className="rounded-md border border-border bg-muted/30 p-3 text-sm"
+    >
       <div className="flex items-center justify-between gap-2">
         <span className="min-w-0 truncate font-mono text-xs text-muted-foreground">
           {domain}
@@ -381,7 +410,7 @@ export function DomainCheckPanel({
         {meta ? (
           <Badge variant={meta.variant} className="shrink-0">
             {StatusIcon ? <StatusIcon className="size-3.5" /> : null}
-            {meta.label}
+            {pill === 'cert_pending' ? t('dnsCheck.certPending') : meta.label}
           </Badge>
         ) : null}
       </div>
@@ -443,7 +472,7 @@ export function DomainCheckPanel({
         </p>
       ) : null}
 
-      {proxyOwned ? (
+      {proxyOwned && !proxyRow ? (
         <div className="mt-2">
           <ProxyManagedCertNote certificate={data?.proxy_certificate} />
         </div>
@@ -509,8 +538,11 @@ export function DomainDnsCheck({
   domain: string
 }) {
   const { data, isFetching, refetch } = useDomainCheck(appName, domain)
+  const { data: proxy } = useQuery(proxyIntegrationQueryOptions())
+  const proxyRow = proxy ? findProxyDomain(proxy, domain) : undefined
   return (
     <DomainCheckPanel
+      proxyRow={proxyRow}
       domain={domain}
       data={data}
       isFetching={isFetching}

@@ -59,6 +59,7 @@ func (s *Syncer) Retry(ctx context.Context, domain string) error {
 		if gap <= 0 {
 			gap = defaultRetryGap
 		}
+		RecordRetry(domain, time.Now())
 		select {
 		case <-ctx.Done():
 		case <-time.After(gap):

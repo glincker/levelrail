@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { RefreshCwGlassIcon } from '@thesvg/ui-react'
+import { domainCheckKeys } from '../queries/domainCheck'
+import { dnsCheckAnchor } from '../lib/dnsPill'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
@@ -23,8 +26,15 @@ import { ProxySetupConfirm } from './proxy/ProxySetupConfirm'
 // Per-domain proxy status for the app Domains tab. Renders nothing when
 // no proxy is detected or this server has no proxy integration. The pill is
 // shown once in the TLS row; this block adds the one sentence and one action.
-export function ProxyDomainStatus({ domain }: { domain: string }) {
+export function ProxyDomainStatus({
+  domain,
+  appName,
+}: {
+  domain: string
+  appName?: string
+}) {
   const { t } = useTranslation('domains')
+  const qc = useQueryClient()
   const { data } = useQuery(proxyIntegrationQueryOptions())
   const setup = useSetupProxyIntegration()
   const [confirming, setConfirming] = useState(false)
@@ -39,6 +49,24 @@ export function ProxyDomainStatus({ domain }: { domain: string }) {
         onMakeLive={() => setConfirming(true)}
       />
       <ProxyDiagnosis row={row} />
+      {appName ? (
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          onClick={() => {
+            document
+              .getElementById(dnsCheckAnchor(domain))
+              ?.scrollIntoView({ block: 'nearest' })
+            void qc.refetchQueries({
+              queryKey: domainCheckKeys.detail(appName, domain),
+            })
+          }}
+        >
+          <RefreshCwGlassIcon className="size-5" aria-hidden="true" />
+          {t('dnsCheck.recheck')}
+        </Button>
+      ) : null}
       {!row.hint && row.last_error ? (
         <p className="text-destructive">
           {t('proxySetup.domains.lastError', { error: row.last_error })}

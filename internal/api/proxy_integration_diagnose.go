@@ -100,7 +100,7 @@ func (rt *Router) collectFallbackEvidence(ctx context.Context, deps *proxyIntegr
 		}
 		in.DNS = facts
 	}
-	if line := proxyroutes.ACMEFailure(rt.proxyContainerLogs(ctx, deps, det.Container), in.Domain); line != "" {
+	if line := proxyroutes.ACMEFailureSince(rt.proxyContainerLogs(ctx, deps, det.Container), in.Domain, latest(in.FirstSeen, proxyroutes.RetriedAt(in.Domain))); line != "" {
 		in.ACMELog = secretmask.Mask(line)
 	}
 	if deps.dialOpen != nil {
@@ -144,4 +144,12 @@ func (rt *Router) retryProxyCert(ctx context.Context, deps *proxyIntegrationDeps
 		return proxyroutes.ErrRetryUnsupported
 	}
 	return deps.retryCert(ctx, domain)
+}
+
+// latest returns the later of two times.
+func latest(a, b time.Time) time.Time {
+	if b.After(a) {
+		return b
+	}
+	return a
 }

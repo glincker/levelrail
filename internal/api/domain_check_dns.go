@@ -60,6 +60,11 @@ func (rt *Router) applyDNSVerdict(ctx context.Context, resp *domainCheckResponse
 
 	resp.Authoritative, resp.Public, resp.Local = view.Authoritative, view.Public, []dnsinspect.Source{localSrc}
 	resp.Zone, resp.Verdict, resp.LocalStale, resp.Escalated, resp.Hints = view.Zone, v.Verdict, v.LocalStale, v.Escalated, v.Hints
+	ns := view.ZoneNS
+	if len(ns) == 0 {
+		ns = view.DelegatedNS
+	}
+	resp.NameserverProvider = dnsinspect.ProviderOf(ns)
 	if v.LocalStale {
 		resp.FlushCommand = v.FlushCommand
 	}
