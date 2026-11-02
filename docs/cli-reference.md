@@ -20,7 +20,7 @@ levelrail-cli auth login --device
 levelrail-cli auth whoami
 ```
 
-`--device` prints a short code that you approve in the dashboard, the same model as `gh auth login`. Credentials are saved to `~/.config/levelrail-cli/credentials`. For CI, create an API token under **Settings, API tokens** and pass it with `--token` or `APP_API_TOKEN`.
+`--device` prints a short code that you approve in the dashboard, the same model as `gh auth login`. Credentials are saved to `~/.config/levelrail-cli/credentials`. `auth login` saves the new token to the credentials file and does not print it; add `--print-token` to see it once. Plain-http targets work on loopback. `up` on a folder without a git remote uploads it, like `deploy <dir>`. The API URL env var is `LEVELRAIL_API_URL` or `APP_API_URL` (the first wins). For CI, create an API token under **Settings, API tokens** and pass it with `--token` or `APP_API_TOKEN`.
 
 Each command resolves its target in this order, and an explicit flag always wins:
 

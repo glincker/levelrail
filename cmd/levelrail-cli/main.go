@@ -606,5 +606,5 @@ Auth and target:
   command in this CLI already follows.
 
 Run "%[1]s apps -h", "%[1]s databases -h", or "%[1]s <command> <subcommand> -h" for more.
-`, prog, envAPIToken, envAPIURL, defaultAPIURL, envProfile, defaultProfile))
+`, prog, envAPIToken, apiURLEnvHelp, defaultAPIURL, envProfile, defaultProfile))
 }

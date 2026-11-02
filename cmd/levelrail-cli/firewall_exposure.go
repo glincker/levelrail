@@ -29,7 +29,7 @@ func runFirewallExposure(prog string, args []string, stdout, stderr io.Writer, l
 	fs.BoolVar(&probe, "probe", false, "also dial each internet-facing port on the node's public address from this side")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s firewall exposure [--node N] [--probe] [flags]\n\nLists published container ports and how reachable each is. Read-only.\n\nFlags:\n  --node string           audit only this node\n  --probe                 also dial each internet-facing port from this side; a failed dial is reported as \"could not confirm\", never as closed\n", prog)
-		_, _ = fmt.Fprintf(stderr, exposureFlagsHelp, envAPIToken, envAPIURL, defaultAPIURL)
+		_, _ = fmt.Fprintf(stderr, exposureFlagsHelp, envAPIToken, apiURLEnvHelp, defaultAPIURL)
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
@@ -98,7 +98,7 @@ func runFirewallRestrict(prog string, args []string, stdout, stderr io.Writer, l
 	fs.BoolVar(&apply, "apply", false, "apply the rules; this confirms the traffic described by --dry-run will be dropped")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s firewall restrict --port N --allow CIDR[,CIDR] [--local-containers] (--dry-run | --apply) [flags]\n\nRestricts a published container port with comment-tagged DOCKER-USER rules.\nRefused for ports the control plane, its agents, ingress or SSH need.\nReverse it with \"%s firewall unrestrict --port N\".\n\nFlags:\n  --port int  --protocol string  --allow string  --local-containers  --node string  --dry-run  --apply\n", prog, prog)
-		_, _ = fmt.Fprintf(stderr, exposureFlagsHelp, envAPIToken, envAPIURL, defaultAPIURL)
+		_, _ = fmt.Fprintf(stderr, exposureFlagsHelp, envAPIToken, apiURLEnvHelp, defaultAPIURL)
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
@@ -161,7 +161,7 @@ func runFirewallUnrestrict(prog string, args []string, stdout, stderr io.Writer,
 	fs.StringVar(&protocol, "protocol", "tcp", "\"tcp\" or \"udp\"")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s firewall unrestrict --port N [--protocol tcp|udp] [flags]\n\nRemoves the rules the control plane added for this port. Rules you created yourself are never touched.\n\nFlags:\n  --port int  --protocol string\n", prog)
-		_, _ = fmt.Fprintf(stderr, exposureFlagsHelp, envAPIToken, envAPIURL, defaultAPIURL)
+		_, _ = fmt.Fprintf(stderr, exposureFlagsHelp, envAPIToken, apiURLEnvHelp, defaultAPIURL)
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {

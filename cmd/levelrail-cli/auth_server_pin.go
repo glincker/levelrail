@@ -181,7 +181,7 @@ Flags:
   --output string    output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string     JMESPath expression to filter the result before printing
   -h, --help         show this help
-`, prog, envAPIURL, defaultAPIURL)
+`, prog, apiURLEnvHelp, defaultAPIURL)
 }
 
 func runAuthTrustServer(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
@@ -256,5 +256,5 @@ Flags:
   --output string    output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string     JMESPath expression to filter the result before printing
   -h, --help         show this help
-`, prog, envAPIURL, defaultAPIURL)
+`, prog, apiURLEnvHelp, defaultAPIURL)
 }

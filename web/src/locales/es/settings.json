@@ -2470,5 +2470,37 @@
     "test": "Probar conexión",
     "testing": "Probando...",
     "username": "Nombre de usuario"
+  },
+  "deployUrlCopies": {
+    "title": "Copias de URL de despliegue",
+    "description": "Indica si los despliegues recientes conservan una copia y si esa copia es accesible. El cambio se aplica en la siguiente sincronización, sin reiniciar.",
+    "modeLabel": "Modo de copia",
+    "modes": {
+      "off": {
+        "label": "Desactivado",
+        "description": "No se conserva ninguna copia."
+      },
+      "private": {
+        "label": "Privado",
+        "description": "Las copias se conservan suspendidas, sin host público ni certificado."
+      },
+      "public": {
+        "label": "Público",
+        "description": "Cada copia recibe su propio nombre de host y certificado, accesibles desde internet."
+      }
+    },
+    "source": {
+      "stored": "Guardado aquí",
+      "env": "Desde el entorno",
+      "default": "Predeterminado"
+    },
+    "reset": "Restablecer al valor predeterminado ({{mode}})",
+    "saved": "Copias de URL de despliegue actualizadas.",
+    "saving": "Guardando...",
+    "confirm": {
+      "title": "¿Hacer públicas las copias de despliegue?",
+      "description": "Cada copia conservada recibe su propio nombre de host público y certificado. Cualquiera con la dirección puede acceder a versiones antiguas de tus apps.",
+      "confirm": "Hacer público"
+    }
   }
 }

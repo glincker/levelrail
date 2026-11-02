@@ -802,7 +802,7 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 			if port == 0 {
 				port = 80
 			}
-			cfg.Apps.HTTP.Servers[opts.ServerName+"-http"] = certRedirectServer(":"+strconv.Itoa(port), &AutoHTTPSConfig{DisableRedir: true}, true, tlsHosts)
+			cfg.Apps.HTTP.Servers[opts.ServerName+"-http"] = certRedirectServer(":"+strconv.Itoa(port), &AutoHTTPSConfig{DisableRedir: true}, true, tlsHosts, listenPort(opts.ListenAddr))
 		}
 		wildcardHosts, regularHosts := splitWildcardHosts(allHosts)
 		switch {

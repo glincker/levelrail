@@ -20,6 +20,8 @@ func waitUpDeploy(ctx context.Context, client *Client, result *upResult, timeout
 		followCtx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
 		logDone = make(chan struct{})
+		touch, stopTick := startDeployProgress(stderr, "waiting", deployProgressInterval(rawLookupEnv))
+		defer stopTick()
 		stopLog = cancel
 		deployID := result.DeployID
 		if deployID == "" {
@@ -28,6 +30,7 @@ func waitUpDeploy(ctx context.Context, client *Client, result *upResult, timeout
 		go func() {
 			defer close(logDone)
 			_ = client.StreamDeployLog(followCtx, name, deployID, func(e apiclient.LogStreamEntry) error {
+				touch()
 				_, _ = fmt.Fprintln(stderr, e.Line)
 				return nil
 			})
@@ -52,9 +55,11 @@ func waitUpDeploy(ctx context.Context, client *Client, result *upResult, timeout
 	}
 	result.Failure, result.Error = wait.Deploy.Failure, wait.Deploy.Error
 	if final, err := client.GetApp(ctx, name); err == nil {
-		result.URL = appPrimaryURL(final)
+		result.URL = publicURL(ctx, client, final)
 		if domain := primaryDomain(final); domain != "" && result.Status == apiclient.DeployOutcomeHealthy {
-			result.Certificate = domainCertState(ctx, client, domain)
+			result.Certificate, result.CertificateKind = domainCertInfo(ctx, client, domain)
+		} else if result.Status == apiclient.DeployOutcomeHealthy && result.URL != "" {
+			result.CertificateKind = fallbackCertKind(ctx, client, result.URL)
 		}
 	}
 	return nil
@@ -76,6 +81,9 @@ func printUpWaitVerdict(stderr io.Writer, result *upResult) {
 	_, _ = fmt.Fprintf(stderr, "deploy %s: %s\n", result.DeployID, result.Status)
 	if result.Status == apiclient.DeployOutcomeHealthy {
 		if note := certNote(result.URL, result.Certificate); note != "" {
+			_, _ = fmt.Fprintln(stderr, note)
+		}
+		if note := internalCANote(result.URL, result.CertificateKind); note != "" {
 			_, _ = fmt.Fprintln(stderr, note)
 		}
 		return

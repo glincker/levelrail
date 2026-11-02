@@ -62,6 +62,10 @@ func settingsUsage(prog string) string {
   %[1]s settings ingress get [flags]                      show the current ingress/ACME settings
   %[1]s settings ingress set [flags]                      configure the primary domain and ACME (Let's Encrypt) settings
   %[1]s settings edge get|set|fix [flags]                 request limits and trusted proxies (fix detects the proxy in front)
+  %[1]s settings email branding get|set|preview [flags]  logo, accent color and footer for every rich email
+  %[1]s settings heartbeat show|set|clear [flags]         the outbound heartbeat ping
+  %[1]s settings ddns show|set|enable|disable|status [flags]   dynamic DNS updates for this server
+  %[1]s settings runtime list|get|set|reset|apply [flags]  live runtime settings (stored value wins, env only seeds the default)
   %[1]s settings dashboard-url get [flags]                show the public URL operators use to reach the dashboard
   %[1]s settings dashboard-url set --url URL [flags]      set it (https refuses plain-HTTP sign-in afterwards)
   %[1]s settings ai-assistant get [flags]                 show the current BYOK AI assistant settings

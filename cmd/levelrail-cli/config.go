@@ -56,3 +56,6 @@ func writeCredentialsFile(prog, profile string, creds credentials) error {
 func listProfiles(prog string) ([]profileSummary, error) {
 	return apiclient.ListProfiles(prog)
 }
+
+// apiURLEnvHelp names both env vars in help text; LEVELRAIL_API_URL wins when both are set.
+const apiURLEnvHelp = envLevelrailAPIURL + " or " + envAPIURL

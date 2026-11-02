@@ -39,7 +39,7 @@ func runMigrateCoolify(prog string, args []string, stdout, stderr io.Writer, loo
 	fs.BoolVar(&f.apply, "apply", false, "create apps directly on the target Levelrail instance (POST /api/v1/apps) instead of writing files")
 	fs.BoolVar(&f.includeSecretValues, "include-secret-values", false, "fetch real env var values from Coolify (requires a Coolify token with the read:sensitive ability); never written into a generated app.yaml, only into a companion secrets file or applied via PUT .../secrets/{key}")
 	fs.StringVar(&targetTokenFlag, "target-token", "", "Levelrail API token, --apply only (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&targetAPIURLFlag, "target-api-url", "", "Levelrail control plane base URL, --apply only (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
+	fs.StringVar(&targetAPIURLFlag, "target-api-url", "", "Levelrail control plane base URL, --apply only (overrides "+apiURLEnvHelp+" and the credentials file, default "+defaultAPIURL+")")
 	fs.StringVar(&targetProfileFlag, "target-profile", "", "named credentials profile to read the target Levelrail instance from, --apply only (overrides "+envProfile+", default \""+defaultProfile+"\")")
 	fs.BoolVar(&f.dryRun, "dry-run", false, "read Coolify and print the exact plan, per-resource outcomes and the cutover checklist; creates and writes nothing")
 	fs.BoolVar(&f.verify, "verify", false, "like --dry-run, but asked of the target control plane so apps already imported show as imported")
@@ -163,5 +163,5 @@ switch order. Stage them with "import apps --from coolify".
 Git repo/branch identity is not persisted Levelrail state today: the
 report prints the exact "apps create --repo ... --ref ..." follow-up
 command for each migrated app that had one.
-`, prog, envAPIToken, envAPIURL, defaultAPIURL)
+`, prog, envAPIToken, apiURLEnvHelp, defaultAPIURL)
 }

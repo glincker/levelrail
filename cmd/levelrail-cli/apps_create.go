@@ -953,7 +953,7 @@ func parseCreateFlags(prog string, args []string, errOut io.Writer, tokenFlag, a
 	fs.BoolVar(&f.interactive, "i", false, "shorthand for --interactive")
 	fs.BoolVar(&f.jsonOut, "json", false, "print the created app as JSON to stdout and nothing else")
 	fs.StringVar(tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
+	fs.StringVar(apiURLFlag, "api-url", "", "control plane API base URL (overrides "+apiURLEnvHelp+" and the credentials file, default "+defaultAPIURL+")")
 	fs.StringVar(profileFlag, "profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
 	outputFlagP, queryFlagP := bindOutputQueryFlags(fs)
 
@@ -1084,7 +1084,7 @@ Common flags:
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
-`, prog, envAPIToken, envAPIURL, defaultAPIURL)
+`, prog, envAPIToken, apiURLEnvHelp, defaultAPIURL)
 }
 
 // registerCreateHealthFlags adds the probe flags of "apps health set" under a readiness/liveness prefix, so both commands parse through probeFlags.toProbe.

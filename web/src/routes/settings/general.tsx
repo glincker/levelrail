@@ -24,6 +24,7 @@ import {
 import { certificatesQueryOptions } from '../../queries/certificates'
 import { GeneralPageShell } from '../../components/settings/GeneralPageShell'
 import { DockerCleanupFallbackCard } from '../../components/DockerCleanupFallbackCard'
+import { DeployUrlCopiesCard } from '../../components/DeployUrlCopiesCard'
 import { OrphanedVolumesCard } from '../../components/OrphanedVolumesCard'
 import { SecretBindingCard } from '../../components/SecretBindingCard'
 import {
@@ -241,6 +242,8 @@ function GeneralSettingsPage() {
         ) : (
           <DockerCleanupFallbackCard />
         )}
+
+        <DeployUrlCopiesCard />
 
         <OrphanedVolumesCard />
 

@@ -10,6 +10,7 @@ import (
 	"os"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 
 	"golang.org/x/term"
@@ -29,9 +30,10 @@ type upResult struct {
 	DeployID  string   `json:"deploy_id,omitempty"`
 	Status    string   `json:"status,omitempty"`
 	// Certificate is issued, pending or failed for the primary domain; empty when unknown.
-	Certificate string                   `json:"certificate,omitempty"`
-	Failure     *apiclient.DeployFailure `json:"failure,omitempty"`
-	Error       string                   `json:"error,omitempty"`
+	Certificate     string                   `json:"certificate,omitempty"`
+	CertificateKind string                   `json:"certificate_kind,omitempty"`
+	Failure         *apiclient.DeployFailure `json:"failure,omitempty"`
+	Error           string                   `json:"error,omitempty"`
 }
 
 // runUp implements "up [dir]": infer an app from the directory, then create or update it, connect databases, build and add the domain.
@@ -89,7 +91,13 @@ func runUp(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(
 		return reportError(stdout, stderr, jsonOut, newValidationError("--timeout must be a valid positive duration, got %q", timeoutStr))
 	}
 
-	inf, err := inferUp(dir, f, detectGitAt(dir))
+	gitSrc := detectGitAt(dir)
+	if f.repo == "" && gitSrc.RepoURL == "" && upUploadCompatible(f, noWait) {
+		_, _ = fmt.Fprintf(stderr, "no git remote \"origin\" in %s, uploading the folder instead (same as \"%s deploy %s\")\n", dir, prog, dir)
+		return runDeployUpload(prog, upAsDeployArgs(f, dir, dryRun, yes, timeoutStr, tokenFlag, apiURLFlag, profileFlag, jsonOut, of), stdout, stderr, lookupEnv, stdin)
+	}
+
+	inf, err := inferUp(dir, f, gitSrc)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
 	}
@@ -461,6 +469,9 @@ builds from the directory's git remote "origin" and adds the domain.
 It then follows the first deploy until the app is healthy and exits like
 "deploy": 0 healthy, %[6]d not healthy, %[7]d timed out. --no-wait returns
 as soon as the build is started. The branch must be pushed first.
+A directory without a git remote is uploaded instead, like "%[1]s deploy dir",
+with a one-line notice (only when none of --with, --domain, --replicas,
+--strategy, --memory, --cpu, --ref, --secret or --no-wait is given).
 Running it again updates the same app and rebuilds; nothing is duplicated.
 Every value is printed with where it came from. Precedence: flag, app
 spec, detection, default.
@@ -492,5 +503,41 @@ Flags:
 
 Example:
   %[1]s up --with postgres --domain app.example.com
-`, prog, envAPIToken, envAPIURL, defaultAPIURL, defaultDeployUploadWait, exitDeployNotHealthy, exitDeployTimeout)
+`, prog, envAPIToken, apiURLEnvHelp, defaultAPIURL, defaultDeployUploadWait, exitDeployNotHealthy, exitDeployTimeout)
+}
+
+// upUploadCompatible reports whether every flag given has an equivalent in the upload deploy.
+func upUploadCompatible(f upFlags, noWait bool) bool {
+	return len(f.with) == 0 && f.domain == "" && f.replicas == 0 && f.strategy == "" && f.memory == "" && f.cpu == 0 &&
+		f.ref == "" && len(f.secrets) == 0 && !noWait
+}
+
+// upAsDeployArgs rebuilds the command line for "deploy [dir]" from the flags "up" already parsed.
+func upAsDeployArgs(f upFlags, dir string, dryRun, yes bool, timeout, token, apiURL, profile string, jsonOut bool, of outputFlags) []string {
+	args := []string{"--timeout", timeout}
+	add := func(flag, v string) {
+		if v != "" {
+			args = append(args, flag, v)
+		}
+	}
+	add("--app", f.name)
+	add("--token", token)
+	add("--api-url", apiURL)
+	add("--profile", profile)
+	if f.port > 0 {
+		args = append(args, "--port", strconv.Itoa(f.port))
+	}
+	if jsonOut {
+		args = append(args, "--json")
+	} else {
+		add("--output", string(of.Format))
+	}
+	add("--query", of.Query)
+	if dryRun {
+		args = append(args, "--dry-run")
+	}
+	if yes {
+		args = append(args, "--yes")
+	}
+	return append(args, dir)
 }

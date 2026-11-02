@@ -17,7 +17,7 @@ func runUsersRole(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	}
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "users role set", "print the updated user as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %[1]s users role set <user> <role> [flags]\n\nAssigns a stored role (id or name) and copies its abilities onto the user.\nRefused for your own user and when it would remove the last root user.\n"+rolesFlagsHelp, prog, envAPIToken, envAPIURL, defaultAPIURL)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %[1]s users role set <user> <role> [flags]\n\nAssigns a stored role (id or name) and copies its abilities onto the user.\nRefused for your own user and when it would remove the last root user.\n"+rolesFlagsHelp, prog, envAPIToken, apiURLEnvHelp, defaultAPIURL)
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args[1:], apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
@@ -59,7 +59,7 @@ func runUsersGrants(prog string, args []string, stdout, stderr io.Writer, lookup
 		fs.Var(&envs, "environment", "environment id to grant (repeatable; none clears every grant)")
 	}
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %[1]s users grants get <user> [flags]\n  %[1]s users grants set <user> [--environment ID ...] [flags]\n\nGrants list the environments a user whose role has granted visibility (guest) can see.\nset replaces the whole list.\n"+rolesFlagsHelp, prog, envAPIToken, envAPIURL, defaultAPIURL)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %[1]s users grants get <user> [flags]\n  %[1]s users grants set <user> [--environment ID ...] [flags]\n\nGrants list the environments a user whose role has granted visibility (guest) can see.\nset replaces the whole list.\n"+rolesFlagsHelp, prog, envAPIToken, apiURLEnvHelp, defaultAPIURL)
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args[1:], apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {

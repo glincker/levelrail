@@ -3434,5 +3434,37 @@
   "iacHelp": {
     "hint": "Click a key to see what it does.",
     "default": "Default: {{value}}."
+  },
+  "deployUrlCopies": {
+    "title": "Deploy URL copies",
+    "description": "Whether recent deploys keep a retained copy, and whether that copy is reachable. A change applies on the next sync pass, without a restart.",
+    "modeLabel": "Copy mode",
+    "modes": {
+      "off": {
+        "label": "Off",
+        "description": "No copies are kept."
+      },
+      "private": {
+        "label": "Private",
+        "description": "Copies are kept suspended, with no public host or certificate."
+      },
+      "public": {
+        "label": "Public",
+        "description": "Copies get their own hostname and certificate, reachable from the internet."
+      }
+    },
+    "source": {
+      "stored": "Saved here",
+      "env": "From environment",
+      "default": "Default"
+    },
+    "reset": "Reset to default ({{mode}})",
+    "saved": "Deploy URL copies updated.",
+    "saving": "Saving...",
+    "confirm": {
+      "title": "Make deploy copies public?",
+      "description": "Every retained copy gets its own public hostname and certificate. Anyone with the address can reach old versions of your apps.",
+      "confirm": "Make public"
+    }
   }
 }

@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"log/slog"
+	"net"
 	"net/netip"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -57,5 +60,42 @@ func TestListenWhenAssigned_NonPositiveRetryDoesNotSpin(t *testing.T) {
 				t.Errorf("address checks = %d, want the default retry interval between checks", n)
 			}
 		})
+	}
+}
+
+func TestServeOIDCTokenRequests_AddrInUseDegradesToInfo(t *testing.T) {
+	busy, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Skip("no loopback listener")
+	}
+	t.Cleanup(func() { _ = busy.Close() })
+	var buf bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	done := make(chan struct{})
+	go func() {
+		serveOIDCTokenRequests(context.Background(), busy.Addr().String(), nil, logger)
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("serve did not return on a busy address")
+	}
+	out := buf.String()
+	if !strings.Contains(out, "level=INFO") || strings.Contains(out, "level=ERROR") || strings.Contains(out, "level=WARN") {
+		t.Fatalf("want a single info line, got %s", out)
+	}
+}
+
+func TestLoadBrand_MissingDefaultFileFallsBack(t *testing.T) {
+	t.Setenv("APP_BRAND_FILE", "")
+	t.Chdir(t.TempDir())
+	b, err := loadBrand()
+	if err != nil || b == nil || b.Name == "" {
+		t.Fatalf("want the built-in brand, got %v %v", b, err)
+	}
+	t.Setenv("APP_BRAND_FILE", "/nonexistent/brand.yaml")
+	if _, err := loadBrand(); err == nil {
+		t.Fatal("an explicit missing APP_BRAND_FILE should still fail")
 	}
 }

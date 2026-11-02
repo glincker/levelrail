@@ -121,12 +121,12 @@ func (s *InheritedSockets) listenAddrs() []string {
 // gets a plain note, because a redirect there would end in a failed handshake.
 // With the redirect off the socket stays held so clients are not refused.
 func (s *InheritedSockets) redirectServer(redirect bool, hosts []string) *Server {
-	return certRedirectServer("fd/"+strconv.Itoa(s.HTTP), &AutoHTTPSConfig{Disabled: true}, redirect, hosts)
+	return certRedirectServer("fd/"+strconv.Itoa(s.HTTP), &AutoHTTPSConfig{Disabled: true}, redirect, hosts, s.HTTPSPort)
 }
 
 // certRedirectServer is the port 80 server shared by the inherited and the
 // self-bound paths, so both redirect only hosts that hold a certificate.
-func certRedirectServer(listen string, auto *AutoHTTPSConfig, redirect bool, hosts []string) *Server {
+func certRedirectServer(listen string, auto *AutoHTTPSConfig, redirect bool, hosts []string, httpsPort int) *Server {
 	srv := &Server{AutomaticHTTPS: auto, Listen: []string{listen}}
 	if !redirect {
 		return srv
@@ -137,7 +137,7 @@ func certRedirectServer(listen string, auto *AutoHTTPSConfig, redirect bool, hos
 			Handle: []any{StaticResponseHandler{
 				Handler:    "static_response",
 				StatusCode: 308,
-				Headers:    map[string][]string{"Location": {"https://{http.request.host}{http.request.uri}"}},
+				Headers:    map[string][]string{"Location": {httpsRedirectLocation(httpsPort)}},
 			}},
 		})
 	}
@@ -148,6 +148,29 @@ func certRedirectServer(listen string, auto *AutoHTTPSConfig, redirect bool, hos
 		Headers:    map[string][]string{"Content-Type": {"text/plain; charset=utf-8"}},
 	}}})
 	return srv
+}
+
+// httpsRedirectLocation keeps a non-default HTTPS port in the redirect target,
+// otherwise plain HTTP on a custom port would bounce to port 443.
+func httpsRedirectLocation(port int) string {
+	if port <= 0 || port == 443 {
+		return "https://{http.request.host}{http.request.uri}"
+	}
+	return "https://{http.request.host}:" + strconv.Itoa(port) + "{http.request.uri}"
+}
+
+// listenPort returns the numeric port of a Caddy listen address such as
+// ":18703" or "0.0.0.0:443", or 0 when it has none.
+func listenPort(addr string) int {
+	i := strings.LastIndex(addr, ":")
+	if i < 0 {
+		return 0
+	}
+	n, err := strconv.Atoi(addr[i+1:])
+	if err != nil {
+		return 0
+	}
+	return n
 }
 
 // NoCertificateNotice is what port 80 answers for a host with no certificate,

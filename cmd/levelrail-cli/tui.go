@@ -40,7 +40,7 @@ func runTUI(prog string, args []string, _, stderr io.Writer, lookupEnv func(stri
 	fs := flag.NewFlagSet(prog+" tui", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	token := fs.String("token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	apiURL := fs.String("api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file)")
+	apiURL := fs.String("api-url", "", "control plane API base URL (overrides "+apiURLEnvHelp+" and the credentials file)")
 	profile := fs.String("profile", "", "named credentials profile to use (overrides "+envProfile+")")
 	readOnly := fs.Bool("read-only", false, "disable every action that changes state")
 	refresh := fs.Duration("refresh", 0, "refresh interval, minimum 2s (default 2s, or "+envTUIRefresh+")")
@@ -145,5 +145,5 @@ Flags:
   -h, --help              show this help
 
 Set NO_COLOR=1 to disable colours. Log buffer size: %[6]s (default 2000 lines).
-`, prog, envTUIRefresh, envAPIToken, envAPIURL, defaultAPIURL, envTUILogBuffer)
+`, prog, envTUIRefresh, envAPIToken, apiURLEnvHelp, defaultAPIURL, envTUILogBuffer)
 }

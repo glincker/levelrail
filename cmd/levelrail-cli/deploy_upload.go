@@ -38,6 +38,8 @@ type deployUploadResult struct {
 	URL      string `json:"url,omitempty"`
 	// Certificate is issued, pending or failed for the primary domain; empty for a fallback URL or when unknown.
 	Certificate string `json:"certificate,omitempty"`
+	// CertificateKind is the issuer class (internal, letsencrypt, ...); empty when unknown.
+	CertificateKind string `json:"certificate_kind,omitempty"`
 	// Failure is the server's classified reason when the build or rollout failed.
 	Failure  *apiclient.DeployFailure `json:"failure,omitempty"`
 	Error    string                   `json:"error,omitempty"`
@@ -378,10 +380,13 @@ func finishUploadDeploy(ctx context.Context, client *Client, prog string, inf up
 		followCtx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
 		logDone = make(chan struct{})
+		touch, stopTick := startDeployProgress(stderr, "building", deployProgressInterval(rawLookupEnv))
+		defer stopTick()
 		stopLog = cancel
 		go func() {
 			defer close(logDone)
 			_ = client.StreamDeployLog(followCtx, name, trig.ID, func(e apiclient.LogStreamEntry) error {
+				touch()
 				_, _ = fmt.Fprintln(stderr, e.Line)
 				return nil
 			})
@@ -406,9 +411,9 @@ func finishUploadDeploy(ctx context.Context, client *Client, prog string, inf up
 	}
 	res.Failure, res.Error = wait.Deploy.Failure, wait.Deploy.Error
 	if final, err := client.GetApp(ctx, name); err == nil {
-		res.URL = appPrimaryURL(final)
+		res.URL = publicURL(ctx, client, final)
 		if domain := primaryDomain(final); domain != "" && res.Status == apiclient.DeployOutcomeHealthy {
-			res.Certificate = domainCertState(ctx, client, domain)
+			res.Certificate, res.CertificateKind = domainCertInfo(ctx, client, domain)
 			if res.Certificate == certPending && urlWait > 0 {
 				if !jsonOut {
 					_, _ = fmt.Fprintln(stderr, "waiting for the certificate on "+res.URL)
@@ -417,12 +422,18 @@ func finishUploadDeploy(ctx context.Context, client *Client, prog string, inf up
 			}
 		}
 	}
+	if res.Status == apiclient.DeployOutcomeHealthy && res.CertificateKind == "" && res.Certificate == "" && res.URL != "" {
+		res.CertificateKind = fallbackCertKind(ctx, client, res.URL)
+	}
 	code := writeScheduledTaskResult(stdout, stderr, of, res, func() {
 		if res.Status == apiclient.DeployOutcomeHealthy && res.URL != "" {
 			_, _ = fmt.Fprintln(stdout, res.URL)
 			if res.Certificate == certIssued && urlWait > 0 {
 				_, _ = fmt.Fprintln(stderr, "certificate issued, "+res.URL+" is ready")
 			} else if note := certNote(res.URL, res.Certificate); note != "" {
+				_, _ = fmt.Fprintln(stderr, note)
+			}
+			if note := internalCANote(res.URL, res.CertificateKind); note != "" {
 				_, _ = fmt.Fprintln(stderr, note)
 			}
 		}
@@ -457,6 +468,7 @@ Static sites need no build: "%[1]s deploy ./site --static" or "%[1]s deploy site
 publishes the folder or zip as is (_redirects, _headers and a 404.html are honored).
 A folder or zip wrapped in one top-level directory is unwrapped for you.
 
+"%[1]s up [dir]" falls back to this upload when the directory has no git remote.
 To deploy a git repository by URL, use "%[1]s deploy <git-url>".
 To deploy an image or a git commit instead, use "%[1]s deploy APP --image IMAGE"
 or "--latest".

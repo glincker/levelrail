@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/agent"
@@ -35,19 +36,25 @@ import (
 	"github.com/GLINCKER/levelrail/internal/webhook"
 )
 
-// Turns a missing brand.yaml into an actionable message, since it would otherwise read as an opaque crash.
-// brand.Load itself stays strict about its input.
+var brandFallbackLogged sync.Once
+
+// A missing default ./brand.yaml falls back to the built-in brand so a bare binary still boots.
+// An explicit APP_BRAND_FILE that is missing stays an actionable error. brand.Load itself stays strict.
 func loadBrand() (*brand.Brand, error) {
 	path := os.Getenv("APP_BRAND_FILE")
-	if path == "" {
+	explicit := path != ""
+	if !explicit {
 		path = defaultBrandFile
 	}
 	b, err := brand.Load(path)
-	if err != nil && os.IsNotExist(errors.Unwrap(err)) && localmode.Enabled(os.Getenv) {
+	if err != nil && os.IsNotExist(errors.Unwrap(err)) && (!explicit || localmode.Enabled(os.Getenv)) {
+		brandFallbackLogged.Do(func() {
+			slog.Info("brand file not found, using the built-in default brand", slog.String("path", path))
+		})
 		return brand.LoadEmbedded()
 	}
 	if err != nil && os.IsNotExist(errors.Unwrap(err)) {
-		return nil, fmt.Errorf("%w (running via install.sh sets this up automatically; running the binary directly needs either a brand.yaml file at %q or APP_BRAND_FILE pointing at one)", err, path)
+		return nil, fmt.Errorf("%w (APP_BRAND_FILE points at %q, which does not exist)", err, path)
 	}
 	return b, err
 }
