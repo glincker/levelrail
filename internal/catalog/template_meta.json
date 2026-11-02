@@ -142,7 +142,9 @@
   "license": "GPL-3.0-only",
   "license_class": "copyleft",
   "license_url": "https://github.com/linuxserver/budge/blob/main/LICENSE",
-  "description": "A self-hosted envelope budgeting app for personal finance. Runs as a single container from the budge image, listening on port 80 and keeps its data in named volumes."
+  "description": "A self-hosted envelope budgeting app for personal finance. Runs as a single container from the budge image, listening on port 80 and keeps its data in named volumes.",
+  "status": "deprecated",
+  "status_reason": "upstream has had no commits since July 2023 and the image tracks latest"
  },
  "budibase": {
   "source_repo": "https://github.com/Budibase/budibase",
@@ -453,7 +455,9 @@
   "license": "Apache-2.0",
   "license_class": "permissive",
   "license_url": "https://github.com/filebrowser/filebrowser/blob/master/LICENSE",
-  "description": "A simple web UI for browsing, uploading, and sharing files from your own storage. Runs as a single container from the filebrowser image, listening on port 80 and keeps its data in named volumes."
+  "description": "A simple web UI for browsing, uploading, and sharing files from your own storage. Runs as a single container from the filebrowser image, listening on port 80 and keeps its data in named volumes.",
+  "status": "deprecated",
+  "status_reason": "upstream repository is archived"
  },
  "firefly-iii": {
   "source_repo": "https://github.com/firefly-iii/firefly-iii",
@@ -498,14 +502,18 @@
   "license": "Apache-2.0",
   "license_class": "permissive",
   "license_url": "https://github.com/FlowiseAI/Flowise/blob/main/LICENSE.md",
-  "description": "Drag-and-drop builder for LLM chatbots, agents, and RAG flows, with an API for each flow. Runs as a single container from the flowise image, listening on port 3000; data is kept in named volumes."
+  "description": "Drag-and-drop builder for LLM chatbots, agents, and RAG flows, with an API for each flow. Runs as a single container from the flowise image, listening on port 3000; data is kept in named volumes.",
+  "status": "deprecated",
+  "status_reason": "upstream repository is archived"
  },
  "flowise-postgres": {
   "source_repo": "https://github.com/FlowiseAI/Flowise",
   "license": "Apache-2.0",
   "license_class": "permissive",
   "license_url": "https://github.com/FlowiseAI/Flowise/blob/main/LICENSE.md",
-  "description": "Flowise with a Postgres record manager, a Redis cache, and a Qdrant vector store, for production RAG flows. Runs 4 containers (cache, flowise, qdrant, recordmanager), with flowise listening on port 3000; data is kept in named volumes."
+  "description": "Flowise with a Postgres record manager, a Redis cache, and a Qdrant vector store, for production RAG flows. Runs 4 containers (cache, flowise, qdrant, recordmanager), with flowise listening on port 3000; data is kept in named volumes.",
+  "status": "deprecated",
+  "status_reason": "upstream repository is archived"
  },
  "forgejo": {
   "description": "A lightweight, community-governed Git forge with issues, pull requests, and CI runners. Runs as a single container from the forgejo image, listening on port 3000; data is kept in named volumes."
@@ -689,7 +697,9 @@
   "license": "MIT",
   "license_class": "permissive",
   "license_url": "https://github.com/ajnart/homarr/blob/master/LICENSE",
-  "description": "A customizable start page dashboard for your self-hosted services with drag-and-drop widgets. Runs as a single container from the homarr image, listening on port 7575 and keeps its data in named volumes."
+  "description": "A customizable start page dashboard for your self-hosted services with drag-and-drop widgets. Runs as a single container from the homarr image, listening on port 7575 and keeps its data in named volumes.",
+  "status": "deprecated",
+  "status_reason": "the pinned legacy ajnart image 0.15.10 comes from an archived repository; the maintained successor is homarr-labs/homarr"
  },
  "home-assistant": {
   "source_repo": "https://github.com/home-assistant/core",
@@ -1359,7 +1369,10 @@
   "license": "MIT",
   "license_class": "permissive",
   "license_url": "https://github.com/sct/overseerr/blob/develop/LICENSE",
-  "description": "Lets your Plex users request new movies and TV shows straight from a shared web UI. Runs as a single container from the overseerr image, listening on port 5055; data is kept in named volumes."
+  "description": "Lets your Plex users request new movies and TV shows straight from a shared web UI. Runs as a single container from the overseerr image, listening on port 5055; data is kept in named volumes.",
+  "status": "deprecated",
+  "status_reason": "upstream repository is archived; superseded by seerr in this catalog",
+  "replaced_by": "seerr"
  },
  "owncast": {
   "source_repo": "https://github.com/owncast/owncast",
@@ -1442,7 +1455,9 @@
   "license": "BSD-2-Clause",
   "license_class": "permissive",
   "license_url": "https://github.com/stonith404/pingvin-share/blob/main/LICENSE",
-  "description": "A self-hosted, ad-free alternative to WeTransfer for sending files with expiring links. Runs as a single container from the pingvin-share image, listening on port 3000 and keeps its data in named volumes."
+  "description": "A self-hosted, ad-free alternative to WeTransfer for sending files with expiring links. Runs as a single container from the pingvin-share image, listening on port 3000 and keeps its data in named volumes.",
+  "status": "deprecated",
+  "status_reason": "upstream repository is archived"
  },
  "plane": {
   "source_repo": "https://github.com/makeplane/plane",
@@ -1837,7 +1852,9 @@
   "license": "Apache-2.0",
   "license_class": "permissive",
   "license_url": "https://github.com/huggingface/text-generation-inference/blob/main/LICENSE",
-  "description": "Hugging Face's production inference server for transformer language models, with continuous batching and streaming. Runs as a single container from the text-generation-inference image, listening on port 80; data is kept in named volumes."
+  "description": "Hugging Face's production inference server for transformer language models, with continuous batching and streaming. Runs as a single container from the text-generation-inference image, listening on port 80; data is kept in named volumes.",
+  "status": "deprecated",
+  "status_reason": "upstream repository is archived"
  },
  "tolgee": {
   "source_repo": "https://github.com/tolgee/tolgee-platform",
@@ -2025,7 +2042,9 @@
   "license": "MIT",
   "license_class": "permissive",
   "license_url": "https://github.com/benbusby/whoogle-search/blob/main/LICENSE",
-  "description": "A privacy-focused front end for Google search results, with no tracking, ads, or JavaScript required. Runs as a single container from the whoogle-search image, listening on port 5000 and keeps its data in named volumes."
+  "description": "A privacy-focused front end for Google search results, with no tracking, ads, or JavaScript required. Runs as a single container from the whoogle-search image, listening on port 5000 and keeps its data in named volumes.",
+  "status": "deprecated",
+  "status_reason": "upstream repository is archived"
  },
  "windmill": {
   "source_repo": "https://github.com/windmill-labs/windmill",

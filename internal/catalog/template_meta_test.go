@@ -25,6 +25,19 @@ func TestTemplateMetaIsValid(t *testing.T) {
 		if strings.ContainsAny(m.Description, dashRunes) {
 			t.Errorf("%s: description has a dash character", id)
 		}
+		if m.Status != "" && m.Status != StatusActive {
+			if strings.TrimSpace(m.StatusReason) == "" {
+				t.Errorf("%s: status %s needs a status_reason", id, m.Status)
+			}
+			if strings.ContainsAny(m.StatusReason, dashRunes) {
+				t.Errorf("%s: status_reason has a dash character", id)
+			}
+		}
+		if m.ReplacedBy != "" {
+			if _, ok := byID[m.ReplacedBy]; !ok {
+				t.Errorf("%s: replaced_by %q is not a template", id, m.ReplacedBy)
+			}
+		}
 		if m.License == "" {
 			continue
 		}

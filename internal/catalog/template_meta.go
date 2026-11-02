@@ -16,6 +16,10 @@ type TemplateMeta struct {
 	LicenseClass string `json:"license_class,omitempty"`
 	LicenseURL   string `json:"license_url,omitempty"`
 	Description  string `json:"description,omitempty"`
+	// Status stays empty for active entries; deprecated ones carry a plain-fact reason.
+	Status       string `json:"status,omitempty"`
+	StatusReason string `json:"status_reason,omitempty"`
+	ReplacedBy   string `json:"replaced_by,omitempty"`
 }
 
 var templateMeta = func() map[string]TemplateMeta {

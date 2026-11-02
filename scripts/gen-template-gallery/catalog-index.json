@@ -4174,7 +4174,8 @@
    "description": "A self-hosted envelope budgeting app for personal finance. Runs as a single container from the budge image, listening on port 80 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Finance",
-   "status": "active",
+   "status": "deprecated",
+   "status_reason": "upstream has had no commits since July 2023 and the image tracks latest",
    "source_repo": "https://github.com/linuxserver/budge",
    "documentation_url": "https://github.com/linuxserver/budge",
    "license": {
@@ -13190,7 +13191,8 @@
    "description": "A simple web UI for browsing, uploading, and sharing files from your own storage. Runs as a single container from the filebrowser image, listening on port 80 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Storage",
-   "status": "active",
+   "status": "deprecated",
+   "status_reason": "upstream repository is archived",
    "source_repo": "https://github.com/filebrowser/filebrowser",
    "documentation_url": "https://filebrowser.org",
    "license": {
@@ -14127,7 +14129,8 @@
    "description": "Drag-and-drop builder for LLM chatbots, agents, and RAG flows, with an API for each flow. Runs as a single container from the flowise image, listening on port 3000; data is kept in named volumes.",
    "first_run": [],
    "category": "AI",
-   "status": "active",
+   "status": "deprecated",
+   "status_reason": "upstream repository is archived",
    "source_repo": "https://github.com/FlowiseAI/Flowise",
    "documentation_url": "https://docs.flowiseai.com",
    "license": {
@@ -14289,7 +14292,8 @@
    "description": "Flowise with a Postgres record manager, a Redis cache, and a Qdrant vector store, for production RAG flows. Runs 4 containers (cache, flowise, qdrant, recordmanager), with flowise listening on port 3000; data is kept in named volumes.",
    "first_run": [],
    "category": "AI",
-   "status": "active",
+   "status": "deprecated",
+   "status_reason": "upstream repository is archived",
    "source_repo": "https://github.com/FlowiseAI/Flowise",
    "documentation_url": "https://docs.flowiseai.com",
    "license": {
@@ -20124,7 +20128,8 @@
    "description": "A customizable start page dashboard for your self-hosted services with drag-and-drop widgets. Runs as a single container from the homarr image, listening on port 7575 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Dashboard",
-   "status": "active",
+   "status": "deprecated",
+   "status_reason": "the pinned legacy ajnart image 0.15.10 comes from an archived repository; the maintained successor is homarr-labs/homarr",
    "source_repo": "https://github.com/ajnart/homarr",
    "documentation_url": "https://homarr.dev/docs/getting-started/",
    "license": {
@@ -40460,7 +40465,9 @@
    "description": "Lets your Plex users request new movies and TV shows straight from a shared web UI. Runs as a single container from the overseerr image, listening on port 5055; data is kept in named volumes.",
    "first_run": [],
    "category": "Media",
-   "status": "active",
+   "status": "deprecated",
+   "status_reason": "upstream repository is archived; superseded by seerr in this catalog",
+   "replaced_by": "seerr",
    "source_repo": "https://github.com/sct/overseerr",
    "documentation_url": "https://docs.overseerr.dev",
    "license": {
@@ -43224,7 +43231,8 @@
    "description": "A self-hosted, ad-free alternative to WeTransfer for sending files with expiring links. Runs as a single container from the pingvin-share image, listening on port 3000 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Storage",
-   "status": "active",
+   "status": "deprecated",
+   "status_reason": "upstream repository is archived",
    "source_repo": "https://github.com/stonith404/pingvin-share",
    "documentation_url": "https://github.com/stonith404/pingvin-share",
    "license": {
@@ -54834,7 +54842,8 @@
    "description": "Hugging Face's production inference server for transformer language models, with continuous batching and streaming. Runs as a single container from the text-generation-inference image, listening on port 80; data is kept in named volumes.",
    "first_run": [],
    "category": "AI",
-   "status": "active",
+   "status": "deprecated",
+   "status_reason": "upstream repository is archived",
    "source_repo": "https://github.com/huggingface/text-generation-inference",
    "documentation_url": "https://huggingface.co/docs/text-generation-inference",
    "license": {
@@ -59454,7 +59463,8 @@
    "description": "A privacy-focused front end for Google search results, with no tracking, ads, or JavaScript required. Runs as a single container from the whoogle-search image, listening on port 5000 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Security",
-   "status": "active",
+   "status": "deprecated",
+   "status_reason": "upstream repository is archived",
    "source_repo": "https://github.com/benbusby/whoogle-search",
    "documentation_url": "https://github.com/benbusby/whoogle-search",
    "license": {

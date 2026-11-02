@@ -264,6 +264,9 @@ func applyMeta(e *Entry, m catalog.TemplateMeta) {
 	if e.Description == "" {
 		e.Description = sanitize(m.Description)
 	}
+	if m.Status != "" {
+		e.Status, e.StatusReason, e.ReplacedBy = m.Status, sanitize(m.StatusReason), m.ReplacedBy
+	}
 }
 
 func applyManifest(e *Entry, m *catalog.Manifest) {
