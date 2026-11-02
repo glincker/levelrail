@@ -188,3 +188,25 @@ func TestDeleteBackupTarget_ReferencedByHistory_FailsCleanly(t *testing.T) {
 		t.Fatal("DeleteBackupTarget() error = nil, want a foreign key constraint error while backup_history still references this target")
 	}
 }
+
+func TestRetireBackupTarget_KeepsHistoryOfDeletedResources(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	target := seedBackupTarget(t, db)
+	if err := db.StartBackupHistory(ctx, BackupHistory{ID: "bkh_o", DatabaseName: "gone", TargetID: target.ID, ObjectKey: "gone/1", StartedAt: "2026-08-14T00:00:00Z"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.FinishBackupHistory(ctx, "bkh_o", BackupStatusSucceeded, 1, "", "", "2026-08-14T00:01:00Z"); err != nil {
+		t.Fatal(err)
+	}
+	n, err := db.RetireBackupTarget(ctx, target.ID)
+	if err != nil || n != 1 {
+		t.Fatalf("RetireBackupTarget() = %d, %v, want 1, nil", n, err)
+	}
+	if _, err := db.GetBackupTarget(ctx, target.ID); !errors.Is(err, ErrBackupTargetNotFound) {
+		t.Fatalf("GetBackupTarget() error = %v, want not found", err)
+	}
+	if _, err := db.GetBackupHistory(ctx, "bkh_o"); err != nil {
+		t.Fatalf("history row lost: %v", err)
+	}
+}

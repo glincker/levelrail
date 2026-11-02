@@ -72,7 +72,7 @@ func (db *DB) GetBackupTarget(ctx context.Context, id string) (BackupTarget, err
 	err := db.QueryRowContext(ctx, `
 		SELECT id, name, provider, endpoint, region, bucket, created_at, encrypt_dumps
 		FROM backup_targets
-		WHERE id = ?
+		WHERE id = ? AND deleted_at = ''
 	`, id).Scan(&t.ID, &t.Name, &t.Provider, &t.Endpoint, &t.Region, &t.Bucket, &t.CreatedAt, &t.EncryptDumps)
 	if errors.Is(err, sql.ErrNoRows) {
 		return BackupTarget{}, ErrBackupTargetNotFound
@@ -89,6 +89,7 @@ func (db *DB) ListBackupTargets(ctx context.Context) ([]BackupTarget, error) {
 	rows, err := db.QueryContext(ctx, `
 		SELECT id, name, provider, endpoint, region, bucket, created_at, encrypt_dumps
 		FROM backup_targets
+		WHERE deleted_at = ''
 		ORDER BY created_at
 	`)
 	if err != nil {
@@ -122,7 +123,7 @@ func (db *DB) UpdateBackupTarget(ctx context.Context, id, name, provider, endpoi
 	res, err := db.ExecContext(ctx, `
 		UPDATE backup_targets
 		SET name = ?, provider = ?, endpoint = ?, region = ?, bucket = ?
-		WHERE id = ?
+		WHERE id = ? AND deleted_at = ''
 	`, name, provider, endpoint, region, bucket, id)
 	if err != nil {
 		return fmt.Errorf("store: update backup target %q: %w", id, err)
@@ -170,7 +171,7 @@ func (db *DB) DeleteBackupTarget(ctx context.Context, id string) error {
 // SetBackupTargetEncryptDumps turns dump encryption on or off for new backups
 // to a target; existing objects are not rewritten.
 func (db *DB) SetBackupTargetEncryptDumps(ctx context.Context, id string, enabled bool) error {
-	res, err := db.ExecContext(ctx, `UPDATE backup_targets SET encrypt_dumps = ? WHERE id = ?`, enabled, id)
+	res, err := db.ExecContext(ctx, `UPDATE backup_targets SET encrypt_dumps = ? WHERE id = ? AND deleted_at = ''`, enabled, id)
 	if err != nil {
 		return fmt.Errorf("store: set backup target %q encryption: %w", id, err)
 	}

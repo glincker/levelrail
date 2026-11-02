@@ -561,3 +561,91 @@ func TestHandleTestBackupTarget_Unreachable(t *testing.T) {
 	t.Parallel()
 	assertTestBackupTargetBadGateway(t, errors.New("dial tcp: connection refused"), "could not reach backup target")
 }
+
+func createRetireTarget(t *testing.T, rt *Router, cookie *http.Cookie) string {
+	t.Helper()
+	rec := httptest.NewRecorder()
+	body := `{"name":"s9","provider":"aws","bucket":"backups","access_key_id":"AKID","secret_access_key":"topsecret"}`
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/backup-targets", body))
+	var created backupTargetResource
+	if err := json.NewDecoder(rec.Body).Decode(&created); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
+	return created.ID
+}
+
+func seedSucceededHistory(t *testing.T, db *store.DB, id, database, targetID string) {
+	t.Helper()
+	ctx := context.Background()
+	if err := db.StartBackupHistory(ctx, store.BackupHistory{ID: id, DatabaseName: database, TargetID: targetID, ObjectKey: database + "/1.dump", StartedAt: "2026-08-14T00:00:00Z"}); err != nil {
+		t.Fatalf("seed history: %v", err)
+	}
+	if err := db.FinishBackupHistory(ctx, id, store.BackupStatusSucceeded, 10, "", "", "2026-08-14T00:01:00Z"); err != nil {
+		t.Fatalf("finish history: %v", err)
+	}
+}
+
+func TestHandleDeleteBackupTarget_OrphanedHistoryDetaches(t *testing.T) {
+	t.Parallel()
+	rt, db := newTestRouterWithBackupSecrets(t, &fakeBackupSecretsSetter{})
+	cookie := loginTestSession(t, rt, db)
+	id := createRetireTarget(t, rt, cookie)
+	seedSucceededHistory(t, db, "bkh_gone", "deleteddb", id)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/backup-targets/"+id, ""))
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("delete status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	get := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(get, authedRequest(t, cookie, http.MethodGet, "/api/v1/backup-targets/"+id, ""))
+	if get.Code != http.StatusNotFound {
+		t.Fatalf("get after delete = %d, want 404", get.Code)
+	}
+	hist, err := db.ListBackupHistory(context.Background(), "deleteddb", 10, nil)
+	if err != nil || len(hist) != 1 || hist[0].TargetID != id {
+		t.Fatalf("history after delete = %+v, err = %v, want the row kept", hist, err)
+	}
+	listRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(listRec, authedRequest(t, cookie, http.MethodGet, "/api/v1/databases/deleteddb/backups", ""))
+	if listRec.Code >= 500 {
+		t.Fatalf("history listing status = %d", listRec.Code)
+	}
+
+	entries, err := db.ListAuditEntries(context.Background(), 50, nil, store.AuditEntryFilter{})
+	if err != nil {
+		t.Fatalf("list audit: %v", err)
+	}
+	found := false
+	for _, e := range entries {
+		if e.Action == "backup_target.deleted" {
+			found = true
+			if !strings.Contains(e.Detail, `"detached_history_rows":1`) || strings.Contains(e.Detail, "topsecret") || strings.Contains(e.Detail, "AKID") {
+				t.Fatalf("audit detail = %s", e.Detail)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("no backup_target.deleted audit entry")
+	}
+}
+
+func TestHandleDeleteBackupTarget_LiveScheduleListed(t *testing.T) {
+	t.Parallel()
+	rt, db := newTestRouterWithBackupSecrets(t, &fakeBackupSecretsSetter{})
+	cookie := loginTestSession(t, rt, db)
+	id := createRetireTarget(t, rt, cookie)
+	ctx := context.Background()
+	if err := db.SaveDesiredDatabase(ctx, store.DesiredDatabase{Name: "livedb", Engine: store.EnginePostgres, Version: "16"}); err != nil {
+		t.Fatalf("save database: %v", err)
+	}
+	if err := db.SetDatabaseBackupSchedule(ctx, "livedb", id, "0 3 * * *", 7, 0); err != nil {
+		t.Fatalf("set schedule: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/backup-targets/"+id, ""))
+	if rec.Code != http.StatusConflict || !strings.Contains(rec.Body.String(), "livedb") {
+		t.Fatalf("delete = %d, body = %s, want 409 naming livedb", rec.Code, rec.Body.String())
+	}
+}

@@ -6,7 +6,7 @@ import (
 	"io"
 )
 
-// Returns 409 while any backup still references this target.
+// Returns 409 while a live schedule, policy or running job uses this target.
 func runBackupTargetsDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "backup-targets delete", "print {\"deleted\": true} as JSON to stdout on success and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, backupTargetsDeleteUsage(prog)) }
@@ -40,8 +40,11 @@ func backupTargetsDeleteUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s backup-targets delete <id> [flags]
 
-Disconnects a backup target. Fails with a conflict if any database's
-backup history still references it.
+Disconnects a backup target. Fails with a conflict, listing what uses it, while
+a live schedule, policy, running backup or restore, or the backup history of an
+existing database or app still references it. History of deleted resources is
+kept and shown as target deleted; restoring it needs a target added again.
+Bucket objects are never deleted.
 
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)
