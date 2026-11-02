@@ -322,5 +322,27 @@
     "composeHint": "Pre-filled from the template. Edit it if you need to before deploying.",
     "deploying": "Deploying...",
     "deploy": "Deploy"
+  },
+  "facts": {
+    "license": {
+      "title": "License: {{spdx}}",
+      "classes": {
+        "permissive": "Permissive license",
+        "copyleft": "Copyleft license",
+        "network-copyleft": "Network copyleft license",
+        "source-available": "Source available",
+        "proprietary": "Proprietary"
+      }
+    },
+    "verifiedOn": "Verified on {{arches}} with image tag {{tag}}",
+    "deprecated": "Deprecated",
+    "yanked": "Withdrawn",
+    "useInstead": "Use {{id}} instead",
+    "filter": {
+      "license": "License class",
+      "anyLicense": "Any license",
+      "arch": "Architecture",
+      "anyArch": "Any architecture"
+    }
   }
 }

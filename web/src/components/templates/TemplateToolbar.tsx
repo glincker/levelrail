@@ -16,9 +16,11 @@ import {
 import { cn } from '@/lib/utils'
 import {
   ALL_CATEGORIES,
+  type TemplateFacets,
   type TemplateSort,
 } from '../../lib/templateCatalogView'
 import type { TemplateDensity } from '../../hooks/useTemplateDensity'
+import { TemplateFacetFilters } from './TemplateFacetFilters'
 
 const SORTS: TemplateSort[] = ['relevance', 'name', 'memory']
 
@@ -59,6 +61,8 @@ export function TemplateToolbar({
   onSort,
   verifiedOnly,
   onVerifiedOnly,
+  facets,
+  onFacets,
   density,
   onDensity,
   categoryCounts,
@@ -73,6 +77,8 @@ export function TemplateToolbar({
   onSort: (value: TemplateSort) => void
   verifiedOnly: boolean
   onVerifiedOnly: (value: boolean) => void
+  facets: TemplateFacets
+  onFacets: (value: TemplateFacets) => void
   density: TemplateDensity
   onDensity: (value: TemplateDensity) => void
   categoryCounts: [string, number][]
@@ -141,6 +147,7 @@ export function TemplateToolbar({
           />
           {t('verified.filter')}
         </button>
+        <TemplateFacetFilters facets={facets} onChange={onFacets} />
         <div
           role="group"
           aria-label={t('marketplace.density.label')}

@@ -1,4 +1,8 @@
-import type { ServiceTemplateListItem } from '../queries/serviceTemplates'
+import type {
+  LicenseClass,
+  ServiceTemplateListItem,
+  TemplateArch,
+} from '../queries/serviceTemplates'
 
 export const ALL_CATEGORIES = 'All'
 export const STARTER_KITS_CATEGORY = 'Starter Kits'
@@ -23,16 +27,38 @@ function relevance(template: ServiceTemplateListItem, query: string): number {
   return -1
 }
 
+export interface TemplateFacets {
+  licenseClass?: LicenseClass
+  arch?: TemplateArch
+}
+
+/** facetsMatch applies the license-class and architecture filters; unknown never matches a set filter. */
+function facetsMatch(
+  template: ServiceTemplateListItem,
+  facets: TemplateFacets,
+): boolean {
+  if (facets.licenseClass && template.license?.class !== facets.licenseClass) {
+    return false
+  }
+  if (facets.arch) {
+    const state = template.arch?.[facets.arch]
+    if (state !== 'tested' && state !== 'published') return false
+  }
+  return true
+}
+
 export function filterTemplates(
   templates: readonly ServiceTemplateListItem[],
   query: string,
   category: string,
   verifiedOnly = false,
+  facets: TemplateFacets = {},
 ): ServiceTemplateListItem[] {
   const q = normalizeText(query)
   return templates.filter(
     (template) =>
       (!verifiedOnly || template.verified === true) &&
+      facetsMatch(template, facets) &&
       (category === ALL_CATEGORIES || template.category === category) &&
       (q === '' || relevance(template, q) >= 0),
   )

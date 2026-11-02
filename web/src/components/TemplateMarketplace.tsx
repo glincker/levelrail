@@ -16,6 +16,7 @@ import {
   countCategories,
   filterTemplates,
   sortTemplates,
+  type TemplateFacets,
   type TemplateSort,
 } from '../lib/templateCatalogView'
 import {
@@ -59,6 +60,7 @@ export function TemplateMarketplace({
   const [category, setCategory] = useState<string>(ALL_CATEGORIES)
   const [sort, setSort] = useState<TemplateSort>('relevance')
   const [verifiedOnly, setVerifiedOnly] = useState(false)
+  const [facets, setFacets] = useState<TemplateFacets>({})
   const [density, setDensity] = useTemplateDensity()
   const templatesQuery = useServiceTemplates()
   const customTemplatesQuery = useCustomTemplates()
@@ -87,11 +89,11 @@ export function TemplateMarketplace({
   const visible = useMemo(
     () =>
       sortTemplates(
-        filterTemplates(templates, search, category, verifiedOnly),
+        filterTemplates(templates, search, category, verifiedOnly, facets),
         sort,
         search,
       ),
-    [templates, search, category, sort, verifiedOnly],
+    [templates, search, category, sort, verifiedOnly, facets],
   )
   const starterKits = useMemo(
     () => templates.filter((tpl) => tpl.category === STARTER_KITS_CATEGORY),
@@ -99,12 +101,18 @@ export function TemplateMarketplace({
   )
 
   const searching = search.trim() !== ''
-  const hasFilters = searching || category !== ALL_CATEGORIES || verifiedOnly
+  const hasFilters =
+    searching ||
+    category !== ALL_CATEGORIES ||
+    verifiedOnly ||
+    !!facets.licenseClass ||
+    !!facets.arch
   const showFeatured = !searching && category === ALL_CATEGORIES
   const clearFilters = () => {
     setSearch('')
     setCategory(ALL_CATEGORIES)
     setVerifiedOnly(false)
+    setFacets({})
   }
 
   if (templatesQuery.isLoading) return <LoadingGrid />
@@ -148,6 +156,8 @@ export function TemplateMarketplace({
             onSort={setSort}
             verifiedOnly={verifiedOnly}
             onVerifiedOnly={setVerifiedOnly}
+            facets={facets}
+            onFacets={setFacets}
             density={density}
             onDensity={setDensity}
             categoryCounts={categoryCounts}
@@ -196,7 +206,7 @@ export function TemplateMarketplace({
             <TemplateGrid
               templates={visible}
               density={density}
-              resetKey={`${search}|${category}|${sort}|${verifiedOnly}`}
+              resetKey={`${search}|${category}|${sort}|${verifiedOnly}|${facets.licenseClass ?? ''}|${facets.arch ?? ''}`}
               onSelect={onSelect}
               onDeployNow={onDeployNow}
               deployingId={deployingId}
