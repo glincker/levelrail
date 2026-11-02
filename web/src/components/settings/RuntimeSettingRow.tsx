@@ -25,6 +25,7 @@ import {
   valueLabelKey,
 } from '../../lib/runtimeSettings'
 import {
+  ResetConfirmationError,
   useResetRuntimeSetting,
   useSetRuntimeSetting,
 } from '../../queries/runtimeSettings'
@@ -53,6 +54,7 @@ export function RuntimeSettingRow({
   const [draft, setDraft] = useState(() => draftOf(setting.value))
   const [syncedFrom, setSyncedFrom] = useState(setting.value)
   const [confirming, setConfirming] = useState<RuntimeSettingWrite | null>(null)
+  const [confirmingReset, setConfirmingReset] = useState(false)
   const title = setting.title || setting.key
   const busy = save.isPending || reset.isPending
 
@@ -80,6 +82,30 @@ export function RuntimeSettingRow({
           toast.add({
             type: 'error',
             title: t('toast.saveError', { title, message: err.message }),
+          })
+        },
+      },
+    )
+  }
+
+  function doReset(confirmWeakening: boolean) {
+    reset.mutate(
+      { key: setting.key, confirmWeakening },
+      {
+        onSuccess: () => {
+          setConfirmingReset(false)
+          toast.add({ type: 'success', title: t('toast.reset', { title }) })
+        },
+        onError: (err) => {
+          // The server asks first when the reset restores a weaker value.
+          if (!confirmWeakening && err instanceof ResetConfirmationError) {
+            setConfirmingReset(true)
+            return
+          }
+          if (confirmWeakening) return
+          toast.add({
+            type: 'error',
+            title: t('toast.resetError', { title, message: err.message }),
           })
         },
       },
@@ -239,23 +265,7 @@ export function RuntimeSettingRow({
               variant="ghost"
               disabled={busy}
               onClick={() => {
-                reset.mutate(setting.key, {
-                  onSuccess: () => {
-                    toast.add({
-                      type: 'success',
-                      title: t('toast.reset', { title }),
-                    })
-                  },
-                  onError: (err) => {
-                    toast.add({
-                      type: 'error',
-                      title: t('toast.resetError', {
-                        title,
-                        message: err.message,
-                      }),
-                    })
-                  },
-                })
+                doReset(false)
               }}
             >
               <RotateCcwGlassIcon size="1.4em" aria-hidden="true" />
@@ -265,9 +275,12 @@ export function RuntimeSettingRow({
         </div>
       </div>
       <ConfirmDialog
-        open={confirming !== null}
+        open={confirming !== null || confirmingReset}
         onOpenChange={(open) => {
-          if (!open) setConfirming(null)
+          if (!open) {
+            setConfirming(null)
+            setConfirmingReset(false)
+          }
         }}
         title={t('confirm.title')}
         description={t('confirm.body', { title })}
@@ -275,10 +288,13 @@ export function RuntimeSettingRow({
         confirmLabel={t('confirm.action')}
         cancelLabel={t('confirm.cancel')}
         tone="destructive"
-        pending={save.isPending}
-        error={save.error?.message ?? null}
+        pending={confirmingReset ? reset.isPending : save.isPending}
+        error={
+          (confirmingReset ? reset.error?.message : save.error?.message) ?? null
+        }
         onConfirm={() => {
-          if (confirming !== null) submit(confirming, true)
+          if (confirmingReset) doReset(true)
+          else if (confirming !== null) submit(confirming, true)
         }}
       />
     </SettingRow>
