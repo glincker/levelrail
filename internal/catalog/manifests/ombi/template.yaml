@@ -4,6 +4,10 @@ description: A request portal where media server users ask for movies and shows 
 icon: ticket
 category: Applications
 documentation_url: https://docs.ombi.app/
+source_repo: https://github.com/Ombi-app/Ombi
+license: GPL-2.0-only
+license_class: copyleft
+license_url: https://github.com/Ombi-app/Ombi/blob/develop/LICENSE
 recommended_memory_bytes: 402653184
 env:
   - key: TZ

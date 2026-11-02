@@ -4,6 +4,10 @@ description: A filament spool inventory manager for 3D printers with usage track
 icon: database
 category: Applications
 documentation_url: https://github.com/Donkie/Spoolman
+source_repo: https://github.com/Donkie/Spoolman
+license: MIT
+license_class: permissive
+license_url: https://github.com/Donkie/Spoolman/blob/master/LICENSE
 recommended_memory_bytes: 268435456
 env:
   - key: TZ

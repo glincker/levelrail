@@ -4,6 +4,10 @@ description: Scrobbles your listening history from sources like Spotify, Jellyfi
 icon: music-notes
 category: Applications
 documentation_url: https://foxxmd.github.io/multi-scrobbler/
+source_repo: https://github.com/FoxxMD/multi-scrobbler
+license: MIT
+license_class: permissive
+license_url: https://github.com/FoxxMD/multi-scrobbler/blob/master/LICENSE
 recommended_memory_bytes: 268435456
 env:
   - key: TZ

@@ -4,6 +4,10 @@ description: An invitation and onboarding manager for Jellyfin, Plex and Emby se
 icon: users
 category: Applications
 documentation_url: https://docs.wizarr.dev/
+source_repo: https://github.com/wizarrrr/wizarr
+license: MIT
+license_class: permissive
+license_url: https://github.com/wizarrrr/wizarr/blob/main/LICENSE.md
 recommended_memory_bytes: 268435456
 env:
   - key: TZ

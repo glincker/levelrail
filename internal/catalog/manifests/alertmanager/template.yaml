@@ -4,6 +4,10 @@ description: "Prometheus Alertmanager: groups, deduplicates and routes alerts to
 icon: bell
 category: Monitoring
 documentation_url: https://prometheus.io/docs/alerting/latest/alertmanager/
+source_repo: https://github.com/prometheus/alertmanager
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/prometheus/alertmanager/blob/main/LICENSE
 recommended_memory_bytes: 134217728
 domains:
   - service: alertmanager

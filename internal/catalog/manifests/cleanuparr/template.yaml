@@ -4,6 +4,10 @@ description: A companion for Sonarr, Radarr and your download client that remove
 icon: broom
 category: Applications
 documentation_url: https://cleanuparr.github.io/Cleanuparr/
+source_repo: https://github.com/Cleanuparr/Cleanuparr
+license: GPL-3.0-only
+license_class: copyleft
+license_url: https://github.com/Cleanuparr/Cleanuparr/blob/main/LICENSE
 recommended_memory_bytes: 268435456
 env:
   - key: TZ

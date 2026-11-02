@@ -4,6 +4,10 @@ description: A Usenet binary downloader with a web interface, RSS and post-proce
 icon: cloud
 category: Applications
 documentation_url: https://sabnzbd.org/wiki/
+source_repo: https://github.com/sabnzbd/sabnzbd
+license: GPL-2.0-or-later
+license_class: copyleft
+license_url: https://github.com/sabnzbd/sabnzbd/blob/develop/LICENSE.txt
 recommended_memory_bytes: 402653184
 env:
   - key: TZ

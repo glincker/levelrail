@@ -4,6 +4,10 @@ description: A media request manager for Jellyfin, Plex and Emby with Sonarr and
 icon: ticket
 category: Applications
 documentation_url: https://docs.seerr.dev/
+source_repo: https://github.com/seerr-team/seerr
+license: MIT
+license_class: permissive
+license_url: https://github.com/seerr-team/seerr/blob/develop/LICENSE
 recommended_memory_bytes: 536870912
 env:
   - key: TZ

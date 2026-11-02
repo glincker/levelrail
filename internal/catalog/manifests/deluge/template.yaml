@@ -4,6 +4,10 @@ description: A lightweight BitTorrent client with a web interface and plugins. G
 icon: download-simple
 category: Applications
 documentation_url: https://deluge.readthedocs.io/
+source_repo: https://github.com/deluge-torrent/deluge
+license: GPL-3.0-only
+license_class: copyleft
+license_url: https://github.com/deluge-torrent/deluge/blob/develop/LICENSE
 recommended_memory_bytes: 268435456
 env:
   - key: TZ

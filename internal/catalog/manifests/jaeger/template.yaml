@@ -4,6 +4,10 @@ description: Distributed tracing with an OTLP collector and query UI in one cont
 icon: chart-line
 category: Monitoring
 documentation_url: https://www.jaegertracing.io/docs/
+source_repo: https://github.com/jaegertracing/jaeger
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/jaegertracing/jaeger/blob/main/LICENSE
 recommended_memory_bytes: 536870912
 domains:
   - service: jaeger

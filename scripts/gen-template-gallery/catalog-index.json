@@ -738,6 +738,7 @@
    "aliases": [],
    "name": "Adminer",
    "slogan": "A single-file database admin tool for MySQL, PostgreSQL, SQLite, and more.",
+   "description": "A single-file database admin tool for MySQL, PostgreSQL, SQLite, and more. Runs as a single container from the adminer image, listening on port 8080.",
    "first_run": [],
    "category": "Database Tools",
    "status": "active",
@@ -1062,7 +1063,13 @@
    "first_run": [],
    "category": "Monitoring",
    "status": "active",
+   "source_repo": "https://github.com/prometheus/alertmanager",
    "documentation_url": "https://prometheus.io/docs/alerting/latest/alertmanager/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/prometheus/alertmanager/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -1161,10 +1168,17 @@
    "aliases": [],
    "name": "Apache Answer",
    "slogan": "A Q&A platform for building a community knowledge base, in the style of a self-hosted Stack Overflow.",
+   "description": "A Q&A platform for building a community knowledge base, in the style of a self-hosted Stack Overflow. Runs as a single container from the answer image, listening on port 80; data is kept in named volumes.",
    "first_run": [],
    "category": "Communication",
    "status": "active",
+   "source_repo": "https://github.com/apache/answer",
    "documentation_url": "https://answer.apache.org/docs/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/apache/answer/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -1181,7 +1195,7 @@
      "service": "answer",
      "image": "apache/answer",
      "tag": "1.4.2",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -1794,10 +1808,17 @@
    "aliases": [],
    "name": "Apprise API",
    "slogan": "A single HTTP endpoint that fans a notification out to 100+ services such as Slack, Discord, and email.",
+   "description": "A single HTTP endpoint that fans a notification out to 100+ services such as Slack, Discord, and email. Runs as a single container from the apprise image, listening on port 8000; data is kept in named volumes.",
    "first_run": [],
    "category": "Communication",
    "status": "active",
+   "source_repo": "https://github.com/caronc/apprise-api",
    "documentation_url": "https://github.com/caronc/apprise-api",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/caronc/apprise-api/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -1821,7 +1842,7 @@
      "service": "apprise-api",
      "image": "caronc/apprise",
      "tag": "1.5.4",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -2423,10 +2444,17 @@
    "aliases": [],
    "name": "Audiobookshelf",
    "slogan": "A self-hosted server for your audiobooks and podcasts, with sync across every device.",
+   "description": "A self-hosted server for your audiobooks and podcasts, with sync across every device. Runs as a single container from the audiobookshelf image, listening on port 80; data is kept in named volumes.",
    "first_run": [],
    "category": "Media",
    "status": "active",
+   "source_repo": "https://github.com/advplyr/audiobookshelf",
    "documentation_url": "https://www.audiobookshelf.org/docs",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/advplyr/audiobookshelf/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -2443,7 +2471,7 @@
      "service": "audiobookshelf",
      "image": "ghcr.io/advplyr/audiobookshelf",
      "tag": "2.34.0",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -3350,6 +3378,7 @@
    "aliases": [],
    "name": "Baserow",
    "slogan": "A no-code database and spreadsheet hybrid you can build internal tools and apps on top of.",
+   "description": "A no-code database and spreadsheet hybrid you can build internal tools and apps on top of. Runs as a single container from the baserow image, listening on port 80; data is kept in named volumes.",
    "first_run": [],
    "category": "Database Tools",
    "status": "active",
@@ -3457,10 +3486,17 @@
    "aliases": [],
    "name": "Bazarr",
    "slogan": "Companion to Sonarr and Radarr that finds and downloads subtitles for your media library.",
+   "description": "Companion to Sonarr and Radarr that finds and downloads subtitles for your media library. Runs as a single container from the bazarr image, listening on port 6767; data is kept in named volumes.",
    "first_run": [],
    "category": "Media",
    "status": "active",
+   "source_repo": "https://github.com/morpheus65535/bazarr",
    "documentation_url": "https://wiki.bazarr.media",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/morpheus65535/bazarr/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -3658,10 +3694,17 @@
    "aliases": [],
    "name": "Beszel",
    "slogan": "A lightweight server monitoring hub with historical stats for CPU, memory, disk, and network.",
+   "description": "A lightweight server monitoring hub with historical stats for CPU, memory, disk, and network. Runs as a single container from the beszel image, listening on port 8090; data is kept in named volumes.",
    "first_run": [],
    "category": "Monitoring",
    "status": "active",
+   "source_repo": "https://github.com/henrygd/beszel",
    "documentation_url": "https://beszel.dev/guide/getting-started",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/henrygd/beszel/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -3678,7 +3721,7 @@
      "service": "beszel",
      "image": "henrygd/beszel",
      "tag": "0.19.0",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm",
@@ -4205,10 +4248,17 @@
    "aliases": [],
    "name": "Budibase",
    "slogan": "An open-source low-code platform for building internal tools, forms, and admin panels.",
+   "description": "An open-source low-code platform for building internal tools, forms, and admin panels. Runs 6 containers (app-service, couchdb-service, minio-service, proxy-service, redis-service, worker-service), with proxy-service listening on port 10000; data is kept in named volumes.",
    "first_run": [],
    "category": "Applications",
    "status": "active",
+   "source_repo": "https://github.com/Budibase/budibase",
    "documentation_url": "https://docs.budibase.com/docs/docker-compose",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/Budibase/budibase/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -4225,7 +4275,7 @@
      "service": "app-service",
      "image": "budibase.docker.scarf.sh/budibase/apps",
      "tag": "latest",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -4239,7 +4289,7 @@
      "service": "couchdb-service",
      "image": "budibase/couchdb",
      "tag": "latest",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/arm64"
      ],
@@ -4266,7 +4316,7 @@
      "service": "proxy-service",
      "image": "budibase/proxy",
      "tag": "latest",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -4299,7 +4349,7 @@
      "service": "worker-service",
      "image": "budibase.docker.scarf.sh/budibase/worker",
      "tag": "latest",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -4640,6 +4690,7 @@
    "aliases": [],
    "name": "Bugsink",
    "slogan": "A self-hosted, lightweight error tracking server with a Sentry-compatible SDK ingestion API.",
+   "description": "A self-hosted, lightweight error tracking server with a Sentry-compatible SDK ingestion API. Runs 2 containers (mysql, web), with web listening on port 8000; data is kept in named volumes.",
    "first_run": [],
    "category": "Monitoring",
    "status": "active",
@@ -4830,10 +4881,17 @@
    "aliases": [],
    "name": "Bytebase",
    "slogan": "A database schema change and migration tool with review workflows built in.",
+   "description": "A database schema change and migration tool with review workflows built in. Runs as a single container from the bytebase image, listening on port 8080; data is kept in named volumes.",
    "first_run": [],
    "category": "Database Tools",
    "status": "active",
+   "source_repo": "https://github.com/bytebase/bytebase",
    "documentation_url": "https://docs.bytebase.com/get-started/step-by-step/deploy-with-docker",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/bytebase/bytebase/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -4850,7 +4908,7 @@
      "service": "bytebase",
      "image": "bytebase/bytebase",
      "tag": "3.9.2",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -5264,10 +5322,17 @@
    "aliases": [],
    "name": "Calibre-Web",
    "slogan": "A clean web interface for browsing, reading, and downloading your existing Calibre ebook library.",
+   "description": "A clean web interface for browsing, reading, and downloading your existing Calibre ebook library. Runs as a single container from the calibre-web image, listening on port 8083; data is kept in named volumes.",
    "first_run": [],
    "category": "Media",
    "status": "active",
+   "source_repo": "https://github.com/janeczku/calibre-web",
    "documentation_url": "https://github.com/janeczku/calibre-web/wiki",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/janeczku/calibre-web/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -5382,10 +5447,17 @@
    "aliases": [],
    "name": "Campfire",
    "slogan": "Basecamp's open-source group chat app: rooms, direct messages, and file sharing, self-hosted as one container.",
+   "description": "Basecamp's open-source group chat app: rooms, direct messages, and file sharing, self-hosted as one container. Runs as a single container from the once-campfire image, listening on port 80; data is kept in named volumes.",
    "first_run": [],
    "category": "Communication",
    "status": "active",
+   "source_repo": "https://github.com/basecamp/once-campfire",
    "documentation_url": "https://github.com/basecamp/once-campfire",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/basecamp/once-campfire/blob/main/MIT-LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -5402,7 +5474,7 @@
      "service": "campfire",
      "image": "ghcr.io/basecamp/once-campfire",
      "tag": "main",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -5665,10 +5737,17 @@
    "aliases": [],
    "name": "Castopod",
    "slogan": "An open-source podcast hosting platform with built-in analytics, a web player, and ActivityPub federation.",
+   "description": "An open-source podcast hosting platform with built-in analytics, a web player, and ActivityPub federation. Runs 3 containers (castopod, mariadb, redis), with castopod listening on port 8080; data is kept in named volumes.",
    "first_run": [],
    "category": "Media",
    "status": "active",
+   "source_repo": "https://github.com/ad-aures/castopod",
    "documentation_url": "https://docs.castopod.org/",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/ad-aures/castopod/blob/develop/LICENSE.md"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -5905,10 +5984,17 @@
    "aliases": [],
    "name": "Changedetection.io",
    "slogan": "Monitor any webpage for changes and get notified the moment content updates.",
+   "description": "Monitor any webpage for changes and get notified the moment content updates. Runs as a single container from the changedetection.io image, listening on port 5000; data is kept in named volumes.",
    "first_run": [],
    "category": "Monitoring",
    "status": "active",
+   "source_repo": "https://github.com/dgtlmoon/changedetection.io",
    "documentation_url": "https://github.com/dgtlmoon/changedetection.io/wiki",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/dgtlmoon/changedetection.io/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -5932,7 +6018,7 @@
      "service": "changedetection",
      "image": "ghcr.io/dgtlmoon/changedetection.io",
      "tag": "0.49.12",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm",
@@ -6014,10 +6100,17 @@
    "aliases": [],
    "name": "Chatwoot",
    "slogan": "An open-source customer support platform for live chat, email, and social messaging.",
+   "description": "An open-source customer support platform for live chat, email, and social messaging. Runs 3 containers (chatwoot, db, redis), with chatwoot listening on port 3000; data is kept in named volumes.",
    "first_run": [],
    "category": "Communication",
    "status": "active",
+   "source_repo": "https://github.com/chatwoot/chatwoot",
    "documentation_url": "https://www.chatwoot.com/docs/self-hosted/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/chatwoot/chatwoot/blob/develop/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -6034,7 +6127,7 @@
      "service": "chatwoot",
      "image": "chatwoot/chatwoot",
      "tag": "v4.6.0",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -6250,10 +6343,17 @@
    "aliases": [],
    "name": "Checkmate",
    "slogan": "An open-source uptime and server monitoring app with incident history and status pages.",
+   "description": "An open-source uptime and server monitoring app with incident history and status pages. Runs 2 containers (checkmate, mongo), with checkmate listening on port 52345; data is kept in named volumes.",
    "first_run": [],
    "category": "Monitoring",
    "status": "active",
+   "source_repo": "https://github.com/bluewave-labs/Checkmate",
    "documentation_url": "https://docs.checkmate.so",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/bluewave-labs/Checkmate/blob/develop/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -6270,7 +6370,7 @@
      "service": "checkmate",
      "image": "ghcr.io/bluewave-labs/checkmate-backend-mono-multiarch",
      "tag": "v3.2.0",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -6550,10 +6650,17 @@
    "aliases": [],
    "name": "Chroma",
    "slogan": "A developer-friendly embedding database for AI applications, served over a simple HTTP API. Open to anyone who can reach it, so reach it from other services in this project at chroma:8000, or attach a domain only behind Basic Auth. Not published on the host.",
+   "description": "A developer-friendly embedding database for AI applications, served over a simple HTTP API. Open to anyone who can reach it, so reach it from other services in this project at chroma:8000, or attach a domain only behind Basic Auth. Not published on the host. Runs as a single container from the chroma image, listening on port 8000; data is kept in named volumes.",
    "first_run": [],
    "category": "Database Tools",
    "status": "active",
+   "source_repo": "https://github.com/chroma-core/chroma",
    "documentation_url": "https://docs.trychroma.com",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/chroma-core/chroma/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -6570,7 +6677,7 @@
      "service": "chroma",
      "image": "ghcr.io/chroma-core/chroma",
      "tag": "1.0.0",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -6662,7 +6769,13 @@
    "first_run": [],
    "category": "Applications",
    "status": "active",
+   "source_repo": "https://github.com/Cleanuparr/Cleanuparr",
    "documentation_url": "https://cleanuparr.github.io/Cleanuparr/",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/Cleanuparr/Cleanuparr/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -6679,7 +6792,7 @@
      "service": "cleanuparr",
      "image": "ghcr.io/cleanuparr/cleanuparr",
      "tag": "2.10.12",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -6772,10 +6885,17 @@
    "aliases": [],
    "name": "ClickHouse",
    "slogan": "A columnar database built for fast analytical queries over large datasets.",
+   "description": "A columnar database built for fast analytical queries over large datasets. Runs as a single container from the clickhouse-server image, listening on port 8123; data is kept in named volumes.",
    "first_run": [],
    "category": "Database Tools",
    "status": "active",
+   "source_repo": "https://github.com/ClickHouse/ClickHouse",
    "documentation_url": "https://hub.docker.com/r/clickhouse/clickhouse-server",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/ClickHouse/ClickHouse/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -6792,7 +6912,7 @@
      "service": "clickhouse",
      "image": "clickhouse/clickhouse-server",
      "tag": "26.3-alpine",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -6892,10 +7012,17 @@
    "aliases": [],
    "name": "CloudBeaver",
    "slogan": "A web-based database manager for browsing and querying Postgres, MySQL, SQLite and more.",
+   "description": "A web-based database manager for browsing and querying Postgres, MySQL, SQLite and more. Runs as a single container from the cloudbeaver image, listening on port 8978; data is kept in named volumes.",
    "first_run": [],
    "category": "Database Tools",
    "status": "active",
+   "source_repo": "https://github.com/dbeaver/cloudbeaver",
    "documentation_url": "https://dbeaver.com/docs/cloudbeaver/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/dbeaver/cloudbeaver/blob/devel/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -6912,7 +7039,7 @@
      "service": "cloudbeaver",
      "image": "dbeaver/cloudbeaver",
      "tag": "24.1.0",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -7335,10 +7462,17 @@
    "aliases": [],
    "name": "Cockpit CMS",
    "slogan": "A headless content platform for managing structured content behind a clean API, without a big CMS footprint.",
+   "description": "A headless content platform for managing structured content behind a clean API, without a big CMS footprint. Runs as a single container from the cockpit image, listening on port 80; data is kept in named volumes.",
    "first_run": [],
    "category": "Applications",
    "status": "active",
+   "source_repo": "https://github.com/agentejo/cockpit",
    "documentation_url": "https://getcockpit.com/documentation/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/agentejo/cockpit/blob/next/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -8917,7 +9051,13 @@
    "first_run": [],
    "category": "Applications",
    "status": "active",
+   "source_repo": "https://github.com/deluge-torrent/deluge",
    "documentation_url": "https://deluge.readthedocs.io/",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/deluge-torrent/deluge/blob/develop/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -9290,10 +9430,17 @@
    "aliases": [],
    "name": "Diun",
    "slogan": "Watches your running containers and notifies you the moment a new image tag is published.",
+   "description": "Watches your running containers and notifies you the moment a new image tag is published. Runs as a single container from the diun image; data is kept in named volumes.",
    "first_run": [],
    "category": "Monitoring",
    "status": "active",
+   "source_repo": "https://github.com/crazy-max/diun",
    "documentation_url": "https://crazymax.dev/diun/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/crazy-max/diun/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -10778,6 +10925,7 @@
    "aliases": [],
    "name": "Drupal",
    "slogan": "A mature, flexible CMS for structured content, multilingual sites, and large editorial teams.",
+   "description": "A mature, flexible CMS for structured content, multilingual sites, and large editorial teams. Runs 2 containers (db, drupal), with drupal listening on port 80; data is kept in named volumes.",
    "first_run": [],
    "category": "Applications",
    "status": "active",
@@ -11366,6 +11514,7 @@
    "aliases": [],
    "name": "Elasticsearch + Kibana",
    "slogan": "Elasticsearch paired with Kibana for log and document search with a visual dashboard. Kibana has no login, so anyone who can open it controls the data: before attaching a domain, enable Basic Auth or the auth gate on it. Elasticsearch is reachable only from services in this project at elasticsearch:9200 and is not published on the host.",
+   "description": "Elasticsearch paired with Kibana for log and document search with a visual dashboard. Kibana has no login, so anyone who can open it controls the data: before attaching a domain, enable Basic Auth or the auth gate on it. Elasticsearch is reachable only from services in this project at elasticsearch:9200 and is not published on the host. Runs 2 containers (elasticsearch, kibana), with elasticsearch listening on port 9200; data is kept in named volumes.",
    "first_run": [],
    "category": "Database Tools",
    "status": "active",
@@ -11528,7 +11677,13 @@
    "first_run": [],
    "category": "Communication",
    "status": "active",
+   "source_repo": "https://github.com/element-hq/element-web",
    "documentation_url": "https://github.com/element-hq/element-web",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/element-hq/element-web/blob/develop/LICENSE-AGPL-3.0"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -11601,6 +11756,7 @@
    "aliases": [],
    "name": "Emby",
    "slogan": "A media server that organizes your movies, shows, and music and streams them to any device.",
+   "description": "A media server that organizes your movies, shows, and music and streams them to any device. Runs as a single container from the emby image, listening on port 8096; data is kept in named volumes.",
    "first_run": [],
    "category": "Media",
    "status": "active",
@@ -11862,10 +12018,17 @@
    "aliases": [],
    "name": "EspoCRM",
    "slogan": "An open-source CRM for managing sales, support, and customer relationships end to end.",
+   "description": "An open-source CRM for managing sales, support, and customer relationships end to end. Runs 2 containers (espocrm, espocrm-db), with espocrm listening on port 80; data is kept in named volumes.",
    "first_run": [],
    "category": "Applications",
    "status": "active",
+   "source_repo": "https://github.com/espocrm/espocrm",
    "documentation_url": "https://docs.espocrm.com",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/espocrm/espocrm/blob/master/LICENSE.txt"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -11882,7 +12045,7 @@
      "service": "espocrm",
      "image": "espocrm/espocrm",
      "tag": "10",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/386",
       "linux/amd64",
@@ -14810,10 +14973,17 @@
    "aliases": [],
    "name": "FreeScout",
    "slogan": "A free, self-hosted help desk and shared mailbox, a lighter alternative to Zendesk or Help Scout.",
+   "description": "A free, self-hosted help desk and shared mailbox, a lighter alternative to Zendesk or Help Scout. Runs 2 containers (freescout, mariadb), with freescout listening on port 80; data is kept in named volumes.",
    "first_run": [],
    "category": "Communication",
    "status": "active",
+   "source_repo": "https://github.com/freescout-help-desk/freescout",
    "documentation_url": "https://github.com/freescout-helpdesk/freescout/wiki",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/freescout-help-desk/freescout/blob/dist/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -15225,7 +15395,13 @@
    "first_run": [],
    "category": "Monitoring",
    "status": "active",
+   "source_repo": "https://github.com/TwiN/gatus",
    "documentation_url": "https://github.com/TwiN/gatus#configuration",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/TwiN/gatus/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -15299,10 +15475,17 @@
    "aliases": [],
    "name": "Ghost",
    "slogan": "A fast, modern publishing platform for blogs and newsletters, with built-in memberships.",
+   "description": "A fast, modern publishing platform for blogs and newsletters, with built-in memberships. Runs 2 containers (db, ghost), with ghost listening on port 2368; data is kept in named volumes.",
    "first_run": [],
    "category": "Applications",
    "status": "active",
+   "source_repo": "https://github.com/TryGhost/Ghost",
    "documentation_url": "https://ghost.org/docs/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/TryGhost/Ghost/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -16565,10 +16748,17 @@
    "aliases": [],
    "name": "Glances",
    "slogan": "A cross-platform system monitor showing CPU, memory, disk, and network at a glance.",
+   "description": "A cross-platform system monitor showing CPU, memory, disk, and network at a glance. Runs as a single container from the glances image, listening on port 61208.",
    "first_run": [],
    "category": "Monitoring",
    "status": "active",
+   "source_repo": "https://github.com/nicolargo/glances",
    "documentation_url": "https://nicolargo.github.io/glances/",
+   "license": {
+    "spdx": "LGPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/nicolargo/glances/blob/develop/COPYING"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -16585,7 +16775,7 @@
      "service": "glances",
      "image": "nicolargo/glances",
      "tag": "3.4.0-full",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/386",
       "linux/amd64",
@@ -16659,10 +16849,17 @@
    "aliases": [],
    "name": "GlitchTip",
    "slogan": "A lightweight, self-hosted error tracking service compatible with the Sentry SDK.",
+   "description": "A lightweight, self-hosted error tracking service compatible with the Sentry SDK. Runs 3 containers (db, glitchtip, redis), with glitchtip listening on port 8080; data is kept in named volumes.",
    "first_run": [],
    "category": "Monitoring",
    "status": "active",
+   "source_repo": "https://github.com/burke-software/GlitchTip",
    "documentation_url": "https://glitchtip.com/documentation",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/burke-software/GlitchTip/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -16877,10 +17074,17 @@
    "aliases": [],
    "name": "GLPI",
    "slogan": "An IT asset and service management platform with helpdesk ticketing built in.",
+   "description": "An IT asset and service management platform with helpdesk ticketing built in. Runs 2 containers (glpi, glpi-db), with glpi listening on port 80; data is kept in named volumes.",
    "first_run": [],
    "category": "Applications",
    "status": "active",
+   "source_repo": "https://github.com/glpi-project/glpi",
    "documentation_url": "https://glpi-project.org/documentation/",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/glpi-project/glpi/blob/12.0/bugfixes/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -17354,10 +17558,17 @@
    "aliases": [],
    "name": "Gotify",
    "slogan": "A simple push notification server with a REST API and web UI, for sending messages to your devices.",
+   "description": "A simple push notification server with a REST API and web UI, for sending messages to your devices. Runs as a single container from the server image, listening on port 80; data is kept in named volumes.",
    "first_run": [],
    "category": "Communication",
    "status": "active",
+   "source_repo": "https://github.com/gotify/server",
    "documentation_url": "https://gotify.net/docs/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/gotify/server/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -17381,7 +17592,7 @@
      "service": "gotify",
      "image": "gotify/server",
      "tag": "2.6.1",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/386",
       "linux/amd64",
@@ -17494,10 +17705,17 @@
    "aliases": [],
    "name": "Grafana",
    "slogan": "Dashboards and exploration for metrics, logs, and traces from any data source.",
+   "description": "Dashboards and exploration for metrics, logs, and traces from any data source. Runs as a single container from the grafana image, listening on port 3000; data is kept in named volumes.",
    "first_run": [],
    "category": "Monitoring",
    "status": "active",
+   "source_repo": "https://github.com/grafana/grafana",
    "documentation_url": "https://grafana.com/docs/grafana/latest/",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/grafana/grafana/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -17521,7 +17739,7 @@
      "service": "grafana",
      "image": "grafana/grafana",
      "tag": "11.2.0",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm",
@@ -17622,10 +17840,17 @@
    "aliases": [],
    "name": "Grafana (Postgres)",
    "slogan": "Grafana backed by Postgres instead of its default embedded SQLite, for multi-instance or external-DB setups.",
+   "description": "Grafana backed by Postgres instead of its default embedded SQLite, for multi-instance or external-DB setups. Runs 2 containers (db, grafana), with grafana listening on port 3000; data is kept in named volumes.",
    "first_run": [],
    "category": "Monitoring",
    "status": "active",
+   "source_repo": "https://github.com/grafana/grafana",
    "documentation_url": "https://grafana.com/docs/grafana/latest/",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/grafana/grafana/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -17661,7 +17886,7 @@
      "service": "grafana",
      "image": "grafana/grafana",
      "tag": "11.2.0",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm",
@@ -17990,10 +18215,17 @@
    "aliases": [],
    "name": "Grimmory",
    "slogan": "Organize, read, annotate, and sync your entire book collection from one place.",
+   "description": "Organize, read, annotate, and sync your entire book collection from one place. Runs 2 containers (db, grimmory), with grimmory listening on port 80; data is kept in named volumes.",
    "first_run": [],
    "category": "Media",
    "status": "active",
+   "source_repo": "https://github.com/grimmory-tools/grimmory",
    "documentation_url": "https://github.com/grimmory-tools/grimmory",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/grimmory-tools/grimmory/blob/develop/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -18841,10 +19073,17 @@
    "aliases": [],
    "name": "Healthchecks",
    "slogan": "Cron job and scheduled task monitoring: get alerted the moment a periodic job stops checking in.",
+   "description": "Cron job and scheduled task monitoring: get alerted the moment a periodic job stops checking in. Runs 2 containers (db, healthchecks), with healthchecks listening on port 8000; data is kept in named volumes.",
    "first_run": [],
    "category": "Monitoring",
    "status": "active",
+   "source_repo": "https://github.com/healthchecks/healthchecks",
    "documentation_url": "https://healthchecks.io/docs/self_hosted/",
+   "license": {
+    "spdx": "BSD-3-Clause",
+    "class": "permissive",
+    "url": "https://github.com/healthchecks/healthchecks/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -18880,7 +19119,7 @@
      "service": "healthchecks",
      "image": "healthchecks/healthchecks",
      "tag": "v4.2",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm",
@@ -20404,10 +20643,17 @@
    "aliases": [],
    "name": "Immich",
    "slogan": "Self-hosted photo and video backup with mobile apps, facial recognition, and timeline search.",
+   "description": "Self-hosted photo and video backup with mobile apps, facial recognition, and timeline search. Runs 4 containers (db, immich-machine-learning, immich-server, redis), with immich-server listening on port 2283; data is kept in named volumes.",
    "first_run": [],
    "category": "Media",
    "status": "active",
+   "source_repo": "https://github.com/immich-app/immich",
    "documentation_url": "https://immich.app/docs",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/immich-app/immich/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -20431,7 +20677,7 @@
      "service": "db",
      "image": "ghcr.io/immich-app/postgres",
      "tag": "14-vectorchord0.3.0-pgvectors0.2.0",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -20445,7 +20691,7 @@
      "service": "immich-machine-learning",
      "image": "ghcr.io/immich-app/immich-machine-learning",
      "tag": "v1.126.1",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -20459,7 +20705,7 @@
      "service": "immich-server",
      "image": "ghcr.io/immich-app/immich-server",
      "tag": "v1.126.1",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -20873,10 +21119,17 @@
    "aliases": [],
    "name": "InfluxDB",
    "slogan": "An open-source time-series database for metrics, events, and IoT analytics.",
+   "description": "An open-source time-series database for metrics, events, and IoT analytics. Runs as a single container from the influxdb image, listening on port 8086; data is kept in named volumes.",
    "first_run": [],
    "category": "Database Tools",
    "status": "active",
+   "source_repo": "https://github.com/influxdata/influxdb",
    "documentation_url": "https://docs.influxdata.com/influxdb/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/influxdata/influxdb/blob/main/LICENSE-APACHE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -21555,10 +21808,17 @@
    "aliases": [],
    "name": "Jackett",
    "slogan": "A proxy that translates queries from your media apps into torrent tracker searches.",
+   "description": "A proxy that translates queries from your media apps into torrent tracker searches. Runs as a single container from the jackett image, listening on port 9117; data is kept in named volumes.",
    "first_run": [],
    "category": "Media",
    "status": "active",
+   "source_repo": "https://github.com/Jackett/Jackett",
    "documentation_url": "https://github.com/Jackett/Jackett#readme",
+   "license": {
+    "spdx": "GPL-2.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/Jackett/Jackett/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -21677,7 +21937,13 @@
    "first_run": [],
    "category": "Monitoring",
    "status": "active",
+   "source_repo": "https://github.com/jaegertracing/jaeger",
    "documentation_url": "https://www.jaegertracing.io/docs/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/jaegertracing/jaeger/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -21694,7 +21960,7 @@
      "service": "jaeger",
      "image": "jaegertracing/all-in-one",
      "tag": "1.64.0",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64",
@@ -21760,10 +22026,17 @@
    "aliases": [],
    "name": "Jellyfin",
    "slogan": "A free media server for streaming your own movies, shows, and music to any device.",
+   "description": "A free media server for streaming your own movies, shows, and music to any device. Runs as a single container from the jellyfin image, listening on port 8096; data is kept in named volumes.",
    "first_run": [],
    "category": "Media",
    "status": "active",
+   "source_repo": "https://github.com/jellyfin/jellyfin",
    "documentation_url": "https://jellyfin.org/docs/",
+   "license": {
+    "spdx": "GPL-2.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/jellyfin/jellyfin/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -21869,10 +22142,17 @@
    "aliases": [],
    "name": "Jellyseerr",
    "slogan": "A request manager for Jellyfin, Plex, and Emby libraries, wired to Sonarr and Radarr.",
+   "description": "A request manager for Jellyfin, Plex, and Emby libraries, wired to Sonarr and Radarr. Runs as a single container from the jellyseerr image, listening on port 5055; data is kept in named volumes.",
    "first_run": [],
    "category": "Media",
    "status": "active",
+   "source_repo": "https://github.com/seerr-team/seerr",
    "documentation_url": "https://docs.jellyseerr.dev",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/seerr-team/seerr/blob/develop/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -21974,7 +22254,13 @@
    "first_run": [],
    "category": "Monitoring",
    "status": "active",
+   "source_repo": "https://github.com/CyferShepard/Jellystat",
    "documentation_url": "https://github.com/CyferShepard/Jellystat",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/CyferShepard/Jellystat/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -22010,7 +22296,7 @@
      "service": "jellystat",
      "image": "cyfershepard/jellystat",
      "tag": "1.1.12",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -22261,6 +22547,7 @@
    "aliases": [],
    "name": "Joomla",
    "slogan": "A long-established CMS with a large extension ecosystem for business sites, portals, and communities.",
+   "description": "A long-established CMS with a large extension ecosystem for business sites, portals, and communities. Runs 2 containers (db, joomla), with joomla listening on port 80; data is kept in named volumes.",
    "first_run": [],
    "category": "Applications",
    "status": "active",
@@ -23511,10 +23798,17 @@
    "aliases": [],
    "name": "Kavita",
    "slogan": "A fast, feature-rich reader server for manga, comics, and ebooks.",
+   "description": "A fast, feature-rich reader server for manga, comics, and ebooks. Runs as a single container from the kavita image, listening on port 5000; data is kept in named volumes.",
    "first_run": [],
    "category": "Media",
    "status": "active",
+   "source_repo": "https://github.com/Kareadita/Kavita",
    "documentation_url": "https://wiki.kavitareader.com/installation/docker/",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/Kareadita/Kavita/blob/develop/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -24271,10 +24565,17 @@
    "aliases": [],
    "name": "Komga",
    "slogan": "A media server for comics, manga, and digital books with a clean reading interface.",
+   "description": "A media server for comics, manga, and digital books with a clean reading interface. Runs as a single container from the komga image, listening on port 25600; data is kept in named volumes.",
    "first_run": [],
    "category": "Media",
    "status": "active",
+   "source_repo": "https://github.com/gotson/komga",
    "documentation_url": "https://komga.org/docs/installation/docker",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/gotson/komga/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -24291,7 +24592,7 @@
      "service": "komga",
      "image": "gotson/komga",
      "tag": "1.26.3",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm",
@@ -24526,7 +24827,13 @@
    "first_run": [],
    "category": "Applications",
    "status": "active",
+   "source_repo": "https://github.com/thedevs-network/kutt",
    "documentation_url": "https://docs.kutt.it/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/thedevs-network/kutt/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -26135,10 +26442,17 @@
    "aliases": [],
    "name": "LibreSpeed",
    "slogan": "A lightweight, self-hosted internet speed test with no ads, tracking, or Flash required.",
+   "description": "A lightweight, self-hosted internet speed test with no ads, tracking, or Flash required. Runs as a single container from the speedtest image, listening on port 82.",
    "first_run": [],
    "category": "Monitoring",
    "status": "active",
+   "source_repo": "https://github.com/librespeed/speedtest",
    "documentation_url": "https://github.com/librespeed/speedtest",
+   "license": {
+    "spdx": "LGPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/librespeed/speedtest/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -26162,7 +26476,7 @@
      "service": "librespeed",
      "image": "ghcr.io/librespeed/speedtest",
      "tag": "6.3.0",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm",
@@ -26346,10 +26660,17 @@
    "aliases": [],
    "name": "Lidarr",
    "slogan": "Watches your indexers for new albums from artists you follow and automatically grabs and organizes them.",
+   "description": "Watches your indexers for new albums from artists you follow and automatically grabs and organizes them. Runs as a single container from the lidarr image, listening on port 8686; data is kept in named volumes.",
    "first_run": [],
    "category": "Media",
    "status": "active",
+   "source_repo": "https://github.com/Lidarr/Lidarr",
    "documentation_url": "https://wiki.servarr.com/lidarr",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/Lidarr/Lidarr/blob/develop/LICENSE.md"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -27339,10 +27660,17 @@
    "aliases": [],
    "name": "Listmonk",
    "slogan": "A self-hosted newsletter and mailing list manager with a fast, dependency-light core.",
+   "description": "A self-hosted newsletter and mailing list manager with a fast, dependency-light core. Runs 2 containers (db, listmonk), with listmonk listening on port 9000; data is kept in named volumes.",
    "first_run": [],
    "category": "Communication",
    "status": "active",
+   "source_repo": "https://github.com/knadh/listmonk",
    "documentation_url": "https://listmonk.app/docs/",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/knadh/listmonk/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -28385,10 +28713,17 @@
    "aliases": [],
    "name": "Grafana Loki",
    "slogan": "A horizontally scalable log aggregation system that indexes labels, not full text, to keep storage cheap.",
+   "description": "A horizontally scalable log aggregation system that indexes labels, not full text, to keep storage cheap. Runs as a single container from the loki image, listening on port 3100; data is kept in named volumes.",
    "first_run": [],
    "category": "Monitoring",
    "status": "active",
+   "source_repo": "https://github.com/grafana/loki",
    "documentation_url": "https://grafana.com/docs/loki/latest",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/grafana/loki/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -28412,7 +28747,7 @@
      "service": "loki",
      "image": "grafana/loki",
      "tag": "3.7.8",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm",
@@ -28494,6 +28829,7 @@
    "aliases": [],
    "name": "Lowcoder",
    "slogan": "An open-source low-code platform for building internal apps, dashboards, and workflows with drag-and-drop.",
+   "description": "An open-source low-code platform for building internal apps, dashboards, and workflows with drag-and-drop. Runs as a single container from the lowcoder-ce image, listening on port 3000; data is kept in named volumes.",
    "first_run": [],
    "category": "Applications",
    "status": "active",
@@ -28739,7 +29075,13 @@
    "first_run": [],
    "category": "Applications",
    "status": "active",
+   "source_repo": "https://github.com/LycheeOrg/Lychee",
    "documentation_url": "https://lycheeorg.dev/docs/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/LycheeOrg/Lychee/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -28756,7 +29098,7 @@
      "service": "lychee",
      "image": "ghcr.io/lycheeorg/lychee",
      "tag": "v7.12.0",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -29378,7 +29720,13 @@
    "first_run": [],
    "category": "Applications",
    "status": "active",
+   "source_repo": "https://github.com/Maintainerr/Maintainerr",
    "documentation_url": "https://docs.maintainerr.info/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/Maintainerr/Maintainerr/blob/development/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -29395,7 +29743,7 @@
      "service": "maintainerr",
      "image": "ghcr.io/maintainerr/maintainerr",
      "tag": "3.31.0",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -29794,6 +30142,7 @@
    "aliases": [],
    "name": "Matrix Synapse",
    "slogan": "A federated, end-to-end encrypted chat server implementing the Matrix protocol.",
+   "description": "A federated, end-to-end encrypted chat server implementing the Matrix protocol. Runs as a single container from the synapse image, listening on port 8008; data is kept in named volumes.",
    "first_run": [],
    "category": "Communication",
    "status": "active",
@@ -29906,6 +30255,7 @@
    "aliases": [],
    "name": "Matrix Synapse (Postgres)",
    "slogan": "A Matrix homeserver backed by Postgres, for self-hosted federated chat and voice/video signaling.",
+   "description": "A Matrix homeserver backed by Postgres, for self-hosted federated chat and voice/video signaling. Runs 2 containers (postgres, synapse), with synapse listening on port 8008; data is kept in named volumes.",
    "first_run": [],
    "category": "Communication",
    "status": "active",
@@ -30114,6 +30464,7 @@
    "aliases": [],
    "name": "Mattermost",
    "slogan": "An open-source, self-hosted alternative to Slack for team messaging and collaboration.",
+   "description": "An open-source, self-hosted alternative to Slack for team messaging and collaboration. Runs 2 containers (db, mattermost), with mattermost listening on port 8065; data is kept in named volumes.",
    "first_run": [],
    "category": "Communication",
    "status": "active",
@@ -30409,6 +30760,7 @@
    "aliases": [],
    "name": "MediaWiki",
    "slogan": "The wiki engine behind Wikipedia, for large collaborative knowledge bases with rich version history.",
+   "description": "The wiki engine behind Wikipedia, for large collaborative knowledge bases with rich version history. Runs 2 containers (db, mediawiki), with mediawiki listening on port 80; data is kept in named volumes.",
    "first_run": [],
    "category": "Applications",
    "status": "active",
@@ -30702,10 +31054,17 @@
    "aliases": [],
    "name": "Memcached",
    "slogan": "A fast in-memory cache for query results, sessions and rendered pages, reachable by other apps on host memcached.",
+   "description": "A fast in-memory cache for query results, sessions and rendered pages, reachable by other apps on host memcached. Runs as a single container from the memcached image, listening on port 11211.",
    "first_run": [],
    "category": "Database Tools",
    "status": "active",
+   "source_repo": "https://github.com/memcached/memcached",
    "documentation_url": "https://memcached.org/",
+   "license": {
+    "spdx": "BSD-3-Clause",
+    "class": "permissive",
+    "url": "https://github.com/memcached/memcached/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -31349,10 +31708,17 @@
    "aliases": [],
    "name": "MeTube",
    "slogan": "A tidy web front end for yt-dlp: paste a link, pick a format, and download video or audio.",
+   "description": "A tidy web front end for yt-dlp: paste a link, pick a format, and download video or audio. Runs as a single container from the metube image, listening on port 8081; data is kept in named volumes.",
    "first_run": [],
    "category": "Media",
    "status": "active",
+   "source_repo": "https://github.com/alexta69/metube",
    "documentation_url": "https://github.com/alexta69/metube",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/alexta69/metube/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -31369,7 +31735,7 @@
      "service": "metube",
      "image": "ghcr.io/alexta69/metube",
      "tag": "latest",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -31459,10 +31825,17 @@
    "aliases": [],
    "name": "Milvus",
    "slogan": "A cloud-native vector database built for billion-scale similarity search, run here as a single standalone node. Has no authentication, so reach it from other services in this project at milvus:19530, or attach a domain (it routes to port 19530 only) only behind Basic Auth. Not published on the host.",
+   "description": "A cloud-native vector database built for billion-scale similarity search, run here as a single standalone node. Has no authentication, so reach it from other services in this project at milvus:19530, or attach a domain (it routes to port 19530 only) only behind Basic Auth. Not published on the host. Runs as a single container from the milvus image, listening on port 19530; data is kept in named volumes.",
    "first_run": [],
    "category": "Database Tools",
    "status": "active",
+   "source_repo": "https://github.com/milvus-io/milvus",
    "documentation_url": "https://milvus.io/docs",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/milvus-io/milvus/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -32326,10 +32699,17 @@
    "aliases": [],
    "name": "Mongo Express",
    "slogan": "A web admin console for MongoDB, bundled with its own MongoDB 7 instance and basic auth.",
+   "description": "A web admin console for MongoDB, bundled with its own MongoDB 7 instance and basic auth. Runs 2 containers (mongo, mongo-express), with mongo-express listening on port 8081; data is kept in named volumes.",
    "first_run": [],
    "category": "Database Tools",
    "status": "active",
+   "source_repo": "https://github.com/mongo-express/mongo-express",
    "documentation_url": "https://github.com/mongo-express/mongo-express",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/mongo-express/mongo-express/blob/master/LICENSE.md"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -32687,10 +33067,17 @@
    "aliases": [],
    "name": "Moodle",
    "slogan": "A widely used, highly customizable learning management system for online courses.",
+   "description": "A widely used, highly customizable learning management system for online courses. Runs 2 containers (mariadb, moodle), with moodle listening on port 8080; data is kept in named volumes.",
    "first_run": [],
    "category": "Applications",
    "status": "active",
+   "source_repo": "https://github.com/moodle/moodle",
    "documentation_url": "https://moodle.org",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/moodle/moodle/blob/main/COPYING.txt"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -33046,7 +33433,13 @@
    "first_run": [],
    "category": "Applications",
    "status": "active",
+   "source_repo": "https://github.com/FoxxMD/multi-scrobbler",
    "documentation_url": "https://foxxmd.github.io/multi-scrobbler/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/FoxxMD/multi-scrobbler/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -33063,7 +33456,7 @@
      "service": "multi-scrobbler",
      "image": "ghcr.io/foxxmd/multi-scrobbler",
      "tag": "0.20.3",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -33160,7 +33553,13 @@
    "first_run": [],
    "category": "Applications",
    "status": "active",
+   "source_repo": "https://github.com/mylar3/mylar3",
    "documentation_url": "https://github.com/mylar3/mylar3/wiki",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/mylar3/mylar3/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -33986,10 +34385,17 @@
    "aliases": [],
    "name": "Navidrome",
    "slogan": "Stream your own music collection from a Subsonic-compatible server to any device, anywhere.",
+   "description": "Stream your own music collection from a Subsonic-compatible server to any device, anywhere. Runs as a single container from the navidrome image, listening on port 4533; data is kept in named volumes.",
    "first_run": [],
    "category": "Media",
    "status": "active",
+   "source_repo": "https://github.com/navidrome/navidrome",
    "documentation_url": "https://www.navidrome.org/docs/",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/navidrome/navidrome/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -34500,10 +34906,17 @@
    "aliases": [],
    "name": "Netdata",
    "slogan": "Per-second infrastructure metrics with zero configuration and a live dashboard out of the box.",
+   "description": "Per-second infrastructure metrics with zero configuration and a live dashboard out of the box. Runs as a single container from the netdata image, listening on port 19999; data is kept in named volumes.",
    "first_run": [],
    "category": "Monitoring",
    "status": "active",
+   "source_repo": "https://github.com/netdata/netdata",
    "documentation_url": "https://learn.netdata.cloud",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/netdata/netdata/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -34520,7 +34933,7 @@
      "service": "netdata",
      "image": "netdata/netdata",
      "tag": "v2.11.1",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm",
@@ -34813,6 +35226,7 @@
    "aliases": [],
    "name": "Nextcloud",
    "slogan": "Self-hosted file sync, sharing, and collaboration, a full private alternative to consumer cloud drives.",
+   "description": "Self-hosted file sync, sharing, and collaboration, a full private alternative to consumer cloud drives. Runs as a single container from the nextcloud image, listening on port 80; data is kept in named volumes.",
    "first_run": [],
    "category": "Applications",
    "status": "active",
@@ -35686,10 +36100,17 @@
    "aliases": [],
    "name": "NocoDB",
    "slogan": "Turn any database into a smart spreadsheet, with a real-time collaborative grid UI.",
+   "description": "Turn any database into a smart spreadsheet, with a real-time collaborative grid UI. Runs as a single container from the nocodb image, listening on port 8080; data is kept in named volumes.",
    "first_run": [],
    "category": "Database Tools",
    "status": "active",
+   "source_repo": "https://github.com/nocodb/nocodb",
    "documentation_url": "https://docs.nocodb.com",
+   "license": {
+    "spdx": "LicenseRef-NocoDB-SUL",
+    "class": "source-available",
+    "url": "https://github.com/nocodb/nocodb/blob/develop/LICENSE.md"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -35713,7 +36134,7 @@
      "service": "nocodb",
      "image": "nocodb/nocodb",
      "tag": "2026.09.0",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm",
@@ -36073,10 +36494,17 @@
    "aliases": [],
    "name": "NodeBB",
    "slogan": "A modern forum platform with real-time discussions, SSO, and a plugin ecosystem, backed by Postgres.",
+   "description": "A modern forum platform with real-time discussions, SSO, and a plugin ecosystem, backed by Postgres. Runs 2 containers (nodebb, postgres), with nodebb listening on port 4567; data is kept in named volumes.",
    "first_run": [],
    "category": "Communication",
    "status": "active",
+   "source_repo": "https://github.com/NodeBB/NodeBB",
    "documentation_url": "https://docs.nodebb.org/",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/NodeBB/NodeBB/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -36093,7 +36521,7 @@
      "service": "nodebb",
      "image": "ghcr.io/nodebb/nodebb",
      "tag": "latest",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -36248,10 +36676,17 @@
    "aliases": [],
    "name": "ntfy",
    "slogan": "A simple pub-sub push notification service you can send alerts to from any script or app.",
+   "description": "A simple pub-sub push notification service you can send alerts to from any script or app. Runs as a single container from the ntfy image, listening on port 80; data is kept in named volumes.",
    "first_run": [],
    "category": "Communication",
    "status": "active",
+   "source_repo": "https://github.com/binwiederhier/ntfy",
    "documentation_url": "https://docs.ntfy.sh",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/binwiederhier/ntfy/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -36275,7 +36710,7 @@
      "service": "ntfy",
      "image": "binwiederhier/ntfy",
      "tag": "v2.11.0",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm",
@@ -36494,10 +36929,17 @@
    "aliases": [],
    "name": "Odoo",
    "slogan": "An all-in-one business suite covering CRM, sales, inventory, accounting, and a website builder.",
+   "description": "An all-in-one business suite covering CRM, sales, inventory, accounting, and a website builder. Runs 2 containers (db, odoo), with odoo listening on port 8069; data is kept in named volumes.",
    "first_run": [],
    "category": "Applications",
    "status": "active",
+   "source_repo": "https://github.com/odoo/odoo",
    "documentation_url": "https://www.odoo.com/documentation",
+   "license": {
+    "spdx": "LGPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/odoo/odoo/blob/20.0/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -37419,7 +37861,13 @@
    "first_run": [],
    "category": "Applications",
    "status": "active",
+   "source_repo": "https://github.com/Ombi-app/Ombi",
    "documentation_url": "https://docs.ombi.app/",
+   "license": {
+    "spdx": "GPL-2.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/Ombi-app/Ombi/blob/develop/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -37524,10 +37972,17 @@
    "aliases": [],
    "name": "Once Campfire",
    "slogan": "A simple, self-hosted group chat app from 37signals, no subscription required.",
+   "description": "A simple, self-hosted group chat app from 37signals, no subscription required. Runs as a single container from the once-campfire image, listening on port 80; data is kept in named volumes.",
    "first_run": [],
    "category": "Communication",
    "status": "active",
+   "source_repo": "https://github.com/basecamp/once-campfire",
    "documentation_url": "https://github.com/basecamp/once-campfire",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/basecamp/once-campfire/blob/main/MIT-LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -37544,7 +37999,7 @@
      "service": "campfire",
      "image": "ghcr.io/basecamp/once-campfire",
      "tag": "main",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -38422,10 +38877,17 @@
    "aliases": [],
    "name": "OpenObserve",
    "slogan": "A lightweight, single-binary observability platform for logs, metrics, and traces with a built-in UI.",
+   "description": "A lightweight, single-binary observability platform for logs, metrics, and traces with a built-in UI. Runs as a single container from the openobserve image, listening on port 5080; data is kept in named volumes.",
    "first_run": [],
    "category": "Monitoring",
    "status": "active",
+   "source_repo": "https://github.com/openobserve/openobserve",
    "documentation_url": "https://openobserve.ai/docs",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/openobserve/openobserve/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -38557,10 +39019,17 @@
    "aliases": [],
    "name": "OrangeHRM",
    "slogan": "An open-source human resources management suite: PTO, recruitment, performance, and an employee directory.",
+   "description": "An open-source human resources management suite: PTO, recruitment, performance, and an employee directory. Runs 2 containers (mariadb, orangehrm), with orangehrm listening on port 80; data is kept in named volumes.",
    "first_run": [],
    "category": "Applications",
    "status": "active",
+   "source_repo": "https://github.com/orangehrm/orangehrm",
    "documentation_url": "https://docs.orangehrm.com/",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/orangehrm/orangehrm/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -38593,7 +39062,7 @@
      "service": "orangehrm",
      "image": "orangehrm/orangehrm",
      "tag": "latest",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64"
      ],
@@ -39315,10 +39784,17 @@
    "aliases": [],
    "name": "Overseerr",
    "slogan": "Lets your Plex users request new movies and TV shows straight from a shared web UI.",
+   "description": "Lets your Plex users request new movies and TV shows straight from a shared web UI. Runs as a single container from the overseerr image, listening on port 5055; data is kept in named volumes.",
    "first_run": [],
    "category": "Media",
    "status": "active",
+   "source_repo": "https://github.com/sct/overseerr",
    "documentation_url": "https://docs.overseerr.dev",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/sct/overseerr/blob/develop/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -39423,10 +39899,17 @@
    "aliases": [],
    "name": "Owncast",
    "slogan": "Run your own live video streaming server with built-in chat, no third-party platform required.",
+   "description": "Run your own live video streaming server with built-in chat, no third-party platform required. Runs as a single container from the owncast image, listening on port 8080; data is kept in named volumes.",
    "first_run": [],
    "category": "Media",
    "status": "active",
+   "source_repo": "https://github.com/owncast/owncast",
    "documentation_url": "https://owncast.online/docs",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/owncast/owncast/blob/develop/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -39443,7 +39926,7 @@
      "service": "owncast",
      "image": "owncast/owncast",
      "tag": "0.3.0",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/386",
       "linux/amd64",
@@ -40968,6 +41451,7 @@
    "aliases": [],
    "name": "pgAdmin",
    "slogan": "A full-featured web GUI for administering and querying PostgreSQL databases.",
+   "description": "A full-featured web GUI for administering and querying PostgreSQL databases. Runs as a single container from the pgadmin4 image, listening on port 80; data is kept in named volumes.",
    "first_run": [],
    "category": "Database Tools",
    "status": "active",
@@ -41100,10 +41584,17 @@
    "aliases": [],
    "name": "PG Back Web",
    "slogan": "A web UI for scheduling, encrypting, and restoring PostgreSQL backups.",
+   "description": "A web UI for scheduling, encrypting, and restoring PostgreSQL backups. Runs 2 containers (pgbackweb, pgbackweb-db), with pgbackweb listening on port 8085; data is kept in named volumes.",
    "first_run": [],
    "category": "Database Tools",
    "status": "active",
+   "source_repo": "https://github.com/eduardolat/pgbackweb",
    "documentation_url": "https://github.com/eduardolat/pgbackweb",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/eduardolat/pgbackweb/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -41120,7 +41611,7 @@
      "service": "pgbackweb",
      "image": "eduardolat/pgbackweb",
      "tag": "0.5.2",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -41269,6 +41760,7 @@
    "aliases": [],
    "name": "pgvector Postgres",
    "slogan": "PostgreSQL 17 with the pgvector extension preinstalled, for embeddings next to your relational data.",
+   "description": "PostgreSQL 17 with the pgvector extension preinstalled, for embeddings next to your relational data. Runs as a single container from the pgvector image, listening on port 5432; data is kept in named volumes.",
    "first_run": [],
    "category": "Database Tools",
    "status": "active",
@@ -41399,10 +41891,17 @@
    "aliases": [],
    "name": "PhotoPrism",
    "slogan": "An AI-powered photo management app that indexes and organizes your library as you own it.",
+   "description": "An AI-powered photo management app that indexes and organizes your library as you own it. Runs as a single container from the photoprism image, listening on port 2342; data is kept in named volumes.",
    "first_run": [],
    "category": "Media",
    "status": "active",
+   "source_repo": "https://github.com/photoprism/photoprism",
    "documentation_url": "https://docs.photoprism.app/getting-started/docker-compose/",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/photoprism/photoprism/blob/develop/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -41419,7 +41918,7 @@
      "service": "photoprism",
      "image": "photoprism/photoprism",
      "tag": "260728",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -41530,10 +42029,17 @@
    "aliases": [],
    "name": "Photoview",
    "slogan": "A fast, simple photo gallery that indexes an existing folder tree without importing or duplicating files.",
+   "description": "A fast, simple photo gallery that indexes an existing folder tree without importing or duplicating files. Runs as a single container from the photoview image, listening on port 80; data is kept in named volumes.",
    "first_run": [],
    "category": "Media",
    "status": "active",
+   "source_repo": "https://github.com/photoview/photoview",
    "documentation_url": "https://photoview.github.io/docs/",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/photoview/photoview/blob/master/LICENSE.txt"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -41550,7 +42056,7 @@
      "service": "photoview",
      "image": "photoview/photoview",
      "tag": "2.4.0",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -41654,10 +42160,17 @@
    "aliases": [],
    "name": "phpMyAdmin",
    "slogan": "A web-based admin tool for MySQL and MariaDB, built for ad-hoc use against any reachable database.",
+   "description": "A web-based admin tool for MySQL and MariaDB, built for ad-hoc use against any reachable database. Runs as a single container from the phpmyadmin image, listening on port 80.",
    "first_run": [],
    "category": "Database Tools",
    "status": "active",
+   "source_repo": "https://github.com/phpmyadmin/phpmyadmin",
    "documentation_url": "https://www.phpmyadmin.net/docs/",
+   "license": {
+    "spdx": "GPL-2.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/phpmyadmin/phpmyadmin/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -41886,10 +42399,17 @@
    "aliases": [],
    "name": "Pinchflat",
    "slogan": "Automatically download and organize YouTube channels and playlists into your media library.",
+   "description": "Automatically download and organize YouTube channels and playlists into your media library. Runs as a single container from the pinchflat image, listening on port 8945; data is kept in named volumes.",
    "first_run": [],
    "category": "Media",
    "status": "active",
+   "source_repo": "https://github.com/kieraneglin/pinchflat",
    "documentation_url": "https://github.com/kieraneglin/pinchflat/wiki",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/kieraneglin/pinchflat/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -41906,7 +42426,7 @@
      "service": "pinchflat",
      "image": "ghcr.io/kieraneglin/pinchflat",
      "tag": "latest",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64"
      ],
@@ -42911,6 +43431,7 @@
    "aliases": [],
    "name": "Plex",
    "slogan": "A media server that organizes your movies, TV, and music and streams them to any device.",
+   "description": "A media server that organizes your movies, TV, and music and streams them to any device. Runs as a single container from the plex image, listening on port 32400; data is kept in named volumes.",
    "first_run": [],
    "category": "Media",
    "status": "active",
@@ -43037,7 +43558,13 @@
    "first_run": [],
    "category": "Communication",
    "status": "active",
+   "source_repo": "https://github.com/useplunk/plunk",
    "documentation_url": "https://docs.useplunk.com/self-hosting/introduction",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/useplunk/plunk/blob/next/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -43631,10 +44158,17 @@
    "aliases": [],
    "name": "Postiz",
    "slogan": "Schedules and publishes posts across social platforms from one calendar, with basic analytics.",
+   "description": "Schedules and publishes posts across social platforms from one calendar, with basic analytics. Runs 3 containers (db, postiz, redis), with postiz listening on port 5000; data is kept in named volumes.",
    "first_run": [],
    "category": "Communication",
    "status": "active",
+   "source_repo": "https://github.com/gitroomhq/postiz-app",
    "documentation_url": "https://docs.postiz.com/installation/docker",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/gitroomhq/postiz-app/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -43670,7 +44204,7 @@
      "service": "postiz",
      "image": "ghcr.io/gitroomhq/postiz-app",
      "tag": "v2.23.0",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -44156,10 +44690,17 @@
    "aliases": [],
    "name": "Prometheus",
    "slogan": "A metrics time-series database and alerting engine built for pull-based scraping.",
+   "description": "A metrics time-series database and alerting engine built for pull-based scraping. Runs as a single container from the prometheus image, listening on port 9090; data is kept in named volumes.",
    "first_run": [],
    "category": "Monitoring",
    "status": "active",
+   "source_repo": "https://github.com/prometheus/prometheus",
    "documentation_url": "https://prometheus.io/docs/introduction/overview/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/prometheus/prometheus/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -44267,10 +44808,17 @@
    "aliases": [],
    "name": "Prowlarr",
    "slogan": "An indexer manager that syncs your torrent and Usenet indexers across the whole Arr stack.",
+   "description": "An indexer manager that syncs your torrent and Usenet indexers across the whole Arr stack. Runs as a single container from the prowlarr image, listening on port 9696; data is kept in named volumes.",
    "first_run": [],
    "category": "Media",
    "status": "active",
+   "source_repo": "https://github.com/Prowlarr/Prowlarr",
    "documentation_url": "https://wiki.servarr.com/prowlarr",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/Prowlarr/Prowlarr/blob/develop/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -44494,10 +45042,17 @@
    "aliases": [],
    "name": "qBittorrent",
    "slogan": "A free, self-hosted BitTorrent client with a full web UI for remote download management.",
+   "description": "A free, self-hosted BitTorrent client with a full web UI for remote download management. Runs as a single container from the qbittorrent image, listening on port 8080; data is kept in named volumes.",
    "first_run": [],
    "category": "Media",
    "status": "active",
+   "source_repo": "https://github.com/qbittorrent/qBittorrent",
    "documentation_url": "https://github.com/qbittorrent/qBittorrent/wiki",
+   "license": {
+    "spdx": "GPL-2.0-or-later",
+    "class": "copyleft",
+    "url": "https://github.com/qbittorrent/qBittorrent/blob/master/COPYING"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -44597,10 +45152,17 @@
    "aliases": [],
    "name": "Qdrant",
    "slogan": "A vector similarity search engine for storing, searching, and managing embeddings.",
+   "description": "A vector similarity search engine for storing, searching, and managing embeddings. Runs as a single container from the qdrant image, listening on port 6333; data is kept in named volumes.",
    "first_run": [],
    "category": "Database Tools",
    "status": "active",
+   "source_repo": "https://github.com/qdrant/qdrant",
    "documentation_url": "https://qdrant.tech/documentation/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/qdrant/qdrant/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -44617,7 +45179,7 @@
      "service": "qdrant",
      "image": "qdrant/qdrant",
      "tag": "v1.12.4",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -44855,10 +45417,17 @@
    "aliases": [],
    "name": "Radarr",
    "slogan": "Watches your favorite indexers for movies and automatically grabs, sorts, and renames them.",
+   "description": "Watches your favorite indexers for movies and automatically grabs, sorts, and renames them. Runs as a single container from the radarr image, listening on port 7878; data is kept in named volumes.",
    "first_run": [],
    "category": "Media",
    "status": "active",
+   "source_repo": "https://github.com/Radarr/Radarr",
    "documentation_url": "https://wiki.servarr.com/radarr",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/Radarr/Radarr/blob/develop/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -45695,10 +46264,17 @@
    "aliases": [],
    "name": "Redis Insight",
    "slogan": "A GUI for exploring keys, running commands, and profiling workloads on any Redis-compatible server.",
+   "description": "A GUI for exploring keys, running commands, and profiling workloads on any Redis-compatible server. Runs as a single container from the redisinsight image, listening on port 5540; data is kept in named volumes.",
    "first_run": [],
    "category": "Database Tools",
    "status": "active",
+   "source_repo": "https://github.com/redis/RedisInsight",
    "documentation_url": "https://redis.io/docs/latest/operate/redisinsight/",
+   "license": {
+    "spdx": "LicenseRef-SSPL-1.0",
+    "class": "source-available",
+    "url": "https://github.com/redis/RedisInsight/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -45715,7 +46291,7 @@
      "service": "redisinsight",
      "image": "redis/redisinsight",
      "tag": "2.70",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -45807,10 +46383,17 @@
    "aliases": [],
    "name": "RedisInsight",
    "slogan": "A GUI for browsing keys, running commands, and profiling performance on any Redis instance.",
+   "description": "A GUI for browsing keys, running commands, and profiling performance on any Redis instance. Runs as a single container from the redisinsight image, listening on port 5540; data is kept in named volumes.",
    "first_run": [],
    "category": "Database Tools",
    "status": "active",
+   "source_repo": "https://github.com/redis/RedisInsight",
    "documentation_url": "https://redis.io/docs/latest/operate/redisinsight/",
+   "license": {
+    "spdx": "LicenseRef-SSPL-1.0",
+    "class": "source-available",
+    "url": "https://github.com/redis/RedisInsight/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -45827,7 +46410,7 @@
      "service": "redisinsight",
      "image": "redis/redisinsight",
      "tag": "2.70",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -45937,10 +46520,17 @@
    "aliases": [],
    "name": "Redlib",
    "slogan": "A private, lightweight front-end for browsing Reddit without tracking or ads.",
+   "description": "A private, lightweight front-end for browsing Reddit without tracking or ads. Runs as a single container from the redlib image, listening on port 8080.",
    "first_run": [],
    "category": "Applications",
    "status": "active",
+   "source_repo": "https://github.com/redlib-org/redlib",
    "documentation_url": "https://github.com/redlib-org/redlib",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/redlib-org/redlib/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -46314,6 +46904,7 @@
    "aliases": [],
    "name": "Rocket.Chat",
    "slogan": "A full-featured, self-hosted team chat platform with video calls and app integrations.",
+   "description": "A full-featured, self-hosted team chat platform with video calls and app integrations. Runs 2 containers (mongo, rocketchat), with rocketchat listening on port 3000; data is kept in named volumes.",
    "first_run": [],
    "category": "Communication",
    "status": "active",
@@ -46467,10 +47058,17 @@
    "aliases": [],
    "name": "Roundcube Webmail",
    "slogan": "A browser-based IMAP email client with a clean interface, address books, and plugin support.",
+   "description": "A browser-based IMAP email client with a clean interface, address books, and plugin support. Runs as a single container from the roundcubemail image, listening on port 80; data is kept in named volumes.",
    "first_run": [],
    "category": "Communication",
    "status": "active",
+   "source_repo": "https://github.com/roundcube/roundcubemail",
    "documentation_url": "https://roundcube.net/about",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/roundcube/roundcubemail/blob/master/LICENSE.md"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -46487,7 +47085,7 @@
      "service": "roundcube",
      "image": "roundcube/roundcubemail",
      "tag": "1.7.4-apache",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/386",
       "linux/amd64",
@@ -46980,7 +47578,13 @@
    "first_run": [],
    "category": "Applications",
    "status": "active",
+   "source_repo": "https://github.com/sabnzbd/sabnzbd",
    "documentation_url": "https://sabnzbd.org/wiki/",
+   "license": {
+    "spdx": "GPL-2.0-or-later",
+    "class": "copyleft",
+    "url": "https://github.com/sabnzbd/sabnzbd/blob/develop/LICENSE.txt"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -47343,10 +47947,17 @@
    "aliases": [],
    "name": "SearXNG",
    "slogan": "A privacy-respecting metasearch engine that aggregates results from dozens of search services.",
+   "description": "A privacy-respecting metasearch engine that aggregates results from dozens of search services. Runs 2 containers (redis, searxng), with searxng listening on port 8080; data is kept in named volumes.",
    "first_run": [],
    "category": "Applications",
    "status": "active",
+   "source_repo": "https://github.com/searxng/searxng",
    "documentation_url": "https://docs.searxng.org",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/searxng/searxng/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -47389,7 +48000,7 @@
      "service": "searxng",
      "image": "searxng/searxng",
      "tag": "2026.9.23-3cd69d30e",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm",
@@ -47625,7 +48236,13 @@
    "first_run": [],
    "category": "Applications",
    "status": "active",
+   "source_repo": "https://github.com/seerr-team/seerr",
    "documentation_url": "https://docs.seerr.dev/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/seerr-team/seerr/blob/develop/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -47642,7 +48259,7 @@
      "service": "seerr",
      "image": "ghcr.io/seerr-team/seerr",
      "tag": "v3.5.1",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -49415,10 +50032,17 @@
    "aliases": [],
    "name": "Sonarr",
    "slogan": "Watches your favorite indexers for new TV episodes and automatically grabs, sorts, and renames them.",
+   "description": "Watches your favorite indexers for new TV episodes and automatically grabs, sorts, and renames them. Runs as a single container from the sonarr image, listening on port 8989; data is kept in named volumes.",
    "first_run": [],
    "category": "Media",
    "status": "active",
+   "source_repo": "https://github.com/Sonarr/Sonarr",
    "documentation_url": "https://wiki.servarr.com/sonarr",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/Sonarr/Sonarr/blob/develop/LICENSE.md"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -49885,10 +50509,17 @@
    "aliases": [],
    "name": "Speedtest Tracker",
    "slogan": "Runs Ookla speed tests on a schedule and charts your connection's throughput, latency, and jitter over time.",
+   "description": "Runs Ookla speed tests on a schedule and charts your connection's throughput, latency, and jitter over time. Runs as a single container from the speedtest-tracker image, listening on port 80; data is kept in named volumes.",
    "first_run": [],
    "category": "Monitoring",
    "status": "active",
+   "source_repo": "https://github.com/alexjustesen/speedtest-tracker",
    "documentation_url": "https://docs.speedtest-tracker.dev",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/alexjustesen/speedtest-tracker/blob/1.x/LICENSE.md"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -50198,7 +50829,13 @@
    "first_run": [],
    "category": "Applications",
    "status": "active",
+   "source_repo": "https://github.com/Donkie/Spoolman",
    "documentation_url": "https://github.com/Donkie/Spoolman",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/Donkie/Spoolman/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -50215,7 +50852,7 @@
      "service": "spoolman",
      "image": "ghcr.io/donkie/spoolman",
      "tag": "0.27.1",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm",
@@ -50437,6 +51074,7 @@
    "aliases": [],
    "name": "Stalwart Mail Server",
    "slogan": "An all-in-one SMTP, IMAP, JMAP, and WebDAV mail server in a single lightweight container.",
+   "description": "An all-in-one SMTP, IMAP, JMAP, and WebDAV mail server in a single lightweight container. Runs as a single container from the stalwart image, listening on port 8080; data is kept in named volumes.",
    "first_run": [],
    "category": "Communication",
    "status": "active",
@@ -50663,10 +51301,17 @@
    "aliases": [],
    "name": "Statusnook",
    "slogan": "Deploy a status page and start monitoring endpoints in minutes.",
+   "description": "Deploy a status page and start monitoring endpoints in minutes. Runs as a single container from the statusnook image, listening on port 8000; data is kept in named volumes.",
    "first_run": [],
    "category": "Monitoring",
    "status": "active",
+   "source_repo": "https://github.com/goksan/statusnook",
    "documentation_url": "https://statusnook.com",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/goksan/statusnook/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -50683,7 +51328,7 @@
      "service": "statusnook",
      "image": "goksan/statusnook",
      "tag": "latest",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -52048,10 +52693,17 @@
    "aliases": [],
    "name": "Tautulli",
    "slogan": "Monitors your Plex server and shows who watched what, with history, stats, and notifications.",
+   "description": "Monitors your Plex server and shows who watched what, with history, stats, and notifications. Runs as a single container from the tautulli image, listening on port 8181; data is kept in named volumes.",
    "first_run": [],
    "category": "Monitoring",
    "status": "active",
+   "source_repo": "https://github.com/Tautulli/Tautulli",
    "documentation_url": "https://docs.tautulli.com",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/Tautulli/Tautulli/blob/nightly/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -52172,10 +52824,17 @@
    "aliases": [],
    "name": "Tdarr",
    "slogan": "Automated media transcoding, health checks, and library-wide format standardization.",
+   "description": "Automated media transcoding, health checks, and library-wide format standardization. Runs as a single container from the tdarr image, listening on port 8265; data is kept in named volumes.",
    "first_run": [],
    "category": "Media",
    "status": "active",
+   "source_repo": "https://github.com/HaveAGitGat/Tdarr",
    "documentation_url": "https://docs.tdarr.io",
+   "license": {
+    "spdx": "LicenseRef-Tdarr-EULA",
+    "class": "proprietary",
+    "url": "https://github.com/HaveAGitGat/Tdarr/blob/master/LICENSE.md"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -52192,7 +52851,7 @@
      "service": "tdarr",
      "image": "ghcr.io/haveagitgat/tdarr",
      "tag": "2.86.01",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -54070,10 +54729,17 @@
    "aliases": [],
    "name": "Transmission",
    "slogan": "A fast, lightweight BitTorrent client with a simple web interface.",
+   "description": "A fast, lightweight BitTorrent client with a simple web interface. Runs as a single container from the transmission image, listening on port 9091; data is kept in named volumes.",
    "first_run": [],
    "category": "Media",
    "status": "active",
+   "source_repo": "https://github.com/transmission/transmission",
    "documentation_url": "https://docs.linuxserver.io/images/docker-transmission/",
+   "license": {
+    "spdx": "GPL-2.0-only OR GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/transmission/transmission/blob/main/COPYING"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -55281,7 +55947,13 @@
    "first_run": [],
    "category": "Monitoring",
    "status": "active",
+   "source_repo": "https://github.com/louislam/uptime-kuma",
    "documentation_url": "https://github.com/louislam/uptime-kuma/wiki",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/louislam/uptime-kuma/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -55305,7 +55977,7 @@
      "service": "kuma",
      "image": "louislam/uptime-kuma",
      "tag": "1.23.13",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm",
@@ -55378,10 +56050,17 @@
    "aliases": [],
    "name": "Uptime Kuma (MariaDB)",
    "slogan": "Uptime Kuma with a MariaDB sidecar provisioned, for the setups that opt out of its default SQLite file.",
+   "description": "Uptime Kuma with a MariaDB sidecar provisioned, for the setups that opt out of its default SQLite file. Runs 2 containers (mariadb, uptime-kuma), with uptime-kuma listening on port 3001; data is kept in named volumes.",
    "first_run": [],
    "category": "Monitoring",
    "status": "active",
+   "source_repo": "https://github.com/louislam/uptime-kuma",
    "documentation_url": "https://github.com/louislam/uptime-kuma/wiki",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/louislam/uptime-kuma/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -55414,7 +56093,7 @@
      "service": "uptime-kuma",
      "image": "louislam/uptime-kuma",
      "tag": "2",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm",
@@ -55544,10 +56223,17 @@
    "aliases": [],
    "name": "Valkey",
    "slogan": "A Redis-compatible in-memory key-value store under the Linux Foundation, with password auth and append-only persistence.",
+   "description": "A Redis-compatible in-memory key-value store under the Linux Foundation, with password auth and append-only persistence. Runs as a single container from the valkey image, listening on port 6379; data is kept in named volumes.",
    "first_run": [],
    "category": "Database Tools",
    "status": "active",
+   "source_repo": "https://github.com/valkey-io/valkey",
    "documentation_url": "https://valkey.io/docs/",
+   "license": {
+    "spdx": "BSD-3-Clause",
+    "class": "permissive",
+    "url": "https://github.com/valkey-io/valkey/blob/unstable/COPYING"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -56151,10 +56837,17 @@
    "aliases": [],
    "name": "VictoriaMetrics",
    "slogan": "A fast, resource-frugal time-series database that speaks the Prometheus query and remote-write APIs. Has no authentication, so point Prometheus-style senders at victoriametrics:8428 from other services in this project, or attach a domain only behind Basic Auth. Not published on the host.",
+   "description": "A fast, resource-frugal time-series database that speaks the Prometheus query and remote-write APIs. Has no authentication, so point Prometheus-style senders at victoriametrics:8428 from other services in this project, or attach a domain only behind Basic Auth. Not published on the host. Runs as a single container from the victoria-metrics image, listening on port 8428; data is kept in named volumes.",
    "first_run": [],
    "category": "Monitoring",
    "status": "active",
+   "source_repo": "https://github.com/VictoriaMetrics/VictoriaMetrics",
    "documentation_url": "https://docs.victoriametrics.com",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/VictoriaMetrics/VictoriaMetrics/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -56171,7 +56864,7 @@
      "service": "victoriametrics",
      "image": "victoriametrics/victoria-metrics",
      "tag": "v1.152.0",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/386",
       "linux/amd64",
@@ -56565,10 +57258,17 @@
    "aliases": [],
    "name": "Vvveb CMS",
    "slogan": "A CMS for building websites, blogs, and ecommerce stores.",
+   "description": "A CMS for building websites, blogs, and ecommerce stores. Runs as a single container from the vvvebcms image, listening on port 80; data is kept in named volumes.",
    "first_run": [],
    "category": "Applications",
    "status": "active",
+   "source_repo": "https://github.com/givanz/Vvveb",
    "documentation_url": "https://docs.vvveb.com",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/givanz/Vvveb/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -57123,10 +57823,17 @@
    "aliases": [],
    "name": "Weaviate",
    "slogan": "An open-source vector database with hybrid search, built-in modules, and a GraphQL and REST API.",
+   "description": "An open-source vector database with hybrid search, built-in modules, and a GraphQL and REST API. Runs as a single container from the weaviate image, listening on port 8080; data is kept in named volumes.",
    "first_run": [],
    "category": "Database Tools",
    "status": "active",
+   "source_repo": "https://github.com/weaviate/weaviate",
    "documentation_url": "https://weaviate.io/developers/weaviate",
+   "license": {
+    "spdx": "BSD-3-Clause",
+    "class": "permissive",
+    "url": "https://github.com/weaviate/weaviate/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -58234,7 +58941,13 @@
    "first_run": [],
    "category": "Applications",
    "status": "active",
+   "source_repo": "https://github.com/wizarrrr/wizarr",
    "documentation_url": "https://docs.wizarr.dev/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/wizarrrr/wizarr/blob/main/LICENSE.md"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -58251,7 +58964,7 @@
      "service": "wizarr",
      "image": "ghcr.io/wizarrrr/wizarr",
      "tag": "v2026.10.1",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -58534,10 +59247,17 @@
    "aliases": [],
    "name": "WordPress",
    "slogan": "The world's most widely used content management system, self-hosted with its own database.",
+   "description": "The world's most widely used content management system, self-hosted with its own database. Runs 2 containers (db, wordpress), with wordpress listening on port 80; data is kept in named volumes.",
    "first_run": [],
    "category": "Applications",
    "status": "active",
+   "source_repo": "https://github.com/WordPress/WordPress",
    "documentation_url": "https://wordpress.org/documentation/",
+   "license": {
+    "spdx": "GPL-2.0-or-later",
+    "class": "copyleft",
+    "url": "https://github.com/WordPress/WordPress/blob/master/license.txt"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -58870,10 +59590,17 @@
    "aliases": [],
    "name": "Yamtrack",
    "slogan": "A self-hosted media tracker for movies, TV, anime, manga, games, and books.",
+   "description": "A self-hosted media tracker for movies, TV, anime, manga, games, and books. Runs 2 containers (redis, yamtrack), with yamtrack listening on port 8000; data is kept in named volumes.",
    "first_run": [],
    "category": "Media",
    "status": "active",
+   "source_repo": "https://github.com/FuzzyGrim/Yamtrack",
    "documentation_url": "https://github.com/FuzzyGrim/Yamtrack/wiki",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/FuzzyGrim/Yamtrack/blob/dev/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -58909,7 +59636,7 @@
      "service": "yamtrack",
      "image": "ghcr.io/fuzzygrim/yamtrack",
      "tag": "0.26.3",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -59025,10 +59752,17 @@
    "aliases": [],
    "name": "Zabbix",
    "slogan": "Enterprise-grade network, server, and application monitoring with alerting and trend graphs.",
+   "description": "Enterprise-grade network, server, and application monitoring with alerting and trend graphs. Runs 3 containers (db, zabbix-server, zabbix-web), with zabbix-web listening on port 8080; data is kept in named volumes.",
    "first_run": [],
    "category": "Monitoring",
    "status": "active",
+   "source_repo": "https://github.com/zabbix/zabbix",
    "documentation_url": "https://www.zabbix.com/documentation/current/en/manual/installation/containers",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/zabbix/zabbix/blob/master/COPYING"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -59064,7 +59798,7 @@
      "service": "zabbix-server",
      "image": "zabbix/zabbix-server-pgsql",
      "tag": "alpine-7.4-latest",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64",
@@ -59081,7 +59815,7 @@
      "service": "zabbix-web",
      "image": "zabbix/zabbix-web-nginx-pgsql",
      "tag": "alpine-7.4-latest",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64",

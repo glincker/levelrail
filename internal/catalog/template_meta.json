@@ -34,6 +34,30 @@
   "license_url": "https://github.com/AdguardTeam/AdGuardHome/blob/master/LICENSE.txt",
   "description": "Network-wide ad and tracker blocking with a DNS server and a friendly admin dashboard. Runs as a single container from the adguardhome image, listening on port 3000 and keeps its data in named volumes."
  },
+ "adminer": {
+  "description": "A single-file database admin tool for MySQL, PostgreSQL, SQLite, and more. Runs as a single container from the adminer image, listening on port 8080."
+ },
+ "answer": {
+  "source_repo": "https://github.com/apache/answer",
+  "license": "Apache-2.0",
+  "license_class": "permissive",
+  "license_url": "https://github.com/apache/answer/blob/main/LICENSE",
+  "description": "A Q&A platform for building a community knowledge base, in the style of a self-hosted Stack Overflow. Runs as a single container from the answer image, listening on port 80; data is kept in named volumes."
+ },
+ "apprise-api": {
+  "source_repo": "https://github.com/caronc/apprise-api",
+  "license": "MIT",
+  "license_class": "permissive",
+  "license_url": "https://github.com/caronc/apprise-api/blob/master/LICENSE",
+  "description": "A single HTTP endpoint that fans a notification out to 100+ services such as Slack, Discord, and email. Runs as a single container from the apprise image, listening on port 8000; data is kept in named volumes."
+ },
+ "audiobookshelf": {
+  "source_repo": "https://github.com/advplyr/audiobookshelf",
+  "license": "GPL-3.0-only",
+  "license_class": "copyleft",
+  "license_url": "https://github.com/advplyr/audiobookshelf/blob/master/LICENSE",
+  "description": "A self-hosted server for your audiobooks and podcasts, with sync across every device. Runs as a single container from the audiobookshelf image, listening on port 80; data is kept in named volumes."
+ },
  "authentik": {
   "source_repo": "https://github.com/goauthentik/authentik",
   "license": "MIT",
@@ -48,6 +72,23 @@
   "license_url": "https://github.com/autobrr/autobrr/blob/develop/LICENSE",
   "description": "Matches torrent releases from your indexers against filters and pushes hits straight to your download client. Runs as a single container from the autobrr image, listening on port 7474 and keeps its data in named volumes."
  },
+ "baserow": {
+  "description": "A no-code database and spreadsheet hybrid you can build internal tools and apps on top of. Runs as a single container from the baserow image, listening on port 80; data is kept in named volumes."
+ },
+ "bazarr": {
+  "source_repo": "https://github.com/morpheus65535/bazarr",
+  "license": "GPL-3.0-only",
+  "license_class": "copyleft",
+  "license_url": "https://github.com/morpheus65535/bazarr/blob/master/LICENSE",
+  "description": "Companion to Sonarr and Radarr that finds and downloads subtitles for your media library. Runs as a single container from the bazarr image, listening on port 6767; data is kept in named volumes."
+ },
+ "beszel": {
+  "source_repo": "https://github.com/henrygd/beszel",
+  "license": "MIT",
+  "license_class": "permissive",
+  "license_url": "https://github.com/henrygd/beszel/blob/main/LICENSE",
+  "description": "A lightweight server monitoring hub with historical stats for CPU, memory, disk, and network. Runs as a single container from the beszel image, listening on port 8090; data is kept in named volumes."
+ },
  "budge": {
   "source_repo": "https://github.com/linuxserver/budge",
   "license": "GPL-3.0-only",
@@ -55,8 +96,67 @@
   "license_url": "https://github.com/linuxserver/budge/blob/main/LICENSE",
   "description": "A self-hosted envelope budgeting app for personal finance. Runs as a single container from the budge image, listening on port 80 and keeps its data in named volumes."
  },
+ "budibase": {
+  "source_repo": "https://github.com/Budibase/budibase",
+  "license": "GPL-3.0-only",
+  "license_class": "copyleft",
+  "license_url": "https://github.com/Budibase/budibase/blob/master/LICENSE",
+  "description": "An open-source low-code platform for building internal tools, forms, and admin panels. Runs 6 containers (app-service, couchdb-service, minio-service, proxy-service, redis-service, worker-service), with proxy-service listening on port 10000; data is kept in named volumes."
+ },
+ "bugsink": {
+  "description": "A self-hosted, lightweight error tracking server with a Sentry-compatible SDK ingestion API. Runs 2 containers (mysql, web), with web listening on port 8000; data is kept in named volumes."
+ },
+ "bytebase": {
+  "source_repo": "https://github.com/bytebase/bytebase",
+  "license": "MIT",
+  "license_class": "permissive",
+  "license_url": "https://github.com/bytebase/bytebase/blob/main/LICENSE",
+  "description": "A database schema change and migration tool with review workflows built in. Runs as a single container from the bytebase image, listening on port 8080; data is kept in named volumes."
+ },
+ "calibre-web": {
+  "source_repo": "https://github.com/janeczku/calibre-web",
+  "license": "GPL-3.0-only",
+  "license_class": "copyleft",
+  "license_url": "https://github.com/janeczku/calibre-web/blob/master/LICENSE",
+  "description": "A clean web interface for browsing, reading, and downloading your existing Calibre ebook library. Runs as a single container from the calibre-web image, listening on port 8083; data is kept in named volumes."
+ },
+ "campfire": {
+  "source_repo": "https://github.com/basecamp/once-campfire",
+  "license": "MIT",
+  "license_class": "permissive",
+  "license_url": "https://github.com/basecamp/once-campfire/blob/main/MIT-LICENSE",
+  "description": "Basecamp's open-source group chat app: rooms, direct messages, and file sharing, self-hosted as one container. Runs as a single container from the once-campfire image, listening on port 80; data is kept in named volumes."
+ },
  "cap-captcha": {
   "description": "A lightweight, privacy-friendly proof-of-work CAPTCHA, an alternative to reCAPTCHA or hCaptcha. Runs 2 containers (cap, valkey), with cap listening on port 3000 and keeps its data in named volumes."
+ },
+ "castopod": {
+  "source_repo": "https://github.com/ad-aures/castopod",
+  "license": "AGPL-3.0-only",
+  "license_class": "network-copyleft",
+  "license_url": "https://github.com/ad-aures/castopod/blob/develop/LICENSE.md",
+  "description": "An open-source podcast hosting platform with built-in analytics, a web player, and ActivityPub federation. Runs 3 containers (castopod, mariadb, redis), with castopod listening on port 8080; data is kept in named volumes."
+ },
+ "changedetection": {
+  "source_repo": "https://github.com/dgtlmoon/changedetection.io",
+  "license": "Apache-2.0",
+  "license_class": "permissive",
+  "license_url": "https://github.com/dgtlmoon/changedetection.io/blob/master/LICENSE",
+  "description": "Monitor any webpage for changes and get notified the moment content updates. Runs as a single container from the changedetection.io image, listening on port 5000; data is kept in named volumes."
+ },
+ "chatwoot": {
+  "source_repo": "https://github.com/chatwoot/chatwoot",
+  "license": "MIT",
+  "license_class": "permissive",
+  "license_url": "https://github.com/chatwoot/chatwoot/blob/develop/LICENSE",
+  "description": "An open-source customer support platform for live chat, email, and social messaging. Runs 3 containers (chatwoot, db, redis), with chatwoot listening on port 3000; data is kept in named volumes."
+ },
+ "checkmate": {
+  "source_repo": "https://github.com/bluewave-labs/Checkmate",
+  "license": "AGPL-3.0-only",
+  "license_class": "network-copyleft",
+  "license_url": "https://github.com/bluewave-labs/Checkmate/blob/develop/LICENSE",
+  "description": "An open-source uptime and server monitoring app with incident history and status pages. Runs 2 containers (checkmate, mongo), with checkmate listening on port 52345; data is kept in named volumes."
  },
  "chibisafe": {
   "source_repo": "https://github.com/chibisafe/chibisafe",
@@ -64,6 +164,27 @@
   "license_class": "permissive",
   "license_url": "https://github.com/chibisafe/chibisafe/blob/master/LICENSE",
   "description": "A file vault for uploading and sharing files from the cloud. Runs 2 containers (chibisafe, chibisafe-server), with chibisafe listening on port 8001 and keeps its data in named volumes."
+ },
+ "chroma": {
+  "source_repo": "https://github.com/chroma-core/chroma",
+  "license": "Apache-2.0",
+  "license_class": "permissive",
+  "license_url": "https://github.com/chroma-core/chroma/blob/main/LICENSE",
+  "description": "A developer-friendly embedding database for AI applications, served over a simple HTTP API. Open to anyone who can reach it, so reach it from other services in this project at chroma:8000, or attach a domain only behind Basic Auth. Not published on the host. Runs as a single container from the chroma image, listening on port 8000; data is kept in named volumes."
+ },
+ "clickhouse": {
+  "source_repo": "https://github.com/ClickHouse/ClickHouse",
+  "license": "Apache-2.0",
+  "license_class": "permissive",
+  "license_url": "https://github.com/ClickHouse/ClickHouse/blob/master/LICENSE",
+  "description": "A columnar database built for fast analytical queries over large datasets. Runs as a single container from the clickhouse-server image, listening on port 8123; data is kept in named volumes."
+ },
+ "cloudbeaver": {
+  "source_repo": "https://github.com/dbeaver/cloudbeaver",
+  "license": "Apache-2.0",
+  "license_class": "permissive",
+  "license_url": "https://github.com/dbeaver/cloudbeaver/blob/devel/LICENSE",
+  "description": "A web-based database manager for browsing and querying Postgres, MySQL, SQLite and more. Runs as a single container from the cloudbeaver image, listening on port 8978; data is kept in named volumes."
  },
  "cloudflare-ddns": {
   "source_repo": "https://github.com/favonia/cloudflare-ddns",
@@ -77,6 +198,13 @@
   "license_class": "copyleft",
   "license_url": "https://github.com/cloudreve/cloudreve/blob/master/LICENSE",
   "description": "A self-hosted file management and sharing system with multiple storage backends. Runs 3 containers (cloudreve, postgres, redis), with cloudreve listening on port 5212 and keeps its data in named volumes."
+ },
+ "cockpit-cms": {
+  "source_repo": "https://github.com/agentejo/cockpit",
+  "license": "MIT",
+  "license_class": "permissive",
+  "license_url": "https://github.com/agentejo/cockpit/blob/next/LICENSE",
+  "description": "A headless content platform for managing structured content behind a clean API, without a big CMS footprint. Runs as a single container from the cockpit image, listening on port 80; data is kept in named volumes."
  },
  "copyparty": {
   "source_repo": "https://github.com/9001/copyparty",
@@ -99,8 +227,18 @@
   "license_url": "https://github.com/lissy93/dashy/blob/master/LICENSE",
   "description": "A feature-rich, self-hosted start page with widgets, status checks, and full visual customization. Runs as a single container from the dashy image, listening on port 8080 and keeps its data in named volumes."
  },
+ "diun": {
+  "source_repo": "https://github.com/crazy-max/diun",
+  "license": "MIT",
+  "license_class": "permissive",
+  "license_url": "https://github.com/crazy-max/diun/blob/master/LICENSE",
+  "description": "Watches your running containers and notifies you the moment a new image tag is published. Runs as a single container from the diun image; data is kept in named volumes."
+ },
  "dolibarr": {
   "description": "An open-source ERP and CRM for small businesses: invoicing, contacts, stock, and accounting in one app. Runs 2 containers (db, dolibarr), with dolibarr listening on port 80 and keeps its data in named volumes."
+ },
+ "drupal": {
+  "description": "A mature, flexible CMS for structured content, multilingual sites, and large editorial teams. Runs 2 containers (db, drupal), with drupal listening on port 80; data is kept in named volumes."
  },
  "duplicati": {
   "description": "Scheduled, encrypted backups of your files to local storage, network shares, or cloud storage. Runs as a single container from the duplicati image, listening on port 8200 and keeps its data in named volumes."
@@ -108,12 +246,25 @@
  "elasticsearch": {
   "description": "A distributed, RESTful search and analytics engine for full-text search and log analytics. Security is off, so reach it from other services in this project at elasticsearch:9200, or attach a domain only behind Basic Auth. Not published on the host. Runs as a single container from the elasticsearch image, listening on port 9200 and keeps its data in named volumes."
  },
+ "elasticsearch-kibana": {
+  "description": "Elasticsearch paired with Kibana for log and document search with a visual dashboard. Kibana has no login, so anyone who can open it controls the data: before attaching a domain, enable Basic Auth or the auth gate on it. Elasticsearch is reachable only from services in this project at elasticsearch:9200 and is not published on the host. Runs 2 containers (elasticsearch, kibana), with elasticsearch listening on port 9200; data is kept in named volumes."
+ },
+ "emby": {
+  "description": "A media server that organizes your movies, shows, and music and streams them to any device. Runs as a single container from the emby image, listening on port 8096; data is kept in named volumes."
+ },
  "embystat": {
   "source_repo": "https://github.com/mregni/EmbyStat",
   "license": "MIT",
   "license_class": "permissive",
   "license_url": "https://github.com/mregni/EmbyStat/blob/develop/LICENSE",
   "description": "Watch statistics and insight dashboards for your Emby or Jellyfin server. Runs as a single container from the embystat image, listening on port 6555 and keeps its data in named volumes."
+ },
+ "espocrm": {
+  "source_repo": "https://github.com/espocrm/espocrm",
+  "license": "AGPL-3.0-only",
+  "license_class": "network-copyleft",
+  "license_url": "https://github.com/espocrm/espocrm/blob/master/LICENSE.txt",
+  "description": "An open-source CRM for managing sales, support, and customer relationships end to end. Runs 2 containers (espocrm, espocrm-db), with espocrm listening on port 80; data is kept in named volumes."
  },
  "etcd": {
   "source_repo": "https://github.com/etcd-io/etcd",
@@ -146,6 +297,20 @@
   "license_url": "https://github.com/pawelmalak/flame/blob/master/LICENSE.md",
   "description": "A self-hosted start page with an app launcher, bookmarks, and Docker label integration. Runs as a single container from the flame image, listening on port 5005 and keeps its data in named volumes."
  },
+ "freescout": {
+  "source_repo": "https://github.com/freescout-help-desk/freescout",
+  "license": "AGPL-3.0-only",
+  "license_class": "network-copyleft",
+  "license_url": "https://github.com/freescout-help-desk/freescout/blob/dist/LICENSE",
+  "description": "A free, self-hosted help desk and shared mailbox, a lighter alternative to Zendesk or Help Scout. Runs 2 containers (freescout, mariadb), with freescout listening on port 80; data is kept in named volumes."
+ },
+ "ghost": {
+  "source_repo": "https://github.com/TryGhost/Ghost",
+  "license": "MIT",
+  "license_class": "permissive",
+  "license_url": "https://github.com/TryGhost/Ghost/blob/main/LICENSE",
+  "description": "A fast, modern publishing platform for blogs and newsletters, with built-in memberships. Runs 2 containers (db, ghost), with ghost listening on port 2368; data is kept in named volumes."
+ },
  "ghostfolio": {
   "source_repo": "https://github.com/ghostfolio/ghostfolio",
   "license": "AGPL-3.0-only",
@@ -160,8 +325,64 @@
   "license_url": "https://github.com/glanceapp/glance/blob/main/LICENSE",
   "description": "A fast, self-hosted dashboard that pulls RSS, weather, and other widgets onto one page. Runs as a single container from the glance image, listening on port 8080 and keeps its data in named volumes."
  },
+ "glances": {
+  "source_repo": "https://github.com/nicolargo/glances",
+  "license": "LGPL-3.0-only",
+  "license_class": "copyleft",
+  "license_url": "https://github.com/nicolargo/glances/blob/develop/COPYING",
+  "description": "A cross-platform system monitor showing CPU, memory, disk, and network at a glance. Runs as a single container from the glances image, listening on port 61208."
+ },
+ "glitchtip": {
+  "source_repo": "https://github.com/burke-software/GlitchTip",
+  "license": "MIT",
+  "license_class": "permissive",
+  "license_url": "https://github.com/burke-software/GlitchTip/blob/master/LICENSE",
+  "description": "A lightweight, self-hosted error tracking service compatible with the Sentry SDK. Runs 3 containers (db, glitchtip, redis), with glitchtip listening on port 8080; data is kept in named volumes."
+ },
+ "glpi": {
+  "source_repo": "https://github.com/glpi-project/glpi",
+  "license": "GPL-3.0-only",
+  "license_class": "copyleft",
+  "license_url": "https://github.com/glpi-project/glpi/blob/12.0/bugfixes/LICENSE",
+  "description": "An IT asset and service management platform with helpdesk ticketing built in. Runs 2 containers (glpi, glpi-db), with glpi listening on port 80; data is kept in named volumes."
+ },
  "goatcounter": {
   "description": "A privacy-friendly, open-source web analytics platform that never tracks individual visitors. Runs as a single container from the goatcounter image, listening on port 8080 and keeps its data in named volumes."
+ },
+ "gotify": {
+  "source_repo": "https://github.com/gotify/server",
+  "license": "MIT",
+  "license_class": "permissive",
+  "license_url": "https://github.com/gotify/server/blob/master/LICENSE",
+  "description": "A simple push notification server with a REST API and web UI, for sending messages to your devices. Runs as a single container from the server image, listening on port 80; data is kept in named volumes."
+ },
+ "grafana": {
+  "source_repo": "https://github.com/grafana/grafana",
+  "license": "AGPL-3.0-only",
+  "license_class": "network-copyleft",
+  "license_url": "https://github.com/grafana/grafana/blob/main/LICENSE",
+  "description": "Dashboards and exploration for metrics, logs, and traces from any data source. Runs as a single container from the grafana image, listening on port 3000; data is kept in named volumes."
+ },
+ "grafana-postgres": {
+  "source_repo": "https://github.com/grafana/grafana",
+  "license": "AGPL-3.0-only",
+  "license_class": "network-copyleft",
+  "license_url": "https://github.com/grafana/grafana/blob/main/LICENSE",
+  "description": "Grafana backed by Postgres instead of its default embedded SQLite, for multi-instance or external-DB setups. Runs 2 containers (db, grafana), with grafana listening on port 3000; data is kept in named volumes."
+ },
+ "grimmory": {
+  "source_repo": "https://github.com/grimmory-tools/grimmory",
+  "license": "AGPL-3.0-only",
+  "license_class": "network-copyleft",
+  "license_url": "https://github.com/grimmory-tools/grimmory/blob/develop/LICENSE",
+  "description": "Organize, read, annotate, and sync your entire book collection from one place. Runs 2 containers (db, grimmory), with grimmory listening on port 80; data is kept in named volumes."
+ },
+ "healthchecks": {
+  "source_repo": "https://github.com/healthchecks/healthchecks",
+  "license": "BSD-3-Clause",
+  "license_class": "permissive",
+  "license_url": "https://github.com/healthchecks/healthchecks/blob/master/LICENSE",
+  "description": "Cron job and scheduled task monitoring: get alerted the moment a periodic job stops checking in. Runs 2 containers (db, healthchecks), with healthchecks listening on port 8000; data is kept in named volumes."
  },
  "heimdall": {
   "source_repo": "https://github.com/linuxserver/Heimdall",
@@ -198,6 +419,13 @@
   "license_url": "https://github.com/bastienwirtz/homer/blob/main/LICENSE",
   "description": "A dead simple static start page for your services, configured with a single YAML file. Runs as a single container from the homer image, listening on port 8080 and keeps its data in named volumes."
  },
+ "immich": {
+  "source_repo": "https://github.com/immich-app/immich",
+  "license": "AGPL-3.0-only",
+  "license_class": "network-copyleft",
+  "license_url": "https://github.com/immich-app/immich/blob/main/LICENSE",
+  "description": "Self-hosted photo and video backup with mobile apps, facial recognition, and timeline search. Runs 4 containers (db, immich-machine-learning, immich-server, redis), with immich-server listening on port 2283; data is kept in named volumes."
+ },
  "infisical": {
   "source_repo": "https://github.com/Infisical/infisical",
   "license": "MIT",
@@ -205,12 +433,50 @@
   "license_url": "https://github.com/Infisical/infisical/blob/main/LICENSE",
   "description": "An open-source secrets manager to centralize API keys, database credentials, and app config. Runs 3 containers (db, infisical, redis), with infisical listening on port 8080 and keeps its data in named volumes."
  },
+ "influxdb": {
+  "source_repo": "https://github.com/influxdata/influxdb",
+  "license": "Apache-2.0",
+  "license_class": "permissive",
+  "license_url": "https://github.com/influxdata/influxdb/blob/main/LICENSE-APACHE",
+  "description": "An open-source time-series database for metrics, events, and IoT analytics. Runs as a single container from the influxdb image, listening on port 8086; data is kept in named volumes."
+ },
  "invoice-ninja": {
   "source_repo": "https://github.com/invoiceninja/invoiceninja",
   "license": "LicenseRef-Elastic-2.0",
   "license_class": "source-available",
   "license_url": "https://github.com/invoiceninja/invoiceninja/blob/v5-stable/LICENSE",
   "description": "Self-hosted invoicing, quotes, and payments for freelancers and small businesses. Runs 3 containers (db, invoiceninja, redis), with invoiceninja listening on port 80 and keeps its data in named volumes."
+ },
+ "jackett": {
+  "source_repo": "https://github.com/Jackett/Jackett",
+  "license": "GPL-2.0-only",
+  "license_class": "copyleft",
+  "license_url": "https://github.com/Jackett/Jackett/blob/master/LICENSE",
+  "description": "A proxy that translates queries from your media apps into torrent tracker searches. Runs as a single container from the jackett image, listening on port 9117; data is kept in named volumes."
+ },
+ "jellyfin": {
+  "source_repo": "https://github.com/jellyfin/jellyfin",
+  "license": "GPL-2.0-only",
+  "license_class": "copyleft",
+  "license_url": "https://github.com/jellyfin/jellyfin/blob/master/LICENSE",
+  "description": "A free media server for streaming your own movies, shows, and music to any device. Runs as a single container from the jellyfin image, listening on port 8096; data is kept in named volumes."
+ },
+ "jellyseerr": {
+  "source_repo": "https://github.com/seerr-team/seerr",
+  "license": "MIT",
+  "license_class": "permissive",
+  "license_url": "https://github.com/seerr-team/seerr/blob/develop/LICENSE",
+  "description": "A request manager for Jellyfin, Plex, and Emby libraries, wired to Sonarr and Radarr. Runs as a single container from the jellyseerr image, listening on port 5055; data is kept in named volumes."
+ },
+ "joomla": {
+  "description": "A long-established CMS with a large extension ecosystem for business sites, portals, and communities. Runs 2 containers (db, joomla), with joomla listening on port 80; data is kept in named volumes."
+ },
+ "kavita": {
+  "source_repo": "https://github.com/Kareadita/Kavita",
+  "license": "GPL-3.0-only",
+  "license_class": "copyleft",
+  "license_url": "https://github.com/Kareadita/Kavita/blob/develop/LICENSE",
+  "description": "A fast, feature-rich reader server for manga, comics, and ebooks. Runs as a single container from the kavita image, listening on port 5000; data is kept in named volumes."
  },
  "keycloak": {
   "source_repo": "https://github.com/keycloak/keycloak",
@@ -226,12 +492,40 @@
   "license_url": "https://github.com/keycloak/keycloak/blob/main/LICENSE.txt",
   "description": "Keycloak backed by Postgres instead of its default embedded database, for a real multi-instance setup. Runs 2 containers (db, keycloak), with keycloak listening on port 8080 and keeps its data in named volumes."
  },
+ "komga": {
+  "source_repo": "https://github.com/gotson/komga",
+  "license": "MIT",
+  "license_class": "permissive",
+  "license_url": "https://github.com/gotson/komga/blob/master/LICENSE",
+  "description": "A media server for comics, manga, and digital books with a clean reading interface. Runs as a single container from the komga image, listening on port 25600; data is kept in named volumes."
+ },
  "kopia": {
   "source_repo": "https://github.com/kopia/kopia",
   "license": "Apache-2.0",
   "license_class": "permissive",
   "license_url": "https://github.com/kopia/kopia/blob/master/LICENSE",
   "description": "Fast, incremental, encrypted backups to a repository, driven from a web UI instead of a cron script. Runs as a single container from the kopia image, listening on port 51515 and keeps its data in named volumes."
+ },
+ "librespeed": {
+  "source_repo": "https://github.com/librespeed/speedtest",
+  "license": "LGPL-3.0-only",
+  "license_class": "copyleft",
+  "license_url": "https://github.com/librespeed/speedtest/blob/master/LICENSE",
+  "description": "A lightweight, self-hosted internet speed test with no ads, tracking, or Flash required. Runs as a single container from the speedtest image, listening on port 82."
+ },
+ "lidarr": {
+  "source_repo": "https://github.com/Lidarr/Lidarr",
+  "license": "GPL-3.0-only",
+  "license_class": "copyleft",
+  "license_url": "https://github.com/Lidarr/Lidarr/blob/develop/LICENSE.md",
+  "description": "Watches your indexers for new albums from artists you follow and automatically grabs and organizes them. Runs as a single container from the lidarr image, listening on port 8686; data is kept in named volumes."
+ },
+ "listmonk": {
+  "source_repo": "https://github.com/knadh/listmonk",
+  "license": "AGPL-3.0-only",
+  "license_class": "network-copyleft",
+  "license_url": "https://github.com/knadh/listmonk/blob/master/LICENSE",
+  "description": "A self-hosted newsletter and mailing list manager with a fast, dependency-light core. Runs 2 containers (db, listmonk), with listmonk listening on port 9000; data is kept in named volumes."
  },
  "lldap": {
   "source_repo": "https://github.com/lldap/lldap",
@@ -247,12 +541,41 @@
   "license_url": "https://github.com/logto-io/logto/blob/master/LICENSE",
   "description": "Modern, developer-first customer identity: sign-in experiences, social login, and OIDC without the plumbing. Runs 2 containers (db, logto), with logto listening on port 3001 and keeps its data in named volumes."
  },
+ "loki": {
+  "source_repo": "https://github.com/grafana/loki",
+  "license": "AGPL-3.0-only",
+  "license_class": "network-copyleft",
+  "license_url": "https://github.com/grafana/loki/blob/main/LICENSE",
+  "description": "A horizontally scalable log aggregation system that indexes labels, not full text, to keep storage cheap. Runs as a single container from the loki image, listening on port 3100; data is kept in named volumes."
+ },
+ "lowcoder": {
+  "description": "An open-source low-code platform for building internal apps, dashboards, and workflows with drag-and-drop. Runs as a single container from the lowcoder-ce image, listening on port 3000; data is kept in named volumes."
+ },
  "matomo": {
   "source_repo": "https://github.com/matomo-org/matomo",
   "license": "GPL-3.0-only",
   "license_class": "copyleft",
   "license_url": "https://github.com/matomo-org/matomo/blob/6.x-dev/LICENSE",
   "description": "A privacy-friendly, self-hosted alternative to Google Analytics with full data ownership. Runs 2 containers (db, matomo), with matomo listening on port 80 and keeps its data in named volumes."
+ },
+ "matrix-synapse": {
+  "description": "A federated, end-to-end encrypted chat server implementing the Matrix protocol. Runs as a single container from the synapse image, listening on port 8008; data is kept in named volumes."
+ },
+ "matrix-synapse-postgres": {
+  "description": "A Matrix homeserver backed by Postgres, for self-hosted federated chat and voice/video signaling. Runs 2 containers (postgres, synapse), with synapse listening on port 8008; data is kept in named volumes."
+ },
+ "mattermost": {
+  "description": "An open-source, self-hosted alternative to Slack for team messaging and collaboration. Runs 2 containers (db, mattermost), with mattermost listening on port 8065; data is kept in named volumes."
+ },
+ "mediawiki": {
+  "description": "The wiki engine behind Wikipedia, for large collaborative knowledge bases with rich version history. Runs 2 containers (db, mediawiki), with mediawiki listening on port 80; data is kept in named volumes."
+ },
+ "memcached": {
+  "source_repo": "https://github.com/memcached/memcached",
+  "license": "BSD-3-Clause",
+  "license_class": "permissive",
+  "license_url": "https://github.com/memcached/memcached/blob/master/LICENSE",
+  "description": "A fast in-memory cache for query results, sessions and rendered pages, reachable by other apps on host memcached. Runs as a single container from the memcached image, listening on port 11211."
  },
  "metabase": {
   "source_repo": "https://github.com/metabase/metabase",
@@ -261,8 +584,36 @@
   "license_url": "https://github.com/metabase/metabase/blob/master/LICENSE.txt",
   "description": "Ask questions of your data and share dashboards, no SQL required. Runs as a single container from the metabase image, listening on port 3000 and keeps its data in named volumes."
  },
+ "metube": {
+  "source_repo": "https://github.com/alexta69/metube",
+  "license": "AGPL-3.0-only",
+  "license_class": "network-copyleft",
+  "license_url": "https://github.com/alexta69/metube/blob/master/LICENSE",
+  "description": "A tidy web front end for yt-dlp: paste a link, pick a format, and download video or audio. Runs as a single container from the metube image, listening on port 8081; data is kept in named volumes."
+ },
+ "milvus": {
+  "source_repo": "https://github.com/milvus-io/milvus",
+  "license": "Apache-2.0",
+  "license_class": "permissive",
+  "license_url": "https://github.com/milvus-io/milvus/blob/master/LICENSE",
+  "description": "A cloud-native vector database built for billion-scale similarity search, run here as a single standalone node. Has no authentication, so reach it from other services in this project at milvus:19530, or attach a domain (it routes to port 19530 only) only behind Basic Auth. Not published on the host. Runs as a single container from the milvus image, listening on port 19530; data is kept in named volumes."
+ },
  "minio": {
   "description": "S3-compatible object storage you run yourself, with a built-in web console. Runs as a single container from the minio image, listening on port 9000 and keeps its data in named volumes."
+ },
+ "mongo-express": {
+  "source_repo": "https://github.com/mongo-express/mongo-express",
+  "license": "MIT",
+  "license_class": "permissive",
+  "license_url": "https://github.com/mongo-express/mongo-express/blob/master/LICENSE.md",
+  "description": "A web admin console for MongoDB, bundled with its own MongoDB 7 instance and basic auth. Runs 2 containers (mongo, mongo-express), with mongo-express listening on port 8081; data is kept in named volumes."
+ },
+ "moodle": {
+  "source_repo": "https://github.com/moodle/moodle",
+  "license": "GPL-3.0-only",
+  "license_class": "copyleft",
+  "license_url": "https://github.com/moodle/moodle/blob/main/COPYING.txt",
+  "description": "A widely used, highly customizable learning management system for online courses. Runs 2 containers (mariadb, moodle), with moodle listening on port 8080; data is kept in named volumes."
  },
  "mosquitto": {
   "source_repo": "https://github.com/eclipse-mosquitto/mosquitto",
@@ -291,12 +642,29 @@
   "license_url": "https://github.com/nats-io/nats-server/blob/main/LICENSE",
   "description": "A lightweight messaging server for pub/sub, request/reply and durable streams, with JetStream persistence enabled. Runs as a single container from the nats image, listening on port 4222 and keeps its data in named volumes."
  },
+ "navidrome": {
+  "source_repo": "https://github.com/navidrome/navidrome",
+  "license": "GPL-3.0-only",
+  "license_class": "copyleft",
+  "license_url": "https://github.com/navidrome/navidrome/blob/master/LICENSE",
+  "description": "Stream your own music collection from a Subsonic-compatible server to any device, anywhere. Runs as a single container from the navidrome image, listening on port 4533; data is kept in named volumes."
+ },
  "netbox": {
   "source_repo": "https://github.com/netbox-community/netbox",
   "license": "Apache-2.0",
   "license_class": "permissive",
   "license_url": "https://github.com/netbox-community/netbox/blob/main/LICENSE.txt",
   "description": "Source-of-truth IPAM and DCIM for tracking IP space, racks, devices, and cabling. Runs 3 containers (db, netbox, redis), with netbox listening on port 8080 and keeps its data in named volumes."
+ },
+ "netdata": {
+  "source_repo": "https://github.com/netdata/netdata",
+  "license": "GPL-3.0-only",
+  "license_class": "copyleft",
+  "license_url": "https://github.com/netdata/netdata/blob/master/LICENSE",
+  "description": "Per-second infrastructure metrics with zero configuration and a live dashboard out of the box. Runs as a single container from the netdata image, listening on port 19999; data is kept in named volumes."
+ },
+ "nextcloud": {
+  "description": "Self-hosted file sync, sharing, and collaboration, a full private alternative to consumer cloud drives. Runs as a single container from the nextcloud image, listening on port 80; data is kept in named volumes."
  },
  "nextjs-postgres-starter": {
   "description": "The SSR-plus-database pairing behind most Next.js apps, wired with a healthchecked Postgres. Runs 2 containers (db, web), with web listening on port 3000 and keeps its data in named volumes."
@@ -311,6 +679,13 @@
   "license_url": "https://github.com/NginxProxyManager/nginx-proxy-manager/blob/develop/LICENSE",
   "description": "A web UI for managing Nginx reverse-proxy hosts, redirects, and Let's Encrypt certificates. Runs as a single container from the nginx-proxy-manager image, listening on port 81 and keeps its data in named volumes."
  },
+ "nocodb": {
+  "source_repo": "https://github.com/nocodb/nocodb",
+  "license": "LicenseRef-NocoDB-SUL",
+  "license_class": "source-available",
+  "license_url": "https://github.com/nocodb/nocodb/blob/develop/LICENSE.md",
+  "description": "Turn any database into a smart spreadsheet, with a real-time collaborative grid UI. Runs as a single container from the nocodb image, listening on port 8080; data is kept in named volumes."
+ },
  "node-postgres-starter": {
   "description": "A minimal Node HTTP service wired to a Postgres database, the most common backend pairing. Runs 2 containers (db, web), with web listening on port 3000 and keeps its data in named volumes."
  },
@@ -321,6 +696,48 @@
   "license_url": "https://github.com/node-red/node-red/blob/main/LICENSE",
   "description": "A flow-based visual editor for wiring together hardware, APIs, and online services. Runs as a single container from the node-red image, listening on port 1880 and keeps its data in named volumes."
  },
+ "nodebb": {
+  "source_repo": "https://github.com/NodeBB/NodeBB",
+  "license": "GPL-3.0-only",
+  "license_class": "copyleft",
+  "license_url": "https://github.com/NodeBB/NodeBB/blob/master/LICENSE",
+  "description": "A modern forum platform with real-time discussions, SSO, and a plugin ecosystem, backed by Postgres. Runs 2 containers (nodebb, postgres), with nodebb listening on port 4567; data is kept in named volumes."
+ },
+ "ntfy": {
+  "source_repo": "https://github.com/binwiederhier/ntfy",
+  "license": "Apache-2.0",
+  "license_class": "permissive",
+  "license_url": "https://github.com/binwiederhier/ntfy/blob/main/LICENSE",
+  "description": "A simple pub-sub push notification service you can send alerts to from any script or app. Runs as a single container from the ntfy image, listening on port 80; data is kept in named volumes."
+ },
+ "odoo": {
+  "source_repo": "https://github.com/odoo/odoo",
+  "license": "LGPL-3.0-only",
+  "license_class": "copyleft",
+  "license_url": "https://github.com/odoo/odoo/blob/20.0/LICENSE",
+  "description": "An all-in-one business suite covering CRM, sales, inventory, accounting, and a website builder. Runs 2 containers (db, odoo), with odoo listening on port 8069; data is kept in named volumes."
+ },
+ "once-campfire": {
+  "source_repo": "https://github.com/basecamp/once-campfire",
+  "license": "MIT",
+  "license_class": "permissive",
+  "license_url": "https://github.com/basecamp/once-campfire/blob/main/MIT-LICENSE",
+  "description": "A simple, self-hosted group chat app from 37signals, no subscription required. Runs as a single container from the once-campfire image, listening on port 80; data is kept in named volumes."
+ },
+ "openobserve": {
+  "source_repo": "https://github.com/openobserve/openobserve",
+  "license": "AGPL-3.0-only",
+  "license_class": "network-copyleft",
+  "license_url": "https://github.com/openobserve/openobserve/blob/main/LICENSE",
+  "description": "A lightweight, single-binary observability platform for logs, metrics, and traces with a built-in UI. Runs as a single container from the openobserve image, listening on port 5080; data is kept in named volumes."
+ },
+ "orangehrm": {
+  "source_repo": "https://github.com/orangehrm/orangehrm",
+  "license": "GPL-3.0-only",
+  "license_class": "copyleft",
+  "license_url": "https://github.com/orangehrm/orangehrm/blob/main/LICENSE",
+  "description": "An open-source human resources management suite: PTO, recruitment, performance, and an employee directory. Runs 2 containers (mariadb, orangehrm), with orangehrm listening on port 80; data is kept in named volumes."
+ },
  "organizr": {
   "source_repo": "https://github.com/causefx/Organizr",
   "license": "GPL-3.0-only",
@@ -328,11 +745,66 @@
   "license_url": "https://github.com/causefx/Organizr/blob/v2-master/LICENSE",
   "description": "A unified homepage and tabbed dashboard for linking every self-hosted app behind one interface. Runs as a single container from the organizr image, listening on port 80 and keeps its data in named volumes."
  },
+ "overseerr": {
+  "source_repo": "https://github.com/sct/overseerr",
+  "license": "MIT",
+  "license_class": "permissive",
+  "license_url": "https://github.com/sct/overseerr/blob/develop/LICENSE",
+  "description": "Lets your Plex users request new movies and TV shows straight from a shared web UI. Runs as a single container from the overseerr image, listening on port 5055; data is kept in named volumes."
+ },
+ "owncast": {
+  "source_repo": "https://github.com/owncast/owncast",
+  "license": "MIT",
+  "license_class": "permissive",
+  "license_url": "https://github.com/owncast/owncast/blob/develop/LICENSE",
+  "description": "Run your own live video streaming server with built-in chat, no third-party platform required. Runs as a single container from the owncast image, listening on port 8080; data is kept in named volumes."
+ },
  "passbolt": {
   "description": "An open-source password manager built for teams, compatible with the usual browser extensions. Runs 2 containers (db, passbolt), with passbolt listening on port 80 and keeps its data in named volumes."
  },
+ "pgadmin": {
+  "description": "A full-featured web GUI for administering and querying PostgreSQL databases. Runs as a single container from the pgadmin4 image, listening on port 80; data is kept in named volumes."
+ },
+ "pgbackweb": {
+  "source_repo": "https://github.com/eduardolat/pgbackweb",
+  "license": "AGPL-3.0-only",
+  "license_class": "network-copyleft",
+  "license_url": "https://github.com/eduardolat/pgbackweb/blob/main/LICENSE",
+  "description": "A web UI for scheduling, encrypting, and restoring PostgreSQL backups. Runs 2 containers (pgbackweb, pgbackweb-db), with pgbackweb listening on port 8085; data is kept in named volumes."
+ },
+ "pgvector": {
+  "description": "PostgreSQL 17 with the pgvector extension preinstalled, for embeddings next to your relational data. Runs as a single container from the pgvector image, listening on port 5432; data is kept in named volumes."
+ },
+ "photoprism": {
+  "source_repo": "https://github.com/photoprism/photoprism",
+  "license": "AGPL-3.0-only",
+  "license_class": "network-copyleft",
+  "license_url": "https://github.com/photoprism/photoprism/blob/develop/LICENSE",
+  "description": "An AI-powered photo management app that indexes and organizes your library as you own it. Runs as a single container from the photoprism image, listening on port 2342; data is kept in named volumes."
+ },
+ "photoview": {
+  "source_repo": "https://github.com/photoview/photoview",
+  "license": "AGPL-3.0-only",
+  "license_class": "network-copyleft",
+  "license_url": "https://github.com/photoview/photoview/blob/master/LICENSE.txt",
+  "description": "A fast, simple photo gallery that indexes an existing folder tree without importing or duplicating files. Runs as a single container from the photoview image, listening on port 80; data is kept in named volumes."
+ },
+ "phpmyadmin": {
+  "source_repo": "https://github.com/phpmyadmin/phpmyadmin",
+  "license": "GPL-2.0-only",
+  "license_class": "copyleft",
+  "license_url": "https://github.com/phpmyadmin/phpmyadmin/blob/master/LICENSE",
+  "description": "A web-based admin tool for MySQL and MariaDB, built for ad-hoc use against any reachable database. Runs as a single container from the phpmyadmin image, listening on port 80."
+ },
  "pi-hole": {
   "description": "Network-wide ad blocking that works as a DNS sinkhole for your whole network. Runs as a single container from the pihole image, listening on port 80 and keeps its data in named volumes."
+ },
+ "pinchflat": {
+  "source_repo": "https://github.com/kieraneglin/pinchflat",
+  "license": "AGPL-3.0-only",
+  "license_class": "network-copyleft",
+  "license_url": "https://github.com/kieraneglin/pinchflat/blob/master/LICENSE",
+  "description": "Automatically download and organize YouTube channels and playlists into your media library. Runs as a single container from the pinchflat image, listening on port 8945; data is kept in named volumes."
  },
  "pingvin-share": {
   "source_repo": "https://github.com/stonith404/pingvin-share",
@@ -348,6 +820,9 @@
   "license_url": "https://github.com/plausible/analytics/blob/master/LICENSE.md",
   "description": "Lightweight, privacy-friendly, cookie-free web analytics with no consent banner required. Runs 3 containers (clickhouse, db, plausible), with plausible listening on port 8000 and keeps its data in named volumes."
  },
+ "plex": {
+  "description": "A media server that organizes your movies, TV, and music and streams them to any device. Runs as a single container from the plex image, listening on port 32400; data is kept in named volumes."
+ },
  "pocket-id": {
   "source_repo": "https://github.com/pocket-id/pocket-id",
   "license": "BSD-2-Clause",
@@ -361,6 +836,13 @@
   "license_class": "permissive",
   "license_url": "https://github.com/portainer/portainer/blob/develop/LICENSE",
   "description": "A web UI for managing containers, images, volumes, and networks. Runs as a single container from the portainer-ce image, listening on port 9443 and keeps its data in named volumes."
+ },
+ "postiz": {
+  "source_repo": "https://github.com/gitroomhq/postiz-app",
+  "license": "AGPL-3.0-only",
+  "license_class": "network-copyleft",
+  "license_url": "https://github.com/gitroomhq/postiz-app/blob/main/LICENSE",
+  "description": "Schedules and publishes posts across social platforms from one calendar, with basic analytics. Runs 3 containers (db, postiz, redis), with postiz listening on port 5000; data is kept in named volumes."
  },
  "prefect": {
   "source_repo": "https://github.com/PrefectHQ/prefect",
@@ -376,11 +858,77 @@
   "license_url": "https://github.com/PrivateBin/PrivateBin/blob/master/LICENSE.md",
   "description": "A minimalist, encrypted pastebin where the server has zero knowledge of what you paste. Runs as a single container from the nginx-fpm-alpine image, listening on port 8080 and keeps its data in named volumes."
  },
+ "prometheus": {
+  "source_repo": "https://github.com/prometheus/prometheus",
+  "license": "Apache-2.0",
+  "license_class": "permissive",
+  "license_url": "https://github.com/prometheus/prometheus/blob/main/LICENSE",
+  "description": "A metrics time-series database and alerting engine built for pull-based scraping. Runs as a single container from the prometheus image, listening on port 9090; data is kept in named volumes."
+ },
+ "prowlarr": {
+  "source_repo": "https://github.com/Prowlarr/Prowlarr",
+  "license": "GPL-3.0-only",
+  "license_class": "copyleft",
+  "license_url": "https://github.com/Prowlarr/Prowlarr/blob/develop/LICENSE",
+  "description": "An indexer manager that syncs your torrent and Usenet indexers across the whole Arr stack. Runs as a single container from the prowlarr image, listening on port 9696; data is kept in named volumes."
+ },
+ "qbittorrent": {
+  "source_repo": "https://github.com/qbittorrent/qBittorrent",
+  "license": "GPL-2.0-or-later",
+  "license_class": "copyleft",
+  "license_url": "https://github.com/qbittorrent/qBittorrent/blob/master/COPYING",
+  "description": "A free, self-hosted BitTorrent client with a full web UI for remote download management. Runs as a single container from the qbittorrent image, listening on port 8080; data is kept in named volumes."
+ },
+ "qdrant": {
+  "source_repo": "https://github.com/qdrant/qdrant",
+  "license": "Apache-2.0",
+  "license_class": "permissive",
+  "license_url": "https://github.com/qdrant/qdrant/blob/master/LICENSE",
+  "description": "A vector similarity search engine for storing, searching, and managing embeddings. Runs as a single container from the qdrant image, listening on port 6333; data is kept in named volumes."
+ },
  "rabbitmq": {
   "description": "A widely used open-source message broker supporting AMQP, MQTT, and STOMP. Runs as a single container from the rabbitmq image, listening on port 15672 and keeps its data in named volumes."
  },
+ "radarr": {
+  "source_repo": "https://github.com/Radarr/Radarr",
+  "license": "GPL-3.0-only",
+  "license_class": "copyleft",
+  "license_url": "https://github.com/Radarr/Radarr/blob/develop/LICENSE",
+  "description": "Watches your favorite indexers for movies and automatically grabs, sorts, and renames them. Runs as a single container from the radarr image, listening on port 7878; data is kept in named volumes."
+ },
  "redis-cache-starter": {
   "description": "A web service backed by a Redis cache, the cache-aside pattern most apps reach for first. Runs 2 containers (cache, web), with web listening on port 3000 and keeps its data in named volumes."
+ },
+ "redis-insight": {
+  "source_repo": "https://github.com/redis/RedisInsight",
+  "license": "LicenseRef-SSPL-1.0",
+  "license_class": "source-available",
+  "license_url": "https://github.com/redis/RedisInsight/blob/main/LICENSE",
+  "description": "A GUI for exploring keys, running commands, and profiling workloads on any Redis-compatible server. Runs as a single container from the redisinsight image, listening on port 5540; data is kept in named volumes."
+ },
+ "redisinsight": {
+  "source_repo": "https://github.com/redis/RedisInsight",
+  "license": "LicenseRef-SSPL-1.0",
+  "license_class": "source-available",
+  "license_url": "https://github.com/redis/RedisInsight/blob/main/LICENSE",
+  "description": "A GUI for browsing keys, running commands, and profiling performance on any Redis instance. Runs as a single container from the redisinsight image, listening on port 5540; data is kept in named volumes."
+ },
+ "redlib": {
+  "source_repo": "https://github.com/redlib-org/redlib",
+  "license": "AGPL-3.0-only",
+  "license_class": "network-copyleft",
+  "license_url": "https://github.com/redlib-org/redlib/blob/main/LICENSE",
+  "description": "A private, lightweight front-end for browsing Reddit without tracking or ads. Runs as a single container from the redlib image, listening on port 8080."
+ },
+ "rocketchat": {
+  "description": "A full-featured, self-hosted team chat platform with video calls and app integrations. Runs 2 containers (mongo, rocketchat), with rocketchat listening on port 3000; data is kept in named volumes."
+ },
+ "roundcube": {
+  "source_repo": "https://github.com/roundcube/roundcubemail",
+  "license": "GPL-3.0-only",
+  "license_class": "copyleft",
+  "license_url": "https://github.com/roundcube/roundcubemail/blob/master/LICENSE.md",
+  "description": "A browser-based IMAP email client with a clean interface, address books, and plugin support. Runs as a single container from the roundcubemail image, listening on port 80; data is kept in named volumes."
  },
  "rustdesk-server": {
   "source_repo": "https://github.com/rustdesk/rustdesk-server",
@@ -394,6 +942,13 @@
   "license_class": "copyleft",
   "license_url": "https://github.com/haiwen/seafile/blob/master/LICENSE.txt",
   "description": "Self-hosted file sync and share with real file-level versioning and client-side encryption options. Runs 3 containers (mariadb, memcached, seafile), with seafile listening on port 80 and keeps its data in named volumes."
+ },
+ "searxng": {
+  "source_repo": "https://github.com/searxng/searxng",
+  "license": "AGPL-3.0-only",
+  "license_class": "network-copyleft",
+  "license_url": "https://github.com/searxng/searxng/blob/master/LICENSE",
+  "description": "A privacy-respecting metasearch engine that aggregates results from dozens of search services. Runs 2 containers (redis, searxng), with searxng listening on port 8080; data is kept in named volumes."
  },
  "seaweedfs": {
   "source_repo": "https://github.com/seaweedfs/seaweedfs",
@@ -412,8 +967,32 @@
  "snipe-it": {
   "description": "IT asset management for tracking hardware, licenses, and accessories, and who currently has what. Runs 2 containers (db, snipeit), with snipeit listening on port 80 and keeps its data in named volumes."
  },
+ "sonarr": {
+  "source_repo": "https://github.com/Sonarr/Sonarr",
+  "license": "GPL-3.0-only",
+  "license_class": "copyleft",
+  "license_url": "https://github.com/Sonarr/Sonarr/blob/develop/LICENSE.md",
+  "description": "Watches your favorite indexers for new TV episodes and automatically grabs, sorts, and renames them. Runs as a single container from the sonarr image, listening on port 8989; data is kept in named volumes."
+ },
+ "speedtest-tracker": {
+  "source_repo": "https://github.com/alexjustesen/speedtest-tracker",
+  "license": "MIT",
+  "license_class": "permissive",
+  "license_url": "https://github.com/alexjustesen/speedtest-tracker/blob/1.x/LICENSE.md",
+  "description": "Runs Ookla speed tests on a schedule and charts your connection's throughput, latency, and jitter over time. Runs as a single container from the speedtest-tracker image, listening on port 80; data is kept in named volumes."
+ },
+ "stalwart": {
+  "description": "An all-in-one SMTP, IMAP, JMAP, and WebDAV mail server in a single lightweight container. Runs as a single container from the stalwart image, listening on port 8080; data is kept in named volumes."
+ },
  "static-site-api-starter": {
   "description": "A static frontend and a separate API service deployed together, the split most SPAs actually run. Runs 2 containers (api, static), with api listening on port 4000."
+ },
+ "statusnook": {
+  "source_repo": "https://github.com/goksan/statusnook",
+  "license": "MIT",
+  "license_class": "permissive",
+  "license_url": "https://github.com/goksan/statusnook/blob/main/LICENSE",
+  "description": "Deploy a status page and start monitoring endpoints in minutes. Runs as a single container from the statusnook image, listening on port 8000; data is kept in named volumes."
  },
  "supertokens": {
   "source_repo": "https://github.com/supertokens/supertokens-core",
@@ -436,6 +1015,20 @@
   "license_url": "https://github.com/syncthing/syncthing/blob/main/LICENSE",
   "description": "Continuous, peer-to-peer file synchronization between your own devices, no cloud in between. Runs as a single container from the syncthing image, listening on port 8384 and keeps its data in named volumes."
  },
+ "tautulli": {
+  "source_repo": "https://github.com/Tautulli/Tautulli",
+  "license": "GPL-3.0-only",
+  "license_class": "copyleft",
+  "license_url": "https://github.com/Tautulli/Tautulli/blob/nightly/LICENSE",
+  "description": "Monitors your Plex server and shows who watched what, with history, stats, and notifications. Runs as a single container from the tautulli image, listening on port 8181; data is kept in named volumes."
+ },
+ "tdarr": {
+  "source_repo": "https://github.com/HaveAGitGat/Tdarr",
+  "license": "LicenseRef-Tdarr-EULA",
+  "license_class": "proprietary",
+  "license_url": "https://github.com/HaveAGitGat/Tdarr/blob/master/LICENSE.md",
+  "description": "Automated media transcoding, health checks, and library-wide format standardization. Runs as a single container from the tdarr image, listening on port 8265; data is kept in named volumes."
+ },
  "technitium-dns": {
   "source_repo": "https://github.com/TechnitiumSoftware/DnsServer",
   "license": "GPL-3.0-only",
@@ -457,12 +1050,33 @@
   "license_url": "https://github.com/traccar/traccar/blob/master/LICENSE.txt",
   "description": "An open-source GPS tracking platform supporting over 170 device protocols. Runs 2 containers (traccar, traccar-db), with traccar listening on port 8082 and keeps its data in named volumes."
  },
+ "transmission": {
+  "source_repo": "https://github.com/transmission/transmission",
+  "license": "GPL-2.0-only OR GPL-3.0-only",
+  "license_class": "copyleft",
+  "license_url": "https://github.com/transmission/transmission/blob/main/COPYING",
+  "description": "A fast, lightweight BitTorrent client with a simple web interface. Runs as a single container from the transmission image, listening on port 9091; data is kept in named volumes."
+ },
  "umami": {
   "source_repo": "https://github.com/umami-software/umami",
   "license": "MIT",
   "license_class": "permissive",
   "license_url": "https://github.com/umami-software/umami/blob/master/LICENSE",
   "description": "Simple, privacy-focused website analytics without tracking cookies or ad-tech. Runs 2 containers (db, umami), with umami listening on port 3000 and keeps its data in named volumes."
+ },
+ "uptime-kuma-mariadb": {
+  "source_repo": "https://github.com/louislam/uptime-kuma",
+  "license": "MIT",
+  "license_class": "permissive",
+  "license_url": "https://github.com/louislam/uptime-kuma/blob/master/LICENSE",
+  "description": "Uptime Kuma with a MariaDB sidecar provisioned, for the setups that opt out of its default SQLite file. Runs 2 containers (mariadb, uptime-kuma), with uptime-kuma listening on port 3001; data is kept in named volumes."
+ },
+ "valkey": {
+  "source_repo": "https://github.com/valkey-io/valkey",
+  "license": "BSD-3-Clause",
+  "license_class": "permissive",
+  "license_url": "https://github.com/valkey-io/valkey/blob/unstable/COPYING",
+  "description": "A Redis-compatible in-memory key-value store under the Linux Foundation, with password auth and append-only persistence. Runs as a single container from the valkey image, listening on port 6379; data is kept in named volumes."
  },
  "vault": {
   "source_repo": "https://github.com/hashicorp/vault",
@@ -478,12 +1092,33 @@
   "license_url": "https://github.com/dani-garcia/vaultwarden/blob/main/LICENSE.txt",
   "description": "A lightweight, self-hosted password manager server compatible with the Bitwarden clients. Runs as a single container from the server image, listening on port 80 and keeps its data in named volumes."
  },
+ "victoriametrics": {
+  "source_repo": "https://github.com/VictoriaMetrics/VictoriaMetrics",
+  "license": "Apache-2.0",
+  "license_class": "permissive",
+  "license_url": "https://github.com/VictoriaMetrics/VictoriaMetrics/blob/master/LICENSE",
+  "description": "A fast, resource-frugal time-series database that speaks the Prometheus query and remote-write APIs. Has no authentication, so point Prometheus-style senders at victoriametrics:8428 from other services in this project, or attach a domain only behind Basic Auth. Not published on the host. Runs as a single container from the victoria-metrics image, listening on port 8428; data is kept in named volumes."
+ },
+ "vvveb": {
+  "source_repo": "https://github.com/givanz/Vvveb",
+  "license": "AGPL-3.0-only",
+  "license_class": "network-copyleft",
+  "license_url": "https://github.com/givanz/Vvveb/blob/master/LICENSE",
+  "description": "A CMS for building websites, blogs, and ecommerce stores. Runs as a single container from the vvvebcms image, listening on port 80; data is kept in named volumes."
+ },
  "wallos": {
   "source_repo": "https://github.com/ellite/Wallos",
   "license": "GPL-3.0-only",
   "license_class": "copyleft",
   "license_url": "https://github.com/ellite/Wallos/blob/main/LICENSE.md",
   "description": "A personal subscription tracker that shows what you pay each month, with reminders and multi-currency support. Runs as a single container from the wallos image, listening on port 80 and keeps its data in named volumes."
+ },
+ "weaviate": {
+  "source_repo": "https://github.com/weaviate/weaviate",
+  "license": "BSD-3-Clause",
+  "license_class": "permissive",
+  "license_url": "https://github.com/weaviate/weaviate/blob/main/LICENSE",
+  "description": "An open-source vector database with hybrid search, built-in modules, and a GraphQL and REST API. Runs as a single container from the weaviate image, listening on port 8080; data is kept in named volumes."
  },
  "whoogle": {
   "source_repo": "https://github.com/benbusby/whoogle-search",
@@ -499,8 +1134,29 @@
   "license_url": "https://github.com/windmill-labs/windmill/blob/main/LICENSE",
   "description": "Turn scripts in Python, TypeScript, Go, and SQL into webhooks, workflows, and internal UIs. Runs 2 containers (db, windmill), with windmill listening on port 8000 and keeps its data in named volumes."
  },
+ "wordpress": {
+  "source_repo": "https://github.com/WordPress/WordPress",
+  "license": "GPL-2.0-or-later",
+  "license_class": "copyleft",
+  "license_url": "https://github.com/WordPress/WordPress/blob/master/license.txt",
+  "description": "The world's most widely used content management system, self-hosted with its own database. Runs 2 containers (db, wordpress), with wordpress listening on port 80; data is kept in named volumes."
+ },
  "worker-redis-queue-starter": {
   "description": "A worker process pulling jobs off a Redis-backed queue, the base shape for async job processing. Runs 2 containers (queue, worker) and keeps its data in named volumes."
+ },
+ "yamtrack": {
+  "source_repo": "https://github.com/FuzzyGrim/Yamtrack",
+  "license": "AGPL-3.0-only",
+  "license_class": "network-copyleft",
+  "license_url": "https://github.com/FuzzyGrim/Yamtrack/blob/dev/LICENSE",
+  "description": "A self-hosted media tracker for movies, TV, anime, manga, games, and books. Runs 2 containers (redis, yamtrack), with yamtrack listening on port 8000; data is kept in named volumes."
+ },
+ "zabbix": {
+  "source_repo": "https://github.com/zabbix/zabbix",
+  "license": "AGPL-3.0-only",
+  "license_class": "network-copyleft",
+  "license_url": "https://github.com/zabbix/zabbix/blob/master/COPYING",
+  "description": "Enterprise-grade network, server, and application monitoring with alerting and trend graphs. Runs 3 containers (db, zabbix-server, zabbix-web), with zabbix-web listening on port 8080; data is kept in named volumes."
  },
  "zipline": {
   "source_repo": "https://github.com/diced/zipline",

@@ -4,6 +4,10 @@ description: A modern URL shortener with custom domains, link analytics and an A
 icon: link
 category: Applications
 documentation_url: https://docs.kutt.it/
+source_repo: https://github.com/thedevs-network/kutt
+license: MIT
+license_class: permissive
+license_url: https://github.com/thedevs-network/kutt/blob/main/LICENSE
 recommended_memory_bytes: 402653184
 env:
   - key: DB_PASSWORD

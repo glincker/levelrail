@@ -4,6 +4,10 @@ description: The Element Matrix web client, served as static files and pointed a
 icon: users
 category: Communication
 documentation_url: https://github.com/element-hq/element-web
+source_repo: https://github.com/element-hq/element-web
+license: AGPL-3.0-only
+license_class: network-copyleft
+license_url: https://github.com/element-hq/element-web/blob/develop/LICENSE-AGPL-3.0
 recommended_memory_bytes: 67108864
 env:
   - key: HOMESERVER_URL
