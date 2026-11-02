@@ -1,3 +1,4 @@
+import { selectableCardClass } from './ui/selectable-card'
 import { cn } from '@/lib/utils'
 import { InfoTip } from './kit'
 import type { PreviewMode } from '../types/preview'
@@ -56,8 +57,8 @@ export function PreviewModeSelector({
           <div
             key={o.mode}
             className={cn(
-              'flex items-start gap-2 rounded-md border p-3',
-              selected ? 'border-primary bg-muted/50' : 'border-border',
+              'flex items-start gap-2 rounded-md p-3',
+              selectableCardClass(selected),
               disabled && 'opacity-60',
             )}
           >

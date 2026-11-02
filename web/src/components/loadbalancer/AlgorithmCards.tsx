@@ -1,3 +1,4 @@
+import { selectableCardClass } from '@/components/ui/selectable-card'
 import type { ComponentType } from 'react'
 import {
   ChartColumnGlassIcon,
@@ -117,8 +118,8 @@ export function AlgorithmCards({
               aria-checked={selected}
               onClick={() => onChange(o.value)}
               className={cn(
-                'flex w-full items-start gap-3 rounded-xl border p-3 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/60',
-                selected ? 'border-primary bg-primary/5' : 'hover:bg-muted/50',
+                'flex w-full items-start gap-3 rounded-xl p-3 text-left',
+                selectableCardClass(selected),
               )}
             >
               <MiniDiagram lines={meta.lines} />

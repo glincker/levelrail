@@ -1,3 +1,4 @@
+import { SelectedMark, selectableCardClass } from './ui/selectable-card'
 import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { DatabaseGlassIcon, SearchGlassIcon } from '@thesvg/ui-react'
@@ -191,11 +192,11 @@ export function DatabasePicker({
           onSelect(entry)
         }}
         className={cn(
-          'flex h-full flex-col items-start gap-3 rounded-lg border border-border bg-card p-3 text-left transition-colors motion-reduce:transition-none',
-          'hover:border-primary/40 hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
-          selected && 'border-primary ring-2 ring-primary',
+          'flex h-full flex-col items-start gap-3 rounded-lg p-3 text-left',
+          selectableCardClass(selected, !selected ? 'bg-card' : undefined),
         )}
       >
+        <SelectedMark selected={selected} />
         <span className="flex w-full items-center gap-3">
           <EngineTile entry={entry} />
           <span className="text-sm font-medium text-foreground">
