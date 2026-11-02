@@ -48,5 +48,21 @@
     "failedOnly": "Solo fallidas",
     "loading": "Cargando...",
     "loadOlder": "Cargar entradas anteriores"
+  },
+  "anchor": {
+    "title": "Ancla de auditoría",
+    "off": "Desactivada",
+    "offHint": "No se exporta ninguna copia externa de la cabecera de la cadena de auditoría.",
+    "offLink": "Configurar el webhook del ancla",
+    "exporting": "Exportando",
+    "lastExported": "Última secuencia exportada {{seq}}",
+    "at": "a las {{time}}",
+    "never": "Aún no se ha exportado nada",
+    "exported": "Exportados",
+    "failed": "Fallidos",
+    "dropped": "Descartados",
+    "queued": "En cola",
+    "lastError": "Último error",
+    "lastErrorAt": "a las {{time}}"
   }
 }

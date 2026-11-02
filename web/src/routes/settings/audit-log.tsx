@@ -29,6 +29,7 @@ import {
 import { TableSkeleton } from '../../components/ui/table-skeleton'
 import { PurgeAuditLogDialog } from '../../components/PurgeAuditLogDialog'
 import { AuditIntegrityBadge } from '../../components/AuditIntegrityBadge'
+import { AuditAnchorCard } from '../../components/AuditAnchorCard'
 import { AuditLogTable } from '../../components/AuditLogTable'
 import { AgentFilterChips } from '../../components/AgentFilterChips'
 import { collectAgentNames } from '../../lib/agentNames'
@@ -293,6 +294,7 @@ function AuditLogSettingsPage() {
         </>
       }
     >
+      <AuditAnchorCard />
       <div className="flex flex-wrap items-center gap-2">
         <Input
           value={search}

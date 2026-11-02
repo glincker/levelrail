@@ -19,6 +19,7 @@ const KNOWN = new Set<string>([
   'public_exposure',
   'docker_api_exposed',
   'offbox_backup_off',
+  'offsite_backup_unencrypted',
   'audit_anchor_off',
   'master_key_rotation',
   'secrets_old',

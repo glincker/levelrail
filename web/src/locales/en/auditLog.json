@@ -48,5 +48,21 @@
     "failedOnly": "Failed only",
     "loading": "Loading...",
     "loadOlder": "Load older entries"
+  },
+  "anchor": {
+    "title": "Audit anchor",
+    "off": "Off",
+    "offHint": "No off-box copy of the audit chain head is exported.",
+    "offLink": "Set the anchor webhook",
+    "exporting": "Exporting",
+    "lastExported": "Last exported sequence {{seq}}",
+    "at": "at {{time}}",
+    "never": "Nothing exported yet",
+    "exported": "Exported",
+    "failed": "Failed",
+    "dropped": "Dropped",
+    "queued": "Queued",
+    "lastError": "Last error",
+    "lastErrorAt": "at {{time}}"
   }
 }

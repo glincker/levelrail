@@ -195,6 +195,11 @@
       "pass": "Encrypted off-box backups are on",
       "why": "Losing this machine would lose every app definition, secret and certificate."
     },
+    "offsite_backup_unencrypted": {
+      "title": "Backup destinations without encryption",
+      "pass": "Every backup destination is encrypted",
+      "why": "A copy stored unencrypted can be read by anyone who gets into that storage. Turn encryption on in the backup destination settings, then run a new backup."
+    },
     "audit_anchor_off": {
       "title": "No off-box audit log anchor is configured",
       "pass": "An off-box audit log anchor is on",
