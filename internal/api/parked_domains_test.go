@@ -164,3 +164,96 @@ func TestParkedDNSFromCheck(t *testing.T) {
 		}
 	}
 }
+
+func TestParkedDomainsAPI_Environment(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+	for _, svc := range []store.DesiredService{
+		{Name: "web", Image: "img:v1", Port: 80, Domains: []string{"www.example.com"}},
+		{Name: "api", Image: "img:v1", Port: 80},
+	} {
+		if err := db.SaveDesiredService(ctx, svc); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, e := range []store.Environment{{ID: "env_stg", Name: "stg"}, {ID: "env_prod", Name: "prod"}} {
+		e.ProjectID, e.Scope = "proj_global", store.EnvironmentScopeGlobal
+		if err := db.SaveEnvironment(ctx, e); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, _, err := db.EditServiceEnvironmentDomains(ctx, "web", "env_stg", func([]string) ([]string, error) {
+		return []string{"stg.example.com", "x.example.com"}, nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	rec := sdReq(t, rt, cookie, http.MethodPost, "/api/v1/domains/park", `{"app":"web","domain":"stg.example.com","environment":"stg"}`)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"environment":"stg"`) {
+		t.Fatalf("park env = %d %s", rec.Code, rec.Body.String())
+	}
+	rec = sdReq(t, rt, cookie, http.MethodGet, "/api/v1/domains/parked", "")
+	if !strings.Contains(rec.Body.String(), `"parked_from_environment":"stg"`) {
+		t.Fatalf("list = %s", rec.Body.String())
+	}
+	rec = sdReq(t, rt, cookie, http.MethodPost, "/api/v1/domains/parked/stg.example.com/attach", `{"app":"api","environment":"prod"}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("attach env = %d %s", rec.Code, rec.Body.String())
+	}
+	rec = sdReq(t, rt, cookie, http.MethodPost, "/api/v1/domains/move", `{"domain":"x.example.com","from":"web","from_environment":"stg","to":"web","to_environment":"prod"}`)
+	if rec.Code != http.StatusConflict || !strings.Contains(rec.Body.String(), "requires_confirmation") {
+		t.Fatalf("unconfirmed env move = %d %s", rec.Code, rec.Body.String())
+	}
+	rec = sdReq(t, rt, cookie, http.MethodPost, "/api/v1/domains/move", `{"domain":"x.example.com","from":"web","from_environment":"stg","to":"web","to_environment":"prod","confirm":true}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("env move = %d %s", rec.Code, rec.Body.String())
+	}
+	rec = sdReq(t, rt, cookie, http.MethodPost, "/api/v1/domains/park", `{"app":"web","domain":"x.example.com","environment":"nope"}`)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("unknown env = %d, want 404", rec.Code)
+	}
+	if svc, _ := db.GetDesiredService(ctx, "web"); len(svc.Domains) != 1 {
+		t.Fatalf("default list changed: %v", svc.Domains)
+	}
+}
+
+func TestParkedDomainsAPI_StaticSites(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "img:v1", Port: 80}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SaveStaticSite(ctx, store.StaticSite{Name: "docs", Domains: []string{"docs.example.com", "old.example.com"}, RootDir: "/srv/docs"}); err != nil {
+		t.Fatal(err)
+	}
+
+	rec := sdReq(t, rt, cookie, http.MethodPost, "/api/v1/domains/park", `{"app":"docs","target_kind":"static_site","domain":"old.example.com"}`)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"kind":"static_site"`) {
+		t.Fatalf("park static = %d %s", rec.Code, rec.Body.String())
+	}
+	rec = sdReq(t, rt, cookie, http.MethodGet, "/api/v1/domains/parked", "")
+	if !strings.Contains(rec.Body.String(), `"parked_from_kind":"static_site"`) {
+		t.Fatalf("list = %s", rec.Body.String())
+	}
+	rec = sdReq(t, rt, cookie, http.MethodPost, "/api/v1/domains/move", `{"domain":"docs.example.com","from":"docs","from_kind":"static_site","to":"web"}`)
+	if rec.Code != http.StatusConflict || !strings.Contains(rec.Body.String(), "requires_confirmation") {
+		t.Fatalf("unconfirmed move = %d %s", rec.Code, rec.Body.String())
+	}
+	rec = sdReq(t, rt, cookie, http.MethodPost, "/api/v1/domains/move", `{"domain":"docs.example.com","from":"docs","from_kind":"static_site","to":"web","confirm":true}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("move static to app = %d %s", rec.Code, rec.Body.String())
+	}
+	if svc, _ := db.GetDesiredService(ctx, "web"); len(svc.Domains) != 1 || svc.Domains[0] != "docs.example.com" {
+		t.Fatalf("web domains = %v", svc.Domains)
+	}
+	rec = sdReq(t, rt, cookie, http.MethodPost, "/api/v1/domains/parked/old.example.com/attach", `{"app":"docs","target_kind":"static_site"}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("attach to static = %d %s", rec.Code, rec.Body.String())
+	}
+	rec = sdReq(t, rt, cookie, http.MethodPost, "/api/v1/domains/park", `{"app":"docs","target_kind":"bogus","domain":"old.example.com"}`)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("bad kind = %d", rec.Code)
+	}
+}

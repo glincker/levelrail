@@ -16,15 +16,19 @@ import {
 
 type Tool = 'details' | 'park' | 'move' | 'delete'
 
-// Compact action row for one saved domain on the per-app page. These rows
-// are the app's default list, the only one park and move work on.
+// Compact action row for one saved domain on the per-app page. In an
+// environment tab (environment set) only park and move apply, the row's own
+// remove button covers delete.
 export function DomainRowTools({
   appName,
   domain,
+  environment,
 }: {
   appName: string
   domain: string
+  environment?: string
 }) {
+  const scoped = environment !== undefined
   const { t } = useTranslation('domains')
   const [tool, setTool] = useState<Tool | null>(null)
   const close = (open: boolean) => {
@@ -32,17 +36,19 @@ export function DomainRowTools({
   }
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      <Button
-        type="button"
-        size="sm"
-        variant="outline"
-        onClick={() => {
-          setTool('details')
-        }}
-      >
-        <SettingsGlassIcon size="1.4em" aria-hidden="true" />
-        {t('page.row.details')}
-      </Button>
+      {scoped ? null : (
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            setTool('details')
+          }}
+        >
+          <SettingsGlassIcon size="1.4em" aria-hidden="true" />
+          {t('page.row.details')}
+        </Button>
+      )}
       <Button
         type="button"
         size="sm"
@@ -65,17 +71,19 @@ export function DomainRowTools({
         <UnlinkGlassIcon size="1.4em" aria-hidden="true" />
         {t('page.row.park')}
       </Button>
-      <Button
-        type="button"
-        size="sm"
-        variant="ghost"
-        onClick={() => {
-          setTool('delete')
-        }}
-      >
-        <TrashGlassIcon size="1.4em" aria-hidden="true" />
-        {t('page.row.delete')}
-      </Button>
+      {scoped ? null : (
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          onClick={() => {
+            setTool('delete')
+          }}
+        >
+          <TrashGlassIcon size="1.4em" aria-hidden="true" />
+          {t('page.row.delete')}
+        </Button>
+      )}
       {tool === 'details' ? (
         <DomainDetailSheet
           appName={appName}
@@ -88,6 +96,7 @@ export function DomainRowTools({
         <ParkDomainDialog
           app={appName}
           domain={domain}
+          environment={environment}
           open
           onOpenChange={close}
         />
@@ -96,6 +105,7 @@ export function DomainRowTools({
         <MoveDomainDialog
           from={appName}
           domain={domain}
+          fromEnvironment={environment}
           open
           onOpenChange={close}
         />

@@ -12,10 +12,13 @@ import (
 
 func domainsParkUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s domains park <app> <domain> [--note TEXT]
-  %[1]s domains move <domain> --from APP --to APP [--confirm]
+  %[1]s domains park <app> <domain> [--env ENV] [--note TEXT]
+  %[1]s domains park --static-site SITE <domain> [--note TEXT]
+  %[1]s domains move <domain> --from APP --to APP [--from-env ENV] [--to-env ENV] [--confirm]
+  %[1]s domains move <domain> [--from APP | --from-static-site SITE] [--to APP | --to-static-site SITE] [--confirm]
   %[1]s domains parked list
-  %[1]s domains parked attach <domain> --app APP [--discard-settings]
+  %[1]s domains parked attach <domain> --app APP [--env ENV] [--discard-settings]
+  %[1]s domains parked attach <domain> --static-site SITE
   %[1]s domains parked delete <domain>
 
 park takes a domain off an app but keeps it registered, with its DNS records
@@ -25,6 +28,13 @@ only runs the collision check. parked delete forgets the registration and
 never touches DNS. park keeps the domain's settings (WAF, rate limit, TLS
 certificate reference, basic auth, auth gate, maintenance, redirect, error
 pages, search settings); attach restores them unless --discard-settings.
+Static sites work the same way through --static-site, --from-static-site and
+--to-static-site. A static site has no per-domain settings, so a domain that
+moves to or from one, or is attached to one, does not keep them.
+Without --env, --from-env and --to-env a command works on the app's default
+domain list; with them it works on that environment's own domain set (an
+environment ID, name or kind), so an environment domain can be parked, moved
+between environments or attached to another app's environment.
 `, prog)
 }
 
@@ -32,19 +42,31 @@ pages, search settings); attach restores them unless --discard-settings.
 func runDomainsPark(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenP, apiURLP, profileP, jsonP, outputP, queryP := apiFlagSet(prog, "domains park", "print the result as JSON", stderr)
 	note := fs.String("note", "", "why the domain is parked")
+	env := fs.String("env", "", "environment whose domain set the domain leaves (default: the app's default list)")
+	site := fs.String("static-site", "", "park the domain from this static site instead of an app")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, domainsParkUsage(prog)+"\nFlags:\n"); fs.PrintDefaults() }
 	token, apiURL, profile, jsonOut, of, code, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenP, apiURLP, profileP, jsonP, outputP, queryP}, prog, stderr)
 	if !ok {
 		return code
 	}
-	rest, ok := requireArgs(fs, stderr, prog, "domains park", "an app and a domain", 2)
-	if !ok {
-		return exitUsage
+	req := apiclient.DomainLifecycleRequest{Environment: *env, Note: *note}
+	if *site != "" {
+		rest, ok := requireArgs(fs, stderr, prog, "domains park", "a domain (with --static-site)", 1)
+		if !ok {
+			return exitUsage
+		}
+		req.App, req.Domain, req.TargetKind = *site, rest[0], "static_site"
+	} else {
+		rest, ok := requireArgs(fs, stderr, prog, "domains park", "an app and a domain", 2)
+		if !ok {
+			return exitUsage
+		}
+		req.App, req.Domain = rest[0], rest[1]
 	}
 	client := apiClientFromFlags(prog, apiURL, token, profile, lookupEnv)
-	res, err := client.ParkDomain(context.Background(), apiclient.DomainLifecycleRequest{App: rest[0], Domain: rest[1], Note: *note})
+	res, err := client.ParkDomain(context.Background(), req)
 	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("park domain %q: %w", rest[1], err))
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("park domain %q: %w", req.Domain, err))
 	}
 	return writeScheduledTaskResult(stdout, stderr, of, res, func() {
 		_, _ = fmt.Fprintf(stdout, "parked %s (was on %s); attach it to an app with: %s domains parked attach %s --app APP\n", res.Domain, res.From, prog, res.Domain)
@@ -56,6 +78,10 @@ func runDomainsMove(prog string, args []string, stdout, stderr io.Writer, lookup
 	fs, tokenP, apiURLP, profileP, jsonP, outputP, queryP := apiFlagSet(prog, "domains move", "print the result as JSON", stderr)
 	from := fs.String("from", "", "app that serves the domain now")
 	to := fs.String("to", "", "app that should serve it")
+	fromEnv := fs.String("from-env", "", "environment set the domain leaves (default: the app's default list)")
+	toEnv := fs.String("to-env", "", "environment set the domain joins (default: the app's default list)")
+	fromSite := fs.String("from-static-site", "", "static site that serves the domain now (instead of --from)")
+	toSite := fs.String("to-static-site", "", "static site that should serve it (instead of --to)")
 	confirm := fs.Bool("confirm", false, "apply the move after the collision check")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, domainsParkUsage(prog)+"\nFlags:\n"); fs.PrintDefaults() }
 	token, apiURL, profile, jsonOut, of, code, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenP, apiURLP, profileP, jsonP, outputP, queryP}, prog, stderr)
@@ -66,12 +92,23 @@ func runDomainsMove(prog string, args []string, stdout, stderr io.Writer, lookup
 	if !ok {
 		return exitUsage
 	}
-	if *from == "" || *to == "" {
-		_, _ = fmt.Fprintf(stderr, "%s: --from and --to are required\n", prog)
+	req := apiclient.DomainLifecycleRequest{Domain: domain, From: *from, To: *to, FromEnvironment: *fromEnv, ToEnvironment: *toEnv, Confirm: *confirm}
+	if (*from != "" && *fromSite != "") || (*to != "" && *toSite != "") {
+		_, _ = fmt.Fprintf(stderr, "%s: use either --from or --from-static-site, and either --to or --to-static-site\n", prog)
+		return exitUsage
+	}
+	if *fromSite != "" {
+		req.From, req.FromKind = *fromSite, "static_site"
+	}
+	if *toSite != "" {
+		req.To, req.ToKind = *toSite, "static_site"
+	}
+	if req.From == "" || req.To == "" {
+		_, _ = fmt.Fprintf(stderr, "%s: a source (--from or --from-static-site) and a target (--to or --to-static-site) are required\n", prog)
 		return exitUsage
 	}
 	client := apiClientFromFlags(prog, apiURL, token, profile, lookupEnv)
-	res, err := client.MoveDomain(context.Background(), apiclient.DomainLifecycleRequest{Domain: domain, From: *from, To: *to, Confirm: *confirm})
+	res, err := client.MoveDomain(context.Background(), req)
 	if err != nil {
 		hint := ""
 		if strings.Contains(err.Error(), "confirm") {
@@ -124,9 +161,9 @@ func runDomainsParkedList(prog string, args []string, stdout, stderr io.Writer, 
 			return
 		}
 		tw := tabwriter.NewWriter(stdout, 0, 2, 2, ' ', 0)
-		_, _ = fmt.Fprintln(tw, "DOMAIN\tPARKED FROM\tPARKED AT\tDNS\tTLS\tNOTE")
+		_, _ = fmt.Fprintln(tw, "DOMAIN\tPARKED FROM\tKIND\tENV\tPARKED AT\tDNS\tTLS\tNOTE")
 		for _, p := range list {
-			_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\n", p.Domain, p.ParkedFrom, p.ParkedAt, parkedDNSCell(p), parkedTLSCell(p), p.Note)
+			_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", p.Domain, p.ParkedFrom, p.ParkedFromKind, p.ParkedFromEnvironment, p.ParkedAt, parkedDNSCell(p), parkedTLSCell(p), p.Note)
 		}
 		_ = tw.Flush()
 	})
@@ -135,6 +172,8 @@ func runDomainsParkedList(prog string, args []string, stdout, stderr io.Writer, 
 func runDomainsParkedAttach(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenP, apiURLP, profileP, jsonP, outputP, queryP := apiFlagSet(prog, "domains parked attach", "print the result as JSON", stderr)
 	app := fs.String("app", "", "app that should serve the domain")
+	site := fs.String("static-site", "", "static site that should serve the domain (instead of --app)")
+	env := fs.String("env", "", "environment whose domain set receives the domain (default: the app's default list)")
 	discard := fs.Bool("discard-settings", false, "drop the settings kept by park instead of restoring them")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, domainsParkUsage(prog)+"\nFlags:\n"); fs.PrintDefaults() }
 	token, apiURL, profile, jsonOut, of, code, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenP, apiURLP, profileP, jsonP, outputP, queryP}, prog, stderr)
@@ -145,12 +184,16 @@ func runDomainsParkedAttach(prog string, args []string, stdout, stderr io.Writer
 	if !ok {
 		return exitUsage
 	}
-	if *app == "" {
-		_, _ = fmt.Fprintf(stderr, "%s: --app is required\n", prog)
+	if (*app == "") == (*site == "") {
+		_, _ = fmt.Fprintf(stderr, "%s: exactly one of --app or --static-site is required\n", prog)
 		return exitUsage
 	}
+	req := apiclient.DomainLifecycleRequest{App: *app, Environment: *env, DiscardSettings: *discard}
+	if *site != "" {
+		req.App, req.TargetKind = *site, "static_site"
+	}
 	client := apiClientFromFlags(prog, apiURL, token, profile, lookupEnv)
-	res, err := client.AttachParkedDomain(context.Background(), domain, *app, *discard)
+	res, err := client.AttachParkedDomainTo(context.Background(), domain, req)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("attach parked domain %q: %w", domain, err))
 	}
@@ -158,6 +201,9 @@ func runDomainsParkedAttach(prog string, args []string, stdout, stderr io.Writer
 		_, _ = fmt.Fprintf(stdout, "attached %s to %s\n", res.Domain, res.To)
 		if len(res.RestoredSettings) > 0 {
 			_, _ = fmt.Fprintf(stdout, "restored settings: %s\n", strings.Join(res.RestoredSettings, ", "))
+		}
+		if res.Message != "" {
+			_, _ = fmt.Fprintln(stdout, res.Message)
 		}
 	})
 }

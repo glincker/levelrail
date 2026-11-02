@@ -13,6 +13,7 @@ import {
   type EnvironmentDomainSet,
 } from '../queries/appEnvironmentDomains'
 import { isValidDomain } from '../lib/domainWizard'
+import { DomainRowTools } from './domains/DomainRowTools'
 
 const DEFAULT_TAB = 'default'
 
@@ -56,11 +57,16 @@ function EnvironmentSet({
           {set.domains.map((d) => (
             <li
               key={d}
-              className="flex items-center gap-2 rounded-md border border-border px-2 py-1"
+              className="flex flex-wrap items-center gap-2 rounded-md border border-border px-2 py-1"
             >
               <span className="min-w-0 flex-1 truncate font-mono text-sm">
                 {d}
               </span>
+              <DomainRowTools
+                appName={appName}
+                domain={d}
+                environment={set.environment_id}
+              />
               <Button
                 type="button"
                 variant="ghost"

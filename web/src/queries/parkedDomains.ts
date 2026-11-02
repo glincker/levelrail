@@ -9,11 +9,18 @@ import {
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { appKeys } from './apps'
 import { domainKeys } from './domains'
+import {
+  attachRequestBody,
+  moveRequestBody,
+  parkRequestBody,
+} from '../lib/domainLifecycle'
 
 export interface ParkedDomain {
   domain: string
   kind: 'parked'
   parked_from?: string
+  // Environment name the domain was parked from; empty for the default list.
+  parked_from_environment?: string
   note?: string
   parked_by?: string
   parked_at?: string
@@ -39,6 +46,9 @@ export interface DomainLifecycleResult {
   domain: string
   from?: string
   to?: string
+  environment?: string
+  from_environment?: string
+  to_environment?: string
   applied: boolean
   requires_confirmation?: boolean
   message?: string
@@ -48,11 +58,28 @@ export interface AttachResult extends DomainLifecycleResult {
   restored_settings?: string[]
 }
 
+export interface ParkInput {
+  app: string
+  domain: string
+  note?: string
+  // Environment ID, name or kind; omitted for the app's default list.
+  environment?: string
+}
+
 export interface MoveInput {
   domain: string
   from: string
   to: string
   confirm?: boolean
+  fromEnvironment?: string
+  toEnvironment?: string
+}
+
+export interface AttachInput {
+  domain: string
+  app: string
+  discardSettings?: boolean
+  environment?: string
 }
 
 export const parkedDomainKeys = {
@@ -123,8 +150,13 @@ export function useParkDomain() {
   const invalidate = useInvalidateLifecycle()
   return useMutation({
     meta: { errorToast: false },
-    mutationFn: (input: { app: string; domain: string; note?: string }) =>
-      send<DomainLifecycleResult>(`${BASE}/park`, 'POST', input, 'park domain'),
+    mutationFn: (input: ParkInput) =>
+      send<DomainLifecycleResult>(
+        `${BASE}/park`,
+        'POST',
+        parkRequestBody(input),
+        'park domain',
+      ),
     onSuccess: invalidate,
   })
 }
@@ -134,7 +166,12 @@ export function useMoveDomain() {
   return useMutation({
     meta: { errorToast: false },
     mutationFn: (input: MoveInput) =>
-      send<DomainLifecycleResult>(`${BASE}/move`, 'POST', input, 'move domain'),
+      send<DomainLifecycleResult>(
+        `${BASE}/move`,
+        'POST',
+        moveRequestBody(input),
+        'move domain',
+      ),
     onSuccess: (result) => (result.applied ? invalidate() : undefined),
   })
 }
@@ -143,15 +180,11 @@ export function useAttachParkedDomain() {
   const invalidate = useInvalidateLifecycle()
   return useMutation({
     meta: { errorToast: false },
-    mutationFn: (input: {
-      domain: string
-      app: string
-      discardSettings?: boolean
-    }) =>
+    mutationFn: (input: AttachInput) =>
       send<AttachResult>(
         `${BASE}/parked/${encodeURIComponent(input.domain)}/attach`,
         'POST',
-        { app: input.app, discard_settings: input.discardSettings === true },
+        attachRequestBody(input),
         'attach domain',
       ),
     onSuccess: invalidate,

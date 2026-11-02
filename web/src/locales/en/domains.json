@@ -1274,6 +1274,10 @@
     "deleteParked": {
       "title": "Delete parked domain {{domain}}?",
       "body": "Forgets the domain and its parked DNS and certificate state. Type the domain to confirm."
+    },
+    "environment": {
+      "label": "Environment",
+      "default": "Default list"
     }
   },
   "parked": {
@@ -1291,7 +1295,8 @@
     "tls": {
       "pending": "Certificate pending",
       "none": "No certificate"
-    }
+    },
+    "fromEnvironment": "Parked from {{app}} ({{environment}})"
   },
   "detail": {
     "description": "Settings for this domain on {{app}}.",

@@ -1274,6 +1274,10 @@
     "deleteParked": {
       "title": "¿Eliminar el dominio aparcado {{domain}}?",
       "body": "Olvida el dominio y su estado de DNS y certificado. Escribe el dominio para confirmar."
+    },
+    "environment": {
+      "label": "Entorno",
+      "default": "Lista por defecto"
     }
   },
   "parked": {
@@ -1291,7 +1295,8 @@
     "tls": {
       "pending": "Certificado pendiente",
       "none": "Sin certificado"
-    }
+    },
+    "fromEnvironment": "Aparcado desde {{app}} ({{environment}})"
   },
   "detail": {
     "description": "Ajustes de este dominio en {{app}}.",

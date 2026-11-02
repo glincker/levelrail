@@ -6,18 +6,66 @@ import { Label } from '@/components/ui/label'
 import { NativeSelect } from '@/components/ui/native-select'
 import { toast } from '@/components/ui/toast'
 import { appListQueryOptions } from '../../queries/apps'
-import { useEditAppDomains } from '../../queries/appEnvironmentDomains'
+import {
+  appEnvironmentDomainsQueryOptions,
+  useEditAppDomains,
+} from '../../queries/appEnvironmentDomains'
 import {
   useAttachParkedDomain,
   useDeleteParkedDomain,
   useMoveDomain,
   useParkDomain,
 } from '../../queries/parkedDomains'
-import { humanizeSettingKind, moveTargets } from '../../lib/domainLifecycle'
+import {
+  humanizeSettingKind,
+  isNoopMove,
+  moveTargets,
+} from '../../lib/domainLifecycle'
 
 interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
+}
+
+// Environment choice for a target app: the default list first, then each
+// environment of that app by ID.
+function EnvironmentTargetSelect({
+  id,
+  app,
+  value,
+  onChange,
+}: {
+  id: string
+  app: string
+  value: string
+  onChange: (value: string) => void
+}) {
+  const { t } = useTranslation('domains')
+  const { data } = useQuery({
+    ...appEnvironmentDomainsQueryOptions(app),
+    enabled: app !== '',
+  })
+  return (
+    <div className="flex items-center gap-2">
+      <Label htmlFor={id} className="shrink-0">
+        {t('lifecycle.environment.label')}
+      </Label>
+      <NativeSelect
+        id={id}
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value)
+        }}
+      >
+        <option value="">{t('lifecycle.environment.default')}</option>
+        {(data?.environments ?? []).map((env) => (
+          <option key={env.environment_id} value={env.environment_id}>
+            {env.name}
+          </option>
+        ))}
+      </NativeSelect>
+    </div>
+  )
 }
 
 function errorText(e: unknown): string | null {
@@ -28,9 +76,10 @@ function errorText(e: unknown): string | null {
 export function ParkDomainDialog({
   app,
   domain,
+  environment,
   open,
   onOpenChange,
-}: Props & { app: string; domain: string }) {
+}: Props & { app: string; domain: string; environment?: string }) {
   const { t } = useTranslation('domains')
   const park = useParkDomain()
   return (
@@ -50,7 +99,7 @@ export function ParkDomainDialog({
       error={errorText(park.error)}
       onConfirm={() => {
         park.mutate(
-          { app, domain },
+          { app, domain, environment },
           {
             onSuccess: () => {
               toast.add({
@@ -71,16 +120,21 @@ export function ParkDomainDialog({
 export function MoveDomainDialog({
   from,
   domain,
+  fromEnvironment,
   open,
   onOpenChange,
-}: Props & { from: string; domain: string }) {
+}: Props & { from: string; domain: string; fromEnvironment?: string }) {
   const { t } = useTranslation('domains')
   const { data: apps = [] } = useQuery(appListQueryOptions())
-  const targets = moveTargets(apps, from)
+  const { data: fromSets } = useQuery(appEnvironmentDomainsQueryOptions(from))
+  const hasEnvironments = (fromSets?.environments.length ?? 0) > 0
+  const targets = moveTargets(apps, from, hasEnvironments)
   const [to, setTo] = useState('')
+  const [toEnvironment, setToEnvironment] = useState('')
   const [warning, setWarning] = useState<string | null>(null)
   const move = useMoveDomain()
-  const target = to || targets[0] || ''
+  const target = to || targets.find((n) => n !== from) || targets[0] || ''
+  const noop = isNoopMove({ from, to: target, fromEnvironment, toEnvironment })
   return (
     <ConfirmDialog
       open={open}
@@ -95,12 +149,19 @@ export function MoveDomainDialog({
         warning ? t('lifecycle.move.confirm') : t('lifecycle.move.check')
       }
       pendingLabel={t('lifecycle.pending')}
-      confirmDisabled={target === ''}
+      confirmDisabled={target === '' || noop}
       pending={move.isPending}
       error={errorText(move.error)}
       onConfirm={() => {
         move.mutate(
-          { domain, from, to: target, confirm: warning !== null },
+          {
+            domain,
+            from,
+            to: target,
+            confirm: warning !== null,
+            fromEnvironment,
+            toEnvironment,
+          },
           {
             onSuccess: (result) => {
               if (result.applied) {
@@ -127,6 +188,7 @@ export function MoveDomainDialog({
           value={target}
           onChange={(e) => {
             setTo(e.target.value)
+            setToEnvironment('')
             setWarning(null)
           }}
         >
@@ -137,6 +199,15 @@ export function MoveDomainDialog({
           ))}
         </NativeSelect>
       </div>
+      <EnvironmentTargetSelect
+        id="move-target-environment"
+        app={target}
+        value={toEnvironment}
+        onChange={(v) => {
+          setToEnvironment(v)
+          setWarning(null)
+        }}
+      />
       {warning ? (
         <p role="alert" className="text-sm text-tone-warning">
           {warning}
@@ -195,6 +266,7 @@ export function AttachParkedDialog({
   const { t } = useTranslation('domains')
   const { data: apps = [] } = useQuery(appListQueryOptions())
   const [to, setTo] = useState('')
+  const [environment, setEnvironment] = useState('')
   const [fresh, setFresh] = useState(false)
   const attach = useAttachParkedDomain()
   const target = to || apps[0]?.name || ''
@@ -211,7 +283,12 @@ export function AttachParkedDialog({
       error={errorText(attach.error)}
       onConfirm={() => {
         attach.mutate(
-          { domain, app: target, discardSettings: hasSettings && fresh },
+          {
+            domain,
+            app: target,
+            discardSettings: hasSettings && fresh,
+            environment,
+          },
           {
             onSuccess: (result) => {
               const kinds = (result.restored_settings ?? []).map((k) =>
@@ -244,6 +321,7 @@ export function AttachParkedDialog({
           value={target}
           onChange={(e) => {
             setTo(e.target.value)
+            setEnvironment('')
           }}
         >
           {apps.map((a) => (
@@ -253,6 +331,12 @@ export function AttachParkedDialog({
           ))}
         </NativeSelect>
       </div>
+      <EnvironmentTargetSelect
+        id="attach-target-environment"
+        app={target}
+        value={environment}
+        onChange={setEnvironment}
+      />
       {hasSettings ? (
         <fieldset className="space-y-1">
           <legend className="text-sm font-medium">

@@ -89,7 +89,12 @@ export function ParkedDomainsGroup() {
             </span>
             {p.parked_from ? (
               <span className="text-xs text-muted-foreground">
-                {t('parked.from', { app: p.parked_from })}
+                {p.parked_from_environment
+                  ? t('parked.fromEnvironment', {
+                      app: p.parked_from,
+                      environment: p.parked_from_environment,
+                    })
+                  : t('parked.from', { app: p.parked_from })}
               </span>
             ) : null}
             <ParkedDnsBadge dns={p.dns} />
