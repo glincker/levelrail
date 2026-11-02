@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 // History event names.
@@ -96,6 +98,8 @@ func (db *DB) RecordHistory(ctx context.Context, e HistoryEntry) error {
 			return nil
 		}
 	}
+	// Detail carries notice text and Error a delivery failure, both can echo a registered value.
+	e.Detail, e.Error = secretmask.Mask(e.Detail), secretmask.Mask(e.Error)
 	certJSON, err := encodeCertPayload(e.Cert)
 	if err != nil {
 		return err

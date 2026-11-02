@@ -87,19 +87,13 @@ func TestMaskLongestFirst(t *testing.T) {
 
 // A store write path that stores free text must mask it. Every file that inserts into one of these
 // tables either calls secretmask or is listed in unreviewedSinks with the reason it has not been proven.
-var freeTextTables = regexp.MustCompile(`INSERT (?:OR [A-Z]+ )?INTO (log_entries|deploy_logs|audit_log|pipeline_logs|app_events|deploy_trace_steps|error_events|error_issues|notification_deliveries|webhook_deliveries|event_webhook_deliveries|status_webhook_deliveries|pipeline_webhook_deliveries|ai_chat_messages|email_deliveries|alert_history|service_hook_runs|scheduled_task_runs|oneshot_jobs|build_runs|pipeline_jobs|gate_events|deploy_gate_events|team_events|node_security_events|database_query_history)\b`)
+var freeTextTables = regexp.MustCompile(`INSERT (?:OR [A-Z]+ )?INTO (log_entries|deploy_logs|audit_log|pipeline_logs|app_events|deploy_trace_steps|error_events|error_issues|notification_deliveries|webhook_deliveries|event_webhook_deliveries|status_webhook_deliveries|pipeline_webhook_deliveries|ai_chat_messages|email_deliveries|alert_history|service_hook_runs|scheduled_task_runs|oneshot_jobs|build_runs|pipeline_jobs|gate_events|deploy_gate_events|team_events|node_security_events|database_query_history|deploy_exit_captures)\b`)
 
 // unreviewedSinks is debt, not an approval: each path stores text that could carry a value, and no
 // proof test drives it yet. Remove an entry when the file masks or a test proves the field is structured.
 var unreviewedSinks = map[string]string{
-	"internal/alerting/history.go":       "alert message text",
-	"internal/rollback/host.go":          "rollback event detail",
-	"internal/store/ai_chat.go":          "chat messages",
-	"internal/store/deploy_gate.go":      "gate decision detail",
-	"internal/store/gate.go":             "gate decision detail",
-	"internal/store/database_queries.go": "user SQL text",
-	"internal/store/team_invites.go":     "team event detail",
-	"internal/store/node_security.go":    "node security event detail",
+	"internal/rollback/host.go": "audit path is built from release versions, a validated backup name and the OS user; the host CLI process holds no registered secrets, so a mask there would be a no-op",
+	"internal/store/gate.go":    "gate_events columns are fixed gateReason* codes, a decision enum, the client IP and the account email; no free text from a request or an app",
 }
 
 // reviewedWriters are functions that write to a free-text table without a Mask call in their own body,

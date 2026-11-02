@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -66,7 +67,7 @@ func (rt *Router) handleDownloadDeployLog(w http.ResponseWriter, r *http.Request
 			return
 		}
 		for _, e := range rt.mergeTraceIntoLog(r.Context(), deployID, entries) {
-			fmt.Fprintf(&body, "%s %s\n", e.Stream, e.Message)
+			fmt.Fprintf(&body, "%s %s\n", e.Stream, secretmask.Mask(e.Message))
 		}
 	}
 

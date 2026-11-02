@@ -7,6 +7,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -57,6 +58,8 @@ func (rt *Router) readContainerLogs(ctx context.Context, svc *store.DesiredServi
 	lines, errs := reader.Logs(lctx, application.ContainerName(svc.Name, application.NameImage(*svc), svc.RestartNonce), false, since)
 	var out []docker.LogLine
 	for l := range lines {
+		// Read straight from the runtime, so this is the first mask these lines meet.
+		l.Message = secretmask.Mask(l.Message)
 		out = append(out, l)
 		if len(out) > limit {
 			out = out[1:]

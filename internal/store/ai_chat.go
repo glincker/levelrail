@@ -9,6 +9,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 // AI chat role values. "tool" carries a tool_result turn (either an
@@ -221,6 +223,10 @@ func (db *DB) SaveAIChatMessage(ctx context.Context, m AIChatMessage) error {
 		}
 	}
 
+	// Users paste secrets and tools echo them; the stored history also feeds the next model turn.
+	m.Content = secretmask.Mask(m.Content)
+	toolCallsJSON = maskJSONBytes(toolCallsJSON)
+
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("store: save ai chat message: begin transaction: %w", err)
@@ -245,6 +251,17 @@ func (db *DB) SaveAIChatMessage(ctx context.Context, m AIChatMessage) error {
 	return nil
 }
 
+// maskJSONBytes masks inside JSON text. The replacement is plain text, so a string value stays valid JSON.
+func maskJSONBytes(b []byte) []byte {
+	if len(b) == 0 {
+		return b
+	}
+	if masked := secretmask.Mask(string(b)); len(masked) != len(b) || masked != string(b) {
+		return []byte(masked)
+	}
+	return b
+}
+
 // nullableJSON returns nil (so the column stores SQL NULL) for an empty
 // marshal result, rather than an empty byte slice.
 func nullableJSON(b []byte) any {
@@ -265,7 +282,7 @@ func (db *DB) UpdateAIChatMessageToolCalls(ctx context.Context, messageID string
 	}
 	res, err := db.ExecContext(ctx, `
 		UPDATE ai_chat_messages SET tool_calls = ? WHERE id = ?
-	`, nullableJSON(toolCallsJSON), messageID)
+	`, nullableJSON(maskJSONBytes(toolCallsJSON)), messageID)
 	if err != nil {
 		return fmt.Errorf("store: update ai chat message tool calls: %w", err)
 	}
@@ -342,7 +359,7 @@ func (db *DB) SaveAIChatConfirmation(ctx context.Context, c AIChatConfirmation) 
 		INSERT INTO ai_chat_confirmations
 			(id, session_id, message_id, tool_use_id, tool_name, tool_input, status, created_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-	`, c.ID, c.SessionID, c.MessageID, c.ToolUseID, c.ToolName, string(c.ToolInput), c.Status, c.CreatedAt)
+	`, c.ID, c.SessionID, c.MessageID, c.ToolUseID, c.ToolName, secretmask.Mask(string(c.ToolInput)), c.Status, c.CreatedAt)
 	if err != nil {
 		return fmt.Errorf("store: save ai chat confirmation: %w", err)
 	}
@@ -422,7 +439,7 @@ func scanAIChatConfirmation(row rowScanner) (AIChatConfirmation, error) {
 func (db *DB) ResolveAIChatConfirmation(ctx context.Context, id, status string, result json.RawMessage, resolvedAt time.Time) error {
 	res, err := db.ExecContext(ctx, `
 		UPDATE ai_chat_confirmations SET status = ?, result = ?, resolved_at = ? WHERE id = ?
-	`, status, nullableJSON(result), resolvedAt, id)
+	`, status, nullableJSON(maskJSONBytes(result)), resolvedAt, id)
 	if err != nil {
 		return fmt.Errorf("store: resolve ai chat confirmation: %w", err)
 	}

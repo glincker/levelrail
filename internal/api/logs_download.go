@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
@@ -102,7 +103,7 @@ func (rt *Router) downloadResourceLogs(w http.ResponseWriter, r *http.Request, l
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", logDownloadFilename(noun, name, to)))
 	w.WriteHeader(http.StatusOK)
 	for _, e := range entries {
-		_, _ = fmt.Fprintf(w, "%s %s %s\n", e.Timestamp.UTC().Format(time.RFC3339), e.Stream, telemetry.RedactLine(e.Message))
+		_, _ = fmt.Fprintf(w, "%s %s %s\n", e.Timestamp.UTC().Format(time.RFC3339), e.Stream, telemetry.RedactLine(secretmask.Mask(e.Message)))
 	}
 }
 

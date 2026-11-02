@@ -8,6 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 // ErrSavedQueryNotFound is returned when a saved query does not exist for the caller.
@@ -63,6 +65,9 @@ func (db *DB) AddDatabaseQueryHistory(ctx context.Context, h DatabaseQueryHistor
 	if h.CreatedAt.IsZero() {
 		h.CreatedAt = time.Now()
 	}
+	// A statement can embed a literal credential and the driver error can echo it; replay of a
+	// masked entry is the accepted cost.
+	h.SQL, h.Error = secretmask.Mask(h.SQL), secretmask.Mask(h.Error)
 	ok := 0
 	if h.OK {
 		ok = 1
