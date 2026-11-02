@@ -1,0 +1,26 @@
+services:
+  mkdocs-material:
+    image: squidfunk/mkdocs-material:9.8.0
+    ports: ["8000"]
+    entrypoint: ["sh", "-c"]
+    command:
+      - "[ -f docs/index.md ] || echo '# Welcome' > docs/index.md; exec mkdocs serve -a 0.0.0.0:8000"
+    volumes:
+      - docs:/docs/docs
+    configs:
+      - source: mkdocs_config
+        target: /docs/mkdocs.yml
+        mode: 0444
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8000/"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+configs:
+  mkdocs_config:
+    content: |
+      site_name: Documentation
+      theme:
+        name: material

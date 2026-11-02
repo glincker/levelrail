@@ -1,0 +1,23 @@
+id: mkdocs-material
+name: Material for MkDocs
+description: A documentation site generator with a searchable Material theme. This serves your Markdown files live; put them in the docs volume and edit the generated config to set the site name and navigation.
+icon: book
+category: Developer Tools
+documentation_url: https://squidfunk.github.io/mkdocs-material/
+source_repo: https://github.com/squidfunk/mkdocs-material
+license: MIT
+license_class: permissive
+license_url: https://github.com/squidfunk/mkdocs-material/blob/master/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+domains:
+  - service: mkdocs-material
+    port: 8000
+    description: Public address of the documentation site.
+healthcheck:
+  service: mkdocs-material
+  port: 8000
+  path: /
