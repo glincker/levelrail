@@ -17,8 +17,6 @@ levelrail-cli settings runtime set <key> <value>
 levelrail-cli settings runtime reset <key>
 ```
 
-A reset that would restore a weaker environment seed or default for a security setting is treated like a weakening change and needs `--confirm-weakening` (API: `?confirm_weakening=true`).
-
 The environment variables that seed these defaults are also listed on [Environment variables](/environment-variables#runtime-settings).
 
 ## Security
