@@ -50,9 +50,11 @@ vi.mock('../EnableHttpsCard', () => ({ EnableHttpsCard: () => <div /> }))
 vi.mock('../settings/CertificatesCard', () => ({
   CertificatesCard: () => <div />,
 }))
-vi.mock('../IngressSettingsCard', () => ({
-  IngressSettingsCard: () => <div />,
-}))
+// The DNS-01 switch lives inside the ingress card, so the card mock renders it.
+vi.mock('../IngressSettingsCard', async () => {
+  const { IngressDns01Switch } = await import('../IngressDns01Switch')
+  return { IngressSettingsCard: () => <IngressDns01Switch /> }
+})
 vi.mock('../IngressEdgeCard', () => ({ IngressEdgeCard: () => <div /> }))
 vi.mock('../IngressConnectivityCard', () => ({
   IngressConnectivityCard: () => <div />,
@@ -101,6 +103,11 @@ function stubApi(api: Api) {
           primary_domain: api.primary,
           acme_enabled: true,
           hsts_enabled: false,
+        },
+        '/api/v1/settings/ingress/dns01': {
+          enabled: false,
+          source: 'default',
+          provider_connected: false,
         },
         '/api/v1/settings/dashboard-url': { dashboard_url: api.dashboard },
         '/api/v1/settings/cloudflare-dns': {
