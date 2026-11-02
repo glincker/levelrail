@@ -22,13 +22,26 @@ ports, hooks or automatic rollback, and it sleeps after
 `APP_DEPLOY_URL_IDLE_MINUTES` without traffic (default 5), then wakes on the
 first visit, so old deploys do not run idle.
 
-Only a person opening the address in a browser wakes a sleeping copy. Crawlers,
-scanners and scripts (including `curl`) get a plain 503 and the copy stays
-asleep, because a new hostname becomes public as soon as its certificate is
-issued and bots find it within seconds. The check needs no setting: it looks for
-a top-level browser navigation (`Sec-Fetch-Mode: navigate`) and a user agent
-that is not a known bot. The certificate itself is still requested when the
-copy is created. The app's own URL is not affected.
+Only a person opening the address in a browser wakes a sleeping copy. Everything
+else gets a plain 503 and the copy stays asleep, because a new hostname becomes
+public as soon as its certificate is issued and bots find it within seconds. The
+check needs no setting:
+
+- When the request carries `Sec-Fetch-Mode`, only `navigate` (a top-level
+  browser visit) wakes the copy.
+- When the header is absent (Safari before 16.4, or a proxy that strips
+  `Sec-Fetch-*`), a request with `Accept: text/html` wakes it, on HTTP or HTTPS.
+- A user agent containing `bot`, `crawl`, `spider`, `slurp`, `scan`, `headless`,
+  `curl`, `python` or `go-http` never wakes it. That covers crawlers, scanners,
+  `curl`, Python and Go clients, and headless browsers such as HeadlessChrome,
+  Playwright, Puppeteer and Lighthouse.
+
+If you run end-to-end tests against an old deploy, open the copy once in a real
+browser first, or test the app's normal URL instead. A client that spoofs a
+browser user agent and sends the right headers still wakes the copy; that only
+starts one container, which sleeps again after the idle time. The certificate
+itself is still requested when the copy is created. The app's own URL is not
+affected.
 
 The hostname is one label under the apps base domain. Without a base domain it
 falls back to the sslip.io address of the control plane's public IP. With
