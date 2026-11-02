@@ -1156,5 +1156,40 @@
     "fixHttps": "Arreglar: activar HTTPS",
     "fixAddress": "Arreglar: revisar dirección",
     "details": "Detalles de la dirección"
+  },
+  "cutover": {
+    "title": "Lista de migración",
+    "loading": "Comprobando este servidor...",
+    "error": "No se pudo cargar la lista de migración.",
+    "eta": "unos {{minutes}} min",
+    "getCertificate": "Obtener el certificado antes de cambiar el DNS",
+    "noProvider": "No hay un proveedor de DNS conectado, así que HTTP-01 solo funciona después del cambio. Baja el TTL del registro a {{ttl}} segundos antes, o conecta Cloudflare, Route53 o Google Cloud DNS.",
+    "runbook": "Guía del certificado",
+    "guide": "Mover un dominio sin tiempo de inactividad",
+    "ready": "Listo para cambiar: la app responde en este servidor para {{domain}} ({{cert}})",
+    "notReady": "No está listo para cambiar: la app aún no responde en este servidor para {{domain}}",
+    "certReady": "certificado listo, sin caída prevista",
+    "certPending": "certificado pendiente",
+    "proxied": "Este nombre pasa por el proxy de Cloudflare. El cambio funciona con el proxy activado o desactivado.",
+    "proxyDocs": "Documentación del proxy de Cloudflare",
+    "risk": {
+      "none": "Sin caída prevista",
+      "likely": "Caída probable",
+      "unknown": "Riesgo de caída desconocido"
+    },
+    "state": {
+      "pass": "correcto",
+      "wait": "en espera",
+      "fail": "fallido",
+      "skip": "no necesario"
+    },
+    "steps": {
+      "app": "La app responde en este servidor",
+      "certificate": "El certificado está listo",
+      "current_dns": "DNS actual y TTL",
+      "switch_dns": "Cambiar el DNS a este servidor",
+      "authoritative": "Verificado en los servidores autoritativos",
+      "live": "Verificado de extremo a extremo con el nombre real"
+    }
   }
 }

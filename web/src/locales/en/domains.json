@@ -1156,5 +1156,40 @@
     "fixHttps": "Fix: enable HTTPS",
     "fixAddress": "Fix: check address",
     "details": "Address details"
+  },
+  "cutover": {
+    "title": "Cutover checklist",
+    "loading": "Checking this server...",
+    "error": "Could not load the cutover checklist.",
+    "eta": "about {{minutes}} min",
+    "getCertificate": "Get certificate before switching DNS",
+    "noProvider": "No DNS provider is connected, so HTTP-01 works only after the switch. Lower the record TTL to {{ttl}} seconds beforehand, or connect Cloudflare, Route53 or Google Cloud DNS.",
+    "runbook": "Certificate runbook",
+    "guide": "Move a domain with no downtime",
+    "ready": "Ready to switch: the app answers on this server for {{domain}} ({{cert}})",
+    "notReady": "Not ready to switch: the app does not answer on this server for {{domain}} yet",
+    "certReady": "certificate ready, no downtime expected",
+    "certPending": "certificate pending",
+    "proxied": "This name is proxied by Cloudflare. The cutover keeps working with the proxy on or off.",
+    "proxyDocs": "Cloudflare proxy docs",
+    "risk": {
+      "none": "No downtime expected",
+      "likely": "Downtime likely",
+      "unknown": "Downtime risk unknown"
+    },
+    "state": {
+      "pass": "passed",
+      "wait": "waiting",
+      "fail": "failed",
+      "skip": "not needed"
+    },
+    "steps": {
+      "app": "The app answers on this server",
+      "certificate": "The certificate is ready",
+      "current_dns": "Current DNS and TTL",
+      "switch_dns": "Switch DNS to this server",
+      "authoritative": "Verified from authoritative servers",
+      "live": "Verified end to end over the real name"
+    }
   }
 }

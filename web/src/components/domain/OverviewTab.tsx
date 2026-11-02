@@ -11,6 +11,7 @@ import { RenewCertificateButton } from '../RenewCertificateButton'
 import type { DomainPolicies } from '../../queries/domainPolicyTypes'
 import type { DomainFix } from './domainSearch'
 import { FixTarget } from './FixTarget'
+import { DomainCutoverCard } from '../domains/DomainCutoverCard'
 import { PreviewPanel, Section } from './PolicyShared'
 
 const SECTIONS = ['redirects', 'geo', 'headers', 'cache', 'forwarders'] as const
@@ -84,6 +85,9 @@ export function OverviewTab({
         <FixTarget active={fix === 'dns'}>
           <DomainDnsCheck appName={app} domain={domain} />
         </FixTarget>
+      </Section>
+      <Section title={t('cutover.title', { ns: 'domains' })}>
+        <DomainCutoverCard domain={domain} />
       </Section>
       <PreviewPanel steps={policies.preview} loading={false} />
     </div>
