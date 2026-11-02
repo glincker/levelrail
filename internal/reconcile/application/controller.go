@@ -268,12 +268,13 @@ type Controller struct {
 	egressReadyBudget       time.Duration
 	egressReadyPollInterval time.Duration
 
-	rollouts            RolloutRecorder              // nil is valid: rollout state just isn't recorded
-	servingImageID      string                       // image ID of the last replica proven ready this pass
-	stopGrace           time.Duration                // 0 uses defaultStopGrace
-	previousReleaseHold time.Duration                // 0 removes the previous release at cutover
-	restartPolicy       func(context.Context) string // stored runtime setting, read per container create
-	applied             AppliedConfigRecorder        // nil is valid: pending changes just aren't tracked
+	rollouts            RolloutRecorder                            // nil is valid: rollout state just isn't recorded
+	servingImageID      string                                     // image ID of the last replica proven ready this pass
+	stopGrace           time.Duration                              // 0 uses defaultStopGrace
+	previousReleaseHold time.Duration                              // 0 removes the previous release at cutover
+	deployWindows       func(context.Context) deploysafety.Windows // live override of the timings, see WithDeployWindows
+	restartPolicy       func(context.Context) string               // stored runtime setting, read per container create
+	applied             AppliedConfigRecorder                      // nil is valid: pending changes just aren't tracked
 	lastHeldUntil       time.Time
 	now                 func() time.Time // nil uses time.Now; tests step a fake clock
 	unconfirmedMu       sync.Mutex

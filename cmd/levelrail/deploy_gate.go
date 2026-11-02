@@ -13,6 +13,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/deploywatch"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
@@ -77,13 +78,14 @@ type deployWatchDeps struct {
 	nudger      deploy.ReconcileNudger
 	dispatcher  *alerting.DeployDispatcher
 	logger      *slog.Logger
+	windows     func(context.Context) deploysafety.Windows
 }
 
 // startDeployWatch runs the post-deploy watch until ctx is cancelled.
 func startDeployWatch(ctx context.Context, g deployGate, d deployWatchDeps) {
 	resolver, _ := d.local.(docker.ImageResolver)
 	w := &deploywatch.Watcher{
-		Store: d.db, Audit: d.db, Defaults: g.defaults, Restarts: d.restarts, Metrics: d.metrics,
+		Store: d.db, Audit: d.db, Defaults: g.defaults, Windows: d.windows, Restarts: d.restarts, Metrics: d.metrics,
 		Resolver: resolver, Nudger: d.nudger, Logger: d.logger, SampleInterval: d.sampleEvery,
 		Inspectors: func(nodeID string) (docker.ExitStateInspector, error) {
 			if nodeID == d.localNodeID {
@@ -104,4 +106,15 @@ func startDeployWatch(ctx context.Context, g deployGate, d deployWatchDeps) {
 		},
 	}
 	go w.Run(ctx, g.defaults.WatchInterval)
+}
+
+// deployWindowsFrom reads the deploy timing settings; the stored value wins
+// and the APP_DEPLOY_* env only seeds the default.
+func deployWindowsFrom(ctx context.Context, rs *runtimesettings.Service) deploysafety.Windows {
+	return deploysafety.Windows{
+		Drain:  rs.Duration(ctx, runtimesettings.KeyDeployDrainTimeout),
+		Stable: rs.Duration(ctx, runtimesettings.KeyDeployStableWindow),
+		Watch:  rs.Duration(ctx, runtimesettings.KeyDeployWatchWindow),
+		Hold:   rs.Duration(ctx, runtimesettings.KeyDeployPreviousReleaseHold),
+	}
 }

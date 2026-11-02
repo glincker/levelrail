@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/deploysafety"
 	"github.com/GLINCKER/levelrail/internal/nodepreflight"
 	"log/slog"
 	"net/http"
@@ -401,6 +403,9 @@ func (s *bootState) startReconciler() {
 		previewNotifier:              previewManager,
 		dns01AllHosts: func(c context.Context) bool {
 			return s.apiRouter.RuntimeSettings().Bool(c, runtimesettings.KeyIngressDNS01AllHosts)
+		},
+		deployWindows: func(c context.Context) deploysafety.Windows {
+			return deployWindowsFrom(c, s.apiRouter.RuntimeSettings())
 		},
 		restartPolicy: func(c context.Context) string {
 			return s.apiRouter.RuntimeSettings().String(c, runtimesettings.KeyContainersRestartPolicy)

@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/deploysafety"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"log/slog"
 	"os"
@@ -100,6 +102,8 @@ type dynamicSourceDeps struct {
 	proxySyncer *proxyroutes.Syncer
 	// dns01AllHosts reads the live DNS-01-for-every-host setting.
 	dns01AllHosts func(context.Context) bool
+	// deployWindows reads the live drain, stable, watch and hold timings.
+	deployWindows func(context.Context) deploysafety.Windows
 	// restartPolicy reads the live container restart policy setting.
 	restartPolicy func(context.Context) string
 	// dependsOnTimeout reads the live compose depends_on wait limit.
@@ -290,6 +294,9 @@ func appOptionsFor(deps dynamicSourceDeps) []application.Option {
 	appOpts = append(appOpts, deps.deployGate.appOptions(deps.db)...)
 	if reconcile.WorkersFromEnv(os.Getenv) > 1 {
 		appOpts = append(appOpts, application.WithReadinessRequeue(pendingReadiness(), application.ReadinessRequeueFromEnv(os.Getenv)))
+	}
+	if deps.deployWindows != nil {
+		appOpts = append(appOpts, application.WithDeployWindows(deps.deployWindows))
 	}
 	if deps.restartPolicy != nil {
 		appOpts = append(appOpts, application.WithRestartPolicy(deps.restartPolicy))

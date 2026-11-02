@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+
 	"errors"
+	"github.com/GLINCKER/levelrail/internal/deploysafety"
 	"log/slog"
 	"net/http"
 	"os"
@@ -199,7 +201,8 @@ func (s *bootState) startAlerting() {
 	// Opt-in per app (AutoRollbackOnSLOBurn, off by default), like the crashloop rollback.
 	alertingEngine.SetSLOBurnAutoRollback(db, engine, alertingDB)
 	startDeployWatch(ctx, gate, deployWatchDeps{db: db, local: client, registry: agentRegistry, localNodeID: meshLocalNodeID(meshCfg),
-		restarts: restartTracker, metrics: alertingFederator, sampleEvery: metricsCollectionInterval, nudger: engine, dispatcher: deployDispatcher, logger: logger})
+		restarts: restartTracker, metrics: alertingFederator, sampleEvery: metricsCollectionInterval, nudger: engine, dispatcher: deployDispatcher, logger: logger,
+		windows: func(c context.Context) deploysafety.Windows { return deployWindowsFrom(c, apiRouter.RuntimeSettings()) }})
 	go func() {
 		if err := alertingEngine.Run(ctx, alertEvaluationInterval); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("alerting engine stopped", slog.String("error", err.Error()))

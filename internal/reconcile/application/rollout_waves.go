@@ -216,7 +216,7 @@ func (c *Controller) retireOld(ctx context.Context, targets []string, desired *s
 	if safety.DrainTimeout > 0 {
 		return 0
 	}
-	hold := c.effectiveHold(safety) > 0
+	hold := c.effectiveHold(ctx, safety) > 0
 	// Created ties at fake-clock resolution, so break ties on name.
 	sort.SliceStable(stale, func(i, j int) bool {
 		if !stale[i].Created.Equal(stale[j].Created) {
