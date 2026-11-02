@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { UsersGlassIcon } from '@thesvg/ui-react'
+import { DownloadGlassIcon, UsersGlassIcon } from '@thesvg/ui-react'
 import { Sparkline } from '@/components/kit'
 import { Button } from '@/components/ui/button'
 import { NativeSelect } from '@/components/ui/native-select'
 import { Skeleton } from '@/components/ui/skeleton'
+import { toast } from '@/components/ui/toast'
+import { saveBlobAs } from '../../lib/visitorsExport'
 import { formatDate } from '../../lib/format'
 import {
   STATUS_CLASSES,
@@ -14,6 +16,7 @@ import {
   statusTotal,
 } from '../../lib/visitorsView'
 import {
+  fetchVisitorsExport,
   isVisitorsUnavailable,
   useAppVisitors,
   type AppVisitors,
@@ -187,6 +190,51 @@ export function VisitorsDetail({ data }: Readonly<{ data: AppVisitors }>) {
   )
 }
 
+/** Downloads the current window and domain as CSV; off while loading or with nothing to export. */
+export function VisitorsExportButton({
+  app,
+  win,
+  domain = '',
+  requests,
+}: Readonly<{
+  app: string
+  win: VisitorsWindow
+  domain?: string
+  requests: number | undefined
+}>) {
+  const { t } = useTranslation('common')
+  const [busy, setBusy] = useState(false)
+  const empty = !requests
+  const label = t('visitors.exportCsv')
+  return (
+    <Button
+      size="icon-sm"
+      variant="ghost"
+      aria-label={label}
+      title={empty ? t('visitors.exportEmpty') : label}
+      disabled={busy || empty}
+      onClick={() => {
+        setBusy(true)
+        fetchVisitorsExport(app, win, domain)
+          .then(({ blob, filename }) => {
+            saveBlobAs(blob, filename)
+          })
+          .catch((e: unknown) => {
+            toast.add({
+              title: e instanceof Error ? e.message : String(e),
+              type: 'error',
+            })
+          })
+          .finally(() => {
+            setBusy(false)
+          })
+      }}
+    >
+      <DownloadGlassIcon size="1.2em" aria-hidden="true" />
+    </Button>
+  )
+}
+
 /** VisitorsSection is the edge access log summary at the top of the Traffic tab. */
 export function VisitorsSection({ app }: Readonly<{ app: string }>) {
   const { t } = useTranslation('common')
@@ -269,6 +317,12 @@ export function VisitorsSection({ app }: Readonly<{ app: string }>) {
               </Button>
             ))}
           </div>
+          <VisitorsExportButton
+            app={app}
+            win={win}
+            domain={domain}
+            requests={data?.requests}
+          />
         </div>
       </div>
       {isPending ? (

@@ -1247,7 +1247,9 @@
     "topPathsCaption": "Las 10 páginas principales en esta ventana",
     "topReferrersCaption": "Los 10 orígenes principales en esta ventana",
     "unavailable": "Las cifras de visitantes necesitan el registro de acceso del borde, que no está activado en esta instalación.",
-    "chartHeading": "Solicitudes en el tiempo"
+    "chartHeading": "Solicitudes en el tiempo",
+    "exportCsv": "Descargar CSV",
+    "exportEmpty": "No hay nada que exportar en esta ventana."
   },
   "overviewHero": {
     "addressInfo": "Sobre esta dirección",

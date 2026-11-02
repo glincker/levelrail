@@ -4,6 +4,7 @@
 import { keepPreviousData, queryOptions, useQuery } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { VISITORS_REFETCH_MS } from '../components/overview/config'
+import { visitorsExportFilename } from '../lib/visitorsExport'
 
 export type VisitorsWindow = '1h' | '24h' | '7d' | '30d'
 
@@ -82,4 +83,31 @@ export function useAppVisitors(
   domain = '',
 ) {
   return useQuery(appVisitorsQueryOptions(app, window, domain))
+}
+
+/** Fetches the CSV export as a blob; errors carry the API's mapped message. */
+export async function fetchVisitorsExport(
+  app: string,
+  window: VisitorsWindow,
+  domain = '',
+): Promise<{ blob: Blob; filename: string }> {
+  const qs = new URLSearchParams({ window, format: 'csv' })
+  if (domain) qs.set('domain', domain)
+  const res = await fetch(
+    `/api/v1/apps/${encodeURIComponent(app)}/visitors/export?${qs.toString()}`,
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `export visitors failed: ${res.status}`),
+    )
+  }
+  return {
+    blob: await res.blob(),
+    filename: visitorsExportFilename(
+      res.headers.get('Content-Disposition'),
+      app,
+      window,
+    ),
+  }
 }

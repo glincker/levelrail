@@ -1247,7 +1247,9 @@
     "topPathsCaption": "Top 10 pages in this window",
     "topReferrersCaption": "Top 10 referrers in this window",
     "unavailable": "Visitor numbers need the edge access log, which is not enabled on this install.",
-    "chartHeading": "Requests over time"
+    "chartHeading": "Requests over time",
+    "exportCsv": "Download CSV",
+    "exportEmpty": "Nothing to export in this window."
   },
   "overviewHero": {
     "addressInfo": "About this address",

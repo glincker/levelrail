@@ -5,6 +5,7 @@ import { ChevronRightGlassIcon, UsersGlassIcon } from '@thesvg/ui-react'
 import { Sparkline } from '@/components/kit'
 import { Button } from '@/components/ui/button'
 import { formatDate } from '../../lib/format'
+import { VisitorsExportButton } from '../trafficDetail/VisitorsSection'
 import {
   isVisitorsUnavailable,
   useAppVisitors,
@@ -189,6 +190,11 @@ export function VisitorsCard({ appName }: { appName: string }) {
               </Button>
             ))}
           </div>
+          <VisitorsExportButton
+            app={appName}
+            win={win}
+            requests={data?.requests}
+          />
           <Link
             to="/apps/$name/traffic"
             params={{ name: appName }}
