@@ -172,7 +172,7 @@ export function SettingsScopedSidebar() {
               onChange={(event) => setQuery(event.target.value)}
               placeholder={t('nav.search')}
               aria-label={t('nav.search')}
-              className="h-8 pl-7"
+              className="h-8 pl-9"
             />
           </div>
         </SidebarGroupContent>

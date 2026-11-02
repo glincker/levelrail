@@ -99,7 +99,7 @@ function SettingsHubPage() {
               }}
               placeholder={t('nav.search')}
               aria-label={t('nav.search')}
-              className="h-8 pl-7"
+              className="h-8 pl-9"
             />
           </div>
         }

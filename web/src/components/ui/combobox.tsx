@@ -140,7 +140,7 @@ export function Combobox({
             }}
             placeholder={searchPlaceholder}
             aria-label={searchPlaceholder}
-            className="h-7 pl-7 text-sm"
+            className="h-7 pl-9 text-sm"
           />
         </div>
         <div ref={listRef} role="listbox" className="max-h-56 overflow-y-auto">
