@@ -37,6 +37,12 @@ func TestNextStandaloneHint(t *testing.T) {
 	if has(map[string][]byte{"next.config.mjs": []byte(`export default { output: "standalone" }`)}) {
 		t.Error("config with standalone must stay quiet")
 	}
+	if !has(map[string][]byte{"next.config.js": []byte("// standalone later\nmodule.exports = {}")}) {
+		t.Error("a comment mentioning standalone must not silence the hint")
+	}
+	if has(map[string][]byte{"next.config.ts": []byte("const c = { output: 'standalone' }\nexport default c")}) {
+		t.Error("single-quoted standalone must stay quiet")
+	}
 	if len(nextStandaloneFinding(nil, "vite", false)) != 0 {
 		t.Error("non-Next framework must stay quiet")
 	}

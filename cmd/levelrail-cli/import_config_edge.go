@@ -51,3 +51,20 @@ func addEdgeSources(dir string, files map[string][]byte) {
 		})
 	}
 }
+
+var nextConfigFiles = []string{"next.config.js", "next.config.mjs", "next.config.ts", "next.config.cjs"}
+
+// addNextConfig adds next.config.* as text so the translator can tell whether
+// output: "standalone" is already set. The file is never executed.
+func addNextConfig(dir string, files map[string][]byte) {
+	for _, name := range nextConfigFiles {
+		p := filepath.Join(dir, name)
+		info, err := os.Stat(p)
+		if err != nil || info.IsDir() || info.Size() > maxConfigFileBytes {
+			continue
+		}
+		if b, err := os.ReadFile(p); err == nil { //nolint:gosec // the operator names the directory to read
+			files[name] = b
+		}
+	}
+}

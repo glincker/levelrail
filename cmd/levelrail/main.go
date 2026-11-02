@@ -46,6 +46,12 @@ const (
 	shutdownDrainEnv     = "APP_SHUTDOWN_DRAIN"
 	defaultShutdownDrain = 20 * time.Second
 
+	// After a host reboot Docker can publish loopback ports after the first pass; extra passes
+	// shortly after start and after the first docker event fix routes before the resync tick.
+	bootRecheckEnv          = "APP_BOOT_RECHECKS"
+	bootEventRecheckEnv     = "APP_BOOT_EVENT_RECHECK"
+	defaultBootEventRecheck = 3 * time.Second
+
 	// Bounded so a live agent Session stream cannot stall exit until systemd SIGKILLs the process.
 	agentGRPCShutdownTimeout = 5 * time.Second
 

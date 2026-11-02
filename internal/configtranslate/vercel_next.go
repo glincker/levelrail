@@ -1,8 +1,12 @@
 package configtranslate
 
-import "bytes"
+import "regexp"
 
 var nextConfigNames = []string{"next.config.js", "next.config.mjs", "next.config.ts", "next.config.cjs"}
+
+// nextStandaloneRe matches an output option set to standalone, so a comment or
+// an unrelated word does not count.
+var nextStandaloneRe = regexp.MustCompile(`output\s*[:=]\s*[^,;}\n]*['"` + "`" + `]standalone['"` + "`" + `]`)
 
 // nextStandaloneFinding hints at output: "standalone" for a Next.js server,
 // which keeps the container image small. It stays quiet when the config has it.
@@ -11,7 +15,7 @@ func nextStandaloneFinding(files map[string][]byte, fw string, isStatic bool) []
 		return nil
 	}
 	for _, n := range nextConfigNames {
-		if b, ok := lookup(files, n); ok && bytes.Contains(b, []byte("standalone")) {
+		if b, ok := lookup(files, n); ok && nextStandaloneRe.Match(b) {
 			return nil
 		}
 	}

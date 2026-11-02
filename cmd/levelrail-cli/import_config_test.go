@@ -179,3 +179,26 @@ func TestImportConfigStepsRefuseAndQuote(t *testing.T) {
 		t.Errorf("spec file not quoted:\n%s", steps)
 	}
 }
+
+func TestImportConfigNextStandaloneHint(t *testing.T) {
+	vercel := `{"framework":"nextjs"}`
+	cases := []struct {
+		name string
+		cfg  string
+		want bool
+	}{
+		{"next.config.js", "module.exports = {}\n", true},
+		{"next.config.mjs", "export default { output: 'standalone' }\n", false},
+		{"next.config.ts", "const c = { output: \"standalone\" }\nexport default c\n", false},
+	}
+	for _, c := range cases {
+		dir := writeConfigDir(t, map[string]string{"vercel.json": vercel, c.name: c.cfg})
+		code, out, _ := runConfigCmd(t, nil, "--json", dir)
+		if code != exitOK {
+			t.Fatalf("%s: code=%d", c.name, code)
+		}
+		if got := strings.Contains(out, "vercel.next.standalone"); got != c.want {
+			t.Errorf("%s: hint=%v want %v", c.name, got, c.want)
+		}
+	}
+}

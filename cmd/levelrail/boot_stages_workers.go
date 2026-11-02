@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
@@ -483,6 +484,7 @@ func (s *bootState) serve() error {
 			logger.Info("closed live streams for shutdown", slog.Int("streams", n))
 		}
 	}()
+	engine.SetBootPasses(bootPassDelays(logger), envDurationOr(logger, bootEventRecheckEnv, defaultBootEventRecheck))
 	engineErr := engine.Run(ctx, events, resyncInterval)
 
 	drainCtx, drainCancel := context.WithTimeout(context.Background(), envDurationOr(logger, shutdownDrainEnv, defaultShutdownDrain))
@@ -520,4 +522,22 @@ func storedDeployURLMode(db interface {
 		}
 		return m
 	}
+}
+
+// bootPassDelays reads the comma separated offsets of the extra post-start passes.
+func bootPassDelays(logger *slog.Logger) []time.Duration {
+	raw := os.Getenv(bootRecheckEnv)
+	if raw == "" {
+		return []time.Duration{3 * time.Second, 10 * time.Second}
+	}
+	var out []time.Duration
+	for _, part := range strings.Split(raw, ",") {
+		d, err := time.ParseDuration(strings.TrimSpace(part))
+		if err != nil || d < 0 {
+			logger.Warn("invalid boot pass delay, skipping", slog.String("key", bootRecheckEnv), slog.String("value", part))
+			continue
+		}
+		out = append(out, d)
+	}
+	return out
 }
