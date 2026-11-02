@@ -31,7 +31,7 @@ services:
     volumes:
       - "shop_uploads:/uploads"
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:3000/healthz >/dev/null || wget -q -O /dev/null http://localhost:3000/healthz || exit 1"]
+      test: ["CMD", "curl", "-fsS", "http://localhost:3000/healthz"]
       interval: 10s
       timeout: 3s
       retries: 3

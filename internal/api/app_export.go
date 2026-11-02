@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/appexport"
+	"github.com/GLINCKER/levelrail/internal/envredact"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -32,7 +33,24 @@ func (rt *Router) handleExportApp(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	files, err := appexport.Render(appexport.Input{AppName: appName, Services: exportInput(appName, svcs)})
+	names := make([]string, len(svcs))
+	for i := range svcs {
+		names[i] = svcs[i].Name
+	}
+	denied, derr := rt.firstDeniedRef(r, AbilityRead, appRefs(names))
+	if derr != nil {
+		rt.internalError(w, "api: export app: authz failed", derr, slog.String("name", name))
+		return
+	}
+	if denied != nil {
+		writeError(w, http.StatusNotFound, "app not found")
+		return
+	}
+	files, err := appexport.Render(appexport.Input{AppName: appName, Services: rt.exportInput(r.Context(), appName, svcs)})
+	if errors.Is(err, appexport.ErrInvalidName) {
+		writeError(w, http.StatusUnprocessableEntity, "export refused: "+err.Error())
+		return
+	}
 	if err != nil {
 		rt.internalError(w, "api: export app: render failed", err, slog.String("name", name))
 		return
@@ -105,15 +123,30 @@ func groupName(ctx context.Context, rt *Router, appID, fallback string) string {
 	return fallback
 }
 
-// exportInput maps stored services to the export model. Only names of secret
-// bindings are copied: SecretEnv, DatabaseEnv and VaultEnv hold no values.
-func exportInput(appName string, svcs []store.DesiredService) []appexport.Service {
+// exportInput maps stored services to the export model. Plain env goes through
+// the same classifier as every other read surface; redacted values become
+// secret names, so no value of a sensitive variable is copied.
+func (rt *Router) exportInput(ctx context.Context, appName string, svcs []store.DesiredService) []appexport.Service {
 	key := func(n string) string { return strings.TrimPrefix(n, appName+"-") }
 	out := make([]appexport.Service, 0, len(svcs))
 	for _, s := range svcs {
 		e := appexport.Service{
 			Key: key(s.Name), Image: s.Image, Command: s.Command, Entrypoint: s.Entrypoint,
-			Port: s.Port, Domains: s.Domains, Env: s.Env, PullPolicy: s.PullPolicy,
+			Port: s.Port, Domains: s.Domains, PullPolicy: s.PullPolicy,
+		}
+		settings, ok := rt.envSettingsFor(ctx, s.Name)
+		overrides := settings.SensitiveOverrides
+		if !ok {
+			overrides = maskEverything(s.Env)
+		}
+		e.Env = map[string]string{}
+		for k, v := range s.Env {
+			shown, meta := envredact.Value(k, v, overrides)
+			if meta.ValueRedacted {
+				e.SecretEnv = append(e.SecretEnv, k)
+				continue
+			}
+			e.Env[k] = shown
 		}
 		for _, ref := range s.SecretEnv {
 			e.SecretEnv = append(e.SecretEnv, ref.Name)
@@ -154,6 +187,7 @@ func exportInput(appName string, svcs []store.DesiredService) []appexport.Servic
 			e.DependsOnHealthy = append(e.DependsOnHealthy, key(d))
 		}
 		sort.Strings(e.DependsOn)
+		sort.Strings(e.SecretEnv)
 		out = append(out, e)
 	}
 	return out

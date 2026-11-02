@@ -1,13 +1,13 @@
 // Package appexport renders an app as plain Docker Compose plus an env
 // template so leaving Levelrail never needs Levelrail. Secret values are
-// never part of the input type, and key or value shapes that look secret
-// are blanked as a second line of defense.
+// never part of the input type; the caller classifies env before export.
 package appexport
 
 import (
 	"archive/tar"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"regexp"
@@ -88,14 +88,32 @@ type File struct {
 }
 
 var (
-	secretKey   = regexp.MustCompile(`(?i)(PASSWORD|PASSWD|SECRET|TOKEN|PRIVATE|CREDENTIAL|APIKEY|API_KEY|ACCESS_KEY|AUTH|DSN|SALT|(^|_)KEY$)`)
-	secretValue = regexp.MustCompile(`://[^/\s:@]+:[^/\s@]+@|-----BEGIN [A-Z ]*PRIVATE KEY-----`)
-	safeKey     = regexp.MustCompile(`[^A-Za-z0-9_]`)
+	safeKey      = regexp.MustCompile(`[^A-Za-z0-9_]`)
+	envNameRe    = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+	serviceKeyRe = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_.-]*$`)
 )
 
-// IsSecretShaped reports whether an env pair must be treated as secret.
-func IsSecretShaped(key, value string) bool {
-	return secretKey.MatchString(key) || secretValue.MatchString(value)
+// ErrInvalidName marks a service key or env name that cannot be written to
+// compose or .env without breaking the file structure.
+var ErrInvalidName = errors.New("appexport: invalid service or variable name")
+
+func validateNames(svcs []Service) error {
+	for _, s := range svcs {
+		if !serviceKeyRe.MatchString(s.Key) {
+			return fmt.Errorf("%w: service key %q", ErrInvalidName, s.Key)
+		}
+		for _, d := range s.DependsOn {
+			if !serviceKeyRe.MatchString(d) {
+				return fmt.Errorf("%w: depends_on %q", ErrInvalidName, d)
+			}
+		}
+		for _, k := range allKeys(s) {
+			if !envNameRe.MatchString(k) {
+				return fmt.Errorf("%w: env name %q in service %q", ErrInvalidName, k, s.Key)
+			}
+		}
+	}
+	return nil
 }
 
 // Render produces docker-compose.yml, .env.example and README.md, sorted and
@@ -112,6 +130,9 @@ func Render(in Input) ([]File, error) {
 			return nil, fmt.Errorf("appexport: service %q needs a unique key and an image", s.Key)
 		}
 		seen[s.Key] = true
+	}
+	if err := validateNames(svcs); err != nil {
+		return nil, err
 	}
 	vars := planVars(svcs)
 	env := renderEnv(svcs, vars)
@@ -172,11 +193,7 @@ func planVars(svcs []Service) map[string][]envVar {
 			} else if secrets[k] {
 				v.Secret = true
 			} else if val, ok := s.Env[k]; ok {
-				if IsSecretShaped(k, val) {
-					v.Secret = true
-				} else {
-					v.Value = val
-				}
+				v.Value = val
 			}
 			out[s.Key] = append(out[s.Key], v)
 		}
@@ -229,6 +246,14 @@ func renderEnv(svcs []Service, vars map[string][]envVar) string {
 func dotenvQuote(v string) string {
 	if v == "" || !strings.ContainsAny(v, " \t\n\r#\"'$\\`") {
 		return v
+	}
+	if strings.Contains(v, `\`) {
+		// Single quotes keep backslashes literal; a value with both kinds
+		// cannot be quoted safely, so it becomes a placeholder.
+		if strings.Contains(v, "'") {
+			return SecretPlaceholder
+		}
+		return "'" + v + "'"
 	}
 	r := strings.NewReplacer(`\`, `\\`, `"`, `\"`, "$", `\$`, "\n", `\n`, "\r", `\r`)
 	return `"` + r.Replace(v) + `"`
@@ -386,7 +411,7 @@ func writeHealth(b *strings.Builder, s Service) {
 			scheme = "http"
 		}
 		url := fmt.Sprintf("%s://localhost:%d%s", scheme, s.Port, h.Path)
-		test = ysList([]string{"CMD-SHELL", fmt.Sprintf("curl -fsS %s >/dev/null || wget -q -O /dev/null %s || exit 1", url, url)})
+		test = ysList([]string{"CMD", "curl", "-fsS", url})
 	default:
 		return
 	}

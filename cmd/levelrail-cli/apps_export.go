@@ -69,6 +69,9 @@ func runAppsExport(prog string, args []string, stdout, stderr io.Writer, lookupE
 	return exitOK
 }
 
+// maxExportFileBytes bounds one extracted file so a bad archive cannot fill memory.
+const maxExportFileBytes = 8 << 20
+
 // extractExport writes the known files of a tar into dir and returns their paths.
 func extractExport(data []byte, dir string) ([]string, error) {
 	if err := os.MkdirAll(dir, 0o750); err != nil {
@@ -88,9 +91,12 @@ func extractExport(data []byte, dir string) ([]string, error) {
 			return nil, fmt.Errorf("unexpected entry %q in the export", h.Name)
 		}
 		p := filepath.Join(dir, h.Name) //nolint:gosec // h.Name is checked against the fixed allowlist above
-		body, err := io.ReadAll(tr)
+		body, err := io.ReadAll(io.LimitReader(tr, maxExportFileBytes+1))
 		if err != nil {
 			return nil, err
+		}
+		if len(body) > maxExportFileBytes {
+			return nil, fmt.Errorf("entry %q exceeds %d bytes", h.Name, maxExportFileBytes)
 		}
 		if err := os.WriteFile(p, body, 0o600); err != nil {
 			return nil, err
