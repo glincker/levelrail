@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased (v0.8.6)
+## Stack notes carried from v0.8.6
 
 
 ### Features
