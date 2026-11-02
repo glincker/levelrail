@@ -8,11 +8,13 @@
 # v0.8.12: the plugin egress proxy (internal/plugin/egress) dials through kit/netguard, adding three dependents.
 # v0.8.13: the scan-catalog-platforms and gen-template-platforms tools import internal/catalog, adding two dependents to every package the catalog reaches.
 # v0.8.14: the gen-arm-compat tool imports internal/catalog, adding two dependents to every package the catalog reaches.
+# v0.9.0: the gen-runtime-settings-docs tool imports internal/api for its init-time settings registry, adding one dependent to internal/changes.
 internal/autoscale 162
 internal/bindaddr 162
 internal/bindmount 164
 internal/build 34
 internal/canarypolicy 162
+internal/changes 21
 internal/chaos 156
 internal/compose 57
 internal/costbudget 156
