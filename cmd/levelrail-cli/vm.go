@@ -28,12 +28,17 @@ const (
 	vmInstance     = "levelrail"
 	vmGuestBin     = "/usr/local/bin/levelrail"
 	vmGuestUnit    = "levelrail-controlplane.service"
-	vmGuestToken   = "/etc/levelrail/desktop-token" //nolint:gosec // a file path, not a credential
-	vmTokenFile    = "desktop-token"
+	vmGuestData    = "/var/lib/levelrail/data"
+	vmGuestEnvFile = "/etc/levelrail/controlplane.env"
+	vmGuestHTTPS   = 443
+	vmGuestAgent   = 8081
+	vmAdminFile    = "admin-credentials"
+	vmAdminName    = "admin"
+	vmAdminBytes   = 18
+	vmGuestToken   = vmGuestData + "/desktop-token" //nolint:gosec // a file path, not a credential
 	vmPollInterval = 2 * time.Second
 	vmIngressFrom  = 8880
 	vmPortProbes   = 50
-	vmTokenBytes   = 32
 	vmExitFail     = 1
 )
 
@@ -59,8 +64,8 @@ type vmEnv struct {
 	sleep        func(time.Duration)
 }
 
+func (e *vmEnv) adminPath() string   { return filepath.Join(e.dataDir, vmAdminFile) }
 func (e *vmEnv) instanceDir() string { return filepath.Join(e.dataDir, "lima", vmInstance) }
-func (e *vmEnv) tokenPath() string   { return filepath.Join(e.dataDir, vmTokenFile) }
 
 const vmUsage = `Usage:
   %[1]s vm init [--memory MiB] [--cpus N] [--disk GiB] [--dashboard-port P] [--ingress-port P] [--control-plane-bin PATH] [--no-start]
@@ -194,12 +199,14 @@ func vmDispatch(ctx context.Context, env *vmEnv, prog string, args []string, std
 	return code
 }
 
-// checkLimaHome refuses a private Lima home with _config: Lima merges default
-// and override files from it into every instance, which could undo the isolation.
+// checkLimaHome refuses a private Lima home with default or override files: Lima merges
+// them into every instance, which could undo the isolation. Its own generated ssh keys in _config are fine.
 func (e *vmEnv) checkLimaHome() error {
-	cfg := filepath.Join(e.dataDir, "lima", "_config")
-	if _, err := os.Stat(cfg); err == nil {
-		return fmt.Errorf("%s exists; remove it, Lima merges its files into every instance", cfg)
+	for _, n := range []string{"default.yaml", "override.yaml", "always.yaml"} {
+		cfg := filepath.Join(e.dataDir, "lima", "_config", n)
+		if _, err := os.Stat(cfg); err == nil {
+			return fmt.Errorf("%s exists; remove it, Lima merges its files into every instance", cfg)
+		}
 	}
 	return nil
 }
@@ -268,22 +275,25 @@ Wants=docker.service
 ConditionPathExists=%[1]s
 
 [Service]
+ExecStartPre=/usr/bin/install -d -m 0700 %[2]s
 ExecStart=%[1]s
 Restart=on-failure
 Environment=APP_LOCAL_MODE=1
 Environment=APP_DESKTOP_MODE=1
 Environment=APP_DESKTOP_ALLOWED_PORTS=%[5]d,%[6]d
-Environment=APP_DESKTOP_TOKEN_FILE=%[2]s
-Environment=APP_DATA_DIR=/var/lib/levelrail/data
+Environment=APP_DATA_DIR=%[2]s
 Environment=APP_HTTP_ADDR=127.0.0.1:%[3]d
 Environment=APP_INGRESS_HTTP_ADDR=127.0.0.1:%[4]d
+Environment=APP_INGRESS_HTTPS_ADDR=127.0.0.1:%[7]d
+Environment=APP_AGENT_ADDR=127.0.0.1:%[8]d
+EnvironmentFile=-%[9]s
 Environment=APP_INGRESS_HTTP_REDIRECT=false
 Environment=APP_PUBLIC_HOST=localhost
 Environment=APP_CONTAINER_RUNTIME_SOCKET=unix:///var/run/docker.sock
 
 [Install]
 WantedBy=multi-user.target
-`, vmGuestBin, vmGuestToken, lima.DefaultDashboardGuest, lima.DefaultIngressGuest, s.DashboardPort, s.IngressPort)
+`, vmGuestBin, vmGuestData, lima.DefaultDashboardGuest, lima.DefaultIngressGuest, s.DashboardPort, s.IngressPort, vmGuestHTTPS, vmGuestAgent, vmGuestEnvFile)
 	return guest.Sidecar{BinaryPath: vmGuestBin, UnitName: vmGuestUnit, UnitContent: unit}
 }
 
@@ -293,18 +303,45 @@ func (e *vmEnv) render(s vmruntime.Settings, l lima.Limits) ([]byte, error) {
 	return lima.Render(ls, l, lima.RenderOptions{Arch: e.arch, ImageSHA256Override: lima.ImageOverrideFromEnv()})
 }
 
-func (e *vmEnv) ensureToken() error {
-	if _, err := os.Stat(e.tokenPath()); err == nil {
+// ensureAdmin creates the first-admin password once, host side, mode 0600. It returns the
+// password only when newly made, so the caller can show it exactly once.
+func (e *vmEnv) ensureAdmin() (string, error) {
+	if _, err := os.Stat(e.adminPath()); err == nil {
+		return "", nil
+	}
+	b := make([]byte, vmAdminBytes)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	pw := hex.EncodeToString(b)
+	body := "APP_ADMIN_USERNAME=" + vmAdminName + "\nAPP_ADMIN_PASSWORD=" + pw + "\n"
+	if err := os.MkdirAll(e.dataDir, 0o700); err != nil {
+		return "", err
+	}
+	return pw, os.WriteFile(e.adminPath(), []byte(body), 0o600)
+}
+
+// installAdmin puts the admin env file in the guest once; the control plane reads it only
+// while no user exists, so a stale copy is harmless.
+func (e *vmEnv) installAdmin(ctx context.Context) error {
+	if _, err := os.Stat(e.adminPath()); err != nil {
 		return nil
 	}
-	b := make([]byte, vmTokenBytes)
-	if _, err := rand.Read(b); err != nil {
-		return err
+	if _, err := e.runner.Run(ctx, "shell", vmInstance, "--", "sudo", "test", "-f", vmGuestEnvFile); err == nil {
+		return nil
 	}
-	if err := os.MkdirAll(e.dataDir, 0o700); err != nil {
-		return err
+	steps := [][]string{
+		{"copy", e.adminPath(), vmInstance + ":/tmp/lr-admin.env"},
+		{"shell", vmInstance, "--", "sudo", "install", "-D", "-m", "0600", "/tmp/lr-admin.env", vmGuestEnvFile},
+		{"shell", vmInstance, "--", "rm", "-f", "/tmp/lr-admin.env"},
+		{"shell", vmInstance, "--", "sudo", "systemctl", "try-restart", vmGuestUnit},
 	}
-	return os.WriteFile(e.tokenPath(), []byte(hex.EncodeToString(b)+"\n"), 0o600)
+	for _, a := range steps {
+		if _, err := e.runner.Run(ctx, a...); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (e *vmEnv) init(ctx context.Context, f vmFlags, stdout io.Writer, lookupEnv vmruntime.Lookup) error {
@@ -350,8 +387,12 @@ func (e *vmEnv) init(ctx context.Context, f vmFlags, stdout io.Writer, lookupEnv
 	if err := os.MkdirAll(filepath.Join(e.dataDir, "lima"), 0o700); err != nil {
 		return err
 	}
-	if err := e.ensureToken(); err != nil {
+	adminPW, err := e.ensureAdmin()
+	if err != nil {
 		return err
+	}
+	if adminPW != "" {
+		_, _ = fmt.Fprintf(stdout, "First admin: %s / %s (shown once; stored in %s)\n", vmAdminName, adminPW, e.adminPath())
 	}
 	tmpl := filepath.Join(e.dataDir, "levelrail.yaml")
 	if err := os.WriteFile(tmpl, yaml, 0o600); err != nil {
@@ -396,46 +437,28 @@ func (e *vmEnv) guestRead(ctx context.Context, path string) ([]byte, error) {
 	return e.runner.Run(ctx, "shell", vmInstance, "--", "sudo", "cat", path)
 }
 
-// isolationRaw adds the freshness fields the guest writes on top of guest.Status.
-type isolationRaw struct {
-	BootID    string `json:"boot_id"`
-	CheckedAt string `json:"checked_at"`
-}
-
-// checkFresh requires the status to come from this boot, so a file left on the
-// disk by an earlier boot never counts as a pass.
-func (e *vmEnv) checkFresh(ctx context.Context, raw []byte) error {
-	var r isolationRaw
-	if err := json.Unmarshal(raw, &r); err != nil {
-		return err
-	}
-	if _, err := time.Parse(time.RFC3339, r.CheckedAt); err != nil {
-		return errors.New("isolation status has no valid checked_at")
-	}
-	boot, err := e.runner.Run(ctx, "shell", vmInstance, "--", "cat", "/proc/sys/kernel/random/boot_id")
+// bootID is read over limactl so a status file left by an earlier boot never counts.
+func (e *vmEnv) bootID(ctx context.Context) (string, error) {
+	out, err := e.runner.Run(ctx, "shell", vmInstance, "--", "cat", "/proc/sys/kernel/random/boot_id")
 	if err != nil {
-		return err
+		return "", err
 	}
-	if r.BootID == "" || r.BootID != strings.TrimSpace(string(boot)) {
-		return errors.New("isolation status is stale (boot id mismatch or missing)")
-	}
-	return nil
+	return strings.TrimSpace(string(out)), nil
 }
 
-// waitIsolation polls the guest self-check; a fail or stale result returns at once.
+// waitIsolation polls the guest self-check; a fail result returns at once.
 func (e *vmEnv) waitIsolation(ctx context.Context, deadline time.Time) (guest.Status, error) {
 	for {
 		raw, err := e.guestRead(ctx, guest.StatusPath)
 		if err == nil {
-			st, perr := guest.ParseStatus(raw)
-			if perr == nil {
-				if ferr := e.checkFresh(ctx, raw); ferr != nil {
-					return st, ferr
+			boot, berr := e.bootID(ctx)
+			if berr == nil {
+				if st, perr := guest.ParseStatus(raw, boot); perr == nil {
+					if !st.Passed() {
+						return st, errors.New("guest isolation check failed")
+					}
+					return st, nil
 				}
-				if !st.Passed() {
-					return st, errors.New("guest isolation check failed")
-				}
-				return st, nil
 			}
 		}
 		if time.Now().After(deadline) {
@@ -486,6 +509,10 @@ func (e *vmEnv) start(ctx context.Context, bin string, stdout io.Writer, lookupE
 		e.failClosed(ctx)
 		return fmt.Errorf("%w; the VM was stopped (limit %s)", err, timeout)
 	}
+	if err := e.installAdmin(bctx); err != nil {
+		e.failClosed(ctx)
+		return fmt.Errorf("%w; the VM was stopped", err)
+	}
 	if err := e.installBinary(bctx, bin); err != nil {
 		e.failClosed(ctx)
 		return fmt.Errorf("%w; the VM was stopped", err)
@@ -498,7 +525,7 @@ func (e *vmEnv) start(ctx context.Context, bin string, stdout io.Writer, lookupE
 	if err := vmruntime.Save(e.settingsPath, s); err != nil {
 		return err
 	}
-	_, _ = fmt.Fprintf(stdout, "Dashboard: %s\nDesktop token file: %s\n", url, e.tokenPath())
+	_, _ = fmt.Fprintf(stdout, "Dashboard: %s\nDesktop token: %s (inside the VM, root only)\n", url, vmGuestToken)
 	return nil
 }
 
@@ -547,20 +574,11 @@ func (e *vmEnv) installBinary(ctx context.Context, bin string) error {
 	steps := [][]string{
 		{"copy", bin, vmInstance + ":/tmp/levelrail-cp"},
 		{"shell", vmInstance, "--", "sudo", "install", "-m", "0755", "/tmp/levelrail-cp", vmGuestBin},
-		{"shell", vmInstance, "--", "sudo", "install", "-d", "-m", "0700", filepath.Dir(vmGuestToken)},
+		// enable, not only restart: the provision step skipped enabling it while the binary was missing.
+		{"shell", vmInstance, "--", "sudo", "systemctl", "enable", vmGuestUnit},
+		{"shell", vmInstance, "--", "sudo", "systemctl", "restart", vmGuestUnit},
 	}
 	for _, a := range steps {
-		if _, err := e.runner.Run(ctx, a...); err != nil {
-			return err
-		}
-	}
-	if _, err := e.runner.Run(ctx, "copy", e.tokenPath(), vmInstance+":/tmp/desktop-token"); err != nil {
-		return err
-	}
-	for _, a := range [][]string{
-		{"shell", vmInstance, "--", "sudo", "install", "-m", "0600", "/tmp/desktop-token", vmGuestToken},
-		{"shell", vmInstance, "--", "sudo", "systemctl", "restart", vmGuestUnit},
-	} {
 		if _, err := e.runner.Run(ctx, a...); err != nil {
 			return err
 		}
@@ -584,7 +602,7 @@ func (e *vmEnv) waitDashboard(ctx context.Context, port int, deadline time.Time)
 // control plane accepts.
 func httpProbe(ctx context.Context, port int) error {
 	p := strconv.Itoa(port)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://127.0.0.1:"+p+"/", nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://127.0.0.1:"+p+"/healthz", nil)
 	if err != nil {
 		return err
 	}
@@ -595,6 +613,10 @@ func httpProbe(ctx context.Context, port int) error {
 		return err
 	}
 	_ = resp.Body.Close()
+	// The safe-mode recovery page also answers, so only a healthy control plane counts.
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("healthz returned %d", resp.StatusCode)
+	}
 	return nil
 }
 
@@ -691,7 +713,8 @@ func (e *vmEnv) status(ctx context.Context, jsonOut bool, stdout io.Writer, look
 	if inst != nil && inst.Status == "Running" {
 		r.Isolation = "no result"
 		if raw, rerr := e.guestRead(ctx, guest.StatusPath); rerr == nil {
-			if st, perr := guest.ParseStatus(raw); perr == nil {
+			boot, _ := e.bootID(ctx)
+			if st, perr := guest.ParseStatus(raw, boot); perr == nil {
 				r.Isolation = st.Result
 				r.IsolationInfo = st.Checks
 				if !st.Passed() {

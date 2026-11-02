@@ -34,6 +34,8 @@ func (f *fakeLima) Run(_ context.Context, args ...string) ([]byte, error) {
 			return nil, nil
 		}
 		return []byte(`{"name":"levelrail","status":"` + f.status + `"}` + "\n"), nil
+	case strings.Contains(line, "test -f"):
+		return nil, errors.New("missing")
 	case args[0] == "create":
 		f.status = "Stopped"
 	case args[0] == "start":
@@ -142,12 +144,20 @@ func TestVMInitSeedsFromEnvAndStarts(t *testing.T) {
 	if !strings.Contains(out, "http://levelrail.localhost:") || !strings.Contains(out, "desktop-token") {
 		t.Fatalf("out %q", out)
 	}
-	if st, _ := os.Stat(e.tokenPath()); st == nil || st.Mode().Perm() != 0o600 {
-		t.Fatal("token file missing or not 0600")
+	if st, _ := os.Stat(e.adminPath()); st == nil || st.Mode().Perm() != 0o600 {
+		t.Fatal("admin credentials missing or not 0600")
+	}
+	if !f.did("copy "+e.adminPath()) || strings.Contains(out, "APP_ADMIN_PASSWORD") {
+		t.Fatalf("admin env not installed in the guest, or leaked: %v", f.calls)
 	}
 	yaml, _ := os.ReadFile(filepath.Join(e.dataDir, "levelrail.yaml"))
 	if !strings.Contains(string(yaml), "APP_DESKTOP_ALLOWED_PORTS") {
 		t.Fatal("sidecar unit lacks allowed ports")
+	}
+	for _, want := range []string{"APP_INGRESS_HTTPS_ADDR=127.0.0.1:", "APP_AGENT_ADDR=127.0.0.1:", "EnvironmentFile=-" + vmGuestEnvFile} {
+		if !strings.Contains(string(yaml), want) {
+			t.Fatalf("sidecar unit lacks %q", want)
+		}
 	}
 }
 
@@ -183,7 +193,7 @@ func TestVMStartStaleStatusFailsClosed(t *testing.T) {
 	_ = vmruntime.Save(e.settingsPath, vmruntime.Settings{MemoryMiB: 3072, CPUs: 2, DiskGiB: 30, DashboardPort: 9000, IngressPort: 9001})
 	_ = os.MkdirAll(e.instanceDir(), 0o700)
 	f.status, f.bootID = "Stopped", "old-boot"
-	if code, _, _ := runVMCmd(e, nil, "start"); code == 0 || !f.did("stop --force") {
+	if code, _, _ := runVMCmd(e, map[string]string{"APP_VM_BOOT_TIMEOUT": "50ms"}, "start"); code == 0 || !f.did("stop --force") {
 		t.Fatalf("code=%d calls=%v", code, f.calls)
 	}
 }
@@ -240,7 +250,14 @@ func TestVMSettingsFilePermsAndAtomic(t *testing.T) {
 
 func TestVMRefusesLimaConfigDir(t *testing.T) {
 	e, _ := testVM(t)
-	_ = os.MkdirAll(filepath.Join(e.dataDir, "lima", "_config"), 0o700)
+	cfg := filepath.Join(e.dataDir, "lima", "_config")
+	_ = os.MkdirAll(cfg, 0o700)
+	// Lima's own generated keys are allowed.
+	_ = os.WriteFile(filepath.Join(cfg, "user.pub"), []byte("k"), 0o600)
+	if err := e.checkLimaHome(); err != nil {
+		t.Fatalf("generated keys must not block: %v", err)
+	}
+	_ = os.WriteFile(filepath.Join(cfg, "override.yaml"), []byte("x"), 0o600)
 	if code, _, errs := runVMCmd(e, nil, "init"); code == 0 || !strings.Contains(errs, "_config") {
 		t.Fatalf("code=%d err=%s", code, errs)
 	}
