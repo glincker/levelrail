@@ -385,6 +385,7 @@
     "help": {
       "label": "Help",
       "forPage": "Help for this page",
+      "getStarted": "Get started",
       "docs": "Documentation",
       "troubleshooting": "Troubleshooting",
       "systemStatus": "Doctor",

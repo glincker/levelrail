@@ -6,6 +6,7 @@ import {
   BookmarkGlassIcon,
   CircleQuestionMarkGlassIcon,
   MessageCircleGlassIcon,
+  RocketGlassIcon,
   SocialGithubGlassIcon,
 } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
@@ -18,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useBrand } from '../hooks/useBrand'
+import { useIsRoot } from '../hooks/useIsRoot'
 import { helpDocForPath } from './shell/contextHelp'
 
 // Header-level help entry point, next to NotificationBell/ThemeToggle.
@@ -27,6 +29,7 @@ import { helpDocForPath } from './shell/contextHelp'
 // same "no invented link" rule HelpLink follows.
 export function HelpMenu() {
   const brand = useBrand()
+  const isRoot = useIsRoot()
   const { t } = useTranslation()
   const { t: tHelp } = useTranslation('help')
   const contextDoc = useRouterState({
@@ -54,6 +57,12 @@ export function HelpMenu() {
           >
             <BookOpenGlassIcon size="1.4em" />
             {t('shell.help.forPage')}
+          </DropdownMenuItem>
+        ) : null}
+        {isRoot ? (
+          <DropdownMenuItem render={<Link to="/get-started" />}>
+            <RocketGlassIcon size="1.4em" />
+            {t('shell.help.getStarted')}
           </DropdownMenuItem>
         ) : null}
         <DropdownMenuItem render={<Link to="/help" />}>

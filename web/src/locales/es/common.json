@@ -313,6 +313,7 @@
     "help": {
       "label": "Ayuda",
       "forPage": "Ayuda para esta página",
+      "getStarted": "Primeros pasos",
       "docs": "Documentación",
       "troubleshooting": "Solución de problemas",
       "systemStatus": "Estado del sistema",
