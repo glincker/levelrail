@@ -87,7 +87,7 @@ func TestMaskLongestFirst(t *testing.T) {
 
 // A store write path that stores free text must mask it. Every file that inserts into one of these
 // tables either calls secretmask or is listed in unreviewedSinks with the reason it has not been proven.
-var freeTextTables = regexp.MustCompile(`INSERT (?:OR [A-Z]+ )?INTO (log_entries|deploy_logs|audit_log|pipeline_logs|app_events|deploy_trace_steps|error_events|error_issues|notification_deliveries|webhook_deliveries|event_webhook_deliveries|status_webhook_deliveries|pipeline_webhook_deliveries|ai_chat_messages|email_deliveries|alert_history|service_hook_runs|scheduled_task_runs|oneshot_jobs|build_runs|pipeline_jobs|gate_events|deploy_gate_events|team_events|node_security_events|database_query_history|deploy_exit_captures)\b`)
+var freeTextTables = regexp.MustCompile(`INSERT (?:OR [A-Z]+ )?INTO (log_entries|deploy_logs|audit_log|pipeline_logs|app_events|deploy_trace_steps|error_events|error_issues|notification_deliveries|webhook_deliveries|event_webhook_deliveries|status_webhook_deliveries|pipeline_webhook_deliveries|ai_chat_messages|ai_chat_confirmations|email_deliveries|alert_history|service_hook_runs|scheduled_task_runs|oneshot_jobs|build_runs|pipeline_jobs|gate_events|deploy_gate_events|team_events|node_security_events|database_query_history|deploy_exit_captures)\b`)
 
 // unreviewedSinks is debt, not an approval: each path stores text that could carry a value, and no
 // proof test drives it yet. Remove an entry when the file masks or a test proves the field is structured.
@@ -106,6 +106,11 @@ var reviewedWriters = map[string]string{
 	"internal/store/deploy_attempt.go:FailOrphanedDeployAttempts":            "fixed restart message",
 	"internal/store/deploy_attempt_safety.go:RecoverRestartRollout":          "clears the error",
 	"internal/store/pipeline_jobs.go:CreatePipelineJobs":                     "structured job fields, no output",
+	"internal/store/deploy_attempt_queue.go:StartQueuedDeployAttempt":        "clears the reason",
+	"internal/store/deploy_attempt_queue.go:CancelDeployAttempt":             "fixed DeployReasonCanceled code",
+	"internal/store/deploy_attempt_queue.go:SupersedeQueuedDeployAttempt":    "fixed DeployReasonSuperseded code",
+	"internal/store/ai_chat.go:UpdateAIChatMessageToolCalls":                 "masked through maskJSONBytes, proven by the ai chat sink test",
+	"internal/store/ai_chat.go:SaveAIChatConfirmation":                       "input stays real while pending (approval executes it) and is masked on resolve",
 }
 
 func repoRoot(t *testing.T) string {
@@ -118,7 +123,7 @@ func repoRoot(t *testing.T) string {
 }
 
 // freeTextUpdates covers UPDATE statements that overwrite a free-text column of an existing row.
-var freeTextUpdates = regexp.MustCompile(`(?s)UPDATE (?:scheduled_tasks\s+SET[^;]*?last_run_output|deploy_attempts\s+SET[^;]*?\berror\b|pipeline_jobs\s+SET[^;]*?\boutputs\b|scheduled_task_runs\s+SET[^;]*?\b(?:output|message)\b|build_runs\s+SET[^;]*?\b(?:output|error)\b|service_hook_runs\s+SET[^;]*?\b(?:output|error)\b)`)
+var freeTextUpdates = regexp.MustCompile(`(?s)UPDATE (?:scheduled_tasks\s+SET[^;]*?last_run_output|deploy_attempts\s+SET[^;]*?\b(?:error|reason)\b|ai_chat_messages\s+SET[^;]*?\btool_calls\b|ai_chat_confirmations\s+SET[^;]*?\b(?:result|tool_input)\b|pipeline_jobs\s+SET[^;]*?\boutputs\b|scheduled_task_runs\s+SET[^;]*?\b(?:output|message)\b|build_runs\s+SET[^;]*?\b(?:output|error)\b|service_hook_runs\s+SET[^;]*?\b(?:output|error)\b)`)
 
 // funcsWritingFreeText returns the functions of one file whose body holds a free-text SQL write
 // and whether each also calls into secretmask inside that same body.
@@ -143,7 +148,7 @@ func funcsWritingFreeText(t *testing.T, path string) (writers map[string]bool) {
 					writes = true
 				}
 			case *ast.SelectorExpr:
-				if id, ok := x.X.(*ast.Ident); ok && id.Name == "secretmask" {
+				if id, ok := x.X.(*ast.Ident); ok && id.Name == "secretmask" && strings.HasPrefix(x.Sel.Name, "Mask") {
 					masks = true
 				}
 			}

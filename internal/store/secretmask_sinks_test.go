@@ -212,3 +212,27 @@ func TestDeployExitCaptureMasksRegisteredSecrets(t *testing.T) {
 		t.Error("caller's slice was mutated")
 	}
 }
+
+func TestDeployAttemptReasonWritersMaskRegisteredSecrets(t *testing.T) {
+	secretmask.Add(sinkSecret)
+	db := openTestDB(t)
+	ctx := context.Background()
+	saveSucceededAttempt(t, db, "dep_r1", "web", "app:v1", time.Now())
+	if err := db.MarkRolloutFailureReason(ctx, "web", "app:v1", "probe key="+sinkSecret+" refused"); err != nil {
+		t.Fatal(err)
+	}
+	a, _ := db.GetDeployAttempt(ctx, "dep_r1")
+	hasAll(t, "MarkRolloutFailureReason", a.Reason, sinkSecret, "probe key=", " refused")
+
+	if err := db.SetDeployAttemptReason(ctx, "dep_r1", "set "+sinkSecret); err != nil {
+		t.Fatal(err)
+	}
+	a, _ = db.GetDeployAttempt(ctx, "dep_r1")
+	hasAll(t, "SetDeployAttemptReason", a.Reason, sinkSecret, "set ")
+
+	if _, err := db.TransitionDeployAttempt(ctx, "dep_r1", DeployAttemptStatusSucceeded, DeployAttemptStatusFailed, "moved "+sinkSecret); err != nil {
+		t.Fatal(err)
+	}
+	a, _ = db.GetDeployAttempt(ctx, "dep_r1")
+	hasAll(t, "TransitionDeployAttempt", a.Reason, sinkSecret, "moved ")
+}

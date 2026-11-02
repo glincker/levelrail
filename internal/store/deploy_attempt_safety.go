@@ -192,6 +192,7 @@ func (db *DB) ListHeldDeployAttempts(ctx context.Context) ([]DeployAttempt, erro
 // if it is still in from, so two releasers can never both act on it. A
 // terminal to status also stamps finished_at. Reports whether it moved.
 func (db *DB) TransitionDeployAttempt(ctx context.Context, id, from, to, reason string) (bool, error) {
+	reason = secretmask.Mask(reason)
 	var finished sql.NullString
 	if to != DeployAttemptStatusRunning && to != DeployAttemptStatusHeld {
 		finished = sql.NullString{String: time.Now().UTC().Format(time.RFC3339Nano), Valid: true}
@@ -213,6 +214,7 @@ func (db *DB) TransitionDeployAttempt(ctx context.Context, id, from, to, reason 
 // SetDeployAttemptReason records why an attempt was held, superseded or
 // allowed through a freeze.
 func (db *DB) SetDeployAttemptReason(ctx context.Context, id, reason string) error {
+	reason = secretmask.Mask(reason)
 	if _, err := db.ExecContext(ctx, `UPDATE deploy_attempts SET reason = ? WHERE id = ?`, reason, id); err != nil {
 		return fmt.Errorf("store: set deploy attempt %q reason: %w", id, err)
 	}

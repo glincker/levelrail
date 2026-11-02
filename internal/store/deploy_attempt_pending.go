@@ -3,6 +3,8 @@ package store
 import (
 	"context"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 // ResolvePendingDeployAttempts settles the attempts queued for an offline node
@@ -34,6 +36,7 @@ func (db *DB) ResolvePendingDeployAttempts(ctx context.Context, serviceName stri
 }
 
 func (db *DB) finishPending(ctx context.Context, id, status, reason, by string, now time.Time) (bool, error) {
+	reason = secretmask.Mask(reason)
 	res, err := db.ExecContext(ctx, `
 		UPDATE deploy_attempts SET status = ?, reason = ?, superseded_by = ?, finished_at = ?
 		WHERE id = ? AND status = ?
