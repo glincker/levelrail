@@ -36,6 +36,16 @@ func (rt *Router) parkedStore() parkedDomainStore {
 	return s
 }
 
+// requireParkedStore writes the 501 and reports false when the store has no parked domain support.
+func (rt *Router) requireParkedStore(w http.ResponseWriter) (parkedDomainStore, bool) {
+	st := rt.parkedStore()
+	if st == nil {
+		writeError(w, http.StatusNotImplemented, "parked domains are not supported by this store")
+		return nil, false
+	}
+	return st, true
+}
+
 // parkedDomainResource is one parked domain on the wire.
 type parkedDomainResource struct {
 	Domain     string `json:"domain"`
@@ -121,9 +131,8 @@ func decodeDomainMove(w http.ResponseWriter, r *http.Request) (domainMoveRequest
 
 // handleListParkedDomains handles GET /api/v1/domains/parked.
 func (rt *Router) handleListParkedDomains(w http.ResponseWriter, r *http.Request) {
-	st := rt.parkedStore()
-	if st == nil {
-		writeError(w, http.StatusNotImplemented, "parked domains are not supported by this store")
+	st, ok := rt.requireParkedStore(w)
+	if !ok {
 		return
 	}
 	rows, err := st.ListParkedDomains(r.Context())
@@ -179,15 +188,19 @@ func (rt *Router) handleListParkedDomains(w http.ResponseWriter, r *http.Request
 // handleParkDomain handles POST /api/v1/domains/park: the domain leaves the
 // app's list but stays registered, with its DNS and certificate untouched.
 func (rt *Router) handleParkDomain(w http.ResponseWriter, r *http.Request) {
-	st := rt.parkedStore()
-	if st == nil {
-		writeError(w, http.StatusNotImplemented, "parked domains are not supported by this store")
+	st, ok := rt.requireParkedStore(w)
+	if !ok {
 		return
 	}
 	req, ok := decodeDomainMove(w, r)
 	if !ok {
 		return
 	}
+	rt.parkDomain(w, r, st, req)
+}
+
+// parkDomain is the park core shared by the single and batch routes.
+func (rt *Router) parkDomain(w http.ResponseWriter, r *http.Request, st parkedDomainStore, req domainMoveRequest) {
 	if req.Domain == "" || req.App == "" {
 		writeError(w, http.StatusBadRequest, "domain and app are required")
 		return
@@ -216,15 +229,19 @@ func (rt *Router) handleParkDomain(w http.ResponseWriter, r *http.Request) {
 // handleMoveDomain handles POST /api/v1/domains/move. Without confirm it
 // only reports the collision check; per-domain settings travel with the domain.
 func (rt *Router) handleMoveDomain(w http.ResponseWriter, r *http.Request) {
-	st := rt.parkedStore()
-	if st == nil {
-		writeError(w, http.StatusNotImplemented, "parked domains are not supported by this store")
+	st, ok := rt.requireParkedStore(w)
+	if !ok {
 		return
 	}
 	req, ok := decodeDomainMove(w, r)
 	if !ok {
 		return
 	}
+	rt.moveDomain(w, r, st, req)
+}
+
+// moveDomain is the move core shared by the single and batch routes.
+func (rt *Router) moveDomain(w http.ResponseWriter, r *http.Request, st parkedDomainStore, req domainMoveRequest) {
 	fromKind, okFrom := normalizeDomainKind(req.FromKind)
 	toKind, okTo := normalizeDomainKind(req.ToKind)
 	if !okFrom || !okTo {
@@ -297,16 +314,19 @@ func (rt *Router) appHasHTTPPort(w http.ResponseWriter, r *http.Request, app, ms
 
 // handleAttachParkedDomain handles POST /api/v1/domains/parked/{domain}/attach.
 func (rt *Router) handleAttachParkedDomain(w http.ResponseWriter, r *http.Request) {
-	st := rt.parkedStore()
-	if st == nil {
-		writeError(w, http.StatusNotImplemented, "parked domains are not supported by this store")
+	st, ok := rt.requireParkedStore(w)
+	if !ok {
 		return
 	}
 	req, ok := decodeDomainMove(w, r)
 	if !ok {
 		return
 	}
-	domain := normalizeStandaloneDomain(r.PathValue("domain"))
+	rt.attachParkedDomain(w, r, st, normalizeStandaloneDomain(r.PathValue("domain")), req)
+}
+
+// attachParkedDomain is the attach core shared by the single and batch routes.
+func (rt *Router) attachParkedDomain(w http.ResponseWriter, r *http.Request, st parkedDomainStore, domain string, req domainMoveRequest) {
 	if req.App == "" {
 		writeError(w, http.StatusBadRequest, "app is required")
 		return
@@ -345,12 +365,15 @@ func (rt *Router) handleAttachParkedDomain(w http.ResponseWriter, r *http.Reques
 // handleDeleteParkedDomain handles DELETE /api/v1/domains/parked/{domain}. It
 // only forgets the registration; DNS records and certificates are left alone.
 func (rt *Router) handleDeleteParkedDomain(w http.ResponseWriter, r *http.Request) {
-	st := rt.parkedStore()
-	if st == nil {
-		writeError(w, http.StatusNotImplemented, "parked domains are not supported by this store")
+	st, ok := rt.requireParkedStore(w)
+	if !ok {
 		return
 	}
-	domain := normalizeStandaloneDomain(r.PathValue("domain"))
+	rt.deleteParkedDomain(w, r, st, normalizeStandaloneDomain(r.PathValue("domain")))
+}
+
+// deleteParkedDomain is the delete core shared by the single and batch routes.
+func (rt *Router) deleteParkedDomain(w http.ResponseWriter, r *http.Request, st parkedDomainStore, domain string) {
 	if !rt.authorizeParkedOrigin(w, r, st, domain) {
 		return
 	}
@@ -434,6 +457,7 @@ func (rt *Router) recordDomainLifecycleAudit(r *http.Request, action, domain str
 	if len(detail) > 0 {
 		entry.Detail = detail[0]
 	}
+	entry.Detail = withBatchID(r.Context(), entry.Detail)
 	if err := rt.auditLog.SaveAuditEntry(r.Context(), entry); err != nil {
 		rt.logger.Warn("api: save domain lifecycle audit entry", slog.String("domain", domain), slog.String("error", err.Error()))
 	}

@@ -1201,6 +1201,7 @@ Endpoints for:
 | POST | /api/v1/domains/move | AbilityWriteSensitive | handleMoveDomain |
 | POST | /api/v1/domains/parked/{domain}/attach | AbilityWriteSensitive | handleAttachParkedDomain |
 | DELETE | /api/v1/domains/parked/{domain} | AbilityWriteSensitive | handleDeleteParkedDomain |
+| POST | /api/v1/domains/batch | AbilityWriteSensitive | handleDomainsBatch |
 
 ## Built-in Container Registry
 

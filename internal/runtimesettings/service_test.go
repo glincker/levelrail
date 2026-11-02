@@ -284,7 +284,7 @@ func TestRegistryDefaultsAreValidAndSecure(t *testing.T) {
 			t.Errorf("%s not secure by default", d.Key)
 		}
 	}
-	if len(Definitions()) != 87 {
+	if len(Definitions()) != 88 {
 		t.Fatalf("registry size = %d", len(Definitions()))
 	}
 }

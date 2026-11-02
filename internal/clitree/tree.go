@@ -216,6 +216,7 @@ var Tree = map[string]*Node{
 		"ports":                {Subs: map[string]*Node{"show": nil, "restrict": nil, "unrestrict": nil}},
 		"park":                 nil,
 		"move":                 nil,
+		"batch":                {Subs: map[string]*Node{"park": nil, "move": nil, "attach": nil, "delete-parked": nil}},
 		"parked":               {Subs: map[string]*Node{"list": nil, "attach": nil, "delete": nil}},
 		"standalone":           {Subs: map[string]*Node{"list": nil, "add": nil, "update": nil, "remove": nil}},
 		"provider":             {Subs: map[string]*Node{"get": nil, "set": nil, "test": nil}},

@@ -118,3 +118,59 @@ func (c *Client) AttachParkedDomainTo(ctx context.Context, domain string, req Do
 func (c *Client) DeleteParkedDomain(ctx context.Context, domain string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/domains/parked/"+url.PathEscape(domain), nil, nil)
 }
+
+// DomainBatchItem is one domain of a bulk request; the fields used depend on the action.
+type DomainBatchItem struct {
+	Domain          string `json:"domain"`
+	App             string `json:"app,omitempty"`
+	From            string `json:"from,omitempty"`
+	To              string `json:"to,omitempty"`
+	Note            string `json:"note,omitempty"`
+	Environment     string `json:"environment,omitempty"`
+	TargetKind      string `json:"target_kind,omitempty"`
+	FromKind        string `json:"from_kind,omitempty"`
+	ToKind          string `json:"to_kind,omitempty"`
+	FromEnvironment string `json:"from_environment,omitempty"`
+	ToEnvironment   string `json:"to_environment,omitempty"`
+}
+
+// DomainBatchRequest is the body of POST /api/v1/domains/batch; Action is
+// park, move, attach or delete_parked.
+type DomainBatchRequest struct {
+	Action          string            `json:"action"`
+	Items           []DomainBatchItem `json:"items"`
+	Confirm         bool              `json:"confirm,omitempty"`
+	DiscardSettings bool              `json:"discard_settings,omitempty"`
+}
+
+// DomainBatchResult is the outcome of one item, with the HTTP status the single route would give.
+type DomainBatchResult struct {
+	Domain               string   `json:"domain"`
+	OK                   bool     `json:"ok"`
+	Status               int      `json:"status"`
+	Error                string   `json:"error,omitempty"`
+	Code                 string   `json:"code,omitempty"`
+	RequiresConfirmation bool     `json:"requires_confirmation,omitempty"`
+	Message              string   `json:"message,omitempty"`
+	RestoredSettings     []string `json:"restored_settings,omitempty"`
+}
+
+// DomainBatchResponse mirrors internal/api's domainBatchResponse.
+type DomainBatchResponse struct {
+	BatchID string              `json:"batch_id"`
+	Action  string              `json:"action"`
+	Results []DomainBatchResult `json:"results"`
+	Summary struct {
+		Total                int `json:"total"`
+		Succeeded            int `json:"succeeded"`
+		Failed               int `json:"failed"`
+		RequiresConfirmation int `json:"requires_confirmation"`
+	} `json:"summary"`
+}
+
+// DomainsBatch calls POST /api/v1/domains/batch.
+func (c *Client) DomainsBatch(ctx context.Context, req DomainBatchRequest) (DomainBatchResponse, error) {
+	var out DomainBatchResponse
+	err := c.do(ctx, http.MethodPost, "/api/v1/domains/batch", req, &out)
+	return out, err
+}

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1939 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1940 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1814,6 +1814,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/domains", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleListDomains", Description: "Domains (centralized cross-app list, web/src/routes/domains): every service_domains row, AbilityRead like GET /api/v1/apps, no new ability tier: this is the same data DomainEditor already exposes per-app, aggregated across every app in one read-only call."},
 	{Method: "GET", Path: "/api/v1/domains/automation/runs", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleListAutomationRuns", Description: ""},
 	{Method: "POST", Path: "/api/v1/domains/automation/runs/{id}/undo", Ability: "AbilityRoot", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleUndoAutomationRun", Description: ""},
+	{Method: "POST", Path: "/api/v1/domains/batch", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDomainsBatch", Description: ""},
 	{Method: "GET", Path: "/api/v1/domains/dns-provider", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDomainDNSProvider", Description: "Not under /mail/, so the mail flag does not gate it: the Domains page uses it too."},
 	{Method: "GET", Path: "/api/v1/domains/dns-status", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDomainDNSStatus", Description: ""},
 	{Method: "POST", Path: "/api/v1/domains/move", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleMoveDomain", Description: ""},

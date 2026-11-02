@@ -59,7 +59,7 @@ func parkedDNSFromCheck(status string) string {
 
 // parkedStateFor looks up DNS and certificate state for one domain. A lookup
 // that overruns parkedLookupTimeout reports unknown instead of blocking.
-func (rt *Router) parkedStateFor(ctx context.Context, r *http.Request, domain string) parkedDomainState {
+func (rt *Router) parkedStateFor(ctx context.Context, domain, expected string, inferred bool) parkedDomainState {
 	st := parkedDomainState{
 		DNS: parkedDNSState{Status: parkedDNSUnknown, CheckedAt: time.Now().UTC().Format(time.RFC3339)},
 		TLS: parkedTLSState{State: parkedTLSNone},
@@ -68,7 +68,6 @@ func (rt *Router) parkedStateFor(ctx context.Context, r *http.Request, domain st
 		st.TLS = parkedTLSFromCert(cert)
 	}
 
-	expected, inferred := advertisedHost(r, rt.advertisedPublicHost(ctx))
 	dctx, cancel := context.WithTimeout(ctx, parkedLookupTimeout)
 	defer cancel()
 	done := make(chan domainCheckResponse, 1)
@@ -93,8 +92,10 @@ func parkedTLSFromCert(c domainCertStatusResource) parkedTLSState {
 	return out
 }
 
-// parkedStates resolves every domain concurrently, keyed by domain.
+// parkedStates resolves every domain concurrently, keyed by domain. The
+// advertised host is read once, not per domain.
 func (rt *Router) parkedStates(ctx context.Context, r *http.Request, domains []string) map[string]parkedDomainState {
+	expected, inferred := advertisedHost(r, rt.advertisedPublicHost(ctx))
 	out := make(map[string]parkedDomainState, len(domains))
 	var mu sync.Mutex
 	var wg sync.WaitGroup
@@ -106,7 +107,7 @@ func (rt *Router) parkedStates(ctx context.Context, r *http.Request, domains []s
 		go func() {
 			defer wg.Done()
 			defer func() { <-sem }()
-			st := rt.parkedStateFor(ctx, r, d)
+			st := rt.parkedStateFor(ctx, d, expected, inferred)
 			mu.Lock()
 			out[d] = st
 			mu.Unlock()
