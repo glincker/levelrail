@@ -3,8 +3,11 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -172,5 +175,39 @@ func TestRun_AppsVolumes_UnknownSubcommand(t *testing.T) {
 	}
 	if !strings.Contains(stderr.String(), "unknown apps volumes subcommand") {
 		t.Errorf("stderr = %q, want an unknown-subcommand error", stderr.String())
+	}
+}
+
+func TestRun_VolumesExportImport(t *testing.T) {
+	var gotPath, gotQuery string
+	var gotBody []byte
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath, gotQuery = r.URL.Path, r.URL.RawQuery
+		if r.Method == http.MethodGet {
+			_, _ = w.Write([]byte("TARBYTES"))
+			return
+		}
+		gotBody, _ = io.ReadAll(r.Body)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"entries":2,"bytes":1024}`))
+	}))
+	defer srv.Close()
+
+	file := filepath.Join(t.TempDir(), "data.tar.gz")
+	stdout, _ := runCLIExpectOK(t, []string{"volumes", "export", "web", "data", "--out", file, "--api-url", srv.URL})
+	if gotPath != "/api/v1/apps/web/volumes/data/export" || !strings.Contains(stdout, "8 bytes") {
+		t.Fatalf("export path=%s stdout=%q", gotPath, stdout)
+	}
+	b, err := os.ReadFile(file) //nolint:gosec // path built from t.TempDir()
+	if err != nil || string(b) != "TARBYTES" {
+		t.Fatalf("file = %q %v", b, err)
+	}
+
+	stdout, _ = runCLIExpectOK(t, []string{"apps", "volumes", "import", "web", "data", "--in", file, "--force", "--api-url", srv.URL})
+	if gotPath != "/api/v1/apps/web/volumes/data/import" || gotQuery != "force=true" || string(gotBody) != "TARBYTES" {
+		t.Fatalf("import path=%s query=%s body=%q", gotPath, gotQuery, gotBody)
+	}
+	if !strings.Contains(stdout, "imported 2 entries") {
+		t.Fatalf("stdout = %q", stdout)
 	}
 }

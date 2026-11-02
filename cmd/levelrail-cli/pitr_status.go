@@ -47,6 +47,9 @@ func runPITRStatus(prog string, args []string, stdout, stderr io.Writer, lookupE
 		default:
 			_, _ = fmt.Fprintln(stdout, "no succeeded base backup yet; take one with \"pitr base-backups trigger\"")
 		}
+		if status.BaseBackupSchedule != "" {
+			_, _ = fmt.Fprintf(stdout, "base backup schedule: %s\n", status.BaseBackupSchedule)
+		}
 		printWALShip(stdout, status.WALShip)
 	})
 }

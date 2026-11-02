@@ -4,8 +4,10 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -13,6 +15,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/backup"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/cronexpr"
 )
 
 // databaseDataVolumeName mirrors internal/reconcile/database's own
@@ -128,6 +131,10 @@ type pitrStatusResource struct {
 	WindowStart   string `json:"window_start,omitempty"`
 	WindowEnd     string `json:"window_end,omitempty"`
 	WindowError   string `json:"window_error,omitempty"`
+	// BaseBackupSchedule and BaseBackupTargetID describe the independent base
+	// backup cron; empty means a base backup follows each scheduled dump.
+	BaseBackupSchedule string `json:"base_backup_schedule,omitempty"`
+	BaseBackupTargetID string `json:"base_backup_target_id,omitempty"`
 	// WALShip reports shipping of the WAL archive to the backup target; nil
 	// when no shipping pass has run yet for this database.
 	WALShip *walShipResource `json:"wal_ship,omitempty"`
@@ -184,6 +191,55 @@ func toPITRRestoreHistoryResource(h store.PITRRestoreHistory) pitrRestoreHistory
 	}
 }
 
+// enablePITRRequest is the optional body of POST .../pitr. A nil
+// BaseBackupSchedule leaves the base backup schedule unchanged and an empty
+// one clears it.
+type enablePITRRequest struct {
+	BaseBackupSchedule *string `json:"base_backup_schedule,omitempty"`
+	BaseBackupTargetID string  `json:"base_backup_target_id,omitempty"`
+}
+
+// baseBackupScheduleSetter is the optional store method behind the base
+// backup schedule, kept off the shared databases interface.
+type baseBackupScheduleSetter interface {
+	SetDatabaseBaseBackupSchedule(ctx context.Context, name, schedule, targetID string) error
+}
+
+// applyBaseBackupSchedule validates and stores req's schedule, writing the
+// error response itself and returning false on failure.
+func (rt *Router) applyBaseBackupSchedule(w http.ResponseWriter, r *http.Request, db *store.DesiredDatabase, req enablePITRRequest) bool {
+	schedule := *req.BaseBackupSchedule
+	targetID := req.BaseBackupTargetID
+	if schedule != "" {
+		if _, err := cronexpr.Parse(schedule); err != nil {
+			writeError(w, http.StatusBadRequest, fmt.Sprintf("invalid base_backup_schedule: %s", err.Error()))
+			return false
+		}
+		if targetID == "" {
+			targetID = db.BackupTargetID
+		}
+		if targetID == "" {
+			writeError(w, http.StatusBadRequest, "base_backup_target_id is required when the database has no backup target")
+			return false
+		}
+		if !rt.loadBackupTarget(w, r, targetID, "api: set base backup schedule: load backup target failed") {
+			return false
+		}
+	} else {
+		targetID = ""
+	}
+	setter, ok := rt.databases.(baseBackupScheduleSetter)
+	if !ok {
+		writeError(w, http.StatusNotImplemented, "base backup schedules are not supported by this store")
+		return false
+	}
+	if err := setter.SetDatabaseBaseBackupSchedule(r.Context(), db.Name, schedule, targetID); err != nil {
+		rt.internalError(w, "api: set base backup schedule failed", err, slog.String("name", db.Name))
+		return false
+	}
+	return true
+}
+
 // handleEnablePITR handles POST /api/v1/databases/{name}/pitr: turns on
 // WAL archiving going forward, never retroactive (docs/managing-databases.md).
 // Only Postgres supports PITR today; any other engine is rejected with
@@ -206,6 +262,21 @@ func (rt *Router) handleEnablePITR(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusBadRequest, "point-in-time restore needs an S3 compatible backup target, not a node directory: pick an S3 target first")
 			return
 		}
+	}
+
+	var req enablePITRRequest
+	if r.ContentLength != 0 {
+		if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxDecodeBodyBytes)).Decode(&req); err != nil && !errors.Is(err, io.EOF) {
+			writeError(w, http.StatusBadRequest, msgInvalidRequestBody)
+			return
+		}
+	}
+	if req.BaseBackupSchedule != nil && !rt.applyBaseBackupSchedule(w, r, db, req) {
+		return
+	}
+	if db.PITREnabled && req.BaseBackupSchedule != nil {
+		rt.reloadAndWriteDatabase(w, r, name, "set base backup schedule")
+		return
 	}
 
 	now := time.Now().UTC().Format(time.RFC3339)
@@ -252,7 +323,7 @@ func (rt *Router) handleGetPITRStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resource := pitrStatusResource{Enabled: db.PITREnabled, EnabledAt: db.PITREnabledAt}
+	resource := pitrStatusResource{Enabled: db.PITREnabled, EnabledAt: db.PITREnabledAt, BaseBackupSchedule: db.BaseBackupSchedule, BaseBackupTargetID: db.BaseBackupTargetID}
 	var windows pitrWindower
 	if isMySQLFamilyEngine(db.Engine) {
 		if rt.mysqlPITRRestoreRunner != nil {

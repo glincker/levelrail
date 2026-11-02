@@ -823,7 +823,7 @@ The backup schedule has no `databases` subcommand: use `backups schedule set`, o
 
 - Deleting a backup target leaves its stored credentials in the secrets store, unreferenced but not erased at rest.
 - A scheduled backup missed while the control plane is down is not replayed on restart.
-- Physical base backups for point-in-time restore are manual unless the database has a backup schedule, which triggers one after each scheduled backup.
+- Physical base backups for point-in-time restore follow each scheduled dump unless the database has its own base backup schedule (`pitr enable --base-backup-cron`, the API `base_backup_schedule` field, or the dashboard field), which runs independently of the dump schedule. Without either, they are manual.
 - Connection strings only switch to the TLS form for Postgres and Redis. MySQL, MariaDB and MongoDB serve TLS next to plaintext and leave the client to ask for it.
 - MongoDB has no point-in-time restore.
 

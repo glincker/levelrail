@@ -47,3 +47,20 @@ The output is sorted and byte-stable, so you can commit it to git and diff it.
 5. Point DNS at the new host.
 
 To go the other way, see [Migrate from Docker Compose](/migrate-from-docker-compose).
+
+## Move volume data
+
+Volume contents travel as a `tar.gz`, in or out of Levelrail.
+
+```bash
+levelrail volumes export web data --out web-data.tar.gz
+levelrail apps stop web
+levelrail volumes import web data --in web-data.tar.gz
+```
+
+- Export reads the volume through a short-lived helper container with a read-only mount. For a consistent copy of a busy app, stop it first.
+- Import needs the app stopped and the volume empty. `--force` replaces existing files, and only works after you turn on the `volumes.import_overwrite` runtime setting (off by default). Take a backup first.
+- Import refuses archives with absolute paths, `..` segments, links that leave the volume, or device files, and drops setuid and setgid bits. Nothing is unpacked from a rejected archive, though a bad entry later in the stream stops the import part way.
+- The size cap is the `volumes.transfer_max_bytes` runtime setting (10 GiB by default, 1 MiB minimum) and the time cap is `volumes.transfer_timeout` (30 minutes by default, 1 minute minimum). Both apply to the next transfer.
+- The routes are `GET /api/v1/apps/{name}/volumes/{volume}/export` and `POST /api/v1/apps/{name}/volumes/{volume}/import`. Both need the write-sensitive ability and write a `volume.export` or `volume.import` audit event with the app, volume, entry count and byte count, never file names or contents.
+- Volumes that hold the managed mail certificate or key are refused.

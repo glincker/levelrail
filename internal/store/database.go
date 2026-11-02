@@ -131,6 +131,11 @@ type DesiredDatabase struct {
 	// two. PITREnabledAt is "" whenever PITREnabled is false.
 	PITREnabled   bool
 	PITREnabledAt string
+	// BaseBackupSchedule is a cron expression for base backups taken
+	// independently of the dump schedule; "" ties them to each dump.
+	// BaseBackupTargetID falls back to BackupTargetID when empty.
+	BaseBackupSchedule string
+	BaseBackupTargetID string
 
 	// ExistingVolume is the owner's stored choice ("reuse" or "discard")
 	// about a data volume a deleted database of this name left behind;
@@ -472,6 +477,59 @@ func (db *DB) SetDatabaseBackupSchedule(ctx context.Context, name, targetID, sch
 	return nil
 }
 
+// SetDatabaseBaseBackupSchedule sets the independent base backup cron and
+// target for name; an empty schedule returns to base backups after each dump.
+func (db *DB) SetDatabaseBaseBackupSchedule(ctx context.Context, name, schedule, targetID string) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE desired_databases
+		SET base_backup_schedule = ?, base_backup_target_id = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+		WHERE name = ?
+	`, schedule, targetID, name)
+	if err != nil {
+		return fmt.Errorf("store: set base backup schedule for database %q: %w", name, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: set base backup schedule for database %q: rows affected: %w", name, err)
+	}
+	if n == 0 {
+		return ErrDatabaseNotFound
+	}
+	return nil
+}
+
+// ListBaseBackupScheduledDatabases returns PITR-enabled databases with their
+// own base backup schedule and a usable target, ordered by name.
+func (db *DB) ListBaseBackupScheduledDatabases(ctx context.Context) ([]DesiredDatabase, error) {
+	rows, err := db.QueryContext(ctx, `
+		SELECT `+desiredDatabaseColumns+`
+		FROM desired_databases
+		WHERE pitr_enabled = 1 AND base_backup_schedule != ''
+		AND (base_backup_target_id != '' OR backup_target_id IS NOT NULL)
+		AND name NOT IN (`+pendingDatabaseNamesSQL+`)
+		ORDER BY name
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("store: list base backup scheduled databases: %w", err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	var out []DesiredDatabase
+	for rows.Next() {
+		d, err := scanDesiredDatabase(rows.Scan)
+		if err != nil {
+			return nil, fmt.Errorf("store: scan base backup scheduled row: %w", err)
+		}
+		out = append(out, *d)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: iterate base backup scheduled rows: %w", err)
+	}
+	return out, nil
+}
+
 // PublicPortRangeStart and PublicPortRangeEnd bound the host ports
 // auto-assigned by SetDatabasePublicAccess when the caller doesn't
 // request a specific one. Chosen clear of every port this control plane
@@ -648,7 +706,7 @@ func (db *DB) ListScheduledDatabases(ctx context.Context) ([]DesiredDatabase, er
 // ListDesiredDatabasesByNode, ListDesiredDatabasesByProject,
 // ListScheduledDatabases), the database-kind counterpart to
 // desiredServiceColumns in service.go.
-const desiredDatabaseColumns = "name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, public_bind_address, resources, suspended, pitr_enabled, pitr_enabled_at, existing_volume, volume_resolved, pooler_enabled, pooler_pool_size, pooler_max_client_conn"
+const desiredDatabaseColumns = "name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, public_bind_address, resources, suspended, pitr_enabled, pitr_enabled_at, existing_volume, volume_resolved, pooler_enabled, pooler_pool_size, pooler_max_client_conn, base_backup_schedule, base_backup_target_id"
 
 // scanDesiredDatabase reads the column shape desiredDatabaseColumns
 // selects, via either row.Scan or rows.Scan (same signature), so the
@@ -666,7 +724,7 @@ func scanDesiredDatabase(scan func(dest ...any) error) (*DesiredDatabase, error)
 		suspended                 bool
 		pitrEnabled               bool
 	)
-	if err := scan(&d.Name, &d.Engine, &d.Version, &d.NodeID, &projectID, &backupTargetID, &d.BackupSchedule, &d.BackupRetain, &d.BackupRetainDays, &publiclyAccessible, &publicPort, &publicBindAddress, &resourcesJSON, &suspended, &pitrEnabled, &d.PITREnabledAt, &d.ExistingVolume, &d.VolumeResolved, &d.PoolerEnabled, &d.PoolerPoolSize, &d.PoolerMaxClientConn); err != nil {
+	if err := scan(&d.Name, &d.Engine, &d.Version, &d.NodeID, &projectID, &backupTargetID, &d.BackupSchedule, &d.BackupRetain, &d.BackupRetainDays, &publiclyAccessible, &publicPort, &publicBindAddress, &resourcesJSON, &suspended, &pitrEnabled, &d.PITREnabledAt, &d.ExistingVolume, &d.VolumeResolved, &d.PoolerEnabled, &d.PoolerPoolSize, &d.PoolerMaxClientConn, &d.BaseBackupSchedule, &d.BaseBackupTargetID); err != nil {
 		return nil, err
 	}
 	d.Suspended = suspended

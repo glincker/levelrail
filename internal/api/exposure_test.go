@@ -192,3 +192,39 @@ func TestDoctorExposureCheck(t *testing.T) {
 		t.Fatalf("finding check = %+v", checks[1])
 	}
 }
+
+func TestExposureReportIncludesDrift(t *testing.T) {
+	ipt := &fakeIptables{rules: []string{"-p tcp -m tcp --dport 5432 -j DROP", "-j RETURN"}}
+	rt, cookie := exposureRouter(t, ipt, []docker.ContainerState{typesenseState})
+
+	code, body := exposureCall(t, rt, cookie, http.MethodGet, "/api/v1/firewall/exposure", "")
+	if code != http.StatusOK {
+		t.Fatalf("status = %d: %s", code, body)
+	}
+	var rep struct {
+		Drift []struct {
+			Kind string `json:"kind"`
+			Port int    `json:"port"`
+		} `json:"drift"`
+	}
+	if err := json.Unmarshal([]byte(body), &rep); err != nil {
+		t.Fatal(err)
+	}
+	got := map[string]int{}
+	for _, d := range rep.Drift {
+		got[d.Kind] = d.Port
+	}
+	if got["unmanaged_public_port"] != 8108 || got["restriction_undeclared"] != 5432 {
+		t.Fatalf("drift = %s", body)
+	}
+	if len(ipt.rules) != 2 {
+		t.Fatalf("drift check changed the chain: %v", ipt.rules)
+	}
+	rows := doctorExposureDrift([]exposure.DriftFinding{
+		{Kind: exposure.DriftRestrictionUndeclared, Severity: exposure.SeverityInfo, Port: 5432, Protocol: "tcp"},
+		{Kind: exposure.DriftRestrictionMissing, Severity: exposure.SeverityHigh, Port: 6379, Protocol: "tcp"},
+	})
+	if len(rows) != 1 || rows[0].Status != doctorStatusWarn {
+		t.Fatalf("doctor rows = %+v", rows)
+	}
+}

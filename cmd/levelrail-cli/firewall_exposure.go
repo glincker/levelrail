@@ -47,7 +47,21 @@ func runFirewallExposure(prog string, args []string, stdout, stderr io.Writer, l
 	return exitOK
 }
 
+func printExposureDrift(out io.Writer, drift []apiclient.ExposureDrift) {
+	if len(drift) == 0 {
+		return
+	}
+	_, _ = fmt.Fprintln(out, "\ndrift between declared and actual exposure")
+	for _, d := range drift {
+		_, _ = fmt.Fprintf(out, "  [%s] %d/%s %s: %s\n", d.Severity, d.Port, d.Protocol, d.Kind, d.Message)
+		if d.Fix != "" {
+			_, _ = fmt.Fprintf(out, "    Do: %s\n", d.Fix)
+		}
+	}
+}
+
 func printExposure(out io.Writer, rep apiclient.ExposureReport) {
+	defer printExposureDrift(out, rep.Drift)
 	for _, n := range rep.Nodes {
 		_, _ = fmt.Fprintf(out, "node %s\n", n.NodeName)
 		if n.Status != "ok" {

@@ -42914,6 +42914,92 @@
         "x-required-ability": "read"
       }
     },
+    "/api/v1/apps/{name}/volumes/{volume}/export": {
+      "get": {
+        "description": "Requires the `write:sensitive` ability.",
+        "operationId": "handleExportVolume",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "volume",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "write:sensitive"
+            ]
+          }
+        ],
+        "summary": "Export Volume",
+        "tags": [
+          "App Volume Backups / Restore"
+        ],
+        "x-required-ability": "write:sensitive"
+      }
+    },
     "/api/v1/apps/{name}/volumes/{volume}/files": {
       "get": {
         "description": "Volume file browser: reads need read:sensitive (contents can hold secrets), edits need write plus read:sensitive, so an operator can fix a config file without SSH.\n\nRequires the `read:sensitive` ability.",
@@ -43360,6 +43446,103 @@
           "App Volume Backups / Restore"
         ],
         "x-required-ability": "write"
+      }
+    },
+    "/api/v1/apps/{name}/volumes/{volume}/import": {
+      "post": {
+        "description": "Requires the `write:sensitive` ability.",
+        "operationId": "handleImportVolume",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "volume",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "write:sensitive"
+            ]
+          }
+        ],
+        "summary": "Import Volume",
+        "tags": [
+          "App Volume Backups / Restore"
+        ],
+        "x-required-ability": "write:sensitive"
       }
     },
     "/api/v1/apps/{name}/volumes/{volume}/restore": {

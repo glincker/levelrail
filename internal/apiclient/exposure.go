@@ -64,10 +64,23 @@ type ExposureNode struct {
 
 // ExposureReport mirrors internal/api's exposureReportResource.
 type ExposureReport struct {
-	GeneratedAt string         `json:"generated_at"`
-	Nodes       []ExposureNode `json:"nodes"`
-	Exposed     int            `json:"exposed"`
-	High        int            `json:"high"`
+	GeneratedAt string          `json:"generated_at"`
+	Nodes       []ExposureNode  `json:"nodes"`
+	Exposed     int             `json:"exposed"`
+	High        int             `json:"high"`
+	Drift       []ExposureDrift `json:"drift"`
+}
+
+// ExposureDrift mirrors internal/exposure's DriftFinding.
+type ExposureDrift struct {
+	Kind     string   `json:"kind"`
+	Severity string   `json:"severity"`
+	Port     int      `json:"port"`
+	Protocol string   `json:"protocol"`
+	Subject  string   `json:"subject,omitempty"`
+	Message  string   `json:"message"`
+	Fix      string   `json:"fix,omitempty"`
+	Rules    []string `json:"rules,omitempty"`
 }
 
 // ExposureRestrictRequest mirrors internal/api's exposureRestrictRequest.

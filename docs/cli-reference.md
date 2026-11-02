@@ -405,6 +405,8 @@ levelrail-cli apps health clear <name> [--probe readiness|liveness] [flags]
 levelrail-cli apps health discover <name>
 levelrail-cli apps volumes get <name> [flags]
 levelrail-cli apps volumes attach <name> --name NAME --path PATH [flags]
+levelrail-cli apps volumes export <app> <volume> --out FILE.tar.gz [flags]
+levelrail-cli apps volumes import <app> <volume> --in FILE.tar.gz [--force] [flags]
 levelrail-cli apps volumes detach <name> --name NAME [flags]
 levelrail-cli apps storage set <name> --storage-target-id ID [flags]
 levelrail-cli apps storage clear <name> [flags]
@@ -953,7 +955,7 @@ levelrail-cli pitr restores <database> [flags]
 levelrail-cli pitr restore <database> --base-backup ID --target-time RFC3339 [--confirm NAME | --restore-as NEW] [flags]
 ```
 
-`enable` turns on continuous WAL (Postgres) or binary log (MySQL, MariaDB) archiving going forward; `status` shows whether PITR is enabled and the current recoverable window; `restores` lists point in time restore attempts (base backup, target time, status, error). `restore` overwrites a Postgres database in place and is destructive. For MySQL and MariaDB it needs `--restore-as NEW`, creates that new database and leaves the source untouched.
+`enable` turns on continuous WAL (Postgres) or binary log (MySQL, MariaDB) archiving going forward, and `--base-backup-cron EXPR [--base-backup-target ID]` gives base backups their own schedule independent of the dump schedule (an empty value clears it); `status` shows whether PITR is enabled and the current recoverable window; `restores` lists point in time restore attempts (base backup, target time, status, error). `restore` overwrites a Postgres database in place and is destructive. For MySQL and MariaDB it needs `--restore-as NEW`, creates that new database and leaves the source untouched.
 
 ## Build
 
@@ -1778,6 +1780,10 @@ levelrail-cli control-plane-backups help-dr
 Snapshots of the control plane's own database, stored under `<data dir>/control-plane-backups/`. `create` takes one now (manual snapshots are never auto-deleted), `download` saves one to `--out FILE` (or raw bytes to stdout), `verify` re-checks the checksum, SQLite integrity and schema version without restoring (exit 1 if any check fails), `delete` removes one. Snapshots never contain the master key. Restore is an offline server command, `levelrail restore-db <file>`; see [Control plane backup and restore](/control-plane-backup).
 
 The `--offbox`, `schedule`, `run-now`, `drill`, `escrow` and `keys` subcommands drive encrypted off-box backups. `keys generate` makes an age key pair on your machine (private key to a `0600` file, public key to stdout). `schedule set` changes only the flags you pass (`--enable`, `--disable`, `--destination`, `--recipient`, `--schedule`, `--drill-schedule`, `--retain-daily`, `--retain-weekly`, `--retain-monthly`, `--escrow-destination`). `run-now` and `drill run` wait for the run and exit 1 if it failed; `drill status` exits 1 when the last drill failed or none has run. `escrow` writes the master key and agent CA key encrypted to your recipients (never uploaded unless `--upload`, and never to the backup bucket). `restore-plan` prints the ordered recovery steps with the newest complete backup and the exact restore command filled in. `help-dr` prints a static runbook. Restore an off-box backup on the server with `levelrail restore --from <s3://... | file> --identity FILE [--dry-run]`. See [Disaster recovery](/disaster-recovery).
+
+### Volume export and import
+
+`levelrail-cli volumes export|import` is the same pair as `apps volumes export|import`. See [Leave anytime](/leave-anytime) for the rules.
 
 ### Orphaned volumes
 

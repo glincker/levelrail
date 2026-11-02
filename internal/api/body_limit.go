@@ -18,7 +18,7 @@ func (rt *Router) bodyLimitMiddleware(next http.Handler) http.Handler {
 		enginePrefix = rt.authEngine.Prefix()
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if isGitPushUpload(r.URL.Path) || isSourceUpload(r) || isAssetObjectUpload(r) {
+		if isGitPushUpload(r.URL.Path) || isSourceUpload(r) || isAssetObjectUpload(r) || isVolumeImport(r) {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -61,6 +61,16 @@ func isAssetObjectUpload(r *http.Request) bool {
 	}
 	id, tail, ok := strings.Cut(rest, "/")
 	return ok && id != "" && tail == "objects"
+}
+
+// isVolumeImport streams a volume archive that the handler bounds with volumes.transfer_max_bytes after auth.
+func isVolumeImport(r *http.Request) bool {
+	rest, ok := strings.CutPrefix(r.URL.Path, "/api/v1/apps/")
+	if !ok || r.Method != http.MethodPost {
+		return false
+	}
+	parts := strings.Split(rest, "/")
+	return len(parts) == 4 && parts[0] != "" && parts[1] == "volumes" && parts[2] != "" && parts[3] == "import"
 }
 
 func isPreAuthPath(path, enginePrefix string) bool {

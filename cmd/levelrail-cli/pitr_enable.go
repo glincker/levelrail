@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"io"
 )
@@ -9,6 +10,9 @@ import (
 // Returns 400 for non-postgres engines, the only engine PITR supports.
 func runPITREnable(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "pitr enable", `print {"status": "enabled"} as JSON to stdout on success and nothing else`, stderr)
+	var baseCron, baseTarget string
+	fs.StringVar(&baseCron, "base-backup-cron", "", "cron expression for base backups taken independently of the dump schedule (empty clears it)")
+	fs.StringVar(&baseTarget, "base-backup-target", "", "backup target for scheduled base backups (default: the database backup target)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, pitrEnableUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -23,7 +27,19 @@ func runPITREnable(prog string, args []string, stdout, stderr io.Writer, lookupE
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
-	if err := client.EnablePITR(context.Background(), name); err != nil {
+	baseCronSet := false
+	fs.Visit(func(f *flag.Flag) {
+		if f.Name == "base-backup-cron" {
+			baseCronSet = true
+		}
+	})
+	var err error
+	if baseCronSet {
+		err = client.SetBaseBackupSchedule(context.Background(), name, baseCron, baseTarget)
+	} else {
+		err = client.EnablePITR(context.Background(), name)
+	}
+	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("enable pitr for database %q: %w", name, err))
 	}
 
@@ -40,6 +56,8 @@ Turns on continuous WAL archiving for <database> going forward. Only
 recoverable by timestamp from this moment onward; nothing before it.
 
 Flags:
+  --base-backup-cron string    cron expression for base backups taken independently of the dump schedule (empty clears it)
+  --base-backup-target string  backup target for scheduled base backups (default: the database backup target)
   --token string           API token (default: %[2]s env var, then the credentials file)
   --api-url string        control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string        named credentials profile to read (overrides APP_PROFILE, default "default")

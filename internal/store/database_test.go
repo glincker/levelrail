@@ -1028,3 +1028,34 @@ func TestSetDatabasePublicAccess_RangeExhausted(t *testing.T) {
 		t.Errorf("SetDatabasePublicAccess() error = %v, want ErrPublicPortRangeExhausted", err)
 	}
 }
+
+func TestListBaseBackupScheduledDatabases(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	for _, name := range []string{"on", "pitr-off", "no-schedule"} {
+		if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: name, Engine: EnginePostgres, Version: "16"}); err != nil {
+			t.Fatalf("SaveDesiredDatabase(%s) error = %v", name, err)
+		}
+	}
+	for _, name := range []string{"on", "no-schedule"} {
+		if err := db.SetDatabasePITR(ctx, name, true, "2026-08-14T00:00:00Z"); err != nil {
+			t.Fatalf("SetDatabasePITR(%s) error = %v", name, err)
+		}
+	}
+	for _, name := range []string{"on", "pitr-off"} {
+		if err := db.SetDatabaseBaseBackupSchedule(ctx, name, "0 4 * * 0", "bkt_x"); err != nil {
+			t.Fatalf("SetDatabaseBaseBackupSchedule(%s) error = %v", name, err)
+		}
+	}
+
+	got, err := db.ListBaseBackupScheduledDatabases(ctx)
+	if err != nil {
+		t.Fatalf("ListBaseBackupScheduledDatabases() error = %v", err)
+	}
+	if len(got) != 1 || got[0].Name != "on" || got[0].BaseBackupSchedule != "0 4 * * 0" || got[0].BaseBackupTargetID != "bkt_x" {
+		t.Fatalf("got = %+v, want exactly [on] with its schedule", got)
+	}
+	if err := db.SetDatabaseBaseBackupSchedule(ctx, "missing", "", ""); !errors.Is(err, ErrDatabaseNotFound) {
+		t.Errorf("missing database error = %v, want ErrDatabaseNotFound", err)
+	}
+}

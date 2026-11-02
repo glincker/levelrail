@@ -1751,6 +1751,12 @@ func (c *Client) EnablePITR(ctx context.Context, name string) error {
 	return c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/pitr", nil, nil)
 }
 
+// SetBaseBackupSchedule calls POST /api/v1/databases/{name}/pitr with a
+// base backup cron; an empty schedule clears it.
+func (c *Client) SetBaseBackupSchedule(ctx context.Context, name, schedule, targetID string) error {
+	return c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/pitr", PITRBaseBackupScheduleRequest{BaseBackupSchedule: &schedule, BaseBackupTargetID: targetID}, nil)
+}
+
 // DisablePITR calls DELETE /api/v1/databases/{name}/pitr.
 func (c *Client) DisablePITR(ctx context.Context, name string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/databases/"+PathEscape(name)+"/pitr", nil, nil)

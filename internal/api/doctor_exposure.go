@@ -50,7 +50,28 @@ func (rt *Router) doctorCheckExposure(ctx context.Context) []doctorCheckResource
 			out = append(out, doctorExposureFinding(n, f))
 		}
 	}
+	out = append(out, doctorExposureDrift(rep.Drift)...)
 	return append([]doctorCheckResource{doctorExposureSummary(attention, unreadable)}, out...)
+}
+
+// doctorExposureDrift turns drift findings into rows. Hand-made rules are
+// informational and unmanaged public ports already have a row each, so both stay out.
+func doctorExposureDrift(drift []exposure.DriftFinding) []doctorCheckResource {
+	var out []doctorCheckResource
+	for _, d := range drift {
+		if d.Severity == exposure.SeverityInfo || d.Kind == exposure.DriftUnmanagedPublicPort {
+			continue
+		}
+		out = append(out, doctorCheckResource{
+			Code:     fmt.Sprintf("%s_drift_%s_%s_%d", doctorExposureCode, d.Kind, d.Protocol, d.Port),
+			Name:     fmt.Sprintf("Exposure drift %d/%s", d.Port, d.Protocol),
+			Status:   doctorStatusWarn,
+			Message:  d.Message,
+			Fix:      d.Fix,
+			DocsPath: doctorExposureDocs,
+		})
+	}
+	return out
 }
 
 func nodeKey(n exposureNodeResource) string {

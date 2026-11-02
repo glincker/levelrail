@@ -338,6 +338,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runIngressLimits(prog, args[1:], stdout, stderr, lookupEnv)
 	case "budget":
 		return runBudget(prog, args[1:], stdout, stderr, lookupEnv)
+	case "volumes":
+		return runVolumes(prog, args[1:], stdout, stderr, lookupEnv)
 	case "volumes-orphaned":
 		return runVolumesOrphaned(prog, args[1:], stdout, stderr, lookupEnv)
 	case "volumes-orphaned-cleanup":
@@ -546,6 +548,7 @@ Usage:
   %[1]s search <query...> [--kind K] [flags]                  find apps, databases, nodes, templates, settings and actions; search saved list|add|rm keeps queries
   %[1]s janitor <status|run|policy> [flags]                   automatic cleanup of unused images, build cache, volumes and old deploy attempts
   %[1]s system-prune [flags]                                remove stopped containers, dangling images, and unused volumes/build cache, fleet-wide
+  %[1]s volumes export|import <app> <volume> [flags]          move a volume out of or into Levelrail as a tar.gz
   %[1]s volumes-orphaned [flags]                              list this instance's named volumes no app or database references any more
   %[1]s volumes-orphaned-cleanup --names name1,name2 [flags]   remove exactly the named orphaned volumes, after re-confirming each is still orphaned
   %[1]s users list|create|set-abilities|delete|roles [flags]   manage users and their abilities, directly or via a curated role

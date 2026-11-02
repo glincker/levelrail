@@ -87,6 +87,38 @@ export function useEnablePITR(databaseName: string) {
   })
 }
 
+// POST /api/v1/databases/{name}/pitr with a base_backup_schedule body
+// (handleEnablePITR); an empty schedule clears it.
+export function useSetBaseBackupSchedule(databaseName: string) {
+  const queryClient = useQueryClient()
+  return useMutation<void, ApiError, { schedule: string; targetId: string }>({
+    mutationFn: async ({ schedule, targetId }) => {
+      const res = await fetch(pitrURL(databaseName, '/pitr'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          base_backup_schedule: schedule,
+          base_backup_target_id: targetId,
+        }),
+      })
+      if (!res.ok) {
+        throw new ApiError(
+          res.status,
+          await readErrorMessage(
+            res,
+            `set base backup schedule failed: ${res.status}`,
+          ),
+        )
+      }
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: pitrKeys.status(databaseName),
+      })
+    },
+  })
+}
+
 // DELETE /api/v1/databases/{name}/pitr (handleDisablePITR).
 export function useDisablePITR(databaseName: string) {
   const queryClient = useQueryClient()

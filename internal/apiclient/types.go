@@ -1397,9 +1397,19 @@ type PITRStatusResource struct {
 	WindowStart   string `json:"window_start,omitempty"`
 	WindowEnd     string `json:"window_end,omitempty"`
 	WindowError   string `json:"window_error,omitempty"`
+	// BaseBackupSchedule is the independent base backup cron, empty when a
+	// base backup follows each scheduled dump.
+	BaseBackupSchedule string `json:"base_backup_schedule,omitempty"`
+	BaseBackupTargetID string `json:"base_backup_target_id,omitempty"`
 	// WALShip is the last shipping outcome of the WAL archive to the backup
 	// target; nil until a pass has run.
 	WALShip *WALShipResource `json:"wal_ship,omitempty"`
+}
+
+// PITRBaseBackupScheduleRequest mirrors internal/api's enablePITRRequest.
+type PITRBaseBackupScheduleRequest struct {
+	BaseBackupSchedule *string `json:"base_backup_schedule,omitempty"`
+	BaseBackupTargetID string  `json:"base_backup_target_id,omitempty"`
 }
 
 // WALShipResource mirrors internal/api's walShipResource.

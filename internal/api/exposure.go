@@ -85,6 +85,8 @@ type exposureReportResource struct {
 	Nodes       []exposureNodeResource `json:"nodes"`
 	Exposed     int                    `json:"exposed"`
 	High        int                    `json:"high"`
+	// Drift lists where declared exposure and the control plane's own host disagree.
+	Drift []exposure.DriftFinding `json:"drift"`
 }
 
 const localNodeLabel = "local"
@@ -254,7 +256,7 @@ func (rt *Router) exposureReport(ctx context.Context, only string, probe bool) (
 		return exposureReportResource{}, fmt.Errorf("resolve owners: %w", err)
 	}
 	chain := rt.exposure.ReadChain(ctx)
-	rep := exposureReportResource{GeneratedAt: time.Now().UTC().Format(time.RFC3339), Nodes: []exposureNodeResource{}}
+	rep := exposureReportResource{GeneratedAt: time.Now().UTC().Format(time.RFC3339), Nodes: []exposureNodeResource{}, Drift: []exposure.DriftFinding{}}
 	for _, ref := range rt.exposureNodeRefs(ctx, only) {
 		n := rt.exposureAuditNode(ctx, ref, owners, chain)
 		if probe {
@@ -269,8 +271,27 @@ func (rt *Router) exposureReport(ctx context.Context, only string, probe bool) (
 			}
 		}
 		rep.Nodes = append(rep.Nodes, n)
+		if ref.local && n.Status == exposureNodeOK {
+			rep.Drift = rt.exposureDrift(ctx, n, chain)
+		}
 	}
 	return rep, nil
+}
+
+// exposureDrift compares the local node's declared exposure with the host. Read-only.
+func (rt *Router) exposureDrift(ctx context.Context, n exposureNodeResource, chain exposure.Chain) []exposure.DriftFinding {
+	in := exposure.DriftInput{Chain: chain, Prefix: rt.exposure.Prefix(), Known: rt.exposure.Protected(), Listeners: rt.exposure.ReadListeners(ctx)}
+	for _, f := range n.Findings {
+		in.Findings = append(in.Findings, f.Finding)
+	}
+	for _, r := range rt.exposureRestrictionMap(ctx) {
+		in.Declared = append(in.Declared, exposure.Restriction{Port: r.Port, Protocol: r.Protocol, Allow: r.Allow})
+	}
+	out := exposure.CheckDrift(in)
+	if out == nil {
+		return []exposure.DriftFinding{}
+	}
+	return out
 }
 
 // exposureProbeNode dials the node's public address on each internet-facing

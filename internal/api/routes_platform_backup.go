@@ -112,6 +112,8 @@ func (rt *Router) registerBackupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteVolumeBackup))
 	mux.HandleFunc("POST /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/verify", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleVerifyVolumeBackup))
 	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/verifications", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListVolumeBackupVerifications))
+	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/export", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleExportVolume))
+	mux.HandleFunc("POST /api/v1/apps/{name}/volumes/{volume}/import", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleImportVolume))
 	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/backup-schedule", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetVolumeBackupSchedule))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/volumes/{volume}/backup-schedule", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetVolumeBackupSchedule))
 

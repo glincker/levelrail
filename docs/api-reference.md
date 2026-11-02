@@ -1304,6 +1304,8 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/volumes/{volume}/files/content | AbilityWrite | handlePutVolumeFile |
 | DELETE | /api/v1/apps/{name}/volumes/{volume}/files/content | AbilityWrite | handleDeleteVolumeFile |
 | POST | /api/v1/apps/{name}/volumes/{volume}/files/restore | AbilityWrite | handleRestoreVolumeFile |
+| GET | /api/v1/apps/{name}/volumes/{volume}/export | AbilityWriteSensitive | handleExportVolume |
+| POST | /api/v1/apps/{name}/volumes/{volume}/import | AbilityWriteSensitive | handleImportVolume |
 
 ## App Storage / Database Attach
 

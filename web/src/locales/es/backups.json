@@ -388,6 +388,17 @@
     "loading": "Cargando...",
     "loadOlder": "Cargar entradas anteriores"
   },
+  "baseSchedule": {
+    "title": "Programación de copias base",
+    "description": "Toma copias base con su propio cron, independiente de la programación de volcados. Déjalo vacío para tomar una tras cada volcado programado.",
+    "cronLabel": "Expresión cron",
+    "cronPlaceholder": "0 3 * * 0",
+    "targetLabel": "ID del destino de copias",
+    "targetPlaceholder": "Por defecto, el destino de copias de la base de datos",
+    "save": "Guardar programación",
+    "saving": "Guardando...",
+    "saved": "Programación de copias base guardada."
+  },
   "tables": {
     "restores": "Restauraciones",
     "cloneDatabases": "Bases de datos restauradas como nuevas",
