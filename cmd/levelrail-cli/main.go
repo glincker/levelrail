@@ -78,6 +78,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runUp(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	case "dev":
 		return runDev(prog, args[1:], stdout, stderr, lookupEnv)
+	case "vm":
+		return runVM(prog, args[1:], stdout, stderr, lookupEnv)
 	case "open":
 		return runOpen(prog, args[1:], stdout, stderr, lookupEnv)
 	case "login":
@@ -403,6 +405,7 @@ Usage:
   %[1]s login [--device] [flags]     sign in and save a token, same as auth login
   %[1]s open <app> [flags]           print an app's public URLs
   %[1]s dev [status|stop] [flags]    run a private instance on this machine, apps at <app>.localhost
+  %[1]s vm init|start|stop|status|shell|set [flags]   run Levelrail in a private macOS VM (experimental, APP_VM_EXPERIMENTAL=on)
   %[1]s backup <database> [--target ID] [flags]   back a database up now, same as backups trigger
   %[1]s restore <database> --latest --confirm NAME [flags]   restore a database, same as backups restore
   %[1]s apps create [flags]         create an app
