@@ -503,14 +503,15 @@ func (rt *Router) pinnedOriginUsable(ctx context.Context, pinned session) bool {
 // plain AbilityRead request never reaches the auditWorthy branch at
 // all, so it never pays for that lookup.
 func (rt *Router) callAudited(w http.ResponseWriter, r *http.Request, required, actorType, actorID, tokenName string, next http.HandlerFunc) {
-	if !auditWorthy(required) && !rt.sensitiveReadAudited(r) {
+	tagOnly := !auditWorthy(required) && !rt.sensitiveReadAudited(r) && actorType == "token" && mcpToolTag(r) != ""
+	if !auditWorthy(required) && !rt.sensitiveReadAudited(r) && (!tagOnly || !mcpTagRowAllowed(actorID)) {
 		next(w, r)
 		return
 	}
 
 	rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
 	next(rec, r)
-	if rec.status < http.StatusBadRequest {
+	if rec.status < http.StatusBadRequest && !tagOnly {
 		rt.markSearchDirty()
 	}
 

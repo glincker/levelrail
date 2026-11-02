@@ -15,6 +15,7 @@ const CATEGORY_TONE: Record<string, keyof typeof TONES> = {
   Monitoring: 'info',
   Media: 'warning',
   Finance: 'success',
+  Games: 'accent',
   Security: 'success',
   'Starter Kits': 'accent',
   Productivity: 'info',

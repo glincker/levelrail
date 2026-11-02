@@ -18,6 +18,8 @@ type fakeStore struct {
 	rows     map[string]store.DeployURL
 	sleep    map[string]int
 	hold     map[string]bool
+	asleep   map[string]bool
+	saves    []string
 }
 
 func newFake() *fakeStore {
@@ -27,6 +29,7 @@ func newFake() *fakeStore {
 		rows:     map[string]store.DeployURL{},
 		sleep:    map[string]int{},
 		hold:     map[string]bool{},
+		asleep:   map[string]bool{},
 	}
 }
 
@@ -34,15 +37,57 @@ func (f *fakeStore) ListDesiredServices(context.Context) ([]store.DesiredService
 	return append([]store.DesiredService(nil), f.services...), nil
 }
 
+// Save mirrors the real store: it never writes the suspended flag.
 func (f *fakeStore) SaveDesiredService(_ context.Context, svc store.DesiredService) error {
 	for i := range f.services {
 		if f.services[i].Name == svc.Name {
+			svc.Suspended = f.services[i].Suspended
 			f.services[i] = svc
 			return nil
 		}
 	}
+	svc.Suspended = false
 	f.services = append(f.services, svc)
 	return nil
+}
+
+// SaveSuspended mirrors the real store: the row exists suspended from its first write.
+func (f *fakeStore) SaveSuspendedDesiredService(ctx context.Context, svc store.DesiredService) error {
+	_ = f.SaveDesiredService(ctx, svc)
+	for i := range f.services {
+		if f.services[i].Name == svc.Name {
+			f.services[i].Suspended = true
+		}
+	}
+	f.saves = append(f.saves, svc.Name)
+	return nil
+}
+
+// ListAppSleep mirrors the real store: only rows with sleeping enabled.
+func (f *fakeStore) ListAppSleep(context.Context) ([]store.AppSleep, error) {
+	var out []store.AppSleep
+	for name, m := range f.sleep {
+		if m > 0 {
+			out = append(out, store.AppSleep{ServiceName: name, IdleMinutes: m})
+		}
+	}
+	return out, nil
+}
+
+func (f *fakeStore) DeleteAppSleep(_ context.Context, name string) error {
+	delete(f.sleep, name)
+	delete(f.hold, name)
+	delete(f.asleep, name)
+	return nil
+}
+
+func (f *fakeStore) DeleteAppSleepIfOrphan(ctx context.Context, name string) error {
+	for _, svc := range f.services {
+		if svc.Name == name {
+			return nil
+		}
+	}
+	return f.DeleteAppSleep(ctx, name)
 }
 
 func (f *fakeStore) ListDeployAttempts(_ context.Context, name string) ([]store.DeployAttempt, error) {
@@ -60,6 +105,11 @@ func (f *fakeStore) SetAppSleepIdle(_ context.Context, name string, minutes int,
 
 func (f *fakeStore) SetAppSleepHold(_ context.Context, name string, hold bool, _ time.Time) error {
 	f.hold[name] = hold
+	return nil
+}
+
+func (f *fakeStore) SetAppSleeping(_ context.Context, name string, sleeping bool, _ time.Time) error {
+	f.asleep[name] = sleeping
 	return nil
 }
 
@@ -90,6 +140,8 @@ func (f *fakeStore) remove(_ context.Context, name string) error {
 			break
 		}
 	}
+	// Mirrors the real delete, which clears the sleep setting with the service.
+	_ = f.DeleteAppSleep(context.Background(), name)
 	return nil
 }
 
@@ -154,7 +206,7 @@ func TestPlanMarksLive(t *testing.T) {
 
 func TestSyncRetention(t *testing.T) {
 	f := newFake()
-	f.services = []store.DesiredService{{Name: "web", Image: "web:ccccccc", Port: 80, Volumes: []store.ServiceVolume{{Name: "data"}}}}
+	f.services = []store.DesiredService{{Name: "web", Image: "web:ccccccc", Port: 80}}
 	f.attempts["web"] = []store.DeployAttempt{
 		attempt(1, store.DeployAttemptStatusSucceeded, "aaaaaaa"),
 		attempt(2, store.DeployAttemptStatusSucceeded, "bbbbbbb"),
@@ -162,7 +214,7 @@ func TestSyncRetention(t *testing.T) {
 	}
 	nudged := 0
 	s := &Syncer{
-		Store: f, Config: Config{Keep: 3, IdleMinutes: 5, Interval: time.Minute},
+		Store: f, Config: Config{Keep: 3, IdleMinutes: 5, Interval: time.Minute, MaxCopies: 2, Mode: ModePublic},
 		HostFor: func(_ context.Context, name string) string { return name + ".apps.example.com" },
 		Remove:  f.remove, Nudge: func() { nudged++ }, Now: func() time.Time { return t0 },
 		Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
@@ -215,6 +267,10 @@ func TestSyncRetention(t *testing.T) {
 	}
 }
 
+var dflt = Config{Keep: 3, IdleMinutes: 5, Interval: time.Minute, MaxCopies: 1, MinFreeMB: 1024, MaxMemPct: 25, Mode: ModePrivate}
+
+func withKeep(c Config, n int) Config { c.Keep = n; return c }
+
 func TestConfigFromEnv(t *testing.T) {
 	get := func(m map[string]string) func(string) string { return func(k string) string { return m[k] } }
 	tests := []struct {
@@ -222,10 +278,10 @@ func TestConfigFromEnv(t *testing.T) {
 		env  map[string]string
 		want Config
 	}{
-		{"defaults", nil, Config{Keep: 3, IdleMinutes: 5, Interval: time.Minute}},
-		{"keep zero disables", map[string]string{EnvKeep: "0"}, Config{Keep: 0, IdleMinutes: 5, Interval: time.Minute}},
-		{"malformed falls back", map[string]string{EnvKeep: "x", EnvIdleMinutes: "-1", EnvInterval: "soon"}, Config{Keep: 3, IdleMinutes: 5, Interval: time.Minute}},
-		{"custom", map[string]string{EnvKeep: "5", EnvIdleMinutes: "9", EnvInterval: "30s"}, Config{Keep: 5, IdleMinutes: 9, Interval: 30 * time.Second}},
+		{"defaults", nil, dflt},
+		{"keep zero disables", map[string]string{EnvKeep: "0"}, withKeep(dflt, 0)},
+		{"malformed falls back", map[string]string{EnvKeep: "x", EnvIdleMinutes: "-1", EnvInterval: "soon"}, dflt},
+		{"custom", map[string]string{EnvKeep: "5", EnvIdleMinutes: "9", EnvInterval: "30s", EnvMaxCopies: "2", EnvMinFreeMemoryMB: "512", EnvMaxMemoryPercent: "10"}, Config{Keep: 5, IdleMinutes: 9, Interval: 30 * time.Second, MaxCopies: 2, MinFreeMB: 512, MaxMemPct: 10, Mode: ModePrivate}},
 	}
 	for _, tc := range tests {
 		if got := ConfigFromEnv(get(tc.env)); got != tc.want {
@@ -245,5 +301,300 @@ func TestCloneDropsHostBindings(t *testing.T) {
 	svc := Clone(app, w[0], "d5.example.test")
 	if svc.HostPort != nil || len(svc.PublishedPorts) != 0 {
 		t.Fatalf("clone host_port = %v, published_ports = %+v, want neither", svc.HostPort, svc.PublishedPorts)
+	}
+}
+
+func newSyncer(f *fakeStore, cfg Config) *Syncer {
+	return &Syncer{
+		Store: f, Config: cfg, Mode: func(context.Context) string { return ModePublic },
+		HostFor: func(_ context.Context, name string) string { return name + ".apps.example.com" },
+		Remove:  f.remove, Now: func() time.Time { return t0 },
+		HostMemory: func() (int64, int64, error) { return 8 << 30, 6 << 30, nil },
+		Logger:     slog.New(slog.NewTextHandler(io.Discard, nil)),
+	}
+}
+
+func fourDeploys(f *fakeStore, app store.DesiredService) {
+	f.services = []store.DesiredService{app}
+	f.attempts["web"] = []store.DeployAttempt{
+		attempt(1, store.DeployAttemptStatusSucceeded, "aaaaaaa"),
+		attempt(2, store.DeployAttemptStatusSucceeded, "bbbbbbb"),
+		attempt(3, store.DeployAttemptStatusSucceeded, "ccccccc"),
+		attempt(4, store.DeployAttemptStatusSucceeded, "ddddddd"),
+	}
+}
+
+func copyCount(f *fakeStore) int { return len(f.rows) }
+
+// However many deploys pass, an app keeps at most MaxCopies older releases, born asleep.
+func TestSync_AtMostOneCopyAndBornAsleep(t *testing.T) {
+	f := newFake()
+	fourDeploys(f, store.DesiredService{Name: "web", Image: "web:ddddddd", Port: 80})
+	s := newSyncer(f, dflt)
+	for i := 0; i < 4; i++ {
+		if err := s.Sync(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+		if copyCount(f) != 1 {
+			t.Fatalf("pass %d: %d copies, want 1", i, copyCount(f))
+		}
+	}
+	for name := range f.rows {
+		if !f.asleep[name] {
+			t.Errorf("%s was not created asleep", name)
+		}
+		for _, svc := range f.services {
+			if svc.Name == name && !svc.Suspended {
+				t.Errorf("%s is not suspended at birth", name)
+			}
+		}
+	}
+}
+
+// Apps that own data or a host port get no copy: it would run on an empty volume.
+func TestSync_StatefulAppGetsNoCopies(t *testing.T) {
+	hp := 25565
+	cases := map[string]store.DesiredService{
+		"volume":   {Name: "web", Image: "web:ddddddd", Volumes: []store.ServiceVolume{{Name: "world"}}},
+		"bind":     {Name: "web", Image: "web:ddddddd", BindMounts: []store.ServiceBindMount{{HostPath: "/srv/data"}}},
+		"hostport": {Name: "web", Image: "web:ddddddd", HostPort: &hp},
+	}
+	for name, app := range cases {
+		f := newFake()
+		fourDeploys(f, app)
+		if err := newSyncer(f, dflt).Sync(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+		if copyCount(f) != 0 || len(f.services) != 1 {
+			t.Errorf("%s: rows=%d services=%d, want no copies", name, copyCount(f), len(f.services))
+		}
+	}
+}
+
+// Existing copies of an app that became stateful, or beyond the cap, are removed.
+func TestSync_ExistingExtraCopiesRemoved(t *testing.T) {
+	f := newFake()
+	fourDeploys(f, store.DesiredService{Name: "web", Image: "web:ddddddd", Port: 80})
+	s := newSyncer(f, withKeep(dflt, 4))
+	s.Config.MaxCopies = 3
+	if err := s.Sync(context.Background()); err != nil || copyCount(f) != 3 {
+		t.Fatalf("setup: err=%v copies=%d", err, copyCount(f))
+	}
+	s.Config.MaxCopies = 1
+	if err := s.Sync(context.Background()); err != nil || copyCount(f) != 1 {
+		t.Fatalf("cap: err=%v copies=%d, want 1", err, copyCount(f))
+	}
+}
+
+// A fresh syncer (control plane restart) removes the copies of an app deleted meanwhile.
+func TestSync_DeletedAppCopiesRemovedAfterRestart(t *testing.T) {
+	f := newFake()
+	fourDeploys(f, store.DesiredService{Name: "web", Image: "web:ddddddd", Port: 80})
+	if err := newSyncer(f, dflt).Sync(context.Background()); err != nil || copyCount(f) != 1 {
+		t.Fatalf("setup: err=%v copies=%d", err, copyCount(f))
+	}
+	f.services = f.services[1:]
+	var removed []string
+	s := newSyncer(f, dflt)
+	s.Remove = func(ctx context.Context, name string) error {
+		removed = append(removed, name)
+		return f.remove(ctx, name)
+	}
+	if err := s.Sync(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if copyCount(f) != 0 || len(removed) != 1 || len(f.services) != 0 {
+		t.Fatalf("rows=%d removed=%v services=%d, want all gone", copyCount(f), removed, len(f.services))
+	}
+}
+
+func TestSync_MemoryGuard(t *testing.T) {
+	big := &store.ServiceResources{MemoryBytes: 3 << 30}
+	cases := []struct {
+		name  string
+		app   store.DesiredService
+		avail int64
+		want  int
+	}{
+		{"plenty", store.DesiredService{Name: "web", Image: "web:ddddddd"}, 6 << 30, 1},
+		{"low available memory", store.DesiredService{Name: "web", Image: "web:ddddddd"}, 512 << 20, 0},
+		{"limit above host share", store.DesiredService{Name: "web", Image: "web:ddddddd", Resources: big}, 6 << 30, 0},
+	}
+	for _, tc := range cases {
+		f := newFake()
+		fourDeploys(f, tc.app)
+		s := newSyncer(f, dflt)
+		avail := tc.avail
+		s.HostMemory = func() (int64, int64, error) { return 8 << 30, avail, nil }
+		if err := s.Sync(context.Background()); err != nil || copyCount(f) != tc.want {
+			t.Errorf("%s: err=%v copies=%d, want %d", tc.name, err, copyCount(f), tc.want)
+		}
+	}
+}
+
+// Sleep rows left by older deletes (service gone) are cleared, live ones kept.
+func TestSync_PrunesOrphanSleepRows(t *testing.T) {
+	f := newFake()
+	f.services = []store.DesiredService{{Name: "web", Image: "web:ddddddd", Port: 80}}
+	f.sleep["web"] = 5
+	f.sleep["ngx-dep1234567"] = 5
+	f.sleep["minecraft-abc-dep1"] = 5
+	if err := newSyncer(f, dflt).Sync(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := f.sleep["web"]; !ok {
+		t.Error("sleep row of an existing service was pruned")
+	}
+	for _, name := range []string{"ngx-dep1234567", "minecraft-abc-dep1"} {
+		if _, ok := f.sleep[name]; ok {
+			t.Errorf("orphan sleep row %s survived", name)
+		}
+	}
+}
+
+// Deleting the app removes its copies and their sleep rows, nothing is listed as awake.
+func TestSync_DeletedAppLeavesNoSleepRows(t *testing.T) {
+	f := newFake()
+	fourDeploys(f, store.DesiredService{Name: "web", Image: "web:ddddddd", Port: 80})
+	s := newSyncer(f, dflt)
+	if err := s.Sync(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	f.services = nil
+	if err := s.Sync(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(f.rows) != 0 || len(f.sleep) != 0 {
+		t.Errorf("rows=%d sleep=%d, want none", len(f.rows), len(f.sleep))
+	}
+}
+
+// A copy is written suspended in one call and never passes through a running state.
+func TestSync_CopyBornSuspendedInOneWrite(t *testing.T) {
+	f := newFake()
+	fourDeploys(f, store.DesiredService{Name: "web", Image: "web:ddddddd", Port: 80})
+	if err := newSyncer(f, dflt).Sync(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(f.saves) != 1 {
+		t.Fatalf("suspended saves = %v, want one", f.saves)
+	}
+	for _, svc := range f.services {
+		if svc.Name == f.saves[0] && !svc.Suspended {
+			t.Error("copy not suspended after its only write")
+		}
+	}
+}
+
+func TestSyncNoHostCreatesNoCopy(t *testing.T) {
+	f := newFake()
+	f.services = []store.DesiredService{{Name: "web", Image: "web:ccccccc", Port: 80}}
+	f.attempts["web"] = []store.DeployAttempt{
+		attempt(1, store.DeployAttemptStatusSucceeded, "aaaaaaa"),
+		attempt(2, store.DeployAttemptStatusSucceeded, "ccccccc"),
+	}
+	s := &Syncer{
+		Store: f, Config: Config{Keep: 3, IdleMinutes: 5, Interval: time.Minute, MaxCopies: 2, Mode: ModePublic},
+		HostFor: func(context.Context, string) string { return "" },
+		Remove:  f.remove, Nudge: func() {}, Now: func() time.Time { return t0 },
+		Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+	}
+	if err := s.Sync(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(f.rows) != 0 || len(f.services) != 1 || len(f.services[0].Domains) != 0 {
+		t.Fatalf("rows = %+v services = %+v, want no copy and no domain", f.rows, f.services)
+	}
+}
+
+func urlCopiesSyncer(f *fakeStore, stored *string, hostCalls *int) *Syncer {
+	s := newSyncer(f, withKeep(dflt, 3))
+	s.Mode = func(context.Context) string { return *stored }
+	s.HostFor = func(_ context.Context, name string) string {
+		*hostCalls++
+		return name + ".apps.example.com"
+	}
+	return s
+}
+
+func urlCopiesFixture() *fakeStore {
+	f := newFake()
+	f.services = []store.DesiredService{{Name: "web", Image: "web:ccccccc", Port: 80}}
+	f.attempts["web"] = []store.DeployAttempt{
+		attempt(1, store.DeployAttemptStatusSucceeded, "aaaaaaa"),
+		attempt(3, store.DeployAttemptStatusSucceeded, "ccccccc"),
+	}
+	return f
+}
+
+func copyOf(f *fakeStore) store.DesiredService {
+	for _, svc := range f.services {
+		if svc.Name == "web-aaaaaaa" {
+			return svc
+		}
+	}
+	return store.DesiredService{}
+}
+
+// Private mode must create the copy with no domain, so the ingress has no route
+// and no certificate order to make for it, while it is still born asleep.
+func TestURLCopiesPrivateCreatesNoPublicHost(t *testing.T) {
+	f := urlCopiesFixture()
+	stored, hostCalls := "", 0
+	s := urlCopiesSyncer(f, &stored, &hostCalls)
+	ctx := context.Background()
+
+	if err := s.Sync(ctx); err != nil {
+		t.Fatal(err)
+	}
+	c := copyOf(f)
+	if c.Name == "" || len(c.Domains) != 0 {
+		t.Fatalf("copy = %+v, want a copy with no domains", c)
+	}
+	if hostCalls != 0 || f.rows["web-aaaaaaa"].Host != "" {
+		t.Fatalf("hostCalls = %d row = %+v, private mode must not form a host", hostCalls, f.rows["web-aaaaaaa"])
+	}
+	if err := s.Sync(ctx); err != nil || len(f.services) != 2 {
+		t.Fatalf("second pass: err=%v services=%d, want no change", err, len(f.services))
+	}
+}
+
+func TestURLCopiesModeSwitch(t *testing.T) {
+	f := urlCopiesFixture()
+	stored, hostCalls := "public", 0
+	s := urlCopiesSyncer(f, &stored, &hostCalls)
+	ctx := context.Background()
+
+	if err := s.Sync(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if c := copyOf(f); len(c.Domains) != 1 {
+		t.Fatalf("public copy = %+v, want routed", c)
+	}
+
+	stored = "private"
+	if err := s.Sync(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if c := copyOf(f); len(c.Domains) != 0 || f.rows["web-aaaaaaa"].Host != "" {
+		t.Fatalf("private copy = %+v row = %+v, want unrouted", c, f.rows["web-aaaaaaa"])
+	}
+
+	stored = "public"
+	if err := s.Sync(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if c := copyOf(f); len(c.Domains) != 1 || f.rows["web-aaaaaaa"].Host == "" {
+		t.Fatalf("reopened copy = %+v row = %+v, want routed again", c, f.rows["web-aaaaaaa"])
+	}
+
+	stored = "off"
+	if err := s.Sync(ctx); err != nil || len(f.rows) != 0 {
+		t.Fatalf("off must remove copies: err=%v rows=%+v", err, f.rows)
+	}
+
+	stored = "bogus"
+	if got := s.effectiveMode(ctx); got != ModePrivate {
+		t.Fatalf("invalid stored value fell back to %q, want the env seed", got)
 	}
 }

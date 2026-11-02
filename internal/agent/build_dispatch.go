@@ -49,6 +49,9 @@ func (t *GRPCTransport) BuildOnNode(ctx context.Context, req build.RemoteRequest
 		progress = func(build.ProgressEvent) {}
 	}
 
+	if req.Network != "" && req.Network != build.NetworkOpen && !t.caps.has(CapBuildNetwork) {
+		return nil, ErrAgentLacksBuildNetwork
+	}
 	pbReq, err := buildRequestToPB(req)
 	if err != nil {
 		return nil, err

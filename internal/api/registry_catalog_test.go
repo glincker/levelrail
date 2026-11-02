@@ -244,3 +244,16 @@ func TestRegistryCatalogRoutes_RequireAuth(t *testing.T) {
 		})
 	}
 }
+
+func TestRegistryHostPortComparison(t *testing.T) {
+	a, _ := registryHostPort("reg.example.com:5000")
+	b, _ := registryHostPort("reg.example.com:6000")
+	c, _ := registryHostPort("https://reg.example.com:443")
+	d, _ := registryHostPort("reg.example.com")
+	if a == b {
+		t.Fatalf("different ports compared equal: %q", a)
+	}
+	if c != d {
+		t.Fatalf("default port should match bare host: %q vs %q", c, d)
+	}
+}

@@ -2,16 +2,10 @@ package api
 
 import (
 	"net/http"
-	"os"
-	"strconv"
 	"strings"
 )
 
 const (
-	// envMaxBodyBytes raises or lowers the backstop for every API request body.
-	envMaxBodyBytes = "APP_API_MAX_BODY_BYTES"
-	// defaultMaxBodyBytes sits above the largest per-handler cap (8 MiB).
-	defaultMaxBodyBytes int64 = 16 << 20
 	// preAuthMaxBodyBytes bounds routes an anonymous caller can reach.
 	preAuthMaxBodyBytes int64 = 1 << 20
 )
@@ -19,21 +13,17 @@ const (
 // bodyLimitMiddleware caps request bodies before any handler decodes them, so
 // an unauthenticated client cannot buffer an unbounded JSON string.
 func (rt *Router) bodyLimitMiddleware(next http.Handler) http.Handler {
-	backstop := defaultMaxBodyBytes
-	if v, err := strconv.ParseInt(strings.TrimSpace(os.Getenv(envMaxBodyBytes)), 10, 64); err == nil && v > 0 {
-		backstop = v
-	}
 	enginePrefix := ""
 	if rt.authEngine != nil {
 		enginePrefix = rt.authEngine.Prefix()
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if isGitPushUpload(r.URL.Path) || isSourceUpload(r) {
+		if isGitPushUpload(r.URL.Path) || isSourceUpload(r) || isAssetObjectUpload(r) || isVolumeImport(r) {
 			next.ServeHTTP(w, r)
 			return
 		}
 		if r.Body != nil && r.Body != http.NoBody {
-			limit := backstop
+			limit := rt.maxBodyBytes(r.Context())
 			if isPreAuthPath(r.URL.Path, enginePrefix) && preAuthMaxBodyBytes < limit {
 				limit = preAuthMaxBodyBytes
 			}
@@ -61,6 +51,26 @@ func isSourceUpload(r *http.Request) bool {
 	}
 	app, tail, ok := strings.Cut(rest, "/")
 	return ok && app != "" && tail == "uploads"
+}
+
+// isAssetObjectUpload streams to a temp file and is capped by assets.upload_max_bytes after auth, so the generic backstop must not apply.
+func isAssetObjectUpload(r *http.Request) bool {
+	rest, ok := strings.CutPrefix(r.URL.Path, "/api/v1/assets/buckets/")
+	if !ok || r.Method != http.MethodPut {
+		return false
+	}
+	id, tail, ok := strings.Cut(rest, "/")
+	return ok && id != "" && tail == "objects"
+}
+
+// isVolumeImport streams a volume archive that the handler bounds with volumes.transfer_max_bytes after auth.
+func isVolumeImport(r *http.Request) bool {
+	rest, ok := strings.CutPrefix(r.URL.Path, "/api/v1/apps/")
+	if !ok || r.Method != http.MethodPost {
+		return false
+	}
+	parts := strings.Split(rest, "/")
+	return len(parts) == 4 && parts[0] != "" && parts[1] == "volumes" && parts[2] != "" && parts[3] == "import"
 }
 
 func isPreAuthPath(path, enginePrefix string) bool {

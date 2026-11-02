@@ -158,6 +158,7 @@ export function useRefreshMarketplace() {
 
 export function useMarketplacePreview() {
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (v: { source_id: string; id: string }) =>
       send<MarketplacePreview>('POST', `${base}/preview`, v),
   })

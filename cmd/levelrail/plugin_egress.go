@@ -35,7 +35,8 @@ func runPluginEgress(ctx context.Context, logger *slog.Logger, lookup func(strin
 	}
 
 	store := egress.NewPolicyStore()
-	ps := egress.NewPolicyServer(store, get(egress.EnvPolicyCache))
+	counters := egress.NewCounters()
+	ps := egress.NewPolicyServer(store, get(egress.EnvPolicyCache)).WithCounters(counters)
 	if err := ps.LoadCache(); err != nil {
 		logger.Warn("plugin egress policy cache ignored", slog.String("error", err.Error()))
 	}
@@ -56,6 +57,7 @@ func runPluginEgress(ctx context.Context, logger *slog.Logger, lookup func(strin
 		Allowlist:   store,
 		Config:      egress.ConfigFromEnv(lookup),
 		OnDeny: func(plugin, host string, port int, reason string) {
+			counters.Record(plugin, reason)
 			logger.Warn("plugin egress denied",
 				slog.String("plugin", plugin), slog.String("host", host),
 				slog.Int("port", port), slog.String("reason", reason))

@@ -37,6 +37,7 @@ import {
   UpgradeSafetySkeleton,
 } from './UpgradeSafetyCard'
 import { upgradeBlockReason } from './upgradeBlockReason'
+import { shouldShowRestore } from './shouldShowRestore'
 
 const POLL_MS = UPGRADE_POLL_MS
 const RECENT_MS = 15 * 60_000
@@ -224,7 +225,7 @@ export function UpgradeNow() {
   const restoreCommand = plan.data?.backup?.restore_command
   const backupFailed =
     recent?.failed_step === 'backup' && recent.outcome !== 'succeeded'
-  const showRestore = recent?.outcome === 'succeeded' && Boolean(restoreCommand)
+  const showRestore = shouldShowRestore(recent, restoreCommand)
 
   return (
     <div className="space-y-4">

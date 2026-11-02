@@ -11,6 +11,7 @@ import (
 // MeshPortLookup reads a database's allocated mesh port (0 when none).
 type MeshPortLookup interface {
 	GetDatabaseMeshPort(ctx context.Context, name string) (int, error)
+	GetDatabasePoolerMeshPort(ctx context.Context, name string) (int, error)
 }
 
 // meshEndpointResolver is meshpath.EndpointResolver, kept local so the mesh
@@ -51,6 +52,30 @@ func (c *Controller) meshBinding(ctx context.Context, desired *store.DesiredData
 	if state != nil {
 		for _, p := range state.Ports {
 			if p.HostPort == port && p.ContainerPort == containerPort && meshpath.ValidateBindIP(p.HostIP) == nil {
+				return docker.PortBinding{ContainerPort: p.ContainerPort, HostPort: p.HostPort, HostIP: p.HostIP, Protocol: p.Protocol}, true
+			}
+		}
+	}
+	return docker.PortBinding{}, false
+}
+
+// poolerMeshBinding publishes the pooler's port on the mesh address when the
+// database is pooled and a cross-node app reserved a port for it.
+func (c *Controller) poolerMeshBinding(ctx context.Context, desired *store.DesiredDatabase, state *docker.ContainerState) (docker.PortBinding, bool) {
+	if !PoolerActive(desired) || c.meshEndpoints == nil || c.meshPorts == nil {
+		return docker.PortBinding{}, false
+	}
+	port, err := c.meshPorts.GetDatabasePoolerMeshPort(ctx, c.dbName)
+	if err != nil || port == 0 {
+		return docker.PortBinding{}, false
+	}
+	path, err := c.meshEndpoints.Endpoint(ctx, desired.NodeID)
+	if err == nil && path.Usable && meshpath.ValidateBindIP(path.Address) == nil {
+		return docker.PortBinding{ContainerPort: PoolerPort, HostPort: port, HostIP: path.Address}, true
+	}
+	if state != nil {
+		for _, p := range state.Ports {
+			if p.HostPort == port && p.ContainerPort == PoolerPort && meshpath.ValidateBindIP(p.HostIP) == nil {
 				return docker.PortBinding{ContainerPort: p.ContainerPort, HostPort: p.HostPort, HostIP: p.HostIP, Protocol: p.Protocol}, true
 			}
 		}

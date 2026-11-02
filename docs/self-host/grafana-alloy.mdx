@@ -1,0 +1,63 @@
+---
+title: "Self-host Grafana Alloy with Docker"
+sidebarTitle: "Grafana Alloy"
+description: "A telemetry collector that scrapes metrics and ships them to Prometheus-compatible, Loki or Tempo backends. This starts with a small pipeline that scrapes its own metrics and logs them; edit the config to forward data elsewhere."
+"og:url": "https://docs.levelrail.com/self-host/grafana-alloy"
+---
+
+A telemetry collector that scrapes metrics and ships them to Prometheus-compatible, Loki or Tempo backends. This starts with a small pipeline that scrapes its own metrics and logs them; edit the config to forward data elsewhere.
+
+This page describes the Levelrail template for Grafana Alloy (Monitoring). It deploys the services below as one Docker Compose app on your own server. Project site: https://grafana.com/docs/alloy/latest/.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `alloy` | `grafana/alloy:v1.21.3` | 12345 | `alloy_data -&#62; /var/lib/alloy/data` |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`alloy`): alloy_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Grafana Alloy with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Grafana Alloy. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy grafana-alloy --name my-grafana-alloy
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Monitoring templates
+
+- [Alertmanager](/self-host/alertmanager)
+- [Beszel](/self-host/beszel)
+- [Blackbox Exporter](/self-host/blackbox-exporter)
+- [Bugsink](/self-host/bugsink)
+- [Changedetection.io](/self-host/changedetection)
+
+All templates are listed in the [self-host gallery](/self-host).

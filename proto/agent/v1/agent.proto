@@ -859,6 +859,10 @@ message BuildRequest {
   map<string, string> build_args = 5;
   bool no_cache = 6;
   BuildCache cache = 7;
+  // network is the control plane's resolved build network mode (open, none
+  // or block-private). Empty means open. The node applies the stricter of
+  // this and its own setting.
+  string network = 8;
 }
 
 enum BuildKind {

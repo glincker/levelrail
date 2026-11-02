@@ -23,7 +23,7 @@ func setGitSourceBuild(ctx context.Context, client *apiclient.Client, name, buil
 		return gitSourceResource{}, err
 	}
 	return client.SetGitSourceBuild(ctx, name, apiclient.SetGitSourceBuildRequest{
-		BuildType: buildType, BuildPath: dockerfile, BaseDirectory: baseDirectory, BuildCommand: command, PublishDir: publish,
+		BuildType: buildType, BuildPath: dockerfile, BaseDirectory: baseDirectory, BuildCommand: command, PublishDir: publish, StaticSPA: static.SPA,
 	})
 }
 
@@ -33,6 +33,8 @@ type staticBuildFlags struct {
 	Command string
 	Publish string
 	Infer   bool
+	// SPA is nil to keep the stored value.
+	SPA *bool
 }
 
 // resolveStaticBuild fills a missing command or publish directory from the
@@ -67,6 +69,9 @@ func printResolvedBuild(out io.Writer, gs gitSourceResource) {
 	}
 	if gs.BuildCommand != "" {
 		_, _ = fmt.Fprintf(out, "build_command:  %s\npublish_dir:    %s\n", gs.BuildCommand, gs.PublishDir)
+	}
+	if gs.StaticSPA {
+		_, _ = fmt.Fprintln(out, "spa:            on")
 	}
 }
 

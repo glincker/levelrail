@@ -4,6 +4,10 @@ description: Open-source billing and client management for hosting providers, wi
 icon: credit-card
 category: Finance
 documentation_url: https://paymenter.org/docs/guides/docker
+source_repo: https://github.com/Paymenter/Paymenter
+license: MIT
+license_class: permissive
+license_url: https://github.com/Paymenter/Paymenter/blob/master/LICENSE
 recommended_memory_bytes: 805306368
 env:
   - key: DB_PASSWORD

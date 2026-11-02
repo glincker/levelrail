@@ -4,6 +4,10 @@ description: A durable workflow engine for background jobs, queues, cron and eve
 icon: workflow
 category: Developer Tools
 documentation_url: https://www.inngest.com/docs/self-hosting
+source_repo: https://github.com/inngest/inngest
+license: LicenseRef-SSPL-1.0-DOSP
+license_class: source-available
+license_url: https://github.com/inngest/inngest/blob/main/LICENSE.md
 recommended_memory_bytes: 536870912
 env:
   - key: DB_PASSWORD

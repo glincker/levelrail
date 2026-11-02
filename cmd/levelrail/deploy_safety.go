@@ -14,6 +14,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/dockerguard"
 	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -66,7 +67,7 @@ func deployMaxConcurrent(logger *slog.Logger) int {
 		logger.Warn("invalid deploy concurrency limit, using unlimited", slog.String("env", deployMaxConcurrentEnv), slog.String("value", raw))
 		return 0
 	}
-	return n
+	return runtimesettings.ClampLimit(runtimesettings.KeyDeployMaxConcurrent, n)
 }
 
 // envDurationOr parses name as a duration, falling back to def when unset

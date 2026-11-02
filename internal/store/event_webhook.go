@@ -9,6 +9,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 // Delivery states of one event webhook delivery.
@@ -193,6 +195,7 @@ func scanEventDelivery(s interface{ Scan(dest ...any) error }) (EventWebhookDeli
 
 // SaveEventDelivery inserts a delivery.
 func (db *DB) SaveEventDelivery(ctx context.Context, d EventWebhookDelivery) error {
+	d.LastError = secretmask.Mask(d.LastError)
 	_, err := db.ExecContext(ctx, `INSERT INTO event_webhook_deliveries (`+eventDeliveryColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		d.ID, d.WebhookID, d.EventID, d.EventType, d.Payload, d.State, d.Attempts, d.ResponseStatus,
 		d.LastError, d.NextAttemptAt, d.CreatedAt, d.UpdatedAt)
@@ -204,6 +207,7 @@ func (db *DB) SaveEventDelivery(ctx context.Context, d EventWebhookDelivery) err
 
 // UpdateEventDelivery writes the mutable delivery fields.
 func (db *DB) UpdateEventDelivery(ctx context.Context, d EventWebhookDelivery) error {
+	d.LastError = secretmask.Mask(d.LastError)
 	_, err := db.ExecContext(ctx, `UPDATE event_webhook_deliveries SET state = ?, attempts = ?, response_status = ?, last_error = ?, next_attempt_at = ?, updated_at = ? WHERE id = ?`,
 		d.State, d.Attempts, d.ResponseStatus, d.LastError, d.NextAttemptAt, d.UpdatedAt, d.ID)
 	if err != nil {

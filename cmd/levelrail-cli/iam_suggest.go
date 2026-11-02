@@ -44,5 +44,5 @@ func printSuggestions(out io.Writer, s apiclient.IAMSuggestions) {
 
 func iamSuggestUsage(prog string) string {
 	return fmt.Sprintf("Usage:\n  %[1]s iam suggest [--days N] [flags]\n\nSuggest narrower abilities for each token from what the audit log shows it used.\n\nFlags:\n  --days int          audit window in days (default 30)\n", prog) +
-		fmt.Sprintf(iamAPIFlagsHelp, envAPIToken, envAPIURL, defaultAPIURL)
+		fmt.Sprintf(iamAPIFlagsHelp, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }

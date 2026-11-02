@@ -236,7 +236,11 @@
       "signInApproveAgent": "A token that approves sign-ins cannot be issued to an agent",
       "secretsReveal": "Reveal secret values",
       "secretsRevealHint": "Lets this token read a secret value, but only when the server allows token reveal (APP_SECRET_REVEAL_TOKENS=on) and the request carries your password. Every reveal is audited. Root does not include it.",
-      "secretsRevealNeedsSensitive": "Revealing secrets also needs read:sensitive"
+      "secretsRevealNeedsSensitive": "Revealing secrets also needs read:sensitive",
+      "allowChanges": "Allow changes",
+      "readOnlyNote": "Read only: this token can view apps, deploys and logs but cannot change anything.",
+      "allowChangesOn": "This token can change configuration. Pick exactly what below.",
+      "allowChangesWarning": "A token that can change things can be misused by anything that holds it, including an AI assistant tricked by text in logs or env values. Grant only what the integration needs."
     },
     "devFixtureBadge": "Dev fixture, local only",
     "devFixtureRootWarning": "Full access with a publicly known secret. Never expose this server to a network.",
@@ -245,14 +249,17 @@
     "devFixtureGroupCount_other": "{{count}} tokens",
     "devFixtureGroupBody": "Seeded for local testing, with public secrets. Never created in release builds. Safe to ignore.",
     "rotate": "Rotate",
-    "rotateLabel": "Rotate {{name}}"
+    "rotateLabel": "Rotate {{name}}",
+    "access": {
+      "read_only": "Read only",
+      "can_change": "Can change"
+    }
   },
   "hostFirewall": {
     "title": "Host firewall",
     "description": "Turns this server's ufw firewall on or off. Turning it on first allows SSH, the control plane ports and HTTP/3, so you cannot lock yourself out.",
     "statusOn": "On",
     "statusOff": "Off",
-    "statusMissing": "ufw not installed",
     "defaultIncoming": "Default for incoming traffic: {{policy}}",
     "required": "Ports kept open",
     "turnOn": "Turn on firewall",
@@ -271,7 +278,14 @@
     "published": "Published ports",
     "allowed": "Allowed",
     "notAllowed": "Not allowed",
-    "localOnly": "Local only"
+    "localOnly": "Local only",
+    "notFiltered": "Not filtered",
+    "notChecked": "Not checked",
+    "statusUnmanaged": "{{backend}} (read only)",
+    "statusNone": "No firewall",
+    "guidance": "Commands to review and run yourself on this server. Levelrail does not run them.",
+    "unmanagedHelp": "Levelrail only manages ufw, so it will not change this firewall. The ports below are what your rules need to allow.",
+    "noneHelp": "No firewall tool was found that this process can read, so every published port is reachable unless your cloud provider filters it. Install ufw here to manage it from this page."
   },
   "setupNext": {
     "heading": "Next steps",
@@ -812,6 +826,11 @@
       "label": "Instance URL (optional)",
       "hint": "Leave blank for gitlab.com. For a self-hosted GitLab, enter its https address.",
       "invalid": "Instance URL must start with https://"
+    },
+    "tenantId": {
+      "label": "Directory (tenant) ID",
+      "hint": "Required for new accounts to be created from Microsoft sign-in. Without it, only identities that are already linked can sign in.",
+      "invalid": "Tenant ID must be a GUID"
     },
     "userPoolId": {
       "label": "User pool ID",
@@ -1687,6 +1706,10 @@
       "confirmAction": "Remove revoked tokens",
       "cleaned_one": "Removed {{count}} revoked token.",
       "cleaned_other": "Removed {{count}} revoked tokens."
+    },
+    "attention": {
+      "title_one": "1 token needs attention",
+      "title_other": "{{count}} token issues need attention"
     }
   },
   "usersPage": {
@@ -2605,6 +2628,11 @@
     "removedToast": "Firewall rule removed."
   },
   "storageDestinations": {
+    "accountLabel": {
+      "r2": "Cloudflare account ID",
+      "oracle": "Namespace",
+      "default": "Account or namespace ID"
+    },
     "usage": {
       "header": "Usage",
       "none": "Empty",
@@ -3407,5 +3435,37 @@
   "iacHelp": {
     "hint": "Click a key to see what it does.",
     "default": "Default: {{value}}."
+  },
+  "deployUrlCopies": {
+    "title": "Deploy URL copies",
+    "description": "Whether recent deploys keep a retained copy, and whether that copy is reachable. A change applies on the next sync pass, without a restart.",
+    "modeLabel": "Copy mode",
+    "modes": {
+      "off": {
+        "label": "Off",
+        "description": "No copies are kept."
+      },
+      "private": {
+        "label": "Private",
+        "description": "Copies are kept suspended, with no public host or certificate."
+      },
+      "public": {
+        "label": "Public",
+        "description": "Copies get their own hostname and certificate, reachable from the internet."
+      }
+    },
+    "source": {
+      "stored": "Saved here",
+      "env": "From environment",
+      "default": "Default"
+    },
+    "reset": "Reset to default ({{mode}})",
+    "saved": "Deploy URL copies updated.",
+    "saving": "Saving...",
+    "confirm": {
+      "title": "Make deploy copies public?",
+      "description": "Every retained copy gets its own public hostname and certificate. Anyone with the address can reach old versions of your apps.",
+      "confirm": "Make public"
+    }
   }
 }

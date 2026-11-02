@@ -219,7 +219,7 @@ var monitoringTemplates = []Template{
     image: henrygd/beszel:0.19.0
     ports: ["8090:8090"]
     environment:
-      APP_URL: ${SERVICE_FQDN_BESZEL:-http://localhost:8090}
+      APP_URL: ${SERVICE_URL_BESZEL:-http://localhost:8090}
     volumes:
       - beszel_data:/beszel_data
     healthcheck:

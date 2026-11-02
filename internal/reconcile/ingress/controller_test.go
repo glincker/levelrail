@@ -829,3 +829,124 @@ func TestController_Reconcile_CustomListenAddrs_AppliedToConfig(t *testing.T) {
 		t.Errorf("Apps.HTTP.HTTPPort = %d, want 8080", applier.lastCfg.Apps.HTTP.HTTPPort)
 	}
 }
+
+// A TCP-only app (a game server) has no web port, so it gets no sslip.io
+// host and therefore no route or certificate request.
+func TestController_Reconcile_NoDomains_TCPOnlyApp_NoFallbackRoute(t *testing.T) {
+	desired := store.DesiredService{
+		Name: "mc", Image: "img:v1",
+		PublishedPorts: []store.PublishedPort{{ContainerPort: 25565, HostPort: 25565, Protocol: "tcp"}},
+	}
+	target := application.ContainerName(desired.Name, desired.Image, "")
+	rt := newFakeRuntime()
+	rt.seedRunning(target, 34567)
+
+	st := &fakeStore{services: []store.DesiredService{desired}}
+	applier := &fakeApplier{}
+	c := New(st, rt, applier, WithLogger(discardLogger()), WithPublicHost("203.0.113.5"))
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if routes := applier.routes(t); len(routes) != 0 {
+		t.Errorf("applied routes = %v, want none for a TCP-only app", routes)
+	}
+}
+
+// An operator-configured domain still routes even when the app also
+// publishes a TCP port.
+func TestController_Reconcile_TCPPublishedWithDomain_StillRouted(t *testing.T) {
+	desired := store.DesiredService{
+		Name: "panel", Image: "img:v1", Port: 80, Domains: []string{"panel.example.com"},
+		PublishedPorts: []store.PublishedPort{{ContainerPort: 25565, HostPort: 25565, Protocol: "tcp"}},
+	}
+	target := application.ContainerName(desired.Name, desired.Image, "")
+	rt := newFakeRuntime()
+	rt.seedRunning(target, 34567)
+
+	st := &fakeStore{services: []store.DesiredService{desired}}
+	applier := &fakeApplier{}
+	c := New(st, rt, applier, WithLogger(discardLogger()), WithPublicHost("203.0.113.5"))
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if routes := applier.routes(t); len(routes) != 1 {
+		t.Errorf("applied routes = %v, want 1", routes)
+	}
+}
+
+func TestController_Reconcile_FallbackCertsMode(t *testing.T) {
+	desired := store.DesiredService{Name: "web", Image: "img:v1", Port: 80}
+	target := application.ContainerName(desired.Name, desired.Image, "")
+	host := "web.203-0-113-5.sslip.io"
+
+	for _, tc := range []struct {
+		name     string
+		mode     func(context.Context) string
+		wantLazy bool
+	}{
+		{"unset is eager", nil, false},
+		{"eager", func(context.Context) string { return "eager" }, false},
+		{"lazy", func(context.Context) string { return "lazy" }, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			rt := newFakeRuntime()
+			rt.seedRunning(target, 34567)
+			applier := &fakeApplier{}
+			c := New(&fakeStore{services: []store.DesiredService{desired}}, rt, applier,
+				WithLogger(discardLogger()), WithPublicHost("203.0.113.5"), WithFallbackCerts(tc.mode))
+			if _, err := c.Reconcile(context.Background()); err != nil {
+				t.Fatalf("Reconcile() error = %v", err)
+			}
+			var eager, lazy []string
+			for _, p := range applier.lastCfg.Apps.TLS.Automation.Policies {
+				if p.OnDemand {
+					lazy = append(lazy, p.Subjects...)
+				} else {
+					eager = append(eager, p.Subjects...)
+				}
+			}
+			if tc.wantLazy && (len(lazy) != 1 || lazy[0] != host || len(eager) != 0) {
+				t.Errorf("lazy=%v eager=%v, want only %s on demand", lazy, eager, host)
+			}
+			if !tc.wantLazy && (len(lazy) != 0 || len(eager) != 1 || eager[0] != host) {
+				t.Errorf("lazy=%v eager=%v, want only %s eager", lazy, eager, host)
+			}
+		})
+	}
+}
+
+// A user domain equal to another service's fallback name keeps its eager
+// certificate: only a fallback that wins its host is deferred.
+func TestController_Reconcile_LazyFallback_UserDomainSameAsFallbackStaysEager(t *testing.T) {
+	const host = "web.203-0-113-5.sslip.io"
+	owner := store.DesiredService{Name: "owner", Image: "img:v1", Port: 80, Domains: []string{host}}
+	web := store.DesiredService{Name: "web", Image: "img:v1", Port: 80}
+
+	rt := newFakeRuntime()
+	rt.seedRunning(application.ContainerName(owner.Name, owner.Image, ""), 34567)
+	rt.seedRunning(application.ContainerName(web.Name, web.Image, ""), 34568)
+
+	st := &fakeStore{services: []store.DesiredService{owner, web}}
+	applier := &fakeApplier{}
+	c := New(st, rt, applier, WithLogger(discardLogger()), WithPublicHost("203.0.113.5"),
+		WithFallbackCerts(func(context.Context) string { return "lazy" }))
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+
+	applier.mu.Lock()
+	defer applier.mu.Unlock()
+	if applier.lastCfg == nil || applier.lastCfg.Apps.TLS == nil || applier.lastCfg.Apps.TLS.Automation == nil {
+		t.Fatalf("no TLS automation applied: %+v", applier.lastCfg)
+	}
+	for _, p := range applier.lastCfg.Apps.TLS.Automation.Policies {
+		if !p.OnDemand {
+			continue
+		}
+		for _, s := range p.Subjects {
+			if s == host {
+				t.Errorf("%s is on-demand, want eager for the user domain", host)
+			}
+		}
+	}
+}

@@ -1,0 +1,24 @@
+id: maintainerr
+name: Maintainerr
+description: Rule-based media library cleanup for Plex and Jellyfin that works with Sonarr, Radarr and Seerr. MIT licensed. On first open, add your media server and arr apps in settings, then build rules.
+icon: archive
+category: Applications
+documentation_url: https://docs.maintainerr.info/
+source_repo: https://github.com/Maintainerr/Maintainerr
+license: MIT
+license_class: permissive
+license_url: https://github.com/Maintainerr/Maintainerr/blob/development/LICENSE
+recommended_memory_bytes: 402653184
+env:
+  - key: TZ
+    label: Time zone
+    description: IANA time zone for rule schedules.
+    default: Etc/UTC
+domains:
+  - service: maintainerr
+    port: 6246
+    description: Public address of Maintainerr.
+healthcheck:
+  service: maintainerr
+  port: 6246
+  path: /

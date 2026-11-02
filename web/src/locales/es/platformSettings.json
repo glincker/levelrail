@@ -88,6 +88,14 @@
       "title": "Configuración de ingreso",
       "description": "Dominio principal, correo ACME y HSTS."
     },
+    "dns01": {
+      "title": "Desafío DNS para todos los hosts",
+      "description": "Usa el desafío DNS-01 para todos los certificados, para servidores tras CGNAT o con el puerto 80 cerrado."
+    },
+    "ddns": {
+      "title": "DNS dinámico",
+      "description": "Mantiene un nombre DNS apuntando a la IP pública de este servidor."
+    },
     "ingressEdge": {
       "title": "Borde de ingreso",
       "description": "El proxy integrado y los puertos en los que escucha."

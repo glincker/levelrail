@@ -1,0 +1,36 @@
+services:
+  jellystat:
+    image: cyfershepard/jellystat:1.1.12
+    ports: ["3000"]
+    environment:
+      POSTGRES_USER: jellystat
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_IP: db
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: jellystat
+      JWT_SECRET: ${JWT_SECRET}
+      TZ: ${TZ}
+    volumes:
+      - backup:/app/backend/backup-data
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000/auth/isConfigured || wget -q -O /dev/null http://127.0.0.1:3000/auth/isConfigured"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: jellystat
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: jellystat
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jellystat -d jellystat"]
+      interval: 5s
+      timeout: 5s
+      retries: 10

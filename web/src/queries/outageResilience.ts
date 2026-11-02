@@ -48,6 +48,7 @@ export function useResilience() {
 function useReportMutation(url: string, what: string) {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async () => parse(await fetch(url, { method: 'POST' }), what),
     onSuccess: (data) => qc.setQueryData(resilienceKey, data),
   })

@@ -84,7 +84,7 @@ Flags:
 func runRolesList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "roles list", "print roles as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %[1]s roles list [flags]\n"+rolesFlagsHelp, prog, envAPIToken, envAPIURL, defaultAPIURL)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %[1]s roles list [flags]\n"+rolesFlagsHelp, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
@@ -111,7 +111,7 @@ func runRolesCreate(prog string, args []string, stdout, stderr io.Writer, lookup
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %[1]s roles create <name> --abilities LIST [--visibility all|granted] [--description TEXT] [flags]\n"+
 			"\n  --abilities string    comma-separated abilities (valid: read, read:sensitive, write, write:sensitive, deploy, root)\n"+
-			"  --visibility string   all (default) or granted\n  --description string  short description\n"+rolesFlagsHelp, prog, envAPIToken, envAPIURL, defaultAPIURL)
+			"  --visibility string   all (default) or granted\n  --description string  short description\n"+rolesFlagsHelp, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
@@ -147,7 +147,7 @@ func runRolesUpdate(prog string, args []string, stdout, stderr io.Writer, lookup
 	fs.StringVar(&description, "description", "", "new description")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %[1]s roles update <role> [--name N] [--abilities LIST] [--visibility V] [--description T] [flags]\n"+
-			"\nOnly the flags you pass change. Built-in roles cannot be edited.\n"+rolesFlagsHelp, prog, envAPIToken, envAPIURL, defaultAPIURL)
+			"\nOnly the flags you pass change. Built-in roles cannot be edited.\n"+rolesFlagsHelp, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
@@ -194,7 +194,7 @@ func runRolesUpdate(prog string, args []string, stdout, stderr io.Writer, lookup
 func runRolesDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "roles delete", "print {\"deleted\": true} as JSON to stdout on success and nothing else", stderr)
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %[1]s roles delete <role> [flags]\n\nRefused for built-in roles and roles that still have users.\n"+rolesFlagsHelp, prog, envAPIToken, envAPIURL, defaultAPIURL)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %[1]s roles delete <role> [flags]\n\nRefused for built-in roles and roles that still have users.\n"+rolesFlagsHelp, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {

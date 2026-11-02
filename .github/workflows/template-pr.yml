@@ -1,0 +1,206 @@
+name: Template PR
+
+# Checks only the templates a pull request changes. No schedule, no secrets,
+# pull_request (never pull_request_target) so fork code never gets write access.
+# Needs owner review before it is relied on. The scanner image is digest pinned.
+
+on:
+  pull_request:
+    paths:
+      - 'internal/catalog/manifests/**'
+  push:
+    branches: ['release/**']
+    paths:
+      - 'internal/catalog/manifests/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: template-pr-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TRIVY_IMAGE: aquasec/trivy:0.58.1@sha256:ab70a02200597efa04748f210f793936eb647cbcdb0ea69cc30b226d6f5a22c7
+  KEV_URL: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+  MAX_IMAGE_GB: '2'
+  SMOKE_SETTLE: 30s
+
+jobs:
+  changed:
+    runs-on: ubuntu-latest
+    outputs:
+      ids: ${{ steps.ids.outputs.ids }}
+      any: ${{ steps.ids.outputs.any }}
+      bulk: ${{ steps.ids.outputs.bulk }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Changed template ids
+        id: ids
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          BULK_THRESHOLD: '20'
+        run: |
+          ids="$(git diff --name-only --diff-filter=AM "$BASE_SHA" "$GITHUB_SHA" -- internal/catalog/manifests \
+            | awk -F/ 'NF >= 4 {print $4}' | sort -u | while read -r d; do [ -d "internal/catalog/manifests/$d" ] && echo "$d"; done)"
+          # A bulk change (a release) gets one loader-rules job instead of a job per template.
+          {
+            echo "any=$([ -n "$ids" ] && echo true || echo false)"
+            echo "bulk=$([ "$(printf '%s\n' "$ids" | grep -c .)" -gt "${BULK_THRESHOLD}" ] && echo true || echo false)"
+            echo "ids=$(printf '%s\n' "$ids" | jq -R . | jq -sc 'map(select(. != ""))')"
+          } >> "$GITHUB_OUTPUT"
+
+  admit-bulk:
+    needs: changed
+    if: needs.changed.outputs.bulk == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: go.mod
+
+      - name: Loader and submission rules for every changed template
+        env:
+          IDS: ${{ needs.changed.outputs.ids }}
+        run: |
+          fail=0
+          for id in $(echo "$IDS" | jq -r '.[]'); do
+            go run ./scripts/validate-templates -id "$id" || { echo "::error::$id failed"; fail=1; }
+          done
+          exit $fail
+
+  admit:
+    needs: changed
+    if: needs.changed.outputs.any == 'true' && needs.changed.outputs.bulk != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        id: ${{ fromJSON(needs.changed.outputs.ids) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: go.mod
+
+      - name: Loader and submission rules
+        run: go run ./scripts/validate-templates -id "${{ matrix.id }}"
+
+      - name: Install crane
+        run: go install github.com/google/go-containerregistry/cmd/crane@v0.20.2
+
+      - name: Resolve images, platforms and size
+        run: |
+          mkdir -p out
+          refs="$(awk '/^[[:space:]]*image:/ {print $2}' "internal/catalog/manifests/${{ matrix.id }}/compose.yaml" | tr -d "\"'" | sort -u)"
+          : > out/refs.txt
+          for ref in $refs; do
+            digest="$("$(go env GOPATH)/bin/crane" digest "$ref")" || { echo "::error::$ref does not resolve"; exit 1; }
+            echo "$ref $digest" >> out/refs.txt
+            "$(go env GOPATH)/bin/crane" manifest "$ref" | jq -r '[.manifests[]?.platform | select(. != null) | "\(.os)/\(.architecture)"] | unique | join(",")' > "out/platforms-$(echo "$ref" | tr '/:' '__').txt"
+          done
+          cat out/refs.txt
+
+      - name: Known-exploited and secret scan
+        run: |
+          curl -fsSL "$KEV_URL" | jq -r '.vulnerabilities[].cveID' | sort -u > out/kev.txt
+          fail=0
+          while read -r ref _digest; do
+            name="$(echo "$ref" | tr '/:' '__')"
+            docker run --rm -v "$PWD/out:/out" "$TRIVY_IMAGE" image --scanners vuln,secret --format json --output "/out/trivy-$name.json" "$ref"
+            jq -r '[.Results[]?.Vulnerabilities[]?.VulnerabilityID] | unique[]' "out/trivy-$name.json" | sort -u > "out/cves-$name.txt"
+            if hits="$(comm -12 out/kev.txt "out/cves-$name.txt")" && [ -n "$hits" ]; then
+              echo "::error::$ref has known-exploited vulnerabilities: $(echo "$hits" | tr '\n' ' ')"; fail=1
+            fi
+            secrets="$(jq '[.Results[]?.Secrets[]?] | length' "out/trivy-$name.json")"
+            if [ "$secrets" -gt 0 ]; then echo "::error::$ref has $secrets secret finding(s)"; fail=1; fi
+            fixable="$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="CRITICAL" and (.FixedVersion // "") != "")] | length' "out/trivy-$name.json")"
+            if [ "$fixable" -gt 0 ]; then echo "::warning::$ref has critical findings with a fix available (not blocking)"; fi
+          done < out/refs.txt
+          exit "$fail"
+
+      - name: Upload admission artifacts
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: admission-${{ matrix.id }}
+          path: out/
+          retention-days: 30
+
+  smoke:
+    needs: [changed, admit]
+    if: needs.changed.outputs.any == 'true' && needs.changed.outputs.bulk != 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        id: ${{ fromJSON(needs.changed.outputs.ids) }}
+        runner: [ubuntu-latest, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: go.mod
+
+      - name: Smoke
+        run: |
+          # Arm64 is reported separately and never blocks the amd64 result.
+          go run ./scripts/template-smoke -only "${{ matrix.id }}" -pull -max-image-gb "$MAX_IMAGE_GB" -settle "$SMOKE_SETTLE" \
+            -json "smoke-${{ matrix.id }}-${{ matrix.runner }}.json" -md "smoke-${{ matrix.id }}-${{ matrix.runner }}.md" \
+            || [ "${{ matrix.runner }}" = "ubuntu-24.04-arm" ]
+
+      # Artifact only: PR CI never commits. Maintainers fold the uploaded
+      # verified.json and images.lock.json into the catalog after merge.
+      - name: Install crane
+        run: go install github.com/google/go-containerregistry/cmd/crane@v0.20.2
+
+      - name: Prepare verification record
+        if: success() || matrix.runner == 'ubuntu-24.04-arm'
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          ARCH: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'arm64' || 'amd64' }}
+        run: |
+          mkdir -p record
+          cp internal/catalog/verified.json internal/catalog/images.lock.json record/
+          PATH="$PATH:$(go env GOPATH)/bin" go run ./scripts/record-verified -id "${{ matrix.id }}" -arch "$ARCH" -crane \
+            -run-url "$RUN_URL" -smoke-json "smoke-${{ matrix.id }}-${{ matrix.runner }}.json" \
+            -verified record/verified.json -lock record/images.lock.json || rm -rf record
+
+      - name: Upload verification record
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: record-${{ matrix.id }}-${{ matrix.runner }}
+          path: record/
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Summary
+        if: always()
+        run: cat smoke-*.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+
+      - name: Upload smoke result
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: smoke-${{ matrix.id }}-${{ matrix.runner }}
+          path: smoke-*.json
+          if-no-files-found: ignore
+          retention-days: 30

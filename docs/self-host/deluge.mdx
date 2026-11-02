@@ -1,0 +1,67 @@
+---
+title: "Self-host Deluge with Docker"
+sidebarTitle: "Deluge"
+description: "A lightweight BitTorrent client with a web interface and plugins. GPL-3.0 licensed. The web UI starts with the default password deluge, so change it on first sign in (Preferences, Interface). Only the web UI is published, so incoming peer connections are limited."
+"og:url": "https://docs.levelrail.com/self-host/deluge"
+---
+
+A lightweight BitTorrent client with a web interface and plugins. GPL-3.0 licensed. The web UI starts with the default password deluge, so change it on first sign in (Preferences, Interface). Only the web UI is published, so incoming peer connections are limited.
+
+This page describes the Levelrail template for Deluge (Applications). It deploys the services below as one Docker Compose app on your own server. Project site: https://deluge.readthedocs.io/.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `deluge` | `lscr.io/linuxserver/deluge:2.2.0` | 8112 | `config -&#62; /config`<br />`downloads -&#62; /downloads` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `deluge` | `PGID` | Preset in the template |
+| `deluge` | `PUID` | Preset in the template |
+| `deluge` | `TZ` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`deluge`): config, downloads.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Deluge with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Deluge. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy deluge --name my-deluge
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Applications templates
+
+- [Budibase](/self-host/budibase)
+- [Cleanuparr](/self-host/cleanuparr)
+- [Cockpit CMS](/self-host/cockpit-cms)
+- [Drupal](/self-host/drupal)
+- [EspoCRM](/self-host/espocrm)
+
+All templates are listed in the [self-host gallery](/self-host).

@@ -6,6 +6,8 @@ import (
 	"io"
 	"strings"
 	"text/tabwriter"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 // deploy is a thin wrapper over the compose deploy call, pre-filled from the catalog entry.
@@ -64,8 +66,13 @@ func runTemplatesList(prog string, args []string, stdout, stderr io.Writer, look
 	fs.BoolVar(&custom, "custom", false, "list your own saved templates (apps save-as-template) instead of the built-in catalog")
 	var verifiedOnly bool
 	fs.BoolVar(&verifiedOnly, "verified", false, "only list templates that passed the last live smoke run")
+	var licenseClass, arch string
+	fs.StringVar(&licenseClass, "license-class", "", "only templates with this license class: permissive, copyleft, network-copyleft, source-available or proprietary")
+	fs.StringVar(&arch, "arch", "", "only templates whose images support this architecture: amd64 or arm64")
+	var hideDeprecated bool
+	fs.BoolVar(&hideDeprecated, "hide-deprecated", false, "leave out deprecated templates (they are listed, marked, by default)")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s templates list [--custom] [--verified] [flags]\n\nLists every entry in the curated service catalog, without each entry's\ncompose body (see \"templates get\"). --custom lists your own saved\ntemplates instead.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s templates list [--custom] [--verified] [--license-class C] [--arch A] [--hide-deprecated] [flags]\n\nLists every entry in the curated service catalog, without each entry's\ncompose body (see \"templates get\"). --custom lists your own saved\ntemplates instead.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 
@@ -84,7 +91,7 @@ func runTemplatesList(prog string, args []string, stdout, stderr io.Writer, look
 		return writeScheduledTaskResult(stdout, stderr, of, result, func() { printCustomTemplatesTable(stdout, result) })
 	}
 
-	result, err := client.ListServiceTemplates(context.Background())
+	result, err := client.ListServiceTemplatesFiltered(context.Background(), apiclient.TemplateListFilter{LicenseClass: licenseClass, Arch: arch, HideDeprecated: hideDeprecated})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list service templates: %w", err))
 	}
@@ -106,11 +113,33 @@ func printTemplatesTable(out io.Writer, templates []serviceTemplateListItem) {
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "ID\tNAME\tCATEGORY\tRAM\tGPU\tVERIFIED\tSLOGAN")
+	_, _ = fmt.Fprintln(tw, "ID\tNAME\tCATEGORY\tLICENSE\tTRUST\tRAM\tGPU\tVERIFIED\tSLOGAN")
 	for _, t := range templates {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n", t.ID, t.Name, t.Category, formatRecommendedMemory(t.RecommendedMemoryBytes), gpuColumn(t.RequiresGPU), verifiedColumn(t.Verified), t.Slogan)
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", t.ID, t.Name+deprecatedMark(t.TemplateFacts), t.Category, licenseColumn(t.License), trustColumn(t.Trust), formatRecommendedMemory(t.RecommendedMemoryBytes), gpuColumn(t.RequiresGPU), verifiedColumn(t.Verified), t.Slogan)
 	}
 	_ = tw.Flush()
+}
+
+func deprecatedMark(f apiclient.TemplateFacts) string {
+	if f.Status == "deprecated" || f.Status == "yanked" {
+		return " [" + f.Status + "]"
+	}
+	return ""
+}
+
+// An unknown license prints nothing, never a guess.
+func licenseColumn(l *apiclient.TemplateLicense) string {
+	if l == nil || l.Class == "" {
+		return "-"
+	}
+	return l.Class
+}
+
+func trustColumn(t *apiclient.TemplateTrust) string {
+	if t == nil || t.Level == "" {
+		return "-"
+	}
+	return t.Level
 }
 
 func verifiedColumn(v bool) string {
@@ -133,6 +162,9 @@ func formatRecommendedMemory(bytes int64) string {
 		return "-"
 	}
 	const gib = 1024 * 1024 * 1024
+	if bytes < gib {
+		return fmt.Sprintf("~%d MiB", (bytes+1<<19)>>20)
+	}
 	return fmt.Sprintf("~%.0f GiB", float64(bytes)/gib)
 }
 
@@ -166,8 +198,9 @@ func printTemplateDetailHuman(out io.Writer, t serviceTemplateDetail) {
 		_, _ = fmt.Fprintf(out, "description:\n  %s\n", strings.ReplaceAll(t.Description, "\n", "\n  "))
 	}
 	if t.RecommendedMemoryBytes > 0 {
-		_, _ = fmt.Fprintf(out, "recommended_ram:   %s\n", formatRecommendedMemory(t.RecommendedMemoryBytes))
+		_, _ = fmt.Fprintf(out, "recommended_ram:   %s (working set; a deploy applies a higher container limit for peaks, see apps get)\n", formatRecommendedMemory(t.RecommendedMemoryBytes))
 	}
+	printTemplateFacts(out, t.TemplateFacts)
 	_, _ = fmt.Fprintln(out, "compose:")
 	_, _ = fmt.Fprintln(out, t.Compose)
 }
@@ -259,4 +292,41 @@ func runTemplatesDelete(prog string, args []string, stdout, stderr io.Writer, lo
 		return exitCodeForError(err)
 	}
 	return exitOK
+}
+
+// printTemplateFacts prints the marketplace facts. A verification line says only that a smoke run passed for that tag.
+func printTemplateFacts(out io.Writer, f apiclient.TemplateFacts) {
+	if l := f.License; l != nil && l.SPDX != "" {
+		line := l.SPDX
+		if l.Class != "" {
+			line += " (" + l.Class + ")"
+		}
+		if l.URL != "" {
+			line += " " + l.URL
+		}
+		_, _ = fmt.Fprintf(out, "license:           %s\n", line)
+	}
+	if f.Listing != nil && f.Listing.By != "" {
+		by := f.Listing.By
+		if f.Listing.VendorOrg != "" {
+			by += " (" + f.Listing.VendorOrg + ")"
+		}
+		_, _ = fmt.Fprintf(out, "listed_by:         %s\n", by)
+	}
+	if f.Trust != nil && f.Trust.Level != "" {
+		_, _ = fmt.Fprintf(out, "trust:             %s\n", f.Trust.Level)
+	}
+	if v := f.Verification; v != nil && v.Tag != "" {
+		_, _ = fmt.Fprintf(out, "verification:      smoke passed for image tag %s on %s\n", v.Tag, strings.Join(v.Arches, ", "))
+	}
+	if f.Status == "deprecated" || f.Status == "yanked" {
+		line := f.Status
+		if f.StatusReason != "" {
+			line += ": " + f.StatusReason
+		}
+		if f.ReplacedBy != "" {
+			line += " (replaced by " + f.ReplacedBy + ")"
+		}
+		_, _ = fmt.Fprintf(out, "status:            %s\n", line)
+	}
 }

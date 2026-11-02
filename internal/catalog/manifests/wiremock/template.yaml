@@ -1,0 +1,23 @@
+id: wiremock
+name: WireMock
+description: An HTTP mock server that stubs and records API responses for development and tests. Stubs are managed through its admin API, so restrict who can reach it.
+icon: plug
+category: Developer Tools
+documentation_url: https://github.com/wiremock/wiremock
+source_repo: https://github.com/wiremock/wiremock
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/wiremock/wiremock/blob/master/LICENSE.txt
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 536870912
+domains:
+  - service: wiremock
+    port: 8080
+    description: Public address of WireMock.
+healthcheck:
+  service: wiremock
+  port: 8080
+  path: /__admin/health

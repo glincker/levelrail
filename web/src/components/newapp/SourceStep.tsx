@@ -13,6 +13,7 @@ import { ImportPlanPreview } from '../ImportPlanPreview'
 import type { ImportPlan, ImportPlanRequest } from '../../queries/imports'
 import { FeaturedTemplates } from './FeaturedTemplates'
 import { GitProviderCards } from './GitProviderCards'
+import { SampleAppButton } from '../getStarted/SampleAppButton'
 import { MoreWays } from './MoreWays'
 import { SectionHeading } from './SectionHeading'
 import { RepoList } from './RepoList'
@@ -113,6 +114,15 @@ export function SourceStep({
               : t('source.errorManage')}
           </Button>
         </Alert>
+      ) : null}
+
+      {providersReady && !hasProvider ? (
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-xl border border-border bg-card p-3 shadow-xs">
+          <p className="min-w-0 flex-1 text-sm text-muted-foreground">
+            {t('source.noProvider.lead')}
+          </p>
+          <SampleAppButton />
+        </div>
       ) : null}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start">

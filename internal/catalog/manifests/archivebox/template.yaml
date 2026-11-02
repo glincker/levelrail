@@ -4,6 +4,10 @@ description: A self-hosted web archiver that saves pages as HTML, PDF, screensho
 icon: archive
 category: Productivity
 documentation_url: https://github.com/ArchiveBox/ArchiveBox/wiki/Docker
+source_repo: https://github.com/ArchiveBox/ArchiveBox
+license: MIT
+license_class: permissive
+license_url: https://github.com/ArchiveBox/ArchiveBox/blob/dev/LICENSE
 recommended_memory_bytes: 1610612736
 env:
   - key: ADMIN_USERNAME

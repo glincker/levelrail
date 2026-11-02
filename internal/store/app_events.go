@@ -9,6 +9,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 // App event kinds recorded in app_events. Deploys and rollbacks are not
@@ -83,6 +85,7 @@ func (db *DB) AddAppEvent(ctx context.Context, e AppEvent) error {
 	if keys == nil {
 		keys = []string{}
 	}
+	e.Title, e.Detail = secretmask.Mask(e.Title), secretmask.Mask(e.Detail)
 	keysJSON, err := json.Marshal(keys)
 	if err != nil {
 		return fmt.Errorf("store: marshal app event keys: %w", err)

@@ -9,8 +9,8 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: metamcp
       DATABASE_URL: postgresql://metamcp:${DB_PASSWORD}@db:5432/metamcp
-      APP_URL: ${SERVICE_FQDN_METAMCP:-http://localhost:12008}
-      NEXT_PUBLIC_APP_URL: ${SERVICE_FQDN_METAMCP:-http://localhost:12008}
+      APP_URL: ${SERVICE_URL_METAMCP:-http://localhost:12008}
+      NEXT_PUBLIC_APP_URL: ${SERVICE_URL_METAMCP:-http://localhost:12008}
       BETTER_AUTH_SECRET: ${AUTH_SECRET}
       TRANSFORM_LOCALHOST_TO_DOCKER_INTERNAL: "true"
     depends_on:

@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 // DeployReasonCanceled is recorded on canceled attempts.
@@ -63,6 +65,7 @@ func (db *DB) StartQueuedDeployAttempt(ctx context.Context, id string, now time.
 // running, so a queue replay never overwrites an outcome the deploy itself
 // already recorded. Reports whether it moved.
 func (db *DB) FinishRunningDeployAttempt(ctx context.Context, id, status string, finishedAt time.Time, errMsg string) (bool, error) {
+	errMsg = secretmask.Mask(errMsg)
 	res, err := db.ExecContext(ctx, `
 		UPDATE deploy_attempts SET status = ?, finished_at = ?, error = NULLIF(?, '')
 		WHERE id = ? AND status = ?

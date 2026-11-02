@@ -222,5 +222,14 @@
       "upgrade": "requests asked to switch protocol (WebSocket), which is never cached.",
       "other": "requests were left out of the cache for less common reasons."
     }
+  },
+  "proxy": {
+    "title": "Cloudflare proxy",
+    "body": "Proxy this app's domains through Cloudflare when Levelrail writes their DNS records. Existing records change the next time the DNS fix runs.",
+    "following": "Following the server setting, currently {{state}}.",
+    "override": "Set for this app only.",
+    "reset": "Follow the server setting",
+    "on": "on",
+    "off": "off"
   }
 }

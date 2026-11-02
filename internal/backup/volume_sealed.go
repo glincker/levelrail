@@ -73,6 +73,8 @@ type sealedResult struct {
 	codec    string
 	manifest TreeManifest
 	hasMan   bool
+	// warning is set when the backup succeeded but may not be consistent.
+	warning string
 }
 
 func sealedObjectKey(serviceName, volumeName string, at time.Time, historyID, ext, codec string) string {
@@ -150,7 +152,11 @@ func (r *Runner) sealedAttempt(ctx context.Context, serviceName, volumeName, doc
 
 	if opts.Quiesce != nil && (policy.PreHook != "" || policy.PostHook != "" || policy.Quiesce != "") {
 		end, qerr := opts.Quiesce.Begin(ctx, serviceName, policy)
-		if qerr != nil {
+		switch {
+		case qerr != nil && errors.Is(qerr, ErrInconsistent) && end != nil:
+			// The error already starts with "inconsistent: ".
+			res.warning = qerr.Error()
+		case qerr != nil:
 			return 0, "", res, fmt.Errorf("prepare volume for backup: %w", qerr)
 		}
 		defer func() {

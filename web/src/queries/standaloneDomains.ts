@@ -216,6 +216,7 @@ export function useUpdateStandaloneDomain(domain: string) {
 export function useDeleteStandaloneDomain() {
   const invalidate = useInvalidateDomains()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (domain: string) =>
       send<undefined>(
         `${BASE}/${encodeURIComponent(domain)}`,

@@ -113,7 +113,7 @@ var devtools2Templates = []Template{
     environment:
       DATABASE_URL: postgres://$SERVICE_USER_DB:$SERVICE_PASSWORD_DB@db:5432/rallly
       SECRET_PASSWORD: $SERVICE_HEX_64_SECRET
-      NEXT_PUBLIC_BASE_URL: ${SERVICE_FQDN_RALLLY:-http://localhost:3000}
+      NEXT_PUBLIC_BASE_URL: ${SERVICE_URL_RALLLY:-http://localhost:3000}
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:3000/"]
       interval: 10s
@@ -213,7 +213,7 @@ var devtools2Templates = []Template{
     ports: ["80:80"]
     environment:
       GITLAB_OMNIBUS_CONFIG: |
-        external_url '${SERVICE_FQDN_GITLAB:-http://localhost}'
+        external_url '${SERVICE_URL_GITLAB:-http://localhost}'
     volumes:
       - gitlab_config:/etc/gitlab
       - gitlab_logs:/var/log/gitlab
@@ -281,7 +281,7 @@ var devtools2Templates = []Template{
     image: codeberg.org/forgejo/forgejo:9.0.3
     ports: ["3000:3000"]
     environment:
-      FORGEJO__server__ROOT_URL: ${SERVICE_FQDN_FORGEJO:-http://localhost:3000}
+      FORGEJO__server__ROOT_URL: ${SERVICE_URL_FORGEJO:-http://localhost:3000}
       FORGEJO__security__SECRET_KEY: $SERVICE_HEX_64_SECRETKEY
     volumes:
       - forgejo_data:/data

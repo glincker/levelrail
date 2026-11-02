@@ -32,6 +32,7 @@ func seedFailedDeploy(t *testing.T, db *store.DB) {
 }
 
 func TestDeployFailureSurfaces(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedFailedDeploy(t, db)
@@ -101,6 +102,7 @@ func TestDeployFailureSurfaces(t *testing.T) {
 }
 
 func TestGetDeployNotFound(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedFailedDeploy(t, db)
@@ -114,6 +116,7 @@ func TestGetDeployNotFound(t *testing.T) {
 }
 
 func TestDeployFailureExcerptSkipsPreviousContainer(t *testing.T) {
+	t.Parallel()
 	rt, db, tdb := newTestRouterWithTelemetry(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()

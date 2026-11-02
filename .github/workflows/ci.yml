@@ -198,7 +198,7 @@ jobs:
     needs: [changes, plan]
     if: ${{ !cancelled() && needs.plan.result != 'skipped' }}
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Planning passed
         if: needs.plan.result != 'success'

@@ -294,3 +294,24 @@ func (c *Controller) pruneSupersededPrevious(ctx context.Context, targets []stri
 	}
 	_ = c.removeContainers(ctx, c.supersededPrevious(all, targets))
 }
+
+// supersededRelease is the newest running release other than name's own, the
+// one the retire pass will hold. Label-only: a failed listing just omits it.
+func (c *Controller) supersededRelease(ctx context.Context, name string) string {
+	all, err := c.listPrefix(ctx, c.serviceName+"-")
+	if err != nil {
+		return ""
+	}
+	own, best := releaseOf(name), ""
+	var bestAt time.Time
+	for _, cs := range all {
+		rel := releaseOf(cs.Name)
+		if !cs.Running || !ownsContainer(c.serviceName, cs.Name) || rel == own {
+			continue
+		}
+		if best == "" || cs.Created.After(bestAt) {
+			best, bestAt = rel, cs.Created
+		}
+	}
+	return best
+}

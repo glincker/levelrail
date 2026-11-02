@@ -83,6 +83,7 @@ function useInvalidate(app: string) {
 export function useSetRotationPolicy(app: string) {
   const invalidate = useInvalidate(app)
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async (input: RotationPolicyInput & { key: string }) => {
       const { key, ...body } = input
       const res = await fetch(
@@ -119,6 +120,7 @@ export function useDeleteRotationPolicy(app: string) {
 export function useRotateSecretValue(app: string) {
   const invalidate = useInvalidate(app)
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async (input: { key: string; value: string }) => {
       const res = await fetch(
         `${appBase(app)}/secrets/${encodeURIComponent(input.key)}/rotate`,
@@ -137,6 +139,7 @@ export function useRotateSecretValue(app: string) {
 export function useRotateNow(app: string) {
   const invalidate = useInvalidate(app)
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async (key: string) => {
       const res = await fetch(
         `${appBase(app)}/secrets/${encodeURIComponent(key)}/rotation/rotate`,

@@ -1,0 +1,31 @@
+services:
+  isso:
+    image: ghcr.io/isso-comments/isso:0.14.0
+    ports: ["8080"]
+    volumes:
+      - db:/db
+    configs:
+      - source: isso_config
+        target: /config/isso.cfg
+        mode: 0444
+    healthcheck:
+      test:
+        - CMD
+        - python3
+        - -c
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080/info').status < 400 else 1)"
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+configs:
+  isso_config:
+    content: |
+      [general]
+      dbpath = /db/comments.db
+      host = https://example.com
+      [server]
+      listen = http://0.0.0.0:8080
+      [guard]
+      enabled = true

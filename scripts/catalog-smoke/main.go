@@ -159,8 +159,9 @@ func render(tpl catalog.Template) (string, string) {
 				return tok
 			}
 			val = v
-		case mv.Kind == "FQDN", mv.Kind == "URL":
-			// The platform resolves FQDN to a full URL, so the harness must too.
+		case mv.Kind == "FQDN":
+			val = tpl.ID + ".localhost"
+		case mv.Kind == "URL":
 			val = "http://" + tpl.ID + ".localhost"
 		case mv.HasDefault:
 			val = mv.Default

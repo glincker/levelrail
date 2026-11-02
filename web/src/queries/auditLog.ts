@@ -208,6 +208,7 @@ export const auditChainQueryOptions = () =>
 export function usePurgeAuditLog() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: purgeAuditLog,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: auditLogKeys.all })

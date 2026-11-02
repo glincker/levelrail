@@ -32,6 +32,7 @@ func doDB(t *testing.T, rt *Router, cookie *http.Cookie, method, path, body stri
 }
 
 func TestCreateDatabase_StoresEverythingPendingWithoutDocker(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	rt.orphanedVolumes = noDockerVolumes{t}
 	cookie := loginTestSession(t, rt, db)
@@ -60,6 +61,7 @@ func TestCreateDatabase_StoresEverythingPendingWithoutDocker(t *testing.T) {
 }
 
 func TestCreateDatabase_RejectsBadExistingVolumeChoice(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	rec := doDB(t, rt, cookie, http.MethodPost, "/api/v1/databases", `{"name":"main","engine":"redis","version":"7","existing_volume":"maybe"}`)
@@ -69,6 +71,7 @@ func TestCreateDatabase_RejectsBadExistingVolumeChoice(t *testing.T) {
 }
 
 func TestPendingDatabase_FailureKeepsRecordEditRetryDiscard(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -112,6 +115,7 @@ func TestPendingDatabase_FailureKeepsRecordEditRetryDiscard(t *testing.T) {
 }
 
 func TestPendingDatabase_CreatedDatabaseCannotBeEditedOrDiscarded(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()

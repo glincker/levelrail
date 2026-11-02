@@ -50,6 +50,10 @@ type File struct {
 	// ingress routing) and to resolve any ${SERVICE_FQDN_*} reference
 	// within that same service's environment (ResolveMagicVars).
 	Domains map[string]string
+	// RuntimeDomains holds domains assigned after deploy (service key to
+	// host). Only SERVICE_FQDN and SERVICE_URL resolution reads it, so a
+	// re-render never changes what ToDesiredServices persists.
+	RuntimeDomains map[string]string
 	// Networks lists this file's own top-level networks: names, sorted.
 	// Only used by Notices to detect that custom networks were declared
 	// at all; Levelrail doesn't create per-network isolation from this.
@@ -65,6 +69,11 @@ type File struct {
 	// Unsupported lists keys that parsed but are not read, so Notices can
 	// report them instead of dropping them silently.
 	Unsupported []UnsupportedKey
+	// InterpVars are the variables ${VAR:-default} forms in env values read
+	// (app env and saved env keys); nil means every variable is unset.
+	InterpVars map[string]string
+	// InterpWarnings collects names-only notes about unset variables.
+	InterpWarnings []string
 }
 
 // Service is one entry under services:.

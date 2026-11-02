@@ -131,6 +131,7 @@ func TestCheck(t *testing.T) {
 		{"bench soak --csv /tmp/x", "", true},
 		{"dev --bin /bin/sh", "", true},
 		{"dev", "dev", true},
+		{"vm status", "", true},
 		{"functions dev /data --image alpine", "", true},
 		{"databases connect pg --launch", "", true},
 		{"databases connect pg", "databases connect", true},

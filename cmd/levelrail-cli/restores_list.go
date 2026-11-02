@@ -23,7 +23,7 @@ Flags:
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
-`, prog, envAPIToken, envAPIURL, defaultAPIURL, synopsis, what)
+`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL, synopsis, what)
 }
 
 // runBackupsRestores implements "backups restores <database>".

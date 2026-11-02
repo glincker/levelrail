@@ -22,7 +22,7 @@ export function RestartControlPlaneButton({
   const { t } = useTranslation('common')
   const isRoot = useIsRoot()
   const { data: info } = useSystemRestartInfo()
-  const restart = useRestartControlPlane()
+  const restart = useRestartControlPlane({ inlineError: true })
   const tracking = useRestartState()
   const [open, setOpen] = useState(false)
 

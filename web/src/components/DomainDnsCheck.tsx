@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   CheckGlassIcon,
   CircleAlertGlassIcon,
@@ -16,12 +16,27 @@ import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
 import {
   useDomainCheck,
   type AcmeFailure,
+  type DnsHint,
   type DnsProvider,
+  type DnsSource,
+  type DnsVerdict,
   type DomainCheckStatus,
   type DomainResolver,
   type ProxyCertificate,
   type TlsOwner,
 } from '../queries/domainCheck'
+import {
+  dnsCheckAnchor,
+  dnsPillState,
+  proxyCertTrusted,
+  type DnsPillState,
+} from '../lib/dnsPill'
+import { findProxyDomain } from '../lib/proxyIntegration'
+import {
+  proxyIntegrationQueryOptions,
+  type ProxyDomain,
+} from '../queries/proxyIntegration'
+import { useQuery } from '@tanstack/react-query'
 import { AcmeFailureHint } from './AcmeFailureHint'
 import { DnsProviderBadge } from './DnsProviderBadge'
 import { ProxyManagedCertNote } from './ProxyManagedCertNote'
@@ -43,6 +58,15 @@ export interface DomainCheckPanelData {
   proxy_certificate?: ProxyCertificate
   checked_at?: string
   resolvers?: DomainResolver[]
+  authoritative?: DnsSource[]
+  public?: DnsSource[]
+  local?: DnsSource[]
+  verdict?: DnsVerdict
+  local_stale?: boolean
+  retry_at?: string
+  escalated?: boolean
+  flush_command?: string
+  hints?: DnsHint[]
 }
 
 type DnsRecordType = 'A' | 'AAAA' | 'CNAME'
@@ -112,7 +136,7 @@ function DnsRecordRow({ label, value }: { label: string; value: string }) {
 }
 
 const STATUS_META: Record<
-  DomainCheckStatus,
+  DnsPillState,
   {
     label: string
     variant: VariantProps<typeof badgeVariants>['variant']
@@ -144,12 +168,174 @@ const STATUS_META: Record<
     variant: 'muted',
     icon: CircleAlertGlassIcon,
   },
+  cert_pending: {
+    label: '',
+    variant: 'warning',
+    icon: CircleAlertGlassIcon,
+  },
 }
 
-// What each resolver answered and what to do about it, so "Check now" always
-// ends with an explanation instead of an unchanged badge.
+const VERDICT_VARIANT: Record<
+  DnsVerdict,
+  VariantProps<typeof badgeVariants>['variant']
+> = {
+  dns_ready: 'success',
+  public_ready: 'warning',
+  not_found: 'warning',
+  points_elsewhere: 'destructive',
+  unknown: 'muted',
+}
+
+// Hints whose text has no per-domain values are translated here; the rest
+// (addresses, name servers) show the server's own sentence.
+const STATIC_HINTS = new Set([
+  'local_stale',
+  'local_stale_long',
+  'was_cloudflare_proxy',
+  'waiting',
+  'check_zone',
+  'check_aaaa',
+  'check_cname',
+  'check_nameservers',
+])
+
+function useRemainingMs(iso?: string): number {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    if (!iso) return undefined
+    const id = setInterval(() => {
+      setNow(Date.now())
+    }, 1000)
+    return () => {
+      clearInterval(id)
+    }
+  }, [iso])
+  return iso ? Math.max(0, Date.parse(iso) - now) : 0
+}
+
+function formatCountdown(ms: number): string {
+  const total = Math.ceil(ms / 1000)
+  const m = Math.floor(total / 60)
+  const sec = String(total % 60).padStart(2, '0')
+  return `${m}:${sec}`
+}
+
+function DnsAnswerGroup({
+  label,
+  sources,
+}: {
+  label: string
+  sources?: DnsSource[]
+}) {
+  const { t } = useTranslation('domains')
+  if (!sources || sources.length === 0) return null
+  return (
+    <div>
+      <div className="font-medium text-foreground">{label}</div>
+      <ul className="space-y-0.5 text-muted-foreground">
+        {sources.map((r) => (
+          <li key={r.name} className="flex gap-2">
+            <span className="w-32 shrink-0 truncate">{r.name}</span>
+            <span className="min-w-0 break-all font-mono">
+              {r.addresses && r.addresses.length > 0
+                ? r.addresses.join(', ')
+                : (r.error ?? t('dnsCheck.noAnswer'))}
+              {r.ttl ? (
+                <span className="ml-1 text-muted-foreground/70">
+                  {t('dnsCheck.ttl', { seconds: r.ttl })}
+                </span>
+              ) : null}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+function FlushCommand({ command }: { command: string }) {
+  const { t } = useTranslation('domains')
+  const { copied, copy } = useCopyToClipboard()
+  return (
+    <div className="space-y-1">
+      <p className="text-muted-foreground">{t('dnsCheck.flushIntro')}</p>
+      <div className="flex items-center gap-2 rounded-md border border-input bg-background p-1.5">
+        <code className="min-w-0 flex-1 overflow-x-auto text-xs">
+          {command}
+        </code>
+        <Button
+          type="button"
+          size="icon-sm"
+          variant="ghost"
+          onClick={() => {
+            copy(command)
+          }}
+          aria-label={t('dnsCheck.copyFlush')}
+        >
+          {copied ? (
+            <CheckGlassIcon className="size-5" />
+          ) : (
+            <CopyGlassIcon className="size-5" />
+          )}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+// What the zone's own servers, public resolvers and this server each
+// answered, the verdict, the cache countdown and what to check next, so
+// "Check now" always ends with an explanation instead of an unchanged badge.
 function DnsResolverReport({ data }: { data: DomainCheckPanelData }) {
   const { t } = useTranslation('domains')
+  const remaining = useRemainingMs(data.retry_at)
+  if (data.verdict) {
+    const variant = VERDICT_VARIANT[data.verdict]
+    return (
+      <div className="mt-2 space-y-2 text-xs">
+        <Badge variant={variant}>{t(`dnsCheck.verdict.${data.verdict}`)}</Badge>
+        <DnsAnswerGroup
+          label={t('dnsCheck.groups.authoritative')}
+          sources={data.authoritative}
+        />
+        <DnsAnswerGroup
+          label={t('dnsCheck.groups.public')}
+          sources={data.public}
+        />
+        <DnsAnswerGroup
+          label={t('dnsCheck.groups.local')}
+          sources={data.local}
+        />
+        {data.local_stale && data.retry_at ? (
+          <p className="text-foreground" aria-live="off">
+            {t('dnsCheck.retryAt', {
+              time: new Date(data.retry_at).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              }),
+            })}
+            {remaining > 0
+              ? ` ${t('dnsCheck.countdown', { left: formatCountdown(remaining) })}`
+              : ''}
+          </p>
+        ) : null}
+        {data.local_stale && data.flush_command ? (
+          <FlushCommand command={data.flush_command} />
+        ) : null}
+        {data.hints && data.hints.length > 0 ? (
+          <ul className="list-disc space-y-0.5 pl-4 text-foreground">
+            {data.hints.map((h) => (
+              <li key={h.code}>
+                {STATIC_HINTS.has(h.code)
+                  ? t(`dnsCheck.hints.${h.code}`, { defaultValue: h.message })
+                  : h.message}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
+    )
+  }
   const resolvers = data.resolvers ?? []
   if (resolvers.length === 0) return null
   return (
@@ -187,15 +373,24 @@ export function DomainCheckPanel({
   data,
   isFetching,
   onRefetch,
+  proxyRow,
 }: {
   domain: string
   data?: DomainCheckPanelData
   isFetching: boolean
   onRefetch: () => void
+  proxyRow?: ProxyDomain
 }) {
   const { t } = useTranslation('domains')
   const proxyOwned = data?.tls_owner === 'proxy'
-  const meta = data ? STATUS_META[data.status] : undefined
+  const pill = data
+    ? dnsPillState(
+        data.status,
+        proxyOwned,
+        proxyCertTrusted(proxyRow, data.proxy_certificate),
+      )
+    : undefined
+  const meta = pill ? STATUS_META[pill] : undefined
   const StatusIcon = meta?.icon
   const options = data ? dnsRecordOptions(data) : []
   const [activeType, setActiveType] = useState<DnsRecordType | undefined>(
@@ -204,7 +399,10 @@ export function DomainCheckPanel({
   const active = options.find((o) => o.type === activeType) ?? options[0]
 
   return (
-    <div className="rounded-md border border-border bg-muted/30 p-3 text-sm">
+    <div
+      id={dnsCheckAnchor(domain)}
+      className="rounded-md border border-border bg-muted/30 p-3 text-sm"
+    >
       <div className="flex items-center justify-between gap-2">
         <span className="min-w-0 truncate font-mono text-xs text-muted-foreground">
           {domain}
@@ -212,7 +410,7 @@ export function DomainCheckPanel({
         {meta ? (
           <Badge variant={meta.variant} className="shrink-0">
             {StatusIcon ? <StatusIcon className="size-3.5" /> : null}
-            {meta.label}
+            {pill === 'cert_pending' ? t('dnsCheck.certPending') : meta.label}
           </Badge>
         ) : null}
       </div>
@@ -274,7 +472,7 @@ export function DomainCheckPanel({
         </p>
       ) : null}
 
-      {proxyOwned ? (
+      {proxyOwned && !proxyRow ? (
         <div className="mt-2">
           <ProxyManagedCertNote certificate={data?.proxy_certificate} />
         </div>
@@ -295,7 +493,7 @@ export function DomainCheckPanel({
         </div>
       ) : null}
 
-      {data && data.status !== 'connected' ? (
+      {data && (data.status !== 'connected' || data.local_stale) ? (
         <DnsResolverReport data={data} />
       ) : null}
 
@@ -340,8 +538,11 @@ export function DomainDnsCheck({
   domain: string
 }) {
   const { data, isFetching, refetch } = useDomainCheck(appName, domain)
+  const { data: proxy } = useQuery(proxyIntegrationQueryOptions())
+  const proxyRow = proxy ? findProxyDomain(proxy, domain) : undefined
   return (
     <DomainCheckPanel
+      proxyRow={proxyRow}
       domain={domain}
       data={data}
       isFetching={isFetching}

@@ -145,33 +145,6 @@ var catalogBatch4Templates = []Template{
 `,
 	},
 	{
-		ID:                     "minecraft",
-		Name:                   "Minecraft Server",
-		Slogan:                 "A vanilla Minecraft Java server that downloads and runs the selected version on first boot.",
-		Category:               "Applications",
-		DocumentationURL:       "https://github.com/itzg/docker-minecraft-server",
-		RecommendedMemoryBytes: 3221225472, // 3Gi
-		Compose: `services:
-  minecraft:
-    image: itzg/minecraft-server:java21
-    ports: ["25565:25565"]
-    environment:
-      EULA: "TRUE"
-      TYPE: VANILLA
-      MEMORY: 2G
-      DIFFICULTY: normal
-      MAX_PLAYERS: "10"
-    volumes:
-      - minecraft_data:/data
-    healthcheck:
-      test: ["CMD-SHELL", "mc-health"]
-      interval: 15s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
-`,
-	},
-	{
 		// Tag not independently verified against a live registry in this
 		// environment; the image repository matches upstream's own
 		// self-host instructions.
@@ -209,8 +182,8 @@ var catalogBatch4Templates = []Template{
     image: ghcr.io/bluewave-labs/checkmate-backend-mono-multiarch:v3.2.0
     ports: ["52345:52345"]
     environment:
-      UPTIME_APP_API_BASE_URL: ${SERVICE_FQDN_CHECKMATE:-http://localhost:52345}/api/v1
-      UPTIME_APP_CLIENT_HOST: ${SERVICE_FQDN_CHECKMATE:-http://localhost:52345}
+      UPTIME_APP_API_BASE_URL: ${SERVICE_URL_CHECKMATE:-http://localhost:52345}/api/v1
+      UPTIME_APP_CLIENT_HOST: ${SERVICE_URL_CHECKMATE:-http://localhost:52345}
       DB_CONNECTION_STRING: mongodb://mongo:27017/checkmate
       JWT_SECRET: $SERVICE_PASSWORD_64_JWT
     depends_on: [mongo]

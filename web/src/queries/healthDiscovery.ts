@@ -38,5 +38,8 @@ export async function discoverAppHealth(
 }
 
 export function useDiscoverAppHealth() {
-  return useMutation({ mutationFn: discoverAppHealth })
+  return useMutation({
+    meta: { errorToast: false },
+    mutationFn: discoverAppHealth,
+  })
 }

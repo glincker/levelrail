@@ -7,6 +7,8 @@ import (
 	"sort"
 	"sync"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 // MetricsSource is what the query layer needs from one agent, local or
@@ -120,7 +122,11 @@ func (f *Federator) QueryLogs(ctx context.Context, resourceID string, from, to t
 			finalErrs = append(finalErrs, errs[i])
 			continue
 		}
-		all = append(all, results[i]...)
+		for _, e := range results[i] {
+			// A remote node may not know this node's registered secrets.
+			e.Message = secretmask.Mask(e.Message)
+			all = append(all, e)
+		}
 	}
 
 	sort.Slice(all, func(i, j int) bool { return all[i].Timestamp.Before(all[j].Timestamp) })

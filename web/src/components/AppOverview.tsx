@@ -19,6 +19,7 @@ import { MoveToThisServerButton, PlacementLabel } from './PlacementLabel'
 import { useEnvironmentListOptional } from '../queries/environments'
 import { PinnedDigestBadge } from './PinnedDigestBadge'
 import { digestOfImage, unpinnedImage } from '../lib/imageDigest'
+import { GameStatusCard } from './apps/GameStatusCard'
 import { TunnelHint } from './apps/TunnelHint'
 
 // i18n keys for internal/spec's three strategy constants.
@@ -103,10 +104,22 @@ export function AppOverview({ app }: { app: AppDetail }) {
                 : app.strategy}
             </dd>
           </div>
-          <Field
-            label={t('appOverview.replicas')}
-            value={String(app.replicas)}
-          />
+          <div>
+            <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              {t('appOverview.replicas')}
+            </dt>
+            <dd className="mt-0.5 text-sm text-foreground">
+              {app.replicas}
+              {app.replicas > 1 ? (
+                <span className="mt-0.5 block text-xs text-muted-foreground">
+                  {t('replicaNotice.sameServer', {
+                    ns: 'common',
+                    replicas: app.replicas,
+                  })}
+                </span>
+              ) : null}
+            </dd>
+          </div>
           <div>
             <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
               {t('appOverview.node')}
@@ -190,6 +203,7 @@ export function AppOverview({ app }: { app: AppDetail }) {
             probe={app.health?.liveness}
           />
         </div>
+        <GameStatusCard appName={app.name} />
         <TunnelHint
           appName={app.name}
           port={app.port}

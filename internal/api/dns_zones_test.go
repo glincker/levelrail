@@ -115,6 +115,7 @@ func serveDNS(t *testing.T, rt *Router, req *http.Request) *httptest.ResponseRec
 }
 
 func TestDNSZones_NoProviderIsEmptyState(t *testing.T) {
+	t.Parallel()
 	rt, _, cookie := newDNSZoneTestRouter(t, nil)
 	rec := serveDNS(t, rt, authedRequest(t, cookie, http.MethodGet, "/api/v1/dns/zones", ""))
 	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"provider":"none"`) {
@@ -127,6 +128,7 @@ func TestDNSZones_NoProviderIsEmptyState(t *testing.T) {
 }
 
 func TestDNSZones_ListOverviewAndDelegation(t *testing.T) {
+	t.Parallel()
 	rt, _, cookie := newDNSZoneTestRouter(t, newFakeZoneProvider())
 	rec := serveDNS(t, rt, authedRequest(t, cookie, http.MethodGet, "/api/v1/dns/zones", ""))
 	var list dnsZonesResponse
@@ -149,6 +151,7 @@ func TestDNSZones_ListOverviewAndDelegation(t *testing.T) {
 }
 
 func TestDNSZones_RecordCRUDConflictsAndAudit(t *testing.T) {
+	t.Parallel()
 	p := newFakeZoneProvider()
 	rt, db, cookie := newDNSZoneTestRouter(t, p)
 	base := "/api/v1/dns/zones/example.com/records"
@@ -207,6 +210,7 @@ func TestDNSZones_RecordCRUDConflictsAndAudit(t *testing.T) {
 }
 
 func TestDNSZones_ReadTokenCannotWrite(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newDNSZoneTestRouter(t, newFakeZoneProvider())
 	const plaintext = "read-scoped-token" //nolint:gosec // test fixture
 	if err := db.SaveAPIToken(context.Background(), store.APIToken{ID: "tok_read", Name: "reader", TokenHash: hashToken(plaintext), Abilities: []string{AbilityRead}, CreatedAt: time.Now()}); err != nil {
@@ -234,6 +238,7 @@ func TestDNSZones_ReadTokenCannotWrite(t *testing.T) {
 }
 
 func TestDNSZones_CreateAndDeleteZone(t *testing.T) {
+	t.Parallel()
 	p := newFakeZoneProvider()
 	rt, _, cookie := newDNSZoneTestRouter(t, p)
 	tests := []struct {
@@ -262,6 +267,7 @@ func TestDNSZones_CreateAndDeleteZone(t *testing.T) {
 }
 
 func TestDNSZones_ImportExportTemplateDiscover(t *testing.T) {
+	t.Parallel()
 	p := newFakeZoneProvider()
 	rt, _, cookie := newDNSZoneTestRouter(t, p)
 	imp := "/api/v1/dns/zones/example.com/records/import"
@@ -299,6 +305,7 @@ func TestDNSZones_ImportExportTemplateDiscover(t *testing.T) {
 }
 
 func TestWildcardDomains(t *testing.T) {
+	t.Parallel()
 	rt, db, cookie := newDNSZoneTestRouter(t, newFakeZoneProvider())
 	seedAppWithDomains(t, db, "app.example.com")
 	rec := serveDNS(t, rt, authedRequest(t, cookie, http.MethodPatch, "/api/v1/apps/web/domains", `{"add":["*.apps.example.com"]}`))
@@ -324,6 +331,7 @@ func TestWildcardDomains(t *testing.T) {
 }
 
 func TestCreateWildcardRecords(t *testing.T) {
+	t.Parallel()
 	p := newFakeZoneProvider()
 	rt, _, _ := newDNSZoneTestRouter(t, p)
 	rt.publicHost = "203.0.113.50"
@@ -344,6 +352,7 @@ func TestCreateWildcardRecords(t *testing.T) {
 }
 
 func TestUpdateAppWildcardNeedsDNS01(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		connect bool
@@ -383,6 +392,7 @@ func TestUpdateAppWildcardNeedsDNS01(t *testing.T) {
 }
 
 func TestCreateAppWildcardNeedsDNS01(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		connect bool

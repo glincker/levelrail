@@ -47,8 +47,18 @@ func (r runRecorder) RecordBuildRun(ctx context.Context, run build.Run) error {
 
 // BuildLimitsSource resolves saved overrides over the env defaults on every build.
 func BuildLimitsSource(s BuildPerformanceStore, env build.Limits) build.LimitsSource {
+	return BuildLimitsSourceWithMemory(s, env, nil)
+}
+
+// BuildLimitsSourceWithMemory is BuildLimitsSource with the base memory cap taken from mem (the
+// builds.memory_limit_mb setting resolved to MiB) instead of the env value; saved overrides still win.
+func BuildLimitsSourceWithMemory(s BuildPerformanceStore, env build.Limits, mem func(context.Context) int) build.LimitsSource {
 	return func(ctx context.Context, app string) build.Limits {
-		eff, _ := resolveBuildLimits(ctx, s, env)
+		base := env
+		if mem != nil {
+			base.MemoryMB = mem(ctx)
+		}
+		eff, _ := resolveBuildLimits(ctx, s, base)
 		eff, _ = resolveAppBuildLimits(ctx, s, eff, app)
 		return eff
 	}

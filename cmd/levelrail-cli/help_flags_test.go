@@ -53,6 +53,8 @@ func helpFlagGaps(t *testing.T) []string {
 		t.Fatal(err)
 	}
 	decls := map[string]*ast.FuncDecl{}
+	// usageConsts holds package-level string constants such as jobsUsage that a Usage closure prints.
+	usageConsts := map[string][]string{}
 	type unit struct {
 		file string
 		fn   *ast.FuncDecl
@@ -67,6 +69,13 @@ func helpFlagGaps(t *testing.T) []string {
 			t.Fatalf("parse %s: %v", f, err)
 		}
 		for _, d := range af.Decls {
+			if gd, ok := d.(*ast.GenDecl); ok && gd.Tok == token.CONST {
+				for _, sp := range gd.Specs {
+					if vs, ok := sp.(*ast.ValueSpec); ok && len(vs.Names) == 1 {
+						usageConsts[vs.Names[0].Name] = stringLits(vs)
+					}
+				}
+			}
 			if fd, ok := d.(*ast.FuncDecl); ok && fd.Body != nil && fd.Recv == nil {
 				decls[fd.Name.Name] = fd
 				units = append(units, unit{f, fd})
@@ -128,6 +137,9 @@ func helpFlagGaps(t *testing.T) []string {
 				hasUsage = true
 				usageText = append(usageText, stringLits(x.Rhs[0])...)
 				ast.Inspect(x.Rhs[0], func(m ast.Node) bool {
+					if id, ok := m.(*ast.Ident); ok {
+						usageText = append(usageText, usageConsts[id.Name]...)
+					}
 					if c, ok := m.(*ast.CallExpr); ok {
 						if id, ok := c.Fun.(*ast.Ident); ok {
 							if d := decls[id.Name]; d != nil {

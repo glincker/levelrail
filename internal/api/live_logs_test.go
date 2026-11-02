@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
@@ -234,5 +235,64 @@ func TestHandleLiveLogStream_NoSubscriberLeakAfterDisconnect(t *testing.T) {
 		}
 	case <-time.After(2 * time.Second):
 		t.Fatal("timed out: broadcaster did not deliver after a prior subscriber disconnected")
+	}
+}
+
+func TestHandleLiveLogStream_MultiLineSecretAcrossBackfillAndLive(t *testing.T) {
+	t.Setenv(EnvLogMaskIdleFlush, "400ms")
+	secretmask.Add("backfill-live-half-one\nbackfill-live-half-two")
+	rt, db, tdb, broadcaster := newTestRouterWithLiveLogs(t)
+	ctx := context.Background()
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+	if err := tdb.WriteLogBatch(ctx, []telemetry.LogEntry{
+		{ResourceID: "service:web", Stream: "stdout", Timestamp: time.Now().UTC().Add(-time.Minute), Message: "k=backfill-live-half-one"},
+	}); err != nil {
+		t.Fatalf("seed backfill: %v", err)
+	}
+	srv := httptest.NewServer(rt.Handler())
+	defer srv.Close()
+	cookie := loginViaServer(t, srv, db)
+	reqCtx, reqCancel := context.WithCancel(context.Background())
+	defer reqCancel()
+	req, _ := http.NewRequestWithContext(reqCtx, http.MethodGet, srv.URL+"/api/v1/apps/web/logs/stream", nil)
+	req.AddCookie(cookie)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("do request: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	time.Sleep(50 * time.Millisecond)
+	broadcaster.Publish(telemetry.LogEntry{ResourceID: "service:web", Stream: "stdout", Message: "backfill-live-half-two done"})
+
+	got := make(chan string, 1)
+	go func() {
+		reader := bufio.NewReader(resp.Body)
+		var all strings.Builder
+		for {
+			ev, err := nextSSEData(reader)
+			if err != nil {
+				got <- all.String()
+				return
+			}
+			all.WriteString(ev)
+			if strings.Contains(ev, "done") {
+				got <- all.String()
+				return
+			}
+		}
+	}()
+	select {
+	case body := <-got:
+		if strings.Contains(body, "backfill-live-half") {
+			t.Fatalf("leak: %q", body)
+		}
+		if !strings.Contains(body, "k="+secretmask.Marker+" done") {
+			t.Fatalf("surrounding text lost: %q", body)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("stream never delivered the masked line")
 	}
 }

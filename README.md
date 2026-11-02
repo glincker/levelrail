@@ -148,6 +148,10 @@ irm https://levelrail.com/install-cli.ps1 | iex
 
 The first two work on any supported platform, the third is for macOS and Linux, the last for Windows PowerShell.
 
+### Run it on a free Arm VM
+
+Levelrail's release binaries and images are built for `arm64`, so it runs on an Oracle Cloud Always Free Arm VM. You open two firewalls (the cloud network rules and the host firewall), then run the same installer. Oracle sets the free limits and its idle-instance rule, and both can change. Read the [Oracle Cloud guide](docs/install-on-oracle-cloud.md) and Oracle's [Always Free page](https://docs.oracle.com/en-us/iaas/Content/FreeTier/resourceref.htm) first. App images vary on Arm, so check an image's platforms before installing a template.
+
 ## How it works
 
 ```mermaid
@@ -168,10 +172,10 @@ The control plane keeps desired state in embedded SQLite and a reconciler makes 
 
 ## Verify what you install
 
-Releases publish a Sigstore signature for `checksums.txt` and a build provenance attestation. Replace `v0.1.0` with the release tag.
+Releases publish a Sigstore signature for `checksums.txt` and a build provenance attestation. The first line below resolves the latest release tag; set `V` to a tag yourself to verify an older release.
 
 ```bash
-V=v0.1.0
+V=$(gh release view --repo glincker/levelrail --json tagName -q .tagName)
 BASE=https://github.com/glincker/levelrail/releases/download/$V
 curl -fsSLO $BASE/checksums.txt -O $BASE/checksums.txt.sigstore.json -O $BASE/levelrail-linux-amd64
 cosign verify-blob --bundle checksums.txt.sigstore.json \
@@ -215,7 +219,7 @@ Most self-hosted platforms in this category manage servers by SSHing in and shel
 | Orchestration | Level-triggered reconciler | Compose | Swarm | Swarm | Bash scheduler |
 | Built-in metrics and logs | Yes | Opt-in add-on | Separate binary | No | No |
 | Rollback | Pinned images, readiness-gated | Health check off by default | Swarm rollback | Manual | Default scheduler: none |
-| Backup verification | Automatic, all 8 engines | Non-empty check | None | None | No backups |
+| Backup verification | Automatic; Postgres stable, MySQL and MongoDB beta ([status](docs/feature-status.md)) | Non-empty check | None | None | No backups |
 | SSO and provisioning | OAuth (20 providers) and generic OIDC; SAML and SCIM (beta, off by default) | See their docs | See their docs | See their docs | See their docs |
 | Audit log | Hash-chained, verifiable, CSV export, forwarding to syslog, webhook or bucket | See their docs | See their docs | See their docs | See their docs |
 | IAM | Allow and Deny policies per app or database, scoped tokens | See their docs | See their docs | See their docs | See their docs |
@@ -229,7 +233,7 @@ This is positioning, not a ranking, and every project here is worth using. Where
 - **Databases:** Postgres, MySQL, MariaDB, MongoDB, Redis, KeyDB, Dragonfly and ClickHouse with scheduled backups, Postgres point-in-time recovery, restore, and password rotation. [Databases](docs/managing-databases.md)
 - **One search for everything:** Cmd+K across apps, databases, nodes, templates and actions, filtered by what you may do. [Search](docs/search.md)
 - **Servers:** Add nodes with a one-time token, WireGuard mesh, zones and failure-domain spreading, placement what-if. [Multi-node](docs/multi-node.md)
-- **Templates:** about 360 one-click services, with a smoke test that brings up the top 50 (48 pass today, [status](docs/templates-status.md)). [Catalog](docs/template-catalog.md)
+- **Templates:** about 360 one-click services, with a smoke test over the catalog (101 of 108 tested passed in the 2026-10-25 and 2026-10-27 runs, [status](docs/templates-status.md)). [Catalog](docs/template-catalog.md)
 - **Identity and access:** Password, passkeys, TOTP, OAuth with 20 providers plus generic OIDC, IAM policies, teams, a hash-chained audit log with CSV export. SAML single sign-on and SCIM provisioning are beta and off by default. [Identity and access](docs/identity-and-access.md), [SAML and SCIM](docs/sso-saml.md)
 - **Plugins:** A signed plugin marketplace with one-click install, dashboard panels and first-party alert channels. [Plugins](docs/plugins.md)
 - **Automation:** One HTTP API behind the dashboard, a CLI and an MCP server. AI never sits in the reconciliation path. [CLI](docs/cli-reference.md), [AI control](docs/ai-control.md)

@@ -6,12 +6,14 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/GLINCKER/levelrail/internal/envredact"
 	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
@@ -271,6 +273,7 @@ func planFromFileBuild(f createFlags, key string, svc spec.Service, detected det
 	if err != nil {
 		return createPlan{}, newValidationError("service %q resources: %v", key, err)
 	}
+	resources = withSecurity(resources, svc.Security)
 	health, err := toServiceHealth(svc.Health)
 	if err == nil {
 		health, err = withRestart(health, svc.Restart)
@@ -342,6 +345,7 @@ func planFromFileImage(f createFlags, key string, svc spec.Service) (createPlan,
 	if err != nil {
 		return createPlan{}, newValidationError("service %q resources: %v", key, err)
 	}
+	resources = withSecurity(resources, svc.Security)
 	health, err := toServiceHealth(svc.Health)
 	if err == nil {
 		health, err = withRestart(health, svc.Restart)
@@ -521,6 +525,19 @@ func literalEnv(env map[string]spec.EnvVar) map[string]string {
 		return nil
 	}
 	return out
+}
+
+// withSecurity carries security.read_only_rootfs, which the API stores beside the resource limits.
+func withSecurity(r *serviceResources, sec *spec.Security) *serviceResources {
+	if sec == nil || sec.ReadOnlyRootfs == nil {
+		return r
+	}
+	if r == nil {
+		r = &serviceResources{}
+	}
+	on := *sec.ReadOnlyRootfs
+	r.ReadOnlyRootfs = &on
+	return r
 }
 
 func toServiceResources(r *spec.Resources) (*serviceResources, error) {
@@ -741,6 +758,18 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 		return runAppsCreateStatic(ctx, client, plan.DeploySpec, of, stdout, stderr, f.jsonOut)
 	}
 
+	// Checked before create so a rejected bind mount does not leave a half-created app.
+	if err := validatePlanVolumes(plan.Volumes); err != nil {
+		return reportError(stdout, stderr, f.jsonOut, err)
+	}
+
+	// Same rule the build trigger enforces, checked first so a bad URL leaves no placeholder app.
+	if plan.Build != nil {
+		if err := validateBuildRepoScheme(plan.Build.RepoURL); err != nil {
+			return reportError(stdout, stderr, f.jsonOut, err)
+		}
+	}
+
 	created, err := client.CreateApp(ctx, plan.CreateBody)
 	if err != nil {
 		return reportError(stdout, stderr, f.jsonOut, fmt.Errorf("create app %q: %w", plan.CreateBody.Name, err))
@@ -775,16 +804,34 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 		}
 	}
 
-	return fetchAndPrintCreatedApp(ctx, client, created.Name, stdout, stderr, of)
+	return fetchAndPrintCreatedApp(ctx, client, created.Name, prog, plan.Build == nil, stdout, stderr, of)
 }
 
-// attachPlanVolumes wires app.yaml's volumes on with a follow-up PUT. Bind mounts (hostPath) are rejected, since that endpoint takes name and path only.
-func attachPlanVolumes(ctx context.Context, client *Client, name string, volumes []spec.Volume, stderr io.Writer, jsonOut bool) error {
-	resources := make([]appVolumeResource, 0, len(volumes))
+// validatePlanVolumes rejects bind mounts, which the volumes endpoint cannot take. Compose deploys carry them.
+func validateBuildRepoScheme(repo string) error {
+	u, err := url.Parse(repo)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") {
+		return newValidationError("repo_url must use http or https (got %q)", envredact.URLForLog(repo))
+	}
+	return nil
+}
+
+func validatePlanVolumes(volumes []spec.Volume) error {
 	for _, v := range volumes {
 		if v.HostPath != "" {
-			return newValidationError("volume %q: hostPath bind mounts are not supported by \"apps create --file\", attach a named volume instead", v.Name)
+			return newValidationError("volume with hostPath %q: bind mounts are not supported by \"apps create --file\", use a named volume, or deploy a compose file with \"apps deploy-compose <name> --file\" and a \"- %s:%s:ro\" volume", v.HostPath, v.HostPath, v.Path)
 		}
+	}
+	return nil
+}
+
+// attachPlanVolumes wires app.yaml's volumes on with a follow-up PUT. The endpoint takes name and path only.
+func attachPlanVolumes(ctx context.Context, client *Client, name string, volumes []spec.Volume, stderr io.Writer, jsonOut bool) error {
+	if err := validatePlanVolumes(volumes); err != nil {
+		return err
+	}
+	resources := make([]appVolumeResource, 0, len(volumes))
+	for _, v := range volumes {
 		resources = append(resources, appVolumeResource{Name: v.Name, ContainerPath: v.Path})
 	}
 	if !jsonOut {
@@ -835,8 +882,8 @@ func runAppsCreateStatic(ctx context.Context, client *Client, plan *deploySpecCr
 
 // fetchAndPrintCreatedApp re-fetches name's now-final state and prints
 // it, the shared tail of every "apps create" path once the app (and, if
-// applicable, its build) already succeeded.
-func fetchAndPrintCreatedApp(ctx context.Context, client *Client, name string, stdout, stderr io.Writer, of outputFlags) int {
+// applicable, its build) already succeeded. stopped is true when no build was started, so nothing runs until a deploy.
+func fetchAndPrintCreatedApp(ctx context.Context, client *Client, name, prog string, stopped bool, stdout, stderr io.Writer, of outputFlags) int {
 	final, err := client.GetApp(ctx, name)
 	if err != nil {
 		// The app already exists here, so a failure only means the final state could not be shown. Still exits non-zero so scripts do not read it as success.
@@ -846,6 +893,9 @@ func fetchAndPrintCreatedApp(ctx context.Context, client *Client, name string, s
 
 	if err := renderResult(stdout, of.Format, of.Query, final, func() {
 		_, _ = fmt.Fprintf(stderr, "app %q created\n", final.Name)
+		if stopped {
+			_, _ = fmt.Fprintf(stderr, "app %q stays stopped until it is deployed: run \"%s apps deploy %s --image IMAGE\" or \"%s up\" from your project folder\n", final.Name, prog, final.Name, prog)
+		}
 		printAppHuman(stdout, final)
 		printSelfSignedNote(ctx, client, stdout, final.FallbackURL)
 	}); err != nil {
@@ -855,7 +905,7 @@ func fetchAndPrintCreatedApp(ctx context.Context, client *Client, name string, s
 	return exitOK
 }
 
-// printSelfSignedNote says the automatic https URL is self-signed while
+// printSelfSignedNote says the automatic https URL has no certificate while
 // HTTPS is not enabled. A failed status lookup prints nothing.
 func printSelfSignedNote(ctx context.Context, client *Client, out io.Writer, autoURL string) {
 	if !strings.HasPrefix(autoURL, "https://") {
@@ -865,7 +915,7 @@ func printSelfSignedNote(ctx context.Context, client *Client, out io.Writer, aut
 	if err != nil || status.State == "issued" {
 		return
 	}
-	_, _ = fmt.Fprintln(out, "note:     the auto url uses a self-signed certificate until HTTPS is enabled; plain http gets a 308 redirect to it")
+	_, _ = fmt.Fprintln(out, "note:     the auto url has no HTTPS certificate yet, so it shows a connection error and plain http shows a note instead of redirecting; enable HTTPS from Domains or with: levelrail-cli settings ingress https enable")
 }
 
 // ContinueOnError, not ExitOnError: a library os.Exit would make commands untestable, so only main() calls os.Exit.
@@ -905,8 +955,8 @@ func parseCreateFlags(prog string, args []string, errOut io.Writer, tokenFlag, a
 	fs.BoolVar(&f.interactive, "interactive", false, "run a step-by-step wizard instead of specifying flags: prompts for name, source, port, domain, health check, resource limits, and optionally more services, then writes app.yaml or calls the API")
 	fs.BoolVar(&f.interactive, "i", false, "shorthand for --interactive")
 	fs.BoolVar(&f.jsonOut, "json", false, "print the created app as JSON to stdout and nothing else")
-	fs.StringVar(tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(apiURLFlag, "api-url", "", "control plane API base URL (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
+	fs.StringVar(tokenFlag, "token", "", "API token (overrides "+apiTokenEnvHelp+" and the credentials file)")
+	fs.StringVar(apiURLFlag, "api-url", "", "control plane API base URL (overrides "+apiURLEnvHelp+" and the credentials file, default "+defaultAPIURL+")")
 	fs.StringVar(profileFlag, "profile", "", "named credentials profile to read (overrides "+envProfile+", default \""+defaultProfile+"\")")
 	outputFlagP, queryFlagP := bindOutputQueryFlags(fs)
 
@@ -1037,7 +1087,7 @@ Common flags:
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
-`, prog, envAPIToken, envAPIURL, defaultAPIURL)
+`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }
 
 // registerCreateHealthFlags adds the probe flags of "apps health set" under a readiness/liveness prefix, so both commands parse through probeFlags.toProbe.

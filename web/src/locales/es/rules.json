@@ -1,0 +1,26 @@
+{
+  "builder": {
+    "conditions": "Condiciones",
+    "if": "Si",
+    "and": "Y",
+    "then": "Entonces",
+    "fieldLabel": "Campo de la condición {{n}}",
+    "nameLabel": "Nombre de la condición {{n}}",
+    "operatorLabel": "Operador de la condición {{n}}",
+    "valueLabel": "Valor de la condición {{n}}",
+    "removeCondition": "Quitar la condición {{n}}",
+    "addCondition": "Y",
+    "maxConditions": "Como máximo {{count}} condiciones por regla.",
+    "actionLabel": "Acción",
+    "selectAction": "Seleccionar acción",
+    "ruleName": "Nombre",
+    "description": "Descripción (opcional)",
+    "cancel": "Cancelar",
+    "viewCode": "Ver código",
+    "hideCode": "Ocultar código",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "codeLabel": "Regla tal como se guarda",
+    "codeHelp": "Esto es exactamente lo que se guarda. Solo lectura."
+  }
+}

@@ -1,0 +1,24 @@
+id: lubelogger
+name: LubeLogger
+description: A self-hosted vehicle maintenance and fuel mileage tracker with reminders and document storage. MIT licensed. On first open, register the first user, which becomes the root account.
+icon: calendar
+category: Applications
+documentation_url: https://docs.lubelogger.com/
+recommended_memory_bytes: 268435456
+env:
+  - key: LC_ALL
+    label: Locale
+    description: Locale for dates, numbers and currency.
+    default: en_US
+  - key: LUBELOGGER_ALLOWED_FILE_EXTENSIONS
+    label: Allowed upload types
+    description: Comma separated file extensions users may attach to records.
+    default: .png,.jpg,.jpeg,.pdf,.xls,.xlsx,.docx
+domains:
+  - service: lubelogger
+    port: 8080
+    description: Public address of LubeLogger.
+healthcheck:
+  service: lubelogger
+  port: 8080
+  path: /Login

@@ -74,7 +74,7 @@ func TestBuildRoutesConfig_InheritedSockets(t *testing.T) {
 		}
 	}
 	redirect := cfg.Apps.HTTP.Servers["edge-http"]
-	if redirect == nil || redirect.Listen[0] != "fd/4" || len(redirect.Routes) != 1 {
+	if redirect == nil || redirect.Listen[0] != "fd/4" || len(redirect.Routes) != 2 {
 		t.Fatalf("redirect server = %+v", redirect)
 	}
 	raw, _ := json.Marshal(cfg)
@@ -108,5 +108,39 @@ func TestBuildRoutesConfig_InheritedSocketsServePlainHTTPRoutes(t *testing.T) {
 	}
 	if main.Listen[0] != "fd/3" {
 		t.Errorf("main listen = %v", main.Listen)
+	}
+}
+
+func redirectServerRaw(t *testing.T, hosts []string) string {
+	t.Helper()
+	routes := []ProxyRoute{}
+	if len(hosts) > 0 {
+		routes = append(routes, ProxyRoute{Hosts: hosts, BackendDial: "127.0.0.1:9"})
+	}
+	cfg, err := BuildRoutesConfig(RoutesOptions{
+		ServerName: "edge", TLS: true, HTTPRedirect: true, Routes: routes,
+		Inherited: &InheritedSockets{HTTPS: 3, HTTP: 4, HTTPSPort: 443, HTTPPort: 80},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, _ := json.Marshal(cfg.Apps.HTTP.Servers["edge-http"])
+	return string(raw)
+}
+
+func TestRedirectServer_NoCertificateNoRedirect(t *testing.T) {
+	raw := redirectServerRaw(t, nil)
+	if strings.Contains(raw, "308") || strings.Contains(raw, "Location") {
+		t.Errorf("no host holds a certificate, port 80 must not redirect: %s", raw)
+	}
+	if !strings.Contains(raw, "No HTTPS certificate") {
+		t.Errorf("port 80 should explain itself: %s", raw)
+	}
+}
+
+func TestRedirectServer_CertifiedHostStillRedirects(t *testing.T) {
+	raw := redirectServerRaw(t, []string{"app.example.com"})
+	if !strings.Contains(raw, `"status_code":308`) || !strings.Contains(raw, `"host":["app.example.com"]`) {
+		t.Errorf("certified host must keep the 308 redirect scoped to it: %s", raw)
 	}
 }

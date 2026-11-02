@@ -6,7 +6,7 @@ apps_multi.go 1
 authlib_oauth.go 2
 control_plane_dr.go 1
 control_plane_dr_restore.go 1
-database_clone_restore.go 6
+database_clone_restore.go 4
 database_engines.go 1
 database_network_rules.go 1
 database_public_access.go 4

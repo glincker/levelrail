@@ -3,9 +3,17 @@
 package secretmask
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
 	"log/slog"
+	"net/url"
+	"os"
+	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -16,59 +24,255 @@ const (
 	Marker = "[redacted]"
 	// MinLength skips short values: masking "true" or "1234" would shred ordinary text.
 	MinLength = 8
-	maxValues = 20000
+	// defaultMaxPrimaries caps distinct secrets; override with APP_SECRETMASK_MAX_VALUES.
+	defaultMaxPrimaries = 20000
+	maxValuesEnv        = "APP_SECRETMASK_MAX_VALUES"
 )
+
+func maxPrimaries() int {
+	if n, err := strconv.Atoi(os.Getenv(maxValuesEnv)); err == nil && n > 0 {
+		return n
+	}
+	return defaultMaxPrimaries
+}
 
 // Registry holds secret values and rewrites text that contains them.
 type Registry struct {
-	mu     sync.Mutex
-	values map[string]struct{}
-	sorted atomic.Pointer[[]string]
+	mu        sync.Mutex
+	primaries map[string]struct{}
+	forms     map[string]struct{}
+	max       int
+	warned    atomic.Bool
+	dirty     atomic.Bool
+	sorted    atomic.Pointer[[]string]
+	// maxNL is the longest registered value containing a newline, zero if none.
+	maxNL  atomic.Int64
+	nlList atomic.Pointer[[]string]
 }
 
 // New returns an empty registry.
 func New() *Registry {
-	r := &Registry{values: make(map[string]struct{})}
+	r := &Registry{primaries: make(map[string]struct{}), forms: make(map[string]struct{}), max: maxPrimaries()}
 	empty := []string{}
 	r.sorted.Store(&empty)
 	return r
 }
 
-// Add registers a secret value; short values and a full registry are ignored.
+// Add registers a secret value; short values are ignored. The cap counts primary
+// values only, encoded forms ride along, and a primary is never evicted.
 func (r *Registry) Add(v string) {
+	for _, x := range lineForms(v) {
+		r.add(x)
+	}
+}
+
+// lineForms adds the shapes a multi-line value takes once log lines are split and rejoined:
+// no trailing newline, and LF in place of CRLF (scanners strip the \r).
+func lineForms(v string) []string {
+	out := []string{v}
+	for _, c := range []string{
+		strings.TrimRight(v, "\r\n"),
+		strings.ReplaceAll(v, "\r\n", "\n"),
+		strings.TrimRight(strings.ReplaceAll(v, "\r\n", "\n"), "\r\n"),
+	} {
+		if len(c) >= MinLength && !slices.Contains(out, c) {
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
+func (r *Registry) add(v string) {
 	if len(v) < MinLength {
 		return
 	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	if _, ok := r.values[v]; ok || len(r.values) >= maxValues {
+	if _, ok := r.primaries[v]; ok {
 		return
 	}
-	r.values[v] = struct{}{}
-	list := make([]string, 0, len(r.values))
-	for k := range r.values {
-		list = append(list, k)
+	if len(r.primaries) >= r.max {
+		if r.warned.CompareAndSwap(false, true) {
+			slog.Warn("secretmask: registry full, new secrets are not masked", slog.Int("primaries", len(r.primaries)))
+		}
+		return
 	}
-	sort.Slice(list, func(i, j int) bool { return len(list[i]) > len(list[j]) })
-	r.sorted.Store(&list)
+	// Tools echo a secret base64 or URL encoded (auth headers, DSNs), so those forms are masked too.
+	for _, form := range encodedForms(v) {
+		r.forms[form] = struct{}{}
+	}
+	r.primaries[v] = struct{}{}
+	// Sorting is deferred to the next Mask so a burst of Adds (startup preload) pays once.
+	r.dirty.Store(true)
 }
 
-// Mask replaces every registered value in s, longest first.
-func (r *Registry) Mask(s string) string {
-	list := *r.sorted.Load()
-	if len(list) == 0 || s == "" {
-		return s
+func (r *Registry) snapshot() []string {
+	if r.dirty.Load() {
+		r.mu.Lock()
+		if r.dirty.Load() {
+			list := make([]string, 0, len(r.primaries)+len(r.forms))
+			for k := range r.primaries {
+				list = append(list, k)
+			}
+			for k := range r.forms {
+				if _, isPrimary := r.primaries[k]; !isPrimary {
+					list = append(list, k)
+				}
+			}
+			sort.Slice(list, func(i, j int) bool { return len(list[i]) > len(list[j]) })
+			multi := []string{}
+			for _, v := range list {
+				if strings.Contains(v, "\n") {
+					multi = append(multi, v)
+				}
+			}
+			nl := 0
+			if len(multi) > 0 {
+				nl = len(multi[0])
+			}
+			r.maxNL.Store(int64(nl))
+			r.nlList.Store(&multi)
+			r.sorted.Store(&list)
+			// Cleared only after the store so a racing Mask never sees clean with a stale list.
+			r.dirty.Store(false)
+		}
+		r.mu.Unlock()
 	}
-	for _, v := range list {
-		if strings.Contains(s, v) {
-			s = strings.ReplaceAll(s, v, Marker)
+	return *r.sorted.Load()
+}
+
+func encodedForms(v string) []string {
+	forms := []string{
+		base64.StdEncoding.EncodeToString([]byte(v)),
+		base64.RawStdEncoding.EncodeToString([]byte(v)),
+		base64.URLEncoding.EncodeToString([]byte(v)),
+		base64.RawURLEncoding.EncodeToString([]byte(v)),
+		url.QueryEscape(v),
+		url.PathEscape(v),
+	}
+	forms = append(forms, jsonForms(v)...)
+	out := forms[:0]
+	for _, f := range forms {
+		if f != v && len(f) >= MinLength {
+			out = append(out, f)
 		}
 	}
-	return s
+	return out
+}
+
+// jsonForms covers a secret embedded in a JSON string: quotes, backslashes,
+// control characters, HTML-safe \u003c style escapes and ASCII-only \uXXXX.
+func jsonForms(v string) []string {
+	plain := func(escapeHTML bool) string {
+		var buf bytes.Buffer
+		enc := json.NewEncoder(&buf)
+		enc.SetEscapeHTML(escapeHTML)
+		if enc.Encode(v) != nil {
+			return ""
+		}
+		out := strings.TrimSuffix(buf.String(), "\n")
+		return out[1 : len(out)-1]
+	}
+	forms := []string{plain(false), plain(true)}
+	var ascii strings.Builder
+	for _, r := range plain(false) {
+		switch {
+		case r < 0x80:
+			ascii.WriteRune(r)
+		case r >= 0x10000:
+			r -= 0x10000
+			fmt.Fprintf(&ascii, "\\u%04x\\u%04x", 0xd800+(r>>10), 0xdc00+(r&0x3ff))
+		default:
+			fmt.Fprintf(&ascii, "\\u%04x", r)
+		}
+	}
+	return append(forms, ascii.String())
+}
+
+// Mask replaces every registered value in s. Overlapping and prefix matches are
+// merged into one span so no tail of a longer secret survives a shorter hit.
+func (r *Registry) Mask(s string) string {
+	spans := r.mergedSpans(s)
+	if len(spans) == 0 {
+		return s
+	}
+	var b strings.Builder
+	pos := 0
+	for _, sp := range spans {
+		b.WriteString(s[pos:sp[0]])
+		b.WriteString(Marker)
+		pos = sp[1]
+	}
+	b.WriteString(s[pos:])
+	return b.String()
+}
+
+// mergedSpans returns the non-overlapping spans of s covered by registered values.
+func (r *Registry) mergedSpans(s string) [][2]int {
+	return spansOf(r.snapshot(), s)
+}
+
+// multiLineSpans is mergedSpans limited to values that contain a newline.
+func (r *Registry) multiLineSpans(s string) [][2]int {
+	r.snapshot()
+	return spansOf(*r.nlList.Load(), s)
+}
+
+func spansOf(list []string, s string) [][2]int {
+	if len(list) == 0 || s == "" {
+		return nil
+	}
+	var spans [][2]int
+	for _, v := range list {
+		for from := 0; ; {
+			i := strings.Index(s[from:], v)
+			if i < 0 {
+				break
+			}
+			spans = append(spans, [2]int{from + i, from + i + len(v)})
+			from += i + 1
+		}
+	}
+	if len(spans) == 0 {
+		return nil
+	}
+	sort.Slice(spans, func(i, j int) bool { return spans[i][0] < spans[j][0] })
+	merged := spans[:1]
+	for _, sp := range spans[1:] {
+		last := &merged[len(merged)-1]
+		if sp[0] < last[1] {
+			if sp[1] > last[1] {
+				last[1] = sp[1]
+			}
+			continue
+		}
+		merged = append(merged, sp)
+	}
+	return merged
+}
+
+// maxLen is the longest registered value or form, the basis of the stream carry window.
+func (r *Registry) maxLen() int {
+	list := r.snapshot()
+	if len(list) == 0 {
+		return 0
+	}
+	return len(list[0])
+}
+
+// maxMultiLineLen is the longest registered value that spans lines; only such a
+// value needs lines held back, and 0 means every line can be masked on its own.
+func (r *Registry) maxMultiLineLen() int {
+	r.snapshot()
+	return int(r.maxNL.Load())
 }
 
 // Len reports how many values are registered.
-func (r *Registry) Len() int { return len(*r.sorted.Load()) }
+func (r *Registry) Len() int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return len(r.primaries)
+}
 
 var shared = New()
 

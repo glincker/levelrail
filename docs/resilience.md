@@ -161,7 +161,7 @@ What is tested, and what is not (see also ADR 025 and the route snapshot above):
 - **Process down for 10 minutes.** The sealed route snapshot is on disk. At the next start it is loaded into Caddy before the database is needed, with the certificate store unavailable (`TestSnapshotRestoreNeedsNoDatabase`).
 - **TLS renewals during a database outage.** A renewal that cannot be saved fails loudly and certmagic retries it on its next maintenance pass. A database that is down never reads as "certificate missing", so no needless re-issue happens when it returns, and stored certificates are untouched (`TestCertStorageOutageIsRetriableNotMissing`). Certificates already loaded in Caddy's memory keep serving.
 
-Limits that remain: while the process is down nothing renews certificates and nothing probes app health (container health probes and the reconciler run in the control plane process). Containers are created with Docker restart policy `no`, so a container that exits, or a host that reboots, during an outage stays down until the control plane is back.
+Limits that remain: while the process is down nothing renews certificates and nothing probes app health (container health probes and the reconciler run in the control plane process). Containers are created with Docker restart policy `unless-stopped` by default (setting `containers.restart_policy`), so Docker brings them back after a host reboot or a crash during an outage. Containers created before this default keep `no` until redeployed.
 
 The Nodes page has a **Resilience check** card (`levelrail-cli resilience check`, API `GET /api/v1/system/resilience`) showing the route snapshot, certificate cache and per node agent link. **Simulate control plane outage** (`--simulate`) is a dry run: it opens the sealed snapshot the way a restart would and stops nothing. A missing or failed snapshot has a **Fix** button (`--fix`) that rewrites it from the applied config. Metrics and logs stay on each node and are pulled on demand, so nothing is buffered or lost while an agent is disconnected. Ingress is one process, so the table above still applies for a stopped process. Several ingress nodes sharing certificate state are the next step (ADR 033).
 
@@ -191,7 +191,7 @@ Measured on a 2 vCPU droplet running a build of this branch's predecessor (v0.2.
 
 Fixes shipped from these runs: pinned host port handoff with restore on failure, removal of half-started containers, a check that a pinned port is actually published, rolling deploys keeping the routed replica until cutover, required secrets enforced at reconcile time, default [load balancing](/load-balancing) for multi-replica apps, and ingress config applies skipped when nothing changed. These fixes are covered by unit tests with a fake Docker client; they have not yet been re-measured on a real server.
 
-Not measured on a server: Docker daemon restart mid-run and disk pressure on the host volume (the shared test host could not be disturbed). Containers use restart policy `no`, so after a daemon restart recovery depends on the reconciler's next pass.
+Not measured on a server: Docker daemon restart mid-run and disk pressure on the host volume (the shared test host could not be disturbed). New containers use restart policy `unless-stopped`, so Docker brings them back after a daemon restart; older ones depend on the reconciler's next pass until redeployed.
 
 ## Chaos harness
 

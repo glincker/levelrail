@@ -54,7 +54,10 @@ async function preflightSSHNodeProvision(
 
 // Reads the server's host keys without authenticating; nothing is cached.
 export function usePreflightSSHNodeProvision() {
-  return useMutation({ mutationFn: preflightSSHNodeProvision })
+  return useMutation({
+    meta: { errorToast: false },
+    mutationFn: preflightSSHNodeProvision,
+  })
 }
 
 async function createSSHNodeProvision(
@@ -80,6 +83,7 @@ async function createSSHNodeProvision(
 export function useCreateSSHNodeProvision() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: createSSHNodeProvision,
     onSuccess: () => {
       void queryClient.invalidateQueries({

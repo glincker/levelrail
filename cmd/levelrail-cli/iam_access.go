@@ -74,7 +74,7 @@ func printSimulation(out io.Writer, s apiclient.IAMSimulation) {
 
 func iamSimulateUsage(prog string) string {
 	return fmt.Sprintf("Usage:\n  %[1]s iam simulate --principal user:ID|token:ID --action ABILITY --resource RESOURCE [flags]\n\nAsk whether a principal can do an ability on a resource, using the platform's real evaluator.\nNothing is changed.\n\nFlags:\n  --principal string   who to test, user:ID or token:ID\n  --action string      ability, e.g. write\n  --resource string    resource, e.g. app:web or database:main\n", prog) +
-		fmt.Sprintf(iamAPIFlagsHelp, envAPIToken, envAPIURL, defaultAPIURL)
+		fmt.Sprintf(iamAPIFlagsHelp, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }
 
 func runIAMEffective(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -118,7 +118,7 @@ func printEffective(out io.Writer, e apiclient.IAMEffective) {
 
 func iamEffectiveUsage(prog string) string {
 	return fmt.Sprintf("Usage:\n  %[1]s iam effective --principal user:ID|token:ID [flags]\n\nShow what a principal can do on every app and database, grouped by ability.\n\nFlags:\n  --principal string   who to inspect, user:ID or token:ID\n", prog) +
-		fmt.Sprintf(iamAPIFlagsHelp, envAPIToken, envAPIURL, defaultAPIURL)
+		fmt.Sprintf(iamAPIFlagsHelp, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }
 
 func runIAMAnalyze(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -149,5 +149,5 @@ func printAnalysis(out io.Writer, a apiclient.IAMAnalysis) {
 
 func iamAnalyzeUsage(prog string) string {
 	return fmt.Sprintf("Usage:\n  %[1]s iam analyze [flags]\n\nRun static checks over every policy, attachment and token, with a one line fix for each finding.\n\nFlags:\n", prog) +
-		fmt.Sprintf(iamAPIFlagsHelp, envAPIToken, envAPIURL, defaultAPIURL)
+		fmt.Sprintf(iamAPIFlagsHelp, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }

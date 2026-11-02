@@ -63,6 +63,10 @@ func (rt *Router) handleProjectLifecycle(w http.ResponseWriter, r *http.Request,
 		SucceededDatabases: []string{},
 	}
 	for _, app := range apps {
+		if !suspended && rt.volumeTransfers.importing(app.Name) {
+			result.FailedApps = append(result.FailedApps, app.Name)
+			continue
+		}
 		if err := rt.apps.UpdateServiceSuspended(r.Context(), app.Name, suspended); err != nil {
 			rt.logger.Error("api: project lifecycle: update app suspended failed",
 				slog.String("error", err.Error()), slog.String("project_id", id), slog.String("app", app.Name))

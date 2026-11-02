@@ -6,12 +6,14 @@ import (
 	"sort"
 
 	"github.com/GLINCKER/levelrail/internal/meshpath"
+	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 // DatabaseMeshPorts allocates a database's stable mesh port.
 type DatabaseMeshPorts interface {
 	EnsureDatabaseMeshPort(ctx context.Context, name string, minPort, maxPort int) (int, error)
+	EnsureDatabasePoolerMeshPort(ctx context.Context, name string, minPort, maxPort int) (int, error)
 }
 
 // MeshDatabaseConfig wires cross-node database connections over the mesh.
@@ -46,7 +48,9 @@ func SameNode(a, b, localNodeID string) bool {
 type dbEndpoint struct {
 	host string
 	port int
-	ip   string
+	// poolerPort is 0 when the database has no pooler.
+	poolerPort int
+	ip         string
 }
 
 // crossNodeDatabase returns the mesh endpoint for db when it runs on a
@@ -66,6 +70,14 @@ func (c *Controller) crossNodeDatabase(ctx context.Context, appNodeID string, db
 	if err != nil {
 		return dbEndpoint{}, false, fmt.Errorf("database %q: allocate mesh port: %w", db.Name, err)
 	}
+	// Reserving the pooler port here makes the database publish it before the
+	// app ever dials it.
+	var poolerPort int
+	if database.PoolerActive(db) {
+		if poolerPort, err = c.meshDB.Ports.EnsureDatabasePoolerMeshPort(ctx, db.Name, c.meshDB.MinPort, c.meshDB.MaxPort); err != nil {
+			return dbEndpoint{}, false, fmt.Errorf("database %q: allocate pooler mesh port: %w", db.Name, err)
+		}
+	}
 	path, err := c.meshDB.Endpoints.Endpoint(ctx, db.NodeID)
 	if err != nil {
 		return dbEndpoint{}, false, fmt.Errorf("database %q: mesh endpoint: %w", db.Name, err)
@@ -73,7 +85,7 @@ func (c *Controller) crossNodeDatabase(ctx context.Context, appNodeID string, db
 	if !path.Usable {
 		return dbEndpoint{}, false, fmt.Errorf("database %q is on another node with no usable mesh path yet: %s", db.Name, path.Reason)
 	}
-	return dbEndpoint{host: DatabaseHost(db.Name, c.meshDB.Zone), port: port, ip: path.Address}, true, nil
+	return dbEndpoint{host: DatabaseHost(db.Name, c.meshDB.Zone), port: port, poolerPort: poolerPort, ip: path.Address}, true, nil
 }
 
 // crossNodeDatabaseName reports a managed database on another node than

@@ -14,6 +14,7 @@ import (
 )
 
 func TestAutoscaleLifecycle(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -79,6 +80,7 @@ func TestAutoscaleLifecycle(t *testing.T) {
 }
 
 func TestAutoscaleRejectsManualReplicaEdits(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -112,6 +114,7 @@ func TestAutoscaleRejectsManualReplicaEdits(t *testing.T) {
 }
 
 func TestAutoscaleAppDeleteCascades(t *testing.T) {
+	t.Parallel()
 	_, db := newTestRouter(t)
 	ctx := context.Background()
 	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "nginx:1", Port: 80}); err != nil {

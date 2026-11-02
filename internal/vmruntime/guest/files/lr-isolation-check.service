@@ -1,0 +1,11 @@
+[Unit]
+Description=Levelrail guest isolation self-check
+After=lr-isolation.service docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/lr-isolation-check
+
+[Install]
+WantedBy=multi-user.target

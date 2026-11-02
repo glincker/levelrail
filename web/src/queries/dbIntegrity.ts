@@ -78,6 +78,7 @@ export function useCheckIntegrity() {
 export function useStageRestore() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async (name: string): Promise<IntegrityPending> => {
       const res = await fetch(`${URL}/restore`, {
         method: 'POST',

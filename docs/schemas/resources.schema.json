@@ -75,6 +75,7 @@
             "node_offline",
             "node_resource_usage",
             "patch_status",
+            "pooler_saturated",
             "registry_refresh_failing",
             "restore_drill_failed",
             "scheduled_task_failure",
@@ -419,6 +420,14 @@
           "default": false,
           "description": "Give each preview an isolated credential on this database (Postgres and Redis).",
           "type": "boolean"
+        },
+        "seedFrom": {
+          "default": "none",
+          "description": "Start an ephemeral preview instance from the latest succeeded backup (latest) or empty (none). Used with ephemeralInPreviews.",
+          "enum": [
+            "latest",
+            "none"
+          ]
         },
         "version": {
           "description": "Engine version.",
@@ -1293,6 +1302,16 @@
       ],
       "type": "object"
     },
+    "security": {
+      "additionalProperties": false,
+      "properties": {
+        "read_only_rootfs": {
+          "description": "Mount the root filesystem read-only with tmpfs on /tmp and /run. Omit to inherit the fleet default; false opts out of a fleet-wide true. Not allowed with files.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
     "service": {
       "additionalProperties": false,
       "anyOf": [
@@ -1487,6 +1506,10 @@
             "$ref": "#/$defs/route"
           },
           "type": "array"
+        },
+        "security": {
+          "$ref": "#/$defs/security",
+          "description": "Per-service container hardening overrides."
         },
         "static": {
           "$ref": "#/$defs/staticOptions",

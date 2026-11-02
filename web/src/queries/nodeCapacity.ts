@@ -54,6 +54,7 @@ export function useNodeCleanupRuns(id: string) {
 
 export function useCleanupPreview(id: string) {
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async () =>
       parse<CleanupResult>(
         await fetch(path(id, 'cleanup'), {
@@ -69,6 +70,7 @@ export function useCleanupPreview(id: string) {
 export function useRunCleanup(id: string) {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async () =>
       parse<CleanupResult>(
         await fetch(path(id, 'cleanup'), {
@@ -88,6 +90,7 @@ export function useRunCleanup(id: string) {
 export function useSaveGuardrails(id: string) {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async (settings: NodeGuardrailSettings) =>
       parse<NodeCapacity>(
         await fetch(path(id, 'guardrails'), {

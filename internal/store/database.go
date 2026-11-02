@@ -2,10 +2,13 @@ package store
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 )
 
 // Supported managed database engines. internal/spec's own engine list
@@ -62,6 +65,11 @@ type DesiredDatabase struct {
 	Name    string
 	Engine  string
 	Version string
+	// InstanceID and CreatedAt identify this incarnation of the name, so a
+	// later database reusing the name cannot restore this one's backups.
+	// Set once on insert and never changed by SaveDesiredDatabase.
+	InstanceID string
+	CreatedAt  string
 	// NodeID: see DesiredService.NodeID's own doc comment, identical
 	// meaning and identical "SaveDesiredDatabase never writes it, only
 	// UpdateDatabaseNode does" exception below.
@@ -131,6 +139,11 @@ type DesiredDatabase struct {
 	// two. PITREnabledAt is "" whenever PITREnabled is false.
 	PITREnabled   bool
 	PITREnabledAt string
+	// BaseBackupSchedule is a cron expression for base backups taken
+	// independently of the dump schedule; "" ties them to each dump.
+	// BaseBackupTargetID falls back to BackupTargetID when empty.
+	BaseBackupSchedule string
+	BaseBackupTargetID string
 
 	// ExistingVolume is the owner's stored choice ("reuse" or "discard")
 	// about a data volume a deleted database of this name left behind;
@@ -188,21 +201,78 @@ func (db *DB) SaveDesiredDatabase(ctx context.Context, d DesiredDatabase) error 
 	if err != nil {
 		return fmt.Errorf("store: marshal resources for database %q: %w", d.Name, err)
 	}
+	instanceID, err := newDatabaseInstanceID()
+	if err != nil {
+		return fmt.Errorf("store: save desired database %q: %w", d.Name, err)
+	}
 
 	_, err = db.ExecContext(ctx, `
-		INSERT INTO desired_databases (name, engine, version, resources, node_id, project_id, existing_volume, volume_resolved, updated_at)
-		VALUES (?, ?, ?, ?, '', NULL, ?, 0, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		INSERT INTO desired_databases (name, engine, version, resources, node_id, project_id, existing_volume, volume_resolved, instance_id, created_at, updated_at)
+		VALUES (?, ?, ?, ?, '', NULL, ?, 0, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (name) DO UPDATE SET
 			engine = excluded.engine,
 			version = excluded.version,
 			resources = excluded.resources,
 			existing_volume = CASE WHEN excluded.existing_volume <> '' THEN excluded.existing_volume ELSE desired_databases.existing_volume END,
 			updated_at = excluded.updated_at
-	`, d.Name, d.Engine, d.Version, string(resourcesJSON), d.ExistingVolume)
+	`, d.Name, d.Engine, d.Version, string(resourcesJSON), d.ExistingVolume, instanceID)
 	if err != nil {
 		return fmt.Errorf("store: save desired database %q: %w", d.Name, err)
 	}
 	return nil
+}
+
+// ErrDatabaseExists is returned by CreateDesiredDatabase when the name is taken.
+var ErrDatabaseExists = errors.New("store: database already exists")
+
+// CreateDesiredDatabase inserts a new database and fails with ErrDatabaseExists
+// if the name is taken, so two concurrent creates cannot both win.
+func (db *DB) CreateDesiredDatabase(ctx context.Context, d DesiredDatabase) error {
+	resourcesJSON, err := json.Marshal(d.Resources)
+	if err != nil {
+		return fmt.Errorf("store: marshal resources for database %q: %w", d.Name, err)
+	}
+	instanceID, err := newDatabaseInstanceID()
+	if err != nil {
+		return fmt.Errorf("store: create desired database %q: %w", d.Name, err)
+	}
+	res, err := db.ExecContext(ctx, `
+		INSERT INTO desired_databases (name, engine, version, resources, node_id, project_id, existing_volume, volume_resolved, instance_id, created_at, updated_at)
+		VALUES (?, ?, ?, ?, '', NULL, ?, 0, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		ON CONFLICT (name) DO NOTHING
+	`, d.Name, d.Engine, d.Version, string(resourcesJSON), d.ExistingVolume, instanceID)
+	if err != nil {
+		return fmt.Errorf("store: create desired database %q: %w", d.Name, err)
+	}
+	if n, err := res.RowsAffected(); err == nil && n == 0 {
+		return ErrDatabaseExists
+	}
+	return nil
+}
+
+func newDatabaseInstanceID() (string, error) {
+	b := make([]byte, 8)
+	if _, err := rand.Read(b); err != nil {
+		return "", fmt.Errorf("generate instance id: %w", err)
+	}
+	return hex.EncodeToString(b), nil
+}
+
+// OwnsBackup reports whether a backup row belongs to this database instance.
+// A row stamped with an instance id must match it. A row from before instance
+// ids existed has none, so it matches only when the database was created at or before
+// the backup started (a backup cannot predate its database); unparsable times
+// are refused.
+func (d DesiredDatabase) OwnsBackup(instanceID, startedAt string) bool {
+	if instanceID != "" {
+		return d.InstanceID != "" && instanceID == d.InstanceID
+	}
+	created, err1 := time.Parse(time.RFC3339, d.CreatedAt)
+	started, err2 := time.Parse(time.RFC3339, startedAt)
+	if err1 != nil || err2 != nil {
+		return false
+	}
+	return !started.Before(created)
 }
 
 // UpdateDatabaseNode is DesiredDatabase's counterpart to
@@ -472,6 +542,59 @@ func (db *DB) SetDatabaseBackupSchedule(ctx context.Context, name, targetID, sch
 	return nil
 }
 
+// SetDatabaseBaseBackupSchedule sets the independent base backup cron and
+// target for name; an empty schedule returns to base backups after each dump.
+func (db *DB) SetDatabaseBaseBackupSchedule(ctx context.Context, name, schedule, targetID string) error {
+	res, err := db.ExecContext(ctx, `
+		UPDATE desired_databases
+		SET base_backup_schedule = ?, base_backup_target_id = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+		WHERE name = ?
+	`, schedule, targetID, name)
+	if err != nil {
+		return fmt.Errorf("store: set base backup schedule for database %q: %w", name, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: set base backup schedule for database %q: rows affected: %w", name, err)
+	}
+	if n == 0 {
+		return ErrDatabaseNotFound
+	}
+	return nil
+}
+
+// ListBaseBackupScheduledDatabases returns PITR-enabled databases with their
+// own base backup schedule and a usable target, ordered by name.
+func (db *DB) ListBaseBackupScheduledDatabases(ctx context.Context) ([]DesiredDatabase, error) {
+	rows, err := db.QueryContext(ctx, `
+		SELECT `+desiredDatabaseColumns+`
+		FROM desired_databases
+		WHERE pitr_enabled = 1 AND base_backup_schedule != ''
+		AND (base_backup_target_id != '' OR backup_target_id IS NOT NULL)
+		AND name NOT IN (`+pendingDatabaseNamesSQL+`)
+		ORDER BY name
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("store: list base backup scheduled databases: %w", err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	var out []DesiredDatabase
+	for rows.Next() {
+		d, err := scanDesiredDatabase(rows.Scan)
+		if err != nil {
+			return nil, fmt.Errorf("store: scan base backup scheduled row: %w", err)
+		}
+		out = append(out, *d)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: iterate base backup scheduled rows: %w", err)
+	}
+	return out, nil
+}
+
 // PublicPortRangeStart and PublicPortRangeEnd bound the host ports
 // auto-assigned by SetDatabasePublicAccess when the caller doesn't
 // request a specific one. Chosen clear of every port this control plane
@@ -648,7 +771,7 @@ func (db *DB) ListScheduledDatabases(ctx context.Context) ([]DesiredDatabase, er
 // ListDesiredDatabasesByNode, ListDesiredDatabasesByProject,
 // ListScheduledDatabases), the database-kind counterpart to
 // desiredServiceColumns in service.go.
-const desiredDatabaseColumns = "name, engine, version, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, public_bind_address, resources, suspended, pitr_enabled, pitr_enabled_at, existing_volume, volume_resolved, pooler_enabled, pooler_pool_size, pooler_max_client_conn"
+const desiredDatabaseColumns = "name, engine, version, instance_id, created_at, node_id, project_id, backup_target_id, backup_schedule, backup_retain, backup_retain_days, publicly_accessible, public_port, public_bind_address, resources, suspended, pitr_enabled, pitr_enabled_at, existing_volume, volume_resolved, pooler_enabled, pooler_pool_size, pooler_max_client_conn, base_backup_schedule, base_backup_target_id"
 
 // scanDesiredDatabase reads the column shape desiredDatabaseColumns
 // selects, via either row.Scan or rows.Scan (same signature), so the
@@ -666,7 +789,7 @@ func scanDesiredDatabase(scan func(dest ...any) error) (*DesiredDatabase, error)
 		suspended                 bool
 		pitrEnabled               bool
 	)
-	if err := scan(&d.Name, &d.Engine, &d.Version, &d.NodeID, &projectID, &backupTargetID, &d.BackupSchedule, &d.BackupRetain, &d.BackupRetainDays, &publiclyAccessible, &publicPort, &publicBindAddress, &resourcesJSON, &suspended, &pitrEnabled, &d.PITREnabledAt, &d.ExistingVolume, &d.VolumeResolved, &d.PoolerEnabled, &d.PoolerPoolSize, &d.PoolerMaxClientConn); err != nil {
+	if err := scan(&d.Name, &d.Engine, &d.Version, &d.InstanceID, &d.CreatedAt, &d.NodeID, &projectID, &backupTargetID, &d.BackupSchedule, &d.BackupRetain, &d.BackupRetainDays, &publiclyAccessible, &publicPort, &publicBindAddress, &resourcesJSON, &suspended, &pitrEnabled, &d.PITREnabledAt, &d.ExistingVolume, &d.VolumeResolved, &d.PoolerEnabled, &d.PoolerPoolSize, &d.PoolerMaxClientConn, &d.BaseBackupSchedule, &d.BaseBackupTargetID); err != nil {
 		return nil, err
 	}
 	d.Suspended = suspended

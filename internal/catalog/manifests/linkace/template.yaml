@@ -1,0 +1,24 @@
+id: linkace
+name: LinkAce
+description: A self-hosted bookmark archive with tags, lists, link checks and a REST API. GPL-3.0 licensed. Runs on SQLite in one container. On first open, register the admin account; the public address you assign is used as the app URL, so assign the domain before the first visit.
+icon: link
+category: Productivity
+documentation_url: https://www.linkace.org/docs/
+source_repo: https://github.com/Kovah/LinkAce
+license: GPL-3.0-or-later
+license_class: copyleft
+license_url: https://github.com/Kovah/LinkAce/blob/2.x/LICENSE.md
+recommended_memory_bytes: 268435456
+env:
+  - key: TZ
+    label: Time zone
+    description: IANA time zone for timestamps and scheduled link checks.
+    default: Etc/UTC
+domains:
+  - service: linkace
+    port: 80
+    description: Public address of LinkAce.
+healthcheck:
+  service: linkace
+  port: 80
+  path: /

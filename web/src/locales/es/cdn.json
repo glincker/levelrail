@@ -1,0 +1,235 @@
+{
+  "retry": "Intentar de nuevo",
+  "nav": {
+    "label": "Secciones de CDN",
+    "overview": "Resumen",
+    "caches": "Cachés",
+    "redirects": "Redirecciones",
+    "routing": "Reglas de enrutamiento"
+  },
+  "window": {
+    "label": "Intervalo de tiempo",
+    "5m": "5 minutos",
+    "1h": "1 hora",
+    "24h": "24 horas"
+  },
+  "overview": {
+    "title": "CDN y cachés",
+    "description": "Solicitudes, errores y aciertos de caché en todas las aplicaciones, y cuáles de tus servidores las respondieron."
+  },
+  "tiles": {
+    "requests": "Solicitudes",
+    "perSecond": "{{rate}} por segundo",
+    "requestsInfo": "Solicitudes que atendió el ingress en este intervalo, según las métricas de solicitudes.",
+    "errors": "Errores del servidor (5xx)",
+    "errorsInfo": "Proporción de solicitudes respondidas con un estado 5xx, incluidos los errores de la aplicación.",
+    "hitRate": "Tasa de aciertos de caché",
+    "hitRateInfo": "Aciertos entre aciertos más fallos en rutas con caché, durante los últimos {{minutes}} minutos. Las solicitudes que se saltan la caché no se cuentan.",
+    "hitRateSince": "Aciertos entre aciertos más fallos en rutas con caché. Se cuentan en memoria desde que inició el ingress, así que se reinician con él.",
+    "saved": "Ancho de banda ahorrado",
+    "savedInfo": "Bytes del cuerpo de respuesta servidos desde la caché en lugar de la aplicación, durante los últimos {{minutes}} minutos.",
+    "savedSince": "Bytes del cuerpo de respuesta servidos desde la caché en lugar de la aplicación, desde que inició el ingress.",
+    "entries": "Objetos en caché",
+    "memory": "Memoria de la caché",
+    "memoryInfo": "Bytes retenidos en el ingress frente a su tope. Cuando se llega al tope, primero se descartan los objetos más antiguos y menos usados.",
+    "none": "Sin datos"
+  },
+  "nodes": {
+    "title": "Desde dónde se sirve el tráfico",
+    "help": "Las solicitudes se cuentan para el servidor donde se ejecuta cada aplicación. La ubicación de los visitantes no se mide.",
+    "aria": "Proporción de solicitudes por servidor",
+    "local": "Este servidor",
+    "apps_one": "{{count}} aplicación",
+    "apps_other": "{{count}} aplicaciones",
+    "noRegions": "Aún no hay etiquetas de región. Agrega una a un servidor en la página de Nodos para verla aquí.",
+    "emptyTitle": "No hay solicitudes en este intervalo",
+    "emptyBody": "Las proporciones aparecen cuando una aplicación con dominio recibe tráfico.",
+    "emptyAction": "Abrir dominios"
+  },
+  "cacheCard": {
+    "title": "Caché",
+    "help": "Los aciertos los responde el ingress. Los fallos van a la aplicación.",
+    "open": "Abrir cachés"
+  },
+  "chart": {
+    "empty": "Aún no hay actividad de caché. Activa el almacenamiento en caché de un dominio para ver aquí los aciertos y fallos.",
+    "aria": "{{hits}} aciertos de caché y {{misses}} fallos en los últimos {{minutes}} minutos",
+    "span": "Últimos {{minutes}} minutos",
+    "hits": "Aciertos",
+    "misses": "Fallos"
+  },
+  "caches": {
+    "title": "Cachés",
+    "description": "La caché de respuestas del ingress: qué tan bien funciona para cada aplicación y cómo vaciarla.",
+    "scopeTitle": "Dónde viven las entradas",
+    "scopeBody": "Una sola caché en memoria del ingress de este plano de control atiende a todas las aplicaciones, incluidas las de otros servidores. Las purgas se aplican ahí. Los objetos se etiquetan con el encabezado de respuesta {{tag}}. Los contadores se reinician cuando se reinicia el ingress, y aún no hay una caché de borde por servidor.",
+    "chartTitle": "Tasa de aciertos en el tiempo",
+    "chartHelp": "Aciertos y fallos de caché por minuto en todas las aplicaciones.",
+    "tabApps": "Aplicaciones",
+    "tabPurge": "Purgar",
+    "tabHistory": "Historial"
+  },
+  "apps": {
+    "app": "Aplicación",
+    "cache": "Almacenamiento en caché",
+    "onFor": "Activado en {{on}} de {{total}} dominios",
+    "off": "Desactivado",
+    "requests": "Solicitudes almacenables en caché",
+    "hitRate": "Tasa de aciertos",
+    "saved": "Ancho de banda ahorrado",
+    "aria": "Tasa de aciertos de caché por aplicación, de mayor a menor actividad",
+    "emptyTitle": "Aún no hay aplicaciones",
+    "emptyBody": "Despliega una aplicación, asígnale un dominio y luego activa el almacenamiento en caché.",
+    "emptyAction": "Abrir aplicaciones",
+    "why": "Por qué no está en caché"
+  },
+  "picker": {
+    "label": "Aplicación"
+  },
+  "purge": {
+    "scopeLegend": "Qué purgar",
+    "scope": {
+      "url": {
+        "title": "Una URL",
+        "help": "Una ruta y consulta, todas las variantes.",
+        "field": "Ruta y consulta"
+      },
+      "prefix": {
+        "title": "Prefijo de ruta",
+        "help": "Todo lo que cuelga de una ruta.",
+        "field": "Prefijo de ruta"
+      },
+      "tag": {
+        "title": "Etiqueta de caché",
+        "help": "Objetos que tu aplicación etiquetó en un encabezado de respuesta.",
+        "field": "Etiqueta de caché"
+      },
+      "all": {
+        "title": "Todo",
+        "help": "Vacía toda la caché de este alcance.",
+        "field": ""
+      }
+    },
+    "allNote": "Elimina todas las respuestas en caché de {{target}}. La siguiente solicitud a cada URL va a la aplicación.",
+    "action": "Purgar",
+    "purging": "Purgando",
+    "done_one": "Se eliminó {{count}} respuesta en caché.",
+    "done_other": "Se eliminaron {{count}} respuestas en caché.",
+    "confirmTitle": "¿Purgar todo de {{target}}?",
+    "confirmBody": "Se elimina del ingress cada respuesta en caché.",
+    "consequenceOrigin": "La aplicación recibe todas las solicitudes de nuevo hasta que la caché se vuelva a llenar, así que espera un pico de carga.",
+    "consequenceUndo": "No se puede deshacer. Queda registrado en el historial de purgas.",
+    "confirm": "Purgar todo"
+  },
+  "history": {
+    "aria": "Purgas de caché de {{app}}, de la más nueva a la más antigua",
+    "when": "Cuándo",
+    "who": "Quién",
+    "domain": "Dominio",
+    "scope": "Qué",
+    "removed": "Eliminadas",
+    "emptyTitle": "Aún no hay purgas",
+    "emptyBody": "Las purgas hechas desde el panel, la CLI o la API se listan aquí con quién las ejecutó."
+  },
+  "app": {
+    "subtitle": "Guarda en caché archivos estáticos y otras respuestas seguras en el ingress para que las solicitudes repetidas nunca lleguen a tu aplicación. Las páginas dinámicas no se guardan a menos que tu aplicación o una regla lo permita.",
+    "presetTitle": "Guardar en caché los recursos estáticos",
+    "presetBody": "Agrega una regla para imágenes, scripts, estilos y fuentes, y activa el almacenamiento en caché. El Cache-Control de tu propia aplicación sigue prevaleciendo, y las respuestas con cookies nunca se guardan.",
+    "presetAction": "Guardar en caché los recursos estáticos",
+    "presetApplying": "Aplicando",
+    "domain": "Dominio",
+    "state": "Almacenamiento en caché",
+    "on": "Activado",
+    "off": "Desactivado",
+    "rules": "Reglas",
+    "edit": "Editar",
+    "editRules": "Editar reglas",
+    "domainsAria": "Ajustes de caché de los dominios de {{app}}",
+    "chartTitle": "Tasa de aciertos en el tiempo",
+    "counts": "{{hits}} aciertos, {{misses}} fallos, {{bypasses}} omitidas desde que inició el ingress.",
+    "noDomainsTitle": "Esta aplicación no tiene dominio",
+    "noDomainsBody": "La caché se coloca delante de los dominios. Agrega uno para empezar a guardar en caché.",
+    "noDomainsAction": "Agregar un dominio"
+  },
+  "controls": {
+    "domain": "Dominio",
+    "app": "Aplicación",
+    "open": "Abrir",
+    "docs": "Guía de controles de tráfico",
+    "tab": {
+      "redirects": "Redirecciones",
+      "forwarding": "Reenvío de rutas",
+      "headers": "Encabezados"
+    },
+    "redirects": {
+      "title": "Redirecciones",
+      "description": "Fuerza HTTPS, elige un host canónico y reenvía las direcciones antiguas. Cada dominio tiene su propia configuración.",
+      "aria": "Dominios y su configuración de redirecciones"
+    },
+    "routing": {
+      "title": "Reglas de enrutamiento",
+      "description": "Envía rutas a otra aplicación o URL y define encabezados de solicitud y respuesta. Cada dominio tiene su propia configuración.",
+      "aria": "Dominios y su configuración de enrutamiento"
+    },
+    "emptyTitle": "Aún no hay dominios que configurar",
+    "emptyBody": "Primero agrega un dominio a una aplicación. Sus controles de redirección y enrutamiento aparecerán aquí.",
+    "emptyAction": "Abrir dominios"
+  },
+  "thirdParty": {
+    "title": "Usar Cloudflare, Akamai o Fastly por delante",
+    "headers": "Envía Cache-Control (y un encabezado de etiqueta como Cache-Tag) desde tu aplicación. Tanto el CDN como el ingress los respetan.",
+    "clientIp": "Agrega los rangos de direcciones del CDN al ajuste de proxies de confianza para que las IP de los visitantes, los límites de frecuencia y las reglas por país usen la dirección real del cliente.",
+    "plugins": "Las integraciones propias para purgar el CDN y dirigir el tráfico están planificadas mediante el sistema de plugins. Hoy no hay nada conectado.",
+    "docs": "Leer la guía"
+  },
+  "banner": {
+    "diagram": {
+      "origin": "Origen",
+      "edge": "Borde"
+    }
+  },
+  "reasons": {
+    "column": "Por qué no está en caché",
+    "none": "Nada bloquea la caché",
+    "fixVary": "Agrega {{header}} a Vary",
+    "nextjsHelp": "Parece una aplicación Next.js. El preajuste de Next.js identifica las páginas en caché por los encabezados de su enrutador.",
+    "nextjsFix": "Aplicar el preajuste de Next.js",
+    "short": {
+      "vary_header": "La aplicación varía según {{header}}",
+      "set_cookie": "Las respuestas definen una cookie",
+      "private": "Las respuestas están marcadas como privadas",
+      "no_store": "Las respuestas prohíben el almacenamiento (no-store)",
+      "no_cache": "Las respuestas exigen revalidación (no-cache)",
+      "status_not_cached": "El estado de la respuesta no se guarda en caché",
+      "too_large": "Las respuestas son demasiado grandes",
+      "range": "Las solicitudes Range se saltan la caché",
+      "authorization": "Las solicitudes llevan credenciales",
+      "cookie_request": "Las solicitudes llevan cookies",
+      "upgrade": "Las solicitudes de cambio de protocolo se saltan la caché",
+      "other": "Otros motivos"
+    },
+    "long": {
+      "vary_header": "las respuestas varían según el encabezado {{header}}, que ninguna regla de caché incluye, así que no se pueden guardar de forma segura.",
+      "set_cookie": "las respuestas definen una cookie, así que son personales y no se guardan.",
+      "private": "la aplicación marcó las respuestas como privadas.",
+      "no_store": "las solicitudes o respuestas indican no-store.",
+      "no_cache": "las respuestas indican no-cache, así que deben comprobarse con la aplicación cada vez.",
+      "status_not_cached": "las respuestas tenían un estado que la regla no guarda en caché. Agrega el estado a la regla para guardarlas.",
+      "too_large": "las respuestas superaron el límite de caché por objeto.",
+      "range": "las solicitudes pidieron una parte de un archivo (Range), que nunca se guarda en caché.",
+      "authorization": "las solicitudes llevaban un encabezado Authorization, así que nunca se guardan en caché.",
+      "cookie_request": "las solicitudes llevaban una cookie. Activa el almacenamiento en caché con cookies en la regla si la página es igual para todos.",
+      "upgrade": "las solicitudes pidieron cambiar de protocolo (WebSocket), que nunca se guarda en caché.",
+      "other": "las solicitudes quedaron fuera de la caché por motivos menos comunes."
+    }
+  },
+  "proxy": {
+    "title": "Proxy de Cloudflare",
+    "body": "Pasa los dominios de esta aplicación por el proxy de Cloudflare cuando Levelrail escribe sus registros DNS. Los registros existentes cambian la próxima vez que se ejecute la corrección de DNS.",
+    "following": "Sigue el ajuste del servidor, actualmente {{state}}.",
+    "override": "Definido solo para esta aplicación.",
+    "reset": "Seguir el ajuste del servidor",
+    "on": "activado",
+    "off": "desactivado"
+  }
+}

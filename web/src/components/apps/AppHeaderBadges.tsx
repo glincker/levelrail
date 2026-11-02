@@ -16,6 +16,7 @@ import { AsleepFor } from '../AsleepFor'
 import { useAppNetwork } from '../../queries/appNetwork'
 import { useDeployAttempts } from '../../queries/deployAttempts'
 import { nodeDetailQueryOptions } from '../../queries/nodes'
+import { formatAbsolute } from '../../lib/dateFormat'
 import type { AppDetail } from '../../types/appDetail'
 
 // Below sm only the icon shows; the text stays reachable via title and sr-only.
@@ -43,7 +44,14 @@ export function AppHeaderBadges({
   app,
   attentionCount = 0,
 }: {
-  app: Pick<AppDetail, 'name' | 'node_id' | 'node_name' | 'node_offline'>
+  app: Pick<
+    AppDetail,
+    | 'name'
+    | 'node_id'
+    | 'node_name'
+    | 'node_offline'
+    | 'previous_release_held_until'
+  >
   attentionCount?: number
 }) {
   const { t } = useTranslation('appAccess')
@@ -67,6 +75,8 @@ export function AppHeaderBadges({
     ? t('badges.port', { port: network.container_port })
     : ''
   const deployedLabel = t('badges.deployed')
+  // The API omits the field once the hold has lapsed.
+  const heldUntil = app.previous_release_held_until
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       {attentionCount > 0 ? (
@@ -129,6 +139,18 @@ export function AppHeaderBadges({
             icon={<ServerGlassIcon size="1.4em" aria-hidden="true" />}
           >
             {app.node_name ?? app.node_id}
+          </Chip>
+        </Link>
+      ) : null}
+      {heldUntil ? (
+        <Link to="/apps/$name/deploys" params={{ name: app.name }}>
+          <Chip
+            label={t('badges.previousHeldTitle', {
+              time: formatAbsolute(heldUntil),
+            })}
+            icon={<RestoreGlassIcon size="1.4em" aria-hidden="true" />}
+          >
+            {t('badges.previousHeld')} <RelativeTime at={heldUntil} live />
           </Chip>
         </Link>
       ) : null}

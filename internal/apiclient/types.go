@@ -18,6 +18,8 @@ type ServiceResources struct {
 	NanoCPUs        int64  `json:"nano_cpus,omitempty"`
 	SwapMemoryBytes int64  `json:"swap_memory_bytes,omitempty"`
 	CPUSetCPUs      string `json:"cpuset_cpus,omitempty"`
+	// ReadOnlyRootfs is the per-app read-only root choice; nil inherits.
+	ReadOnlyRootfs *bool `json:"read_only_rootfs,omitempty"`
 }
 
 // ServiceProbe mirrors one of AppResource.Health's two probes (readiness
@@ -56,6 +58,8 @@ type ServiceHooks struct {
 type AppResource struct {
 	Name  string `json:"name"`
 	Image string `json:"image"`
+	// TemplateID is the catalog template the app was deployed from, empty otherwise.
+	TemplateID string `json:"template_id,omitempty"`
 	// PendingImage is set while a rollout to a new image is in progress or
 	// failed; Image is then the last image confirmed serving.
 	PendingImage string `json:"pending_image,omitempty"`
@@ -1020,6 +1024,34 @@ type DomainCheckResource struct {
 	Challenge   string       `json:"challenge,omitempty"`
 	DNSProvider string       `json:"dns_provider,omitempty"`
 	ACMEFailure *ACMEFailure `json:"acme_failure,omitempty"`
+	// Authoritative, Public and Local are the answers of the zone's name
+	// servers, public resolvers and this host's resolver.
+	Authoritative []DNSSource `json:"authoritative,omitempty"`
+	Public        []DNSSource `json:"public,omitempty"`
+	Local         []DNSSource `json:"local,omitempty"`
+	Verdict       string      `json:"verdict,omitempty"`
+	LocalStale    bool        `json:"local_stale,omitempty"`
+	RetryAt       string      `json:"retry_at,omitempty"`
+	Escalated     bool        `json:"escalated,omitempty"`
+	FlushCommand  string      `json:"flush_command,omitempty"`
+	Hints         []DNSHint   `json:"hints,omitempty"`
+	Zone          string      `json:"zone,omitempty"`
+	// NameserverProvider is cloudflare, route53, other or unknown.
+	NameserverProvider string `json:"nameserver_provider,omitempty"`
+}
+
+// DNSSource is one resolver's answer in a domain check.
+type DNSSource struct {
+	Name      string   `json:"name"`
+	Addresses []string `json:"addresses,omitempty"`
+	TTL       uint32   `json:"ttl,omitempty"`
+	Error     string   `json:"error,omitempty"`
+}
+
+// DNSHint is one piece of DNS guidance in a domain check.
+type DNSHint struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
 }
 
 // ACMEFailure mirrors internal/api's acmeFailureResource.
@@ -1365,9 +1397,19 @@ type PITRStatusResource struct {
 	WindowStart   string `json:"window_start,omitempty"`
 	WindowEnd     string `json:"window_end,omitempty"`
 	WindowError   string `json:"window_error,omitempty"`
+	// BaseBackupSchedule is the independent base backup cron, empty when a
+	// base backup follows each scheduled dump.
+	BaseBackupSchedule string `json:"base_backup_schedule,omitempty"`
+	BaseBackupTargetID string `json:"base_backup_target_id,omitempty"`
 	// WALShip is the last shipping outcome of the WAL archive to the backup
 	// target; nil until a pass has run.
 	WALShip *WALShipResource `json:"wal_ship,omitempty"`
+}
+
+// PITRBaseBackupScheduleRequest mirrors internal/api's enablePITRRequest.
+type PITRBaseBackupScheduleRequest struct {
+	BaseBackupSchedule *string `json:"base_backup_schedule,omitempty"`
+	BaseBackupTargetID string  `json:"base_backup_target_id,omitempty"`
 }
 
 // WALShipResource mirrors internal/api's walShipResource.
@@ -1463,6 +1505,24 @@ type TriggerCloneRestoreRequest struct {
 	Version   string            `json:"version,omitempty"`
 	ProjectID string            `json:"project_id,omitempty"`
 	Resources *ServiceResources `json:"resources,omitempty"`
+}
+
+// CreateDatabaseBranchRequest mirrors internal/api's databaseBranchRequest.
+type CreateDatabaseBranchRequest struct {
+	Name      string `json:"name"`
+	BackupID  string `json:"backup_id,omitempty"`
+	At        string `json:"at,omitempty"`
+	ProjectID string `json:"project_id,omitempty"`
+}
+
+// DatabaseBranchResource mirrors internal/api's databaseBranchResource.
+type DatabaseBranchResource struct {
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	BranchedFrom string `json:"branched_from"`
+	BackupID     string `json:"backup_id,omitempty"`
+	At           string `json:"at,omitempty"`
+	Status       string `json:"status"`
 }
 
 // VolumeCloneRestoreResource mirrors internal/api's
@@ -1690,6 +1750,54 @@ type ServiceTemplateListItem struct {
 	RecommendedMemoryBytes int64  `json:"recommended_memory_bytes,omitempty"`
 	RequiresGPU            bool   `json:"requires_gpu,omitempty"`
 	Verified               bool   `json:"verified"`
+	TemplateFacts
+}
+
+// TemplateFacts mirrors internal/api's templateFacts: the marketplace
+// facts every catalog entry carries. All fields are optional.
+type TemplateFacts struct {
+	License      *TemplateLicense      `json:"license,omitempty"`
+	Listing      *TemplateListing      `json:"listing,omitempty"`
+	Trust        *TemplateTrust        `json:"trust,omitempty"`
+	Verification *TemplateVerification `json:"verification,omitempty"`
+	Arch         map[string]string     `json:"arch,omitempty"`
+	Status       string                `json:"status,omitempty"`
+	StatusReason string                `json:"status_reason,omitempty"`
+	ReplacedBy   string                `json:"replaced_by,omitempty"`
+}
+
+// TemplateLicense is the stated license and its class.
+type TemplateLicense struct {
+	SPDX  string `json:"spdx"`
+	Class string `json:"class"`
+	URL   string `json:"url,omitempty"`
+}
+
+// TemplateListing says who stands behind an entry.
+type TemplateListing struct {
+	By        string `json:"by"`
+	VendorOrg string `json:"vendor_org,omitempty"`
+}
+
+// TemplateTrust is the composite trust level: listed, verified or verified_signed.
+type TemplateTrust struct {
+	Level       string `json:"level"`
+	EvidenceURL string `json:"evidence_url,omitempty"`
+}
+
+// TemplateVerification is the smoke record bound to an image tag.
+type TemplateVerification struct {
+	Tag    string   `json:"tag"`
+	Arches []string `json:"arches"`
+	RunURL string   `json:"run_url,omitempty"`
+}
+
+// TemplateListFilter narrows ListServiceTemplates server side. Zero value lists everything.
+type TemplateListFilter struct {
+	LicenseClass   string
+	VerifiedOnly   bool
+	Arch           string
+	HideDeprecated bool
 }
 
 // ServiceTemplateDetail mirrors internal/api's serviceTemplateDetail:
@@ -1711,6 +1819,13 @@ type ServiceTemplateDetail struct {
 	RequiresGPU            bool                 `json:"requires_gpu,omitempty"`
 	RequiresConfiguration  bool                 `json:"requires_configuration,omitempty"`
 	Requirements           TemplateRequirements `json:"requirements"`
+	Manifest               *TemplateManifest    `json:"manifest,omitempty"`
+	TemplateFacts
+}
+
+// TemplateManifest carries only the manifest fields the CLI acts on.
+type TemplateManifest struct {
+	ConsoleCommand []string `json:"console_command,omitempty"`
 }
 
 // TemplateRequirements mirrors internal/catalog's Requirements.
@@ -1879,6 +1994,7 @@ type GitSourceResource struct {
 	// BuildCommand and PublishDir build a static site before serving it.
 	BuildCommand string `json:"build_command,omitempty"`
 	PublishDir   string `json:"publish_dir,omitempty"`
+	StaticSPA    bool   `json:"static_spa"`
 	// ResolvedBuild states what a deploy builds, in plain terms.
 	ResolvedBuild GitSourceResolvedBuild `json:"resolved_build"`
 	// TriggerMode mirrors store.GitSource.TriggerMode: "push" (default)
@@ -1945,6 +2061,7 @@ type SetGitSourceRequest struct {
 	BaseDirectory string `json:"base_directory,omitempty"`
 	BuildCommand  string `json:"build_command,omitempty"`
 	PublishDir    string `json:"publish_dir,omitempty"`
+	StaticSPA     bool   `json:"static_spa,omitempty"`
 	Token         string `json:"token,omitempty"`
 	TriggerMode   string `json:"trigger_mode,omitempty"`
 }
@@ -1963,6 +2080,7 @@ type SetGitSourceBuildRequest struct {
 	BaseDirectory string `json:"base_directory"`
 	BuildCommand  string `json:"build_command"`
 	PublishDir    string `json:"publish_dir"`
+	StaticSPA     *bool  `json:"static_spa,omitempty"`
 }
 
 // StaticBuildSuggestion mirrors internal/repolayout's StaticBuildSuggestion.
@@ -2185,6 +2303,8 @@ type ScheduledTaskResource struct {
 	ConsecutiveMissed      int        `json:"consecutive_missed"`
 	RunningSince           *time.Time `json:"running_since,omitempty"`
 	NextRunAt              *time.Time `json:"next_run_at,omitempty"`
+	HeartbeatHost          string     `json:"heartbeat_host,omitempty"`
+	HeartbeatConfigured    bool       `json:"heartbeat_configured,omitempty"`
 	// RunID is set on the response to a run-now call.
 	RunID string `json:"run_id,omitempty"`
 	// HTTP is the request an http-mode job sends instead of a command.
@@ -2240,6 +2360,10 @@ type ScheduledTaskRequest struct {
 	CPULimitMillis         int    `json:"cpu_limit_millis,omitempty"`
 	MemoryLimitMB          int    `json:"memory_limit_mb,omitempty"`
 	WarnAfterSeconds       int    `json:"warn_after_seconds,omitempty"`
+	// HeartbeatURL and HeartbeatFailURL are sent only; the server never returns them.
+	HeartbeatURL     string `json:"heartbeat_url,omitempty"`
+	HeartbeatFailURL string `json:"heartbeat_fail_url,omitempty"`
+	HeartbeatClear   bool   `json:"heartbeat_clear,omitempty"`
 	// HTTP makes the job call a path on the app (Mode "http").
 	HTTP *JobHTTP `json:"http,omitempty"`
 }
@@ -3870,6 +3994,26 @@ type AuditChainReport struct {
 	Problems    []AuditChainProblem `json:"problems"`
 }
 
+// AuditAnchor mirrors store.AuditAnchor: one signed chain head, no row content.
+type AuditAnchor struct {
+	Version int    `json:"v"`
+	Seq     int64  `json:"seq"`
+	Hash    string `json:"hash"`
+	At      string `json:"at"`
+	Sig     string `json:"sig"`
+}
+
+// AuditAnchorReport mirrors store.AuditAnchorReport.
+type AuditAnchorReport struct {
+	OK         bool                `json:"ok"`
+	Checked    int                 `json:"checked"`
+	Matched    int                 `json:"matched"`
+	Compacted  int                 `json:"compacted"`
+	Unverified int                 `json:"unverified"`
+	LiveHead   int64               `json:"live_head"`
+	Problems   []AuditChainProblem `json:"problems"`
+}
+
 // DeployAttemptResource mirrors internal/api's deployAttemptResource
 // (internal/api/deploy_attempts.go): one row of GET
 // /api/v1/apps/{name}/deploy-attempts, additive to the reconcile
@@ -4041,6 +4185,7 @@ type OAuthProviderSettingsResource struct {
 	AllowedEmailDomain string `json:"allowed_email_domain,omitempty"`
 	IssuerURL          string `json:"issuer_url,omitempty"`
 	DisplayName        string `json:"display_name,omitempty"`
+	TenantID           string `json:"tenant_id,omitempty"`
 	HasClientSecret    bool   `json:"has_client_secret"`
 }
 
@@ -4055,6 +4200,7 @@ type UpdateOAuthProviderSettingsRequest struct {
 	AllowedEmailDomain string `json:"allowed_email_domain"`
 	IssuerURL          string `json:"issuer_url"`
 	DisplayName        string `json:"display_name"`
+	TenantID           string `json:"tenant_id"`
 }
 
 // EmailSettingsResource mirrors internal/api's emailSettingsResource
@@ -4151,6 +4297,7 @@ type HTTPSStatusResource struct {
 	Hint             string     `json:"hint,omitempty"`
 	DashboardURL     string     `json:"dashboard_url,omitempty"`
 	DefaultEmail     string     `json:"default_email,omitempty"`
+	Notice           string     `json:"notice,omitempty"`
 	// Preflight is set on the enable response only.
 	Preflight []HTTPSPreflightPort `json:"preflight,omitempty"`
 }
@@ -4170,6 +4317,15 @@ type EnableHTTPSRequest struct {
 // DashboardURLResource mirrors internal/api's dashboardURLResource (GET/PUT /api/v1/settings/dashboard-url).
 type DashboardURLResource struct {
 	DashboardURL string `json:"dashboard_url"`
+}
+
+// DeployURLCopiesResource mirrors internal/api's deployURLCopiesResource
+// (GET/PUT /api/v1/settings/deploy-url-copies). Source is stored, env or default.
+type DeployURLCopiesResource struct {
+	Mode    string   `json:"mode"`
+	Source  string   `json:"source"`
+	Default string   `json:"default"`
+	Modes   []string `json:"modes"`
 }
 
 // UpdateSettingsResource mirrors internal/api's updateSettingsResource
@@ -4506,6 +4662,14 @@ type apiErrorBody struct {
 	Code      string          `json:"code,omitempty"`
 	RequestID string          `json:"request_id,omitempty"`
 	Fix       json.RawMessage `json:"fix,omitempty"`
+	// MissingVariables lists unset required compose variables (names and messages only).
+	MissingVariables []MissingVariable `json:"missing_variables,omitempty"`
+}
+
+// MissingVariable is one required compose variable with no value.
+type MissingVariable struct {
+	Name    string `json:"name"`
+	Message string `json:"message"`
 }
 
 // fixText flattens the fix field, a plain string or an object with a label.
@@ -4546,6 +4710,8 @@ type APIError struct {
 	// RequestID and Fix are the server's correlation id and suggested remedy, when sent.
 	RequestID string
 	Fix       string
+	// MissingVariables is set on a deploy refused for unset required variables.
+	MissingVariables []MissingVariable
 }
 
 // Error renders the server message, appending a retry hint when RetryAfter is set.

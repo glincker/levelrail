@@ -27,7 +27,14 @@ func appBody(f appFields) map[string]any {
 	if f.PublishedPorts != nil {
 		body["published_ports"] = *f.PublishedPorts
 	}
-	setOrClear(body, "resources", resourcesToStore(f.Resources), f.Resources != nil)
+	res := resourcesToStore(f.Resources)
+	if f.Security != nil {
+		if res == nil {
+			res = &store.ServiceResources{}
+		}
+		res.ReadOnlyRootfs = f.Security.ReadOnlyRootfs
+	}
+	setOrClear(body, "resources", res, res != nil)
 	health := healthToStore(f.Health)
 	if f.Restart != "" {
 		if health == nil {

@@ -1,10 +1,12 @@
 package main
 
 import (
+	"path"
 	"sort"
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/GLINCKER/levelrail/internal/envredact"
 )
 
 // envFileEntry is one parsed key/value pair from a .env-format file.
@@ -150,11 +152,16 @@ func quoteDotenvValue(v string) string {
 // envImportPlan classifies incoming .env entries against an app's current
 // plain env. Later duplicates of a key win.
 type envImportPlan struct {
-	New       []string          `json:"new"`
-	Changed   []string          `json:"changed"`
-	Unchanged []string          `json:"unchanged"`
-	Secret    []string          `json:"skipped_secret"`
-	Merged    map[string]string `json:"-"`
+	New       []string `json:"new"`
+	Changed   []string `json:"changed"`
+	Unchanged []string `json:"unchanged"`
+	Secret    []string `json:"skipped_secret"`
+	// Platform lists keys the source platform injects itself (vercel env pull adds VERCEL_*).
+	Platform []string `json:"skipped_platform,omitempty"`
+	// ToSecret lists keys sent to the secret store instead of plain env.
+	ToSecret     []string          `json:"to_secret,omitempty"`
+	Merged       map[string]string `json:"-"`
+	movedFromEnv bool
 }
 
 func planEnvImport(current map[string]string, entries []envFileEntry, secretKeys []string, keepExisting bool) envImportPlan {
@@ -178,6 +185,8 @@ func planEnvImport(current map[string]string, entries []envFileEntry, secretKeys
 	for _, k := range order {
 		cur, exists := current[k]
 		switch {
+		case strings.HasPrefix(k, "VERCEL_"):
+			plan.Platform = append(plan.Platform, k)
 		case secrets[k]:
 			plan.Secret = append(plan.Secret, k)
 		case exists && cur == apiclient.MaskedEnvValue && (incoming[k] == "" || incoming[k] == apiclient.MaskedEnvValue):
@@ -196,4 +205,54 @@ func planEnvImport(current map[string]string, entries []envFileEntry, secretKeys
 		}
 	}
 	return plan
+}
+
+type envRouteMode int
+
+const (
+	envRouteAuto envRouteMode = iota
+	envRouteAllSecrets
+	envRouteAllPlain
+)
+
+// routeEnvImport splits entries into plain env and secret-store writes. Empty
+// and masked values, platform keys and keys already secret stay on the plain
+// path so the plan reports them as before. Later duplicates of a key win.
+func routeEnvImport(entries []envFileEntry, secretKeys []string, mode envRouteMode, patterns []string) (plain, secret []envFileEntry) {
+	existing := make(map[string]bool, len(secretKeys))
+	for _, k := range secretKeys {
+		existing[k] = true
+	}
+	last := map[string]string{}
+	for _, e := range entries {
+		last[e.Key] = e.Value
+	}
+	seen := map[string]bool{}
+	for _, e := range entries {
+		v := last[e.Key]
+		keepPlain := mode == envRouteAllPlain || strings.HasPrefix(e.Key, "VERCEL_") || existing[e.Key] || v == "" || v == apiclient.MaskedEnvValue
+		if !keepPlain && mode == envRouteAuto && !matchesAnyPattern(e.Key, patterns) {
+			sensitive, _ := envredact.Classify(e.Key, v, nil)
+			keepPlain = !sensitive
+		}
+		if keepPlain {
+			plain = append(plain, e)
+			continue
+		}
+		if !seen[e.Key] {
+			seen[e.Key] = true
+			secret = append(secret, envFileEntry{Key: e.Key, Value: v})
+		}
+	}
+	return plain, secret
+}
+
+func matchesAnyPattern(key string, patterns []string) bool {
+	up := strings.ToUpper(key)
+	for _, p := range patterns {
+		if ok, err := path.Match(strings.ToUpper(p), up); err == nil && ok {
+			return true
+		}
+	}
+	return false
 }

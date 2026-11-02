@@ -41,6 +41,8 @@ export const PLATFORM_ANCHORS = {
   certificates: 'certificates',
   ingressSettings: 'ingress-settings',
   ingressEdge: 'ingress-edge',
+  ddns: 'dynamic-dns',
+  dns01: 'dns01-all-hosts',
   connectivity: 'connectivity',
   reverseProxy: 'reverse-proxy-guide',
   dashboardUrl: DASHBOARD_URL_ANCHOR,
@@ -70,6 +72,19 @@ export const PLATFORM_SETTINGS: readonly PlatformSettingEntry[] = [
     page: 'ingress',
     anchor: PLATFORM_ANCHORS.ingressSettings,
     keywords: 'ingress primary domain acme email hsts proxy',
+  },
+  {
+    id: 'dns01',
+    page: 'ingress',
+    anchor: PLATFORM_ANCHORS.dns01,
+    keywords:
+      'dns challenge dns-01 every host cgnat port 80 closed wildcard acme provider',
+  },
+  {
+    id: 'ddns',
+    page: 'ingress',
+    anchor: PLATFORM_ANCHORS.ddns,
+    keywords: 'dynamic dns ddns duckdns public ip changes update record home',
   },
   {
     id: 'ingressEdge',

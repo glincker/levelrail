@@ -54,7 +54,7 @@ These guides and template pages cover specific AI apps. The guides explain the w
 - **AI control does not govern every caller.** It does not apply to people signed in with a session, or to API tokens without an agent name. Give every agent token an agent name so the switch can see it. See [AI control](/ai-control).
 - **Per-resource permissions are limited.** Per-resource IAM covers apps, databases and models. Nodes, projects, domains, registries and settings are gated only by ability. See [Threat model](/threat-model).
 - **The master key sits beside the database by default.** It is stored in the data directory unless `APP_MASTER_KEY` or `APP_MASTER_KEY_FILE` is set, so a copy of the whole data directory decrypts every secret. See [Threat model](/threat-model).
-- **Container hardening has no per-app override.** Read-only root filesystems are opt-in. See [Security overview](/security#what-this-does-not-cover-yet).
+- **Container hardening is mostly fleet-wide.** A read-only root filesystem can be set per app with `security.read_only_rootfs`; capabilities, `no-new-privileges` and the PID limit cannot. See [Security overview](/security#what-this-does-not-cover-yet).
 - **The Docker API guard does not stop root code in the agent container.** The agent container holds the Docker socket, so a compromised agent is root on its node. See [Threat model](/threat-model).
 - **Restore drills for most engines check the object, not a replay.** Only Postgres, MySQL and MariaDB drills replay the dump. See [Prove your backups work](/prove-your-backups-work).
 - **Sessions are in memory.** A control plane restart, including an upgrade, signs everyone out. API tokens are not affected. See [Security overview](/security#what-this-does-not-cover-yet).

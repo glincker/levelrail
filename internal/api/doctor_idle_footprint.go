@@ -16,7 +16,7 @@ func (rt *Router) doctorCheckIdleFootprint(context.Context) doctorCheckResource 
 	}
 	a := rt.idleAssessment(p)
 	cur := a.Current
-	line := fmt.Sprintf("rss %d MiB, cpu %.1f%%, %d goroutines, %d open fds", cur.RSSBytes>>20, cur.CPUPercent, cur.Goroutines, cur.OpenFDs)
+	line := fmt.Sprintf("control plane process rss %d MiB (sampled now, while the checks run), cpu %.1f%%, %d goroutines, %d open fds", cur.RSSBytes>>20, cur.CPUPercent, cur.Goroutines, cur.OpenFDs)
 	switch a.Status {
 	case footprint.StatusWithin:
 		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: line + ", within tolerance of the idle baseline"}

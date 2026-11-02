@@ -126,6 +126,7 @@ export async function promoteApp(
 export function usePromoteApp(appName: string) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (input: PromoteAppInput) => promoteApp(appName, input),
     onSuccess: (result) => {
       if (isPendingPromoteApproval(result)) {

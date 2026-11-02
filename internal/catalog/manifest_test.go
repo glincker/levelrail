@@ -146,3 +146,20 @@ func TestEmbeddedManifests(t *testing.T) {
 		}
 	}
 }
+
+func TestManifestMarketplaceFieldErrors(t *testing.T) {
+	cases := []struct{ name, extra, want string }{
+		{"bad license", "license: not a license!\n", "known SPDX"},
+		{"bad status", "status: gone\n", "status"},
+		{"deprecated needs reason", "status: deprecated\n", "status_reason"},
+		{"bad hosted_use", "hosted_use: maybe\n", "hosted_use"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := LoadManifests(demoFS(testManifest+tc.extra, testCompose), "m")
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("error = %v, want %q", err, tc.want)
+			}
+		})
+	}
+}

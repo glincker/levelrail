@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	git "github.com/go-git/go-git/v5"
@@ -482,6 +483,11 @@ func serveOIDCTokenRequests(ctx context.Context, addr string, engine *pipeline.E
 	mux.Handle("/oidc/token", engine.OIDCTokenRequestHandler())
 	srv := &http.Server{Addr: addr, Handler: mux, ReadHeaderTimeout: 5 * time.Second}
 	ln, err := listenWhenAssigned(ctx, addr, envDurationOrDefault(logger, envOIDCListenRetry, defaultOIDCListenRetry), localInterfacePrefixes, logger)
+	if errors.Is(err, syscall.EADDRINUSE) {
+		// A second control plane on the same host shares the bridge gateway; this one runs without job OIDC token requests.
+		logger.Info("pipeline: oidc token request address already in use, job OIDC token requests are off for this instance", slog.String("addr", addr))
+		return
+	}
 	if err != nil {
 		logger.Error("pipeline: oidc token request server stopped", slog.String("error", err.Error()))
 		return

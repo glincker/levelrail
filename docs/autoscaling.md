@@ -97,6 +97,10 @@ Silence is not zero. For `requests_per_replica`, a window with no requests count
 
 The autoscaler owns the replica count. A manual edit that would change it (dashboard, `apps scale`, `PUT /api/v1/apps/{name}`) is refused with `409`, and a deploy whose `app.yaml` sets `replicas` fails with the same explanation. To set replicas by hand, clear the policy first: `apps autoscale clear` leaves the count where it is. A deploy never resets the count the autoscaler chose.
 
+## Replicas share one server
+
+An app is placed on a single server, and every replica of it runs there. Extra replicas add capacity and spread load across containers on that server, and a rolling deploy keeps serving while they restart. They do not protect the app if the server itself goes down. The app page and `apps get` show this whenever an app has more than one replica.
+
 ## Limits you control
 
 | Variable | Default | Meaning |

@@ -1,4 +1,4 @@
-<!-- translated-from: README.md blob:9c194248e518399035b29933ea71854d30fc19ec lang:zh-Hans -->
+<!-- translated-from: README.md blob:ce94937d3ed19f5133e5579976d74dcdff199567 lang:zh-Hans -->
 <div align="center">
 <img src="../../docs/assets/brand/levelrail-default.svg" alt="Levelrail 标志" width="56" height="56">
 <h1>Levelrail</h1>
@@ -151,6 +151,10 @@ irm https://levelrail.com/install-cli.ps1 | iex
 
 前两条适用于所有受支持的平台，第三条适用于 macOS 和 Linux，最后一条适用于 Windows PowerShell。
 
+### 在免费 Arm 虚拟机上运行
+
+Levelrail 的发布二进制和镜像是为 `arm64` 构建的，因此可以在 Oracle Cloud Always Free 的 Arm 虚拟机上运行。你需要开放两道防火墙（云网络规则和主机防火墙），然后运行同一个安装脚本。免费额度和闲置实例规则由 Oracle 制定，二者都可能变化。请先阅读 [Oracle Cloud 指南](../../docs/install-on-oracle-cloud.md)和 Oracle 的 [Always Free 页面](https://docs.oracle.com/en-us/iaas/Content/FreeTier/resourceref.htm)。Arm 上的应用镜像支持情况不一，安装模板前请先确认镜像支持的平台。
+
 ## 工作原理
 
 ```mermaid
@@ -171,10 +175,10 @@ flowchart LR
 
 ## 验证你安装的内容
 
-发布版本会提供 `checksums.txt` 的 Sigstore 签名和构建来源证明。请把 `v0.1.0` 替换为发布标签。
+发布版本会提供 `checksums.txt` 的 Sigstore 签名和构建来源证明。下面第一行会获取最新发布标签；要验证旧版本，请自行把 `V` 设为对应标签。
 
 ```bash
-V=v0.1.0
+V=$(gh release view --repo glincker/levelrail --json tagName -q .tagName)
 BASE=https://github.com/glincker/levelrail/releases/download/$V
 curl -fsSLO $BASE/checksums.txt -O $BASE/checksums.txt.sigstore.json -O $BASE/levelrail-linux-amd64
 cosign verify-blob --bundle checksums.txt.sigstore.json \
@@ -218,7 +222,7 @@ gh attestation verify levelrail-linux-amd64 --repo glincker/levelrail
 | 编排 | 电平触发的 reconciler | Compose | Swarm | Swarm | Bash 调度器 |
 | 内置指标和日志 | 是 | 可选附加组件 | 独立二进制文件 | 否 | 否 |
 | 回滚 | 固定镜像，以就绪检查为门控 | 健康检查默认关闭 | Swarm 回滚 | 手动 | 默认调度器：无 |
-| 备份验证 | 自动，覆盖全部 8 种引擎 | 非空检查 | 无 | 无 | 无备份 |
+| 备份验证 | 自动；Postgres 为 stable，MySQL 和 MongoDB 为 beta（[状态](../../docs/feature-status.md)） | 非空检查 | 无 | 无 | 无备份 |
 | SSO 和用户配置 | OAuth（20 个提供商）和通用 OIDC；SAML 和 SCIM（beta，默认关闭） | 见其文档 | 见其文档 | 见其文档 | 见其文档 |
 | 审计日志 | 哈希链、可验证、CSV 导出、转发到 syslog、webhook 或存储桶 | 见其文档 | 见其文档 | 见其文档 | 见其文档 |
 | IAM | 按应用或数据库的 Allow 和 Deny 策略、限定范围的令牌 | 见其文档 | 见其文档 | 见其文档 | 见其文档 |
@@ -232,7 +236,7 @@ gh attestation verify levelrail-linux-amd64 --repo glincker/levelrail
 - **数据库：** Postgres、MySQL、MariaDB、MongoDB、Redis、KeyDB、Dragonfly 和 ClickHouse，支持定时备份、Postgres 时间点恢复、恢复和密码轮换。[数据库](../../docs/managing-databases.md)
 - **一个搜索框搜遍一切：** 用 Cmd+K 搜索应用、数据库、节点、模板和操作，并按你的权限过滤。[搜索](../../docs/search.md)
 - **服务器：** 使用一次性令牌添加节点，WireGuard 网格，可用区和故障域分散，放置情景模拟。[多节点](../../docs/multi-node.md)
-- **模板：** 约 360 个一键服务，并有冒烟测试拉起前 50 个（目前 48 个通过，[状态](../../docs/templates-status.md)）。[目录](../../docs/template-catalog.md)
+- **模板：** 约 360 个一键服务，并有覆盖整个目录的冒烟测试（2026-10-25 和 2026-10-27 的运行中，已测试的 108 个里 101 个通过，[状态](../../docs/templates-status.md)）。[目录](../../docs/template-catalog.md)
 - **身份与访问：** 密码、passkey、TOTP、支持 20 个提供商的 OAuth 以及通用 OIDC、IAM 策略、团队、可导出 CSV 的哈希链审计日志。SAML 单点登录和 SCIM 用户配置为 beta，默认关闭。[身份与访问](../../docs/identity-and-access.md)，[SAML 和 SCIM](../../docs/sso-saml.md)
 - **插件：** 带签名的插件市场，支持一键安装、仪表盘面板和官方告警渠道。[插件](../../docs/plugins.md)
 - **自动化：** 仪表盘、CLI 和 MCP 服务器背后是同一套 HTTP API。AI 永远不在 reconcile 路径中。[CLI](../../docs/cli-reference.md)，[AI 控制](../../docs/ai-control.md)

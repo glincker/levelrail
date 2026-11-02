@@ -24,7 +24,7 @@ func TestEffectiveHold(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := New("web", &fakeStore{}, newFakeRuntime(0), WithPreviousReleaseHold(tt.hold))
-			if got := c.effectiveHold(tt.cfg); got != tt.want {
+			if got := c.effectiveHold(context.Background(), tt.cfg); got != tt.want {
 				t.Errorf("effectiveHold() = %s, want %s", got, tt.want)
 			}
 		})

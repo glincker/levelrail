@@ -4,6 +4,10 @@ description: A data pipeline tool for building, running and monitoring ETL, stre
 icon: workflow
 category: Developer Tools
 documentation_url: https://docs.mage.ai/getting-started/setup
+source_repo: https://github.com/mage-ai/mage-ai
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/mage-ai/mage-ai/blob/master/LICENSE
 recommended_memory_bytes: 1073741824
 domains:
   - service: mage

@@ -26,6 +26,11 @@ Make a bad release fail before it replaces a good one, read the structured failu
 Build in CI, deploy to your own server on every push, and fail the pipeline if the rollout fails.
 
 </Card>
+<Card title="Deploy a Next.js app to your own server" href="/tutorials/deploy-nextjs">
+
+Deploy from a git repository with the right port, a health check, a domain and a one-command rollback.
+
+</Card>
 </CardGroup>
 
 ## Data and backups
@@ -62,6 +67,33 @@ Deploy from the [template catalog](/templates-and-registry), add a domain, and b
 <Card title="Debug an app with built-in logs and metrics" href="/tutorials/debug-an-app-with-logs-and-metrics">
 
 Search logs, follow them live, read CPU and memory, and start from the health score. No Grafana to install.
+
+</Card>
+</CardGroup>
+
+## Watch and recover
+
+<CardGroup cols={2}>
+
+<Card title="Get a ping when your Levelrail server stops" href="/tutorials/heartbeat-ping-out">
+
+Point the off-host heartbeat at a monitor you control, so a dead server still raises an alert.
+
+</Card>
+<Card title="Send a crashloop alert to ntfy" href="/tutorials/alerts-to-ntfy">
+
+Connect an ntfy topic as a channel, alert when an app restarts in a loop, and check the delivery history.
+
+</Card>
+</CardGroup>
+
+## Reach and secure
+
+<CardGroup cols={2}>
+
+<Card title="Get a certificate behind CGNAT with DNS-01" href="/tutorials/dns-01-behind-cgnat">
+
+Issue trusted certificates for a home server with no inbound port, using DNS-01 and dynamic DNS, and learn what is still needed for public access.
 
 </Card>
 </CardGroup>

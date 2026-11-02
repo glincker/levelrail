@@ -133,8 +133,8 @@ var storageTemplates = []Template{
     image: ghcr.io/formbricks/formbricks:4.5.0
     ports: ["3000:3000"]
     environment:
-      WEBAPP_URL: ${SERVICE_FQDN_FORMBRICKS:-http://localhost:3000}
-      NEXTAUTH_URL: ${SERVICE_FQDN_FORMBRICKS:-http://localhost:3000}
+      WEBAPP_URL: ${SERVICE_URL_FORMBRICKS:-http://localhost:3000}
+      NEXTAUTH_URL: ${SERVICE_URL_FORMBRICKS:-http://localhost:3000}
       NEXTAUTH_SECRET: $SERVICE_BASE64_NEXTAUTHSECRET
       ENCRYPTION_KEY: $SERVICE_BASE64_ENCRYPTIONKEY
       CRON_SECRET: $SERVICE_BASE64_CRONSECRET
@@ -174,7 +174,7 @@ var storageTemplates = []Template{
     image: infisical/infisical:v0.154.6
     ports: ["8080:8080"]
     environment:
-      SITE_URL: ${SERVICE_FQDN_INFISICAL:-http://localhost:8080}
+      SITE_URL: ${SERVICE_URL_INFISICAL:-http://localhost:8080}
       ENCRYPTION_KEY: $SERVICE_PASSWORD_ENCRYPTIONKEY
       AUTH_SECRET: $SERVICE_REALBASE64_64_AUTHSECRET
       DB_CONNECTION_URI: postgres://infisical:$SERVICE_PASSWORD_DB@db:5432/infisical

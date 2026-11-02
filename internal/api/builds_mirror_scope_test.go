@@ -11,6 +11,7 @@ import (
 )
 
 func TestCloneCredentialScopeEmptyWithoutCredential(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouter(t)
 	token, scope := rt.cloneCredential(context.Background(), "web", "https://example.com/org/web.git", false)
 	if token != "" || scope != "" {
@@ -19,6 +20,7 @@ func TestCloneCredentialScopeEmptyWithoutCredential(t *testing.T) {
 }
 
 func TestTriggerRepoAllowedForTeamScopedCaller(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouterWithBuilder(t, newFakeBuilder("img:1", nil), nil)
 	seedWebApp(t, db)
 	seedGitSourceForSchedule(t, db)
@@ -38,6 +40,7 @@ func TestTriggerRepoAllowedForTeamScopedCaller(t *testing.T) {
 }
 
 func TestTriggerBuildFromCacheNeedsReadSensitive(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouterWithBuilder(t, newFakeBuilder("img:1", nil), nil)
 	seedWebApp(t, db)
 	plain := "deploy-only-token-for-test"

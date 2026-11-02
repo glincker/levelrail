@@ -1,0 +1,150 @@
+{
+  "gate": {
+    "title": "Puerta de preparación y vigilancia",
+    "rules": "Recibe tráfico tras {{passes}} comprobaciones de preparación seguidas y {{stable}} en ejecución sin reiniciarse. La versión anterior se drena durante {{drain}} y después esta se vigila durante {{watch}}.",
+    "pinned": "Fijada como destino de reversión {{ref}}, así que la limpieza de imágenes nunca la eliminará.",
+    "hidden_one": "{{count}} paso anterior no se muestra.",
+    "hidden_other": "{{count}} pasos anteriores no se muestran.",
+    "empty": "Todavía no hay pasos de la puerta registrados. Aparecen cuando arranca el contenedor nuevo.",
+    "unavailable": "La cronología de la puerta no está disponible para este despliegue."
+  },
+  "phase": {
+    "readiness": "Preparación",
+    "stability": "Ventana de estabilidad",
+    "cutover": "Cambio de tráfico",
+    "drain": "Drenaje",
+    "watch": "Vigilancia posterior al despliegue",
+    "rollback": "Reversión",
+    "pin": "Fijación para reversión"
+  },
+  "stage": {
+    "pending": "Pendiente",
+    "gating": "Pasando la puerta",
+    "gate_failed": "No pasó la puerta",
+    "watching": "Vigilando",
+    "cleared": "Superada",
+    "watch_failed": "La vigilancia saltó",
+    "rolled_back": "Revertida",
+    "watch_stopped": "Vigilancia detenida"
+  },
+  "settings": {
+    "title": "Seguridad del despliegue",
+    "infoTipLabel": "Acerca de la seguridad del despliegue",
+    "description": "Una versión nueva recibe tráfico solo después de que su sonda de preparación pase varias veces seguidas y de que se ejecute durante una ventana estable sin reiniciarse ni ser terminada por falta de memoria (OOM). La versión anterior sigue atendiendo las solicitudes en curso mientras se drena. Tras el cambio de tráfico la versión se vigila, y un bucle de caídas, una terminación por OOM o un pico de errores 5xx la revierte.",
+    "inheritHint": "Deja un campo vacío para usar el valor predeterminado de la plataforma que se muestra en él.",
+    "unavailable": "No se pudieron cargar los ajustes de seguridad del despliegue.",
+    "save": "Guardar",
+    "reset": "Usar los valores de la plataforma",
+    "on": "activado",
+    "off": "desactivado",
+    "field": {
+      "success_threshold": {
+        "label": "Comprobaciones de preparación seguidas",
+        "hint": "Comprobaciones consecutivas de la sonda de preparación antes de mover el tráfico."
+      },
+      "stable_window": {
+        "label": "Ventana de estabilidad",
+        "hint": "Cuánto tiempo debe ejecutarse el contenedor nuevo sin reinicios ni terminación por OOM, p. ej. 10s."
+      },
+      "drain_timeout": {
+        "label": "Tiempo de drenaje",
+        "hint": "Cuánto tiempo sigue atendiendo la versión anterior tras el cambio de tráfico, p. ej. 15s."
+      },
+      "watch_window": {
+        "label": "Ventana de vigilancia",
+        "hint": "Cuánto tiempo se vigila una versión nueva tras el cambio de tráfico, p. ej. 10m."
+      },
+      "watch_latency_ratio": {
+        "label": "Múltiplo de latencia p95 que cuenta como regresión",
+        "hint": "Comparado con la versión anterior. 0 desactiva la comprobación de latencia."
+      },
+      "watch_max_restarts": {
+        "label": "Reinicios que hacen saltar la vigilancia",
+        "hint": "Reinicios del contenedor dentro de la ventana de vigilancia que cuentan como bucle de caídas."
+      },
+      "watch_error_rate": {
+        "label": "Proporción de 5xx que hace saltar la vigilancia (%)",
+        "hint": "Proporción de solicitudes respondidas con 5xx dentro de la ventana de vigilancia."
+      },
+      "watch_min_requests": {
+        "label": "Solicitudes antes de que cuente la proporción de 5xx",
+        "hint": "Un puñado de solicitudes no basta para juzgar una versión."
+      }
+    },
+    "autoRollback": {
+      "label": "Revertir automáticamente cuando salte la vigilancia",
+      "hint": "Definido para esta app.",
+      "inherited": "Siguiendo el valor predeterminado de la plataforma ({{value}})."
+    },
+    "toast": {
+      "saved": "Ajustes de seguridad del despliegue guardados.",
+      "error": "No se pudieron guardar los ajustes de seguridad del despliegue."
+    }
+  },
+  "autoRollback": {
+    "title": "Reversión automática",
+    "infoTipLabel": "Acerca de la reversión automática",
+    "description": "Después de que una versión recibe tráfico se vigila durante una ventana. Un bucle de caídas, una terminación por OOM o un pico de 5xx es una señal firme. Una regresión de latencia p95 frente a la versión anterior es una señal suave y nunca revierte salvo que lo actives.",
+    "inheritHint": "Deja un campo vacío para usar el valor predeterminado de la plataforma que se muestra en él.",
+    "mode": {
+      "label": "Modo",
+      "default": "Valor predeterminado de la plataforma ({{value}})",
+      "off": "Desactivado: no vigilar",
+      "notify": "Avisar: solo alertar",
+      "auto": "Automático: alertar y revertir"
+    },
+    "soft": {
+      "label": "Dejar que una regresión de latencia también revierta",
+      "hint": "Solo se aplica en modo automático. En otro caso, una regresión de latencia solo envía una alerta.",
+      "inherited": "Siguiendo el valor predeterminado de la plataforma ({{value}})."
+    },
+    "save": "Guardar",
+    "reset": "Usar los valores de la plataforma",
+    "toast": {
+      "saved": "Ajustes de reversión automática guardados.",
+      "error": "No se pudieron guardar los ajustes de reversión automática."
+    }
+  },
+  "watch": {
+    "watching": "Vigilando durante {{window}} tras el cambio de tráfico, quedan {{left}}.",
+    "min": "{{count}} min",
+    "sec": "{{count}} s",
+    "progress": "Progreso de la vigilancia posterior al despliegue",
+    "tripped": "La vigilancia saltó: {{message}} ({{reason}}).",
+    "rolledBack": "Revertida automáticamente: {{message}} ({{reason}}).",
+    "stopped": "La vigilancia se detuvo antes de que terminara la ventana.",
+    "off": "La vigilancia posterior al despliegue está desactivada para esta app.",
+    "notice": "Aviso: {{message}}",
+    "stop": "Dejar de vigilar",
+    "stopped_toast": "Vigilancia detenida.",
+    "stopError": "No se pudo detener la vigilancia.",
+    "rollbackNow": "Revertir ahora",
+    "rollbackTitle": "¿Revertir esta versión?",
+    "rollbackDescription": "El tráfico vuelve a la versión anterior conservada.",
+    "rollbackConsequence": "La versión anterior {{ref}} se vuelve a desplegar por la misma puerta de preparación.",
+    "rollbackConfirm": "Revertir",
+    "rollbackPending": "Revirtiendo",
+    "rollbackToast": "Reversión iniciada.",
+    "rollbackError": "No se pudo revertir.",
+    "noTarget": "Todavía no hay una versión anterior conservada a la que revertir."
+  },
+  "targets": {
+    "title": "Destinos de reversión fijados",
+    "empty": "Todavía no hay versiones fijadas. Una versión se fija cuando recibe tráfico.",
+    "live": "En vivo"
+  },
+  "publishLock": {
+    "lock": "Bloquear la publicación",
+    "unlock": "Desbloquear la publicación",
+    "bannerTitle": "La publicación está bloqueada",
+    "bannerBody_one": "{{by}} la bloqueó. La versión en vivo permanece fijada y {{count}} compilación está retenida.",
+    "bannerBody_other": "{{by}} la bloqueó. La versión en vivo permanece fijada y {{count}} compilaciones están retenidas.",
+    "reason": "Motivo: {{reason}}",
+    "publish": "Publicar",
+    "publishedToast": "Publicada. La compilación retenida pasa a estar en vivo.",
+    "rollbackLock": "Revertir y bloquear",
+    "rollbackLockHint": "Vuelve a desplegar esta versión y retiene todas las compilaciones posteriores",
+    "held": "Retenida, no en vivo",
+    "error": "No se pudo cambiar el bloqueo de publicación."
+  }
+}

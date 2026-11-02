@@ -11,6 +11,7 @@ import (
 )
 
 func TestResilienceReport(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	serve := func(method, path, body string) *httptest.ResponseRecorder {

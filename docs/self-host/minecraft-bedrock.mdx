@@ -1,0 +1,75 @@
+---
+title: "Self-host Minecraft Bedrock Server with Docker"
+sidebarTitle: "Minecraft Bedrock Server"
+description: "A Minecraft Bedrock Edition dedicated server for phones, consoles and Windows players. You must accept the Minecraft EULA yourself by entering TRUE. Players connect on UDP 19132: the port binds privately by default, so set a public bind in the app's Network settings and open UDP 19132 in the host and cloud firewall. The image publishes amd64 and arm64 builds, but the Bedrock server itself is x86 software, so on arm64 it runs under emulation and needs more CPU."
+"og:url": "https://docs.levelrail.com/self-host/minecraft-bedrock"
+---
+
+A Minecraft Bedrock Edition dedicated server for phones, consoles and Windows players. You must accept the Minecraft EULA yourself by entering TRUE. Players connect on UDP 19132: the port binds privately by default, so set a public bind in the app's Network settings and open UDP 19132 in the host and cloud firewall. The image publishes amd64 and arm64 builds, but the Bedrock server itself is x86 software, so on arm64 it runs under emulation and needs more CPU.
+
+This page describes the Levelrail template for Minecraft Bedrock Server (Games). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/itzg/docker-minecraft-bedrock-server.
+
+Recommended memory: about 2048 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `bedrock` | `itzg/minecraft-bedrock-server:2026.10.3` | 19132 | `bedrock_data -&#62; /data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `bedrock` | `ALLOW_LIST` | Preset in the template |
+| `bedrock` | `DIFFICULTY` | Preset in the template |
+| `bedrock` | `EULA` | You must provide |
+| `bedrock` | `GAME_MODE` | Preset in the template |
+| `bedrock` | `VERSION` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`bedrock`): 19132:19132.
+- You must provide one or more secrets before it can deploy (`bedrock`): EULA.
+- Stores data in named volumes (`bedrock`): bedrock_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+<Warning>This template needs configuration before it can deploy. Open it in the dashboard, set each variable marked "You must provide" in the Compose body, then deploy.</Warning>
+
+## Deploy Minecraft Bedrock Server with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Minecraft Bedrock Server. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates get minecraft-bedrock --output json | jq -r .compose > minecraft-bedrock.compose.yaml
+# edit minecraft-bedrock.compose.yaml to set the variables you must provide
+levelrail-cli apps deploy-compose my-minecraft-bedrock --file minecraft-bedrock.compose.yaml
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Games templates
+
+- [Factorio Server](/self-host/factorio)
+- [Minecraft Server](/self-host/minecraft)
+- [Palworld Server](/self-host/palworld)
+- [Terraria Server](/self-host/terraria)
+
+All templates are listed in the [self-host gallery](/self-host).

@@ -92,6 +92,13 @@ func TestUpgradeMatrix_SeededDataSurvivesUpgradeToHead(t *testing.T) {
 	for i := step; i < len(all)-1; i += step {
 		checkpoints = append(checkpoints, all[i].version)
 	}
+	// Short mode keeps the oldest and newest start points; the nightly lane runs all.
+	if testing.Short() && len(checkpoints) > 2 {
+		checkpoints = []int{checkpoints[0], checkpoints[len(checkpoints)-1]}
+	}
+	if testing.Short() && raceEnabled && len(checkpoints) > 1 {
+		checkpoints = checkpoints[:1]
+	}
 	head := all[len(all)-1].version
 
 	for _, from := range checkpoints {

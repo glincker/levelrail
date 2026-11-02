@@ -84,6 +84,7 @@ export async function createAlertRule(
 export function useCreateAlertRule(appName: string) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (req: CreateAlertRuleRequest) => createAlertRule(appName, req),
     onSuccess: () => {
       void queryClient.invalidateQueries({
@@ -122,6 +123,7 @@ export async function updateAlertRule(
 export function useUpdateAlertRule(appName: string) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: ({ id, req }: { id: string; req: CreateAlertRuleRequest }) =>
       updateAlertRule(appName, id, req),
     onSuccess: () => {
@@ -153,6 +155,7 @@ export async function deleteAlertRule(
 export function useDeleteAlertRule(appName: string) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (id: string) => deleteAlertRule(appName, id),
     onSuccess: () => {
       void queryClient.invalidateQueries({

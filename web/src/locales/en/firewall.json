@@ -18,9 +18,17 @@
       "overview": "Overview",
       "traffic": "Traffic",
       "rules": "Rules",
+      "ports": "Ports",
       "audit": "Audit log"
     },
+    "hostPointer": "Open ports and host firewall live in Settings > Firewall.",
+    "hostPointerLink": "Open Settings > Firewall",
     "help": "Firewall guide"
+  },
+  "ports": {
+    "loading": "Loading ports",
+    "loadError": "Could not load the published ports.",
+    "reach": "Reachable from"
   },
   "outcome": {
     "allowed": "Allowed",

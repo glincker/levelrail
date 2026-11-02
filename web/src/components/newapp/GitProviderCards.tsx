@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
+import { ChevronDownGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { BrandTile } from '../BrandLogoBadge'
 import { ingressSettingsQueryOptions } from '../../queries/domains'
@@ -19,36 +20,50 @@ export function GitProviderCards() {
   const noPublicAddress = ingress !== undefined && !ingress.primary_domain
   return (
     <div className="space-y-2">
-      <div>
-        <p className="text-sm font-medium text-foreground">
+      <details className="group rounded-lg border border-border bg-card">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm font-medium text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none [&::-webkit-details-marker]:hidden">
           {t('source.git.connectTitle')}
-        </p>
-        <p className="text-sm text-muted-foreground">
-          {t('source.git.connectBody')}
-        </p>
-      </div>
-      <ul className="grid gap-2 sm:grid-cols-2">
-        {PROVIDERS.map((p) => (
-          <li
-            key={p.id}
-            className="flex items-center gap-3 rounded-lg border border-border bg-card p-3"
+          <ChevronDownGlassIcon
+            className="size-5 text-muted-foreground transition-transform group-open:rotate-180 motion-reduce:transition-none"
+            aria-hidden="true"
+          />
+        </summary>
+        <div className="space-y-2 px-3 pb-3">
+          <p className="text-sm text-muted-foreground">
+            {t('source.git.connectBody')}
+          </p>
+          <ul className="grid gap-2 sm:grid-cols-2">
+            {PROVIDERS.map((p) => (
+              <li
+                key={p.id}
+                className="flex items-center gap-3 rounded-lg border border-border bg-card p-3"
+              >
+                <BrandTile name={p.id} label={p.label} size="md" />
+                <span className="min-w-0 flex-1 text-sm font-medium text-foreground">
+                  {p.label}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  render={<Link to={p.to} />}
+                  nativeButton={false}
+                  aria-label={t('source.git.connectLabel', {
+                    provider: p.label,
+                  })}
+                >
+                  {t('source.git.connect')}
+                </Button>
+              </li>
+            ))}
+          </ul>
+          <Link
+            to="/settings/git-connections"
+            className="inline-block text-sm font-medium text-primary underline-offset-4 hover:underline"
           >
-            <BrandTile name={p.id} label={p.label} size="md" />
-            <span className="min-w-0 flex-1 text-sm font-medium text-foreground">
-              {p.label}
-            </span>
-            <Button
-              size="sm"
-              variant="outline"
-              render={<Link to={p.to} />}
-              nativeButton={false}
-              aria-label={t('source.git.connectLabel', { provider: p.label })}
-            >
-              {t('source.git.connect')}
-            </Button>
-          </li>
-        ))}
-      </ul>
+            {t('source.git.manageAll')}
+          </Link>
+        </div>
+      </details>
       {noPublicAddress ? (
         <p className="text-sm text-muted-foreground">
           {t('source.git.needsAddress')}{' '}
@@ -65,12 +80,6 @@ export function GitProviderCards() {
           </button>
         </p>
       ) : null}
-      <Link
-        to="/settings/git-connections"
-        className="inline-block text-sm font-medium text-primary underline-offset-4 hover:underline"
-      >
-        {t('source.git.manageAll')}
-      </Link>
     </div>
   )
 }

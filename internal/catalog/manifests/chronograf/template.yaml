@@ -1,0 +1,25 @@
+id: chronograf
+name: Chronograf
+description: A web interface to explore, graph and alert on time series stored in InfluxDB. Add your InfluxDB connection from the first screen; it has no login of its own, so restrict who can reach it.
+icon: chart-line
+category: Monitoring
+documentation_url: https://docs.influxdata.com/chronograf/
+source_repo: https://github.com/influxdata/chronograf
+license: MIT
+license_class: permissive
+license_url: https://github.com/influxdata/chronograf/blob/master/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Open the page and enter the address of your InfluxDB server to connect it.
+domains:
+  - service: chronograf
+    port: 8888
+    description: Public address of Chronograf.
+healthcheck:
+  service: chronograf
+  port: 8888
+  path: /ping

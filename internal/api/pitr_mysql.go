@@ -31,6 +31,9 @@ func (rt *Router) handleTriggerMySQLPITRRestore(w http.ResponseWriter, r *http.R
 		writeError(w, http.StatusBadRequest, "base_backup_id is required")
 		return
 	}
+	if rt.refuseForeignBaseBackup(w, r, db, req.BaseBackupID) {
+		return
+	}
 	if req.RestoreAs == "" {
 		writeError(w, http.StatusBadRequest, "restore_as is required: a point-in-time restore of "+db.Engine+" creates a new database")
 		return

@@ -120,7 +120,7 @@ func moveNodeFlagsUsage(dest string) string {
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
-`, dest, envAPIToken, envAPIURL, defaultAPIURL)
+`, dest, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }
 
 func appsSetNodeUsage(prog string) string {

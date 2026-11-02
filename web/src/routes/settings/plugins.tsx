@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ApprovalDialog } from '../../components/plugins/ApprovalDialog'
+import { EgressBanner } from '../../components/plugins/EgressBanner'
 import { InstallPluginDialog } from '../../components/plugins/InstallPluginDialog'
 import { PanelHost } from '../../components/plugins/PanelHost'
 import { MarketplaceTab } from '../../components/plugins/MarketplaceTab'
@@ -87,12 +88,15 @@ function PluginsPage() {
               }
             />
           ) : (
-            <PluginTable
-              plugins={plugins}
-              onReview={setReviewing}
-              onUpgrade={setUpgrading}
-              onTrustKeys={showKeys}
-            />
+            <>
+              <EgressBanner plugins={plugins} />
+              <PluginTable
+                plugins={plugins}
+                onReview={setReviewing}
+                onUpgrade={setUpgrading}
+                onTrustKeys={showKeys}
+              />
+            </>
           )}
           <PluginPanels plugins={plugins} />
           <PanelHost slot="plugins" />

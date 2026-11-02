@@ -27,6 +27,11 @@ forum on the [GLINR Discord](https://discord.gg/Ar5pcaZB99).
   [`good first issue`](https://github.com/glincker/levelrail/labels/good%20first%20issue)
   or [`help wanted`](https://github.com/glincker/levelrail/labels/help%20wanted).
 
+- Run `scripts/preflight.sh` before you push. It picks the repo-wide guards
+  that match your changed files (CLI tree, template logos, generated files,
+  fan-in, execgate, locales, docs, dashes). Agent briefs should include this
+  step. See [Which guard catches what](../docs/contributing-guards.md).
+
 ## Branches and commits
 
 - Branch names: `type/short-description`, e.g. `fix/rollback-image-gc`
@@ -116,6 +121,24 @@ and only for the areas you touched (backend, web, installer). Also on every
 PR: **PR hygiene** (labels, size, description and commit rules, one job) and
 the third-party review bots, which are not required. Flaky-test issues are
 filed by a separate workflow after CI finishes on `main`, not on PRs.
+
+## Which guard catches what
+
+Several checks scan the whole tree, so a scoped test run does not reach them.
+The ones you hit most often:
+
+| You changed | Run | A failure usually means |
+| --- | --- | --- |
+| Non-test Go that starts a process | `go test ./test/execgate` | The file needs a reviewed entry in `test/execgate/allowlist.txt`. Docker and BuildKit are driven through their APIs and never go in the list. |
+| Imports between internal packages | `scripts/check-fanin.sh` | A package passed its budget in `scripts/fanin-budget.txt`. Split the package, or raise the entry with a reason in the PR. |
+| API routes, templates, docs pages | `scripts/code-gen-check.sh` | A generated file is stale. Run the generator and commit the output. |
+| Docs | `bash scripts/docs-check.sh --links-only` and `scripts/check-dashes.sh` | A broken relative link, or an em or en dash. |
+| CLI flags or verbs | `go test ./cmd/levelrail-cli` | Help text, `--json` or completion drifted from the code. |
+| Web strings | `scripts/check-i18n.sh <file>` | Literal JSX text. Use `t()` with a key in `web/src/locales/en`. |
+
+The full table, with the fix for each guard, the git hook flags such as
+`LEVELRAIL_PUSH_BACKGROUND`, and the gate scripts, is in
+[docs/contributing-guards.md](../docs/contributing-guards.md).
 
 ## Running tests
 
@@ -213,68 +236,13 @@ it separately if you think the set should change.
 
 ## Adding a service template
 
-The service catalog (`internal/catalog`, served by
-`GET /api/v1/service-templates`) has two sources, merged into one list
-everywhere it's used:
+To list a product or app in the marketplace catalog, follow [Add a template](https://docs.levelrail.com/add-a-template): two files under `internal/catalog/manifests/<id>/`, checked locally with `scripts/template-lint.sh <id>`.
 
-- `internal/catalog/templates_*.go`: the existing, hand-written Go
-  entries. Don't touch these to add a new template.
-- `internal/catalog/contrib/*.yaml`: one YAML file per template. This is
-  the path for contributing a new template without touching Go source or
-  running the Go toolchain.
+The hand-written `internal/catalog/templates_*.go` entries and the `internal/catalog/contrib/*.yaml` files are frozen. Do not add to them; a test fails if a new contrib file appears.
 
-To add one, create `internal/catalog/contrib/<your-id>.yaml`:
+The template PR workflow pulls and boots the image for each changed template, scans it, and uploads the result as an artifact. Say in your PR description that you ran it locally with the volumes mounted, since a review cannot see that. Pin a specific image tag, never `latest`. A recorded passing smoke run for the pinned image earns the **Verified** label, with the tested architectures shown.
 
-```yaml
-id: your-app
-name: Your App
-slogan: One sentence describing what it does and why it's worth running.
-category: Developer Tools
-documentation_url: https://example.com/docs
-recommended_memory_bytes: 268435456
-compose: |
-  services:
-    your-app:
-      image: ghcr.io/you/your-app:1.2.3
-      ports: ["8080:8080"]
-      volumes:
-        - your_app_data:/data
-      healthcheck:
-        test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1"]
-        interval: 30s
-        timeout: 5s
-        retries: 3
-```
-
-Notes on the fields:
-
-- `id` must be unique across the whole catalog (Go entries included).
-  `go test ./internal/catalog/...` fails the build on a duplicate.
-- `compose` is a real `compose.yaml` body, pasted in as a YAML block
-  scalar (the `|` above), not escaped or quoted. It must parse against
-  this platform's supported Compose subset (`internal/compose`): one
-  container per service, no bind-mount file injection, no
-  `depends_on: service_healthy` ordering. Use an image tag, not `latest`.
-  At least one service needs a `healthcheck:` block.
-- `recommended_memory_bytes` is shown in the UI and applied as the new
-  app's container memory limit (editable under Resources, never lowered on
-  a redeploy). It is not checked against any node's real memory.
-- A single-writer app that locks its state volume sets
-  `x-levelrail-strategy: recreate` and an `x-levelrail-strategy-reason` on
-  its service in the compose body.
-- Pin a real, specific image tag you've verified exists.
-
-Review model: a human reviews every template PR the same way as any
-other PR. There is no automated pipeline that pulls or boots the image,
-and there will not be: an orchestrator platform isn't the place to
-bulk-verify every vendor's image. Please say in your PR description that
-you pulled the image and ran it locally with the volumes mounted (not
-just `docker build`), since that's the one thing a review can't see for
-itself, but this isn't mechanically checked.
-
-See "Branches and commits" and "Code style" above for comment and commit
-conventions; they apply the same way inside a `contrib/*.yaml` file's
-`compose` body as anywhere else.
+See "Branches and commits" and "Code style" above for comment and commit conventions.
 
 ## Writing migrations
 

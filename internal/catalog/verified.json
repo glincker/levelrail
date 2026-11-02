@@ -1,107 +1,934 @@
 {
-  "verified_on": "2026-10-27",
-  "environment": "local docker compose smoke run (scripts/catalog-smoke.sh), arm64 host",
-  "templates": [
-    "2fauth",
-    "actual-budget",
-    "adminer",
-    "alertmanager",
-    "apprise-api",
-    "appsmith",
-    "archivebox",
-    "authelia",
-    "authentik",
-    "backrest",
-    "bentopdf",
-    "bookstack",
-    "bytestash",
-    "changedetection",
-    "consul",
-    "couchdb",
-    "crawl4ai",
-    "dashy",
-    "directus",
-    "docker-registry",
-    "etcd",
-    "excalidraw",
-    "filebrowser",
-    "firefly-iii",
-    "flatnotes",
-    "forgejo",
-    "ghost",
-    "gitea",
-    "glance",
-    "goatcounter",
-    "gotenberg",
-    "gotify",
-    "grafana",
-    "headscale",
-    "heimdall",
-    "homepage",
-    "homer",
-    "immich",
-    "influxdb",
-    "it-tools",
-    "jellyfin",
-    "kavita",
-    "keycloak",
-    "kopia",
-    "librespeed",
-    "linkding",
-    "listmonk",
-    "lldap",
-    "loki",
-    "mailpit",
-    "mealie",
-    "meilisearch",
-    "memcached",
-    "memos",
-    "metabase",
-    "metube",
-    "minio",
-    "mosquitto",
-    "n8n",
-    "nats",
-    "navidrome",
-    "nextcloud",
-    "nocodb",
-    "ntfy",
-    "open-notebook",
-    "open-webui",
-    "outline",
-    "pairdrop",
-    "paperless-ngx",
-    "penpot",
-    "pgadmin",
-    "phpmyadmin",
-    "plausible",
-    "pocket-id",
-    "pocketbase",
-    "portainer",
-    "privatebin",
-    "prometheus",
-    "rabbitmq",
-    "radicale",
-    "readeck",
-    "rocketchat",
-    "rsshub",
-    "searxng",
-    "shiori",
-    "silverbullet",
-    "sonarqube",
-    "strapi",
-    "syncthing",
-    "tautulli",
-    "triliumnext",
-    "typesense",
-    "umami",
-    "uptime-kuma",
-    "valkey",
-    "vaultwarden",
-    "verdaccio",
-    "vikunja",
-    "wakapi",
-    "wallos",
-    "wordpress"
-  ]
+  "2fauth": {
+    "tag": "8.0.2",
+    "images": [
+      "2fauth/2fauth:8.0.2"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "actual-budget": {
+    "tag": "26.9.0",
+    "images": [
+      "actualbudget/actual-server:26.9.0"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "adminer": {
+    "tag": "5",
+    "images": [
+      "adminer:5"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "alertmanager": {
+    "tag": "v0.27.0",
+    "images": [
+      "prom/alertmanager:v0.27.0"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "apprise-api": {
+    "tag": "1.5.4",
+    "images": [
+      "caronc/apprise:1.5.4"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "appsmith": {
+    "tag": "v2.4.2",
+    "images": [
+      "appsmith/appsmith-ce:v2.4.2"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "archivebox": {
+    "tag": "0.9.76",
+    "images": [
+      "archivebox/archivebox:0.9.76"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "authelia": {
+    "tag": "4.39.28",
+    "images": [
+      "authelia/authelia:4.39.28"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "authentik": {
+    "tag": "2026.8.3",
+    "images": [
+      "ghcr.io/goauthentik/server:2026.8.3",
+      "postgres:16-alpine"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "backrest": {
+    "tag": "v1.14.1",
+    "images": [
+      "garethgeorge/backrest:v1.14.1"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "bentopdf": {
+    "tag": "v1.16.1",
+    "images": [
+      "ghcr.io/alam00000/bentopdf:v1.16.1"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "bookstack": {
+    "tag": "24.05.2",
+    "images": [
+      "lscr.io/linuxserver/bookstack:24.05.2",
+      "mariadb:11"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "bytestash": {
+    "tag": "1.5.13",
+    "images": [
+      "ghcr.io/jordan-dalby/bytestash:1.5.13"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "changedetection": {
+    "tag": "0.49.12",
+    "images": [
+      "ghcr.io/dgtlmoon/changedetection.io:0.49.12"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "consul": {
+    "tag": "1.20",
+    "images": [
+      "hashicorp/consul:1.20"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "couchdb": {
+    "tag": "3.4",
+    "images": [
+      "couchdb:3.4"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "crawl4ai": {
+    "tag": "0.9.5",
+    "images": [
+      "unclecode/crawl4ai:0.9.5"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "dashy": {
+    "tag": "4.7.8",
+    "images": [
+      "lissy93/dashy:4.7.8"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "directus": {
+    "tag": "11",
+    "images": [
+      "directus/directus:11",
+      "postgres:16-alpine",
+      "redis:7-alpine"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "docker-registry": {
+    "tag": "3",
+    "images": [
+      "registry:3"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "etcd": {
+    "tag": "v3.5.17",
+    "images": [
+      "quay.io/coreos/etcd:v3.5.17"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "filebrowser": {
+    "tag": "v2.31.2",
+    "images": [
+      "filebrowser/filebrowser:v2.31.2"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "filebrowser-quantum": {
+    "tag": "2.0.2-stable",
+    "images": [
+      "ghcr.io/gtsteffaniak/filebrowser:2.0.2-stable"
+    ],
+    "arches": [
+      "arm64"
+    ],
+    "http_status": 200
+  },
+  "firefly-iii": {
+    "tag": "version-6.2.3",
+    "images": [
+      "fireflyiii/core:version-6.2.3",
+      "mariadb:11"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "flatnotes": {
+    "tag": "v5.5.5",
+    "images": [
+      "dullage/flatnotes:v5.5.5"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "forgejo": {
+    "tag": "9.0.3",
+    "images": [
+      "codeberg.org/forgejo/forgejo:9.0.3"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "ghost": {
+    "tag": "5",
+    "images": [
+      "ghost:5",
+      "mysql:8.4"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "gitea": {
+    "tag": "1.23.1",
+    "images": [
+      "gitea/gitea:1.23.1",
+      "mariadb:11"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "glance": {
+    "tag": "v0.8.6",
+    "images": [
+      "glanceapp/glance:v0.8.6"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "goatcounter": {
+    "tag": "2.7",
+    "images": [
+      "arp242/goatcounter:2.7"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "gotenberg": {
+    "tag": "8.15",
+    "images": [
+      "gotenberg/gotenberg:8.15"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "gotify": {
+    "tag": "2.6.1",
+    "images": [
+      "gotify/server:2.6.1"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "grafana": {
+    "tag": "11.2.0",
+    "images": [
+      "grafana/grafana:11.2.0"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "headscale": {
+    "tag": "v0.29.6",
+    "images": [
+      "headscale/headscale:v0.29.6"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "heimdall": {
+    "tag": "2.6.3",
+    "images": [
+      "lscr.io/linuxserver/heimdall:2.6.3"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "homepage": {
+    "tag": "v0.10.4",
+    "images": [
+      "ghcr.io/gethomepage/homepage:v0.10.4"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "homer": {
+    "tag": "v24.05.1",
+    "images": [
+      "b4bz/homer:v24.05.1"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "immich": {
+    "tag": "v1.126.1",
+    "images": [
+      "ghcr.io/immich-app/immich-machine-learning:v1.126.1",
+      "ghcr.io/immich-app/immich-server:v1.126.1",
+      "ghcr.io/immich-app/postgres:14-vectorchord0.3.0-pgvectors0.2.0",
+      "redis:7.4-alpine"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "influxdb": {
+    "tag": "2.7-alpine",
+    "images": [
+      "influxdb:2.7-alpine"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "it-tools": {
+    "tag": "2024.10.22-7ca5933",
+    "images": [
+      "corentinth/it-tools:2024.10.22-7ca5933"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "jellyfin": {
+    "tag": "10.11.8",
+    "images": [
+      "lscr.io/linuxserver/jellyfin:10.11.8"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "kavita": {
+    "tag": "0.9.1",
+    "images": [
+      "jvmilazz0/kavita:0.9.1"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "keycloak": {
+    "tag": "26.1",
+    "images": [
+      "quay.io/keycloak/keycloak:26.1"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "kopia": {
+    "tag": "0.19.0",
+    "images": [
+      "kopia/kopia:0.19.0"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "librespeed": {
+    "tag": "6.3.0",
+    "images": [
+      "ghcr.io/librespeed/speedtest:6.3.0"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "linkding": {
+    "tag": "1.31.0",
+    "images": [
+      "sissbruecker/linkding:1.31.0"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "listmonk": {
+    "tag": "v6.0.0",
+    "images": [
+      "listmonk/listmonk:v6.0.0",
+      "postgres:16-alpine"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "lldap": {
+    "tag": "v0.6.3",
+    "images": [
+      "lldap/lldap:v0.6.3"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "loki": {
+    "tag": "3.7.8",
+    "images": [
+      "grafana/loki:3.7.8"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "mailpit": {
+    "tag": "v1.21.8",
+    "images": [
+      "axllent/mailpit:v1.21.8"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "mealie": {
+    "tag": "v3.28.0",
+    "images": [
+      "ghcr.io/mealie-recipes/mealie:v3.28.0"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "meilisearch": {
+    "tag": "v1.11.1",
+    "images": [
+      "getmeili/meilisearch:v1.11.1"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "memcached": {
+    "tag": "1.6-alpine",
+    "images": [
+      "memcached:1.6-alpine"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "memos": {
+    "tag": "stable",
+    "images": [
+      "neosmemo/memos:stable"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "minio": {
+    "tag": "RELEASE.2026-09-19T17-05-25Z.hotfix.4ef74f03d6f2",
+    "images": [
+      "quay.io/minio/aistor/minio:RELEASE.2026-09-19T17-05-25Z.hotfix.4ef74f03d6f2"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "mosquitto": {
+    "tag": "2.0.20",
+    "images": [
+      "eclipse-mosquitto:2.0.20"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "n8n": {
+    "tag": "1.62.1",
+    "images": [
+      "n8nio/n8n:1.62.1"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "nats": {
+    "tag": "2.10-alpine",
+    "images": [
+      "nats:2.10-alpine"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "navidrome": {
+    "tag": "0.54.1",
+    "images": [
+      "deluan/navidrome:0.54.1"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "nextcloud": {
+    "tag": "29.0.4-apache",
+    "images": [
+      "nextcloud:29.0.4-apache"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "nocodb": {
+    "tag": "2026.09.0",
+    "images": [
+      "nocodb/nocodb:2026.09.0"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "ntfy": {
+    "tag": "v2.11.0",
+    "images": [
+      "binwiederhier/ntfy:v2.11.0"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "open-notebook": {
+    "tag": "1.15.0",
+    "images": [
+      "lfnovo/open_notebook:1.15.0",
+      "surrealdb/surrealdb:v2.6.5"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "open-webui": {
+    "tag": "0.11.3",
+    "images": [
+      "ghcr.io/open-webui/open-webui:0.11.3",
+      "ollama/ollama:0.33.3"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "outline": {
+    "tag": "0.79.0",
+    "images": [
+      "outlinewiki/outline:0.79.0",
+      "postgres:16-alpine",
+      "redis:7-alpine"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "pairdrop": {
+    "tag": "1.11.2",
+    "images": [
+      "lscr.io/linuxserver/pairdrop:1.11.2"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "paperless-ngx": {
+    "tag": "2.14.5",
+    "images": [
+      "paperlessngx/paperless-ngx:2.14.5",
+      "redis:7.4"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "penpot": {
+    "tag": "2.11.1",
+    "images": [
+      "penpotapp/backend:2.11.1",
+      "penpotapp/exporter:2.11.1",
+      "penpotapp/frontend:2.11.1",
+      "postgres:15-alpine",
+      "valkey/valkey:8.1-alpine"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "pgadmin": {
+    "tag": "8.14",
+    "images": [
+      "dpage/pgadmin4:8.14"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "phpmyadmin": {
+    "tag": "5.2.2",
+    "images": [
+      "phpmyadmin:5.2.2"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "plausible": {
+    "tag": "24.12-alpine",
+    "images": [
+      "clickhouse/clickhouse-server:24.12-alpine",
+      "ghcr.io/plausible/community-edition:v3.0.1",
+      "postgres:16-alpine"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "pocket-id": {
+    "tag": "v1.13",
+    "images": [
+      "ghcr.io/pocket-id/pocket-id:v1.13"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "pocketbase": {
+    "tag": "0.22.27",
+    "images": [
+      "ghcr.io/muchobien/pocketbase:0.22.27"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "portainer": {
+    "tag": "2.21.0",
+    "images": [
+      "portainer/portainer-ce:2.21.0"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "privatebin": {
+    "tag": "1.7.4",
+    "images": [
+      "privatebin/nginx-fpm-alpine:1.7.4"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "prometheus": {
+    "tag": "v2.54.1",
+    "images": [
+      "prom/prometheus:v2.54.1"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "rabbitmq": {
+    "tag": "3.13-management-alpine",
+    "images": [
+      "rabbitmq:3.13-management-alpine"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "radicale": {
+    "tag": "3.9.0",
+    "images": [
+      "kozea/radicale:3.9.0"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "readeck": {
+    "tag": "0.23.4",
+    "images": [
+      "codeberg.org/readeck/readeck:0.23.4"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "rocketchat": {
+    "tag": "7",
+    "images": [
+      "mongo:7",
+      "rocketchat/rocket.chat:8.0.1"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "rsshub": {
+    "tag": "2026-10-26",
+    "images": [
+      "diygod/rsshub:2026-10-26"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "rustfs": {
+    "tag": "1.0.4",
+    "images": [
+      "rustfs/rustfs:1.0.4"
+    ],
+    "arches": [
+      "arm64"
+    ],
+    "http_status": 200
+  },
+  "searxng": {
+    "tag": "7-alpine",
+    "images": [
+      "redis:7-alpine",
+      "searxng/searxng:2026.9.23-3cd69d30e"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "shiori": {
+    "tag": "v1.7.1",
+    "images": [
+      "ghcr.io/go-shiori/shiori:v1.7.1"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "silverbullet": {
+    "tag": "2.11.1",
+    "images": [
+      "ghcr.io/silverbulletmd/silverbullet:2.11.1"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "sonarqube": {
+    "tag": "16-alpine",
+    "images": [
+      "postgres:16-alpine",
+      "sonarqube:community"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "strapi": {
+    "tag": "v5.33.4",
+    "images": [
+      "elestio/strapi-production:v5.33.4",
+      "postgres:16-alpine"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "syncthing": {
+    "tag": "1.29.4",
+    "images": [
+      "lscr.io/linuxserver/syncthing:1.29.4"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "tautulli": {
+    "tag": "2.15.0",
+    "images": [
+      "lscr.io/linuxserver/tautulli:2.15.0"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "triliumnext": {
+    "tag": "stable",
+    "images": [
+      "ghcr.io/triliumnext/trilium:stable"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "typesense": {
+    "tag": "30.2",
+    "images": [
+      "typesense/typesense:30.2"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "umami": {
+    "tag": "postgresql-v2.19.0",
+    "images": [
+      "ghcr.io/umami-software/umami:postgresql-v2.19.0",
+      "postgres:16-alpine"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "uptime-kuma": {
+    "tag": "1.23.13",
+    "images": [
+      "louislam/uptime-kuma:1.23.13"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "valkey": {
+    "tag": "8.0-alpine",
+    "images": [
+      "valkey/valkey:8.0-alpine"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "vaultwarden": {
+    "tag": "1.32.1",
+    "images": [
+      "vaultwarden/server:1.32.1"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "verdaccio": {
+    "tag": "5.31.1",
+    "images": [
+      "verdaccio/verdaccio:5.31.1"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "vikunja": {
+    "tag": "16-alpine",
+    "images": [
+      "postgres:16-alpine",
+      "vikunja/vikunja:0.24.1"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "wakapi": {
+    "tag": "2.13.0",
+    "images": [
+      "ghcr.io/muety/wakapi:2.13.0",
+      "postgres:16-alpine"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "wallos": {
+    "tag": "5.8.1",
+    "images": [
+      "bellamy/wallos:5.8.1"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  },
+  "wordpress": {
+    "tag": "8.4",
+    "images": [
+      "mysql:8.4",
+      "wordpress:6.6-apache"
+    ],
+    "arches": [
+      "arm64"
+    ]
+  }
 }

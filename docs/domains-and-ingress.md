@@ -42,6 +42,8 @@ levelrail-cli domains check my-app my-app.example.com
 
 `domains check` reports whether the domain currently resolves to this control plane's advertised address.
 
+The check asks three groups and shows each answer with its TTL: the zone's own (authoritative) name servers, public resolvers (`APP_DNS_PUBLIC_RESOLVERS`, a comma separated list, default 1.1.1.1, 8.8.8.8 and 9.9.9.9) and this server's resolver. The authoritative answer decides: when those servers already return this server's address the verdict is `dns_ready` and onboarding, the live probe and certificate issuance continue even if this server's own resolver still caches an old answer. In that case the card shows when that cache should expire and, on hosts running systemd-resolved, the `resolvectl flush-caches` command to run yourself (the control plane never runs it). If the old record was a Cloudflare proxy, the card says so. After the wait budget (runtime setting `domains.dns_wait_budget`, default 10 minutes) the card stops saying nothing is wrong and lists concrete checks: the right zone, an AAAA record elsewhere, a flattened CNAME and a different authoritative DNS provider.
+
 </Step>
 <Step title="Add the domain to your app">
 
@@ -160,7 +162,7 @@ The **Guided setup** button on an app's Domains tab walks one domain through fou
 1. **Domain.** Pick the environment it belongs to, and optionally route the `www` or apex twin with a redirect to the one you typed.
 2. **DNS record.** The exact A, AAAA or CNAME record to add, re-checked live.
 3. **Container port.** Whether the running container really listens on the app's port. This reads the container's socket table, so it needs exec access enabled for the app; without it the step says it could not verify.
-4. **Certificate.** Which challenge applies. HTTP-01 needs the internet to reach port 80 on this server. If this server sits on a private (LAN, NAT, NAS) address, or the domain is a wildcard, only DNS-01 can work, and the step says which provider is connected (Cloudflare, Route53 or none) and where to connect one.
+4. **Certificate.** Which challenge applies. HTTP-01 needs the internet to reach port 80 on this server, and non-wildcard hosts use it by default. DNS-01 is used for wildcard hosts, and for single hosts only when you turn on the runtime setting `ingress.dns01_all_hosts` (see below) or switch one domain to it during a cutover. It needs a connected DNS provider: Cloudflare, Route53 or Google Cloud DNS, checked in that order. Without a provider, a non-wildcard host on a private (LAN, NAT, NAS) address cannot get a trusted certificate from ACME. Enabling `ingress.dns01_all_hosts` is refused while no provider is connected. DNS-01 for single hosts is not yet verified against a real CA. The step says which provider is connected, or none, and where to connect one. Use a wildcard host (which also needs a provider), a tunnel, or an uploaded certificate instead.
 
 When a certificate request fails, the dashboard shows the certificate authority's own error next to the one step that usually fixes it: open ports 80 and 443, fix the DNS record, wait out a rate limit, or correct a CAA record. The same reason appears on the Domains list and in `domains check`.
 
@@ -456,6 +458,20 @@ An upload is all or nothing: if saving the key or the record fails, the previous
 ### Domains that are dropped or downgraded
 
 The ingress pass never degrades a domain silently. Each pass records a per-domain issue, shown on the domain list (and by `levelrail-cli domains list`): an uploaded certificate that cannot be read (automatic issuance is used instead), a basic auth password that cannot be read (the domain is not routed rather than served open), a wildcard with no DNS-01 provider, or a standalone target that is unavailable. A dropped domain also turns the ingress Ready condition False with the domain names; fixing the cause clears it on the next pass. Each issue on the domain list has a Fix button: **Use automatic certificate** (root only, clears the uploaded certificate) or **Upload again** for a certificate, **Set password** for basic auth, **Connect DNS provider** for a wildcard, **Open app** or **Check target** for an unavailable target.
+
+## DNS-01 for single hosts
+
+By default only wildcard hosts use DNS-01. If port 80 is closed or the server is behind CGNAT, turn it on for every host. This is a runtime setting (`ingress.dns01_all_hosts`): you manage it from the ingress settings card or the CLI, a stored value applies without a restart, and `APP_INGRESS_DNS01_ALL_HOSTS` only seeds the default while nothing is stored.
+
+```bash
+levelrail-cli settings ingress dns01 show
+levelrail-cli settings ingress dns01 enable
+levelrail-cli settings ingress dns01 disable
+```
+
+API: `GET` and `PUT /api/v1/settings/ingress/dns01`. Enabling is refused while no DNS provider is connected (see below). This path is not yet verified against a real CA.
+
+Moving a live domain from another server? DNS-01 lets the certificate be issued before DNS changes: see [Move a domain with no downtime](/move-a-domain-with-no-downtime).
 
 ## Wildcard domains: DNS-01 providers
 
@@ -921,6 +937,8 @@ APP_INGRESS_CLIENT_IP_HEADERS=CF-Connecting-IP   # optional, defaults to X-Forwa
 <Warning>
 Keep the trusted list to the proxies you actually run: anything listed can claim any client address.
 </Warning>
+
+For Cloudflare, switch on the Cloudflare client IP preset (`levelrail-cli settings ingress cloudflare set --preset cloudflare --confirm-weakening`) instead of pasting ranges; see [Run behind Cloudflare](/behind-cloudflare) for the full setup and what the proxy leaves exposed.
 
 ### Running behind a TLS proxy
 

@@ -127,3 +127,21 @@ func TestOneShotLimitsFromEnv(t *testing.T) {
 		t.Fatalf("%+v", l)
 	}
 }
+
+func TestOneShot_OnUpdateSeesFinalSnapshotLast(t *testing.T) {
+	var mu sync.Mutex
+	var last OneShotSnapshot
+	job := &OneShot{OnUpdate: func(s OneShotSnapshot) {
+		mu.Lock()
+		last = s
+		mu.Unlock()
+	}}
+	job.Run(context.Background(), OneShotSpec{Completions: 2, Parallelism: 2}, func(_ context.Context, _, _ int) AttemptOutcome {
+		return AttemptOutcome{RunID: "r", Status: store.ScheduledTaskStatusSuccess}
+	})
+	mu.Lock()
+	defer mu.Unlock()
+	if last.State != OneShotSucceeded || last.Succeeded != 2 || last.FinishedAt == nil {
+		t.Fatalf("last persisted snapshot = %+v", last)
+	}
+}

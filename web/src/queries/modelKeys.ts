@@ -54,6 +54,7 @@ function useInvalidateKeys(name: string) {
 export function useCreateModelKey(name: string) {
   const invalidate = useInvalidateKeys(name)
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (req: CreateModelKeyRequest) =>
       requestJson<CreatedModelKey>(
         keysUrl(name),

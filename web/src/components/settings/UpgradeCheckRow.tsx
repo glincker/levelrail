@@ -20,7 +20,7 @@ const CHECK_TONE: Record<UpgradeCheckStatus, Tone> = {
 export function UpgradeCheckRow({ check }: { check: UpgradeCheck }) {
   const { t } = useTranslation('updates')
   const backup = useBackupNow()
-  const recheck = useRecheckPreflight()
+  const recheck = useRecheckPreflight({ inlineError: true })
   const open =
     check.status !== 'ok' &&
     check.status !== 'unknown' &&

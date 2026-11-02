@@ -133,9 +133,30 @@ export function useDnsZoneRecords(
 export const dnsRecordsQueryOptions = (zone: string) =>
   queryOptions({
     queryKey: dnsKeys.records(zone),
-    queryFn: () => request<DnsRecordsResponse>(`${zoneBase(zone)}/records`),
+    queryFn: () => fetchAllZoneRecords(zone),
     staleTime: 15_000,
   })
+
+// A large zone pages its records; follow next_cursor so none are hidden. A repeated
+// cursor ends the loop so a misbehaving server cannot spin it.
+export async function fetchAllZoneRecords(
+  zone: string,
+): Promise<DnsRecordsResponse> {
+  let out = await request<DnsRecordsResponse>(`${zoneBase(zone)}/records`)
+  const seen = new Set<string>()
+  while (out.next_cursor && !seen.has(out.next_cursor)) {
+    seen.add(out.next_cursor)
+    const q = new URLSearchParams({ cursor: out.next_cursor })
+    const next = await request<DnsRecordsResponse>(
+      `${zoneBase(zone)}/records?${q.toString()}`,
+    )
+    out = {
+      ...next,
+      records: [...out.records, ...next.records],
+    }
+  }
+  return out
+}
 
 export const dnsTemplatesQueryOptions = () =>
   queryOptions({

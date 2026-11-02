@@ -453,7 +453,7 @@ func TestHandleDeployCompose_DomainAssignedFromExtension(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
-	yaml := "x-levelrail-domains:\n  app: app.example.com\nservices:\n  app:\n    image: myapp:latest\n    environment:\n      FRONTEND_URL: ${SERVICE_FQDN_APP}\n"
+	yaml := "x-levelrail-domains:\n  app: app.example.com\nservices:\n  app:\n    image: myapp:latest\n    environment:\n      FRONTEND_URL: ${SERVICE_URL_APP}\n"
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps/myapp/compose", yaml))
 	if rec.Code != http.StatusOK {

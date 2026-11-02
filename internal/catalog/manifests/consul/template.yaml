@@ -4,6 +4,10 @@ description: "HashiCorp Consul in single-server mode with the web UI: service di
 icon: hard-drives
 category: Infrastructure
 documentation_url: https://developer.hashicorp.com/consul/docs
+source_repo: https://github.com/hashicorp/consul
+license: BUSL-1.1
+license_class: source-available
+license_url: https://github.com/hashicorp/consul/blob/main/LICENSE
 recommended_memory_bytes: 268435456
 domains:
   - service: consul

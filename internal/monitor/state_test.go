@@ -53,3 +53,14 @@ func TestTrackerKeepsCountingWhileDown(t *testing.T) {
 		t.Fatalf("down streak must keep growing past the global threshold: %+v", st)
 	}
 }
+
+func TestTrackerForceCountsRepeatedFailures(t *testing.T) {
+	tr := NewTracker(2, 2, nil)
+	m := Monitor{ID: "mon_4"}
+	for range 5 {
+		tr.Force(m, true, "missed", false)
+	}
+	if st := tr.Status(m.ID); st.State != StateDown || st.FailStreak != 6 {
+		t.Fatalf("forced failures must keep counting: %+v", st)
+	}
+}

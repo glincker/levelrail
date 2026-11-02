@@ -374,3 +374,24 @@ func TestSessionsRegisterRejectsPlainUsernameAndClosesAfterFirst(t *testing.T) {
 		t.Error("library signup stayed open after the first user")
 	}
 }
+
+func TestSessionsIssueSessionTTLExpiresInTheLibrary(t *testing.T) {
+	e := newSessEnv(t)
+	u := e.user(t, "u-ttl", "ttl@example.test")
+	ctx := context.Background()
+	tok, err := e.sess.IssueSessionTTL(ctx, u, "ua", "127.0.0.1", 40*time.Millisecond)
+	if err != nil {
+		t.Fatalf("IssueSessionTTL: %v", err)
+	}
+	long, err := e.sess.IssueSessionTTL(ctx, u, "ua", "127.0.0.1", time.Hour)
+	if err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(120 * time.Millisecond)
+	if _, ok := e.sess.Lookup(ctx, tok); ok {
+		t.Fatal("short session outlived its own TTL")
+	}
+	if _, ok := e.sess.Lookup(ctx, long); !ok {
+		t.Fatal("long session should be live")
+	}
+}

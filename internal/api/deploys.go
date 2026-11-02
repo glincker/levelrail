@@ -81,6 +81,9 @@ type deployTriggerResult struct {
 	// DeployID is the attempt this trigger created, so a waiter follows it
 	// rather than whichever deploy is newest.
 	DeployID string `json:"deploy_id,omitempty"`
+	// CDNWarning is set when a static publish or rollback could not purge the
+	// CDN cache. The publish itself succeeded.
+	CDNWarning string `json:"cdn_warning,omitempty"`
 }
 
 // handleTriggerDeploy handles POST /api/v1/apps/{name}/deploys. It
@@ -652,7 +655,23 @@ func (rt *Router) appStatusConditions(ctx context.Context, svc store.DesiredServ
 	if cond := rt.crossNodeIngressAppCondition(ctx, svc); cond != nil {
 		conditions = append(conditions, *cond)
 	}
-	return rt.markRestartRollingOut(ctx, svc, conditions), nil
+	return rt.markRestartRollingOut(ctx, svc, clearStaleSuspended(svc, conditions)), nil
+}
+
+// clearStaleSuspended stops reporting Suspended for an app that was started. The
+// stored condition lingers until the controller finishes its next pass, which a
+// retry backoff can delay for minutes.
+func clearStaleSuspended(svc store.DesiredService, conditions []reconcile.Condition) []reconcile.Condition {
+	if svc.Suspended {
+		return conditions
+	}
+	out := slices.Clone(conditions)
+	for i, c := range out {
+		if c.Type == reconcile.ConditionTypeReady && c.Reason == "Suspended" {
+			out[i] = reconcile.Condition{Type: c.Type, Status: reconcile.ConditionUnknown, Reason: "Starting", Message: "the app was started; waiting for the controller to confirm it is ready", LastTransitionTime: c.LastTransitionTime}
+		}
+	}
+	return out
 }
 
 // handleAppStatus handles GET /api/v1/apps/{name}/status: the same

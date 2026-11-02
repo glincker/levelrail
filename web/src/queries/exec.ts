@@ -54,6 +54,7 @@ export async function execInApp(
 
 export function useExecApp(name: string) {
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (input: ExecAppInput) => execInApp(name, input),
   })
 }

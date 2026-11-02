@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 )
@@ -72,6 +73,12 @@ type ProxyRouteStatus struct {
 	// Delivered is true when the last verification proved the proxy hands
 	// this domain's requests to the built-in ingress.
 	Delivered bool
+	// CertClass and the diagnosis fields come from proxyroutes.Diagnose.
+	CertClass string
+	Diagnosis string
+	Hint      string
+	Snippet   string
+	Evidence  []string
 }
 
 // GetProxyIntegrationSettings returns the seeded singleton row.
@@ -123,7 +130,8 @@ func parseProxyTime(s string) time.Time {
 func (db *DB) ListProxyRouteStatus(ctx context.Context) ([]ProxyRouteStatus, error) {
 	rows, err := db.QueryContext(ctx, `
 		SELECT domain, target, file_name, written, written_at, proxy_loaded, reachable, status_code,
-		       cert_issuer, cert_not_after, cert_trusted, last_error, verified_at, delivered
+		       cert_issuer, cert_not_after, cert_trusted, last_error, verified_at, delivered,
+		       cert_class, diagnosis, hint, snippet, evidence
 		FROM proxy_route_status ORDER BY domain
 	`)
 	if err != nil {
@@ -137,13 +145,16 @@ func (db *DB) ListProxyRouteStatus(ctx context.Context) ([]ProxyRouteStatus, err
 			written, reachable, trusted     int
 			delivered                       int
 			writtenAt, verifiedAt, notAfter string
+			evidence                        string
 		)
 		if err := rows.Scan(&s.Domain, &s.Target, &s.FileName, &written, &writtenAt, &s.ProxyLoaded, &reachable, &s.StatusCode,
-			&s.CertIssuer, &notAfter, &trusted, &s.LastError, &verifiedAt, &delivered); err != nil {
+			&s.CertIssuer, &notAfter, &trusted, &s.LastError, &verifiedAt, &delivered,
+			&s.CertClass, &s.Diagnosis, &s.Hint, &s.Snippet, &evidence); err != nil {
 			return nil, fmt.Errorf("store: scan proxy route status: %w", err)
 		}
 		s.Written, s.Reachable, s.CertTrusted, s.Delivered = written != 0, reachable != 0, trusted != 0, delivered != 0
 		s.CertNotAfter = parseProxyTime(notAfter)
+		_ = json.Unmarshal([]byte(evidence), &s.Evidence)
 		s.WrittenAt, s.VerifiedAt = parseProxyTime(writtenAt), parseProxyTime(verifiedAt)
 		out = append(out, s)
 	}
@@ -192,12 +203,15 @@ func (db *DB) MarkProxyRouteFailed(ctx context.Context, domain, target, lastErro
 // SaveProxyRouteVerification stores a probe outcome for an already tracked
 // domain. A domain removed meanwhile is left untracked.
 func (db *DB) SaveProxyRouteVerification(ctx context.Context, s ProxyRouteStatus) error {
+	evidence, _ := json.Marshal(append([]string{}, s.Evidence...))
 	_, err := db.ExecContext(ctx, `
 		UPDATE proxy_route_status SET proxy_loaded = ?, reachable = ?, status_code = ?, cert_issuer = ?,
-			cert_not_after = ?, cert_trusted = ?, last_error = ?, verified_at = ?, delivered = ?
+			cert_not_after = ?, cert_trusted = ?, last_error = ?, verified_at = ?, delivered = ?,
+			cert_class = ?, diagnosis = ?, hint = ?, snippet = ?, evidence = ?
 		WHERE domain = ?
 	`, s.ProxyLoaded, boolInt(s.Reachable), s.StatusCode, s.CertIssuer, formatProxyTime(s.CertNotAfter), boolInt(s.CertTrusted),
-		s.LastError, formatProxyTime(s.VerifiedAt), boolInt(s.Delivered), s.Domain)
+		s.LastError, formatProxyTime(s.VerifiedAt), boolInt(s.Delivered),
+		s.CertClass, s.Diagnosis, s.Hint, s.Snippet, string(evidence), s.Domain)
 	if err != nil {
 		return fmt.Errorf("store: save proxy route %s verification: %w", s.Domain, err)
 	}

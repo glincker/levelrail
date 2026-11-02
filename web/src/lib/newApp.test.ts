@@ -137,6 +137,33 @@ describe('applyNewApp', () => {
     )
   })
 
+  it('pre-fills single page app mode from detection and sends it', async () => {
+    const spaAnalysis = {
+      ...nextAnalysis,
+      build: { ...nextAnalysis.build, type: 'static' },
+      detection: {
+        framework: 'Vite',
+        language: 'node',
+        build_type: 'static',
+        confidence: 'high' as const,
+        reasons: [],
+        port: { value: 80, source: 'static' },
+        health_path: '/',
+        runtime_version: { value: '', source: '' },
+        env_vars: [],
+        warnings: [],
+        spa: true,
+      },
+    }
+    const e = editsFromAnalysis(spaAnalysis)
+    expect(e.spa).toBe(true)
+    expect(editsFromAnalysis(nextAnalysis).spa).toBe(false)
+    const calls = mockApi()
+    await applyNewApp(spaAnalysis, source, e)
+    const put = calls.find((c) => c.key.endsWith('/git-source/build'))
+    expect(put?.body).toMatchObject({ build_type: 'static', static_spa: true })
+  })
+
   it('skips app creation when resuming', async () => {
     const calls = mockApi()
     await applyNewApp(

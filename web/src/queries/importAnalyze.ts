@@ -70,6 +70,7 @@ export interface Detection {
   start_command?: string
   build_command?: string
   output_dir?: string
+  spa?: boolean
   health_path: string
   runtime_version: { value: string; source: string }
   env_vars: DetectionEnvVar[]

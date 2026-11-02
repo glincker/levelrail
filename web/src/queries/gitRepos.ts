@@ -2,6 +2,7 @@
 // (GET /api/v1/git/repos): searched, filtered and paged on the server from
 // a per-connection cache, so a huge account never loads in one response.
 
+import { inlineErrorMeta, type InlineErrorOptions } from '@/lib/inlineError'
 import {
   keepPreviousData,
   useInfiniteQuery,
@@ -101,9 +102,13 @@ export function useGitRepoList(
 
 // Re-lists the provider now instead of serving the cache, then reloads every
 // open list for that provider.
-export function useRefreshGitRepos(provider: GitRepoProvider | '') {
+export function useRefreshGitRepos(
+  provider: GitRepoProvider | '',
+  opts?: InlineErrorOptions,
+) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: inlineErrorMeta(opts),
     mutationFn: () => fetchGitRepoList(provider, { refresh: true }),
     onSettled: () =>
       queryClient.invalidateQueries({

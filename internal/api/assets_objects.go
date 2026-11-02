@@ -133,7 +133,7 @@ func (rt *Router) handleRequestAssetUpload(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusBadRequest, "content_type is not a valid media type")
 		return
 	}
-	maxBytes := assetsUploadMaxBytes()
+	maxBytes := rt.assetsUploadMax(r.Context())
 	if req.Size <= 0 {
 		writeError(w, http.StatusBadRequest, "size is required: it is signed into the URL")
 		return
@@ -258,7 +258,7 @@ func (rt *Router) handleUploadAsset(w http.ResponseWriter, r *http.Request) {
 		_ = tmp.Close()
 		_ = os.Remove(tmp.Name())
 	}()
-	maxBytes := assetsUploadMaxBytes()
+	maxBytes := rt.assetsUploadMax(r.Context())
 	size, err := io.Copy(tmp, io.LimitReader(r.Body, maxBytes+1))
 	if err != nil {
 		var tooBig *http.MaxBytesError

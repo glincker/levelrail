@@ -1,0 +1,63 @@
+---
+title: "Self-host Factorio Server with Docker"
+sidebarTitle: "Factorio Server"
+description: "A dedicated Factorio multiplayer server with saves kept in a volume."
+"og:url": "https://docs.levelrail.com/self-host/factorio"
+---
+
+A dedicated Factorio multiplayer server with saves kept in a volume.
+
+This page describes the Levelrail template for Factorio Server (Games). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/factoriotools/factorio-docker.
+
+Recommended memory: about 2048 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `factorio` | `factoriotools/factorio:2.1.24` | 34197 | `factorio_data -&#62; /factorio` |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`factorio`): 34197:34197.
+- Stores data in named volumes (`factorio`): factorio_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Factorio Server with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Factorio Server. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy factorio --name my-factorio
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Games templates
+
+- [Minecraft Server](/self-host/minecraft)
+- [Minecraft Bedrock Server](/self-host/minecraft-bedrock)
+- [Palworld Server](/self-host/palworld)
+- [Terraria Server](/self-host/terraria)
+
+All templates are listed in the [self-host gallery](/self-host).

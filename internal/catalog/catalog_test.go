@@ -99,7 +99,7 @@ func TestTemplate_Keycloak_ProductionMode(t *testing.T) {
 	if got, want := svc.Command, "start"; len(got) != 1 || got[0] != want {
 		t.Errorf("command = %v, want [%q] (production mode, not start-dev)", got, want)
 	}
-	if got, want := svc.Environment["KC_HOSTNAME"], "${SERVICE_FQDN_KEYCLOAK:-http://localhost:8080}"; got != want {
+	if got, want := svc.Environment["KC_HOSTNAME"], "${SERVICE_URL_KEYCLOAK:-http://localhost:8080}"; got != want {
 		t.Errorf("KC_HOSTNAME = %q, want %q", got, want)
 	}
 	if got, want := svc.Environment["KC_PROXY_HEADERS"], "xforwarded"; got != want {
@@ -124,7 +124,7 @@ func TestTemplate_Vikunja_ProductionDefaults(t *testing.T) {
 	if got, want := svc.Environment["VIKUNJA_SERVICE_JWTSECRET"], "$SERVICE_HEX_64_JWTSECRET"; got != want {
 		t.Errorf("VIKUNJA_SERVICE_JWTSECRET = %q, want %q (a generated per-instance secret, not a static value)", got, want)
 	}
-	if got, want := svc.Environment["VIKUNJA_SERVICE_PUBLICURL"], "${SERVICE_FQDN_VIKUNJA:-http://localhost:3456}"; got != want {
+	if got, want := svc.Environment["VIKUNJA_SERVICE_PUBLICURL"], "${SERVICE_URL_VIKUNJA:-http://localhost:3456}"; got != want {
 		t.Errorf("VIKUNJA_SERVICE_PUBLICURL = %q, want %q", got, want)
 	}
 

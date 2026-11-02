@@ -22,7 +22,7 @@ var automationBatchTemplates = []Template{
       N8N_ENCRYPTION_KEY: $SERVICE_HEX_64_ENCRYPTIONKEY
       N8N_PROTOCOL: https
       N8N_PORT: "5678"
-      WEBHOOK_URL: ${SERVICE_FQDN_N8N:-http://localhost:5678}
+      WEBHOOK_URL: ${SERVICE_URL_N8N:-http://localhost:5678}
       DB_TYPE: postgresdb
       DB_POSTGRESDB_HOST: postgres
       DB_POSTGRESDB_PORT: "5432"
@@ -337,7 +337,7 @@ var automationBatchTemplates = []Template{
     image: seafileltd/seafile-mc:13.0.28
     ports: ["8080:80"]
     environment:
-      SEAFILE_SERVER_HOSTNAME: ${SERVICE_FQDN_SEAFILE:-http://localhost:8080}
+      SEAFILE_SERVER_HOSTNAME: ${SERVICE_FQDN_SEAFILE:-localhost:8080}
       DB_HOST: mariadb
       DB_PORT: "3306"
       DB_ROOT_PASSWD: $SERVICE_PASSWORD_MYSQLROOT
@@ -455,7 +455,7 @@ var automationBatchTemplates = []Template{
       ESPOCRM_DATABASE_NAME: espocrm
       ESPOCRM_DATABASE_USER: $SERVICE_USER_MARIADB
       ESPOCRM_DATABASE_PASSWORD: $SERVICE_PASSWORD_MARIADB
-      ESPOCRM_SITE_URL: ${SERVICE_FQDN_ESPOCRM:-http://localhost:8080}
+      ESPOCRM_SITE_URL: ${SERVICE_URL_ESPOCRM:-http://localhost:8080}
     volumes:
       - espocrm_data:/var/www/html/data
       - espocrm_custom:/var/www/html/custom

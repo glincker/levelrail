@@ -151,6 +151,8 @@ type fakeDocker struct {
 	specs      []docker.ContainerSpec
 	nextID     int
 	networks   []string
+	isolated   []docker.IsolatedNetworkOptions
+	connects   []string
 
 	createErr error
 	startErr  error
@@ -240,6 +242,21 @@ func (f *fakeDocker) EnsureNetwork(_ context.Context, name string) (string, erro
 	defer f.mu.Unlock()
 	f.networks = append(f.networks, name)
 	return name, nil
+}
+
+func (f *fakeDocker) EnsureIsolatedNetwork(_ context.Context, name string, opts docker.IsolatedNetworkOptions) (string, bool, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.networks = append(f.networks, name)
+	f.isolated = append(f.isolated, opts)
+	return name, false, nil
+}
+
+func (f *fakeDocker) NetworkConnect(_ context.Context, name, containerID string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.connects = append(f.connects, name+":"+containerID)
+	return nil
 }
 
 func (f *fakeDocker) count() int {

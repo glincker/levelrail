@@ -114,6 +114,7 @@ function useRefreshAfterWrite() {
 export function useCreateEmailProvider() {
   const refresh = useRefreshAfterWrite()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (p: EmailProvider) => request<EmailProvider>('POST', BASE, p),
     onSuccess: refresh,
   })
@@ -122,6 +123,7 @@ export function useCreateEmailProvider() {
 export function useUpdateEmailProvider() {
   const refresh = useRefreshAfterWrite()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (p: EmailProvider & { id: string }) =>
       request<EmailProvider>('PUT', `${BASE}/${encodeURIComponent(p.id)}`, p),
     onSuccess: refresh,
@@ -131,6 +133,7 @@ export function useUpdateEmailProvider() {
 export function useDeleteEmailProvider() {
   const refresh = useRefreshAfterWrite()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (id: string) =>
       request<undefined>('DELETE', `${BASE}/${encodeURIComponent(id)}`),
     onSuccess: refresh,
@@ -140,6 +143,7 @@ export function useDeleteEmailProvider() {
 export function usePromoteEmailProvider() {
   const refresh = useRefreshAfterWrite()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (id: string) =>
       request<{ providers: EmailProvider[] }>(
         'POST',

@@ -20,14 +20,14 @@ levelrail-cli auth login --device
 levelrail-cli auth whoami
 ```
 
-`--device` prints a short code that you approve in the dashboard, the same model as `gh auth login`. Credentials are saved to `~/.config/levelrail-cli/credentials`. For CI, create an API token under **Settings, API tokens** and pass it with `--token` or `APP_API_TOKEN`.
+`--device` prints a short code that you approve in the dashboard, the same model as `gh auth login`. Credentials are saved to `~/.config/levelrail-cli/credentials`. `auth login` saves the new token to the credentials file and does not print it; add `--print-token` to see it once. Plain-http targets work on loopback. `up` on a folder without a git remote uploads it, like `deploy <dir>`. The API URL env var is `LEVELRAIL_API_URL` or `APP_API_URL` (the first wins). For CI, create an API token under **Settings, API tokens** and pass it with `--token`, `LEVELRAIL_TOKEN` or `APP_API_TOKEN`.
 
 Each command resolves its target in this order, and an explicit flag always wins:
 
 | Setting | Flag | Environment variable | Default |
 | --- | --- | --- | --- |
-| API token | `--token` | `APP_API_TOKEN` | the saved profile |
-| Control plane URL | `--api-url` | `APP_API_URL` | `http://localhost:8080` |
+| API token | `--token` | `LEVELRAIL_TOKEN` or `APP_API_TOKEN` | the saved profile |
+| Control plane URL | `--api-url` | `LEVELRAIL_API_URL` or `APP_API_URL` | `http://localhost:8080` |
 | Profile | `--profile` | `APP_PROFILE` | `default` |
 
 Login pins the server. `auth login` prints the server's name and fingerprint (compare it with the one on the approval page) and saves its identity in the profile. Every later request first checks that the URL still answers as that server and refuses to send the token otherwise, naming the fix: `auth login --reauth` to log in to the new server, or `auth trust-server` to pin the one now answering. A profile saved before pinning existed asks once to confirm the fingerprint (`--yes` or `APP_TRUST_SERVER=yes` for scripts). `APP_API_TOKEN` keeps working and only prints a warning when the profile pins a different server. `auth status` and `auth whoami` show the pinned server.
@@ -198,6 +198,7 @@ levelrail-cli apps get <name> [flags]
 levelrail-cli apps status <name> [flags]
 levelrail-cli apps overview [name ...] [flags]
 levelrail-cli apps network <name> [flags]
+levelrail-cli apps init [--file app.yaml] [--name NAME] [--image IMAGE | --build TYPE] [--port N] [--domain HOST] [--database ENGINE] [--force]
 levelrail-cli apps validate --file <app.yaml|compose.yaml> [flags]
 levelrail-cli apps clone <name> <new-name> [flags]
 levelrail-cli apps delete <name> [flags]
@@ -208,6 +209,7 @@ levelrail-cli apps delete <name> [flags]
 
 `apps tree <name>` prints what an app consists of: current deployment and last deploy (image tag, short digest, status), replicas with their reconcile conditions, domains, volumes, linked databases and the env key count (never values). `--watch` redraws every `--interval` (default 5s, or `LEVELRAIL_TREE_INTERVAL`) until Ctrl+C; `--json` prints the nested structure. Per-container rows are not shown because there is no per-app container endpoint.
 - `apps create --file` sends a service's `published_ports` (container_port, host_port, protocol tcp or udp). `apps get`, `apps list` and `apps deploy-compose` show them as `53/udp`, and `--json` carries `published_ports`. Refusals print the server message plus a hint.
+- `apps init` writes a starter `app.yaml` offline. Optional field names and hints are read from the embedded schema, and the result is validated before it is written. It refuses to overwrite a file unless `--force` is set.
 - `apps validate` parses and validates an app.yaml or a Docker Compose file locally, with no API call and no deploy. It prints the detected format, service count, and every non-blocking `notices` entry a real deploy would also surface.
 - `apps delete` removes an app and stops its containers; if the node is unreachable the delete is reported as pending and retried.
 
@@ -280,6 +282,7 @@ levelrail-cli apps deploy <app> --at WHEN (--image IMAGE | --latest --branch NAM
 levelrail-cli apps cancel-superseded enable|disable|status <app-name> [flags]
 levelrail-cli apps auto-rollback enable|disable|status <app-name> [flags]
 levelrail-cli apps autoscale show|set|clear|history <app-name> [flags]
+levelrail-cli apps cdn get|set|resync <app-name> [flags]   (set takes --proxied on|off|inherit and re-syncs existing DNS records; resync takes --dry-run)
 levelrail-cli apps abuse get|set|dry-run <app-name> [flags]
 levelrail-cli functions init|deploy|list|runtimes|invoke|delete [flags]
 levelrail-cli jobs list|get|create|update|run|history|logs|enable|disable|delete <app> [<job>] [flags]
@@ -358,6 +361,8 @@ levelrail-cli apps exec-access enable|disable|status <name> [flags]
 
 ```
 levelrail-cli apps exec <name> -- <command> [args...] [flags]
+levelrail-cli apps console <name> [-- <command> [args...]] [flags]
+levelrail-cli apps export <name> [--format compose] [--out DIR|-] [flags]
 levelrail-cli apps logs <name> [flags]
 levelrail-cli apps metrics <name> --metric NAME [flags]
 levelrail-cli apps requests <name> [flags]
@@ -378,6 +383,7 @@ levelrail-cli apps scheduled-tasks delete <app> <id> [flags]
 ```
 
 - `apps exec` runs a command in the app's container and exits with its real exit code.
+- `apps console <app>` opens the console the app's template declares (Minecraft: `rcon-cli`) through the same exec path. With no command it opens a terminal; with `-- list` it runs once and prints the output. Templates that declare no console are refused with a pointer to `apps exec`. The console reads its credentials from the container's environment, nothing secret is passed on the command line.
 - `apps tunnel <app> [--service s] [--port p] [--local-port n]` listens on 127.0.0.1 and relays to a private container port, see [app tunnel](/app-tunnel).
 - `apps logs` searches an app's stored log entries, or streams live with `--follow`. For a capped excerpt see `logs query` under [Logs](#logs).
 - `apps requests` shows request rate, errors and latency from the ingress; `apps resource-usage` ranks every app by latest CPU, memory and network usage.
@@ -399,6 +405,8 @@ levelrail-cli apps health clear <name> [--probe readiness|liveness] [flags]
 levelrail-cli apps health discover <name>
 levelrail-cli apps volumes get <name> [flags]
 levelrail-cli apps volumes attach <name> --name NAME --path PATH [flags]
+levelrail-cli apps volumes export <app> <volume> --out FILE.tar.gz [flags]
+levelrail-cli apps volumes import <app> <volume> --in FILE.tar.gz [--force] [flags]
 levelrail-cli apps volumes detach <name> --name NAME [flags]
 levelrail-cli apps storage set <name> --storage-target-id ID [flags]
 levelrail-cli apps storage clear <name> [flags]
@@ -419,7 +427,7 @@ levelrail-cli apps build-cache remove <name>|--global
 ### Environment, secrets and Vault
 
 ```
-levelrail-cli apps env import <name> --file .env [--dry-run] [--keep-existing] [--apply] [flags]
+levelrail-cli apps env import <name> --file .env [--dry-run] [--keep-existing] [--all-secrets|--all-plain] [--secret-pattern GLOBS] [--apply] [flags]
 levelrail-cli apps env export <name> [--out FILE] [--reveal] [--format dotenv|json] [flags]
 levelrail-cli apps env get <name> <KEY> [--reveal] [flags]
 levelrail-cli apps env diff <app-a> <app-b> [flags]
@@ -442,7 +450,7 @@ levelrail-cli apps contexts list|clear|show <name> [flags]
 levelrail-cli apps contexts set <name> --context CTX [--env K=V]... [--build-command CMD] [--publish DIR] [--build-arg K=V]... [flags]
 ```
 
-- `apps env import` merges a .env file into an app's plain env vars and prints which keys are new, changed or unchanged. Keys that are already secrets are skipped. It reports how many changes are pending, or restarts the app right away with `--apply`.
+- `apps env import` merges a .env file into an app and prints which keys are new, changed, unchanged or sent to secrets, by name only. Keys that look sensitive (`*_KEY`, `*_SECRET`, `*_TOKEN`, `*PASSWORD*`, `DATABASE_URL` and URLs with credentials) go to the secret store and the rest to plain env. `--all-secrets` sends every key to secrets, `--all-plain` keeps every key in plain env, and `--secret-pattern STRIPE_*,*_DSN` adds key globs to the secret side. Keys that are already secrets are skipped. It reports how many changes are pending, or restarts the app right away with `--apply`.
 - `apps env diff` compares two apps' env vars, for example staging against production. Secret values are never read: secrets are compared by key only, and the dashboard has the same comparison on an app's Environment page.
 - `apps env export` writes env vars as .env text; sensitive and secret keys are written empty with a comment unless `--reveal` is given. `apps env get` prints one variable, masked when sensitive. `--reveal` asks for your password (and authenticator code) at the prompt, never from flags or the environment, and needs a token with `read:sensitive` and `secrets:reveal` plus `APP_SECRET_REVEAL_TOKENS=on` on the server. See [Environment variables and secrets](/environment-and-secrets).
 - `apps secrets set` sets or rotates one secret's encrypted value and declares the key as secret backed so it is injected; `--apply` restarts the app now. With `--env-file` it bulk imports every key in a .env format file as its own secret. Values are never returned: `list` shows key names and locked state only. `lock` toggles a secret's overwrite guard.
@@ -664,6 +672,7 @@ levelrail-cli databases start <name> [flags]
 levelrail-cli databases stop <name> [flags]
 levelrail-cli databases metrics <name> --metric NAME [flags]
 levelrail-cli databases logs <name> [flags]
+levelrail-cli databases branch create <source> <new-name> (--from-backup ID | --at TIME) [flags]
 levelrail-cli databases slow-queries <name> [flags]
 levelrail-cli databases schema <name> [--columns] [flags]
 levelrail-cli databases query <name> --sql "select ..." [--explain] [--write --confirm <name>] [flags]
@@ -788,7 +797,7 @@ levelrail-cli tokens list [flags]
 levelrail-cli tokens revoke <id> [flags]
 levelrail-cli tokens cleanup [--older-than-days N] [--yes] [flags]
 ```
-Every `tokens` subcommand requires a username and password (prompted if omitted), because these routes are session only server side and a bearer token cannot call them. `create` mints a new API token; `--agent` labels it as issued to an AI agent so audit entries record the agent name. `list` never shows a secret. `cleanup` permanently removes revoked tokens that were revoked more than `--older-than-days` days ago (default 90 when the flag is omitted; `0` removes every revoked token and needs `--yes`) and prints how many it removed; unlike the other subcommands it takes a root API token (`--token` or the stored one) instead of a password, and it never touches an active token. The dashboard setting **Delete revoked API tokens after** (Settings, API tokens) does the same on a schedule.
+`tokens create` requires a username and password (prompted if omitted, never prompted in CI mode), because that route is session only server side. `revoke` first tries the API token from `--token`, `LEVELRAIL_TOKEN`, `APP_API_TOKEN` or the saved profile, and asks for `--username` and `--password` only when the server refuses a token. `create` mints a new API token; `--agent` labels it as issued to an AI agent so audit entries record the agent name. `list` never shows a secret. `cleanup` permanently removes revoked tokens that were revoked more than `--older-than-days` days ago (default 90 when the flag is omitted; `0` removes every revoked token and needs `--yes`) and prints how many it removed; unlike the other subcommands it takes a root API token (`--token` or the stored one) instead of a password, and it never touches an active token. The dashboard setting **Delete revoked API tokens after** (Settings, API tokens) does the same on a schedule.
 
 ## Domains
 
@@ -797,8 +806,10 @@ Per domain settings take `<app> <domain>`, and the domain must already be one of
 ```
 levelrail-cli domains list [flags]
 levelrail-cli domains check <app> <domain> [flags]
+levelrail-cli domains check --cutover <domain>... [--expect-ip <ip>]... [--json]
 levelrail-cli domains doctor <app> <domain> [--json]
 levelrail-cli domains diagnose <domain> [--fix] [--json]
+levelrail-cli domains cutover <domain> [--get-certificate] [--revert-challenge] [--json]
 levelrail-cli domains add <app> <domain>... [--dns auto|off|preview] [--json]
 levelrail-cli domains summary [--json]
 levelrail-cli domains activity <domain> [--limit N] [--before CURSOR] [--actions PREFIXES] [--json]
@@ -901,8 +912,8 @@ levelrail-cli backups drill list [--app A --volume V | --database D] [--limit N]
 levelrail-cli backups drill show <drill-id> [flags]
 levelrail-cli backups volumes list <app> <volume> [flags]
 levelrail-cli backups volumes policy get <app> <volume> [flags]
-levelrail-cli backups volumes policy set <app> <volume> [--retain-daily N --retain-weekly N --retain-monthly N --pre-hook CMD --post-hook CMD --pause]
-levelrail-cli backups volumes restore <app> <volume> --backup ID [--new-volume NAME] [--target-app APP] [--node NODE]
+levelrail-cli backups volumes policy set <app> <volume> [--retain-daily N --retain-weekly N --retain-monthly N --pre-hook CMD --post-hook CMD --clear-pre-hook --clear-post-hook --pause|--no-pause]   (omitted flags keep the stored value)
+levelrail-cli backups volumes restore <app> <volume> --backup ID [--new-volume|--new-volume-name NAME] [--target-app APP] [--node NODE]
 ```
 
 - `list-all` lists backup history across every database and app volume instance wide.
@@ -921,7 +932,7 @@ levelrail-cli app-volume-backups trigger <app> <volume> --target ID [flags]
 levelrail-cli app-volume-backups delete <app> <volume> <backup-id> [flags]
 levelrail-cli app-volume-backups download <app> <volume> <backup-id> [flags]
 levelrail-cli app-volume-backups restore <app> <volume> --backup ID --confirm APP/VOLUME [flags]
-levelrail-cli app-volume-backups restore-as-new <app> <volume> --backup ID [--new-volume-name NAME] [flags]
+levelrail-cli app-volume-backups restore-as-new <app> <volume> --backup ID [--new-volume-name|--new-volume NAME] [flags]
 levelrail-cli app-volume-backups restores <app> <volume> [flags]
 levelrail-cli app-volume-backups clone-restores <app> <volume> [flags]
 levelrail-cli app-volume-backups schedule set <app> <volume> --target ID --cron EXPR [flags]
@@ -946,7 +957,7 @@ levelrail-cli pitr restores <database> [flags]
 levelrail-cli pitr restore <database> --base-backup ID --target-time RFC3339 [--confirm NAME | --restore-as NEW] [flags]
 ```
 
-`enable` turns on continuous WAL (Postgres) or binary log (MySQL, MariaDB) archiving going forward; `status` shows whether PITR is enabled and the current recoverable window; `restores` lists point in time restore attempts (base backup, target time, status, error). `restore` overwrites a Postgres database in place and is destructive. For MySQL and MariaDB it needs `--restore-as NEW`, creates that new database and leaves the source untouched.
+`enable` turns on continuous WAL (Postgres) or binary log (MySQL, MariaDB) archiving going forward, and `--base-backup-cron EXPR [--base-backup-target ID]` gives base backups their own schedule independent of the dump schedule (an empty value clears it); `status` shows whether PITR is enabled and the current recoverable window; `restores` lists point in time restore attempts (base backup, target time, status, error). `restore` overwrites a Postgres database in place and is destructive. For MySQL and MariaDB it needs `--restore-as NEW`, creates that new database and leaves the source untouched.
 
 ## Build
 
@@ -1137,10 +1148,11 @@ levelrail-cli backup-targets list [flags]
 levelrail-cli backup-targets get <id> [flags]
 levelrail-cli backup-targets create --name NAME --provider PROVIDER --bucket BUCKET --access-key-id ID --secret-access-key KEY [flags]
 levelrail-cli backup-targets update <id> --name NAME --provider PROVIDER --bucket BUCKET [flags]
-levelrail-cli backup-targets delete <id> [flags]
+levelrail-cli backup-targets delete <id> [--yes] [flags]
+levelrail-cli backups targets delete <id> [--yes] [flags]
 levelrail-cli backup-targets test <id> [flags]
 ```
-S3 compatible backup destinations. Valid `--provider` values are `aws`, `r2` and `custom`; `--endpoint` is required for `r2` and `custom`. `test` probes the bucket over its stored credentials without uploading or deleting anything.
+S3 compatible backup destinations. Valid `--provider` values are `aws`, `r2` and `custom`; `--endpoint` is required for `r2` and `custom`. `test` probes the bucket over its stored credentials without uploading or deleting anything. `delete` asks for `--yes` when the target still has backup history, and answers 409 and lists what uses the target (schedules, policies, running work, history of existing databases or apps); history of deleted resources is kept and shown as target deleted, but it cannot be restored from the console and creating a target again does not reattach it. Bucket objects stay in the bucket.
 
 ## Storage
 
@@ -1642,7 +1654,7 @@ levelrail-cli audit-purge [flags]
 
 `audit-purge` deletes every entry older than the retention window (`APP_AUDIT_LOG_RETENTION_DAYS`, default 90 days) right now instead of waiting for the automatic sweep. Security-family entries are kept for `APP_AUDIT_LOG_SECURITY_RETENTION_DAYS` (default 365). It needs an admin or root scoped token.
 
-`audit-verify` walks the audit log's hash chain and signed checkpoints and prints any entry that was edited, removed or cut off the end. It exits 1 when a check fails and needs a root token.
+`audit-verify` walks the audit log's hash chain and signed checkpoints and prints any entry that was edited, removed or cut off the end. It exits 1 when a check fails and needs a root token. `audit-verify --anchor <file-or-https-url>` also reads an off-box anchor export (the `audit-anchors.jsonl` file or a JSON array of anchors, see [Security](/security#audit-log-anchor)) and checks that the live chain still holds every anchored head. It exits 1 when an anchored head was rewritten, rolled back or removed, and `--json` then prints `{"chain": ..., "anchor": ...}`. `APP_AUDIT_ANCHOR_FETCH_TIMEOUT` bounds a remote export read.
 
 `tokens create` and `auth login` default to a 90 day lifetime. A token that never expires needs `tokens create --no-expiry` from a root caller, and the security policy's maximum lifetime still overrides it.
 
@@ -1772,6 +1784,10 @@ Snapshots of the control plane's own database, stored under `<data dir>/control-
 
 The `--offbox`, `schedule`, `run-now`, `drill`, `escrow` and `keys` subcommands drive encrypted off-box backups. `keys generate` makes an age key pair on your machine (private key to a `0600` file, public key to stdout). `schedule set` changes only the flags you pass (`--enable`, `--disable`, `--destination`, `--recipient`, `--schedule`, `--drill-schedule`, `--retain-daily`, `--retain-weekly`, `--retain-monthly`, `--escrow-destination`). `run-now` and `drill run` wait for the run and exit 1 if it failed; `drill status` exits 1 when the last drill failed or none has run. `escrow` writes the master key and agent CA key encrypted to your recipients (never uploaded unless `--upload`, and never to the backup bucket). `restore-plan` prints the ordered recovery steps with the newest complete backup and the exact restore command filled in. `help-dr` prints a static runbook. Restore an off-box backup on the server with `levelrail restore --from <s3://... | file> --identity FILE [--dry-run]`. See [Disaster recovery](/disaster-recovery).
 
+### Volume export and import
+
+`levelrail-cli volumes export|import` is the same pair as `apps volumes export|import`. See [Leave anytime](/leave-anytime) for the rules.
+
 ### Orphaned volumes
 
 ```
@@ -1867,6 +1883,8 @@ levelrail-cli migrate caprover --url URL --token TOKEN [flags]
 
 One way migration from a live instance. By default it writes `app.yaml` files plus a migration report into `--out-dir` (default `./migrated`); `--apply` creates the apps directly on a target instance instead, using `--target-token`, `--target-api-url` and `--target-profile`. `--include-secret-values` also fetches real env var values. For Coolify, `--token` is an API bearer token (with the `read:sensitive` ability if you want secret values); for Dokploy it is an API key; for CapRover it is the login password.
 
+For Coolify one-click services, `--stage-dir` (default `./migrated/compose`) receives one `compose.yaml` per service with its magic variables translated, and `--domain-suffix` (default `localhost`) sets the parent domain of the staged hosts. Staging writes files only and starts nothing. See [Move a Coolify one-click service to a Compose app](/coolify-service-to-compose).
+
 ## Stack templates {#stack-templates}
 
 ```
@@ -1933,6 +1951,10 @@ levelrail-cli settings ingress get [flags]
 levelrail-cli settings ingress set [--primary-domain D] [--acme-enabled] [--public-https-port N] [--tls-terminated-upstream] [--apps-base-domain HOST] [--dns-cname-target HOST] [--dns-ttl SECONDS] [--dns-proxied] [flags]
 levelrail-cli settings ingress https status [flags]
 levelrail-cli settings ingress https enable [--email EMAIL] [--staging] [--wait 2m] [flags]
+levelrail-cli settings ingress dns01 show|enable|disable [flags]
+levelrail-cli settings ingress cloudflare show|set --preset none|cloudflare [--confirm-weakening] [flags]
+levelrail-cli settings ddns show|enable|disable|status [flags]
+levelrail-cli settings ddns set [--provider generic|duckdns] [--domains LIST] [--target URL|TOKEN] [flags]
 levelrail-cli settings edge get [flags]
 levelrail-cli settings edge set [--trusted-proxies LIST] [--max-body SIZE] [--max-header SIZE] [--read-header-timeout DUR] [--idle-timeout DUR] [flags]
 levelrail-cli settings edge fix [flags]
@@ -1942,10 +1964,11 @@ levelrail-cli settings dashboard-url fix [flags]
 levelrail-cli settings runtime list [flags]
 levelrail-cli settings runtime get KEY [flags]
 levelrail-cli settings runtime set KEY VALUE [--confirm-weakening] [flags]
-levelrail-cli settings runtime reset KEY [flags]
+levelrail-cli settings runtime reset KEY [--confirm-weakening] [flags]
 levelrail-cli settings runtime apply [flags]
 levelrail-cli settings updates get [flags]
 levelrail-cli settings updates set --channel CHANNEL [--auto-update] [flags]
+levelrail-cli settings deploy-url-copies get|set <off|private|public|default> [flags]
 levelrail-cli settings deploy-freeze show [flags]
 levelrail-cli settings deploy-freeze set --cron EXPR --duration D [flags]
 levelrail-cli settings deploy-freeze clear [flags]
@@ -1959,7 +1982,7 @@ levelrail-cli settings ai-assistant get|set|clear [flags]
 - `edge get|set|fix` shows and changes request limits and the trusted proxy list; `fix` detects the proxy in front of this server and trusts it. `levelrail-cli ingress-limits show|set|clear APP` is the per-app request body cap. See [Domains and ingress](/domains-and-ingress#edge-limits-client-ips-and-failover).
 - `dashboard-url set` sets the public dashboard URL; once it is `https://`, sign in over plain HTTP is refused (`--url ""` clears it).
 - `dashboard-url fix` switches the URL to `https://` on the primary domain once it answers over https with a valid certificate. The same Fix button sits in Settings, General (Settings health) and Security. CLI and MCP gating of beta features follows the Settings switches (`APP_EXPERIMENTAL` stays an override).
-- `updates` configures the release channel and auto update checking. `deploy-freeze` manages fleet wide freeze windows; per app windows are under `apps freeze`.
+- `deploy-url-copies` sets whether retained deploy copies are off, private (suspended, no public host or certificate, the default) or public; a stored value wins over `APP_DEPLOY_URL_COPIES` and applies without a restart. `updates` configures the release channel and auto update checking. `deploy-freeze` manages fleet wide freeze windows; per app windows are under `apps freeze`.
 - `ai-assistant` is experimental (`APP_EXPERIMENTAL=ai-chat`): `get` shows the active model, the fallback chain and the limits (keys are never returned), `providers list|set|test|remove|models` manages provider keys, `use <provider> <model>` picks the active model, `fallback set` sets the fallback chain, and `usage` shows token use.
 
 ## Git integrations
@@ -1994,13 +2017,13 @@ levelrail-cli git-providers use-as-source --id ID --repo REPO --app-name NAME [f
 ## Templates
 
 ```
-levelrail-cli templates list [--custom] [flags]
+levelrail-cli templates list [--custom] [--verified] [--license-class CLASS] [--arch amd64|arm64] [--hide-deprecated] [flags]
 levelrail-cli templates get <id> [flags]
 levelrail-cli templates deploy <id> [--name NAME] [flags]
 levelrail-cli templates install <id> [--name NAME] [--env KEY=VALUE]... [--domain SERVICE=HOST]... [flags]
 levelrail-cli templates delete <id> [flags]
 ```
-`list` browses the curated service catalog, or `--custom` for your own saved templates. `get` shows one entry including its full compose.yaml. `deploy` deploys a template's compose.yaml as an app, and the app name defaults to the template id; pass `--name` to use another. A custom template works with every verb the same as a built-in one, except `delete`: only a custom template can be deleted (see `apps save-as-template`). See [Templates](/templates).
+`list` browses the curated service catalog with license and trust columns, or `--custom` for your own saved templates. `--license-class`, `--arch` and `--hide-deprecated` filter on the server, and deprecated entries are marked, not hidden, by default. `get` shows one entry including its license, trust, verification (image tag and architectures) and any deprecation notice, then its full compose.yaml. `deploy` deploys a template's compose.yaml as an app, and the app name defaults to the template id; pass `--name` to use another. A custom template works with every verb the same as a built-in one, except `delete`: only a custom template can be deleted (see `apps save-as-template`). See [Templates](/templates).
 
 `install` is for manifest templates (the ones `get` shows with settings): it fills each `${KEY}` setting from `--env`, a generated secret or its default, puts the listed services behind `--domain` hosts, and deploys the result as a compose app that is not a trial. See [Compose apps](/compose-apps#templates).
 

@@ -1,0 +1,65 @@
+---
+title: "Self-host Maintainerr with Docker"
+sidebarTitle: "Maintainerr"
+description: "Rule-based media library cleanup for Plex and Jellyfin that works with Sonarr, Radarr and Seerr. MIT licensed. On first open, add your media server and arr apps in settings, then build rules."
+"og:url": "https://docs.levelrail.com/self-host/maintainerr"
+---
+
+Rule-based media library cleanup for Plex and Jellyfin that works with Sonarr, Radarr and Seerr. MIT licensed. On first open, add your media server and arr apps in settings, then build rules.
+
+This page describes the Levelrail template for Maintainerr (Applications). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.maintainerr.info/.
+
+Recommended memory: about 384 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `maintainerr` | `ghcr.io/maintainerr/maintainerr:3.31.0` | 6246 | `data -&#62; /opt/data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `maintainerr` | `TZ` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`maintainerr`): data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Maintainerr with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Maintainerr. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy maintainerr --name my-maintainerr
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Applications templates
+
+- [Budibase](/self-host/budibase)
+- [Cleanuparr](/self-host/cleanuparr)
+- [Cockpit CMS](/self-host/cockpit-cms)
+- [Deluge](/self-host/deluge)
+- [Drupal](/self-host/drupal)
+
+All templates are listed in the [self-host gallery](/self-host).

@@ -87,6 +87,7 @@ func do(t *testing.T, rt *Router, cookie *http.Cookie, method, path, body string
 }
 
 func TestBackupProtectionRoutes_RequireAuth(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouter(t)
 	assertRoutesRequireAuth(t, rt, []routeCase{
 		{http.MethodGet, "/api/v1/backups/health"},
@@ -101,6 +102,7 @@ func TestBackupProtectionRoutes_RequireAuth(t *testing.T) {
 }
 
 func TestBackupProtection_NotConfigured(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedServiceWithVolume(t, db)
@@ -118,6 +120,7 @@ func TestBackupProtection_NotConfigured(t *testing.T) {
 }
 
 func TestHandleBackupHealth(t *testing.T) {
+	t.Parallel()
 	p := &fakeBackupProtection{health: []backup.ResourceHealth{{
 		Kind: store.BackupResourceKindVolume, AppName: "web", ResourceName: "data", BackupCount: 3, TotalBytes: 99,
 		State: backup.HealthHealthy, Encrypted: true,
@@ -151,6 +154,7 @@ func TestHandleBackupHealth(t *testing.T) {
 }
 
 func TestHandleStartBackupDrill(t *testing.T) {
+	t.Parallel()
 	p := &fakeBackupProtection{}
 	rt, db := newProtectionRouter(t, p, nil)
 	cookie := loginTestSession(t, rt, db)
@@ -177,6 +181,7 @@ func TestHandleStartBackupDrill(t *testing.T) {
 }
 
 func TestHandleStartBackupDrill_RefusesFailedBackup(t *testing.T) {
+	t.Parallel()
 	p := &fakeBackupProtection{}
 	rt, db := newProtectionRouter(t, p, nil)
 	cookie := loginTestSession(t, rt, db)
@@ -190,6 +195,7 @@ func TestHandleStartBackupDrill_RefusesFailedBackup(t *testing.T) {
 }
 
 func TestHandleListAndGetBackupDrills(t *testing.T) {
+	t.Parallel()
 	rt, db := newProtectionRouter(t, &fakeBackupProtection{}, nil)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -211,6 +217,7 @@ func TestHandleListAndGetBackupDrills(t *testing.T) {
 }
 
 func TestHandleVolumeBackupPolicy(t *testing.T) {
+	t.Parallel()
 	rt, db := newProtectionRouter(t, &fakeBackupProtection{}, nil)
 	cookie := loginTestSession(t, rt, db)
 	seedServiceWithVolume(t, db)
@@ -247,6 +254,7 @@ func TestHandleVolumeBackupPolicy(t *testing.T) {
 }
 
 func TestHandleVolumeRestoreTo(t *testing.T) {
+	t.Parallel()
 	const path = "/api/v1/apps/web/volumes/data/restore-to"
 	await := func(t *testing.T, p *fakeBackupProtection) [3]string {
 		t.Helper()
@@ -331,6 +339,7 @@ func TestHandleVolumeRestoreTo(t *testing.T) {
 }
 
 func TestRestoreVolumePrefixRequired(t *testing.T) {
+	t.Parallel()
 	rt := &Router{}
 	cases := []struct {
 		name string

@@ -440,6 +440,7 @@ func (c *Client) Create(ctx context.Context, spec ContainerSpec) (string, error)
 		c.attachGPU(ctx, hostConfig, *spec.GPU)
 	}
 	c.hardening.apply(hostConfig, spec)
+	c.hardening.applyReadOnlyRootfs(hostConfig, spec)
 
 	release := c.declare(spec)
 	defer release()

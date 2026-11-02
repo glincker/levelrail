@@ -87,6 +87,7 @@ interface ProbeInput {
 // Authenticates a candidate against its registry and stores nothing.
 export function useProbeRegistryCredential() {
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (input: ProbeInput) =>
       sendJSON<ConnectionTestResult>(
         '/api/v1/registry-credentials/test',
@@ -113,6 +114,7 @@ export function usePackageRegistries() {
 export function useCreatePackageRegistry() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (req: CreatePackageRegistryRequest) =>
       sendJSON<PackageRegistry>(
         '/api/v1/package-registries',

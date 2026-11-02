@@ -107,6 +107,9 @@ type Syncer struct {
 	// Exec validates and reloads a managed proxy that needs it (nginx); nil
 	// makes such a provider refuse to write anything.
 	Exec Exec
+	// RetryGap is how long Retry leaves the nudged file in place before
+	// restoring it, so the proxy sees two distinct configurations.
+	RetryGap time.Duration
 
 	// mu serialises passes from the reconciler and the API on one directory.
 	mu sync.Mutex
@@ -225,6 +228,10 @@ func (s *Syncer) PlanFor(ctx context.Context, settings store.ProxyIntegrationSet
 }
 
 func (s *Syncer) render(prov Provider, settings store.ProxyIntegrationSettings, path UpstreamPath, t Target) Item {
+	return s.renderPrio(prov, settings, path, t, s.RouterPriority)
+}
+
+func (s *Syncer) renderPrio(prov Provider, settings store.ProxyIntegrationSettings, path UpstreamPath, t Target, prio int) Item {
 	it := Item{Target: t}
 	name, err := s.NS.FileNameExt(t.Domain, prov.Ext())
 	if err != nil {
@@ -241,7 +248,7 @@ func (s *Syncer) render(prov Provider, settings store.ProxyIntegrationSettings, 
 	}
 	it.Content, it.Err = prov.Render(s.NS, Route{
 		Domain: t.Domain, EntrypointHTTP: settings.EntrypointHTTP, EntrypointHTTPS: settings.EntrypointHTTPS,
-		CertResolver: settings.CertResolver, Upstream: it.Upstream, Priority: s.RouterPriority,
+		CertResolver: settings.CertResolver, Upstream: it.Upstream, Priority: prio,
 		CertDir: settings.CertDir, Webroot: settings.Webroot,
 	})
 	return it

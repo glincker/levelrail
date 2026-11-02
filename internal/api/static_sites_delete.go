@@ -114,6 +114,13 @@ func (rt *Router) SweepOrphanStaticSites(ctx context.Context) ([]string, error) 
 	for _, s := range services {
 		owned[s.Name] = true
 	}
+	previews, err := rt.staticPreviewNames(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("api: static orphan sweep: %w", err)
+	}
+	for name := range previews {
+		owned[name] = true
+	}
 	pending, err := rt.pendingDeployServices(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("api: static orphan sweep: %w", err)

@@ -9,11 +9,14 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -168,6 +171,14 @@ func (rt *Router) recordAudit(ctx context.Context, r *http.Request, required, ac
 	if required == AbilityRead && rt.sensitiveReadAudited(r) {
 		entry.Action = AuditActionSensitiveRead
 	}
+	if tool := mcpToolTag(r); tool != "" && actorType == "token" {
+		// The tag is advisory detail only; a read it alone caused is an mcp.tool_call row.
+		if entry.Action == "" && !auditWorthy(required) {
+			entry.Action = AuditActionMCPToolCall
+		}
+		detail, _ := json.Marshal(map[string]any{"tool": tool, "transport": "stdio", "source": "client_header", "argument_names": mcpArgTags(r)})
+		entry.Detail = string(detail)
+	}
 	if actorType == "token" {
 		entry.AgentName = agentNameFrom(ctx)
 		entry.AgentClient = sanitizeAgentClient(r.Header.Get(AgentClientHeader))
@@ -177,7 +188,10 @@ func (rt *Router) recordAudit(ctx context.Context, r *http.Request, required, ac
 		rt.logger.Warn("api: save audit entry failed", slog.String("error", err.Error()), slog.String("path", r.URL.Path))
 		return
 	}
-	rt.emitAuditEvent(entry)
+	// Client-reported tag rows stay out of the webhook queue.
+	if entry.Action != AuditActionMCPToolCall {
+		rt.emitAuditEvent(entry)
+	}
 }
 
 // auditLogEntryResource is GET /api/v1/audit-log's wire shape, mirroring
@@ -370,4 +384,77 @@ func csvSafe(v string) string {
 		return "'" + v
 	}
 	return v
+}
+
+const (
+	mcpToolTagHeader  = "X-Levelrail-Mcp-Tool"
+	mcpArgsTagHeader  = "X-Levelrail-Mcp-Args"
+	mcpTagMaxLen      = 64
+	mcpTagMaxArgNames = 32
+	// envMCPTagRPM caps client-tagged read audit rows per token per minute; 0 disables the cap.
+	envMCPTagRPM     = "APP_MCP_STDIO_TAG_ROWS_PER_MIN"
+	defaultMCPTagRPM = 600
+)
+
+// cleanMCPTag keeps only [A-Za-z0-9_.:-] and bounds the length.
+func cleanMCPTag(s string) string {
+	var b strings.Builder
+	for _, c := range s {
+		if b.Len() >= mcpTagMaxLen {
+			break
+		}
+		if c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '_' || c == '.' || c == ':' || c == '-' {
+			b.WriteRune(c)
+		}
+	}
+	return b.String()
+}
+
+// mcpToolTag returns the cleaned tool name a local MCP server reported.
+func mcpToolTag(r *http.Request) string {
+	return cleanMCPTag(r.Header.Get(mcpToolTagHeader))
+}
+
+func mcpArgTags(r *http.Request) []string {
+	names := []string{}
+	for _, n := range strings.Split(r.Header.Get(mcpArgsTagHeader), ",") {
+		if n = cleanMCPTag(n); n != "" && len(names) < mcpTagMaxArgNames {
+			names = append(names, secretmask.Mask(n))
+		}
+	}
+	return names
+}
+
+type mcpTagWindow struct {
+	start time.Time
+	count int
+}
+
+var (
+	mcpTagMu      sync.Mutex
+	mcpTagWindows = map[string]*mcpTagWindow{}
+)
+
+// mcpTagRowAllowed applies the optional per-token cap on tag-only rows.
+func mcpTagRowAllowed(tokenID string) bool {
+	limit := defaultMCPTagRPM
+	if v, err := strconv.Atoi(os.Getenv(envMCPTagRPM)); err == nil && v >= 0 {
+		limit = v
+	}
+	if limit == 0 {
+		return true
+	}
+	now := time.Now()
+	mcpTagMu.Lock()
+	defer mcpTagMu.Unlock()
+	w := mcpTagWindows[tokenID]
+	if w == nil || now.Sub(w.start) >= time.Minute {
+		if len(mcpTagWindows) > 4096 {
+			clear(mcpTagWindows)
+		}
+		w = &mcpTagWindow{start: now}
+		mcpTagWindows[tokenID] = w
+	}
+	w.count++
+	return w.count <= limit
 }

@@ -150,3 +150,19 @@ func TestRun_Version_Help(t *testing.T) {
 		t.Errorf("stderr = %q, want usage text", stderr)
 	}
 }
+
+func TestDisplayCLIVersion(t *testing.T) {
+	cases := []struct {
+		in   cliVersionInfo
+		want string
+	}{
+		{cliVersionInfo{Version: "v1.2.3", Commit: unknownBuildInfo}, "v1.2.3"},
+		{cliVersionInfo{Version: "dev", Commit: "abc123"}, "dev (source build at abc123)"},
+		{cliVersionInfo{Version: "dev", Commit: unknownBuildInfo}, "dev (source build, no release version stamped)"},
+	}
+	for _, tc := range cases {
+		if got := displayCLIVersion(tc.in); got != tc.want {
+			t.Errorf("displayCLIVersion(%+v) = %q, want %q", tc.in, got, tc.want)
+		}
+	}
+}

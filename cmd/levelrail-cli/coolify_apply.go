@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"sort"
 
 	"github.com/GLINCKER/levelrail/internal/spec"
@@ -14,6 +16,10 @@ func applyMigration(ctx context.Context, client *Client, report *migrationReport
 	for i := range report.Apps {
 		a := &report.Apps[i]
 		if a.Blocking {
+			continue
+		}
+		if a.Compose != nil {
+			// Staged by the pipeline before apply, since staging writes files only.
 			continue
 		}
 
@@ -62,4 +68,32 @@ func healthMappedToSpec(h mappedHealth) *spec.Health {
 		probe.Timeout = fmt.Sprintf("%ds", h.Timeout)
 	}
 	return &spec.Health{Readiness: &probe, Liveness: &probe}
+}
+
+// defaultStageDir is where staged compose apps go. Staging writes files only,
+// because the compose deploy route starts containers.
+const defaultStageDir = "./migrated/compose"
+
+// stageComposeApp writes the translated compose file with owner-only
+// permissions (it holds generated secrets) and records the deploy command.
+func stageComposeApp(a *mappedApp, dir string) {
+	if dir == "" {
+		dir = defaultStageDir
+	}
+	if hasRawMagicVar(a.Compose.Yaml) {
+		a.CreateError = "unresolved SERVICE_ variables remain, fix them in the staged file before deploying"
+	}
+	appDir := filepath.Join(dir, a.ServiceName)
+	if err := os.MkdirAll(appDir, 0o700); err != nil { //nolint:gosec // name is sanitized, dir is operator-supplied
+		a.CreateError = fmt.Errorf("stage compose app %q: %w", a.ServiceName, err).Error()
+		return
+	}
+	path := filepath.Join(appDir, "compose.yaml")
+	if err := os.WriteFile(path, []byte(a.Compose.Yaml), 0o600); err != nil { //nolint:gosec // name is sanitized, dir is operator-supplied
+		a.CreateError = fmt.Errorf("stage compose app %q: %w", a.ServiceName, err).Error()
+		return
+	}
+	a.Compose.StagedPath = path
+	a.Compose.Deploy = fmt.Sprintf("levelrail-cli compose deploy %s -f %s", a.ServiceName, path)
+	a.Applied = a.CreateError == ""
 }

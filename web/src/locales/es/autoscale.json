@@ -1,0 +1,131 @@
+{
+  "title": "Autoescalado",
+  "description": "Agrega y quita réplicas conforme cambia la carga, entre un mínimo y un máximo que defines. Subir es rápido, bajar es lento, y cada decisión se registra con su motivo.",
+  "loading": "Cargando el autoescalado",
+  "loadError": "No se pudo cargar el autoescalado de esta aplicación.",
+  "retry": "Intentar de nuevo",
+  "empty": {
+    "title": "El autoescalado está desactivado",
+    "body": "La aplicación mantiene el número de réplicas que definiste a mano. Activa el autoescalado para seguir la carga entre un mínimo y un máximo. Mientras esté activado, se rechazan las ediciones manuales de réplicas.",
+    "action": "Configurar el autoescalado"
+  },
+  "metric": {
+    "cpu_percent": "CPU",
+    "memory_percent": "Memoria",
+    "requests_per_replica": "Solicitudes por réplica"
+  },
+  "reason": {
+    "Pending": "Esperando la primera comprobación",
+    "WithinTarget": "En el objetivo",
+    "ScaledUp": "Escalada hacia arriba",
+    "ScaledDown": "Escalada hacia abajo",
+    "MetricsUnavailable": "Sin métricas recientes",
+    "CooldownActive": "En enfriamiento",
+    "Stabilizing": "Confirmando la reducción",
+    "NoCapacity": "Sin capacidad",
+    "SpendCapPaused": "Retenida por el tope de gasto",
+    "AtMaximum": "En el máximo",
+    "AtMinimum": "En el mínimo",
+    "BoundsCorrected": "Movida al rango",
+    "Suspended": "Aplicación detenida",
+    "ScaleFailed": "Falló el escalado",
+    "Flapping": "Inestable"
+  },
+  "blocked": {
+    "cooldown": "enfriamiento",
+    "stabilization": "ventana de estabilización",
+    "spend_cap": "tope de gasto",
+    "no_capacity": "falta de capacidad",
+    "max_replicas": "máximo de réplicas",
+    "min_replicas": "mínimo de réplicas",
+    "global_ceiling": "tope global",
+    "step_limit": "límite de paso",
+    "no_metrics": "falta de métricas",
+    "suspended": "aplicación detenida"
+  },
+  "next": {
+    "no_capacity": "Ningún nodo tiene espacio para otra réplica. Agrega un nodo, libera capacidad o baja la solicitud de CPU y memoria de la aplicación. Revisa la tarjeta de Ubicación.",
+    "spend_cap": "Hay un tope de gasto vigente, así que no se agregan réplicas. Sube el presupuesto o espera al reinicio del mes.",
+    "no_metrics": "La métrica falta o está desactualizada, así que se mantiene el número de réplicas. Comprueba que la aplicación esté en ejecución y que sus métricas lleguen.",
+    "max_replicas": "La carga pide más réplicas de las que permite el máximo. Sube el máximo si la aplicación debe crecer más.",
+    "global_ceiling": "El tope global de réplicas del operador está limitando esta aplicación. Sube APP_AUTOSCALE_MAX_REPLICAS en el plano de control para permitir más.",
+    "flapping": "El número cambia de dirección una y otra vez. Amplía las tolerancias o alarga los enfriamientos en Avanzado."
+  },
+  "stats": {
+    "replicas": "Réplicas",
+    "replicasValue": "{{current}} ahora, {{desired}} deseadas",
+    "range": "Rango",
+    "rangeValue": "{{min}} a {{max}}",
+    "band": "Subir por encima, bajar por debajo",
+    "bandValue": "+{{up}}% y -{{down}}%",
+    "metricValue": "{{value}}{{unit}} de {{target}}{{unit}}",
+    "metricUnknown": "Desconocido"
+  },
+  "actions": {
+    "edit": "Editar política",
+    "remove": "Quitar política"
+  },
+  "form": {
+    "min": "Mínimo de réplicas",
+    "minHelp": "Nunca menos que esto.",
+    "max": "Máximo de réplicas",
+    "maxHelp": "Nunca más que esto. Limitado por el tope global del operador.",
+    "metric": "Escalar según",
+    "metricCpu": "CPU",
+    "metricCpuHelp": "Uso promedio como porcentaje del límite de CPU de la aplicación.",
+    "metricMemory": "Memoria",
+    "metricMemoryHelp": "Uso promedio como porcentaje del límite de memoria de la aplicación.",
+    "metricRequests": "Solicitudes por réplica",
+    "metricRequestsHelp": "Solicitudes por segundo en el ingress, divididas entre las réplicas.",
+    "target": "Objetivo ({{unit}})",
+    "perSecond": " sol./s",
+    "targetHelp": "El valor en el que mantener la métrica. Las réplicas cambian solo cuando está claramente por encima o por debajo de este valor.",
+    "advanced": "Avanzado",
+    "advancedHelp": "Deja un campo vacío para usar su valor predeterminado. Los enfriamientos y la ventana de estabilización están en minutos.",
+    "upTolerance": "Subir cuando supere el objetivo en (porcentaje)",
+    "downTolerance": "Bajar cuando esté por debajo del objetivo en (porcentaje)",
+    "upCooldown": "Espera entre aumentos (minutos)",
+    "downCooldown": "Espera antes de reducir (minutos)",
+    "stabilization": "Confirmar una reducción durante (minutos)",
+    "stepUp": "Máximo de réplicas agregadas a la vez",
+    "stepDown": "Máximo de réplicas quitadas a la vez",
+    "save": "Guardar política",
+    "saving": "Guardando",
+    "cancel": "Cancelar",
+    "error": {
+      "replicas": "Escribe números enteros de réplicas, con el máximo igual o mayor que el mínimo.",
+      "target": "Escribe un objetivo mayor que cero (hasta 100 para CPU y memoria).",
+      "advanced": "Revisa los campos avanzados: usa números enteros, y minutos de al menos 1 segundo."
+    }
+  },
+  "remove": {
+    "title": "¿Quitar esta política?",
+    "description": "La aplicación deja de escalar por sí sola.",
+    "consequences": {
+      "replicas": "El número de réplicas se queda donde está ahora.",
+      "manual": "Puedes volver a definir las réplicas a mano.",
+      "history": "Se conserva el historial de decisiones."
+    },
+    "confirm": "Quitar política",
+    "pending": "Quitando"
+  },
+  "history": {
+    "title": "Decisiones recientes",
+    "empty": "Aún no hay decisiones. Aquí se listan los cambios de escala y los motivos para mantener el valor.",
+    "loadError": "No se pudo cargar el historial.",
+    "replicas": "{{from}} a {{to}}",
+    "blockedBy": "limitada por {{by}}",
+    "kind": {
+      "scaled_up": "Escalada hacia arriba",
+      "scaled_down": "Escalada hacia abajo",
+      "held": "Mantenida",
+      "failed": "Falló el escalado",
+      "configured": "Política modificada",
+      "cleared": "Política quitada"
+    }
+  },
+  "toast": {
+    "saved": "Autoescalado guardado",
+    "removed": "Autoescalado quitado"
+  }
+}

@@ -13,6 +13,7 @@ import (
 )
 
 func TestAppCache_AbilitiesAndPurgeHistory(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	seedAppWithDomain(t, db)
 	const plaintext = "cache-read-token" //nolint:gosec // fake fixture
@@ -52,6 +53,7 @@ func TestAppCache_AbilitiesAndPurgeHistory(t *testing.T) {
 }
 
 func TestAppCache_PurgeScopesAndHistory(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	seedAppWithDomain(t, db)
 	cookie := loginTestSession(t, rt, db)
@@ -89,6 +91,7 @@ func TestAppCache_PurgeScopesAndHistory(t *testing.T) {
 }
 
 func TestAppCache_PresetIsIdempotent(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	seedAppWithDomain(t, db)
 	cookie := loginTestSession(t, rt, db)
@@ -116,6 +119,7 @@ func TestAppCache_PresetIsIdempotent(t *testing.T) {
 }
 
 func TestSystemCache_ListsApps(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	seedAppWithDomain(t, db)
 	cookie := loginTestSession(t, rt, db)
@@ -127,6 +131,7 @@ func TestSystemCache_ListsApps(t *testing.T) {
 }
 
 func TestRankNodes(t *testing.T) {
+	t.Parallel()
 	per := map[string]*cdnNode{"": {Requests: 30, Apps: 2}, "n1": {ID: "n1", Requests: 70, Apps: 1}}
 	out, labeled := rankNodes(per, []store.Node{{ID: "n1", Name: "edge-1", Region: "fsn1"}}, 100)
 	if len(out) != 2 || out[0].Name != "edge-1" || out[0].Share != 0.7 || !labeled || out[1].ID != "" {

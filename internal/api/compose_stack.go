@@ -36,6 +36,8 @@ type composeDeployOpts struct {
 	profiles   []string
 	source     string
 	templateID string
+	// interpEnv is the install form's env, counted as the app env on a first deploy.
+	interpEnv map[string]string
 }
 
 type composeServiceStatus struct {

@@ -11,6 +11,7 @@ import (
 )
 
 func TestSetupTokenGuessing_IsRateLimitedPerIP(t *testing.T) {
+	t.Parallel()
 	rt, _, token := newSetupTestRouter(t)
 	post := func(setup, ip string) int {
 		body := `{"username":"admin","password":"a-good-password","setup_token":"` + setup + `"}`
@@ -35,6 +36,7 @@ func TestSetupTokenGuessing_IsRateLimitedPerIP(t *testing.T) {
 }
 
 func TestWakeTokenGuessing_LocksOutTheGuesser(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouter(t)
 	rt.wakeToken = "tok"
 	call := func(token, ip string) int {
@@ -61,6 +63,7 @@ func TestWakeTokenGuessing_LocksOutTheGuesser(t *testing.T) {
 }
 
 func TestDeviceTokenPoll_IsRateLimitedPerIP(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouter(t)
 	rt.devicePollLimit = newAPIRateLimiter(3)
 	poll := func(ip string) int {
@@ -84,6 +87,7 @@ func TestDeviceTokenPoll_IsRateLimitedPerIP(t *testing.T) {
 }
 
 func TestLoginLimiter_PrunesIdleKeysAtCap(t *testing.T) {
+	t.Parallel()
 	l := newLoginLimiter()
 	old := time.Now().Add(-2 * loginLimiterIdleAfter)
 	for i := 0; i < loginLimiterPruneAt; i++ {

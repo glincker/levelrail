@@ -32,6 +32,10 @@ levelrail-cli apps create --name api --repo https://github.com/you/api.git \
 | Next.js (static export) | none | `/` | static | static files |
 | React / Vite | none | `/` | static | static files |
 | Astro | none | `/` | static | static files |
+| Astro (SSR) | 4321 | `/` | Railpack | Node standalone server |
+| Hugo | none | `/` | static | static files |
+| Jekyll | none | `/` | static | static files |
+| Eleventy | none | `/` | static | static files |
 | Nuxt | 3000 | `/` | Railpack | Nitro server |
 | Remix | 3000 | `/` | Railpack | remix-serve |
 | SvelteKit | 3000 | `/` | Railpack | adapter-node server |
@@ -42,6 +46,9 @@ levelrail-cli apps create --name api --repo https://github.com/you/api.git \
 | FastAPI | 8000 | `/docs` | Railpack | uvicorn |
 | Ruby on Rails | 3000 | `/up` | Railpack | puma |
 | Laravel | 80 | `/up` | Railpack | FrankenPHP |
+| NestJS | 3000 | `/` | Railpack | `node dist/main` |
+| Flask | 5000 | `/` | Railpack | gunicorn |
+| Rust (axum, Actix Web) | 8080 | `/` | Railpack | release binary |
 
 Static presets have no port: the built-in web server serves the files directly and no container runs. With the CLI, declare `build.type: static` in `app.yaml` and use `--file`.
 
@@ -49,7 +56,17 @@ Static presets have no port: the built-in web server serves the files directly a
 
 ### Next.js
 
-Set `output: 'standalone'` in `next.config` for the smallest runtime image. The preset mounts a volume at `/app/.next/cache` so ISR pages and optimized images survive a redeploy. `NEXT_PUBLIC_*` values are inlined at build time, so pass them as build args, not runtime env. `levelrail-cli build frameworks nextjs --dockerfile` prints a multi-stage Dockerfile with a non-root user.
+Next.js (App Router and Pages Router) builds with Railpack, which starts the app with `npm run start`. Set `output: 'standalone'` in `next.config` when you use your own Dockerfile and want the smallest image; a Railpack build serves it through `next start`, which works but logs a warning that it does not use the standalone output. The preset mounts a volume at `/app/.next/cache` so ISR pages and optimized images survive a redeploy. `levelrail-cli build frameworks nextjs --dockerfile` prints a multi-stage Dockerfile with a non-root user.
+
+Set `NEXT_PUBLIC_*` values as plain (non-secret) app env before the first deploy: Next.js inlines them at `next build`. Every framework build receives the literal, non-secret app env vars whose names start with `NEXT_PUBLIC_`, `VITE_`, `PUBLIC_`, `REACT_APP_`, `NUXT_PUBLIC_`, `GATSBY_` or `EXPO_PUBLIC_` (the list is `APP_STATIC_BUILD_ENV_PREFIXES`). With a Dockerfile, a value is passed only when the Dockerfile declares `ARG NAME`, and explicit `build.args` win. Secrets, `from` references and vault values are never passed to a build; use `build.secrets` for a Dockerfile build that needs one. The build log has a `build env` line naming the keys passed (never the values), so a missing variable is easy to spot. Changing a value needs a new build, not just a restart. `sharp` on arm64 ships in the standalone trace (unverified on a real arm64 host).
+
+### Sizing a Next.js app
+
+A Next.js build is the heaviest step on a small server. The build memory cap is set per build (see [Build memory guard](/build-performance#build-memory-guard)), and building on a 1 GB host is not recommended. Build on a builds-only node ([Build node routing](/build-node-routing)) or in CI, then deploy the image.
+
+How many Next.js sites one server can run depends on the idle memory of each site, which has not been measured (pending a host run). The per-site figure in [Build performance](/build-performance#sizing-a-vps) is an assumption used for arithmetic, not a benchmark.
+
+Host swap is a safety margin for the platform and the running sites. It does not add build memory, because a build's swap is limited to the same size as its cap.
 
 ### Next.js static export
 
@@ -61,7 +78,23 @@ The `dist` directory is served as a static site. Variables prefixed `VITE_` are 
 
 ### Astro
 
-Static output is the default and is served directly. For `output: 'server'` pick Node.js and set the port to 4321.
+Static output is the default and is served directly. With `output: 'server'` and the `@astrojs/node` adapter in standalone mode, the detector chooses **Astro (SSR)**: port 4321, started with `node ./dist/server/entry.mjs`. Set `HOST=0.0.0.0`, otherwise the server only listens on localhost.
+
+### Hugo, Jekyll and Eleventy
+
+These generators build on the control plane as a static site: set `build.command` and `build.publish` as described in [Pages](/pages). The presets fill `hugo --minify` with `public`, `bundle exec jekyll build` with `_site`, and `npx @11ty/eleventy` with `_site`. The build image needs the generator installed (Hugo binary, Ruby with the Gemfile gems, or the npm dependencies).
+
+### NestJS
+
+Build with `nest build` and start with `node dist/main`. NestJS listens on 3000 unless `app.listen` is given another port, so read `PORT` there.
+
+### Flask
+
+Served by gunicorn on port 5000, which is the Flask development default. Point the start command at your `module:app`. `SECRET_KEY` is required for sessions.
+
+### Rust
+
+Rust has no standard port, so the preset uses 8080 and expects the server to bind `0.0.0.0` on `PORT`. Release builds are memory hungry: on a 1 GB host add swap or build the image elsewhere.
 
 ### Nuxt
 

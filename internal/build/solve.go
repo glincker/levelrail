@@ -66,6 +66,16 @@ func newSolveOpt(req Request, cache CacheConfig, out io.WriteCloser) (*bkclient.
 	if req.CgroupParent != "" {
 		attrs["cgroup-parent"] = req.CgroupParent
 	}
+	force, set, err := req.Network.forceNetworkAttr()
+	if err != nil {
+		return nil, err
+	}
+	if set {
+		if err := req.Network.checkFrontend(dockerfilePath, req.BuildArgs); err != nil {
+			return nil, err
+		}
+		attrs["force-network-mode"] = force
+	}
 	for k, v := range req.BuildArgs {
 		attrs["build-arg:"+k] = v
 	}

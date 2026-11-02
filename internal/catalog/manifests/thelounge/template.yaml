@@ -1,0 +1,25 @@
+id: thelounge
+name: The Lounge
+description: A modern web IRC client that stays connected for you, so you can read what you missed from any device. Users are created from the command line, and chat history is kept on a volume.
+icon: chat
+category: Communication
+documentation_url: https://thelounge.chat/docs
+source_repo: https://github.com/thelounge/thelounge
+license: MIT
+license_class: permissive
+license_url: https://github.com/thelounge/thelounge/blob/master/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Create your first user from the container terminal with thelounge add followed by a username, then sign in at the address.
+domains:
+  - service: thelounge
+    port: 9000
+    description: Public address of the web client.
+healthcheck:
+  service: thelounge
+  port: 9000
+  path: /

@@ -1,0 +1,34 @@
+id: mariadb
+name: MariaDB
+description: The MariaDB database server on the official image, with a persistent volume, generated root and user passwords, and an application database. It is not published on the host, so reach it from other services in this project at mariadb:3306.
+icon: database
+category: Database Tools
+documentation_url: https://mariadb.com/kb/en/documentation/
+source_repo: https://github.com/MariaDB/server
+license: GPL-2.0-only
+license_class: copyleft
+license_url: https://github.com/MariaDB/server/blob/main/COPYING
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 536870912
+first_run:
+  - Read the generated passwords from the app secrets, then connect with the application user or as root from a service in the same project.
+env:
+  - key: MARIADB_DATABASE
+    label: Database name
+    description: Database created on first start.
+    default: app
+  - key: MARIADB_USER
+    label: Database user
+    description: Application user with full rights on that database.
+    default: app
+domains:
+  - service: mariadb
+    port: 3306
+    description: This is a TCP database with no web page, so leave it empty and connect over the project network.
+healthcheck:
+  service: mariadb
+  port: 3306
+  kind: tcp

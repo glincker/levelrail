@@ -1,0 +1,2 @@
+go test fuzz v1
+string("sha256=232a5e067b6a5aA567Ed5a1d21A0DfFaF6Ef0eEeCb6bD9BcF43b3d5eF3Fc4f43")

@@ -13,6 +13,7 @@ import (
 )
 
 func TestHandleListProbeAttempts(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()

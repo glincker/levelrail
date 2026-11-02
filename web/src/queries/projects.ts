@@ -119,6 +119,7 @@ export async function createProject(name: string): Promise<ProjectResource> {
 export function useCreateProject() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: createProject,
     onSuccess: (created) => {
       queryClient.setQueryData(projectKeys.detail(created.id), created)
@@ -234,6 +235,7 @@ export function useRestartProject() {
 export function useDeleteProject() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: deleteProject,
     onSuccess: (_data, { id }) => {
       queryClient.removeQueries({ queryKey: projectKeys.detail(id) })

@@ -256,6 +256,9 @@ func (r *Runner) RunVolumeBackup(ctx context.Context, historyID, serviceName, vo
 	if runErr != nil {
 		status = store.BackupStatusFailed
 		errMsg = runErr.Error()
+	} else if sealed.warning != "" {
+		// A succeeded row with a message is the "inconsistent" warning.
+		errMsg = sealed.warning
 	}
 	finishedAt := r.now().UTC().Format(time.RFC3339)
 	if err := r.Store.FinishBackupHistory(ctx, historyID, status, size, checksum, errMsg, finishedAt); err != nil {

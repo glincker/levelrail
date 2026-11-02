@@ -1,0 +1,64 @@
+---
+title: "Self-host Kokoro TTS with Docker"
+sidebarTitle: "Kokoro TTS"
+description: "A CPU text-to-speech server with an OpenAI-compatible /v1/audio/speech API, built on the Kokoro model. Apache-2.0 licensed. The image is about 3 GB and there is no login, so keep it on a private network or behind an auth proxy."
+"og:url": "https://docs.levelrail.com/self-host/kokoro-fastapi"
+---
+
+A CPU text-to-speech server with an OpenAI-compatible /v1/audio/speech API, built on the Kokoro model. Apache-2.0 licensed. The image is about 3 GB and there is no login, so keep it on a private network or behind an auth proxy.
+
+This page describes the Levelrail template for Kokoro TTS (AI). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/remsky/Kokoro-FastAPI.
+
+Recommended memory: about 1536 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `kokoro` | `ghcr.io/remsky/kokoro-fastapi-cpu:v0.9.2` | 8880 | none |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `kokoro` | `TZ` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Nothing beyond a standard container: no extra privileges, host mounts or published ports.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Kokoro TTS with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Kokoro TTS. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy kokoro-fastapi --name my-kokoro-fastapi
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More AI templates
+
+- [AnythingLLM](/self-host/anythingllm)
+- [ComfyUI](/self-host/comfyui)
+- [Crawl4AI](/self-host/crawl4ai)
+- [Docling Serve](/self-host/docling-serve)
+- [Flowise](/self-host/flowise)
+
+All templates are listed in the [self-host gallery](/self-host).

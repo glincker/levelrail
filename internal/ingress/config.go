@@ -462,6 +462,44 @@ type Automation struct {
 type AutomationPolicy struct {
 	Subjects []string `json:"subjects,omitempty"`
 	Issuers  []any    `json:"issuers,omitempty"`
+	// OnDemand defers issuance to the first TLS handshake for a subject. Subjects here are exact hosts, which is the allowlist.
+	OnDemand bool `json:"on_demand,omitempty"`
+}
+
+// deferHostCerts moves hosts into an on-demand policy that keeps the issuers they had, so no certificate is ordered until a handshake asks for one.
+func deferHostCerts(app *TLSApp, hosts []string) {
+	if app == nil || app.Automation == nil || len(hosts) == 0 {
+		return
+	}
+	lazy := make(map[string]bool, len(hosts))
+	for _, h := range hosts {
+		lazy[strings.ToLower(h)] = true
+	}
+	var moved []string
+	var issuers []any
+	kept := app.Automation.Policies[:0:0]
+	for _, p := range app.Automation.Policies {
+		var rest []string
+		for _, s := range p.Subjects {
+			if lazy[strings.ToLower(s)] {
+				moved = append(moved, s)
+				if issuers == nil {
+					issuers = p.Issuers
+				}
+				continue
+			}
+			rest = append(rest, s)
+		}
+		if len(rest) > 0 {
+			p.Subjects = rest
+			kept = append(kept, p)
+		}
+	}
+	if len(moved) == 0 {
+		return
+	}
+	// Caddy applies the first matching policy, so the on-demand one goes first.
+	app.Automation.Policies = append([]AutomationPolicy{{Subjects: moved, Issuers: issuers, OnDemand: true}}, kept...)
 }
 
 // InternalIssuer is Caddy's "internal" TLS issuer (tls.issuance.internal):
@@ -813,24 +851,75 @@ func internalIssuerTLSApp(hosts []string) *TLSApp {
 	}
 }
 
-// acmeWithFallbackTLSApp scopes real ACME to every host, wildcards through
-// DNS-01 when a provider is set. Every policy ends in the internal issuer, so
-// a rejected contact, an unreachable challenge or a rate limit leaves the host
-// on a locally signed certificate, never on none.
-func acmeWithFallbackTLSApp(opts RoutesOptions, wildcardHosts, regularHosts []string) *TLSApp {
+// acmeWithFallbackTLSApp scopes real ACME to every host: wildcards through
+// DNS-01 when a provider is set, and every host through it when DNS01AllHosts
+// is on (for hosts whose port 80 is unreachable). Every policy ends in the
+// internal issuer, so a failed challenge leaves a locally signed certificate.
+func acmeWithFallbackTLSApp(opts RoutesOptions, wildcardHosts, regularHosts []string) (*TLSApp, error) {
+	perHost, wildcardHosts, regularHosts := splitPerHostDNS01(opts, wildcardHosts, regularHosts)
+	app, err := acmeGlobalTLSApp(opts, wildcardHosts, regularHosts)
+	if err != nil || len(perHost) == 0 {
+		return app, err
+	}
+	// Caddy applies the first matching policy, so the per-host one goes first.
+	dns := NewDNSACMEIssuer(opts.ACMEEmail, opts.ACMEDirectoryURL, opts.DNSProvider)
+	first := AutomationPolicy{Subjects: perHost, Issuers: withInternalFallback(dns, opts.FallbackCertLifetime)}
+	if len(wildcardHosts)+len(regularHosts) == 0 {
+		app.Automation.Policies = []AutomationPolicy{first}
+		return app, nil
+	}
+	app.Automation.Policies = append([]AutomationPolicy{first}, app.Automation.Policies...)
+	return app, nil
+}
+
+// splitPerHostDNS01 takes the hosts that asked for DNS-01 out of the other
+// lists. Without a provider the request is ignored so one lost credential
+// cannot fail the whole build; the host falls back to HTTP-01.
+func splitPerHostDNS01(opts RoutesOptions, wildcardHosts, regularHosts []string) (perHost, wild, regular []string) {
+	if opts.DNS01AllHosts || opts.DNSProvider == nil || len(opts.DNS01Hosts) == 0 {
+		return nil, wildcardHosts, regularHosts
+	}
+	want := make(map[string]bool, len(opts.DNS01Hosts))
+	for _, h := range opts.DNS01Hosts {
+		want[strings.ToLower(h)] = true
+	}
+	pick := func(in []string) (kept []string) {
+		for _, h := range in {
+			if want[strings.ToLower(h)] {
+				perHost = append(perHost, h)
+			} else {
+				kept = append(kept, h)
+			}
+		}
+		return kept
+	}
+	return perHost, pick(wildcardHosts), pick(regularHosts)
+}
+
+func acmeGlobalTLSApp(opts RoutesOptions, wildcardHosts, regularHosts []string) (*TLSApp, error) {
 	acme := NewACMEIssuer(opts.ACMEEmail, opts.ACMEDirectoryURL, opts.HTTPPort)
+	if opts.DNS01AllHosts {
+		if opts.DNSProvider == nil {
+			return nil, fmt.Errorf("ingress: DNS-01 for all hosts is enabled but no DNS provider credentials are configured")
+		}
+		hosts := append(append([]string{}, wildcardHosts...), regularHosts...)
+		dns := NewDNSACMEIssuer(opts.ACMEEmail, opts.ACMEDirectoryURL, opts.DNSProvider)
+		return &TLSApp{Automation: &Automation{Policies: []AutomationPolicy{
+			{Subjects: hosts, Issuers: withInternalFallback(dns, opts.FallbackCertLifetime)},
+		}}}, nil
+	}
 	if opts.DNSProvider == nil || len(wildcardHosts) == 0 {
 		hosts := append(append([]string{}, wildcardHosts...), regularHosts...)
 		return &TLSApp{Automation: &Automation{Policies: []AutomationPolicy{
 			{Subjects: hosts, Issuers: withInternalFallback(acme, opts.FallbackCertLifetime)},
-		}}}
+		}}}, nil
 	}
 	dns := NewDNSACMEIssuer(opts.ACMEEmail, opts.ACMEDirectoryURL, opts.DNSProvider)
 	policies := []AutomationPolicy{{Subjects: wildcardHosts, Issuers: withInternalFallback(dns, opts.FallbackCertLifetime)}}
 	if len(regularHosts) > 0 {
 		policies = append(policies, AutomationPolicy{Subjects: regularHosts, Issuers: withInternalFallback(acme, opts.FallbackCertLifetime)})
 	}
-	return &TLSApp{Automation: &Automation{Policies: policies}}
+	return &TLSApp{Automation: &Automation{Policies: policies}}, nil
 }
 
 // newInternalPKIApp builds a PKIApp for the internal issuer's local CA

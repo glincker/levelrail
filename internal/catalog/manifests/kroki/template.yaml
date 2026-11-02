@@ -1,0 +1,25 @@
+id: kroki
+name: Kroki
+description: An API that turns diagram text such as Mermaid, PlantUML and Graphviz into images. It has no database and no login, so restrict who can reach it.
+icon: diagram
+category: Developer Tools
+documentation_url: https://docs.kroki.io/
+source_repo: https://github.com/yuzutech/kroki
+license: MIT
+license_class: permissive
+license_url: https://github.com/yuzutech/kroki/blob/main/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 536870912
+first_run:
+  - Send diagram text to the address followed by /mermaid/svg or another format path to get an image.
+domains:
+  - service: kroki
+    port: 8000
+    description: Public address of Kroki.
+healthcheck:
+  service: kroki
+  port: 8000
+  path: /health

@@ -6085,8 +6085,12 @@ type BuildRequest struct {
 	BuildArgs      map[string]string `protobuf:"bytes,5,rep,name=build_args,json=buildArgs,proto3" json:"build_args,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	NoCache        bool              `protobuf:"varint,6,opt,name=no_cache,json=noCache,proto3" json:"no_cache,omitempty"`
 	Cache          *BuildCache       `protobuf:"bytes,7,opt,name=cache,proto3" json:"cache,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// network is the control plane's resolved build network mode (open, none
+	// or block-private). Empty means open. The node applies the stricter of
+	// this and its own setting.
+	Network       string `protobuf:"bytes,8,opt,name=network,proto3" json:"network,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *BuildRequest) Reset() {
@@ -6166,6 +6170,13 @@ func (x *BuildRequest) GetCache() *BuildCache {
 		return x.Cache
 	}
 	return nil
+}
+
+func (x *BuildRequest) GetNetwork() string {
+	if x != nil {
+		return x.Network
+	}
+	return ""
 }
 
 // BuildCache carries only internal/build.CacheConfig's registry backend.
@@ -8007,7 +8018,7 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\x03cmd\x18\x01 \x03(\tR\x03cmd\x12\x1c\n" +
 	"\tcontainer\x18\x02 \x01(\tR\tcontainer\x12\x1b\n" +
 	"\texit_code\x18\x03 \x01(\x05R\bexitCode\x12\x16\n" +
-	"\x06stderr\x18\x04 \x01(\tR\x06stderr\"\xf3\x02\n" +
+	"\x06stderr\x18\x04 \x01(\tR\x06stderr\"\x8d\x03\n" +
 	"\fBuildRequest\x121\n" +
 	"\x04kind\x18\x01 \x01(\x0e2\x1d.levelrail.agent.v1.BuildKindR\x04kind\x12\x10\n" +
 	"\x03tag\x18\x02 \x01(\tR\x03tag\x12'\n" +
@@ -8016,7 +8027,8 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\n" +
 	"build_args\x18\x05 \x03(\v2/.levelrail.agent.v1.BuildRequest.BuildArgsEntryR\tbuildArgs\x12\x19\n" +
 	"\bno_cache\x18\x06 \x01(\bR\anoCache\x124\n" +
-	"\x05cache\x18\a \x01(\v2\x1e.levelrail.agent.v1.BuildCacheR\x05cache\x1a<\n" +
+	"\x05cache\x18\a \x01(\v2\x1e.levelrail.agent.v1.BuildCacheR\x05cache\x12\x18\n" +
+	"\anetwork\x18\b \x01(\tR\anetwork\x1a<\n" +
 	"\x0eBuildArgsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\\\n" +

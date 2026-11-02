@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -28,26 +29,96 @@ func WithConditionReader(r ConditionReader) Option {
 // DeploySpec's Deploy call and its own follow-up UpdateServiceApp,
 // multi.go) fails this gate open, not closed.
 func (c *Controller) dependencyBlock(ctx context.Context, desired *store.DesiredService) *reconcile.Result {
+	res, dep := c.dependencyGate(ctx, desired)
+	if c.dependsOnTimeout == nil {
+		return res
+	}
+	if res == nil || len(res.Conditions) == 0 || res.Conditions[0].Status != reconcile.ConditionUnknown {
+		c.clearDependencyWait(desired.Name)
+		return res
+	}
+	limit := c.dependsOnTimeout(ctx)
+	if slices.Contains(desired.DependsOnCompleted(), dep) {
+		// A one-shot may legitimately run for its own budget, longer than a start wait.
+		budget := c.effectiveCompletionBudget(c.dependencySpec(ctx, desired.AppID+"-"+dep))
+		limit = max(limit, budget)
+	}
+	since := c.dependencyWaitStart(desired)
+	if limit <= 0 || c.clock().Sub(since) < limit {
+		return res
+	}
+	msg := fmt.Sprintf("dependency %q did not become ready within %s (the larger of compose.depends_on_timeout and the one-shot budget for a completion wait)", dep, limit)
+	c.traceDependencyWait(ctx, desired, dep, reasonDependencyTimeout, msg)
+	return &reconcile.Result{Conditions: []reconcile.Condition{{
+		Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionFalse, Reason: reasonDependencyTimeout, Message: msg,
+	}}}
+}
+
+// WithDependsOnTimeout sets where the depends_on wait limit comes from, read on
+// every pass so a stored setting change applies live. Unset keeps waiting forever.
+func WithDependsOnTimeout(get func(context.Context) time.Duration) Option {
+	return func(ctrl *Controller) { ctrl.dependsOnTimeout = get }
+}
+
+// dependencyWaitStart returns when this spec first waited. A changed spec
+// (new image, restart nonce) starts a fresh clock so a fixed redeploy is not
+// judged by the failed one.
+func (c *Controller) dependencyWaitStart(desired *store.DesiredService) time.Time {
+	fp := desired.Image + "\x00" + desired.RestartNonce + "\x00" + NameImage(*desired)
+	c.dependsOnMu.Lock()
+	defer c.dependsOnMu.Unlock()
+	if c.dependsOnSince == nil {
+		c.dependsOnSince = map[string]dependencyWait{}
+	}
+	if w, ok := c.dependsOnSince[desired.Name]; ok && w.spec == fp {
+		return w.since
+	}
+	t := c.clock()
+	c.dependsOnSince[desired.Name] = dependencyWait{since: t, spec: fp}
+	return t
+}
+
+// dependencySpec loads the dependency's desired service, or an empty one so the default budget applies.
+func (c *Controller) dependencySpec(ctx context.Context, depName string) *store.DesiredService {
+	if dep, err := c.store.GetDesiredService(ctx, depName); err == nil && dep != nil {
+		return dep
+	}
+	return &store.DesiredService{}
+}
+
+type dependencyWait struct {
+	since time.Time
+	spec  string
+}
+
+func (c *Controller) clearDependencyWait(name string) {
+	c.dependsOnMu.Lock()
+	delete(c.dependsOnSince, name)
+	c.dependsOnMu.Unlock()
+}
+
+// dependencyGate returns the blocking result plus the name of the dependency it waits on.
+func (c *Controller) dependencyGate(ctx context.Context, desired *store.DesiredService) (*reconcile.Result, string) {
 	if len(desired.DependsOn) == 0 || desired.AppID == "" {
-		return nil
+		return nil, ""
 	}
 	for _, dep := range desired.DependsOn {
 		depName := desired.AppID + "-" + dep
 		if slices.Contains(desired.DependsOnCompleted(), dep) {
 			if res := c.completionBlock(ctx, desired, dep, depName); res != nil {
-				return res
+				return res, dep
 			}
 			continue
 		}
 		started, err := c.dependencyStarted(ctx, depName)
 		if err != nil {
 			res := notReady("DependencyCheckFailed", fmt.Errorf("check dependency %q: %w", dep, err))
-			return &res
+			return &res, dep
 		}
 		if !started {
 			res := waitingFor(dep, depName, "WaitingForDependency", "start")
 			c.traceDependencyWait(ctx, desired, dep, "WaitingForDependency", res.Conditions[0].Message)
-			return res
+			return res, dep
 		}
 		if !slices.Contains(desired.DependsOnHealthy, dep) || c.conditions == nil {
 			continue
@@ -55,15 +126,15 @@ func (c *Controller) dependencyBlock(ctx context.Context, desired *store.Desired
 		ready, err := c.dependencyReady(ctx, depName)
 		if err != nil {
 			res := notReady("DependencyCheckFailed", fmt.Errorf("check dependency %q health: %w", dep, err))
-			return &res
+			return &res, dep
 		}
 		if !ready {
 			res := waitingFor(dep, depName, "WaitingForDependencyHealthy", "pass its readiness check")
 			c.traceDependencyWait(ctx, desired, dep, "WaitingForDependencyHealthy", res.Conditions[0].Message)
-			return res
+			return res, dep
 		}
 	}
-	return nil
+	return nil, ""
 }
 
 func waitingFor(dep, depName, reason, what string) *reconcile.Result {
@@ -110,6 +181,7 @@ func (c *Controller) dependencyStarted(ctx context.Context, depName string) (boo
 const (
 	reasonWaitingForCompletion = "WaitingForDependencyCompleted"
 	reasonDependencyFailed     = "DependencyFailed"
+	reasonDependencyTimeout    = "DependencyTimeout"
 )
 
 // completionBlock gates condition: service_completed_successfully: nil once a

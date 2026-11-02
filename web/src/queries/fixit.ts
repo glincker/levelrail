@@ -134,6 +134,7 @@ export function useFixForCheck(checkId: string): Fix | undefined {
 export function useApplyFix() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async (vars: {
       id: string
       params?: Record<string, string>

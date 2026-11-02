@@ -136,6 +136,10 @@ func (rt *Router) handleTriggerRestore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if refuseForeignBackup(w, db, backup.ID, backup.InstanceID, backup.StartedAt) {
+		return
+	}
+
 	historyID, err := randomRestoreHistoryID()
 	if err != nil {
 		rt.internalError(w, "api: trigger restore: generate id failed", err)

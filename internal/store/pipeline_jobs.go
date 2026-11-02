@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 // PipelineJob is one expanded job of a run. NeedsJSON and MatrixJSON are
@@ -194,6 +196,7 @@ func (db *DB) SetPipelineJobStatus(ctx context.Context, id, status, reason, node
 
 // SetPipelineJobOutputs stores a job's JSON-encoded outputs.
 func (db *DB) SetPipelineJobOutputs(ctx context.Context, id, outputsJSON string) error {
+	outputsJSON = secretmask.Mask(outputsJSON)
 	if _, err := db.ExecContext(ctx, `UPDATE pipeline_jobs SET outputs = ? WHERE id = ?`, outputsJSON, id); err != nil {
 		return fmt.Errorf("store: set pipeline job %q outputs: %w", id, err)
 	}
@@ -230,7 +233,7 @@ func (db *DB) AppendPipelineLogs(ctx context.Context, lines []PipelineLogLine) e
 	for _, l := range lines {
 		if _, err := tx.ExecContext(ctx, `
 			INSERT INTO pipeline_logs (run_id, job_key, step_idx, stream, line, created_at) VALUES (?, ?, ?, ?, ?, ?)
-		`, l.RunID, l.JobKey, l.StepIndex, l.Stream, l.Line, formatTime(l.CreatedAt)); err != nil {
+		`, l.RunID, l.JobKey, l.StepIndex, l.Stream, secretmask.Mask(l.Line), formatTime(l.CreatedAt)); err != nil {
 			return fmt.Errorf("store: insert pipeline log: %w", err)
 		}
 	}

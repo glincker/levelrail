@@ -121,11 +121,24 @@ Domain redirects, maintenance mode, basic auth, the WAF, [Shield](/domain-traffi
 
 ## Putting a CDN in front
 
-A CDN such as Cloudflare, Akamai or Fastly can sit in front of the ingress. Levelrail does not manage it yet, but these settings make the two work together:
+A CDN such as Cloudflare, Akamai or Fastly can sit in front of the ingress. For the Cloudflare specifics (SSL mode, certificates, upload limits, and what the proxy does not hide) see [Run behind Cloudflare](/behind-cloudflare). Levelrail does not manage the CDN itself, but these settings make the two work together:
 
 - Send correct `Cache-Control` from your app (`public, max-age=...` or `s-maxage=...` for shared caches, `private` or `no-store` for anything personal). Both the CDN and the ingress follow it. Send a tag header such as `Cache-Tag` if you purge Levelrail by tag; check which header your CDN uses for its own tags, since the names differ.
 - Add the CDN's address ranges to `APP_INGRESS_TRUSTED_PROXIES` so visitor addresses, Shield rate limits and country rules use the real client address from `X-Forwarded-For` rather than the CDN's. See [behind an existing proxy](/behind-an-existing-proxy).
-- Purge the CDN with its own tools; purging Levelrail does not purge the CDN, and the reverse. First party integrations (purge, steering) are a future plugin direction recorded in ADR 034; none is built.
+- For Cloudflare, Levelrail purges the edge cache for you when a static site is published, deployed or rolled back, as long as the app's DNS records are proxied (see below). For any other CDN, purge it with its own tools; purging Levelrail does not purge the CDN, and the reverse.
+
+### Cloudflare purge on publish
+
+When the app's records are proxied, a static publish, a deploy, publishing a held build and a rollback each clear Cloudflare's cache for the app's domains, so visitors do not keep seeing the old site.
+
+- The Cloudflare token needs the **Cache Purge** permission, and **Zone Settings: Read** for the SSL check below.
+- The purge is best effort. If it fails, the publish or rollback still succeeds; the build log shows a warning, and the rollback and publish responses carry a `cdn_warning` field.
+- Set `APP_CDN_PURGE=off` to turn the purge off, and `APP_CDN_PURGE_TIMEOUT` (a duration, default `20s`) to bound how long it may take.
+- The purge clears every cached URL under the app's hostnames, not other apps on the same zone.
+
+### SSL mode check
+
+`GET /api/v1/apps/{name}/cdn` adds `ssl_mode` and `ssl_warning` when the app is proxied and the Cloudflare token can read zone settings. `off` and `flexible` produce a warning because they cause redirect loops against an origin that serves HTTPS; `full` suggests `strict`. The same read adds the mode to the message shown when a proxied DNS record is created.
 
 ## Not yet
 
@@ -141,3 +154,9 @@ A CDN such as Cloudflare, Akamai or Fastly can sit in front of the ingress. Leve
 - Disk backed storage with checksummed objects, sized by environment variables.
 - Cross node purge once more than one ingress serves traffic.
 - Routing rules in the CDN section will use the shared rule builder (redirect with status, rewrite, set header) instead of linking to each domain's page.
+
+## Change the proxy setting for one app from the CLI
+
+`levelrail-cli apps cdn get <app>` shows the per-app proxy override, what it resolves to and the Cloudflare SSL/TLS mode. `levelrail-cli apps cdn set <app> --proxied on|off|inherit` changes it and, when the resolved setting actually changed, re-syncs the app's existing DNS records so they match.
+
+The re-sync only touches records Levelrail created for that app, and only those whose proxy flag differs. A record someone else created or edited is left alone, and each record reports its own result, so one failure does not hide the rest (the command exits non-zero if any failed). Use `--no-resync` to save the setting only, then `levelrail-cli apps cdn resync <app> --dry-run` to preview the changes before running `resync` for real. It needs a Cloudflare token with DNS edit.

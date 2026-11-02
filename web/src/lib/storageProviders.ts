@@ -8,6 +8,7 @@ const PRESET_LOGO: Record<StoragePreset, string | undefined> = {
   minio: 'minio',
   wasabi: 'wasabi',
   gcs: 'google-cloud-storage',
+  oracle: undefined,
   custom: undefined,
 }
 
@@ -24,5 +25,6 @@ export const STORAGE_PRESET_LABEL: Record<StoragePreset, string> = {
   minio: 'MinIO',
   wasabi: 'Wasabi',
   gcs: 'Google Cloud Storage',
+  oracle: 'Oracle Cloud',
   custom: 'S3 compatible',
 }

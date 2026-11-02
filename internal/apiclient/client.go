@@ -158,6 +158,10 @@ func (c *Client) doOnce(ctx context.Context, method, path string, payload []byte
 	if agent := agentClientFrom(ctx); agent != "" {
 		req.Header.Set(AgentClientHeader, agent)
 	}
+	if call := mcpCallFrom(ctx); call.tool != "" {
+		req.Header.Set(MCPToolHeader, call.tool)
+		req.Header.Set(MCPArgsHeader, call.args)
+	}
 
 	start := time.Now()
 	resp, err := c.hc.Do(req) //nolint:gosec // same target as above
@@ -193,7 +197,7 @@ func decodeResponse(resp *http.Response, out any) error {
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		var coded apiErrorBody
 		_ = json.Unmarshal(data, &coded)
-		return &APIError{StatusCode: resp.StatusCode, Message: ExtractErrorMessage(data), RetryAfter: retryAfterHeader(resp.Header), Code: coded.Code, RequestID: coded.RequestID, Fix: coded.fixText()}
+		return &APIError{StatusCode: resp.StatusCode, Message: ExtractErrorMessage(data), RetryAfter: retryAfterHeader(resp.Header), Code: coded.Code, RequestID: coded.RequestID, Fix: coded.fixText(), MissingVariables: coded.MissingVariables}
 	}
 	if out != nil && len(data) > 0 {
 		if err := json.Unmarshal(data, out); err != nil {
@@ -1747,6 +1751,12 @@ func (c *Client) EnablePITR(ctx context.Context, name string) error {
 	return c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/pitr", nil, nil)
 }
 
+// SetBaseBackupSchedule calls POST /api/v1/databases/{name}/pitr with a
+// base backup cron; an empty schedule clears it.
+func (c *Client) SetBaseBackupSchedule(ctx context.Context, name, schedule, targetID string) error {
+	return c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/pitr", PITRBaseBackupScheduleRequest{BaseBackupSchedule: &schedule, BaseBackupTargetID: targetID}, nil)
+}
+
 // DisablePITR calls DELETE /api/v1/databases/{name}/pitr.
 func (c *Client) DisablePITR(ctx context.Context, name string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/databases/"+PathEscape(name)+"/pitr", nil, nil)
@@ -1899,6 +1909,14 @@ func (c *Client) TriggerVolumeRestore(ctx context.Context, name, volume, backupI
 func (c *Client) TriggerCloneRestore(ctx context.Context, name string, req TriggerCloneRestoreRequest) (CloneRestoreResource, error) {
 	var out CloneRestoreResource
 	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/restore-as-new", req, &out)
+	return out, err
+}
+
+// CreateDatabaseBranch calls POST /api/v1/databases/{name}/branches: a new
+// independent database from a backup or point in time. The source is never written.
+func (c *Client) CreateDatabaseBranch(ctx context.Context, name string, req CreateDatabaseBranchRequest) (DatabaseBranchResource, error) {
+	var out DatabaseBranchResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/databases/"+PathEscape(name)+"/branches", req, &out)
 	return out, err
 }
 
@@ -2303,8 +2321,30 @@ func (c *Client) PromoteApp(ctx context.Context, name string, req PromoteAppRequ
 // ListServiceTemplates calls GET /api/v1/service-templates: the full
 // catalog, without each entry's Compose body (see ServiceTemplateListItem).
 func (c *Client) ListServiceTemplates(ctx context.Context) ([]ServiceTemplateListItem, error) {
+	return c.ListServiceTemplatesFiltered(ctx, TemplateListFilter{})
+}
+
+// ListServiceTemplatesFiltered is ListServiceTemplates with the server side filters.
+func (c *Client) ListServiceTemplatesFiltered(ctx context.Context, f TemplateListFilter) ([]ServiceTemplateListItem, error) {
+	q := url.Values{}
+	if f.LicenseClass != "" {
+		q.Set("license_class", f.LicenseClass)
+	}
+	if f.VerifiedOnly {
+		q.Set("verified", "true")
+	}
+	if f.Arch != "" {
+		q.Set("arch", f.Arch)
+	}
+	if f.HideDeprecated {
+		q.Set("include_deprecated", "false")
+	}
+	path := "/api/v1/service-templates"
+	if len(q) > 0 {
+		path += "?" + q.Encode()
+	}
 	var out []ServiceTemplateListItem
-	err := c.do(ctx, http.MethodGet, "/api/v1/service-templates", nil, &out)
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
 	return out, err
 }
 
@@ -4078,6 +4118,13 @@ func (c *Client) VerifyAuditLog(ctx context.Context) (AuditChainReport, error) {
 	return out, err
 }
 
+// CheckAuditAnchors calls POST /api/v1/audit-log/anchor-check with exported anchors.
+func (c *Client) CheckAuditAnchors(ctx context.Context, anchors []AuditAnchor) (AuditAnchorReport, error) {
+	var out AuditAnchorReport
+	err := c.do(ctx, http.MethodPost, "/api/v1/audit-log/anchor-check", map[string]any{"anchors": anchors}, &out)
+	return out, err
+}
+
 // DeployAttemptFilter narrows ListDeployAttemptsFiltered; empty fields are ignored.
 type DeployAttemptFilter struct {
 	Branch string
@@ -4289,6 +4336,20 @@ func (c *Client) EnableHTTPS(ctx context.Context, req EnableHTTPSRequest) (HTTPS
 	return out, err
 }
 
+// GetDeployURLCopies calls GET /api/v1/settings/deploy-url-copies.
+func (c *Client) GetDeployURLCopies(ctx context.Context) (DeployURLCopiesResource, error) {
+	var out DeployURLCopiesResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/deploy-url-copies", nil, &out)
+	return out, err
+}
+
+// SetDeployURLCopies calls PUT /api/v1/settings/deploy-url-copies; an empty mode clears the stored value.
+func (c *Client) SetDeployURLCopies(ctx context.Context, mode string) (DeployURLCopiesResource, error) {
+	var out DeployURLCopiesResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/settings/deploy-url-copies", map[string]string{"mode": mode}, &out)
+	return out, err
+}
+
 // GetUpdateSettings calls GET /api/v1/updates/settings.
 func (c *Client) GetUpdateSettings(ctx context.Context) (UpdateSettingsResource, error) {
 	var out UpdateSettingsResource
@@ -4335,6 +4396,8 @@ type RuntimeSettingResource struct {
 	PendingRestart bool   `json:"pending_restart"`
 	UpdatedAt      string `json:"updated_at"`
 	UpdatedBy      string `json:"updated_by"`
+	// AllowedStrings lists the values a string setting accepts.
+	AllowedStrings []string `json:"allowed_strings,omitempty"`
 }
 
 // RuntimeSettingsRestart reports whether the control plane can restart itself and has a restart pending.
@@ -4377,9 +4440,14 @@ func (c *Client) PutRuntimeSetting(ctx context.Context, key string, req RuntimeS
 }
 
 // DeleteRuntimeSetting calls DELETE /api/v1/settings/runtime/{key}, dropping the saved value.
-func (c *Client) DeleteRuntimeSetting(ctx context.Context, key string) (RuntimeSettingResource, error) {
+// confirmWeakening acknowledges a reset that restores a weaker env or default value.
+func (c *Client) DeleteRuntimeSetting(ctx context.Context, key string, confirmWeakening bool) (RuntimeSettingResource, error) {
 	var out RuntimeSettingResource
-	err := c.do(ctx, http.MethodDelete, "/api/v1/settings/runtime/"+url.PathEscape(key), nil, &out)
+	path := "/api/v1/settings/runtime/" + url.PathEscape(key)
+	if confirmWeakening {
+		path += "?confirm_weakening=true"
+	}
+	err := c.do(ctx, http.MethodDelete, path, nil, &out)
 	return out, err
 }
 

@@ -32,6 +32,7 @@ func healthyPosture() postureInput {
 		CodeLoginAdmins:   &no,
 		Exposure:          &postureExposure{},
 		OffBoxBackups:     &yes,
+		AuditAnchor:       &yes,
 		MasterKey:         true,
 		MasterKeyKnown:    true,
 		MasterKeyRotated:  &rotated,
@@ -91,6 +92,7 @@ func TestEvaluatePosture_EachRuleFails(t *testing.T) {
 		{"code_login_admins", postureStatusFail, func(in *postureInput) { in.CodeLoginAdmins = &yes }},
 		{"public_exposure", postureStatusFail, func(in *postureInput) { in.Exposure.Attention = 2 }},
 		{"docker_api_exposed", postureStatusFail, func(in *postureInput) { in.Exposure.DockerAPI = 1 }},
+		{"audit_anchor_off", postureStatusFail, func(in *postureInput) { in.AuditAnchor = &no; in.AppsLive = true }},
 		{"offbox_backup_off", postureStatusFail, func(in *postureInput) { in.OffBoxBackups = &no; in.AppsLive = true }},
 		{"master_key_rotation", postureStatusFail, func(in *postureInput) { in.MasterKeyRotated = &old }},
 		{"master_key_rotation", postureStatusFail, func(in *postureInput) { in.MasterKey = false }},
@@ -101,6 +103,7 @@ func TestEvaluatePosture_EachRuleFails(t *testing.T) {
 		{"domains_unshielded", postureStatusUnknown, func(in *postureInput) { in.ShieldKnown = false }},
 		{"saml_open_domains", postureStatusFail, func(in *postureInput) { in.OpenSAML = []string{"Okta"} }},
 		{"saml_open_domains", postureStatusUnknown, func(in *postureInput) { in.SAMLKnown = false }},
+		{"microsoft_no_tenant", postureStatusFail, func(in *postureInput) { in.MicrosoftNoTenant = true }},
 		{"agents_outdated", postureStatusFail, func(in *postureInput) { in.OutdatedAgents = []string{"node-2"} }},
 		{"login_anomalies", postureStatusFail, func(in *postureInput) {
 			in.Anomalies = []loginAnomaly{{Kind: anomalyKindIP, Subject: "203.0.113.9", Count: 20, At: postureNow}}

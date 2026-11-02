@@ -51,6 +51,8 @@ export interface NewAppEdits {
   buildType: GitSourceBuildType
   dockerfilePath: string
   baseDirectory: string
+  /** Single page app mode: unknown paths serve index.html (static sites). */
+  spa: boolean
   domain: string
   /** Operator-typed env values; the repository's own values are never read. */
   env: Record<string, string>
@@ -95,6 +97,7 @@ export function editsFromAnalysis(a: ImportAnalysis): NewAppEdits {
     buildType: asBuildType(a.build.type),
     dockerfilePath: a.build.dockerfile_path ?? '',
     baseDirectory: a.build.base_directory ?? '',
+    spa: a.detection?.spa === true && asBuildType(a.build.type) === 'static',
     domain: a.domain.value,
     env: {},
     databases: a.databases.map((d) => ({
@@ -225,11 +228,13 @@ async function connectSource(
       })
       return
   }
-  if (e.baseDirectory !== '') {
+  const spa = e.buildType === 'static' && e.spa
+  if (e.baseDirectory !== '' || spa) {
     await setGitBuild(appName, {
       build_type: e.buildType,
       build_path: e.dockerfilePath,
       base_directory: e.baseDirectory,
+      ...(spa ? { static_spa: true } : {}),
     })
   }
 }

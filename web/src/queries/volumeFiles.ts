@@ -73,6 +73,7 @@ export function volumeFileDownloadURL(
 export function useUploadVolumeFile(app: string, volume: string) {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async (vars: { path: string; file: File }) => {
       const res = await fetch(
         `${base(app, volume)}/content?path=${encodeURIComponent(vars.path)}`,
@@ -88,6 +89,7 @@ export function useUploadVolumeFile(app: string, volume: string) {
 export function useDeleteVolumeFile(app: string, volume: string) {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async (path: string) => {
       const res = await fetch(volumeFileDownloadURL(app, volume, path), {
         method: 'DELETE',

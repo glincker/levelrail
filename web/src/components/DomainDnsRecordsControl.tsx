@@ -25,6 +25,8 @@ import {
   useDnsRecords,
   useUpdateDnsRecord,
 } from '../queries/dnsRecords'
+import { useDomainCheck } from '../queries/domainCheck'
+import { DnsConnectPopover } from './dns/DnsConnectPopover'
 import { RecordFields, RecordRow } from './DnsRecordRow'
 import {
   EMPTY_DRAFT,
@@ -32,6 +34,19 @@ import {
   toRecord,
   type DraftRecord,
 } from '../lib/dnsRecordDraft'
+
+// Offers the matching provider connect flow when the zone's name servers
+// belong to Cloudflare or Route53 and no provider is configured yet.
+export function ConnectNsProvider({ provider }: { provider?: string }) {
+  const { t } = useTranslation('dns')
+  if (provider !== 'cloudflare' && provider !== 'route53') return null
+  const label = provider === 'cloudflare' ? 'Cloudflare' : 'Route53'
+  return (
+    <DnsConnectPopover provider={provider} label={label} variant="outline">
+      {t('recordsControl.connect', { provider: label })}
+    </DnsConnectPopover>
+  )
+}
 
 // A per-domain DNS records view: lists the whole best-effort zone's
 // A/AAAA/CNAME/TXT/MX/SRV/CAA records (not just this one domain's own
@@ -50,6 +65,7 @@ export function DomainDnsRecordsControl({
   const { t } = useTranslation('dns')
   const [open, setOpen] = useState(false)
   const { data, isLoading, isError, error } = useDnsRecords(appName, domain)
+  const { data: check } = useDomainCheck(appName, domain)
   const createRecord = useCreateDnsRecord(appName, domain)
   const updateRecord = useUpdateDnsRecord(appName, domain)
   const deleteRecord = useDeleteDnsRecord(appName, domain)
@@ -90,6 +106,9 @@ export function DomainDnsRecordsControl({
                 : t('recordsControl.count', { count: records.length })}
           </Badge>
         </button>
+        {notConfigured ? (
+          <ConnectNsProvider provider={check?.nameserver_provider} />
+        ) : null}
         <Button
           type="button"
           variant="ghost"
@@ -129,13 +148,18 @@ export function DomainDnsRecordsControl({
       {isLoading ? (
         <Skeleton className="h-24 w-full" />
       ) : notConfigured ? (
-        <Alert>
-          <CircleAlertGlassIcon
-            className="size-5 text-tone-danger"
-            aria-hidden="true"
-          />
-          <AlertDescription>{t('recordsControl.noProvider')}</AlertDescription>
-        </Alert>
+        <>
+          <Alert>
+            <CircleAlertGlassIcon
+              className="size-5 text-tone-danger"
+              aria-hidden="true"
+            />
+            <AlertDescription>
+              {t('recordsControl.noProvider')}
+            </AlertDescription>
+          </Alert>
+          <ConnectNsProvider provider={check?.nameserver_provider} />
+        </>
       ) : isError ? (
         <Alert variant="destructive">
           <AlertDescription>{error?.message}</AlertDescription>

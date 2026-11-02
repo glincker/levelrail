@@ -141,14 +141,9 @@ type BindMount struct {
 // ContainerSpec is desired state for a container a controller wants to
 // exist.
 //
-// No restart policy field, deliberately: the reconciler, not Docker, is
-// meant to be the sole authority on "should this container
-// be running." A Docker-native restart policy running alongside a
-// reconciler that also restarts dead containers is two independent
-// systems racing to make the same decision, exactly the kind of drift
-// the reconciler's level-triggered design exists to avoid. Every
-// container Levelrail creates gets Docker's "no" restart policy; staying
-// running is the reconciler's job, proven live in nginxdemo (Phase 0).
+// RestartPolicy defaults to Docker's "no" and is set only for long-running
+// app containers by the application controller, from the stored runtime
+// setting containers.restart_policy, so apps return after a host reboot.
 //
 // No health check field either: the app spec's readiness/liveness probes
 // are modeled on Kubernetes' prober pattern (the controller calls out to
@@ -272,6 +267,9 @@ type ContainerSpec struct {
 	// with none added back, no-new-privileges, a PID limit and a small
 	// noexec /tmp. Used for untrusted workloads such as plugins.
 	Hardened bool
+	// HardenedCapAdd lists the only capabilities a Hardened container gets
+	// back after the drop-all, for a helper that must keep file ownership.
+	HardenedCapAdd []string
 	// RestartPolicy is a Docker restart policy name. Empty keeps "no": only a
 	// container no reconciler owns, such as a managed proxy, sets it.
 	RestartPolicy string

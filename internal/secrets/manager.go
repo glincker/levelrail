@@ -334,3 +334,60 @@ func (m *Manager) SetBuildEnabled(ctx context.Context, serviceName, envKey strin
 	}
 	return nil
 }
+
+// preloadPageSize bounds each keyset page so startup memory stays flat.
+const preloadPageSize = 500
+
+// Preload decrypts every stored secret once so the masking registry is warm
+// before log collectors and runners start. It never fails boot: bad rows are
+// counted and reported as counts only. One DEK unwrap per service.
+func (m *Manager) Preload(ctx context.Context) (loaded, failed int) {
+	var afterSvc, afterKey string
+	deks := map[string][]byte{}
+	bad := map[string]bool{}
+	for {
+		rows, err := m.store.ListSecretCiphertexts(ctx, afterSvc, afterKey, preloadPageSize)
+		if err != nil {
+			m.logger.Warn("secrets: preload list failed", slog.String("error", err.Error()))
+			failed++
+			break
+		}
+		if len(rows) == 0 {
+			break
+		}
+		for _, row := range rows {
+			afterSvc, afterKey = row.ServiceName, row.EnvKey
+			if bad[row.ServiceName] {
+				failed++
+				continue
+			}
+			dek, ok := deks[row.ServiceName]
+			if !ok {
+				wrapped, err := m.store.GetServiceDEK(ctx, row.ServiceName)
+				if err == nil {
+					dek, err = m.masterKey().UnwrapDEK(WrappedDEK(wrapped))
+				}
+				if err != nil {
+					bad[row.ServiceName] = true
+					failed++
+					continue
+				}
+				deks[row.ServiceName] = dek
+			}
+			plaintext, _, err := DecryptValue(dek, slotBinding(row.ServiceName, row.EnvKey), row.Ciphertext)
+			if err != nil {
+				failed++
+				continue
+			}
+			secretmask.Add(plaintext)
+			loaded++
+		}
+		if len(rows) < preloadPageSize {
+			break
+		}
+	}
+	if failed > 0 {
+		m.logger.Warn("secrets: preload skipped some values", slog.Int("loaded", loaded), slog.Int("failed", failed))
+	}
+	return loaded, failed
+}

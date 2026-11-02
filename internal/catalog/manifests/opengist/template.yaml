@@ -1,0 +1,22 @@
+id: opengist
+name: Opengist
+description: A self-hosted pastebin powered by Git, for sharing snippets and gists with revisions, topics and search. AGPL-3.0 licensed. Uses SQLite in one container. SSH Git access is off, so clone and push over HTTPS. The first account you register becomes the admin.
+icon: code
+category: Developer Tools
+documentation_url: https://opengist.io/docs
+source_repo: https://github.com/thomiceli/opengist
+license: AGPL-3.0
+license_class: network-copyleft
+license_url: https://github.com/thomiceli/opengist/blob/master/LICENSE
+recommended_memory_bytes: 134217728
+domains:
+  - service: opengist
+    port: 6157
+    description: Public address of Opengist.
+healthcheck:
+  service: opengist
+  port: 6157
+  path: /
+status: active
+listing:
+  by: community

@@ -16,7 +16,16 @@ const (
 	KindDatabaseBackupFailing Kind = "database_backup_failing"
 	KindDatabaseDown          Kind = "database_down"
 	KindDatabaseBackupStale   Kind = "database_backup_stale"
+	KindPoolerSaturated       Kind = "pooler_saturated"
 )
+
+// DefaultPoolerSaturatedWaitSeconds is how long the longest queued client waits before pooler_saturated fires when Threshold is unset.
+const DefaultPoolerSaturatedWaitSeconds = 5.0
+
+// DatabasePoolerSource reads the connection pooler's client queue; ErrDatabaseHealthUnavailable means no pooler is running.
+type DatabasePoolerSource interface {
+	PoolerSaturation(ctx context.Context, name string) (waiting int, maxWaitSeconds float64, err error)
+}
 
 // DefaultDatabaseBackupStaleHours is the age of the newest successful backup past which database_backup_stale fires when Threshold is unset.
 const DefaultDatabaseBackupStaleHours = 26.0
@@ -33,7 +42,7 @@ var ErrDatabaseHealthUnavailable = errors.New("alerting: database health unavail
 // IsDatabaseKind reports whether k is one of the database rule kinds.
 func IsDatabaseKind(k Kind) bool {
 	switch k {
-	case KindDatabaseConnections, KindDatabaseDisk, KindDatabaseBackupFailing, KindDatabaseDown, KindDatabaseBackupStale, KindBackupFailed:
+	case KindDatabaseConnections, KindDatabaseDisk, KindDatabaseBackupFailing, KindDatabaseDown, KindDatabaseBackupStale, KindPoolerSaturated, KindBackupFailed:
 		return true
 	}
 	return false
@@ -119,6 +128,26 @@ func EvaluateDatabaseRule(ctx context.Context, health DatabaseHealthSource, back
 			return next, "", nil
 		}
 		return next, fmt.Sprintf("%s: database is not accepting connections", name), nil
+	case KindPoolerSaturated:
+		src, ok := health.(DatabasePoolerSource)
+		if !ok || health == nil {
+			return quietDatabaseRule(next), "", nil
+		}
+		waiting, wait, err := src.PoolerSaturation(ctx, name)
+		if errors.Is(err, ErrDatabaseHealthUnavailable) {
+			return quietDatabaseRule(next), "", nil
+		}
+		if err != nil {
+			return r, "", fmt.Errorf("alerting: evaluate rule %q: read pooler of %q: %w", r.ID, name, err)
+		}
+		at := thresholdOr(r.Threshold, DefaultPoolerSaturatedWaitSeconds)
+		saturated := waiting > 0 && wait >= at
+		next.LastValue = &wait
+		next = advanceState(next, r, saturated, r.ForDuration, now)
+		if !saturated {
+			return next, "", nil
+		}
+		return next, fmt.Sprintf("%s: %d clients are queued for a pooled connection, the longest for %.0fs (alert at %.0fs)", name, waiting, wait, at), nil
 	case KindDatabaseBackupStale:
 		if backups == nil {
 			return quietDatabaseRule(next), "", nil

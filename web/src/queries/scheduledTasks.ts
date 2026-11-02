@@ -213,6 +213,7 @@ export async function deleteScheduledTask(
 export function useDeleteScheduledTask(appName: string) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (id: string) => deleteScheduledTask(appName, id),
     onSuccess: () => {
       void queryClient.invalidateQueries({

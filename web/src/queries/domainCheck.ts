@@ -22,6 +22,22 @@ export interface DomainResolver {
   error?: string
 }
 
+// One resolver's answer; authoritative answers are the source of truth.
+export interface DnsSource {
+  name: string
+  addresses?: string[]
+  ttl?: number
+  error?: string
+}
+
+export type DnsVerdict =
+  'dns_ready' | 'public_ready' | 'not_found' | 'points_elsewhere' | 'unknown'
+
+export interface DnsHint {
+  code: string
+  message: string
+}
+
 export type AcmeAction =
   | 'open_port_80'
   | 'fix_dns'
@@ -71,6 +87,17 @@ export interface DomainCheckResult {
   proxy_certificate?: ProxyCertificate
   checked_at?: string
   resolvers?: DomainResolver[]
+  authoritative?: DnsSource[]
+  public?: DnsSource[]
+  local?: DnsSource[]
+  verdict?: DnsVerdict
+  local_stale?: boolean
+  retry_at?: string
+  escalated?: boolean
+  flush_command?: string
+  hints?: DnsHint[]
+  zone?: string
+  nameserver_provider?: 'cloudflare' | 'route53' | 'other' | 'unknown'
 }
 
 export const domainCheckKeys = {
@@ -104,7 +131,17 @@ export async function fetchDomainCheck(
 // "Check now" button is how an operator resumes checking, not a silent
 // background poll running for the rest of the tab's lifetime.
 const UNRESOLVED_POLL_INTERVAL_MS = 5_000
-const MAX_AUTO_POLL_ATTEMPTS = 24 // 24 * 5s = 2 minutes of automatic polling
+const MAX_AUTO_POLL_ATTEMPTS = 24 // 24 * 5s = 2 minutes at the fast rate
+// After the fast rate the poll backs off instead of stopping, so a slow
+// record still turns green without the operator pressing anything.
+const BACKOFF_START_MS = 15_000
+const BACKOFF_MAX_MS = 300_000
+
+export function pollIntervalMs(updateCount: number): number {
+  if (updateCount < MAX_AUTO_POLL_ATTEMPTS) return UNRESOLVED_POLL_INTERVAL_MS
+  const steps = updateCount - MAX_AUTO_POLL_ATTEMPTS
+  return Math.min(BACKOFF_START_MS * 2 ** Math.min(steps, 8), BACKOFF_MAX_MS)
+}
 
 export function domainCheckQueryOptions(appName: string, domain: string) {
   return queryOptions({
@@ -119,8 +156,7 @@ export function useDomainCheck(appName: string, domain: string) {
     ...domainCheckQueryOptions(appName, domain),
     refetchInterval: (query) => {
       if (query.state.data?.status === 'connected') return false
-      if (query.state.dataUpdateCount >= MAX_AUTO_POLL_ATTEMPTS) return false
-      return UNRESOLVED_POLL_INTERVAL_MS
+      return pollIntervalMs(query.state.dataUpdateCount)
     },
   })
 }

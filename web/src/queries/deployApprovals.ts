@@ -134,6 +134,7 @@ async function decideDeployApproval(
 export function useApproveDeployApproval() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (id: string) =>
       decideDeployApproval(
         id,
@@ -155,6 +156,7 @@ export function useApproveDeployApproval() {
 export function useRejectDeployApproval() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
       decideDeployApproval(
         id,

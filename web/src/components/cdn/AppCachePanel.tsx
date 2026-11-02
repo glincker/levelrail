@@ -28,6 +28,7 @@ import {
   type AppCacheDomain,
 } from '../../queries/cdnCache'
 import { formatCount, formatHitRate } from './format'
+import { AppProxyCard } from './AppProxyCard'
 import { HitRateChart } from './HitRateChart'
 import { PurgeHistoryTable } from './PurgeHistoryTable'
 import { PurgePanel } from './PurgePanel'
@@ -211,6 +212,7 @@ function Body({ app, data }: Readonly<{ app: string; data: AppCache }>) {
         </CardContent>
       </Card>
       <DomainsTable app={app} domains={data.domains} />
+      <AppProxyCard app={app} />
       <Tabs defaultValue="purge">
         <TabsList>
           <TabsTrigger value="purge">{t('caches.tabPurge')}</TabsTrigger>

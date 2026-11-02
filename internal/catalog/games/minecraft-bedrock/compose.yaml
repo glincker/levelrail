@@ -1,0 +1,18 @@
+services:
+  bedrock:
+    image: itzg/minecraft-bedrock-server:2026.10.3
+    ports: ["19132:19132/udp"]
+    environment:
+      EULA: ${EULA}
+      VERSION: ${SERVER_VERSION}
+      ALLOW_LIST: ${ALLOW_LIST}
+      GAME_MODE: survival
+      DIFFICULTY: normal
+    volumes:
+      - bedrock_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "mc-monitor status-bedrock --host 127.0.0.1 --port 19132"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s

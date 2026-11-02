@@ -1,0 +1,17 @@
+services:
+  cleanuparr:
+    image: ghcr.io/cleanuparr/cleanuparr:2.10.12
+    ports: ["11011"]
+    environment:
+      PORT: "11011"
+      PUID: "1000"
+      PGID: "1000"
+      TZ: ${TZ}
+    volumes:
+      - config:/config
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:11011/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s

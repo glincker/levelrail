@@ -159,3 +159,70 @@ func TestAbilityTokenCounts(t *testing.T) {
 		}
 	}
 }
+
+func TestAbilityAllows_SensitiveReadNeedsReadSensitive(t *testing.T) {
+	m, ok := toolTable["list_database_users"]
+	if !ok || m.Class != ClassRead || !m.Sensitive() {
+		t.Fatalf("list_database_users meta = %+v, want a sensitive read tool", m)
+	}
+	if abilityAllows([]string{"read"}, "list_database_users", m) {
+		t.Error("a plain read token must not see a credential-bearing read tool")
+	}
+	if !abilityAllows([]string{"read", "read:sensitive"}, "list_database_users", m) {
+		t.Error("read:sensitive should expose it")
+	}
+	if !abilityAllows([]string{"read"}, "list_apps", toolTable["list_apps"]) {
+		t.Error("a plain read token keeps ordinary read tools")
+	}
+}
+
+func callTool(t *testing.T, session *mcp.ClientSession, name string) *mcp.CallToolResult {
+	t.Helper()
+	res, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: name, Arguments: map[string]any{}})
+	if err != nil {
+		t.Fatalf("call %s: %v", name, err)
+	}
+	return res
+}
+
+func sensitiveReadTool(t *testing.T) string {
+	t.Helper()
+	for n, m := range toolTable {
+		if m.Class == ClassRead && m.Sensitive() {
+			if _, root := rootTierTools[n]; !root {
+				return n
+			}
+		}
+	}
+	t.Fatal("no sensitive read tool in the table")
+	return ""
+}
+
+func isForbidden(res *mcp.CallToolResult) bool {
+	if !res.IsError || len(res.Content) == 0 {
+		return false
+	}
+	tc, ok := res.Content[0].(*mcp.TextContent)
+	return ok && strings.HasPrefix(tc.Text, "forbidden:")
+}
+
+func TestCallRefusesHiddenSensitiveTool(t *testing.T) {
+	name := sensitiveReadTool(t)
+	cases := []struct {
+		name      string
+		abilities []string
+		refused   bool
+	}{
+		{"plain read", []string{"read"}, true},
+		{"read sensitive", []string{"read", "read:sensitive"}, false},
+		{"unknown abilities", nil, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			session := connectWith(t, abilityServer(t, tc.abilities, 0), Options{Mode: ModeFull})
+			if got := isForbidden(callTool(t, session, name)); got != tc.refused {
+				t.Errorf("refused=%v, want %v", got, tc.refused)
+			}
+		})
+	}
+}

@@ -286,3 +286,56 @@ func TestLoopbackTrustFlag(t *testing.T) {
 		t.Fatal("loopback must be trusted by default")
 	}
 }
+
+func TestRuntimeSettings_ResetThatWeakensNeedsConfirm(t *testing.T) {
+	cases := []struct {
+		key, strong, env, envVal string
+	}{
+		{KeyMCPDefaultTokenScope, "read_only", EnvMCPDefaultTokenScope, "read_write"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.key, func(t *testing.T) {
+			if tc.env != "" {
+				t.Setenv(tc.env, tc.envVal)
+			}
+			rt, db := newTestRouter(t)
+			cookie := loginTestSession(t, rt, db)
+			path := rsBase + "/" + tc.key
+			if rec := rsDo(t, rt, cookie, http.MethodPut, path, `{"value":"`+tc.strong+`"}`); rec.Code != http.StatusOK {
+				t.Fatalf("save strong value = %d %s", rec.Code, rec.Body.String())
+			}
+			if rec := rsDo(t, rt, cookie, http.MethodDelete, path, ""); rec.Code != http.StatusBadRequest {
+				t.Fatalf("weakening reset = %d, want 400", rec.Code)
+			}
+			if rec := rsDo(t, rt, cookie, http.MethodDelete, path+"?confirm_weakening=true", ""); rec.Code != http.StatusOK {
+				t.Fatalf("confirmed reset = %d %s", rec.Code, rec.Body.String())
+			}
+		})
+	}
+}
+
+func TestRuntimeSettings_ResetToDefaultNeedsNoConfirm(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	path := rsBase + "/security.build_network"
+	if rec := rsDo(t, rt, cookie, http.MethodPut, path, `{"value":"none"}`); rec.Code != http.StatusOK {
+		t.Fatalf("save strong value = %d %s", rec.Code, rec.Body.String())
+	}
+	if rec := rsDo(t, rt, cookie, http.MethodDelete, path, ""); rec.Code != http.StatusOK {
+		t.Fatalf("reset to default = %d %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestRuntimeSettings_ResetWeakeningWordsCLIFlag(t *testing.T) {
+	t.Setenv(EnvMCPDefaultTokenScope, "read_write")
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	path := rsBase + "/" + KeyMCPDefaultTokenScope
+	if rec := rsDo(t, rt, cookie, http.MethodPut, path, `{"value":"read_only"}`); rec.Code != http.StatusOK {
+		t.Fatalf("save = %d %s", rec.Code, rec.Body.String())
+	}
+	rec := rsDo(t, rt, cookie, http.MethodDelete, path, "")
+	if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "--confirm-weakening") {
+		t.Fatalf("reset = %d %s, want 400 naming --confirm-weakening", rec.Code, rec.Body.String())
+	}
+}

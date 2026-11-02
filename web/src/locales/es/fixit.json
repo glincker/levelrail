@@ -1,0 +1,87 @@
+{
+  "risk": {
+    "safe": "Seguro",
+    "restarts": "Reinicia un servicio",
+    "exposes": "Abre el acceso"
+  },
+  "kind": {
+    "auto": "Un clic",
+    "guided": "Requiere un paso en el servidor",
+    "manual": "Paso manual"
+  },
+  "reversible": "Se puede deshacer",
+  "irreversible": "No se puede deshacer",
+  "willChange": "Qué cambiará",
+  "cli": {
+    "summary": "Corregir por CLI",
+    "hint": "¿Prefieres una terminal? Ejecuta esto en el servidor y luego usa Volver a comprobar."
+  },
+  "learnMore": "Más información",
+  "copy": "Copiar",
+  "copied": "Copiado",
+  "apply": "Corregir ahora",
+  "applying": "Aplicando...",
+  "recheck": "Volver a comprobar",
+  "rechecking": "Comprobando...",
+  "confirmTitle": "¿Aplicar esta corrección?",
+  "confirmBody": "{{title}}. Revisa antes los cambios indicados.",
+  "paramLabel": "Dirección pública",
+  "paramPlaceholder": "Dirección IP o nombre de host",
+  "triedAt": "Intentado a las {{at}}, sigue bloqueado porque {{why}}",
+  "rateLimited": "Se aplicó varias veces en la última hora. Esperando antes de reintentar.",
+  "outcome": {
+    "fixed": "Corregido. La comprobación ya pasa.",
+    "still_failing": "Sigue fallando: {{detail}}",
+    "cannot_fix_here": "No se puede corregir desde aquí: {{detail}}",
+    "skipped": "Nada que hacer: {{detail}}"
+  },
+  "settingsHealth": {
+    "title": "Salud de los ajustes",
+    "loading": "Comprobando esta instancia...",
+    "summary": "{{failing}} de {{total}} comprobaciones requieren atención",
+    "allGood": "Nada requiere atención."
+  },
+  "blockers_one": "{{count}} bloqueo, {{dependent}} dependen de él",
+  "blockers_other": "{{count}} bloqueos, {{dependent}} dependen de ellos",
+  "showDependent": "Mostrar comprobaciones dependientes",
+  "hideDependent": "Ocultar comprobaciones dependientes",
+  "stuck": {
+    "title": "¿Por qué no está en marcha?",
+    "healthy": "Listo, nada que explicar.",
+    "notReadyFor": "No está listo desde hace {{duration}}",
+    "notReadyYet": "No está listo",
+    "timeline": "Cronología de condiciones",
+    "noCauses": "Aún no coincide ninguna causa conocida. Abre los registros y luego vuelve a comprobar.",
+    "confidenceHigh": "Causa probable",
+    "confidenceMedium": "Causa posible",
+    "evidence": "Evidencia",
+    "recheck": "Volver a comprobar",
+    "retryDeploy": "Reintentar despliegue",
+    "retrying": "Reintentando...",
+    "retryFailed": "Falló el reintento: {{message}}",
+    "retryStarted": "Despliegue iniciado.",
+    "fixApplied": "Corrección aplicada.",
+    "fixFailed": "Falló la corrección: {{message}}",
+    "loadFailed": "No se pudo cargar el diagnóstico.",
+    "show": "Mostrar detalles",
+    "hide": "Ocultar detalles"
+  },
+  "runtime": {
+    "engine": "Motor",
+    "support": "Compatibilidad",
+    "kind": {
+      "docker": "Docker Engine",
+      "podman": "Podman",
+      "docker-desktop": "Docker Desktop",
+      "colima": "Colima",
+      "orbstack": "OrbStack",
+      "rancher-desktop": "Rancher Desktop",
+      "unknown": "Motor desconocido"
+    },
+    "level": {
+      "supported": "Compatible",
+      "best-effort": "Mejor esfuerzo",
+      "unverified": "Sin verificar"
+    }
+  }
+}

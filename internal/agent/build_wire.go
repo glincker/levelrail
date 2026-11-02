@@ -28,6 +28,7 @@ func buildRequestToPB(req build.RemoteRequest) (*agentpb.BuildRequest, error) {
 			RegistryRef:      req.Cache.RegistryRef,
 			RegistryInsecure: req.Cache.RegistryInsecure,
 		},
+		Network: string(req.Network),
 	}, nil
 }
 
@@ -37,7 +38,12 @@ func buildRequestFromPB(req *agentpb.BuildRequest) (build.RemoteRequest, error) 
 	if err != nil {
 		return build.RemoteRequest{}, err
 	}
+	network, err := build.ParseNetworkMode(req.GetNetwork())
+	if err != nil {
+		return build.RemoteRequest{}, err
+	}
 	return build.RemoteRequest{
+		Network:        network,
 		Kind:           kind,
 		DockerfilePath: req.GetDockerfilePath(),
 		Tag:            req.GetTag(),

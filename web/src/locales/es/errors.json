@@ -1,0 +1,64 @@
+{
+  "title": "Errores",
+  "subtitle": "Errores que tu app reporta mediante cualquier SDK de Sentry, agrupados en incidencias y vinculados al despliegue que los produjo.",
+  "setup": {
+    "title": "Enviar errores desde esta app",
+    "off": "El seguimiento de errores está desactivado. Actívalo para obtener un DSN para tu SDK de Sentry.",
+    "on": "El seguimiento de errores está activado. Define SENTRY_DSN con el DSN que recibiste, o rótalo para obtener uno nuevo.",
+    "enable": "Activar el seguimiento de errores",
+    "enabling": "Activando...",
+    "rotate": "Rotar DSN",
+    "disable": "Desactivar",
+    "copy": "Copiar",
+    "dsnOnce": "Este DSN se muestra una sola vez. Defínelo en la app y vuelve a desplegar. Al rotarlo, el DSN anterior deja de funcionar.",
+    "endpoint": "Endpoint",
+    "enabledToast": "El seguimiento de errores está activado.",
+    "disabledToast": "El seguimiento de errores está desactivado. El SDK de la app recibirá respuestas 401.",
+    "failed": "No se pudo cambiar el seguimiento de errores."
+  },
+  "filters": {
+    "status": "Estado",
+    "all": "Todos",
+    "open": "Abiertos",
+    "resolved": "Resueltos",
+    "ignored": "Ignorados",
+    "window": "Periodo",
+    "last1": "Última hora",
+    "last24": "Últimas 24 horas",
+    "last168": "Últimos 7 días",
+    "last720": "Últimos 30 días"
+  },
+  "list": {
+    "empty": "No hay errores en este periodo. Cuando tu SDK reporte uno aparecerá aquí.",
+    "loadError": "No se pudieron cargar los errores: {{message}}",
+    "count": "{{count}} eventos",
+    "firstSeen": "Visto por primera vez",
+    "lastSeen": "Visto por última vez",
+    "regressed": "Regresión",
+    "release": "Versión {{release}}",
+    "deploy": "Despliegue {{id}}",
+    "emptyTitle": "Sin errores",
+    "emptyOff": "El seguimiento de errores está desactivado para esta app, así que no se recopila nada. Actívalo para obtener un DSN.",
+    "emptyAction": "Configurar el seguimiento de errores"
+  },
+  "level": {
+    "fatal": "Fatal",
+    "error": "Error",
+    "warning": "Advertencia",
+    "info": "Información",
+    "debug": "Depuración"
+  },
+  "detail": {
+    "loading": "Cargando la incidencia...",
+    "stack": "Traza de pila",
+    "noStack": "Este evento no incluía traza de pila.",
+    "latest": "Último evento",
+    "samples": "{{count}} eventos almacenados",
+    "environment": "Entorno {{environment}}",
+    "resolve": "Resolver",
+    "ignore": "Ignorar",
+    "reopen": "Reabrir",
+    "updated": "Incidencia actualizada.",
+    "updateFailed": "No se pudo actualizar la incidencia."
+  }
+}

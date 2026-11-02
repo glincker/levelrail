@@ -1,0 +1,35 @@
+{
+  "cloudflare": {
+    "label": "Trust Cloudflare for visitor addresses",
+    "helper": "Reads the visitor address from CF-Connecting-IP, but only for connections from Cloudflare's published ranges; a forged header from anywhere else is ignored. Any Cloudflare customer can reach your server through their own proxied record, so this does not prove a request came through your zone.",
+    "ranges": "{{count}} ranges ({{source}}), refreshed every {{interval}}.",
+    "source": {
+      "embedded": "shipped with the app",
+      "fetched": "from Cloudflare"
+    },
+    "lastRefresh": "Last refresh: {{when}}.",
+    "neverRefreshed": "Not refreshed yet, using the shipped list.",
+    "lastError": "Last refresh error: {{error}}",
+    "saved": "Cloudflare client IP is on",
+    "savedOff": "Cloudflare client IP is off",
+    "failed": "Could not change the Cloudflare client IP setting"
+  },
+  "fallbackCerts": {
+    "label": "Certificates for automatic addresses",
+    "helper": "Eager orders the certificate as soon as the route exists; lazy orders it at the first visit to the automatic address. Domains you add yourself are always eager.",
+    "options": {
+      "eager": "Eager",
+      "lazy": "Lazy"
+    },
+    "source": {
+      "default": "Default",
+      "env": "Set by environment",
+      "saved": "Saved"
+    },
+    "envHint": "Seeded from {{env}}. Saving a value here overrides it.",
+    "reset": "Reset to default",
+    "resetDone": "Fallback certificates reset to default",
+    "saved": "Fallback certificate mode saved",
+    "failed": "Could not change the fallback certificate mode"
+  }
+}

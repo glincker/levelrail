@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/spec"
@@ -34,6 +33,9 @@ type ServiceResources struct {
 	GPU *ServiceGPU `json:"gpu,omitempty"`
 	// ShmSizeBytes sizes /dev/shm; 0 keeps Docker's default (64 MB).
 	ShmSizeBytes int64 `json:"shm_size_bytes,omitempty"`
+	// ReadOnlyRootfs is the per-app read-only root choice; nil inherits the
+	// fleet default. Kept here so it needs no new column.
+	ReadOnlyRootfs *bool `json:"read_only_rootfs,omitempty"`
 }
 
 // ServiceGPU is a service's GPU request: Count -1 means every GPU,
@@ -518,6 +520,8 @@ type DesiredService struct {
 	IsTrial bool
 	// TemplateID is the catalog template this service was deployed from; insert-only like IsTrial.
 	TemplateID string
+	// Incarnation tells two lives of the same app name apart. It is set once on first INSERT, never on update, and never copied by clone; '' marks a legacy row.
+	Incarnation string
 
 	// LogDrain is this service's external log-forwarding config
 	// (migrations/0047_service_log_drain.sql), nil meaning none
@@ -658,12 +662,18 @@ func (e *ErrDomainTaken) Error() string {
 // entire desired-state write is rejected in that case, not partially
 // applied with some domains silently dropped.
 func (db *DB) SaveDesiredService(ctx context.Context, svc DesiredService) error {
-	return db.saveDesiredService(ctx, svc, nil)
+	return db.saveDesiredService(ctx, svc, nil, false)
+}
+
+// SaveSuspendedDesiredService is SaveDesiredService that also marks the row
+// suspended in the same transaction, so no reconcile pass can see it running.
+func (db *DB) SaveSuspendedDesiredService(ctx context.Context, svc DesiredService) error {
+	return db.saveDesiredService(ctx, svc, nil, true)
 }
 
 // saveDesiredService is SaveDesiredService with an optional hook run inside
 // the same transaction before the write; a hook error aborts the save.
-func (db *DB) saveDesiredService(ctx context.Context, svc DesiredService, inTx func(*sql.Tx) error) error {
+func (db *DB) saveDesiredService(ctx context.Context, svc DesiredService, inTx func(*sql.Tx) error, suspended bool) error {
 	domainsJSON, err := json.Marshal(nonNilSlice(svc.Domains))
 	if err != nil {
 		return fmt.Errorf("store: marshal domains for service %q: %w", svc.Name, err)
@@ -771,6 +781,11 @@ func (db *DB) saveDesiredService(ctx context.Context, svc DesiredService, inTx f
 		bindAddress = DefaultBindAddress
 	}
 
+	incarnation, err := newIncarnation()
+	if err != nil {
+		return fmt.Errorf("store: save desired service %q: %w", svc.Name, err)
+	}
+
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("store: save desired service %q: begin transaction: %w", svc.Name, err)
@@ -786,8 +801,8 @@ func (db *DB) saveDesiredService(ctx context.Context, svc DesiredService, inTx f
 	}
 
 	_, err = tx.ExecContext(ctx, `
-		INSERT INTO desired_services (name, image, port, host_port, bind_address, domains, env, command, entrypoint, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, egress_policy, node_id, strategy, replicas, labels, volumes, bind_mounts, registry_credential_id, project_id, environment_id, app_id, is_trial, template_id, pull_policy, image_id, image_id_ref, depends_on, depends_on_healthy, published_ports, files, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		INSERT INTO desired_services (name, image, port, host_port, bind_address, domains, env, command, entrypoint, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, egress_policy, node_id, strategy, replicas, labels, volumes, bind_mounts, registry_credential_id, project_id, environment_id, app_id, is_trial, template_id, pull_policy, image_id, image_id_ref, depends_on, depends_on_healthy, published_ports, files, incarnation, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (name) DO UPDATE SET
 			image = excluded.image,
 			port = excluded.port,
@@ -819,7 +834,7 @@ func (db *DB) saveDesiredService(ctx context.Context, svc DesiredService, inTx f
 			published_ports = excluded.published_ports,
 			files = CASE WHEN ? THEN excluded.files ELSE desired_services.files END,
 			updated_at = excluded.updated_at
-	`, svc.Name, svc.Image, svc.Port, hostPortToNull(svc.HostPort), bindAddress, string(domainsJSON), string(envJSON), string(commandJSON), string(entrypointJSON), string(secretEnvJSON), svc.EnvDirty, string(databaseEnvJSON), string(vaultEnvJSON), string(resourcesJSON), string(healthJSON), string(hooksJSON), string(egressJSON), strategy, replicas, string(labelsJSON), string(volumesJSON), string(bindMountsJSON), svc.RegistryCredentialID, sql.NullString{String: svc.AppID, Valid: svc.AppID != ""}, svc.IsTrial, svc.TemplateID, svc.PullPolicy, svc.ImageID, svc.ImageIDRef, string(dependsOnJSON), string(dependsOnHealthyJSON), string(publishedPortsJSON), string(filesJSON), svc.Files != nil)
+	`, svc.Name, svc.Image, svc.Port, hostPortToNull(svc.HostPort), bindAddress, string(domainsJSON), string(envJSON), string(commandJSON), string(entrypointJSON), string(secretEnvJSON), svc.EnvDirty, string(databaseEnvJSON), string(vaultEnvJSON), string(resourcesJSON), string(healthJSON), string(hooksJSON), string(egressJSON), strategy, replicas, string(labelsJSON), string(volumesJSON), string(bindMountsJSON), svc.RegistryCredentialID, sql.NullString{String: svc.AppID, Valid: svc.AppID != ""}, svc.IsTrial, svc.TemplateID, svc.PullPolicy, svc.ImageID, svc.ImageIDRef, string(dependsOnJSON), string(dependsOnHealthyJSON), string(publishedPortsJSON), string(filesJSON), incarnation, svc.Files != nil)
 	if err != nil {
 		return fmt.Errorf("store: save desired service %q: %w", svc.Name, err)
 	}
@@ -833,6 +848,11 @@ func (db *DB) saveDesiredService(ctx context.Context, svc DesiredService, inTx f
 		return fmt.Errorf("store: save desired service %q: %w", svc.Name, err)
 	}
 
+	if suspended {
+		if _, err := tx.ExecContext(ctx, `UPDATE desired_services SET suspended = 1 WHERE name = ?`, svc.Name); err != nil {
+			return fmt.Errorf("store: save desired service %q: suspend: %w", svc.Name, err)
+		}
+	}
 	if err := recordAppChange(ctx, tx, svc.Name); err != nil {
 		return fmt.Errorf("store: save desired service %q: %w", svc.Name, err)
 	}
@@ -840,6 +860,34 @@ func (db *DB) saveDesiredService(ctx context.Context, svc DesiredService, inTx f
 		return fmt.Errorf("store: save desired service %q: commit: %w", svc.Name, err)
 	}
 	return nil
+}
+
+// newIncarnation returns a random 128 bit id for one life of an app.
+func newIncarnation() (string, error) {
+	buf := make([]byte, 16)
+	if _, err := rand.Read(buf); err != nil {
+		return "", fmt.Errorf("generate incarnation: %w", err)
+	}
+	return hex.EncodeToString(buf), nil
+}
+
+// EnsureServiceIncarnation gives a legacy row its id and returns the stored one. The conditional UPDATE keeps two racing passes on one value.
+func (db *DB) EnsureServiceIncarnation(ctx context.Context, name string) (string, error) {
+	id, err := newIncarnation()
+	if err != nil {
+		return "", fmt.Errorf("store: ensure incarnation for %q: %w", name, err)
+	}
+	if _, err := db.ExecContext(ctx, `UPDATE desired_services SET incarnation = ? WHERE name = ? AND incarnation = ''`, id, name); err != nil {
+		return "", fmt.Errorf("store: ensure incarnation for %q: %w", name, err)
+	}
+	var got string
+	if err := db.QueryRowContext(ctx, `SELECT incarnation FROM desired_services WHERE name = ?`, name).Scan(&got); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", ErrServiceNotFound
+		}
+		return "", fmt.Errorf("store: ensure incarnation for %q: %w", name, err)
+	}
+	return got, nil
 }
 
 // claimServiceDomains makes serviceName's service_domains rows match
@@ -1400,10 +1448,32 @@ var ErrServiceVolumeNotFound = errors.New("store: service volume not found")
 // reversed. Exact-prefix stripping, not a generic split, so a logical
 // name that itself contains "-" is never misparsed.
 func ServiceVolumeDockerName(svc DesiredService, volumeName string) (string, bool) {
-	prefix := "app-" + svc.Name + "-"
 	for _, v := range svc.Volumes {
-		if strings.TrimPrefix(v.Name, prefix) == volumeName {
+		if v.Name == ServiceVolumeName(svc.Name, volumeName) {
 			return v.Name, true
+		}
+	}
+	return "", false
+}
+
+// ServiceVolumeName is the Docker volume name for a service's logical volume.
+// Two services can map to one name ("a" with "b-c" and "a-b" with "c"), so
+// callers that attach or touch data check ServiceVolumeOwnerConflict too.
+func ServiceVolumeName(serviceName, logicalName string) string {
+	return "app-" + serviceName + "-" + logicalName
+}
+
+// ServiceVolumeOwnerConflict returns another service in all that already holds
+// the Docker volume dockerName, so a volume is never shared by name collision.
+func ServiceVolumeOwnerConflict(all []DesiredService, owner, dockerName string) (string, bool) {
+	for _, other := range all {
+		if other.Name == owner {
+			continue
+		}
+		for _, v := range other.Volumes {
+			if v.Name == dockerName {
+				return other.Name, true
+			}
 		}
 	}
 	return "", false
@@ -1615,6 +1685,12 @@ func (db *DB) DeleteDesiredService(ctx context.Context, name string) error {
 	if err := db.DeleteDeployExits(ctx, name); err != nil {
 		return fmt.Errorf("store: delete desired service %q: %w", name, err)
 	}
+	if err := db.DeleteAppSleep(ctx, name); err != nil {
+		return fmt.Errorf("store: delete desired service %q: %w", name, err)
+	}
+	if err := db.DeleteRolloutProgress(ctx, name); err != nil {
+		return fmt.Errorf("store: delete desired service %q: %w", name, err)
+	}
 	if err := db.DeleteAppForms(ctx, name); err != nil {
 		return fmt.Errorf("store: delete desired service %q: %w", name, err)
 	}
@@ -1632,7 +1708,7 @@ func (s DesiredService) LocalImageID() string {
 // desiredServiceColumns is the column list every desired_services SELECT
 // in this package shares, kept in one place so scanDesiredService's
 // destination order and each query's column order can never drift apart.
-const desiredServiceColumns = "name, image, port, host_port, bind_address, domains, env, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, egress_policy, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, database_attachment_name, database_attachment_env_var, database_attachment_field, log_drain, environment_id, command, bind_mounts, entrypoint, pull_policy, preview_env_overrides, auto_rollback_on_crashloop, exec_enabled, image_id, image_id_ref, depends_on, auto_rollback_on_slo_burn, is_trial, badge_enabled, depends_on_healthy, published_ports, template_id, files, maintenance_hold"
+const desiredServiceColumns = "name, image, port, host_port, bind_address, domains, env, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, egress_policy, node_id, strategy, replicas, restart_nonce, project_id, labels, storage_target_id, suspended, app_id, volumes, registry_credential_id, database_attachment_name, database_attachment_env_var, database_attachment_field, log_drain, environment_id, command, bind_mounts, entrypoint, pull_policy, preview_env_overrides, auto_rollback_on_crashloop, exec_enabled, image_id, image_id_ref, depends_on, auto_rollback_on_slo_burn, is_trial, badge_enabled, depends_on_healthy, published_ports, template_id, files, maintenance_hold, incarnation"
 
 // scanDesiredService reads the column shape both GetDesiredService
 // and ListDesiredServices query, via either row.Scan or rows.Scan (same
@@ -1646,7 +1722,7 @@ func scanDesiredService(scan func(dest ...any) error) (*DesiredService, error) {
 		dbAttachmentName, dbAttachmentEnvVar, dbAttachmentField                                                                                                                             string
 		dependsOnJSON, dependsOnHealthyJSON, publishedPortsJSON, filesJSON                                                                                                                  string
 	)
-	if err := scan(&svc.Name, &svc.Image, &svc.Port, &hostPort, &svc.BindAddress, &domainsJSON, &envJSON, &secretEnvJSON, &svc.EnvDirty, &databaseEnvJSON, &vaultEnvJSON, &resourcesJSON, &health, &hooks, &egress, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &dbAttachmentName, &dbAttachmentEnvVar, &dbAttachmentField, &logDrainJSON, &environmentID, &command, &bindMounts, &entrypoint, &svc.PullPolicy, &previewEnvOverridesJSON, &svc.AutoRollbackOnCrashloop, &svc.ExecEnabled, &svc.ImageID, &svc.ImageIDRef, &dependsOnJSON, &svc.AutoRollbackOnSLOBurn, &svc.IsTrial, &svc.BadgeEnabled, &dependsOnHealthyJSON, &publishedPortsJSON, &svc.TemplateID, &filesJSON, &svc.MaintenanceHold); err != nil {
+	if err := scan(&svc.Name, &svc.Image, &svc.Port, &hostPort, &svc.BindAddress, &domainsJSON, &envJSON, &secretEnvJSON, &svc.EnvDirty, &databaseEnvJSON, &vaultEnvJSON, &resourcesJSON, &health, &hooks, &egress, &svc.NodeID, &svc.Strategy, &svc.Replicas, &svc.RestartNonce, &projectID, &labels, &storageTargetID, &svc.Suspended, &appID, &volumes, &svc.RegistryCredentialID, &dbAttachmentName, &dbAttachmentEnvVar, &dbAttachmentField, &logDrainJSON, &environmentID, &command, &bindMounts, &entrypoint, &svc.PullPolicy, &previewEnvOverridesJSON, &svc.AutoRollbackOnCrashloop, &svc.ExecEnabled, &svc.ImageID, &svc.ImageIDRef, &dependsOnJSON, &svc.AutoRollbackOnSLOBurn, &svc.IsTrial, &svc.BadgeEnabled, &dependsOnHealthyJSON, &publishedPortsJSON, &svc.TemplateID, &filesJSON, &svc.MaintenanceHold, &svc.Incarnation); err != nil {
 		return nil, err
 	}
 	svc.ProjectID = projectID.String

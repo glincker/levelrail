@@ -13,6 +13,7 @@ import (
 )
 
 func TestHandleBatchAppMetrics(t *testing.T) {
+	t.Parallel()
 	rt, db, tdb := newTestRouterWithTelemetry(t)
 	cookie := loginTestSession(t, rt, db)
 	for _, n := range []string{"web", "worker"} {
@@ -64,6 +65,7 @@ func TestHandleBatchAppMetrics(t *testing.T) {
 }
 
 func TestHandleBatchAppMetrics_NotConfigured(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	rec := httptest.NewRecorder()

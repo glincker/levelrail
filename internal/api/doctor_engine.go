@@ -63,6 +63,7 @@ func (rt *Router) doctorDefs() []doctorCheckDef {
 	}
 	return []doctorCheckDef{
 		one("docker", doctorGroupRuntime, rt.relabelEngine(rt.doctorCheckDocker)),
+		one("docker_version", doctorGroupRuntime, rt.doctorCheckDockerVersion),
 		one("install_state", doctorGroupRuntime, rt.doctorCheckInstallState),
 		one("container_runtime", doctorGroupRuntime, rt.doctorCheckContainerRuntime),
 		one("docker_guard", doctorGroupRuntime, rt.relabelEngine(rt.doctorCheckDockerGuard)),
@@ -77,6 +78,7 @@ func (rt *Router) doctorDefs() []doctorCheckDef {
 		one("disk_hygiene", doctorGroupHost, rt.doctorCheckDiskHygiene),
 		one("data_dir_writable", doctorGroupHost, func(context.Context) doctorCheckResource { return rt.doctorCheckDataDirWritable() }),
 		one("ram", doctorGroupHost, func(context.Context) doctorCheckResource { return rt.doctorCheckRAM() }),
+		one("build_memory", doctorGroupHost, rt.doctorCheckBuildMemory),
 		one("cpu", doctorGroupHost, func(context.Context) doctorCheckResource { return rt.doctorCheckCPU() }),
 		one("disk_io_latency", doctorGroupHost, func(context.Context) doctorCheckResource { return rt.doctorCheckDiskIOLatency() }),
 		one("database", doctorGroupHost, rt.doctorCheckDatabase),
@@ -92,11 +94,12 @@ func (rt *Router) doctorDefs() []doctorCheckDef {
 		one("dashboard_https", doctorGroupNetwork, rt.doctorCheckDashboardHTTPS),
 		many("registry", doctorGroupNetwork, rt.doctorCheckRegistryReachability),
 		many("cross_node_ingress", doctorGroupNetwork, rt.doctorCheckCrossNodeIngress),
-		many("ingress_edge", doctorGroupNetwork, func(context.Context) []doctorCheckResource { return rt.doctorCheckIngressEdge() }),
+		many("ingress_edge", doctorGroupNetwork, rt.doctorCheckIngressEdge),
 		many("ingress_survives", doctorGroupNetwork, func(context.Context) []doctorCheckResource {
 			return rt.doctorCheckIngressSurvives(time.Now())
 		}),
 		many("exposure", doctorGroupNetwork, rt.doctorCheckExposure),
+		many("cloud", doctorGroupNetwork, rt.doctorCheckCloud),
 		one("certificates", doctorGroupNetwork, rt.doctorCheckCertExpiry),
 
 		one("master_key_rotation", doctorGroupSecurity, rt.doctorCheckMasterKeyRotation),

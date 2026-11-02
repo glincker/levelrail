@@ -4,7 +4,7 @@ services:
     ports: ["8080"]
     environment:
       MONGO_URL: mongodb://mongo:27017/wekan
-      ROOT_URL: ${SERVICE_FQDN_WEKAN:-http://localhost:8080}
+      ROOT_URL: ${SERVICE_URL_WEKAN:-http://localhost:8080}
       WRITABLE_PATH: /data
     volumes:
       - attachments:/data

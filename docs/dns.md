@@ -195,7 +195,7 @@ The **Propagation** tab, or `levelrail-cli dns check`, asks one name and type of
 levelrail-cli dns check www.example.com --type A
 ```
 
-Set `APP_DNS_PUBLIC_RESOLVERS=off` to ask only the system resolver, for example on a network that blocks outbound DNS.
+Set `APP_DNS_PUBLIC_RESOLVERS` to a comma separated list of resolvers (default `1.1.1.1,8.8.8.8,9.9.9.9`), or to `off` to ask only the system resolver, for example on a network that blocks outbound DNS. `APP_DNS_LOCAL_CACHE_FALLBACK` (default `5m`) is the wait shown when this server's resolver does not report how long it will keep an old answer.
 
 ## Wildcard subdomains
 

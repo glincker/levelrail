@@ -12,6 +12,9 @@ import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
 import { AcmeBlockedNotice } from './AcmeBlockedNotice'
 import { DomainCheckPanel } from './DomainDnsCheck'
 import { InfoTip } from './kit/InfoTip'
+import { IngressDns01Switch } from './IngressDns01Switch'
+import { IngressCloudflareSwitch } from './IngressCloudflareSwitch'
+import { IngressFallbackCertsCard } from './IngressFallbackCertsCard'
 import { IngressUpstreamFields } from './IngressUpstreamFields'
 import { isValidPublicPort, publicPortError } from '../lib/publicPort'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -194,7 +197,7 @@ export function IngressSettingsCard({
   settings: IngressSettings
   primaryCert?: CertificateStatus
 }) {
-  const updateSettings = useUpdateIngressSettings()
+  const updateSettings = useUpdateIngressSettings({ inlineError: true })
   const { control, register, handleSubmit, formState, watch, setValue } =
     useForm<IngressSettingsFormValues>({
       resolver: zodResolver(ingressSettingsSchema),
@@ -336,6 +339,12 @@ export function IngressSettingsCard({
               }
             />
           </div>
+
+          <IngressDns01Switch />
+
+          <IngressCloudflareSwitch />
+
+          <IngressFallbackCertsCard />
 
           <div className="rounded-md border border-border p-3">
             <Field orientation="horizontal">

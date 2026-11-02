@@ -10,8 +10,10 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/brand"
+	"github.com/GLINCKER/levelrail/internal/cloudflareips"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -86,7 +88,27 @@ type edgeOverrideStore interface {
 
 // effectiveHardening layers the current dashboard settings over the boot
 // policy each pass, so a saved change applies without a restart.
-func (e ingressEdge) effectiveHardening(ctx context.Context, db edgeOverrideStore, logger *slog.Logger) *ingressdriver.Hardening {
+func (e ingressEdge) effectiveHardening(ctx context.Context, db edgeOverrideStore, logger *slog.Logger, rs *runtimesettings.Service) *ingressdriver.Hardening {
+	h := e.layeredHardening(ctx, db, logger)
+	if h != nil && rs != nil {
+		h.MaxBodyBytes = ingressBodyCap(ctx, rs, h.MaxBodyBytes)
+		if rs.TrustedProxyPreset(ctx) == runtimesettings.TrustedProxyPresetCloudflare {
+			m := h.WithCloudflarePreset(cloudflareips.Default().CIDRs())
+			h = &m
+		}
+	}
+	return h
+}
+
+// ingressBodyCap lets the stored runtime setting win, and clamps every other source so no env value or override drops the cap below its floor.
+func ingressBodyCap(ctx context.Context, rs *runtimesettings.Service, current int64) int64 {
+	if rs.Source(ctx, runtimesettings.KeyIngressMaxBodyBytes) == runtimesettings.SourceSaved {
+		return int64(rs.Limit(ctx, runtimesettings.KeyIngressMaxBodyBytes))
+	}
+	return int64(runtimesettings.ClampLimit(runtimesettings.KeyIngressMaxBodyBytes, int(current)))
+}
+
+func (e ingressEdge) layeredHardening(ctx context.Context, db edgeOverrideStore, logger *slog.Logger) *ingressdriver.Hardening {
 	if e.hardening == nil {
 		return nil
 	}
@@ -110,7 +132,7 @@ func (e ingressEdge) effectiveHardening(ctx context.Context, db edgeOverrideStor
 	return &merged
 }
 
-func (e ingressEdge) options(ctx context.Context, db edgeOverrideStore, logger *slog.Logger) []ingressreconcile.Option {
+func (e ingressEdge) options(ctx context.Context, db edgeOverrideStore, logger *slog.Logger, rs *runtimesettings.Service) []ingressreconcile.Option {
 	opts := []ingressreconcile.Option{ingressreconcile.WithHoldTracker(e.holds)}
 	if e.fallbackLifetime > 0 {
 		opts = append(opts, ingressreconcile.WithFallbackCertLifetime(e.fallbackLifetime))
@@ -118,7 +140,7 @@ func (e ingressEdge) options(ctx context.Context, db edgeOverrideStore, logger *
 	if e.inherited.Active() {
 		opts = append(opts, ingressreconcile.WithInheritedSockets(e.inherited))
 	}
-	if h := e.effectiveHardening(ctx, db, logger); h != nil {
+	if h := e.effectiveHardening(ctx, db, logger, rs); h != nil {
 		opts = append(opts, ingressreconcile.WithHardening(*h))
 	}
 	return opts

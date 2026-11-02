@@ -71,8 +71,8 @@ func TestRun_AuthLogin_MintsAndPersistsToken(t *testing.T) {
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
 	}
-	if !strings.Contains(stdout.String(), "plaintext-token-value") {
-		t.Errorf("stdout = %q, want it to show the minted token once", stdout.String())
+	if strings.Contains(stdout.String(), "plaintext-token-value") {
+		t.Errorf("stdout = %q, must not show the minted token without --print-token", stdout.String())
 	}
 
 	credPath := filepath.Join(home, ".config", prog, credentialsFileName)
@@ -105,7 +105,7 @@ func TestRun_AuthLogin_JSONWritesFullTokenResource(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	got := run("levelrail-cli-test-auth-login-json", []string{
 		"auth", "login", "--username", "admin", "--password", "correct-horse",
-		"--api-url", srv.URL, "--abilities", "read", "--json",
+		"--api-url", srv.URL, "--abilities", "read", "--json", "--print-token",
 	}, &stdout, &stderr, envMap())
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
@@ -154,5 +154,19 @@ func TestRun_AuthLogin_Help(t *testing.T) {
 	}
 	if !strings.Contains(stderr.String(), "auth login") {
 		t.Errorf("stderr = %q, want usage text", stderr.String())
+	}
+}
+
+func TestRun_AuthLogin_PrintTokenShowsValue(t *testing.T) {
+	srv := fakeControlPlane(t, []string{"root"})
+	t.Setenv("HOME", t.TempDir())
+
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test-auth-login-print", []string{"auth", "login", "--username", "admin", "--password", "correct-horse", "--api-url", srv.URL, "--print-token"}, &stdout, &stderr, envMap())
+	if got != exitOK {
+		t.Fatalf("exit = %d (stdout=%q stderr=%q)", got, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "plaintext-token-value") {
+		t.Errorf("stdout = %q, want the token with --print-token", stdout.String())
 	}
 }

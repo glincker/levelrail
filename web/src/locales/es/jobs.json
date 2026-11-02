@@ -1,0 +1,166 @@
+{
+  "title": "Tareas",
+  "description": "Ejecuta un comando con una programación cron, en un contenedor nuevo con las variables de entorno, secretos, volúmenes y red de esta aplicación, o dentro de su contenedor en ejecución.",
+  "unnamed": "Tarea sin nombre",
+  "specManaged": "app.yaml",
+  "specManagedHint": "Declarada en app.yaml. Cámbiala allí; aquí solo se puede alternar el interruptor de activación.",
+  "empty": {
+    "title": "Aún no hay tareas",
+    "description": "Ejecuta una migración, precalienta una caché o envía un informe con una programación. Cada ejecución se conserva en el historial con su salida."
+  },
+  "columns": {
+    "job": "Tarea",
+    "schedule": "Programación",
+    "mode": "Modo",
+    "lastRun": "Última ejecución",
+    "nextRun": "Próxima ejecución",
+    "enabled": "Activa",
+    "actions": "Acciones"
+  },
+  "mode": {
+    "fresh": "Contenedor nuevo",
+    "exec": "Dentro del contenedor en ejecución",
+    "http": "Llamada HTTP a la aplicación"
+  },
+  "concurrency": {
+    "allow": "Permitir solapamiento",
+    "forbid": "Omitir si sigue en ejecución",
+    "replace": "Cancelar y reemplazar",
+    "queue": "Poner en cola detrás de ella"
+  },
+  "concurrencyHint": {
+    "allow": "Inicia la nueva ejecución aunque la anterior no haya terminado.",
+    "forbid": "Omite esta ejecución si la anterior sigue en curso, y queda registrada como omitida.",
+    "replace": "Cancela la ejecución anterior que sigue en curso y luego inicia esta.",
+    "queue": "Espera a que termine la ejecución anterior y luego corre, de modo que las ejecuciones solapadas van una tras otra."
+  },
+  "preview": {
+    "title": "Próximas ejecuciones ({{zone}})",
+    "invalid": "Escribe una programación y una zona horaria válidas para previsualizar las próximas ejecuciones.",
+    "none": "Esta programación nunca se ejecuta."
+  },
+  "status": {
+    "running": "En ejecución",
+    "success": "Exitosa",
+    "failed": "Fallida",
+    "timeout": "Tiempo agotado",
+    "container_not_running": "Contenedor detenido",
+    "skipped_concurrency": "Omitida (límite alcanzado)",
+    "replaced": "Reemplazada por una ejecución más reciente",
+    "missed": "Perdida",
+    "interrupted": "Interrumpida por un reinicio"
+  },
+  "trigger": {
+    "schedule": "Programación",
+    "manual": "Manual",
+    "api": "API"
+  },
+  "neverRun": "Nunca se ha ejecutado",
+  "failedInARow": "{{count}} fallidas seguidas",
+  "missedInARow": "{{count}} perdidas seguidas",
+  "localNode": "local",
+  "run": {
+    "now": "Ejecutar ahora",
+    "starting": "Iniciando...",
+    "started": "Tarea iniciada.",
+    "startedWithId": "Tarea iniciada (ejecución {{id}})."
+  },
+  "toggle": {
+    "label": "Activar {{name}}"
+  },
+  "dialog": {
+    "createTrigger": "Crear tarea",
+    "createTitle": "Crear tarea",
+    "editTitle": "Editar tarea",
+    "created": "Tarea creada.",
+    "updated": "Tarea actualizada.",
+    "saving": "Guardando...",
+    "creating": "Creando...",
+    "save": "Guardar cambios",
+    "create": "Crear tarea",
+    "edit": "Editar",
+    "name": "Nombre",
+    "nameHint": "Opcional. Letras minúsculas, dígitos, guiones y guiones bajos.",
+    "namePlaceholder": "p. ej. nightly-migrate",
+    "nameInvalid": "Usa letras minúsculas, dígitos, guiones o guiones bajos.",
+    "wholeNumber": "Debe ser un número entero.",
+    "command": "Comando",
+    "commandPlaceholder": "p. ej. rm -rf /tmp/cache/*",
+    "commandHint": "Se ejecuta mediante un shell (sh -c), así que la imagen necesita un shell. Levelrail nunca lo interpreta.",
+    "commandRequired": "El comando es obligatorio",
+    "modeLabel": "Dónde se ejecuta",
+    "modeHint": {
+      "fresh": "Un contenedor nuevo a partir de la imagen actual de la aplicación, con sus variables de entorno, secretos, volúmenes y red. Se elimina al terminar la ejecución.",
+      "exec": "Dentro del contenedor en ejecución de la aplicación. Falla si el contenedor no está en ejecución.",
+      "http": "Llama a una ruta de la aplicación por HTTP. Una aplicación en reposo se despierta primero y la llamada espera. Cualquier respuesta 2xx cuenta como éxito."
+    },
+    "http": {
+      "method": "Método",
+      "path": "Ruta",
+      "pathPlaceholder": "p. ej. /api/cron/digest",
+      "pathHint": "Una ruta de esta aplicación, que empiece con /. La llamada va directo a la aplicación, no por su dominio público.",
+      "pathInvalid": "Empieza con una sola /.",
+      "body": "Cuerpo",
+      "bodyHint": "Opcional. Se envía como application/json.",
+      "background": "Tarea en segundo plano",
+      "backgroundHint": "La aplicación puede responder 202 de inmediato y seguir trabajando. El plano de control espera la respuesta hasta el tiempo límite de segundo plano y registra el resultado, así nadie tiene que mantener la solicitud abierta."
+    },
+    "timezone": "Zona horaria",
+    "timezoneHint": "Nombre IANA como Europe/Berlin. La programación se interpreta en esta zona, incluidos los cambios de horario de verano.",
+    "timezoneRequired": "La zona horaria es obligatoria",
+    "concurrencyLabel": "Si una ejecución anterior sigue en curso",
+    "enabled": "Activa",
+    "advanced": "Tiempo límite, reintentos y límites",
+    "timeout": "Tiempo límite (segundos)",
+    "timeoutHint": "Por intento. Vacío usa el valor predeterminado del plano de control.",
+    "retries": "Reintentos",
+    "retriesHint": "Intentos adicionales tras un fallo, con espera que se duplica.",
+    "backoff": "Espera entre reintentos (segundos)",
+    "catchUpLabel": "Tras una caída del plano de control",
+    "catchUp": {
+      "skip": "Omitir las ejecuciones perdidas y registrarlas como perdidas",
+      "run_once": "Ejecutar una vez si se perdió una ejecución hace poco"
+    },
+    "lookback": "Ventana de recuperación (segundos)",
+    "memory": "Límite de memoria (MiB)",
+    "memoryHint": "Solo para contenedor nuevo. Vacío usa el límite propio de la aplicación.",
+    "cpu": "Límite de CPU (milinúcleos)",
+    "warnAfter": "Advertir después de (segundos)",
+    "warnAfterHint": "Dispara la alerta de ejecución demasiado larga cuando una ejecución supera este valor. 0 la desactiva."
+  },
+  "delete": {
+    "trigger": "Eliminar",
+    "title": "¿Eliminar esta tarea?",
+    "description": "Se eliminan su programación y el historial de ejecuciones. No se puede deshacer.",
+    "cancel": "Cancelar",
+    "confirm": "Eliminar tarea",
+    "deleted": "Tarea eliminada."
+  },
+  "history": {
+    "title": "Historial de ejecuciones",
+    "description": "Las ejecuciones más recientes de las tareas de esta aplicación, de la más nueva a la más antigua.",
+    "filter": "Estado",
+    "filterAll": "Todos los estados",
+    "empty": "Aún no hay ejecuciones. Usa Ejecutar ahora para iniciar una.",
+    "emptyFiltered": "No hay ejecuciones con este estado.",
+    "columns": {
+      "started": "Inicio",
+      "job": "Tarea",
+      "status": "Estado",
+      "trigger": "Origen",
+      "duration": "Duración",
+      "exit": "Salida o HTTP",
+      "attempts": "Intentos",
+      "node": "Nodo"
+    },
+    "trendLabel": "Duración de las últimas {{count}} ejecuciones terminadas",
+    "trendCaption": "Duración de las ejecuciones, de la más antigua a la más nueva, la más lenta {{max}}",
+    "httpStatus": "HTTP {{code}}",
+    "viewLogs": "Registros",
+    "logsTitle": "Salida de la ejecución",
+    "logsEmpty": "Esta ejecución no produjo salida.",
+    "logsLoading": "Cargando salida...",
+    "logsRedacted": "Los secretos se ocultan en esta salida.",
+    "alertsHint": "Recibe un aviso cuando una tarea falle, pierda ejecuciones o se ejecute demasiado tiempo con Alertas, usando los tipos de fallo de tarea, ejecución perdida o ejecución demasiado larga."
+  }
+}

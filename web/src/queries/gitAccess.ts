@@ -35,6 +35,7 @@ export interface GitAccessResult {
 
 export function useValidateGitAccess(path: string) {
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async (): Promise<GitAccessResult> => {
       const res = await fetch(path, { method: 'POST' })
       if (!res.ok) {

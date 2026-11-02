@@ -39,6 +39,14 @@ levelrail-cli backups drill show bkd_xyz789
 
 `drill run` waits for the result and exits non-zero when the drill fails, so it works in a script or a cron job.
 
+To make the backup a drill needs, trigger one by hand: `levelrail-cli app-volume-backups trigger <app> <volume> --target ID`. `ID` is a storage destination from `levelrail-cli storage list`.
+
+### Try it against a local S3 server
+
+A destination on the same host, such as `--endpoint http://127.0.0.1:19000`, is refused with `endpoint_blocked` by default, because the control plane blocks loopback and private addresses for outbound storage calls. Set `APP_NOTIFY_ALLOW_PRIVATE_NETWORKS=true` in the control plane's environment and restart it. Despite the name, this one switch also gates storage destinations, and it relaxes the same check for webhooks, so enable it only on a host you control.
+
+The `minio/minio` image is no longer pullable from Docker Hub. Two S3-compatible servers whose Docker Hub manifests list an arm64 build (checked with `docker manifest inspect`) are `chrislusf/seaweedfs` and `dxflrs/garage`. Check the tag you pick the same way before relying on it.
+
 ## Automatic drills
 
 Every resource that has a succeeded backup is drilled on its newest backup once per `APP_BACKUP_DRILL_INTERVAL_HOURS` (default `168`, one week; `0` turns scheduled drills off). The result history is on the **Backups** page and in `levelrail-cli backups drill list`.
@@ -102,9 +110,25 @@ Set `APP_BACKUP_ENCRYPTION=off` to keep compression but skip encryption. Older b
 
 A running database's files are only consistent if it is quiet. Per volume you can set, from the **Policy** button or `levelrail-cli backups volumes policy set`:
 
-- Command before backup: runs inside the app's container. A non-zero exit fails the backup, so an inconsistent volume is never archived.
-- Command after backup: runs afterwards, even if the backup failed.
+- Command before backup: runs inside the app's container. If it exits non-zero or times out, the backup is still taken but is recorded as succeeded with an `inconsistent:` warning, so you keep a copy and can see it may not restore cleanly.
+- Command after backup: always runs, even if the backup or the pre-command failed, so an app is never left with saving switched off.
 - Pause the app: freezes the container while the archive streams. It resumes when the upload ends.
+
+Each hook is cut off after `APP_BACKUP_HOOK_TIMEOUT_SECONDS` (default 60), never longer than `APP_BACKUP_HOOK_MAX_SECONDS` (default 600). At most `APP_BACKUP_HOOK_MAX_OUTPUT_BYTES` (default 65536) of a hook's output is read and the output is never stored. Hook errors never include the command or its output, because hooks often carry credentials. No hooks and no schedule are enabled by default.
+
+`policy set` merges: a flag you leave out keeps the stored value, so setting only `--pre-hook` does not touch the post-hook or the retention counts. Remove a hook on purpose with `--clear-pre-hook` or `--clear-post-hook` (or pass an empty string, as in `--post-hook ''`), and stop pausing with `--no-pause`. If the pre-hook turns saving off, as `save-off` does, always set the matching post-hook in the same change, and check the result with `policy get`.
+
+### Example: a Minecraft world
+
+The backup package knows nothing about game servers. Set these commands on the world volume (replace the RCON password with your own; keep it out of shared shell history):
+
+```bash
+levelrail-cli backups volumes policy set mc data \
+  --pre-hook 'rcon-cli save-off && rcon-cli save-all flush && sleep 2' \
+  --post-hook 'rcon-cli save-on'
+```
+
+The pre-command stops autosaves and flushes the world to disk, the archive streams, and the post-command turns saving back on. If RCON is down the backup still runs and carries the `inconsistent:` warning.
 
 ## Retention
 
@@ -122,6 +146,8 @@ Buckets count periods that actually have a backup, so a week with no backups doe
 | --- | --- | --- |
 | `APP_BACKUP_MAX_SIZE_MB` | unset | A volume archive larger than this fails the backup and is not retried. |
 | `APP_BACKUP_TIMEOUT_MINUTES` | unset | One backup, archive plus upload, is cancelled after this long. |
+| `APP_BACKUP_HOOK_TIMEOUT_SECONDS` | `60` | Per-hook time limit, clamped by `APP_BACKUP_HOOK_MAX_SECONDS` (`600`). |
+| `APP_BACKUP_HOOK_MAX_OUTPUT_BYTES` | `65536` | Hook output read before the rest is discarded. |
 | `APP_BACKUP_UPLOAD_ATTEMPTS` | `1` | How many times a failed upload is retried from a fresh archive. |
 | `APP_BACKUP_DRILL_INTERVAL_HOURS` | `168` | Scheduled drill period per resource. `0` disables. |
 | `APP_BACKUP_DRILL_MEMORY_MB` | `1024` | Memory cap for a scratch database container. It also runs with no network. |
@@ -165,7 +191,7 @@ These ran against real Docker volumes and a real S3 compatible server (SeaweedFS
 | Flip one byte of the stored object | Drill fails at restore, scratch volume removed |
 | Truncate the stored object | Drill fails at the object check |
 | Restore a truncated object over a live volume | Refused, the live volume is untouched |
-| Pre-backup hook, post-backup hook and pause | Hooks ran inside the container, container not left paused, a failing pre-hook fails the backup |
+| Pre-backup hook, post-backup hook and pause | Hooks ran inside the container, container not left paused, a failing pre-hook still yields a backup flagged inconsistent, and the post-hook always runs |
 | Postgres dump drilled into a scratch Postgres | Restores, two tables counted; a modified dump fails |
 
 Limits: drills for engines other than Postgres, MySQL and MariaDB check the object, not a replay. Object lock and versioning detection depends on the provider answering those API calls; a provider that does not shows as Open.

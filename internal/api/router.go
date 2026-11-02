@@ -97,6 +97,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/cleanup"
+	"github.com/GLINCKER/levelrail/internal/dnsinspect"
 	"github.com/GLINCKER/levelrail/internal/dnszones"
 	"github.com/GLINCKER/levelrail/internal/janitor"
 	"github.com/GLINCKER/levelrail/internal/meshpath"
@@ -113,6 +114,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/datamigrate"
 	"github.com/GLINCKER/levelrail/internal/dbaccess"
 	"github.com/GLINCKER/levelrail/internal/dbrotate"
+	"github.com/GLINCKER/levelrail/internal/ddns"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/deploysafety"
@@ -234,6 +236,7 @@ type Router struct {
 	mfaVerify              *loginLimiter // separate budget from logins above: brute-forcing a 6-digit code after a correct password is a distinct attack this must independently rate limit
 	sessionTTL             time.Duration // 0 means "use defaultSessionTTL", set via WithSessionTTL
 	trustRoot              TrustRootProbe
+	volumeTransfers        volumeTransferGuard
 	dataDir                string // "" means "don't report disk usage", set via WithDataDir
 	diskGuard              *diskguard.Guard
 	localNodeID            string // "" means "not mesh-enabled", set via WithLocalNodeID; the one node HostDiskCollector/HostMemoryCollector's readings are real for
@@ -299,6 +302,7 @@ type Router struct {
 	gateEvents             gateEventCounter            // coalesced gate events awaiting flush
 	domainRedirect         DomainRedirectStore         // always set, same "core Store interface" shape as domainMaintenance above; no secrets dependency either
 	domainSearchVisibility DomainSearchVisibilityStore // always set, core Store
+	domainACME             DomainACMEChallengeStore    // per-host DNS-01 flag, domain_cutover_cert.go
 	domainPolicy           domainPolicyDeps            // per-domain traffic controls, domain_policies.go
 	cachePurges            CachePurgeStore             // purge history, cache_app.go
 	edgeFW                 edgeFirewallDeps            // ingress firewall rules, settings and live engine, firewall_edge.go
@@ -385,6 +389,9 @@ type Router struct {
 	lookupHost lookupHostFunc
 	// publicLookup asks public resolvers directly; nil uses queryPublicResolvers (tests stub it).
 	publicLookup func(ctx context.Context, host string) []resolverResult
+	// dnsInspector queries public and authoritative DNS; nil builds one from env (tests stub its Exchange).
+	dnsInspector    *dnsinspect.Inspector
+	dnsFlushCommand func() string
 	// domainChecks rate-limits handleCheckDomain's real DNS lookups per
 	// domain; always non-nil, constructed in NewRouter.
 	domainChecks *domainCheckCache
@@ -421,6 +428,8 @@ type Router struct {
 	// updateSettings is the update_settings store surface (migrations/0258),
 	// always set, same "core Store interface" shape as ingressSettings above.
 	updateSettings UpdateSettingsStore
+	// deployURLSettings is the deploy URL copies mode; nil when the store lacks it.
+	deployURLSettings DeployURLSettingsStore
 	// upgradeFetchers is the beta/edge channel lookup, defaulted to
 	// upgrade.DefaultFetchers in NewRouter, overridable in tests the
 	// same way fetchLatestRelease is above.
@@ -547,6 +556,7 @@ type Router struct {
 	hostFirewallSSHPorts         []int
 	exposure                     *exposure.Manager // nil is valid: /api/v1/firewall/exposure returns 501, see WithExposure
 	exposureStore                ExposureStore
+	exposureMu                   sync.Mutex            // orders trial, keep, confirm and remove on stored restrictions
 	privateNetworks              *PrivateNetworkConfig // nil is valid: /api/v1/private-networks returns 501, see WithPrivateNetworks
 	dbAccess                     DatabaseAccessStore   // nil is valid: database users, temporary credentials and network controls return 501, see WithDatabaseAccess
 	dbRotationStore              dbrotate.Store        // nil is valid: database password rotation routes return 501, see WithDatabasePasswordRotation
@@ -757,7 +767,9 @@ type Router struct {
 	doctorHTTPPort               int                      // 0 means "use defaultDoctorHTTPPort (80)", set via WithDoctorIngressPorts
 	doctorHTTPSPort              int                      // 0 means "use defaultDoctorHTTPSPort (443)", set via WithDoctorIngressPorts
 	webhookBodies                webhookBodySeen          // recent signed webhook bodies, replay guard
+	ddnsMgr                      *ddns.Manager            // nil serves 501 on /settings/ddns
 	heartbeatSvc                 *heartbeat.Service       // nil serves 501 on /settings/heartbeat
+	jobPings                     *heartbeat.JobPinger     // nil rejects per-job heartbeat URLs
 	monitors                     MonitorService           // nil is valid: monitor routes return 404 (APP_MONITORS_ENABLED off)
 	runtimeSettings              *runtimesettings.Service // nil only in unit tests of other packages; nil serves env then default
 	webhookDeliveries            WebhookDeliveryStore     // always set, same "core Store interface" shape as deployAttempts above
@@ -848,17 +860,21 @@ type Router struct {
 	// external_reachability_*. nil means "use
 	// (&net.Dialer{}).DialContext", the real default.
 	doctorDialContext doctorDialContextFunc
+	// caSwitchNotice reports a failed CA switch awaiting retry. nil means
+	// ingress.CASwitchNotice; tests inject it because that state is process-wide.
+	caSwitchNotice func() string
 	// doctorNumCPU reports this host's CPU core count for the cpu check.
 	// nil means "use runtime.NumCPU".
 	doctorNumCPU func() int
 	// doctorHostMemory reads this host's total/available memory for the
 	// ram check. nil means "use telemetry.HostMemoryBytes".
 	doctorHostMemory       func() (totalBytes, availableBytes int64, err error)
-	doctorNetworkTimeout   time.Duration // 0 means "use defaultDoctorNetworkTimeout", set via WithDoctorNetworkTimeout
-	doctorPublicIPEndpoint string        // "" means "use defaultDoctorPublicIPEndpoint", set via WithDoctorPublicIPEndpoint
-	doctorClockSkewWarnAge time.Duration // 0 means "use defaultDoctorClockSkewWarnAge", set via WithDoctorClockSkewWarnAge
-	doctorMinRAMBytes      int64         // 0 means "use defaultDoctorMinRAMBytes", set via WithDoctorMinRAMBytes
-	doctorMinCPUCount      int           // 0 means "use defaultDoctorMinCPUCount", set via WithDoctorMinCPUCount
+	gameStatus             gameStatusCache // per-app game status answers, see game_status.go
+	doctorNetworkTimeout   time.Duration   // 0 means "use defaultDoctorNetworkTimeout", set via WithDoctorNetworkTimeout
+	doctorPublicIPEndpoint string          // "" means "use defaultDoctorPublicIPEndpoint", set via WithDoctorPublicIPEndpoint
+	doctorClockSkewWarnAge time.Duration   // 0 means "use defaultDoctorClockSkewWarnAge", set via WithDoctorClockSkewWarnAge
+	doctorMinRAMBytes      int64           // 0 means "use defaultDoctorMinRAMBytes", set via WithDoctorMinRAMBytes
+	doctorMinCPUCount      int             // 0 means "use defaultDoctorMinCPUCount", set via WithDoctorMinCPUCount
 	// doctorAgentAdvertiseHost/doctorAgentAdvertisePort are the
 	// APP_AGENT_ADVERTISE_HOST/APP_AGENT_ADDR-derived address agents dial
 	// to reach this control plane, set via WithDoctorAgentAdvertise. Empty
@@ -893,6 +909,9 @@ type Router struct {
 	branchDeploys  BranchDeployStore // always set
 	contextConfigs ContextConfigStore
 	branchDeployMu sync.Mutex
+
+	// dns01ProviderCheck nil means no provider, so enabling dns01 is refused.
+	dns01ProviderCheck func(context.Context) bool
 }
 
 // NewRouter builds a Router. logger defaults to slog.Default() if nil.
@@ -934,6 +953,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		domainRedirect:              s,
 		domainErrorPages:            s,
 		domainSearchVisibility:      s,
+		domainACME:                  s,
 		domainPolicy:                domainPolicyDeps{store: s},
 		cachePurges:                 s,
 		edgeFW:                      edgeFirewallDeps{store: s, engine: edgefw.Default()},
@@ -1040,6 +1060,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		fetchLatestRelease:          defaultFetchLatestRelease,
 		updatesCache:                newUpdatesCache(),
 		updateSettings:              s,
+		deployURLSettings:           deployURLSettingsOf(s),
 		upgradeFetchers:             upgrade.DefaultFetchers(b.RepoSlug()),
 		channelUpdatesCache:         upgrade.NewCache(),
 		releaseHist:                 newReleaseHistorySource(b.RepoSlug()),
@@ -1101,6 +1122,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		rt.sourceCache = sourcecache.New(sourcecache.ConfigFromEnv(""), logger)
 	}
 	rt.attachRuntimeSettings(s)
+	rt.attachLiveLimits()
 	rt.attachRepoCache(s)
 	rt.attachGitConnStore(s)
 	rt.attachGitReliability(s)

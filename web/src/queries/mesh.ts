@@ -82,6 +82,7 @@ export async function rotateNodeMeshKey(
 export function useRotateNodeMeshKey() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: rotateNodeMeshKey,
     onSuccess: (_result, id) => {
       void queryClient.invalidateQueries({ queryKey: meshKeys.status() })

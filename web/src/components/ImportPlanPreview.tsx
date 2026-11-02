@@ -73,6 +73,7 @@ export function ImportPlanPreview({
     plan.deploy !== 'none' && nameValid && missing.length === 0 && !portInvalid
 
   const deploy = useMutation({
+    meta: { errorToast: false },
     mutationFn: () =>
       deployImportPlan(
         plan,

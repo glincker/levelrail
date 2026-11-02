@@ -34,6 +34,7 @@ export function ImportFrontDoor({
   const guess = guessImportSource(text)
 
   const plan = useMutation({
+    meta: { errorToast: false },
     mutationFn: (request: ImportPlanRequest) => planImport(request),
     onSuccess: (result, request) => {
       onPlan(result, request)

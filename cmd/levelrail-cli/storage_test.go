@@ -110,3 +110,22 @@ func TestRun_LogsValidation(t *testing.T) {
 		}
 	}
 }
+
+// The blocked delete must point at the by-destination listing, since the owning apps may be gone.
+func TestRun_StorageDelete_ConflictNamesListAllTarget(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		_, _ = w.Write([]byte(`{"error":"backup target still has backup history; delete is blocked"}`))
+	}))
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"storage", "delete", "bkt_gone", "--api-url", srv.URL}, &stdout, &stderr, envMap())
+	if got == exitOK {
+		t.Fatal("exit = ok, want failure")
+	}
+	if !strings.Contains(stderr.String(), "backups list-all --target bkt_gone") {
+		t.Errorf("stderr %q does not name the by-destination listing", stderr.String())
+	}
+}

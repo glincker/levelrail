@@ -104,12 +104,16 @@ func (g *Gateway) lookup(ctx context.Context, host string) (store.Model, []store
 	if g.byHost == nil || time.Since(g.loadedAt) > gatewayCacheTTL {
 		list, err := g.store.ListModels(ctx)
 		if err != nil {
-			g.logger.Error("models: gateway list models failed", slog.String("error", err.Error()))
+			if ctx.Err() == nil {
+				g.logger.Error("models: gateway list models failed", slog.String("error", err.Error()))
+			}
 			return store.Model{}, nil, false
 		}
 		allKeys, err := g.store.ListActiveModelKeys(ctx)
 		if err != nil {
-			g.logger.Error("models: gateway list keys failed", slog.String("error", err.Error()))
+			if ctx.Err() == nil {
+				g.logger.Error("models: gateway list keys failed", slog.String("error", err.Error()))
+			}
 			return store.Model{}, nil, false
 		}
 		g.keys = map[string][]store.ModelKey{}

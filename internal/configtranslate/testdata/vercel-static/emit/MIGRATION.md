@@ -10,6 +10,11 @@ Generated from config files (vercel). Review the documents in a pull request, th
 - [vercel.route.condition] vercel.json /ab: has and missing conditions have no equivalent, redirect skipped Fix: Handle the condition in the app or drop the rule.
 - [vercel.rewrite.proxy] vercel.json /api/(.*): no equivalent: rewrite to an external URL (proxy), rule skipped Fix: Proxy in the app, or point clients at the target directly.
 - [vercel.cron.static] vercel.json crons: no equivalent: a static site has no container to run a scheduled task in Fix: Run the endpoints from a server service, or schedule them outside the site.
+- Cutover checklist (Vercel): deploy and test the app on its temporary URL before touching DNS.
+- Cutover checklist: copy the environment variables (`vercel env pull`, then import the file as app secrets) and confirm the app boots.
+- Cutover checklist: lower the DNS TTL on the domain a day ahead so the switch propagates fast.
+- Cutover checklist: add the domain to the app, wait for the certificate, then point the DNS records at this server.
+- Cutover checklist: keep the Vercel project until traffic is confirmed here, then remove the domain from it.
 
 ## App web
 

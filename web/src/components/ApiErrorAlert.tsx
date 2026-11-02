@@ -5,6 +5,7 @@ import { CopyGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { ApiError } from '../lib/apiError'
+import { useErrorText } from '../lib/errorText'
 import { useApplyFix } from '../queries/fixit'
 import { dockerIntegrationKeys } from '../queries/dockerIntegration'
 
@@ -24,10 +25,7 @@ export function ApiErrorAlert({
   const apply = useApplyFix()
   const [copied, setCopied] = useState(false)
   const api = error instanceof ApiError ? error : undefined
-  const message =
-    error instanceof Error && error.message !== 'internal error'
-      ? error.message
-      : t('apiError.generic')
+  const { message, action } = useErrorText()(error)
 
   async function runFix(id: string) {
     await apply.mutateAsync({ id })
@@ -58,6 +56,7 @@ export function ApiErrorAlert({
       />
       <AlertDescription className="space-y-2">
         <p>{message}</p>
+        {action ? <p className="text-muted-foreground">{action}</p> : null}
         <div className="flex flex-wrap items-center gap-2">
           {api?.fix ? (
             <Button

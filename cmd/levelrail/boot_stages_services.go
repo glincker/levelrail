@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/deploysafety"
 	"github.com/GLINCKER/levelrail/internal/nodepreflight"
 	"log/slog"
 	"net/http"
@@ -24,6 +26,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/scheduledtask"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
@@ -185,6 +188,7 @@ func (s *bootState) wireRouter() {
 		scheduledTaskRunner: scheduledTaskRunner, functionQueue: s.functionQueue, engine: engine, ingressDriver: ingressDriver,
 		pushVAPIDPublicKey: pushVAPIDPublicKey,
 	})
+	apiHandler = wrapDesktopMode(logger, db, apiRouter, apiHandler)
 	apiRouter.WarmTrustRoot()
 	if buildLimiter != nil {
 		apiRouter.SetBuildLoad(buildLimiter)
@@ -367,6 +371,7 @@ func (s *bootState) startReconciler() {
 		orphanReaper:                 orphanReaper,
 		janitor:                      janitorEngine,
 		ingressEdge:                  edge,
+		runtimeSettings:              func() *runtimesettings.Service { return s.apiRouter.RuntimeSettings() },
 		db:                           db,
 		runtime:                      client,
 		driver:                       ingressDriver,
@@ -391,12 +396,28 @@ func (s *bootState) startReconciler() {
 		publicHost:                   publicHost(),
 		ingressHTTPSAddr:             ingressHTTPSAddr(),
 		ingressHTTPAddr:              ingressHTTPAddr(),
-		httpRedirect:                 httpRedirectEnabled(ingressHTTPAddr(), edge.inherited, logger),
+		httpRedirect:                 httpRedirectEnabled(ingressHTTPAddr(), edge.inherited, s.ingressDriver.OwnsPort, logger),
 		models:                       newModelDeps(),
 		lbRegistry:                   lbRegistry,
 		proxySyncer:                  proxySyncer,
 		previewNotifier:              previewManager,
+		dns01AllHosts: func(c context.Context) bool {
+			return s.apiRouter.RuntimeSettings().Bool(c, runtimesettings.KeyIngressDNS01AllHosts)
+		},
+		fallbackCerts: func(c context.Context) string {
+			return s.apiRouter.RuntimeSettings().String(c, runtimesettings.KeyIngressFallbackCerts)
+		},
+		deployWindows: func(c context.Context) deploysafety.Windows {
+			return deployWindowsFrom(c, s.apiRouter.RuntimeSettings())
+		},
+		restartPolicy: func(c context.Context) string {
+			return s.apiRouter.RuntimeSettings().String(c, runtimesettings.KeyContainersRestartPolicy)
+		},
+		dependsOnTimeout: func(c context.Context) time.Duration {
+			return s.apiRouter.RuntimeSettings().Duration(c, runtimesettings.KeyComposeDependsOnTimeout)
+		},
 	}
+	s.setupDNS01Check()
 	engine.SetSource(dynamicSource(sourceDeps))
 	engine.SetKeyed(application.IsServiceControllerName)
 	scheduledTaskRunner.Specs = newJobSpecBuilder(sourceDeps)

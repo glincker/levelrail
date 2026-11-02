@@ -14,6 +14,7 @@ import (
 // Covers env, ports, domains, and resource limits across changed and unchanged cases.
 // Both sides are seeded deploy attempts, not live state.
 func TestHandleCompareDeploys_ConfigSnapshotDiff(t *testing.T) {
+	t.Parallel()
 	hostPort := func(p int) *int { return &p }
 
 	tests := []struct {

@@ -32,6 +32,7 @@ func pollDeviceToken(t *testing.T, rt *Router, deviceCode string) *httptest.Resp
 }
 
 func TestHandleDeviceAuthStart(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouter(t)
 	got := startDeviceAuth(t, rt, "my-laptop")
 
@@ -50,6 +51,7 @@ func TestHandleDeviceAuthStart(t *testing.T) {
 }
 
 func TestHandleDeviceAuthToken_Pending(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouter(t)
 	started := startDeviceAuth(t, rt, "")
 
@@ -63,6 +65,7 @@ func TestHandleDeviceAuthToken_Pending(t *testing.T) {
 }
 
 func TestHandleDeviceAuthToken_UnknownCode(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouter(t)
 	rec := pollDeviceToken(t, rt, "not-a-real-device-code")
 	if rec.Code != http.StatusBadRequest {
@@ -74,6 +77,7 @@ func TestHandleDeviceAuthToken_UnknownCode(t *testing.T) {
 }
 
 func TestDeviceAuthFlow_ApproveThenPollGrantsToken(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -133,6 +137,7 @@ func TestDeviceAuthFlow_ApproveThenPollGrantsToken(t *testing.T) {
 }
 
 func TestDeviceAuthFlow_DenyThenPollDenies(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -154,6 +159,7 @@ func TestDeviceAuthFlow_DenyThenPollDenies(t *testing.T) {
 }
 
 func TestDecideDeviceAuthRequest_UnknownCode(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -165,6 +171,7 @@ func TestDecideDeviceAuthRequest_UnknownCode(t *testing.T) {
 }
 
 func TestDecideDeviceAuthRequest_AlreadyDecided(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -184,6 +191,7 @@ func TestDecideDeviceAuthRequest_AlreadyDecided(t *testing.T) {
 }
 
 func TestDeviceAuthRoutes_RequireAuth(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouter(t)
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/auth/device/requests", nil))
@@ -193,6 +201,7 @@ func TestDeviceAuthRoutes_RequireAuth(t *testing.T) {
 }
 
 func TestHandleDeviceAuthStart_RateLimited(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouter(t)
 	var lastRec *httptest.ResponseRecorder
 	for i := 0; i < defaultDeviceStartRate+1; i++ {

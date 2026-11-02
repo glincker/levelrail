@@ -31,8 +31,8 @@ func runMigrateDokploy(prog string, args []string, stdout, stderr io.Writer, loo
 	fs.StringVar(&f.outDir, "out-dir", "./migrated", "directory to write generated app.yaml files and secrets into (file mode only, i.e. when --apply is not given)")
 	fs.BoolVar(&f.apply, "apply", false, "create apps directly on the target Levelrail instance (POST /api/v1/apps) instead of writing files")
 	fs.BoolVar(&f.includeSecretValues, "include-secret-values", false, "write the real env var values already returned by Dokploy into a companion secrets file, or apply them via PUT .../secrets/{key}; never written into a generated app.yaml")
-	fs.StringVar(&targetTokenFlag, "target-token", "", "Levelrail API token, --apply only (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&targetAPIURLFlag, "target-api-url", "", "Levelrail control plane base URL, --apply only (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
+	fs.StringVar(&targetTokenFlag, "target-token", "", "Levelrail API token, --apply only (overrides "+apiTokenEnvHelp+" and the credentials file)")
+	fs.StringVar(&targetAPIURLFlag, "target-api-url", "", "Levelrail control plane base URL, --apply only (overrides "+apiURLEnvHelp+" and the credentials file, default "+defaultAPIURL+")")
 	fs.StringVar(&targetProfileFlag, "target-profile", "", "named credentials profile to read the target Levelrail instance from, --apply only (overrides "+envProfile+", default \""+defaultProfile+"\")")
 	fs.BoolVar(&f.jsonOut, "json", false, "print the migration report as JSON to stdout and nothing else")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, migrateDokployUsage(prog)) }
@@ -108,5 +108,5 @@ Levelrail equivalent and are reported for manual review, not migrated.
 Git repo/branch identity is not persisted Levelrail state today: the
 report prints the exact "apps create --repo ... --ref ..." follow-up
 command for each migrated app that had one.
-`, prog, envAPIToken, envAPIURL, defaultAPIURL)
+`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }

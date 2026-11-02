@@ -78,6 +78,14 @@ func TestRun_SettingsIngressSet_FallbackDomains(t *testing.T) {
 	}
 }
 
+func TestPrintHTTPSStatusHuman_CASwitchNotice(t *testing.T) {
+	var out bytes.Buffer
+	printHTTPSStatusHuman(&out, httpsStatusResource{State: "issued", Domain: "1-2-3-4.sslip.io", Notice: "a previous CA switch failed, retrying after 1m0s"})
+	if !strings.Contains(out.String(), "notice:     a previous CA switch failed, retrying after 1m0s\n") {
+		t.Errorf("output = %q", out.String())
+	}
+}
+
 func TestPrintHTTPSStatusHuman_PreflightWarning(t *testing.T) {
 	var out bytes.Buffer
 	printHTTPSStatusHuman(&out, httpsStatusResource{State: "pending", Preflight: []apiclient.HTTPSPreflightPort{{Port: 80, Reachable: true}, {Port: 443}}})

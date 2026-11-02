@@ -109,7 +109,7 @@ function BudgetFixes({ b }: { b: CostBudgetStatus }) {
 
 function BudgetRow({ b }: { b: CostBudgetStatus }) {
   const { t } = useTranslation('costs')
-  const remove = useDeleteCostBudget()
+  const remove = useDeleteCostBudget({ inlineError: true })
   const [confirm, setConfirm] = useState(false)
   const level = b.level || 'ok'
   return (

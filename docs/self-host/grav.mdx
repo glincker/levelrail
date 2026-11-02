@@ -1,0 +1,67 @@
+---
+title: "Self-host Grav with Docker"
+sidebarTitle: "Grav"
+description: "A flat-file CMS that stores pages as Markdown files, so there is no database to run. Edit content in the admin panel or directly on the volume."
+"og:url": "https://docs.levelrail.com/self-host/grav"
+---
+
+A flat-file CMS that stores pages as Markdown files, so there is no database to run. Edit content in the admin panel or directly on the volume.
+
+This page describes the Levelrail template for Grav (Applications). It deploys the services below as one Docker Compose app on your own server. Project site: https://learn.getgrav.org/.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `grav` | `lscr.io/linuxserver/grav:2.2.21-ls293` | 80 | `config -&#62; /config` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `grav` | `PGID` | Preset in the template |
+| `grav` | `PUID` | Preset in the template |
+| `grav` | `TZ` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`grav`): config.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Grav with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Grav. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy grav --name my-grav
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Applications templates
+
+- [Budibase](/self-host/budibase)
+- [Cleanuparr](/self-host/cleanuparr)
+- [Cockpit CMS](/self-host/cockpit-cms)
+- [Deluge](/self-host/deluge)
+- [Drupal](/self-host/drupal)
+
+All templates are listed in the [self-host gallery](/self-host).

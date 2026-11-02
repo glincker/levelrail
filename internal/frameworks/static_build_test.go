@@ -12,6 +12,9 @@ func TestStaticBuildPrefill(t *testing.T) {
 		{"astro", "dist", true},
 		{"nextjs-static", "out", true},
 		{"docusaurus", "build", true},
+		{"hugo", "public", true},
+		{"jekyll", "_site", true},
+		{"eleventy", "_site", true},
 		{"nextjs", "", false},
 		{"go", "", false},
 	}
@@ -24,6 +27,9 @@ func TestStaticBuildPrefill(t *testing.T) {
 			cmd, publish, ok := p.StaticBuild()
 			if ok != tt.wantOK || publish != tt.wantPublish {
 				t.Fatalf("StaticBuild() = %q, %q, %v", cmd, publish, ok)
+			}
+			if p.OwnBuild && ok && cmd == p.BuildCommand {
+				return
 			}
 			if ok && cmd != DefaultStaticBuildCommand {
 				t.Fatalf("command = %q", cmd)

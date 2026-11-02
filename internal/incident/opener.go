@@ -34,6 +34,7 @@ type Store interface {
 	SetStatusIncidentInternalState(ctx context.Context, id, state, by string, at time.Time) error
 	AddInternalIncidentUpdate(ctx context.Context, u store.StatusIncidentUpdate, visibility, author string) error
 	AddStatusIncidentLink(ctx context.Context, incidentID, monitorID string, downAt time.Time) error
+	AddStatusIncidentComponents(ctx context.Context, incidentID string, ids []string) error
 	MarkStatusIncidentLinkUp(ctx context.Context, incidentID, monitorID string, upAt time.Time) error
 }
 
@@ -174,6 +175,11 @@ func (o *Opener) handleDown(ctx context.Context, t monitor.Transition) error {
 		}
 	}
 	reason := fmt.Sprintf("Monitor %s confirmed down: %s", m.Name, t.Reason)
+	all, err := o.store.ListStatusComponents(ctx)
+	if err != nil {
+		return err
+	}
+	comps := monitorComponentIDs(all, m.ID)
 
 	// Already tracked by an open incident: nothing to do.
 	for _, inc := range incs {
@@ -184,7 +190,7 @@ func (o *Opener) handleDown(ctx context.Context, t monitor.Transition) error {
 	// Same monitor went down again while its incident stayed open for other monitors.
 	for _, inc := range incs {
 		if inc.InternalState != store.IncidentStateResolved && (inc.SourceRef == m.ID || hasLink(linked[inc.ID], m.ID)) {
-			return o.attach(ctx, inc.ID, m.ID, now, reason)
+			return o.attach(ctx, inc.ID, m.ID, now, reason, comps)
 		}
 	}
 	// Reopen a recently resolved incident of this monitor.
@@ -194,21 +200,16 @@ func (o *Opener) handleDown(ctx context.Context, t monitor.Transition) error {
 			if err := o.store.SetStatusIncidentInternalState(ctx, inc.ID, store.IncidentStateTriggered, systemAuthor, now); err != nil {
 				return err
 			}
-			return o.attach(ctx, inc.ID, m.ID, now, "Reopened. "+reason)
+			return o.attach(ctx, inc.ID, m.ID, now, "Reopened. "+reason, comps)
 		}
 	}
-	all, err := o.store.ListStatusComponents(ctx)
-	if err != nil {
-		return err
-	}
-	comps := monitorComponentIDs(all, m.ID)
 	myKeys := foldKeys(all, comps)
 	open := 0
 	for _, inc := range incs {
 		if inc.InternalState != store.IncidentStateResolved {
 			open++
 			if overlaps(foldKeys(all, inc.ComponentIDs), myKeys) && lastDown(linked[inc.ID]).After(now.Add(-o.cfg.FoldWindow)) {
-				return o.attach(ctx, inc.ID, m.ID, now, "Folded in. "+reason)
+				return o.attach(ctx, inc.ID, m.ID, now, "Folded in. "+reason, comps)
 			}
 		}
 	}
@@ -216,7 +217,7 @@ func (o *Opener) handleDown(ctx context.Context, t monitor.Transition) error {
 		o.logger.Warn("open incident cap reached, folding into overflow incident", slog.Int("cap", o.cfg.OpenMax))
 		for _, inc := range incs {
 			if inc.InternalState != store.IncidentStateResolved && inc.SourceRef == overflowRef {
-				return o.attach(ctx, inc.ID, m.ID, now, reason)
+				return o.attach(ctx, inc.ID, m.ID, now, reason, nil)
 			}
 		}
 		return o.create(ctx, overflowRef, "Multiple monitors are down", m.ID, nil, now, reason)
@@ -233,11 +234,14 @@ func (o *Opener) create(ctx context.Context, ref, title, monitorID string, comps
 	if err := o.store.CreateInternalStatusIncident(ctx, in); err != nil {
 		return err
 	}
-	return o.attach(ctx, in.ID, monitorID, now, body)
+	return o.attach(ctx, in.ID, monitorID, now, body, nil)
 }
 
-func (o *Opener) attach(ctx context.Context, incidentID, monitorID string, now time.Time, body string) error {
+func (o *Opener) attach(ctx context.Context, incidentID, monitorID string, now time.Time, body string, comps []string) error {
 	if err := o.store.AddStatusIncidentLink(ctx, incidentID, monitorID, now); err != nil {
+		return err
+	}
+	if err := o.store.AddStatusIncidentComponents(ctx, incidentID, comps); err != nil {
 		return err
 	}
 	return o.note(ctx, incidentID, body)

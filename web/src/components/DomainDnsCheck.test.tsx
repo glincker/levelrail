@@ -108,4 +108,47 @@ describe('DomainCheckPanel', () => {
     renderPanel({ status: 'not_resolving' }, { isFetching: true })
     expect(screen.getByRole('button', { name: /checking/i })).toBeDisabled()
   })
+
+  it('shows the three answer groups, the countdown and the flush command when only this server is stale', () => {
+    const retryAt = new Date(Date.now() + 5 * 60_000).toISOString()
+    renderPanel({
+      status: 'connected',
+      expected_host: '72.61.8.70',
+      verdict: 'dns_ready',
+      local_stale: true,
+      retry_at: retryAt,
+      flush_command: 'resolvectl flush-caches',
+      authoritative: [
+        { name: 'ns1.example.com', addresses: ['72.61.8.70'], ttl: 60 },
+      ],
+      public: [{ name: '1.1.1.1', addresses: ['72.61.8.70'] }],
+      local: [{ name: 'this server', addresses: ['104.21.17.53'], ttl: 900 }],
+      hints: [{ code: 'was_cloudflare_proxy', message: 'x' }],
+    })
+    expect(screen.getByText('DNS is ready')).toBeInTheDocument()
+    expect(screen.getByText(/Authoritative name servers/)).toBeInTheDocument()
+    expect(screen.getByText('104.21.17.53')).toBeInTheDocument()
+    expect(screen.getByText(/ready to retry at/)).toBeInTheDocument()
+    expect(screen.getByText('resolvectl flush-caches')).toBeInTheDocument()
+    expect(screen.getByText(/was proxied by Cloudflare/)).toBeInTheDocument()
+    expect(screen.queryByText(/Nothing is wrong/)).not.toBeInTheDocument()
+  })
+
+  it('lists concrete checks once escalated', () => {
+    renderPanel({
+      status: 'not_resolving',
+      expected_host: '72.61.8.70',
+      verdict: 'not_found',
+      escalated: true,
+      authoritative: [{ name: 'ns1.example.com', error: 'no records' }],
+      hints: [
+        { code: 'check_zone', message: 'x' },
+        { code: 'check_nameservers', message: 'x' },
+      ],
+    })
+    expect(screen.getByText(/right DNS zone/)).toBeInTheDocument()
+    expect(
+      screen.getByText(/another DNS provider is not authoritative/),
+    ).toBeInTheDocument()
+  })
 })

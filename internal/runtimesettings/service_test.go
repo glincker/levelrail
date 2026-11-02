@@ -284,7 +284,7 @@ func TestRegistryDefaultsAreValidAndSecure(t *testing.T) {
 			t.Errorf("%s not secure by default", d.Key)
 		}
 	}
-	if len(Definitions()) != 23 {
+	if len(Definitions()) != 82 {
 		t.Fatalf("registry size = %d", len(Definitions()))
 	}
 }
@@ -307,7 +307,7 @@ func TestMaskSensitive(t *testing.T) {
 func TestRegistryMarksCredentialSettingsSensitive(t *testing.T) {
 	credential := regexp.MustCompile(`(?i)secret|token|password|api[_.-]?key`)
 	for _, d := range Definitions() {
-		if d.Category != CategoryRetention && (credential.MatchString(d.Key) || credential.MatchString(d.Env)) && !d.Sensitive {
+		if d.Category != CategoryRetention && !isRegisteredLimit(d.Key) && (credential.MatchString(d.Key) || credential.MatchString(d.Env)) && !d.Sensitive {
 			t.Errorf("setting %s looks like a credential but is not marked Sensitive, so its value would reach API responses and the audit log", d.Key)
 		}
 	}
@@ -319,5 +319,40 @@ func TestInvalidEnvIsReportedOnce(t *testing.T) {
 	_ = svc.Bool(t.Context(), KeyAuditSensitiveReads)
 	if _, seen := warnedInvalidEnv.Load(KeyAuditSensitiveReads); !seen {
 		t.Fatal("an invalid environment value was ignored silently")
+	}
+}
+
+// isRegisteredLimit exempts only the numeric limit keys from the credential-name guard (a "token redeem" budget is not a credential).
+func isRegisteredLimit(key string) bool { _, ok := limitRanges[key]; return ok }
+
+func TestWeakerThanDefault(t *testing.T) {
+	svc := New(newFakeStore(), envOf(nil))
+	ctx := t.Context()
+	got, _ := svc.Get(ctx, KeyWebhookReplayProtection)
+	if got.WeakerThanDefault {
+		t.Fatal("default value must not be flagged weaker")
+	}
+	got, _ = svc.Set(ctx, KeyWebhookReplayProtection, raw(`false`), "alice")
+	if !got.WeakerThanDefault {
+		t.Fatal("false against a true default must be flagged weaker")
+	}
+	got, _ = svc.Set(ctx, KeyWebhookReplayWindow, raw(`"1m"`), "alice")
+	if !got.WeakerThanDefault {
+		t.Fatalf("shorter window must be flagged weaker: %+v", got)
+	}
+	got, _ = svc.Set(ctx, KeyWebhookReplayWindow, raw(`"30m"`), "alice")
+	if got.WeakerThanDefault {
+		t.Fatal("longer window is stronger")
+	}
+}
+
+func TestDatabasesPoolerDefaultIsOffAndEnvSeeds(t *testing.T) {
+	svc := New(nil, envOf(nil))
+	if got := svc.String(t.Context(), KeyDatabasesPoolerDefault); got != "off" {
+		t.Fatalf("default = %q, want off", got)
+	}
+	svc = New(nil, envOf(map[string]string{"APP_DATABASES_POOLER_DEFAULT": "on"}))
+	if got := svc.String(t.Context(), KeyDatabasesPoolerDefault); got != "on" {
+		t.Fatalf("env seed = %q, want on", got)
 	}
 }

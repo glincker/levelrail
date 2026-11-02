@@ -47,7 +47,7 @@ Postgres, MySQL and MariaDB, off for MongoDB and Redis.
 
 ```
 levelrail-cli databases adopt --list
-levelrail-cli databases adopt --container coolify-pg --name legacy \
+levelrail-cli databases adopt --container old-pg --name legacy \
   --user postgres --database appdb --password-stdin
 ```
 
@@ -109,6 +109,73 @@ already running.
   requires the database name as confirmation.
 - The MCP server exposes `list_external_databases` (read-only). No MCP tool can
   create, change or probe one.
+
+## Hosted database cookbook
+
+Levelrail takes the host, port, user, database and TLS mode as separate fields. It does not parse a connection string, so split the vendor's URL into those fields. It does build a URL for your app from them: Postgres gets `?sslmode=<mode>`, MongoDB gets `?tls=true` and Redis gets the `rediss://` scheme when TLS mode is `require`. A `mongodb+srv://` URL is not accepted as input (see Atlas below).
+
+None of the recipes below has been run against the real vendor service. They are derived from reading `internal/extdb` and the vendors' own pricing pages. Free-tier figures were read on 2026-11-01 and change, so recheck them.
+
+One effect applies to every scale-to-zero service. The health probe runs every five minutes by default and opens a real connection, which can keep an idle database awake and use up free compute or command allowances. Set `APP_EXTERNAL_DB_PROBE_INTERVAL` to a longer interval, or `0` to turn it off, for these.
+
+### Neon (Postgres)
+
+- Fields: host `ep-<name>.<region>.aws.neon.tech`, port 5432, the role and database from the Neon console, TLS mode `require`. Neon refuses plain connections.
+- Free plan: 1 GB of storage per project. Compute suspends after 5 minutes idle on the Free plan and cannot be turned off, so the first connection after a pause is slower and a probe can report `slow` while it wakes.
+- Use the host without `-pooler` for a first test. The pooled host (`-pooler`) is for many short connections.
+
+### Supabase (Postgres)
+
+- Fields: the host, port, user and database from the project's **Connect** page, TLS mode `require`. The pooler user has the form `postgres.<project-ref>`, which the user field accepts.
+- Free plan: 500 MB database size, 2 active projects, and projects are paused after 1 week of inactivity. Whether a probe counts as activity is not verified.
+- Whether your network can reach the direct host over IPv4 depends on the plan. Use the pooler host if the test says `unreachable`.
+
+### Upstash (Redis)
+
+- Fields: engine `redis`, host `<name>.upstash.io`, port 6379 (use the port shown in the console), user `default`, the password from the console, TLS mode `require`. Your app then receives a `rediss://` URL.
+- Free tier: 250 MB of data and 500K commands per month. A probe every five minutes is a small share of that, but turn it down if you are close.
+- The probe passes `--tls --insecure` to `redis-cli`, so it does not verify the server certificate. Your own app should.
+
+### MongoDB Atlas
+
+- `mongodb+srv://` URLs are not supported. The SRV form needs a DNS lookup of the cluster's seed list, and Levelrail stores one plain hostname and port and probes with `mongosh --host --port`. A replica set seed list is not supported either.
+- A single shard hostname (`<cluster>-shard-00-00.<id>.mongodb.net:27017`) passes the host checks, but it may point at a secondary and not the primary. Whether it works end to end has not been verified. Prefer to keep Atlas outside Levelrail and put its URL straight into the app's environment (see [Environment and secrets](/environment-and-secrets)).
+- Atlas also needs your server's IP on its network access list. Free tier: M0, 512 MB of storage.
+
+### Turso (libSQL)
+
+- Not supported. Turso speaks libSQL over HTTP and WebSocket, not one of the five engines (Postgres, MySQL, MariaDB, MongoDB, Redis), so it cannot be added as an external database. Put its URL and token in the app's environment instead.
+
+## URL and TLS mode by engine
+
+The TLS mode is one of `disable`, `prefer` or `require`, for any engine. The default is `prefer` for Postgres, MySQL and MariaDB, and `disable` for MongoDB and Redis. The app URL is built from the stored host, port, user, database and TLS mode, plus the password from the encrypted store, when the container is created. The table shows the URL shape. Placeholders are in capitals.
+
+| Engine | App URL (`url` field) | What `require` changes in the URL |
+| --- | --- | --- |
+| postgres | `postgres://USER:PASSWORD@HOST:PORT/DATABASE?sslmode=MODE` | `sslmode=require`. The parameter is always present, because the mode always has a value. |
+| mysql | `mysql://USER:PASSWORD@HOST:PORT/DATABASE` | Nothing. The URL has no TLS parameter. The mode only drives the health probe. |
+| mariadb | `mariadb://USER:PASSWORD@HOST:PORT/DATABASE` | Nothing, as for mysql. |
+| mongodb | `mongodb://USER:PASSWORD@HOST:PORT/DATABASE` | `?tls=true`. The URL has no `authSource`, so a user created in another database needs that parameter added in the app. |
+| redis | `redis://USER:PASSWORD@HOST:PORT` | The scheme becomes `rediss://`. No database path is added. |
+
+For `redis`, the user part is present only when a password is stored. For `mysql` and `mariadb`, the URL carries no TLS setting, so the app's driver options must ask for TLS (pending run).
+
+The health probe does not verify the server certificate when the mode is `require`. An app should verify the certificate itself.
+
+### Per provider: the fields to enter
+
+Every row is untested. Each one is a starting point to check with **Test connection**, not a verified recipe (pending run).
+
+| Provider | Engine | Host and port | TLS mode to try first | App URL shape |
+| --- | --- | --- | --- | --- |
+| Neon | postgres | the host from the Neon console, without `-pooler` for a first test, port 5432 | `require` | `postgres://USER:PASSWORD@HOST:5432/DATABASE?sslmode=require` |
+| Supabase | postgres | the host and port from the project's Connect page | `require` | `postgres://USER:PASSWORD@HOST:PORT/DATABASE?sslmode=require` |
+| Upstash | redis | `<name>.upstash.io` and the port shown in the console | `require` | `rediss://default:PASSWORD@HOST:PORT` |
+| MongoDB Atlas | mongodb | one shard hostname and port 27017 (SRV URLs are not accepted) | `require` | `mongodb://USER:PASSWORD@HOST:27017/DATABASE?tls=true` |
+| Self-hosted Postgres on a LAN | postgres | the server IP and port 5432 | `prefer`, then `require` if the server offers TLS | `postgres://USER:PASSWORD@IP:5432/DATABASE?sslmode=prefer` |
+| Turso | none | not supported | not applicable | not applicable |
+
+Set the mode in the form, then click **Test connection**. A `tls_error` result means the mode does not match what the server offers. Change it, test again, and keep the mode that passes.
 
 ## Not covered yet
 

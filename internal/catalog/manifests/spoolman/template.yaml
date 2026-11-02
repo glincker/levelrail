@@ -1,0 +1,24 @@
+id: spoolman
+name: Spoolman
+description: A filament spool inventory manager for 3D printers with usage tracking and printer firmware integrations. MIT licensed. On first open, add your filaments and vendors; there is no login, so keep it behind a private network or an auth proxy.
+icon: database
+category: Applications
+documentation_url: https://github.com/Donkie/Spoolman
+source_repo: https://github.com/Donkie/Spoolman
+license: MIT
+license_class: permissive
+license_url: https://github.com/Donkie/Spoolman/blob/master/LICENSE
+recommended_memory_bytes: 268435456
+env:
+  - key: TZ
+    label: Time zone
+    description: IANA time zone for timestamps.
+    default: Etc/UTC
+domains:
+  - service: spoolman
+    port: 8000
+    description: Public address of Spoolman.
+healthcheck:
+  service: spoolman
+  port: 8000
+  path: /api/v1/health

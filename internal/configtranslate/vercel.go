@@ -3,7 +3,9 @@ package configtranslate
 import (
 	"encoding/json"
 	"fmt"
+	"path"
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -107,9 +109,14 @@ func translateVercel(files map[string][]byte, o options) (Fragment, []Finding) {
 	}
 
 	if len(v.Build.Env) > 0 {
-		add("vercel.build.env", SeverityWarn, "build.env", "build-time env is not passed to Railpack builds",
-			"Commit a .env.production for NEXT_PUBLIC_* style values, or use a Dockerfile with build args.")
+		add("vercel.build.env", SeverityWarn, "build.env", "vercel.json build.env is not read, only app env vars with a public prefix (NEXT_PUBLIC_, VITE_ and similar) reach a build",
+			"Set the NEXT_PUBLIC_* values as plain app env before the first deploy; secrets are never passed to a build.")
 	}
+	if edge := edgeSourceFiles(files); len(edge) > 0 {
+		fs = append(fs, edgeSourceFinding(edge))
+	}
+	fs = append(fs, vercelDepFindings(files)...)
+	fs = append(fs, nextStandaloneFinding(files, fw, isStatic)...)
 	if len(v.Builds) > 0 || len(v.Routes) > 0 {
 		add("vercel.legacy", SeverityWarn, "builds/routes", "legacy builds and routes keys are not translated", "Port them to the current rewrites, redirects and headers keys first.")
 	}
@@ -319,11 +326,54 @@ func vercelCrons(svc *Service, v vercelJSON, isStatic bool, o options) []Finding
 		used[name] = true
 		svc.Jobs = append(svc.Jobs, Job{
 			Name: name, Schedule: c.Schedule, Timezone: "UTC", Mode: "exec",
-			Command: []string{"curl", "-fsS", fmt.Sprintf("http://127.0.0.1:%d%s", o.nodePort, c.Path)},
+			Command: cronCommand(o.nodePort, c.Path),
 		})
 		fs = append(fs, Finding{Code: "vercel.cron.http", Severity: SeverityWarn, Source: fileVercel, Subject: c.Path,
-			Message: "Vercel cron makes an HTTP call, a Levelrail task runs a command in the container, so curl is proposed",
-			Fix:     "Confirm curl exists in the image and the port is right, or call the code directly with a script."})
+			Message: "Vercel cron makes an HTTP call, a Levelrail task runs a command in the container, so a curl, wget or node call is proposed that sends Authorization: Bearer $CRON_SECRET when CRON_SECRET is set",
+			Fix:     "Set CRON_SECRET as an app secret if the route checks it, and confirm the port is right."})
 	}
 	return fs
+}
+
+type vercelDep struct {
+	sev     Severity
+	message string
+	fix     string
+}
+
+// vercelDeps maps hosted @vercel packages to what replaces them when self-hosting.
+var vercelDeps = map[string]vercelDep{
+	"og":             {SeverityWarn, "@vercel/og needs the Vercel runtime image tooling", "Import ImageResponse from next/og (bundled with Next.js, runs on Node), or use satori with resvg-js."},
+	"kv":             {SeverityWarn, "@vercel/kv is a hosted Redis, there is no such service behind it here", "Add a Redis database to the stack and switch to a Redis client (ioredis or redis) reading REDIS_URL."},
+	"blob":           {SeverityWarn, "@vercel/blob is a hosted object store, there is no such service behind it here", "Use an S3-compatible store with the AWS S3 SDK, or a volume if one node is enough."},
+	"postgres":       {SeverityWarn, "@vercel/postgres talks to a hosted Postgres over its own proxy and fails against a plain server", "Add a Postgres database to the stack and use pg or postgres.js with DATABASE_URL."},
+	"analytics":      {SeverityInfo, "@vercel/analytics reports to a hosted dashboard, nothing receives it here", "Remove the component, per-app traffic stats are built in, or send events to a self-hosted analytics tool."},
+	"speed-insights": {SeverityInfo, "@vercel/speed-insights reports to a hosted dashboard, nothing receives it here", "Remove the component, or report web-vitals to your own endpoint."},
+}
+
+var vercelDepImport = regexp.MustCompile(`(?:from|import|require)\s*\(?\s*['"]@vercel/(og|kv|blob|postgres|analytics|speed-insights)(?:/[^'"]*)?['"]`)
+
+// vercelDepFindings emits one finding per hosted @vercel package imported in the source files.
+func vercelDepFindings(files map[string][]byte) []Finding {
+	seen := map[string]bool{}
+	for name, b := range files {
+		clean := path.Clean(name)
+		if !edgeSourceExt[path.Ext(clean)] || strings.HasPrefix(clean, "node_modules/") || strings.Contains(clean, "/node_modules/") {
+			continue
+		}
+		for _, m := range vercelDepImport.FindAllSubmatch(b, -1) {
+			seen[string(m[1])] = true
+		}
+	}
+	names := make([]string, 0, len(seen))
+	for n := range seen {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+	var out []Finding
+	for _, n := range names {
+		d := vercelDeps[n]
+		out = append(out, Finding{Code: "vercel.dep." + n, Severity: d.sev, Source: fileVercel, Subject: "@vercel/" + n, Message: d.message, Fix: d.fix})
+	}
+	return out
 }

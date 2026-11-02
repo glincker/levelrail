@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/appimport"
+	"github.com/GLINCKER/levelrail/internal/backup"
 	"github.com/GLINCKER/levelrail/internal/datamigrate"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -308,6 +309,9 @@ func (rt *Router) enableAppImportRouting(ctx context.Context, editor serviceDoma
 		return fmt.Errorf("a domain is already attached to another app: %s", taken.Error())
 	case err != nil:
 		return fmt.Errorf("attach domains: %w", err)
+	}
+	if err := backup.CheckNoImport(it.TargetName); err != nil {
+		return err
 	}
 	if err := rt.apps.UpdateServiceSuspended(ctx, it.TargetName, false); err != nil {
 		return fmt.Errorf("start the app: %w", err)

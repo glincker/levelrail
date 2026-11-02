@@ -1,5 +1,7 @@
 # ADR 060: Mail migration, backup and restore
 
+Partly superseded by [ADR 064](064-email-for-apps.md): new mail work follows ADR 064.
+
 Status: Proposed
 
 Date: 2026-10-29

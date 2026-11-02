@@ -42,7 +42,7 @@ levelrail-cli backup-targets create \
   --secret-access-key ...
 ```
 
-The response never echoes the credentials back. `--provider` accepts `aws`, `r2`, or `custom`. `--endpoint` is required for `r2` and `custom`, and `aws` must omit it (AWS resolves its own endpoint per region). For Backblaze B2, Wasabi, or MinIO, use [Object storage](/object-storage) to connect the bucket as a storage destination: the same record shows up under backup targets.
+The response never echoes the credentials back. `--provider` accepts `aws`, `r2`, or `custom`. `--endpoint` is required for `r2` and `custom`, and `aws` must omit it (AWS resolves its own endpoint per region). For Backblaze B2, Wasabi, Tigris, Google Cloud Storage, Oracle Cloud Object Storage, or MinIO, use [Object storage](/object-storage) to connect the bucket as a storage destination: the same record shows up under backup targets.
 
 </Step>
 <Step title="Test the credential">
@@ -180,6 +180,8 @@ levelrail-cli backups volumes restore <app> <volume> --backup ID [--target-app A
 `GET /api/v1/backups` (newest first, cursor-paginated with `?limit=&before=`) lists backups across every database and app volume. Each entry carries `resource_kind` (`database` or `volume`) and identity fields (`database_name`, or `service_name` and `volume_name`).
 
 On the CLI the attempt history is `levelrail-cli backups list-all [--limit N] [--before RFC3339]` and the health view is `levelrail-cli backups health`.
+
+To see everything stored on one destination, including history of apps that no longer exist, use `levelrail-cli backups list-all --target <destination-id>`. `levelrail-cli storage delete` refuses while any history references the destination and names this command in its error. Remote objects are never removed by a destination delete; they stay in the bucket.
 
 ### Coverage: what is and is not protected
 
@@ -384,7 +386,7 @@ Limits to know about:
 - Deleting a database keeps its data volume and your backups. See [Managing databases](/managing-databases#stop-start-and-delete).
 - The free-space floor protects the control plane's data directory. Nothing watches the Docker host's own disk for a major upgrade's snapshot copy: a copy that runs out of space fails the upgrade before it changes anything.
 - WAL and binary logs for point-in-time restore are shipped to the backup target only for databases on the control plane's own node.
-- A storage endpoint must resolve to a public address unless `APP_NOTIFY_ALLOW_PRIVATE_NETWORKS=true` is set, which a MinIO on the same private network needs.
+- A storage endpoint must resolve to a public address unless `APP_NOTIFY_ALLOW_PRIVATE_NETWORKS=true` is set in the control plane's environment. A local or same-network S3 server needs it, and `storage add` fails with `endpoint_blocked` without it. The name says notify, but the same switch gates storage and relaxes webhook checks too, so set it only on a host you control. The `minio/minio` Docker Hub image can no longer be pulled; see [Prove your backups work](/prove-your-backups-work) for S3-compatible alternatives with arm64 images.
 - Deleting a backup target leaves its stored access key and secret in the secrets store, unreferenced and unreachable through the API but not erased at rest. Registry credentials behave the same way.
 
 ## API reference
@@ -446,6 +448,7 @@ levelrail-cli backup-targets test <id>
 levelrail-cli backup-targets create --name NAME --provider PROVIDER --bucket BUCKET --access-key-id ID --secret-access-key KEY [--endpoint URL] [--region REGION]
 # --endpoint is required for r2 and custom, --region is also required for custom.
 levelrail-cli backup-targets update <id> --name NAME --provider PROVIDER --bucket BUCKET [--access-key-id ID --secret-access-key KEY] [--endpoint URL] [--region REGION]
+# delete returns 409 listing live users of the target. History of deleted resources is kept (shown as target deleted) but cannot be restored from the console; recreating a target does not reattach it. Bucket objects stay in the bucket.
 
 levelrail-cli registry-credentials list
 levelrail-cli registry-credentials get <id>

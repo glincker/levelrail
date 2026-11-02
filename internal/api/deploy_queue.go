@@ -86,7 +86,7 @@ func (rt *Router) deployBlocker(ctx context.Context, name string) bool {
 			return true
 		}
 	}
-	if rt.deployMaxConcurrent > 0 && total >= rt.deployMaxConcurrent {
+	if limit := rt.deployCap(ctx); limit > 0 && total >= limit {
 		return true
 	}
 	return false
@@ -272,7 +272,7 @@ func (rt *Router) startQueued(ctx context.Context) []store.DeployAttempt {
 		if busy[a.ServiceName] {
 			continue
 		}
-		if rt.deployMaxConcurrent > 0 && total >= rt.deployMaxConcurrent {
+		if limit := rt.deployCap(ctx); limit > 0 && total >= limit {
 			break
 		}
 		if rt.queuedFrozen(ctx, a) {
@@ -425,9 +425,9 @@ func (rt *Router) waitFor(ctx context.Context, a store.DeployAttempt, app []stor
 		}
 	}
 	full := false
-	if rt.deployMaxConcurrent > 0 && rt.deploySafety != nil {
+	if limit := rt.deployCap(ctx); limit > 0 && rt.deploySafety != nil {
 		if running, err := rt.deploySafety.ListRunningDeployAttempts(ctx); err == nil {
-			full = len(running) >= rt.deployMaxConcurrent
+			full = len(running) >= limit
 		}
 	}
 	return computeWait(a, app, frozen, frozenUntil, full)

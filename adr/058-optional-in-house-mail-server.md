@@ -1,5 +1,7 @@
 # ADR 058: An optional in-house mail server, wired from an existing engine
 
+Partly superseded by [ADR 064](064-email-for-apps.md): new mail work follows ADR 064.
+
 Status: Proposed
 
 Date: 2026-10-29

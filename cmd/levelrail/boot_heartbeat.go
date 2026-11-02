@@ -8,6 +8,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/heartbeat"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/version"
 )
 
@@ -34,6 +35,33 @@ func (s *bootState) startHeartbeat() {
 		s.agentServer.SetSilenceSource(svc.AgentSilenceURL)
 	}
 	go svc.Run(s.ctx)
+	s.startDDNS()
+	s.startJobHeartbeat()
+}
+
+// startJobHeartbeat wires the per-job ping-out; it needs the secrets store for the encrypted URLs.
+func (s *bootState) startJobHeartbeat() {
+	if s.secretsManager == nil {
+		return
+	}
+	cfg, err := heartbeat.JobPingConfigFromEnv(os.LookupEnv)
+	if err != nil {
+		s.logger.Error("job heartbeat configuration invalid", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+	pinger := heartbeat.NewJobPinger(cfg, s.secretsManager, s.logger)
+	pinger.SetTuning(func(c context.Context) heartbeat.JobTuning {
+		rs := s.apiRouter.RuntimeSettings()
+		return heartbeat.JobTuning{
+			MaxAttempts: rs.Int(c, runtimesettings.KeyHeartbeatJobAttempts),
+			BackoffBase: rs.Duration(c, runtimesettings.KeyHeartbeatJobBackoffBase),
+			BackoffMax:  rs.Duration(c, runtimesettings.KeyHeartbeatJobBackoffMax),
+			Queue:       rs.Int(c, runtimesettings.KeyHeartbeatJobQueue),
+		}
+	})
+	s.scheduledTaskRunner.Pinger = pinger
+	s.apiRouter.SetJobPings(pinger)
+	pinger.Start(s.ctx)
 }
 
 // heartbeatHealth is the gate for the ping: a box that is up but not converging must stop pinging.

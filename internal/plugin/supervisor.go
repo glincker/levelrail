@@ -119,6 +119,7 @@ func (m *Manager) Reconcile(ctx context.Context) {
 		m.log.Error("plugin reconcile: list failed", "error", err)
 		return
 	}
+	m.syncEgress(ctx)
 	known := map[string]bool{}
 	for _, rec := range recs {
 		known[rec.Name] = true
@@ -164,6 +165,7 @@ func (m *Manager) stopPlugin(ctx context.Context, name string) {
 }
 
 func (m *Manager) removeContainer(ctx context.Context, name string) error {
+	m.forgetEgress(name)
 	st, err := m.docker.InspectByName(ctx, m.containerName(name))
 	if err != nil {
 		return fmt.Errorf("inspect: %w", err)
@@ -257,10 +259,7 @@ func (m *Manager) checkHealth(ctx context.Context, rec Record, in *instance, cli
 }
 
 func (m *Manager) containerSpec(rec Record) docker.ContainerSpec {
-	uid, gid := m.cfg.UID, m.cfg.GID
-	if uid <= 0 {
-		uid, gid = fallbackUID, fallbackUID
-	}
+	uid, gid := m.containerIDs()
 	spec := docker.ContainerSpec{
 		Name:  m.containerName(rec.Name),
 		Image: rec.Image,
@@ -284,11 +283,8 @@ func (m *Manager) containerSpec(rec Record) docker.ContainerSpec {
 
 func (m *Manager) start(ctx context.Context, rec Record, in *instance) error {
 	dir := m.runDir(rec.Name)
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return fmt.Errorf("prepare socket dir: %w", err)
-	}
-	if err := os.Chmod(dir, 0o700); err != nil { //nolint:gosec // the socket dir must be owner-only, 0700 is the point
-		return fmt.Errorf("secure socket dir: %w", err)
+	if err := m.securePrivateDir(dir); err != nil {
+		return err
 	}
 	sock := filepath.Join(dir, socketFile)
 	_ = os.Remove(sock)
@@ -302,7 +298,16 @@ func (m *Manager) start(ctx context.Context, rec Record, in *instance) error {
 	}
 	spec := m.containerSpec(rec)
 	if spec.Network != nil {
-		if _, err := m.docker.EnsureNetwork(ctx, spec.Network.Name); err != nil {
+		if m.proxyMode() {
+			// Fail closed: no proxy env means no start, never an open fallback.
+			env, err := m.egressEnvFor(ctx, rec)
+			if err != nil {
+				return err
+			}
+			for k, v := range env {
+				spec.Env[k] = v
+			}
+		} else if err := m.ensurePluginNetwork(ctx); err != nil {
 			return fmt.Errorf("ensure plugin network: %w", err)
 		}
 	}

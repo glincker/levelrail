@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/ai"
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -320,7 +321,7 @@ func (s *aiSSESink) ToolCallProposed(confirmationID, toolUseID, toolName string,
 		Name           string          `json:"name"`
 		Arguments      json.RawMessage `json:"arguments"`
 		ReadOnly       bool            `json:"read_only"`
-	}{aiSSEEventToolCallProposed, confirmationID, toolUseID, toolName, arguments, false})
+	}{aiSSEEventToolCallProposed, confirmationID, toolUseID, toolName, json.RawMessage(secretmask.Mask(string(arguments))), false})
 }
 
 func (s *aiSSESink) ToolResult(toolUseID, toolName string, result json.RawMessage, isError bool) {

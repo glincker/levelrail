@@ -1,10 +1,15 @@
 package main
 
 import (
+	"encoding/json"
+	"os"
 	"reflect"
+	"slices"
 	"sort"
+	"strings"
 	"testing"
 
+	"github.com/GLINCKER/levelrail/internal/platformimport"
 	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
@@ -289,5 +294,48 @@ func TestMapEnvKeysSorted(t *testing.T) {
 	keys, _, _ := mapEnv(envs, false, nil)
 	if !sort.StringsAreSorted(keys) {
 		t.Errorf("keys = %v, want sorted", keys)
+	}
+}
+
+func TestCoolifyMapService(t *testing.T) {
+	svc := platformimport.Service{
+		Name:    "Plausible Stack",
+		Compose: "services:\n  web:\n    image: plausible:v2\n    labels:\n      - coolify.managed=true\n    environment:\n      - SERVICE_FQDN_PLAUSIBLE_8000\n      - SECRET=${SERVICE_PASSWORD_64_KEY}\n      - DB=${SERVICE_PASSWORD_DB}\n      - TOKEN=********\n      - ODD=${SERVICE_NAME_X}\n      - NEEDS=${EXTRA}\n    volumes:\n      - data:/var/lib\n      - ./conf:/etc/conf\nvolumes:\n  data:\n",
+	}
+	got := mapCoolifyService(svc, "apps.test")
+	if got.Blocking || got.Compose == nil || got.ServiceName != "plausible-stack" {
+		t.Fatalf("unexpected mapping: %+v", got)
+	}
+	y := got.Compose.Yaml
+	if !strings.Contains(y, "SERVICE_FQDN_PLAUSIBLE_8000=plausible.apps.test") || strings.Contains(y, "${SERVICE_PASSWORD") {
+		t.Errorf("magic vars not translated:\n%s", y)
+	}
+	if len(got.Compose.Generated) != 2 || len(got.Compose.Volumes) != 1 {
+		t.Errorf("generated=%v volumes=%v", got.Compose.Generated, got.Compose.Volumes)
+	}
+	want := []string{"SERVICE_NAME_X", "volume ./conf:/etc/conf", "masked secret values"}
+	for _, w := range want {
+		if !slices.Contains(got.Compose.Unsupported, w) {
+			t.Errorf("Unsupported %v lacks %q", got.Compose.Unsupported, w)
+		}
+	}
+
+	clean := svc
+	clean.Compose = strings.ReplaceAll(svc.Compose, "      - ODD=${SERVICE_NAME_X}\n", "")
+	app := mapCoolifyService(clean, "apps.test")
+	dir := t.TempDir()
+	stageComposeApp(&app, dir)
+	if !app.Applied || app.CreateError != "" {
+		t.Fatalf("stage failed: %+v", app)
+	}
+	data, err := os.ReadFile(app.Compose.StagedPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hasRawMagicVar(string(data)) || strings.Contains(string(data), "SERVICE_PASSWORD") {
+		t.Errorf("raw magic var left in staged file:\n%s", data)
+	}
+	if b, _ := json.Marshal(app); strings.Contains(string(b), "SERVICE_FQDN") || strings.Contains(string(b), "image:") {
+		t.Errorf("report leaks compose body: %s", b)
 	}
 }

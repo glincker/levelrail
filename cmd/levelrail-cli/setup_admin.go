@@ -22,7 +22,7 @@ func runSetupAdmin(prog string, args []string, stdout, stderr io.Writer, lookupE
 	fs := flag.NewFlagSet(prog+" setup admin", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	username := fs.String("username", "admin", "username for the first admin")
-	apiURL := fs.String("api-url", "", "control plane base URL (default: "+envAPIURL+" env var, then "+defaultAPIURL+")")
+	apiURL := fs.String("api-url", "", "control plane base URL (default: "+apiURLEnvHelp+" env var, then "+defaultAPIURL+")")
 	profile := fs.String("profile", "", "credentials profile (overrides "+envProfile+")")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s setup admin [--username U] [--api-url URL] [--profile NAME]\n\nCreates the first admin on a fresh server. Run \"setup-token\" on the host to get the token, then set %s and %s (or answer the prompts).\n\nFlags:\n", prog, envSetupToken, envAdminPassword)

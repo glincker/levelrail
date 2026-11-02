@@ -98,10 +98,11 @@ func (r *accessRing) snapshot() []AccessRecord {
 // Memory is bounded by hosts times capacity and the log is lost on restart,
 // which is the point: it answers "what just happened", not history.
 type AccessLog struct {
-	mu        sync.RWMutex
-	cap       int
-	retention time.Duration
-	rings     map[string]*accessRing
+	mu           sync.RWMutex
+	cap          int
+	retention    time.Duration
+	retentionSrc atomic.Pointer[func() time.Duration]
+	rings        map[string]*accessRing
 
 	subs    atomic.Pointer[[]accessSub]
 	capture atomic.Bool
@@ -187,6 +188,20 @@ func newAccessLogWithRetention(capacity int, retention time.Duration) *AccessLog
 	return l
 }
 
+// SetRetentionSource makes reads ask fn for the window, so a saved setting applies to the next read.
+func (l *AccessLog) SetRetentionSource(fn func() time.Duration) {
+	if l != nil {
+		l.retentionSrc.Store(&fn)
+	}
+}
+
+func (l *AccessLog) retentionNow() time.Duration {
+	if p := l.retentionSrc.Load(); p != nil {
+		return (*p)()
+	}
+	return l.retention
+}
+
 // accessRetentionFromEnv reads APP_ACCESS_LOG_RETENTION; zero keeps records until the ring overwrites them.
 func accessRetentionFromEnv() time.Duration {
 	d, err := time.ParseDuration(strings.TrimSpace(os.Getenv("APP_ACCESS_LOG_RETENTION")))
@@ -243,6 +258,7 @@ func (l *AccessLog) Query(keys []string, f AccessFilter) []AccessRecord {
 	if limit <= 0 || limit > 500 {
 		limit = 100
 	}
+	ret := l.retentionNow()
 	var out []AccessRecord
 	for _, key := range keys {
 		l.mu.RLock()
@@ -252,7 +268,7 @@ func (l *AccessLog) Query(keys []string, f AccessFilter) []AccessRecord {
 			continue
 		}
 		for _, rec := range r.snapshot() {
-			if l.retention > 0 && time.Since(rec.Time) > l.retention {
+			if ret > 0 && time.Since(rec.Time) > ret {
 				continue
 			}
 			if rec.Millis < f.MinMillis || rec.Status < f.MinStatus {
@@ -280,6 +296,7 @@ func (l *AccessLog) Since(keys []string, since time.Time) []AccessRecord {
 	if l == nil {
 		return nil
 	}
+	ret := l.retentionNow()
 	var out []AccessRecord
 	for _, key := range keys {
 		l.mu.RLock()
@@ -289,7 +306,7 @@ func (l *AccessLog) Since(keys []string, since time.Time) []AccessRecord {
 			continue
 		}
 		for _, rec := range r.snapshot() {
-			if rec.Time.Before(since) || (l.retention > 0 && time.Since(rec.Time) > l.retention) {
+			if rec.Time.Before(since) || (ret > 0 && time.Since(rec.Time) > ret) {
 				continue
 			}
 			out = append(out, rec)

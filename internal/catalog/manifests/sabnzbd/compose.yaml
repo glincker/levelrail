@@ -1,0 +1,17 @@
+services:
+  sabnzbd:
+    image: lscr.io/linuxserver/sabnzbd:5.1.3
+    ports: ["8080"]
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: ${TZ}
+    volumes:
+      - config:/config
+      - downloads:/downloads
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080/"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s

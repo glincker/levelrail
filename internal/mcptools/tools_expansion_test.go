@@ -16,7 +16,13 @@ import (
 
 func newOptionsSession(t *testing.T, opts Options, apiHandler http.HandlerFunc) *mcp.ClientSession {
 	t.Helper()
-	apiSrv := httptest.NewServer(apiHandler)
+	apiSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/v1/auth/my-access" {
+			http.NotFound(w, r)
+			return
+		}
+		apiHandler(w, r)
+	}))
 	t.Cleanup(apiSrv.Close)
 	server, _ := NewServerWithOptions(apiclient.NewClient(apiSrv.URL, "test-token"), opts)
 	st, ct := mcp.NewInMemoryTransports()

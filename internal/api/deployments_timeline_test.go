@@ -13,6 +13,7 @@ import (
 )
 
 func TestDeploymentsTimelineWindowAndFilters(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -66,6 +67,7 @@ func TestDeploymentsTimelineWindowAndFilters(t *testing.T) {
 }
 
 func TestDeploymentsTimelineAlertMarkers(t *testing.T) {
+	t.Parallel()
 	rt, db, adb, cookie := newNoiseRouter(t)
 	ctx := context.Background()
 	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "web:1", Port: 80}); err != nil {

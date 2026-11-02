@@ -1,0 +1,31 @@
+id: romm
+name: RomM
+description: A self-hosted retro game library manager. It scans your ROM collection, matches metadata and cover art, and lets you browse, search and play games in the browser. Runs with a bundled MariaDB database. On first open, the setup page asks you to create the admin login.
+icon: gamepad
+category: Media
+documentation_url: https://docs.romm.app/latest/
+source_repo: https://github.com/rommapp/romm
+license: AGPL-3.0
+license_class: network-copyleft
+license_url: https://github.com/rommapp/romm/blob/master/LICENSE
+hosted_use: unknown
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 1073741824
+first_run:
+  - Open the app and create the admin account on the setup page.
+  - Copy your ROM files into the library volume, one folder per platform, then run a scan from the app.
+env:
+  - key: TZ
+    label: Time zone
+    description: IANA time zone for dates and logs.
+    default: Etc/UTC
+domains:
+  - service: romm
+    port: 8080
+    description: Public address of RomM.
+healthcheck:
+  service: romm
+  port: 8080
+  path: /api/heartbeat

@@ -94,6 +94,7 @@ export function useTemplateUpgradeRun(app: string, enabled: boolean) {
 export function useApplyTemplateUpgrade(app: string) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async (acceptRisk: boolean): Promise<TemplateUpgradeRun> => {
       const res = await fetch(base(app), {
         method: 'POST',

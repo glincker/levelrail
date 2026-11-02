@@ -1,0 +1,71 @@
+---
+title: "Self-host MeshCentral with Docker"
+sidebarTitle: "MeshCentral"
+description: "A remote device management server with web-based desktop, terminal and file access, plus agents for Windows, Linux and macOS. Apache-2.0 licensed. The first account you register becomes the server admin, so register it before sharing the address. Set the host name to your public domain so agents can find the server."
+"og:url": "https://docs.levelrail.com/self-host/meshcentral"
+---
+
+A remote device management server with web-based desktop, terminal and file access, plus agents for Windows, Linux and macOS. Apache-2.0 licensed. The first account you register becomes the server admin, so register it before sharing the address. Set the host name to your public domain so agents can find the server.
+
+This page describes the Levelrail template for MeshCentral (Infrastructure). It deploys the services below as one Docker Compose app on your own server. Project site: https://meshcentral.com/docs/.
+
+Recommended memory: about 384 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `meshcentral` | `ghcr.io/ylianst/meshcentral:1.3.1` | 4430 | `data -&#62; /opt/meshcentral/meshcentral-data`<br />`files -&#62; /opt/meshcentral/meshcentral-files`<br />`web -&#62; /opt/meshcentral/meshcentral-web`<br />`backups -&#62; /opt/meshcentral/meshcentral-backups` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `meshcentral` | `ALLOW_NEW_ACCOUNTS` | Preset in the template |
+| `meshcentral` | `DYNAMIC_CONFIG` | Preset in the template |
+| `meshcentral` | `HOSTNAME` | Preset in the template |
+| `meshcentral` | `PORT` | Preset in the template |
+| `meshcentral` | `REVERSE_PROXY` | Preset in the template |
+| `meshcentral` | `REVERSE_PROXY_TLS_PORT` | Preset in the template |
+| `meshcentral` | `TLS_OFFLOAD` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`meshcentral`): backups, data, files, web.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy MeshCentral with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select MeshCentral. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy meshcentral --name my-meshcentral
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Infrastructure templates
+
+- [AdGuard Home](/self-host/adguard-home)
+- [Cloudflare DDNS](/self-host/cloudflare-ddns)
+- [Consul](/self-host/consul)
+- [Elasticsearch](/self-host/elasticsearch)
+- [etcd](/self-host/etcd)
+
+All templates are listed in the [self-host gallery](/self-host).

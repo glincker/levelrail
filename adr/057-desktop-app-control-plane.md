@@ -1,6 +1,6 @@
 # ADR 057: A desktop app that runs the control plane only while it is open
 
-Status: Proposed
+Status: Superseded by ADR 070
 
 Date: 2026-10-29
 

@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 // ErrTeamInviteInvalid covers an unknown, expired, revoked or already used
@@ -263,6 +265,8 @@ type TeamEvent struct {
 
 // RecordTeamEvent appends to a team's audit trail.
 func (db *DB) RecordTeamEvent(ctx context.Context, e TeamEvent) error {
+	// Subject carries user-typed names, so it is masked with the detail.
+	e.Subject, e.Detail = secretmask.Mask(e.Subject), secretmask.Mask(e.Detail)
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO team_events (id, team_id, actor_id, actor_name, action, subject, detail, created_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, e.ID, e.TeamID, e.ActorID, e.ActorName, e.Action, e.Subject, e.Detail, formatTime(e.CreatedAt))

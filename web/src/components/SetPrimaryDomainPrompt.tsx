@@ -19,7 +19,7 @@ import {
 export function SetPrimaryDomainPrompt() {
   const { t } = useTranslation('settings')
   const { data: ingressSettings } = useIngressSettings()
-  const update = useUpdateIngressSettings()
+  const update = useUpdateIngressSettings({ inlineError: true })
   const [domain, setDomain] = useState('')
   const inputId = useId()
 

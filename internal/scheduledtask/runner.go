@@ -25,6 +25,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/envredact"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 	appspec "github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/kit/backoff"
@@ -81,6 +82,11 @@ type Trigger struct {
 	CatchUp      bool
 }
 
+// RunPinger is told once per settled run; it must not block or fail the run.
+type RunPinger interface {
+	Notify(taskID, runID, status string)
+}
+
 // Runner runs one job and records the outcome.
 type Runner struct {
 	Apps     AppStore
@@ -97,6 +103,8 @@ type Runner struct {
 	Client      *http.Client
 	// NamePrefix namespaces fresh job containers (the brand short name).
 	NamePrefix string
+	// Pinger gets the settled status of each run for the per-job heartbeat; nil disables it.
+	Pinger RunPinger
 
 	// Now returns the current time; nil falls back to time.Now.
 	Now func() time.Time
@@ -284,8 +292,9 @@ func (r *Runner) settleWithoutRunning(ctx context.Context, task store.ScheduledT
 
 func (r *Runner) closeRun(ctx context.Context, task store.ScheduledTask, trig Trigger, runID string, started time.Time, res result) error {
 	ended := r.now()
-	output := redact(res.output, res.secrets)
-	message := redact(res.message, res.secrets)
+	// Mask before capTail so a secret straddling the cut leaves no fragment.
+	output := secretmask.Mask(redact(res.output, res.secrets))
+	message := secretmask.Mask(redact(res.message, res.secrets))
 	snapshot := output
 	if snapshot == "" {
 		snapshot = message
@@ -308,6 +317,9 @@ func (r *Runner) closeRun(ctx context.Context, task store.ScheduledTask, trig Tr
 	}
 	if rerr := r.record(ctx, task.ID, res.status, snapshot); rerr != nil {
 		return rerr
+	}
+	if r.Pinger != nil {
+		r.Pinger.Notify(task.ID, runID, res.status)
 	}
 	return res.infraErr
 }
@@ -622,7 +634,7 @@ func (r *Runner) Cleanup(ctx context.Context, runs []store.ScheduledTaskRun) {
 const replacedOutputMessage = "run cancelled: replaced by a newer invocation (concurrency_policy: replace)"
 
 func (r *Runner) record(ctx context.Context, taskID, status, output string) error {
-	if err := r.Runs.RecordScheduledTaskRun(ctx, taskID, r.now(), status, capTail(output, maxOutputBytes)); err != nil {
+	if err := r.Runs.RecordScheduledTaskRun(ctx, taskID, r.now(), status, capTail(secretmask.Mask(output), maxOutputBytes)); err != nil {
 		return fmt.Errorf("scheduledtask: record run %q: %w", taskID, err)
 	}
 	return nil
@@ -648,13 +660,23 @@ type tailCappedWriter struct {
 	limit int
 	buf   []byte
 	total int64
+	mask  *secretmask.Writer
 }
 
 func newTailCappedWriter(limit int) *tailCappedWriter {
-	return &tailCappedWriter{limit: limit, buf: make([]byte, 0, limit)}
+	w := &tailCappedWriter{limit: limit, buf: make([]byte, 0, limit)}
+	w.mask = secretmask.NewWriter(rawTail{w})
+	return w
 }
 
-func (w *tailCappedWriter) Write(p []byte) (int, error) {
+// rawTail is the post-mask stage, so the cap only ever cuts already masked text.
+type rawTail struct{ w *tailCappedWriter }
+
+func (r rawTail) Write(p []byte) (int, error) { return r.w.append(p) }
+
+func (w *tailCappedWriter) Write(p []byte) (int, error) { return w.mask.Write(p) }
+
+func (w *tailCappedWriter) append(p []byte) (int, error) {
 	w.total += int64(len(p))
 	w.buf = append(w.buf, p...)
 	if len(w.buf) > w.limit {
@@ -665,9 +687,13 @@ func (w *tailCappedWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-func (w *tailCappedWriter) truncated() bool { return w.total > int64(w.limit) }
+func (w *tailCappedWriter) truncated() bool {
+	_ = w.mask.Flush()
+	return w.total > int64(w.limit)
+}
 
 func (w *tailCappedWriter) String() string {
+	_ = w.mask.Flush()
 	if w.total > int64(w.limit) {
 		return "[output truncated, showing the last " + strconv.Itoa(w.limit) + " bytes]\n" + string(w.buf)
 	}

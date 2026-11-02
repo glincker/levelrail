@@ -20,7 +20,7 @@ func (u UnresolvedVar) String() string {
 // ResolveMagicVars scans every service's environment and command for
 // SERVICE_ placeholders, mutating f in place: a token with a bash-style
 // default substitutes that default as a literal value; a generatable
-// token (PASSWORD/USER/BASE64/HEX/REALBASE64) found in Environment is
+// token (PASSWORD/USER/BASE64/HEX/REALBASE64/BASE64BYTES) found in Environment is
 // removed from it entirely and returned via secretEnv instead, since its
 // real value belongs in secret storage, not a literal desired-state
 // column. Command has no equivalent secret-storage indirection (a
@@ -50,6 +50,17 @@ func ResolveMagicVars(
 	generate func(kind, key string, length int) (string, error),
 	persist func(serviceKey, envKey, value string) error,
 ) (secretEnv map[string][]string, unresolved []UnresolvedVar, err error) {
+	return resolveMagicVars(f, generate, persist, true)
+}
+
+// resolveMagicVars is ResolveMagicVars with the generic ${VAR:-default}
+// pass switchable, so a test can compare against the SERVICE_-only result.
+func resolveMagicVars(
+	f *File,
+	generate func(kind, key string, length int) (string, error),
+	persist func(serviceKey, envKey, value string) error,
+	interpolate bool,
+) (secretEnv map[string][]string, unresolved []UnresolvedVar, err error) {
 	secretEnv = make(map[string][]string)
 	generated := make(map[string]string)
 
@@ -76,19 +87,26 @@ func ResolveMagicVars(
 		}
 		newEnv := make(Environment, len(svc.Environment))
 		for envKey, value := range svc.Environment {
+			if interpolate {
+				var ierr error
+				value, ierr = interpolateValue(value, f.InterpVars, func(w string) {
+					f.InterpWarnings = append(f.InterpWarnings, fmt.Sprintf("service %q: env %q: %s", svcKey, envKey, w))
+				})
+				if ierr != nil {
+					return nil, nil, fmt.Errorf("service %q: env %q: %w", svcKey, envKey, ierr)
+				}
+			}
 			vars := FindMagicVars(value)
 			if len(vars) == 0 {
-				newEnv[envKey] = value
+				newEnv[envKey] = unescapeDollar(value)
 				continue
 			}
 
 			if len(vars) == 1 && vars[0].Token == value {
 				v := vars[0]
-				if v.Kind == "FQDN" {
-					if url, ok := resolveFQDN(f, svcKey); ok {
-						newEnv[envKey] = url
-						continue
-					}
+				if val, ok := resolveDomainVar(f, svcKey, v); ok {
+					newEnv[envKey] = val
+					continue
 				}
 				if v.Generatable {
 					val, genErr := resolveGenerated(generated, v, generate)
@@ -112,11 +130,9 @@ func ResolveMagicVars(
 			resolved := value
 			hasSecret := false
 			for _, v := range vars {
-				if v.Kind == "FQDN" {
-					if url, ok := resolveFQDN(f, svcKey); ok {
-						resolved = strings.Replace(resolved, v.Token, url, 1)
-						continue
-					}
+				if val, ok := resolveDomainVar(f, svcKey, v); ok {
+					resolved = strings.Replace(resolved, v.Token, val, 1)
+					continue
 				}
 				if v.Generatable {
 					val, genErr := resolveGenerated(generated, v, generate)
@@ -133,6 +149,7 @@ func ResolveMagicVars(
 				}
 				unresolved = append(unresolved, UnresolvedVar{Service: svcKey, EnvKey: envKey, Token: v.Token})
 			}
+			resolved = unescapeDollar(resolved)
 			if hasSecret {
 				if err := persist(svcKey, envKey, resolved); err != nil {
 					return nil, nil, fmt.Errorf("service %q: env %q: persist secret: %w", svcKey, envKey, err)
@@ -148,17 +165,25 @@ func ResolveMagicVars(
 	return secretEnv, unresolved, nil
 }
 
-// resolveFQDN resolves ${SERVICE_FQDN_*} to the referencing service's
-// own assigned domain (x-levelrail-domains), ignoring the token's own
-// key suffix: FQDN almost always means "my own public URL," and that's
-// a per-service fact, not a value shared across services the way a
-// generated secret's (kind, key) is.
-func resolveFQDN(f *File, svcKey string) (string, bool) {
-	domain, ok := f.Domains[svcKey]
-	if !ok || domain == "" {
+// resolveDomainVar resolves ${SERVICE_FQDN_*} to the referencing service's
+// bare host and ${SERVICE_URL_*} to https://host. The token's own key
+// suffix is ignored: both mean "my own public address", a per-service
+// fact. With no domain assigned it reports false so a ":-default" applies.
+func resolveDomainVar(f *File, svcKey string, v MagicVar) (string, bool) {
+	if v.Kind != "FQDN" && v.Kind != "URL" {
 		return "", false
 	}
-	return "https://" + domain, true
+	domain := f.Domains[svcKey]
+	if domain == "" {
+		domain = f.RuntimeDomains[svcKey]
+	}
+	if domain == "" || strings.Contains(domain, "*") {
+		return "", false
+	}
+	if v.Kind == "URL" {
+		return "https://" + domain, true
+	}
+	return domain, true
 }
 
 // resolveCommandEntry resolves every magic var in one Command entry the
@@ -177,11 +202,9 @@ func resolveCommandEntry(f *File, svcKey string, index int, entry string) (strin
 	resolved := entry
 	var unresolved []UnresolvedVar
 	for _, v := range vars {
-		if v.Kind == "FQDN" {
-			if url, ok := resolveFQDN(f, svcKey); ok {
-				resolved = strings.Replace(resolved, v.Token, url, 1)
-				continue
-			}
+		if val, ok := resolveDomainVar(f, svcKey, v); ok {
+			resolved = strings.Replace(resolved, v.Token, val, 1)
+			continue
 		}
 		if v.Generatable {
 			unresolved = append(unresolved, UnresolvedVar{Service: svcKey, EnvKey: location, Token: v.Token})

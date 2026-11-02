@@ -3,7 +3,7 @@ import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 import { useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { Trans, useTranslation } from 'react-i18next'
+import { useTranslation } from 'react-i18next'
 import { GlobeGlassIcon, PlusGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import { DOMAIN_PATTERN } from '../lib/domainWizard'
 import { DomainEnvironmentTabs } from './DomainEnvironmentTabs'
@@ -71,7 +71,7 @@ function toFieldValues(domains?: string[]): { value: string }[] {
 export function DomainEditor({ app }: { app: AppDetail }) {
   const { t } = useTranslation('domains')
   const [wizardOpen, setWizardOpen] = useState(false)
-  const updateApp = useUpdateApp(app.name)
+  const updateApp = useUpdateApp(app.name, { inlineError: true })
   const domainSchema = useMemo(() => buildDomainSchema(t), [t])
   const { data: certificates } = useCertificates()
   const { control, register, handleSubmit, formState } =
@@ -119,11 +119,11 @@ export function DomainEditor({ app }: { app: AppDetail }) {
           {t('editor.title')}
         </CardTitle>
         <CardDescription>
-          <Trans
-            t={t}
-            i18nKey="editor.description"
-            components={{ link: <Link to="/domains" className="underline" /> }}
-          />
+          {t('editor.descriptionBefore')}
+          <Link to="/domains" className="underline">
+            {t('editor.descriptionLink')}
+          </Link>
+          {t('editor.descriptionAfter')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -230,7 +230,10 @@ export function DomainEditor({ app }: { app: AppDetail }) {
                                   />
                                 )}
                               </div>
-                              <ProxyDomainStatus domain={domain} />
+                              <ProxyDomainStatus
+                                appName={app.name}
+                                domain={domain}
+                              />
                               <DomainDnsRecordsControl
                                 appName={app.name}
                                 domain={domain}

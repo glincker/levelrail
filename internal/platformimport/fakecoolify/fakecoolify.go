@@ -181,6 +181,12 @@ func (s *Server) Handler() http.Handler {
 			"services": list(obj{"uuid": ServiceUUID, "name": "plausible", "service_type": "plausible", "destination": obj{"server": obj{"name": "hetzner-1"}}}),
 		})
 	})
+	mux.HandleFunc("/api/v1/services/{uuid}", func(w http.ResponseWriter, _ *http.Request) {
+		write(w, obj{"docker_compose_raw": "services:\n  plausible:\n    image: plausible/analytics:v2\n"})
+	})
+	mux.HandleFunc("/api/v1/services/{uuid}/envs", func(w http.ResponseWriter, _ *http.Request) {
+		write(w, list(envVar("POSTGRES_PASSWORD", "svc-db-pass", false)))
+	})
 	mux.HandleFunc("/api/v1/applications/{uuid}/envs", func(w http.ResponseWriter, r *http.Request) {
 		write(w, s.envs(r.PathValue("uuid")))
 	})

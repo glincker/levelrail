@@ -14,6 +14,7 @@ import (
 )
 
 func TestHandleDownloadDeployLog_AppNotFound(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -25,6 +26,7 @@ func TestHandleDownloadDeployLog_AppNotFound(t *testing.T) {
 }
 
 func TestHandleDownloadDeployLog_AttemptNotFound(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -41,6 +43,7 @@ func TestHandleDownloadDeployLog_AttemptNotFound(t *testing.T) {
 }
 
 func TestHandleDownloadDeployLog_AttemptBelongsToDifferentApp(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -63,6 +66,7 @@ func TestHandleDownloadDeployLog_AttemptBelongsToDifferentApp(t *testing.T) {
 }
 
 func TestHandleDownloadDeployLog_FinishedAttempt_ReturnsPersistedLog(t *testing.T) {
+	t.Parallel()
 	db := openTestDB(t)
 	fakeLogStore := &fakeDeployLogQuerier{
 		entries: map[string][]sseTestEntry{
@@ -110,6 +114,7 @@ func TestHandleDownloadDeployLog_FinishedAttempt_ReturnsPersistedLog(t *testing.
 }
 
 func TestHandleDownloadDeployLog_FinishedAttempt_NoLogStoreConfigured(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t) // no WithDeployLogQuerier
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -135,6 +140,7 @@ func TestHandleDownloadDeployLog_FinishedAttempt_NoLogStoreConfigured(t *testing
 }
 
 func TestHandleDownloadDeployLog_InProgressAttempt_ReturnsBufferedLines(t *testing.T) {
+	t.Parallel()
 	db := openTestDB(t)
 	recorder := deploylog.NewRecorder(nil, discardLogger())
 	rt := NewRouter(nil, testBrand(), db, WithDeployRecorder(recorder))

@@ -50,6 +50,7 @@ func (rt *Router) teardownPreviewRecord(ctx context.Context, preview store.Previ
 func (rt *Router) teardownPreviewRecordReason(ctx context.Context, preview store.PreviewEnvironment, reason string) (int, string) {
 	failed := rt.removePreviewDNS(ctx, preview)
 	failed = append(failed, rt.teardownPreviewApp(ctx, preview.PreviewAppID)...)
+	failed = append(failed, rt.teardownPreviewStatic(ctx, preview.PreviewAppID)...)
 	failed = append(failed, rt.teardownPreviewEphemeralDatabases(ctx, preview.ID)...)
 	failed = append(failed, rt.teardownPreviewDatabaseIsolations(ctx, preview.ID)...)
 	if label := rt.clearPRPreviewEnv(ctx, preview.AppName, preview.PRNumber); label != "" {

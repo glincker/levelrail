@@ -25,6 +25,36 @@ type oneShotAttempter interface {
 	RunAttempt(ctx context.Context, task store.ScheduledTask) (scheduledtask.AttemptOutcome, error)
 }
 
+// oneShotPersister is the optional durable side of one-shot jobs. A store
+// without it keeps jobs in memory only, as before.
+type oneShotPersister interface {
+	SaveOneShotJob(ctx context.Context, j store.OneShotJob) error
+	GetOneShotJob(ctx context.Context, id string) (store.OneShotJob, error)
+	FailInterruptedOneShotJobs(ctx context.Context, reason string, now time.Time) (int, error)
+	PruneOneShotJobs(ctx context.Context, keep int) ([]string, error)
+}
+
+const oneShotInterruptedReason = "control plane restarted while the job was running; interrupted attempts are not resumed so the command never runs twice"
+
+// oneShotRecovered records which stores already had their stale Running
+// jobs failed in this process.
+var oneShotRecovered sync.Map
+
+func (rt *Router) oneShotPersister(ctx context.Context) oneShotPersister {
+	p, ok := rt.scheduledTasks.(oneShotPersister)
+	if !ok {
+		return nil
+	}
+	if _, done := oneShotRecovered.LoadOrStore(p, true); !done {
+		if n, err := p.FailInterruptedOneShotJobs(ctx, oneShotInterruptedReason, time.Now()); err != nil {
+			rt.logger.Error("api: fail interrupted one-shot jobs", slog.String("error", err.Error()))
+		} else if n > 0 {
+			rt.logger.Warn("api: marked one-shot jobs interrupted by a restart as failed", slog.Int("jobs", n))
+		}
+	}
+	return p
+}
+
 var (
 	oneShotOnce     sync.Once
 	oneShotLimits   scheduledtask.OneShotLimits
@@ -44,7 +74,7 @@ func oneShotInit() {
 // right now, so it needs AbilityDeploy on the app, like "run now".
 func (rt *Router) registerOneShotJobRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/jobs/runs", rt.requireAbilityForResource(AbilityDeploy, oneShotAppFromBody, rt.handleStartOneShotJob))
-	mux.HandleFunc("GET /api/v1/jobs/runs/{id}", rt.requireAbilityForResource(AbilityRead, oneShotAppFromID, rt.handleGetOneShotJob))
+	mux.HandleFunc("GET /api/v1/jobs/runs/{id}", rt.requireAbilityForResource(AbilityRead, rt.oneShotAppFromID, rt.handleGetOneShotJob))
 }
 
 // oneShotAppFromBody names the app resource from the JSON body without
@@ -62,10 +92,15 @@ func oneShotAppFromBody(r *http.Request) string {
 	return "app:" + probe.App
 }
 
-func oneShotAppFromID(r *http.Request) string {
+func (rt *Router) oneShotAppFromID(r *http.Request) string {
 	oneShotInit()
 	if e, ok := oneShotRegistry.Get(r.PathValue("id")); ok {
 		return "app:" + e.App
+	}
+	if p := rt.oneShotPersister(r.Context()); p != nil {
+		if j, err := p.GetOneShotJob(r.Context(), r.PathValue("id")); err == nil {
+			return "app:" + j.App
+		}
 	}
 	return "app:"
 }
@@ -101,6 +136,23 @@ func toOneShotResponse(e *scheduledtask.OneShotEntry) oneShotResponse {
 		ID: e.ID, App: e.App, State: s.State, Completions: s.Completions, Parallelism: e.Spec.Parallelism,
 		BackoffLimit: e.Spec.BackoffLimit, Succeeded: s.Succeeded, FailedAttempts: s.FailedAttempts,
 		Active: s.Active, RunIDs: s.RunIDs, Message: s.Message, StartedAt: s.StartedAt, FinishedAt: s.FinishedAt,
+	}
+}
+
+func storedOneShotJob(e *scheduledtask.OneShotEntry, s scheduledtask.OneShotSnapshot) store.OneShotJob {
+	return store.OneShotJob{
+		ID: e.ID, App: e.App, TaskID: e.TaskID, State: s.State, Completions: s.Completions,
+		Parallelism: e.Spec.Parallelism, BackoffLimit: e.Spec.BackoffLimit, Succeeded: s.Succeeded,
+		FailedAttempts: s.FailedAttempts, Active: s.Active, RunIDs: s.RunIDs, Message: s.Message,
+		StartedAt: s.StartedAt, FinishedAt: s.FinishedAt,
+	}
+}
+
+func fromStoredOneShot(j store.OneShotJob) oneShotResponse {
+	return oneShotResponse{
+		ID: j.ID, App: j.App, State: j.State, Completions: j.Completions, Parallelism: j.Parallelism,
+		BackoffLimit: j.BackoffLimit, Succeeded: j.Succeeded, FailedAttempts: j.FailedAttempts, Active: j.Active,
+		RunIDs: append([]string{}, j.RunIDs...), Message: j.Message, StartedAt: j.StartedAt, FinishedAt: j.FinishedAt,
 	}
 }
 
@@ -168,6 +220,20 @@ func (rt *Router) handleStartOneShotJob(w http.ResponseWriter, r *http.Request) 
 
 	entry := &scheduledtask.OneShotEntry{ID: jobID, App: req.App, TaskID: taskID, Spec: spec, Job: &scheduledtask.OneShot{}}
 	entry.Job.Init(spec)
+	if p := rt.oneShotPersister(r.Context()); p != nil {
+		bg := context.WithoutCancel(r.Context())
+		if err := p.SaveOneShotJob(bg, storedOneShotJob(entry, entry.Job.Snapshot())); err != nil {
+			_ = rt.scheduledTasks.DeleteScheduledTask(bg, taskID)
+			rt.internalError(w, "api: start one-shot job: persist job failed", err, slog.String("app", req.App))
+			return
+		}
+		entry.Job.OnUpdate = func(s scheduledtask.OneShotSnapshot) {
+			if err := p.SaveOneShotJob(bg, storedOneShotJob(entry, s)); err != nil {
+				rt.logger.Error("api: persist one-shot job failed", slog.String("error", err.Error()), slog.String("job", jobID))
+			}
+		}
+		rt.pruneOneShotJobs(bg, p)
+	}
 	oneShotRegistry.Add(entry)
 	go entry.Job.Run(context.WithoutCancel(r.Context()), spec, func(ctx context.Context, _, _ int) scheduledtask.AttemptOutcome {
 		out, err := attempter.RunAttempt(ctx, task)
@@ -185,12 +251,41 @@ func (rt *Router) handleStartOneShotJob(w http.ResponseWriter, r *http.Request) 
 // handleGetOneShotJob handles GET /api/v1/jobs/runs/{id}.
 func (rt *Router) handleGetOneShotJob(w http.ResponseWriter, r *http.Request) {
 	oneShotInit()
-	entry, ok := oneShotRegistry.Get(r.PathValue("id"))
-	if !ok {
-		writeError(w, http.StatusNotFound, "one-shot job not found (jobs are kept in memory and lost on restart)")
+	id := r.PathValue("id")
+	p := rt.oneShotPersister(r.Context())
+	if entry, ok := oneShotRegistry.Get(id); ok {
+		writeJSON(w, http.StatusOK, toOneShotResponse(entry))
 		return
 	}
-	writeJSON(w, http.StatusOK, toOneShotResponse(entry))
+	if p != nil {
+		j, err := p.GetOneShotJob(r.Context(), id)
+		if err == nil {
+			writeJSON(w, http.StatusOK, fromStoredOneShot(j))
+			return
+		}
+		if !errors.Is(err, store.ErrOneShotJobNotFound) {
+			rt.internalError(w, "api: get one-shot job failed", err, slog.String("job", id))
+			return
+		}
+		writeError(w, http.StatusNotFound, "one-shot job not found (it may have been pruned)")
+		return
+	}
+	writeError(w, http.StatusNotFound, "one-shot job not found (jobs are kept in memory and lost on restart)")
+}
+
+// pruneOneShotJobs applies the APP_JOB_ONESHOT_KEEP retention to stored jobs
+// and drops the hidden task rows of the pruned ones.
+func (rt *Router) pruneOneShotJobs(ctx context.Context, p oneShotPersister) {
+	tasks, err := p.PruneOneShotJobs(ctx, oneShotLimits.Keep)
+	if err != nil {
+		rt.logger.Error("api: prune one-shot jobs failed", slog.String("error", err.Error()))
+		return
+	}
+	for _, id := range tasks {
+		if err := rt.scheduledTasks.DeleteScheduledTask(ctx, id); err != nil && !errors.Is(err, store.ErrScheduledTaskNotFound) {
+			rt.logger.Error("api: drop pruned one-shot task failed", slog.String("error", err.Error()), slog.String("task", id))
+		}
+	}
 }
 
 func randomOneShotID() (string, error) {

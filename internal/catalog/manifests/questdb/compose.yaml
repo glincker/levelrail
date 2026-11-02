@@ -1,0 +1,18 @@
+services:
+  questdb:
+    image: questdb/questdb:10.1.0
+    ports: ["9000", "8812", "9009"]
+    environment:
+      QDB_PG_USER: ${QDB_PG_USER}
+      QDB_PG_PASSWORD: $SERVICE_PASSWORD_QUESTDB
+      QDB_HTTP_USER: ${QDB_PG_USER}
+      QDB_HTTP_PASSWORD: $SERVICE_PASSWORD_QUESTDB
+      QDB_TELEMETRY_ENABLED: "false"
+    volumes:
+      - questdb_data:/var/lib/questdb
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -u \"$QDB_HTTP_USER:$QDB_HTTP_PASSWORD\" -o /dev/null http://127.0.0.1:9000/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s

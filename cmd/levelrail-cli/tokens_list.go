@@ -14,7 +14,7 @@ import (
 // Never returns token secrets.
 func runTokensList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs, usernameP, passwordP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := sessionFlagSet(prog, "tokens list", "print tokens as a JSON array to stdout and nothing else", stderr)
-	tokenFlagP := fs.String("token", "", "API token with root ability (skips the password prompt; overrides "+envAPIToken+" and the credentials file)")
+	tokenFlagP := fs.String("token", "", "API token with root ability (skips the password prompt; overrides "+apiTokenEnvHelp+" and the credentials file)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, tokensListUsage(prog)) }
 
 	if err := fs.Parse(args); err != nil {
@@ -79,7 +79,7 @@ func printTokensTable(out io.Writer, tokens []tokenResource) {
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "ID\tNAME\tAGENT\tABILITIES\tCREATED\tREVOKED")
+	_, _ = fmt.Fprintln(tw, "ID\tNAME\tAGENT\tACCESS\tABILITIES\tCREATED\tREVOKED")
 	for _, t := range tokens {
 		revoked := "no"
 		if t.RevokedAt != nil {
@@ -89,7 +89,11 @@ func printTokensTable(out io.Writer, tokens []tokenResource) {
 		if t.Agent != nil {
 			agent = t.Agent.Name
 		}
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%v\t%s\t%s\n", t.ID, t.Name, agent, t.Abilities, t.CreatedAt.Format("2006-01-02T15:04:05Z07:00"), revoked)
+		access := t.Access
+		if access == "" {
+			access = "-"
+		}
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%v\t%s\t%s\n", t.ID, t.Name, agent, access, t.Abilities, t.CreatedAt.Format("2006-01-02T15:04:05Z07:00"), revoked)
 	}
 	_ = tw.Flush()
 }
@@ -112,5 +116,5 @@ Flags:
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
-`, prog, envAPIURL, defaultAPIURL)
+`, prog, apiURLEnvHelp, defaultAPIURL)
 }

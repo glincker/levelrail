@@ -24,7 +24,7 @@ Flags:
   --output string      output format: json, table, or text
   --query string       JMESPath expression to filter the result before printing
   -h, --help           show this help
-`, prog, envAPIToken, envAPIURL, defaultAPIURL)
+`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }
 
 func runBuildFrameworks(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {

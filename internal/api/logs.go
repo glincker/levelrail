@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
@@ -161,15 +162,16 @@ func (rt *Router) queryResourceLogs(w http.ResponseWriter, r *http.Request, look
 
 func toLogEntryResource(e telemetry.LogEntry) logEntryResource {
 	r := logEntryResource{
-		Timestamp:  e.Timestamp,
-		Stream:     e.Stream,
-		Message:    e.Message,
+		Timestamp: e.Timestamp,
+		Stream:    e.Stream,
+		// Rows were masked at ingest; a value registered later is still hidden on read.
+		Message:    secretmask.Mask(e.Message),
 		Structured: e.Structured,
 		Level:      classifyLogLevel(e),
 		Container:  e.ContainerID,
 	}
 	if e.Structured && e.FieldsJSON != "" {
-		r.FieldsJSON = json.RawMessage(e.FieldsJSON)
+		r.FieldsJSON = json.RawMessage(secretmask.Mask(e.FieldsJSON))
 	}
 	return r
 }

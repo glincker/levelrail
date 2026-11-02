@@ -6,6 +6,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/auditanchor"
 	"github.com/GLINCKER/levelrail/internal/profile"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -85,6 +86,7 @@ type postureInput struct {
 	CodeLoginAdmins   *bool
 	Exposure          *postureExposure
 	OffBoxBackups     *bool
+	AuditAnchor       *bool
 	MasterKey         bool
 	MasterKeyRotated  *time.Time
 	MasterKeyKnown    bool
@@ -107,6 +109,7 @@ type postureInput struct {
 	Strict            bool
 	OpenSAML          []string
 	SAMLKnown         bool
+	MicrosoftNoTenant bool
 }
 
 func pass(id, sev string) postureItem {
@@ -213,12 +216,14 @@ func evaluatePosture(in postureInput) []postureItem {
 		exposureRule(in, false),
 		exposureRule(in, true),
 		recommendUntilLive(in, boolRule("offbox_backup_off", postureHigh, in.OffBoxBackups, false, &postureFix{Kind: postureFixLink, Link: "/settings/control-plane-backup", CLI: "control-plane-backups schedule show"})),
+		recommendUntilLive(in, boolRule("audit_anchor_off", postureMedium, in.AuditAnchor, false, &postureFix{Kind: postureFixLink, Link: "/settings/audit-log", CLI: auditanchor.EnvDir + "=/var/lib/levelrail-anchors"})),
 		masterKeyRule(in),
 		staleSecretsRule(in),
 		tlsRule(in),
 		hstsRule(in),
 		shieldRule(in),
 		samlDomainsRule(in),
+		microsoftTenantRule(in),
 		agentsRule(in),
 		anomalyRule(in),
 	}
@@ -378,6 +383,14 @@ func samlDomainsRule(in postureInput) postureItem {
 		return pass(id, postureMedium)
 	}
 	return failing(id, postureMedium, in.OpenSAML, linkFix("/settings/sso"))
+}
+
+func microsoftTenantRule(in postureInput) postureItem {
+	const id = "microsoft_no_tenant"
+	if in.MicrosoftNoTenant {
+		return failing(id, postureMedium, nil, linkFix("/settings/sso"))
+	}
+	return pass(id, postureMedium)
 }
 
 func shieldRule(in postureInput) postureItem {

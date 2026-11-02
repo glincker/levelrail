@@ -1,0 +1,65 @@
+---
+title: "Self-host Docling Serve with Docker"
+sidebarTitle: "Docling Serve"
+description: "An API server that converts PDFs, Office files and images into Markdown, JSON or text for RAG pipelines, using the Docling library on CPU. MIT licensed. The image is about 5 GB, the interactive UI is at /ui and the API docs at /docs. There is no login, so keep it private or behind an auth proxy."
+"og:url": "https://docs.levelrail.com/self-host/docling-serve"
+---
+
+An API server that converts PDFs, Office files and images into Markdown, JSON or text for RAG pipelines, using the Docling library on CPU. MIT licensed. The image is about 5 GB, the interactive UI is at /ui and the API docs at /docs. There is no login, so keep it private or behind an auth proxy.
+
+This page describes the Levelrail template for Docling Serve (AI). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/docling-project/docling-serve.
+
+Recommended memory: about 3072 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `docling` | `ghcr.io/docling-project/docling-serve-cpu:v1.38.2` | 5001 | none |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `docling` | `DOCLING_SERVE_ENABLE_UI` | Preset in the template |
+| `docling` | `TZ` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Nothing beyond a standard container: no extra privileges, host mounts or published ports.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Docling Serve with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Docling Serve. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy docling-serve --name my-docling-serve
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More AI templates
+
+- [AnythingLLM](/self-host/anythingllm)
+- [ComfyUI](/self-host/comfyui)
+- [Crawl4AI](/self-host/crawl4ai)
+- [Flowise](/self-host/flowise)
+- [Flowise (Postgres + Qdrant)](/self-host/flowise-postgres)
+
+All templates are listed in the [self-host gallery](/self-host).

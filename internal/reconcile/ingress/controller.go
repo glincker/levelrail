@@ -342,7 +342,9 @@ type Controller struct {
 	certStorage any
 	servedHosts ServedHostsRecorder
 	domainConds DomainConditionsRecorder
-	issues      domainIssues
+	// dns01Hosts lists hosts that use DNS-01 on their own, read every pass.
+	dns01Hosts DNS01HostLister
+	issues     domainIssues
 
 	// auditRecorder, if set via WithAuditRecorder, is attached to the
 	// same SQLiteStorage certStore builds, so a certificate issuance or
@@ -359,6 +361,10 @@ type Controller struct {
 	// means no wildcard domain ever gets Cloudflare DNS-01, unchanged
 	// from this controller's behavior before this field existed.
 	dnsTokens CloudflareDNSTokenResolver
+	// dns01AllHosts is read every pass so the stored setting applies without a restart; nil means off.
+	dns01AllHosts func(context.Context) bool
+	// fallbackCerts returns the ingress.fallback_certs mode; nil means eager.
+	fallbackCerts func(context.Context) string
 
 	// route53Creds, if set via WithRoute53DNSCredentials, is resolved
 	// fresh every Reconcile pass whenever store.Route53DNSSettings.
@@ -538,6 +544,36 @@ func WithDomainConditionsRecorder(r DomainConditionsRecorder) Option {
 	return func(c *Controller) { c.domainConds = r }
 }
 
+// DNS01HostLister returns the hosts switched to DNS-01 one by one.
+type DNS01HostLister interface {
+	ListDNS01Domains(ctx context.Context) ([]string, error)
+}
+
+// WithDNS01HostLister lets single hosts use DNS-01 without the all-hosts switch.
+func WithDNS01HostLister(l DNS01HostLister) Option {
+	return func(c *Controller) { c.dns01Hosts = l }
+}
+
+// perHostDNS01 keeps only listed hosts this pass really serves, so a stale
+// row for a removed domain changes nothing.
+func (c *Controller) perHostDNS01(ctx context.Context, claimed map[string]string) []string {
+	if c.dns01Hosts == nil {
+		return nil
+	}
+	list, err := c.dns01Hosts.ListDNS01Domains(ctx)
+	if err != nil {
+		c.logger.WarnContext(ctx, "ingress: list per-host dns01 failed", slog.String("error", err.Error()))
+		return nil
+	}
+	var out []string
+	for _, h := range list {
+		if _, ok := claimed[h]; ok {
+			out = append(out, h)
+		}
+	}
+	return out
+}
+
 // WithAuditRecorder records a system-actor audit_log row for every
 // certificate issuance or renewal the SQLiteStorage built from
 // WithCertStore detects (ingress.SQLiteStorage.Store), the only way a
@@ -598,6 +634,30 @@ func WithRegistryDial(dial string) Option {
 // existed.
 func WithCloudflareDNSTokens(resolver CloudflareDNSTokenResolver) Option {
 	return func(c *Controller) { c.dnsTokens = resolver }
+}
+
+// WithDNS01AllHosts supplies the live DNS-01-for-every-host switch, resolved on each pass.
+func WithDNS01AllHosts(fn func(context.Context) bool) Option {
+	return func(c *Controller) { c.dns01AllHosts = fn }
+}
+
+// WithFallbackCerts supplies the live ingress.fallback_certs mode, resolved on each pass.
+func WithFallbackCerts(fn func(context.Context) string) Option {
+	return func(c *Controller) { c.fallbackCerts = fn }
+}
+
+func (c *Controller) lazyFallbackCerts(ctx context.Context) bool {
+	return c.fallbackCerts != nil && c.fallbackCerts(ctx) == "lazy"
+}
+
+func (c *Controller) dns01AllHostsOn(ctx context.Context) bool {
+	return c.dns01AllHosts != nil && c.dns01AllHosts(ctx)
+}
+
+// DNSProviderConnected reports whether a DNS-01 provider is enabled with usable credentials,
+// the same check a reconcile pass makes, so the API can refuse a setting the build would reject.
+func DNSProviderConnected(ctx context.Context, svcStore ServiceStore, opts ...Option) bool {
+	return New(svcStore, nil, nil, opts...).resolveDNSProvider(ctx) != nil
 }
 
 // WithRoute53DNSCredentials enables Route53 DNS-01 for wildcard domains
@@ -819,6 +879,8 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	canaries := c.activeCanaries(ctx, services)
 	envDomainSets := c.environmentDomainSets(ctx)
 	fallbackResolver := ingress.LoadFallbackResolver(ctx, c.store, c.publicHost)
+	lazyFallback := c.lazyFallbackCerts(ctx)
+	var lazyCertHosts []string
 	maintenanceSettings, err = c.applySpendCaps(ctx, services, envDomainSets, settings.FallbackDomainsDisabled, fallbackResolver, now, maintenanceByDomain, maintenanceSettings, wafByDomain)
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: apply spend caps: %w", err)
@@ -840,6 +902,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			}
 		}
 		hosts := configuredHosts
+		fallbackHost := ""
 		if len(hosts) == 0 {
 			// No operator-configured domain: fall back to a zero-config
 			// sslip.io URL when this control plane's own APP_PUBLIC_HOST
@@ -850,7 +913,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			// c.publicHost, and none of the domain-scoped features below
 			// (basic auth, WAF, BYO TLS, maintenance mode, the DNS-check
 			// endpoint) make sense for a hostname nobody configured.
-			if settings.FallbackDomainsDisabled {
+			if settings.FallbackDomainsDisabled || !ingress.ServesHTTP(svc) {
 				continue
 			}
 			fallback, ok := fallbackResolver.Domain(svc.Name)
@@ -858,6 +921,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 				continue
 			}
 			hosts = []string{fallback}
+			fallbackHost = fallback
 		}
 		if owner, host, dup := firstDuplicateHost(svc.Name, hosts, claimedHosts); dup {
 			// store.SaveDesiredService now rejects a save
@@ -875,6 +939,11 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 				slog.String("already_routed_to", owner),
 			)
 			continue
+		}
+		// Only a fallback that wins its host is issued lazily; a user domain
+		// of the same name stays eager.
+		if fallbackHost != "" && lazyFallback {
+			lazyCertHosts = append(lazyCertHosts, fallbackHost)
 		}
 
 		// A domain in maintenance mode is routed unconditionally, with
@@ -1121,6 +1190,12 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			}
 		}
 	}
+	if dnsProvider == nil {
+		for _, host := range c.perHostDNS01(ctx, claimedHosts) {
+			c.issues.note(host, store.DomainCondDNS01Unavailable, store.DomainConditionDegraded,
+				"this domain asked for a DNS-01 certificate but no DNS provider is enabled, so HTTP-01 is used")
+		}
+	}
 	for host, why := range standalonePlan.unrouted {
 		if !c.issues.has(host, store.DomainConditionDropped) {
 			c.issues.note(host, store.DomainCondTargetUnavailable, store.DomainConditionDropped, why)
@@ -1133,6 +1208,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		HTTPPort:             httpPortFromAddr(c.httpListenAddr),
 		HTTPRedirect:         c.httpRedirect && !settings.TLSTerminatedUpstream,
 		FallbackCertLifetime: fallbackLifetimeString(c.fallbackCertLifetime),
+		LazyCertHosts:        lazyCertHosts,
 		PlainHTTP:            settings.TLSTerminatedUpstream,
 		HTTPBindHost:         hostFromAddr(c.httpListenAddr),
 		Routes:               routes,
@@ -1152,6 +1228,8 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		ACMEEmail:            settings.ACMEEmail,
 		ACMEDirectoryURL:     settings.ACMEDirectoryURL,
 		DNSProvider:          dnsProvider,
+		DNS01AllHosts:        c.dns01AllHostsOn(ctx),
+		DNS01Hosts:           c.perHostDNS01(ctx, claimedHosts),
 		TLSCertificates:      tlsCertOverrides,
 		RequestStats:         c.requestStats,
 		Firewall:             c.firewall,

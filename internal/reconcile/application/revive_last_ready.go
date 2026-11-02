@@ -31,7 +31,7 @@ func (c *Controller) reviveLastReady(ctx context.Context, targets []string, desi
 // release (not yet judged) and must keep older stopped ones where they are.
 func (c *Controller) reviveIfDead(ctx context.Context, targets []string, desired *store.DesiredService, skipIfTargetRunning bool) {
 	// Reviving an older one-shot would rerun a finished migration.
-	if desired.RunsToCompletion() {
+	if desired.RunsToCompletion() || desired.Suspended {
 		return
 	}
 	hist, ok := c.store.(attemptHistory)
@@ -43,9 +43,15 @@ func (c *Controller) reviveIfDead(ctx context.Context, targets []string, desired
 		return
 	}
 	others := c.filterStale(all, targets)
+	takeover := c.planHandoff(ctx, desired).stopFirst()
 	for _, cs := range all {
 		if !cs.Running || !ownsContainer(c.serviceName, cs.Name) {
 			continue
+		}
+		// The old release was stopped for this candidate on purpose, so a
+		// running candidate vetoes reviving it until a verdict aborts the handoff.
+		if takeover && slices.Contains(targets, cs.Name) {
+			return
 		}
 		// A different container mid-create on the pinned host port would make
 		// the restarted release fail to bind and fight for the port.

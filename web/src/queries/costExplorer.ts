@@ -1,5 +1,6 @@
 // Queries and mutations for /api/v1/costs: the cost explorer and named budgets.
 
+import { inlineErrorMeta, type InlineErrorOptions } from '@/lib/inlineError'
 import {
   queryOptions,
   useMutation,
@@ -82,6 +83,7 @@ export function useCostBudgets() {
 export function useCreateCostBudget() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (body: CostBudgetInput) =>
       request<CostBudget>(
         '/api/v1/costs/budgets',
@@ -95,6 +97,7 @@ export function useCreateCostBudget() {
 export function useUpdateCostBudget() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: ({ id, body }: { id: string; body: CostBudgetInput }) =>
       request<CostBudget>(
         `/api/v1/costs/budgets/${encodeURIComponent(id)}`,
@@ -105,9 +108,10 @@ export function useUpdateCostBudget() {
   })
 }
 
-export function useDeleteCostBudget() {
+export function useDeleteCostBudget(opts?: InlineErrorOptions) {
   const qc = useQueryClient()
   return useMutation({
+    meta: inlineErrorMeta(opts),
     mutationFn: (id: string) =>
       request<void>(
         `/api/v1/costs/budgets/${encodeURIComponent(id)}`,

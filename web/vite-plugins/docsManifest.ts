@@ -281,6 +281,8 @@ export function buildDocsManifest(): DocsManifest {
 
 const MANIFEST_ID = 'virtual:docs-manifest'
 const RESOLVED_MANIFEST_ID = `\0${MANIFEST_ID}`
+const BODIES_ID = 'virtual:docs-search-bodies'
+const RESOLVED_BODIES_ID = `\0${BODIES_ID}`
 const PATH_INDEX_ID = 'virtual:docs-path-index'
 const RESOLVED_PATH_INDEX_ID = `\0${PATH_INDEX_ID}`
 
@@ -294,12 +296,26 @@ export function docsManifestPlugin(): Plugin {
     name: 'docs-manifest',
     resolveId(id) {
       if (id === MANIFEST_ID) return RESOLVED_MANIFEST_ID
+      if (id === BODIES_ID) return RESOLVED_BODIES_ID
       if (id === PATH_INDEX_ID) return RESOLVED_PATH_INDEX_ID
       return undefined
     },
     load(id) {
       if (id === RESOLVED_MANIFEST_ID) {
-        return `export default ${JSON.stringify(buildDocsManifest())}`
+        // Bodies live in virtual:docs-search-bodies so this eager chunk stays small.
+        const { categories, pages } = buildDocsManifest()
+        const slim: Record<string, DocPageMeta> = {}
+        for (const [route, page] of Object.entries(pages)) {
+          slim[route] = { ...page, body: undefined }
+        }
+        return `export default ${JSON.stringify({ categories, pages: slim })}`
+      }
+      if (id === RESOLVED_BODIES_ID) {
+        const bodies: Record<string, string> = {}
+        for (const [route, page] of Object.entries(buildDocsManifest().pages)) {
+          if (page.body) bodies[route] = page.body
+        }
+        return `export default ${JSON.stringify(bodies)}`
       }
       if (id === RESOLVED_PATH_INDEX_ID) {
         const manifest = buildDocsManifest()

@@ -4,6 +4,10 @@ description: Share a password or API key through a link that self-destructs afte
 icon: lock
 category: Security
 documentation_url: https://docs.onetimesecret.com
+source_repo: https://github.com/onetimesecret/onetimesecret
+license: MIT
+license_class: permissive
+license_url: https://github.com/onetimesecret/onetimesecret/blob/main/LICENSE.txt
 recommended_memory_bytes: 268435456
 env:
   - key: SECRET

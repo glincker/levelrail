@@ -757,6 +757,9 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 	if b, ok := c.meshBinding(ctx, desired, state, meshPort); ok {
 		spec.Ports = append(spec.Ports, b)
 	}
+	if b, ok := c.poolerMeshBinding(ctx, desired, state); ok {
+		spec.Ports = append(spec.Ports, b)
+	}
 	if desired.Resources != nil {
 		spec.Resources = &docker.Resources{
 			MemoryBytes:     desired.Resources.MemoryBytes,

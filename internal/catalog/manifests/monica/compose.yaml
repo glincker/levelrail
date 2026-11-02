@@ -5,7 +5,7 @@ services:
     environment:
       APP_ENV: production
       APP_KEY: ${APP_KEY}
-      APP_URL: ${SERVICE_FQDN_MONICA:-http://localhost}
+      APP_URL: ${SERVICE_URL_MONICA:-http://localhost}
       DB_CONNECTION: mysql
       DB_HOST: mariadb
       DB_PORT: "3306"

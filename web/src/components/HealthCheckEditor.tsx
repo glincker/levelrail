@@ -36,7 +36,7 @@ const healthSchema = z.object({
 // object, so a background refetch triggered by one of them must not wipe
 // out unsaved edits sitting in this one.
 export function HealthCheckEditor({ app }: { app: AppDetail }) {
-  const updateApp = useUpdateApp(app.name)
+  const updateApp = useUpdateApp(app.name, { inlineError: true })
   const notifyRestartRequired = useRestartRequiredToast()
   const { control, register, handleSubmit, formState, setValue, getValues } =
     useForm<HealthFormValues>({

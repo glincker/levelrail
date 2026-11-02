@@ -6,11 +6,12 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
-	"os"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/dnsinspect"
+	"github.com/GLINCKER/levelrail/internal/domaindoctor"
 	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -23,9 +24,6 @@ const domainCheckCacheTTL = 5 * time.Second
 
 // Matches net.Resolver.LookupHost so the real implementation is a one-line wrapper.
 type lookupHostFunc func(ctx context.Context, host string) ([]string, error)
-
-// Used when the system resolver finds nothing, since its cached negative answer can lag a just-added record.
-var publicResolvers = []string{"1.1.1.1:53", "8.8.8.8:53"}
 
 func lookupVia(ctx context.Context, server, host string) ([]string, error) {
 	r := &net.Resolver{
@@ -42,7 +40,7 @@ func defaultLookupHost(ctx context.Context, host string) ([]string, error) {
 	if err == nil && len(hosts) > 0 {
 		return hosts, nil
 	}
-	for _, server := range publicResolvers {
+	for _, server := range dnsinspect.PublicResolvers() {
 		if got, perr := lookupVia(ctx, server, host); perr == nil && len(got) > 0 {
 			return got, nil
 		}
@@ -61,10 +59,30 @@ type domainCheckResult struct {
 type domainCheckCache struct {
 	mu      sync.Mutex
 	results map[string]domainCheckResult
+	// unsettled remembers when a domain first looked unsettled, so the card
+	// can escalate after the wait budget.
+	unsettled map[string]time.Time
 }
 
 func newDomainCheckCache() *domainCheckCache {
-	return &domainCheckCache{results: make(map[string]domainCheckResult)}
+	return &domainCheckCache{results: make(map[string]domainCheckResult), unsettled: make(map[string]time.Time)}
+}
+
+// waited returns how long domain has been unsettled, starting the clock on
+// the first unsettled call and resetting it once settled.
+func (c *domainCheckCache) waited(domain string, unsettled bool, now time.Time) time.Duration {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if !unsettled {
+		delete(c.unsettled, domain)
+		return 0
+	}
+	since, ok := c.unsettled[domain]
+	if !ok {
+		c.unsettled[domain] = now
+		return 0
+	}
+	return now.Sub(since)
 }
 
 func (c *domainCheckCache) get(domain string) (domainCheckResult, bool) {
@@ -129,6 +147,25 @@ type domainCheckResponse struct {
 	// when a proxy owns it and its served certificate is known.
 	TLSOwner         string                     `json:"tls_owner,omitempty"`
 	ProxyCertificate *servedCertificateResource `json:"proxy_certificate,omitempty"`
+	// Authoritative, Public and Local are what the zone's own name servers,
+	// public resolvers and this host's resolver answered. Authoritative
+	// answers are the source of truth.
+	Authoritative []dnsinspect.Source `json:"authoritative,omitempty"`
+	Public        []dnsinspect.Source `json:"public,omitempty"`
+	Local         []dnsinspect.Source `json:"local,omitempty"`
+	// Verdict is dns_ready, public_ready, not_found, points_elsewhere or unknown.
+	Verdict string `json:"verdict,omitempty"`
+	// LocalStale is true when DNS is right but this host's resolver still
+	// holds an old answer; RetryAt is when that cache should expire.
+	LocalStale bool   `json:"local_stale,omitempty"`
+	RetryAt    string `json:"retry_at,omitempty"`
+	// Escalated is true once the wait budget passed and Hints list concrete checks.
+	Escalated    bool                   `json:"escalated,omitempty"`
+	FlushCommand string                 `json:"flush_command,omitempty"`
+	Hints        []domaindoctor.DNSHint `json:"hints,omitempty"`
+	Zone         string                 `json:"zone,omitempty"`
+	// NameserverProvider is cloudflare, route53, other or unknown, read from the zone's NS hostnames.
+	NameserverProvider string `json:"nameserver_provider,omitempty"`
 }
 
 // Configured APP_PUBLIC_HOST wins: self-discovery breaks behind NAT, port mappings and load balancers.
@@ -220,11 +257,9 @@ type resolverResult struct {
 // queryPublicResolvers asks well-known public resolvers directly, bypassing
 // the local stub and its negative cache.
 func queryPublicResolvers(ctx context.Context, host string) []resolverResult {
-	if v := strings.ToLower(os.Getenv("APP_DNS_PUBLIC_RESOLVERS")); v == "off" || v == "false" || v == "0" {
-		return nil
-	}
-	out := make([]resolverResult, 0, len(publicResolvers))
-	for _, server := range publicResolvers {
+	servers := dnsinspect.PublicResolvers()
+	out := make([]resolverResult, 0, len(servers))
+	for _, server := range servers {
 		got, err := lookupVia(ctx, server, host)
 		rr := resolverResult{Name: strings.TrimSuffix(server, ":53"), Addresses: got}
 		if err != nil {
@@ -285,6 +320,7 @@ func (rt *Router) runDomainCheckOpts(ctx context.Context, domain, expectedHost s
 	switch {
 	case result.resolved && hostsOverlap(result.resolvedHosts, expected):
 		resp.Status = domainCheckStatusConnected
+		rt.domainChecks.waited(domain, false, time.Now())
 		return resp
 	case result.resolved:
 		resp.Status = domainCheckStatusResolvesElsewhere
@@ -312,6 +348,7 @@ func (rt *Router) runDomainCheckOpts(ctx context.Context, domain, expectedHost s
 			resp.Status = domainCheckStatusPropagating
 		}
 	}
+	rt.applyDNSVerdict(ctx, &resp, domain, expected, result)
 	return resp
 }
 

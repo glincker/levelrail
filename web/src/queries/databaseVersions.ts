@@ -51,6 +51,7 @@ export function useDatabaseVersions(engine: string) {
 export function useCheckDatabaseVersions(engine: string) {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: () =>
       request(
         `/api/v1/database-versions/refresh?engine=${encodeURIComponent(engine)}`,

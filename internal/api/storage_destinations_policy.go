@@ -164,7 +164,7 @@ func (rt *Router) createAgentStorageDestination(w http.ResponseWriter, r *http.R
 	}
 	if req.Verify {
 		if probe := rt.probeAgentDestination(r.Context(), id); !probe.OK {
-			if derr := rt.backupTargets.DeleteBackupTarget(r.Context(), id); derr != nil {
+			if _, derr := rt.backupTargets.RetireBackupTarget(r.Context(), id); derr != nil {
 				rt.logger.Warn("api: remove unverified storage destination failed", slog.String("error", derr.Error()), slog.String("id", id))
 			}
 			writeError(w, http.StatusBadRequest, "connection test failed ("+probe.Reason+"): "+probe.Message)

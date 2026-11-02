@@ -60,7 +60,7 @@ export function LogToolbar({
           }}
           placeholder="Filter lines"
           aria-label="Filter log lines"
-          className="h-7 pl-7 text-xs"
+          className="h-7 pl-9 text-xs"
         />
       </div>
       <div

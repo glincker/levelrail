@@ -73,6 +73,7 @@ func newTestRouterWithDNSRecordManager(t *testing.T, mgr dnsrecords.Manager) (*R
 }
 
 func TestHandleListDNSRecords_NoProviderConfigured(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	seedAppWithDomains(t, db, "app.example.com")
 	cookie := loginTestSession(t, rt, db)
@@ -85,6 +86,7 @@ func TestHandleListDNSRecords_NoProviderConfigured(t *testing.T) {
 }
 
 func TestHandleListDNSRecords_DomainNotOwnedByApp(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouterWithDNSRecordManager(t, &fakeDNSManager{})
 	seedAppWithDomains(t, db, "app.example.com")
 	cookie := loginTestSession(t, rt, db)
@@ -97,6 +99,7 @@ func TestHandleListDNSRecords_DomainNotOwnedByApp(t *testing.T) {
 }
 
 func TestHandleListDNSRecords_FiltersNSAndSOAAndReportsStatus(t *testing.T) {
+	t.Parallel()
 	mgr := &fakeDNSManager{recs: []libdns.Record{
 		libdns.RR{Name: "@", Type: "NS", Data: "ns1.example.com.", TTL: 3600 * time.Second},
 		libdns.RR{Name: "@", Type: "SOA", Data: "ns1.example.com. admin.example.com. 1 7200 900 1209600 86400", TTL: 3600 * time.Second},
@@ -136,6 +139,7 @@ func TestHandleListDNSRecords_FiltersNSAndSOAAndReportsStatus(t *testing.T) {
 }
 
 func TestHandleCreateDNSRecord_Success(t *testing.T) {
+	t.Parallel()
 	mgr := &fakeDNSManager{}
 	rt, db := newTestRouterWithDNSRecordManager(t, mgr)
 	seedAppWithDomains(t, db, "app.example.com")
@@ -157,6 +161,7 @@ func TestHandleCreateDNSRecord_Success(t *testing.T) {
 }
 
 func TestHandleCreateDNSRecord_RejectsUnknownType(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouterWithDNSRecordManager(t, &fakeDNSManager{})
 	seedAppWithDomains(t, db, "app.example.com")
 	cookie := loginTestSession(t, rt, db)
@@ -170,6 +175,7 @@ func TestHandleCreateDNSRecord_RejectsUnknownType(t *testing.T) {
 }
 
 func TestHandleUpdateDNSRecord_ReplacesExactMatch(t *testing.T) {
+	t.Parallel()
 	mgr := &fakeDNSManager{recs: []libdns.Record{
 		libdns.RR{Name: "www", Type: "A", Data: "203.0.113.5", TTL: 300 * time.Second},
 	}}
@@ -189,6 +195,7 @@ func TestHandleUpdateDNSRecord_ReplacesExactMatch(t *testing.T) {
 }
 
 func TestHandleDeleteDNSRecord_Idempotent(t *testing.T) {
+	t.Parallel()
 	mgr := &fakeDNSManager{recs: []libdns.Record{
 		libdns.RR{Name: "www", Type: "A", Data: "203.0.113.5", TTL: 300 * time.Second},
 	}}
@@ -210,6 +217,7 @@ func TestHandleDeleteDNSRecord_Idempotent(t *testing.T) {
 }
 
 func TestDNSZoneApexGuess(t *testing.T) {
+	t.Parallel()
 	cases := map[string]string{
 		"app.example.com":     "example.com.",
 		"a.b.app.example.com": "example.com.",

@@ -139,7 +139,7 @@ var databasesTemplates = []Template{
     image: baserow/baserow:2.3.3
     ports: ["80:80"]
     environment:
-      BASEROW_PUBLIC_URL: ${SERVICE_FQDN_BASEROW:-http://localhost}
+      BASEROW_PUBLIC_URL: ${SERVICE_URL_BASEROW:-http://localhost}
     volumes:
       - baserow_data:/baserow/data
     healthcheck:

@@ -199,7 +199,11 @@ func (s *Service) applyGate(ctx context.Context, settings Settings, rec *Record,
 	if scan != nil && s.cfg.FailClosed {
 		unknown = scan.Counts.Unknown
 	}
-	if settings.Gate.blocking() && scan != nil && scan.Counts.Critical+unknown+gateHighCount(settings.Gate, scan) > 0 {
+	needsOverride := scan == nil && s.cfg.FailClosed
+	if scan != nil {
+		needsOverride = scan.Counts.Critical+unknown+gateHighCount(settings.Gate, scan) > 0
+	}
+	if settings.Gate.blocking() && needsOverride {
 		reason, ok, err := s.deps.Store.ConsumeOverride(ctx, rec.App, s.now().Add(-s.cfg.OverrideTTL))
 		if err != nil {
 			s.log.Warn("supplychain: consume override failed", slog.String("app", rec.App), slog.String("error", err.Error()))

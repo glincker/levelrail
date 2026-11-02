@@ -43,7 +43,11 @@ function store(key: string, value: string) {
 }
 
 /** Tab order, hidden tabs and the selected tab (last choice, else a board with apps, else Start), kept in localStorage. */
-export function useDashboardTabs(dashboardIds: string[], hasApps = false) {
+export function useDashboardTabs(
+  dashboardIds: string[],
+  hasApps = false,
+  onboarding = false,
+) {
   const [prefs, setPrefs] = useState(loadPrefs)
   // Held raw so a saved dashboard tab survives the moment before the list loads.
   const [stored, setStored] = useState(loadTab)
@@ -54,9 +58,15 @@ export function useDashboardTabs(dashboardIds: string[], hasApps = false) {
   )
   const shown = useMemo(() => shownTabs(all, prefs), [all, prefs])
   const hidden = useMemo(() => hiddenTabs(all, prefs), [all, prefs])
-  const selected = pickSelected(stored, shown, defaultTab(hasApps, shown))
+  // While setting up, Start wins on load; a pick made this visit still sticks.
+  const [chosen, setChosen] = useState(false)
+  const selected =
+    onboarding && !chosen && shown.includes(START_TAB)
+      ? START_TAB
+      : pickSelected(stored, shown, defaultTab(hasApps, shown))
 
   const select = useCallback((id: string) => {
+    setChosen(true)
     setStored(id)
     store(TAB_KEY, id)
   }, [])

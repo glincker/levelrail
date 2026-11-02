@@ -189,6 +189,7 @@ export interface GoLivePlanInput {
 
 export function useGoLivePlan(app: string) {
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (input: GoLivePlanInput) =>
       request<{ plans: GoLiveResult[] }>(
         `/api/v1/apps/${encodeURIComponent(app)}/domains/go-live/plan`,
@@ -218,6 +219,7 @@ export function useDomainAutomation() {
 export function useUpdateDomainAutomation() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (policy: GoLivePolicy) =>
       request<DomainAutomation>(
         '/api/v1/settings/domain-automation',

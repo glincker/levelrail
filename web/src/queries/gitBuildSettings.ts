@@ -128,6 +128,7 @@ export async function checkGitSourceAffected(
 
 export function useCheckGitSourceAffected(name: string) {
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (files: string[]) => checkGitSourceAffected(name, files),
   })
 }

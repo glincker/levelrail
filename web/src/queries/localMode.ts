@@ -45,6 +45,7 @@ export function useLocalMode() {
 
 export function useResetLocalInstance() {
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async (): Promise<void> => {
       const before = await fetchSystemRestart()
       const res = await fetch(`${URL}/reset`, { method: 'POST' })

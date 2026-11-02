@@ -36,6 +36,8 @@ type GitSource struct {
 	// BaseDirectory) is what gets served. Both empty serves BuildPath as-is.
 	BuildCommand string
 	PublishDir   string
+	// StaticSPA serves index.html for unknown paths of a static source.
+	StaticSPA bool
 	// AdditionalServices lets one push fan out to sibling services under
 	// the same store.App (apps_group.go): keyed by the sibling
 	// DesiredService's own name, each entry carries just enough to call
@@ -187,13 +189,17 @@ func (db *DB) saveGitSource(ctx context.Context, g GitSource, appAuth *bool) err
 	if err != nil {
 		return fmt.Errorf("store: save git source for %q: %w", g.ServiceName, err)
 	}
+	staticSPAInt := 0
+	if g.StaticSPA {
+		staticSPAInt = 1
+	}
 	triggerMode := g.TriggerMode
 	if triggerMode == "" {
 		triggerMode = spec.TriggerModePush
 	}
 	_, err = db.ExecContext(ctx, `
-		INSERT INTO service_git_sources (service_name, repo_url, branch, build_type, build_path, base_directory, build_command, publish_dir, additional_services, services_spec, databases_spec, trigger_mode, app_auth, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, 1), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		INSERT INTO service_git_sources (service_name, repo_url, branch, build_type, build_path, base_directory, build_command, publish_dir, static_spa, additional_services, services_spec, databases_spec, trigger_mode, app_auth, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, 1), strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (service_name) DO UPDATE SET
 			repo_url = excluded.repo_url,
 			branch = excluded.branch,
@@ -202,13 +208,14 @@ func (db *DB) saveGitSource(ctx context.Context, g GitSource, appAuth *bool) err
 			base_directory = excluded.base_directory,
 			build_command = excluded.build_command,
 			publish_dir = excluded.publish_dir,
+			static_spa = excluded.static_spa,
 			additional_services = excluded.additional_services,
 			services_spec = excluded.services_spec,
 			databases_spec = excluded.databases_spec,
 			trigger_mode = excluded.trigger_mode,
 			app_auth = COALESCE(?, service_git_sources.app_auth),
 			updated_at = excluded.updated_at
-	`, g.ServiceName, g.RepoURL, g.Branch, g.BuildType, g.BuildPath, g.BaseDirectory, g.BuildCommand, g.PublishDir, additionalJSON, servicesJSON, databasesJSON, triggerMode, authArg, authArg)
+	`, g.ServiceName, g.RepoURL, g.Branch, g.BuildType, g.BuildPath, g.BaseDirectory, g.BuildCommand, g.PublishDir, staticSPAInt, additionalJSON, servicesJSON, databasesJSON, triggerMode, authArg, authArg)
 	if err != nil {
 		return fmt.Errorf("store: save git source for %q: %w", g.ServiceName, err)
 	}
@@ -219,7 +226,7 @@ func (db *DB) saveGitSource(ctx context.Context, g GitSource, appAuth *bool) err
 // ErrGitSourceNotFound if none is.
 func (db *DB) GetGitSource(ctx context.Context, serviceName string) (*GitSource, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT service_name, repo_url, branch, build_type, build_path, base_directory, build_command, publish_dir, additional_services, services_spec, databases_spec, trigger_mode, preview_enabled, post_pr_comments, pr_comment_commands, pr_comment_commands_forks, deploy_paths, deploy_paths_ignore, report_status, created_at, updated_at, connection_id, wait_for_ci, ci_required_checks, app_auth
+		SELECT service_name, repo_url, branch, build_type, build_path, base_directory, build_command, publish_dir, static_spa, additional_services, services_spec, databases_spec, trigger_mode, preview_enabled, post_pr_comments, pr_comment_commands, pr_comment_commands_forks, deploy_paths, deploy_paths_ignore, report_status, created_at, updated_at, connection_id, wait_for_ci, ci_required_checks, app_auth
 		FROM service_git_sources WHERE service_name = ?
 	`, serviceName)
 	g, err := scanGitSource(row.Scan)
@@ -356,6 +363,20 @@ func (g GitSource) SpecBuild() (spec.Build, error) {
 	}
 	b.Command, b.Publish = g.BuildCommand, g.PublishDir
 	return b, nil
+}
+
+// SetGitSourceStaticSPA turns single page app mode on or off for a static
+// source without touching its other build settings.
+func (db *DB) SetGitSourceStaticSPA(ctx context.Context, serviceName string, enabled bool) error {
+	return db.setGitSourceBoolColumn(ctx, "static_spa", serviceName, enabled)
+}
+
+// StaticOptions is the spec static section this source's build settings imply.
+func (g GitSource) StaticOptions() *spec.StaticOptions {
+	if !g.StaticSPA || g.BuildType != spec.BuildStatic {
+		return nil
+	}
+	return &spec.StaticOptions{SPA: true}
 }
 
 // SetGitSourcePreviewEnabled toggles a connected git source's preview
@@ -538,11 +559,12 @@ func scanGitSource(scan func(dest ...any) error) (*GitSource, error) {
 		reportStatus                  int
 		waitForCI                     int
 		appAuth                       int
+		staticSPA                     int
 		ciChecksJSON                  string
 		pathsJSON, pathsIgnoreJSON    string
 		createdAt, updatedAt          string
 	)
-	if err := scan(&g.ServiceName, &g.RepoURL, &g.Branch, &g.BuildType, &g.BuildPath, &g.BaseDirectory, &g.BuildCommand, &g.PublishDir, &additionalJSON, &svcJSON, &dbJSON, &g.TriggerMode, &previewEnabled, &postPRComment, &prCommands, &prCommandsForks, &pathsJSON, &pathsIgnoreJSON, &reportStatus, &createdAt, &updatedAt, &g.ConnectionID, &waitForCI, &ciChecksJSON, &appAuth); err != nil {
+	if err := scan(&g.ServiceName, &g.RepoURL, &g.Branch, &g.BuildType, &g.BuildPath, &g.BaseDirectory, &g.BuildCommand, &g.PublishDir, &staticSPA, &additionalJSON, &svcJSON, &dbJSON, &g.TriggerMode, &previewEnabled, &postPRComment, &prCommands, &prCommandsForks, &pathsJSON, &pathsIgnoreJSON, &reportStatus, &createdAt, &updatedAt, &g.ConnectionID, &waitForCI, &ciChecksJSON, &appAuth); err != nil {
 		return nil, err
 	}
 	g.PreviewEnabled = previewEnabled != 0
@@ -552,6 +574,7 @@ func scanGitSource(scan func(dest ...any) error) (*GitSource, error) {
 	g.ReportStatus = reportStatus != 0
 	g.WaitForCI = waitForCI != 0
 	g.AppAuth = appAuth != 0
+	g.StaticSPA = staticSPA != 0
 	if err := json.Unmarshal([]byte(ciChecksJSON), &g.CIRequiredChecks); err != nil {
 		return nil, fmt.Errorf("unmarshal ci_required_checks: %w", err)
 	}

@@ -4,9 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"path"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/rolloutpolicy"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -24,6 +28,10 @@ type pinnedPortBackoffError struct {
 }
 
 func (e *pinnedPortBackoffError) Error() string {
+	if e.port == 0 {
+		return fmt.Sprintf("the last deploy failed while taking over from the running release, which was restored and keeps serving; next attempt after %s",
+			e.until.UTC().Format(time.RFC3339))
+	}
 	return fmt.Sprintf("the last deploy failed while taking over pinned host port %d, the previous release was restored and keeps serving; next attempt after %s",
 		e.port, e.until.UTC().Format(time.RFC3339))
 }
@@ -57,34 +65,205 @@ func pinnedPortUnbound(state *docker.ContainerState, desired *store.DesiredServi
 	return true
 }
 
+// handoffPlan is what a takeover must free before the next release starts.
+type handoffPlan struct {
+	pinned    []store.PublishedPort
+	streams   map[int]bool
+	exclusive bool
+}
+
+func (h handoffPlan) stopFirst() bool {
+	return len(h.pinned) > 0 || len(h.streams) > 0 || h.exclusive
+}
+
+func (c *Controller) planHandoff(ctx context.Context, desired *store.DesiredService) handoffPlan {
+	pinned := pinnedHostPorts(desired)
+	// A stream listener binds its host port in ingress, so a previous
+	// release still publishing it must stop first.
+	streams, _ := c.streamHostPorts(ctx, desired.Name)
+	return handoffPlan{pinned: pinned, streams: streams, exclusive: holdsExclusiveData(desired, pinned, streams)}
+}
+
+// rolloutBudgetError means an explicit rollout budget forbids taking the
+// only replica down, so the serving release was left untouched.
+type rolloutBudgetError struct{ floor int }
+
+func (e *rolloutBudgetError) Error() string {
+	return fmt.Sprintf("the release holds a host port or single-writer data, so a deploy must stop it first, but the app's rollout budget keeps at least %d replica(s) available; relax max_unavailable or min_available to allow the short outage", e.floor)
+}
+
+const reasonRolloutBudget = "RolloutBudgetForbidsStopFirst"
+
+// stopFirstFloor is the replicas an explicit per-app rollout policy keeps
+// available. Env defaults never count: they are not a promise made for
+// this app.
+func (c *Controller) stopFirstFloor(ctx context.Context) int {
+	src, ok := c.store.(RolloutPolicySource)
+	if !ok {
+		return 0
+	}
+	p, found, err := src.GetRolloutPolicy(ctx, c.serviceName)
+	if err != nil || !found {
+		return 0
+	}
+	pol := rolloutpolicy.Policy{MaxSurge: p.MaxSurge, MaxUnavailable: p.MaxUnavailable, MinAvailable: p.MinAvailable}
+	res := rolloutpolicy.Resolve(pol, rolloutpolicy.OSEnv, 1)
+	floor := 0
+	if pol.MinAvailable != "" {
+		floor = res.MinAvailable
+	}
+	if pol.MaxUnavailable != "" {
+		floor = max(floor, 1-res.MaxUnavailable)
+	}
+	return floor
+}
+
+func (c *Controller) handoffBlockedUntil(target string) (time.Time, bool) {
+	c.handoffMu.Lock()
+	defer c.handoffMu.Unlock()
+	until, ok := c.handoffFailed[target]
+	return until, ok && time.Now().Before(until)
+}
+
+func (c *Controller) noteHandoffFailed(target string) {
+	c.handoffMu.Lock()
+	defer c.handoffMu.Unlock()
+	if c.handoffFailed == nil {
+		c.handoffFailed = map[string]time.Time{}
+	}
+	c.handoffFailed[target] = time.Now().Add(c.effectivePinnedPortRetry())
+}
+
+func (c *Controller) clearHandoffFailed(target string) {
+	c.handoffMu.Lock()
+	defer c.handoffMu.Unlock()
+	delete(c.handoffFailed, target)
+}
+
 // releasePinnedPort stops the running containers of this service that hold
 // the pinned host port target needs. A pinned port cannot be bound twice,
 // so blue-green overlap is impossible: the old release is stopped (not
 // removed) so a failed deploy can restore it.
 func (c *Controller) releasePinnedPort(ctx context.Context, target string, desired *store.DesiredService) ([]docker.ContainerState, error) {
-	pinned := pinnedHostPorts(desired)
-	if len(pinned) == 0 {
+	plan := c.planHandoff(ctx, desired)
+	if !plan.stopFirst() {
 		return nil, nil
 	}
-	if until, ok := c.handoffFailed[target]; ok && time.Now().Before(until) {
-		return nil, &pinnedPortBackoffError{port: pinned[0].HostPort, until: until}
+	if until, blocked := c.handoffBlockedUntil(target); blocked {
+		port := 0
+		if len(plan.pinned) > 0 {
+			port = plan.pinned[0].HostPort
+		}
+		return nil, &pinnedPortBackoffError{port: port, until: until}
 	}
 	all, err := c.listPrefix(ctx, c.serviceName+"-")
 	if err != nil {
-		return nil, fmt.Errorf("list containers holding pinned host port %s: %w", pinned[0], err)
+		return nil, fmt.Errorf("list containers holding the host ports or data of %s: %w", c.serviceName, err)
 	}
-	var released []docker.ContainerState
+	var toStop []docker.ContainerState
 	for _, cs := range all {
-		if cs.Name == target || !cs.Running || !ownsContainer(c.serviceName, cs.Name) || !c.ownsInstance(cs) || !holdsAnyHostPort(cs, pinned) {
+		if cs.Name == target || !cs.Running || !ownsContainer(c.serviceName, cs.Name) || !c.ownsInstance(cs) {
 			continue
 		}
+		if !plan.exclusive && !holdsAnyHostPort(cs, plan.pinned) && !holdsStreamHostPort(cs, plan.streams) {
+			continue
+		}
+		toStop = append(toStop, cs)
+	}
+	if len(toStop) == 0 {
+		return nil, nil
+	}
+	if floor := c.stopFirstFloor(ctx); floor > 0 {
+		return nil, &rolloutBudgetError{floor: floor}
+	}
+	if plan.exclusive {
+		// Fail on a broken volume or missing host path before the serving release is stopped, not after.
+		for _, v := range desired.Volumes {
+			if err := docker.EnsureVolumeFor(ctx, c.runtime, v.Name, volumeOwner(desired, v.Name)); err != nil {
+				return nil, fmt.Errorf("ensure volume %q: %w", v.Name, err)
+			}
+		}
+		if err := c.checkBindSources(desired); err != nil {
+			return nil, err
+		}
+	}
+	var released []docker.ContainerState
+	for _, cs := range toStop {
 		if err := c.stopContainer(ctx, cs.ID); err != nil {
 			_ = c.restoreReleased(ctx, released)
-			return nil, fmt.Errorf("stop %q to free its pinned host ports: %w", cs.Name, err)
+			return nil, fmt.Errorf("stop %q to free its host ports or data volume: %w", cs.Name, err)
 		}
 		released = append(released, cs)
 	}
 	return released, nil
+}
+
+// checkBindSources fails before a stop when a writable bind source is
+// missing on this node, as a missing volume would. Remote nodes are not
+// visible from here and are left to the create step.
+func (c *Controller) checkBindSources(desired *store.DesiredService) error {
+	local := ""
+	if c.meshDB != nil {
+		local = c.meshDB.LocalNodeID
+	}
+	if !SameNode(desired.NodeID, "", local) {
+		return nil
+	}
+	for _, m := range desired.BindMounts {
+		if m.ReadOnly || socketPath(m.HostPath) {
+			continue
+		}
+		if _, err := os.Stat(m.HostPath); err != nil {
+			return fmt.Errorf("bind mount source %q is not usable, the previous release was left running: %w", m.HostPath, err)
+		}
+	}
+	return nil
+}
+
+// socketPath reports a unix socket bind, which shares a daemon rather than data.
+func socketPath(p string) bool {
+	return strings.HasSuffix(path.Clean(p), ".sock")
+}
+
+// writableData reports persistent storage a second writer could corrupt:
+// a named volume, or a writable bind that is not a socket. Read-only
+// binds (config, certs) are safe to share.
+func writableData(desired *store.DesiredService) bool {
+	if len(desired.Volumes) > 0 {
+		return true
+	}
+	for _, m := range desired.BindMounts {
+		if !m.ReadOnly && !socketPath(m.HostPath) {
+			return true
+		}
+	}
+	return false
+}
+
+// holdsExclusiveData is the stop-first rule for single-writer data: one
+// replica with writable storage AND a host-level claim (a fixed host port or
+// a stream port) that already forces a single running release. A volume
+// alone keeps the overlap; databases that lock a volume use
+// strategy: recreate.
+func holdsExclusiveData(desired *store.DesiredService, pinned []store.PublishedPort, streamPorts map[int]bool) bool {
+	if desired.Replicas > 1 || !writableData(desired) {
+		return false
+	}
+	for _, p := range pinned {
+		if p.HostPort > 0 {
+			return true
+		}
+	}
+	return len(streamPorts) > 0
+}
+
+func holdsStreamHostPort(cs docker.ContainerState, ports map[int]bool) bool {
+	for _, p := range cs.Ports {
+		if ports[p.HostPort] && bindingProtocol(p) == store.PortProtocolTCP {
+			return true
+		}
+	}
+	return false
 }
 
 // pinnedHostPorts lists every fixed host port desired binds: the pinned
@@ -153,10 +332,7 @@ func (c *Controller) abortHandoff(ctx context.Context, target string, released [
 		_ = c.stopContainer(ctx, state.ID)
 		_ = c.removeContainer(ctx, state.ID)
 	}
-	if c.handoffFailed == nil {
-		c.handoffFailed = map[string]time.Time{}
-	}
-	c.handoffFailed[target] = time.Now().Add(c.effectivePinnedPortRetry())
+	c.noteHandoffFailed(target)
 	if err := c.restoreReleased(ctx, released); err != nil {
 		return fmt.Errorf("%w (and the previous release could not be restored: %w)", cause, err)
 	}

@@ -73,6 +73,7 @@ func createTestBackupTarget(t *testing.T, rt *Router, cookie *http.Cookie) backu
 }
 
 func TestValidateCreateBackupTargetRequest(t *testing.T) {
+	t.Parallel()
 	valid := createBackupTargetRequest{
 		Name: "primary", Provider: store.BackupProviderR2, Endpoint: "https://x.r2.cloudflarestorage.com",
 		Bucket: "backups", AccessKeyID: "AKID", SecretAccessKey: "shh",
@@ -109,6 +110,7 @@ func withField(base createBackupTargetRequest, mutate func(*createBackupTargetRe
 }
 
 func TestValidateUpdateBackupTargetRequest(t *testing.T) {
+	t.Parallel()
 	valid := updateBackupTargetRequest{Name: "primary", Provider: store.BackupProviderR2, Endpoint: "https://x.r2.cloudflarestorage.com", Bucket: "backups"}
 	tests := []struct {
 		name    string
@@ -139,6 +141,7 @@ func withUpdateField(base updateBackupTargetRequest, mutate func(*updateBackupTa
 }
 
 func TestBackupTargetRoutes_RequireAuth(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouter(t)
 
 	assertRoutesRequireAuth(t, rt, []routeCase{
@@ -152,6 +155,7 @@ func TestBackupTargetRoutes_RequireAuth(t *testing.T) {
 }
 
 func TestHandleCreateBackupTarget_NoSetterConfigured(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t) // no WithBackupSecrets
 	cookie := loginTestSession(t, rt, db)
 
@@ -164,6 +168,7 @@ func TestHandleCreateBackupTarget_NoSetterConfigured(t *testing.T) {
 }
 
 func TestHandleCreateBackupTarget_Success(t *testing.T) {
+	t.Parallel()
 	setter := &fakeBackupSecretsSetter{}
 	rt, db := newTestRouterWithBackupSecrets(t, setter)
 	cookie := loginTestSession(t, rt, db)
@@ -215,6 +220,7 @@ func TestHandleCreateBackupTarget_Success(t *testing.T) {
 }
 
 func TestHandleCreateBackupTarget_InvalidRequest(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouterWithBackupSecrets(t, &fakeBackupSecretsSetter{})
 	cookie := loginTestSession(t, rt, db)
 
@@ -226,6 +232,7 @@ func TestHandleCreateBackupTarget_InvalidRequest(t *testing.T) {
 }
 
 func TestHandleCreateBackupTarget_SecretSetFails(t *testing.T) {
+	t.Parallel()
 	setter := &fakeBackupSecretsSetter{err: errors.New("master key not configured")}
 	rt, db := newTestRouterWithBackupSecrets(t, setter)
 	cookie := loginTestSession(t, rt, db)
@@ -247,6 +254,7 @@ func TestHandleCreateBackupTarget_SecretSetFails(t *testing.T) {
 }
 
 func TestHandleListAndGetBackupTarget(t *testing.T) {
+	t.Parallel()
 	setter := &fakeBackupSecretsSetter{}
 	rt, db := newTestRouterWithBackupSecrets(t, setter)
 	cookie := loginTestSession(t, rt, db)
@@ -283,6 +291,7 @@ func TestHandleListAndGetBackupTarget(t *testing.T) {
 }
 
 func TestHandleUpdateBackupTarget_Success(t *testing.T) {
+	t.Parallel()
 	setter := &fakeBackupSecretsSetter{}
 	rt, db := newTestRouterWithBackupSecrets(t, setter)
 	cookie := loginTestSession(t, rt, db)
@@ -324,6 +333,7 @@ func TestHandleUpdateBackupTarget_Success(t *testing.T) {
 }
 
 func TestHandleUpdateBackupTarget_RotatesCredentials(t *testing.T) {
+	t.Parallel()
 	setter := &fakeBackupSecretsSetter{}
 	rt, dbForLogin := newTestRouterWithBackupSecrets(t, setter)
 	cookie := loginTestSession(t, rt, dbForLogin)
@@ -360,6 +370,7 @@ func TestHandleUpdateBackupTarget_RotatesCredentials(t *testing.T) {
 }
 
 func TestHandleUpdateBackupTarget_NotFound(t *testing.T) {
+	t.Parallel()
 	setter := &fakeBackupSecretsSetter{}
 	rt, db := newTestRouterWithBackupSecrets(t, setter)
 	cookie := loginTestSession(t, rt, db)
@@ -373,6 +384,7 @@ func TestHandleUpdateBackupTarget_NotFound(t *testing.T) {
 }
 
 func TestHandleUpdateBackupTarget_InvalidRequest(t *testing.T) {
+	t.Parallel()
 	setter := &fakeBackupSecretsSetter{}
 	rt, db := newTestRouterWithBackupSecrets(t, setter)
 	cookie := loginTestSession(t, rt, db)
@@ -393,6 +405,7 @@ func TestHandleUpdateBackupTarget_InvalidRequest(t *testing.T) {
 }
 
 func TestHandleDeleteBackupTarget(t *testing.T) {
+	t.Parallel()
 	setter := &fakeBackupSecretsSetter{}
 	rt, db := newTestRouterWithBackupSecrets(t, setter)
 	cookie := loginTestSession(t, rt, db)
@@ -425,6 +438,7 @@ func TestHandleDeleteBackupTarget(t *testing.T) {
 }
 
 func TestHandleDeleteBackupTarget_BlockedByHistory(t *testing.T) {
+	t.Parallel()
 	setter := &fakeBackupSecretsSetter{}
 	rt, db := newTestRouterWithBackupSecrets(t, setter)
 	cookie := loginTestSession(t, rt, db)
@@ -452,6 +466,7 @@ func TestHandleDeleteBackupTarget_BlockedByHistory(t *testing.T) {
 }
 
 func TestHandleTestBackupTarget_NotConfigured(t *testing.T) {
+	t.Parallel()
 	setter := &fakeBackupSecretsSetter{}
 	rt, db := newTestRouterWithBackupSecrets(t, setter) // no WithBackupTargetTester
 	cookie := loginTestSession(t, rt, db)
@@ -466,6 +481,7 @@ func TestHandleTestBackupTarget_NotConfigured(t *testing.T) {
 }
 
 func TestHandleTestBackupTarget_NotFound(t *testing.T) {
+	t.Parallel()
 	setter := &fakeBackupSecretsSetter{}
 	tester := &fakeBackupTargetTester{}
 	rt, db := newTestRouterWithBackupTargetTest(t, setter, tester)
@@ -479,6 +495,7 @@ func TestHandleTestBackupTarget_NotFound(t *testing.T) {
 }
 
 func TestHandleTestBackupTarget_Success(t *testing.T) {
+	t.Parallel()
 	setter := &fakeBackupSecretsSetter{}
 	tester := &fakeBackupTargetTester{}
 	rt, db := newTestRouterWithBackupTargetTest(t, setter, tester)
@@ -522,6 +539,7 @@ func assertTestBackupTargetBadGateway(t *testing.T, testerErr error, wantSubstr 
 }
 
 func TestHandleTestBackupTarget_AuthRejected(t *testing.T) {
+	t.Parallel()
 	rec := assertTestBackupTargetBadGateway(t, &smithyhttp.ResponseError{
 		Response: &smithyhttp.Response{Response: &http.Response{StatusCode: http.StatusForbidden}},
 		Err:      errors.New("403 Forbidden"),
@@ -532,6 +550,7 @@ func TestHandleTestBackupTarget_AuthRejected(t *testing.T) {
 }
 
 func TestHandleTestBackupTarget_BucketNotFound(t *testing.T) {
+	t.Parallel()
 	assertTestBackupTargetBadGateway(t, &smithyhttp.ResponseError{
 		Response: &smithyhttp.Response{Response: &http.Response{StatusCode: http.StatusNotFound}},
 		Err:      errors.New("404 Not Found"),
@@ -539,5 +558,135 @@ func TestHandleTestBackupTarget_BucketNotFound(t *testing.T) {
 }
 
 func TestHandleTestBackupTarget_Unreachable(t *testing.T) {
+	t.Parallel()
 	assertTestBackupTargetBadGateway(t, errors.New("dial tcp: connection refused"), "could not reach backup target")
+}
+
+func createRetireTarget(t *testing.T, rt *Router, cookie *http.Cookie) string {
+	t.Helper()
+	rec := httptest.NewRecorder()
+	body := `{"name":"s9","provider":"aws","bucket":"backups","access_key_id":"AKID","secret_access_key":"topsecret"}`
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/backup-targets", body))
+	var created backupTargetResource
+	if err := json.NewDecoder(rec.Body).Decode(&created); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
+	return created.ID
+}
+
+func seedSucceededHistory(t *testing.T, db *store.DB, id, database, targetID string) {
+	t.Helper()
+	ctx := context.Background()
+	if err := db.StartBackupHistory(ctx, store.BackupHistory{ID: id, DatabaseName: database, TargetID: targetID, ObjectKey: database + "/1.dump", StartedAt: "2026-08-14T00:00:00Z"}); err != nil {
+		t.Fatalf("seed history: %v", err)
+	}
+	if err := db.FinishBackupHistory(ctx, id, store.BackupStatusSucceeded, 10, "", "", "2026-08-14T00:01:00Z"); err != nil {
+		t.Fatalf("finish history: %v", err)
+	}
+}
+
+func TestHandleDeleteBackupTarget_OrphanedHistoryDetaches(t *testing.T) {
+	t.Parallel()
+	rt, db := newTestRouterWithBackupSecrets(t, &fakeBackupSecretsSetter{})
+	cookie := loginTestSession(t, rt, db)
+	id := createRetireTarget(t, rt, cookie)
+	seedSucceededHistory(t, db, "bkh_gone", "deleteddb", id)
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/backup-targets/"+id, ""))
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("delete status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	get := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(get, authedRequest(t, cookie, http.MethodGet, "/api/v1/backup-targets/"+id, ""))
+	if get.Code != http.StatusNotFound {
+		t.Fatalf("get after delete = %d, want 404", get.Code)
+	}
+	hist, err := db.ListBackupHistory(context.Background(), "deleteddb", 10, nil)
+	if err != nil || len(hist) != 1 || hist[0].TargetID != id {
+		t.Fatalf("history after delete = %+v, err = %v, want the row kept", hist, err)
+	}
+	listRec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(listRec, authedRequest(t, cookie, http.MethodGet, "/api/v1/databases/deleteddb/backups", ""))
+	if listRec.Code >= 500 {
+		t.Fatalf("history listing status = %d", listRec.Code)
+	}
+
+	entries, err := db.ListAuditEntries(context.Background(), 50, nil, store.AuditEntryFilter{})
+	if err != nil {
+		t.Fatalf("list audit: %v", err)
+	}
+	found := false
+	for _, e := range entries {
+		if e.Action == "backup_target.deleted" {
+			found = true
+			if !strings.Contains(e.Detail, `"detached_history_rows":1`) || strings.Contains(e.Detail, "topsecret") || strings.Contains(e.Detail, "AKID") {
+				t.Fatalf("audit detail = %s", e.Detail)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("no backup_target.deleted audit entry")
+	}
+}
+
+func TestHandleDeleteBackupTarget_LiveScheduleListed(t *testing.T) {
+	t.Parallel()
+	rt, db := newTestRouterWithBackupSecrets(t, &fakeBackupSecretsSetter{})
+	cookie := loginTestSession(t, rt, db)
+	id := createRetireTarget(t, rt, cookie)
+	ctx := context.Background()
+	if err := db.SaveDesiredDatabase(ctx, store.DesiredDatabase{Name: "livedb", Engine: store.EnginePostgres, Version: "16"}); err != nil {
+		t.Fatalf("save database: %v", err)
+	}
+	if err := db.SetDatabaseBackupSchedule(ctx, "livedb", id, "0 3 * * *", 7, 0); err != nil {
+		t.Fatalf("set schedule: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/backup-targets/"+id, ""))
+	if rec.Code != http.StatusConflict || !strings.Contains(rec.Body.String(), "livedb") {
+		t.Fatalf("delete = %d, body = %s, want 409 naming livedb", rec.Code, rec.Body.String())
+	}
+}
+
+func TestHandleDeleteBackupTarget_BoundBucketIs409(t *testing.T) {
+	t.Parallel()
+	rt, db := newTestRouterWithBackupSecrets(t, &fakeBackupSecretsSetter{})
+	cookie := loginTestSession(t, rt, db)
+	id := createRetireTarget(t, rt, cookie)
+	if _, err := db.ExecContext(context.Background(), `INSERT INTO storage_buckets (id, name, target_id, prefix, created_at) VALUES ('b1', 'media', ?, 'p/', 'now')`, id); err != nil {
+		t.Fatal(err)
+	}
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/backup-targets/"+id, ""))
+	if rec.Code != http.StatusConflict || !strings.Contains(rec.Body.String(), "media") {
+		t.Fatalf("delete = %d, body = %s, want 409 naming the bucket", rec.Code, rec.Body.String())
+	}
+	if _, err := db.GetBackupTarget(context.Background(), id); err != nil {
+		t.Fatalf("target must stay live: %v", err)
+	}
+}
+
+type failingAuditStore struct{ AuditStore }
+
+func (failingAuditStore) SaveAuditEntry(context.Context, store.AuditEntry) error {
+	return errors.New("audit down")
+}
+
+func TestHandleDeleteBackupTarget_AuditFailureStaysSuccess(t *testing.T) {
+	t.Parallel()
+	rt, db := newTestRouterWithBackupSecrets(t, &fakeBackupSecretsSetter{})
+	cookie := loginTestSession(t, rt, db)
+	id := createRetireTarget(t, rt, cookie)
+	rt.auditLog = failingAuditStore{rt.auditLog}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/backup-targets/"+id, ""))
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("delete = %d, body = %s, want 204 for a committed delete", rec.Code, rec.Body.String())
+	}
+	if _, err := db.GetBackupTarget(context.Background(), id); !errors.Is(err, store.ErrBackupTargetNotFound) {
+		t.Fatalf("target should be gone, err = %v", err)
+	}
 }

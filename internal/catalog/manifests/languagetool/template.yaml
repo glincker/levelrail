@@ -1,0 +1,22 @@
+id: languagetool
+name: LanguageTool
+description: A multilingual grammar, style and spell checking server with an HTTP API at /v2/check. LGPL-2.1 licensed. Runs the community server image in one container without the optional n-gram data. There is no web login, so keep the address private or put it behind an access rule.
+icon: pen
+category: Productivity
+documentation_url: https://dev.languagetool.org/http-server
+source_repo: https://github.com/languagetool-org/languagetool
+license: LGPL-2.1-or-later
+license_class: copyleft
+license_url: https://github.com/languagetool-org/languagetool/blob/master/COPYING.txt
+recommended_memory_bytes: 1073741824
+domains:
+  - service: languagetool
+    port: 8010
+    description: Public address of the LanguageTool API.
+healthcheck:
+  service: languagetool
+  port: 8010
+  path: /v2/languages
+status: active
+listing:
+  by: community

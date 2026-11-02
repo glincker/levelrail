@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 )
 
@@ -186,5 +187,139 @@ func TestDeleteBackupTarget_ReferencedByHistory_FailsCleanly(t *testing.T) {
 	// history row: see DeleteBackupTarget's own doc comment.
 	if err := db.DeleteBackupTarget(ctx, target.ID); err == nil {
 		t.Fatal("DeleteBackupTarget() error = nil, want a foreign key constraint error while backup_history still references this target")
+	}
+}
+
+func TestRetireBackupTarget_KeepsHistoryOfDeletedResources(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	target := seedBackupTarget(t, db)
+	if err := db.StartBackupHistory(ctx, BackupHistory{ID: "bkh_o", DatabaseName: "gone", TargetID: target.ID, ObjectKey: "gone/1", StartedAt: "2026-08-14T00:00:00Z"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.FinishBackupHistory(ctx, "bkh_o", BackupStatusSucceeded, 1, "", "", "2026-08-14T00:01:00Z"); err != nil {
+		t.Fatal(err)
+	}
+	res, err := db.RetireBackupTarget(ctx, target.ID)
+	if err != nil || res.Detached != 1 {
+		t.Fatalf("RetireBackupTarget() = %+v, %v, want 1 detached, nil", res, err)
+	}
+	if _, err := db.GetBackupTarget(ctx, target.ID); !errors.Is(err, ErrBackupTargetNotFound) {
+		t.Fatalf("GetBackupTarget() error = %v, want not found", err)
+	}
+	if _, err := db.GetBackupHistory(ctx, "bkh_o"); err != nil {
+		t.Fatalf("history row lost: %v", err)
+	}
+}
+
+func TestRetireBackupTarget_BlockedByOtherUsers(t *testing.T) {
+	cases := map[string]string{
+		"bucket":      `INSERT INTO storage_buckets (id, name, target_id, prefix, created_at) VALUES ('b1', 'media', '%s', 'p/', 'now')`,
+		"dr":          `UPDATE control_plane_dr_settings SET escrow_target_id = '%s' WHERE id = 1`,
+		"copy":        `UPDATE backup_copy_settings SET target_id = '%s' WHERE id = 1`,
+		"predepl":     `INSERT INTO app_predeploy_snapshot_settings (app, mode, target_id) VALUES ('web', 'on', '%s')`,
+		"drtarget":    `INSERT OR IGNORE INTO control_plane_dr_settings (id) VALUES (1); UPDATE control_plane_dr_settings SET target_id = '%s' WHERE id = 1`,
+		"basebackup":  `INSERT INTO base_backup_history (id, database_name, target_id, object_key, status, started_at) VALUES ('bb1', 'db', '%s', 'k', 'running', 'now')`,
+		"drill":       `INSERT INTO backup_drills (id, backup_history_id, resource_kind, target_id, status, started_at) VALUES ('d1', 'h1', 'database', '%s', 'running', 'now')`,
+		"copy-queued": `INSERT INTO backup_targets (id, name, provider, bucket, created_at) VALUES ('bkt_other', 'o', 'aws', 'b', 'now'); INSERT INTO backup_history (id, database_name, target_id, object_key, status, started_at, finished_at) VALUES ('h2', 'gone', 'bkt_other', 'k', 'succeeded', 'now', 'now'); INSERT INTO backup_copies (backup_history_id, target_id, status, queued_at) VALUES ('h2', '%s', 'pending', 'now')`,
+	}
+	for name, stmt := range cases {
+		t.Run(name, func(t *testing.T) {
+			db := openTestDB(t)
+			ctx := context.Background()
+			target := seedBackupTarget(t, db)
+			if name == "dr" {
+				if _, err := db.ExecContext(ctx, `INSERT OR IGNORE INTO control_plane_dr_settings (id) VALUES (1)`); err != nil {
+					t.Fatal(err)
+				}
+			}
+			for _, one := range strings.Split(strings.ReplaceAll(stmt, "%s", target.ID), "; ") {
+				if _, err := db.ExecContext(ctx, one); err != nil {
+					t.Fatalf("seed %q: %v", one, err)
+				}
+			}
+			_, err := db.RetireBackupTarget(ctx, target.ID)
+			var inUse *BackupTargetInUseError
+			if !errors.As(err, &inUse) {
+				t.Fatalf("RetireBackupTarget() error = %v, want in-use", err)
+			}
+			if _, err := db.GetBackupTarget(ctx, target.ID); err != nil {
+				t.Fatalf("target must stay live: %v", err)
+			}
+		})
+	}
+}
+
+func TestRetireBackupTarget_PruneScopeAndCredentials(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	target := seedBackupTarget(t, db)
+	if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: "live", Engine: EnginePostgres, Version: "16"}); err != nil {
+		t.Fatal(err)
+	}
+	for id, dbName := range map[string]string{"bkh_live": "live", "bkh_dead": "dead"} {
+		if err := db.StartBackupHistory(ctx, BackupHistory{ID: id, DatabaseName: dbName, TargetID: target.ID, ObjectKey: dbName + "/1", StartedAt: "2026-08-14T00:00:00Z"}); err != nil {
+			t.Fatal(err)
+		}
+		if err := db.FinishBackupHistory(ctx, id, BackupStatusFailed, 0, "", "boom", "2026-08-14T00:01:00Z"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := db.SaveServiceDEK(ctx, BackupTargetSecretsKey(target.ID), []byte("dek")); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SaveSecretValue(ctx, BackupTargetSecretsKey(target.ID), "secret_access_key", []byte("sealed")); err != nil {
+		t.Fatal(err)
+	}
+
+	// The live database's failed attempt stays, and it blocks the retire.
+	if _, err := db.RetireBackupTarget(ctx, target.ID); err == nil {
+		t.Fatal("want in-use error for history of a live database")
+	}
+	if _, err := db.GetBackupHistory(ctx, "bkh_live"); err != nil {
+		t.Fatalf("live resource history was pruned: %v", err)
+	}
+	if ok, _ := db.HasSecretValue(ctx, BackupTargetSecretsKey(target.ID), "secret_access_key"); !ok {
+		t.Fatal("credentials wiped by a blocked retire")
+	}
+	if _, err := db.GetBackupHistory(ctx, "bkh_dead"); err != nil {
+		t.Fatalf("blocked retire must roll back the prune: %v", err)
+	}
+
+	if err := db.DeleteDesiredDatabase(ctx, "live"); err != nil {
+		t.Fatal(err)
+	}
+	res, err := db.RetireBackupTarget(ctx, target.ID)
+	if err != nil || res.Pruned != 2 {
+		t.Fatalf("RetireBackupTarget() = %+v, %v, want 2 pruned", res, err)
+	}
+	if ok, _ := db.HasSecretValue(ctx, BackupTargetSecretsKey(target.ID), "secret_access_key"); ok {
+		t.Fatal("credentials survived the retire")
+	}
+}
+
+func TestRetireBackupTarget_WipeIsAtomic(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	target := seedBackupTarget(t, db)
+	key := BackupTargetSecretsKey(target.ID)
+	if err := db.SaveServiceDEK(ctx, key, []byte("dek")); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SaveSecretValue(ctx, key, "secret_access_key", []byte("sealed")); err != nil {
+		t.Fatal(err)
+	}
+	// A failure inside the transaction, after the target row is gone, must undo everything.
+	if _, err := db.ExecContext(ctx, `CREATE TRIGGER fail_dek_delete BEFORE DELETE ON service_secrets BEGIN SELECT RAISE(ABORT, 'boom'); END`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.RetireBackupTarget(ctx, target.ID); err == nil {
+		t.Fatal("RetireBackupTarget() error = nil, want the injected failure")
+	}
+	if _, err := db.GetBackupTarget(ctx, target.ID); err != nil {
+		t.Fatalf("target must survive a failed retire: %v", err)
+	}
+	if ok, _ := db.HasSecretValue(ctx, key, "secret_access_key"); !ok {
+		t.Fatal("credentials deleted by a failed retire")
 	}
 }

@@ -77,6 +77,7 @@ export async function fetchNodeMove(id: string): Promise<NodeMove> {
 export function useStartNodeMove(kind: NodeMoveKind, name: string) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (nodeId: string) => startNodeMove(kind, name, nodeId),
     onSuccess: (move) => {
       queryClient.setQueryData(nodeMoveKeys.detail(move.id), move)
@@ -149,6 +150,7 @@ export async function fetchNodeDrains(nodeId: string): Promise<NodeDrain[]> {
 export function useStartNodeDrain() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: ({ id, targetNodeId }: { id: string; targetNodeId: string }) =>
       startNodeDrain(id, targetNodeId),
     onSuccess: (drain, { id }) => {
@@ -240,6 +242,7 @@ export function useNodeLabels(nodeId: string) {
 export function useSetNodeLabels(nodeId: string) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (labels: NodeLabels) => putNodeLabels(nodeId, labels),
     onSuccess: (labels) => {
       queryClient.setQueryData(nodeMoveKeys.labels(nodeId), labels)
@@ -293,6 +296,7 @@ export function usePlacement(kind: NodeMoveKind, name: string, enabled = true) {
 export function useSetPlacement(kind: NodeMoveKind, name: string) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (nodeSelector: NodeLabels) =>
       putPlacement(kind, name, nodeSelector),
     onSuccess: (placement) => {

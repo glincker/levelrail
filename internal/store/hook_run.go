@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 // Hook types HookRun.HookType holds, matching
@@ -36,6 +38,8 @@ type HookRun struct {
 // migrations/0083_service_hook_runs.sql's own comment for why a full
 // history isn't.
 func (db *DB) UpsertHookRun(ctx context.Context, run HookRun) error {
+	// Hook output is untrusted command text and may echo env values.
+	run.Output, run.Command = secretmask.Mask(run.Output), secretmask.Mask(run.Command)
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO service_hook_runs (service_name, hook_type, command, exit_code, success, output, ran_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?)

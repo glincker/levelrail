@@ -24,6 +24,7 @@ async function postPreflight(
 
 export function usePreflightApp(appName: string) {
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (body: PreflightRequest = {}) =>
       postPreflight(
         `/api/v1/apps/${encodeURIComponent(appName)}/preflight`,
@@ -34,6 +35,7 @@ export function usePreflightApp(appName: string) {
 
 export function usePreflightNewApp() {
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (body: PreflightRequest) =>
       postPreflight('/api/v1/preflight', body),
   })

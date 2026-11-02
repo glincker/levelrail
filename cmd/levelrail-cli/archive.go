@@ -40,7 +40,7 @@ Flags:
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
-`, prog, envAPIToken, envAPIURL, defaultAPIURL, verb, tail)
+`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL, verb, tail)
 }
 
 // runArchive dispatches "archive ls|create|restore|verify|download|delete|policy".

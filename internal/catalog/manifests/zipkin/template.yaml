@@ -1,0 +1,25 @@
+id: zipkin
+name: Zipkin
+description: A distributed tracing system that collects timing data from your services and shows request traces. This uses in-memory storage, so traces reset when the container restarts.
+icon: git-branch
+category: Monitoring
+documentation_url: https://zipkin.io/
+source_repo: https://github.com/openzipkin/zipkin
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/openzipkin/zipkin/blob/master/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 536870912
+first_run:
+  - Send spans to /api/v2/spans from your tracing library, then open the page to search traces.
+domains:
+  - service: zipkin
+    port: 9411
+    description: Public address of the Zipkin web interface.
+healthcheck:
+  service: zipkin
+  port: 9411
+  path: /health

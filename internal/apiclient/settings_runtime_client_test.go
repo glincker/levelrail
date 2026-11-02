@@ -68,7 +68,7 @@ func TestClient_RuntimeSettings(t *testing.T) {
 		{
 			name: "delete",
 			call: func(c *Client) (any, error) {
-				return c.DeleteRuntimeSetting(context.Background(), "security.bind_allowed_roots")
+				return c.DeleteRuntimeSetting(context.Background(), "security.bind_allowed_roots", false)
 			},
 			wantVerb: http.MethodDelete,
 			wantPath: "/api/v1/settings/runtime/security.bind_allowed_roots",

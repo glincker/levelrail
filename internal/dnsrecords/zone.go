@@ -151,28 +151,61 @@ func (c *CloudflareAPI) FindZone(ctx context.Context, domain string) (string, er
 	return "", ErrZoneNotFound
 }
 
+type cfDNSRecord struct {
+	ID      string `json:"id"`
+	Content string `json:"content"`
+	Proxied bool   `json:"proxied"`
+}
+
+// matchingRecords lists the records of recType at fqdn whose content equals
+// content; records with other content are never returned.
+func (c *CloudflareAPI) matchingRecords(ctx context.Context, zone, fqdn, recType, content string) (cfZone, []cfDNSRecord, error) {
+	z, ok, err := c.zoneByName(ctx, strings.TrimSuffix(zone, "."))
+	if err != nil {
+		return cfZone{}, nil, err
+	}
+	if !ok {
+		return cfZone{}, nil, ErrZoneNotFound
+	}
+	var recs []cfDNSRecord
+	q := url.Values{"type": {recType}, "name": {fqdn}}
+	if err := c.do(ctx, http.MethodGet, "/zones/"+z.ID+"/dns_records?"+q.Encode(), nil, &recs); err != nil {
+		return cfZone{}, nil, err
+	}
+	var out []cfDNSRecord
+	for _, r := range recs {
+		if sameData(r.Content, content, recType) {
+			out = append(out, r)
+		}
+	}
+	return z, out, nil
+}
+
+// ProxyDrift counts the matching records and how many differ from proxied,
+// without changing anything.
+func (c *CloudflareAPI) ProxyDrift(ctx context.Context, zone, fqdn, recType, content string, proxied bool) (found, drifted int, err error) {
+	_, recs, err := c.matchingRecords(ctx, zone, fqdn, recType, content)
+	if err != nil {
+		return 0, 0, err
+	}
+	for _, r := range recs {
+		if r.Proxied != proxied {
+			drifted++
+		}
+	}
+	return len(recs), drifted, nil
+}
+
 // SetProxied sets the proxied flag on the records of recType at fqdn in zone
 // whose content equals content, and returns how many it changed.
 func (c *CloudflareAPI) SetProxied(ctx context.Context, zone, fqdn, recType, content string, proxied bool) (int, error) {
-	z, ok, err := c.zoneByName(ctx, strings.TrimSuffix(zone, "."))
+	z, recs, err := c.matchingRecords(ctx, zone, fqdn, recType, content)
 	if err != nil {
-		return 0, err
-	}
-	if !ok {
-		return 0, ErrZoneNotFound
-	}
-	var recs []struct {
-		ID      string `json:"id"`
-		Content string `json:"content"`
-		Proxied bool   `json:"proxied"`
-	}
-	q := url.Values{"type": {recType}, "name": {fqdn}}
-	if err := c.do(ctx, http.MethodGet, "/zones/"+z.ID+"/dns_records?"+q.Encode(), nil, &recs); err != nil {
 		return 0, err
 	}
 	changed := 0
 	for _, r := range recs {
-		if !sameData(r.Content, content, recType) || r.Proxied == proxied {
+		if r.Proxied == proxied {
 			continue
 		}
 		patch := map[string]bool{"proxied": proxied}

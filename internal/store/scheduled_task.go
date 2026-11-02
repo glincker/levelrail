@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 // Scheduled task run statuses (migrations/0048_scheduled_tasks.sql's
@@ -287,6 +289,7 @@ func (db *DB) UpdateScheduledTask(ctx context.Context, id string, command []stri
 // ErrScheduledTaskNotFound if id doesn't exist, e.g. the task was
 // deleted between being picked up by a tick and this call.
 func (db *DB) RecordScheduledTaskRun(ctx context.Context, id string, ranAt time.Time, status, output string) error {
+	output = secretmask.Mask(output)
 	res, err := db.ExecContext(ctx, `
 		UPDATE scheduled_tasks
 		SET last_run_at = ?, last_run_status = ?, last_run_output = ?, updated_at = ?,

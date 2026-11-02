@@ -41,7 +41,7 @@ function toFieldValues(app: AppDetail): HooksFormValues {
 // useRestartRequiredToast's "restart to apply" messaging applies here
 // exactly the way it already does for HealthCheckEditor.
 export function HooksEditor({ app }: { app: AppDetail }) {
-  const updateApp = useUpdateApp(app.name)
+  const updateApp = useUpdateApp(app.name, { inlineError: true })
   const notifyRestartRequired = useRestartRequiredToast()
   const hasHooks = !!(app.hooks?.pre_deploy || app.hooks?.post_deploy)
   const { data: hookRuns } = useAppHookRuns(app.name, hasHooks)

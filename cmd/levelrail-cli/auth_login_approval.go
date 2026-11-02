@@ -109,6 +109,12 @@ func approvalPageURL(base, id string) string {
 	return strings.TrimRight(base, "/") + approvalApprovePath + "?request=" + url.QueryEscape(id)
 }
 
+// approvalHostHint is the path that works on a fresh install, where no token
+// holding signin:approve exists yet: the server's own binary, run on the host.
+func approvalHostHint(id string, match int) string {
+	return fmt.Sprintf("On the server itself (first sign-in, no token yet): sudo levelrail approve-signin %s --match %d (add APP_DATA_DIR=<your data dir> after sudo if you changed it)", id, match)
+}
+
 func approvalPairingHint(prog string) string {
 	return fmt.Sprintf("Faster: open the dashboard, copy the command from the \"Connect your CLI\" card and run it (%s login --api-url <url> --code XXXX-XXXX).", prog)
 }
@@ -122,16 +128,16 @@ func (c *authSessionClient) awaitApproval(ctx context.Context, prog string, logi
 	interactive := approvalInteractive()
 	if !interactive && !opts.wait && !envTruthy(lookupEnv, envLoginApprovalWait) {
 		return loginResponse{}, &apiError{StatusCode: http.StatusUnauthorized, Message: fmt.Sprintf(
-			"new-device approval required (request %s, number %d): approve at %s, or sign in with \"%s login --api-url %s --code XXXX-XXXX\" using a code from the dashboard, or run \"%s login --wait\" (or set %s=1) to wait for approval",
-			login.ApprovalID, login.ApprovalMatch, pageURL, prog, c.baseURL, prog, envLoginApprovalWait)}
+			"new-device approval required (request %s, number %d): approve at %s, or run on the server \"sudo levelrail approve-signin %s --match %d\" (add APP_DATA_DIR=<your data dir> after sudo if you changed it), or sign in with \"%s login --api-url %s --code XXXX-XXXX\" using a code from the dashboard, or run \"%s login --wait\" (or set %s=1) to wait for approval",
+			login.ApprovalID, login.ApprovalMatch, pageURL, login.ApprovalID, login.ApprovalMatch, prog, c.baseURL, prog, envLoginApprovalWait)}
 	}
 	if login.ApprovalExpiresAt != nil {
 		if left := time.Until(*login.ApprovalExpiresAt); left > 0 && left < timeout {
 			timeout = left
 		}
 	}
-	_, _ = fmt.Fprintf(stderr, "This sign-in comes from a new device, so it needs your approval.\n\n  1. Open %s\n     in the browser where you are signed in to the dashboard.\n  2. Type this number when asked: %d\n\nOr run \"%s auth approve %s --match %d\" with a token that holds signin:approve.\n%s\nWaiting up to %s. Press Ctrl+C to cancel.\n",
-		pageURL, login.ApprovalMatch, prog, login.ApprovalID, login.ApprovalMatch, approvalPairingHint(prog), timeout.Round(time.Second))
+	_, _ = fmt.Fprintf(stderr, "This sign-in comes from a new device, so it needs your approval.\n\n  1. Open %s\n     in the browser where you are signed in to the dashboard.\n  2. Type this number when asked: %d\n\nOr run \"%s auth approve %s --match %d\" with a token that holds signin:approve.\n%s\n%s\nWaiting up to %s. Press Ctrl+C to cancel.\n",
+		pageURL, login.ApprovalMatch, prog, login.ApprovalID, login.ApprovalMatch, approvalHostHint(login.ApprovalID, login.ApprovalMatch), approvalPairingHint(prog), timeout.Round(time.Second))
 	if wantOpen(opts.open, interactive, lookupEnv) {
 		if err := openBrowserFunc(ctx, pageURL); err != nil {
 			_, _ = fmt.Fprintf(stderr, "Could not open a browser (%v); open the link above yourself.\n", err)

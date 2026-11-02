@@ -192,7 +192,16 @@
     "gate": "Puerta de disponibilidad y vigilancia",
     "probes": "Intentos de sonda de salud",
     "conditionLine": "{{reason}} ({{status}}): {{message}}",
-    "noConditions": "El reconciliador todavía no ha informado de ningún estado para esta aplicación."
+    "noConditions": "El reconciliador todavía no ha informado de ningún estado para esta aplicación.",
+    "counts": {
+      "policy": "Sobrecarga máx. {{surge}}, no disponibles máx. {{unavailable}}, disponibles mín. {{min}}",
+      "ready": "Listas",
+      "surge": "Sobrecarga",
+      "title": "Progreso de la actualización gradual",
+      "unavailable": "No disponibles",
+      "updated": "Actualizadas",
+      "wave": "Oleada {{wave}} de {{waves}}"
+    }
   },
   "page": {
     "notInHistory": "Este intento de despliegue no está en el historial actual de esta aplicación.",
@@ -288,5 +297,8 @@
     "total": "{{phase}}: {{time}}",
     "noTiming": "sin tiempo",
     "truncated": "Las fases solo se detectaron en las primeras {{count}} líneas."
+  },
+  "chain": {
+    "position": "Intento {{position}} de esta cadena"
   }
 }

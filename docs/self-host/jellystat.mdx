@@ -1,0 +1,77 @@
+---
+title: "Self-host Jellystat with Docker"
+sidebarTitle: "Jellystat"
+description: "A statistics and history dashboard for Jellyfin with watch time, library and user insights, backed by Postgres. MIT licensed. Create the admin user on first open, then add your Jellyfin URL and an API key."
+"og:url": "https://docs.levelrail.com/self-host/jellystat"
+---
+
+A statistics and history dashboard for Jellyfin with watch time, library and user insights, backed by Postgres. MIT licensed. Create the admin user on first open, then add your Jellyfin URL and an API key.
+
+This page describes the Levelrail template for Jellystat (Monitoring). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/CyferShepard/Jellystat.
+
+Recommended memory: about 384 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `postgres:16-alpine` | none | `pgdata -&#62; /var/lib/postgresql/data` |
+| `jellystat` | `cyfershepard/jellystat:1.1.12` | 3000 | `backup -&#62; /app/backend/backup-data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `POSTGRES_DB` | Preset in the template |
+| `db` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `db` | `POSTGRES_USER` | Preset in the template |
+| `jellystat` | `JWT_SECRET` | Generated at deploy |
+| `jellystat` | `POSTGRES_DB` | Preset in the template |
+| `jellystat` | `POSTGRES_IP` | Preset in the template |
+| `jellystat` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `jellystat` | `POSTGRES_PORT` | Preset in the template |
+| `jellystat` | `POSTGRES_USER` | Preset in the template |
+| `jellystat` | `TZ` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`db`, `jellystat`): JWT_SECRET, POSTGRES_PASSWORD, POSTGRES_PASSWORD.
+- Stores data in named volumes (`db`, `jellystat`): backup, pgdata.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Jellystat with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Jellystat. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy jellystat --name my-jellystat
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Monitoring templates
+
+- [Alertmanager](/self-host/alertmanager)
+- [Beszel](/self-host/beszel)
+- [Blackbox Exporter](/self-host/blackbox-exporter)
+- [Bugsink](/self-host/bugsink)
+- [Changedetection.io](/self-host/changedetection)
+
+All templates are listed in the [self-host gallery](/self-host).

@@ -50,6 +50,10 @@ func (i rehydrateInventory) Volumes(ctx context.Context) ([]rehydrate.Volume, er
 	for _, s := range svcs {
 		prefix := "app-" + s.Name + "-"
 		for _, v := range s.Volumes {
+			// A volume another app also holds is skipped: restoring it would write into the wrong app's data.
+			if _, clash := store.ServiceVolumeOwnerConflict(svcs, s.Name, v.Name); clash || !strings.HasPrefix(v.Name, prefix) {
+				continue
+			}
 			out = append(out, rehydrate.Volume{App: s.Name, Name: strings.TrimPrefix(v.Name, prefix)})
 		}
 	}

@@ -37,8 +37,6 @@ const (
 	mcpHTTPDefaultTimeout  = 30
 	mcpHTTPInternalHost    = "http://mcp.internal"
 	mcpHTTPAgentClient     = "mcp-http"
-	mcpHTTPMaxArgKeys      = 32
-	mcpHTTPMaxKeyLen       = 64
 )
 
 // mcpHTTP serves the experimental read-only remote MCP endpoint. inner is the
@@ -141,8 +139,12 @@ func (m *mcpHTTP) serve(w http.ResponseWriter, r *http.Request) {
 	client := apiclient.NewClient(mcpHTTPInternalHost, token,
 		apiclient.WithUserAgent("levelrail-mcp/"+version.Version),
 		apiclient.WithTransport(&mcpInprocTransport{inner: m.inner, origin: r, maxResponse: m.maxResponse, timeout: m.callTimeout, audience: audience}))
-	server, _ := mcptools.NewServerWithOptions(client, mcptools.Options{Mode: mcptools.ModeReadOnly})
-	server.AddReceivingMiddleware(m.auditMiddleware(r, rec))
+	server, _ := mcptools.NewServerWithOptions(client, mcptools.Options{
+		Mode: mcptools.ModeReadOnly,
+		AuditSink: func(_ context.Context, c mcptools.AuditCall) {
+			m.writeAudit(r, rec, c.Tool, c.ArgumentNames, c.Outcome, c.Duration)
+		},
+	})
 	m.rt.logger.Debug("api: mcp-http server built", slog.Duration("took", time.Since(start)))
 
 	h := mcp.NewStreamableHTTPHandler(func(*http.Request) *mcp.Server { return server },
@@ -189,51 +191,6 @@ func (m *mcpHTTP) readBody(r *http.Request) ([]byte, bool) {
 		return nil, int64(len(b)) > m.maxBody
 	}
 	return b, false
-}
-
-// auditMiddleware writes one audit row per tools/call. It stores argument
-// names only, never values, because tool inputs can carry secrets.
-func (m *mcpHTTP) auditMiddleware(r *http.Request, rec *store.APIToken) mcp.Middleware {
-	return func(next mcp.MethodHandler) mcp.MethodHandler {
-		return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
-			if method != "tools/call" {
-				return next(ctx, method, req)
-			}
-			start := time.Now()
-			res, err := next(ctx, method, req)
-			outcome := "ok"
-			if cr, isCall := res.(*mcp.CallToolResult); err != nil || (isCall && cr.IsError) {
-				outcome = "error"
-			}
-			tool, keys := mcpCallSummary(req)
-			m.writeAudit(r, rec, tool, keys, outcome, time.Since(start))
-			return res, err
-		}
-	}
-}
-
-func mcpCallSummary(req mcp.Request) (string, []string) {
-	var name string
-	var raw json.RawMessage
-	switch p := req.GetParams().(type) {
-	case *mcp.CallToolParamsRaw:
-		name, raw = p.Name, p.Arguments
-	case *mcp.CallToolParams:
-		name = p.Name
-		if p.Arguments != nil {
-			raw, _ = json.Marshal(p.Arguments)
-		}
-	}
-	var args map[string]json.RawMessage
-	_ = json.Unmarshal(raw, &args)
-	keys := make([]string, 0, len(args))
-	for k := range args {
-		if len(keys) < mcpHTTPMaxArgKeys {
-			keys = append(keys, mcpTruncate(k, mcpHTTPMaxKeyLen))
-		}
-	}
-	slices.Sort(keys)
-	return mcpTruncate(name, mcpHTTPMaxKeyLen), keys
 }
 
 func mcpTruncate(s string, n int) string {

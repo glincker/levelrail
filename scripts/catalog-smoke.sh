@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # Deploys catalog templates in a local Docker harness and writes a pass report.
-# Usage: scripts/catalog-smoke.sh [-n TOP] [-i id1,id2] [-t SECONDS] [-k] [-r]
+# Usage: scripts/catalog-smoke.sh [-n TOP] [-i id1,id2] [-t SECONDS] [-k] [-r] [-R]
 #   -n TOP      how many templates (default 50)
 #   -i IDS      only these template IDs
 #   -t SECONDS  per-template wait for healthy (default 180)
 #   -k          keep images pulled by the run (default: remove images the run pulled)
 #   -r          also rewrite docs/templates-status.md from the results
+#   -R          record each pass in verified.json and images.lock.json (needs crane)
 # Every project is named lrsmoke-<id>; containers, volumes and networks are removed
 # after each template and again on exit or interrupt.
 set -u
@@ -15,13 +16,15 @@ ids=""
 wait_s=180
 keep_images=0
 write_docs=0
-while getopts "n:i:t:kr" opt; do
+record=0
+while getopts "n:i:t:krR" opt; do
   case "$opt" in
     n) top="$OPTARG" ;;
     i) ids="$OPTARG" ;;
     t) wait_s="$OPTARG" ;;
     k) keep_images=1 ;;
     r) write_docs=1 ;;
+    R) record=1 ;;
     *) exit 2 ;;
   esac
 done
@@ -106,4 +109,12 @@ echo "results: $results"
 
 if [ "$write_docs" -eq 1 ]; then
   (cd "$repo" && go run ./scripts/catalog-smoke report -results "$results" -out docs/templates-status.md)
+fi
+
+if [ "$record" -eq 1 ]; then
+  arch="$(uname -m)"
+  case "$arch" in x86_64) arch=amd64 ;; aarch64) arch=arm64 ;; esac
+  awk -F'\t' '$2 == "pass" {print $1}' "$results" | while read -r id; do
+    (cd "$repo" && go run ./scripts/record-verified -id "$id" -arch "$arch" -crane) || echo "not recorded: $id" >&2
+  done
 fi

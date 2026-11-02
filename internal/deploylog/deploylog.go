@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 	"github.com/GLINCKER/levelrail/kit/untrusted"
 )
@@ -171,7 +172,8 @@ func (r *Recorder) Progress(attemptID string) func(build.ProgressEvent) {
 		if stream == "" {
 			stream = "stdout"
 		}
-		ev.Log = untrusted.RedactTokens(ev.Log)
+		// Mask before the line is kept or fanned out: live viewers and replay read this copy, not the store's.
+		ev.Log = secretmask.Mask(untrusted.RedactTokens(ev.Log))
 		line := Event{Line: ev.Log, Stream: stream}
 
 		r.mu.Lock()

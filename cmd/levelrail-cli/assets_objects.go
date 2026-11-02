@@ -126,7 +126,7 @@ func assetsUpload(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	if err != nil {
 		return c.fail(err)
 	}
-	info, err := os.Stat(pos[1])
+	info, err := os.Stat(pos[1]) //nolint:gosec // G703: path is the file argument the user passed on their own machine
 	if err != nil {
 		return c.fail(newValidationError("cannot read %s: %v", pos[1], err))
 	}

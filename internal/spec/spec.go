@@ -46,10 +46,12 @@ type Service struct {
 	// rules; EffectiveBindAddress applies the default.
 	BindAddress string `yaml:"bind_address,omitempty"`
 	// PublishedPorts bind straight on the host, bypassing the proxy (UDP).
-	PublishedPorts []PublishedPort   `yaml:"published_ports,omitempty"`
-	Health         *Health           `yaml:"health,omitempty"`
-	Resources      *Resources        `yaml:"resources,omitempty"`
-	Env            map[string]EnvVar `yaml:"env,omitempty"`
+	PublishedPorts []PublishedPort `yaml:"published_ports,omitempty"`
+	Health         *Health         `yaml:"health,omitempty"`
+	Resources      *Resources      `yaml:"resources,omitempty"`
+	// Security tightens this service's container beyond the fleet defaults.
+	Security *Security         `yaml:"security,omitempty"`
+	Env      map[string]EnvVar `yaml:"env,omitempty"`
 	// Files are inline text files written into the container before it starts.
 	Files    []File `yaml:"files,omitempty"`
 	Replicas int    `yaml:"replicas,omitempty"`
@@ -323,6 +325,14 @@ type Probe struct {
 	Failures        int         `yaml:"failures,omitempty"`
 }
 
+// Security holds per-service container hardening overrides.
+type Security struct {
+	// ReadOnlyRootfs mounts the root filesystem read-only, with tmpfs on /tmp
+	// and /run. nil inherits the fleet default (off unless the operator set
+	// APP_CONTAINER_READONLY_ROOTFS), false opts out of a fleet-wide true.
+	ReadOnlyRootfs *bool `yaml:"read_only_rootfs,omitempty" json:"read_only_rootfs,omitempty"`
+}
+
 // Resources holds a service's resource limits.
 type Resources struct {
 	Memory string  `yaml:"memory,omitempty"`
@@ -383,7 +393,18 @@ type Database struct {
 	// already has its own credentials. Postgres and Redis only today.
 	// Off by default.
 	IsolatedInPreviews bool `yaml:"isolatedInPreviews,omitempty"`
+	// SeedFrom picks what an ephemeral preview instance starts with:
+	// "latest" restores the newest succeeded backup of the database
+	// named by this entry's key, "none" (the default) starts empty.
+	// Only read when EphemeralInPreviews is set.
+	SeedFrom string `yaml:"seedFrom,omitempty"`
 }
+
+// Values SeedFrom accepts; empty means SeedFromNone.
+const (
+	SeedFromNone   = "none"
+	SeedFromLatest = "latest"
+)
 
 // Backup describes a database's backup schedule.
 type Backup struct {

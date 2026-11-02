@@ -131,6 +131,7 @@
     "openDeployLogs": "Open deploy logs",
     "openLogs": "Open full logs",
     "noLines": "No log lines were captured for this failure.",
+    "lastLine": "Last line:",
     "showing": "Showing the last {{shown}} of {{total}} lines.",
     "linesLabel": "Last log lines of the failing container"
   },
@@ -151,13 +152,14 @@
     "lastOutput": "{{count}} lines: the last output of the stopped container",
     "waiting": "Waiting for log output...",
     "noContainer": "No container is running to produce logs: {{reason}}",
-    "viewDeploys": "View deploy history to troubleshoot"
+    "viewDeploys": "Show last deploy log"
   },
   "connection": {
     "connecting": "Connecting...",
     "open": "Live",
     "error": "Reconnecting...",
-    "notRunning": "Not running"
+    "notRunning": "Not running",
+    "noContainer": "No container"
   },
   "databaseRule": {
     "kind": {

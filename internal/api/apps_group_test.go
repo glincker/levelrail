@@ -20,6 +20,7 @@ func linkServiceToApp(t *testing.T, db *store.DB, serviceName, appID string) {
 }
 
 func TestAppGroupRoute_RequiresAuth(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouter(t)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/apps/web/group", nil)
@@ -48,6 +49,7 @@ func getAppGroup(t *testing.T, rt *Router, cookie *http.Cookie, path string) app
 }
 
 func TestHandleGetAppGroup_NotFound(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -60,6 +62,7 @@ func TestHandleGetAppGroup_NotFound(t *testing.T) {
 
 // TestHandleGetAppGroup_ServiceWithNoApp checks a service with no app_id is its own one-service group, not a 404.
 func TestHandleGetAppGroup_ServiceWithNoApp(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -82,6 +85,7 @@ func TestHandleGetAppGroup_ServiceWithNoApp(t *testing.T) {
 
 // TestHandleGetAppGroup_MultiServiceApp checks the worst-condition-wins rollup across two services.
 func TestHandleGetAppGroup_MultiServiceApp(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -129,6 +133,7 @@ func TestHandleGetAppGroup_MultiServiceApp(t *testing.T) {
 
 // TestHandleGetAppGroup_ByAppName checks that the app name returned by deploy responses resolves, not a false 404.
 func TestHandleGetAppGroup_ByAppName(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()

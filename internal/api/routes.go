@@ -62,6 +62,8 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerArchiveRoutes(mux)
 	rt.registerSpendCapRoutes(mux)
 	rt.registerAppAbuseRoutes(mux)
+	rt.registerAppGameRoutes(mux)
+	rt.registerAppCDNRoutes(mux)
 	rt.registerIngressEdgeRoutes(mux)
 	rt.registerCostExplorerRoutes(mux)
 	rt.registerAutoscaleRoutes(mux)

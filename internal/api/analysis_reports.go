@@ -97,7 +97,7 @@ func (rt *Router) handleGetAnalysisReport(w http.ResponseWriter, r *http.Request
 
 // AnalysisRunner generates one report on demand; *analysis.Runner satisfies it.
 type AnalysisRunner interface {
-	Generate(ctx context.Context, tr analysis.Trigger) (store.AnalysisReport, error)
+	GenerateManual(ctx context.Context, tr analysis.Trigger) (store.AnalysisReport, error)
 }
 
 // SetAnalysisRunner enables the on-demand run route. Without it the route answers 501.
@@ -110,7 +110,11 @@ func (rt *Router) handleRunAnalysisReport(w http.ResponseWriter, r *http.Request
 		return
 	}
 	app := r.PathValue("name")
-	row, err := rt.analysisRunner.Generate(r.Context(), analysis.Trigger{Kind: analysis.TriggerManual, ID: "manual", App: app, At: time.Now()})
+	row, err := rt.analysisRunner.GenerateManual(r.Context(), analysis.Trigger{Kind: analysis.TriggerManual, ID: "manual", App: app, At: time.Now()})
+	if errors.Is(err, analysis.ErrBusy) {
+		writeError(w, http.StatusTooManyRequests, "analysis is busy, try again shortly")
+		return
+	}
 	if err != nil {
 		rt.internalError(w, "api: run analysis failed", err)
 		return

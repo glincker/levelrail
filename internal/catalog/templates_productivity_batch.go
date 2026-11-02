@@ -117,7 +117,7 @@ var productivityBatchTemplates = []Template{
         condition: service_started
     environment:
       APPFLOWY_GOTRUE_BASE_URL: http://gotrue:9999
-      APPFLOWY_BASE_URL: ${SERVICE_FQDN_ADMIN_FRONTEND:-http://localhost:3000}
+      APPFLOWY_BASE_URL: ${SERVICE_URL_ADMIN_FRONTEND:-http://localhost:3000}
 `,
 	},
 	{
@@ -148,7 +148,7 @@ var productivityBatchTemplates = []Template{
       postgres:
         condition: service_healthy
     environment:
-      APP_BASE_URL: ${SERVICE_FQDN_JOPLIN:-http://localhost:22300}
+      APP_BASE_URL: ${SERVICE_URL_JOPLIN:-http://localhost:22300}
       DB_CLIENT: pg
       POSTGRES_USER: joplin
       POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
@@ -233,7 +233,7 @@ var productivityBatchTemplates = []Template{
       teable-db-migrate:
         condition: service_completed_successfully
     environment:
-      PUBLIC_ORIGIN: ${SERVICE_FQDN_TEABLE:-http://localhost:3000}
+      PUBLIC_ORIGIN: ${SERVICE_URL_TEABLE:-http://localhost:3000}
       PRISMA_DATABASE_URL: postgresql://teable:$SERVICE_PASSWORD_DB@teable-db:5432/teable
       SECRET_KEY: $SERVICE_PASSWORD_64_SECRETKEY
       PORT: "3000"
@@ -394,7 +394,7 @@ var productivityBatchTemplates = []Template{
       - web
       - api
     environment:
-      APP_DOMAIN: ${SERVICE_FQDN_PLANE:-http://localhost:8080}
+      APP_DOMAIN: ${SERVICE_URL_PLANE:-http://localhost:8080}
       FILE_SIZE_LIMIT: "5242880"
       BUCKET_NAME: uploads
       SITE_ADDRESS: ":80"
@@ -450,8 +450,8 @@ var productivityBatchTemplates = []Template{
       redis:
         condition: service_started
     environment:
-      SERVER_URL: ${SERVICE_FQDN_TWENTY:-http://localhost:3000}
-      FRONT_BASE_URL: ${SERVICE_FQDN_TWENTY:-http://localhost:3000}
+      SERVER_URL: ${SERVICE_URL_TWENTY:-http://localhost:3000}
+      FRONT_BASE_URL: ${SERVICE_URL_TWENTY:-http://localhost:3000}
       APP_SECRET: $SERVICE_BASE64_32_SECRET
       ENABLE_DB_MIGRATIONS: "true"
       CACHE_STORAGE_TYPE: redis
@@ -605,11 +605,11 @@ var productivityBatchTemplates = []Template{
       database:
         condition: service_healthy
     environment:
-      NEXTAUTH_URL: ${SERVICE_FQDN_DOCUMENSO:-http://localhost:3000}
+      NEXTAUTH_URL: ${SERVICE_URL_DOCUMENSO:-http://localhost:3000}
       NEXTAUTH_SECRET: $SERVICE_BASE64_AUTHSECRET
       NEXT_PRIVATE_ENCRYPTION_KEY: $SERVICE_BASE64_ENCRYPTIONKEY
       NEXT_PRIVATE_ENCRYPTION_SECONDARY_KEY: $SERVICE_BASE64_SECONDARYKEY
-      NEXT_PUBLIC_WEBAPP_URL: ${SERVICE_FQDN_DOCUMENSO:-http://localhost:3000}
+      NEXT_PUBLIC_WEBAPP_URL: ${SERVICE_URL_DOCUMENSO:-http://localhost:3000}
       NEXT_PRIVATE_DATABASE_URL: postgresql://documenso:$SERVICE_PASSWORD_DB@database:5432/documenso?schema=public
       NEXT_PRIVATE_DIRECT_DATABASE_URL: postgresql://documenso:$SERVICE_PASSWORD_DB@database:5432/documenso?schema=public
       NEXT_PRIVATE_SIGNING_TRANSPORT: local
@@ -663,7 +663,7 @@ var productivityBatchTemplates = []Template{
       postgresql:
         condition: service_healthy
     environment:
-      HOST: ${SERVICE_FQDN_DOCUSEAL:-http://localhost:3000}
+      HOST: ${SERVICE_URL_DOCUSEAL:-http://localhost:3000}
       DATABASE_URL: postgresql://docuseal:$SERVICE_PASSWORD_DB@postgresql:5432/docuseal
     volumes:
       - docuseal_data:/data
@@ -702,7 +702,7 @@ var productivityBatchTemplates = []Template{
       database:
         condition: service_healthy
     environment:
-      BASE_URL: ${SERVICE_FQDN_FIDER:-http://localhost:3000}
+      BASE_URL: ${SERVICE_URL_FIDER:-http://localhost:3000}
       DATABASE_URL: postgres://fider:$SERVICE_PASSWORD_DB@database:5432/fider?sslmode=disable
       JWT_SECRET: $SERVICE_PASSWORD_64_JWTSECRET
       EMAIL_NOREPLY: noreply@example.com

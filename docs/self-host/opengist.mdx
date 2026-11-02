@@ -1,0 +1,67 @@
+---
+title: "Self-host Opengist with Docker"
+sidebarTitle: "Opengist"
+description: "A self-hosted pastebin powered by Git, for sharing snippets and gists with revisions, topics and search. AGPL-3.0 licensed. Uses SQLite in one container. SSH Git access is off, so clone and push over HTTPS. The first account you register becomes the admin."
+"og:url": "https://docs.levelrail.com/self-host/opengist"
+---
+
+A self-hosted pastebin powered by Git, for sharing snippets and gists with revisions, topics and search. AGPL-3.0 licensed. Uses SQLite in one container. SSH Git access is off, so clone and push over HTTPS. The first account you register becomes the admin.
+
+This page describes the Levelrail template for Opengist (Developer Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://opengist.io/docs.
+
+Recommended memory: about 128 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `opengist` | `ghcr.io/thomiceli/opengist:1.15.3` | 6157 | `data -&#62; /opengist` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `opengist` | `OG_EXTERNAL_URL` | Preset in the template |
+| `opengist` | `OG_LOG_LEVEL` | Preset in the template |
+| `opengist` | `OG_SSH_GIT_ENABLED` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`opengist`): data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Opengist with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Opengist. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy opengist --name my-opengist
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Developer Tools templates
+
+- [Appsmith](/self-host/appsmith)
+- [Appwrite](/self-host/appwrite)
+- [Athens](/self-host/athens)
+- [Browserless](/self-host/browserless)
+- [ByteStash](/self-host/bytestash)
+
+All templates are listed in the [self-host gallery](/self-host).

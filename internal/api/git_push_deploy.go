@@ -152,6 +152,16 @@ func (rt *Router) gitPushBuildConfig(ctx context.Context, name string, c *object
 	return spec.BuildRailpack, "", ""
 }
 
+// gitPushStaticSPA is the stored single page app flag, the same source the
+// webhook deploy reads through GitSource.StaticOptions.
+func (rt *Router) gitPushStaticSPA(ctx context.Context, name, buildType string) bool {
+	if rt.gitSources == nil || buildType != spec.BuildStatic {
+		return false
+	}
+	gs, err := rt.gitSources.GetGitSource(ctx, name)
+	return err == nil && gs != nil && gs.StaticOptions() != nil
+}
+
 // deployGitPush builds and deploys the pushed commit through the same pipeline
 // as a manual build and waits for the outcome, streaming the build output to
 // the client. The branch ref advances only when the deploy succeeds, so a
@@ -176,7 +186,7 @@ func (rt *Router) deployGitPush(r *http.Request, ws *pushStream, name string, pl
 	buildType, path, base := rt.gitPushBuildConfig(ctx, name, plan.commit)
 	treq := triggerBuildRequest{
 		RepoURL: gitPushMirrorURL(name), Ref: hash,
-		Build: triggerBuildBuildInput{Type: buildType, Path: path, BaseDirectory: base},
+		Build: triggerBuildBuildInput{Type: buildType, Path: path, BaseDirectory: base, StaticSPA: rt.gitPushStaticSPA(ctx, name, buildType)},
 	}
 	buildReq := manualBuildRequest(name, *existing, treq, buildType)
 

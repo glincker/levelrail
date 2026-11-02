@@ -51,6 +51,10 @@ func requiredAbilities(name string, m Meta) []string {
 		return []string{abilityRoot}
 	}
 	if m.Class == ClassRead {
+		// Credential-bearing reads stay hidden from a plain read token.
+		if m.Sensitive() {
+			return []string{abilityReadSensitive}
+		}
 		return []string{abilityRead, abilityReadSensitive}
 	}
 	if _, ok := deployTierTools[name]; ok {
@@ -106,10 +110,25 @@ func (p *abilityProbe) get(ctx context.Context) []string {
 	return p.cached
 }
 
-// abilityMiddleware narrows tools/list to what the token can call. Calls are untouched: the server still decides each one.
+// abilityMiddleware narrows tools/list to what the token can call and refuses tools/call
+// for the same tools, since several hidden routes only need the plain read ability.
 func abilityMiddleware(p *abilityProbe) mcp.Middleware {
 	return func(next mcp.MethodHandler) mcp.MethodHandler {
 		return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
+			if method == "tools/call" {
+				if call, ok := req.(*mcp.CallToolRequest); ok && call.Params != nil {
+					// A tool a plain read token may call needs no probe, so ordinary reads cost no extra request.
+					if m, known := toolTable[call.Params.Name]; known && !abilityAllows([]string{abilityRead}, call.Params.Name, m) {
+						if abilities := p.get(ctx); len(abilities) > 0 && !abilityAllows(abilities, call.Params.Name, m) {
+							return &mcp.CallToolResult{
+								IsError: true,
+								Content: []mcp.Content{&mcp.TextContent{Text: fmt.Sprintf(`forbidden: {"tool":%q,"missing_ability":%q}`, call.Params.Name, requiredAbilities(call.Params.Name, m)[0])}},
+							}, nil
+						}
+					}
+				}
+				return next(ctx, method, req)
+			}
 			if method != "tools/list" {
 				return next(ctx, method, req)
 			}

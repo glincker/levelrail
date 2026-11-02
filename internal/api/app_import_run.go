@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/backup"
 	"github.com/GLINCKER/levelrail/internal/envredact"
 	"github.com/GLINCKER/levelrail/internal/platformimport"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -271,6 +272,9 @@ func (rt *Router) verifyAppImportItem(ctx context.Context, it store.AppImportIte
 	svc, err := rt.apps.GetDesiredService(ctx, name)
 	if err != nil {
 		return store.AppImportVerifyFailed, "the staged app no longer exists, stage the import again"
+	}
+	if err := backup.CheckNoImport(name); err != nil {
+		return store.AppImportVerifyFailed, "a volume import is running for this app: verify again when it finishes"
 	}
 	if err := rt.apps.UpdateServiceSuspended(ctx, name, false); err != nil {
 		return store.AppImportVerifyFailed, "could not start the staged app: " + err.Error()

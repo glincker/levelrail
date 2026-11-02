@@ -13,6 +13,9 @@
   },
   "source": {
     "analyzing": "Reading the repository...",
+    "noProvider": {
+      "lead": "No git provider is connected, and you do not need one. Paste a repository URL, pick a template, or try the sample app."
+    },
     "privateRepo": "We could not read this repository. If it is private, connect your git provider and pick it from the list.",
     "privateRepoConnect": "Connect a git provider",
     "analyze": "Analyze repository",
@@ -111,6 +114,7 @@
       "title": "Advanced options",
       "buildType": "Build type",
       "dockerfile": "Dockerfile path",
+      "spa": "Single page app mode",
       "baseDirectory": "Build context directory",
       "validateDirectory": "Validate directory",
       "memory": "Memory limit (MiB)",

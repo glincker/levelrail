@@ -145,6 +145,10 @@ func (rt *Router) handleCloneRestore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if refuseForeignBackup(w, sourceDB, backup.ID, backup.InstanceID, backup.StartedAt) {
+		return
+	}
+
 	version := req.Version
 	if version == "" {
 		// Same version as the source database today, the closest
@@ -159,31 +163,15 @@ func (rt *Router) handleCloneRestore(w http.ResponseWriter, r *http.Request) {
 		Engine:    sourceDB.Engine,
 		Version:   version,
 		ProjectID: req.ProjectID,
+		// The clone stays on the source's node; secrets and passwords are never copied.
+		NodeID: sourceDB.NodeID,
+		// Resources go through the create path so the quota check reserves them up front.
+		Resources: req.Resources,
 	}
 	if !rt.createDesiredDatabase(w, r, newDB) {
 		return
 	}
-
-	if req.Resources != nil {
-		// Mirrors handleSetDatabaseResources' own body (databases.go):
-		// resources are ordinary desired state but, like every other
-		// new database, aren't accepted directly by createDesiredDatabase
-		// (see databaseResource.Resources' own field doc comment), so
-		// this is the identical trailing step that endpoint would take,
-		// applied once up front instead of via a second operator call.
-		desired, err := rt.databases.GetDesiredDatabase(r.Context(), req.NewName)
-		if err != nil {
-			rt.logger.Error("api: clone restore: reload new database failed", slog.String("error", err.Error()), slog.String("name", req.NewName))
-			writeError(w, http.StatusInternalServerError, "internal error")
-			return
-		}
-		desired.Resources = req.Resources
-		if err := rt.databases.SaveDesiredDatabase(r.Context(), *desired); err != nil {
-			rt.logger.Error("api: clone restore: set new database resources failed", slog.String("error", err.Error()), slog.String("name", req.NewName))
-			writeError(w, http.StatusInternalServerError, "internal error")
-			return
-		}
-	}
+	rt.copyDatabaseTLSMode(r.Context(), name, req.NewName)
 
 	historyID, err := randomCloneRestoreID()
 	if err != nil {
@@ -249,4 +237,23 @@ func randomCloneRestoreID() (string, error) {
 		return "", fmt.Errorf("api: generate clone restore id: %w", err)
 	}
 	return "clr_" + base64.RawURLEncoding.EncodeToString(buf), nil
+}
+
+// copyDatabaseTLSMode gives the clone the source's TLS intent. A failure only
+// logs: the clone keeps the create-time default.
+func (rt *Router) copyDatabaseTLSMode(ctx context.Context, source, clone string) {
+	modes, ok := rt.databases.(databaseTLSModeStore)
+	if !ok {
+		if modes, ok = rt.databaseTLSModeStore(); !ok {
+			return
+		}
+	}
+	mode, err := modes.GetDatabaseTLSMode(ctx, source)
+	if err != nil {
+		rt.logger.Warn("api: clone restore: read source tls mode failed", slog.String("source_database", source), slog.String("error", err.Error()))
+		return
+	}
+	if err := modes.SetDatabaseTLSMode(ctx, clone, mode); err != nil {
+		rt.logger.Warn("api: clone restore: copy tls mode failed", slog.String("new_database", clone), slog.String("error", err.Error()))
+	}
 }

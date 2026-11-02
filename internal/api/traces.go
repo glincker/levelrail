@@ -123,9 +123,14 @@ func (rt *Router) authTraceIngest(r *http.Request, header string) string {
 		}
 		v, err := rt.secrets.Resolve(r.Context(), traceIngestSecretsKey(app), traceIngestKeyName)
 		if err != nil || v == "" {
+			rt.ingestLookupFailed(r)
 			return ""
 		}
 		want = v
+		if subtle.ConstantTimeCompare([]byte(tok), []byte(want)) != 1 {
+			rt.ingestLookupFailed(r)
+			return ""
+		}
 		rt.traceKeys.put(app, want, now)
 	}
 	if subtle.ConstantTimeCompare([]byte(tok), []byte(want)) != 1 {

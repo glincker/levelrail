@@ -180,7 +180,7 @@ func orNotSet(u string) string {
 func probeDashboardHTTPS(ctx context.Context, base string) error {
 	ctx, cancel := context.WithTimeout(ctx, dashboardURLProbeTimeout)
 	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, base+"/api/v1/brand", nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, base+"/api/v1/brand", nil) //nolint:gosec // base is the operator-configured dashboard URL
 	if err != nil {
 		return err
 	}

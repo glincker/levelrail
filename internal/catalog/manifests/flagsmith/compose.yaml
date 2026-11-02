@@ -1,0 +1,32 @@
+services:
+  flagsmith:
+    image: flagsmith/flagsmith:2.288.2
+    ports: ["8000"]
+    environment:
+      DATABASE_URL: postgresql://flagsmith:$SERVICE_PASSWORD_DB@db:5432/flagsmith
+      DJANGO_SECRET_KEY: $SERVICE_PASSWORD_64_DJANGOKEY
+      DJANGO_ALLOWED_HOSTS: ${SERVICE_FQDN_FLAGSMITH:-*}
+      FLAGSMITH_DOMAIN: ${SERVICE_FQDN_FLAGSMITH:-localhost:8000}
+      USE_X_FORWARDED_HOST: "true"
+      DISABLE_INFLUXDB_FEATURES: "True"
+      ENABLE_ADMIN_ACCESS_USER_PASS: "true"
+      TZ: ${TZ}
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/health')\""]
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 90s
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: flagsmith
+      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_DB: flagsmith
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flagsmith -d flagsmith"]
+      interval: 5s
+      timeout: 5s
+      retries: 10

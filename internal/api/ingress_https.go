@@ -60,6 +60,8 @@ type httpsStatusResource struct {
 	DashboardURL     string     `json:"dashboard_url,omitempty"`
 	// DefaultEmail is the signed-in admin's address, offered as the ACME contact when none is typed.
 	DefaultEmail string `json:"default_email,omitempty"`
+	// Notice explains a pending wait, such as a failed CA switch retrying later.
+	Notice string `json:"notice,omitempty"`
 	// Preflight is set on the enable response only: a non-blocking dial of
 	// ports 80 and 443 on the public IP, so a closed firewall shows up now
 	// instead of as a failed issuance minutes later.
@@ -209,8 +211,9 @@ func computeHTTPSStatus(s store.IngressSettings, certs []alerting.CertInfo, fail
 		return out
 	}
 	if !startedAt.IsZero() && now.Sub(startedAt) > pendingAfter {
-		out.State, out.Hint = httpsStateFailed, httpsHintUnreachable
-		out.Error = "no certificate was issued and the certificate authority reported no error; port 80 is most likely not reachable from the internet"
+		// No CA error means the cause is unknown; blaming port 80 misled when no order was placed.
+		out.State, out.Hint = httpsStateFailed, httpsHintUnknown
+		out.Error = "no certificate was issued yet and the certificate authority reported no error; check the control plane log, and that port 80 is open to the internet"
 	}
 	return out
 }
@@ -245,7 +248,16 @@ func (rt *Router) buildHTTPSStatus(r *http.Request) (httpsStatusResource, error)
 		out.DashboardURL = u
 	}
 	out.DefaultEmail = rt.defaultACMEEmail(r)
+	out.Notice = rt.caSwitchNoticeOrDefault()
 	return out, nil
+}
+
+// caSwitchNoticeOrDefault reads the live driver notice unless a test injected one.
+func (rt *Router) caSwitchNoticeOrDefault() string {
+	if rt.caSwitchNotice != nil {
+		return rt.caSwitchNotice()
+	}
+	return ingress.CASwitchNotice()
 }
 
 // defaultACMEEmail is the caller's own account email when it is a real address, else the first admin's.
@@ -287,7 +299,16 @@ func (rt *Router) handleEnableHTTPS(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusConflict, "no public IP address is known for this server; set APP_PUBLIC_HOST to it, or configure your own domain instead")
 		return
 	}
+	current, err := rt.ingressSettings.GetIngressSettings(r.Context())
+	if err != nil {
+		rt.internalError(w, "api: enable https: load settings", err)
+		return
+	}
+	// A stored contact wins over the account default so a re-run keeps it.
 	email := strings.TrimSpace(req.Email)
+	if email == "" {
+		email = strings.TrimSpace(current.ACMEEmail)
+	}
 	if email == "" {
 		email = rt.defaultACMEEmail(r)
 	}
@@ -300,11 +321,6 @@ func (rt *Router) handleEnableHTTPS(w http.ResponseWriter, r *http.Request) {
 		return
 	} else if owner != "" {
 		writeError(w, http.StatusConflict, (&store.ErrDomainTaken{Domain: domain, Owner: owner}).Error())
-		return
-	}
-	current, err := rt.ingressSettings.GetIngressSettings(r.Context())
-	if err != nil {
-		rt.internalError(w, "api: enable https: load settings", err)
 		return
 	}
 	if current.TLSTerminatedUpstream {

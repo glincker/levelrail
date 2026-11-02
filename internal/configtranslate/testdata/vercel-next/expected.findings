@@ -1,5 +1,9 @@
 warn vercel.build.custom 
 warn vercel.build.env build.env
+info vercel.dep.analytics @vercel/analytics
+warn vercel.dep.kv @vercel/kv
+warn vercel.dep.og @vercel/og
+info vercel.next.standalone next.config
 warn vercel.regions.multi iad1,fra1
 blocker vercel.runtime.edge app/api/og/route.ts
 info vercel.function.maxduration app/api/report/route.ts

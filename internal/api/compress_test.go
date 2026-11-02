@@ -20,6 +20,7 @@ func serveCompress(h http.HandlerFunc, path string, hdr map[string]string) *http
 }
 
 func TestCompressMiddleware(t *testing.T) {
+	t.Parallel()
 	body := strings.Repeat(`{"name":"app"},`, 200)
 	jsonHandler := func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -93,6 +94,7 @@ func TestCompressMiddleware(t *testing.T) {
 }
 
 func TestCompressMiddleware_LiveJSONRouteThroughHandler(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	seedSearchApps(t, db, "alpha", "beta")
 	tok := seedMatrixToken(t, db, "root", []string{AbilityRoot})

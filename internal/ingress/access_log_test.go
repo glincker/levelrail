@@ -92,3 +92,17 @@ func BenchmarkAccessLogRecordNoSubscribers(b *testing.B) {
 		l.Record("a", AccessRecord{})
 	}
 }
+
+func TestAccessLogRetentionSourceApplied(t *testing.T) {
+	l := NewAccessLog(10)
+	l.Record("k", AccessRecord{Time: time.Now().Add(-2 * time.Hour), Status: 200})
+	window := 3 * time.Hour
+	l.SetRetentionSource(func() time.Duration { return window })
+	if got := len(l.Query([]string{"k"}, AccessFilter{})); got != 1 {
+		t.Fatalf("record within the window hidden: %d", got)
+	}
+	window = time.Hour
+	if got := len(l.Query([]string{"k"}, AccessFilter{})); got != 0 {
+		t.Fatalf("a shorter stored window did not apply to the next read: %d", got)
+	}
+}

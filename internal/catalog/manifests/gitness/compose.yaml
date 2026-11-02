@@ -1,0 +1,15 @@
+services:
+  gitness:
+    image: harness/harness:3.3.0
+    ports: ["3000"]
+    environment:
+      GITNESS_URL_BASE: ${URL_BASE}
+      GITNESS_USER_SIGNUP_ENABLED: "true"
+    volumes:
+      - data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/healthz || curl -fsS -o /dev/null http://127.0.0.1:3000/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s

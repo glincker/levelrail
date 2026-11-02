@@ -290,11 +290,11 @@ func TestSealedVolumeBackup_Live_HooksAndPause(t *testing.T) {
 
 	hist.policies["web/data"] = store.VolumeBackupPolicy{PreHook: "exit 3"}
 	err = runner.RunVolumeBackup(ctx, "bkh_hookfail", "web", "data", vol, "bkt_test", "")
-	if err == nil || !strings.Contains(err.Error(), "pre-backup hook") {
-		t.Fatalf("failing pre-hook must fail the backup, got %v", err)
+	if err != nil {
+		t.Fatalf("failing pre-hook must still back up, got %v", err)
 	}
-	if hist.rows["bkh_hookfail"].Status != store.BackupStatusFailed {
-		t.Fatalf("status = %q", hist.rows["bkh_hookfail"].Status)
+	if row := hist.rows["bkh_hookfail"]; row.Status != store.BackupStatusSucceeded || !strings.HasPrefix(row.Error, "inconsistent") {
+		t.Fatalf("row = %+v", row)
 	}
 }
 

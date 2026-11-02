@@ -25,6 +25,19 @@ func Detect(read Reader) (Match, bool) {
 	if _, ok := read("go.mod"); ok {
 		return match("go", "go.mod found"), true
 	}
+	if _, ok := read("Cargo.toml"); ok {
+		return match("rust", "Cargo.toml found"), true
+	}
+	for _, f := range []string{"hugo.toml", "hugo.yaml", "hugo.json"} {
+		if _, ok := read(f); ok {
+			return match("hugo", f+" found"), true
+		}
+	}
+	if gem, ok := read("Gemfile"); ok && strings.Contains(strings.ToLower(gem), "jekyll") {
+		if _, ok := read("_config.yml"); ok {
+			return match("jekyll", "Gemfile lists jekyll and _config.yml exists"), true
+		}
+	}
 	for _, f := range []string{"pom.xml", "build.gradle", "build.gradle.kts"} {
 		if text, ok := read(f); ok && strings.Contains(strings.ToLower(text), "spring-boot") {
 			return match("spring-boot", f+" lists spring-boot"), true
@@ -41,6 +54,9 @@ func Detect(read Reader) (Match, bool) {
 		}
 		if strings.Contains(low, "fastapi") {
 			return match("fastapi", f+" lists fastapi"), true
+		}
+		if strings.Contains(low, "flask") {
+			return match("flask", f+" lists flask"), true
 		}
 	}
 	if text, ok := read("Gemfile"); ok && strings.Contains(strings.ToLower(text), "rails") {
@@ -84,12 +100,18 @@ func detectNode(text string, read Reader) (Match, bool) {
 		return match("sveltekit", "package.json lists @sveltejs/kit"), true
 	case has("@docusaurus/core"):
 		return match("docusaurus", "package.json lists @docusaurus/core"), true
+	case has("astro") && has("@astrojs/node"):
+		return match("astro-ssr", "package.json lists astro and @astrojs/node"), true
+	case has("@11ty/eleventy"):
+		return match("eleventy", "package.json lists @11ty/eleventy"), true
+	case has("@nestjs/core"):
+		return match("nestjs", "package.json lists @nestjs/core"), true
 	case has("astro"):
 		return match("astro", "package.json lists astro"), true
 	case has("vite"):
 		return match("vite", "package.json lists vite"), true
 	}
-	for _, name := range []string{"express", "fastify", "koa", "hono", "@nestjs/core"} {
+	for _, name := range []string{"express", "fastify", "koa", "hono"} {
 		if has(name) {
 			return match("node", "package.json lists "+name), true
 		}

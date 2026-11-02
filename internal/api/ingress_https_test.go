@@ -59,7 +59,7 @@ func TestComputeHTTPSStatus(t *testing.T) {
 		{"staging cert counts when staging", stagingOn, []alerting.CertInfo{stagingCert}, nil, now, httpsStateIssued, ""},
 		{"internal cert only is pending", on, []alerting.CertInfo{internal}, nil, now, httpsStatePending, ""},
 		{"ca error", on, nil, fail, now, httpsStateFailed, httpsHintUnreachable},
-		{"pending too long", on, nil, nil, now.Add(-time.Hour), httpsStateFailed, httpsHintUnreachable},
+		{"pending too long", on, nil, nil, now.Add(-time.Hour), httpsStateFailed, httpsHintUnknown},
 		{"pending fresh", on, nil, nil, now.Add(-time.Second), httpsStatePending, ""},
 	}
 	for _, tc := range tests {
@@ -245,5 +245,48 @@ func TestWithHSTS(t *testing.T) {
 	}
 	if get(false) != "" {
 		t.Fatal("HSTS must not be sent over plain http")
+	}
+}
+
+func TestHTTPSStatusCarriesCASwitchNotice(t *testing.T) {
+	db := openTestDB(t)
+	rt := NewRouter(discardLogger(), testBrand(), db, WithPublicHost("203.0.113.5"))
+	const want = "a previous CA switch failed, retrying after 1m0s"
+	rt.caSwitchNotice = func() string { return want }
+	cookie := loginTestSession(t, rt, db)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/settings/ingress/https", ""))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status read: %d %s", rec.Code, rec.Body.String())
+	}
+	var body map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := body["notice"].(string); got != want {
+		t.Fatalf("notice = %q, want %q (body %s)", got, want, rec.Body.String())
+	}
+}
+
+func TestEnableHTTPSUsesStoredEmail(t *testing.T) {
+	db := openTestDB(t)
+	rt := NewRouter(discardLogger(), testBrand(), db, WithPublicHost("203.0.113.5"))
+	rt.doctorDialContext = fakeDoctorOfflineDialContext
+	cookie := loginTestSession(t, rt, db)
+	cur, err := db.GetIngressSettings(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	cur.ACMEEmail = "stored@glincker.com"
+	if err := db.UpdateIngressSettings(t.Context(), cur); err != nil {
+		t.Fatal(err)
+	}
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/settings/ingress/https", `{"staging":true}`))
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("enable without email: %d %s", rec.Code, rec.Body.String())
+	}
+	if s, err := db.GetIngressSettings(t.Context()); err != nil || s.ACMEEmail != "stored@glincker.com" {
+		t.Fatalf("acme email = %q, %v", s.ACMEEmail, err)
 	}
 }

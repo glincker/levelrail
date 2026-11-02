@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"sync"
@@ -13,6 +14,9 @@ import (
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
+
+// ErrBusy means every report slot is in use; callers answer 429 and retry later.
+var ErrBusy = errors.New("analysis: report capacity is full")
 
 // Saver persists reports; *store.DB satisfies it.
 type Saver interface {
@@ -95,6 +99,20 @@ func (r *Runner) admit(app string) bool {
 	default:
 		return false
 	}
+}
+
+// GenerateManual runs one operator-requested report inside the same concurrency cap and
+// timeout as alert-driven ones, without the per-app interval.
+func (r *Runner) GenerateManual(ctx context.Context, tr Trigger) (store.AnalysisReport, error) {
+	select {
+	case r.sem <- struct{}{}:
+	default:
+		return store.AnalysisReport{}, ErrBusy
+	}
+	defer func() { <-r.sem }()
+	ctx, cancel := context.WithTimeout(ctx, r.cfg.Timeout)
+	defer cancel()
+	return r.Generate(ctx, tr)
 }
 
 // Generate collects, builds and stores one report.

@@ -60,3 +60,28 @@ func TestGenerateWholeCatalog(t *testing.T) {
 		t.Error("generated data contains an em or en dash")
 	}
 }
+
+func TestInstallFor(t *testing.T) {
+	if in := installFor(nil); in.Kind != "deploy" || len(in.Fields) != 0 {
+		t.Errorf("nil manifest = %+v", in)
+	}
+	m := &catalog.Manifest{Env: []catalog.EnvPrompt{
+		{Key: "A", Label: "Admin", Required: true},
+		{Key: "B", Default: "x", Required: true},
+		{Key: "C", Generate: "password"},
+	}}
+	in := installFor(m)
+	if in.Kind != "install" || len(in.Fields) != 3 {
+		t.Fatalf("install = %+v", in)
+	}
+	want := []InstallField{
+		{"A", "Admin", true, "none"},
+		{"B", "B", false, "preset"},
+		{"C", "C", false, "generated"},
+	}
+	for i, w := range want {
+		if in.Fields[i] != w {
+			t.Errorf("field %d = %+v, want %+v", i, in.Fields[i], w)
+		}
+	}
+}

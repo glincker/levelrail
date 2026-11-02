@@ -80,6 +80,7 @@ export async function updateObservabilitySettings(
 export function useUpdateObservabilitySettings() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: updateObservabilitySettings,
     onSuccess: (updated) => {
       queryClient.setQueryData(observabilitySettingsKeys.all, updated)

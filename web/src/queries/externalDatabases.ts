@@ -56,6 +56,7 @@ export function useExternalCandidates(nodeId: string, enabled: boolean) {
 
 export function useTestExternalDatabase() {
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (req: ExternalDatabaseRequest) =>
       send<ExternalProbeResult>(
         'POST',

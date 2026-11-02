@@ -224,28 +224,33 @@ func traceRegistryAuth(ctx context.Context, tr *deploytrace.Tracer, desired *sto
 }
 
 // traceImageInspect records the pulled image's shape and whether it matches
-// the node. A mismatch is a warning here: the daemon may still run it under
-// emulation, and the create or start step reports if it does not.
-func (c *Controller) traceImageInspect(ctx context.Context, tr *deploytrace.Tracer, image string) {
+// the node. A mismatch is refused only when the node cannot emulate the image
+// arch (see platformPolicy); otherwise it stays a warning.
+func (c *Controller) traceImageInspect(ctx context.Context, tr *deploytrace.Tracer, image string) error {
 	insp, ok := c.runtime.(docker.ImageDetailInspector)
-	if !ok || tr == nil {
-		return
+	if !ok {
+		return nil
 	}
 	span := tr.Begin(ctx, deploytrace.StepImageInspect, "inspecting "+image)
 	d, err := insp.InspectImageDetails(ctx, image)
 	if err != nil {
 		span.Fail(ctx, "ImageInspectFailed", err)
-		return
+		return nil
 	}
 	node, nodeErr := insp.NodePlatform(ctx)
 	detail := fmt.Sprintf("%s, %s/%s, entrypoint %s, ports %s, healthcheck %s",
 		deploytrace.Bytes(d.SizeBytes), d.OS, d.Arch, listOrNone(d.Entrypoint), listOrNone(d.ExposedPorts), healthText(d))
 	if nodeErr == nil && node.Arch != "" && d.Arch != "" && node.Arch != d.Arch {
-		span.End(ctx, store.TraceStatusWarning, reasonPlatformMismatch,
-			fmt.Sprintf("%s; image is %s but this node is %s/%s", detail, d.Arch, node.OS, node.Arch))
-		return
+		msg, refuse := platformVerdict(image, d.Arch, node, platformMismatchMode(), emulationFor(d.Arch))
+		if refuse {
+			span.End(ctx, store.TraceStatusFailed, reasonPlatformMismatch, msg)
+			return fmt.Errorf("%s: %s", reasonPlatformMismatch, msg)
+		}
+		span.End(ctx, store.TraceStatusWarning, reasonPlatformMismatch, detail+"; "+msg)
+		return nil
 	}
 	span.Done(ctx, detail+nodeMatch(node, nodeErr))
+	return nil
 }
 
 func nodeMatch(n docker.NodePlatform, err error) string {

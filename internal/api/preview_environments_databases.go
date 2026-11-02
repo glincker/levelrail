@@ -46,13 +46,17 @@ func ephemeralDatabaseName(previewName, sourceKey string) string {
 // Returns every database this call provisioned or already owned, so the
 // caller can decide whether exactly one exists and is eligible for
 // automatic env attachment (deployPreviewSingle's own use of this).
-func (rt *Router) provisionEphemeralDatabases(ctx context.Context, previewEnvironmentID, previewName string, databases map[string]spec.Database) []store.PreviewEphemeralDatabase {
+//
+// Also returns one note per database whose seedFrom restore started or
+// fell back to an empty database, for the preview's status reason.
+func (rt *Router) provisionEphemeralDatabases(ctx context.Context, previewEnvironmentID, previewName string, databases map[string]spec.Database) ([]store.PreviewEphemeralDatabase, []string) {
 	var provisioned []store.PreviewEphemeralDatabase
+	var notes []string
 	for key, d := range databases {
 		if !d.EphemeralInPreviews {
 			continue
 		}
-		p, err := rt.provisionOneEphemeralDatabase(ctx, previewEnvironmentID, previewName, key, d)
+		p, created, err := rt.provisionOneEphemeralDatabase(ctx, previewEnvironmentID, previewName, key, d)
 		if err != nil {
 			rt.logger.Error("api: provision ephemeral preview database failed",
 				slog.String("error", err.Error()),
@@ -61,17 +65,37 @@ func (rt *Router) provisionEphemeralDatabases(ctx context.Context, previewEnviro
 			continue
 		}
 		provisioned = append(provisioned, p)
+		if created && d.SeedFrom == spec.SeedFromLatest {
+			notes = append(notes, rt.seedEphemeralFromParent(ctx, key, p)...)
+		}
 	}
-	return provisioned
+	return provisioned, notes
 }
 
-func (rt *Router) provisionOneEphemeralDatabase(ctx context.Context, previewEnvironmentID, previewName, sourceKey string, d spec.Database) (store.PreviewEphemeralDatabase, error) {
+// seedEphemeralFromParent restores the newest succeeded backup of the
+// parent database (the one named by the app.yaml key) into the preview
+// database through the existing clone restore path, so the preview gets its
+// own generated credentials and none of the parent's secrets.
+func (rt *Router) seedEphemeralFromParent(ctx context.Context, parentName string, db store.PreviewEphemeralDatabase) []string {
+	parent, err := rt.databases.GetDesiredDatabase(ctx, parentName)
+	if err != nil {
+		return []string{"seedFrom skipped: database " + parentName + " was not found, " + db.DatabaseName + " is empty"}
+	}
+	if parent.Engine != db.Engine {
+		return []string{"seedFrom skipped: " + parentName + " is " + parent.Engine + " but the preview database is " + db.Engine + ", " + db.DatabaseName + " is empty"}
+	}
+	return rt.seedPreviewDatabase(ctx, parentName, db, db.Engine)
+}
+
+// The bool is true only when this call created the database, so a
+// redeploy never re-seeds one that already holds data.
+func (rt *Router) provisionOneEphemeralDatabase(ctx context.Context, previewEnvironmentID, previewName, sourceKey string, d spec.Database) (store.PreviewEphemeralDatabase, bool, error) {
 	existing, err := rt.previewEnvironments.GetPreviewEphemeralDatabaseByPreviewAndKey(ctx, previewEnvironmentID, sourceKey)
 	if err == nil {
-		return *existing, nil
+		return *existing, false, nil
 	}
 	if !errors.Is(err, store.ErrPreviewEphemeralDatabaseNotFound) {
-		return store.PreviewEphemeralDatabase{}, fmt.Errorf("check existing ephemeral database: %w", err)
+		return store.PreviewEphemeralDatabase{}, false, fmt.Errorf("check existing ephemeral database: %w", err)
 	}
 
 	version := d.Version
@@ -81,12 +105,12 @@ func (rt *Router) provisionOneEphemeralDatabase(ctx context.Context, previewEnvi
 
 	dbName := ephemeralDatabaseName(previewName, sourceKey)
 	if err := rt.databases.SaveDesiredDatabase(ctx, store.DesiredDatabase{Name: dbName, Engine: d.Engine, Version: version}); err != nil {
-		return store.PreviewEphemeralDatabase{}, fmt.Errorf("save desired database %q: %w", dbName, err)
+		return store.PreviewEphemeralDatabase{}, false, fmt.Errorf("save desired database %q: %w", dbName, err)
 	}
 
 	id, err := store.NewPreviewEphemeralDatabaseID()
 	if err != nil {
-		return store.PreviewEphemeralDatabase{}, fmt.Errorf("mint ephemeral database id: %w", err)
+		return store.PreviewEphemeralDatabase{}, false, fmt.Errorf("mint ephemeral database id: %w", err)
 	}
 	now := time.Now().UTC().Format(time.RFC3339Nano)
 	p := store.PreviewEphemeralDatabase{
@@ -101,9 +125,9 @@ func (rt *Router) provisionOneEphemeralDatabase(ctx context.Context, previewEnvi
 		UpdatedAt:            now,
 	}
 	if err := rt.previewEnvironments.SavePreviewEphemeralDatabase(ctx, p); err != nil {
-		return store.PreviewEphemeralDatabase{}, fmt.Errorf("save ephemeral database tracking row: %w", err)
+		return store.PreviewEphemeralDatabase{}, false, fmt.Errorf("save ephemeral database tracking row: %w", err)
 	}
-	return p, nil
+	return p, true, nil
 }
 
 // attachEphemeralDatabase points previewName's own DesiredService at

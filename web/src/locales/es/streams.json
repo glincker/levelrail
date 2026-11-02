@@ -1,0 +1,38 @@
+{
+  "tableLabel": "Puertos reenviados",
+  "page": {
+    "title": "Streams",
+    "description": "Reenvía un puerto del host a uno de los puertos de contenedor de esta aplicación, como TCP sin procesar. UDP, la terminación de TLS y las listas de acceso aún no son compatibles.",
+    "pendingNote": "Un stream agregado a una aplicación en ejecución surte efecto en su próximo reinicio, que ocurre automáticamente."
+  },
+  "table": {
+    "hostPort": "Puerto del host",
+    "containerPort": "Puerto del contenedor",
+    "protocol": "Protocolo",
+    "created": "Agregado",
+    "actions": "Acciones"
+  },
+  "empty": {
+    "title": "No hay streams configurados",
+    "description": "Agrega un stream para reenviar un puerto del host a uno de los puertos de contenedor de esta aplicación."
+  },
+  "add": {
+    "trigger": "Agregar stream",
+    "hostPortLabel": "Puerto del host",
+    "hostPortPlaceholder": "15432",
+    "containerPortLabel": "Puerto del contenedor",
+    "containerPortPlaceholder": "5432",
+    "protocolLabel": "Protocolo",
+    "submit": "Agregar stream",
+    "submitting": "Agregando..."
+  },
+  "remove": {
+    "trigger": "Quitar",
+    "removing": "Quitando..."
+  },
+  "toast": {
+    "created": "Stream creado en el puerto del host {{hostPort}}.",
+    "removed": "Stream eliminado.",
+    "errorTitle": "No se pudo guardar este stream."
+  }
+}

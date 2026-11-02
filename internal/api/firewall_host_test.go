@@ -34,6 +34,10 @@ func (f *fakeUFW) run(_ context.Context, name string, args ...string) ([]byte, e
 		}
 		return []byte("Status: inactive\n"), nil
 	}
+	if name != "ufw" {
+		// hostfw.Detect read-only probes of other backends.
+		return nil, nil
+	}
 	f.calls = append(f.calls, call)
 	if f.failOn != "" && strings.Contains(call, f.failOn) {
 		return []byte("boom"), errors.New("exit status 1")
@@ -198,10 +202,10 @@ func TestHostFirewallStatus_ListsUDPPublishedPorts(t *testing.T) {
 		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
 	}
 	want := []hostFirewallPublishedPort{
-		{Port: 8080, Protocol: "tcp", App: "dns", Service: "dns-server", BindAddress: bindaddr.Public, Allowed: true},
-		{Port: 53, Protocol: "udp", App: "dns", Service: "dns-server", BindAddress: bindaddr.Public, Allowed: true},
-		{Port: 51820, Protocol: "udp", App: "dns", Service: "dns-server", BindAddress: bindaddr.Public, Allowed: false},
-		{Port: 5353, Protocol: "udp", App: "local", Service: "local", BindAddress: bindaddr.Private, Allowed: false},
+		{Port: 8080, Protocol: "tcp", App: "dns", Service: "dns-server", BindAddress: bindaddr.Public, Allowed: true, Filtered: true},
+		{Port: 53, Protocol: "udp", App: "dns", Service: "dns-server", BindAddress: bindaddr.Public, Allowed: true, Filtered: true},
+		{Port: 51820, Protocol: "udp", App: "dns", Service: "dns-server", BindAddress: bindaddr.Public, Allowed: false, Filtered: true},
+		{Port: 5353, Protocol: "udp", App: "local", Service: "local", BindAddress: bindaddr.Private, Allowed: false, Filtered: true},
 	}
 	for _, w := range want {
 		if !slices.Contains(res.PublishedPorts, w) {
@@ -227,5 +231,124 @@ func TestUFWAllowed(t *testing.T) {
 		if got := ufwAllowed(text, c.port, c.proto); got != c.want {
 			t.Errorf("ufwAllowed(%d/%s) = %v, want %v", c.port, c.proto, got, c.want)
 		}
+	}
+}
+
+func TestHostFirewallStatus_NoFilterIsNotAllowed(t *testing.T) {
+	f := &fakeUFW{}
+	db := openTestDB(t)
+	rt := NewRouter(discardLogger(), testBrand(), db,
+		WithHostFirewallRunner(f.run, f.lookPath))
+	if err := db.SaveDesiredService(t.Context(), store.DesiredService{Name: "web", Image: "img", Port: 80, BindAddress: bindaddr.Public, PublishedPorts: []store.PublishedPort{{ContainerPort: 25, HostPort: 25, Protocol: "tcp"}}}); err != nil {
+		t.Fatal(err)
+	}
+	res := rt.hostFirewallStatus(t.Context())
+	if res.Backend != "none" || res.Managed || res.Active {
+		t.Errorf("backend=%q managed=%v active=%v, want none/false/false", res.Backend, res.Managed, res.Active)
+	}
+	if len(res.Required) == 0 || len(res.PublishedPorts) != 1 {
+		t.Fatalf("required=%v published=%v, want both lists kept", res.Required, res.PublishedPorts)
+	}
+	if p := res.PublishedPorts[0]; p.Allowed || p.Filtered {
+		t.Errorf("published port %+v, want allowed=false filtered=false", p)
+	}
+}
+
+func TestHostFirewallStatus_OtherBackendIsReadOnly(t *testing.T) {
+	look := func(n string) (string, error) {
+		if n == "firewall-cmd" {
+			return "/usr/bin/firewall-cmd", nil
+		}
+		return "", errors.New("not found")
+	}
+	run := func(_ context.Context, _ string, args ...string) ([]byte, error) {
+		if len(args) > 0 && args[0] == "--state" {
+			return []byte("running\n"), nil
+		}
+		return []byte(""), nil
+	}
+	rt := NewRouter(discardLogger(), testBrand(), openTestDB(t), WithHostFirewallRunner(run, look))
+	res := rt.hostFirewallStatus(t.Context())
+	if res.Backend != "firewalld" || res.Managed || res.Installed || !res.Active {
+		t.Errorf("backend=%q managed=%v installed=%v active=%v", res.Backend, res.Managed, res.Installed, res.Active)
+	}
+}
+
+func hostFirewallBackendStatus(t *testing.T, tool string, outs map[string]string) hostFirewallResource {
+	t.Helper()
+	look := func(n string) (string, error) {
+		if n == tool {
+			return "/usr/sbin/" + n, nil
+		}
+		return "", errors.New("not found")
+	}
+	run := func(_ context.Context, name string, args ...string) ([]byte, error) {
+		return []byte(outs[name+" "+strings.Join(args, " ")]), nil
+	}
+	rt := NewRouter(discardLogger(), testBrand(), openTestDB(t), WithHostFirewallRunner(run, look))
+	return rt.hostFirewallStatus(t.Context())
+}
+
+const nftJumpDrop = "table ip filter {\n\tchain INPUT {\n\t\ttype filter hook input priority filter; policy accept;\n\t\tjump ufw-input\n\t}\n\tchain ufw-input {\n\t\ttcp dport 5432 drop\n\t}\n}\n"
+
+func noUFWCommands(t *testing.T, cmds []string) {
+	t.Helper()
+	for _, c := range cmds {
+		if strings.HasPrefix(c, "ufw") {
+			t.Errorf("ufw command %q shown for a non-ufw backend", c)
+		}
+	}
+}
+
+func TestHostFirewallStatus_NftablesFilteredMatchesDoctor(t *testing.T) {
+	res := hostFirewallBackendStatus(t, "nft", map[string]string{"nft list ruleset": nftJumpDrop})
+	if res.Backend != "nftables" || res.Managed || !res.Active {
+		t.Fatalf("backend=%q managed=%v active=%v, want nftables/false/true", res.Backend, res.Managed, res.Active)
+	}
+	if strings.Contains(res.Detail, "no input chain") {
+		t.Errorf("detail %q contradicts the doctor classification", res.Detail)
+	}
+	noUFWCommands(t, res.Commands)
+	if !slices.Contains(res.Commands, "nft list ruleset") || !slices.Contains(res.Commands, "nft add rule inet filter input tcp dport 22 accept") {
+		t.Errorf("commands = %v, want nft inspect and allow guidance", res.Commands)
+	}
+}
+
+func TestHostFirewallStatus_NftablesUnfiltered(t *testing.T) {
+	res := hostFirewallBackendStatus(t, "nft", map[string]string{"nft list ruleset": "table ip filter {\n\tchain INPUT {\n\t\ttype filter hook input priority filter; policy accept;\n\t}\n}\n"})
+	if res.Backend != "nftables" || res.Active || res.Managed {
+		t.Fatalf("backend=%q active=%v managed=%v, want nftables/false/false", res.Backend, res.Active, res.Managed)
+	}
+	noUFWCommands(t, res.Commands)
+	if !slices.Equal(res.Commands, []string{"nft list ruleset"}) {
+		t.Errorf("commands = %v, want only the inspect command", res.Commands)
+	}
+}
+
+func TestHostFirewallStatus_IptablesGuidance(t *testing.T) {
+	res := hostFirewallBackendStatus(t, "iptables", map[string]string{"iptables -S": "-P INPUT DROP\n"})
+	if res.Backend != "iptables" || !res.Active || res.Managed {
+		t.Fatalf("backend=%q active=%v managed=%v", res.Backend, res.Active, res.Managed)
+	}
+	noUFWCommands(t, res.Commands)
+	if !slices.Contains(res.Commands, "iptables -A INPUT -p tcp --dport 22 -j ACCEPT") {
+		t.Errorf("commands = %v, want iptables guidance", res.Commands)
+	}
+}
+
+func TestHostFirewallStatus_FirewalldGuidance(t *testing.T) {
+	res := hostFirewallBackendStatus(t, "firewall-cmd", map[string]string{"firewall-cmd --state": "running\n"})
+	noUFWCommands(t, res.Commands)
+	if !slices.Contains(res.Commands, "firewall-cmd --permanent --add-port=22/tcp") {
+		t.Errorf("commands = %v, want firewall-cmd guidance", res.Commands)
+	}
+}
+
+func TestHostFirewallStatus_UFWKeepsEnableCommands(t *testing.T) {
+	f := &fakeUFW{installed: true, active: true}
+	rt := NewRouter(discardLogger(), testBrand(), openTestDB(t), WithHostFirewallRunner(f.run, f.lookPath))
+	res := rt.hostFirewallStatus(t.Context())
+	if res.Backend != "ufw" || !res.Managed || !slices.Contains(res.Commands, "ufw --force enable") {
+		t.Errorf("backend=%q managed=%v commands=%v", res.Backend, res.Managed, res.Commands)
 	}
 }

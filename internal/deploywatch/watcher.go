@@ -44,6 +44,9 @@ type Notifier func(ctx context.Context, app, image, message string)
 type Watcher struct {
 	Store    WatchStore
 	Defaults deploysafety.Effective
+	// Windows, when set, replaces the drain, stable and watch timings of
+	// Defaults on every tick so a runtime settings change applies live.
+	Windows func(context.Context) deploysafety.Windows
 	// Inspectors returns the exit-state inspector for an app's node.
 	Inspectors func(nodeID string) (docker.ExitStateInspector, error)
 	Restarts   RestartCounter
@@ -89,12 +92,20 @@ func (w *Watcher) logger() *slog.Logger {
 	return w.Logger
 }
 
+func (w *Watcher) defaults(ctx context.Context) deploysafety.Effective {
+	if w.Windows == nil {
+		return w.Defaults
+	}
+	return w.Defaults.WithWindows(w.Windows(ctx))
+}
+
 // Tick evaluates every release whose watch window may still be open.
 func (w *Watcher) Tick(ctx context.Context) {
 	now := w.clock()
 	horizon := deploysafety.MaxOverrideWindow
-	if w.Defaults.WatchWindow > horizon {
-		horizon = w.Defaults.WatchWindow
+	defaults := w.defaults(ctx)
+	if defaults.WatchWindow > horizon {
+		horizon = defaults.WatchWindow
 	}
 	cutovers, err := w.Store.ListGateEventsSince(ctx, deploysafety.PhaseCutover, deploysafety.StatusPassed, now.Add(-horizon))
 	if err != nil {
@@ -163,7 +174,7 @@ func (w *Watcher) watchOne(ctx context.Context, service, attemptID string, now t
 	if err != nil {
 		return err
 	}
-	cfg := deploysafety.Resolve(w.Defaults, overrides)
+	cfg := deploysafety.Resolve(w.defaults(ctx), overrides)
 	if cfg.WatchWindow <= 0 || cfg.WatchMode == deploysafety.WatchModeOff {
 		return nil
 	}

@@ -120,7 +120,7 @@ export function AppsPanel() {
               }}
               placeholder={t('apps.search')}
               aria-label={t('apps.search')}
-              className="h-8 w-44 pl-7"
+              className="h-8 w-44 pl-9"
             />
           </span>
           {(['grid', 'list'] as const).map((v) => (

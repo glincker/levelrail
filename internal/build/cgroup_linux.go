@@ -53,7 +53,8 @@ func (c cgroupV2) Provision(id string, memoryMB, cpuMillis int) (string, func(),
 			cleanup()
 			return "", nil, fmt.Errorf("set memory limit: %w", err)
 		}
-		_ = os.WriteFile(filepath.Join(dir, "memory.swap.max"), []byte("0"), 0o600)
+		// Swap is allowed up to the memory cap so a build cannot swap past it.
+		_ = os.WriteFile(filepath.Join(dir, "memory.swap.max"), []byte(v), 0o600)
 	}
 	if cpuMillis > 0 {
 		v := fmt.Sprintf("%d %d", cpuMillis*cgroupCPUPeriod/1000, cgroupCPUPeriod)

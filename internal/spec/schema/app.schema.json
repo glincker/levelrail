@@ -52,6 +52,7 @@
         },
         "health": { "description": "Readiness and liveness probes.", "$ref": "#/$defs/health" },
         "resources": { "description": "CPU, memory and GPU limits for each container.", "$ref": "#/$defs/resources" },
+        "security": { "description": "Per-service container hardening overrides.", "$ref": "#/$defs/security" },
         "env": {
           "description": "Environment variables, as literal strings or secret and reference objects.",
           "type": "object",
@@ -461,6 +462,13 @@
     "statusCode": { "type": "integer", "minimum": 100, "maximum": 599 },
     "statusRange": { "type": "string", "pattern": "^[1-5][0-9]{2}(-[1-5][0-9]{2})?$" },
     "statusList": { "type": "string", "pattern": "^[1-5][0-9]{2}(-[1-5][0-9]{2})?([ ,]+[1-5][0-9]{2}(-[1-5][0-9]{2})?)*$" },
+    "security": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "read_only_rootfs": { "description": "Mount the root filesystem read-only with tmpfs on /tmp and /run. Omit to inherit the fleet default; false opts out of a fleet-wide true. Not allowed with files.", "type": "boolean" }
+      }
+    },
     "resources": {
       "type": "object",
       "additionalProperties": false,
@@ -520,7 +528,8 @@
         "version": { "description": "Engine version.", "type": "string", "minLength": 1 },
         "backup": { "description": "Backup schedule.", "$ref": "#/$defs/backup" },
         "ephemeralInPreviews": { "description": "Give each preview its own disposable instance.", "default": false, "type": "boolean" },
-        "isolatedInPreviews": { "description": "Give each preview an isolated credential on this database (Postgres and Redis).", "default": false, "type": "boolean" }
+        "isolatedInPreviews": { "description": "Give each preview an isolated credential on this database (Postgres and Redis).", "default": false, "type": "boolean" },
+        "seedFrom": { "description": "Start an ephemeral preview instance from the latest succeeded backup (latest) or empty (none). Used with ephemeralInPreviews.", "default": "none", "enum": ["latest", "none"] }
       }
     },
     "backup": {

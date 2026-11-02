@@ -14,6 +14,7 @@ import (
 )
 
 func TestHandleEnablePITR_RejectsAgentDirectoryTarget(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedPostgresDatabaseForAPI(t, db)
@@ -53,6 +54,7 @@ func (f *flakyTeardownRuntime) Remove(context.Context, string, bool) error {
 }
 
 func TestDatabaseTeardownHalfSucceededIsRetried(t *testing.T) {
+	t.Parallel()
 	db := openTestDB(t)
 	rt := NewRouter(discardLogger(), testBrand(), db)
 	fake := &flakyTeardownRuntime{fakeExecAppRuntime: &fakeExecAppRuntime{}, removeErr: errors.New("docker unavailable")}
@@ -88,6 +90,7 @@ func TestDatabaseTeardownHalfSucceededIsRetried(t *testing.T) {
 }
 
 func TestFindProvisionedNodeIgnoresOlderSameNameNode(t *testing.T) {
+	t.Parallel()
 	started := time.Date(2026, 10, 19, 12, 0, 0, 0, time.UTC)
 	nodes := []store.Node{
 		{ID: "old", Name: "edge", CreatedAt: started.Add(-time.Hour)},
@@ -103,6 +106,7 @@ func TestFindProvisionedNodeIgnoresOlderSameNameNode(t *testing.T) {
 }
 
 func TestGenerateControlPlaneDRKeypair(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -121,6 +125,7 @@ func TestGenerateControlPlaneDRKeypair(t *testing.T) {
 }
 
 func TestRestorePlanNotConfigured(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 

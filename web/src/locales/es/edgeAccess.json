@@ -1,0 +1,16 @@
+{
+  "title": "Solicitudes",
+  "subtitle": "Las solicitudes más recientes que pasaron por el borde para esta aplicación, de la más nueva a la más antigua. Se guardan en memoria, así que un reinicio las borra.",
+  "filters": {
+    "minMs": "Más lentas que (ms)",
+    "path": "La ruta empieza con",
+    "errorsOnly": "Solo errores del servidor"
+  },
+  "list": {
+    "empty": "Aún no hay solicitudes que coincidan. Envía tráfico a uno de los dominios de esta aplicación y aparecerán aquí en unos segundos.",
+    "loadError": "No se pudieron cargar las solicitudes: {{message}}",
+    "upstream": "Error del servidor de origen",
+    "emptyTitle": "Aún no hay solicitudes",
+    "emptyAction": "Revisar dominios"
+  }
+}

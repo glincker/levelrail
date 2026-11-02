@@ -129,6 +129,7 @@ export function useClearDeployPolicy() {
 
 export function useCheckDeployPolicy() {
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (req: PolicyCheckRequest) =>
       request<PolicyCheckResult>('POST', `${BASE}/check`, req),
   })

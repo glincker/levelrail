@@ -105,16 +105,20 @@ services:
   app:
     image: app:latest
     environment:
-      FRONTEND_URL: ${SERVICE_FQDN_APP}
+      FRONTEND_URL: ${SERVICE_URL_APP}
+      HOST_ONLY: ${SERVICE_FQDN_APP}
 `)
 	if len(unresolved) != 0 {
 		t.Errorf("unresolved = %+v, want none", unresolved)
 	}
 	if len(secretEnv) != 0 {
-		t.Errorf("secretEnv = %+v, want none (FQDN is a literal URL, not a secret)", secretEnv)
+		t.Errorf("secretEnv = %+v, want none (a domain is a literal, not a secret)", secretEnv)
 	}
 	if got := f.Services["app"].Environment["FRONTEND_URL"]; got != "https://app.example.com" {
 		t.Errorf("FRONTEND_URL = %q, want https://app.example.com", got)
+	}
+	if got := f.Services["app"].Environment["HOST_ONLY"]; got != "app.example.com" {
+		t.Errorf("HOST_ONLY = %q, want the bare host", got)
 	}
 }
 
@@ -126,7 +130,7 @@ services:
   app:
     image: app:latest
     environment:
-      CALLBACK_URL: "${SERVICE_FQDN_APP}/oauth/callback"
+      CALLBACK_URL: "${SERVICE_URL_APP}/oauth/callback"
 `)
 	if len(unresolved) != 0 {
 		t.Errorf("unresolved = %+v, want none", unresolved)
@@ -345,7 +349,7 @@ x-levelrail-domains:
 services:
   app:
     image: app:latest
-    command: ["sh", "-c", "echo ${SERVICE_FQDN_APP}"]
+    command: ["sh", "-c", "echo ${SERVICE_URL_APP}"]
 `,
 			wantCommand: []string{"sh", "-c", "echo https://app.example.com"},
 		},
@@ -377,7 +381,7 @@ x-levelrail-domains:
 services:
   app:
     image: app:latest
-    command: ["sh", "-c", "curl ${SERVICE_FQDN_APP}/health -H x-key:$SERVICE_PASSWORD_API"]
+    command: ["sh", "-c", "curl ${SERVICE_URL_APP}/health -H x-key:$SERVICE_PASSWORD_API"]
 `,
 			wantCommand:    []string{"sh", "-c", "curl https://app.example.com/health -H x-key:$SERVICE_PASSWORD_API"},
 			wantUnresolved: []UnresolvedVar{{Service: "app", EnvKey: "command[2]", Token: "$SERVICE_PASSWORD_API"}},
@@ -742,5 +746,51 @@ services:
 	}
 	if got := f.Services["app"].Environment["NORMAL_ENV"]; got != "just-a-value" {
 		t.Errorf("NORMAL_ENV = %q, want just-a-value", got)
+	}
+}
+
+func TestResolveMagicVars_DomainVarsFallBackToDefaultWithoutDomain(t *testing.T) {
+	f, _, unresolved := mustResolve(t, `
+services:
+  app:
+    image: app:latest
+    environment:
+      WEBHOOK_URL: ${SERVICE_URL_APP:-http://localhost:5678}
+      HOST: ${SERVICE_FQDN_APP:-localhost}
+`)
+	if len(unresolved) != 0 {
+		t.Fatalf("unresolved = %+v, want none", unresolved)
+	}
+	env := f.Services["app"].Environment
+	if env["WEBHOOK_URL"] != "http://localhost:5678" || env["HOST"] != "localhost" {
+		t.Errorf("env = %+v, want the localhost defaults", env)
+	}
+}
+
+func TestResolveMagicVars_RuntimeDomainBeatsDefault(t *testing.T) {
+	f, err := Parse([]byte(`
+services:
+  app:
+    image: app:latest
+    environment:
+      WEBHOOK_URL: ${SERVICE_URL_APP:-http://localhost:5678}
+      HOST: ${SERVICE_FQDN_APP:-localhost}
+      CB: ${SERVICE_URL_APP:-http://localhost}/api
+`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.RuntimeDomains = map[string]string{"app": "n8n.example.com"}
+	noGen := func(string, string, int) (string, error) { return "", nil }
+	noPersist := func(string, string, string) error { return nil }
+	if _, _, err := ResolveMagicVars(f, noGen, noPersist); err != nil {
+		t.Fatal(err)
+	}
+	env := f.Services["app"].Environment
+	if env["WEBHOOK_URL"] != "https://n8n.example.com" || env["HOST"] != "n8n.example.com" || env["CB"] != "https://n8n.example.com/api" {
+		t.Errorf("env = %+v, want the assigned domain in each shape", env)
+	}
+	if f.Domains["app"] != "" {
+		t.Errorf("Domains = %+v, a runtime domain must not leak into persisted domains", f.Domains)
 	}
 }

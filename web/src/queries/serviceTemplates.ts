@@ -23,7 +23,7 @@ export const serviceTemplateKeys = {
 }
 
 // Mirrors serviceTemplateListItem's wire shape exactly.
-export interface ServiceTemplateListItem {
+export interface ServiceTemplateListItem extends TemplateFacts {
   id: string
   name: string
   slogan: string
@@ -48,6 +48,32 @@ export interface ServiceTemplateListItem {
   has_volume?: boolean
   // Passed the last committed live smoke run (internal/catalog/verified.json).
   verified?: boolean
+}
+
+export type LicenseClass =
+  | 'permissive'
+  | 'copyleft'
+  | 'network-copyleft'
+  | 'source-available'
+  | 'proprietary'
+
+export type TemplateArch = 'amd64' | 'arm64'
+
+// Mirrors internal/api's templateFacts. Every field is optional: an entry
+// without a recorded license or verification simply omits it.
+export interface TemplateFacts {
+  license?: { spdx: string; class: LicenseClass | ''; url?: string }
+  listing?: { by: string; vendor_org?: string }
+  trust?: {
+    level: 'listed' | 'verified' | 'verified_signed'
+    evidence_url?: string
+  }
+  // Smoke passed for this image tag on these architectures. No dates.
+  verification?: { tag: string; arches: string[]; run_url?: string }
+  arch?: Record<string, 'tested' | 'published' | 'absent' | 'unknown'>
+  status?: 'active' | 'deprecated' | 'yanked'
+  status_reason?: string
+  replaced_by?: string
 }
 
 // Mirrors serviceTemplateDetail's wire shape: the list item's fields plus
@@ -184,6 +210,7 @@ export async function deployServiceTemplateNow(
 export function useDeployServiceTemplateNow() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: deployServiceTemplateNow,
     onSuccess: (result) => {
       for (const service of result.services) {

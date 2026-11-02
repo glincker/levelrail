@@ -311,7 +311,7 @@ Apply from the CLI with `levelrail-cli apps diagnose <name> --apply-fix N [--inp
 | `MISSING_ENV` | "is not set", "is undefined", "required environment variable", Python `KeyError`, pydantic "Field required", zod "Required", Go envconfig | input `env.NAME` for each missing variable |
 | `PORT_IN_USE` | "port is already allocated", `EADDRINUSE`, "address already in use" | manual: free the port or pin another host port |
 | `PERMISSION_DENIED` | `EACCES`, `PermissionError`, "cannot create directory ... Permission denied" | manual: chown the host directory or volume to the container user |
-| `EXEC_FORMAT_ERROR` | "exec format error", "no matching manifest for", platform mismatch | manual: rebuild for the node architecture or publish a multi-arch image |
+| `EXEC_FORMAT_ERROR` | "exec format error", "no matching manifest for", platform mismatch (a deploy is refused before start with a `PlatformMismatch` trace reason when the node has no emulation, see `APP_PLATFORM_MISMATCH`) | manual: rebuild for the node architecture or publish a multi-arch image |
 | `COMMAND_NOT_FOUND` | "executable file not found in $PATH", "not found" from sh, exit code 127, entrypoint "no such file" | manual: fix the entrypoint, shebang, line endings or executable bit |
 | `HEALTHCHECK_FAILING` | readiness probe timeout, refused connection, or a 404 | patch `health.readiness.path` to a candidate (`/healthz`, `/health`, `/`, ...) on a 404, otherwise a manual hint |
 | `IMAGE_PULL_FAILED` | manifest unknown (not found), unauthorized (credentials), toomanyrequests (rate limit) | manual: fix the reference or add a registry credential |

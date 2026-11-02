@@ -1,0 +1,69 @@
+---
+title: "Self-host imgproxy with Docker"
+sidebarTitle: "imgproxy"
+description: "A fast image processing server that resizes, crops and converts images on the fly from signed URLs. Apache-2.0 licensed. A signing key and salt are generated for you, so only URLs signed with them are served."
+"og:url": "https://docs.levelrail.com/self-host/imgproxy"
+---
+
+A fast image processing server that resizes, crops and converts images on the fly from signed URLs. Apache-2.0 licensed. A signing key and salt are generated for you, so only URLs signed with them are served.
+
+This page describes the Levelrail template for imgproxy (Infrastructure). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.imgproxy.net/.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `imgproxy` | `ghcr.io/imgproxy/imgproxy:v4.0.20` | 8080 | none |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `imgproxy` | `IMGPROXY_BIND` | Preset in the template |
+| `imgproxy` | `IMGPROXY_ENABLE_DEBUG_HEADERS` | Preset in the template |
+| `imgproxy` | `IMGPROXY_KEY` | Generated at deploy |
+| `imgproxy` | `IMGPROXY_SALT` | Generated at deploy |
+| `imgproxy` | `IMGPROXY_USE_ETAG` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`imgproxy`): IMGPROXY_KEY, IMGPROXY_SALT.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy imgproxy with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select imgproxy. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy imgproxy --name my-imgproxy
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Infrastructure templates
+
+- [AdGuard Home](/self-host/adguard-home)
+- [Cloudflare DDNS](/self-host/cloudflare-ddns)
+- [Consul](/self-host/consul)
+- [Elasticsearch](/self-host/elasticsearch)
+- [etcd](/self-host/etcd)
+
+All templates are listed in the [self-host gallery](/self-host).

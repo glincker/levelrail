@@ -1,6 +1,10 @@
 package ingress
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/store"
+)
 
 func TestFallbackDomain_PublicIPv4(t *testing.T) {
 	got, ok := FallbackDomain("203.0.113.5", "my-app")
@@ -103,6 +107,25 @@ func TestSanitizeDNSLabel(t *testing.T) {
 	for _, tt := range tests {
 		if got := sanitizeDNSLabel(tt.in); got != tt.want {
 			t.Errorf("sanitizeDNSLabel(%q) = %q, want %q", tt.in, got, tt.want)
+		}
+	}
+}
+
+func TestServesHTTP(t *testing.T) {
+	tcp := []store.PublishedPort{{ContainerPort: 25565, HostPort: 25565, Protocol: "tcp"}}
+	cases := []struct {
+		name string
+		svc  store.DesiredService
+		want bool
+	}{
+		{"web port", store.DesiredService{Port: 80}, true},
+		{"web port plus published", store.DesiredService{Port: 80, PublishedPorts: tcp}, true},
+		{"no ports declared", store.DesiredService{}, true},
+		{"tcp only game server", store.DesiredService{PublishedPorts: tcp}, false},
+	}
+	for _, c := range cases {
+		if got := ServesHTTP(c.svc); got != c.want {
+			t.Errorf("%s: ServesHTTP = %v, want %v", c.name, got, c.want)
 		}
 	}
 }

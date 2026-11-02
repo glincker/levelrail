@@ -22,10 +22,212 @@
     "saved": "Saved"
   },
   "badges": {
-    "restart": "Restart required"
+    "restart": "Restart required",
+    "weakens": "Weakens security",
+    "security": "Security setting"
+  },
+  "options": {
+    "open": "Open (no restriction)",
+    "none": "None (RUN steps have no network)",
+    "block-private": "Block private ranges (not enforceable yet)",
+    "read_only": "Read only",
+    "read_write": "Read and write"
+  },
+  "items": {
+    "buildNetwork": {
+      "title": "Build network",
+      "description": "Network for RUN steps of a build: open, none, or block-private (reserved: builds fail until it can be enforced). Read on every build."
+    },
+    "mcpDefaultTokenScope": {
+      "title": "Default token scope",
+      "description": "Scope for a new token created without explicit abilities: read_only or read_write. Existing tokens keep their scope."
+    },
+    "lowFreeMb": {
+      "title": "Low disk threshold",
+      "description": "Free space in MiB on the data or Docker volume below which the disk guard raises a low-disk warning and alert (64 to 1048576). Critical is clamped to this value when it is higher."
+    },
+    "criticalFreeMb": {
+      "title": "Critical disk threshold",
+      "description": "Free space in MiB below which builds, image pulls and backups are refused and the disk reserve is released (16 to 1048576). A value above the low threshold is treated as equal to it."
+    },
+    "reserveMb": {
+      "title": "Disk reserve size",
+      "description": "Size in MiB of the placeholder file kept in the data dir so SQLite can still commit when the disk fills; it is released below the critical threshold (0 to 4096, 0 turns the reserve off)."
+    },
+    "metricsRetention": {
+      "title": "Raw metrics retention",
+      "description": "How long raw container metric samples are kept before the prune job deletes them, from 1h to 8760h; older data stays available in the coarser rollup tiers."
+    },
+    "logsRetention": {
+      "title": "Log, trace and error retention",
+      "description": "How long stored app logs, traces and error events are kept before the hourly sweep deletes them, from 1h to 8760h; the next sweep uses a changed value."
+    },
+    "logBudgetMb": {
+      "title": "Default log budget per app",
+      "description": "Stored log size in MiB each app may use before the sweep trims its oldest lines; 0 means unlimited, otherwise 16 to 10485760. A per-app budget overrides it."
+    },
+    "rawRetention": {
+      "title": "Monitor raw result retention",
+      "description": "How long each uptime monitor check result is kept before the prune job deletes it, from 1h to 8760h; hourly rollups are kept on their own window."
+    },
+    "webhookReplayProtection": {
+      "title": "Webhook replay protection",
+      "description": "Ignore a signed git webhook body that was already delivered within the replay window."
+    },
+    "webhookReplayWindow": {
+      "title": "Webhook replay window",
+      "description": "How long an identical signed webhook body is remembered."
+    },
+    "auditSensitiveReads": {
+      "title": "Audit sensitive reads",
+      "description": "Record an audit entry when logs, env exports and other sensitive data are read."
+    },
+    "bindBlockCredentialDirs": {
+      "title": "Block credential directories in bind mounts",
+      "description": "Refuse bind mounts of .ssh, .aws, .kube and similar credential directories."
+    },
+    "bindAllowedRoots": {
+      "title": "Allowed bind-mount roots",
+      "description": "When not empty, bind mounts must sit inside one of these directories."
+    },
+    "statusTimeout": {
+      "title": "Game status ping timeout",
+      "description": "How long the game server status ping waits for a game port to answer before reporting it offline. Values under 200ms are raised to 200ms."
+    },
+    "statusCache": {
+      "title": "Game status cache time",
+      "description": "How long one game server status answer is reused, so many dashboards and CLI calls ping a game port at most once in this time. 0s turns the cache off."
+    },
+    "trustLoopbackForwardedHeaders": {
+      "title": "Trust forwarded headers from loopback",
+      "description": "Believe X-Forwarded-For when the request arrives from this host. Turn off when nothing local proxies to the control plane."
+    },
+    "caSwitchRetryBase": {
+      "title": "CA switch retry delay",
+      "description": "First wait before retrying a certificate authority switch that failed to load; it doubles on each failure up to the maximum."
+    },
+    "caSwitchRetryMax": {
+      "title": "CA switch maximum retry delay",
+      "description": "Upper bound on the wait between retries of a failed certificate authority switch."
+    },
+    "sessionTtl": {
+      "title": "Desktop app session lifetime",
+      "description": "How long a dashboard session issued to the desktop app stays valid before it must exchange its token again."
+    },
+    "revokedTokenDays": {
+      "title": "Delete revoked API tokens after",
+      "description": "Days a revoked API token stays listed before the cleanup removes it. 0 keeps them forever."
+    },
+    "expiredTokenDays": {
+      "title": "Delete expired API tokens after",
+      "description": "Days an expired API token stays listed before the cleanup removes it. 0 keeps them forever."
+    },
+    "jobMaxAttempts": {
+      "title": "Job ping attempts",
+      "description": "How many times a per-job heartbeat ping is tried before it is given up."
+    },
+    "jobBackoffBase": {
+      "title": "Job ping retry delay",
+      "description": "First wait before retrying a failed job ping; it doubles on each retry up to the maximum."
+    },
+    "jobBackoffMax": {
+      "title": "Job ping maximum retry delay",
+      "description": "Upper bound on the wait between job ping retries."
+    },
+    "jobQueue": {
+      "title": "Job ping queue size",
+      "description": "How many job pings may wait to be sent before new ones are dropped. A change applies at once."
+    },
+    "rateLimitReadRpm": {
+      "title": "API read rate limit",
+      "description": "Read requests per minute allowed for each API token, signed-in user or client address. Requests over the budget get HTTP 429 with a Retry-After header. Minimum 60 so the dashboard keeps working; a change applies at once and keeps each caller's current budget. A limit cannot be switched off: an environment value of 0 or below the minimum is raised to the minimum (older releases treated 0 as off)."
+    },
+    "rateLimitWriteRpm": {
+      "title": "API write rate limit",
+      "description": "Write and deploy requests per minute allowed for each API token, signed-in user or client address. Requests over the budget get HTTP 429 with a Retry-After header. Minimum 20 so an operator cannot lock themselves out; a change applies at once. A limit cannot be switched off: an environment value of 0 or below the minimum is raised to the minimum (older releases treated 0 as off)."
+    },
+    "rateLimitRedeemRpm": {
+      "title": "Password reset and invite redeem rate limit",
+      "description": "Password reset and invite accept requests per minute allowed from one client address. Requests over the budget get HTTP 429. Minimum 3; a change applies at once. A limit cannot be switched off: an environment value of 0 or below the minimum is raised to the minimum (older releases treated 0 as off)."
+    },
+    "engineRateLimitPerIp": {
+      "title": "Sign-in rate limit per address",
+      "description": "Credential requests (sign in, password reset, MFA) per minute allowed from one client address before it gets HTTP 429. This slows credential stuffing; it cannot be turned off and the minimum is 10 so an admin can still sign in. An environment value below 10 is raised to 10. Needs a restart because the auth library holds the budget."
+    },
+    "engineRateLimitPerEmail": {
+      "title": "Sign-in rate limit per account",
+      "description": "Credential requests per minute allowed for one account name from any address before it gets HTTP 429. This slows targeted password guessing; it cannot be turned off and the minimum is 10 so the owner can still sign in. An environment value below 10 is raised to 10. Needs a restart because the auth library holds the budget."
+    },
+    "maxBodyBytes": {
+      "title": "API request body limit",
+      "description": "Largest JSON request body in bytes the API reads before any handler runs; a bigger body is cut off and the request fails with HTTP 413. Source uploads, git pushes and asset uploads have their own limits. Between 1 MiB and 1 GiB; a change applies to the next request."
+    },
+    "uploadMaxBytes": {
+      "title": "Asset upload size limit",
+      "description": "Largest single asset object in bytes accepted by a direct or presigned upload; a bigger upload is refused with HTTP 413. Between 1 MiB and 1 TiB; direct uploads are exempt from the API request body limit and obey only this one. A change applies to the next upload."
+    },
+    "maxConcurrent": {
+      "title": "Concurrent deploys",
+      "description": "How many deploys may run at once across all apps; extra deploys wait in the queue and start when one finishes. 0 means no limit. A change applies to the next queue decision."
+    },
+    "dependsOnTimeout": {
+      "title": "Compose dependency wait",
+      "description": "How long a compose service waits for a depends_on dependency to start, pass its health check or exit 0 before the deploy fails naming that dependency, from 5s to 1h; a change applies on the next reconcile pass."
+    },
+    "interval": {
+      "title": "Cleanup interval",
+      "description": "How often the scheduled cleanup checks every data type. The minimum is 15 minutes."
+    },
+    "enabled": {
+      "title": "Run cleanup on a schedule",
+      "description": "Turn the scheduled cleanup off entirely. Manual cleanups still work."
+    },
+    "memoryLimitMb": {
+      "title": "Build memory limit",
+      "description": "Memory in MiB one build may use (256 to 1048576). 0 means auto: 60 percent of the host memory, at least 512 and always leaving a reserve for the control plane (APP_BUILD_MEMORY_PERCENT and APP_BUILD_MEMORY_RESERVE_MB tune the formula). The cap also limits swap, and Node builds get a matching --max-old-space-size. A change applies to the next build; running builds keep their limit. A saved per-app or global value from build limits still wins."
+    },
+    "auditLogDays": {
+      "title": "Keep audit log entries for",
+      "description": "Days an audit log entry is kept before the cleanup removes it. Sign-in and policy entries follow their own, longer window. 0 keeps everything."
+    },
+    "auditSecurityDays": {
+      "title": "Keep security audit entries for",
+      "description": "Days sign-in, step-up, token and policy audit entries are kept. Never shorter than the general window. 0 keeps them forever."
+    },
+    "emailLogDays": {
+      "title": "Keep the email delivery log for",
+      "description": "Days an email delivery log row is kept. 0 keeps them forever."
+    },
+    "webhookDeliveryDays": {
+      "title": "Keep inbound webhook deliveries for",
+      "description": "Days a received git webhook delivery is kept for troubleshooting. 0 keeps them forever."
+    },
+    "eventWebhookDays": {
+      "title": "Keep event webhook deliveries for",
+      "description": "Days a finished outbound event webhook delivery is kept. 0 keeps them forever."
+    },
+    "alertHistoryDays": {
+      "title": "Keep alert history for",
+      "description": "Days an alert history entry is kept. 0 keeps them forever."
+    },
+    "containersRestartPolicy": {
+      "title": "Container restart policy",
+      "description": "Docker restart policy for long-running app containers, so apps come back after a host reboot or Docker restart. Applies to containers created on the next deploy or recreate; existing containers keep their old policy."
+    },
+    "backupLocalRoot": {
+      "title": "Local backup root",
+      "description": "Absolute directory on the control plane that confines local backup targets. Empty uses backups/ under the data directory. The next backup or restore uses a changed value; target paths stay relative to it and cannot leave it."
+    },
+    "bootRechecks": {
+      "title": "Boot recheck delays",
+      "description": "Offsets after start, colon separated (for example 3s:10s), at which the control plane runs extra reconcile passes so routes are fixed when Docker publishes ports late after a host reboot. Each offset is at least 1s. Read at start."
+    },
+    "bootEventRecheck": {
+      "title": "Boot recheck after first event",
+      "description": "How long after the first Docker event the control plane runs one more reconcile pass, from 1s to 1h. Read at start."
+    }
   },
   "row": {
-    "envHint": "Environment variable: {{env}}",
     "defaultHint": "Default: {{value}}",
     "updatedBy": "Saved by {{actor}}",
     "on": "On",
@@ -36,7 +238,9 @@
     "saving": "Saving",
     "reset": "Reset to default",
     "resetting": "Resetting",
-    "invalid": "Enter a whole number."
+    "invalid": "Enter a whole number.",
+    "envCopy": "Copy {{env}}",
+    "envHint": "Environment variable: {{env}}"
   },
   "toast": {
     "saved": "{{title}} saved.",
@@ -80,7 +284,9 @@
     "never": "Never delete",
     "days_one": "{{count}} day",
     "days_other": "{{count}} days",
-    "year": "1 year"
+    "year": "1 year",
+    "hours_one": "{{count}} hour",
+    "hours_other": "{{count}} hours"
   },
   "overview": {
     "title": "Data retention",
@@ -100,5 +306,15 @@
       "metricsAndLogs": "Metrics and logs",
       "pipelineArtifacts": "Pipeline artifacts"
     }
+  },
+  "toolbar": {
+    "searchLabel": "Search settings",
+    "searchPlaceholder": "Search settings",
+    "changedOnly": "Changed from default",
+    "clear": "Clear filters",
+    "count": "{{shown}} of {{total}}",
+    "jumpLabel": "Jump to a category",
+    "noMatchTitle": "No settings match",
+    "noMatchBody": "Try a shorter search, or clear the filters to see every setting."
   }
 }

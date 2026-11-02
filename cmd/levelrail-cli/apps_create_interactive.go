@@ -558,7 +558,7 @@ func runWizardCreateViaAPI(a wizardAnswers, stdout, stderr io.Writer, cf credent
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("app %q was created but the build failed: %w", created.Name, buildErr))
 	}
 
-	return fetchAndPrintCreatedApp(ctx, client, created.Name, stdout, stderr, of)
+	return fetchAndPrintCreatedApp(ctx, client, created.Name, prog, plan.Build == nil, stdout, stderr, of)
 }
 
 // Same call and output as apps deploy-spec, so both surfaces read identically.

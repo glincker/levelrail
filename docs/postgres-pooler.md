@@ -8,11 +8,11 @@ Small servers often run out of Postgres connections before they run out of CPU o
 
 ## Enable it
 
-The control plane needs to know which pooler image to run. There is no built in default, so you pick and pin a version you trust:
+The pooler runs a pinned default image (`edoburu/pgbouncer:v1.26.1-p0`). To use a build you have vetted, set the override below:
 
 | Variable | Meaning |
 | --- | --- |
-| `APP_PG_POOLER_IMAGE` | Required. Pooler image, pinned by tag or digest. It must accept the common pgbouncer env contract (`DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `LISTEN_PORT`, `POOL_MODE`, `AUTH_TYPE`). |
+| `APP_PG_POOLER_IMAGE` | Optional. Overrides the pinned default. Pooler image, pinned by tag or digest. It must accept the common pgbouncer env contract (`DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `LISTEN_PORT`, `POOL_MODE`, `AUTH_TYPE`). |
 | `APP_PG_POOLER_DEFAULT_POOL_SIZE` | Optional. Server connections per user and database pair. Unset or invalid keeps the image default. |
 | `APP_PG_POOLER_MAX_CLIENT_CONN` | Optional. Maximum client connections the pooler accepts. Unset or invalid keeps the image default. |
 
@@ -37,7 +37,7 @@ The pooler joins the database container's network namespace and listens on port 
 - `field: port` resolves to 6432 while the pooler is on.
 - `field: direct_url` always resolves to the direct Postgres URL. Use it for migrations, `LISTEN`/`NOTIFY`, advisory locks held across transactions, and anything else that needs a session.
 
-Apps on a different node than the database keep the direct URL, because the mesh only maps the Postgres port.
+Apps on a different node than the database reach the pooler over the mesh on its own stable port, allocated from the same range as database mesh ports. The `url` and `port` fields resolve to it, and `direct_url` keeps the Postgres mesh port.
 
 Transaction pooling means session state does not survive between transactions. Prepared statements, `SET` without `LOCAL`, and temporary tables can misbehave on the pooled URL. Most ORMs have a setting for this (for example disabling server side prepared statements).
 
@@ -45,8 +45,8 @@ Transaction pooling means session state does not survive between transactions. P
 
 The reconciler treats the pooler as a child of the database and converges it on every pass:
 
-- Enabled and the database is running: the pooler container exists and runs. It is recreated when the database container is replaced (a version change), the image changes, or the pool settings change.
+- Enabled and the database is running: the pooler container exists and runs. It is recreated when the database container is replaced (a version change), the image changes, the pool settings change, or the password rotates.
 - Disabled, suspended or deleted: the pooler container is removed.
-- Its health shows up as a separate `PoolerReady` condition, so a broken pooler never marks the database itself as down. `pooler show` prints the reason, for example `PoolerImageNotConfigured`.
+- Its health shows up as a separate `PoolerReady` condition, so a broken pooler never marks the database itself as down. `pooler show` prints the reason, for example `DatabaseNotRunning`.
 
 The database password is passed to the pooler container the same way it is passed to Postgres itself. It is never written into labels, logs or API responses: the URLs returned by `pooler show` use a `<password>` placeholder.

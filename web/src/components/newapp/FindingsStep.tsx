@@ -5,6 +5,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import {
   Collapsible,
   CollapsiblePanel,
@@ -324,6 +326,18 @@ export function FindingsStep({
               </SelectContent>
             </Select>
           </Finding>
+          {edits.buildType === 'static' ? (
+            <div className="flex items-center justify-between gap-3">
+              <Label htmlFor="f-spa">{t('findings.advanced.spa')}</Label>
+              <Switch
+                id="f-spa"
+                checked={edits.spa}
+                onCheckedChange={(v) => {
+                  set('spa', v)
+                }}
+              />
+            </div>
+          ) : null}
           <Finding
             id="f-dockerfile"
             label={t('findings.advanced.dockerfile')}

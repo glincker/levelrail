@@ -174,3 +174,33 @@ func dispatchRouter(remote NodeBuilder, nodes NodeSource) *Router {
 	}
 	return r
 }
+
+func TestRouter_DispatchCarriesNetworkMode(t *testing.T) {
+	SetNetworkResolver(func(context.Context) (string, error) { return "none", nil })
+	t.Cleanup(func() { SetNetworkResolver(nil) })
+	remote := &stubNodeBuilder{err: errors.New("stop")}
+	r := dispatchRouter(remote, staticNodes(NodeInfo{ID: "builder-1", AcceptsBuildWorkloads: true, Online: true}))
+
+	_, _ = r.Build(t.Context(), Request{ContextDir: t.TempDir(), Tag: "app:sha"}, nil)
+	if remote.req.Network != NetworkNone {
+		t.Errorf("dockerfile dispatch network = %q, want none", remote.req.Network)
+	}
+	_, _ = r.BuildRailpack(t.Context(), RailpackRequest{SourceDir: t.TempDir(), Tag: "app:sha"}, nil)
+	if remote.req.Network != NetworkNone {
+		t.Errorf("railpack dispatch network = %q, want none", remote.req.Network)
+	}
+}
+
+func TestRouter_DispatchRefusesUnenforceableMode(t *testing.T) {
+	SetNetworkResolver(func(context.Context) (string, error) { return "block-private", nil })
+	t.Cleanup(func() { SetNetworkResolver(nil) })
+	remote := &stubNodeBuilder{}
+	r := dispatchRouter(remote, staticNodes(NodeInfo{ID: "builder-1", AcceptsBuildWorkloads: true, Online: true}))
+
+	if _, err := r.Build(t.Context(), Request{ContextDir: t.TempDir(), Tag: "app:sha"}, nil); !errors.Is(err, ErrNetworkUnenforceable) {
+		t.Fatalf("err = %v, want ErrNetworkUnenforceable", err)
+	}
+	if len(remote.calls) != 0 {
+		t.Errorf("dispatched %v despite an unenforceable mode", remote.calls)
+	}
+}

@@ -127,6 +127,7 @@ export async function deleteFeatureFlag(
 export function useDeleteFeatureFlag(appName: string) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (id: string) => deleteFeatureFlag(appName, id),
     onSuccess: () => {
       void queryClient.invalidateQueries({

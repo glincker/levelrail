@@ -130,8 +130,8 @@ func TestBuildRoutesConfig_RedirectOnlyForHostsWithAnIssuer(t *testing.T) {
 				t.Fatalf("BuildRoutesConfig() error = %v", err)
 			}
 			server := cfg.Apps.HTTP.Servers["ingress"]
-			if server.AutomaticHTTPS != nil && server.AutomaticHTTPS.DisableRedir {
-				t.Fatal("redirect disabled: this case must redirect")
+			if cfg.Apps.HTTP.Servers["ingress-http"] == nil || server.AutomaticHTTPS == nil || !server.AutomaticHTTPS.DisableRedir {
+				t.Fatal("this case must redirect through the cert-aware port 80 server")
 			}
 			covered := map[string]bool{}
 			for _, p := range cfg.Apps.TLS.Automation.Policies {

@@ -1,6 +1,7 @@
 package deploy
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strconv"
@@ -67,6 +68,13 @@ func toDesiredService(name, image string, svc spec.Service) (store.DesiredServic
 			return store.DesiredService{}, fmt.Errorf("resources: %w", err)
 		}
 		d.Resources = &resources
+	}
+	if svc.Security != nil && svc.Security.ReadOnlyRootfs != nil {
+		if d.Resources == nil {
+			d.Resources = &store.ServiceResources{}
+		}
+		on := *svc.Security.ReadOnlyRootfs
+		d.Resources.ReadOnlyRootfs = &on
 	}
 
 	if svc.Health != nil {
@@ -369,4 +377,31 @@ func parseDurationOrZero(s string) (time.Duration, error) {
 		return 0, fmt.Errorf("invalid duration %q: %w", s, err)
 	}
 	return d, nil
+}
+
+// ErrVolumeNameClaimed means a service's resolved volume name is already held by another service.
+var ErrVolumeNameClaimed = fmt.Errorf("deploy: volume name is already claimed by another app")
+
+type serviceLister interface {
+	ListDesiredServices(ctx context.Context) ([]store.DesiredService, error)
+}
+
+// checkVolumeOwners refuses a service whose resolved volume names collide with
+// another app's ("a" with "b-c" and "a-b" with "c" both map to app-a-b-c), so a
+// deploy never mounts another app's data. A store that cannot list is skipped.
+func checkVolumeOwners(ctx context.Context, st any, d store.DesiredService) error {
+	l, ok := st.(serviceLister)
+	if !ok || len(d.Volumes) == 0 {
+		return nil
+	}
+	all, err := l.ListDesiredServices(ctx)
+	if err != nil {
+		return fmt.Errorf("check volume owners: %w", err)
+	}
+	for _, v := range d.Volumes {
+		if other, clash := store.ServiceVolumeOwnerConflict(all, d.Name, v.Name); clash {
+			return fmt.Errorf("%w: %q is also held by app %q, rename one of the volumes", ErrVolumeNameClaimed, v.Name, other)
+		}
+	}
+	return nil
 }

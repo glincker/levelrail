@@ -68,6 +68,7 @@ func seedVerifyFixture(t *testing.T, db *store.DB) {
 }
 
 func TestBackupVerifyRoutes_RequireAuth(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouter(t)
 
 	assertRoutesRequireAuth(t, rt, []routeCase{
@@ -77,6 +78,7 @@ func TestBackupVerifyRoutes_RequireAuth(t *testing.T) {
 }
 
 func TestHandleVerifyBackup_NoVerifierConfigured(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t) // no WithBackupVerifier
 	cookie := loginTestSession(t, rt, db)
 	seedVerifyFixture(t, db)
@@ -89,6 +91,7 @@ func TestHandleVerifyBackup_NoVerifierConfigured(t *testing.T) {
 }
 
 func TestHandleVerifyBackup_DatabaseNotFound(t *testing.T) {
+	t.Parallel()
 	verifier := newFakeBackupVerifier()
 	rt, db := newTestRouterWithBackupVerifier(t, verifier)
 	cookie := loginTestSession(t, rt, db)
@@ -102,6 +105,7 @@ func TestHandleVerifyBackup_DatabaseNotFound(t *testing.T) {
 }
 
 func TestHandleVerifyBackup_BackupNotFound(t *testing.T) {
+	t.Parallel()
 	verifier := newFakeBackupVerifier()
 	rt, db := newTestRouterWithBackupVerifier(t, verifier)
 	cookie := loginTestSession(t, rt, db)
@@ -115,6 +119,7 @@ func TestHandleVerifyBackup_BackupNotFound(t *testing.T) {
 }
 
 func TestHandleVerifyBackup_BackupBelongsToDifferentDatabase(t *testing.T) {
+	t.Parallel()
 	verifier := newFakeBackupVerifier()
 	rt, db := newTestRouterWithBackupVerifier(t, verifier)
 	cookie := loginTestSession(t, rt, db)
@@ -131,6 +136,7 @@ func TestHandleVerifyBackup_BackupBelongsToDifferentDatabase(t *testing.T) {
 }
 
 func TestHandleVerifyBackup_NotSucceeded(t *testing.T) {
+	t.Parallel()
 	verifier := newFakeBackupVerifier()
 	rt, db := newTestRouterWithBackupVerifier(t, verifier)
 	cookie := loginTestSession(t, rt, db)
@@ -154,6 +160,7 @@ func TestHandleVerifyBackup_NotSucceeded(t *testing.T) {
 }
 
 func TestHandleVerifyBackup_Success(t *testing.T) {
+	t.Parallel()
 	verifier := newFakeBackupVerifier()
 	rt, db := newTestRouterWithBackupVerifier(t, verifier)
 	cookie := loginTestSession(t, rt, db)
@@ -192,6 +199,7 @@ func TestHandleVerifyBackup_Success(t *testing.T) {
 }
 
 func TestHandleListBackupVerifications_BackupNotFound(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedVerifyFixture(t, db)
@@ -204,6 +212,7 @@ func TestHandleListBackupVerifications_BackupNotFound(t *testing.T) {
 }
 
 func TestHandleListBackupVerifications_NoVerifierConfigured_StillWorks(t *testing.T) {
+	t.Parallel()
 	// Listing verification attempts needs no runner: see
 	// WithBackupVerifier's own doc comment. This test locks that in.
 	rt, db := newTestRouter(t) // no WithBackupVerifier

@@ -53,25 +53,33 @@ function TokensPage() {
       }
       actions={<CreateTokenDialog />}
       banners={
-        <>
-          {expiringSoon > 0 ? (
-            <Banner
-              variant="warning"
-              title={t('tokensPage.expiring.title', { count: expiringSoon })}
-              action={<CreateTokenDialog />}
-            >
-              {t('tokensPage.expiring.body')}
-            </Banner>
-          ) : null}
-          {longLivedRoot > 0 ? (
-            <Banner
-              variant="warning"
-              title={t('tokensPage.banner.title', { count: longLivedRoot })}
-            >
-              {t('tokensPage.banner.body')}
-            </Banner>
-          ) : null}
-        </>
+        expiringSoon + longLivedRoot > 0 ? (
+          <Banner
+            variant="warning"
+            title={t('tokensPage.attention.title', {
+              count: (expiringSoon > 0 ? 1 : 0) + (longLivedRoot > 0 ? 1 : 0),
+            })}
+          >
+            <ul className="list-disc space-y-1 pl-4">
+              {expiringSoon > 0 ? (
+                <li>
+                  <span className="font-medium">
+                    {t('tokensPage.expiring.title', { count: expiringSoon })}
+                  </span>{' '}
+                  {t('tokensPage.expiring.body')}
+                </li>
+              ) : null}
+              {longLivedRoot > 0 ? (
+                <li>
+                  <span className="font-medium">
+                    {t('tokensPage.banner.title', { count: longLivedRoot })}
+                  </span>{' '}
+                  {t('tokensPage.banner.body')}
+                </li>
+              ) : null}
+            </ul>
+          </Banner>
+        ) : null
       }
     >
       {brand.DocsURL ? (

@@ -61,6 +61,10 @@ The dashboard shows a banner on every page of a local instance with the data dir
 
 Stopping or resetting does not remove containers that apps already started. Remove them with `docker rm -f` when you are done.
 
+## Experimental: managed VM on macOS
+
+On Apple silicon Macs, an experimental private Linux VM can run Levelrail instead of `dev`, so apps run isolated from your files. It is not yet proven outside one test Mac. See [Desktop runtime](/desktop-runtime).
+
 ## What it is not
 
 Local mode is for developing and trying things out. It is not a way to host anything for other people: it refuses to bind a non-loopback address, serves plain HTTP, and keeps its admin password in a file in your home directory. For a real server, see [Installing](/installing).

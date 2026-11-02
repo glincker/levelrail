@@ -228,3 +228,18 @@ func TestGitSourceBuild_DetectRequiresConnectedSource(t *testing.T) {
 		t.Fatalf("status = %d, want 404", rec.Code)
 	}
 }
+
+func TestGitSourceBuild_StaticSPAIsStoredAndReported(t *testing.T) {
+	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	connectGitSource(t, rt, cookie, `{"repo_url":"https://github.com/org/site.git","branch":"main","build_type":"static","static_spa":true}`)
+	rec := layoutReq(t, rt, cookie, http.MethodGet, "/api/v1/apps/web/git-source", "")
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"static_spa":true`) {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	rec = layoutReq(t, rt, cookie, http.MethodPut, "/api/v1/apps/web/git-source/build", `{"build_type":"static","static_spa":false}`)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"static_spa":false`) {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+}

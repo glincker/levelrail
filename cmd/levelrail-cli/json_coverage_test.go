@@ -11,6 +11,15 @@ import (
 // with the reason. Keep it short: a command that returns data or a status
 // an agent would branch on belongs on --json, not in this list.
 var jsonExempt = map[string]string{
+	"vm init":                       "host-local lifecycle command, prints progress lines",
+	"vm start":                      "host-local lifecycle command, prints the dashboard URL",
+	"vm stop":                       "host-local lifecycle command, prints one line",
+	"vm shell":                      "interactive guest shell, needs a TTY",
+	"vm set":                        "host-local setting change, prints one line",
+	"vm export":                     "host-local archive writer, prints the path and checksum",
+	"vm reset":                      "host-local deletion, prints the deleted paths",
+	"vm upgrade":                    "host-local lifecycle command, prints progress lines",
+	"vm uninstall":                  "host-local deletion, prints the deleted paths",
 	"completion bash":               "prints a shell script meant to be sourced",
 	"completion zsh":                "prints a shell script meant to be sourced",
 	"completion fish":               "prints a shell script meant to be sourced",

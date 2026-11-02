@@ -43,6 +43,7 @@ function plugin(over: Partial<Plugin> = {}): Plugin {
     installed_at: '',
     installed_by: '',
     last_error: '',
+    egress_mode: 'open',
     ...over,
   }
 }

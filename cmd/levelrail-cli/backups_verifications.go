@@ -42,13 +42,16 @@ func printBackupVerificationsTable(out io.Writer, verifications []backupVerifica
 	_, _ = fmt.Fprintln(tw, "ID\tSTATUS\tCHECKSUM\tSIZE\tFORMAT\tCHECKED BY\tSTARTED\tFINISHED")
 	for _, v := range verifications {
 		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-			v.ID, v.Status, checkMark(v.ChecksumMatch), checkMark(v.SizeMatch), checkMark(v.FormatValid), v.CheckedBy, v.StartedAt, v.FinishedAt)
+			v.ID, v.Status, checkMark(v.Status, v.ChecksumMatch), checkMark(v.Status, v.SizeMatch), checkMark(v.Status, v.FormatValid), v.CheckedBy, v.StartedAt, v.FinishedAt)
 	}
 	_ = tw.Flush()
 }
 
-// Renders pass/fail as 'ok'/'FAIL' so failures stand out.
-func checkMark(ok bool) string {
+// Renders pass/fail as 'ok'/'FAIL' so failures stand out; a run still in flight has no verdict yet.
+func checkMark(status string, ok bool) string {
+	if status == "running" || status == "pending" || status == "queued" {
+		return status
+	}
 	if ok {
 		return "ok"
 	}
@@ -70,5 +73,5 @@ Flags:
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
-`, prog, envAPIToken, envAPIURL, defaultAPIURL)
+`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }

@@ -157,3 +157,16 @@ func TestDefaultLogBudgetBytes(t *testing.T) {
 		t.Errorf("got %d", got)
 	}
 }
+
+func TestLogBudgetSourceAppliesLive(t *testing.T) {
+	t.Cleanup(func() { logBudgetSource.Store(nil) })
+	mb := int64(64)
+	SetLogBudgetSource(func() int64 { return mb << 20 })
+	if DefaultLogBudgetBytes() != 64<<20 {
+		t.Fatalf("budget = %d", DefaultLogBudgetBytes())
+	}
+	mb = 0
+	if DefaultLogBudgetBytes() != 0 {
+		t.Fatal("0 must mean unlimited")
+	}
+}

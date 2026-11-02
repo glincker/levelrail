@@ -99,6 +99,39 @@ To publish an app on a host port and open it here in one step, see [App ports an
 
 `ufw` does not cover ports Docker publishes: they skip the INPUT chain. The [Exposure audit](/exposure-audit) lists which of your containers are reachable from outside and can restrict them with DOCKER-USER rules.
 
+## iptables-based hosts
+
+Some images, including the Ubuntu images Oracle Cloud ships, use plain `iptables` with a saved ruleset instead of `ufw`. On those hosts the INPUT chain often ends in a catch-all `REJECT`. A rule added with `iptables -A` lands after that `REJECT` and is never reached, so the port stays closed.
+
+What Levelrail does here:
+
+- Reads only. `levelrail-cli doctor` reports the `host_firewall_iptables` check when iptables is the firewall in use, and says so when a `REJECT` or `DROP` sits before `ACCEPT` rules.
+- Prints the exact commands to open a port correctly (insert before the `REJECT`) and to persist it. Nothing is applied.
+- Lists your published ports and which layers they need opened (`published_port_reachability`). Ports bound only to loopback (127.0.0.1 or ::1) are listed as private and need no firewall change. It does not probe from outside, so it never claims a port is reachable.
+- Reuses one doctor result for `APP_DASHBOARD_CACHE_TTL` (default 5 seconds), so a check run right after you change a firewall rule can still show the old result. Wait that long and run `levelrail-cli doctor` again.
+
+What Levelrail does not do:
+
+- It does not write, reorder or save iptables or nftables rules. The managed rules above are `ufw` only.
+- It cannot see or change the cloud provider's own rules (a VCN security list, a network security group, a security group). Those are a separate layer, and a port needs both open.
+
+To open a port by hand, insert before the `REJECT` (position 5 is an example, doctor prints yours) and save:
+
+```bash
+sudo iptables -I INPUT 5 -p udp --dport 19132 -j ACCEPT
+sudo netfilter-persistent save
+```
+
+On a stock Oracle Ubuntu image this was checked: rule 5 was `REJECT --reject-with icmp-host-prohibited`, inserting at positions 5 and 6 worked, `netfilter-persistent save` wrote `/etc/iptables/rules.v4`, and the rules survived a reboot. See [Install on Oracle Cloud Always Free](/install-on-oracle-cloud).
+
+Without `netfilter-persistent`, use `sudo sh -c 'iptables-save > /etc/iptables/rules.v4'`. Docker-published ports are forwarded rather than passed through INPUT. On that image an nginx container published on TCP 25565 was reachable from outside with only the cloud rule, and the `REJECT` packet counter did not move. Services listening on the host itself (the dashboard, ingress on 80 and 443) need the INPUT accept. This was tested for TCP only, not UDP. Confirm on your own host with an outside connection test.
+
+To tell which layer blocks a port, look at how the connection fails. A timeout means the cloud firewall dropped it. "Connection refused" means the host answered, either because nothing listens or because the host `REJECT` rule did. Watch the counters with `sudo iptables -L INPUT -v -n --line-numbers` while you retry. If the `REJECT` count grows, the host firewall is the blocker.
+
+The `host_firewall_iptables` and other cloud checks are available from the release that includes them. A release published before them does not show them in `levelrail-cli doctor`.
+
+The cloud checks are optional. Set `APP_DOCTOR_CLOUD_CHECKS=off` to skip them, `APP_DOCTOR_CLOUD_METADATA=on` to allow one short link-local metadata call (timeout `APP_DOCTOR_CLOUD_METADATA_TIMEOUT`, default 300ms), and `APP_DOCTOR_ORACLE_IDLE_PERCENT` and `APP_DOCTOR_ORACLE_IDLE_DAYS` to change the figures quoted in the informational `idle_reclaim_risk` note (defaults 20 and 7). Oracle's policy can change; read the [current terms](https://docs.oracle.com/en-us/iaas/Content/FreeTier/resourceref.htm).
+
 ## Troubleshooting
 
 ### Ports 80 or 443 report as "blocked" in the preflight check

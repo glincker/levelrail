@@ -1,0 +1,23 @@
+id: isso
+name: Isso
+description: A lightweight self-hosted comment server for static sites with a small JavaScript embed. Comments live in a SQLite file on a volume.
+icon: chat-circle
+category: Productivity
+documentation_url: https://github.com/isso-comments/isso
+source_repo: https://github.com/isso-comments/isso
+license: MIT
+license_class: permissive
+license_url: https://github.com/isso-comments/isso/blob/master/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 134217728
+domains:
+  - service: isso
+    port: 8080
+    description: Public address of Isso.
+healthcheck:
+  service: isso
+  port: 8080
+  path: /info

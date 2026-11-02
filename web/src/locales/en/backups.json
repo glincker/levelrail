@@ -388,6 +388,17 @@
     "loading": "Loading...",
     "loadOlder": "Load older entries"
   },
+  "baseSchedule": {
+    "title": "Base backup schedule",
+    "description": "Take base backups on their own cron, independent of the dump schedule. Leave empty to take one after each scheduled dump.",
+    "cronLabel": "Cron expression",
+    "cronPlaceholder": "0 3 * * 0",
+    "targetLabel": "Backup target ID",
+    "targetPlaceholder": "Defaults to the database backup target",
+    "save": "Save schedule",
+    "saving": "Saving...",
+    "saved": "Base backup schedule saved."
+  },
   "tables": {
     "restores": "Restores",
     "cloneDatabases": "Databases restored as new",

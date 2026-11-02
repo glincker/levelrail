@@ -1,0 +1,27 @@
+services:
+  openclaw-gateway:
+    image: ghcr.io/openclaw/openclaw:2026.10.5
+    x-levelrail-strategy: recreate
+    x-levelrail-strategy-reason: The gateway locks its state volume, so the old container must stop before the new one starts (brief downtime on each deploy).
+    command:
+      - sh
+      - -c
+      - |
+        [ -f /home/node/.openclaw/openclaw.json ] || printf '{gateway:{trustedProxies:["${TRUSTED_PROXY_CIDR}"]}}\n' > /home/node/.openclaw/openclaw.json
+        exec node dist/index.js gateway --bind lan --port 18789 --allow-unconfigured
+    ports: ["18789:18789"]
+    environment:
+      OPENCLAW_GATEWAY_TOKEN: $SERVICE_HEX_32_GATEWAYTOKEN
+      OPENCLAW_GATEWAY_PORT: "18789"
+      OPENCLAW_STATE_DIR: /home/node/.openclaw
+      OPENCLAW_CONFIG_DIR: /home/node/.openclaw
+      OPENCLAW_WORKSPACE_DIR: /home/node/.openclaw/workspace
+      TZ: UTC
+    volumes:
+      - openclaw_data:/home/node/.openclaw
+    healthcheck:
+      test: ["CMD", "node", "dist/docker-healthcheck.js"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s

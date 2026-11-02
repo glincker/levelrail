@@ -3,6 +3,8 @@ package ingress
 import (
 	"net"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 // fallbackDomainSuffix is sslip.io's own wildcard DNS convention: any
@@ -112,4 +114,11 @@ func sanitizeDNSLabel(s string) string {
 		}
 	}
 	return strings.Trim(b.String(), "-")
+}
+
+// ServesHTTP reports whether svc has a web port to route. An app whose only
+// ports are published host ports (a game server) has no HTTP route, so it must
+// not get an automatic hostname or a certificate for one.
+func ServesHTTP(svc store.DesiredService) bool {
+	return svc.Port != 0 || len(svc.PublishedPorts) == 0
 }

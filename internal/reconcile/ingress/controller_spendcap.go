@@ -55,7 +55,7 @@ func (c *Controller) applySpendCaps(ctx context.Context, services []store.Desire
 			continue
 		}
 		hosts := routedDomains(svc, envSets)
-		if len(hosts) == 0 && !fallbackOff {
+		if len(hosts) == 0 && !fallbackOff && ingress.ServesHTTP(svc) {
 			if h, ok := fallbacks.Domain(svc.Name); ok {
 				hosts = []string{h}
 			}

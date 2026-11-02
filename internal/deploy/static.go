@@ -155,6 +155,9 @@ func (p *Pipeline) deployStatic(ctx context.Context, req Request, progress func(
 	}
 
 	p.finishStaticPublish(ctx, req, progress, stats, duration, held)
+	if !held {
+		p.pruneStaticReleases(ctx, req.ServiceName)
+	}
 
 	// Best-effort, secondary to the deploy itself, the identical
 	// "must never block the real operation" choice deployDockerfile

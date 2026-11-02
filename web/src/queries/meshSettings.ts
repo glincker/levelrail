@@ -85,6 +85,7 @@ async function updateMeshSettings(
 export function useUpdateMeshSettings() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: updateMeshSettings,
     onSuccess: (data) => {
       queryClient.setQueryData(meshSettingsKeys.all, data)

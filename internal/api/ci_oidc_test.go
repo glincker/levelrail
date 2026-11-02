@@ -35,6 +35,7 @@ func ciExchange(t *testing.T, rt *Router, app string) *httptest.ResponseRecorder
 }
 
 func TestCIOIDCExchangeScopesTokenToTrustedApp(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -84,6 +85,7 @@ func TestCIOIDCExchangeScopesTokenToTrustedApp(t *testing.T) {
 }
 
 func TestCIOIDCExchangeRejections(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -128,6 +130,7 @@ func TestCIOIDCExchangeRejections(t *testing.T) {
 }
 
 func TestCITrustValidationAndWorkflow(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -178,6 +181,7 @@ func (v *ciProviderTestVerifier) VerifyProvider(ctx context.Context, raw string,
 }
 
 func TestCIOIDCExchangeGitLabAndCircleCI(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -273,6 +277,7 @@ func TestCIOIDCExchangeGitLabAndCircleCI(t *testing.T) {
 }
 
 func TestCITrustMatchesKeepsProvidersApart(t *testing.T) {
+	t.Parallel()
 	github := store.CIOIDCTrust{Provider: ciProviderGitHub, Repository: "acme/web", RefPattern: "refs/heads/main"}
 	gitlab := store.CIOIDCTrust{Provider: ciProviderGitLab, Issuer: "https://gitlab.com", Repository: "acme/web", RefPattern: "refs/heads/main"}
 	glClaims := CIClaims{Provider: ciProviderGitLab, Issuer: "https://gitlab.com", Repository: "acme/web", Ref: "refs/heads/main"}

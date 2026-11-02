@@ -79,6 +79,11 @@ type Engine struct {
 	// ReconcileAll that was already going to happen anyway.
 	nudge chan struct{}
 
+	// bootDelays and firstEventDelay schedule extra passes after Run starts
+	// and after the first docker event, see SetBootPasses.
+	bootDelays      []time.Duration
+	firstEventDelay time.Duration
+
 	started atomic.Bool
 
 	guard *Guard
@@ -204,6 +209,15 @@ func (e *Engine) Guard() *Guard { return e.guard }
 // finish, for at most d, instead of being cut mid-operation. Zero keeps the
 // old behavior of cancelling the pass with the context.
 func (e *Engine) SetDrainTimeout(d time.Duration) { e.drainTimeout = d }
+
+// SetBootPasses schedules extra passes at each delay after Run starts, and one
+// firstEvent after the first docker event. After a host reboot Docker may
+// publish loopback ports after the first pass, and only the resync tick would
+// otherwise correct the routes. Zero or negative values are skipped.
+func (e *Engine) SetBootPasses(afterStart []time.Duration, firstEvent time.Duration) {
+	e.bootDelays = afterStart
+	e.firstEventDelay = firstEvent
+}
 
 // pass runs one ReconcileAll that survives a shutdown signal for drainTimeout.
 func (e *Engine) pass(ctx context.Context) {
@@ -429,6 +443,14 @@ func (e *Engine) Run(ctx context.Context, events <-chan docker.Event, resyncInte
 	}
 	pass()
 
+	for _, d := range e.bootDelays {
+		if d > 0 {
+			t := time.AfterFunc(d, e.Nudge)
+			defer t.Stop()
+		}
+	}
+	firstEventSeen := false
+
 	ticker := time.NewTicker(resyncInterval)
 	defer ticker.Stop()
 
@@ -480,6 +502,13 @@ func (e *Engine) Run(ctx context.Context, events <-chan docker.Event, resyncInte
 				e.logger.Warn("docker event stream closed, continuing on resync ticker alone")
 				events = nil // avoid a hot loop selecting on a closed, always-ready channel
 				continue
+			}
+			if !firstEventSeen {
+				firstEventSeen = true
+				if e.firstEventDelay > 0 {
+					t := time.AfterFunc(e.firstEventDelay, e.Nudge)
+					defer t.Stop()
+				}
 			}
 			e.logger.Debug("event triggered reconcile",
 				slog.String("container", ev.ContainerName),

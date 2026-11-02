@@ -1,0 +1,9 @@
+services:
+  blackbox:
+    image: prom/blackbox-exporter:v0.29.1
+    ports: ["9115"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:9115/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

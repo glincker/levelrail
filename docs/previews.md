@@ -41,7 +41,7 @@ A preview inherits the app's plain environment, minus database connection variab
 | `seed` | A new database restored from the latest succeeded backup of the named seed database, in the background. Without a backup or a restore runner the preview keeps an empty database and says so |
 | `shared` | The production database. Opt in only for read-mostly apps you trust: every preview can read and change production data |
 
-Databases declared in `app.yaml` with `ephemeralInPreviews` or `isolatedInPreviews` keep working as before and take precedence for multi-service previews.
+Databases declared in `app.yaml` with `ephemeralInPreviews` or `isolatedInPreviews` keep working as before and take precedence for multi-service previews. Add `seedFrom: latest` to an ephemeral database to start it from the latest succeeded backup of the database with the same key instead of empty; the default `none` starts empty, and a missing backup, a different engine or low free disk falls back to empty with the reason shown on the preview.
 
 The name matching for `none` is a heuristic. If a credential has an unusual name, set it to an empty value with a preview-only override.
 

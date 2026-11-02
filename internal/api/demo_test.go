@@ -34,6 +34,7 @@ func postDemo(rt *Router, target, body string) *httptest.ResponseRecorder {
 }
 
 func TestDemoInfoOffOnRealInstance(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouter(t)
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/demo", nil))
@@ -51,6 +52,7 @@ func TestDemoInfoOffOnRealInstance(t *testing.T) {
 }
 
 func TestDemoSession(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		verifier   HumanVerifier
@@ -82,6 +84,7 @@ func TestDemoSession(t *testing.T) {
 }
 
 func TestDemoSessionRateLimit(t *testing.T) {
+	t.Parallel()
 	rt := demoRouter(t, DemoConfig{SessionsPerMinute: 2})
 	var codes []int
 	for i := 0; i < 3; i++ {
@@ -93,6 +96,7 @@ func TestDemoSessionRateLimit(t *testing.T) {
 }
 
 func TestDemoSessionIsReadOnlyVisitor(t *testing.T) {
+	t.Parallel()
 	rt := demoRouter(t, DemoConfig{})
 	rec := postDemo(rt, "/api/v1/demo/session", `{}`)
 	var cookie *http.Cookie
@@ -116,6 +120,7 @@ func TestDemoSessionIsReadOnlyVisitor(t *testing.T) {
 }
 
 func TestDemoCTAAndStats(t *testing.T) {
+	t.Parallel()
 	rt := demoRouter(t, DemoConfig{})
 	tests := []struct {
 		body   string
@@ -137,6 +142,7 @@ func TestDemoCTAAndStats(t *testing.T) {
 }
 
 func TestDemoInfoEnabled(t *testing.T) {
+	t.Parallel()
 	reset := time.Date(2026, 10, 15, 4, 0, 0, 0, time.UTC)
 	rt := demoRouter(t, DemoConfig{Username: "demo", Password: "demo-readonly", InstallCommand: "curl install | sh", ResetsAt: func() time.Time { return reset }})
 	rec := httptest.NewRecorder()

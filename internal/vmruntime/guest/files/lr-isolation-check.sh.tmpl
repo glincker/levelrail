@@ -1,0 +1,109 @@
+#!/bin/bash
+# Boot-time isolation self-check. Writes the result to a file the host reads over limactl.
+set -u
+STATUS_FILE="{{.StatusPath}}"
+GW="{{.HostGateway}}"
+DNS_PROBE="{{index .DNSServers 0}}"
+LAN_PROBE="{{.LANProbe}}"
+TIMEOUT="${LR_PROBE_TIMEOUT:-{{.ProbeTimeoutSec}}}"
+EXPECTED_SHARES="{{.ExpectedShares}}"
+NS=lrchk
+LAN=lrchklan
+results=""
+overall=pass
+
+BOOT_ID=$(cat /proc/sys/kernel/random/boot_id)
+
+add() { # name result detail
+  results="${results:+$results,}{\"name\":\"$1\",\"result\":\"$2\",\"detail\":\"$3\"}"
+  [ "$2" = pass ] || overall=fail
+}
+
+cleanup() {
+  ip netns del $NS 2>/dev/null
+  ip netns del $LAN 2>/dev/null
+  ip link del lrchk2 2>/dev/null
+  ip link del lrchk0 2>/dev/null
+  nft delete table ip lr_check 2>/dev/null
+  for i in lrchk0 lrchk2; do
+    iptables -D DOCKER-USER -i $i -j ACCEPT 2>/dev/null
+    iptables -D DOCKER-USER -o $i -j ACCEPT 2>/dev/null
+  done
+}
+trap cleanup EXIT
+cleanup
+
+# Docker sets FORWARD to drop, so the probe links are let through DOCKER-USER (after our drops) or every probe would pass for the wrong reason.
+# rc 124 means the packet was silently dropped, anything else means the host answered.
+probe() {
+  ip netns exec $NS timeout "$TIMEOUT" bash -c "exec 3<>/dev/tcp/$1/$2" 2>/dev/null
+  [ $? -ne 124 ]
+}
+
+if nft list chain inet lr_isolation forward 2>/dev/null | grep -q "ip daddr $GW drop"; then
+  add rules_loaded pass ok
+else
+  add rules_loaded fail missing
+fi
+
+# The control plane carves app networks from APP_NETWORK_POOL; a pool outside the allowed Docker range is silently firewalled.
+APP_POOL="{{.AppNetworkPool}}"
+ENV_POOL=$(sed -n 's/^APP_NETWORK_POOL=//p' /etc/levelrail/controlplane.env 2>/dev/null | tail -n1 | tr -d '"')
+[ -n "$ENV_POOL" ] && APP_POOL="$ENV_POOL"
+if python3 -c 'import ipaddress,sys;sys.exit(0 if ipaddress.ip_network(sys.argv[1]).subnet_of(ipaddress.ip_network(sys.argv[2])) else 1)' "$APP_POOL" "{{.DockerPool}}" 2>/dev/null; then
+  add app_pool_allowed pass ok
+else
+  add app_pool_allowed fail pool_outside_allowed_range
+fi
+
+if grep -q '"ip": "{{.PublishIP}}"' /etc/docker/daemon.json 2>/dev/null; then
+  add publish_loopback pass ok
+else
+  add publish_loopback fail daemon_json
+fi
+
+if ss -H -ltnp 2>/dev/null | awk '$4 ~ /^(0\.0\.0\.0|\[::\]|\*):/' | grep -q docker-proxy; then
+  add no_wildcard_publish fail docker_proxy_wildcard
+else
+  add no_wildcard_publish pass ok
+fi
+
+if ss -H -ltn 2>/dev/null | grep -qE ':(2375|2376)\b'; then
+  add no_docker_tcp fail listening
+else
+  add no_docker_tcp pass ok
+fi
+
+mounts=$(grep -cE ' (virtiofs|9p|fuse\.sshfs) ' /proc/mounts)
+if [ "$mounts" -eq "$EXPECTED_SHARES" ]; then
+  add host_mounts pass "$mounts"
+else
+  add host_mounts fail "$mounts"
+fi
+
+if ip netns add $NS && ip link add lrchk0 type veth peer name lrchk1 && ip link set lrchk1 netns $NS \
+  && ip addr add 10.99.99.1/24 dev lrchk0 && ip link set lrchk0 up \
+  && ip netns exec $NS sh -c 'ip addr add 10.99.99.2/24 dev lrchk1 && ip link set lrchk1 up && ip link set lo up && ip route add default via 10.99.99.1' \
+  && sysctl -qw net.ipv4.ip_forward=1 \
+  && nft add table ip lr_check \
+  && nft add chain ip lr_check post '{ type nat hook postrouting priority 100; }' \
+  && nft add rule ip lr_check post ip saddr 10.99.99.0/24 masquerade \
+  && iptables -I DOCKER-USER -i lrchk0 -j ACCEPT && iptables -I DOCKER-USER -o lrchk0 -j ACCEPT \
+  && iptables -I DOCKER-USER -i lrchk2 -j ACCEPT && iptables -I DOCKER-USER -o lrchk2 -j ACCEPT \
+  && ip netns add $LAN && ip link add lrchk2 type veth peer name lrchk3 && ip link set lrchk3 netns $LAN \
+  && ip addr add 10.99.98.1/24 dev lrchk2 && ip link set lrchk2 up \
+  && ip netns exec $LAN sh -c 'ip addr add {{.LANProbe}}/24 dev lrchk3 && ip link set lrchk3 up && ip link set lo up && ip route add default via 10.99.98.1' \
+  && { ip netns exec $LAN timeout 20 python3 -c 'import socket,time;s=socket.socket();s.bind(("{{.LANProbe}}",80));s.listen(8);time.sleep(20)' >/dev/null 2>&1 & sleep 1; }; then
+  if probe "$DNS_PROBE" 53; then add dns_allowed pass ok; else add dns_allowed fail probe_control; fi
+  if probe "$GW" 22; then add host_unreachable fail reached; else add host_unreachable pass dropped; fi
+  # The LAN target really listens, so a missing drop rule makes this probe connect and fail the check.
+  if probe "$LAN_PROBE" 80; then add lan_unreachable fail reached; else add lan_unreachable pass dropped; fi
+else
+  add probe_setup fail netns
+fi
+
+mkdir -p "$(dirname "$STATUS_FILE")"
+printf '{"result":"%s","boot_id":"%s","checked_at":"%s","checks":[%s]}\n' "$overall" "$BOOT_ID" "$(date -u +%FT%TZ)" "$results" > "$STATUS_FILE.tmp"
+chmod 0644 "$STATUS_FILE.tmp"
+mv "$STATUS_FILE.tmp" "$STATUS_FILE"
+[ "$overall" = pass ]

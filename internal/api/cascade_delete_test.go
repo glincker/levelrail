@@ -31,6 +31,7 @@ func seedCascade(t *testing.T, db *store.DB) {
 }
 
 func TestCascadeDelete(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		target     string
@@ -88,6 +89,7 @@ func TestCascadeDelete(t *testing.T) {
 }
 
 func TestCascadeDelete_KeepsDatabaseUsedOutsideScopeAndResumes(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -128,6 +130,7 @@ func TestCascadeDelete_KeepsDatabaseUsedOutsideScopeAndResumes(t *testing.T) {
 }
 
 func TestDelete_WithoutCascadeStillDetaches(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedCascade(t, db)

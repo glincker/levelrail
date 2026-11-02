@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"os"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/agent"
@@ -255,7 +254,7 @@ func drainTargets(db *store.DB) func(context.Context) ([]telemetry.DrainConfig, 
 }
 
 // Mirrors runMetricsRetentionSweep; retention is env-configurable, the interval is not.
-func runLogsRetentionSweep(ctx context.Context, db *telemetry.DB, logger *slog.Logger) {
+func runLogsRetentionSweep(ctx context.Context, db *telemetry.DB, retention func() time.Duration, logger *slog.Logger) {
 	loop := footprint.Track("logs retention sweep", logsRetentionSweepInterval)
 	defer loop.Active()()
 	ticker := time.NewTicker(logsRetentionSweepInterval)
@@ -263,7 +262,7 @@ func runLogsRetentionSweep(ctx context.Context, db *telemetry.DB, logger *slog.L
 
 	sweep := func() {
 		defer loop.Observe(time.Now(), nil)
-		cutoff := time.Now().Add(-logsRetention())
+		cutoff := time.Now().Add(-retention())
 		deleted, err := db.RetainLogs(ctx, cutoff)
 		if err != nil {
 			logger.Error("logs retention sweep failed", slog.String("error", err.Error()))
@@ -300,20 +299,4 @@ func runLogsRetentionSweep(ctx context.Context, db *telemetry.DB, logger *slog.L
 			sweep()
 		}
 	}
-}
-
-func logsRetention() time.Duration {
-	fallback := defaultLogsRetention
-	if profileRetention > 0 {
-		fallback = profileRetention
-	}
-	raw := os.Getenv("APP_LOGS_RETENTION")
-	if raw == "" {
-		return fallback
-	}
-	d, err := time.ParseDuration(raw)
-	if err != nil {
-		return fallback
-	}
-	return d
 }

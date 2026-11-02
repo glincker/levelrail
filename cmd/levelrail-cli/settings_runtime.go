@@ -115,7 +115,7 @@ func runSettingsRuntimeSet(prog string, args []string, stdout, stderr io.Writer,
 	var confirmWeakening bool
 	fs.BoolVar(&confirmWeakening, "confirm-weakening", false, "required to change a setting whose risk is weakens_security (the change is audited)")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s settings runtime set KEY VALUE [flags]\n\nVALUE is true or false (bool), a Go duration such as 10m (duration), an integer\n(int) or a comma-separated list (string_list). Settings whose risk is\nweakens_security need --confirm-weakening.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s settings runtime set KEY VALUE [flags]\n\nVALUE is true or false (bool), a Go duration such as 10m (duration), an integer\n(int), one of the allowed words (string) or a comma-separated list (string_list). Settings whose risk is\nweakens_security need --confirm-weakening.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -138,11 +138,11 @@ func runSettingsRuntimeSet(prog string, args []string, stdout, stderr io.Writer,
 	}
 	weakening := current.Risk == runtimeRiskWeakensSecurity
 	if weakening && !confirmWeakening {
-		_, _ = fmt.Fprintf(stderr, "%s: %s weakens a security protection; re-run with --confirm-weakening to change it (the change is audited)\n", prog, key)
+		_, _ = fmt.Fprintf(stderr, "%s: changing %s can weaken a security protection (turning it off, shortening it or raising a limit); re-run with --confirm-weakening to change it (the change is audited)\n", prog, key)
 		return exitValidation
 	}
 
-	value, err := parseRuntimeSettingValue(current.Kind, raw)
+	value, err := parseRuntimeSettingValue(current.Kind, raw, current.AllowedStrings)
 	if err != nil {
 		_, _ = fmt.Fprintf(stderr, "%s: set runtime setting %s: %v\n", prog, key, err)
 		return exitValidation
@@ -157,8 +157,10 @@ func runSettingsRuntimeSet(prog string, args []string, stdout, stderr io.Writer,
 
 func runSettingsRuntimeReset(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "settings runtime reset", "print the reset setting as JSON to stdout and nothing else", stderr)
+	var confirmWeakening bool
+	fs.BoolVar(&confirmWeakening, "confirm-weakening", false, "required when the reset restores a weaker environment or default value for a weakens_security setting")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s settings runtime reset KEY [flags]\n\nDeletes the saved value so the setting falls back to its environment variable or default.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s settings runtime reset KEY [flags]\n\nDeletes the saved value so the setting falls back to its environment variable or default.\nA reset that restores a weaker value needs --confirm-weakening.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -171,7 +173,7 @@ func runSettingsRuntimeReset(prog string, args []string, stdout, stderr io.Write
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-	setting, err := client.DeleteRuntimeSetting(context.Background(), rest[0])
+	setting, err := client.DeleteRuntimeSetting(context.Background(), rest[0], confirmWeakening)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("reset runtime setting %s: %w", rest[0], err))
 	}
@@ -208,7 +210,7 @@ func runSettingsRuntimeApply(prog string, args []string, stdout, stderr io.Write
 
 // parseRuntimeSettingValue converts the raw CLI argument into the typed value the
 // PUT body carries for the setting's kind.
-func parseRuntimeSettingValue(kind, raw string) (any, error) {
+func parseRuntimeSettingValue(kind, raw string, allowed []string) (any, error) {
 	switch kind {
 	case "bool":
 		switch strings.ToLower(strings.TrimSpace(raw)) {
@@ -229,6 +231,17 @@ func parseRuntimeSettingValue(kind, raw string) (any, error) {
 			return nil, fmt.Errorf("value must be an integer, got %q", raw)
 		}
 		return strconv.Itoa(n), nil
+	case "string":
+		v := strings.TrimSpace(raw)
+		if len(allowed) == 0 {
+			return v, nil
+		}
+		for _, a := range allowed {
+			if strings.EqualFold(a, v) {
+				return a, nil
+			}
+		}
+		return nil, fmt.Errorf("value must be one of %s, got %q", strings.Join(allowed, ", "), raw)
 	case "string_list":
 		return splitRuntimeSettingList(raw), nil
 	default:

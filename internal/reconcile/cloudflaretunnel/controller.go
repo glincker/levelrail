@@ -20,6 +20,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -30,7 +32,18 @@ import (
 // image is the official Cloudflare Tunnel daemon image, run as a
 // container like every other process this codebase manages: Levelrail
 // never shells out to a cloudflared binary itself.
-const image = "cloudflare/cloudflared:latest"
+const defaultImage = "cloudflare/cloudflared:2026.10.7"
+
+// imageEnv overrides the pinned tag so an operator can bump or mirror it
+// without a new release.
+const imageEnv = "APP_CLOUDFLARED_IMAGE"
+
+func imageRef() string {
+	if v := strings.TrimSpace(os.Getenv(imageEnv)); v != "" {
+		return v
+	}
+	return defaultImage
+}
 
 const defaultStopTimeout = 10 * time.Second
 
@@ -157,7 +170,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 
 	spec := docker.ContainerSpec{
 		Name:    target,
-		Image:   image,
+		Image:   imageRef(),
 		Env:     map[string]string{tunnelEnvKey: token},
 		Command: []string{"tunnel", "--no-autoupdate", "run"},
 	}
@@ -175,7 +188,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		}
 		justDeployed = true
 
-	case !docker.SameImageRef(state.Image, image):
+	case !docker.SameImageRef(state.Image, imageRef()):
 		if err := c.replace(ctx, state, spec); err != nil {
 			return notReady("ReplaceFailed", err), fmt.Errorf("cloudflare-tunnel: %w", err)
 		}

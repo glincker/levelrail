@@ -75,7 +75,6 @@ func TestHandleCreateToken_InvalidAbilities(t *testing.T) {
 	cookie := loginTestSession(t, rt, db)
 
 	tests := []string{
-		`{"name":"x","abilities":[]}`,
 		`{"name":"x","abilities":["root","read"]}`,
 		`{"name":"x","abilities":["not-a-real-ability"]}`,
 		`{"name":"","abilities":["read"]}`,

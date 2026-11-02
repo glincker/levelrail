@@ -126,8 +126,8 @@
     "requested": "Requested abilities",
     "network": "Network access",
     "networkNone": "No network. The plugin cannot reach anything outside its container.",
-    "networkHosts": "Hosts the plugin says it needs: {{hosts}}. This list is declared by the plugin, not restricted.",
-    "networkNote": "A plugin with any declared host currently has general network access.",
+    "networkHosts": "Hosts the plugin says it needs: {{hosts}}.",
+    "networkNote": "These hosts are enforced only when the egress proxy is on. Until then, a plugin with any declared host has general network access.",
     "image": "Image",
     "signedBy": "Signed by key",
     "never": "Secrets are never stored by the plugin. The credential for a channel is sent with each delivery only.",
@@ -204,6 +204,26 @@
     "bad_signature": "Bad signature",
     "digest_mismatch": "Digest mismatch",
     "unverified": "Not verified"
+  },
+  "egress": {
+    "openTitle": "Declared hosts are not enforced",
+    "openBody": "Plugins that declare outbound hosts currently share a general network. Set APP_PLUGIN_EGRESS_MODE=proxy to restrict each plugin to the hosts it declared.",
+    "summary": {
+      "none": "No denied connections",
+      "last": "last {{when}}",
+      "help": "Counts since the egress proxy last restarted. The denied host names are in the proxy log, not here.",
+      "reasons": {
+        "host_not_allowed": "host not declared",
+        "blocked_address": "blocked address",
+        "resolve_failed": "DNS lookup failed",
+        "dial_failed": "connection failed",
+        "too_many_tunnels": "too many connections",
+        "rate_limited": "rate limited",
+        "bad_request": "malformed request",
+        "unknown_caller": "unknown caller"
+      },
+      "count": "Denied connections: {{count}}"
+    }
   },
   "review": {
     "verification": "Verification",

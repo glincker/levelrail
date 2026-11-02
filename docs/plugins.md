@@ -15,7 +15,7 @@ Plugins run third-party code on your server, next to a control plane that holds 
 
 - It runs in a container with a read-only root filesystem, every Linux capability dropped, no new privileges, a process limit and memory and CPU limits. It runs as an unprivileged user and never gets the Docker socket.
 - Its only mount is a private socket directory. It has no access to the control plane database, the master key, your apps' files or other plugins.
-- With no declared outbound hosts it has no network at all. With declared hosts it joins a dedicated network that is separate from your apps. The declared hosts are shown to you at approval but are not yet enforced per host, so treat a plugin that declares hosts as able to reach the internet.
+- With no declared outbound hosts it has no network at all. With declared hosts it joins a dedicated network that is separate from your apps, with container to container traffic switched off on a newly created network. By default (`APP_PLUGIN_EGRESS_MODE=open`) the declared hosts are shown at approval but not enforced per host, so treat such a plugin as able to reach the internet, and the dashboard says so. With `APP_PLUGIN_EGRESS_MODE=proxy` the network has no gateway and the plugin can only reach its declared hosts through an allowlisting proxy sidecar; see [Restricting plugin egress](#restricting-plugin-egress).
 - It receives only the event being delivered, its own non-secret config, and the credential for that one call. The control plane sends the credential with each call and never stores it in the plugin. A plugin must not persist or log it.
 - It receives alert text under the `read` ability. Log excerpts reach it only if you also approved `read:sensitive`.
 - A broken plugin cannot block alerting: calls have a timeout, a concurrency limit and a circuit breaker, and a failing plugin is restarted with backoff.
@@ -197,3 +197,36 @@ levelrail-cli plugins marketplace sources add --url https://plugins.example.com/
 - CDN providers and other kinds, Route53 as a DNS plugin, and plugins on remote nodes.
 - Per-host network enforcement and a supply chain scan of the plugin image.
 - Rootless Docker uid mapping for the socket directory.
+
+## Restricting plugin egress
+
+Set `APP_PLUGIN_EGRESS_MODE=proxy` to enforce declared hosts. The control plane then runs a small proxy container (the same image, started as `plugin-egress`) and gives every plugin with declared hosts a private network that has no route out. Each plugin gets its own proxy credential and can reach only the hosts in its approved list, on port 443 unless the entry names a port. Names are resolved by the proxy and any internal, loopback, link-local or metadata address is refused even if the name points to it.
+
+- Set `APP_PLUGIN_EGRESS_IMAGE` to the image that runs the proxy. Release builds default to the matching `ghcr.io/glincker/levelrail` tag; a development build must set it.
+- Fail closed: if the proxy is down or its image is missing, plugins that need the network stay stopped with the reason shown in their last error. They never fall back to the open network.
+- Switching to proxy mode replaces the plugin network once, so plugins with declared hosts restart.
+- Plugins must use their HTTP client's default proxy handling. A plugin that opens raw sockets, or ignores `HTTPS_PROXY`, cannot reach the network in proxy mode.
+- Refused requests are logged by the proxy (plugin, host, port, reason, no payload) and counted per plugin and reason.
+
+### What each mode enforces
+
+- `open` (default): declared hosts are shown at approval but are not enforced. A plugin with declared hosts shares a network with a gateway and can reach the internet. No sidecar runs, so there are no denial counts.
+- `proxy`: the plugin network has no gateway. Every outbound request goes through the sidecar, which allows only the plugin's approved hosts (and ports), resolves names itself and refuses internal, loopback, link-local and metadata addresses. A plugin with no declared hosts has no network in either mode.
+
+### Reading denial counts
+
+In proxy mode `GET /api/v1/plugins` and `GET /api/v1/plugins/{name}` carry an `egress_denials` object per plugin. It needs the same ability as listing plugins.
+
+```json
+"egress_denials": {
+  "total": 4,
+  "by_reason": { "host_not_allowed": 3, "blocked_address": 1 },
+  "last_denied": "2026-10-31T11:00:00Z"
+}
+```
+
+- Reasons: `host_not_allowed`, `blocked_address`, `resolve_failed`, `dial_failed`, `too_many_tunnels`, `rate_limited`, `bad_request`, `unknown_caller`.
+- Counts are since the sidecar last started and reset when it restarts. Only counts and the time of the latest refusal are kept: no hosts, URLs, paths, headers or credentials. The refused host is in the sidecar log line.
+- In open mode, or when the sidecar cannot be read, `total` is 0 and `by_reason` is empty. The control plane reads the sidecar at most once per `APP_PLUGIN_EGRESS_DENIALS_TTL` and never blocks a list call longer than `APP_PLUGIN_EGRESS_DENIALS_TIMEOUT`.
+- A rising `host_not_allowed` count usually means the plugin calls a host missing from its manifest. Add it in a new version and approve it again.
+- A plugin that talks to an address you configure yourself (a self-hosted chat server, for example) needs that host in its approved list.

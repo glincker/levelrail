@@ -308,6 +308,11 @@ Endpoints for:
 | GET | /api/v1/settings/heartbeat | AbilityRoot | handleGetHeartbeat |
 | PUT | /api/v1/settings/heartbeat | AbilityRoot | handlePutHeartbeat |
 | GET | /api/v1/security/advisories | AbilityRead | handleSecurityAdvisories |
+| GET | /api/v1/settings/ddns | AbilityRoot | handleGetDDNS |
+| PUT | /api/v1/settings/ddns | AbilityRoot | handlePutDDNS |
+| GET | /api/v1/settings/ddns/status | AbilityRoot | handleDDNSStatus |
+| GET | /api/v1/settings/deploy-url-copies | AbilityRead | handleGetDeployURLCopies |
+| PUT | /api/v1/settings/deploy-url-copies | AbilityRoot | handlePutDeployURLCopies |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -674,6 +679,11 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/analysis/reports | AbilityRead | handleListAnalysisReports |
 | POST | /api/v1/apps/{name}/analysis/reports | AbilityWrite | handleRunAnalysisReport |
 | POST | /api/v1/apps/{name}/advisory-refresh | AbilityDeploy | handleAdvisoryRefresh |
+| GET | /api/v1/apps/{name}/cdn | AbilityRead | handleGetAppCDN |
+| PUT | /api/v1/apps/{name}/cdn | AbilityWriteSensitive | handlePutAppCDN |
+| POST | /api/v1/apps/{name}/cdn/resync | AbilityWriteSensitive | handleResyncAppCDN |
+| GET | /api/v1/apps/{name}/game-status | AbilityRead | handleGetAppGameStatus |
+| GET | /api/v1/apps/{name}/export | AbilityRead | handleExportApp |
 
 </Accordion>
 
@@ -871,6 +881,7 @@ Endpoints for:
 | GET | /api/v1/databases/{name}/pooler | AbilityRead | handleGetDatabasePooler |
 | POST | /api/v1/databases/{name}/pooler | AbilityWriteSensitive | handleEnableDatabasePooler |
 | DELETE | /api/v1/databases/{name}/pooler | AbilityWriteSensitive | handleDisableDatabasePooler |
+| POST | /api/v1/databases/{name}/branches | AbilityWriteSensitive | handleBranchDatabase |
 
 ## Projects / Organizations / Environments
 
@@ -1119,6 +1130,10 @@ Endpoints for:
 | GET | /api/v1/settings/email/branding | AbilityRead | handleGetEmailBranding |
 | PUT | /api/v1/settings/email/branding | AbilityRoot | handleUpdateEmailBranding |
 | POST | /api/v1/settings/email/branding/preview | AbilityRoot | handlePreviewEmailBranding |
+| GET | /api/v1/settings/ingress/dns01 | AbilityRoot | handleGetIngressDNS01 |
+| PUT | /api/v1/settings/ingress/dns01 | AbilityRoot | handlePutIngressDNS01 |
+| GET | /api/v1/settings/ingress/cloudflare | AbilityRoot | handleGetIngressCloudflare |
+| PUT | /api/v1/settings/ingress/cloudflare | AbilityRoot | handlePutIngressCloudflare |
 
 </Accordion>
 
@@ -1171,6 +1186,10 @@ Endpoints for:
 | POST | /api/v1/registry-credentials/{id}/refresh | AbilityWriteSensitive | handleRefreshRegistryCredential |
 | GET | /api/v1/domains/dns-provider | AbilityRead | handleDomainDNSProvider |
 | GET | /api/v1/domains/dns-status | AbilityRead | handleDomainDNSStatus |
+| GET | /api/v1/domains/{domain}/cutover | AbilityRead | handleDomainCutover |
+| POST | /api/v1/domains/{domain}/cutover/certificate | AbilityRoot | handleCutoverCertificate |
+| DELETE | /api/v1/domains/{domain}/cutover/certificate | AbilityRoot | handleCutoverCertificateRevert |
+| GET | /api/v1/domains/{domain}/verify | AbilityRead | handleDomainCutoverVerify |
 
 ## Built-in Container Registry
 
@@ -1287,6 +1306,8 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/volumes/{volume}/files/content | AbilityWrite | handlePutVolumeFile |
 | DELETE | /api/v1/apps/{name}/volumes/{volume}/files/content | AbilityWrite | handleDeleteVolumeFile |
 | POST | /api/v1/apps/{name}/volumes/{volume}/files/restore | AbilityWrite | handleRestoreVolumeFile |
+| GET | /api/v1/apps/{name}/volumes/{volume}/export | AbilityWriteSensitive | handleExportVolume |
+| POST | /api/v1/apps/{name}/volumes/{volume}/import | AbilityWriteSensitive | handleImportVolume |
 
 ## App Storage / Database Attach
 
@@ -1317,6 +1338,8 @@ Endpoints for:
 | DELETE | /api/v1/apps/{name}/log-drain | AbilityWriteSensitive | handleClearAppLogDrain |
 | GET | /api/v1/audit-log/export | AbilityRoot | handleExportAuditLog |
 | GET | /api/v1/audit-log/verify | AbilityRoot | handleVerifyAuditLog |
+| GET | /api/v1/audit-log/anchor | AbilityRoot | handleGetAuditAnchor |
+| POST | /api/v1/audit-log/anchor-check | AbilityRoot | handleCheckAuditAnchors |
 
 `GET /api/v1/audit-log` accepts optional query params: `limit`, `before` (RFC3339 cursor), `path`, `method`, `client_kind` (exact match), `q` (case-insensitive substring across actor name, ability, method, path and remote address), `status=failed` (only `status_code >= 400`), and `format=csv`. All filters combine with AND and the CSV export honors them.
 
@@ -2127,6 +2150,7 @@ Routes that do not fit an existing group.
 | DELETE | /api/v1/mcp/oauth/clients/{id} | AbilityRoot | handleDeleteMCPClient |
 | GET | /api/v1/mail/dns/status | AbilityRead | handleMailDNSStatus |
 | GET | /api/v1/dns/zones/{provider}/{id} | AbilityRead | handleGetDNSZoneDetail |
+| POST | /api/v1/firewall/exposure/restrictions/{protocol}/{port}/confirm | AbilityRoot | handleExposureConfirm |
 | POST | /mcp | Public |  |
 
 ## See also

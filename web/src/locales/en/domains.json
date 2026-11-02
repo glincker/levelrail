@@ -559,9 +559,10 @@
         "error": "Error"
       },
       "certificate": {
-        "issued": "{{issuer}}, valid until {{date}}",
         "expired": "{{issuer}}, expired on {{date}}",
-        "pending": "Proxy default certificate, waiting for issuance"
+        "pending": "Proxy default certificate, waiting for issuance",
+        "valid": "{{issuer}}, valid until {{date}}",
+        "untrusted": "{{issuer}}, not trusted, valid until {{date}}"
       },
       "checked": "Checked {{time}}",
       "neverChecked": "Not checked yet",
@@ -571,7 +572,20 @@
       "verifyNotLive": "{{domain}} is not live yet.",
       "verifyFailed": "Could not verify {{domain}}.",
       "lastError": "Last problem: {{error}}",
-      "makeLive": "Make this domain live"
+      "makeLive": "Make this domain live",
+      "summary": {
+        "ready": "Certificate ready",
+        "waiting": "Waiting for the proxy to get a certificate",
+        "waitingSince": "Waiting for the proxy to get a certificate (since {{time}})",
+        "default": "Proxy is serving its default certificate: it could not get one",
+        "unwired": "Route not wired",
+        "unreachable": "Route not answering"
+      },
+      "retry": "Retry certificate request",
+      "retrying": "Retrying...",
+      "retryFailed": "Could not retry {{domain}}.",
+      "copy": "Copy",
+      "copied": "Copied"
     },
     "facts": {
       "title": "What Levelrail detected",
@@ -651,8 +665,37 @@
     "checking": "Checking...",
     "checkedAt": "Checked at {{time}}",
     "noAnswer": "no answer",
-    "propagatingHelp": "Public DNS already points this domain at this server. This server's own resolver keeps a \"not found\" answer for a while (often up to 30 minutes), so it will connect on its own. Nothing is wrong.",
-    "notFoundHelp": "No resolver has this record yet. Check the record at your DNS provider (type, name, value) and give it a minute. A new record is usually visible within a few minutes."
+    "propagatingHelp": "Public DNS already points this domain at this server. Some resolvers are still catching up; the list above shows which ones and when to try again.",
+    "notFoundHelp": "No resolver has this record yet. Check the record at your DNS provider (type, name, value) and give it a minute. A new record is usually visible within a few minutes.",
+    "ttl": "(ttl {{seconds}}s)",
+    "groups": {
+      "authoritative": "Authoritative name servers (source of truth)",
+      "public": "Public resolvers",
+      "local": "This server's resolver"
+    },
+    "verdict": {
+      "dns_ready": "DNS is ready",
+      "public_ready": "Public DNS is ready",
+      "not_found": "Record not found",
+      "points_elsewhere": "Points elsewhere",
+      "unknown": "Not checked"
+    },
+    "retryAt": "This server's resolver is ready to retry at {{time}}.",
+    "countdown": "({{left}} left)",
+    "flushIntro": "To clear this server's DNS cache now, run this on the host:",
+    "copyFlush": "Copy the flush command",
+    "hints": {
+      "local_stale": "DNS is correct at the authoritative servers. This server's own resolver still holds the old answer; nothing else is blocked.",
+      "local_stale_long": "This server's own resolver holds the old answer longer than expected. DNS is correct, so visitors and certificates are not affected; flush the cache or restart the resolver.",
+      "was_cloudflare_proxy": "This domain was proxied by Cloudflare; your DNS now points straight at the server, so visitors reach the server directly (the origin IP is no longer hidden).",
+      "waiting": "The record has not appeared on the authoritative servers yet. New records usually show within a few minutes.",
+      "check_zone": "Check the record is in the right DNS zone and spelled exactly.",
+      "check_aaaa": "Check there is no AAAA record pointing somewhere else.",
+      "check_cname": "Check the apex is not a CNAME that your provider flattens to a different address.",
+      "check_nameservers": "Check another DNS provider is not authoritative: the name servers at your registrar must be the ones holding this record."
+    },
+    "certPending": "Waiting for certificate",
+    "recheck": "Recheck DNS"
   },
   "goLive": {
     "loading": "Checking progress...",
@@ -1031,7 +1074,9 @@
   },
   "editor": {
     "title": "Domains",
-    "description": "Domains routed to this app through the ingress layer. Platform-wide ACME and primary domain settings live under <link>Domains</link>.",
+    "descriptionBefore": "Domains routed to this app through the ingress layer. Platform-wide ACME and primary domain settings live under ",
+    "descriptionLink": "Domains",
+    "descriptionAfter": ".",
     "dnsHintLink": "DNS record types explained",
     "dnsHint": "Point an A record at this server's IP address (or a CNAME at its hostname), then a TLS certificate is issued automatically once it resolves.",
     "empty": "No domains configured.",
@@ -1103,6 +1148,62 @@
       "off": "Certificates are off for this domain",
       "reason": "Reason",
       "logs": "Open logs"
+    }
+  },
+  "statusBar": {
+    "label": "Domains status",
+    "httpsOn": "HTTPS enabled",
+    "httpsOff": "HTTPS not enabled",
+    "address": "Server",
+    "fixHttps": "Fix: enable HTTPS",
+    "fixAddress": "Fix: check address",
+    "details": "Address details"
+  },
+  "cutover": {
+    "title": "Cutover checklist",
+    "loading": "Checking this server...",
+    "error": "Could not load the cutover checklist.",
+    "eta": "about {{minutes}} min",
+    "getCertificate": "Get certificate before switching DNS",
+    "revertChallenge": "Switch back to HTTP-01 for this domain",
+    "dns01ThisDomain": "Only this domain uses DNS-01 for its certificate. Other domains on this server keep their own challenge.",
+    "noProvider": "No DNS provider is connected, so HTTP-01 works only after the switch. Lower the record TTL to {{ttl}} seconds beforehand, or connect Cloudflare, Route53 or Google Cloud DNS.",
+    "runbook": "Certificate runbook",
+    "guide": "Move a domain with no downtime",
+    "ready": "Ready to switch: the app answers on this server for {{domain}} ({{cert}})",
+    "notReady": "Not ready to switch: the app does not answer on this server for {{domain}} yet",
+    "certReady": "certificate ready, no downtime expected",
+    "certPending": "certificate pending",
+    "proxied": "This name is proxied by Cloudflare. The cutover keeps working with the proxy on or off.",
+    "proxyDocs": "Cloudflare proxy docs",
+    "risk": {
+      "none": "No downtime expected",
+      "likely": "Downtime likely",
+      "unknown": "Downtime risk unknown"
+    },
+    "state": {
+      "pass": "passed",
+      "wait": "waiting",
+      "fail": "failed",
+      "skip": "not needed"
+    },
+    "steps": {
+      "app": "The app answers on this server",
+      "certificate": "The certificate is ready",
+      "current_dns": "Current DNS and TTL",
+      "switch_dns": "Switch DNS to this server",
+      "authoritative": "Verified from authoritative servers",
+      "live": "Verified end to end over the real name"
+    },
+    "verify": {
+      "loading": "Checking the live name...",
+      "error": "Could not check the live name.",
+      "recheck": "Check again",
+      "verdict": {
+        "PASS": "Ready",
+        "WARN": "Warnings",
+        "FAIL": "Failed"
+      }
     }
   }
 }

@@ -28,6 +28,7 @@ export async function keepTrialApp(name: string): Promise<KeepTrialResult> {
 export function useKeepTrialApp() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: keepTrialApp,
     onSuccess: (res) => {
       for (const name of [res.name, ...res.kept]) {

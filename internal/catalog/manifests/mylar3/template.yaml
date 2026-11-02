@@ -1,0 +1,24 @@
+id: mylar3
+name: Mylar3
+description: An automated comic book downloader that watches your series, finds new issues through your indexers and download client, and renames them into a library. GPL-3.0 licensed. Open the web UI, then add your indexers and download client under Configuration.
+icon: books
+category: Applications
+documentation_url: https://github.com/mylar3/mylar3/wiki
+source_repo: https://github.com/mylar3/mylar3
+license: GPL-3.0
+license_class: copyleft
+license_url: https://github.com/mylar3/mylar3/blob/master/LICENSE
+recommended_memory_bytes: 268435456
+env:
+  - key: TZ
+    label: Time zone
+    description: IANA time zone for logs and the scheduler.
+    default: Etc/UTC
+domains:
+  - service: mylar3
+    port: 8090
+    description: Public address of Mylar3.
+healthcheck:
+  service: mylar3
+  port: 8090
+  path: /

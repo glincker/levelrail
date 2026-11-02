@@ -173,7 +173,7 @@ var productivity2Templates = []Template{
     environment:
       PENPOT_FLAGS: "enable-login-with-password disable-email-verification"
       PENPOT_SECRET_KEY: $SERVICE_REALBASE64_64_SECRETKEY
-      PENPOT_PUBLIC_URI: ${SERVICE_FQDN_FRONTEND:-http://localhost:8080}
+      PENPOT_PUBLIC_URI: ${SERVICE_URL_FRONTEND:-http://localhost:8080}
       PENPOT_DATABASE_URI: postgresql://postgres/penpot
       PENPOT_DATABASE_USERNAME: $SERVICE_USER_POSTGRES
       PENPOT_DATABASE_PASSWORD: $SERVICE_PASSWORD_POSTGRES
@@ -185,7 +185,7 @@ var productivity2Templates = []Template{
   exporter:
     image: penpotapp/exporter:2.11.1
     environment:
-      PENPOT_PUBLIC_URI: ${SERVICE_FQDN_FRONTEND:-http://localhost:8080}
+      PENPOT_PUBLIC_URI: ${SERVICE_URL_FRONTEND:-http://localhost:8080}
       PENPOT_REDIS_URI: redis://valkey/0
   postgres:
     image: postgres:15-alpine
@@ -362,7 +362,7 @@ var productivity2Templates = []Template{
     image: wallabag/wallabag:2.6.14
     ports: ["80:80"]
     environment:
-      SYMFONY__ENV__DOMAIN_NAME: ${SERVICE_FQDN_WALLABAG:-http://localhost}
+      SYMFONY__ENV__DOMAIN_NAME: ${SERVICE_URL_WALLABAG:-http://localhost}
       SYMFONY__ENV__SECRET: $SERVICE_HEX_32_SECRET
     volumes:
       - wallabag_data:/var/www/wallabag/data

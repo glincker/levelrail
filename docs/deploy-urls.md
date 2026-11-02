@@ -22,9 +22,49 @@ ports, hooks or automatic rollback, and it sleeps after
 `APP_DEPLOY_URL_IDLE_MINUTES` without traffic (default 5), then wakes on the
 first visit, so old deploys do not run idle.
 
+Only a person opening the address in a browser wakes a sleeping copy. Everything
+else gets a plain 503 and the copy stays asleep, because a new hostname becomes
+public as soon as its certificate is issued and bots find it within seconds. The
+check needs no setting:
+
+- When the request carries `Sec-Fetch-Mode`, only `navigate` (a top-level
+  browser visit) wakes the copy.
+- When the header is absent (Safari before 16.4, or a proxy that strips
+  `Sec-Fetch-*`), a request with `Accept: text/html` wakes it, on HTTP or HTTPS.
+- A user agent containing `bot`, `crawl`, `spider`, `slurp`, `scan`, `headless`,
+  `curl`, `python` or `go-http` never wakes it. That covers crawlers, scanners,
+  `curl`, Python and Go clients, and headless browsers such as HeadlessChrome,
+  Playwright, Puppeteer and Lighthouse.
+
+If you run end-to-end tests against an old deploy, open the copy once in a real
+browser first, or test the app's normal URL instead. A client that spoofs a
+browser user agent and sends the right headers still wakes the copy; that only
+starts one container, which sleeps again after the idle time. The certificate
+itself is still requested when the copy is created. The app's own URL is not
+affected.
+
 The hostname is one label under the apps base domain. Without a base domain it
 falls back to the sslip.io address of the control plane's public IP. With
-neither, no URLs are created.
+neither, or when automatic hostnames are switched off (`settings ingress
+--fallback-domains=false`) and there is no base domain, no URLs are created, so
+no certificate is requested for a copy. Copies that already exist are not
+removed when you switch automatic hostnames off; they keep their hostname until
+they age out of the retention window or `APP_DEPLOY_URL_KEEP` is set to 0.
+
+## Copies mode
+
+The setting `deploy.url_copies` decides whether a copy is reachable. A stored value
+wins; `APP_DEPLOY_URL_COPIES` only seeds the default. Change it with
+`levelrail-cli settings deploy-url-copies set <mode>`, through
+`PUT /api/v1/settings/deploy-url-copies`, and it applies on the next sync pass.
+
+| Mode | Behavior |
+| --- | --- |
+| `private` (default) | Copies are kept suspended with no hostname, so no route and no certificate exists for them. |
+| `public` | Copies get their own hostname and certificate, and the Visit button appears. |
+| `off` | No copies are kept and existing ones are removed. |
+
+Switching between `private` and `public` updates existing copies in place.
 
 ## Retention
 

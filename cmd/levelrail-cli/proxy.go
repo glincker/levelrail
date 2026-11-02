@@ -69,7 +69,7 @@ func proxyUsage(prog string) string {
   %[1]s proxy install [--provider traefik] [--confirm]
   %[1]s proxy status
   %[1]s proxy apply
-  %[1]s proxy verify [--domain D]
+  %[1]s proxy verify [--domain D [--retry-cert]]
   %[1]s proxy disable
 
 Without a subcommand: shows what holds ports 80 and 443 and the configuration to paste

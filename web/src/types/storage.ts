@@ -4,7 +4,7 @@
 // in a response.
 
 export type StoragePreset =
-  'aws' | 'r2' | 'b2' | 'minio' | 'wasabi' | 'gcs' | 'custom'
+  'aws' | 'r2' | 'b2' | 'minio' | 'wasabi' | 'gcs' | 'oracle' | 'custom'
 
 export interface StorageProvider {
   id: StoragePreset

@@ -21,7 +21,7 @@ var catalogBatch3Templates = []Template{
     image: ghcr.io/we-promise/sure:0.6.7
     ports: ["3000:3000"]
     environment:
-      APP_DOMAIN: ${SERVICE_FQDN_SURE:-http://localhost:3000}
+      APP_DOMAIN: ${SERVICE_FQDN_SURE:-localhost:3000}
       SECRET_KEY_BASE: $SERVICE_BASE64_64_SURE
       POSTGRES_USER: sure
       POSTGRES_PASSWORD: $SERVICE_PASSWORD_POSTGRESQL
@@ -95,8 +95,8 @@ var catalogBatch3Templates = []Template{
     image: ghcr.io/vert-sh/vert:latest
     ports: ["80:80"]
     environment:
-      PUB_VERT_URL: ${SERVICE_FQDN_VERT:-http://localhost:80}
-      PUB_HOSTNAME: ${SERVICE_FQDN_VERT:-http://localhost:80}
+      PUB_VERT_URL: ${SERVICE_URL_VERT:-http://localhost:80}
+      PUB_HOSTNAME: ${SERVICE_FQDN_VERT:-localhost}
       PUB_PORT: "80"
       PUB_ENV: production
     healthcheck:
@@ -326,7 +326,7 @@ var catalogBatch3Templates = []Template{
     environment:
       SECRET_KEY: $SERVICE_PASSWORD_64_SECRETKEY
       CREATE_SUPERUSER: admin:$SERVICE_PASSWORD_BUGSINK
-      BASE_URL: ${SERVICE_FQDN_BUGSINK:-http://localhost:8000}
+      BASE_URL: ${SERVICE_URL_BUGSINK:-http://localhost:8000}
       DATABASE_URL: mysql://bugsink:$SERVICE_PASSWORD_BUGSINK@mysql:3306/bugsink
       BEHIND_HTTPS_PROXY: "True"
     depends_on: [mysql]

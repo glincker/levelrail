@@ -46,6 +46,7 @@ var allowlist = []AllowEntry{
 	{"apps errors get", "read: shows one record from the API, secrets masked server side"},
 	{"apps errors list", "read: lists records from the API"},
 	{"apps exec-access status", "read: reports status from the API"},
+	{"apps export", "read: downloads compose files from the API, secret values never included"},
 	{"apps freeze show", "read: shows one record from the API, secrets masked server side"},
 	{"apps get", "read: shows one record from the API, secrets masked server side"},
 	{"apps github-actions trust list", "read: lists records from the API"},

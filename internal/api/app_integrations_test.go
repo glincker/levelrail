@@ -19,6 +19,7 @@ func seedAppIntegrationApp(t *testing.T, db *store.DB, name string) {
 }
 
 func TestHandleListIntegrationCatalog(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -50,6 +51,7 @@ func TestHandleListIntegrationCatalog(t *testing.T) {
 }
 
 func TestHandleAttachAppIntegration_NoSetterConfigured(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t) // no WithSecretSetter
 	cookie := loginTestSession(t, rt, db)
 	seedAppIntegrationApp(t, db, "web")
@@ -63,6 +65,7 @@ func TestHandleAttachAppIntegration_NoSetterConfigured(t *testing.T) {
 }
 
 func TestHandleAttachAppIntegration_Success(t *testing.T) {
+	t.Parallel()
 	setter := &fakeSecretSetter{}
 	rt, db := newTestRouterWithSecrets(t, setter)
 	cookie := loginTestSession(t, rt, db)
@@ -93,6 +96,7 @@ func TestHandleAttachAppIntegration_Success(t *testing.T) {
 }
 
 func TestHandleAttachAppIntegration_MissingRequiredField(t *testing.T) {
+	t.Parallel()
 	setter := &fakeSecretSetter{}
 	rt, db := newTestRouterWithSecrets(t, setter)
 	cookie := loginTestSession(t, rt, db)
@@ -107,6 +111,7 @@ func TestHandleAttachAppIntegration_MissingRequiredField(t *testing.T) {
 }
 
 func TestHandleAttachAppIntegration_UnknownKey(t *testing.T) {
+	t.Parallel()
 	setter := &fakeSecretSetter{}
 	rt, db := newTestRouterWithSecrets(t, setter)
 	cookie := loginTestSession(t, rt, db)
@@ -121,6 +126,7 @@ func TestHandleAttachAppIntegration_UnknownKey(t *testing.T) {
 }
 
 func TestHandleAttachAppIntegration_AlreadyAttached(t *testing.T) {
+	t.Parallel()
 	setter := &fakeSecretSetter{}
 	rt, db := newTestRouterWithSecrets(t, setter)
 	cookie := loginTestSession(t, rt, db)
@@ -141,6 +147,7 @@ func TestHandleAttachAppIntegration_AlreadyAttached(t *testing.T) {
 }
 
 func TestHandleListAppIntegrations(t *testing.T) {
+	t.Parallel()
 	setter := &fakeSecretSetter{}
 	rt, db := newTestRouterWithSecrets(t, setter)
 	cookie := loginTestSession(t, rt, db)
@@ -168,6 +175,7 @@ func TestHandleListAppIntegrations(t *testing.T) {
 }
 
 func TestHandleDetachAppIntegration(t *testing.T) {
+	t.Parallel()
 	setter := &fakeSecretSetter{}
 	rt, db := newTestRouterWithSecrets(t, setter)
 	cookie := loginTestSession(t, rt, db)
@@ -202,6 +210,7 @@ func TestHandleDetachAppIntegration(t *testing.T) {
 }
 
 func TestHandleDetachAppIntegration_WrongApp(t *testing.T) {
+	t.Parallel()
 	setter := &fakeSecretSetter{}
 	rt, db := newTestRouterWithSecrets(t, setter)
 	cookie := loginTestSession(t, rt, db)

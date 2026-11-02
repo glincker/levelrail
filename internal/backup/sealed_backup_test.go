@@ -358,7 +358,7 @@ func TestRunVolumeBackup_QuiesceHooks(t *testing.T) {
 		t.Fatalf("err = %v", err)
 	}
 	if e.hist.rows["bkh_2"].Status != store.BackupStatusFailed {
-		t.Fatal("a failing pre-hook must fail the backup rather than snapshot an inconsistent volume")
+		t.Fatal("a hard quiesce failure must still fail the backup")
 	}
 }
 

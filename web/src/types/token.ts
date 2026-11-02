@@ -134,6 +134,8 @@ export interface TokenResource {
   id: string
   name: string
   abilities: TokenAbility[]
+  // read_only when nothing the token holds can change anything.
+  access?: 'read_only' | 'can_change'
   // Set when the token was issued to an AI agent (internal/api/agent_identity.go).
   agent?: TokenAgent
   created_at: string

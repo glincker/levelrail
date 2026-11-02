@@ -195,6 +195,11 @@
       "pass": "Las copias de seguridad externas cifradas están activadas",
       "why": "Perder esta máquina implicaría perder todas las definiciones de apps, secretos y certificados."
     },
+    "audit_anchor_off": {
+      "title": "No hay un ancla externa del registro de auditoría configurada",
+      "pass": "El ancla externa del registro de auditoría está activada",
+      "why": "Sin una copia de la cabecera de la cadena de auditoría fuera de esta máquina, quien tenga root aquí puede reescribir el historial y volver a firmarlo sin que se detecte."
+    },
     "master_key_rotation": {
       "title": "Falta la clave maestra o su rotación está vencida",
       "pass": "La clave maestra se rotó recientemente",
@@ -244,6 +249,11 @@
       "title": "Tu cuenta necesita una contraseña nueva",
       "pass": "Tu cuenta no está marcada",
       "why": "Se reportó un inicio de sesión en tu cuenta que no era tuyo."
+    },
+    "microsoft_no_tenant": {
+      "pass": "El inicio de sesión con Microsoft está desactivado o limitado a tu tenant",
+      "title": "El inicio de sesión con Microsoft no está limitado a un tenant",
+      "why": "En el tenant compartido cualquier directorio puede declarar una dirección de correo, por eso no se crean cuentas nuevas desde él. Indica el id de tu tenant en los ajustes del proveedor de Microsoft."
     },
     "saml_open_domains": {
       "pass": "Cada conexión SAML activa limita el inicio de sesión a tus dominios",

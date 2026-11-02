@@ -12,7 +12,7 @@ import { domainsQueryOptions } from '../../queries/domains'
 import type { FwRange } from '../../queries/firewallEdge'
 import { RuleSelect } from '../rules/RuleSelect'
 
-export type FirewallTab = 'overview' | 'traffic' | 'rules' | 'audit'
+export type FirewallTab = 'overview' | 'traffic' | 'rules' | 'ports' | 'audit'
 
 const RANGES: FwRange[] = ['1h', '6h', '24h']
 
@@ -77,6 +77,14 @@ export function FirewallPage({
           {t('page.tabs.rules')}
         </Link>
         <Link
+          to="/firewall/ports"
+          search={search}
+          aria-current={current('ports')}
+          className={TAB_CLASS}
+        >
+          {t('page.tabs.ports')}
+        </Link>
+        <Link
           to="/firewall/audit"
           search={search}
           aria-current={current('audit')}
@@ -130,6 +138,15 @@ export function FirewallPage({
         />
       }
     >
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm">
+        <span>{t('page.hostPointer')}</span>
+        <Link
+          to="/settings/firewall"
+          className="font-medium underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+        >
+          {t('page.hostPointerLink')}
+        </Link>
+      </div>
       {tabs}
       {children}
     </PageTemplate>

@@ -1,0 +1,25 @@
+id: opensearch
+name: OpenSearch
+description: A single node OpenSearch search and analytics engine with the security plugin on, a persistent volume, a generated admin password and a 512 MB Java heap. The API speaks HTTPS with a self signed certificate and is not published on the host, so reach it from other services in this project at opensearch:9200.
+icon: database
+category: Database Tools
+documentation_url: https://opensearch.org/docs/latest/
+source_repo: https://github.com/opensearch-project/OpenSearch
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/opensearch-project/OpenSearch/blob/main/LICENSE.txt
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 1610612736
+first_run:
+  - Read the generated admin password from the app secrets, then call the API over HTTPS as the admin user from a service in the same project.
+domains:
+  - service: opensearch
+    port: 9200
+    description: The API is HTTPS with a self signed certificate and has no web page, so leave this empty and connect over the project network.
+healthcheck:
+  service: opensearch
+  port: 9200
+  kind: tcp

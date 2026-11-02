@@ -6,9 +6,11 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/dbviewer"
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -82,6 +84,15 @@ func (rt *Router) runDatabaseStatement(w http.ResponseWriter, r *http.Request, m
 	}
 	req, ok := rt.decodeQueryRequest(w, r, target.Limits)
 	if !ok {
+		return
+	}
+	// History stores masked SQL; running it would write the literal marker as the value.
+	if strings.Contains(req.SQL, secretmask.Marker) {
+		writeJSON(w, http.StatusBadRequest, apiError{
+			Error:     "this statement contains redacted text from query history and cannot be run; re-type the real value",
+			Code:      "masked_query",
+			RequestID: w.Header().Get(requestIDHeader),
+		})
 		return
 	}
 	write := mode == queryModeWrite

@@ -2,8 +2,11 @@ package alerting
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 func TestRecordAndListNotificationDeliveries_NewestFirst(t *testing.T) {
@@ -114,5 +117,24 @@ func TestRecordDelivery_NoopWhenChannelIDEmpty(t *testing.T) {
 	}
 	if count != 0 {
 		t.Errorf("notification_deliveries has %d rows, want 0 for an empty channel id", count)
+	}
+}
+
+func TestRecordNotificationDelivery_ErrorIsMasked(t *testing.T) {
+	db := newTestDeployNotifyDB(t)
+	ctx := context.Background()
+	secretmask.Add("webhook-token-zzzz-4321")
+	if err := db.SaveNotificationChannel(ctx, NotificationChannel{ID: "chn_m", Name: "M", Kind: NotifyGeneric, NotifyURL: "https://m.example.com", Enabled: true}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.RecordNotificationDelivery(ctx, NotificationDelivery{ID: "ndl_m", ChannelID: "chn_m", Trigger: "test", Error: "post failed webhook-token-zzzz-4321 status 500"}); err != nil {
+		t.Fatal(err)
+	}
+	got, err := db.ListNotificationDeliveries(ctx, "chn_m", 10, nil)
+	if err != nil || len(got) != 1 {
+		t.Fatalf("got %d, %v", len(got), err)
+	}
+	if strings.Contains(got[0].Error, "webhook-token") || !strings.HasPrefix(got[0].Error, "post failed ") || !strings.HasSuffix(got[0].Error, " status 500") {
+		t.Errorf("error = %q", got[0].Error)
 	}
 }

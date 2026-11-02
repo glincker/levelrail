@@ -1,0 +1,80 @@
+---
+title: "Self-host RomM with Docker"
+sidebarTitle: "RomM"
+description: "A self-hosted retro game library manager. It scans your ROM collection, matches metadata and cover art, and lets you browse, search and play games in the browser. Runs with a bundled MariaDB database. On first open, the setup page asks you to create the admin login."
+"og:url": "https://docs.levelrail.com/self-host/romm"
+---
+
+A self-hosted retro game library manager. It scans your ROM collection, matches metadata and cover art, and lets you browse, search and play games in the browser. Runs with a bundled MariaDB database. On first open, the setup page asks you to create the admin login.
+
+This page describes the Levelrail template for RomM (Media). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.romm.app/latest/.
+
+Recommended memory: about 1024 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `mariadb:11.8.9` | none | `dbdata -&#62; /var/lib/mysql` |
+| `romm` | `rommapp/romm:5.4.1` | 8080 | `resources -&#62; /romm/resources`<br />`library -&#62; /romm/library`<br />`assets -&#62; /romm/assets`<br />`config -&#62; /romm/config`<br />`redis -&#62; /redis-data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `MARIADB_DATABASE` | Preset in the template |
+| `db` | `MARIADB_PASSWORD` | Generated at deploy |
+| `db` | `MARIADB_ROOT_PASSWORD` | Generated at deploy |
+| `db` | `MARIADB_USER` | Preset in the template |
+| `romm` | `DB_HOST` | Preset in the template |
+| `romm` | `DB_NAME` | Preset in the template |
+| `romm` | `DB_PASSWD` | Generated at deploy |
+| `romm` | `DB_PORT` | Preset in the template |
+| `romm` | `DB_USER` | Preset in the template |
+| `romm` | `DISABLE_DOWNLOAD_ENDPOINT_AUTH` | Preset in the template |
+| `romm` | `ROMM_AUTH_SECRET_KEY` | Generated at deploy |
+| `romm` | `ROMM_DB_DRIVER` | Preset in the template |
+| `romm` | `TZ` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`db`, `romm`): DB_PASSWD, ROMM_AUTH_SECRET_KEY, MARIADB_PASSWORD, MARIADB_ROOT_PASSWORD.
+- Stores data in named volumes (`db`, `romm`): assets, config, dbdata, library, redis, resources.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy RomM with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select RomM. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy romm --name my-romm
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Media templates
+
+- [Audiobookshelf](/self-host/audiobookshelf)
+- [Bazarr](/self-host/bazarr)
+- [Calibre-Web](/self-host/calibre-web)
+- [Castopod](/self-host/castopod)
+- [Emby](/self-host/emby)
+
+All templates are listed in the [self-host gallery](/self-host).

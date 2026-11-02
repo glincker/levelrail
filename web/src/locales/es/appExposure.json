@@ -1,0 +1,98 @@
+{
+  "title": "Puertos y exposición",
+  "description": "Cambia el puerto en el que escucha esta aplicación y elige cómo se puede acceder a ella. Muchas aplicaciones pueden usar el mismo puerto de contenedor: cada una recibe su propio puerto de host.",
+  "containerPort": "Puerto del contenedor",
+  "containerPortHelp": "El puerto en el que escucha la aplicación dentro de su contenedor.",
+  "mode": {
+    "label": "Exposición",
+    "proxied": "A través del proxy",
+    "proxiedHelp": "Accesible por su dominio, o por el nombre de host automático, en los puertos 80 y 443. Otras aplicaciones la alcanzan por nombre. No se abre ningún puerto de host.",
+    "direct": "IP y puerto directos",
+    "directHelp": "También se publica en un puerto de host y se abre en el firewall del host, para que puedas comprobar la aplicación en la dirección del servidor. Es HTTP sin cifrar y omite TLS y los controles de autenticación."
+  },
+  "hostPort": "Puerto de host",
+  "hostPortHelp": "Déjalo vacío para elegir automáticamente un puerto libre entre {{lo}} y {{hi}}.",
+  "preview": "Vista previa de cambios",
+  "previewing": "Comprobando",
+  "apply": "Aplicar",
+  "applying": "Aplicando",
+  "revert": "Volver a solo proxy",
+  "reset": "Descartar",
+  "nothingToChange": "No cambiaría nada.",
+  "willChange": "Esto cambiará",
+  "recreates": "El contenedor se vuelve a crear con la nueva configuración. La imagen no se reconstruye ni se descarga de nuevo.",
+  "remoteNode": "Esta aplicación se ejecuta en otro nodo. Los puertos de host directos solo están disponibles para aplicaciones del propio nodo del plano de control.",
+  "plainHttpWarning": "HTTP sin cifrar: el tráfico no está cifrado y la autenticación básica o los controles de inicio de sesión configurados en el dominio no se aplican en este puerto.",
+  "applied": "Exposición actualizada",
+  "appliedDescription": "La reconciliación se ejecuta en segundo plano.",
+  "change": {
+    "container_port": "Puerto del contenedor",
+    "host_port": "Puerto de host",
+    "bind_address": "Dirección de enlace",
+    "firewall": "Regla de firewall"
+  },
+  "values": {
+    "automatic": "automático",
+    "open": "abierto",
+    "closed": "cerrado"
+  },
+  "urls": {
+    "title": "Dónde responde",
+    "domain": "Dominio",
+    "fallback": "Nombre de host automático",
+    "direct": "IP y puerto directos",
+    "none": "Aún no hay URL pública. Añade un dominio, activa los nombres de host automáticos o usa IP y puerto directos.",
+    "internal": "Otras aplicaciones de este servidor la alcanzan por el nombre de la aplicación en el puerto {{port}}."
+  },
+  "check": {
+    "button": "Probar desde aquí",
+    "running": "Probando",
+    "scope": "Se prueba desde el host del plano de control. Esto no puede demostrar que el puerto esté abierto a todo internet.",
+    "ok": "Accesible",
+    "status": "HTTP {{status}} en {{ms}} ms",
+    "failures": {
+      "container_not_running": "El contenedor no se está ejecutando, así que no hay nada que alcanzar. Inicia o vuelve a desplegar la aplicación.",
+      "container_not_listening": "El contenedor está activo pero nada responde en su puerto publicado. Puede que la aplicación no escuche en el puerto de contenedor indicado arriba, o que aún esté arrancando.",
+      "firewall_closed": "La dirección del servidor no responde en este puerto. Probablemente el firewall del host o el grupo de seguridad de tu proveedor de nube esté cerrado.",
+      "unreachable_from_host": "El ingress no respondió desde este servidor. Comprueba que se estén sirviendo los puertos 80 y 443.",
+      "tls_not_issued": "El certificado aún no es de confianza. El ingress sirve un certificado temporal y reintenta con la CA pública en su ciclo de renovación.",
+      "proxy_route_missing": "El proxy respondió pero no tiene ruta para este nombre de host. Comprueba que el dominio esté asociado a esta aplicación.",
+      "upstream_failing": "El proxy tiene una ruta pero la aplicación detrás de ella no responde.",
+      "app_error": "La aplicación respondió con un error del servidor.",
+      "request_failed": "La solicitud no se completó."
+    },
+    "fixFirewall": "Abrir la configuración del firewall",
+    "fixCertificates": "Abrir dominios y certificados"
+  },
+  "inUse": {
+    "title": "Puertos de host en uso en este nodo",
+    "port": "Puerto",
+    "heldBy": "Ocupado por",
+    "empty": "Ninguna aplicación ni el plano de control tiene puertos de host fijados o publicados.",
+    "control": "Plano de control: {{name}}",
+    "app": "Aplicación {{name}}",
+    "stream": "Stream de {{name}}"
+  },
+  "errors": {
+    "load": "No se pudo cargar la configuración de exposición.",
+    "invalidPort": "Introduce un número entero del 1 al 65535."
+  },
+  "tunnel": {
+    "title": "Acceder a un puerto privado",
+    "description": "Abre un puerto local que se conecta por túnel a esta aplicación sin publicarla. Requiere la CLI con sesión iniciada con un token de operador.",
+    "portLabel": "Puerto de contenedor {{port}}",
+    "copy": "Copiar el comando de túnel para el puerto {{port}}",
+    "copied": "Copiado"
+  },
+  "game": {
+    "title": "Servidor de juego",
+    "online": "En línea",
+    "offline": "Sin conexión",
+    "players": "{{online}}/{{max}} jugadores",
+    "latency": "{{ms}} ms",
+    "copy": "Copiar dirección de unión",
+    "copied": "Copiado",
+    "notExposed": "Aún no es público: publica el puerto para obtener una dirección de unión.",
+    "noPublicHost": "Únete por el puerto {{port}} en la dirección pública de este servidor."
+  }
+}

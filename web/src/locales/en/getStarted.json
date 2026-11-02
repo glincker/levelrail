@@ -170,6 +170,7 @@
   "first": {
     "title": "Deploy your first app",
     "titleLive": "Your first app is running",
+    "primary": "Choose how to deploy",
     "subtitle": "Pick a path. Each one ends with a running app and a link you can open.",
     "sample": {
       "title": "Sample app",

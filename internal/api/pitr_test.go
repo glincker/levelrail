@@ -374,3 +374,39 @@ func TestHandleListPITRRestoreHistory_DatabaseNotFound(t *testing.T) {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNotFound)
 	}
 }
+
+func TestHandleEnablePITR_BaseBackupSchedule(t *testing.T) {
+	rt, db := newTestRouterWithPITR(t, nil, nil)
+	cookie := loginTestSession(t, rt, db)
+	seedPostgresDatabaseForAPI(t, db)
+	seedBackupTargetForAPI(t, db)
+
+	do := func(body string) *httptest.ResponseRecorder {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/databases/main/pitr", body))
+		return rec
+	}
+
+	if rec := do(`{"base_backup_schedule":"not cron","base_backup_target_id":"bkt_test1"}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("bad cron status = %d, want 400, body = %s", rec.Code, rec.Body.String())
+	}
+	if rec := do(`{"base_backup_schedule":"0 4 * * 0","base_backup_target_id":"bkt_test1"}`); rec.Code != http.StatusOK {
+		t.Fatalf("set status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	got, err := db.GetDesiredDatabase(context.Background(), "main")
+	if err != nil {
+		t.Fatalf("GetDesiredDatabase() error = %v", err)
+	}
+	if !got.PITREnabled || got.BaseBackupSchedule != "0 4 * * 0" || got.BaseBackupTargetID != "bkt_test1" {
+		t.Fatalf("stored = %+v, want PITR on with the schedule", got)
+	}
+	enabledAt := got.PITREnabledAt
+
+	if rec := do(`{"base_backup_schedule":""}`); rec.Code != http.StatusOK {
+		t.Fatalf("clear status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	got, _ = db.GetDesiredDatabase(context.Background(), "main")
+	if got.BaseBackupSchedule != "" || got.BaseBackupTargetID != "" || got.PITREnabledAt != enabledAt {
+		t.Fatalf("after clear = %+v, want schedule empty and enabled_at unchanged", got)
+	}
+}

@@ -11,6 +11,7 @@ import (
 type AppGroupLister interface {
 	ListServicesByApp(ctx context.Context, appID string) ([]store.DesiredService, error)
 	DeleteApp(ctx context.Context, id string) error
+	DeleteAppIfOrphaned(ctx context.Context, id string) (bool, error)
 	SaveApp(ctx context.Context, a store.App) error
 	GetAppByName(ctx context.Context, name string) (store.App, error)
 }

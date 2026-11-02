@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { SlidersHorizontalGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -10,12 +11,18 @@ import { PageTemplate } from '@/components/shell/PageTemplate'
 import { RuntimeRestartBanner } from '@/components/settings/RuntimeRestartBanner'
 import { RetentionOverviewCard } from '@/components/settings/RetentionOverviewCard'
 import { RuntimeSettingRow } from '@/components/settings/RuntimeSettingRow'
+import { RuntimeSettingsToolbar } from '@/components/settings/RuntimeSettingsToolbar'
 import {
   SettingsCardSkeleton,
   SettingsHeaderSkeleton,
 } from '../../components/settings/SettingsSkeletons'
 import { useIsRoot } from '../../hooks/useIsRoot'
-import { groupByCategory } from '../../lib/runtimeSettings'
+import {
+  categoryAnchor,
+  filterSettings,
+  groupByCategory,
+  settingItemId,
+} from '../../lib/runtimeSettings'
 import {
   runtimeSettingsQueryOptions,
   useRuntimeSettings,
@@ -37,8 +44,25 @@ function SecurityRuntimePage() {
   const { t } = useTranslation('runtimeSettings')
   const isRoot = useIsRoot()
   const { data, error, refetch } = useRuntimeSettings()
-  const settings = data?.settings ?? []
+  const settings = useMemo(() => data?.settings ?? [], [data])
   const pending = settings.filter((s) => s.pending_restart).length
+  const [query, setQuery] = useState('')
+  const [changedOnly, setChangedOnly] = useState(false)
+  const visible = useMemo(
+    () =>
+      filterSettings(settings, { query, changedOnly }, (s) => {
+        const id = settingItemId(s.key)
+        return {
+          title: t(`items.${id}.title`, { defaultValue: s.title }),
+          description: t(`items.${id}.description`, {
+            defaultValue: s.description,
+          }),
+        }
+      }),
+    [settings, query, changedOnly, t],
+  )
+  const groups = groupByCategory(visible)
+  const filtering = query.trim() !== '' || changedOnly
 
   return (
     <PageTemplate
@@ -80,8 +104,45 @@ function SecurityRuntimePage() {
           }
         />
       ) : null}
-      {groupByCategory(settings).map((group) => (
-        <Card key={group.category}>
+      {settings.length > 0 ? (
+        <RuntimeSettingsToolbar
+          query={query}
+          onQuery={setQuery}
+          changedOnly={changedOnly}
+          onChangedOnly={setChangedOnly}
+          counts={groups.map((g) => ({
+            category: g.category,
+            count: g.items.length,
+          }))}
+          shown={visible.length}
+          total={settings.length}
+        />
+      ) : null}
+      {filtering && settings.length > 0 && visible.length === 0 ? (
+        <EmptyState
+          icon={<SlidersHorizontalGlassIcon className="size-8" />}
+          title={t('toolbar.noMatchTitle')}
+          description={t('toolbar.noMatchBody')}
+          action={
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setQuery('')
+                setChangedOnly(false)
+              }}
+            >
+              {t('toolbar.clear')}
+            </Button>
+          }
+        />
+      ) : null}
+      {groups.map((group) => (
+        <Card
+          key={group.category}
+          id={categoryAnchor(group.category)}
+          className="scroll-mt-28"
+        >
           <CardHeader>
             <CardTitle>{t(`categories.${group.category}`)}</CardTitle>
           </CardHeader>
@@ -94,7 +155,7 @@ function SecurityRuntimePage() {
           </CardContent>
         </Card>
       ))}
-      {settings.length > 0 ? <RetentionOverviewCard /> : null}
+      {settings.length > 0 && !filtering ? <RetentionOverviewCard /> : null}
     </PageTemplate>
   )
 }

@@ -23,6 +23,7 @@ func newTestRouterWithDetect(t *testing.T, fn detectFunc) (*Router, *store.DB) {
 }
 
 func TestHandleDetectFramework_Success(t *testing.T) {
+	t.Parallel()
 	var gotReq build.DetectRequest
 	rt, db := newTestRouterWithDetect(t, func(_ context.Context, req build.DetectRequest) (*build.DetectResult, error) {
 		gotReq = req
@@ -50,6 +51,7 @@ func TestHandleDetectFramework_Success(t *testing.T) {
 }
 
 func TestHandleDetectFramework_NothingDetected(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouterWithDetect(t, func(context.Context, build.DetectRequest) (*build.DetectResult, error) {
 		return &build.DetectResult{}, nil
 	})
@@ -77,6 +79,7 @@ func TestHandleDetectFramework_NothingDetected(t *testing.T) {
 // doc comment, not a scary error banner for what is very often just an
 // unsupported or unreachable repo.
 func TestHandleDetectFramework_DetectFailure_RespondsGracefully(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouterWithDetect(t, func(context.Context, build.DetectRequest) (*build.DetectResult, error) {
 		return nil, errors.New("build: detect: clone timed out")
 	})
@@ -99,6 +102,7 @@ func TestHandleDetectFramework_DetectFailure_RespondsGracefully(t *testing.T) {
 }
 
 func TestHandleDetectFramework_MissingRepoURL(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouterWithDetect(t, func(context.Context, build.DetectRequest) (*build.DetectResult, error) {
 		t.Fatal("detect should not be called without repo_url")
 		return nil, nil

@@ -117,6 +117,8 @@ export default defineConfig({
         ],
       },
       routesDirectory: './src/routes',
+      // Colocated tests are not routes; scanning them logs missing-Route warnings.
+      routeFileIgnorePattern: '\\.test\\.(ts|tsx)$',
       generatedRouteTree: './src/routeTree.gen.ts',
     }),
     react(),

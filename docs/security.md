@@ -102,6 +102,8 @@ Passkeys only work on the exact https address set as the dashboard URL.
 - **Two-factor authentication (TOTP)** is available per user, with recovery codes for account lockout.
 - **Two-factor codes are single-use.** A TOTP code that was already accepted is refused if presented again inside its validity window, and recovery codes are consumed on use.
 - **Read-tier callers cannot enumerate people or credentials.** `GET /api/v1/users` returns only the caller's own record unless the caller is `root`, and notification destinations (webhook URLs, bot tokens, routing keys) are shown as `(hidden)` without `read:sensitive`, see [observability](/observability#notification-channels).
+- **GitHub App tokens are scoped.** Callers limited to a team never receive the connected GitHub App's credentials and use a per-app deploy token instead. Clone tokens minted from the App name the one repository and carry only read access to contents and metadata. A git source saved by a team-scoped caller is never cloned with the App.
+- **SAML sign-in cannot take over a root account.** Saving a SAML connection needs at least one allowed email domain, and a first sign-in never links to an existing root account by email address. Connections saved earlier with an empty domain list keep working and show a Security Center warning.
 
 Full detail on all three: [Identity and access](/identity-and-access#principals-a-session-or-a-token).
 
@@ -161,6 +163,21 @@ Retention is managed in one place, **Settings, Cleanup**: a retention period per
 
 Every mutating API call from an authenticated principal is recorded: who, what, when, and the outcome. The log is queryable, exportable as NDJSON or CSV, verifiable as a hash chain, and streamable to a webhook or an S3 bucket. Reads that can expose secrets or personal data, such as app and database logs, Loki queries and data exports, are recorded too. Every change to a security setting and every cleanup run is audited with counts only, never row contents or secret values. See [Identity and access](/identity-and-access#audit-log).
 
+### Audit log anchor
+
+The chain and its checkpoints are signed with a key stored on the control plane. Someone with root on that machine could rewrite the whole log and sign it again. The anchor closes that gap by copying the signed chain head (sequence number, hash, timestamp, signature) to storage you control. It carries no log content and never the key. Nothing is published until you set one of these:
+
+| Variable | Meaning |
+| --- | --- |
+| `APP_AUDIT_ANCHOR_DIR` | Directory that receives `audit-anchors.jsonl`, one JSON record per line, append only. Ship it off the box (rsync, object storage sync, a backup job); on Linux `chattr +a` on the file makes local tampering harder. |
+| `APP_AUDIT_ANCHOR_URL` | HTTPS endpoint that receives each record as a JSON POST. Private and metadata addresses are refused like any outbound webhook (`APP_NOTIFY_ALLOW_PRIVATE_NETWORKS` is the shared opt-in). |
+| `APP_AUDIT_ANCHOR_INTERVAL` | How often a new head is published when the log moved (Go duration, default `15m`). |
+| `APP_AUDIT_ANCHOR_TIMEOUT` | Webhook timeout (default `10s`). |
+
+A failing sink only logs a warning and is retried on the next interval; audit writes are never held up by it. Check an export with `levelrail-cli audit-verify --anchor audit-anchors.jsonl`.
+
+What it proves: every head in the export is still part of the live chain at the same position with the same hash, so deleting the tail (rollback) or rewriting history before an anchored point is detected, even if the attacker re-signs a chain that verifies on its own. What it does not prove: anything written after the newest anchor you hold (the interval is that window), or what was in a row before it was first chained. Heads that fall inside a range removed by retention cannot be compared and are reported as compacted, not as failures. Anchor signatures are checked on the control plane, so an export you hold alone cannot be verified offline without that key. The Security Center warns until an anchor is configured.
+
 ## Container hardening
 
 Every container Levelrail creates (apps, databases, catalogue services, helpers) can be created with secure defaults: all Linux capabilities dropped except a minimal set, `no-new-privileges`, and a per-container process limit. It is controlled by `APP_CONTAINER_HARDENING` on the control plane and on each agent:
@@ -180,7 +197,9 @@ What `enforce` sets:
 - `SecurityOpt: no-new-privileges`, so a process cannot gain privileges through setuid binaries.
 - `PidsLimit` from `APP_CONTAINER_PIDS_LIMIT` (default `4096`, `0` disables), which stops a fork bomb from exhausting the host.
 
-`APP_CONTAINER_HARDENING_CAP_ADD` (comma separated, for example `SYS_CHROOT,NET_RAW`) adds capabilities for every container on that host, for images that need more than the minimal set (SSH or FTP servers, tools using `ping`). It applies host-wide because a per-app override would need a new field carried to remote agents; a per-app `security` block in `app.yaml` is future work. Read-only root filesystems and privileged containers are never set by these defaults. The setting is read by the process that creates the container, so it applies to remote nodes when set on the agent, and the doctor reports the control plane's own value.
+`APP_CONTAINER_HARDENING_CAP_ADD` (comma separated, for example `SYS_CHROOT,NET_RAW`) adds capabilities for every container on that host, for images that need more than the minimal set (SSH or FTP servers, tools using `ping`). It applies host-wide; per-app capability overrides are future work. Privileged containers are never set by these defaults.
+
+Read-only root filesystems are opt-in. `security.read_only_rootfs` in `app.yaml` sets it for one app, and `APP_CONTAINER_READONLY_ROOTFS=true` makes it the default for apps that do not set it (`false` per app opts out). The root is mounted read-only with a tmpfs on `/tmp` and `/run` (`APP_CONTAINER_READONLY_TMPFS_MB`, default 64); declared volumes stay writable. See [app.yaml](/app-spec-reference#security) for the limits. The setting is read by the process that creates the container, so it applies to remote nodes when set on the agent, and the doctor reports the control plane's own value.
 
 ## Docker API guard
 
@@ -275,6 +294,8 @@ The built-in assistant cannot change anything on its own. The server, not the mo
 
 This lives in `internal/ai` (`classify.go`, `engine.go`). See [AI assistant](/ai-assistant) and [AI control](/ai-control).
 
+External MCP clients do not enforce that taint tracking, so the protection lives in the token: new tokens are read only by default and writing is a per-token opt-in. See [Connect an AI assistant safely](/mcp-safe-setup).
+
 ## Production hardening checklist
 
 1. Set an `https://` dashboard URL and serve it through the ingress. Sign-in over plain HTTP is then refused.
@@ -300,7 +321,7 @@ Levelrail does not yet have a dedicated security disclosure address. Until one e
 - [Secret scanning](/secret-scanning) checks the checked-out tree and plain env values at deploy time, but not git history or image layers.
 - Dashboard sessions are stored in the database and survive a restart. Sessions minted from API-token session links are held in memory and end on restart. API tokens are unaffected.
 - `GET /api/v1/system/containers` lists containers Levelrail does not manage only to `root` callers. Other callers with `read` see managed containers only.
-- Container hardening is on by default but has no per-app override yet, and read-only root filesystems stay opt-in.
+- Container hardening is on by default. A read-only root filesystem is opt-in, per app with `security.read_only_rootfs` in [app.yaml](/app-spec-reference#security) or fleet-wide with `APP_CONTAINER_READONLY_ROOTFS`. Capabilities, `no-new-privileges` and the PID limit have no per-app override yet.
 - Rootless Docker and Podman detection and hardening adjustment ([above](#rootless-and-podman)) exist but are not verified against a real installation; bind-mount ownership and cgroup resource limits beyond `PidsLimit` are known gaps.
 
 ## Next steps

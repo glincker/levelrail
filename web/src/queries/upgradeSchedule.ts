@@ -1,6 +1,7 @@
 // Scheduled upgrades, the automatic upgrade policy and the preflight fix
 // actions behind Settings > Updates (internal/api/updates_schedule.go).
 
+import { inlineErrorMeta, type InlineErrorOptions } from '@/lib/inlineError'
 import {
   queryOptions,
   useMutation,
@@ -137,6 +138,7 @@ export function policyQueryOptions() {
 export function useSetPolicy() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async (input: UpgradePolicyInput): Promise<UpgradePolicy> => {
       const res = await fetch('/api/v1/updates/auto', {
         method: 'PUT',
@@ -171,6 +173,7 @@ export class ScheduleError extends ApiError {
 export function useCreateSchedule() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async (input: ScheduleRequest): Promise<UpgradeSchedule> => {
       const res = await fetch('/api/v1/updates/schedule', {
         method: 'POST',
@@ -207,6 +210,7 @@ export function useCreateSchedule() {
 export function useCancelSchedule() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async (): Promise<UpgradeSchedule> => {
       const res = await fetch('/api/v1/updates/schedule', { method: 'DELETE' })
       if (!res.ok) throw await failure(res, 'cancel scheduled upgrade')
@@ -228,6 +232,7 @@ interface BackupNowResult {
 export function useBackupNow() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async (): Promise<BackupNowResult> => {
       const res = await fetch('/api/v1/updates/backup-now', { method: 'POST' })
       if (!res.ok) throw await failure(res, 'back up now')
@@ -241,9 +246,10 @@ export function useBackupNow() {
 
 // useRecheckPreflight re-runs the checks bypassing the release cache, which
 // is what clears a release that was still being published a moment ago.
-export function useRecheckPreflight() {
+export function useRecheckPreflight(opts?: InlineErrorOptions) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: inlineErrorMeta(opts),
     mutationFn: async (): Promise<UpdatePreflight> => {
       const res = await fetch('/api/v1/updates/preflight?refresh=1')
       if (!res.ok) throw await failure(res, 're-check upgrade preflight')

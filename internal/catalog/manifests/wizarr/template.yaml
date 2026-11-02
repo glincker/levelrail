@@ -1,0 +1,24 @@
+id: wizarr
+name: Wizarr
+description: An invitation and onboarding manager for Jellyfin, Plex and Emby servers. MIT licensed. On first open, create the admin account, then connect your media server.
+icon: users
+category: Applications
+documentation_url: https://docs.wizarr.dev/
+source_repo: https://github.com/wizarrrr/wizarr
+license: MIT
+license_class: permissive
+license_url: https://github.com/wizarrrr/wizarr/blob/main/LICENSE.md
+recommended_memory_bytes: 268435456
+env:
+  - key: TZ
+    label: Time zone
+    description: IANA time zone for logs and invite expiry.
+    default: Etc/UTC
+domains:
+  - service: wizarr
+    port: 5690
+    description: Public address of Wizarr, the link invited users open.
+healthcheck:
+  service: wizarr
+  port: 5690
+  path: /

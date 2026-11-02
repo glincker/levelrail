@@ -10,6 +10,22 @@ description: Complete reference for app.yaml - the declarative app spec for Leve
 
 Levelrail looks for the file under these names, in this order: `app.yaml`, `app.yml`, `deploy.yaml`, `deploy.yml`, then the product's own name with a `.yaml` or `.yml` extension. The generic names come first so a repo that already committed `app.yaml` keeps working.
 
+To start a new file, run `levelrail-cli apps init`. It writes a valid `app.yaml` with the optional fields listed as comments, taken from the same schema.
+
+## Minimal example
+
+The smallest valid file deploys one prebuilt image. A flat file with only `name`, `image` and `port` at the top level fails validation: the schema needs `version` and a `services` map.
+
+```yaml
+version: 1
+services:
+  web:
+    image: nginx:1.27
+    port: 80
+```
+
+Check any file before you deploy it with `levelrail-cli apps validate --file app.yaml`.
+
 ## Full example
 
 ```yaml
@@ -45,7 +61,7 @@ services:
     volumes:
       - name: data              # named Docker volume
         path: /var/lib/data
-      - hostPath: /srv/web/uploads  # bind mount of a real host directory
+      - hostPath: /srv/web/uploads  # bind mount, honoured by "deploy", not by "apps create --file"
         path: /uploads
         readOnly: true
     hooks:
@@ -141,6 +157,8 @@ Exactly one of `name` or `hostPath` must be set:
 | `path` | string | yes | none | The container-side mount path. |
 | `readOnly` | boolean | no | `false` | Mounts read-only inside the container. Only meaningful with `hostPath`; rejected on a named volume. |
 
+`apps create --file` attaches named volumes only. A `hostPath` entry is refused before the app is created, with a message naming the alternative. For a host bind mount on a new app, use a compose file with `apps deploy-compose <name> --file`, for example `- /srv/cfg:/usr/share/nginx/html:ro` (the `:ro` suffix mounts it read-only).
+
 **Constraint**: Two volumes on the same service can never share a `path`.
 
 ### `Health`
@@ -206,6 +224,14 @@ A Compose file's `healthcheck:` is translated into a readiness probe: a `curl`/`
 | `swapMemory` | string | no | none | Same pattern as `memory`. Docker's `MemorySwap`: the combined memory+swap ceiling, not swap on top of memory, so it must be at least `memory` and requires `memory` to also be set. |
 | `cpuSet` | string | no | none | Docker's `cpuset-cpus` format, for example `0-3` or `0,2`. Pins the container to specific host CPUs. |
 | `gpu` | `all`, integer, or object | no | none | Requests NVIDIA GPUs. `all`, a count such as `2`, or `{count: 2}` / `{devices: ["0", "GPU-uuid"]}` (device indexes or UUIDs win over count). The app is refused on a node without a GPU and the nvidia container runtime, and moving it to such a node is rejected. See [AI models](/ai-models#gpu-nodes). |
+
+### `Security`
+
+| Field | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `read_only_rootfs` | boolean | no | inherit | `true` mounts the container root filesystem read-only. Levelrail adds a tmpfs on `/tmp` and `/run` (size from `APP_CONTAINER_READONLY_TMPFS_MB`, default 64, mounted `nosuid,nodev`, not `noexec`) unless a volume or bind mount already uses that path. Declared volumes and bind mounts stay writable. Omit it to follow `APP_CONTAINER_READONLY_ROOTFS` (off by default); `false` opts this app out of a fleet-wide `true`. Changing it recreates the container once. Not allowed together with `files` (they are copied into the root before start) or on a static build. |
+
+An app that writes elsewhere (an nginx cache under `/var/cache/nginx`, a database data directory, an upload folder) needs a volume at that path, or it fails with `Read-only file system` in its logs. Fleet-wide `true` skips services that declare `files`.
 
 ### `LoadBalancer`
 
@@ -346,6 +372,7 @@ If Vault is unreachable, not configured, or the secret/field doesn't exist, the 
 | `backup` | `Backup` | no | none | Backup schedule. |
 | `ephemeralInPreviews` | boolean | no | `false` | Provision a full, disposable database of its own for every pull-request preview, destroyed with the preview and with no restore path. Only meaningful once the app's git source has preview environments enabled; see [Git integrations](/git-integrations) and [Deploy previews](/deploy-previews). |
 | `isolatedInPreviews` | boolean | no | `false` | Give each preview its own credential on the existing database (a Postgres role or a Redis ACL user scoped to its own key prefix) instead of a new instance. Postgres and Redis only. Ignored when `ephemeralInPreviews` is also set. |
+| `seedFrom` | string | no | `none` | With `ephemeralInPreviews`, `latest` restores the newest succeeded backup of the database with the same key as the preview's starting data, with fresh credentials (the source's secrets are never copied). `none` starts empty. With no backup, no restore runner, a different engine or too little free disk, the preview database starts empty and the preview status says why. |
 
 ### `Backup`
 

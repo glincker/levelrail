@@ -1,7 +1,6 @@
 .git
 .github
 .claude
-docs-local
 data
 *.db
 *.db-wal

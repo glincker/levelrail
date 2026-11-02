@@ -74,6 +74,7 @@ export function useMaintenanceBanner() {
 export function useCreateScheduledMaintenance() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async (
       body: CreateScheduledMaintenance,
     ): Promise<ScheduledMaintenance> => {

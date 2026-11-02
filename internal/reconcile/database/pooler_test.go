@@ -73,7 +73,7 @@ func TestPooler_LifecycleFollowsDesiredState(t *testing.T) {
 	}
 }
 
-func TestPooler_ImageUnsetKeepsDatabaseReady(t *testing.T) {
+func TestPooler_ImageUnsetUsesPinnedDefault(t *testing.T) {
 	t.Setenv(EnvPoolerImage, "")
 	rt := newFakeRuntime()
 	desired := &store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16", PoolerEnabled: true}
@@ -86,8 +86,11 @@ func TestPooler_ImageUnsetKeepsDatabaseReady(t *testing.T) {
 	if conditionOf(t, res).Status != reconcile.ConditionTrue {
 		t.Errorf("database Ready = %+v, want True", conditionOf(t, res))
 	}
-	if cond, _ := poolerCond(t, res); cond.Reason != "PoolerImageNotConfigured" {
-		t.Errorf("pooler reason = %q, want PoolerImageNotConfigured", cond.Reason)
+	if cond, _ := poolerCond(t, res); cond.Reason != "PoolerRunning" {
+		t.Errorf("pooler reason = %q, want PoolerRunning", cond.Reason)
+	}
+	if got := PoolerImage(); got != DefaultPoolerImage || strings.HasSuffix(got, ":latest") || !strings.Contains(got, ":v") {
+		t.Errorf("PoolerImage() = %q, want pinned default", got)
 	}
 }
 
@@ -113,5 +116,32 @@ func TestPooler_ReplacedWhenPasswordRotates(t *testing.T) {
 		if strings.Contains(v, "new-pw") {
 			t.Errorf("label %s carries the password", k)
 		}
+	}
+}
+
+func TestParseShowPools(t *testing.T) {
+	out := "database|user|cl_active|cl_waiting|cl_active_cancel_req|sv_active|maxwait|maxwait_us|pool_mode\n" +
+		"app|app|10|3|0|10|7|500000|transaction\n" +
+		"app|other|1|2|0|1|2|0|transaction\n" +
+		"pgbouncer|pgbouncer|1|0|0|0|0|0|statement\n" +
+		"(3 rows)\n"
+	got, err := ParseShowPools(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ClientsWaiting != 5 || got.MaxWaitSeconds != 7.5 {
+		t.Fatalf("got %+v, want 5 waiting and 7.5s", got)
+	}
+	if _, err := ParseShowPools("psql: error: connection refused"); err == nil {
+		t.Fatal("expected an error for output without a SHOW POOLS header")
+	}
+}
+
+func TestPoolerConfigRevision_IgnoresStatsUsers(t *testing.T) {
+	env := poolerEnv("main", "pw", 0, 0)
+	with := poolerConfigRevision(env)
+	delete(env, "STATS_USERS")
+	if got := poolerConfigRevision(env); got != with {
+		t.Errorf("revision changed when STATS_USERS was removed: %s vs %s", got, with)
 	}
 }

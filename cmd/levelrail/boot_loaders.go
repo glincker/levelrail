@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/agent"
@@ -35,19 +36,25 @@ import (
 	"github.com/GLINCKER/levelrail/internal/webhook"
 )
 
-// Turns a missing brand.yaml into an actionable message, since it would otherwise read as an opaque crash.
-// brand.Load itself stays strict about its input.
+var brandFallbackLogged sync.Once
+
+// A missing default ./brand.yaml falls back to the built-in brand so a bare binary still boots.
+// An explicit APP_BRAND_FILE that is missing stays an actionable error. brand.Load itself stays strict.
 func loadBrand() (*brand.Brand, error) {
 	path := os.Getenv("APP_BRAND_FILE")
-	if path == "" {
+	explicit := path != ""
+	if !explicit {
 		path = defaultBrandFile
 	}
 	b, err := brand.Load(path)
-	if err != nil && os.IsNotExist(errors.Unwrap(err)) && localmode.Enabled(os.Getenv) {
+	if err != nil && os.IsNotExist(errors.Unwrap(err)) && (!explicit || localmode.Enabled(os.Getenv)) {
+		brandFallbackLogged.Do(func() {
+			slog.Info("brand file not found, using the built-in default brand", slog.String("path", path))
+		})
 		return brand.LoadEmbedded()
 	}
 	if err != nil && os.IsNotExist(errors.Unwrap(err)) {
-		return nil, fmt.Errorf("%w (running via install.sh sets this up automatically; running the binary directly needs either a brand.yaml file at %q or APP_BRAND_FILE pointing at one)", err, path)
+		return nil, fmt.Errorf("%w (APP_BRAND_FILE points at %q, which does not exist)", err, path)
 	}
 	return b, err
 }
@@ -97,7 +104,9 @@ func loadSecretsManager(db *store.DB, dataDir string, opts ...secrets.ManagerOpt
 		if err != nil {
 			return nil, "", fmt.Errorf("load master key from APP_MASTER_KEY: %w", err)
 		}
-		return secrets.NewManager(db, mk, opts...), "", nil
+		mgr = secrets.NewManager(db, mk, opts...)
+		mgr.Preload(context.Background())
+		return mgr, "", nil
 	}
 
 	mk, keyPath, err := loadOrGenerateMasterKey(dataDir)
@@ -114,6 +123,7 @@ func loadSecretsManager(db *store.DB, dataDir string, opts ...secrets.ManagerOpt
 	if promoted {
 		slog.Info("master key rotation was interrupted; completed it from the staged key file")
 	}
+	mgr.Preload(context.Background())
 	return mgr, keyPath, nil
 }
 
@@ -231,7 +241,9 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 	}
 
 	router := build.NewRouter(buildClient, buildNodeSource(db, agentRegistry), agent.NewBuildDispatcher(agentRegistry), build.WithRouterLogger(logger))
-	limiter := build.NewLimiter(router, api.BuildLimitsSource(db, build.LimitsFromEnv(os.LookupEnv)),
+	memGuard := build.MemGuardFromEnv(os.LookupEnv)
+	limiter := build.NewLimiter(router, api.BuildLimitsSourceWithMemory(db, build.LimitsFromEnv(os.LookupEnv), buildMemoryCap(memGuard)),
+		build.WithMemoryGuard(memGuard, hostMemoryMB),
 		build.WithRunRecorder(api.BuildRunRecorder(db)), build.WithLimiterLogger(logger),
 		build.WithNodeResolver(router.SelectedNode), build.WithImageSizer(router.ImageSize),
 		build.WithCgroupProvisioner(build.NewCgroupProvisioner(os.Getenv(build.EnvBuildCgroupRoot))))

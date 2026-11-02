@@ -1,0 +1,71 @@
+---
+title: "Self-host RustFS with Docker"
+sidebarTitle: "RustFS"
+description: "An S3-compatible object storage server written in Rust, with a web console. One container serves the S3 API on port 9000 and the console on port 9001. Access and secret keys are generated at install time."
+"og:url": "https://docs.levelrail.com/self-host/rustfs"
+---
+
+An S3-compatible object storage server written in Rust, with a web console. One container serves the S3 API on port 9000 and the console on port 9001. Access and secret keys are generated at install time.
+
+This page describes the Levelrail template for RustFS (Storage). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.rustfs.com/.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `rustfs` | `rustfs/rustfs:1.0.4` | 9001, 9000 | `data -&#62; /data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `rustfs` | `RUSTFS_ACCESS_KEY` | Generated at deploy |
+| `rustfs` | `RUSTFS_ADDRESS` | Preset in the template |
+| `rustfs` | `RUSTFS_CONSOLE_ADDRESS` | Preset in the template |
+| `rustfs` | `RUSTFS_CONSOLE_ENABLE` | Preset in the template |
+| `rustfs` | `RUSTFS_SECRET_KEY` | Generated at deploy |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`rustfs`): RUSTFS_ACCESS_KEY, RUSTFS_SECRET_KEY.
+- Stores data in named volumes (`rustfs`): data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy RustFS with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select RustFS. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy rustfs --name my-rustfs
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Storage templates
+
+- [Chibisafe](/self-host/chibisafe)
+- [Cloudreve](/self-host/cloudreve)
+- [copyparty](/self-host/copyparty)
+- [Duplicati](/self-host/duplicati)
+- [File Browser](/self-host/filebrowser)
+
+All templates are listed in the [self-host gallery](/self-host).

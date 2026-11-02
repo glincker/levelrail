@@ -105,6 +105,7 @@ async function editAppDomains(
 export function useEditAppDomains(appName: string) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (input: EditDomainsInput) => editAppDomains(appName, input),
     onSuccess: () => {
       void queryClient.invalidateQueries({

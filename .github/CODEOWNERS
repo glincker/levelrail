@@ -1,1 +1,9 @@
 * @thegdsks
+
+# Catalog data and the workflow that admits it.
+/internal/catalog/manifests/ @thegdsks
+/internal/catalog/verified.json @thegdsks
+/internal/catalog/images.lock.json @thegdsks
+/internal/catalog/tombstones.json @thegdsks
+/internal/catalog/contrib/ @thegdsks
+/.github/workflows/template-pr.yml @thegdsks

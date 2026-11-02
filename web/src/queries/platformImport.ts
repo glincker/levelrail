@@ -68,12 +68,14 @@ async function postImport(
 
 export function useDiscoverPlatformImport() {
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (req: PlatformImportRequest) => postImport('discover', req),
   })
 }
 
 export function useApplyPlatformImport() {
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (req: PlatformImportRequest) => postImport('apply', req),
   })
 }

@@ -211,3 +211,103 @@ func TestSleepResourceReportsWakeTimingAndIdleLimits(t *testing.T) {
 		t.Errorf("below the env floor = %d %s", rec.Code, rec.Body)
 	}
 }
+
+func TestDeployURLCopyWakeIgnoresAutomatedTraffic(t *testing.T) {
+	rt, db, _ := newSafetyRouter(t, stubResolver{digest: newDigest})
+	rt.wakeToken = "tok"
+	ctx := context.Background()
+	for _, n := range []string{"web", "web-aaaaaaa"} {
+		if err := db.SaveDesiredService(ctx, store.DesiredService{Name: n, Image: "nginx:1", Port: 80, Domains: []string{n + ".example.com"}}); err != nil {
+			t.Fatal(err)
+		}
+		if err := db.SetAppSleepIdle(ctx, n, 5, time.Now()); err != nil {
+			t.Fatal(err)
+		}
+		if err := db.UpdateServiceSuspended(ctx, n, true); err != nil {
+			t.Fatal(err)
+		}
+		if err := db.SetAppSleeping(ctx, n, true, time.Now()); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := db.SaveDeployURL(ctx, store.DeployURL{ServiceName: "web-aaaaaaa", AppName: "web", AttemptID: "da_1", Host: "web-aaaaaaa.example.com"}); err != nil {
+		t.Fatal(err)
+	}
+	hit := func(app string, hdr map[string]string) int {
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/hooks/wake", nil)
+		req.Header.Set("X-Wake-Token", "tok")
+		req.Header.Set("X-Wake-App", app)
+		req.Header.Set("X-Wake-Uri", "/")
+		for k, v := range hdr {
+			req.Header.Set(k, v)
+		}
+		rec := httptest.NewRecorder()
+		rt.handleWakeHook(rec, req)
+		return rec.Code
+	}
+	asleep := func(app string) bool { a, _ := db.GetAppSleep(ctx, app); return a.Sleeping }
+
+	scanner := map[string]string{"User-Agent": "Mozilla/5.0 (compatible; CensysInspect/1.1)", "Accept": "*/*"}
+	bot := map[string]string{"User-Agent": "Googlebot/2.1", "Sec-Fetch-Mode": "navigate"}
+	for _, h := range []map[string]string{scanner, bot, nil} {
+		if code := hit("web-aaaaaaa", h); code != http.StatusServiceUnavailable || !asleep("web-aaaaaaa") {
+			t.Fatalf("automated request %v: code %d asleep=%v, want 503 and still asleep", h, code, asleep("web-aaaaaaa"))
+		}
+	}
+	// The same unauthenticated request still wakes a normal app: only copies are gated.
+	hit("web", scanner)
+	if asleep("web") {
+		t.Fatal("a regular app must still wake on any request")
+	}
+	browser := map[string]string{"User-Agent": "Mozilla/5.0 Safari/605.1", "Sec-Fetch-Mode": "navigate", "Accept": "text/html"}
+	hit("web-aaaaaaa", browser)
+	if asleep("web-aaaaaaa") {
+		t.Fatal("a browser visit must wake the copy")
+	}
+}
+
+func TestDeployURLCopyWakeWithoutFetchMetadataOverHTTPS(t *testing.T) {
+	rt, db, _ := newSafetyRouter(t, stubResolver{digest: newDigest})
+	rt.wakeToken = "tok"
+	ctx := context.Background()
+	for _, n := range []string{"web", "web-bbbbbbb"} {
+		if err := db.SaveDesiredService(ctx, store.DesiredService{Name: n, Image: "nginx:1", Port: 80, Domains: []string{n + ".example.com"}}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := db.SaveDeployURL(ctx, store.DeployURL{ServiceName: "web-bbbbbbb", AppName: "web", AttemptID: "da_2", Host: "web-bbbbbbb.example.com"}); err != nil {
+		t.Fatal(err)
+	}
+	sleepCopy := func() {
+		if err := db.SetAppSleepIdle(ctx, "web-bbbbbbb", 5, time.Now()); err != nil {
+			t.Fatal(err)
+		}
+		if err := db.UpdateServiceSuspended(ctx, "web-bbbbbbb", true); err != nil {
+			t.Fatal(err)
+		}
+		if err := db.SetAppSleeping(ctx, "web-bbbbbbb", true, time.Now()); err != nil {
+			t.Fatal(err)
+		}
+	}
+	hit := func(ua string) bool {
+		sleepCopy()
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/hooks/wake", nil)
+		req.Header.Set("X-Wake-Token", "tok")
+		req.Header.Set("X-Wake-App", "web-bbbbbbb")
+		req.Header.Set("X-Wake-Uri", "/")
+		req.Header.Set("X-Forwarded-Proto", "https")
+		req.Header.Set("Accept", "text/html,application/xhtml+xml")
+		req.Header.Set("User-Agent", ua)
+		rt.handleWakeHook(httptest.NewRecorder(), req)
+		a, _ := db.GetAppSleep(ctx, "web-bbbbbbb")
+		return !a.Sleeping
+	}
+	if !hit("Mozilla/5.0 (Macintosh) AppleWebKit/605.1.15 Version/15.6 Safari/605.1.15") {
+		t.Fatal("older Safari without Sec-Fetch-Mode over https must wake the copy")
+	}
+	for _, ua := range []string{"curl/8.4.0", "Googlebot/2.1", "Mozilla/5.0 HeadlessChrome/120.0"} {
+		if hit(ua) {
+			t.Fatalf("%q must not wake the copy", ua)
+		}
+	}
+}

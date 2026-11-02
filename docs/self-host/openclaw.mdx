@@ -1,11 +1,11 @@
 ---
 title: "Self-host OpenClaw with Docker"
 sidebarTitle: "OpenClaw"
-description: "A self-hosted personal AI agent gateway that connects chat apps and tools to the model provider you choose."
+description: "A self-hosted personal AI agent gateway that connects chat apps and tools to the model provider you choose. Recommended container limit is 2 GiB. Measured use is 0.9 to 1.3 GiB, so a Levelrail VM needs at least 4096 MiB. The gateway trusts the ingress proxy through gateway.trustedProxies, written once to openclaw.json in the data volume."
 "og:url": "https://docs.levelrail.com/self-host/openclaw"
 ---
 
-A self-hosted personal AI agent gateway that connects chat apps and tools to the model provider you choose.
+A self-hosted personal AI agent gateway that connects chat apps and tools to the model provider you choose. Recommended container limit is 2 GiB. Measured use is 0.9 to 1.3 GiB, so a Levelrail VM needs at least 4096 MiB. The gateway trusts the ingress proxy through gateway.trustedProxies, written once to openclaw.json in the data volume.
 
 This page describes the Levelrail template for OpenClaw (AI). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.openclaw.ai/install.
 
@@ -67,7 +67,7 @@ See the [service template catalog](/templates-and-registry) for how templates wo
 - [AnythingLLM](/self-host/anythingllm)
 - [ComfyUI](/self-host/comfyui)
 - [Crawl4AI](/self-host/crawl4ai)
+- [Docling Serve](/self-host/docling-serve)
 - [Flowise](/self-host/flowise)
-- [Flowise (Postgres + Qdrant)](/self-host/flowise-postgres)
 
 All templates are listed in the [self-host gallery](/self-host).

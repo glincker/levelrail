@@ -1,0 +1,30 @@
+id: grav
+name: Grav
+description: A flat-file CMS that stores pages as Markdown files, so there is no database to run. Edit content in the admin panel or directly on the volume.
+icon: file-text
+category: Applications
+documentation_url: https://learn.getgrav.org/
+source_repo: https://github.com/getgrav/grav
+license: MIT
+license_class: permissive
+license_url: https://github.com/getgrav/grav/blob/develop/LICENSE.txt
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+env:
+  - key: TZ
+    label: Time zone
+    description: IANA time zone for logs and scheduled jobs.
+    default: Etc/UTC
+first_run:
+  - Open /admin on the public address and create the first administrator account before anyone else does.
+domains:
+  - service: grav
+    port: 80
+    description: Public address of the site.
+healthcheck:
+  service: grav
+  port: 80
+  path: /

@@ -1,4 +1,4 @@
-import type { DocHeading, DocsManifest } from '../types/docs'
+import type { DocHeading, DocsManifest, DocsSearchBodies } from '../types/docs'
 
 export interface DocSearchResult {
   path: string
@@ -14,6 +14,7 @@ export interface DocSearchResult {
 export function searchDocs(
   manifest: DocsManifest,
   query: string,
+  bodies?: DocsSearchBodies,
 ): DocSearchResult[] {
   const q = query.trim().toLowerCase()
   if (!q) return []
@@ -38,7 +39,10 @@ export function searchDocs(
     // Falls back to the body excerpt only when title/headings found
     // nothing, so a page already surfaced by a heading match doesn't also
     // show a redundant page-level entry.
-    if (!matched && page.body.toLowerCase().includes(q)) {
+    if (
+      !matched &&
+      (bodies?.[path] ?? page.body ?? '').toLowerCase().includes(q)
+    ) {
       results.push({ path, title: page.title })
     }
   }
@@ -68,6 +72,7 @@ export function searchDocsGrouped(
   manifest: DocsManifest,
   query: string,
   limits: { pages: number; headings: number } = { pages: 8, headings: 2 },
+  bodies?: DocsSearchBodies,
 ): DocPageHit[] {
   const q = query.trim().toLowerCase()
   if (!q) return []
@@ -79,7 +84,7 @@ export function searchDocsGrouped(
     if (path === '/') continue
     if (filterPublished && !page.section) continue
     const title = page.title.toLowerCase()
-    const body = page.body.toLowerCase()
+    const body = (bodies?.[path] ?? page.body ?? '').toLowerCase()
     const headings = page.headings.map((heading, order) => ({
       heading,
       order,

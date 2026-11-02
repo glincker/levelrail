@@ -204,7 +204,7 @@ func TestBuildRoutesConfig_ACMEDisabled_RegressionUnchanged(t *testing.T) {
 							},
 							{
 								Match:  []Matcher{{Host: []string{"static.example.com"}}},
-								Handle: []any{NewFileServerHandler("/var/lib/levelrail-data/static/docs/abc")},
+								Handle: []any{NewStaticEncodeHandler(), NewFileServerHandler("/var/lib/levelrail-data/static/docs/abc")},
 							},
 						},
 						AutomaticHTTPS: &AutoHTTPSConfig{DisableRedir: true},

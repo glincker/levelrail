@@ -90,6 +90,7 @@ async function cleanupOrphanedVolumes(
 export function useCleanupOrphanedVolumes() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: cleanupOrphanedVolumes,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: orphanedVolumesKeys.all })

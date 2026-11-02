@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"sort"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 // DeployAttempt is one row-per-attempt entry in the deploy_attempts
@@ -389,6 +391,7 @@ var ErrDeployAttemptNotFound = errors.New("store: deploy attempt not found")
 // "caller controls the vocabulary" convention for status strings
 // elsewhere in this package.
 func (db *DB) FinishDeployAttempt(ctx context.Context, id, status string, finishedAt time.Time, errMsg string) error {
+	errMsg = secretmask.Mask(errMsg)
 	var errVal sql.NullString
 	if errMsg != "" {
 		errVal = sql.NullString{String: errMsg, Valid: true}

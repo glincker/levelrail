@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -88,6 +89,75 @@ func parseV2Selector(raw string) (v2Selector, error) {
 	return sel, nil
 }
 
+// v2FieldSelector filters on metadata.name, metadata.namespace and top-level status.* values.
+type v2FieldSelector []v2FieldTerm
+
+type v2FieldTerm struct {
+	field, value string
+	negate       bool
+}
+
+func parseV2FieldSelector(raw string) (v2FieldSelector, error) {
+	var out v2FieldSelector
+	for _, term := range strings.Split(raw, ",") {
+		term = strings.TrimSpace(term)
+		if term == "" {
+			continue
+		}
+		t := v2FieldTerm{}
+		var k, v string
+		var found bool
+		if k, v, found = strings.Cut(term, "!="); found {
+			t.negate = true
+		} else if k, v, found = strings.Cut(strings.Replace(term, "==", "=", 1), "="); !found {
+			return nil, fmt.Errorf("unsupported field selector term %q", term)
+		}
+		t.field, t.value = strings.TrimSpace(k), strings.TrimSpace(v)
+		if t.field != "metadata.name" && t.field != "metadata.namespace" && !strings.HasPrefix(t.field, "status.") {
+			return nil, fmt.Errorf("unsupported field selector %q: use metadata.name, metadata.namespace or status.<field>", t.field)
+		}
+		out = append(out, t)
+	}
+	return out, nil
+}
+
+func (fs v2FieldSelector) matches(o v2Object) bool {
+	for _, t := range fs {
+		var got string
+		switch t.field {
+		case "metadata.name":
+			got = o.Metadata.Name
+		case "metadata.namespace":
+			got = o.Metadata.Namespace
+		default:
+			got = v2StatusField(o.Status, strings.TrimPrefix(t.field, "status."))
+		}
+		if (got == t.value) == t.negate {
+			return false
+		}
+	}
+	return true
+}
+
+// v2StatusField reads one top-level status value through JSON so struct and map statuses behave alike.
+func v2StatusField(status any, key string) string {
+	if status == nil {
+		return ""
+	}
+	raw, err := json.Marshal(status)
+	if err != nil {
+		return ""
+	}
+	var m map[string]any
+	if json.Unmarshal(raw, &m) != nil {
+		return ""
+	}
+	if v, ok := m[key]; ok && v != nil {
+		return fmt.Sprint(v)
+	}
+	return ""
+}
+
 func (sel v2Selector) matches(labels map[string]string) bool {
 	for _, m := range sel {
 		if !m(labels) {
@@ -138,6 +208,11 @@ func (s *v2Server) handleList(kind string) http.HandlerFunc {
 			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}
+		fsel, err := parseV2FieldSelector(r.URL.Query().Get("fieldSelector"))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
 		if kind == v2PathApps {
 			s.ensureBackfill(r.Context())
 		}
@@ -154,7 +229,7 @@ func (s *v2Server) handleList(kind string) http.HandlerFunc {
 		namespace := r.URL.Query().Get("namespace")
 		matched := items[:0:0]
 		for _, o := range items {
-			if sel.matches(o.Metadata.Labels) && (namespace == "" || o.Metadata.Namespace == namespace) {
+			if sel.matches(o.Metadata.Labels) && fsel.matches(o) && (namespace == "" || o.Metadata.Namespace == namespace) {
 				matched = append(matched, o)
 			}
 		}

@@ -39,6 +39,7 @@ func setAppCondition(t *testing.T, db *store.DB, app string, status reconcile.Co
 }
 
 func TestAppsSummaryAndStatusFilter_AreTenantScoped(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	seedSearchApps(t, db, "ok-a", "ok-b", "bad-a", "secret-bad")
 	setAppCondition(t, db, "ok-a", reconcile.ConditionTrue)
@@ -71,6 +72,7 @@ func TestAppsSummaryAndStatusFilter_AreTenantScoped(t *testing.T) {
 }
 
 func TestAppsList_MultiEnvironmentFilterAndSummary(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	ctx := context.Background()
 	seedSearchApps(t, db, "one", "two", "three")
@@ -97,6 +99,7 @@ func TestAppsList_MultiEnvironmentFilterAndSummary(t *testing.T) {
 }
 
 func TestHandleListNodes_ResourceCount(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedNode(t, db, "node_a", "alpha")

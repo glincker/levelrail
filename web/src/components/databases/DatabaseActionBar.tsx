@@ -2,6 +2,7 @@ import { lazy, Suspense, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
+  CopyGlassIcon,
   EllipsisGlassIcon,
   PauseGlassIcon,
   PlayGlassIcon,
@@ -19,6 +20,7 @@ import type { DatabaseResource } from '../../types/databaseDetail'
 import { engineHasBackups } from '@/lib/databaseCatalog'
 import { DeleteDatabaseDialog } from '../DeleteDatabaseDialog'
 import { ConnectDrawer } from './ConnectDrawer'
+import { BranchDatabaseDialog } from './BranchDatabaseDialog'
 
 const BackupSetupDialog = lazy(() =>
   import('./backupSetup/BackupSetupDialog').then((m) => ({
@@ -43,6 +45,7 @@ export function DatabaseActionBar({
   const [restarting, setRestarting] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [setupOpen, setSetupOpen] = useState(false)
+  const [branchOpen, setBranchOpen] = useState(false)
   const targetId = database.backup_target_id
 
   function onError(error: Error) {
@@ -186,6 +189,18 @@ export function DatabaseActionBar({
               })
             },
           },
+          ...(engineHasBackups(database.engine)
+            ? [
+                {
+                  id: 'branch',
+                  label: t('detail.branch'),
+                  icon: <CopyGlassIcon size="1.4em" />,
+                  onSelect: () => {
+                    setBranchOpen(true)
+                  },
+                },
+              ]
+            : []),
           {
             id: 'delete',
             label: t('detail.delete'),
@@ -197,6 +212,14 @@ export function DatabaseActionBar({
           },
         ]}
       />
+      {branchOpen ? (
+        <BranchDatabaseDialog
+          name={name}
+          engine={database.engine}
+          open={branchOpen}
+          onOpenChange={setBranchOpen}
+        />
+      ) : null}
       <DeleteDatabaseDialog
         name={name}
         open={deleteOpen}

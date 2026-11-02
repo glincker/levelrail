@@ -1,5 +1,5 @@
 import type { ReactElement, ReactNode } from 'react'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
@@ -193,7 +193,14 @@ describe('FailureContextCard', () => {
     }
     renderObs(<FailureContextCard appName="web" />)
     expect(screen.getByText('This app is crashlooping')).toBeInTheDocument()
-    expect(screen.getByText('panic: boom')).toBeInTheDocument()
+    const lines = screen.getByLabelText(
+      'Last log lines of the failing container',
+    )
+    expect(within(lines).getByText('panic: boom')).toBeInTheDocument()
+    // The same line also leads the card as the likeliest cause.
+    expect(screen.getByText('Last line:').parentElement).toHaveTextContent(
+      'panic: boom',
+    )
     expect(
       screen.getByText(/7 restarts in the last 15 minutes/),
     ).toBeInTheDocument()

@@ -322,5 +322,27 @@
     "composeHint": "Rellenado desde la plantilla. Edítalo si lo necesitas antes de desplegar.",
     "deploying": "Desplegando...",
     "deploy": "Desplegar"
+  },
+  "facts": {
+    "license": {
+      "title": "Licencia: {{spdx}}",
+      "classes": {
+        "permissive": "Licencia permisiva",
+        "copyleft": "Licencia copyleft",
+        "network-copyleft": "Licencia copyleft de red",
+        "source-available": "Código disponible",
+        "proprietary": "Propietaria"
+      }
+    },
+    "verifiedOn": "Verificada en {{arches}} con la etiqueta de imagen {{tag}}",
+    "deprecated": "Obsoleta",
+    "yanked": "Retirada",
+    "useInstead": "Usa {{id}} en su lugar",
+    "filter": {
+      "license": "Clase de licencia",
+      "anyLicense": "Cualquier licencia",
+      "arch": "Arquitectura",
+      "anyArch": "Cualquier arquitectura"
+    }
   }
 }

@@ -55,6 +55,9 @@ type Preset struct {
 	EnvHints     []EnvHint    `json:"env_hints"`
 	Volumes      []VolumeHint `json:"volumes"`
 	DocsAnchor   string       `json:"docs_anchor"`
+	// OwnBuild marks static generators whose build command is not an npm
+	// script, so StaticBuild returns BuildCommand instead of the default.
+	OwnBuild bool `json:"-"`
 }
 
 var presets = []Preset{
@@ -109,6 +112,49 @@ var presets = []Preset{
 		EnvHints: []EnvHint{
 			{Key: "HOST", Description: "Bind address for adapter-node.", Default: "0.0.0.0"},
 			{Key: "ORIGIN", Description: "Public origin; form actions fail CSRF checks without it.", Required: true},
+		},
+	},
+	{
+		ID: "astro-ssr", Name: "Astro (SSR)", Runtime: "node", Icon: "astro", BuildType: BuildRailpack, OutputMode: OutputServer,
+		Port: 4321, HealthPath: "/", BuildCommand: "astro build", StartCommand: "node ./dist/server/entry.mjs", DocsAnchor: "astro-ssr",
+		EnvHints: []EnvHint{
+			{Key: "HOST", Description: "Bind address for the @astrojs/node standalone server; must be 0.0.0.0 to be reachable.", Default: "0.0.0.0"},
+			{Key: "PORT", Description: "Listen port of the standalone server; keep it equal to the app port.", Default: "4321"},
+		},
+	},
+	{
+		ID: "hugo", Name: "Hugo", Runtime: "go", Icon: "hugo", BuildType: BuildStatic, OutputMode: OutputStatic,
+		HealthPath: "/", BuildCommand: "hugo --minify", PublishDir: "public", OwnBuild: true, DocsAnchor: "hugo",
+		EnvHints: []EnvHint{{Key: "HUGO_ENVIRONMENT", Description: "Selects the config environment, production by default for hugo builds.", Default: "production"}},
+	},
+	{
+		ID: "jekyll", Name: "Jekyll", Runtime: "ruby", Icon: "jekyll", BuildType: BuildStatic, OutputMode: OutputStatic,
+		HealthPath: "/", BuildCommand: "bundle exec jekyll build", PublishDir: "_site", OwnBuild: true, DocsAnchor: "jekyll",
+		EnvHints: []EnvHint{{Key: "JEKYLL_ENV", Description: "Set to production so pages built for deploy skip development-only content.", Default: "production"}},
+	},
+	{
+		ID: "eleventy", Name: "Eleventy", Runtime: "node", Icon: "eleventy", BuildType: BuildStatic, OutputMode: OutputStatic,
+		HealthPath: "/", BuildCommand: "npx @11ty/eleventy", PublishDir: "_site", OwnBuild: true, DocsAnchor: "eleventy",
+	},
+	{
+		ID: "nestjs", Name: "NestJS", Runtime: "node", Icon: "nestjs", BuildType: BuildRailpack, OutputMode: OutputServer,
+		Port: 3000, HealthPath: "/", BuildCommand: "nest build", StartCommand: "node dist/main", DocsAnchor: "nestjs",
+		EnvHints: []EnvHint{{Key: "PORT", Description: "Pass it to app.listen(process.env.PORT); NestJS defaults to 3000 when it is unset.", Default: "3000"}},
+	},
+	{
+		ID: "flask", Name: "Flask", Runtime: "python", Icon: "flask", BuildType: BuildRailpack, OutputMode: OutputServer,
+		Port: 5000, HealthPath: "/", StartCommand: "gunicorn -b 0.0.0.0:5000 app:app", DocsAnchor: "flask",
+		EnvHints: []EnvHint{
+			{Key: "SECRET_KEY", Description: "Signs sessions; read it with app.config.from_prefixed_env or os.environ.", Required: true, Secret: true},
+			{Key: "WEB_CONCURRENCY", Description: "Gunicorn worker count.", Default: "2"},
+		},
+	},
+	{
+		ID: "rust", Name: "Rust (axum, Actix Web)", Runtime: "rust", Icon: "rust", BuildType: BuildRailpack, OutputMode: OutputBinary,
+		Port: 8080, HealthPath: "/", BuildCommand: "cargo build --release", StartCommand: "./target/release/app", ReadyTimeout: "60s", DocsAnchor: "rust",
+		EnvHints: []EnvHint{
+			{Key: "PORT", Description: "Rust has no default port; bind 0.0.0.0 on this value and keep it equal to the app port.", Default: "8080"},
+			{Key: "RUST_LOG", Description: "Log filter for tracing or env_logger.", Default: "info"},
 		},
 	},
 	{
@@ -201,6 +247,9 @@ const DefaultStaticBuildCommand = "npm run build"
 func (p Preset) StaticBuild() (command, publish string, ok bool) {
 	if p.BuildType != BuildStatic || p.PublishDir == "" {
 		return "", "", false
+	}
+	if p.OwnBuild {
+		return p.BuildCommand, p.PublishDir, true
 	}
 	return DefaultStaticBuildCommand, p.PublishDir, true
 }

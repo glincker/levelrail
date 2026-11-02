@@ -166,7 +166,7 @@ var selfhosted2Templates = []Template{
       DOLI_DB_PASSWORD: $SERVICE_PASSWORD_DB
       DOLI_ADMIN_LOGIN: admin
       DOLI_ADMIN_PASSWORD: $SERVICE_PASSWORD_ADMIN
-      DOLI_URL_ROOT: ${SERVICE_FQDN_DOLIBARR:-http://localhost:8080}
+      DOLI_URL_ROOT: ${SERVICE_URL_DOLIBARR:-http://localhost:8080}
     volumes:
       - dolibarr_documents:/var/www/documents
       - dolibarr_custom:/var/www/html/custom
@@ -283,7 +283,7 @@ var selfhosted2Templates = []Template{
     environment:
       MODE: standalone
       DATABASE_URL: postgres://windmill:$SERVICE_PASSWORD_DB@db:5432/windmill?sslmode=disable
-      BASE_URL: ${SERVICE_FQDN_WINDMILL:-http://localhost:8000}
+      BASE_URL: ${SERVICE_URL_WINDMILL:-http://localhost:8000}
     volumes:
       - windmill_worker_logs:/tmp/windmill/logs
       - windmill_worker_cache:/tmp/windmill/cache

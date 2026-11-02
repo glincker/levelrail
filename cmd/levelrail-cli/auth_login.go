@@ -14,12 +14,12 @@ import (
 // Use --abilities for a deliberately narrower credential.
 var defaultTokenAbility = []string{"root"}
 
-// The login cookie is Secure, so the token mint fails over plain http; use an https --api-url.
+// The login cookie is Secure, so off-loopback plain http fails at the token mint; loopback http works.
 func runAuthLogin(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs, usernameP, passwordP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := sessionFlagSet(prog, "auth login", "print the new token resource as JSON to stdout and nothing else", stderr)
 	var tokenName, abilitiesFlag, clientNameFlag string
 	var expiresInDays int
-	var deviceFlag, reauthFlag, waitFlag bool
+	var deviceFlag, reauthFlag, waitFlag, printToken bool
 	var codeFlag string
 	var openFlag triBool
 	var approvalTimeout time.Duration
@@ -33,6 +33,7 @@ func runAuthLogin(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	fs.IntVar(&expiresInDays, "expires-in-days", 0, "token lifetime in days (default: 90)")
 	fs.BoolVar(&deviceFlag, "device", false, "log in via the device code flow (print a code, approve it from the web dashboard) instead of username/password; works over plain http")
 	fs.StringVar(&clientNameFlag, "client-name", "", "optional label for the device request shown in the approval UI, --device only (default: local hostname)")
+	fs.BoolVar(&printToken, "print-token", false, "print the new token value to stdout (default: only save it to the credentials file)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, authLoginUsage(prog)) }
 
 	if err := fs.Parse(args); err != nil {
@@ -50,7 +51,7 @@ func runAuthLogin(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	of := outputFlags{format, *queryFlagP}
 
 	if deviceFlag {
-		return runAuthLoginDevice(prog, *apiURLFlagP, *profileFlagP, clientNameFlag, reauthFlag, stdout, stderr, lookupEnv, of, jsonOut)
+		return runAuthLoginDevice(prog, *apiURLFlagP, *profileFlagP, clientNameFlag, reauthFlag, printToken, stdout, stderr, lookupEnv, of, jsonOut)
 	}
 
 	if codeFlag != "" {
@@ -90,11 +91,18 @@ func runAuthLogin(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("save credentials: %w", err))
 	}
 
-	if err := renderResult(stdout, of.Format, of.Query, created, func() {
+	// The token is already saved; keeping it off stdout stops it leaking into logs and scrollback.
+	shown := created
+	if !printToken {
+		shown.Token = ""
+	}
+	if err := renderResult(stdout, of.Format, of.Query, shown, func() {
 		dir, _ := configDir(prog)
 		_, _ = fmt.Fprintf(stdout, "logged in as %q\n", loginResp.Username)
 		_, _ = fmt.Fprintf(stdout, "token %q (id %s) created and saved to %s/%s under profile %q\n", created.Name, created.ID, dir, credentialsFileName, profile)
-		_, _ = fmt.Fprintf(stdout, "token value (shown once, not recoverable again): %s\n", created.Token)
+		if printToken {
+			_, _ = fmt.Fprintf(stdout, "token value (shown once, not recoverable again): %s\n", created.Token)
+		}
 	}); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)
@@ -125,11 +133,10 @@ real API token from that session and saves it to this CLI's own
 credentials file. Every later command's --token/%[2]s/credentials-file
 resolution then finds it automatically.
 
-Requires the control plane to be reachable over https for the session
-cookie the login step sets to round-trip to the token-minting step: see
-this command's own doc comment (auth_login.go) for why a plain-http
-target (the common local-dev default) fails at that second step.
-Use --device instead to avoid that entirely.
+Plain-http targets work on loopback (127.0.0.1, localhost, ::1). For any
+other host use an https --api-url, or --device or --code, which also work
+over plain http. The new token is saved to the credentials file and is not
+printed unless you pass --print-token.
 
 With --code XXXX-XXXX: signs in with a short-lived, single-use pairing code
 copied from the dashboard's "Connect your CLI" card. No password, no new
@@ -158,6 +165,7 @@ Flags:
   --token-name string         name for the new token (default: "levelrail-cli-<timestamp>")
   --abilities string           comma-separated ability list (default: root)
   --expires-in-days int      token lifetime in days (default: 90)
+  --print-token                print the new token value to stdout (default: saved only)
   --reauth                       replace the server this profile is pinned to (after the server was reinstalled or restored)
   --code string                pairing code from the dashboard's "Connect your CLI" card
   --open                         open the approval page in a browser (default: on at a desktop terminal)
@@ -169,5 +177,5 @@ Flags:
   --output string                output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string                 JMESPath expression to filter the result before printing
   -h, --help                    show this help
-`, prog, envAPIToken, envAPIURL, defaultAPIURL)
+`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }

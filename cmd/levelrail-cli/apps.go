@@ -29,6 +29,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsWait(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy-compose":
 		return runAppsDeployCompose(prog, args[1:], stdout, stderr, lookupEnv)
+	case "init":
+		return runAppsInit(prog, args[1:], stdout, stderr, lookupEnv)
 	case "validate":
 		return runAppsValidate(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy-spec":
@@ -63,6 +65,10 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsSleep(prog, args[1:], stdout, stderr, lookupEnv)
 	case "urls":
 		return runAppsURLs(prog, args[1:], stdout, stderr, lookupEnv)
+	case "game-status":
+		return runAppsGameStatus(prog, args[1:], stdout, stderr, lookupEnv)
+	case "cdn":
+		return runAppsCDN(prog, args[1:], stdout, stderr, lookupEnv)
 	case "abuse":
 		return runAppsAbuse(prog, args[1:], stdout, stderr, lookupEnv)
 	case "access":
@@ -135,6 +141,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsExposure(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "network":
 		return runAppsNetwork(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
+	case "export":
+		return runAppsExport(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "logs":
 		return runAppsLogs(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "metrics":
@@ -147,6 +155,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsOverview(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "exec":
 		return runAppsExec(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
+	case "console":
+		return runAppsConsole(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "tunnel":
 		return runAppsTunnel(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "exec-access":
@@ -278,6 +288,7 @@ func appsUsage(prog string) string {
   %[1]s apps github-actions get|set|start|finish <name> [flags]   what the GitHub Actions deploy action reports back (deployment, check run)
   %[1]s apps wait <name> [flags]        poll until a deploy attempt actually converges, exit accordingly (a CI gate for "apps deploy")
   %[1]s apps deploy-compose <name> --file compose.yaml [flags]   deploy a Docker Compose file as an app
+  %[1]s apps init [--file app.yaml] [flags]   write a starter app.yaml from the embedded schema, offline
   %[1]s apps validate --file <app.yaml|compose.yaml> [flags]   locally parse and validate a spec file, no API call
   %[1]s apps deploy-spec <name> --file app.yaml --repo-url <url> --ref <ref> [flags]   fan an app.yaml's services: map out into N independent builds under one app
   %[1]s apps group <name> [flags]   show name's sibling services under the same multi-service app
@@ -295,6 +306,8 @@ func appsUsage(prog string) string {
   %[1]s apps sleep enable|disable|status|wake|now|history <name> [flags]   stop an idle app and wake it on the next request
   %[1]s apps sleep list [flags]       apps with sleep on, which are asleep, and the memory freed
   %[1]s apps urls <name> [flags]   where the app can be reached now: ports, local and LAN addresses, domains, internal DNS name
+  %[1]s apps game-status <name> [flags]   game server online state, players, latency and the address players join
+  %[1]s apps cdn get|set|resync <name> [flags]    per app Cloudflare proxy setting, with a safe re-sync of existing DNS records
   %[1]s apps abuse get|set|dry-run <name> [flags]   per app rate limit and deny lists, log_only first, with a replay of recent traffic
   %[1]s apps access <name> [--slow-ms N] [--min-status N] [flags]   recent edge requests with request and trace ids
   %[1]s apps traces list|get <name> [flags]   OTLP traces received for an app: list, or one trace as a tree
@@ -336,12 +349,14 @@ func appsUsage(prog string) string {
   %[1]s apps cost <name> [flags]   estimate what this app's CPU/memory would cost under reference providers (not a real bill)
   %[1]s apps network <name> [flags]   show the live traffic path: container port, host port, running
   %[1]s apps exposure <name> [--mode proxied|direct] [--host-port N] [--port N] [--preview] [check]   change container port or direct host-port exposure, probe reachability
+  %[1]s apps export <name> [--format compose] [--out DIR|-]   write the app as plain docker-compose.yml, .env.example and README.md (no secret values)
   %[1]s apps logs <name> [flags]     search an app's stored log entries, or --follow to stream live
   %[1]s apps metrics <name> --metric NAME [flags]   query an app's metric time series
   %[1]s apps requests <name> [flags]                show request rate, errors and latency from the ingress
   %[1]s apps resource-usage [flags]   rank every app by latest CPU/memory/network usage
   %[1]s apps overview [name ...] [flags]   CPU, memory, traffic and errors for every app in one request
   %[1]s apps exec <name> --<cmd> [args...]   run a command in the app's container, exits with its real exit code
+  %[1]s apps console <name> [-- command...]   open the console its template declares (for example rcon-cli)
   %[1]s apps tunnel <name> [--service s] [--port p] [--local-port n]   reach a private app port from 127.0.0.1
   %[1]s apps exec-access enable|disable|status <name> [flags]   opt an app into (or out of) shell/exec access, on by default
   %[1]s apps log-drain get|set|clear <name> [flags]   configure an external log drain

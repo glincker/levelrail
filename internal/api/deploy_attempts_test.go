@@ -14,6 +14,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
@@ -485,5 +486,61 @@ func TestDeployErrorMessage_StripsControlCodes(t *testing.T) {
 	}
 	if strings.Contains(got, "hunter2") || !strings.Contains(got, "build failed") {
 		t.Errorf("deployErrorMessage() = %q, want redacted readable text", got)
+	}
+}
+
+// A held log line must reach the client before a trace line that was written after it.
+func TestHandleDeployLogStream_TraceTickFlushesHeldLogLinesFirst(t *testing.T) {
+	t.Setenv(EnvLogMaskIdleFlush, "30s")
+	t.Setenv(EnvTracePollInterval, "50ms")
+	secretmask.Add(strings.Repeat("trace-order-secret-", 4))
+	db := openTestDB(t)
+	recorder := deploylog.NewRecorder(nil, discardLogger())
+	rt := NewRouter(nil, testBrand(), db, WithDeployRecorder(recorder))
+	ctx := context.Background()
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000}); err != nil {
+		t.Fatalf("seed app: %v", err)
+	}
+	if err := db.SaveDeployAttempt(ctx, store.DeployAttempt{
+		ID: "dep_order", ServiceName: "web", Image: "levelrail/web:2",
+		Status: store.DeployAttemptStatusRunning, StartedAt: time.Now(),
+	}); err != nil {
+		t.Fatalf("seed attempt: %v", err)
+	}
+	recorder.Start("dep_order")
+	recorder.Progress("dep_order")(build.ProgressEvent{Log: "held log line", Stream: "stdout"})
+
+	srv := httptest.NewServer(rt.Handler())
+	defer srv.Close()
+	cookie := loginViaServer(t, srv, db)
+	reqCtx, reqCancel := context.WithCancel(context.Background())
+	defer reqCancel()
+	req, _ := http.NewRequestWithContext(reqCtx, http.MethodGet, srv.URL+"/api/v1/apps/web/deploys/dep_order/logs", nil)
+	req.AddCookie(cookie)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("do request: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	time.Sleep(100 * time.Millisecond)
+	if err := db.SaveDeployTraceStep(ctx, store.DeployTraceStep{
+		AttemptID: "dep_order", Key: "building", Step: "building", Status: store.TraceStatusRunning, StartedAt: time.Now(),
+	}); err != nil {
+		t.Fatalf("seed trace: %v", err)
+	}
+
+	first := make(chan string, 1)
+	go func() {
+		ev, _ := nextSSEData(bufio.NewReader(resp.Body))
+		first <- ev
+	}()
+	select {
+	case ev := <-first:
+		if !strings.Contains(ev, "held log line") {
+			t.Fatalf("first event = %q, want the held log line before any trace line", ev)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("no event delivered")
 	}
 }

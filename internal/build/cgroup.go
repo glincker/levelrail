@@ -18,6 +18,15 @@ type CgroupProvisioner interface {
 // covers its content, so each rewritten op gets a new digest and the inputs
 // and metadata of the ops after it follow.
 func withCgroupParent(def *llb.Definition, parent string) (*llb.Definition, error) {
+	return rewriteExecs(def, func(ex *pb.ExecOp) {
+		if ex.Meta != nil {
+			ex.Meta.CgroupParent = parent
+		}
+	})
+}
+
+// rewriteExecs applies edit to every exec op and re-digests the graph.
+func rewriteExecs(def *llb.Definition, edit func(*pb.ExecOp)) (*llb.Definition, error) {
 	remap := make(map[digest.Digest]digest.Digest, len(def.Def))
 	out := &llb.Definition{
 		Def:         make([][]byte, 0, len(def.Def)),
@@ -34,8 +43,8 @@ func withCgroupParent(def *llb.Definition, parent string) (*llb.Definition, erro
 				in.Digest = string(nd)
 			}
 		}
-		if ex := op.GetExec(); ex != nil && ex.Meta != nil {
-			ex.Meta.CgroupParent = parent
+		if ex := op.GetExec(); ex != nil {
+			edit(ex)
 		}
 		enc, err := op.MarshalVT()
 		if err != nil {

@@ -91,6 +91,7 @@ export function useLatestVerify() {
 export function useRunVerify() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async (req: VerifyRequest): Promise<VerifyReport> => {
       const res = await fetch('/api/v1/migrations/verify', {
         method: 'POST',

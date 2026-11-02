@@ -97,6 +97,8 @@ func TestRun_BackupsVolumesRestoreAndPolicy(t *testing.T) {
 			_ = json.NewDecoder(r.Body).Decode(&restoreBody)
 			w.WriteHeader(http.StatusAccepted)
 			_, _ = io.WriteString(w, `{"id":"vcr_1","new_volume_name":"app-web-copy-data","node_id":"n2"}`)
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/apps/web/volumes/data/backup-policy":
+			_, _ = io.WriteString(w, `{"retain_daily":3,"post_hook":"rcon-cli save-on"}`)
 		case r.Method == http.MethodPut && r.URL.Path == "/api/v1/apps/web/volumes/data/backup-policy":
 			_ = json.NewDecoder(r.Body).Decode(&policyBody)
 			_ = json.NewEncoder(w).Encode(policyBody)
@@ -126,5 +128,16 @@ func TestRun_BackupsVolumesRestoreAndPolicy(t *testing.T) {
 	}
 	if policyBody["retain_daily"] != float64(7) || policyBody["retain_monthly"] != float64(6) || policyBody["quiesce"] != "pause" || policyBody["pre_hook"] != "sync" {
 		t.Errorf("policy body = %v", policyBody)
+	}
+	// The stored post-hook survives a set that names only the pre-hook.
+	if policyBody["post_hook"] != "rcon-cli save-on" {
+		t.Errorf("post-hook was not preserved: %v", policyBody)
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	got = run("levelrail-cli-test", []string{"backups", "volumes", "policy", "set", "web", "data", "--clear-post-hook", "--api-url", srv.URL}, &stdout, &stderr, envMap())
+	if got != exitOK || policyBody["post_hook"] != nil && policyBody["post_hook"] != "" || policyBody["retain_daily"] != float64(3) {
+		t.Errorf("clear body = %v exit=%d", policyBody, got)
 	}
 }

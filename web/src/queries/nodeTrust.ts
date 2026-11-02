@@ -99,6 +99,7 @@ export interface CertDrillResult {
 export function useNodeCertDrill() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async (id: string): Promise<CertDrillResult> => {
       const res = await fetch(
         `/api/v1/nodes/${encodeURIComponent(id)}/cert/drill`,
@@ -124,6 +125,7 @@ export function useNodeCertDrill() {
 export function useRenewNodeCert() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: renewNodeCert,
     onSuccess: (_data, id) => {
       void queryClient.invalidateQueries({ queryKey: nodeKeys.detail(id) })

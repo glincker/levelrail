@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 // ErrScheduledTaskRunNotFound is returned by GetScheduledTaskRun when id
@@ -162,6 +164,7 @@ func applyRunStartedTx(ctx context.Context, tx *sql.Tx, run ScheduledTaskRun) er
 // task's running_since when no other run of it is still in flight. A
 // success resets consecutive_missed.
 func (db *DB) FinishScheduledTaskRun(ctx context.Context, run ScheduledTaskRun) error {
+	run.Message, run.Output = secretmask.Mask(run.Message), secretmask.Mask(run.Output)
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("store: finish scheduled task run %q: %w", run.ID, err)
@@ -353,6 +356,7 @@ func (db *DB) SyncSpecScheduledTasks(ctx context.Context, serviceName string, jo
 }
 
 func runArgs(r ScheduledTaskRun) []any {
+	r.Message, r.Output = secretmask.Mask(r.Message), secretmask.Mask(r.Output)
 	var exit sql.NullInt64
 	if r.ExitCode != nil {
 		exit = sql.NullInt64{Int64: int64(*r.ExitCode), Valid: true}

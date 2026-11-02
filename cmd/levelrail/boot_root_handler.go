@@ -26,6 +26,7 @@ import (
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/nodefailure"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/scheduledtask"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/selfupgrade"
@@ -136,7 +137,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		api.WithNewDeviceApproval(api.NewDeviceApprovalFromEnv()),
 		api.WithAPIRateLimit(apiRateLimitReadRPM(logger), apiRateLimitWriteRPM(logger)),
 		api.WithWebhookRateLimit(webhookRateLimitRPM(logger)),
-		api.WithTokenRedeemRateLimit(apiRateLimitRPM(logger, "APP_API_RATE_LIMIT_TOKEN_REDEEM_RPM", defaultTokenRedeemRateLimitRPM)),
+		api.WithTokenRedeemRateLimit(runtimesettings.ClampLimit(runtimesettings.KeyAPIRateLimitRedeem, apiRateLimitRPM(logger, "APP_API_RATE_LIMIT_TOKEN_REDEEM_RPM", defaultTokenRedeemRateLimitRPM))),
 		api.WithDataDir(dataDir),
 		api.WithTrustRoot(trustRoot),
 		api.WithReleaseSchemaSource(api.NewReleaseSchemaFetcher(dataDir, trustRoot)),

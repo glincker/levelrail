@@ -95,6 +95,8 @@ type setGitSourceBuildRequest struct {
 	BaseDirectory string `json:"base_directory"`
 	BuildCommand  string `json:"build_command"`
 	PublishDir    string `json:"publish_dir"`
+	// StaticSPA nil keeps the current value; a static source only.
+	StaticSPA *bool `json:"static_spa,omitempty"`
 }
 
 // handleSetGitSourceBuild handles PUT /api/v1/apps/{name}/git-source/build:
@@ -138,6 +140,14 @@ func (rt *Router) handleSetGitSourceBuild(w http.ResponseWriter, r *http.Request
 	if err := rt.gitSources.SetGitSourceBuild(ctx, name, buildType, p, base, req.BuildCommand, req.PublishDir); err != nil {
 		rt.internalError(w, "api: set git source build failed", err, slog.String("name", name))
 		return
+	}
+	if req.StaticSPA != nil || buildType != spec.BuildStatic {
+		on := req.StaticSPA != nil && *req.StaticSPA && buildType == spec.BuildStatic
+		if err := rt.gitSources.SetGitSourceStaticSPA(ctx, name, on); err != nil {
+			rt.internalError(w, "api: set git source spa failed", err, slog.String("name", name))
+			return
+		}
+		gs.StaticSPA = on
 	}
 	gs.BuildType, gs.BuildPath, gs.BaseDirectory = buildType, p, base
 	gs.BuildCommand, gs.PublishDir = req.BuildCommand, req.PublishDir

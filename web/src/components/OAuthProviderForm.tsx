@@ -25,6 +25,7 @@ interface SchemaMessages {
   issuerUrl: string
   instanceUrl: string
   userPoolId: string
+  tenantId: string
 }
 
 function buildSchema(
@@ -40,6 +41,7 @@ function buildSchema(
       allowedEmailDomain: z.string().trim(),
       issuerUrl: z.string().trim(),
       displayName: z.string().trim(),
+      tenantId: z.string().trim(),
     })
     .superRefine((data, ctx) => {
       if (!data.enabled) {
@@ -80,6 +82,17 @@ function buildSchema(
           path: ['issuerUrl'],
         })
       }
+      if (
+        provider === 'microsoft' &&
+        data.tenantId &&
+        !/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(data.tenantId)
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          message: msg.tenantId,
+          path: ['tenantId'],
+        })
+      }
       if (provider === 'oidc' && !data.issuerUrl) {
         ctx.addIssue({
           code: 'custom',
@@ -106,6 +119,7 @@ export function OAuthProviderForm({
   const isOIDC = settings.provider === 'oidc'
   const isGitLab = settings.provider === 'gitlab'
   const isCognito = settings.provider === 'cognito'
+  const isMicrosoft = settings.provider === 'microsoft'
   const callback = callbackUrl(window.location.origin, settings.provider)
   const id = (suffix: string) => `${settings.provider}-${suffix}`
 
@@ -118,6 +132,7 @@ export function OAuthProviderForm({
           issuerUrl: t('oauthPage.errors.issuerUrl'),
           instanceUrl: t('oauthPage.instanceUrl.invalid'),
           userPoolId: t('oauthPage.userPoolId.invalid'),
+          tenantId: t('oauthPage.tenantId.invalid'),
         }),
       ),
       values: {
@@ -127,6 +142,7 @@ export function OAuthProviderForm({
         allowedEmailDomain: settings.allowed_email_domain ?? '',
         issuerUrl: settings.issuer_url ?? '',
         displayName: settings.display_name ?? '',
+        tenantId: settings.tenant_id ?? '',
       },
       resetOptions: { keepDirtyValues: true },
     })
@@ -142,6 +158,7 @@ export function OAuthProviderForm({
           allowed_email_domain: values.allowedEmailDomain,
           issuer_url: values.issuerUrl,
           display_name: values.displayName,
+          tenant_id: values.tenantId,
         },
       },
       {
@@ -257,6 +274,23 @@ export function OAuthProviderForm({
                 {t('oauthPage.userPoolId.hint')}
               </FieldDescription>
               <FieldError errors={[formState.errors.issuerUrl]} />
+            </Field>
+          ) : null}
+          {isMicrosoft ? (
+            <Field>
+              <FieldLabel htmlFor={id('tenant-id')}>
+                {t('oauthPage.tenantId.label')}
+              </FieldLabel>
+              <Input
+                id={id('tenant-id')}
+                {...register('tenantId')}
+                placeholder="00000000-0000-0000-0000-000000000000"
+                className="font-mono"
+              />
+              <FieldDescription>
+                {t('oauthPage.tenantId.hint')}
+              </FieldDescription>
+              <FieldError errors={[formState.errors.tenantId]} />
             </Field>
           ) : null}
           {isOIDC ? (

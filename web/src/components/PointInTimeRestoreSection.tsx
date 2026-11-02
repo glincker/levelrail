@@ -22,6 +22,7 @@ import { toast } from '@/components/ui/toast'
 import { formatDate } from '../lib/format'
 import { isoToLocalInputValue, localInputValueToISO } from '../lib/pitrTime'
 import { PITRBinlogCopy } from './PITRBinlogCopy'
+import { BaseBackupScheduleField } from './BaseBackupScheduleField'
 import { WalShipStatusItem } from './WalShipStatusItem'
 import { ApiError } from '../lib/apiError'
 import {
@@ -226,6 +227,13 @@ function EnabledPITRContent({
         </div>
         <WalShipStatusItem ship={pitrWindow?.wal_ship} />
       </dl>
+
+      <BaseBackupScheduleField
+        key={pitrWindow?.base_backup_schedule ?? ''}
+        databaseName={databaseName}
+        schedule={pitrWindow?.base_backup_schedule ?? ''}
+        targetId={pitrWindow?.base_backup_target_id ?? ''}
+      />
 
       <div className="flex flex-col gap-2">
         <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">

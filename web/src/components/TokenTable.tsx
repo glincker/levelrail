@@ -99,7 +99,10 @@ function TokenRows({ tokens, rotatableIds }: TokenTableProps) {
       header: t('tokens.name'),
       cell: (token) => (
         <div className="space-y-1">
-          <span className="font-medium break-all text-foreground">
+          <span
+            className="block max-w-64 min-w-32 truncate font-medium text-foreground"
+            title={token.name}
+          >
             {token.name}
           </span>
           {token.dev_fixture ? (
@@ -145,6 +148,13 @@ function TokenRows({ tokens, rotatableIds }: TokenTableProps) {
       priority: 2,
       cell: (token) => (
         <div className="flex flex-wrap gap-1">
+          {token.access ? (
+            <Badge
+              variant={token.access === 'can_change' ? 'destructive' : 'muted'}
+            >
+              {t(`tokens.access.${token.access}`)}
+            </Badge>
+          ) : null}
           {token.abilities.map((ability) => (
             <Badge key={ability} variant={TOKEN_ABILITY_BADGE_VARIANT[ability]}>
               {ability}

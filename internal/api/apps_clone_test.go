@@ -15,6 +15,7 @@ import (
 
 // TestHandleCloneApp_Success checks which fields carry over verbatim to the clone.
 func TestHandleCloneApp_Success(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -84,6 +85,7 @@ func TestHandleCloneApp_Success(t *testing.T) {
 
 // TestHandleCloneApp_NameConflict checks that a name collision, including self-clone, is rejected, not overwritten.
 func TestHandleCloneApp_NameConflict(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -109,6 +111,7 @@ func TestHandleCloneApp_NameConflict(t *testing.T) {
 }
 
 func TestHandleCloneApp_SourceNotFound(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -120,6 +123,7 @@ func TestHandleCloneApp_SourceNotFound(t *testing.T) {
 }
 
 func TestHandleCloneApp_MissingNewName_Rejected(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -136,6 +140,7 @@ func TestHandleCloneApp_MissingNewName_Rejected(t *testing.T) {
 }
 
 func TestHandleCloneApp_MalformedBody(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -153,6 +158,7 @@ func TestHandleCloneApp_MalformedBody(t *testing.T) {
 
 // TestHandleCloneApp_DomainsNotCarriedOver checks the clone succeeds domainless, since the source still owns its domains.
 func TestHandleCloneApp_DomainsNotCarriedOver(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -181,6 +187,7 @@ func TestHandleCloneApp_DomainsNotCarriedOver(t *testing.T) {
 
 // TestHandleCloneApp_SecretEnvNamesCarryOverWithoutValues checks secret names carry over but values never do.
 func TestHandleCloneApp_SecretEnvNamesCarryOverWithoutValues(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -214,6 +221,7 @@ func TestHandleCloneApp_SecretEnvNamesCarryOverWithoutValues(t *testing.T) {
 
 // TestHandleCloneApp_ProjectInherited_NodeNot checks project is inherited but node placement is not.
 func TestHandleCloneApp_ProjectInherited_NodeNot(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -264,6 +272,7 @@ func TestHandleCloneApp_ProjectInherited_NodeNot(t *testing.T) {
 }
 
 func TestHandleCloneApp_RequiresAuth(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouter(t)
 
 	rec := httptest.NewRecorder()

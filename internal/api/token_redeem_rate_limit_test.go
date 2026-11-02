@@ -28,6 +28,7 @@ func TestTokenRedeemRateLimit(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			db := openTestDB(t)
 			rt := NewRouter(discardLogger(), testBrand(), db, WithTokenRedeemRateLimit(2))
+			rt.tokenRedeemRateLimit.source = nil
 
 			for i := 0; i < 2; i++ {
 				rec := postTokenRedeem(rt, tc.path, tc.body, "203.0.113.7:1000")

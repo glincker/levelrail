@@ -119,6 +119,7 @@ export function useStopOrphanedContainer() {
 export function useRemoveOrphanedContainer() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (name: string) => postOrphanedContainerAction(name, 'remove'),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: containerKeys.all })
@@ -161,6 +162,7 @@ async function claimOrphanedContainer(
 export function useClaimOrphanedContainer() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: ({
       containerName,
       name,

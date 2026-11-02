@@ -39,7 +39,7 @@ func (rt *Router) handleInstallServiceTemplate(w http.ResponseWriter, r *http.Re
 		return
 	}
 	if tpl.Manifest == nil {
-		writeError(w, http.StatusConflict, "this template has no install manifest; deploy it through the compose flow instead")
+		writeError(w, http.StatusConflict, "this template has no install manifest, so it cannot be configured at install time; use 'templates deploy "+id+"' (POST /api/v1/service-templates/"+id+"/deploy) instead")
 		return
 	}
 	var req templateInstallRequest
@@ -72,7 +72,7 @@ func (rt *Router) handleInstallServiceTemplate(w http.ResponseWriter, r *http.Re
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	resp, ok := rt.deployComposeBody(w, r, name, []byte(body), composeDeployOpts{source: store.ComposeRevisionSourceTemplate, templateID: tpl.ID})
+	resp, ok := rt.deployComposeBody(w, r, name, []byte(body), composeDeployOpts{source: store.ComposeRevisionSourceTemplate, templateID: tpl.ID, interpEnv: req.Env})
 	if !ok {
 		return
 	}

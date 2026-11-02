@@ -1,0 +1,45 @@
+#!/usr/sbin/nft -f
+# Egress baseline for containers and guest processes. Loaded before Docker so its chains never see an open window.
+# Host-network containers share the guest stack, so they are covered by the output chain, not forward.
+add table inet lr_isolation
+delete table inet lr_isolation
+table inet lr_isolation {
+  chain forward {
+    type filter hook forward priority -10; policy accept;
+    ct state established,related accept
+{{- range .DNSServers}}
+    ip daddr {{.}} udp dport 53 accept
+    ip daddr {{.}} tcp dport 53 accept
+{{- end}}
+    ip daddr {{.HostGateway}} drop
+    ip daddr 172.16.0.0/12 ip daddr != {{.DockerPool}} drop
+    ip daddr { 10.0.0.0/8, 192.168.0.0/16, 169.254.0.0/16, 100.64.0.0/10, 127.0.0.0/8, 224.0.0.0/4 } drop
+    ip6 daddr { ::1, fc00::/7, fe80::/10 } drop
+  }
+
+  # Guest processes and host-network containers: no path to the Lima gateway (the Mac's loopback) or private ranges.
+  chain output {
+    type filter hook output priority -10; policy accept;
+    oifname "lo" accept
+    ct state established,related accept
+    ip daddr {{.HostGateway}} udp dport 67 accept
+{{- range .DNSServers}}
+    ip daddr {{.}} udp dport 53 accept
+    ip daddr {{.}} tcp dport 53 accept
+{{- end}}
+    ip daddr {{.HostGateway}} drop
+    ip daddr 172.16.0.0/12 ip daddr != {{.DockerPool}} drop
+    ip daddr { 10.0.0.0/8, 192.168.0.0/16, 169.254.0.0/16, 100.64.0.0/10, 224.0.0.0/4 } drop
+    ip6 daddr { fc00::/7 } drop
+  }
+
+  # Containers must not reach guest services (sshd, sidecar) on the guest's own addresses.
+  chain input {
+    type filter hook input priority -10; policy accept;
+    iifname "lo" accept
+    ct state established,related accept
+    ip saddr {{.DockerPool}} udp dport 53 accept
+    ip saddr {{.DockerPool}} tcp dport 53 accept
+    ip saddr {{.DockerPool}} drop
+  }
+}

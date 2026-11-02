@@ -14,6 +14,7 @@ import (
 	vaultapi "github.com/hashicorp/vault/api"
 	"github.com/hashicorp/vault/api/auth/approle"
 
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -67,6 +68,7 @@ func (r *Resolver) Resolve(ctx context.Context, cfg store.VaultSettings, credent
 	if !ok {
 		return "", fmt.Errorf("vault: secret %q field %q is not a string", path, key)
 	}
+	secretmask.Add(value)
 	return value, nil
 }
 

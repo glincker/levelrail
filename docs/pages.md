@@ -118,6 +118,8 @@ To remove only the published site and keep the app record, use `levelrail-cli st
 
 If a site is ever left behind without an app, a background sweep removes it after a grace period. The default is 10 minutes. Set `APP_STATIC_ORPHAN_GRACE` (for example `1h`) to change it. An empty or `0` value falls back to the default.
 
+Every deploy writes a release directory. After a successful publish, Levelrail keeps the newest 10 releases of a site and deletes older ones. Set `APP_STATIC_KEEP_RELEASES` to change the count (minimum 3). The live release, the previous one (the rollback target), releases used by queued, running, held or awaiting approval deploys, and releases another site still serves are never deleted, and nothing is deleted while a publish lock is set.
+
 ## List your static sites
 
 From the CLI:
@@ -138,6 +140,20 @@ This shows every site currently served through the embedded ingress, with no bui
 ## Previews and branch deploys
 
 A static site you deploy with `--ref` is one deploy of one ref. To get a stable URL per branch with automatic rebuilds on each push, connect the repository as a source-connected app and turn on [branch deploys](/preview-environments#branch-deploys). Pull request previews are separate and need a pull request.
+
+### Pull request previews
+
+A source-connected static site gets a preview for each pull request when previews are on. The pull request's head commit is built and published as its own site, `<site>-pr-<number>`, on the preview URL, and the pull request gets the usual comment and commit status. The live site, its domain and its release history are not touched. Closing or merging the pull request, or the stale preview sweep, removes the preview's files. Static previews do not enforce the preview basic auth gate. See [static sites in previews](/preview-environments#static-sites).
+
+## App env in static builds
+
+A static build runs in a throwaway container, so app env does not reach it by default. Levelrail passes the literal env vars of the app whose names start with `VITE_`, `NEXT_PUBLIC_`, `PUBLIC_` or `GATSBY_`, because those frameworks copy them into the published files. Secrets, references to other resources and Vault values are never passed, and neither is anything outside the allowed prefixes. Values in `build.args` win over env of the same name. Set `APP_STATIC_BUILD_ENV_PREFIXES` (comma separated) to change the prefixes, or to an empty value to pass nothing.
+
+Anything a build puts in the published directory is public. Do not give a `PUBLIC_` variable a value you would not print on the page.
+
+## Front a static site with Cloudflare
+
+With a Cloudflare DNS integration connected, Levelrail creates a domain's record as proxied when the server-wide proxy setting is on. The Cache tab of an app has a Cloudflare proxy switch that overrides it for that app alone (`GET` and `PUT /api/v1/apps/{name}/cdn`, body `{"proxied": true | false | null}`, where `null` goes back to the server setting). The change applies to records written afterwards; run the domain's DNS fix to update an existing record. Keep the Cloudflare SSL/TLS mode on Full (strict).
 
 ## Limitations
 

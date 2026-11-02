@@ -13,9 +13,10 @@ import (
 func runBackupsListAll(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "backups list-all", "print backup history as a JSON array to stdout and nothing else", stderr)
 	var limitFlag int
-	var beforeFlag string
+	var beforeFlag, targetFlag string
 	fs.IntVar(&limitFlag, "limit", 0, "max attempts to return (default: server default)")
 	fs.StringVar(&beforeFlag, "before", "", "only show attempts started before this RFC3339 timestamp (page backward using the STARTED column of a prior run)")
+	fs.StringVar(&targetFlag, "target", "", "only show attempts stored on this storage destination or backup target id (works for deleted apps too)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, backupsListAllUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -39,11 +40,26 @@ func runBackupsListAll(prog string, args []string, stdout, stderr io.Writer, loo
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list all backups: %w", err))
 	}
 
+	history = filterBackupsByTarget(history, targetFlag)
 	if err := renderResult(stdout, of.Format, of.Query, history, func() { printAllBackupHistoryTable(stdout, history) }); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)
 	}
 	return exitOK
+}
+
+// filterBackupsByTarget keeps rows on target; "" keeps everything.
+func filterBackupsByTarget(history []backupHistoryResource, target string) []backupHistoryResource {
+	if target == "" {
+		return history
+	}
+	out := make([]backupHistoryResource, 0, len(history))
+	for _, h := range history {
+		if h.TargetID == target {
+			out = append(out, h)
+		}
+	}
+	return out
 }
 
 // Like printBackupHistoryTable, plus a RESOURCE column since rows span resources.
@@ -78,8 +94,9 @@ Flags:
   --json                    print backup history as a JSON array to stdout, nothing else
   --limit int              max attempts to return (default: server default)
   --before string          only show attempts started before this RFC3339 timestamp
+  --target string          only show attempts stored on this storage destination id, including history of deleted apps
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
-`, prog, envAPIToken, envAPIURL, defaultAPIURL)
+`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }

@@ -53,6 +53,7 @@ export async function triggerSystemPrune(): Promise<SystemPruneResult> {
 export function useTriggerSystemPrune() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: triggerSystemPrune,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: systemStatusKeys.all })

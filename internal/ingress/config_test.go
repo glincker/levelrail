@@ -262,3 +262,18 @@ func TestBuildProxyConfig_JSONShape(t *testing.T) {
 		}
 	})
 }
+
+func TestDeferHostCerts_KeepsIssuersAndOtherHosts(t *testing.T) {
+	issuer := NewInternalIssuer()
+	app := &TLSApp{Automation: &Automation{Policies: []AutomationPolicy{
+		{Subjects: []string{"a.example.com", "b.sslip.io"}, Issuers: []any{issuer}},
+	}}}
+	deferHostCerts(app, []string{"B.sslip.io"})
+	got := app.Automation.Policies
+	if len(got) != 2 || !got[0].OnDemand || got[0].Subjects[0] != "b.sslip.io" || len(got[0].Issuers) != 1 {
+		t.Fatalf("policies = %+v, want on-demand policy for b.sslip.io first", got)
+	}
+	if got[1].OnDemand || len(got[1].Subjects) != 1 || got[1].Subjects[0] != "a.example.com" {
+		t.Errorf("remaining policy = %+v, want a.example.com eager", got[1])
+	}
+}

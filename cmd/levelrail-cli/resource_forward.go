@@ -8,6 +8,8 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
@@ -129,9 +131,10 @@ func cpUsage(prog string) string {
   %[1]s cp --from-backup ID <app>/<volume>:<path>   restore one file from a backup
 
 A remote side is APP/VOLUME:PATH. Exactly one side is remote. Single files
-only, the same limit as "%[1]s apps volumes cp".
+unless -r is given, which copies a whole directory tree one file at a time.
 
 Flags:
+  -r, --recursive        copy a directory and everything under it
   --from-backup string   restore the remote path from this backup id instead of uploading
   --json                 print the transfer result as JSON and nothing else
 %[2]s`, prog, commonFlagsHelp)
@@ -154,8 +157,11 @@ func parseRemoteSpec(s string) (remoteSpec, bool) {
 
 func runCp(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	var backupID *string
-	c, code, ok := parseCLICall(prog, "cp", cpUsage(prog), args, stdout, stderr, lookupEnv, func(fs *flag.FlagSet) {
+	var recursive *bool
+	c, code, ok := parseCLICall(prog, "cp", cpUsage(prog), expandShortFlags(args), stdout, stderr, lookupEnv, func(fs *flag.FlagSet) {
 		backupID = fs.String("from-backup", "", "restore the remote path from this backup id")
+		recursive = fs.Bool("recursive", false, "copy a directory tree")
+		fs.BoolVar(recursive, "r", false, "copy a directory tree (short)")
 	})
 	if !ok {
 		return code
@@ -180,6 +186,20 @@ func runCp(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(
 	dstR, dstRemote := parseRemoteSpec(rest[1])
 	if srcRemote == dstRemote {
 		return c.invalid("exactly one side must be remote, written APP/VOLUME:PATH")
+	}
+	if *recursive {
+		if srcRemote {
+			n, err := c.downloadTree(ctx, srcR, rest[1])
+			if err != nil {
+				return c.fail(fmt.Errorf("download %s: %w", rest[0], err))
+			}
+			return c.render(map[string]any{"path": srcR.Path, "files": n}, func() { _, _ = fmt.Fprintf(c.stdout, "downloaded %d files to %s\n", n, rest[1]) })
+		}
+		n, err := c.uploadTree(ctx, rest[0], dstR)
+		if err != nil {
+			return c.fail(fmt.Errorf("upload to %s: %w", rest[1], err))
+		}
+		return c.render(map[string]any{"path": dstR.Path, "files": n}, func() { _, _ = fmt.Fprintf(c.stdout, "uploaded %d files to %s\n", n, rest[1]) })
 	}
 	if srcRemote {
 		w, closeFn, err := openLocalDest(rest[1], stdout)
@@ -219,4 +239,79 @@ func remoteArg(rest []string, want int) (remoteSpec, bool) {
 		return remoteSpec{}, false
 	}
 	return parseRemoteSpec(rest[want-1])
+}
+
+// uploadTree sends every regular file under root; symlinks are skipped so a link cannot pull in files outside the tree.
+func (c cliCall) uploadTree(ctx context.Context, root string, dst remoteSpec) (int, error) {
+	n := 0
+	err := filepath.WalkDir(root, func(p string, d os.DirEntry, werr error) error {
+		if werr != nil {
+			return werr
+		}
+		if !d.Type().IsRegular() {
+			return nil
+		}
+		rel, rerr := filepath.Rel(root, p)
+		if rerr != nil {
+			return rerr
+		}
+		f, oerr := os.Open(p) //nolint:gosec // the operator names the local tree to upload
+		if oerr != nil {
+			return oerr
+		}
+		defer func() { _ = f.Close() }()
+		if _, uerr := c.client.UploadVolumeFile(ctx, dst.App, dst.Volume, path.Join(dst.Path, filepath.ToSlash(rel)), f); uerr != nil {
+			return fmt.Errorf("%s: %w", rel, uerr)
+		}
+		n++
+		return nil
+	})
+	return n, err
+}
+
+// downloadTree mirrors a remote directory into dest, listing one level at a time.
+func (c cliCall) downloadTree(ctx context.Context, src remoteSpec, dest string) (int, error) {
+	n := 0
+	var walk func(remote, local string) error
+	walk = func(remote, local string) error {
+		listing, err := c.client.ListVolumeFiles(ctx, src.App, src.Volume, remote, 0)
+		if err != nil {
+			return err
+		}
+		if listing.Truncated {
+			return fmt.Errorf("%s has more entries than one listing returns", remote)
+		}
+		if err := os.MkdirAll(local, 0o750); err != nil {
+			return err
+		}
+		for _, e := range listing.Entries {
+			// Base() keeps a hostile entry name from escaping the destination.
+			name := filepath.Base(e.Name)
+			if name == "." || name == ".." || name == string(filepath.Separator) {
+				continue
+			}
+			rp, lp := path.Join(remote, name), filepath.Join(local, name)
+			switch e.Type {
+			case "dir":
+				if err := walk(rp, lp); err != nil {
+					return err
+				}
+			case "file":
+				f, err := os.OpenFile(lp, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600) //nolint:gosec // the path joins the operator's destination and a sanitised base name
+				if err != nil {
+					return err
+				}
+				_, derr := c.client.DownloadVolumeFile(ctx, src.App, src.Volume, rp, f)
+				if cerr := f.Close(); derr == nil {
+					derr = cerr
+				}
+				if derr != nil {
+					return fmt.Errorf("%s: %w", rp, derr)
+				}
+				n++
+			}
+		}
+		return nil
+	}
+	return n, walk(src.Path, dest)
 }

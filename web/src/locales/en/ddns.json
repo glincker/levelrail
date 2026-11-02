@@ -1,0 +1,68 @@
+{
+  "title": "Dynamic DNS",
+  "description": "Keeps a DNS record pointed at this server when its public IP changes. Changes apply immediately.",
+  "status": {
+    "running": "Running",
+    "failing": "Failing",
+    "off": "Off",
+    "label": "Updater status"
+  },
+  "source": {
+    "stored": "Saved",
+    "default": "Using defaults"
+  },
+  "enabled": "Enabled",
+  "provider": {
+    "label": "Provider",
+    "generic": "Generic URL",
+    "duckdns": "DuckDNS"
+  },
+  "domains": {
+    "label": "DuckDNS domains",
+    "placeholder": "myhome,office"
+  },
+  "target": {
+    "labelGeneric": "Update URL",
+    "labelDuckdns": "DuckDNS token",
+    "placeholder": "Paste to set or replace",
+    "configured": "Configured ({{host}})",
+    "configuredNoHost": "Configured",
+    "notConfigured": "Not configured",
+    "clear": "Clear",
+    "cleared": "Credential cleared."
+  },
+  "advanced": {
+    "toggle": "Advanced",
+    "interval": "Check every (s)",
+    "timeout": "Timeout (s)",
+    "minGap": "Min gap between updates (s)",
+    "reassert": "Re-send every (s)",
+    "failAlertAfter": "Alert after failures",
+    "quorum": "Probe quorum",
+    "probeUrls": "Probe URLs (one per line)",
+    "allowPrivate": "Allow private addresses",
+    "allowInsecureHttp": "Allow plain HTTP"
+  },
+  "last": {
+    "title": "Last check",
+    "never": "No check yet",
+    "ip": "IP {{ip}}",
+    "result": "Result: {{result}}",
+    "check": "checked {{when}}",
+    "change": "changed {{when}}",
+    "failures": "{{count}} failures in a row",
+    "alert": "Alert active"
+  },
+  "result": {
+    "ok": "ok",
+    "failing": "failing",
+    "pending": "pending",
+    "not running": "not running"
+  },
+  "save": "Save",
+  "saving": "Saving...",
+  "saved": "Dynamic DNS saved.",
+  "error": {
+    "number": "Use whole numbers of 1 or more."
+  }
+}

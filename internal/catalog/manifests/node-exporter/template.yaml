@@ -1,0 +1,25 @@
+id: node-exporter
+name: Node Exporter
+description: A Prometheus exporter for hardware and OS metrics of the host it runs on. It serves plain metrics at /metrics for a Prometheus server to scrape.
+icon: cpu
+category: Monitoring
+documentation_url: https://prometheus.io/docs/guides/node-exporter/
+source_repo: https://github.com/prometheus/node_exporter
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/prometheus/node_exporter/blob/master/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 67108864
+first_run:
+  - Add node-exporter:9100 as a scrape target in your Prometheus config. The page serves metrics only.
+domains:
+  - service: node-exporter
+    port: 9100
+    description: Public address of the Node Exporter web interface.
+healthcheck:
+  service: node-exporter
+  port: 9100
+  path: /metrics

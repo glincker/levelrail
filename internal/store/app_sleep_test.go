@@ -105,3 +105,45 @@ func TestServicesWithActiveDeploy(t *testing.T) {
 		t.Errorf("active = %v", got)
 	}
 }
+
+func TestSuspendedSaveAndSleepClearedOnDelete(t *testing.T) {
+	db := openTestDB(t)
+	ctx := t.Context()
+	svc := DesiredService{Name: "web-abc1234", Image: "web:1", Port: 80}
+	if err := db.SaveSuspendedDesiredService(ctx, svc); err != nil {
+		t.Fatal(err)
+	}
+	got, err := db.GetDesiredService(ctx, svc.Name)
+	if err != nil || !got.Suspended {
+		t.Fatalf("born suspended = %+v, %v", got, err)
+	}
+	if err := db.SetAppSleepIdle(ctx, svc.Name, 5, time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.DeleteDesiredService(ctx, svc.Name); err != nil {
+		t.Fatal(err)
+	}
+	if rows, _ := db.ListAppSleep(ctx); len(rows) != 0 {
+		t.Fatalf("sleep rows after delete = %+v, want none", rows)
+	}
+}
+
+func TestDeleteAppSleepIfOrphanKeepsRecreatedService(t *testing.T) {
+	db := openTestDB(t)
+	ctx := t.Context()
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "web:1", Port: 80}); err != nil {
+		t.Fatal(err)
+	}
+	for _, n := range []string{"web", "gone"} {
+		if err := db.SetAppSleepIdle(ctx, n, 5, time.Now()); err != nil {
+			t.Fatal(err)
+		}
+		if err := db.DeleteAppSleepIfOrphan(ctx, n); err != nil {
+			t.Fatal(err)
+		}
+	}
+	rows, _ := db.ListAppSleep(ctx)
+	if len(rows) != 1 || rows[0].ServiceName != "web" {
+		t.Fatalf("sleep rows = %+v, want only the live service", rows)
+	}
+}

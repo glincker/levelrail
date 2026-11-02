@@ -18,6 +18,8 @@ func (rt *Router) registerIngressRoutes(mux *http.ServeMux) {
 	// certificate automation fleet-wide on the next reconcile.
 	mux.HandleFunc("GET /api/v1/settings/ingress", rt.requireAbility(AbilityRead, rt.handleGetIngressSettings))
 	mux.HandleFunc("PUT /api/v1/settings/ingress", rt.requireAbility(AbilityRoot, rt.handleUpdateIngressSettings))
+	mux.HandleFunc("GET /api/v1/settings/deploy-url-copies", rt.requireAbility(AbilityRead, rt.handleGetDeployURLCopies))
+	mux.HandleFunc("PUT /api/v1/settings/deploy-url-copies", rt.requireAbility(AbilityRoot, rt.handlePutDeployURLCopies))
 	mux.HandleFunc("GET /api/v1/settings/dashboard-url", rt.requireAbility(AbilityRead, rt.handleGetDashboardURL))
 	mux.HandleFunc("PUT /api/v1/settings/dashboard-url", rt.requireAbility(AbilityRoot, rt.handleUpdateDashboardURL))
 	mux.HandleFunc("GET /api/v1/settings/heartbeat", rt.requireAbility(AbilityRoot, rt.handleGetHeartbeat))
@@ -30,6 +32,10 @@ func (rt *Router) registerIngressRoutes(mux *http.ServeMux) {
 	// toggle can actually succeed.
 	mux.HandleFunc("GET /api/v1/settings/ingress/https", rt.requireAbility(AbilityRead, rt.handleGetHTTPSStatus))
 	mux.HandleFunc("POST /api/v1/settings/ingress/https", rt.requireAbility(AbilityRoot, rt.handleEnableHTTPS))
+	mux.HandleFunc("GET /api/v1/settings/ingress/dns01", rt.requireAbility(AbilityRoot, rt.handleGetIngressDNS01))
+	mux.HandleFunc("PUT /api/v1/settings/ingress/dns01", rt.requireAbility(AbilityRoot, rt.handlePutIngressDNS01))
+	mux.HandleFunc("GET /api/v1/settings/ingress/cloudflare", rt.requireAbility(AbilityRoot, rt.handleGetIngressCloudflare))
+	mux.HandleFunc("PUT /api/v1/settings/ingress/cloudflare", rt.requireAbility(AbilityRoot, rt.handlePutIngressCloudflare))
 	mux.HandleFunc("GET /api/v1/settings/ingress/check", rt.requireAbility(AbilityRoot, rt.handleCheckIngressDomain))
 
 	mux.HandleFunc("GET /api/v1/settings/dns-provider", rt.requireAbility(AbilityRead, rt.handleGetDNSProvider))

@@ -4,6 +4,10 @@ description: An all-in-one insight hub that combines website analytics, uptime m
 icon: chart
 category: Analytics
 documentation_url: https://tianji.dev/docs/intro
+source_repo: https://github.com/msgbyte/tianji
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/msgbyte/tianji/blob/master/LICENSE
 recommended_memory_bytes: 536870912
 env:
   - key: DB_PASSWORD

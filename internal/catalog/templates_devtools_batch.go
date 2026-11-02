@@ -136,7 +136,7 @@ var devtoolsBatchTemplates = []Template{
     image: codeberg.org/forgejo/forgejo:9.0.3
     ports: ["3000:3000"]
     environment:
-      FORGEJO__server__ROOT_URL: ${SERVICE_FQDN_FORGEJO:-http://localhost:3000}
+      FORGEJO__server__ROOT_URL: ${SERVICE_URL_FORGEJO:-http://localhost:3000}
       FORGEJO__security__SECRET_KEY: $SERVICE_HEX_64_SECRETKEY
       FORGEJO__database__DB_TYPE: postgres
       FORGEJO__database__HOST: db:5432
@@ -251,8 +251,8 @@ var devtoolsBatchTemplates = []Template{
       VITE_ALLOWED_AUTH_PROVIDERS: EMAIL
       DATABASE_URL: postgresql://hoppscotch:$SERVICE_PASSWORD_DB@db:5432/hoppscotch
       DATA_ENCRYPTION_KEY: $SERVICE_BASE64_32_DATAENCRYPTIONKEY
-      WHITELISTED_ORIGINS: ${SERVICE_FQDN_HOPPSCOTCH:-http://localhost:3080}
-      VITE_BASE_URL: ${SERVICE_FQDN_HOPPSCOTCH:-http://localhost:3080}
+      WHITELISTED_ORIGINS: ${SERVICE_URL_HOPPSCOTCH:-http://localhost:3080}
+      VITE_BASE_URL: ${SERVICE_URL_HOPPSCOTCH:-http://localhost:3080}
       ENABLE_SUBPATH_BASED_ACCESS: "true"
     depends_on: [db]
     healthcheck:
@@ -381,7 +381,7 @@ var devtoolsBatchTemplates = []Template{
       KC_HTTP_ENABLED: "true"
       KC_HEALTH_ENABLED: "true"
       KC_LEGACY_OBSERVABILITY_INTERFACE: "true"
-      KC_HOSTNAME: ${SERVICE_FQDN_KEYCLOAK:-http://localhost:8080}
+      KC_HOSTNAME: ${SERVICE_URL_KEYCLOAK:-http://localhost:8080}
       KC_PROXY_HEADERS: xforwarded
     volumes:
       - keycloak_postgres_data:/opt/keycloak/data
@@ -474,7 +474,7 @@ var devtoolsBatchTemplates = []Template{
     ports: ["5601"]
     environment:
       ELASTICSEARCH_HOSTS: http://elasticsearch:9200
-      SERVER_PUBLICBASEURL: ${SERVICE_FQDN_KIBANA:-http://localhost:5601}
+      SERVER_PUBLICBASEURL: ${SERVICE_URL_KIBANA:-http://localhost:5601}
       XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: $SERVICE_HEX_32_ENCRYPTIONKEY
     depends_on: [elasticsearch]
     healthcheck:

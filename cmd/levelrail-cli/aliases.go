@@ -11,6 +11,11 @@ func runAliasedDeploy(prog string, args []string, stdout, stderr io.Writer, look
 	if len(args) > 0 && args[0] == "status" {
 		return runAppsDeploysGate(prog, args[1:], stdout, stderr, lookupEnv)
 	}
+	if len(args) == 1 && (args[0] == "-h" || args[0] == "--help") {
+		_, _ = fmt.Fprintf(stderr, "alias for 'apps deploy' (image and commit deploys), see '%s apps deploy --help'\n\n", prog)
+		_, _ = fmt.Fprint(stderr, deployUploadUsage(prog))
+		return exitOK
+	}
 	if wantsRepoURLDeploy(args) {
 		return runDeployURL(prog, args, stdout, stderr, lookupEnv)
 	}

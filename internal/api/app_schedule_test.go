@@ -22,6 +22,7 @@ func seedGitSourceForSchedule(t *testing.T, db *store.DB) {
 }
 
 func TestAppScheduleRoutes_RequireAuth(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouter(t)
 
 	assertRoutesRequireAuth(t, rt, []routeCase{
@@ -32,6 +33,7 @@ func TestAppScheduleRoutes_RequireAuth(t *testing.T) {
 }
 
 func TestHandleGetAppSchedule_NotConfigured(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -44,6 +46,7 @@ func TestHandleGetAppSchedule_NotConfigured(t *testing.T) {
 }
 
 func TestHandleSetAppSchedule_AppNotFound(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -55,6 +58,7 @@ func TestHandleSetAppSchedule_AppNotFound(t *testing.T) {
 }
 
 func TestHandleSetAppSchedule_RequiresGitSource(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web") // no git source connected
@@ -70,6 +74,7 @@ func TestHandleSetAppSchedule_RequiresGitSource(t *testing.T) {
 }
 
 func TestHandleSetAppSchedule_InvalidCron(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -83,6 +88,7 @@ func TestHandleSetAppSchedule_InvalidCron(t *testing.T) {
 }
 
 func TestHandleSetAppSchedule_InvalidTimezone(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -96,6 +102,7 @@ func TestHandleSetAppSchedule_InvalidTimezone(t *testing.T) {
 }
 
 func TestHandleSetAppSchedule_MissingBranch(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -109,6 +116,7 @@ func TestHandleSetAppSchedule_MissingBranch(t *testing.T) {
 }
 
 func TestHandleSetAndGetAppSchedule_Success(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -148,6 +156,7 @@ func TestHandleSetAndGetAppSchedule_Success(t *testing.T) {
 }
 
 func TestHandleListAppScheduleHistory_EmptyByDefault(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -168,6 +177,7 @@ func TestHandleListAppScheduleHistory_EmptyByDefault(t *testing.T) {
 
 // TestTriggerScheduledDeploy_DeploysLatestCommitOnBranch checks the branch head is deployed through the git-source path.
 func TestTriggerScheduledDeploy_DeploysLatestCommitOnBranch(t *testing.T) {
+	t.Parallel()
 	db := openTestDB(t)
 	rt := NewRouter(discardLogger(), testBrand(), db, WithGitSourceSecrets(newFakeGitSourceSecrets()))
 	seedApp(t, db, "web")
@@ -206,6 +216,7 @@ func TestTriggerScheduledDeploy_DeploysLatestCommitOnBranch(t *testing.T) {
 }
 
 func TestTriggerScheduledDeploy_NoGitSourceConnected(t *testing.T) {
+	t.Parallel()
 	db := openTestDB(t)
 	rt := NewRouter(discardLogger(), testBrand(), db)
 	seedApp(t, db, "web") // no git source
@@ -223,6 +234,7 @@ func putSchedule(t *testing.T, rt *Router, cookie *http.Cookie, body string) *ht
 }
 
 func TestHandleSetAppSchedule_RunAtValidation(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")
@@ -247,6 +259,7 @@ func TestHandleSetAppSchedule_RunAtValidation(t *testing.T) {
 }
 
 func TestHandleSetAppSchedule_RunAtSuccessAndRearm(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedApp(t, db, "web")

@@ -8,7 +8,7 @@ description: Connect S3-compatible buckets for log archive, build cache, and bac
 
 A storage destination is an S3-compatible bucket the control plane can write to. Log archive and the remote build cache use it, and database and volume backups use the same destinations: a destination is a backup target with a few extra options, so anything you connect appears in both **Settings, Storage destinations** and **Settings, Backup targets**.
 
-Supported providers: AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi, and any custom S3-compatible endpoint.
+Supported providers: AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi, Tigris, Google Cloud Storage, Oracle Cloud Object Storage (preset `oracle`), and any custom S3-compatible endpoint.
 
 ## Connect a destination
 
@@ -42,10 +42,40 @@ Credentials are encrypted with the control plane master key, never logged, and n
 | `r2` | account id (`--account-id`) | `https://<account-id>.r2.cloudflarestorage.com` |
 | `b2` | region such as `us-west-004` | `https://s3.<region>.backblazeb2.com` |
 | `wasabi` | region | `https://s3.<region>.wasabisys.com` |
+| `tigris` | none (region `auto`) | `https://t3.storage.dev` |
+| `gcs` | none | `https://storage.googleapis.com` |
+| `oracle` | namespace (`--account-id`) and region | `https://<namespace>.compat.objectstorage.<region>.oraclecloud.com` |
 | `minio` | endpoint | the URL you give |
 | `custom` | endpoint | the URL you give |
 
-Everything except AWS uses path-style addressing by default. Pass `--virtual-hosted` (or tick the box in the dialog) for a provider that needs the bucket in the hostname.
+Everything except AWS and Tigris uses path-style addressing by default. Pass `--virtual-hosted` (or tick the box in the dialog) for a provider that needs the bucket in the hostname.
+
+The preset IDs are `aws`, `r2`, `b2`, `wasabi`, `tigris`, `gcs`, `oracle`, `minio`, `garage` and `custom`. `storage providers` lists what the API knows. The help text printed by `storage add` names fewer of them (it leaves out `tigris` and `oracle`). The `--provider` value goes to the API unchanged, so the API decides which names it accepts (pending run).
+
+### Presets: Tigris, Oracle Object Storage and GCS HMAC
+
+These three presets are not yet verified against a real bucket (pending run). The values below are the ones the code sends, from `internal/objectstore/presets.go`.
+
+| Preset | Endpoint | Region | Addressing | Needs beyond the key pair |
+| --- | --- | --- | --- | --- |
+| `tigris` | `https://t3.storage.dev` | `auto` | virtual-hosted | nothing |
+| `gcs` | `https://storage.googleapis.com` | `auto` | path-style | an HMAC key pair |
+| `oracle` | `https://<namespace>.compat.objectstorage.<region>.oraclecloud.com` | the OCI region, required | path-style | the tenancy namespace (sent as the account id) and the region |
+
+**Tigris** (`--provider tigris`): endpoint `https://t3.storage.dev`, region `auto`, virtual-hosted addressing, so path style is off. Create an access key in the Tigris console and give it access to the bucket. Check the Tigris pricing page before you size a bucket.
+
+**Google Cloud Storage** (`--provider gcs`): endpoint `https://storage.googleapis.com` (the XML API), region `auto`, path-style. It needs an HMAC key, not a service account JSON file. In Cloud Storage, open Settings, then Interoperability, create an HMAC key for a service account that has `Storage Object Admin` on the bucket, and use the access ID as the access key id and the secret as the secret access key. The console path is pending run.
+
+**Oracle Cloud Object Storage** (`--provider oracle`): the preset takes the tenancy namespace, sent as the account id (`--account-id`), and the OCI region. The endpoint is built from both, and addressing is always path-style. In the dashboard, pick the Oracle Cloud preset and fill in its namespace and region fields (dashboard labels pending run). The same settings by hand with the `custom` provider:
+
+| Field | Value |
+| --- | --- |
+| Endpoint | `https://<namespace>.compat.objectstorage.<region>.oraclecloud.com` |
+| Region | the OCI region identifier, for example `us-ashburn-1` |
+| Addressing | path-style (the default for `custom`) |
+| Access key id and secret | a Customer Secret Key pair (user settings, Customer secret keys) |
+
+The namespace is under Tenancy details. Oracle shows the secret once, so copy it when you create the pair. The preset host is fixed to `oraclecloud.com`. If that host does not resolve for your region, the preset cannot point elsewhere, so use the `custom` provider with the endpoint you need (pending run).
 
 ### What the connection test does
 

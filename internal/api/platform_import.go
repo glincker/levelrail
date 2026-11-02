@@ -336,6 +336,9 @@ func (a *importApplier) CreateApp(ctx context.Context, p platformimport.AppPlan)
 	if err != nil {
 		return nil, err
 	}
+	// Held from the existence check to the row save so a same-name delete cannot wipe these secrets in between.
+	unlockName := lockAppName(p.Name)
+	defer unlockName()
 	if _, err := rt.apps.GetDesiredService(ctx, p.Name); err == nil {
 		return nil, errors.New("an app with this name already exists")
 	} else if !errors.Is(err, store.ErrServiceNotFound) {
@@ -375,9 +378,11 @@ func (a *importApplier) CreateApp(ctx context.Context, p platformimport.AppPlan)
 			return warnings, fmt.Errorf("assign project: %w", err)
 		}
 	}
+	// Linking stays under the lock: a delete's orphan sweep must not drop the App row between lookup and link.
 	if _, err := rt.ensureAppLinked(ctx, p.Name, p.Name); err != nil {
 		return warnings, fmt.Errorf("link app: %w", err)
 	}
+	unlockName()
 	warnings = append(warnings, a.createImportedJobs(ctx, p.Name, p.Crons)...)
 	if a.sessionID != "" {
 		staged, err := a.finishStaging(ctx, p)

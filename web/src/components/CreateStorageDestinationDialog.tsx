@@ -177,7 +177,9 @@ export function CreateStorageDestinationDialog() {
           {provider?.needs_account_id ? (
             <Field>
               <FieldLabel htmlFor="storage-account">
-                Cloudflare account ID
+                {t(`storageDestinations.accountLabel.${form.preset}`, {
+                  defaultValue: t('storageDestinations.accountLabel.default'),
+                })}
               </FieldLabel>
               <Input
                 id="storage-account"
@@ -187,10 +189,12 @@ export function CreateStorageDestinationDialog() {
                   set('accountId', e.target.value)
                 }}
               />
-              <FieldDescription>
-                The endpoint becomes https://&lt;account-id&gt;
-                .r2.cloudflarestorage.com.
-              </FieldDescription>
+              {form.preset === 'r2' ? (
+                <FieldDescription>
+                  The endpoint becomes https://&lt;account-id&gt;
+                  .r2.cloudflarestorage.com.
+                </FieldDescription>
+              ) : null}
             </Field>
           ) : null}
           {provider?.needs_region || provider?.default_region ? (

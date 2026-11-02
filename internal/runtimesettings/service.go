@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -44,8 +46,10 @@ type Setting struct {
 	AllowedValues  []int           `json:"allowed_values,omitempty"`
 	AllowedStrings []string        `json:"allowed_strings,omitempty"`
 	PendingRestart bool            `json:"pending_restart"`
-	UpdatedAt      *time.Time      `json:"updated_at"`
-	UpdatedBy      string          `json:"updated_by"`
+	// WeakerThanDefault is true when a weakens_security setting now holds a weaker value than its default.
+	WeakerThanDefault bool       `json:"weaker_than_default"`
+	UpdatedAt         *time.Time `json:"updated_at"`
+	UpdatedBy         string     `json:"updated_by"`
 }
 
 // Service resolves settings. A nil *Service resolves env then default only,
@@ -62,6 +66,17 @@ type Service struct {
 	saved  map[string]store.RuntimeSettingRow
 	loaded bool
 	boot   map[string]string
+	// lastGood and retryAt serve the previous rows briefly after a failed load, so a database error is not a query per request.
+	lastGood map[string]store.RuntimeSettingRow
+	retryAt  time.Time
+}
+
+// loadRetryInterval is how long a failed load is not retried; APP_RUNTIME_SETTINGS_LOAD_RETRY overrides the 2s default.
+func loadRetryInterval() time.Duration {
+	if d, err := time.ParseDuration(os.Getenv("APP_RUNTIME_SETTINGS_LOAD_RETRY")); err == nil && d > 0 {
+		return d
+	}
+	return 2 * time.Second
 }
 
 // New builds a Service over the global registry. lookup defaults to os.LookupEnv.
@@ -111,6 +126,8 @@ type resolved struct {
 	canonical string
 	source    string
 	row       *store.RuntimeSettingRow
+	// invalid names a saved or env value that failed validation on a FailClosed setting.
+	invalid string
 }
 
 func (s *Service) definition(key string) (Definition, bool) {
@@ -137,9 +154,22 @@ func (s *Service) load(ctx context.Context) (map[string]store.RuntimeSettingRow,
 		s.mu.RUnlock()
 		return m, nil
 	}
+	stale, retryAt := s.lastGood, s.retryAt
 	s.mu.RUnlock()
+	if time.Now().Before(retryAt) {
+		if stale != nil {
+			return stale, nil
+		}
+		return nil, errors.New("runtimesettings: load saved values: database unavailable, retrying shortly")
+	}
 	rows, err := s.store.ListRuntimeSettings(ctx)
 	if err != nil {
+		s.mu.Lock()
+		s.retryAt = time.Now().Add(loadRetryInterval())
+		s.mu.Unlock()
+		if stale != nil {
+			return stale, nil
+		}
 		return nil, fmt.Errorf("runtimesettings: load saved values: %w", err)
 	}
 	m := make(map[string]store.RuntimeSettingRow, len(rows))
@@ -147,14 +177,14 @@ func (s *Service) load(ctx context.Context) (map[string]store.RuntimeSettingRow,
 		m[r.Key] = r
 	}
 	s.mu.Lock()
-	s.saved, s.loaded = m, true
+	s.saved, s.loaded, s.lastGood, s.retryAt = m, true, m, time.Time{}
 	s.mu.Unlock()
 	return m, nil
 }
 
 func (s *Service) invalidate() {
 	s.mu.Lock()
-	s.loaded, s.saved = false, nil
+	s.loaded, s.saved, s.retryAt = false, nil, time.Time{}
 	s.mu.Unlock()
 }
 
@@ -172,19 +202,28 @@ func (s *Service) lookupEnv(name string) (string, bool) {
 // validates is skipped so a bad value never disables a protection by accident.
 func (s *Service) resolve(ctx context.Context, d Definition) (resolved, error) {
 	saved, err := s.load(ctx)
+	invalid := ""
 	if row, ok := saved[d.Key]; ok {
 		if c, perr := canonicalFromString(d, row.Value); perr == nil {
 			return resolved{def: d, canonical: c, source: SourceSaved, row: &row}, nil
 		}
+		invalid = fmt.Sprintf("the saved setting %s holds an invalid value", d.Key)
 	}
 	if v, ok := s.lookupEnv(d.Env); ok && v != "" {
-		if c, perr := canonicalEnv(d, v); perr == nil {
+		if c, perr := canonicalEnv(d, v); perr == nil && (invalid == "" || !d.FailClosed) {
 			return resolved{def: d, canonical: c, source: SourceEnv}, err
+		}
+		if invalid == "" {
+			invalid = fmt.Sprintf("the environment variable %s holds an invalid value", d.Env)
 		}
 		warnInvalidEnv(d)
 	}
 	c, _ := canonicalFromString(d, d.Default)
-	return resolved{def: d, canonical: c, source: SourceDefault}, err
+	r := resolved{def: d, canonical: c, source: SourceDefault, invalid: invalid}
+	if !d.FailClosed {
+		r.invalid = ""
+	}
+	return r, err
 }
 
 // maskSensitive hides a credential-like value but still tells the UI whether one is set.
@@ -204,6 +243,9 @@ func (s *Service) build(r resolved) Setting {
 		Default: typed(d, def), Value: typed(d, r.canonical), Source: r.source, Env: d.Env,
 		Apply: string(d.Apply), Risk: string(d.Risk), Onboarding: d.Onboarding, Sensitive: d.Sensitive,
 		AllowedValues: d.AllowedInts, AllowedStrings: d.AllowedStrings,
+	}
+	if d.Risk == RiskWeakensSecurity && r.canonical != def {
+		out.WeakerThanDefault = weaker(d, def, r.canonical)
 	}
 	if d.Sensitive {
 		out.Default, out.Value = maskSensitive(out.Default), maskSensitive(out.Value)
@@ -301,6 +343,33 @@ func (s *Service) Reset(ctx context.Context, key string) (Setting, error) {
 	return s.Get(ctx, key)
 }
 
+// WeakensOnReset reports whether deleting the saved value would leave a weaker
+// environment seed than the one in force now. Returning to the built-in default
+// never needs confirmation, so only an explicit env seed is compared.
+func (s *Service) WeakensOnReset(ctx context.Context, key string) bool {
+	d, ok := s.definition(key)
+	if !ok || d.Risk != RiskWeakensSecurity {
+		return false
+	}
+	cur, _ := s.resolve(ctx, d)
+	if cur.source != SourceSaved {
+		return false
+	}
+	v, ok := s.lookupEnv(d.Env)
+	if !ok || v == "" {
+		return false
+	}
+	target, err := canonicalEnv(d, v)
+	if err != nil {
+		return false
+	}
+	c, err := canonicalFromString(d, target)
+	if err != nil {
+		return false
+	}
+	return s.WeakensTo(ctx, key, typed(d, c))
+}
+
 // WeakensTo reports whether saving raw would make a weakens_security setting
 // weaker than it is now: a bool turned off, an allowlist cleared or widened,
 // or a duration shortened.
@@ -314,15 +383,26 @@ func (s *Service) WeakensTo(ctx context.Context, key string, raw json.RawMessage
 		return false
 	}
 	cur, _ := s.resolve(ctx, d)
+	return weaker(d, cur.canonical, next)
+}
+
+// weaker reports whether next is a weaker canonical value than base for d.
+func weaker(d Definition, base, next string) bool {
 	switch d.Kind {
 	case KindBool:
 		return next == "false"
 	case KindDuration:
-		return durationOf(next) < durationOf(cur.canonical)
+		return durationOf(next) < durationOf(base)
+	case KindString:
+		order := d.StrengthOrder
+		return slices.Index(order, base) >= 0 && slices.Index(order, next) < slices.Index(order, base)
 	case KindInt:
-		return shorterDays(cur.canonical, next)
+		if d.HigherIsWeaker {
+			return intOf(next) > intOf(base)
+		}
+		return shorterDays(base, next)
 	case KindStringList:
-		old := listOf(cur.canonical)
+		old := listOf(base)
 		if len(old) == 0 {
 			return false
 		}
@@ -419,6 +499,24 @@ func (s *Service) value(ctx context.Context, key string) string {
 	return r.canonical
 }
 
+// StringChecked returns a string setting for a security decision. Unlike
+// String it errors, naming where the problem came from, when the saved
+// settings cannot be read or a FailClosed setting holds an invalid value.
+func (s *Service) StringChecked(ctx context.Context, key string) (string, error) {
+	d, ok := s.definition(key)
+	if !ok {
+		return "", fmt.Errorf("runtimesettings: unknown setting %q", key)
+	}
+	r, err := s.resolve(ctx, d)
+	if d.FailClosed && err != nil {
+		return "", fmt.Errorf("%s: saved settings could not be read: %w", key, err)
+	}
+	if r.invalid != "" {
+		return "", fmt.Errorf("%s: %s; fix it or remove it (allowed: %s)", key, r.invalid, strings.Join(d.AllowedStrings, ", "))
+	}
+	return r.canonical, nil
+}
+
 // Source reports whether a key's value is saved, from the environment, or the default.
 func (s *Service) Source(ctx context.Context, key string) string {
 	d, ok := s.definition(key)
@@ -461,6 +559,11 @@ func shorterDays(cur, next string) bool {
 		return true
 	}
 	return n < c
+}
+
+func intOf(canonical string) int {
+	n, _ := strconv.Atoi(canonical)
+	return n
 }
 
 // Int returns an int setting.

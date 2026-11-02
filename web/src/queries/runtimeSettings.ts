@@ -85,6 +85,7 @@ function useInvalidate() {
 export function useSetRuntimeSetting() {
   const invalidate = useInvalidate()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async (v: {
       key: string
       value: RuntimeSettingWrite
@@ -104,20 +105,40 @@ export function useSetRuntimeSetting() {
   })
 }
 
+// Thrown when a reset would restore a weaker value and needs an explicit yes.
+export class ResetConfirmationError extends ApiError {}
+
 export function useResetRuntimeSetting() {
   const invalidate = useInvalidate()
   return useMutation({
-    mutationFn: async (key: string) =>
-      json<RuntimeSetting>(
-        await fetch(`${BASE}/${encodeURIComponent(key)}`, send('DELETE')),
-        'reset setting',
-      ),
+    mutationFn: async (v: { key: string; confirmWeakening?: boolean }) => {
+      const res = await fetch(
+        `${BASE}/${encodeURIComponent(v.key)}${
+          v.confirmWeakening ? '?confirm_weakening=true' : ''
+        }`,
+        send('DELETE'),
+      )
+      if (res.status === 400) {
+        const body = (await res
+          .clone()
+          .json()
+          .catch(() => null)) as { code?: string; error?: string } | null
+        if (body?.code === 'confirmation_required') {
+          throw new ResetConfirmationError(
+            400,
+            body.error ?? 'confirmation required',
+          )
+        }
+      }
+      return json<RuntimeSetting>(res, 'reset setting')
+    },
     onSuccess: invalidate,
   })
 }
 
 export function useApplyRuntimeSettings() {
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async () =>
       json<SystemRestartInfo>(
         await fetch(`${BASE}/apply`, send('POST')),

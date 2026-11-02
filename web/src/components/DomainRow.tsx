@@ -341,7 +341,8 @@ export function DomainNameCell({
           to="/domains/$domain"
           params={{ domain: domain.domain }}
           search={{ app: domainScope(domain) }}
-          className="min-w-0 font-mono text-sm font-medium break-all text-foreground hover:underline"
+          title={domain.domain}
+          className="min-w-0 truncate font-mono text-sm font-medium text-foreground hover:underline"
         >
           {domain.domain}
         </Link>

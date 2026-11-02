@@ -38,7 +38,7 @@ var securityTemplates = []Template{
     image: passbolt/passbolt:5.16.0-1-ce
     ports: ["80:80"]
     environment:
-      APP_FULL_BASE_URL: ${SERVICE_FQDN_PASSBOLT:-http://localhost}
+      APP_FULL_BASE_URL: ${SERVICE_URL_PASSBOLT:-http://localhost}
       PASSBOLT_SSL_FORCE: "false"
       DATASOURCES_DEFAULT_HOST: db
       DATASOURCES_DEFAULT_USERNAME: passbolt
@@ -85,7 +85,7 @@ var securityTemplates = []Template{
       # (9000) in start as well as start-dev; this keeps it on the main
       # port so this platform's single-port probe can still reach it.
       KC_LEGACY_OBSERVABILITY_INTERFACE: "true"
-      KC_HOSTNAME: ${SERVICE_FQDN_KEYCLOAK:-http://localhost:8080}
+      KC_HOSTNAME: ${SERVICE_URL_KEYCLOAK:-http://localhost:8080}
       # Production mode (start) requires a configured hostname and
       # rejects its own TLS assumptions; this platform's Caddy ingress
       # terminates TLS in front, so Keycloak trusts its proxy headers.
@@ -111,7 +111,7 @@ var securityTemplates = []Template{
     image: ghcr.io/pocket-id/pocket-id:v1.13
     ports: ["1411:1411"]
     environment:
-      APP_URL: ${SERVICE_FQDN_POCKETID:-http://localhost:1411}
+      APP_URL: ${SERVICE_URL_POCKETID:-http://localhost:1411}
       TRUST_PROXY: "true"
     volumes:
       - pocket_id_data:/app/data

@@ -103,6 +103,7 @@ export async function createOrganization(
 export function useCreateOrganization() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: createOrganization,
     onSuccess: (created) => {
       queryClient.setQueryData(organizationKeys.detail(created.id), created)
@@ -127,6 +128,7 @@ export function deleteOrganization(args: CascadeDeleteArgs): Promise<void> {
 export function useDeleteOrganization() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: deleteOrganization,
     onSuccess: (_data, { id }) => {
       queryClient.removeQueries({ queryKey: organizationKeys.detail(id) })
@@ -167,6 +169,7 @@ export async function setProjectOrganization(
 export function useSetProjectOrganization() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: ({ projectId, orgId }: { projectId: string; orgId: string }) =>
       setProjectOrganization(projectId, orgId),
     onSuccess: (updated) => {

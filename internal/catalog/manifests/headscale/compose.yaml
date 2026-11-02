@@ -4,7 +4,7 @@ services:
     ports: ["8080"]
     command: ["serve"]
     environment:
-      HEADSCALE_SERVER_URL: ${SERVICE_FQDN_HEADSCALE:-http://localhost:8080}
+      HEADSCALE_SERVER_URL: ${SERVICE_URL_HEADSCALE:-http://localhost:8080}
       HEADSCALE_LISTEN_ADDR: 0.0.0.0:8080
       HEADSCALE_DNS_BASE_DOMAIN: tailnet.internal
       HEADSCALE_DNS_OVERRIDE_LOCAL_DNS: "false"

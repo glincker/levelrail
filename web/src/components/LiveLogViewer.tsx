@@ -35,6 +35,9 @@ export function LiveLogViewer({
       ? conditions?.find((c) => c.Status === 'False')
       : undefined
 
+  // Nothing is running to stream from, so connecting and waiting copy would be misleading.
+  const noContainer = problem !== undefined
+
   let countKey: LineCountKey = 'liveLogs.waiting'
   if (lines.length > 0) {
     countKey = stopped ? 'liveLogs.lastOutput' : 'liveLogs.lineCount'
@@ -43,10 +46,18 @@ export function LiveLogViewer({
   return (
     <div className="flex h-full flex-col gap-2">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs text-muted-foreground">
-          {t(countKey, { count: lines.length })}
-        </p>
-        <LogConnectionBadge state={connectionState} notRunning={stopped} />
+        {noContainer && lines.length === 0 ? (
+          <span />
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            {t(countKey, { count: lines.length })}
+          </p>
+        )}
+        <LogConnectionBadge
+          state={connectionState}
+          notRunning={stopped}
+          noContainer={noContainer}
+        />
       </div>
 
       {runStatus && !runStatus.running ? (

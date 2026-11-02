@@ -13,6 +13,9 @@
   },
   "source": {
     "analyzing": "Leyendo el repositorio...",
+    "noProvider": {
+      "lead": "No hay un proveedor git conectado y no hace falta. Pega la URL de un repositorio, elige una plantilla o prueba la aplicación de ejemplo."
+    },
     "privateRepo": "No pudimos leer este repositorio. Si es privado, conecta tu proveedor de git y elígelo de la lista.",
     "privateRepoConnect": "Conectar un proveedor de git",
     "analyze": "Analizar repositorio",
@@ -111,6 +114,7 @@
       "title": "Opciones avanzadas",
       "buildType": "Tipo de compilación",
       "dockerfile": "Ruta del Dockerfile",
+      "spa": "Modo de aplicación de una sola página",
       "baseDirectory": "Directorio de contexto de compilación",
       "validateDirectory": "Validar directorio",
       "memory": "Límite de memoria (MiB)",

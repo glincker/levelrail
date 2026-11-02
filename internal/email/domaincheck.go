@@ -97,6 +97,9 @@ func checkSPF(ctx context.Context, dns DNSLookup, domain, include string) Record
 		rc.Status, rc.Code, rc.Value, rc.Message = CheckWarn, "spf_multiple", spf[0], "More than one SPF record exists. Merge them into one, receivers reject multiple records."
 	case strings.Contains(strings.ToLower(spf[0]), "+all"):
 		rc.Status, rc.Code, rc.Value, rc.Message = CheckWarn, "spf_permissive", spf[0], "SPF ends in +all, which authorizes every sender. Use ~all or -all."
+	case CountSPFLookups(ctx, dns, spf[0], SPFLimitsFromEnv().Depth) > SPFLimitsFromEnv().Lookups:
+		rc.Status, rc.Code, rc.Value = CheckWarn, CodeSPFTooManyLookups, spf[0]
+		rc.Message = fmt.Sprintf("SPF needs more than %d DNS lookups, so receivers treat it as an error. Remove unused include terms or flatten them.", SPFLimitsFromEnv().Lookups)
 	case include != "" && !strings.Contains(strings.ToLower(spf[0]), include):
 		rc.Status, rc.Code, rc.Value = CheckWarn, "spf_no_include", spf[0]
 		rc.Message = fmt.Sprintf("SPF does not include %s. Add include:%s unless your provider uses its own return-path domain.", include, include)
@@ -118,6 +121,11 @@ func checkDKIM(ctx context.Context, dns DNSLookup, domain string, provider Backe
 		if cname, err := dns.LookupCNAME(ctx, name); err == nil && cname != "" && strings.TrimSuffix(cname, ".") != name {
 			rc.Name, rc.Status, rc.Code, rc.Value, rc.Message = name, CheckPass, "dkim_found", cname, "DKIM CNAME found for selector "+sel+"."
 			return rc
+		}
+	}
+	for _, sel := range selectors {
+		if name := sel + "._domainkey." + domain; DKIMProxied(ctx, dns, name) {
+			return proxiedDKIMCheck(name)
 		}
 	}
 	rc.Status, rc.Code = CheckWarn, "dkim_not_found"

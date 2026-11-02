@@ -133,6 +133,14 @@ func (db *DB) SetAppSleeping(ctx context.Context, serviceName string, sleeping b
 	return nil
 }
 
+// DeleteAppSleep drops serviceName's sleep setting; a missing row is not an error.
+func (db *DB) DeleteAppSleep(ctx context.Context, serviceName string) error {
+	if _, err := db.ExecContext(ctx, `DELETE FROM app_sleep WHERE service_name = ?`, serviceName); err != nil {
+		return fmt.Errorf("store: delete app sleep for %q: %w", serviceName, err)
+	}
+	return nil
+}
+
 // GetAppSleep returns serviceName's row, or a disabled zero value when none exists.
 func (db *DB) GetAppSleep(ctx context.Context, serviceName string) (AppSleep, error) {
 	a := AppSleep{ServiceName: serviceName, PortWake: true}
@@ -182,4 +190,13 @@ func (db *DB) CountAppStreamsByService(ctx context.Context) (map[string]int, err
 		out[n] = c
 	}
 	return out, rows.Err()
+}
+
+// DeleteAppSleepIfOrphan drops the sleep row only while no desired service
+// carries the name, so a delete-then-recreate cannot lose the new row.
+func (db *DB) DeleteAppSleepIfOrphan(ctx context.Context, serviceName string) error {
+	if _, err := db.ExecContext(ctx, `DELETE FROM app_sleep WHERE service_name = ? AND NOT EXISTS (SELECT 1 FROM desired_services WHERE name = ?)`, serviceName, serviceName); err != nil {
+		return fmt.Errorf("store: delete orphan app sleep for %q: %w", serviceName, err)
+	}
+	return nil
 }

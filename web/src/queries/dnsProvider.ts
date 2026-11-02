@@ -115,6 +115,7 @@ export function useSetDnsProvider(app?: string) {
 
 export function useTestDnsProvider(app?: string) {
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (body: DnsProviderRequest) =>
       request<DnsProviderTestResult>(`${basePath(app)}/test`, 'POST', body),
   })

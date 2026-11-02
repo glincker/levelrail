@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 // Node security event kinds.
@@ -104,6 +106,8 @@ func (db *DB) AddNodeSecurityEvent(ctx context.Context, ev NodeSecurityEvent, p 
 	if err != nil {
 		return fmt.Errorf("store: encode security event detail: %w", err)
 	}
+	// Message can echo a gRPC refusal and Subject a peer-chosen certificate name.
+	detail = []byte(secretmask.Mask(string(detail)))
 	nowMS := now.UnixMilli()
 	if p.Coalesce && p.Window > 0 {
 		res, err := db.ExecContext(ctx, `

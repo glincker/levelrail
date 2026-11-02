@@ -268,17 +268,20 @@ type Controller struct {
 	egressReadyBudget       time.Duration
 	egressReadyPollInterval time.Duration
 
-	rollouts            RolloutRecorder       // nil is valid: rollout state just isn't recorded
-	servingImageID      string                // image ID of the last replica proven ready this pass
-	stopGrace           time.Duration         // 0 uses defaultStopGrace
-	previousReleaseHold time.Duration         // 0 removes the previous release at cutover
-	applied             AppliedConfigRecorder // nil is valid: pending changes just aren't tracked
+	rollouts            RolloutRecorder                            // nil is valid: rollout state just isn't recorded
+	servingImageID      string                                     // image ID of the last replica proven ready this pass
+	stopGrace           time.Duration                              // 0 uses defaultStopGrace
+	previousReleaseHold time.Duration                              // 0 removes the previous release at cutover
+	deployWindows       func(context.Context) deploysafety.Windows // live override of the timings, see WithDeployWindows
+	restartPolicy       func(context.Context) string               // stored runtime setting, read per container create
+	applied             AppliedConfigRecorder                      // nil is valid: pending changes just aren't tracked
 	lastHeldUntil       time.Time
 	now                 func() time.Time // nil uses time.Now; tests step a fake clock
 	unconfirmedMu       sync.Mutex
 	unconfirmed         map[string]*store.AppliedConfig // created but not yet proven ready, by container name
 	pinnedPortRetry     time.Duration                   // see WithPinnedPortRetry
 	reviveWatch         time.Duration                   // see WithReviveWatch
+	handoffMu           sync.Mutex                      // parallel replica starts share handoffFailed
 	handoffFailed       map[string]time.Time            // target name to the time its next pinned-port handoff may run
 	pendingReady        *PendingReadiness               // nil keeps the blocking readiness wait, see WithReadinessRequeue
 	readinessRequeue    time.Duration
@@ -292,9 +295,12 @@ type Controller struct {
 	gateTick            time.Duration
 	drain               *DrainTracker
 	pinner              RollbackPinner
-	exitRecorder        ExitRecorder  // nil is valid: exits are only reported, not captured
-	startupWatch        time.Duration // see WithStartupWatch
-	nodeRecovering      bool          // see WithNodeRecovering
+	exitRecorder        ExitRecorder                        // nil is valid: exits are only reported, not captured
+	startupWatch        time.Duration                       // see WithStartupWatch
+	nodeRecovering      bool                                // see WithNodeRecovering
+	dependsOnTimeout    func(context.Context) time.Duration // nil waits forever, see WithDependsOnTimeout
+	dependsOnMu         sync.Mutex
+	dependsOnSince      map[string]dependencyWait // first pass a service waited on a dependency
 }
 
 // Option configures optional Controller behavior.
@@ -513,6 +519,15 @@ type RetainedDeploys interface {
 	IsRetained(ctx context.Context, service string) bool
 }
 
+// retainedAsleep is true for a deploy-URL copy still marked sleeping: a stray
+// unsuspend (project start, bulk start) must not boot a second copy of the app.
+func (c *Controller) retainedAsleep(ctx context.Context) bool {
+	a, ok := c.retained.(interface {
+		Asleep(ctx context.Context, service string) bool
+	})
+	return ok && a.Asleep(ctx, c.serviceName)
+}
+
 // WithRetainedDeploys makes retained deploy services stop retrying after
 // repeated readiness failures instead of looping with the crash backoff.
 func WithRetainedDeploys(r RetainedDeploys) Option {
@@ -617,11 +632,13 @@ func (c *Controller) reconcileDesired(ctx context.Context, desired *store.Desire
 		return unknownResult(ReasonMaintenanceHold), nil
 	}
 
+	desired = c.withIncarnation(ctx, desired)
+
 	// Suspended is an operator-requested stop (DesiredService.Suspended's
 	// own doc comment): converge to zero containers and return early,
 	// same containers-only teardown removeStale already performs after a
 	// deploy, just with keep=nil instead of the new replica set.
-	if desired.Suspended {
+	if desired.Suspended || c.retainedAsleep(ctx) {
 		// One container listing serves both teardowns: this runs for every
 		// suspended app on every resync.
 		all, err := c.listPrefix(ctx, c.serviceName+"-")
@@ -633,7 +650,7 @@ func (c *Controller) reconcileDesired(ctx context.Context, desired *store.Desire
 			return notReady("SuspendFailed", err), fmt.Errorf("application/%s: suspend: remove containers: %w", c.serviceName, err)
 		}
 		result := unknownResult("Suspended")
-		if c.retained != nil && c.retained.IsRetained(ctx, c.serviceName) {
+		if c.retained != nil && desired.Suspended && c.retained.IsRetained(ctx, c.serviceName) {
 			result = unknownResult(reasonRetainedDeployStopped)
 		}
 		result.Conditions = append(result.Conditions, c.reconcileEgressWith(ctx, c.filterEgressSidecars(all), nil, desired))
@@ -936,6 +953,13 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 		return replicaOutcome{reason: "InspectFailed"}, fmt.Errorf("inspect %q: %w", target, err)
 	}
 
+	if incarnationMismatch(state, desired) {
+		if err := c.removeContainer(ctx, state.ID); err != nil {
+			return replicaOutcome{reason: reasonIncarnationMismatch}, fmt.Errorf("remove %q left by an earlier life of the app: %w", target, err)
+		}
+		state = nil
+	}
+
 	if pinnedPortUnbound(state, desired) {
 		if err := c.removeContainer(ctx, state.ID); err != nil {
 			return replicaOutcome{reason: reasonPinnedPortUnbound}, fmt.Errorf("remove %q running without its pinned host port %d: %w", target, *desired.HostPort, err)
@@ -957,8 +981,16 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 		state = nil
 	}
 
+	if readOnlyRootfsDrifted(state, desired) {
+		if err := c.removeContainer(ctx, state.ID); err != nil {
+			return replicaOutcome{reason: reasonReadOnlyRootfsDriftRecreate}, fmt.Errorf("remove %q to apply its changed security.read_only_rootfs: %w", target, err)
+		}
+		state = nil
+	}
+
 	meshIP, _ := c.meshBindIP(ctx, desired)
-	if publishedPortDrifted(state, desired, meshIP) || publishedPortsDrifted(state, desired) {
+	streamPorts, _ := c.streamHostPorts(ctx, desired.Name) // a list error just skips this drift check
+	if publishedPortDrifted(state, desired, meshIP) || publishedPortsDrifted(state, effectiveDesired(desired, streamPorts), streamPorts) {
 		if err := c.removeContainer(ctx, state.ID); err != nil {
 			return replicaOutcome{reason: reasonPortDriftRecreate}, fmt.Errorf("remove %q to republish its changed port or bind address: %w", target, err)
 		}
@@ -1005,7 +1037,7 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 				released = append(released, c.locateReleased(ctx, prior.released)...)
 			}
 		}
-		if err := c.createAndStart(ctx, target, desired); err != nil {
+		if err := c.createAndStart(ctx, target, desired, released); err != nil {
 			reason, err := c.createFailure(err)
 			c.traceAbort(ctx, desired, target, reason, err)
 			return replicaOutcome{reason: reason}, c.abortHandoff(ctx, target, released, err)
@@ -1042,7 +1074,7 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 			if err := c.removeContainer(ctx, state.ID); err != nil {
 				return replicaOutcome{reason: "StartFailed"}, fmt.Errorf("restart %q: start failed (%w) and the broken container could not be removed for recreation: %w", target, startErr, err)
 			}
-			if err := c.createAndStart(ctx, target, desired); err != nil {
+			if err := c.createAndStart(ctx, target, desired, released); err != nil {
 				return replicaOutcome{reason: "CreateFailed"}, fmt.Errorf("restart %q: start failed (%w), recreated instead: %w", target, startErr, err)
 			}
 			created = true
@@ -1062,7 +1094,7 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 			var crash *readinessCrashError
 			if defers && !errors.As(err, &crash) {
 				if started, ok := c.adoptable(ctx, target, state, desired); ok {
-					return c.deferCandidate(target, state, pendingCandidate{created: true, firstSeen: started}), nil
+					return c.deferCandidate(target, state, pendingCandidate{created: true, released: releasedIDs(c.releasedFromLabel(ctx, state)), firstSeen: started}), nil
 				}
 			}
 			return replicaOutcome{reason: readinessReason(err, "RunningNotReady")}, err
@@ -1190,7 +1222,7 @@ func (c *Controller) readinessVerdict(ctx context.Context, target string, state 
 		}
 		return replicaOutcome{reason: reason}, c.abortHandoff(ctx, target, released, err)
 	}
-	delete(c.handoffFailed, target)
+	c.clearHandoffFailed(target)
 	return c.confirmedOutcome(ctx, target, state, desired, true)
 }
 
@@ -1215,7 +1247,9 @@ func (c *Controller) imageOutcome(ctx context.Context, state *docker.ContainerSt
 		}
 		return replicaOutcome{reason: "ImageInspectFailed"}, err
 	}
+	c.unconfirmedMu.Lock()
 	c.servingImageID = state.ImageID
+	c.unconfirmedMu.Unlock()
 	return replicaOutcome{justDeployed: justDeployed, imageID: state.ImageID}, nil
 }
 
@@ -1308,7 +1342,7 @@ func (c *Controller) ensureAppNetwork(ctx context.Context, desired *store.Desire
 	return nil
 }
 
-func (c *Controller) createAndStart(ctx context.Context, name string, desired *store.DesiredService) error {
+func (c *Controller) createAndStart(ctx context.Context, name string, desired *store.DesiredService, released []docker.ContainerState) error {
 	tr := c.tracer(ctx, desired)
 	c.traceDependenciesMet(ctx, tr, desired)
 	cfgSpan := tr.Begin(ctx, deploytrace.StepConfigValidate, "resolving env and container config")
@@ -1329,16 +1363,21 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 	if err := c.refuseRemotePublishedPorts(desired); err != nil {
 		return err
 	}
-	spec, err := toContainerSpec(name, desired)
+	streamHosts, err := c.streamHostPorts(ctx, desired.Name)
+	if err != nil {
+		return fmt.Errorf("app streams: %w", err)
+	}
+	spec, err := toContainerSpec(name, effectiveDesired(desired, streamHosts))
 	if err != nil {
 		return fmt.Errorf("container spec: %w", err)
 	}
+	spec.RestartPolicy = c.restartPolicyFor(ctx, desired)
 	c.applyMeshBind(ctx, desired, &spec)
 	streamPorts, err := c.streamPortBindings(ctx, desired.Name)
 	if err != nil {
 		return fmt.Errorf("app streams: %w", err)
 	}
-	spec.Ports = append(spec.Ports, streamPorts...)
+	spec.Ports = appendStreamPorts(spec.Ports, streamPorts)
 	spec.Env = env
 	if spec.Files, err = c.resolveFiles(ctx, desired, env); err != nil {
 		return fmt.Errorf("resolve files: %w", err)
@@ -1347,6 +1386,19 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 		spec.Labels = mergeLabel(spec.Labels, appspec.InstanceLabelKey, c.instanceID)
 	}
 	spec.Labels = mergeLabel(spec.Labels, appspec.AppLabelKey, volumeOwner(desired, "").App)
+	if c.retained != nil && c.retained.IsRetained(ctx, c.serviceName) {
+		spec.Labels = mergeLabel(spec.Labels, appspec.DeployURLLabelKey, "1")
+	}
+	if desired.Incarnation != "" {
+		spec.Labels = mergeLabel(spec.Labels, appspec.IncarnationLabelKey, desired.Incarnation)
+	}
+	if prev := c.supersededRelease(ctx, name); prev != "" {
+		spec.Labels = mergeLabel(spec.Labels, appspec.SupersedesLabelKey, prev)
+	}
+	if len(released) > 0 {
+		// Survives a control plane restart so the stopped previous release can still be restored.
+		spec.Labels = mergeLabel(spec.Labels, releasedLabelKey, releasedLabelValue(released))
+	}
 	if desired.RegistryCredentialID != "" {
 		auth, err := c.resolveRegistryAuth(ctx, desired.RegistryCredentialID)
 		if err != nil {
@@ -1383,7 +1435,11 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 		stopWatch()
 		return fmt.Errorf("create %q: %w", name, err)
 	}
-	c.traceImageInspect(ctx, tr, desired.Image)
+	if err := c.traceImageInspect(ctx, tr, desired.Image); err != nil {
+		stopWatch()
+		_ = c.removeContainer(ctx, id)
+		return fmt.Errorf("create %q: %w", name, err)
+	}
 	c.holdApplied(name, c.appliedSnapshot(ctx, name, desired))
 	startSpan := tr.Begin(ctx, deploytrace.StepContainerStart, "starting "+name)
 	if err := c.startContainer(ctx, id); err != nil {
@@ -1399,6 +1455,32 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 		return err
 	}
 	return nil
+}
+
+// appendStreamPorts adds stream bindings, skipping one that an existing
+// ephemeral loopback binding of the same port already provides. Two such
+// bindings made Docker hand out the same host port twice and the start
+// failed with "address already in use".
+func appendStreamPorts(ports, streams []docker.PortBinding) []docker.PortBinding {
+	norm := func(p string) string {
+		if p == "" {
+			return store.PortProtocolTCP
+		}
+		return p
+	}
+	for _, s := range streams {
+		dup := false
+		for _, p := range ports {
+			if p.ContainerPort == s.ContainerPort && norm(p.Protocol) == norm(s.Protocol) && p.HostIP == s.HostIP && p.HostPort == 0 {
+				dup = true
+				break
+			}
+		}
+		if !dup {
+			ports = append(ports, s)
+		}
+	}
+	return ports
 }
 
 // streamPortBindings returns one extra docker.PortBinding per raw TCP
@@ -1827,14 +1909,19 @@ func (c *Controller) resolveDatabaseField(ctx context.Context, appNodeID, dbName
 	}
 
 	// The pooler shares the database's namespace: same host, other port.
-	// Cross-node apps keep the direct route, the mesh only maps 5432.
-	pooled := database.PoolerActive(desiredDB) && !crossNode
+	// Cross-node apps use the pooler's own mesh port.
+	pooled := database.PoolerActive(desiredDB)
+	poolerPort := database.PoolerPort
+	if crossNode {
+		poolerPort = ep.poolerPort
+		pooled = pooled && poolerPort != 0
+	}
 	switch field {
 	case "host":
 		return host, nil
 	case "port":
 		if pooled {
-			return strconv.Itoa(database.PoolerPort), nil
+			return strconv.Itoa(poolerPort), nil
 		}
 		return strconv.Itoa(port), nil
 	case "direct_url":
@@ -1848,7 +1935,7 @@ func (c *Controller) resolveDatabaseField(ctx context.Context, appNodeID, dbName
 	case "url":
 		if pooled {
 			// Client to pooler stays inside the namespace bridge, no TLS there.
-			return c.resolveDatabaseURL(ctx, dbName, desiredDB.Engine, host, database.PoolerPort, false)
+			return c.resolveDatabaseURL(ctx, dbName, desiredDB.Engine, host, poolerPort, false)
 		}
 		return c.resolveDatabaseURL(ctx, dbName, desiredDB.Engine, host, port, tlsEnabled)
 	default:
@@ -2280,6 +2367,9 @@ func (c *Controller) awaitReady(ctx context.Context, desired *store.DesiredServi
 	// ends the wait instead of waiting out the full readiness budget.
 	t := time.NewTicker(c.effectiveReviveWatch())
 	defer t.Stop()
+	// A takeover stopped the old release on purpose: reviving it would
+	// put two writers or two binders next to the candidate.
+	takeover := c.planHandoff(ctx, desired).stopFirst()
 	for {
 		select {
 		case err := <-readyErr:
@@ -2293,7 +2383,7 @@ func (c *Controller) awaitReady(ctx context.Context, desired *store.DesiredServi
 			if c.desiredSuperseded(ctx, desired) {
 				return errSuperseded
 			}
-			if desired.HostPort == nil && len(desired.PublishedPorts) == 0 {
+			if !takeover && desired.HostPort == nil && len(desired.PublishedPorts) == 0 {
 				c.reviveIfDead(ctx, []string{candidate}, desired, false)
 			}
 		}
@@ -2519,6 +2609,40 @@ func (c *Controller) ownsInstance(cs docker.ContainerState) bool {
 // caller's own map untouched. Used to stamp internal/spec.InstanceLabelKey
 // onto a container spec without createAndStart mutating desired.Labels,
 // which store.DesiredService owns.
+// incarnationBackfiller is implemented by the real store; fakes without it keep legacy rows legacy.
+type incarnationBackfiller interface {
+	EnsureServiceIncarnation(ctx context.Context, name string) (string, error)
+}
+
+const reasonIncarnationMismatch = "IncarnationMismatch"
+
+// withIncarnation fills a legacy row's missing id on the first pass, on a copy so the store's value is never mutated.
+func (c *Controller) withIncarnation(ctx context.Context, desired *store.DesiredService) *store.DesiredService {
+	if desired.Incarnation != "" {
+		return desired
+	}
+	b, ok := c.store.(incarnationBackfiller)
+	if !ok {
+		return desired
+	}
+	id, err := b.EnsureServiceIncarnation(ctx, desired.Name)
+	if err != nil || id == "" {
+		return desired
+	}
+	cp := *desired
+	cp.Incarnation = id
+	return &cp
+}
+
+// incarnationMismatch is true only for a container labeled with another life's id; an unlabeled one is a legacy container and is kept.
+func incarnationMismatch(state *docker.ContainerState, desired *store.DesiredService) bool {
+	if state == nil || desired.Incarnation == "" {
+		return false
+	}
+	got, labeled := state.Labels[appspec.IncarnationLabelKey]
+	return labeled && got != desired.Incarnation
+}
+
 func mergeLabel(labels map[string]string, key, value string) map[string]string {
 	out := make(map[string]string, len(labels)+1)
 	for k, v := range labels {
@@ -2752,6 +2876,7 @@ func toContainerSpec(name string, desired *store.DesiredService) (docker.Contain
 		}
 	}
 	spec.ShmSizeBytes, spec.Labels = shmSpec(desired, spec.Labels)
+	spec.Labels = readOnlyRootfsSpec(desired, spec.Labels)
 	for _, v := range desired.Volumes {
 		spec.Volumes = append(spec.Volumes, docker.VolumeMount{Name: v.Name, ContainerPath: v.ContainerPath})
 	}

@@ -1,6 +1,10 @@
 package compose
 
-import "testing"
+import (
+	"encoding/base64"
+	"strings"
+	"testing"
+)
 
 func TestFindMagicVars(t *testing.T) {
 	tests := []struct {
@@ -115,5 +119,54 @@ func TestGenerateValue_TwoCallsDiffer(t *testing.T) {
 func TestGenerateValue_UnknownKind(t *testing.T) {
 	if _, err := GenerateValue("FQDN", 0); err == nil {
 		t.Fatal("GenerateValue(\"FQDN\", 0) error = nil, want an error (not a generatable kind)")
+	}
+}
+
+func TestBase64BytesResolvesInsideComposedValue(t *testing.T) {
+	f := &File{Services: map[string]Service{"app": {Environment: Environment{
+		"APP_KEY": "base64:$SERVICE_BASE64BYTES_32_APPKEY",
+	}}}}
+	persisted := map[string]string{}
+	_, unresolved, err := ResolveMagicVars(f, func(kind, _ string, n int) (string, error) {
+		return GenerateValue(kind, n)
+	}, func(_, envKey, v string) error { persisted[envKey] = v; return nil })
+	if err != nil || len(unresolved) != 0 {
+		t.Fatalf("err=%v unresolved=%v", err, unresolved)
+	}
+	val, ok := strings.CutPrefix(persisted["APP_KEY"], "base64:")
+	if !ok {
+		t.Fatalf("missing prefix: %q", persisted["APP_KEY"])
+	}
+	raw, err := base64.StdEncoding.DecodeString(val)
+	if err != nil || len(raw) != 32 {
+		t.Fatalf("decode err=%v len=%d, want 32 bytes", err, len(raw))
+	}
+}
+
+func TestTranslateMagicVars(t *testing.T) {
+	src := "services:\n  app:\n    environment:\n      - SERVICE_FQDN_APP_3000\n      - SERVICE_URL_APP\n      - DB_PASS=${SERVICE_PASSWORD_DB}\n      - SERVICE_PASSWORD_DB\n      - X=${SERVICE_NAME_THING}\n      - Y=${SERVICE_OTHER_Z:-fallback}\n"
+	got, err := TranslateMagicVars(src, func(k string) string { return strings.ToLower(k) + ".example.test" })
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"SERVICE_FQDN_APP_3000=app.example.test", "SERVICE_URL_APP=https://app.example.test", "Y=fallback", "${SERVICE_NAME_THING}"} {
+		if !strings.Contains(got.Compose, want) {
+			t.Errorf("missing %q in:\n%s", want, got.Compose)
+		}
+	}
+	if len(got.Unsupported) != 1 || got.Unsupported[0] != "SERVICE_NAME_THING" {
+		t.Errorf("Unsupported = %v", got.Unsupported)
+	}
+	if len(got.Generated) != 1 {
+		t.Fatalf("Generated = %v, want one shared password", got.Generated)
+	}
+	var vals []string
+	for _, l := range strings.Split(got.Compose, "\n") {
+		if strings.Contains(l, "DB_PASS=") || strings.Contains(l, "SERVICE_PASSWORD_DB=") {
+			vals = append(vals, l[strings.LastIndex(l, "=")+1:])
+		}
+	}
+	if len(vals) != 2 || vals[0] != vals[1] || len(vals[0]) != 32 {
+		t.Errorf("password values = %v, want identical 32 char values", vals)
 	}
 }

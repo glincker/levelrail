@@ -553,7 +553,7 @@ func (rt *Router) automaticDomains(r *http.Request, canSee func(string) bool) []
 	}
 	var out []domainResource
 	for _, svc := range svcs {
-		if len(svc.Domains) > 0 || !canSee(svc.Name) {
+		if len(svc.Domains) > 0 || !canSee(svc.Name) || !ingress.ServesHTTP(svc) {
 			continue
 		}
 		if d, ok := res.Domain(svc.Name); ok {

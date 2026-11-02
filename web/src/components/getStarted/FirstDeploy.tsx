@@ -9,7 +9,7 @@ import {
   LayoutGridGlassIcon,
   RocketGlassIcon,
 } from '@thesvg/ui-react'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { CreateResourceWizard } from '../CreateResourceWizard'
 import { EnableHttpsCard } from '../EnableHttpsCard'
@@ -111,10 +111,20 @@ export function FirstDeploy({
   return (
     <div className="space-y-6">
       <header className="space-y-1">
-        <h1 className="flex items-center gap-2 text-xl font-semibold text-foreground">
-          <RocketGlassIcon aria-hidden="true" className="size-8 text-primary" />
-          {live ? t('first.titleLive') : t('first.title')}
-        </h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="flex items-center gap-2 text-xl font-semibold text-foreground">
+            <RocketGlassIcon
+              aria-hidden="true"
+              className="size-8 text-primary"
+            />
+            {live ? t('first.titleLive') : t('first.title')}
+          </h1>
+          {app ? null : (
+            <Link to="/apps/new" className={buttonVariants({ size: 'sm' })}>
+              {t('first.primary')}
+            </Link>
+          )}
+        </div>
         {live ? null : (
           <p className="max-w-prose text-sm text-muted-foreground">
             {t('first.subtitle')}
@@ -137,6 +147,7 @@ export function FirstDeploy({
               action={
                 <Button
                   size="sm"
+                  variant="outline"
                   onClick={deploySample}
                   disabled={createApp.isPending}
                 >

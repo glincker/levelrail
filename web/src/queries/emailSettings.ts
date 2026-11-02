@@ -119,6 +119,7 @@ export async function updateEmailSettings(
 export function useUpdateEmailSettings() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: updateEmailSettings,
     onSuccess: (updated) => {
       queryClient.setQueryData(emailSettingsKeys.all, updated)
@@ -224,6 +225,7 @@ export async function sendTestEmail({
 export function useSendTestEmail() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: sendTestEmail,
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: emailSettingsKeys.status })
@@ -266,6 +268,7 @@ export async function fetchEmailDomainCheck(
 
 export function useEmailDomainCheck() {
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (providerId?: string) => fetchEmailDomainCheck(providerId),
   })
 }

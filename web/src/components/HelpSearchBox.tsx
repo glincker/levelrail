@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { SearchGlassIcon } from '@thesvg/ui-react'
 import { Input } from '@/components/ui/input'
+import { loadDocsSearchBodies } from '../lib/docsManifestLoader'
 import { searchDocs } from '../lib/docsSearch'
 import type { DocsManifest } from '../types/docs'
 
@@ -13,7 +15,18 @@ import type { DocsManifest } from '../types/docs'
 // chunk happens to import it.
 export function HelpSearchBox({ manifest }: { manifest: DocsManifest }) {
   const [query, setQuery] = useState('')
-  const results = useMemo(() => searchDocs(manifest, query), [query, manifest])
+  const active = query.trim().length > 0
+  // Search text is a separate lazy chunk, fetched on the first keystroke.
+  const bodies = useQuery({
+    queryKey: ['help', 'docs-search-bodies'],
+    queryFn: loadDocsSearchBodies,
+    enabled: active,
+    staleTime: Infinity,
+  })
+  const results = useMemo(
+    () => searchDocs(manifest, query, bodies.data),
+    [query, manifest, bodies.data],
+  )
 
   return (
     <div className="relative">
@@ -29,7 +42,8 @@ export function HelpSearchBox({ manifest }: { manifest: DocsManifest }) {
       />
       {query.trim() ? (
         <div className="absolute top-full right-0 left-0 z-20 mt-1 max-h-80 overflow-y-auto rounded-lg border border-border bg-popover p-1 shadow-md">
-          {results.length === 0 ? (
+          {results.length === 0 && bodies.isPending ? null : results.length ===
+            0 ? (
             <p className="px-2 py-3 text-sm text-muted-foreground">
               No matches for &ldquo;{query}&rdquo;
             </p>

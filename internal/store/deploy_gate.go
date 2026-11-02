@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 // DeploySafetySettings is one app's readiness gate and post-deploy watch
@@ -186,6 +188,8 @@ func (db *DB) RecordGateEvent(ctx context.Context, e DeployGateEvent) error {
 		e.At = time.Now()
 	}
 	at := e.At.UTC().Format(time.RFC3339Nano)
+	// Message is often a readiness probe or runtime error that can echo a registered value.
+	e.Reason, e.Message = secretmask.Mask(e.Reason), secretmask.Mask(e.Message)
 	var err error
 	if e.DeployAttemptID != "" {
 		_, err = db.ExecContext(ctx, `
@@ -249,6 +253,7 @@ func (db *DB) ListGateEventsSince(ctx context.Context, phase, status string, sin
 // MarkRolloutFailureReason stamps reason onto the newest succeeded or
 // failed attempt that deployed (serviceName, image).
 func (db *DB) MarkRolloutFailureReason(ctx context.Context, serviceName, image, reason string) error {
+	reason = secretmask.Mask(reason)
 	_, err := db.ExecContext(ctx, `
 		UPDATE deploy_attempts SET reason = ?
 		WHERE id = (
@@ -266,6 +271,7 @@ func (db *DB) MarkRolloutFailureReason(ctx context.Context, serviceName, image, 
 // FailDeployAttemptWithReason flips a succeeded attempt to failed after the
 // fact, recording why. Reports whether it changed anything.
 func (db *DB) FailDeployAttemptWithReason(ctx context.Context, id, reason, message string) (bool, error) {
+	reason, message = secretmask.Mask(reason), secretmask.Mask(message)
 	res, err := db.ExecContext(ctx, `
 		UPDATE deploy_attempts SET status = ?, rollout_state = ?, reason = ?, error = ?, finished_at = COALESCE(finished_at, ?)
 		WHERE id = ? AND status = ?

@@ -6,6 +6,9 @@ import "github.com/GLINCKER/levelrail/internal/reconcile"
 type appStatusSummary struct {
 	Label   string `json:"label"`
 	Variant string `json:"variant"`
+	// Reason and Message come from the first failing condition so list rows can say why.
+	Reason  string `json:"reason,omitempty"`
+	Message string `json:"message,omitempty"`
 }
 
 // Mirrors summarizeAppStatus: any False wins, then all True means healthy, otherwise still reconciling.
@@ -14,14 +17,14 @@ func summarizeAppConditions(conditions []reconcile.Condition) appStatusSummary {
 		return appStatusSummary{Label: "No status yet", Variant: "muted"}
 	}
 	for _, c := range conditions {
-		if c.Reason == "Suspended" {
+		if c.Reason == "Suspended" || c.Reason == "RetainedDeployStopped" {
 			return appStatusSummary{Label: "Stopped", Variant: "muted"}
 		}
 	}
 	allTrue := true
 	for _, c := range conditions {
 		if c.Status == reconcile.ConditionFalse {
-			return appStatusSummary{Label: "Attention needed", Variant: "destructive"}
+			return appStatusSummary{Label: "Attention needed", Variant: "destructive", Reason: c.Reason, Message: c.Message}
 		}
 		if c.Status != reconcile.ConditionTrue && !isOptionalFeatureUnconfigured(c) {
 			allTrue = false

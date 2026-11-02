@@ -1,5 +1,7 @@
 # ADR 059: Mail security, storage and team ownership
 
+Partly superseded by [ADR 064](064-email-for-apps.md): new mail work follows ADR 064.
+
 Status: Accepted (owner defaults recorded, see Decisions at the end)
 
 Date: 2026-10-29

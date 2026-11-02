@@ -23,6 +23,7 @@ kubectl get does. Run "%[1]s api-resources" for the document kinds.
 Flags:
   -o, --output string   table, wide (extra columns), json, yaml, name, text
   -l, --selector string label selector, for example env=prod,tier!=db,canary
+  --field-selector string field selector, for example status.phase=running,metadata.name!=web
   -n, --namespace string only resources in this project
   --limit N             page size for a list (default: the server default)
   --json                print the result as JSON and nothing else
@@ -44,11 +45,12 @@ Flags:
 }
 
 func runGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	var selector, selShort, namespace *string
+	var selector, selShort, fieldSel, namespace *string
 	var limit *int
 	c, code, ok := parseCLICall(prog, "get", getUsage(prog), expandShortFlags(args), stdout, stderr, lookupEnv, func(fs *flag.FlagSet) {
 		selector = fs.String("selector", "", "label selector")
 		selShort = fs.String("l", "", "label selector (short)")
+		fieldSel = fs.String("field-selector", "", "field selector")
 		limit = fs.Int("limit", 0, "page size for a list")
 		namespace = fs.String("namespace", "", "only resources in this project")
 	})
@@ -79,7 +81,7 @@ func runGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func
 		}
 		return c.renderObjects(kind, []apiclient.V2Object{obj}, obj, wide)
 	}
-	list, err := c.client.ListV2(ctx, kind.Path, sel, *limit)
+	list, err := c.client.ListV2Fields(ctx, kind.Path, sel, *fieldSel, *limit)
 	if err != nil {
 		return c.fail(fmt.Errorf("list %s: %w", kind.Path, err))
 	}

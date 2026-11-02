@@ -25,6 +25,9 @@ export interface PITRStatus {
   // container isn't running), independent of enabled/has_base_backup
   // still being real, useful information on their own.
   window_error?: string
+  // Empty when a base backup follows each scheduled dump.
+  base_backup_schedule?: string
+  base_backup_target_id?: string
   // wal_ship is absent until a shipping pass has run for this database.
   wal_ship?: WalShipStatus
 }

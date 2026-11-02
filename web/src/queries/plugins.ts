@@ -60,6 +60,13 @@ export interface PluginPreview {
   reapproval_required: boolean
 }
 
+// Proxy denial counters since the sidecar last started; host names stay in its log.
+export interface PluginEgressDenials {
+  total: number
+  by_reason: Record<string, number>
+  last_denied?: string
+}
+
 // Matches internal/plugin's Record plus the API's running flag.
 export interface Plugin {
   name: string
@@ -86,6 +93,8 @@ export interface Plugin {
   installed_at: string
   installed_by: string
   last_error: string
+  egress_mode: 'open' | 'proxy'
+  egress_denials?: PluginEgressDenials
 }
 
 // Matches internal/plugin's TrustedKey.
@@ -184,6 +193,7 @@ export function useInstallPlugin() {
 
 export function useInspectPlugin() {
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (input: InstallPluginInput) =>
       send<PluginPreview>('POST', '/api/v1/plugins/inspect', input),
   })

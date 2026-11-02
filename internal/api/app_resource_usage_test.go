@@ -13,6 +13,7 @@ import (
 )
 
 func TestHandleAppResourceUsage_NotConfigured(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t) // no WithTelemetryQuerier
 	cookie := loginTestSession(t, rt, db)
 
@@ -24,6 +25,7 @@ func TestHandleAppResourceUsage_NotConfigured(t *testing.T) {
 }
 
 func TestHandleAppResourceUsage_RanksAppsByLatestSample(t *testing.T) {
+	t.Parallel()
 	rt, db, tdb := newTestRouterWithTelemetry(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -101,6 +103,7 @@ func TestHandleAppResourceUsage_RanksAppsByLatestSample(t *testing.T) {
 }
 
 func TestHandleAppResourceUsage_NoApps_ReturnsEmptyList(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newTestRouterWithTelemetry(t)
 	cookie := loginTestSession(t, rt, db)
 

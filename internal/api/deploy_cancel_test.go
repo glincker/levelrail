@@ -29,6 +29,7 @@ func cancelRequest(t *testing.T, rt *Router, cookie *http.Cookie, id string) *ht
 }
 
 func TestHandleCancelDeploy_QueuedAttemptIsCanceled(t *testing.T) {
+	t.Parallel()
 	rt, db, cookie := newTimelineRouter(t)
 	saveAttempt(t, db, "att_queued", store.DeployAttemptStatusQueued)
 
@@ -46,6 +47,7 @@ func TestHandleCancelDeploy_QueuedAttemptIsCanceled(t *testing.T) {
 }
 
 func TestHandleCancelDeploy_FinishedAttemptConflicts(t *testing.T) {
+	t.Parallel()
 	rt, db, cookie := newTimelineRouter(t)
 	saveAttempt(t, db, "att_done", store.DeployAttemptStatusSucceeded)
 
@@ -59,6 +61,7 @@ func TestHandleCancelDeploy_FinishedAttemptConflicts(t *testing.T) {
 }
 
 func TestHandleCancelDeploy_RunningWithoutLiveBuildConflicts(t *testing.T) {
+	t.Parallel()
 	rt, db, cookie := newTimelineRouter(t)
 	saveAttempt(t, db, "att_stale", store.DeployAttemptStatusRunning)
 
@@ -69,6 +72,7 @@ func TestHandleCancelDeploy_RunningWithoutLiveBuildConflicts(t *testing.T) {
 }
 
 func TestHandleCancelDeploy_UnknownAttemptIsNotFound(t *testing.T) {
+	t.Parallel()
 	rt, _, cookie := newTimelineRouter(t)
 	if rec := cancelRequest(t, rt, cookie, "att_missing"); rec.Code != http.StatusNotFound {
 		t.Fatalf("status = %d, want 404; body = %s", rec.Code, rec.Body.String())
@@ -76,6 +80,7 @@ func TestHandleCancelDeploy_UnknownAttemptIsNotFound(t *testing.T) {
 }
 
 func TestHandleCancelDeploy_NotConfiguredIs501(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	if rec := cancelRequest(t, rt, cookie, "att_x"); rec.Code != http.StatusNotImplemented {

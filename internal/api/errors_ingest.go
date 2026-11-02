@@ -156,9 +156,14 @@ func (rt *Router) authErrorIngest(r *http.Request, tok string) string {
 		}
 		v, err := rt.secrets.Resolve(r.Context(), errorIngestSecretsKey(app), errorIngestSecretName)
 		if err != nil || v == "" {
+			rt.ingestLookupFailed(r)
 			return ""
 		}
 		want = v
+		if subtle.ConstantTimeCompare([]byte(tok), []byte(want)) != 1 {
+			rt.ingestLookupFailed(r)
+			return ""
+		}
 		rt.errTrack.keys.put(app, want, now)
 	}
 	if subtle.ConstantTimeCompare([]byte(tok), []byte(want)) != 1 {
@@ -167,11 +172,15 @@ func (rt *Router) authErrorIngest(r *http.Request, tok string) string {
 	return app
 }
 
-// ingestLookupAllowed caps uncached key lookups per client IP so unauthenticated
-// guesses cannot drive a database read each.
+// ingestLookupAllowed reports whether this IP still has failed-guess budget for an
+// uncached key lookup. It never spends: only failures do, so valid keys never throttle.
 func (rt *Router) ingestLookupAllowed(r *http.Request) bool {
-	ok, _ := rt.buildHookLimits().failures.allow("ingest-probe:" + clientIP(r))
-	return ok
+	return rt.buildHookLimits().failures.peek("ingest-probe:" + clientIP(r))
+}
+
+// ingestLookupFailed records one failed authentication against the client IP.
+func (rt *Router) ingestLookupFailed(r *http.Request) {
+	rt.buildHookLimits().failures.spend("ingest-probe:" + clientIP(r))
 }
 
 func setSentryCORS(w http.ResponseWriter) {

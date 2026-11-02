@@ -198,6 +198,7 @@ type Pipeline struct {
 	// staticRouteLimits caps _redirects, _headers and spec routing rules.
 	staticRouteLimits spec.StaticLimits
 	staticRecorder    StaticPublishRecorder
+	staticPublished   StaticPublishHook
 
 	staticExtractor  StaticExtractor // nil is valid: build.command then fails its deploy loudly
 	staticBuildImage string
@@ -317,12 +318,14 @@ func (p *Pipeline) deployDockerfile(ctx context.Context, req Request, progress f
 	}
 
 	s3Cache, progress, cacheDone := p.prepareBuildCache(ctx, req.ServiceName, progress)
+	buildArgs := dockerfileBuildArgs(req.Service.Env, req.Service.Build.Args, dockerfilePathOrDefault(buildRoot, dockerfilePath), StaticBuildEnvPrefixes())
+	emitBuildEnvKeys(progress, "dockerfile", buildArgs, len(req.Service.Env))
 	buildReq := build.Request{
 		ContextDir:     buildRoot,
 		DockerfilePath: dockerfilePath,
 		RootDir:        req.SourceDir,
 		Tag:            tag,
-		BuildArgs:      req.Service.Build.Args,
+		BuildArgs:      buildArgs,
 		S3Cache:        s3Cache,
 		Attest:         p.attest,
 		NoCache:        req.NoCache,
@@ -371,9 +374,12 @@ func (p *Pipeline) deployRailpack(ctx context.Context, req Request, progress fun
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
 	}
 
+	buildEnv := staticBuildArgs(req.Service.Env, nil, StaticBuildEnvPrefixes())
+	emitBuildEnvKeys(progress, "railpack", buildEnv, len(req.Service.Env))
 	res, err := p.builder.BuildRailpack(ctx, build.RailpackRequest{
 		SourceDir: buildRoot,
 		Tag:       tag,
+		Env:       buildEnv,
 	}, progress)
 	if err != nil {
 		var unsupported *build.UnsupportedProviderError
@@ -396,6 +402,9 @@ func (p *Pipeline) finishDeploy(ctx context.Context, req Request, res *build.Res
 	}
 	desired, err := toDesiredService(req.ServiceName, res.Tag, req.Service)
 	if err != nil {
+		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
+	}
+	if err := checkVolumeOwners(ctx, p.store, desired); err != nil {
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
 	}
 	resolution := p.buildResolution(ctx, res.Tag, res.ExporterResponse)
@@ -442,6 +451,9 @@ func (p *Pipeline) deployImage(ctx context.Context, req Request) (string, error)
 
 	desired, err := toDesiredService(req.ServiceName, req.Service.Build.Image, req.Service)
 	if err != nil {
+		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
+	}
+	if err := checkVolumeOwners(ctx, p.store, desired); err != nil {
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
 	}
 	if req.Service.Build.RegistryCredential != "" {

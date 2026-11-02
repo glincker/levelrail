@@ -1,11 +1,13 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
 
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 )
 
 // DoctorIngressEdge is the ingress edge policy GET /api/v1/system/doctor reports.
@@ -23,7 +25,7 @@ type DoctorIngressEdge struct {
 // before the router serves requests.
 func (rt *Router) SetDoctorIngressEdge(edge DoctorIngressEdge) { rt.doctorEdge = &edge }
 
-func (rt *Router) doctorCheckIngressEdge() []doctorCheckResource {
+func (rt *Router) doctorCheckIngressEdge(ctx context.Context) []doctorCheckResource {
 	if rt.doctorEdge == nil {
 		return nil
 	}
@@ -33,8 +35,13 @@ func (rt *Router) doctorCheckIngressEdge() []doctorCheckResource {
 		return []doctorCheckResource{{Code: code, Name: name, Status: doctorStatusWarn, Message: "edge hardening is off (APP_INGRESS_HARDENING=false): no timeouts, size limits or friendly 503 page"}}
 	}
 	parts := []string{fmt.Sprintf("failover retry window %s", e.RetryWindow)}
-	if e.MaxBodyBytes > 0 {
-		parts = append(parts, fmt.Sprintf("request bodies capped at %d bytes", e.MaxBodyBytes))
+	maxBody := e.MaxBodyBytes
+	// A saved value wins over the boot-time figure, which goes stale after a live change.
+	if rs := rt.runtimeSettings; rs != nil && rs.Source(ctx, runtimesettings.KeyIngressMaxBodyBytes) == runtimesettings.SourceSaved {
+		maxBody = int64(rs.Limit(ctx, runtimesettings.KeyIngressMaxBodyBytes))
+	}
+	if maxBody > 0 {
+		parts = append(parts, fmt.Sprintf("request bodies capped at %d bytes", maxBody))
 	}
 	if e.TrustedProxies > 0 {
 		parts = append(parts, fmt.Sprintf("%d trusted proxy ranges", e.TrustedProxies))

@@ -94,6 +94,7 @@ export async function cloneEnvironment(
 export function useCloneEnvironment(projectId: string) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: ({ id, input }: { id: string; input: CloneEnvironmentInput }) =>
       cloneEnvironment(id, input),
     onSuccess: () => {

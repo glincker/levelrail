@@ -1,0 +1,160 @@
+{
+  "title": "Imágenes",
+  "subtitle": "Cada imagen de contenedor de un nodo: cuánto pesa, de qué apps y despliegues proviene y qué se puede eliminar con seguridad.",
+  "node": {
+    "label": "Nodo",
+    "local": "Este servidor"
+  },
+  "tiles": {
+    "count": "Imágenes",
+    "size": "Disco usado",
+    "reclaimable": "Se puede liberar",
+    "protected": "Conservadas"
+  },
+  "columns": {
+    "image": "Imagen",
+    "size": "Tamaño",
+    "apps": "Usada por",
+    "status": "Estado",
+    "created": "Compilada"
+  },
+  "untagged": "sin etiqueta",
+  "status": {
+    "removable": "Se puede eliminar",
+    "kept": "Conservada: {{reason}}"
+  },
+  "roles": {
+    "live": "En vivo",
+    "rollback_target": "Destino de reversión",
+    "recent": "Despliegue reciente",
+    "history": "Despliegue anterior"
+  },
+  "sources": {
+    "webhook": "Push de git",
+    "manual": "Despliegue manual",
+    "image": "Despliegue de imagen",
+    "compose": "Compose",
+    "promote": "Promovida",
+    "auto_rollback": "Reversión automática",
+    "git_push": "Remoto de push de git",
+    "clone": "Clon",
+    "schedule": "Programado",
+    "pr_comment": "Comentario de PR",
+    "other": "Despliegue"
+  },
+  "cleanup": {
+    "button": "Liberar {{size}}",
+    "nothing": "Nada que eliminar",
+    "title": "Eliminar imágenes sin uso",
+    "description": "Estas imágenes no están en vivo, no son un destino de reversión, no están entre los {{keep}} despliegues más recientes de ninguna app y ningún contenedor las usa.",
+    "consequences": "Las imágenes en vivo, los destinos de reversión y los despliegues recientes nunca se eliminan. Las imágenes eliminadas se descargan o se recompilan de nuevo si una app las necesita.",
+    "confirm": "Eliminar imágenes",
+    "pending": "Eliminando...",
+    "done": "Se eliminaron {{count}} imágenes y se liberaron {{size}}.",
+    "partial": "No se pudieron eliminar {{count}} imágenes.",
+    "failed": "Falló la limpieza",
+    "preview": "Previsualizando la limpieza..."
+  },
+  "detail": {
+    "close": "Cerrar",
+    "lineage": "Linaje",
+    "lineageEmpty": "Ningún despliegue de esta plataforma usó esta imagen.",
+    "layers": "Capas",
+    "layersEmpty": "Los tamaños de capa no están disponibles para esta imagen.",
+    "digest": "Digest",
+    "localBuild": "Compilada en este servidor, sin digest de registro",
+    "promotedFrom": "Promovida a {{app}}",
+    "verify": "Verificar firma",
+    "verifying": "Verificando...",
+    "layerSize": "{{size}} ({{percent}}%)"
+  },
+  "verify": {
+    "verified": "Firma verificada",
+    "unsigned": "No se encontró firma",
+    "failed": "Falló la comprobación de la firma",
+    "not_configured": "No hay clave de firma configurada",
+    "no_registry_digest": "Compilada localmente, nada que verificar",
+    "fix": "Define un archivo de clave pública en los ajustes del plano de control y vuelve a comprobar."
+  },
+  "dockerDegraded": {
+    "message": "Docker no responde. Los despliegues y los contenedores están en pausa.",
+    "recheck": "Volver a comprobar",
+    "rechecking": "Comprobando...",
+    "details": "Salud de Docker",
+    "dismiss": "Descartar hasta que Docker se recupere"
+  },
+  "dockerHealth": {
+    "title": "Motor de Docker",
+    "recheck": "Volver a comprobar",
+    "freeSpace": "Liberar espacio",
+    "summary": "Docker {{version}} en {{platform}}. Se pueden recuperar {{reclaimable}} de {{total}}.",
+    "status": {
+      "ok": "OK",
+      "warn": "Requiere atención",
+      "fail": "Fallando",
+      "unknown": "Desconocido"
+    }
+  },
+  "lint": {
+    "title": "Comprobación de Dockerfile",
+    "help": "Pega un Dockerfile para comprobar usuarios root, etiquetas base flotantes, falta de health checks y compilaciones de una sola etapa.",
+    "inputLabel": "Contenido del Dockerfile",
+    "placeholder": "FROM node:22-alpine",
+    "check": "Comprobar",
+    "applyFix": "Aplicar correcciones seguras",
+    "clean": "Sin hallazgos.",
+    "line": "Línea {{line}}:",
+    "severity": {
+      "warn": "Advertencia",
+      "info": "Sugerencia"
+    },
+    "toast": {
+      "failed": "No se pudo comprobar el Dockerfile.",
+      "fixed": "Correcciones aplicadas al texto de arriba."
+    }
+  },
+  "policy": {
+    "title": "Política de firmas",
+    "validate": "Validar",
+    "validating": "Validando...",
+    "refLabel": "Referencia de imagen a probar",
+    "refPlaceholder": "Opcional: repo@sha256:... para verificar una imagen",
+    "error": "No se pudo validar la política de firmas.",
+    "valid": "La política de firmas funciona.",
+    "invalid": "La política de firmas requiere atención.",
+    "fingerprint": "Clave {{value}}.",
+    "sample": {
+      "verified": "La imagen de muestra está firmada con tu clave.",
+      "unsigned": "La imagen de muestra no tiene firma.",
+      "failed": "La imagen de muestra no superó la verificación.",
+      "not_configured": "No hay ninguna clave pública configurada.",
+      "no_registry_digest": "La muestra no tiene digest de registro que verificar."
+    },
+    "issues": {
+      "key_unreadable": "No se pudo leer el archivo de clave pública, así que las comprobaciones de firma están desactivadas. Corrige la ruta de la clave y reinicia.",
+      "enforce_without_key": "Se solicitó imponer firmas pero no hay una clave utilizable, así que no se impone nada. Define un archivo de clave pública válido.",
+      "key_without_enforcement": "Hay una clave cargada pero la imposición está desactivada, así que todavía se pueden promover imágenes sin firmar.",
+      "sample_failed": "La imagen de muestra no se verificó con tu clave."
+    }
+  },
+  "signatures": {
+    "enforce": "Las promociones requieren una firma de imagen válida.",
+    "off": "Las comprobaciones de firma se ejecutan bajo demanda."
+  },
+  "empty": {
+    "title": "No hay imágenes en este nodo",
+    "description": "Las imágenes aparecen aquí después del primer despliegue o compilación."
+  },
+  "error": {
+    "title": "No se pudieron cargar las imágenes",
+    "retry": "Comprobar de nuevo",
+    "unsupported": "Este nodo todavía no informa de sus imágenes."
+  },
+  "banner": {
+    "description": "Las imágenes aparecen aquí después del primer despliegue o compilación, con su tamaño, las apps que las usan y si se pueden eliminar con seguridad.",
+    "diagram": {
+      "layers": "Capas",
+      "node": "Nodo"
+    }
+  }
+}

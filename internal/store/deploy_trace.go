@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 // Deploy trace step statuses.
@@ -41,6 +43,7 @@ func (db *DB) SaveDeployTraceStep(ctx context.Context, s DeployTraceStep) error 
 	if s.Key == "" {
 		s.Key = s.Step
 	}
+	s.Reason, s.Detail = secretmask.Mask(s.Reason), secretmask.Mask(s.Detail)
 	ended := ""
 	if !s.EndedAt.IsZero() {
 		ended = s.EndedAt.UTC().Format(time.RFC3339Nano)

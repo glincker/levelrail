@@ -1,0 +1,54 @@
+---
+title: "Self-host MailDev with Docker"
+sidebarTitle: "MailDev"
+description: "A local SMTP server that catches outgoing mail and shows it in a web inbox, for testing mail from your apps. Mail sent to maildev:1025 from other services in this project appears in the web page and is never delivered."
+"og:url": "https://docs.levelrail.com/self-host/maildev"
+---
+
+A local SMTP server that catches outgoing mail and shows it in a web inbox, for testing mail from your apps. Mail sent to maildev:1025 from other services in this project appears in the web page and is never delivered.
+
+This page describes the Levelrail template for MailDev (Mail). It deploys the services below as one Docker Compose app on your own server. Project site: https://maildev.github.io/maildev/.
+
+Recommended memory: about 128 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `maildev` | `maildev/maildev:2.2.1` | 1080, 1025 | none |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Nothing beyond a standard container: no extra privileges, host mounts or published ports.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy MailDev with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select MailDev. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy maildev --name my-maildev
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+All templates are listed in the [self-host gallery](/self-host).

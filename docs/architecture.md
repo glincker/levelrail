@@ -1,170 +1,167 @@
 ---
 title: "Architecture"
-description: Core architecture of Levelrail's reconciler, agent, builds, ingress, state, observability, and security layers.
+description: How the control plane, node agent, reconciler, ingress, store and extension points fit together, with the code path of a deploy and the trust boundaries.
 "og:image": "https://docs.levelrail.com/public/og/architecture.png"
 "twitter:image": "https://docs.levelrail.com/public/og/architecture.png"
 "og:url": "https://docs.levelrail.com/architecture"
 ---
 
-This page explains how Levelrail is built, for contributors and for operators who want to know what runs on their server. It describes the code as it is today. To use the platform, start with [Getting started](/getting-started). For maturity per feature, see [feature status](/feature-status).
+This page is for contributors and for operators who want to know what runs on their server. It describes the code as it is on this branch. Every claim maps to a path in [Where to look](#where-to-look). To use the platform, start with [Getting started](/getting-started). For maturity per feature, see [Feature status](/feature-status). For the checks that protect these boundaries, see [Which guard catches what](/contributing-guards).
 
-## Control plane
+## Components
 
-Package: `internal/reconcile` (see `internal/reconcile/engine.go`, and the per-resource controllers under `internal/reconcile/application`, `internal/reconcile/database`, `internal/reconcile/ingress`, `internal/reconcile/mesh`, `internal/reconcile/nodehealth`).
+| Component | What it is | Code |
+| --- | --- | --- |
+| Control plane | One Go binary. Serves the REST API, the embedded dashboard, ingress, the reconcile engine and background workers. | `cmd/levelrail` |
+| CLI | `levelrail-cli`. Talks to the control plane over HTTP only. It may not import the store or the Docker client (enforced by a lint rule). | `cmd/levelrail-cli`, `internal/apiclient` |
+| Node agent | `levelrail-agent`. Runs on an extra server, dials the control plane, and executes container operations on that server's Docker daemon. | `cmd/levelrail-agent`, `internal/agent` |
+| MCP server | `levelrail-mcp`. Wraps REST calls as MCP tools over stdio or loopback HTTP. Write tools are hidden unless `--allow-write` is set. | `cmd/levelrail-mcp`, `internal/mcptools` |
+| Reconcile engine | Level-triggered controllers that move observed state toward desired state. | `internal/reconcile` |
+| Store | Embedded SQLite through a pure Go driver, forward-only embedded migrations. | `internal/store` |
+| API | `net/http` router, ability checks, audit rows, OpenAPI served at `/api/v1/openapi.json`. | `internal/api` |
+| Dashboard | React and TypeScript, built to static files and embedded in the binary when built with the `embedweb` tag. | `web`, `web/embed_real.go` |
+| Ingress | Caddy embedded as a library. Certificates are kept in the store. | `internal/ingress` |
+| Builds | BuildKit client for Dockerfile builds, Railpack for apps without a Dockerfile, a separate path for static sites. | `internal/build`, `internal/deploy` |
+| Plugins | Out-of-process extensions with a signed, digest-pinned package and an approved ability list. | `internal/plugin` |
+| Backup | Database backups, and verified control plane snapshots under the data dir. | `internal/backup`, `internal/cpbackup` |
+| DNS and CDN | Zone management at Cloudflare and Route53 through the DNS provider. | `internal/dnszones` |
+| Templates | A curated set of one-click service templates and bundled starter stacks. | `internal/catalog`, `internal/stacktemplates` |
 
-The core loop is a reconciler, not an imperative deploy script. Desired state lives in the database as declarative resource records. Each controller compares desired state against what Docker reports and makes the two match. The pattern comes from Kubernetes controllers, without the rest of the Kubernetes runtime.
+## Process model
 
-Every controller is idempotent and level-triggered, never edge-triggered. `Reconcile` never assumes it's continuing a previous partial operation. On every call it works out what to do from current observed state alone.
+On a single host there is one control plane process. It opens its SQLite files in the data dir, starts the reconcile engine against the local Docker daemon, binds the API and the ingress, and serves the dashboard from the embedded files. `agent.Local` calls the Docker runtime in the same process.
 
-That makes it safe to interrupt and safe to retry. Call it again after a half-finished attempt and it converges, instead of double-applying or corrupting state.
-
-Every reconcile also emits a status condition with a reason string. A failure shows up in the UI with an explanation, not a spinner that never resolves.
-
-```mermaid
-flowchart TD
-  A["Desired state<br/>(database records)"] -->|Read| B["Reconcile loop"]
-  C["Observed state<br/>(Docker events)"] -->|Stream| B
-  B -->|Diff| D{Match?}
-  D -->|No| E["Converge<br/>(issue commands)"]
-  D -->|Yes| F["No-op"]
-  E -->|Emit| G["Status condition<br/>(reason + outcome)"]
-  F -->|Emit| G
-  G -->|Show in UI| H["Dashboard"]
-  E -.->|Watch| C
-```
-
-## Node agent
-
-Packages: `internal/agent` (see `internal/agent/transport.go`, `internal/agent/grpc_transport.go`, `internal/agent/server.go`) and `internal/docker` (see `internal/docker/client.go`).
-
-The node agent dials out to the control plane, not the other way around, so managed servers never need an inbound port open. It talks to the local Docker Engine API directly and never shells out to the `docker` CLI.
-
-The transport is an interface (`agent.Transport`) with two implementations:
-- `Local` - calls a `docker.Runtime` in-process (single-node)
-- `GRPCTransport` - dispatches the same calls over a real reverse-dialed gRPC connection with mTLS ([multi-node](/multi-node))
-
-Both ship today, along with node enrollment (one-time join tokens exchanged for client certificates), a real `levelrail-agent` binary, and cross-node service placement. Reconcilers and everything above the transport boundary don't know which implementation they're talking to, so single-node and multi-node run the same code path.
+With extra nodes, each node runs `levelrail-agent` next to its own Docker daemon. The agent connects out to the control plane, so a managed node needs no inbound port for control traffic. The control plane holds the other end of that session as `agent.GRPCTransport`. Controllers call the same `agent.Transport` interface either way.
 
 ```mermaid
-graph LR
-  R["Reconciler<br/>(reconcile/*)"]
-  T["Transport interface<br/>(agent.Transport)"]
-  L["Local<br/>(in-process)"]
-  G["gRPC<br/>(reverse-dialed)"]
-  D["Docker Engine API"]
-  A["Node agent"]
-  
-  R -->|calls| T
-  T -->|impl| L
-  T -->|impl| G
-  L -->|talks to| D
-  G -->|reverse dial| A
-  A -->|talks to| D
+flowchart LR
+  CLI["levelrail-cli / MCP / dashboard"] -->|HTTPS, token| API
+  subgraph CP["Control plane process"]
+    API["internal/api"] --> ST[("SQLite files<br/>in the data dir")]
+    API --> ENG["reconcile engine"]
+    ENG --> ST
+    ENG --> TR{"agent.Transport"}
+    ING["ingress (Caddy)"] --> ST
+  end
+  TR -->|in process| D1["local Docker daemon"]
+  TR -->|session dialed by the agent, mTLS| AG["levelrail-agent"]
+  AG --> D2["node Docker daemon"]
 ```
 
-Two more pieces sit alongside the agent:
-- WireGuard mesh: `internal/network` (built on `wireguard-go`) is designed to give every node a peer and internal DNS names that resolve across machines. It is beta and not yet verified across real hosts, see [feature status](/feature-status)
-- Dedicated build nodes: nodes marked build-capable run builds so they don't compete with production containers for CPU
+## Deploy data flow
 
-## Builds
+The same path serves the dashboard, the CLI and the MCP tools, because they all call the REST API. `levelrail-cli apply -f` is the declarative entry. The verb `apps apply` is different: it restarts an app so saved env, secret and config changes reach the running container.
 
-Package: `internal/build` (see `internal/build/client.go`, `internal/build/solve.go`).
+1. `levelrail-cli apply -f` validates the files, asks `POST /api/v1/apply/plan` for a plan, prints it, and sends `POST /api/v1/apply` with the plan hash it saw. The server recomputes the plan and returns a conflict if it changed. Apply re-issues each change through the ordinary routes with the caller's own credentials, so ability checks and audit rows are the same as for a manual change.
+2. A deploy is `POST /api/v1/apps/{name}/deploys`, guarded by the deploy ability on that app. `handleTriggerDeploy` loads the desired service, resolves the image or release, applies environment protection (a protected environment turns the deploy into a pending approval), and records a deploy attempt.
+3. For git or source builds, `deploy.Pipeline.Deploy` builds the image (Dockerfile through BuildKit, Railpack otherwise, static sites separately) and then saves desired state with `SaveDesiredService`. Image deploys write the new image into desired state directly. Neither step creates a container.
+4. The reconcile engine runs when a Docker event arrives, when `Engine.Nudge` is called, and on a periodic resync. The application controller for that service reads desired state in `Controller.Reconcile`.
+5. By strategy (`reconcileBlueGreen`, `reconcileRolling`, `reconcileRecreate`) it computes target container names from the service, image, restart nonce and replica index, and calls `ensureReplicaRunning` for each. A missing target is created and started through the `docker.Runtime` interface (`createAndStart`).
+6. `waitReady` runs the readiness probe, and a watch for early exit or OOM kill where the runtime can report it. A replica that fails readiness stops the pass and the failure is recorded.
+7. When every target is ready, stale containers of earlier releases are retired (`retireStale`), subject to the drain window and the previous-release hold. The controller returns conditions with a reason string, and the engine stores them for the dashboard.
 
-Builds go through BuildKit's Go client, not `docker build`. That gives you a remote build cache and parallel stage execution, which the CLI path doesn't offer.
+```mermaid
+sequenceDiagram
+  participant U as CLI or dashboard
+  participant A as internal/api
+  participant S as store
+  participant E as reconcile engine
+  participant C as application controller
+  participant R as docker.Runtime
+  U->>A: POST /api/v1/apply, then deploys
+  A->>S: SaveDesiredService
+  A->>E: Nudge
+  E->>C: Reconcile
+  C->>S: GetDesiredService
+  C->>R: InspectByName, Create, Start
+  C->>R: readiness probe, then remove stale
+  C->>S: conditions via engine
+```
 
-Three build types are supported:
-- Dockerfile builds go through the `dockerfile.v0` frontend
-- Railpack (`github.com/railwayapp/railpack`) detects a build plan for apps that don't ship a Dockerfile
-- Static sites (`build.type: static`) take their own path with no container involved
+## Reconcile loop invariants
 
-The remote cache is registry-backed (`internal/build/cache.go`), with an S3 option (`internal/build/cache_s3.go`). Dedicated [build nodes](/build-node-routing) share it instead of each rebuilding from scratch.
+These are properties the code and its tests rely on. Controllers in `internal/reconcile` must keep them.
+
+- Idempotent and level-triggered. A call derives what to do from desired and observed state, never from the memory of a half-finished call.
+- A settled pass creates no containers. The application controller tests run `Reconcile` twice and assert the create count did not change. Recreate has an explicit no-op check, because without it a healthy set would be recreated on every resync.
+- Every pass returns conditions with a reason. A maintenance hold, a suspended app and an app still waiting for its first build each return their own reason instead of silence.
+- A maintenance hold wins over everything else. While `DesiredService.MaintenanceHold` is set, the controller leaves the containers to whoever set the hold.
+- Suspended means zero containers. The controller removes the service's containers and returns early.
+- A deploy that lands mid-pass owns the next verdict. If desired state changed while a pass ran, that pass's result is dropped and the nudge from the deploy queues the next one.
+- Drain and hold. A retired release is removed only after its drain window, measured from when traffic left it (`DrainTracker`), and the previous release can be kept for a configured hold (`heldFilter`). Both are in memory, so after a restart the timers fall back to creation times.
+- Rolling waves. `reconcileRolling` replaces replicas in waves bounded by max surge and max unavailable from the rollout policy.
+- Storm protection. The engine rate limits passes and opens a per-controller circuit breaker after repeated failures. The limits are read from `APP_RECONCILE_*` environment variables, and `NudgeController` closes a breaker when a change makes a retry worthwhile.
+- Shutdown. A pass in progress can finish for a drain timeout after a stop signal before its context is cancelled.
+
+## Trust boundaries
+
+| Boundary | What enforces it |
+| --- | --- |
+| Client to API | Bearer tokens with abilities (read, write, deploy, root). Routes check the ability, and many check it per resource. The authz matrix test fails a route that skips this. |
+| Control plane to agent | gRPC over TLS 1.3. Agent certificates are issued from a CA the control plane holds. Enrollment uses a one-time join token and a CSR, and the agent can pin the CA fingerprint. Client certificates are requested and verified in code so a rejection can name the node. See ADRs 003, 021 and 032. |
+| Control plane to Docker | Docker is driven through its API, not through a shell. `dockerguard` is a Unix socket proxy that forwards an allowlisted set of endpoints and rejects container configurations that would hand a container the host. See [Docker access](/docker-access). |
+| App containers | Run as separate containers on Docker networks the controller ensures. Hardening options are applied in `internal/docker`. Decrypted secrets are resolved when a container is created. |
+| Plugins | Run as containers with only the abilities an operator approved. Root and write abilities are refused. With no declared hosts a plugin has no network. With `APP_PLUGIN_EGRESS_MODE=proxy` outbound traffic goes through an allowlisting proxy sidecar. See [Plugins](/plugins). |
+| Builds | Builds run through BuildKit on the control plane or on a build-capable node. Build secrets are resolved in `internal/deploy/build_secrets.go`. Build output is a container image run like any other. |
+| Secrets at rest | Per-owner data keys wrapped by a master key. The key lives in `master.key` in the data dir by default, or comes from `APP_MASTER_KEY` or `APP_MASTER_KEY_FILE`. See [Security](/security). |
+| Process spawning | A whole-tree test fails when non-test Go code starts a host process from a file not on a reviewed list. |
+
+## Where state lives
+
+The data dir is `APP_DATA_DIR`, default `./data` for the binary. Installers set their own path.
+
+| State | Location |
+| --- | --- |
+| Desired state, settings, deploy history, audit rows, encrypted secret values | `levelrail.db` (SQLite, WAL journal) |
+| Metrics, logs and traces | `telemetry.db` |
+| Alert rules and state | `alerting.db` |
+| Master key | `master.key` unless `APP_MASTER_KEY` or `APP_MASTER_KEY_FILE` is used |
+| Published static sites | `static/` |
+| Control plane snapshots | A directory under the data dir managed by `internal/cpbackup` |
+| Certificates and ACME account keys | In the store, not on disk, so they follow the database |
+| Agent identity | On the agent node, in `APP_AGENT_STORAGE_DIR` or the file named by `APP_AGENT_IDENTITY_FILE` |
+
+Separate SQLite files for telemetry and alerting keep their write load away from the main store. Container state is not copied anywhere: Docker is the source of truth for what is running, and desired state is the source of truth for what should run.
+
+Migrations live in `internal/store/migrations/*.sql`, are embedded in the binary and applied in version order at start. The migration version check fails on duplicate numbers. An upgrade that fails to open or migrate the store starts safe mode instead of a normal boot.
+
+## API and generated files
+
+Routes are registered in `internal/api/routes_*.go`. `scripts/gen-api-reference` reads them and writes `docs/api-reference.md`, `docs/public/openapi.json` and `internal/api/openapi_gen.go`. These are committed. `scripts/code-gen-check.sh` runs every generator and fails if any tracked file changes. The route tree for the dashboard is generated by `scripts/gen-route-tree.mjs` and is not committed.
 
 ## Ingress
 
-Package: `internal/ingress` (see `internal/ingress/driver.go`, `internal/ingress/certstorage.go`).
+Caddy runs inside the control plane process and is driven through its admin API. Certificates and ACME account keys are stored through a `certmagic.Storage` implementation over the store, so they are shared across nodes. The default issuer is internal and self-signed until HTTPS is enabled for a hostname. Real Let's Encrypt issuance has been run over a `<dashed-ip>.sslip.io` name on a public host, see the [recorded run](/acme-verification-runbook#recorded-run-2026-10-05). Renewal and DNS-01 wildcards are not verified on a real host.
 
-Caddy (`github.com/caddyserver/caddy/v2`) is embedded as a library and driven in-process through its admin API, instead of running as a separate container with its own config. You get automatic TLS and HTTP/3 without a second moving part to operate.
+## Extension points
 
-Certificates and ACME account keys live in the database (`internal/ingress/certstorage.go` implements `certmagic.Storage` over `internal/store`), so certs are shared across nodes rather than pinned to whichever machine issued them. On first start after an upgrade, `internal/ingress/certimport.go` copies any certificates Caddy had written to its on-disk storage into the database, so nothing re-issues. Saving a different CA drops the other issuers' certificates (`internal/ingress/certpurge.go`), because certmagic reuses a valid certificate from any issuer.
+- Templates. `internal/catalog` holds the one-click templates as compose bodies. A test parses and validates every one against the supported compose subset. See [Adding a service template](https://github.com/glincker/levelrail/blob/main/.github/CONTRIBUTING.md).
+- Plugins. The manifest kinds are `notification_channel`, `dns_provider` and `panel_provider`. A plugin runs out of process and reaches the control plane only through the abilities it was granted. See [Plugins](/plugins) and ADR 034.
+- Notification channels. Built-in channels live in `internal/alerting`. A plugin of kind `notification_channel` adds more.
+- Platform as code. Resource kinds and their JSON schema live in `internal/iac`, and the schema is published to `docs/schemas/resources.schema.json`.
 
-`internal/ingress/publicip.go` resolves the server's public IP at startup (`APP_PUBLIC_HOST`, else a probe of public what-is-my-IP services). That gives zero-DNS hostnames: `<dashed-ip>.sslip.io` is built from it for the dashboard (one-click Enable HTTPS, `internal/api/ingress_https.go`) and `<app>.<dashed-ip>.sslip.io` for every app with no domain (`internal/ingress/fallback_domain.go`, toggle in `ingress_settings.fallback_domains_disabled`).
+## Where to look
 
-When the HTTP ingress port can be bound, Caddy's automatic redirect server owns it (`308` to https) and also serves HTTP-01 challenges. Otherwise the port stays closed outside challenges.
-
-An `events` subscription (`internal/ingress/acme_events.go`) records certmagic's `cert_failed` events per hostname, so the API can report the CA's own error and a hint (`GET /api/v1/settings/ingress/https`).
-
-TLS issuance works like this:
-- Defaults to an internal, self-signed issuer
-- A real Caddy ACME issuer, settings toggle, and form validation are built and wired end to end
-- Verified: real Let's Encrypt issuance over `<dashed-ip>.sslip.io` on a public VPS (see [the recorded run](/acme-verification-runbook#recorded-run-2026-10-05)). Renewal and DNS-01 wildcards are still not exercised live
-
-## State
-
-Package: `internal/store` (see `internal/store/store.go`,
-`internal/store/database.go`, `internal/store/migrate.go`).
-
-State is embedded SQLite in WAL mode, opened via `modernc.org/sqlite`
-(pure Go, no cgo), which keeps cross-compiling the control plane binary
-simple. Schema changes go through embedded, versioned, forward-only
-migrations.
-
-## Observability
-
-Package: `internal/telemetry` (see `internal/telemetry/collector.go`, `internal/telemetry/logs.go`, `internal/telemetry/federate.go`).
-
-Each node keeps its own data:
-- A metrics store: a local time-series store at 15s resolution (CPU, memory, disk IO, network IO, deploy count, build duration)
-- A log store: local logs with full-text search (FTS5) and structured JSON log parsing
-
-Nothing is centrally indexed by default, so idle cost stays near zero as you add apps.
-
-Federated query is shipped, not planned. `internal/telemetry/federate.go` defines a `MetricsSource` interface that both the local, single-node store and a remote node's data satisfy identically. The query API (`internal/api`) fans a query out and merges results across nodes.
-
-```mermaid
-graph TD
-  N1["Node 1<br/>Metrics + Logs<br/>FTS5 index"]
-  N2["Node 2<br/>Metrics + Logs<br/>FTS5 index"]
-  N3["Node N<br/>Metrics + Logs<br/>FTS5 index"]
-  
-  Q["Query API<br/>(internal/api)"]
-  M["Merge results<br/>(federate.go)"]
-  
-  Q -->|fan out| N1
-  Q -->|fan out| N2
-  Q -->|fan out| N3
-  
-  N1 -->|results| M
-  N2 -->|results| M
-  N3 -->|results| M
-  
-  M -->|single result set| D["Dashboard<br/>+ Prometheus<br/>remote-read"]
-```
-
-A Prometheus remote-read endpoint exposes the same data, so you can point your own Grafana at it.
-
-Alerting and detection sit on top of the metrics and log layer:
-- Alerting rules (threshold, crashloop, certificate expiry, and more) delivered over 18 notification kinds, from Slack, Discord, email, and Telegram to PagerDuty, ntfy, a generic webhook, and browser push
-- Crashloop detection that surfaces the last 200 lines of a failing container's logs directly in the UI
-
-## Secrets
-
-Package: `internal/secrets` (see `internal/secrets/manager.go`, `internal/secrets/dek.go`).
-
-Secrets use envelope encryption: a per-app data encryption key, wrapped by a master key the control plane holds. Agents receive decrypted environment variables only at container-create time and never write them to disk. The crypto primitives come from `filippo.io/age`.
-
-## Frontend
-
-Directory: `web/` (React, Vite, TypeScript, Tailwind, TanStack Router and Query).
-
-The frontend builds to static assets and is embedded into the control plane binary via `embed.FS`, so there's no separate Node process to run in production.
-
-Route-level code splitting keeps bundles small. The log viewer's bundle, for example, stays out of the initial dashboard load.
-
-Live build logs and app log tailing use server-sent events (SSE) instead of websockets, because SSE reconnects cleanly through proxies.
-
-## See also
-
-- [Comparison](/comparison): how this architecture compares to Coolify, Dokploy, and others
-- [Security overview](/security): how secrets, tokens, and TLS fit into this design
-- [Feature status](/feature-status): maturity of each layer
-- [ADRs](https://github.com/glincker/levelrail/tree/main/adr): the decisions behind this design
+| Topic | Path |
+| --- | --- |
+| Boot sequence and wiring | `cmd/levelrail/boot_run.go`, `cmd/levelrail/boot_stores.go`, `cmd/levelrail/boot_loaders.go` |
+| Safe mode | `cmd/levelrail/boot_safemode.go`, `internal/safemode` |
+| Reconcile engine and storm protection | `internal/reconcile/engine.go`, `internal/reconcile/guard.go` |
+| Application controller | `internal/reconcile/application/controller.go`, `drain.go`, `image_truth.go`, `rollout_waves.go` |
+| Docker runtime interface | `internal/docker/runtime.go` |
+| Agent transport and session | `internal/agent/transport.go`, `internal/agent/grpc_transport.go`, `internal/agent/mux.go` |
+| Agent certificates | `internal/agent/credentials.go`, `internal/agent/pki_csr.go` |
+| Agent entry point | `cmd/levelrail-agent/main.go` |
+| Declarative apply | `cmd/levelrail-cli/apply.go`, `internal/apiclient/iac.go`, `internal/api/iac.go`, `internal/iac` |
+| Deploy trigger | `internal/api/deploys.go`, `internal/deploy/deploy.go`, `internal/deploy/order.go` |
+| Routes and OpenAPI | `internal/api/routes_*.go`, `scripts/gen-api-reference` |
+| Store and migrations | `internal/store/store.go`, `internal/store/migrate.go`, `internal/store/migrations` |
+| Secrets | `internal/secrets`, `internal/vault` |
+| Docker socket guard | `internal/dockerguard`, `test/execgate` |
+| Plugins and egress | `internal/plugin`, `internal/plugin/egress`, `cmd/levelrail/plugin_egress.go` |
+| MCP server | `cmd/levelrail-mcp`, `internal/mcptools` |
+| Ingress | `internal/ingress` |
+| Builds | `internal/build`, `internal/deploy` |
+| Backup | `internal/backup`, `internal/cpbackup` |
+| Dashboard | `web`, `web/embed_real.go` |
+| Decisions | `adr/` |

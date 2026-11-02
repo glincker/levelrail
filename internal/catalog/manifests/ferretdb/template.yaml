@@ -1,0 +1,25 @@
+id: ferretdb
+name: FerretDB
+description: A MongoDB compatible database that stores documents in PostgreSQL. Runs FerretDB with a bundled PostgreSQL that has the DocumentDB extension, a persistent volume and a generated password. It is not published on the host, so reach it from other services in this project at ferretdb:27017.
+icon: database
+category: Database Tools
+documentation_url: https://docs.ferretdb.io/
+source_repo: https://github.com/FerretDB/FerretDB
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/FerretDB/FerretDB/blob/main/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 536870912
+first_run:
+  - Read the generated password from the app secrets, then connect with a MongoDB client as the ferretdb user from a service in the same project.
+domains:
+  - service: ferretdb
+    port: 27017
+    description: This is a TCP database with no web page, so leave it empty and connect over the project network.
+healthcheck:
+  service: ferretdb
+  port: 27017
+  kind: tcp

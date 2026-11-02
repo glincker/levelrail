@@ -42,6 +42,7 @@ export function useResourceLabels(path: LabelKindPath, name: string) {
 export function useSetResourceLabels(path: LabelKindPath, name: string) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async (labels: Record<string, string>) => {
       const res = await fetch(labelsUrl(path, name), {
         method: 'PUT',

@@ -95,6 +95,7 @@ export async function renderProjectTemplate(
 
 export function useRenderProjectTemplate() {
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: ({
       id,
       params,

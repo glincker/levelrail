@@ -69,6 +69,7 @@ func seedSucceededBackupForCloneRestore(t *testing.T, db *store.DB, databaseName
 }
 
 func TestCloneRestoreRoutes_RequireAuth(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouter(t)
 
 	assertRoutesRequireAuth(t, rt, []routeCase{
@@ -78,6 +79,7 @@ func TestCloneRestoreRoutes_RequireAuth(t *testing.T) {
 }
 
 func TestHandleCloneRestore_NoRunnerConfigured(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t) // no WithCloneRestoreRunner
 	cookie := loginTestSession(t, rt, db)
 	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16"}); err != nil {
@@ -93,6 +95,7 @@ func TestHandleCloneRestore_NoRunnerConfigured(t *testing.T) {
 }
 
 func TestHandleCloneRestore_SourceDatabaseNotFound(t *testing.T) {
+	t.Parallel()
 	runner := newFakeCloneRestoreRunner()
 	rt, db := newTestRouterWithCloneRestoreRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)
@@ -105,6 +108,7 @@ func TestHandleCloneRestore_SourceDatabaseNotFound(t *testing.T) {
 }
 
 func TestHandleCloneRestore_MissingBackupID(t *testing.T) {
+	t.Parallel()
 	runner := newFakeCloneRestoreRunner()
 	rt, db := newTestRouterWithCloneRestoreRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)
@@ -120,6 +124,7 @@ func TestHandleCloneRestore_MissingBackupID(t *testing.T) {
 }
 
 func TestHandleCloneRestore_MissingNewName(t *testing.T) {
+	t.Parallel()
 	runner := newFakeCloneRestoreRunner()
 	rt, db := newTestRouterWithCloneRestoreRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)
@@ -136,6 +141,7 @@ func TestHandleCloneRestore_MissingNewName(t *testing.T) {
 }
 
 func TestHandleCloneRestore_NewNameSameAsSource(t *testing.T) {
+	t.Parallel()
 	runner := newFakeCloneRestoreRunner()
 	rt, db := newTestRouterWithCloneRestoreRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)
@@ -152,6 +158,7 @@ func TestHandleCloneRestore_NewNameSameAsSource(t *testing.T) {
 }
 
 func TestHandleCloneRestore_BackupNotFound(t *testing.T) {
+	t.Parallel()
 	runner := newFakeCloneRestoreRunner()
 	rt, db := newTestRouterWithCloneRestoreRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)
@@ -167,6 +174,7 @@ func TestHandleCloneRestore_BackupNotFound(t *testing.T) {
 }
 
 func TestHandleCloneRestore_BackupFromDifferentDatabase(t *testing.T) {
+	t.Parallel()
 	runner := newFakeCloneRestoreRunner()
 	rt, db := newTestRouterWithCloneRestoreRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)
@@ -186,6 +194,7 @@ func TestHandleCloneRestore_BackupFromDifferentDatabase(t *testing.T) {
 }
 
 func TestHandleCloneRestore_BackupNotSucceeded(t *testing.T) {
+	t.Parallel()
 	runner := newFakeCloneRestoreRunner()
 	rt, db := newTestRouterWithCloneRestoreRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)
@@ -208,6 +217,7 @@ func TestHandleCloneRestore_BackupNotSucceeded(t *testing.T) {
 }
 
 func TestHandleCloneRestore_NewNameAlreadyExists(t *testing.T) {
+	t.Parallel()
 	runner := newFakeCloneRestoreRunner()
 	rt, db := newTestRouterWithCloneRestoreRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)
@@ -232,6 +242,7 @@ func TestHandleCloneRestore_NewNameAlreadyExists(t *testing.T) {
 // with the source's own engine, and the source database itself is never
 // modified.
 func TestHandleCloneRestore_Success(t *testing.T) {
+	t.Parallel()
 	runner := newFakeCloneRestoreRunner()
 	rt, db := newTestRouterWithCloneRestoreRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)
@@ -305,6 +316,7 @@ func TestHandleCloneRestore_Success(t *testing.T) {
 // itself never accepts resources directly (databaseResource.Resources'
 // own field doc comment) but handleSetDatabaseResources does.
 func TestHandleCloneRestore_WithResources(t *testing.T) {
+	t.Parallel()
 	runner := newFakeCloneRestoreRunner()
 	rt, db := newTestRouterWithCloneRestoreRunner(t, runner)
 	cookie := loginTestSession(t, rt, db)
@@ -331,6 +343,7 @@ func TestHandleCloneRestore_WithResources(t *testing.T) {
 }
 
 func TestHandleListCloneRestores_DatabaseNotFound(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -342,6 +355,7 @@ func TestHandleListCloneRestores_DatabaseNotFound(t *testing.T) {
 }
 
 func TestHandleListCloneRestores_NoRunnerConfigured_StillWorks(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t) // no WithCloneRestoreRunner
 	cookie := loginTestSession(t, rt, db)
 	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16"}); err != nil {
@@ -367,5 +381,39 @@ func TestHandleListCloneRestores_NoRunnerConfigured_StillWorks(t *testing.T) {
 	}
 	if len(got) != 1 || got[0].ID != "clr_1" {
 		t.Fatalf("history = %+v, want exactly the seeded row", got)
+	}
+}
+
+func TestHandleCloneRestore_CopiesNodeAndTLSIntent(t *testing.T) {
+	t.Parallel()
+	runner := newFakeCloneRestoreRunner()
+	rt, db := newTestRouterWithCloneRestoreRunner(t, runner)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+	if err := db.SaveDesiredDatabase(ctx, store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16"}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	if err := db.UpdateDatabaseNode(ctx, "main", "node-a"); err != nil {
+		t.Fatalf("seed node: %v", err)
+	}
+	if err := db.SetDatabaseTLSMode(ctx, "main", store.DatabaseTLSModeOff); err != nil {
+		t.Fatalf("seed tls: %v", err)
+	}
+	seedSucceededBackupForCloneRestore(t, db, "main")
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/databases/main/restore-as-new", `{"backup_id":"bkh_1","new_name":"main-copy"}`))
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	got, err := db.GetDesiredDatabase(ctx, "main-copy")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.NodeID != "node-a" {
+		t.Errorf("clone node = %q, want node-a", got.NodeID)
+	}
+	if mode, _ := db.GetDatabaseTLSMode(ctx, "main-copy"); mode != store.DatabaseTLSModeOff {
+		t.Errorf("clone tls mode = %q, want off", mode)
 	}
 }

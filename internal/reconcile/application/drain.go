@@ -151,8 +151,8 @@ func (c *Controller) clock() time.Time {
 // effectiveHold is how long the previous release outlives a cutover: at
 // least the drain timeout and, with auto-rollback, the watch window, so a
 // watch-triggered rollback lands on a release that is still running.
-func (c *Controller) effectiveHold(cfg deploysafety.Effective) time.Duration {
-	hold := max(c.previousReleaseHold, cfg.DrainTimeout)
+func (c *Controller) effectiveHold(ctx context.Context, cfg deploysafety.Effective) time.Duration {
+	hold := max(c.holdBase(ctx), cfg.DrainTimeout)
 	if cfg.AutoRollback {
 		hold = max(hold, cfg.WatchWindow)
 	}
@@ -228,7 +228,7 @@ func (c *Controller) retireStale(ctx context.Context, targets []string, desired 
 		return c.removeContainers(ctx, due)
 	}
 
-	hold := c.effectiveHold(cfg)
+	hold := c.effectiveHold(ctx, cfg)
 	var (
 		due       []docker.ContainerState
 		heldUntil time.Time

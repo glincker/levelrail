@@ -1,9 +1,13 @@
 package api
 
 import (
+	"encoding/json"
 	"errors"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"strings"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
 func TestDoctorCheckRAM(t *testing.T) {
@@ -95,5 +99,47 @@ func TestDoctorCheckCPU(t *testing.T) {
 				t.Error("Fix = \"\", want a concrete suggestion")
 			}
 		})
+	}
+}
+
+func TestDoctorCheckBuildMemory(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		total int64
+		want  string
+	}{
+		{"1 GB warns", 1 << 30, doctorStatusWarn},
+		{"4 GB ok", 4 << 30, doctorStatusOK},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			rt, _ := newDoctorTestRouter(t)
+			rt.doctorHostMemory = func() (int64, int64, error) { return tt.total, tt.total, nil }
+			if c := rt.doctorCheckBuildMemory(t.Context()); c.Status != tt.want {
+				t.Errorf("status = %q, want %q", c.Status, tt.want)
+			}
+		})
+	}
+}
+
+func TestDoctorCheckBuildMemory_StoredSetting(t *testing.T) {
+	rt, db := newDoctorTestRouter(t)
+	rt.doctorHostMemory = func() (int64, int64, error) { return 6 << 30, 6 << 30, nil }
+	svc := runtimesettings.New(db, func(string) (string, bool) { return "", false })
+	rt.runtimeSettings = svc
+	ctx := t.Context()
+
+	if _, err := svc.Set(ctx, runtimesettings.KeyBuildsMemoryLimitMB, json.RawMessage(`512`), "test"); err != nil {
+		t.Fatal(err)
+	}
+	c := rt.doctorCheckBuildMemory(ctx)
+	if c.Status != doctorStatusOK || !strings.Contains(c.Message, "capped at 512 MiB") {
+		t.Errorf("saved 512: %+v", c)
+	}
+	if _, err := svc.Set(ctx, runtimesettings.KeyBuildsMemoryLimitMB, json.RawMessage(`99999`), "test"); err != nil {
+		t.Fatal(err)
+	}
+	c = rt.doctorCheckBuildMemory(ctx)
+	if c.Status != doctorStatusWarn || !strings.Contains(c.Message, "99999") || c.Fix == "" {
+		t.Errorf("saved above host RAM: %+v", c)
 	}
 }

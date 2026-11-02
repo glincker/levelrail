@@ -186,7 +186,7 @@ func (e *moveExecutor) Resume(ctx context.Context, kind, name string) error {
 	var err error
 	if kind == store.NodeMoveKindDatabase {
 		err = e.rt.databases.UpdateDatabaseSuspended(ctx, name, false)
-	} else {
+	} else if err = backup.CheckNoImport(name); err == nil {
 		err = e.rt.apps.UpdateServiceSuspended(ctx, name, false)
 	}
 	e.rt.nudgeReconciler()

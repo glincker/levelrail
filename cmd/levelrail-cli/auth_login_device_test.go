@@ -120,7 +120,7 @@ func TestRun_AuthLoginDevice_FullFlow(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 
 	var stdout, stderr strings.Builder
-	got := runAuthLogin("levelrail-cli-test", []string{"--device", "--api-url", srv.URL}, &stdout, &stderr, envMap(), strings.NewReader(""))
+	got := runAuthLogin("levelrail-cli-test", []string{"--device", "--print-token", "--api-url", srv.URL}, &stdout, &stderr, envMap(), strings.NewReader(""))
 	if got != exitOK {
 		t.Fatalf("exit = %d, want %d (stdout=%q stderr=%q)", got, exitOK, stdout.String(), stderr.String())
 	}

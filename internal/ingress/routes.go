@@ -356,6 +356,8 @@ type RoutesOptions struct {
 	// served while public ACME issuance fails lives, so the public CA is
 	// retried on that cadence. Empty keeps Caddy's default (12h).
 	FallbackCertLifetime string
+	// LazyCertHosts get their certificate on the first TLS handshake instead of when the config loads.
+	LazyCertHosts []string
 	// PlainHTTP serves the same routes over unencrypted HTTP on HTTPPort,
 	// for a proxy in front that terminates TLS and dials this port.
 	PlainHTTP bool
@@ -445,6 +447,13 @@ type RoutesOptions struct {
 	// pass; internal/reconcile/ingress resolves which one (and its
 	// credentials) from the operator-facing settings and internal/secrets.
 	DNSProvider DNS01Provider
+	// DNS01AllHosts makes DNS-01 the challenge for every host, not only
+	// wildcards, so servers behind CGNAT or a closed port 80 can still
+	// issue. It needs DNSProvider; without one the build fails closed.
+	DNS01AllHosts bool
+	// DNS01Hosts are single hosts that use DNS-01 while every other host
+	// keeps its own challenge. Ignored when no DNSProvider is set.
+	DNS01Hosts []string
 	// AdminListen overrides Caddy's admin API bind address. Empty keeps
 	// Caddy's own default (localhost:2019).
 	AdminListen string
@@ -648,9 +657,9 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		if r.RootDir == "" {
 			return nil, fmt.Errorf("ingress: build routes config: static route %d has no root directory", i)
 		}
-		staticHandle := []any{NewFileServerHandler(r.RootDir)}
+		staticHandle := []any{NewStaticEncodeHandler(), NewFileServerHandler(r.RootDir)}
 		if r.Rules != nil {
-			staticHandle = []any{NewStaticSiteHandler(r.RootDir, r.Rules)}
+			staticHandle = []any{NewStaticEncodeHandler(), NewStaticSiteHandler(r.RootDir, r.Rules)}
 		}
 		if DefaultSplits().Active(r.Hosts) {
 			staticHandle = append([]any{NewSplitTestingHandler()}, staticHandle...)
@@ -756,9 +765,13 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		cfg.Apps.Layer4 = &Layer4App{Servers: servers}
 	}
 
+	var tlsHosts []string
+	if opts.TLS {
+		tlsHosts = allHosts
+	}
 	if opts.Inherited.Active() {
 		if opts.Inherited.HTTP != 0 {
-			cfg.Apps.HTTP.Servers[opts.ServerName+"-http"] = opts.Inherited.redirectServer(opts.HTTPRedirect)
+			cfg.Apps.HTTP.Servers[opts.ServerName+"-http"] = opts.Inherited.redirectServer(opts.HTTPRedirect, tlsHosts)
 		}
 		cfg.ownedPorts = []int{opts.Inherited.HTTPSPort, opts.Inherited.HTTPPort}
 	}
@@ -782,10 +795,23 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		if !opts.HTTPRedirect || opts.Inherited.Active() {
 			server.AutomaticHTTPS = &AutoHTTPSConfig{DisableRedir: true}
 		}
+		if opts.HTTPRedirect && !opts.Inherited.Active() && (!opts.PlainHTTP || opts.HTTPPort == 0) {
+			// Caddy's own redirect covers every routed host; this one skips hosts with no certificate.
+			server.AutomaticHTTPS = &AutoHTTPSConfig{DisableRedir: true}
+			port := opts.HTTPPort
+			if port == 0 {
+				port = 80
+			}
+			cfg.Apps.HTTP.Servers[opts.ServerName+"-http"] = certRedirectServer(":"+strconv.Itoa(port), &AutoHTTPSConfig{DisableRedir: true}, true, tlsHosts, listenPort(opts.ListenAddr))
+		}
 		wildcardHosts, regularHosts := splitWildcardHosts(allHosts)
 		switch {
 		case opts.ACMEEnabled:
-			cfg.Apps.TLS = acmeWithFallbackTLSApp(opts, wildcardHosts, regularHosts)
+			tlsApp, err := acmeWithFallbackTLSApp(opts, wildcardHosts, regularHosts)
+			if err != nil {
+				return nil, err
+			}
+			cfg.Apps.TLS = tlsApp
 			cfg.Apps.PKI = newInternalPKIApp()
 			cfg.Apps.ACMEEvents = &ACMEEventsApp{}
 			cfg.Logging = newACMELogTap()
@@ -793,6 +819,8 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 			cfg.Apps.TLS = internalIssuerTLSApp(allHosts)
 			cfg.Apps.PKI = newInternalPKIApp()
 		}
+
+		deferHostCerts(cfg.Apps.TLS, opts.LazyCertHosts)
 
 		if opts.Inherited.Active() {
 			disableHTTPChallenge(cfg.Apps.TLS)

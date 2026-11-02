@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/backup"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -66,7 +67,7 @@ func (rt *Router) applyPreviewDatabaseStrategy(ctx context.Context, preview *sto
 		rt.logger.Error("api: preview database source not found", slog.String("error", err.Error()), slog.String("database", source))
 		return []string{"database " + source + " was not found, no preview database was created"}
 	}
-	db, err := rt.provisionOneEphemeralDatabase(ctx, preview.ID, previewName, previewDatabaseSourceKey, spec.Database{Engine: src.Engine, Version: src.Version})
+	db, _, err := rt.provisionOneEphemeralDatabase(ctx, preview.ID, previewName, previewDatabaseSourceKey, spec.Database{Engine: src.Engine, Version: src.Version})
 	if err != nil {
 		rt.logger.Error("api: provision preview database failed", slog.String("error", err.Error()), slog.String("preview_app", previewName))
 		return []string{"could not create the preview database"}
@@ -103,6 +104,9 @@ func (rt *Router) markSeedFailed(id string, cause error) {
 func (rt *Router) seedPreviewDatabase(ctx context.Context, source string, db store.PreviewEphemeralDatabase, engine string) []string {
 	if rt.cloneRestoreRunner == nil {
 		return []string{"seed restore is not configured on this control plane, the preview database is empty"}
+	}
+	if err := backup.CheckWorkDirSpace(); err != nil {
+		return []string{"not enough free disk to seed " + db.DatabaseName + " from " + source + ", the preview database is empty"}
 	}
 	history, err := rt.backupHistory.ListBackupHistory(ctx, source, 25, nil)
 	if err != nil {

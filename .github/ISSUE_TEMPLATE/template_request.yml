@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Check the existing catalog first. You can also add a template yourself with one file in `internal/catalog/contrib/`. See the [service template guide](https://github.com/glincker/levelrail/blob/main/.github/CONTRIBUTING.md#adding-a-service-template).
+        Check the existing catalog first. You can also list the app yourself by opening a pull request with two files under `internal/catalog/manifests/<id>/`. Listing is free. See [Add a template](https://docs.levelrail.com/add-a-template) and use the template submission pull request form.
 
   - type: input
     id: service

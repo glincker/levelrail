@@ -2,15 +2,47 @@ import { useTranslation } from 'react-i18next'
 import { ShieldCheckGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { CodeBlock } from '@/components/ui/code-block'
 import { HostFirewallToggle } from './HostFirewallToggle'
 import { useHostFirewall } from '../queries/hostFirewall'
+import type { HostFirewallPublishedPort } from '../types/hostFirewall'
 
 const LOOPBACK_BINDS = new Set(['127.0.0.1', '::1', 'localhost'])
+
+function portState(
+  p: HostFirewallPublishedPort,
+  managed: boolean,
+): {
+  variant: 'success' | 'muted' | 'warning'
+  label:
+    | 'hostFirewall.notFiltered'
+    | 'hostFirewall.notChecked'
+    | 'hostFirewall.allowed'
+    | 'hostFirewall.localOnly'
+    | 'hostFirewall.notAllowed'
+} {
+  if (p.filtered === false)
+    return { variant: 'warning', label: 'hostFirewall.notFiltered' }
+  if (!managed) return { variant: 'muted', label: 'hostFirewall.notChecked' }
+  if (p.allowed) return { variant: 'success', label: 'hostFirewall.allowed' }
+  return LOOPBACK_BINDS.has(p.bind_address)
+    ? { variant: 'muted', label: 'hostFirewall.localOnly' }
+    : { variant: 'warning', label: 'hostFirewall.notAllowed' }
+}
 
 export function HostFirewallCard() {
   const { t } = useTranslation('settings')
   const { data } = useHostFirewall()
   if (!data) return null
+  const managed = data.managed ?? data.installed
+  const backend = data.backend ?? (data.installed ? 'ufw' : 'none')
+  const statusKey = managed
+    ? data.active
+      ? 'hostFirewall.statusOn'
+      : 'hostFirewall.statusOff'
+    : backend === 'none'
+      ? 'hostFirewall.statusNone'
+      : 'hostFirewall.statusUnmanaged'
 
   return (
     <Card>
@@ -22,81 +54,74 @@ export function HostFirewallCard() {
           />
           {t('hostFirewall.title')}
           <Badge variant={data.active ? 'success' : 'muted'}>
-            {t(
-              !data.installed
-                ? 'hostFirewall.statusMissing'
-                : data.active
-                  ? 'hostFirewall.statusOn'
-                  : 'hostFirewall.statusOff',
-            )}
+            {t(statusKey, { backend })}
           </Badge>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4 text-sm">
         <p className="text-muted-foreground">
           {t(
-            data.installed
+            managed
               ? 'hostFirewall.description'
-              : 'hostFirewall.missingHelp',
+              : backend === 'none'
+                ? 'hostFirewall.noneHelp'
+                : 'hostFirewall.unmanagedHelp',
           )}
         </p>
-        {data.installed ? (
-          <>
-            <p className="text-xs text-muted-foreground">
-              {t('hostFirewall.required')}:{' '}
-              <span className="break-all font-mono">
-                {data.required.map((p) => `${p.port}/${p.protocol}`).join(', ')}
-              </span>
-            </p>
-            {data.published_ports?.length ? (
-              <ul
-                aria-label={t('hostFirewall.published')}
-                className="space-y-1 text-xs"
-              >
-                {data.published_ports.map((p) => (
-                  <li
-                    key={`${p.port}/${p.protocol}/${p.app}/${p.service ?? ''}`}
-                    className="flex flex-wrap items-center gap-2"
-                  >
-                    <span className="font-mono">{p.port}</span>
-                    <Badge variant={p.protocol === 'udp' ? 'info' : 'muted'}>
-                      {p.protocol.toUpperCase()}
+        {!managed && data.detail ? (
+          <p className="text-xs text-muted-foreground">{data.detail}</p>
+        ) : null}
+        <>
+          <p className="text-xs text-muted-foreground">
+            {t('hostFirewall.required')}:{' '}
+            <span className="break-all font-mono">
+              {data.required.map((p) => `${p.port}/${p.protocol}`).join(', ')}
+            </span>
+          </p>
+          {data.published_ports?.length ? (
+            <ul
+              aria-label={t('hostFirewall.published')}
+              className="space-y-1 text-xs"
+            >
+              {data.published_ports.map((p) => (
+                <li
+                  key={`${p.port}/${p.protocol}/${p.app}/${p.service ?? ''}`}
+                  className="flex flex-wrap items-center gap-2"
+                >
+                  <span className="font-mono">{p.port}</span>
+                  <Badge variant={p.protocol === 'udp' ? 'info' : 'muted'}>
+                    {p.protocol.toUpperCase()}
+                  </Badge>
+                  <span className="text-muted-foreground">
+                    {p.service ? `${p.app} / ${p.service}` : p.app}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="font-mono text-muted-foreground">
+                      {p.bind_address}
+                    </span>
+                    <Badge variant={portState(p, managed).variant}>
+                      {t(portState(p, managed).label)}
                     </Badge>
-                    <span className="text-muted-foreground">
-                      {p.service ? `${p.app} / ${p.service}` : p.app}
-                    </span>
-                    <span className="inline-flex items-center gap-1.5">
-                      <span className="font-mono text-muted-foreground">
-                        {p.bind_address}
-                      </span>
-                      <Badge
-                        variant={
-                          p.allowed
-                            ? 'success'
-                            : LOOPBACK_BINDS.has(p.bind_address)
-                              ? 'muted'
-                              : 'warning'
-                        }
-                      >
-                        {t(
-                          p.allowed
-                            ? 'hostFirewall.allowed'
-                            : LOOPBACK_BINDS.has(p.bind_address)
-                              ? 'hostFirewall.localOnly'
-                              : 'hostFirewall.notAllowed',
-                        )}
-                      </Badge>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {!managed && data.commands?.length ? (
+            <div className="space-y-1.5">
+              <p className="text-xs text-muted-foreground">
+                {t('hostFirewall.guidance')}
+              </p>
+              <CodeBlock code={data.commands.join('\n')} language="bash" />
+            </div>
+          ) : null}
+          {managed ? (
             <p className="text-xs text-muted-foreground">
               {t('hostFirewall.sshNote')}
             </p>
-            <HostFirewallToggle />
-          </>
-        ) : null}
+          ) : null}
+          {managed ? <HostFirewallToggle /> : null}
+        </>
       </CardContent>
     </Card>
   )

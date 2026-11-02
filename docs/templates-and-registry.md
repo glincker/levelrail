@@ -55,7 +55,7 @@ An app started with the one-click **Deploy now** route is a trial: its pages sho
 
 ## How templates are defined
 
-The built-in catalog is compiled into the control plane binary and served from memory: there is no catalog table and no admin screen. Adding or changing a built-in template means shipping a new control plane build. Each entry has an ID, name, slogan, category, documentation link, a Compose body, and two optional hints:
+The built-in catalog is compiled into the control plane binary and served from memory: there is no catalog table and no admin screen. Adding or changing a built-in template means shipping a new control plane build. New entries are two files under `internal/catalog/manifests/<id>/`, described in [Add a template](/add-a-template). Each entry has an ID, name, slogan, category, documentation link, a Compose body, and two optional hints:
 
 - Recommended memory: a static hint shown as a badge (for example "~6 GiB RAM recommended"). It is a rule of thumb and is not checked against any node's free memory. When you deploy a template, the container memory limit is set to twice this value so the app has headroom for peaks; you can change it under Resources.
 - Requires GPU: the entry reserves an NVIDIA GPU through `deploy.resources.reservations.devices`. It needs a node with a GPU and the NVIDIA container runtime; see [AI models](/ai-models#gpu-nodes).
@@ -66,9 +66,38 @@ Only the `resources.reservations.devices` and `replicas` keys of a Compose `depl
 
 Templates use `$SERVICE_<KIND>_<NAME>` tokens in place of literal secrets. At deploy time:
 
-- `PASSWORD`, `USER`, `BASE64`, `HEX` and `REALBASE64` tokens are generated and stored as secrets. Every reference to the same name gets the same value, so an app and its database agree on `$SERVICE_PASSWORD_DB`. A generated value is never written into the stored Compose body.
-- `FQDN` tokens resolve to `https://` plus the service's assigned domain, when the Compose file assigns one.
+- `PASSWORD`, `USER`, `BASE64`, `HEX`, `REALBASE64` and `BASE64BYTES` tokens are generated and stored as secrets. Every reference to the same name gets the same value, so an app and its database agree on `$SERVICE_PASSWORD_DB`. A generated value is never written into the stored Compose body.
+- `BASE64BYTES` is standard padded base64 of N random bytes (default 32), written `$SERVICE_BASE64BYTES_<N>_<NAME>`. There is no prefix option: a framework key such as a Laravel `APP_KEY` is composed as `base64:$SERVICE_BASE64BYTES_32_APPKEY`. `BASE64` and `REALBASE64` instead produce N characters, not N bytes.
+- `$SERVICE_FQDN_<NAME>` resolves to the service's own assigned domain as a bare host, and `$SERVICE_URL_<NAME>` to `https://` plus that host. The suffix is ignored: both always mean this service's own domain. With no domain assigned, write a default such as `${SERVICE_URL_APP:-http://localhost:5678}`. Adding, changing or removing a domain re-renders these values and recreates the service.
 - Any token written with a default (`${SERVICE_FOO:-value}`) uses that default.
+
+### Start order with depends_on
+
+`depends_on` is honoured in list and map form. A service is created only after its dependencies are ready:
+
+- `service_started` (and the list form): a container of the dependency is running.
+- `service_healthy`: the dependency's health check has passed. The dependency needs a `healthcheck`; shell-less images cannot use `CMD-SHELL`, use `CMD` with the binary's own check.
+- `service_completed_successfully`: the one-shot dependency exited 0. A nonzero exit fails the deploy and names the dependency.
+
+Cycles are rejected at import with the path. A dependency that is not ready within the runtime setting `compose.depends_on_timeout` (default 120s, 5s to 1h, env seed `APP_COMPOSE_DEPENDS_ON_TIMEOUT`, applies live) fails the service with the dependency's name; it still starts if the dependency comes up later. Services without `depends_on` start as before. Recreating one member does not wait for dependencies that are already up.
+
+### Variable interpolation in env values
+
+Environment values (not `command:` or `healthcheck:`, which the container shell expands itself) accept the standard compose forms for variables the app knows. The scope is exactly the plain env keys already saved on the app's own services (set with `apps env set` or the Env tab, merged across its services). It never includes the control plane's own environment, another app's env, or secret-typed values, which stay out of plain desired state. A template's install-form values are written into the compose body at render time, so they need no lookup. The stored revision keeps the original `${...}` text, so the next deploy re-resolves it against the then-current env:
+
+- `${VAR}` the value; `${VAR:-d}` the default when unset or empty; `${VAR-d}` the default only when unset.
+- `${VAR:+alt}` and `${VAR+alt}` the alternative when set; `${VAR:?msg}` and `${VAR?msg}` fail the import with `msg` when missing.
+- `$$` is a literal `$`.
+
+```yaml
+environment:
+  DB_PASSWORD: ${DB_PASSWORD:?set a database password}
+  PORT: ${PORT:-8080}
+```
+
+With `DB_PASSWORD` missing from the app env the deploy fails with `set a database password`; once it is set, the next deploy uses it. Messages and warnings name variables only, never values.
+
+A plain `${VAR}` with no value is left as written and reported as a warning (names only, never values). `SERVICE_*` tokens behave exactly as before.
 - Anything else has no value and is reported as unresolved. A template with an unresolved token is marked `requires_configuration`, and the one-click route refuses it. Deploy it through the dashboard's Compose editor, or with `apps deploy-compose`, after filling the value in.
 
 ## Save an app as a template

@@ -394,16 +394,7 @@ func (rt *Router) handleDeleteStorageDestination(w http.ResponseWriter, r *http.
 		writeError(w, http.StatusConflict, "storage destination is used by a log archive policy; remove the policy first")
 		return
 	}
-	err := rt.backupTargets.DeleteBackupTarget(r.Context(), id)
-	if errors.Is(err, store.ErrBackupTargetNotFound) {
-		writeError(w, http.StatusNotFound, "storage destination not found")
-		return
-	}
-	if err != nil {
-		writeError(w, http.StatusConflict, "storage destination still has backup history; delete is blocked until that is addressed")
-		return
-	}
-	w.WriteHeader(http.StatusNoContent)
+	rt.retireBackupTarget(w, r, id, "storage destination")
 }
 
 // handleTestStorageDestination handles POST /api/v1/storage/destinations/{id}/test.

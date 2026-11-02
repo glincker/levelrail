@@ -299,7 +299,10 @@ export async function createNodeJoinToken(
 }
 
 export function useCreateNodeJoinToken() {
-  return useMutation({ mutationFn: createNodeJoinToken })
+  return useMutation({
+    meta: { errorToast: false },
+    mutationFn: createNodeJoinToken,
+  })
 }
 
 // DELETE /api/v1/nodes/{id} (internal/api/nodes.go's handleDeleteNode).
@@ -321,6 +324,7 @@ export async function deleteNode(id: string): Promise<void> {
 export function useDeleteNode() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: deleteNode,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: nodeKeys.list() })
@@ -417,6 +421,7 @@ export async function setNodeWorkloads({
 export function useSetNodeWorkloads() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: setNodeWorkloads,
     onSuccess: (updated) => {
       queryClient.setQueryData(nodeKeys.detail(updated.id), updated)
@@ -454,6 +459,7 @@ export async function setNodeRegion({
 export function useSetNodeRegion() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: setNodeRegion,
     onSuccess: (updated) => {
       queryClient.setQueryData(nodeKeys.detail(updated.id), updated)

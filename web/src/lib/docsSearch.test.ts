@@ -177,3 +177,45 @@ describe('searchDocsGrouped word matching', () => {
     ])
   })
 })
+
+describe('search with split bodies', () => {
+  const full: DocsManifest = {
+    categories: [],
+    pages: {
+      '/alpha': {
+        file: 'alpha.md',
+        title: 'Alpha',
+        headings: [{ id: 'setup', text: 'Setup', level: 2 }],
+        body: 'configure the reverse proxy and certificates',
+      },
+      '/beta': {
+        file: 'beta.md',
+        title: 'Beta',
+        headings: [],
+        body: 'certificates renew automatically every night',
+      },
+    },
+  }
+  const slim: DocsManifest = {
+    categories: [],
+    pages: Object.fromEntries(
+      Object.entries(full.pages).map(([k, v]) => [
+        k,
+        { ...v, body: undefined },
+      ]),
+    ),
+  }
+  const bodies = Object.fromEntries(
+    Object.entries(full.pages).map(([k, v]) => [k, v.body ?? '']),
+  )
+
+  it.each(['certificates', 'reverse proxy', 'setup', 'alpha', 'nomatch'])(
+    'gives identical results for %s',
+    (q) => {
+      expect(searchDocs(slim, q, bodies)).toEqual(searchDocs(full, q))
+      expect(searchDocsGrouped(slim, q, undefined, bodies)).toEqual(
+        searchDocsGrouped(full, q),
+      )
+    },
+  )
+})

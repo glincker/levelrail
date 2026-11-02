@@ -2,6 +2,7 @@ info heroku.web.port web
 info heroku.health.none web
 info heroku.process.port worker
 warn vercel.build.custom 
+info vercel.next.standalone next.config
 warn vercel.cron.http /api/tick
 warn merge.service-clash web
 warn config.source.unknown web

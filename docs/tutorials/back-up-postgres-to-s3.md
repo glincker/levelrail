@@ -14,7 +14,7 @@ A backup you have never restored is a guess. In this tutorial you will connect a
 
 - A running Levelrail instance and the CLI logged in to it ([installing](/installing)).
 - A Postgres database. Create `main-db` as in [Connect an app to Postgres](/tutorials/connect-an-app-to-postgres), or use your own.
-- A bucket and an access key pair with read and write access. AWS S3, Cloudflare R2, Backblaze B2, and MinIO all work.
+- A bucket and an access key pair with read and write access. AWS S3 and MinIO are covered by the steps below. Cloudflare R2 and Backblaze B2 are in [their own section](#cloudflare-r2-and-backblaze-b2-live-check-pending) (live check pending).
 
 <Steps>
 <Step title="Connect the bucket as a backup target">
@@ -154,6 +154,38 @@ levelrail-cli backup-targets delete bkt_Ra-kILVUyJaw
 ```
 
 Keep the target if you want to keep the schedule running.
+
+## Cloudflare R2 and Backblaze B2 (live check pending)
+
+Neither provider has been run through this tutorial against a real bucket yet. The commands below use only flags listed in the [CLI reference](/cli-reference). The live check is pending.
+
+R2 uses the `r2` provider with the account endpoint. Replace `ACCOUNT_ID` with your Cloudflare account id:
+
+```bash
+levelrail-cli backup-targets create \
+  --name r2-offsite \
+  --provider r2 \
+  --endpoint https://ACCOUNT_ID.r2.cloudflarestorage.com \
+  --bucket my-backups \
+  --access-key-id "$ACCESS_KEY" \
+  --secret-access-key "$SECRET_KEY"
+```
+
+B2 uses the `custom` provider with the regional S3 endpoint. The example uses `us-west-004`, so use the region shown for your bucket:
+
+```bash
+levelrail-cli backup-targets create \
+  --name b2-offsite \
+  --provider custom \
+  --endpoint https://s3.us-west-004.backblazeb2.com \
+  --bucket my-backups \
+  --access-key-id "$ACCESS_KEY" \
+  --secret-access-key "$SECRET_KEY"
+```
+
+Test each target with `levelrail-cli backup-targets test <id>`, then take a backup, verify it and restore it with the same commands as above, using the new target id (live check pending).
+
+The backup target commands in the CLI reference do not list a region flag, so these examples do not set one. Whether R2 or B2 need a region set for signing is not yet confirmed (pending run).
 
 ## Where to go next
 

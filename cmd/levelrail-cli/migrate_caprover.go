@@ -29,8 +29,8 @@ func runMigrateCaprover(prog string, args []string, stdout, stderr io.Writer, lo
 	fs.StringVar(&f.outDir, "out-dir", "./migrated", "directory to write generated app.yaml files and secrets into (file mode only, i.e. when --apply is not given)")
 	fs.BoolVar(&f.apply, "apply", false, "create apps directly on the target Levelrail instance (POST /api/v1/apps) instead of writing files")
 	fs.BoolVar(&f.includeSecretValues, "include-secret-values", false, "write the real env var values already returned by CapRover into a companion secrets file, or apply them via PUT .../secrets/{key}; never written into a generated app.yaml")
-	fs.StringVar(&targetTokenFlag, "target-token", "", "Levelrail API token, --apply only (overrides "+envAPIToken+" and the credentials file)")
-	fs.StringVar(&targetAPIURLFlag, "target-api-url", "", "Levelrail control plane base URL, --apply only (overrides "+envAPIURL+" and the credentials file, default "+defaultAPIURL+")")
+	fs.StringVar(&targetTokenFlag, "target-token", "", "Levelrail API token, --apply only (overrides "+apiTokenEnvHelp+" and the credentials file)")
+	fs.StringVar(&targetAPIURLFlag, "target-api-url", "", "Levelrail control plane base URL, --apply only (overrides "+apiURLEnvHelp+" and the credentials file, default "+defaultAPIURL+")")
 	fs.StringVar(&targetProfileFlag, "target-profile", "", "named credentials profile to read the target Levelrail instance from, --apply only (overrides "+envProfile+", default \""+defaultProfile+"\")")
 	fs.BoolVar(&f.jsonOut, "json", false, "print the migration report as JSON to stdout and nothing else")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, migrateCaproverUsage(prog)) }
@@ -96,5 +96,5 @@ build.type is assumed to be dockerfile and flagged for manual review.
 CapRover does not expose git repo/branch identity for a deployed app at
 all, so no follow-up "apps create --repo ..." command is printed here,
 unlike migrate coolify/dokploy.
-`, prog, envAPIToken, envAPIURL, defaultAPIURL)
+`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }

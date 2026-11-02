@@ -1,0 +1,34 @@
+id: timescaledb
+name: TimescaleDB
+description: PostgreSQL with the TimescaleDB extension for time series data, with a persistent volume and a generated password. The core is Apache-2.0 and some features fall under the Timescale License. It is not published on the host, so reach it from other services in this project at timescaledb:5432.
+icon: database
+category: Database Tools
+documentation_url: https://docs.timescale.com/
+source_repo: https://github.com/timescale/timescaledb
+license: LicenseRef-Timescale
+license_class: source-available
+license_url: https://github.com/timescale/timescaledb/blob/main/LICENSE
+hosted_use: unknown
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 536870912
+first_run:
+  - Read the generated password from the app secrets, connect from a service in the same project, The extension is already created in the default database. Run CREATE EXTENSION IF NOT EXISTS timescaledb in any other database you add.
+env:
+  - key: POSTGRES_USER
+    label: Database user
+    description: Name of the superuser created on first start.
+    default: postgres
+  - key: POSTGRES_DB
+    label: Database name
+    description: Database created on first start.
+    default: app
+domains:
+  - service: timescaledb
+    port: 5432
+    description: This is a TCP database with no web page, so leave it empty and connect over the project network.
+healthcheck:
+  service: timescaledb
+  port: 5432
+  kind: tcp

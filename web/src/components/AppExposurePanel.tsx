@@ -381,7 +381,7 @@ function UrlList({
 
 function ReachabilityCheck({ appName }: { appName: string }) {
   const { t } = useTranslation('appExposure')
-  const check = useCheckExposure(appName)
+  const check = useCheckExposure(appName, { inlineError: true })
   const result = check.data
   return (
     <div className="space-y-3 border-t border-border pt-4">

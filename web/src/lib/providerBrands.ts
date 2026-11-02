@@ -78,6 +78,7 @@ const STORAGE_PRESET_BRAND: Record<StoragePreset, string> = {
   minio: 'minio',
   wasabi: '',
   gcs: 'google-cloud-storage',
+  oracle: 'oracle',
   custom: '',
 }
 

@@ -70,6 +70,13 @@ type ScheduledBaseBackupRunner interface {
 	RunBaseBackup(ctx context.Context, historyID, databaseName, containerName, targetID string) error
 }
 
+// BaseBackupScheduleStore is the optional store surface for databases whose
+// base backups run on their own cron; a store without it keeps base backups
+// tied to the dump schedule.
+type BaseBackupScheduleStore interface {
+	ListBaseBackupScheduledDatabases(ctx context.Context) ([]store.DesiredDatabase, error)
+}
+
 // ScheduledVerifier matches api.BackupVerifier's shape (internal/api/backup_verify.go);
 // *VerifyRunner satisfies both, so cmd/levelrail/main.go shares one instance.
 type ScheduledVerifier interface {
@@ -144,8 +151,8 @@ type Scheduler struct {
 	// stable for existing call sites.
 	Verifier ScheduledVerifier
 	// BaseBackups, if set, takes a physical base backup after each scheduled
-	// logical backup of a PITR-enabled database, so point-in-time restore
-	// stays fresh without a second schedule. nil disables it.
+	// logical backup of a PITR-enabled database, or on the database's own base
+	// backup schedule when it has one. nil disables both.
 	BaseBackups ScheduledBaseBackupRunner
 	// Policies and GFS enable per-volume daily/weekly/monthly retention;
 	// both nil is valid and leaves only the count/age rules.
@@ -153,7 +160,10 @@ type Scheduler struct {
 	GFS      GFSStore
 	// Tombstones, if set, keeps failed object deletes for retry instead of only logging them.
 	Tombstones TombstoneStore
-	Logger     *slog.Logger
+	// DefaultRetentionHours, if set, gives backups with no count or age rule of their own a
+	// maximum age in hours (0 keeps them). It runs right after a fresh success, so the newest backup always survives.
+	DefaultRetentionHours func(ctx context.Context) int
+	Logger                *slog.Logger
 	// Now returns the current time, the same testable-clock field
 	// Runner.Now already establishes in runner.go: production code
 	// leaves it nil and Tick falls back to time.Now, tests set it for
@@ -170,6 +180,9 @@ type Scheduler struct {
 	// independent maps make that structurally impossible instead of
 	// merely unlikely.
 	volumeNextRun map[string]time.Time
+	// baseNextRun is the next fire time of each database's own base backup
+	// cron, kept apart from nextRun because the two schedules are independent.
+	baseNextRun map[string]time.Time
 }
 
 // NewScheduler builds a Scheduler ready to Tick or Run. logger defaults
@@ -198,6 +211,23 @@ func NewScheduler(store ScheduleStore, runner ScheduledBackupRunner, deleter Del
 // service/volume names are plain identifiers) already guarantees.
 func volumeScheduleKey(serviceName, volumeName string) string {
 	return serviceName + "/" + volumeName
+}
+
+// retentionRule resolves a resource's own count and age rule, falling back to the default window only
+// when it has neither.
+func (s *Scheduler) retentionRule(ctx context.Context, keep, days int) (int, time.Time, bool) {
+	var olderThan time.Time
+	switch {
+	case keep > 0 || days > 0:
+		if days > 0 {
+			olderThan = s.now().AddDate(0, 0, -days)
+		}
+	case s.DefaultRetentionHours != nil && s.DefaultRetentionHours(ctx) > 0:
+		olderThan = s.now().Add(-time.Duration(s.DefaultRetentionHours(ctx)) * time.Hour)
+	default:
+		return 0, time.Time{}, false
+	}
+	return keep, olderThan, true
 }
 
 func (s *Scheduler) now() time.Time {
@@ -292,6 +322,10 @@ func (s *Scheduler) Tick(ctx context.Context) error {
 		}
 	}
 
+	if berrs := s.tickBaseBackups(ctx, now); berrs != nil {
+		errs = append(errs, berrs)
+	}
+
 	if verrs := s.tickServiceVolumes(ctx, now); verrs != nil {
 		errs = append(errs, verrs)
 	}
@@ -299,6 +333,54 @@ func (s *Scheduler) Tick(ctx context.Context) error {
 	s.sweepTombstones(ctx)
 
 	return errors.Join(errs...)
+}
+
+// tickBaseBackups runs base backups for PITR databases that have their own
+// schedule, whether or not they have a dump schedule. Called with s.mu held.
+func (s *Scheduler) tickBaseBackups(ctx context.Context, now time.Time) error {
+	bs, ok := s.Store.(BaseBackupScheduleStore)
+	if !ok || s.BaseBackups == nil {
+		return nil
+	}
+	dbs, err := bs.ListBaseBackupScheduledDatabases(ctx)
+	if err != nil {
+		return fmt.Errorf("backup: scheduler: list base backup schedules: %w", err)
+	}
+	if s.baseNextRun == nil {
+		s.baseNextRun = make(map[string]time.Time)
+	}
+
+	seen := make(map[string]struct{}, len(dbs))
+	for _, d := range dbs {
+		seen[d.Name] = struct{}{}
+		sched, perr := cronexpr.Parse(d.BaseBackupSchedule)
+		if perr != nil {
+			s.log().Warn("backup: scheduler: invalid base backup schedule, skipping",
+				slog.String("database", d.Name), slog.String("schedule", d.BaseBackupSchedule), slog.String("error", perr.Error()))
+			continue
+		}
+		next, known := s.baseNextRun[d.Name]
+		if !known {
+			s.baseNextRun[d.Name] = sched.Next(now)
+			continue
+		}
+		if now.Before(next) {
+			continue
+		}
+		s.baseNextRun[d.Name] = sched.Next(now)
+
+		targetID := d.BaseBackupTargetID
+		if targetID == "" {
+			targetID = d.BackupTargetID
+		}
+		s.runScheduledBaseBackup(ctx, d, scheduledBackupContainerName(d.Name), targetID)
+	}
+	for name := range s.baseNextRun {
+		if _, ok := seen[name]; !ok {
+			delete(s.baseNextRun, name)
+		}
+	}
+	return nil
 }
 
 // tickServiceVolumes is Tick's volume evaluation, split into its own
@@ -383,16 +465,12 @@ func (s *Scheduler) runScheduled(ctx context.Context, d store.DesiredDatabase) e
 		s.verifyScheduled(ctx, d.Name, historyID, d.Engine)
 	}
 
-	if d.PITREnabled && s.BaseBackups != nil {
-		s.runScheduledBaseBackup(ctx, d, containerName)
+	if d.PITREnabled && s.BaseBackups != nil && d.BaseBackupSchedule == "" {
+		s.runScheduledBaseBackup(ctx, d, containerName, d.BackupTargetID)
 	}
 
-	if d.BackupRetain > 0 || d.BackupRetainDays > 0 {
-		var olderThan time.Time
-		if d.BackupRetainDays > 0 {
-			olderThan = s.now().AddDate(0, 0, -d.BackupRetainDays)
-		}
-		pruned, pruneErr := s.Store.PruneBackupHistory(ctx, d.Name, d.BackupRetain, olderThan)
+	if keep, olderThan, ok := s.retentionRule(ctx, d.BackupRetain, d.BackupRetainDays); ok {
+		pruned, pruneErr := s.Store.PruneBackupHistory(ctx, d.Name, keep, olderThan)
 		if pruneErr != nil {
 			s.log().Error("backup: scheduled retention prune failed",
 				slog.String("database", d.Name), slog.String("error", pruneErr.Error()))
@@ -411,13 +489,13 @@ func (s *Scheduler) runScheduled(ctx context.Context, d store.DesiredDatabase) e
 // runScheduledBaseBackup logs a failed base backup rather than failing the
 // tick: the logical backup already succeeded and the failed attempt is
 // visible in base backup history.
-func (s *Scheduler) runScheduledBaseBackup(ctx context.Context, d store.DesiredDatabase, containerName string) {
+func (s *Scheduler) runScheduledBaseBackup(ctx context.Context, d store.DesiredDatabase, containerName, targetID string) {
 	id, err := randomScheduledBackupHistoryID()
 	if err != nil {
 		s.log().Error("backup: scheduled base backup: generate id failed", slog.String("database", d.Name), slog.String("error", err.Error()))
 		return
 	}
-	if err := s.BaseBackups.RunBaseBackup(ctx, id, d.Name, containerName, d.BackupTargetID); err != nil {
+	if err := s.BaseBackups.RunBaseBackup(ctx, id, d.Name, containerName, targetID); err != nil {
 		s.log().Error("backup: scheduled base backup failed", slog.String("database", d.Name), slog.String("id", id), slog.String("error", err.Error()))
 	}
 }
@@ -460,12 +538,8 @@ func (s *Scheduler) runScheduledVolume(ctx context.Context, v store.ServiceVolum
 
 	s.pruneGFS(ctx, v)
 
-	if v.BackupRetain > 0 || v.BackupRetainDays > 0 {
-		var olderThan time.Time
-		if v.BackupRetainDays > 0 {
-			olderThan = s.now().AddDate(0, 0, -v.BackupRetainDays)
-		}
-		pruned, pruneErr := s.Store.PruneServiceVolumeBackupHistory(ctx, v.ServiceName, v.VolumeName, v.BackupRetain, olderThan)
+	if keep, olderThan, ok := s.retentionRule(ctx, v.BackupRetain, v.BackupRetainDays); ok {
+		pruned, pruneErr := s.Store.PruneServiceVolumeBackupHistory(ctx, v.ServiceName, v.VolumeName, keep, olderThan)
 		if pruneErr != nil {
 			s.log().Error("backup: scheduled volume retention prune failed",
 				slog.String("service_volume", label), slog.String("error", pruneErr.Error()))

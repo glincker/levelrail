@@ -30,7 +30,14 @@ func TestSummarizeAppConditions(t *testing.T) {
 				{Type: "Ready", Status: reconcile.ConditionTrue, Reason: "Deployed"},
 				{Type: "EgressPolicyReady", Status: reconcile.ConditionFalse, Reason: "PolicyApplyFailed"},
 			},
-			want: appStatusSummary{Label: "Attention needed", Variant: "destructive"},
+			want: appStatusSummary{Label: "Attention needed", Variant: "destructive", Reason: "PolicyApplyFailed"},
+		},
+		{
+			name: "a stopped deploy copy reads as stopped",
+			conditions: []reconcile.Condition{
+				{Type: "Ready", Status: reconcile.ConditionUnknown, Reason: "RetainedDeployStopped"},
+			},
+			want: appStatusSummary{Label: "Stopped", Variant: "muted"},
 		},
 		{
 			name: "suspended overrides everything else",

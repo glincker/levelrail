@@ -14,7 +14,7 @@ import (
 const defaultDevicePollInterval = 5 * time.Second
 
 // Cookie-free JSON POSTs, so it works against a plain-http control plane.
-func runAuthLoginDevice(prog, apiURLFlag, profileFlag, clientNameFlag string, reauth bool, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), of outputFlags, jsonOut bool) int {
+func runAuthLoginDevice(prog, apiURLFlag, profileFlag, clientNameFlag string, reauth, printToken bool, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), of outputFlags, jsonOut bool) int {
 	profile := resolveProfile(profileFlag, lookupEnv)
 	apiURL := resolveAPIURL(apiURLFlag, lookupEnv, prog, profile)
 	client := NewClient(apiURL, "")
@@ -63,11 +63,18 @@ func runAuthLoginDevice(prog, apiURLFlag, profileFlag, clientNameFlag string, re
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("save credentials: %w", err))
 	}
 
-	if err := renderResult(stdout, of.Format, of.Query, granted, func() {
+	// The token is already saved; keep it off stdout unless asked.
+	shown := granted
+	if !printToken {
+		shown.Token = ""
+	}
+	if err := renderResult(stdout, of.Format, of.Query, shown, func() {
 		dir, _ := configDir(prog)
 		_, _ = fmt.Fprintln(stdout, "device login approved")
 		_, _ = fmt.Fprintf(stdout, "token %q (id %s) created and saved to %s/%s under profile %q\n", granted.Name, granted.ID, dir, credentialsFileName, profile)
-		_, _ = fmt.Fprintf(stdout, "token value (shown once, not recoverable again): %s\n", granted.Token)
+		if printToken {
+			_, _ = fmt.Fprintf(stdout, "token value (shown once, not recoverable again): %s\n", granted.Token)
+		}
 	}); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)

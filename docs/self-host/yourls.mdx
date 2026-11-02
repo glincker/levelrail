@@ -1,0 +1,83 @@
+---
+title: "Self-host YOURLS with Docker"
+sidebarTitle: "YOURLS"
+description: "A self-hosted URL shortener with custom keywords, click statistics and a plugin system. Runs with a bundled MariaDB database. The admin login is the user and password you set in the install form."
+"og:url": "https://docs.levelrail.com/self-host/yourls"
+---
+
+A self-hosted URL shortener with custom keywords, click statistics and a plugin system. Runs with a bundled MariaDB database. The admin login is the user and password you set in the install form.
+
+This page describes the Levelrail template for YOURLS (Applications). It deploys the services below as one Docker Compose app on your own server. Project site: https://yourls.org/docs/.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `mariadb:11.8.9` | none | `dbdata -&#62; /var/lib/mysql` |
+| `yourls` | `yourls:1.10.6` | 8080 | none |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `MARIADB_DATABASE` | Preset in the template |
+| `db` | `MARIADB_PASSWORD` | Generated at deploy |
+| `db` | `MARIADB_ROOT_PASSWORD` | Generated at deploy |
+| `db` | `MARIADB_USER` | Preset in the template |
+| `yourls` | `YOURLS_DB_HOST` | Preset in the template |
+| `yourls` | `YOURLS_DB_NAME` | Preset in the template |
+| `yourls` | `YOURLS_DB_PASS` | Generated at deploy |
+| `yourls` | `YOURLS_DB_USER` | Preset in the template |
+| `yourls` | `YOURLS_PASS` | You must provide |
+| `yourls` | `YOURLS_SITE` | Preset in the template |
+| `yourls` | `YOURLS_USER` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- You must provide one or more secrets before it can deploy (`yourls`): YOURLS_PASS.
+- Passwords and keys are generated at deploy time (`db`, `yourls`): MARIADB_PASSWORD, MARIADB_ROOT_PASSWORD, YOURLS_DB_PASS.
+- Stores data in named volumes (`db`): dbdata.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+<Warning>This template needs configuration before it can deploy. Open it in the dashboard, set each variable marked "You must provide" in the Compose body, then deploy.</Warning>
+
+## Deploy YOURLS with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select YOURLS. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates get yourls --output json | jq -r .compose > yourls.compose.yaml
+# edit yourls.compose.yaml to set the variables you must provide
+levelrail-cli apps deploy-compose my-yourls --file yourls.compose.yaml
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Applications templates
+
+- [Budibase](/self-host/budibase)
+- [Cleanuparr](/self-host/cleanuparr)
+- [Cockpit CMS](/self-host/cockpit-cms)
+- [Deluge](/self-host/deluge)
+- [Drupal](/self-host/drupal)
+
+All templates are listed in the [self-host gallery](/self-host).

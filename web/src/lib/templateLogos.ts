@@ -14,6 +14,7 @@ export const TEMPLATE_LOGO_LOADERS: Record<
   comfyui: () => import('@thesvg/react/comfyui'),
   dolibarr: () => import('@thesvg/react/dolibarr'),
   drupal: () => import('@thesvg/react/drupal'),
+  'filebrowser-quantum': () => import('@thesvg/react/file-browser'),
   ghostfolio: () => import('@thesvg/react/ghostfolio'),
   jellyseerr: () => import('@thesvg/react/jellyseerr'),
   jenkins: () => import('@thesvg/react/jenkins'),
@@ -33,6 +34,7 @@ export const TEMPLATE_LOGO_LOADERS: Record<
   pgvector: () => import('@thesvg/react/postgresql'),
   prefect: () => import('@thesvg/react/prefect'),
   roundcube: () => import('@thesvg/react/roundcube'),
+  rustfs: () => import('@thesvg/react/rustfs'),
   sonarqube: () => import('@thesvg/react/sonarqube-server'),
   'stable-diffusion-webui': () =>
     import('@thesvg/react/stability-stablediffusion'),
@@ -49,6 +51,7 @@ export const TEMPLATE_LOGO_LOADERS: Record<
   'actual-budget': () => import('@thesvg/react/actual-budget'),
   authelia: () => import('@thesvg/react/authelia'),
   rsshub: () => import('@thesvg/react/rsshub'),
+  languagetool: () => import('@thesvg/react/languagetool'),
   'adguard-home': () => import('@thesvg/react/adguard'),
   adminer: () => import('@thesvg/react/adminer'),
   answer: () => import('@thesvg/react/answer'),
@@ -62,6 +65,11 @@ export const TEMPLATE_LOGO_LOADERS: Record<
   chatwoot: () => import('@thesvg/react/chatwoot'),
   cloudbeaver: () => import('@thesvg/react/dbeaver'),
   clickhouse: () => import('@thesvg/react/clickhouse'),
+  postgres: () => import('@thesvg/react/postgresql'),
+  mariadb: () => import('@thesvg/react/mariadb'),
+  mysql: () => import('@thesvg/react/mysql'),
+  timescaledb: () => import('@thesvg/react/timescale'),
+  ferretdb: () => import('@thesvg/react/ferretdb'),
   homarr: () => import('@thesvg/react/homarr'),
   verdaccio: () => import('@thesvg/react/verdaccio'),
   directus: () => import('@thesvg/react/directus'),
@@ -148,7 +156,6 @@ export const TEMPLATE_LOGO_LOADERS: Record<
   postgresql: () => import('@thesvg/react/postgresql'),
   redis: () => import('@thesvg/react/redis'),
   mongodb: () => import('@thesvg/react/mongodb'),
-  mariadb: () => import('@thesvg/react/mariadb'),
   nodedotjs: () => import('@thesvg/react/nodedotjs'),
   python: () => import('@thesvg/react/python'),
   php: () => import('@thesvg/react/php'),
@@ -203,6 +210,8 @@ export const TEMPLATE_LOGO_LOADERS: Record<
   netbox: () => import('@thesvg/react/netbox'),
   postiz: () => import('@thesvg/react/postiz'),
   zabbix: () => import('@thesvg/react/zabbix'),
+  deluge: () => import('@thesvg/react/deluge'),
+  linkace: () => import('@thesvg/react/linkace-badge'),
   // Email settings backends and SMTP provider presets.
   resend: () => import('@thesvg/react/resend'),
   'aws-ses': () => import('@thesvg/react/aws-amazon-simple-email-service'),
@@ -226,6 +235,7 @@ export const TEMPLATE_LOGO_LOADERS: Record<
   'elasticsearch-kibana': () => import('@thesvg/react/elasticsearch'),
   emby: () => import('@thesvg/react/emby'),
   etcd: () => import('@thesvg/react/etcd'),
+  'element-web': () => import('@thesvg/react/element'),
   'firefox-browser': () => import('@thesvg/react/firefox-browser'),
   flipt: () => import('@thesvg/react/flipt'),
   'forgejo-postgres': () => import('@thesvg/react/forgejo'),
@@ -280,6 +290,12 @@ export const TEMPLATE_LOGO_LOADERS: Record<
   '2fauth': () => import('@thesvg/react/2fauth'),
   activepieces: () => import('@thesvg/react/activepieces'),
   alertmanager: () => import('@thesvg/react/alertmanager'),
+  grav: () => import('@thesvg/react/grav'),
+  openspeedtest: () => import('@thesvg/react/openspeedtest'),
+  'grafana-alloy': () => import('@thesvg/react/grafana'),
+  'node-exporter': () => import('@thesvg/react/prometheus'),
+  pushgateway: () => import('@thesvg/react/prometheus'),
+  'blackbox-exporter': () => import('@thesvg/react/prometheus'),
   anythingllm: () => import('@thesvg/react/anythingllm'),
   appflowy: () => import('@thesvg/react/appflowy'),
   'apprise-api': () => import('@thesvg/react/apprise-api'),
@@ -499,6 +515,6 @@ export const COMPOSITE_LOGOS: Record<string, [TechLogoKey, TechLogoKey?]> = {
 
 // No thesvg mark exists for these products yet; they render the monogram tile.
 export const KNOWN_MISSING_LOGOS: readonly string[] =
-  'diun gotenberg lldap campfire once-campfire bugsink imgcompress embystat budge proxyscotch kutt metamcp archivebox backrest crawl4ai headscale open-notebook radicale gatus mail-mox'.split(
+  'diun gotenberg lldap campfire once-campfire bugsink imgcompress embystat budge proxyscotch kutt metamcp archivebox backrest crawl4ai headscale open-notebook radicale gatus mail-mox factorio palworld terraria seerr wizarr maintainerr sabnzbd lubelogger spoolman shaarli reactive-resume spliit jellystat gitness questdb opensearch redash cleanuparr docling-serve kokoro-fastapi lychee meshcentral multi-scrobbler mylar3 ombi smokeping tinyauth imgproxy rss-bridge opengist ackee hyperdx romm flagsmith yourls pgweb zipkin maildev pigallery2 athens mazanoke huginn thelounge mafl redis-commander kroki commafeed swagger-ui remark42 wiremock plantuml-server isso chronograf mkdocs-material'.split(
     ' ',
   )

@@ -7,6 +7,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/deploysafety"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	appspec "github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -179,5 +180,36 @@ func TestRetire_ScaleDownDrainsSurplusReplica(t *testing.T) {
 	}
 	if !p.running(base) {
 		t.Fatal("serving replica removed")
+	}
+}
+
+// The successor is labeled with the release it replaced, and the label does
+// not make a settled pass recreate anything.
+func TestCreate_LabelsSupersededRelease(t *testing.T) {
+	srv := alwaysHealthy()
+	defer srv.Close()
+	cfg := deploysafety.Effective{SuccessThreshold: 1, DrainTimeout: 15 * time.Second}
+	rt := newFakeRuntime(serverPort(t, srv))
+	p := clockedPass{t: t, rt: rt, tracker: NewDrainTracker(), cfg: cfg, hold: 3 * time.Minute}
+	desired := *gateDesired()
+	v1, v2 := ContainerName("web", "img:v1", ""), ContainerName("web", "img:v2", "")
+	for _, name := range []string{v1, v2} {
+		rt.setExitState(name, &docker.ExitState{Running: true})
+	}
+	t0 := time.Now().Truncate(time.Second)
+	desired.Image = "img:v1"
+	p.run(t0.Add(-time.Hour), desired)
+	desired.Image = "img:v2"
+	p.run(t0, desired)
+	if got := rt.containers[v1].Labels[appspec.SupersedesLabelKey]; got != "" {
+		t.Fatalf("first release supersedes label = %q, want none", got)
+	}
+	if got := rt.containers[v2].Labels[appspec.SupersedesLabelKey]; got != releaseOf(v1) {
+		t.Fatalf("successor supersedes label = %q, want %q", got, releaseOf(v1))
+	}
+	creates := rt.createCalls
+	p.run(t0.Add(time.Second), desired)
+	if rt.createCalls != creates {
+		t.Fatalf("settled pass created %d containers, want 0", rt.createCalls-creates)
 	}
 }

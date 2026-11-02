@@ -43,8 +43,8 @@ Vercel is a managed cloud with a global edge network. Levelrail is the other mod
 | Functions | Serverless and edge functions | [Functions](/functions): container apps that sleep when idle and wake on the first request. Cold start is a container start. Not an edge runtime |
 | Edge network | Global edge network | Not provided: bring your own CDN if you need one |
 | Edge runtime | Edge and middleware runtime | Not offered |
-| ISR revalidation | Incremental static regeneration | Not offered (the Next.js preset only keeps the app's own cache across redeploys) |
-| Image optimization | Built-in resizing | Not offered |
+| ISR revalidation | Incremental static regeneration | Runs inside your Next.js app. The Next.js preset mounts a `next-cache` volume at `/app/.next/cache`, so ISR pages survive redeploys. Replicas do not share that cache |
+| Image optimization | Built-in resizing | Served by your app: `next/image` runs in your container, with no global image CDN. It uses your node's CPU and memory |
 | Visitor analytics | Web Analytics | Not offered. Request rate, errors and latency percentiles per app are built in |
 | Blob and KV storage | Blob, KV | Not offered. Managed Postgres and Redis, and S3-compatible storage for backups |
 
@@ -74,7 +74,7 @@ Vercel is a managed cloud with a global edge network. Levelrail is the other mod
     Functions, yes in a limited form: `levelrail-cli functions` deploys a handler as a container app that sleeps when idle and answers the first request after a cold start (one URL per function, no per-request concurrency control). See [Functions](/functions). There is no edge runtime and no edge network. If you need a global edge network, put a CDN in front.
   </Accordion>
   <Accordion title="Is there an importer for Vercel?">
-    No, migration from Vercel is manual. The runbook maps each Vercel concept to its Levelrail equivalent and lists the gaps.
+    Yes, an offline one. `levelrail-cli import config` reads `vercel.json` (with a `Procfile` or `app.json` if present) and prints a proposed `app.yaml` with findings for what has no equivalent. It needs no token and changes nothing. The runbook maps each Vercel concept to its Levelrail equivalent and lists the gaps.
   </Accordion>
   <Accordion title="What does it cost?">
     The software is free under Apache 2.0. Your cost is the servers you run it on.

@@ -46,7 +46,15 @@ type V2List struct {
 
 // ListV2 calls GET /api/v2/{path} with an optional label selector and page size.
 func (c *Client) ListV2(ctx context.Context, path, labelSelector string, limit int) (V2List, error) {
+	return c.ListV2Fields(ctx, path, labelSelector, "", limit)
+}
+
+// ListV2Fields is ListV2 plus a field selector such as status.phase=running.
+func (c *Client) ListV2Fields(ctx context.Context, path, labelSelector, fieldSelector string, limit int) (V2List, error) {
 	q := url.Values{}
+	if fieldSelector != "" {
+		q.Set("fieldSelector", fieldSelector)
+	}
 	if labelSelector != "" {
 		q.Set("labelSelector", labelSelector)
 	}

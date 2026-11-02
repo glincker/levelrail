@@ -6,10 +6,10 @@ import (
 	"time"
 )
 
-func saveSucceededAttempt(t *testing.T, db *DB, id, service, image string, started time.Time) {
+func saveSucceededAttempt(t *testing.T, db *DB, id, image string, started time.Time) {
 	t.Helper()
 	ctx := context.Background()
-	if err := db.SaveDeployAttempt(ctx, DeployAttempt{ID: id, ServiceName: service, Image: image, Status: DeployAttemptStatusRunning, StartedAt: started}); err != nil {
+	if err := db.SaveDeployAttempt(ctx, DeployAttempt{ID: id, ServiceName: "web", Image: image, Status: DeployAttemptStatusRunning, StartedAt: started}); err != nil {
 		t.Fatal(err)
 	}
 	if err := db.FinishDeployAttempt(ctx, id, DeployAttemptStatusSucceeded, started.Add(time.Second), ""); err != nil {
@@ -55,8 +55,8 @@ func TestGateEvents_ResolveAttemptAndList(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
 	now := time.Now()
-	saveSucceededAttempt(t, db, "dep_old", "web", "app:v1", now.Add(-2*time.Hour))
-	saveSucceededAttempt(t, db, "dep_new", "web", "app:v2", now.Add(-time.Minute))
+	saveSucceededAttempt(t, db, "dep_old", "app:v1", now.Add(-2*time.Hour))
+	saveSucceededAttempt(t, db, "dep_new", "app:v2", now.Add(-time.Minute))
 
 	for _, e := range []DeployGateEvent{
 		{ServiceName: "web", Image: "app:v2", Phase: "readiness", Status: "passed", At: now},
@@ -89,7 +89,7 @@ func TestGateEvents_ResolveAttemptAndList(t *testing.T) {
 func TestFailDeployAttemptWithReason_OnlyFromSucceeded(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
-	saveSucceededAttempt(t, db, "dep_1", "web", "app:v1", time.Now())
+	saveSucceededAttempt(t, db, "dep_1", "app:v1", time.Now())
 
 	changed, err := db.FailDeployAttemptWithReason(ctx, "dep_1", "PostDeployCrashloop", "restarted 3 times")
 	if err != nil || !changed {

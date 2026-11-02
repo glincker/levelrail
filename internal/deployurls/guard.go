@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 // EnvMaxUnready is how many readiness failures in a row a retained deploy
@@ -74,6 +76,19 @@ func (g *Guard) NoteReady(service string) {
 func (g *Guard) IsRetained(ctx context.Context, service string) bool {
 	_, ok, err := g.Store.DeployURLApp(ctx, service)
 	return err == nil && ok
+}
+
+// Asleep reports whether service is a retained deploy copy that is marked
+// sleeping. Only a wake request may start it, never a bulk or project start.
+func (g *Guard) Asleep(ctx context.Context, service string) bool {
+	sl, ok := g.Store.(interface {
+		GetAppSleep(ctx context.Context, serviceName string) (store.AppSleep, error)
+	})
+	if !ok || !g.IsRetained(ctx, service) {
+		return false
+	}
+	row, err := sl.GetAppSleep(ctx, service)
+	return err == nil && row.Sleeping
 }
 
 // SecretReader is the secrets surface the application controller uses.

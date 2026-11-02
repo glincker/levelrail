@@ -3,6 +3,7 @@ package egress
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -26,11 +27,18 @@ const maxPolicyBytes = 1 << 20
 type PolicyServer struct {
 	store     *PolicyStore
 	cachePath string
+	counters  *Counters
 }
 
 // NewPolicyServer returns a server. An empty cachePath disables the cache.
 func NewPolicyServer(store *PolicyStore, cachePath string) *PolicyServer {
 	return &PolicyServer{store: store, cachePath: cachePath}
+}
+
+// WithCounters serves the denial tally at GET /denials.
+func (s *PolicyServer) WithCounters(c *Counters) *PolicyServer {
+	s.counters = c
+	return s
 }
 
 // LoadCache installs the cached policy when the store has none yet. A missing
@@ -91,6 +99,9 @@ func (s *PolicyServer) Handler() http.Handler {
 		}
 		_, _ = io.WriteString(w, "ok")
 	})
+	if s.counters != nil {
+		mux.Handle("GET /denials", s.counters.Handler())
+	}
 	mux.HandleFunc("PUT /policy", func(w http.ResponseWriter, r *http.Request) {
 		b, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxPolicyBytes))
 		if err != nil {
@@ -166,4 +177,39 @@ func PushPolicy(ctx context.Context, socketPath string, p Policy) error {
 		return fmt.Errorf("push policy: status %d: %s", resp.StatusCode, string(msg))
 	}
 	return nil
+}
+
+// maxDenialsBody caps what a sidecar may return so a bad peer cannot bloat memory.
+const maxDenialsBody = 1 << 20
+
+// FetchDenials reads the denial tally from a sidecar's policy socket. It is read-only.
+func FetchDenials(ctx context.Context, socketPath string, timeout time.Duration) ([]DenialCount, error) {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	client := &http.Client{
+		Transport: &http.Transport{
+			DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
+				var d net.Dialer
+				return d.DialContext(ctx, "unix", socketPath)
+			},
+			DisableKeepAlives: true,
+		},
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://policy/denials", nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("read denials: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("read denials: status %d", resp.StatusCode)
+	}
+	var out []DenialCount
+	if err := json.NewDecoder(io.LimitReader(resp.Body, maxDenialsBody)).Decode(&out); err != nil {
+		return nil, fmt.Errorf("read denials: %w", err)
+	}
+	return out, nil
 }

@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -120,5 +122,72 @@ func TestKubectlEditConflictKeepsEdit(t *testing.T) {
 	code := run("lr", []string{"edit", "app", "web", "--yes", "--token", "t"}, &out, &errb, kubectlLookup(srv.URL))
 	if code == exitOK || sentVersion != "1" || !strings.Contains(errb.String()+out.String(), "precondition failed") {
 		t.Errorf("want conflict, code %d out %q err %q", code, out.String(), errb.String())
+	}
+}
+
+func TestEditDatabasePicksItsDocument(t *testing.T) {
+	var patched string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/api/v2/databases/main" && r.Method == http.MethodPatch:
+			patched = r.URL.Query().Get("resourceVersion")
+			_, _ = w.Write([]byte(`{"kind":"Database","metadata":{"name":"main","resourceVersion":"4"}}`))
+		case r.URL.Path == "/api/v2/databases/main":
+			_, _ = w.Write([]byte(`{"kind":"Database","metadata":{"name":"main","resourceVersion":"3"}}`))
+		case r.URL.Path == "/api/v1/export":
+			_, _ = w.Write([]byte(`{"files":[{"kind":"Database","name":"other.yaml","content":"kind: Database\nmetadata:\n  name: other\nspec:\n  a: 0\n"},{"kind":"Database","name":"main.yaml","content":"kind: Database\nmetadata:\n  name: main\nspec:\n  a: 1\n"}]}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+	old := editorRunner
+	editorRunner = func(_, path string) error { return appendFile(path, "  b: 2\n") }
+	defer func() { editorRunner = old }()
+
+	var out, errb bytes.Buffer
+	code := run("lr", []string{"edit", "database", "main", "--yes", "--token", "t"}, &out, &errb, kubectlLookup(srv.URL))
+	if code != exitOK || patched != "3" || !strings.Contains(out.String(), "database/main edited") {
+		t.Errorf("code %d patched %q out %q err %q", code, patched, out.String(), errb.String())
+	}
+}
+
+func TestDeleteDataNeedsConfirm(t *testing.T) {
+	var query string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		query = r.URL.RawQuery
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	defer srv.Close()
+	var out, errb bytes.Buffer
+	if code := run("lr", []string{"delete", "database", "main", "--yes", "--delete-data", "--token", "t"}, &out, &errb, kubectlLookup(srv.URL)); code == exitOK || query != "" {
+		t.Fatalf("missing confirm must fail without a call: code %d query %q", code, query)
+	}
+	if code := run("lr", []string{"delete", "database", "main", "--yes", "--delete-data", "--confirm", "main", "--token", "t"}, &out, &errb, kubectlLookup(srv.URL)); code != exitOK || !strings.Contains(query, "delete_data=true") {
+		t.Fatalf("code %d query %q err %q", code, query, errb.String())
+	}
+}
+
+func TestCpRecursiveUploadsTree(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "sub"), 0o750); err != nil {
+		t.Fatal(err)
+	}
+	for _, f := range []string{"a.txt", "sub/b.txt"} {
+		if err := os.WriteFile(filepath.Join(root, f), []byte("x"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var paths []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		paths = append(paths, r.URL.Query().Get("path"))
+		_, _ = w.Write([]byte(`{"path":"x","size":1}`))
+	}))
+	defer srv.Close()
+	var out, errb bytes.Buffer
+	code := run("lr", []string{"cp", "-r", root, "web/data:site", "--token", "t"}, &out, &errb, kubectlLookup(srv.URL))
+	sort.Strings(paths)
+	if code != exitOK || len(paths) != 2 || paths[0] != "site/a.txt" || paths[1] != "site/sub/b.txt" {
+		t.Fatalf("code %d paths %v err %q", code, paths, errb.String())
 	}
 }

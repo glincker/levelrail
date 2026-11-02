@@ -300,7 +300,7 @@ Every registration and login challenge is single-use and expires in 5 minutes. T
 
 ### OAuth sign-in
 
-Eighteen providers are supported. Group to role mapping, account creation policy, allowed domains and sign-in by email domain are covered in [OAuth and OIDC single sign-on](/sso-oidc) (beta). Every one uses the same callback URL shape, `https://<your-dashboard-host>/api/v1/auth/oauth/<provider>/callback`, and the same flow: PKCE, single-use state, an envelope-encrypted client secret, and the link-account flow below.
+Twenty providers plus generic OIDC (`oidc`) are supported. Group to role mapping, account creation policy, allowed domains and sign-in by email domain are covered in [OAuth and OIDC single sign-on](/sso-oidc) (beta). Every one uses the same callback URL shape, `https://<your-dashboard-host>/api/v1/auth/oauth/<provider>/callback`, and the same flow: PKCE, single-use state, an envelope-encrypted client secret, and the link-account flow below.
 
 | Provider | Where to create the OAuth app | Scopes requested |
 | --- | --- | --- |
@@ -325,6 +325,8 @@ Eighteen providers are supported. Group to role mapping, account creation policy
 | `patreon` | Patreon Developers, Clients and API Keys, Create Client. | `identity identity[email]` |
 | `cognito` | AWS Cognito, your user pool, App integrations, app client (confidential, with a secret); needs the user pool ID. | `openid profile email` |
 | `oidc` | Your identity provider's admin console; needs an issuer URL. | `openid email profile` |
+
+Microsoft accepts any directory on the shared endpoint, so Levelrail does not create new accounts from it: only identities that are already linked can sign in. Set the **Directory (tenant) ID** on the provider to allow sign-up; sign-ins from any other tenant are then refused, and the allowed-domain rule still applies.
 
 For Amazon Cognito, put the **User pool ID** (for example `us-east-1_AbC123`) in the row's `issuer_url` field; the region is read from its prefix and the issuer is built from it.
 

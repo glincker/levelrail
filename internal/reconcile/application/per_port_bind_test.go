@@ -58,13 +58,13 @@ func TestPerPortBind_BindChangeIsDrift(t *testing.T) {
 	for _, p := range desired.PublishedPorts {
 		private = append(private, docker.PortBinding{ContainerPort: p.ContainerPort, HostPort: p.HostPort, HostIP: "127.0.0.1", Protocol: "tcp"})
 	}
-	if !publishedPortsDrifted(&docker.ContainerState{Running: true, Ports: private}, desired) {
+	if !publishedPortsDrifted(&docker.ContainerState{Running: true, Ports: private}, desired, nil) {
 		t.Fatal("a port moved to public must read as drift so the container is recreated")
 	}
-	if publishedPortsDrifted(&docker.ContainerState{Running: true, Ports: private}, mailDesired("private")) {
+	if publishedPortsDrifted(&docker.ContainerState{Running: true, Ports: private}, mailDesired("private"), nil) {
 		t.Fatal("a matching private bind is not drift")
 	}
-	if publishedPortsDrifted(&docker.ContainerState{Running: true, Ports: private}, mailDesired("")) {
+	if publishedPortsDrifted(&docker.ContainerState{Running: true, Ports: private}, mailDesired(""), nil) {
 		t.Fatal("a port without its own bind keeps the old host-IP-agnostic check")
 	}
 }

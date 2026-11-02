@@ -1,0 +1,35 @@
+{
+  "cloudflare": {
+    "label": "Confiar en Cloudflare para la dirección del visitante",
+    "helper": "Lee la dirección del visitante de CF-Connecting-IP, pero solo en conexiones desde los rangos publicados de Cloudflare; una cabecera falsificada desde otro origen se ignora. Cualquier cliente de Cloudflare puede llegar a tu servidor con su propio registro proxificado, así que esto no demuestra que la petición pasó por tu zona.",
+    "ranges": "{{count}} rangos ({{source}}), actualizados cada {{interval}}.",
+    "source": {
+      "embedded": "incluidos en la app",
+      "fetched": "desde Cloudflare"
+    },
+    "lastRefresh": "Última actualización: {{when}}.",
+    "neverRefreshed": "Aún sin actualizar, se usa la lista incluida.",
+    "lastError": "Error de la última actualización: {{error}}",
+    "saved": "La IP de cliente de Cloudflare está activada",
+    "savedOff": "La IP de cliente de Cloudflare está desactivada",
+    "failed": "No se pudo cambiar el ajuste de IP de cliente de Cloudflare"
+  },
+  "fallbackCerts": {
+    "label": "Certificados para direcciones automáticas",
+    "helper": "Eager pide el certificado en cuanto existe la ruta; lazy lo pide en la primera visita a la dirección automática. Los dominios que añades tú siempre son eager.",
+    "options": {
+      "eager": "Inmediato (eager)",
+      "lazy": "Diferido (lazy)"
+    },
+    "source": {
+      "default": "Predeterminado",
+      "env": "Definido por el entorno",
+      "saved": "Guardado"
+    },
+    "envHint": "Valor inicial de {{env}}. Guardar un valor aquí lo sustituye.",
+    "reset": "Restablecer al valor predeterminado",
+    "resetDone": "Certificados de respaldo restablecidos",
+    "saved": "Modo de certificados de respaldo guardado",
+    "failed": "No se pudo cambiar el modo de certificados de respaldo"
+  }
+}

@@ -30,7 +30,8 @@
     "rerunOf": "Reintento de {{id}}",
     "rerunOfLabel": "Abrir los registros de {{id}}, el despliegue que este repitió",
     "current": "Actual",
-    "rollbackBadge": "Reversión"
+    "rollbackBadge": "Reversión",
+    "outcomeFailed": "Sin servicio"
   },
   "actions": {
     "copy": "Copiar",
@@ -130,7 +131,17 @@
     "noMatchBody": "Ninguna aplicación cumple el estado y la búsqueda actuales. Borra los filtros para ver las {{total}}.",
     "clearFilters": "Borrar filtros",
     "errorBody": "No se pudo cargar la lista de aplicaciones. {{message}}",
-    "retry": "Reintentar"
+    "retry": "Reintentar",
+    "banner": {
+      "compactDescription": "Todo lo que se ejecuta en este servidor.",
+      "description": "Despliega desde un enlace de git, una imagen de contenedor o una plantilla, y ábrela en tu navegador.",
+      "diagram": {
+        "app": "aplicación",
+        "browser": "navegador",
+        "git": "rama de git"
+      }
+    },
+    "colNode": "Nodo"
   },
   "appAnalysis": {
     "confidence": "Confianza {{level}}",
@@ -415,7 +426,8 @@
       "allNormal": "Todos los sistemas funcionan con normalidad",
       "issues_one": "{{count}} problema requiere atención",
       "issues_other": "{{count}} problemas requieren atención"
-    }
+    },
+    "headerMore": "Más controles de la cabecera"
   },
   "login": {
     "signInTitle": "Iniciar sesión",
@@ -470,7 +482,13 @@
         "sso_no_email": "Tu proveedor de identidad no envió una dirección de correo, por lo que no se pudo asociar ninguna cuenta.",
         "account_disabled": "Esta cuenta está desactivada. Pide a un administrador que restablezca el acceso.",
         "sso_root_not_linkable": "Este correo pertenece a una cuenta de administrador que no se puede vincular mediante inicio de sesión único. Inicia sesión con tu contraseña."
-      }
+      },
+      "ssoCheck": "Continuar",
+      "ssoContinue": "Continuar con SSO",
+      "ssoContinueWith": "Continuar con SSO ({{name}})",
+      "ssoEmail": "Correo de trabajo",
+      "ssoNoRoute": "No hay inicio de sesión único configurado para ese correo. Inicia sesión con tu contraseña o con otra opción.",
+      "ssoRouted": "Tu organización inicia sesión mediante {{provider}}."
     },
     "banner": {
       "dismiss": "Descartar"
@@ -594,7 +612,8 @@
       "badge": "Muestra una insignia de estado de despliegue en vivo que puedes incrustar en un README.",
       "githubActions": "Permite que un flujo de trabajo de GitHub Actions despliegue esta aplicación.",
       "ciDeploy": "Da a tu sistema de CI un token y un comando para desplegar esta aplicación.",
-      "rolloutPolicy": "Limita cuántas réplicas pueden sobrar o no estar disponibles durante una actualización progresiva."
+      "rolloutPolicy": "Limita cuántas réplicas pueden sobrar o no estar disponibles durante una actualización progresiva.",
+      "predeploySnapshot": "Hace una copia de seguridad de las bases de datos vinculadas antes de cada despliegue, para que una reversión también pueda restaurar los datos."
     },
     "whatItDoes": "Qué hace esto:"
   },
@@ -695,5 +714,434 @@
     "version": "Versión",
     "envKey": "Nombre de variable, fila {{row}}",
     "envValue": "Valor de variable, fila {{row}}"
+  },
+  "apiError": {
+    "copied": "Copiado",
+    "copyRequestId": "Copiar ID de solicitud",
+    "fixFailed": "La corrección no funcionó.",
+    "fixing": "Corrigiendo...",
+    "friendly": {
+      "generic": {
+        "action": "Inténtalo de nuevo y cita el ID de solicitud si sigue fallando."
+      },
+      "docker": {
+        "message": "Docker no responde en este host.",
+        "action": "Inicia Docker y vuelve a comprobar."
+      },
+      "unauthorized": {
+        "message": "Tu sesión ha terminado.",
+        "action": "Inicia sesión de nuevo para continuar."
+      },
+      "forbidden": {
+        "message": "Tu cuenta no tiene permiso para hacer esto.",
+        "action": "Pide acceso a un propietario o administrador."
+      },
+      "conflict": {
+        "message": "Esto entra en conflicto con algo que ya existe.",
+        "action": "Cámbiale el nombre o elimina el existente y reintenta."
+      },
+      "validation": {
+        "message": "Algunos valores no son válidos.",
+        "action": "Revisa los campos e inténtalo de nuevo."
+      },
+      "rateLimited": {
+        "message": "Demasiadas solicitudes en poco tiempo.",
+        "action": "Espera un momento e inténtalo de nuevo."
+      },
+      "diskFull": {
+        "message": "El servidor se ha quedado sin espacio en disco.",
+        "action": "Libera espacio en Ajustes, Limpieza, y reintenta."
+      },
+      "unreachable": {
+        "message": "El plano de control no responde.",
+        "action": "Espera unos segundos y reintenta."
+      },
+      "network": {
+        "message": "No se puede conectar con el servidor.",
+        "action": "Comprueba tu conexión y reintenta."
+      }
+    },
+    "generic": "Algo salió mal en el servidor.",
+    "recheckDocker": "Volver a comprobar Docker",
+    "rechecking": "Comprobando...",
+    "requestId": "ID de solicitud: {{id}}",
+    "toastTitle": "No se pudo completar"
+  },
+  "appPower": {
+    "applying": "Aplicando los cambios.",
+    "pending": "Trabajando...",
+    "restartConfirm": "Reiniciar",
+    "restartConsequencePolicy": "La política de reinicio la vuelve a levantar por sí sola si se cierra.",
+    "restartConsequenceRequests": "Las solicitudes en curso pueden fallar mientras vuelve.",
+    "restartDescription": "Los contenedores se reemplazan por otros nuevos, así que la aplicación queda un momento fuera de servicio.",
+    "restartFailed": "\"{{name}}\" no volvió a iniciar",
+    "restartSkip": "No volver a preguntar al reiniciar",
+    "restartTitle": "¿Reiniciar {{name}}?",
+    "restarted": "\"{{name}}\" se reinició.",
+    "restarting": "Reiniciando...",
+    "starting": "Iniciando \"{{name}}\".",
+    "stillRestarting": "Sigue reiniciándose...",
+    "stillRestartingHint": "Aún no ha informado que esté sana. Revisa los registros.",
+    "stillRestartingToast": "\"{{name}}\" sigue reiniciándose",
+    "stillStoppingToast": "\"{{name}}\" sigue deteniéndose",
+    "stopConfirm": "Detener",
+    "stopConsequencePolicy": "La política de reinicio no la volverá a levantar. Se conservan la configuración, las variables de entorno y los dominios.",
+    "stopConsequenceRequests": "Las solicitudes en curso se descartan.",
+    "stopDescription": "La aplicación deja de atender tráfico hasta que la inicies de nuevo.",
+    "stopTitle": "¿Detener {{name}}?",
+    "stopped": "\"{{name}}\" se detuvo.",
+    "stopping": "Deteniendo...",
+    "viewLogs": "Ver registros"
+  },
+  "appReleases": {
+    "current": "Actual",
+    "title": "Versiones"
+  },
+  "appResourceTree": {
+    "groups": {
+      "databases": "Bases de datos",
+      "deployment": "Despliegue",
+      "domains": "Dominios",
+      "env": "Claves de entorno",
+      "replicas": "Réplicas",
+      "volumes": "Volúmenes"
+    },
+    "title": "Recursos"
+  },
+  "appTabs": {
+    "groups": {
+      "advanced": "Avanzado",
+      "basics": "Básicos",
+      "data": "Datos",
+      "network": "Red",
+      "observe": "Observar"
+    },
+    "pages": "Páginas de {{section}}",
+    "sections": "Secciones de la aplicación",
+    "showAll": "Mostrar todas las pestañas ({{count}} ocultas)",
+    "showLess": "Ocultar las pestañas que no aplican"
+  },
+  "banners": {
+    "loadBalancers": {
+      "compactDescription": "Todas las aplicaciones que balancean tráfico, con la salud de los upstreams en vivo.",
+      "description": "Reparte el tráfico de una aplicación entre sus réplicas con comprobaciones de salud y cambios graduales.",
+      "diagram": {
+        "balancer": "balanceador",
+        "browser": "navegador",
+        "server": "servidor"
+      },
+      "title": "Balanceadores de carga"
+    },
+    "projects": {
+      "compactDescription": "Etiquetas que agrupan aplicaciones y bases de datos relacionadas.",
+      "count_one": "{{count}} proyecto",
+      "count_other": "{{count}} proyectos",
+      "description": "Etiquetas opcionales para agrupar una aplicación con su base de datos y su caché. No cambia nada de cómo se ejecutan.",
+      "diagram": {
+        "members": "aplicaciones y bases de datos",
+        "project": "proyecto"
+      },
+      "title": "Proyectos"
+    }
+  },
+  "cliConsole": {
+    "connectFailed": "No se pudo conectar, pulsa Enter para intentarlo de nuevo",
+    "connectFailedWith": "No se pudo conectar: {{message}}",
+    "connected": "Conectado a {{server}}. Escribe help para listar los comandos.",
+    "connecting": "Conectando...",
+    "description": "Ejecuta la CLI como tú. Cada comando queda auditado.",
+    "disconnected": "Desconectado, pulsa Enter para reconectar",
+    "dock": {
+      "offDescription": "La consola de la CLI es una función beta y está desactivada por defecto. Un administrador puede activarla en Ajustes, Funciones beta.",
+      "offTitle": "La consola está desactivada"
+    },
+    "exitCode": "código de salida {{code}}",
+    "genericError": "Algo salió mal.",
+    "helpIntro": "Comandos disponibles (Tab completa, help <comando> lista los subcomandos):",
+    "helpLocal": "También: help, clear. Ctrl+C cancela un comando en ejecución, Ctrl+L limpia la pantalla.",
+    "navLabel": "Consola",
+    "pressEnter": "Pulsa Enter para conectar. Se requiere una confirmación nueva.",
+    "quick": {
+      "actions": {
+        "appDeploys": {
+          "label": "Despliegues de la aplicación"
+        },
+        "appLogs": {
+          "label": "Registros de la aplicación"
+        },
+        "appRedeploy": {
+          "label": "Volver a desplegar la aplicación"
+        },
+        "appRestart": {
+          "label": "Reiniciar la aplicación"
+        },
+        "appRollback": {
+          "consequence": "La aplicación vuelve a apuntar a una imagen anterior y su contenedor se reemplaza.",
+          "label": "Revertir la aplicación"
+        },
+        "appStatus": {
+          "label": "Estado de la aplicación"
+        },
+        "appsList": {
+          "label": "Listar aplicaciones"
+        },
+        "databasesList": {
+          "label": "Listar bases de datos"
+        },
+        "deploysList": {
+          "label": "Listar despliegues"
+        },
+        "nodeGet": {
+          "label": "Detalles del nodo"
+        },
+        "nodesList": {
+          "label": "Listar nodos"
+        },
+        "status": {
+          "label": "Estado"
+        },
+        "systemRestart": {
+          "consequence": "El plano de control se reinicia y el panel no estará disponible hasta que vuelva.",
+          "label": "Reiniciar la plataforma"
+        },
+        "version": {
+          "label": "Versión"
+        }
+      },
+      "clearSelected": "Quitar la aplicación seleccionada",
+      "confirmTitle": "¿Ejecutar este comando?",
+      "connectFirst": "Conecta la consola para ver las acciones rápidas.",
+      "groups": {
+        "apps": "Aplicaciones",
+        "overview": "Resumen",
+        "platform": "Plataforma"
+      },
+      "incomplete": "Completa los campos de arriba",
+      "params": {
+        "app": "Aplicación",
+        "image": "Imagen a la que revertir",
+        "node": "Nodo"
+      },
+      "pick": "Elegir...",
+      "review": "Revisar",
+      "run": "Ejecutar",
+      "selectedApp": "Aplicación seleccionada",
+      "stop": "Detener",
+      "title": "Acciones rápidas",
+      "willRun": "Se ejecutará"
+    },
+    "reconnectHint": "Pulsa Enter para intentarlo de nuevo",
+    "state": {
+      "closed": "Desconectado",
+      "connecting": "Conectando",
+      "idle": "Sin conexión",
+      "open": "Conectado"
+    },
+    "stepUpCancelled": "Confirmación cancelada.",
+    "terminalLabel": "Terminal de la consola de la CLI",
+    "title": "Consola",
+    "unknownCommand": "Comando desconocido: {{name}}"
+  },
+  "confirmAction": {
+    "alertRule": {
+      "confirm": "Eliminar regla",
+      "consequence0": "La regla deja de evaluarse y de notificar de inmediato.",
+      "consequence1": "No se puede deshacer.",
+      "pending": "Eliminando...",
+      "success": "Regla de alerta \"{{name}}\" eliminada.",
+      "title": "¿Eliminar \"{{name}}\"?",
+      "trigger": "Eliminar"
+    },
+    "backupTarget": {
+      "confirm": "Eliminar",
+      "consequence0": "Se elimina la conexión con este bucket.",
+      "consequence1": "No se elimina nada de lo que ya se haya guardado allí como copia de seguridad.",
+      "consequence2": "No se puede deshacer.",
+      "error": "No se pudo eliminar \"{{name}}\".",
+      "pending": "Eliminando...",
+      "success": "Destino de copias de seguridad \"{{name}}\" eliminado.",
+      "title": "¿Eliminar \"{{name}}\"?",
+      "trigger": "Eliminar"
+    },
+    "featureFlag": {
+      "confirm": "Eliminar indicador",
+      "consequence0": "El indicador deja de resolverse de inmediato.",
+      "consequence1": "Cualquier aplicación que aún llame al endpoint de evaluación para él empieza a recibir un 404.",
+      "consequence2": "No se puede deshacer.",
+      "pending": "Eliminando...",
+      "success": "Indicador de función eliminado.",
+      "title": "¿Eliminar \"{{name}}\"?",
+      "trigger": "Eliminar"
+    },
+    "model": {
+      "confirm": "Eliminar",
+      "consequence0": "Se elimina el contenedor del motor y la clave de API deja de funcionar.",
+      "consequence1": "Los pesos descargados se conservan, así que volver a desplegar el mismo modelo no los descarga dos veces.",
+      "pending": "Eliminando...",
+      "success": "Modelo \"{{name}}\" eliminado.",
+      "title": "¿Eliminar \"{{name}}\"?",
+      "trigger": "Eliminar"
+    },
+    "networkShare": {
+      "confirm": "Eliminar",
+      "consequence0": "Cualquier volumen de aplicación que aún monte este recurso compartido no iniciará en su próximo despliegue.",
+      "consequence1": "No se puede deshacer.",
+      "error": "No se pudo eliminar \"{{name}}\".",
+      "pending": "Eliminando...",
+      "success": "Recurso compartido de red \"{{name}}\" eliminado.",
+      "title": "¿Eliminar \"{{name}}\"?",
+      "trigger": "Eliminar"
+    },
+    "registryCredential": {
+      "confirm": "Eliminar",
+      "consequence0": "Cualquier servicio que use esta credencial no podrá descargar una imagen privada en su próximo despliegue.",
+      "consequence1": "No se puede deshacer.",
+      "error": "No se pudo eliminar \"{{name}}\".",
+      "pending": "Eliminando...",
+      "success": "Credencial de registro \"{{name}}\" eliminada.",
+      "title": "¿Eliminar \"{{name}}\"?",
+      "trigger": "Eliminar"
+    },
+    "token": {
+      "abilities": "Permisos: {{abilities}}",
+      "confirm": "Revocar token",
+      "consequence0": "Todo lo que use este token pierde el acceso de inmediato.",
+      "consequence1": "No se puede deshacer.",
+      "devFixture": "Los tokens de datos de prueba de desarrollo se vuelven a crear en el próximo inicio en modo de desarrollo, salvo que los quites del archivo de datos de prueba.",
+      "pending": "Revocando...",
+      "success": "Token \"{{name}}\" revocado.",
+      "title": "¿Revocar \"{{name}}\"?",
+      "trigger": "Revocar"
+    }
+  },
+  "deployApprovalStatus": {
+    "all": "Todos",
+    "approved": "Aprobado",
+    "approving": "Aplicando",
+    "expired": "Vencido",
+    "pending": "Pendiente",
+    "rejected": "Rechazado"
+  },
+  "dock": {
+    "ai": {
+      "configure": "Configurar el asistente de IA",
+      "enableInSettings": "Activar en Ajustes",
+      "experimentalOffDescription": "El chat de IA es una función beta y está desactivada por defecto. Un administrador puede activarla en Ajustes, Funciones beta, sin acceso al servidor.",
+      "experimentalOffTitle": "El chat de IA está desactivado",
+      "notConfiguredDescription": "Agrega una clave de API propia (BYOK) en Ajustes para empezar a chatear.",
+      "notConfiguredTitle": "No hay un proveedor de IA configurado"
+    },
+    "close": "Cerrar el panel",
+    "header": "Encabezado del panel",
+    "launcher": "Abrir el panel del asistente",
+    "launcherUnread": "Abrir el panel del asistente, hay una respuesta nueva",
+    "maximize": "Maximizar el panel",
+    "menu": "Diseño y opciones del panel",
+    "minimize": "Minimizar al lanzador",
+    "mode": {
+      "bottom": "Panel inferior",
+      "float": "Ventana flotante",
+      "side": "Panel lateral derecho"
+    },
+    "moveHint": "Las flechas mueven el panel, Mayús para pasos más grandes, Inicio restablece su posición.",
+    "push": "Empujar el contenido de la página",
+    "region": "Panel del asistente",
+    "regionSide": "Panel lateral del asistente",
+    "reset": "Restablecer posición y tamaño",
+    "resizeHeight": "Cambiar la altura del panel",
+    "resizeWidth": "Cambiar el ancho del panel",
+    "restore": "Restaurar el tamaño del panel",
+    "sheetHandle": "Arrastra hacia abajo para minimizar",
+    "tabs": {
+      "aiChat": "Chat de IA",
+      "console": "Consola"
+    },
+    "tabsLabel": "Pestañas del panel",
+    "toggle": "Mostrar u ocultar el panel del asistente",
+    "toggleHint": "Panel del asistente (Ctrl+J, Ctrl+Mayús+M cambia el diseño)",
+    "unread": "Respuesta nueva"
+  },
+  "draft": {
+    "continue": "Continuar donde lo dejaste",
+    "dismiss": "Descartar",
+    "message": "Tienes un borrador sin guardar de {{time}}.",
+    "startOver": "Empezar de nuevo"
+  },
+  "localMode": {
+    "body": "Todo lo de aquí vive en esta máquina y solo es accesible desde ella. Directorio de datos:",
+    "dialog": {
+      "cancel": "Cancelar",
+      "confirm": "Restablecer instancia",
+      "consequence1": "Los contenedores ya creados siguen en ejecución hasta que los quites.",
+      "consequence2": "Se genera una nueva contraseña de administrador y se imprime en la terminal donde se ejecuta el comando de desarrollo.",
+      "description": "Se eliminan todas las aplicaciones, registros de bases de datos, secretos y ajustes, y la instancia empieza de cero.",
+      "resetting": "Restableciendo...",
+      "title": "¿Restablecer esta instancia local?"
+    },
+    "failed": "No se pudo iniciar el restablecimiento.",
+    "reset": "Restablecer",
+    "resetUnavailable": "El restablecimiento está disponible cuando la instancia se inició con el comando de desarrollo.",
+    "title": "Esta es una instancia local"
+  },
+  "nodeSelect": {
+    "auto": "Automático (el menos cargado)",
+    "autoHint": "Automático la coloca en el nodo elegible con menos carga. Elige un nodo para fijarla ahí."
+  },
+  "pinnedDigest": {
+    "copied": "Digest de la imagen copiado",
+    "copy": "Copiar el digest completo de la imagen",
+    "tip": "La aprobación despliega exactamente esta imagen aunque la etiqueta se mueva."
+  },
+  "recommended": {
+    "add_domain": {
+      "button": "Agregar un dominio",
+      "title": "Aún no hay un dominio"
+    },
+    "add_health_check": {
+      "button": "Agregar una comprobación de salud",
+      "title": "Sin comprobación de salud"
+    },
+    "dismiss": "Descartar: {{title}}",
+    "enable_backups": {
+      "button": "Activar copias de seguridad",
+      "title": "Una base de datos no tiene programación de copias de seguridad"
+    },
+    "enable_previews": {
+      "button": "Activar vistas previas",
+      "title": "Las vistas previas están desactivadas para tus pull requests"
+    },
+    "failed_deploy": {
+      "button": "Ver el registro de compilación",
+      "title": "Falló el último despliegue"
+    },
+    "title": "Recomendado a continuación"
+  },
+  "resourceLabels": {
+    "add": "Agregar etiqueta",
+    "cancel": "Cancelar",
+    "description": "Pares de clave y valor de formato libre para agrupar y filtrar. No cambian cómo se ejecuta el recurso.",
+    "duplicate": "Cada clave se puede usar una sola vez.",
+    "edit": "Editar etiquetas",
+    "empty": "Aún no hay etiquetas.",
+    "filterInvalid": "No se pudo leer ese selector.",
+    "filterLabel": "Filtrar por etiqueta",
+    "filterPlaceholder": "env=prod,tier!=db",
+    "incomplete": "Completa la clave y el valor, o quita la fila.",
+    "keyPlaceholder": "clave",
+    "remove": "Quitar la etiqueta {{key}}",
+    "save": "Guardar etiquetas",
+    "saved": "Etiquetas guardadas",
+    "saving": "Guardando...",
+    "title": "Etiquetas",
+    "valuePlaceholder": "valor"
+  },
+  "replicaNotice": {
+    "autoscaleOwned": "El autoescalado define el número de réplicas de esta app. Cambia la política de autoescalado, o quítala, para definir las réplicas a mano.",
+    "sameServer": "Las {{replicas}} réplicas se ejecutan en el mismo servidor. Más réplicas aportan capacidad y reparten la carga allí, pero no protegen la app si ese servidor se cae."
+  },
+  "templateDefaults": {
+    "memoryNote": "Este límite es el doble de la memoria recomendada de la plantilla, para dejar margen. Edítalo aquí para cambiarlo.",
+    "recreateDowntime": "Recrear detiene el contenedor anterior antes de iniciar el nuevo, así que cada despliegue tiene una breve interrupción. Un despliegue que no pasa su comprobación de disponibilidad vuelve a la imagen anterior.",
+    "strategyReason": "Definido por la plantilla: {{reason}}"
   }
 }

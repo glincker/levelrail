@@ -81,8 +81,19 @@ func localVersionInfo() cliVersionInfo {
 	return info
 }
 
+// displayCLIVersion makes an unstamped source build readable instead of "dev / unknown".
+func displayCLIVersion(c cliVersionInfo) string {
+	if c.Version != "dev" {
+		return c.Version
+	}
+	if c.Commit != unknownBuildInfo {
+		return "dev (source build at " + c.Commit + ")"
+	}
+	return "dev (source build, no release version stamped)"
+}
+
 func printVersionHuman(out io.Writer, r versionReport) {
-	_, _ = fmt.Fprintf(out, "cli version:      %s\n", r.CLI.Version)
+	_, _ = fmt.Fprintf(out, "cli version:      %s\n", displayCLIVersion(r.CLI))
 	_, _ = fmt.Fprintf(out, "commit:           %s\n", r.CLI.Commit)
 	_, _ = fmt.Fprintf(out, "built:            %s\n", r.CLI.BuildDate)
 	if r.Server == nil {
@@ -118,5 +129,5 @@ Flags:
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
-`, prog, envAPIToken, envAPIURL, defaultAPIURL)
+`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }

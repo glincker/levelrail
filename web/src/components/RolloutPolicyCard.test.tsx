@@ -51,4 +51,30 @@ describe('RolloutPolicyCard', () => {
       ),
     )
   })
+  it('does not carry one app draft into another app', async () => {
+    const fetchMock = vi.fn((url: string) =>
+      Promise.resolve(
+        json({
+          app: url.includes('/web/') ? 'web' : 'api',
+          strategy: 'rolling',
+          replicas: 1,
+          policy: { max_surge: url.includes('/web/') ? '1' : '5' },
+          progress: null,
+        }),
+      ),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    const client = new QueryClient()
+    const ui = (name: string) => (
+      <QueryClientProvider client={client}>
+        <RolloutPolicyCard appName={name} />
+      </QueryClientProvider>
+    )
+    const { rerender } = render(ui('web'))
+    const field = () => document.getElementById('rollout-max_surge')
+    await waitFor(() => expect(field()).toHaveValue('1'))
+    await userEvent.type(field() as HTMLElement, '9')
+    rerender(ui('api'))
+    await waitFor(() => expect(field()).toHaveValue('5'))
+  })
 })

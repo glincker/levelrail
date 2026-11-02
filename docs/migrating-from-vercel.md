@@ -12,7 +12,7 @@ This is a runbook for moving one Vercel-hosted Next.js app onto a Levelrail inst
 Some areas are still beta (see [feature status](/feature-status)), and real public ACME has one recorded live run but no renewal or wildcard verification yet (see the [ACME verification runbook](/acme-verification-runbook)). Run the new deployment in parallel with Vercel, and keep Vercel as the rollback path until the shadow run in section 6 is clean.
 </Warning>
 
-Unlike the platform importer in [Migrate to Levelrail](/migrate-to-levelrail), there is no platform API importer for Vercel. One offline helper exists: `levelrail-cli import config` reads `vercel.json` (and a `Procfile` or `app.json` if present) from a directory and prints a proposed `app.yaml` plus findings for what has no equivalent, each with a fix. It needs no token and changes nothing; review its output before using it. Everything else below is manual.
+Two helpers exist. `levelrail-cli import platform vercel --dry-run` is the platform importer described in [Migrate to Levelrail](/migrate-to-levelrail). It reads projects, env var keys, plain env values and domains through the Vercel API, read-only, and prints what it would create. Drop `--dry-run` to create the apps. Databases and volumes are created empty, and encrypted or sensitive values come back as names only. Pending run against a real Vercel account. `levelrail-cli import config` is the offline path: it reads `vercel.json` (and a `Procfile` or `app.json` if present) from a directory and prints a proposed `app.yaml` plus findings for what has no equivalent, each with a fix. It needs no token and changes nothing. Review the output of either helper before using it. Everything else below is manual.
 
 ## 1. Inventory what Vercel holds
 
@@ -30,6 +30,19 @@ Collect this before touching Levelrail. Vercel keeps configuration in its dashbo
 | Functions config | `vercel.json` `functions`, and `export const runtime = "edge"` in your code. | Edge runtime has no equivalent, see section 4. |
 | Rewrites, headers, redirects | `next.config.js` and `vercel.json`. | Those in `next.config.js` run inside Next itself and move with the app. Those only in `vercel.json` do not. |
 
+### Export checklist before a plan change or shutdown
+
+This page does not state Vercel plan terms or dates. Check Vercel's current terms for your plan. Export these while the project still answers, and keep the files out of git:
+
+1. Env vars for each Vercel environment. Pull Production with the steps in [Environment variables from `vercel env pull`](#environment-variables-from-vercel-env-pull), and record the Preview and Development key names.
+2. Domains and redirects, from Project Settings, Domains, with the DNS record values you point at today.
+3. The git repository and branch the project deploys from. Confirm the latest commit is pushed, and keep `vercel.json` and `next.config.js`.
+4. The cron list from the Cron Jobs tab, and the `CRON_SECRET` value.
+5. Storage. Dump each Vercel Postgres database, and export any KV or Blob content you need. Managed storage does not move with the app.
+6. Build settings from Project Settings, General: framework preset, build and output directory, install command, Node version and root directory.
+7. The id and URL of the last deployment you trust, for reference during rollback.
+8. Third-party webhooks and OAuth callback URLs that point at the Vercel domain. You update each one at its provider.
+
 ## 2. Map Vercel concepts to Levelrail
 
 | Vercel | Levelrail equivalent | Notes |
@@ -37,10 +50,10 @@ Collect this before touching Levelrail. Vercel keeps configuration in its dashbo
 | Project | An app, with one or more services | See [Deploying apps](/deploying-apps). |
 | Git deploy on push | A git source with `trigger_mode: push`, from a GitHub, GitLab, Bitbucket, or Gitea connection | Provider connections are set up in the dashboard only. Path filters (`--paths`, `--paths-ignore`) exist. See [Git integrations](/git-integrations). |
 | Build with framework preset | `build.type: railpack` (Node.js is a supported provider) or `build.type: dockerfile` | The "Deploy from git" wizard shows what Railpack detects before you build. Node.js, Go, Java (Spring Boot), Python, Ruby, and PHP are accepted. |
-| `output: "standalone"` with your own Dockerfile | `build.type: dockerfile`, with `build.args` for `ARG` values | Use this when you need control over the image. You own the Dockerfile. Build args are not stored with the app, see the build-time section below. |
-| Static export (`output: "export"`) | `build.type: static`, served by the embedded Caddy with no container | Static runs no build step. It copies `build.path` (relative to the repo root, or to `build.baseDirectory`) from the commit as it is, so the exported `out/` directory must be committed. Otherwise build with `dockerfile` or `railpack`. Deploy it with `apps deploy-spec <app> --file app.yaml --repo-url URL --ref main`, or `apps create --file`, which routes a static service through the same path. The spec forbids `port`, `host_port`, `bind_address`, and `hooks`. |
+| `output: "standalone"` with your own Dockerfile | `build.type: dockerfile`, with `build.args` for `ARG` values | Use this when you need control over the image. You own the Dockerfile. Public-prefix env is passed to the build for declared `ARG`s, see the build-time section below. |
+| Static export (`output: "export"`) | `build.type: static`, served by the embedded Caddy with no container | With `build.command` and `build.publish`, the control plane builds the site in a throwaway container, so `out/` does not need to be committed (see [static sites](/pages)). Without `build.command`, nothing builds: `build.path` (relative to the repo root, or to `build.baseDirectory`) is copied from the commit as it is, so the exported `out/` directory must be committed. `publish` replaces `build.path`. To build with your own image, use `dockerfile` or `railpack`. Deploy it with `apps deploy-spec <app> --file app.yaml --repo-url URL --ref main`, or `apps create --file`, which routes a static service through the same path. The spec forbids `port`, `host_port`, `bind_address`, and `hooks`. |
 | Production and Preview environments | Optional environments inside a project. Apps are tagged with one. Promote copies only the image tag to a sibling app in another environment | Env vars stay per app, so a staging and a production app each keep their own. See [Projects and organizations](/projects-and-organizations) and [Promote details](/deploying-apps#promote-between-environments). |
-| Environment variables | Plain env (`apps env import --file`), encrypted secrets (`apps secrets set --env-file`), or Vault references | Plain import skips keys that are already secrets. Export never includes secret values. |
+| Environment variables | Env import (`apps env import --file`, sensitive keys go to secrets), encrypted secrets (`apps secrets set --env-file`), or Vault references | Import skips keys that are already secrets; `--all-secrets` and `--all-plain` override the split. Export never includes secret values. |
 | Sensitive env vars | `apps secrets set`, envelope-encrypted and write-only | Never returned by the API after save. |
 | Shared env vars | Shared env scoped to a project, organization, or environment (`shared-env set`) | See [Projects and organizations](/projects-and-organizations). |
 | Preview deployments per pull request | Preview environments per PR, opt-in per app: `apps previews enable <app>`. Deployed as `<app>-pr-<number>`, torn down on close or merge | GitHub, GitLab, Bitbucket, and Gitea. The preview domain is `pr-<number>.<app>.<primary-domain>` and needs a control-plane primary domain. Branches get their own stable URL through [branch deploys](/preview-environments#branch-deploys). See [Git integrations](/git-integrations#preview-environments). |
@@ -51,7 +64,7 @@ Collect this before touching Levelrail. Vercel keeps configuration in its dashbo
 | `www` to apex redirect | Add `www` to the app's domains, then `domains redirect set <app> www.example.com --target https://example.com` (301, 302, 307 or 308), or `domains redirects canonical <app> example.com www-to-apex` to attach www and redirect it in one step | The target must be an absolute URL. A bare origin target keeps the request path and query; a target with its own path always redirects there. |
 | Automatic HTTPS | Caddy internal issuer by default (self-signed), or real ACME once enabled in settings | ACME has one recorded live run on a public VPS, with renewal and wildcards not yet verified. Bring-your-own certificate is also supported. |
 | Instant Rollback | `apps deploys rollback-to <app> <deploy-id>` (pinned by digest), `apps rollback <app> --image <tag>` for a tag listed by `apps images <app>`, the dashboard's per-deploy Rollback button, and auto-rollback on crashloop | Prior images are pinned so garbage collection cannot remove a rollback target. Take the deploy id from `apps deploys list <app>`. |
-| Cron Jobs | Scheduled tasks: `apps scheduled-tasks create`, with a 5-field cron expression and an argv command run inside the running container | Not an HTTP call. To trigger a route, the command must use something present in your image. Confirm the tool exists in the image. |
+| Cron Jobs | Scheduled tasks: `apps scheduled-tasks create`, with a 5-field cron expression and an argv command run inside the running container | Not an HTTP call. To trigger a route, the command must use something present in your image. `import config` translates a `vercel.json` cron into a command that tries `curl`, then `wget`, then `node`, and sends `Authorization: Bearer $CRON_SECRET` when the app env has `CRON_SECRET` (the value is read at run time, never written into the job). Set `CRON_SECRET` as an app secret. |
 | Runtime and build logs | `apps logs`, `apps deploys logs`, a node-local log store with full-text search, and live build steps | See [Observability](/observability). |
 | Firewall and rate limiting | Opt-in WAF (detect or block) and rate limiting per domain | See [Domains and ingress](/domains-and-ingress). |
 | Maintenance page | Per-domain maintenance mode | Takes precedence over a redirect. |
@@ -60,13 +73,34 @@ Collect this before touching Levelrail. Vercel keeps configuration in its dashbo
 
 ### Build-time versus runtime env
 
-`NEXT_PUBLIC_*` values are compiled into the JavaScript bundle during `next build`. App env and secrets are only injected when the container is created, never into a build, so setting `NEXT_PUBLIC_*` with `apps env import` does not change the browser code. Verified on a Next.js 15 App Router app:
+`NEXT_PUBLIC_*` values are compiled into the JavaScript bundle during `next build`, so they must exist before the first deploy. Levelrail passes every literal, non-secret app env var whose name starts with a public prefix (`NEXT_PUBLIC_`, `VITE_`, `PUBLIC_`, `REACT_APP_`, `NUXT_PUBLIC_`, `GATSBY_`, `EXPO_PUBLIC_`) to the build:
 
-- Any build type, including push deploys: commit a `.env.production` holding the `NEXT_PUBLIC_*` values. `next build` reads it, so it works with Railpack and with a Dockerfile that copies the repo. These values end up in public JavaScript anyway, so committing them exposes nothing new. This is the recommended path.
-- With `build.type: railpack`: there is no other way today. Railpack builds receive no build-time env, and `build.args` is rejected for Railpack. A value that is only set as app env stays undefined in the client bundle, and the server render shows a different value than the browser (a hydration mismatch).
-- With `build.type: dockerfile`: `build.args` plus matching `ARG` and `ENV` lines in the Dockerfile also work, but build args are not stored with the app. `apps builds trigger` needs `--build-arg` on every call, and push deploys from a git source build without them, so the values silently become empty. Prefer `.env.production`, or give each `ARG` a default in the Dockerfile.
+- `build.type: railpack`: set the values as plain app env (`apps env import`), then deploy. Nothing needs to be committed. Secrets, references and vault values are never passed to a build.
+- `build.type: dockerfile`: the same values are passed as build args when the Dockerfile declares `ARG NAME`; add `ARG NEXT_PUBLIC_X` and `ENV NEXT_PUBLIC_X=$NEXT_PUBLIC_X` before `next build`. Explicit `build.args` win. This also applies to push deploys.
+- The build log has a `build env` line listing the key names passed (never values). If a variable is missing from the bundle, check that line first, then that the name has a public prefix and is not marked secret.
+- A committed `.env.production` still works as a fallback. Changing a value needs a new build: a restart does not change the bundle.
 
-Railpack starts the app with `npm run start`, so `next start` serves it. With `output: "standalone"` Next.js logs a warning that `next start` does not use the standalone output; the app still serves normally. The standalone output only matters for your own Dockerfile.
+Railpack starts the app with `npm run start`, so `next start` serves it. With `output: "standalone"` Next.js logs a warning that `next start` does not use the standalone output; the app still serves normally. The standalone output only matters for your own Dockerfile. `import config` reads `next.config.*` as text (it never runs it) and suggests `output: "standalone"` only when the file does not already set it.
+
+### Environment variables from `vercel env pull`
+
+The Vercel CLI writes one environment to a dotenv file. Levelrail keeps one env set per app, so pull Production only. Pending run against a real Vercel project.
+
+```bash
+vercel env pull .env.production.local --environment production
+levelrail-cli apps env import my-site --file .env.production.local --dry-run
+levelrail-cli apps env import my-site --file .env.production.local
+rm .env.production.local
+```
+
+| Vercel | Levelrail |
+| --- | --- |
+| Production value, not sensitive | Plain app env, from `apps env import` |
+| Sensitive variable | Not returned by `vercel env pull`, because Vercel keeps it write-only. Set it by hand with `apps secrets set my-site --env-file secrets.env` |
+| Key that exists only in Preview or Development | Not used by this app. Give that environment its own app or environment with its own env |
+| `NEXT_PUBLIC_*` value | Plain app env, set before the first deploy (see the build-time section above) |
+
+The dotenv file holds plaintext values. Delete it after the import and do not commit it.
 
 Server-only variables are set as normal app env or secrets and read when the container is created. Changing them shows an "Environment changes pending restart" banner until you apply them (`apps apply <app>`).
 
@@ -93,7 +127,7 @@ Server-only variables are set as normal app env or secrets and read when the con
    Create it with `apps create --file app.yaml --repo URL --ref main --image-repo NAME --secret DATABASE_URL=...`. The first build starts as soon as the app exists, so a `{ secret: true, required: true }` variable must be given with `--secret` here; the CLI refuses to create the app without it. Without a Dockerfile use `--build-type railpack`, and pass the same `--build-type` to every later `apps builds trigger`, which does not remember it. `apps deploys wait <app>` follows the build.
 
    Leave out `domains:` for now, so nothing competes with Vercel for the real hostname. If `APP_PUBLIC_HOST` is set to a public IP, `apps network <app>` shows a zero-config sslip.io URL to test on. The host port behind it changes on every restart, so run `apps network` again after one.
-3. Load env vars. Plain values with `apps env import <app> --file prod.env --dry-run`, then again without `--dry-run`. Secrets with `apps secrets set <app> --env-file secrets.env`. Copy from the Production column in Vercel, not Preview. Keep `NEXT_PUBLIC_*` out of these files; see the build-time section above. Run `apps apply <app>` afterwards.
+3. Load env vars with `apps env import <app> --file prod.env --dry-run`, then again without `--dry-run`. Keys that look sensitive go to the secret store and the rest to plain env, and the output lists key names only. Use `--all-secrets` or `--all-plain` to override, or `apps secrets set <app> --env-file secrets.env` for a secrets-only file. Copy from the Production column in Vercel, not Preview. Set `NEXT_PUBLIC_*` values here too, before the first deploy; see the build-time section above. Run `apps apply <app>` afterwards.
 4. Add a readiness path. Add a cheap route such as `/api/health` that does not depend on external services, and set it with `health.readiness` in `app.yaml` or `apps health set <app> --probe readiness --path /api/health`. A deploy that fails readiness does not take over traffic: the ingress keeps routing to the previous release and the attempt is recorded as failed. Still check `apps status <app>` after each deploy.
 5. Deploy, then verify on the zero-config URL: pages, API routes, auth callbacks, image requests, and streaming responses.
 6. Move data if the app uses Vercel Postgres or KV: create a managed database here, restore a dump into it, and rehearse the restore before cutover.
@@ -101,6 +135,27 @@ Server-only variables are set as normal app env or secrets and read when the con
 8. Enable previews with `apps previews enable <app>` if you rely on PR preview URLs.
 
 To review the move in a pull request instead of creating things directly, run `levelrail-cli import platform vercel --emit stack --out DIR` (or `import config --emit stack --out DIR` on a checkout with a `vercel.json`). It writes App, Database and Domain documents plus a `SECRETS.md` of env variable names (never values) and a `MIGRATION.md` for cron jobs, rewrites and anything else the documents cannot hold. See [Stacks and GitOps](/stacks#migrate-into-a-stack).
+
+### Cron recipe with a bearer header
+
+`levelrail-cli import config` turns a `vercel.json` cron such as this one into a scheduled task:
+
+```json
+{ "crons": [ { "path": "/api/cron/daily", "schedule": "0 3 * * *" } ] }
+```
+
+The task calls the route over loopback on the app port and sends `Authorization: Bearer $CRON_SECRET` when `CRON_SECRET` is set in the container. The variable is read at run time, so the secret never appears in the job definition. The task tries `curl`, then `wget`, then `node`, and fails with exit code 127 if none exists in the image.
+
+To write the same task by hand, set `CRON_SECRET` as an app secret, then create the task. The single quotes keep `$CRON_SECRET` unexpanded on the host. Pending run.
+
+```bash
+levelrail-cli apps secrets set my-site --env-file secrets.env
+levelrail-cli apps scheduled-tasks create my-site --schedule "0 3 * * *" -- \
+  sh -c 'exec curl -fsS -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:3000/api/cron/daily'
+levelrail-cli apps scheduled-tasks run my-site <task-id>
+```
+
+Replace `3000` with the port the app listens on, and `/api/cron/daily` with your route. Check the task with `apps scheduled-tasks list my-site` after the first run.
 
 ## 4. What has no equivalent
 
@@ -115,7 +170,7 @@ Plan for these before you commit to moving.
 | Blob, KV, Edge Config | No drop-in equivalents. Managed Redis exists, but you rewrite the client code. |
 | Serverless scale to zero and autoscaling | Scale to zero exists per app as [Sleep when idle](/sleep-when-idle): an app with no requests stops and the next request starts it, with a cold start of a few seconds. There is no autoscaling, and replicas stay fixed. |
 | Vercel Cron calling HTTP routes | Scheduled tasks exec a command in the container instead. |
-| Build-time env for Railpack | None. Use a committed `.env.production`, see the build-time section in 2. |
+| Build-time env for Railpack | Public-prefix app env is passed to the build (`NEXT_PUBLIC_*`, `VITE_*` and similar). See the build-time section in 2. |
 
 ## 5. DNS cutover and rollback plan
 

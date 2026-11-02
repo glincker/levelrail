@@ -2,6 +2,8 @@ package appsleep
 
 import (
 	"context"
+	"errors"
+	"github.com/GLINCKER/levelrail/internal/backup"
 	"io"
 	"log/slog"
 	"testing"
@@ -106,6 +108,17 @@ func TestWake(t *testing.T) {
 	}
 	if woke, _ := Wake(context.Background(), sleep, apps, nil, "web", now); woke {
 		t.Error("waking an awake app must be a no-op")
+	}
+}
+
+func TestWake_RefusedDuringVolumeImport(t *testing.T) {
+	sleep := &fakeSleep{rows: map[string]*store.AppSleep{"web": {ServiceName: "web", IdleMinutes: 30, Sleeping: true}}}
+	apps := &fakeApps{suspended: map[string]bool{"web": true}}
+	done := backup.MarkImport("web")
+	woke, err := Wake(context.Background(), sleep, apps, nil, "web", time.Now())
+	done()
+	if !errors.Is(err, backup.ErrImportInProgress) || woke || !apps.suspended["web"] || !sleep.rows["web"].Sleeping {
+		t.Fatalf("woke=%v err=%v suspended=%v", woke, err, apps.suspended)
 	}
 }
 

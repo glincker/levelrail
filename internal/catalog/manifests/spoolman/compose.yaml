@@ -1,0 +1,15 @@
+services:
+  spoolman:
+    image: ghcr.io/donkie/spoolman:0.27.1
+    ports: ["8000"]
+    environment:
+      TZ: ${TZ}
+      SPOOLMAN_DB_TYPE: sqlite
+    volumes:
+      - data:/home/app/.local/share/spoolman
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health',timeout=4)\""]
+      interval: 15s
+      timeout: 6s
+      retries: 10
+      start_period: 30s

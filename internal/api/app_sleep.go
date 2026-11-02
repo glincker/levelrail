@@ -142,6 +142,10 @@ func (rt *Router) handleSetAppSleep(w http.ResponseWriter, r *http.Request) {
 	actor := rt.eventActor(r)
 	if req.IdleMinutes == 0 {
 		woke, err := appsleep.Wake(r.Context(), rt.appSleep, rt.apps, rt.reconcileNudger, name, time.Now())
+		if isImportBusy(err) {
+			writeImportBusy(w)
+			return
+		}
 		if err != nil {
 			rt.internalError(w, "api: set app sleep: wake before disable", err, slog.String("name", name))
 			return
@@ -227,6 +231,10 @@ func (rt *Router) handleWakeApp(w http.ResponseWriter, r *http.Request) {
 	prev, _ := rt.appSleep.GetAppSleep(r.Context(), name)
 	start := time.Now()
 	woke, err := appsleep.Wake(r.Context(), rt.appSleep, rt.apps, rt.reconcileNudger, name, start)
+	if isImportBusy(err) {
+		writeImportBusy(w)
+		return
+	}
 	if err != nil {
 		rt.recordSleepEvent(r.Context(), store.SleepEvent{ServiceName: name, Kind: store.SleepEventWakeFailed, At: start, Reason: store.SleepReasonManual, Detail: err.Error(), Actor: rt.eventActor(r)})
 		rt.internalError(w, "api: wake app", err, slog.String("name", name))
@@ -261,6 +269,10 @@ func (rt *Router) handleWakeHook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	name := r.Header.Get(ingress.WakeAppHeader)
+	if !looksLikeBrowserVisit(r) && rt.isDeployURLCopy(r.Context(), name) {
+		writeSleepingNoWake(w)
+		return
+	}
 	w.Header().Set(ingress.WakeHeldHeader, "1")
 	setting, _ := rt.appSleep.GetAppSleep(r.Context(), name)
 	timing := rt.wakeTiming(r.Context(), name)
@@ -283,6 +295,10 @@ func (rt *Router) handleWakeHook(w http.ResponseWriter, r *http.Request) {
 	}
 	start := time.Now()
 	woke, err := appsleep.Wake(r.Context(), rt.appSleep, rt.apps, rt.reconcileNudger, name, start)
+	if isImportBusy(err) {
+		writeImportBusy(w)
+		return
+	}
 	var eventID int64
 	switch {
 	case err != nil:

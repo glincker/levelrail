@@ -238,6 +238,10 @@ func readConfigFiles(dir string) (map[string][]byte, error) {
 		}
 		files[name] = b
 	}
+	if _, ok := files["vercel.json"]; ok {
+		addEdgeSources(dir, files)
+		addNextConfig(dir, files)
+	}
 	return files, nil
 }
 

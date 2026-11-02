@@ -1,0 +1,28 @@
+id: multi-scrobbler
+name: Multi-Scrobbler
+description: Scrobbles your listening history from sources like Spotify, Jellyfin, Plex and Navidrome to destinations like Last.fm, ListenBrainz and Maloja. MIT licensed. Add sources and clients through the web UI or the config files under the data volume.
+icon: music-notes
+category: Applications
+documentation_url: https://foxxmd.github.io/multi-scrobbler/
+source_repo: https://github.com/FoxxMD/multi-scrobbler
+license: MIT
+license_class: permissive
+license_url: https://github.com/FoxxMD/multi-scrobbler/blob/master/LICENSE
+recommended_memory_bytes: 268435456
+env:
+  - key: TZ
+    label: Time zone
+    description: IANA time zone for scrobble timestamps.
+    default: Etc/UTC
+  - key: BASE_URL
+    label: Public URL
+    description: Full public URL, used for OAuth callbacks such as Spotify, for example https://scrobble.example.com.
+    default: http://localhost:9078
+domains:
+  - service: multi-scrobbler
+    port: 9078
+    description: Public address of Multi-Scrobbler.
+healthcheck:
+  service: multi-scrobbler
+  port: 9078
+  path: /

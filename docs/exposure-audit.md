@@ -78,6 +78,9 @@ Rules in DOCKER-USER live in the kernel only. The restriction is stored in the c
 
 ### Limits
 
+- These rules filter forwarded container traffic in `DOCKER-USER`. They do not protect, restrict or lock out services that run on the host itself, such as `sshd`, which are reached through the `INPUT` chain. Use the [host firewall](/host-firewall) for those.
+- IPv6 published ports are not covered: only IPv4 rules are written, so a port Docker also publishes over IPv6 stays reachable that way.
+- The lockout check compares your address with the allow-list only for a public IPv4 caller. When you connect from this host (loopback) or over IPv6, or the address cannot be read, the API, CLI and dashboard return a warning instead, and you should confirm access yourself before keeping the rule.
 - Rules can be applied only on the control plane's own host. For a remote node, copy the dry-run commands and run them there. An agent RPC for this is planned.
 - Only IPv4 sources and the iptables backend are supported. Docker's experimental nftables mode has no DOCKER-USER chain and is reported as unreadable.
 - Reading the chain needs root, the same as turning on `ufw`. Without it, wildcard-bound ports are reported as Unknown.

@@ -74,16 +74,20 @@ type fakeRuntime struct {
 	// holds the same host port. specPorts remembers each created container's
 	// requested bindings by ID.
 	trackPorts bool
-	specPorts  map[string][]docker.PortBinding
+	// overlapStarts counts Starts that found another container running.
+	overlapStarts int
+	specPorts     map[string][]docker.PortBinding
 	// startNoPortsOnce makes the next Start succeed without publishing
 	// any port, the Docker quirk after a failed first start.
 	startNoPortsOnce bool
 
-	createErr  error
-	startErr   error
-	stopErr    error
-	removeErr  error
-	inspectErr error
+	createErr error
+	startErr  error
+	stopErr   error
+	// stopErrOnCall fails exactly the Nth (1-based) Stop call.
+	stopErrOnCall int
+	removeErr     error
+	inspectErr    error
 	// inspectErrOnCall fails exactly the Nth (1-based) InspectByName
 	// call and no other, so a test can break the one inspect a specific
 	// step makes (the liveness check's own, say) without breaking the
@@ -313,6 +317,12 @@ func (f *fakeRuntime) Start(_ context.Context, id string) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.startCalls++
+	for _, other := range f.containers {
+		if other.ID != id && other.Running {
+			f.overlapStarts++
+			break
+		}
+	}
 	if f.startErr != nil {
 		return f.startErr
 	}
@@ -366,6 +376,9 @@ func (f *fakeRuntime) Stop(_ context.Context, id string, _ time.Duration) error 
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.stopCalls++
+	if f.stopErrOnCall != 0 && f.stopCalls == f.stopErrOnCall {
+		return errors.New("stop failed")
+	}
 	if f.stopErr != nil {
 		return f.stopErr
 	}
@@ -696,6 +709,33 @@ func TestController_Reconcile_AppStreams_ReachesContainerSpec(t *testing.T) {
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("created ContainerSpec.Ports = %+v, want %+v", got, want)
+	}
+}
+
+// A stream on the routed port must not add a second ephemeral loopback
+// binding for it: Docker could assign both the same host port.
+func TestController_Reconcile_AppStreams_SamePortAsMain_NoDuplicateBinding(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "mc", Image: "img:v1", Port: 25565}
+	c := New("mc", &fakeStore{svc: desired, streams: []store.AppStream{
+		{ID: "stream_a", ServiceName: "mc", ContainerPort: 25565, HostPort: 25565, Protocol: store.AppStreamProtocolTCP},
+	}}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	want := []docker.PortBinding{{ContainerPort: 25565, HostIP: "127.0.0.1"}}
+	if got := rt.lastCreateSpec.Ports; !reflect.DeepEqual(got, want) {
+		t.Errorf("Ports = %+v, want %+v", got, want)
+	}
+	if rt.createCalls != 1 {
+		t.Errorf("createCalls = %d, want 1", rt.createCalls)
+	}
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("second Reconcile() error = %v", err)
+	}
+	if rt.createCalls != 1 {
+		t.Errorf("settled pass created containers: createCalls = %d, want 1", rt.createCalls)
 	}
 }
 
@@ -3941,5 +3981,102 @@ func TestController_Reconcile_MissingAppLabelIsNotRecreated(t *testing.T) {
 	}
 	if rt.createCalls != 0 {
 		t.Errorf("createCalls = %d, want 0 for a running container lacking the app label", rt.createCalls)
+	}
+}
+
+// An upgrade must not restart containers created before the incarnation label existed.
+func TestController_Reconcile_MissingIncarnationLabelIsNotRecreated(t *testing.T) {
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Incarnation: "life-b"}
+	target := ContainerName("web", desired.Image, "")
+	rt := newFakeRuntime(0)
+	rt.seedLabeled(target, true, map[string]string{"platform-reserved.app": "web"})
+
+	c := New("web", &fakeStore{svc: desired}, rt)
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if rt.createCalls != 0 || rt.removeCalls != 0 {
+		t.Errorf("createCalls=%d removeCalls=%d, want 0 for a container lacking the incarnation label", rt.createCalls, rt.removeCalls)
+	}
+}
+
+func TestController_Reconcile_MatchingIncarnationIsKept(t *testing.T) {
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Incarnation: "life-b"}
+	rt := newFakeRuntime(0)
+	rt.seedLabeled(ContainerName("web", desired.Image, ""), true, map[string]string{"platform-reserved.incarnation": "life-b"})
+
+	if _, err := New("web", &fakeStore{svc: desired}, rt).Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if rt.createCalls != 0 || rt.removeCalls != 0 {
+		t.Errorf("createCalls=%d removeCalls=%d, want 0", rt.createCalls, rt.removeCalls)
+	}
+}
+
+func TestController_Reconcile_OtherIncarnationIsReplaced(t *testing.T) {
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Incarnation: "life-b", Env: map[string]string{"TOKEN": "new"}}
+	rt := newFakeRuntime(0)
+	rt.seedLabeled(ContainerName("web", desired.Image, ""), true, map[string]string{"platform-reserved.incarnation": "life-a"})
+
+	if _, err := New("web", &fakeStore{svc: desired}, rt).Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if rt.createCalls != 1 || rt.lastCreateEnv["TOKEN"] != "new" {
+		t.Errorf("createCalls=%d env=%v, want one fresh container", rt.createCalls, rt.lastCreateEnv)
+	}
+	if got := rt.lastCreateSpec.Labels["platform-reserved.incarnation"]; got != "life-b" {
+		t.Errorf("incarnation label = %q, want life-b", got)
+	}
+}
+
+// A template's private publish of 25565 must not hold the host port a
+// stream listens on, and a settled pass must not recreate the container.
+func TestController_Reconcile_StreamOnPrivatePublishedPort_UsesEphemeralBinding(t *testing.T) {
+	rt := newFakeRuntime(0)
+	desired := &store.DesiredService{Name: "mc", Image: "img:v1", PublishedPorts: []store.PublishedPort{
+		{ContainerPort: 25565, HostPort: 25565, Protocol: store.PortProtocolTCP, Bind: "private"},
+	}}
+	c := New("mc", &fakeStore{svc: desired, streams: []store.AppStream{
+		{ID: "stream_a", ServiceName: "mc", ContainerPort: 25565, HostPort: 25565, Protocol: store.AppStreamProtocolTCP},
+	}}, rt)
+
+	for i := 0; i < 3; i++ {
+		if _, err := c.Reconcile(context.Background()); err != nil {
+			t.Fatalf("Reconcile() error = %v", err)
+		}
+	}
+	for _, p := range rt.lastCreateSpec.Ports {
+		if p.HostPort == 25565 {
+			t.Errorf("a binding still holds host port 25565: %+v", rt.lastCreateSpec.Ports)
+		}
+	}
+	if len(rt.lastCreateSpec.Ports) != 1 || rt.lastCreateSpec.Ports[0].HostIP != "127.0.0.1" {
+		t.Errorf("Ports = %+v, want one ephemeral loopback binding", rt.lastCreateSpec.Ports)
+	}
+	if rt.createCalls != 1 {
+		t.Errorf("settled passes created containers: createCalls = %d, want 1", rt.createCalls)
+	}
+}
+
+// Direct exposure of the same port as a template's private publish must
+// bind it once; the second binding made the start fail with address in use.
+func TestController_Reconcile_DirectExposureOnPrivatePublishedPort_BindsOnce(t *testing.T) {
+	rt := newFakeRuntime(25565)
+	hp := 25565
+	desired := &store.DesiredService{Name: "mc", Image: "img:v1", Port: 25565, HostPort: &hp, BindAddress: "public", PublishedPorts: []store.PublishedPort{
+		{ContainerPort: 25565, HostPort: 25565, Protocol: store.PortProtocolTCP, Bind: "private"},
+	}}
+	c := New("mc", &fakeStore{svc: desired}, rt)
+
+	for i := 0; i < 3; i++ {
+		if _, err := c.Reconcile(context.Background()); err != nil {
+			t.Fatalf("Reconcile() error = %v", err)
+		}
+	}
+	if n := len(rt.lastCreateSpec.Ports); n != 1 {
+		t.Errorf("Ports = %+v, want exactly the exposure binding", rt.lastCreateSpec.Ports)
+	}
+	if rt.createCalls != 1 {
+		t.Errorf("settled passes created containers: createCalls = %d, want 1", rt.createCalls)
 	}
 }

@@ -2,7 +2,10 @@ package main
 
 import (
 	"context"
+
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/deploysafety"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"log/slog"
 	"os"
 	"sync"
@@ -91,10 +94,22 @@ type dynamicSourceDeps struct {
 	// janitor runs scheduled cleanup passes on the local node.
 	janitor     *janitor.Engine
 	ingressEdge ingressEdge
+	// runtimeSettings is read each pass so a saved ingress body cap lands without a restart.
+	runtimeSettings func() *runtimesettings.Service
 	// lbRegistry is shared with the API so it can report live upstream status.
 	lbRegistry *loadbalancer.Registry
 	// proxySyncer is shared with the API so passes on one directory serialise.
 	proxySyncer *proxyroutes.Syncer
+	// dns01AllHosts reads the live DNS-01-for-every-host setting.
+	dns01AllHosts func(context.Context) bool
+	// fallbackCerts reads the live ingress.fallback_certs mode.
+	fallbackCerts func(context.Context) string
+	// deployWindows reads the live drain, stable, watch and hold timings.
+	deployWindows func(context.Context) deploysafety.Windows
+	// restartPolicy reads the live container restart policy setting.
+	restartPolicy func(context.Context) string
+	// dependsOnTimeout reads the live compose depends_on wait limit.
+	dependsOnTimeout func(context.Context) time.Duration
 }
 
 func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
@@ -130,6 +145,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			ingressreconcile.WithCertStore(deps.db),
 			ingressreconcile.WithServedHostsRecorder(deps.db),
 			ingressreconcile.WithDomainConditionsRecorder(deps.db),
+			ingressreconcile.WithDNS01HostLister(deps.db),
 			ingressreconcile.WithAuditRecorder(deps.db),
 			ingressreconcile.WithListenAddr(deps.ingressHTTPSAddr),
 			ingressreconcile.WithHTTPListenAddr(deps.ingressHTTPAddr),
@@ -142,7 +158,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			// Routes remote apps to their node's mesh address.
 			ingressreconcile.WithMeshPaths(newMeshPathResolver(deps.meshCfg, deps.db)),
 		}
-		ingressOpts = append(ingressOpts, deps.ingressEdge.options(ctx, deps.db, deps.logger)...)
+		ingressOpts = append(ingressOpts, deps.ingressEdge.options(ctx, deps.db, deps.logger, deps.settingsService())...)
 		if experimental.Enabled(experimental.AIModels) {
 			ingressOpts = append(ingressOpts, ingressreconcile.WithModelHosts(models.HostLister{Store: deps.db, Hosts: deps.models.hosts}))
 		}
@@ -177,6 +193,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		}
 		ingressOpts = append(ingressOpts, ingressreconcile.WithAppWake(deps.db, dashboardDialAddr(httpAddr()), appWakeToken()))
 		ingressOpts = append(ingressOpts, ingressreconcile.WithCanaries(deps.db), ingressreconcile.WithCanaryDials(canary.DefaultDials()))
+		ingressOpts = append(ingressOpts, ingressreconcile.WithDNS01AllHosts(deps.dns01AllHosts), ingressreconcile.WithFallbackCerts(deps.fallbackCerts))
 		controllers = append(controllers, ingressreconcile.New(deps.db, deps.runtime, deps.driver, ingressOpts...))
 		if deps.proxySyncer != nil {
 			controllers = append(controllers, proxyroutesreconcile.New(deps.proxySyncer))
@@ -280,6 +297,15 @@ func appOptionsFor(deps dynamicSourceDeps) []application.Option {
 	appOpts = append(appOpts, deps.deployGate.appOptions(deps.db)...)
 	if reconcile.WorkersFromEnv(os.Getenv) > 1 {
 		appOpts = append(appOpts, application.WithReadinessRequeue(pendingReadiness(), application.ReadinessRequeueFromEnv(os.Getenv)))
+	}
+	if deps.deployWindows != nil {
+		appOpts = append(appOpts, application.WithDeployWindows(deps.deployWindows))
+	}
+	if deps.restartPolicy != nil {
+		appOpts = append(appOpts, application.WithRestartPolicy(deps.restartPolicy))
+	}
+	if deps.dependsOnTimeout != nil {
+		appOpts = append(appOpts, application.WithDependsOnTimeout(deps.dependsOnTimeout))
 	}
 	if deps.retainedDeploys != nil {
 		appOpts = append(appOpts, application.WithRetainedDeploys(deps.retainedDeploys))
@@ -582,4 +608,11 @@ func agentVersionLookup(deps dynamicSourceDeps) database.AgentVersionLookup {
 		}
 		return n.AgentVersion, true, nil
 	}
+}
+
+func (d dynamicSourceDeps) settingsService() *runtimesettings.Service {
+	if d.runtimeSettings == nil {
+		return nil
+	}
+	return d.runtimeSettings()
 }

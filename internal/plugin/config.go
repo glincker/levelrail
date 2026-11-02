@@ -4,6 +4,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/plugin/egress"
 )
 
 // Environment variables that tune the plugin runtime.
@@ -17,6 +19,8 @@ const (
 	envMaxConcurrent   = "APP_PLUGIN_MAX_CONCURRENT"
 	envBackoffMax      = "APP_PLUGIN_BACKOFF_MAX"
 	envBreakerFailures = "APP_PLUGIN_BREAKER_FAILURES"
+	envDenialsTTL      = "APP_PLUGIN_EGRESS_DENIALS_TTL"
+	envDenialsTimeout  = "APP_PLUGIN_EGRESS_DENIALS_TIMEOUT"
 
 	// EnvAllowUnsigned lets an operator install and run a package with no signature.
 	EnvAllowUnsigned = "APP_PLUGIN_ALLOW_UNSIGNED"
@@ -30,6 +34,12 @@ type Config struct {
 
 	AllowUnsigned bool
 
+	// EgressMode is open (shared bridge) or proxy (allowlisting sidecar).
+	EgressMode string
+	// EgressImage runs the sidecar; EgressEnv carries its limits through.
+	EgressImage string
+	EgressEnv   map[string]string
+
 	MemoryBytes int64
 	NanoCPUs    int64
 	PidsLimit   int64
@@ -42,6 +52,9 @@ type Config struct {
 	BackoffBase       time.Duration
 	BackoffMax        time.Duration
 	BreakerCooldown   time.Duration
+	// DenialsTTL caches the sidecar denial tally; DenialsTimeout bounds one read.
+	DenialsTTL     time.Duration
+	DenialsTimeout time.Duration
 
 	HealthFailures  int
 	BreakerFailures int
@@ -65,6 +78,8 @@ func (c Config) withDefaults() Config {
 	setDur(&c.StopTimeout, 5*time.Second)
 	setDur(&c.BackoffBase, 2*time.Second)
 	setDur(&c.BackoffMax, 5*time.Minute)
+	setDur(&c.DenialsTTL, 10*time.Second)
+	setDur(&c.DenialsTimeout, 2*time.Second)
 	setDur(&c.BreakerCooldown, 30*time.Second)
 	setInt(&c.HealthFailures, 3)
 	setInt(&c.BreakerFailures, 5)
@@ -114,6 +129,7 @@ func ConfigFromEnv(namespace, dataDir string, lookup func(string) (string, bool)
 	}
 	for env, dst := range map[string]*time.Duration{
 		envCallTimeout: &c.CallTimeout, envStartTimeout: &c.StartTimeout, envReconcile: &c.ReconcileInterval, envBackoffMax: &c.BackoffMax,
+		envDenialsTTL: &c.DenialsTTL, envDenialsTimeout: &c.DenialsTimeout,
 	} {
 		if d, err := time.ParseDuration(get(env)); err == nil && d > 0 {
 			*dst = d
@@ -126,6 +142,16 @@ func ConfigFromEnv(namespace, dataDir string, lookup func(string) (string, bool)
 		c.MaxConcurrent = n
 	}
 	c.AllowUnsigned = get(EnvAllowUnsigned) == "true"
+	if strings.EqualFold(get(EnvEgressMode), EgressProxy) {
+		c.EgressMode = EgressProxy
+	}
+	c.EgressImage = get(EnvEgressImage)
+	c.EgressEnv = map[string]string{}
+	for _, k := range []string{egress.EnvConnectTimeout, egress.EnvIdleTimeout, egress.EnvMaxTunnels, egress.EnvBytesPerMinute, egress.EnvAllowPrivate} {
+		if v := get(k); v != "" {
+			c.EgressEnv[k] = v
+		}
+	}
 	if n, err := strconv.Atoi(get(envBreakerFailures)); err == nil && n > 0 {
 		c.BreakerFailures = n
 	}

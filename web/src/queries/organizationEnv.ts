@@ -68,6 +68,7 @@ export async function setOrganizationEnv(
 export function useSetOrganizationEnv(id: string) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (vars: Record<string, string>) => setOrganizationEnv(id, vars),
     onSuccess: (updated) => {
       queryClient.setQueryData(organizationEnvQueryKey(id), updated)

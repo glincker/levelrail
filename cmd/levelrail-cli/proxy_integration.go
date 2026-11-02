@@ -12,7 +12,7 @@ import (
 // runProxyIntegration handles "proxy setup|status|apply|verify|disable".
 func runProxyIntegration(prog, sub string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "proxy "+sub, "print the result as JSON to stdout and nothing else", stderr)
-	var confirm bool
+	var confirm, retryCert bool
 	var dir, domain, provider, certDir string
 	switch sub {
 	case "setup":
@@ -22,6 +22,7 @@ func runProxyIntegration(prog, sub string, args []string, stdout, stderr io.Writ
 		fs.StringVar(&certDir, "cert-dir", "", "nginx: certificate directory inside the proxy container, when it cannot be detected")
 	case "verify":
 		fs.StringVar(&domain, "domain", "", "verify only this domain")
+		fs.BoolVar(&retryCert, "retry-cert", false, "with --domain: make the proxy re-attempt a failed certificate request first (Traefik file routes)")
 	}
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, proxyUsage(prog)); fs.PrintDefaults() }
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -40,7 +41,7 @@ func runProxyIntegration(prog, sub string, args []string, stdout, stderr io.Writ
 	case "apply":
 		res, err = client.ApplyProxyIntegration(ctx)
 	case "verify":
-		res, err = client.VerifyProxyIntegration(ctx, domain)
+		res, err = client.VerifyProxyIntegrationOpts(ctx, domain, retryCert)
 	case "disable":
 		res, err = disableProxyIntegration(ctx, client)
 	}
@@ -99,18 +100,35 @@ func printProxyIntegration(out io.Writer, prog, sub string, r apiclient.ProxyInt
 		if dom.CheckedAt != "" {
 			line += fmt.Sprintf(" reachable=%v", dom.Reachable)
 			if dom.Certificate != nil {
-				line += fmt.Sprintf(" cert=%s until %s valid=%v", dom.Certificate.Issuer, dom.Certificate.NotAfter, dom.Certificate.Valid)
+				line += fmt.Sprintf(" cert=%s until %s valid=%v trusted=%v expired=%v", dom.Certificate.Issuer, dom.Certificate.NotAfter, dom.Certificate.Valid, dom.Certificate.Trusted, dom.Certificate.Expired)
 			}
 		}
 		if dom.LastError != "" {
 			line += ": " + dom.LastError
 		}
 		_, _ = fmt.Fprintln(out, strings.TrimSpace(line))
+		printProxyDiagnosis(out, dom)
 	}
 	for _, s := range r.Steps {
 		_, _ = fmt.Fprintf(out, "[%s] %s: %s\n", s.State, s.ID, s.Detail)
 	}
 	if sub == "setup" && r.DryRun {
 		_, _ = fmt.Fprintf(out, "\nRun %s proxy setup --confirm to apply.\n", prog)
+	}
+}
+
+func printProxyDiagnosis(out io.Writer, dom apiclient.ProxyDomain) {
+	if dom.Diagnosis == "" {
+		return
+	}
+	_, _ = fmt.Fprintf(out, "  diagnosis: %s\n", dom.Diagnosis)
+	if dom.Hint != "" {
+		_, _ = fmt.Fprintf(out, "  fix: %s\n", dom.Hint)
+	}
+	for _, e := range dom.Evidence {
+		_, _ = fmt.Fprintf(out, "  evidence: %s\n", e)
+	}
+	if dom.Snippet != "" {
+		_, _ = fmt.Fprintf(out, "  snippet:\n    %s\n", strings.ReplaceAll(dom.Snippet, "\n", "\n    "))
 	}
 }

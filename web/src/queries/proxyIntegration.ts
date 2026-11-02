@@ -66,6 +66,9 @@ export interface ProxyCertificate {
   issuer: string
   not_after: string
   valid: boolean
+  trusted?: boolean
+  expired?: boolean
+  class?: string
 }
 
 export interface ProxyDomain {
@@ -81,6 +84,14 @@ export interface ProxyDomain {
   checked_at: string
   // delivered: verification proved requests reach the built-in ingress.
   delivered?: boolean
+  // Diagnosis code, hint, snippet and evidence explain an unusable certificate.
+  diagnosis?: string
+  hint?: string
+  snippet?: string
+  evidence?: string[]
+  // Set while a certificate is still expected: poll until then.
+  recheck_until?: string
+  first_seen?: string
 }
 
 export interface ProxyStep {
@@ -200,6 +211,13 @@ export function useApplyProxyIntegration() {
 export function useVerifyProxyDomain() {
   return useInvalidating<string, ProxyDomain>((domain) =>
     post(`${BASE}/verify?domain=${encodeURIComponent(domain)}`),
+  )
+}
+
+// Makes the proxy re-attempt a failed certificate request, then verifies.
+export function useRetryProxyCert() {
+  return useInvalidating<string, ProxyDomain>((domain) =>
+    post(`${BASE}/verify?domain=${encodeURIComponent(domain)}&retry=1`),
   )
 }
 

@@ -1208,3 +1208,33 @@ func TestParse_ImageShorthand(t *testing.T) {
 		})
 	}
 }
+
+func TestParse_DatabaseSeedFrom(t *testing.T) {
+	base := "version: 1\nservices:\n  web: { build: { type: dockerfile }, port: 3000 }\ndatabases:\n  main: { engine: postgres, ephemeralInPreviews: true%s }\n"
+	cases := []struct {
+		name, extra, want string
+		wantErr           bool
+	}{
+		{"omitted defaults to empty", "", "", false},
+		{"latest", ", seedFrom: latest", SeedFromLatest, false},
+		{"none", ", seedFrom: none", SeedFromNone, false},
+		{"unknown value is refused", ", seedFrom: oldest", "", true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			s, err := Parse([]byte(fmt.Sprintf(base, tc.extra)))
+			if tc.wantErr {
+				if err == nil {
+					t.Fatal("Parse() error = nil, want a seedFrom error")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("Parse() error = %v", err)
+			}
+			if got := s.Databases["main"].SeedFrom; got != tc.want {
+				t.Errorf("SeedFrom = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}

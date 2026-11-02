@@ -84,6 +84,7 @@ export function NewAppWizard({ initial }: { initial?: WizardInitial } = {}) {
   const resumeStep = useRef<StepId | null>(draft?.step ?? null)
 
   const analyze = useMutation({
+    meta: { errorToast: false },
     mutationFn: (req: ImportAnalyzeRequest) => analyzeImport(req),
   })
 

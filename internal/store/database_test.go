@@ -22,6 +22,8 @@ func TestSaveAndGetDesiredDatabase(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetDesiredDatabase() error = %v", err)
 	}
+	// Identity is generated on insert; everything else must round-trip.
+	want.InstanceID, want.CreatedAt = got.InstanceID, got.CreatedAt
 	if *got != want {
 		t.Errorf("got %+v, want %+v", got, want)
 	}
@@ -48,6 +50,8 @@ func TestSaveAndGetDesiredDatabase_MySQL(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetDesiredDatabase() error = %v", err)
 	}
+	// Identity is generated on insert; everything else must round-trip.
+	want.InstanceID, want.CreatedAt = got.InstanceID, got.CreatedAt
 	if *got != want {
 		t.Errorf("got %+v, want %+v", got, want)
 	}
@@ -1026,5 +1030,108 @@ func TestSetDatabasePublicAccess_RangeExhausted(t *testing.T) {
 	_, err := db.SetDatabasePublicAccess(ctx, "main", true, 0, "")
 	if !errors.Is(err, ErrPublicPortRangeExhausted) {
 		t.Errorf("SetDatabasePublicAccess() error = %v, want ErrPublicPortRangeExhausted", err)
+	}
+}
+
+func TestListBaseBackupScheduledDatabases(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	for _, name := range []string{"on", "pitr-off", "no-schedule"} {
+		if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: name, Engine: EnginePostgres, Version: "16"}); err != nil {
+			t.Fatalf("SaveDesiredDatabase(%s) error = %v", name, err)
+		}
+	}
+	for _, name := range []string{"on", "no-schedule"} {
+		if err := db.SetDatabasePITR(ctx, name, true, "2026-08-14T00:00:00Z"); err != nil {
+			t.Fatalf("SetDatabasePITR(%s) error = %v", name, err)
+		}
+	}
+	for _, name := range []string{"on", "pitr-off"} {
+		if err := db.SetDatabaseBaseBackupSchedule(ctx, name, "0 4 * * 0", "bkt_x"); err != nil {
+			t.Fatalf("SetDatabaseBaseBackupSchedule(%s) error = %v", name, err)
+		}
+	}
+
+	got, err := db.ListBaseBackupScheduledDatabases(ctx)
+	if err != nil {
+		t.Fatalf("ListBaseBackupScheduledDatabases() error = %v", err)
+	}
+	if len(got) != 1 || got[0].Name != "on" || got[0].BaseBackupSchedule != "0 4 * * 0" || got[0].BaseBackupTargetID != "bkt_x" {
+		t.Fatalf("got = %+v, want exactly [on] with its schedule", got)
+	}
+	if err := db.SetDatabaseBaseBackupSchedule(ctx, "missing", "", ""); !errors.Is(err, ErrDatabaseNotFound) {
+		t.Errorf("missing database error = %v, want ErrDatabaseNotFound", err)
+	}
+}
+
+func TestCreateDesiredDatabase_SecondCreateOfSameNameFails(t *testing.T) {
+	t.Parallel()
+	db := openTestDB(t)
+	ctx := context.Background()
+	d := DesiredDatabase{Name: "dup", Engine: EnginePostgres, Version: "16"}
+	if err := db.CreateDesiredDatabase(ctx, d); err != nil {
+		t.Fatalf("first create: %v", err)
+	}
+	if err := db.CreateDesiredDatabase(ctx, d); !errors.Is(err, ErrDatabaseExists) {
+		t.Fatalf("second create = %v, want ErrDatabaseExists", err)
+	}
+}
+
+func TestDatabaseInstance_BackupsAreStampedAndNotSharedAcrossNameReuse(t *testing.T) {
+	t.Parallel()
+	db := openTestDB(t)
+	ctx := context.Background()
+	if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: "n", Engine: EnginePostgres, Version: "16"}); err != nil {
+		t.Fatal(err)
+	}
+	first, _ := db.GetDesiredDatabase(ctx, "n")
+	if first.InstanceID == "" || first.CreatedAt == "" {
+		t.Fatalf("instance identity not set: %+v", first)
+	}
+	target := seedBackupTarget(t, db)
+	if err := db.StartBackupHistory(ctx, BackupHistory{ID: "b1", DatabaseName: "n", TargetID: target.ID, ObjectKey: "k", StartedAt: "2026-08-14T00:00:00Z"}); err != nil {
+		t.Fatal(err)
+	}
+	b, _ := db.GetBackupHistory(ctx, "b1")
+	if b.InstanceID != first.InstanceID || !first.OwnsBackup(b.InstanceID, b.StartedAt) {
+		t.Fatalf("backup instance = %q, database = %q", b.InstanceID, first.InstanceID)
+	}
+	if err := db.DeleteDesiredDatabase(ctx, "n"); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: "n", Engine: EnginePostgres, Version: "16"}); err != nil {
+		t.Fatal(err)
+	}
+	second, _ := db.GetDesiredDatabase(ctx, "n")
+	if second.InstanceID == first.InstanceID || second.OwnsBackup(b.InstanceID, b.StartedAt) {
+		t.Fatalf("recreated database shares identity with the deleted one: %q", second.InstanceID)
+	}
+	// Save over an existing row must not rotate the identity.
+	if err := db.SaveDesiredDatabase(ctx, DesiredDatabase{Name: "n", Engine: EnginePostgres, Version: "17"}); err != nil {
+		t.Fatal(err)
+	}
+	again, _ := db.GetDesiredDatabase(ctx, "n")
+	if again.InstanceID != second.InstanceID || again.CreatedAt != second.CreatedAt {
+		t.Errorf("identity changed on update: %+v vs %+v", again, second)
+	}
+}
+
+func TestOwnsBackup_LegacyRowRules(t *testing.T) {
+	t.Parallel()
+	d := DesiredDatabase{InstanceID: "abc", CreatedAt: "2026-05-01T00:00:00Z"}
+	cases := []struct {
+		name, inst, started string
+		want                bool
+	}{
+		{"same instance", "abc", "2020-01-01T00:00:00Z", true},
+		{"other instance", "zzz", "2026-06-01T00:00:00Z", false},
+		{"legacy after creation", "", "2026-06-01T00:00:00Z", true},
+		{"legacy before creation", "", "2026-04-01T00:00:00Z", false},
+		{"legacy unparsable", "", "soon", false},
+	}
+	for _, c := range cases {
+		if got := d.OwnsBackup(c.inst, c.started); got != c.want {
+			t.Errorf("%s: got %v, want %v", c.name, got, c.want)
+		}
 	}
 }

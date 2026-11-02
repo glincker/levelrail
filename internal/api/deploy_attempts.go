@@ -13,6 +13,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/failure"
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/supplychain"
 	"github.com/GLINCKER/levelrail/kit/untrusted"
@@ -473,9 +474,11 @@ func (rt *Router) serveFinishedDeployLog(ctx context.Context, w http.ResponseWri
 	for _, r := range rows {
 		sent[r.Key] = stepSignature(r)
 	}
+	masked := newMaskedSSE(w)
 	for _, e := range rt.mergeTraceIntoLog(ctx, deployID, entries) {
-		writeSSEEvent(w, sseLogEvent{Line: e.Message, Stream: e.Stream})
+		masked.Write(sseLogEvent{Line: e.Message, Stream: e.Stream})
 	}
+	masked.Flush()
 	flusher.Flush()
 
 	rt.followTraceLog(ctx, w, flusher, deployID, true, sent)
@@ -510,13 +513,14 @@ func (rt *Router) serveLiveDeployLog(w http.ResponseWriter, r *http.Request, dep
 	// Same zero-body-flush gap serveFinishedDeployLog already fixed:
 	// write one byte so the browser confirms the connection is open.
 	_, _ = fmt.Fprint(w, ": connected\n\n")
+	masked := newMaskedSSE(w)
 	for _, ev := range lines {
-		writeSSEEvent(w, sseLogEvent{Line: ev.Line, Stream: ev.Stream})
+		masked.Write(sseLogEvent{Line: ev.Line, Stream: ev.Stream})
 	}
 	sent := map[string]string{}
 	if rows := rt.traceRows(r.Context(), deployID); len(rows) > 0 {
 		for _, e := range traceLogEntries(deployID, rows) {
-			writeSSEEvent(w, sseLogEvent{Line: e.Message, Stream: e.Stream})
+			masked.Write(sseLogEvent{Line: e.Message, Stream: e.Stream})
 		}
 		for _, row := range rows {
 			sent[row.Key] = stepSignature(row)
@@ -530,7 +534,12 @@ func (rt *Router) serveLiveDeployLog(w http.ResponseWriter, r *http.Request, dep
 		select {
 		case <-r.Context().Done():
 			return
+		case <-masked.Idle():
+			masked.Flush()
+			flusher.Flush()
 		case <-traceTick.C:
+			// Release held log lines first so trace lines cannot overtake them.
+			masked.Flush()
 			rt.writeChangedTraceLines(r.Context(), w, flusher, deployID, sent)
 		case ev, chOpen := <-live:
 			if !chOpen {
@@ -539,11 +548,13 @@ func (rt *Router) serveLiveDeployLog(w http.ResponseWriter, r *http.Request, dep
 				// following trace rows the reconciler adds after the
 				// attempt finished, and stay open for the same
 				// reconnect-avoidance reason as serveFinishedDeployLog.
+				masked.Flush()
+				flusher.Flush()
 				rt.followTraceLog(r.Context(), w, flusher, deployID, true, sent)
 				<-r.Context().Done()
 				return
 			}
-			writeSSEEvent(w, sseLogEvent{Line: ev.Line, Stream: ev.Stream})
+			masked.Write(sseLogEvent{Line: ev.Line, Stream: ev.Stream})
 			flusher.Flush()
 		}
 	}
@@ -573,6 +584,8 @@ func startSSE(w http.ResponseWriter) (flusher http.Flusher, ok bool) {
 // marshal), so it's logged and skipped rather than propagated: one
 // unmarshalable line must not tear down an otherwise-healthy stream.
 func writeSSEEvent(w http.ResponseWriter, ev sseLogEvent) {
+	// Last stop before the wire: live container tails reach here without passing the store's masking.
+	ev.Line = secretmask.Mask(ev.Line)
 	data, err := json.Marshal(ev)
 	if err != nil {
 		slog.Default().Error("api: marshal deploy log event failed", slog.String("error", err.Error()))
@@ -584,5 +597,6 @@ func writeSSEEvent(w http.ResponseWriter, ev sseLogEvent) {
 // deployErrorMessage is stored and served on the deploy record and the error
 // carries repo-author build output, so strip control codes, redact and bound it.
 func deployErrorMessage(err error) string {
-	return untrusted.Sanitize(err.Error(), failureOptions().MaxBytes)
+	// Mask before Sanitize truncates so a secret cut at the limit leaves no fragment.
+	return untrusted.Sanitize(secretmask.Mask(err.Error()), failureOptions().MaxBytes)
 }

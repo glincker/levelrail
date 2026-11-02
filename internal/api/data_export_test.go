@@ -49,6 +49,7 @@ func newExportRouter(t *testing.T) (*Router, *store.DB, *http.Cookie) {
 }
 
 func TestExportDestinations_CRUDNeverReturnsSecrets(t *testing.T) {
+	t.Parallel()
 	rt, _, cookie := newExportRouter(t)
 	do := func(method, path, body string) *httptest.ResponseRecorder {
 		rec := httptest.NewRecorder()
@@ -113,6 +114,7 @@ func TestExportDestinations_CRUDNeverReturnsSecrets(t *testing.T) {
 }
 
 func TestExportDestinations_NotConfiguredAndReadTokenForbidden(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	rec := httptest.NewRecorder()
@@ -150,6 +152,7 @@ func TestExportDestinations_NotConfiguredAndReadTokenForbidden(t *testing.T) {
 }
 
 func TestMetricsRequiresAuth(t *testing.T) {
+	t.Parallel()
 	rt, _, _ := newExportRouter(t)
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/metrics", nil))
@@ -159,6 +162,7 @@ func TestMetricsRequiresAuth(t *testing.T) {
 }
 
 func TestAuditLogExport_FormatsRangeAndRedaction(t *testing.T) {
+	t.Parallel()
 	rt, db, cookie := newExportRouter(t)
 	base := time.Now().UTC().Add(-time.Hour).Truncate(time.Second)
 	for i, p := range []string{"/a", "/api/v1/hooks/ghp_abcdefghijklmnopqrstuvwxyz0123456789", "/c"} {

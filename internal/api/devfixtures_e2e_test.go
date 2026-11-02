@@ -92,6 +92,7 @@ func bearerRequest(method, target, body, plaintext string) *http.Request {
 }
 
 func TestDevFixturesE2E_ReadToken_CanListButNotCreate(t *testing.T) {
+	t.Parallel()
 	fixtures := loadRealDevFixtures(t)
 	rt, _ := newDevFixturesTestRouter(t, fixtures)
 	token := fixturePlaintext(t, fixtures, "dev-read")
@@ -110,6 +111,7 @@ func TestDevFixturesE2E_ReadToken_CanListButNotCreate(t *testing.T) {
 }
 
 func TestDevFixturesE2E_ReadSensitiveToken_DoesNotImplyPlainRead(t *testing.T) {
+	t.Parallel()
 	// No route in router.go requires read:sensitive on its own today
 	// (see the PUT secrets route, which is write:sensitive, not
 	// read:sensitive). The one thing worth pinning down here is that
@@ -128,6 +130,7 @@ func TestDevFixturesE2E_ReadSensitiveToken_DoesNotImplyPlainRead(t *testing.T) {
 }
 
 func TestDevFixturesE2E_WriteToken_CanCreateButNotSetSecret(t *testing.T) {
+	t.Parallel()
 	fixtures := loadRealDevFixtures(t)
 	rt, _ := newDevFixturesTestRouter(t, fixtures)
 	token := fixturePlaintext(t, fixtures, "dev-write")
@@ -146,6 +149,7 @@ func TestDevFixturesE2E_WriteToken_CanCreateButNotSetSecret(t *testing.T) {
 }
 
 func TestDevFixturesE2E_WriteSensitiveToken_ReachesSecretsHandler(t *testing.T) {
+	t.Parallel()
 	fixtures := loadRealDevFixtures(t)
 	rt, db := newDevFixturesTestRouter(t, fixtures)
 	token := fixturePlaintext(t, fixtures, "dev-write-sensitive")
@@ -171,6 +175,7 @@ func TestDevFixturesE2E_WriteSensitiveToken_ReachesSecretsHandler(t *testing.T) 
 }
 
 func TestDevFixturesE2E_DeployToken_CannotRead(t *testing.T) {
+	t.Parallel()
 	// Deploy does not imply read: this is the ability pairing people get
 	// wrong most often, worth its own explicit assertion rather than
 	// folding into another test.
@@ -186,6 +191,7 @@ func TestDevFixturesE2E_DeployToken_CannotRead(t *testing.T) {
 }
 
 func TestDevFixturesE2E_RootToken_CanReadAnything(t *testing.T) {
+	t.Parallel()
 	fixtures := loadRealDevFixtures(t)
 	rt, _ := newDevFixturesTestRouter(t, fixtures)
 	token := fixturePlaintext(t, fixtures, "dev-root")
@@ -198,6 +204,7 @@ func TestDevFixturesE2E_RootToken_CanReadAnything(t *testing.T) {
 }
 
 func TestDevFixturesE2E_NoCredential_Unauthorized(t *testing.T) {
+	t.Parallel()
 	fixtures := loadRealDevFixtures(t)
 	rt, _ := newDevFixturesTestRouter(t, fixtures)
 

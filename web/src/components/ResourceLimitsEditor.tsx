@@ -180,7 +180,7 @@ function toResources(values: ResourcesFormValues): ServiceResources {
 // background refetch stomp unsaved edits in a sibling editor.
 export function ResourceLimitsEditor({ app }: { app: AppDetail }) {
   const { t } = useTranslation('common')
-  const updateApp = useUpdateApp(app.name)
+  const updateApp = useUpdateApp(app.name, { inlineError: true })
   const notifyRestartRequired = useRestartRequiredToast()
   const { control, register, handleSubmit, formState } =
     useForm<ResourcesFormValues>({

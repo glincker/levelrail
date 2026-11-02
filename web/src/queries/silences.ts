@@ -77,6 +77,7 @@ export function useSilences() {
 export function useCreateSilence() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async (input: CreateSilenceInput): Promise<IssueSilence> => {
       const res = await fetch('/api/v1/silences', {
         method: 'POST',

@@ -1,0 +1,22 @@
+id: imgproxy
+name: imgproxy
+description: A fast image processing server that resizes, crops and converts images on the fly from signed URLs. Apache-2.0 licensed. A signing key and salt are generated for you, so only URLs signed with them are served.
+icon: image
+category: Infrastructure
+documentation_url: https://docs.imgproxy.net/
+source_repo: https://github.com/imgproxy/imgproxy
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/imgproxy/imgproxy/blob/master/LICENSE
+recommended_memory_bytes: 268435456
+domains:
+  - service: imgproxy
+    port: 8080
+    description: Public address of the image proxy.
+healthcheck:
+  service: imgproxy
+  port: 8080
+  path: /health
+status: active
+listing:
+  by: community

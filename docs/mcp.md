@@ -27,6 +27,8 @@ By default a session lists about 2,400 estimated tokens: a small core (list and 
 
 ## Tools follow the token's abilities
 
+New tokens are read only unless you opt in to changes, see [Connect an AI assistant safely](/mcp-safe-setup).
+
 `tools/list` offers only the tools the connected token can call. A `read` token sees read tools, a `read,deploy` token also sees the deploy tier (`deploy_app`, `deploy_template`, `rollback_app`, `restart_app` and the canary tools) but not `set_app_env` or `set_app_domains`, a `write` or `write:sensitive` token sees the write tools, and `root` sees everything its mode lists. `enable_toolset` and `list_toolsets` apply the same filter, so a toolset with nothing the token can call is not offered. The filter only narrows the list and costs no extra tokens. It is skipped, and the full mode list is shown, when the token's abilities cannot be read or when IAM policies are attached to it, since a policy can grant access to one resource beyond the base abilities. The server still decides every call.
 
 A call the server refuses for a missing ability returns a short structured error such as `forbidden: {"missing_ability":"write:sensitive","use_instead":"plan_change"}`: the ability to ask for, and a read-only tool to call instead. Refusals from AI control or step-up keep their own message.
@@ -157,7 +159,7 @@ Environment:
 | `APP_MCP_HTTP_CALL_TIMEOUT_SECONDS` | 30 | Time limit for one tool's REST call |
 | `APP_MCP_HTTP_ALLOWED_ORIGINS` | empty | Extra browser origins, comma separated. The dashboard URL is always allowed |
 
-A request with an `Origin` header outside that list gets 403, which blocks DNS rebinding and browser abuse. Clients that send no `Origin` are unaffected. Each tool call writes an audit row with action `mcp.tool_call` holding the tool name, token id, outcome and argument names, never argument values.
+A request with an `Origin` header outside that list gets 403, which blocks DNS rebinding and browser abuse. Clients that send no `Origin` are unaffected. Each tool call writes an audit row with action `mcp.tool_call` holding the tool name, token id, outcome and argument names, never argument values. The server emits that event for every tool call through one audit hook (`mcptools.Options.AuditSink`), including calls that are denied or fail validation, and a registry test fails when any tool skips it. The local stdio server tags each API request with the tool name and argument names (headers `X-Levelrail-Mcp-Tool` and `X-Levelrail-Mcp-Args`, advisory, names only, never values). A read-only call made with an API token then lands as an `mcp.tool_call` row with `transport: stdio` and `source: client_header` in its detail. These rows are client-reported: the actor, path, method and status are recorded by the server, but the tool and argument names are whatever the client sent, so treat them as labels, not proof. A write call keeps its normal audit row with the same tool detail. Rows are per API request, not per tool call, so retries and tools that make several requests produce several rows. Client-reported rows are not sent to event webhooks, and are capped per token per minute by `APP_MCP_STDIO_TAG_ROWS_PER_MIN` (default 600, 0 turns the cap off). Names keep only letters, digits and `_ . : -`. Tools that make no API request, such as toolset switches, are not in the control plane audit log; the stdio server logs them (name, argument names, outcome) to stderr instead.
 
 ## OAuth for remote clients
 

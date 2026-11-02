@@ -4,11 +4,11 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -40,7 +40,7 @@ type BackupTargetStore interface {
 	GetBackupTarget(ctx context.Context, id string) (store.BackupTarget, error)
 	ListBackupTargets(ctx context.Context) ([]store.BackupTarget, error)
 	UpdateBackupTarget(ctx context.Context, id, name, provider, endpoint, region, bucket string) error
-	DeleteBackupTarget(ctx context.Context, id string) error
+	RetireBackupTarget(ctx context.Context, id string) (store.RetireResult, error)
 }
 
 // BackupSecretsSetter is the surface backup target creation needs from
@@ -85,7 +85,7 @@ func toBackupTargetResource(t store.BackupTarget) backupTargetResource {
 	provider, endpoint, localRoot := t.Provider, t.Endpoint, ""
 	if strings.HasPrefix(t.Endpoint, store.LocalEndpointScheme) {
 		provider, endpoint = backupProviderLocal, ""
-		localRoot = backup.LocalRootFromEnv(os.LookupEnv)
+		localRoot = backup.ResolvedLocalRoot()
 	}
 	return backupTargetResource{
 		ID:           t.ID,
@@ -154,7 +154,7 @@ func validateCreateBackupTargetRequest(req createBackupTargetRequest) error {
 		if req.Name == "" {
 			return errors.New("name is required")
 		}
-		if backup.LocalRootFromEnv(os.LookupEnv) == "" {
+		if backup.ResolvedLocalRoot() == "" {
 			return errors.New("local targets need " + backup.EnvLocalRoot + " (or APP_DATA_DIR) set to an absolute directory on the control plane")
 		}
 		_, err := backup.CleanLocalPath(req.Bucket)
@@ -360,34 +360,56 @@ func (rt *Router) handleUpdateBackupTarget(w http.ResponseWriter, r *http.Reques
 // handleDeleteBackupTarget handles DELETE /api/v1/backup-targets/{id}.
 // AbilityWriteSensitive, same as create: deleting the row that gates
 // access to a set of live bucket credentials is a sensitive operation
-// even though this handler itself never touches the credential values.
-//
-// Known gap, left honest rather than silently incomplete:
-// internal/secrets.Manager has no delete/revoke operation today (only
-// SetValue/Resolve/Exists), so the access_key_id/secret_access_key this
-// target's SetValue calls wrote remain in the secrets store,
-// unreferenced and unreachable through this API but not actually erased
-// at rest. Adding secret deletion is its own change to
-// internal/secrets, deliberately not bundled into this one.
+// even though this handler itself never reads the credential values.
+// The retire wipes the stored credentials in the same transaction.
 func (rt *Router) handleDeleteBackupTarget(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
+	rt.retireBackupTarget(w, r, r.PathValue("id"), "backup target")
+}
 
-	err := rt.backupTargets.DeleteBackupTarget(r.Context(), id)
-	if errors.Is(err, store.ErrBackupTargetNotFound) {
-		writeError(w, http.StatusNotFound, "backup target not found")
+// retireBackupTarget answers 409 with the live references, or detaches the
+// history of deleted resources and records how many rows were detached.
+func (rt *Router) retireBackupTarget(w http.ResponseWriter, r *http.Request, id, noun string) {
+	res, err := rt.backupTargets.RetireBackupTarget(r.Context(), id)
+	var inUse *store.BackupTargetInUseError
+	switch {
+	case errors.Is(err, store.ErrBackupTargetNotFound):
+		writeError(w, http.StatusNotFound, noun+" not found")
+		return
+	case errors.As(err, &inUse):
+		writeError(w, http.StatusConflict, noun+" is still in use by "+strings.Join(inUse.Blockers, "; ")+"; remove or delete those first (for backup history, delete the listed backups or the database itself)")
+		return
+	case err != nil && strings.Contains(err.Error(), "FOREIGN KEY"):
+		writeError(w, http.StatusConflict, noun+" is still referenced by other records; remove those first")
+		return
+	case err != nil:
+		rt.internalError(w, "api: delete "+noun+": retire failed", err, slog.String("id", id))
 		return
 	}
-	if err != nil {
-		// Most likely cause: migrations/0018's foreign key from
-		// backup_history still references this target (see
-		// store.DeleteBackupTarget's own doc comment). A 409, not a
-		// 500: the caller did something the current state of the
-		// system won't allow, not something this server got wrong.
-		writeError(w, http.StatusConflict, "backup target still has backup history; delete is blocked until that's addressed")
-		return
-	}
-
+	rt.auditBackupTargetDeleted(r, id, res)
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (rt *Router) auditBackupTargetDeleted(r *http.Request, id string, res store.RetireResult) {
+	if rt.auditLog == nil {
+		return
+	}
+	entryID, err := store.NewAuditEntryID()
+	if err != nil {
+		rt.logger.Warn("api: backup target delete audit id failed", slog.String("error", err.Error()))
+		return
+	}
+	a := rt.accessActor(r)
+	detail, _ := json.Marshal(map[string]any{"target_id": id, "detached_history_rows": res.Detached, "pruned_failed_attempts": res.Pruned})
+	entry := store.AuditEntry{
+		ID: entryID, ActorType: a.kind, ActorID: a.id, ActorName: a.name,
+		Ability: AbilityWriteSensitive, Method: r.Method, Path: r.URL.Path, StatusCode: http.StatusNoContent,
+		RemoteAddr: clientIP(r), CreatedAt: store.FormatAuditTime(time.Now()),
+		ClientKind: clientKindFromUserAgent(r.Header.Get("User-Agent")),
+		Action:     "backup_target.deleted", Detail: string(detail),
+	}
+	if err := rt.auditLog.SaveAuditEntry(context.WithoutCancel(r.Context()), entry); err != nil {
+		rt.logger.Warn("api: backup target delete audit save failed", slog.String("error", err.Error()))
+	}
 }
 
 // handleTestBackupTarget handles POST /api/v1/backup-targets/{id}/test:

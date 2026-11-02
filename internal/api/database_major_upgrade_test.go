@@ -39,6 +39,7 @@ func (f *fakeMajorUpgrader) DiscardSnapshot(_ context.Context, id string) error 
 }
 
 func TestCheckMajorUpgrade(t *testing.T) {
+	t.Parallel()
 	pg := func(v string, pitr bool) *store.DesiredDatabase {
 		return &store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: v, PITREnabled: pitr}
 	}
@@ -71,6 +72,7 @@ func TestCheckMajorUpgrade(t *testing.T) {
 }
 
 func TestMajorUpgradeRoutes(t *testing.T) {
+	t.Parallel()
 	up := newFakeMajorUpgrader()
 	db := openTestDB(t)
 	rt := NewRouter(discardLogger(), testBrand(), db, WithMajorUpgrader(up))
@@ -141,6 +143,7 @@ func TestMajorUpgradeRoutes(t *testing.T) {
 }
 
 func TestMajorUpgradeRoutes_NotConfigured(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	mustCreateDatabase(t, rt, cookie, `{"name":"main","engine":"postgres","version":"16"}`)

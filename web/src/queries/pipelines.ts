@@ -208,6 +208,7 @@ export function useSavePipeline(app: string) {
 export function useDeletePipeline(app: string) {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (name: string) =>
       requestJson<void>(
         `${base(app)}/pipelines/${encodeURIComponent(name)}`,
@@ -223,6 +224,7 @@ export function useDeletePipeline(app: string) {
 export function useStartPipelineRun(app: string) {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: ({ name, req }: { name: string; req: PipelineStartRequest }) =>
       requestJson<PipelineRun>(
         `${base(app)}/pipelines/${encodeURIComponent(name)}/runs`,

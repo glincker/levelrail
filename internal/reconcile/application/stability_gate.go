@@ -86,14 +86,18 @@ func (c *Controller) safetyFor(ctx context.Context, desired *store.DesiredServic
 	if c.gateDefaults == nil {
 		return deploysafety.Effective{SuccessThreshold: 1}
 	}
+	base := *c.gateDefaults
+	if c.deployWindows != nil {
+		base = base.WithWindows(c.deployWindows(ctx))
+	}
 	if c.gateSource == nil {
-		return *c.gateDefaults
+		return base
 	}
 	overrides, err := c.gateSource.GetDeploySafetySettings(ctx, desired.Name)
 	if err != nil {
-		return *c.gateDefaults
+		return base
 	}
-	return deploysafety.Resolve(*c.gateDefaults, overrides)
+	return deploysafety.Resolve(base, overrides)
 }
 
 func (c *Controller) recordGate(ctx context.Context, desired *store.DesiredService, container, phase, status, reason, message string) {

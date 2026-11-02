@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 // Delivery states of a status webhook delivery.
@@ -178,6 +180,7 @@ func (db *DB) AddStatusWebhookDelivery(ctx context.Context, d StatusWebhookDeliv
 	if d.DeliveredAt != nil {
 		delivered = statusTime(*d.DeliveredAt)
 	}
+	d.LastError = secretmask.Mask(d.LastError)
 	res, err := db.ExecContext(ctx, `INSERT OR IGNORE INTO status_webhook_deliveries
 		(id, webhook_id, event_id, event_type, payload, state, attempts, next_attempt_at, last_status, last_error, created_at, delivered_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -254,6 +257,7 @@ func (db *DB) RecordStatusWebhookAttempt(ctx context.Context, d StatusWebhookDel
 	if d.DeliveredAt != nil {
 		delivered = statusTime(*d.DeliveredAt)
 	}
+	d.LastError = secretmask.Mask(d.LastError)
 	if _, err := tx.ExecContext(ctx, `UPDATE status_webhook_deliveries SET state = ?, attempts = ?, next_attempt_at = ?, last_status = ?, last_error = ?, delivered_at = ? WHERE id = ?`,
 		d.State, d.Attempts, statusTime(d.NextAttemptAt), d.LastStatus, d.LastError, delivered, d.ID); err != nil {
 		return false, fmt.Errorf("store: update status webhook delivery: %w", err)

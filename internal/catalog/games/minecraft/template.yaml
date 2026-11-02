@@ -1,0 +1,61 @@
+id: minecraft
+name: Minecraft Server
+description: "A Minecraft Java server (vanilla, Paper, Fabric or Forge via the server type field) that downloads the selected version on first boot (default 1.21.11, tested on the Java 21 image). You must accept the Minecraft EULA yourself by entering TRUE; it is never accepted for you. Players connect to TCP 25565 (no web address is created for it): the port binds privately by default, so set a public bind in the app's Network settings and open TCP 25565 in the host and cloud firewall. RCON is on with a generated password but its port is not published; run apps console from the CLI. The JVM heap is the memory field and the container limit defaults to 2560M, 25 percent above the 2G heap. Defaults suit 2 CPUs and 12 GB of RAM shared with other apps. Image is multi-arch (amd64 and arm64)."
+icon: cube
+category: Games
+documentation_url: https://docker-minecraft-server.readthedocs.io/
+recommended_memory_bytes: 2684354560
+console_command: [rcon-cli]
+env:
+  - key: EULA
+    label: Accept the Minecraft EULA
+    description: Enter TRUE only after reading https://aka.ms/MinecraftEULA. The server refuses to start otherwise.
+    required: true
+  - key: SERVER_TYPE
+    label: Server type
+    description: One of VANILLA, PAPER, FABRIC or FORGE.
+    default: VANILLA
+  - key: SERVER_VERSION
+    label: Minecraft version
+    description: A version such as 1.21.11. The default boots on the Java 21 image. LATEST can resolve to a release that needs a newer Java and then crash on start; use it only together with the java25 runtime below.
+    default: 1.21.11
+  - key: JAVA_VARIANT
+    label: Java runtime
+    description: java21 runs Minecraft up to 1.21.11. Choose java25 for LATEST or any 26.x release. Both are multi-arch (amd64 and arm64).
+    default: java21
+  - key: MEMORY
+    label: JVM heap
+    description: Heap size, for example 2G. Keep the container limit about 25 percent above it.
+    default: 2G
+  - key: MEMORY_LIMIT
+    label: Container memory limit
+    description: Hard cap for the container, about 25 percent above the heap, for example 2560M for a 2G heap.
+    default: 2560M
+  - key: VIEW_DISTANCE
+    label: View distance
+    description: Chunks sent to each player. Lower is lighter on a small host.
+    default: "8"
+  - key: SIMULATION_DISTANCE
+    label: Simulation distance
+    description: Chunks around each player that tick.
+    default: "6"
+  - key: ENABLE_WHITELIST
+    label: Use a whitelist
+    description: TRUE to let only listed players join.
+    default: "FALSE"
+  - key: ENFORCE_WHITELIST
+    label: Enforce the whitelist
+    description: TRUE to kick players who are not listed when the list changes.
+    default: "FALSE"
+  - key: WHITELIST
+    label: Whitelisted players
+    description: Comma separated player names.
+  - key: OPS
+    label: Operators
+    description: Comma separated player names that get operator rights.
+  - key: RCON_PASSWORD
+    label: RCON password
+    description: Generated. Used by rcon-cli inside the container.
+    generate: password
+    length: 24
+    secret: true

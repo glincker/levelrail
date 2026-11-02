@@ -78,6 +78,8 @@ export interface SetGitSourceBuildRequest {
   base_directory: string
   build_command?: string
   publish_dir?: string
+  // static_spa omitted keeps the stored value.
+  static_spa?: boolean
 }
 
 export interface GitSourceBuild {
@@ -117,6 +119,7 @@ export interface GitSourceResource {
   // build_command and publish_dir build a static site before serving it.
   build_command?: string
   publish_dir?: string
+  static_spa?: boolean
   resolved_build?: GitSourceResolvedBuild
   // additional_services fans one push out to sibling services under the
   // same app group (apps_group.go), keyed by the sibling's own service

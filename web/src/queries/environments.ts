@@ -94,6 +94,7 @@ export async function createEnvironment(
 export function useCreateEnvironment(projectId: string) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (input: CreateEnvironmentInput) =>
       createEnvironment(projectId, input),
     onSuccess: () => {
@@ -172,6 +173,7 @@ export function deleteEnvironment(args: CascadeDeleteArgs): Promise<void> {
 export function useDeleteEnvironment(projectId: string) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: deleteEnvironment,
     onSuccess: () => {
       void queryClient.invalidateQueries({

@@ -271,6 +271,8 @@ func TestTrace_FailuresNameTheStepAndKeepOldServing(t *testing.T) {
 }
 
 func TestTrace_ArchMismatchWarns(t *testing.T) {
+	binfmtDir = t.TempDir() + "/absent"
+	t.Cleanup(func() { binfmtDir = "/proc/sys/fs/binfmt_misc" })
 	tr := newFakeTrace()
 	rt := newTraceRuntime(0)
 	rt.pull = pullScript()

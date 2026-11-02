@@ -86,6 +86,7 @@ export function useMcpConsent(id: string) {
 
 export function useDecideMcpConsent(id: string) {
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: ({ approve, scopes }: { approve: boolean; scopes: string[] }) =>
       request<{ redirect_to: string }>(
         `${consentBase}/${encodeURIComponent(id)}/${approve ? 'approve' : 'deny'}`,
@@ -110,6 +111,7 @@ export function useMcpClients(enabled: boolean) {
 export function useCreateMcpClient() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (input: McpClientInput) =>
       request<McpClient>(clientsBase, jsonInit('POST', input), 'add AI client'),
     onSuccess: () => qc.invalidateQueries({ queryKey: mcpOauthKeys.clients() }),
@@ -119,6 +121,7 @@ export function useCreateMcpClient() {
 export function useDeleteMcpClient() {
   const qc = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (id: string) =>
       request<void>(
         `${clientsBase}/${encodeURIComponent(id)}`,

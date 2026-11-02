@@ -2,14 +2,18 @@ package main
 
 import (
 	"context"
+
 	"errors"
+	"github.com/GLINCKER/levelrail/internal/deploysafety"
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/appsleep"
+	"github.com/GLINCKER/levelrail/internal/auditanchor"
 	"github.com/GLINCKER/levelrail/internal/autoscale"
 	"github.com/GLINCKER/levelrail/internal/backup"
 	"github.com/GLINCKER/levelrail/internal/changes"
@@ -20,6 +24,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/imageupdate"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/objectstore"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/scheduledeploy"
 	"github.com/GLINCKER/levelrail/internal/scheduledtask"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
@@ -30,6 +35,7 @@ import (
 
 // startTelemetry starts the metric and log collectors.
 func (s *bootState) startTelemetry() {
+	s.wireStorageSettings()
 	ctx, logger := s.ctx, s.logger
 	agentDataDir := s.agentDataDir
 	agentRegistry := s.agentRegistry
@@ -84,7 +90,7 @@ func (s *bootState) startTelemetry() {
 		}
 	}()
 	go wakeLogCollectorOnContainerEvents(ctx, client, logCollector)
-	go runLogsRetentionSweep(ctx, telemetryDB, logger)
+	go runLogsRetentionSweep(ctx, telemetryDB, retentionSetting(s.apiRouter, runtimesettings.KeyLogsRetention, profileRetention), logger)
 
 	// A pure extra consumer of the log stream: never touches logCollector or its store writes.
 	drainForwarder := telemetry.NewDrainForwarder(logBroadcaster, notifyClient, logger, b.ShortName)
@@ -196,12 +202,23 @@ func (s *bootState) startAlerting() {
 	// Opt-in per app (AutoRollbackOnSLOBurn, off by default), like the crashloop rollback.
 	alertingEngine.SetSLOBurnAutoRollback(db, engine, alertingDB)
 	startDeployWatch(ctx, gate, deployWatchDeps{db: db, local: client, registry: agentRegistry, localNodeID: meshLocalNodeID(meshCfg),
-		restarts: restartTracker, metrics: alertingFederator, sampleEvery: metricsCollectionInterval, nudger: engine, dispatcher: deployDispatcher, logger: logger})
+		restarts: restartTracker, metrics: alertingFederator, sampleEvery: metricsCollectionInterval, nudger: engine, dispatcher: deployDispatcher, logger: logger,
+		windows: func(c context.Context) deploysafety.Windows { return deployWindowsFrom(c, apiRouter.RuntimeSettings()) }})
+	alertingDone := make(chan struct{})
 	go func() {
+		defer close(alertingDone)
 		if err := alertingEngine.Run(ctx, alertEvaluationInterval); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("alerting engine stopped", slog.String("error", err.Error()))
 		}
 	}()
+	// Registered after the stores open, so it runs before they close.
+	s.later(func() {
+		select {
+		case <-alertingDone:
+		case <-time.After(httpShutdownTimeout):
+			logger.Warn("alerting engine did not stop before the stores closed")
+		}
+	})
 	s.alertingEngine = alertingEngine
 }
 
@@ -233,6 +250,9 @@ func (s *bootState) startSchedulers() {
 		scheduler.Verifier = backupVerifyRunner
 		scheduler.Policies, scheduler.GFS = db, db
 		scheduler.Tombstones = db
+		scheduler.DefaultRetentionHours = func(ctx context.Context) int {
+			return s.apiRouter.RuntimeSettings().Int(ctx, runtimesettings.KeyBackupDefaultRetentionHours)
+		}
 		scheduler.BaseBackups = newBaseBackupRunner(db, secretsManager, client, backupRunner, logger)
 		walShip := newWALShipScheduler(db, client, backupRunner, func(nodeID string) bool {
 			return nodeID == "" || (meshCfg != nil && nodeID == meshCfg.localNodeID)
@@ -319,7 +339,7 @@ func (s *bootState) startSchedulers() {
 	}()
 
 	deployURLSyncer := &deployurls.Syncer{
-		Store: db, Config: deployurls.FromProcessEnv(), HostFor: apiRouter.DeployURLHost,
+		Store: db, Config: deployurls.FromProcessEnv(), Mode: storedDeployURLMode(db), HostFor: apiRouter.DeployURLHost,
 		Remove: apiRouter.RemoveDeployURLService, Nudge: apiRouter.NudgeReconcilers, Logger: logger,
 	}
 	go func() {
@@ -402,6 +422,11 @@ func (s *bootState) startSchedulers() {
 		}
 	}()
 
+	// Publishes the signed audit chain head off the box; does nothing unless APP_AUDIT_ANCHOR_* is set.
+	if cfg := auditanchor.ConfigFromEnv(os.LookupEnv); cfg.Enabled() {
+		go auditanchor.New(cfg, db, logger).Run(ctx)
+	}
+
 	// Moves cold audit, deploy and pipeline rows into archive bundles when the policy is on.
 	go func() {
 		if err := apiRouter.RunArchiveSweeper(ctx, 0); err != nil && !errors.Is(err, context.Canceled) {
@@ -462,6 +487,8 @@ func (s *bootState) serve() error {
 			logger.Info("closed live streams for shutdown", slog.Int("streams", n))
 		}
 	}()
+	rs, rsCtx := s.apiRouter.RuntimeSettings(), context.Background()
+	engine.SetBootPasses(bootPassDelays(logger, rs.List(rsCtx, runtimesettings.KeyBootRechecks)), rs.Duration(rsCtx, runtimesettings.KeyBootEventRecheck))
 	engineErr := engine.Run(ctx, events, resyncInterval)
 
 	drainCtx, drainCancel := context.WithTimeout(context.Background(), envDurationOr(logger, shutdownDrainEnv, defaultShutdownDrain))
@@ -486,4 +513,31 @@ func (s *bootState) serve() error {
 		return nil // Ctrl+C / SIGTERM is a clean shutdown, not a failure
 	}
 	return engineErr
+}
+
+// storedDeployURLMode reads the stored copies mode each pass; "" lets the env seed apply.
+func storedDeployURLMode(db interface {
+	GetDeployURLCopiesMode(context.Context) (string, error)
+}) func(context.Context) string {
+	return func(ctx context.Context) string {
+		m, err := db.GetDeployURLCopiesMode(ctx)
+		if err != nil {
+			return ""
+		}
+		return m
+	}
+}
+
+// bootPassDelays parses the offsets of the extra post-start passes from the saved setting.
+func bootPassDelays(logger *slog.Logger, items []string) []time.Duration {
+	var out []time.Duration
+	for _, part := range items {
+		d, err := time.ParseDuration(strings.TrimSpace(part))
+		if err != nil || d < 0 {
+			logger.Warn("invalid boot pass delay, skipping", slog.String("key", runtimesettings.KeyBootRechecks), slog.String("value", part))
+			continue
+		}
+		out = append(out, d)
+	}
+	return out
 }

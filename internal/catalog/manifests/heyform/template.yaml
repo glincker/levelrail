@@ -4,6 +4,10 @@ description: A form builder for surveys, quizzes and lead capture, with conversa
 icon: clipboard
 category: Productivity
 documentation_url: https://docs.heyform.net/open-source/installation
+source_repo: https://github.com/heyform/heyform
+license: AGPL-3.0
+license_class: network-copyleft
+license_url: https://github.com/heyform/heyform/blob/next/LICENSE
 recommended_memory_bytes: 805306368
 env:
   - key: SESSION_KEY

@@ -20,11 +20,13 @@ func deleteUsage(prog string) string {
   %[1]s delete <kind> <name> [--yes] [flags]
 
 Deletes an app or a database. Asks for confirmation on a terminal; pass
---yes in scripts. Data volumes are kept: use "%[1]s apps delete --delete-data"
-when the data must go too. Nodes are removed with "%[1]s nodes delete".
+--yes in scripts. Data volumes are kept unless you pass --delete-data with
+--confirm NAME, which destroys them for good. Nodes are removed with "%[1]s nodes delete".
 
 Flags:
   --yes           do not ask for confirmation
+  --delete-data   also destroy the data volumes (needs --confirm NAME)
+  --confirm string   the name again, required with --delete-data
   -n, --namespace string   require the resource to be in this project
   --json          print {"deleted": true} as JSON and nothing else
 %[2]s`, prog, commonFlagsHelp)
@@ -33,8 +35,9 @@ Flags:
 func editUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s edit app <name> [flags]
+  %[1]s edit database <name> [flags]
 
-Exports the app as a resource document, opens it in $VISUAL or $EDITOR, and
+Exports the app or database as a resource document, opens it in $VISUAL or $EDITOR, and
 applies only the fields you changed with server-side apply. The save carries
 the version you opened, so the server refuses it when the app changed while
 you were editing and nothing is overwritten silently. Your edit is kept
@@ -61,10 +64,13 @@ func confirmYes(stderr io.Writer, question string) error {
 
 func runDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	var yes *bool
-	var namespace *string
+	var namespace, confirm *string
+	var deleteData *bool
 	c, code, ok := parseCLICall(prog, "delete", deleteUsage(prog), expandShortFlags(args), stdout, stderr, lookupEnv, func(fs *flag.FlagSet) {
 		yes = fs.Bool("yes", false, "do not ask for confirmation")
 		namespace = fs.String("namespace", "", "require the resource to be in this project")
+		deleteData = fs.Bool("delete-data", false, "also destroy the data volumes (needs --confirm NAME)")
+		confirm = fs.String("confirm", "", "the name again, required with --delete-data")
 	})
 	if !ok {
 		return code
@@ -81,6 +87,9 @@ func runDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		return c.invalid("nodes are not deleted from here: use \"%s nodes delete %s\"", prog, rest[1])
 	}
 	name := rest[1]
+	if *deleteData && *confirm != name {
+		return c.invalid("--delete-data needs --confirm %s: the data is destroyed and cannot be recovered", name)
+	}
 	if *namespace != "" {
 		obj, gerr := c.client.GetV2(context.Background(), kind.Path, name)
 		if gerr != nil {
@@ -99,10 +108,20 @@ func runDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 	pending := false
 	switch kind.Path {
 	case "apps":
-		res, derr := c.client.DeleteAppResult(ctx, name)
+		var res apiclient.DeleteAppResult
+		var derr error
+		if *deleteData {
+			res, derr = c.client.DeleteAppAndData(ctx, name)
+		} else {
+			res, derr = c.client.DeleteAppResult(ctx, name)
+		}
 		err, pending = derr, res.Pending
 	default:
-		err = c.client.DeleteDatabase(ctx, name, false)
+		if *deleteData {
+			err = c.client.DeleteDatabaseAndData(ctx, name, false)
+		} else {
+			err = c.client.DeleteDatabase(ctx, name, false)
+		}
 	}
 	if err != nil {
 		return c.fail(fmt.Errorf("delete %s %q: %w", kind.Singular, name, err))
@@ -130,21 +149,38 @@ func runEdit(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 	if err != nil {
 		return c.fail(err)
 	}
-	if kind.Path != "apps" {
-		return c.invalid("edit supports apps only: databases and nodes have no editable document yet")
+	if kind.Path != "apps" && kind.Path != "databases" {
+		return c.invalid("edit supports apps and databases only: nodes have no editable document")
 	}
 	name := rest[1]
 	ctx := context.Background()
 
 	before, err := c.client.GetV2(ctx, kind.Path, name)
 	if err != nil {
-		return c.fail(fmt.Errorf("edit app %q: %w", name, err))
+		return c.fail(fmt.Errorf("edit %s %q: %w", kind.Singular, name, err))
 	}
-	exported, err := c.client.ExportIaC(ctx, "", name, true)
+	appFilter, docKind := name, "App"
+	if kind.Path == "databases" {
+		appFilter, docKind = "", "Database"
+	}
+	exported, err := c.client.ExportIaC(ctx, "", appFilter, true)
 	if err != nil {
-		return c.fail(fmt.Errorf("export app %q: %w", name, err))
+		return c.fail(fmt.Errorf("export %s %q: %w", kind.Singular, name, err))
 	}
 	original := exported.Join()
+	if kind.Path == "databases" {
+		// The export lists every database; keep only the one being edited.
+		original = ""
+		for _, f := range exported.Files {
+			if string(f.Kind) == docKind && strings.Contains(f.Content, "name: "+name+"\n") {
+				original = f.Content
+				break
+			}
+		}
+		if original == "" {
+			return c.fail(fmt.Errorf("export %s %q: no exported document", kind.Singular, name))
+		}
+	}
 
 	dir, err := os.MkdirTemp("", "edit-")
 	if err != nil {
@@ -169,7 +205,7 @@ func runEdit(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 
 	origSpec, err := manifestSpec([]byte(original))
 	if err != nil {
-		return c.fail(fmt.Errorf("read exported app %q: %w", name, err))
+		return c.fail(fmt.Errorf("read exported %s %q: %w", kind.Singular, name, err))
 	}
 	editedSpec, err := manifestSpec(edited)
 	if err != nil {
@@ -186,7 +222,7 @@ func runEdit(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		}
 	}
 	// The resourceVersion precondition makes the save a compare-and-swap on the server.
-	manifest := map[string]any{"kind": "App", "metadata": map[string]any{"name": name}, "spec": changes}
+	manifest := map[string]any{"kind": docKind, "metadata": map[string]any{"name": name}, "spec": changes}
 	res, err := c.client.ApplyV2(ctx, kind.Path, name, manifest, apiclient.V2ApplyOptions{
 		FieldManager: defaultFieldManager(prog) + "-edit", Force: true, ResourceVersion: before.Metadata.ResourceVersion,
 	})
@@ -195,7 +231,9 @@ func runEdit(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		if werr := os.WriteFile(keep, edited, 0o600); werr != nil { //nolint:gosec // the name is a path.Base'd resource name under the temp dir
 			keep = "(could not save)"
 		}
-		return c.fail(fmt.Errorf("apply app %q: %w; your edit is kept at %s", name, err, keep))
+		return c.fail(fmt.Errorf("apply %s %q: %w; your edit is kept at %s", kind.Singular, name, err, keep))
 	}
-	return c.render(res, func() { _, _ = fmt.Fprintf(stdout, "app/%s edited (version %s)\n", name, res.Metadata.ResourceVersion) })
+	return c.render(res, func() {
+		_, _ = fmt.Fprintf(stdout, "%s/%s edited (version %s)\n", kind.Singular, name, res.Metadata.ResourceVersion)
+	})
 }

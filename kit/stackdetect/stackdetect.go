@@ -36,6 +36,10 @@ type Stack struct {
 	Port int
 	// Name is a suggested service name.
 	Name string
+	// BuildCommand and Publish are set for static generators (build.command
+	// and build.publish), empty for sites that are served as they are.
+	BuildCommand string
+	Publish      string
 	// Notes are short hints for the person reading the result.
 	Notes []string
 }
@@ -48,6 +52,22 @@ var composeFiles = []string{"compose.yaml", "compose.yml", "docker-compose.yaml"
 // Detect inspects dir without executing anything from it. Order: Dockerfile,
 // compose file, package.json, go.mod, Java, Python, static site.
 func Detect(dir string) (Stack, error) {
+	s, err := detectCore(dir)
+	if err != nil || !exists(dir, "Procfile") {
+		return s, err
+	}
+	web := procfileWeb(filepath.Join(dir, "Procfile"))
+	switch {
+	case web == "":
+	case !s.Detected():
+		s = Stack{Provider: "procfile", Label: "Procfile", Build: BuildRailpack, Port: 8080, Name: s.Name, Notes: []string{"web process: " + web, "port assumed 8080, make the process read $PORT"}}
+	default:
+		s.Notes = append(s.Notes, "Procfile web process: "+web)
+	}
+	return s, nil
+}
+
+func detectCore(dir string) (Stack, error) {
 	name := serviceName(dir)
 
 	if exists(dir, "Dockerfile") {
@@ -63,8 +83,14 @@ func Detect(dir string) (Stack, error) {
 			return Stack{Provider: "compose", Label: "Docker Compose", Build: BuildCompose, Path: "./" + f, Name: name}, nil
 		}
 	}
+	if g, ok := detectGenerator(dir, name); ok {
+		return g, nil
+	}
 	if exists(dir, "package.json") {
 		return detectNode(dir, name)
+	}
+	if s, ok := detectRuntimes(dir, name); ok {
+		return s, nil
 	}
 	if exists(dir, "go.mod") {
 		return Stack{Provider: "golang", Label: "Go", Build: BuildRailpack, Port: 8080, Name: name}, nil
@@ -106,6 +132,18 @@ func detectNode(dir, name string) (Stack, error) {
 	switch {
 	case has("next"):
 		s.Label = "Node.js (Next.js)"
+		s.Notes = append(s.Notes, "next builds can run out of memory on 1 GB hosts, add swap or build elsewhere")
+	case has("astro") && has("@astrojs/node"):
+		s.Label = "Node.js (Astro SSR)"
+		s.Port = 4321
+		s.Notes = append(s.Notes, "set HOST=0.0.0.0 and PORT=4321, start with node ./dist/server/entry.mjs")
+	case has("@11ty/eleventy"):
+		return staticGen("eleventy", "Eleventy", "npx @11ty/eleventy", "_site", name), nil
+	case has("gatsby"):
+		return staticGen("gatsby", "Gatsby", "npx gatsby build", "public", name), nil
+	case has("@angular/core"):
+		s.Label = "Node.js (Angular)"
+		s.Notes = append(s.Notes, "ng build writes dist/<project>/browser, set it as the publish directory of a static build")
 	case has("@nestjs/core"):
 		s.Label = "Node.js (NestJS)"
 	case has("express"):
@@ -200,4 +238,86 @@ func serviceName(dir string) string {
 		return "web"
 	}
 	return out
+}
+
+func staticGen(provider, label, cmd, publish, name string) Stack {
+	return Stack{Provider: provider, Label: label, Build: BuildStatic, Path: "./", BuildCommand: cmd, Publish: publish, Name: name}
+}
+
+// detectGenerator finds static site generators that are not npm projects.
+func detectGenerator(dir, name string) (Stack, bool) {
+	for _, f := range []string{"hugo.toml", "hugo.yaml", "hugo.json"} {
+		if exists(dir, f) {
+			return staticGen("hugo", "Hugo", "hugo --minify", "public", name), true
+		}
+	}
+	if exists(dir, "_config.yml") && strings.Contains(lowerFile(filepath.Join(dir, "Gemfile")), "jekyll") {
+		return staticGen("jekyll", "Jekyll", "bundle exec jekyll build", "_site", name), true
+	}
+	return Stack{}, false
+}
+
+// detectRuntimes covers the languages that have no framework split here.
+func detectRuntimes(dir, name string) (Stack, bool) {
+	switch {
+	case exists(dir, "Gemfile"):
+		s := Stack{Provider: "ruby", Label: "Ruby", Build: BuildRailpack, Port: 3000, Name: name}
+		gems := lowerFile(filepath.Join(dir, "Gemfile"))
+		switch {
+		case strings.Contains(gems, "rails"):
+			s.Label = "Ruby (Rails)"
+			s.Notes = append(s.Notes, "rails builds can run out of memory on 1 GB hosts, add swap or build elsewhere")
+		case strings.Contains(gems, "sinatra"):
+			s.Label, s.Port = "Ruby (Sinatra)", 4567
+		}
+		return s, true
+	case exists(dir, "composer.json"):
+		s := Stack{Provider: "php", Label: "PHP", Build: BuildRailpack, Port: 80, Name: name}
+		low := lowerFile(filepath.Join(dir, "composer.json"))
+		switch {
+		case strings.Contains(low, "laravel/framework"):
+			s.Label = "PHP (Laravel)"
+		case strings.Contains(low, "symfony/framework-bundle"):
+			s.Label = "PHP (Symfony)"
+		}
+		return s, true
+	case exists(dir, "Cargo.toml"):
+		s := Stack{Provider: "rust", Label: "Rust", Build: BuildRailpack, Port: 8080, Name: name}
+		low := lowerFile(filepath.Join(dir, "Cargo.toml"))
+		switch {
+		case strings.Contains(low, "axum"):
+			s.Label, s.Port = "Rust (axum)", 3000
+		case strings.Contains(low, "actix-web"):
+			s.Label = "Rust (Actix Web)"
+		}
+		s.Notes = append(s.Notes, "cargo release builds can run out of memory on 1 GB hosts, add swap or build elsewhere", "the port is a convention, read it from the server code")
+		return s, true
+	case exists(dir, "mix.exs"):
+		s := Stack{Provider: "elixir", Label: "Elixir", Build: BuildRailpack, Port: 4000, Name: name}
+		if strings.Contains(lowerFile(filepath.Join(dir, "mix.exs")), "phoenix") {
+			s.Label = "Elixir (Phoenix)"
+		}
+		return s, true
+	case exists(dir, "deno.json") || exists(dir, "deno.jsonc"):
+		return Stack{Provider: "deno", Label: "Deno", Build: BuildRailpack, Port: 8000, Name: name}, true
+	}
+	if m, _ := filepath.Glob(filepath.Join(dir, "*.csproj")); len(m) > 0 {
+		return Stack{Provider: "dotnet", Label: ".NET", Build: BuildRailpack, Port: 8080, Name: name, Notes: []string{"the port is the .NET 8+ container default, set ASPNETCORE_URLS to change it"}}, true
+	}
+	return Stack{}, false
+}
+
+func procfileWeb(path string) string {
+	f, err := os.Open(path) //nolint:gosec // reads the project the operator pointed at
+	if err != nil {
+		return ""
+	}
+	defer func() { _ = f.Close() }()
+	sc := bufio.NewScanner(f)
+	for sc.Scan() {
+		if cmd, ok := strings.CutPrefix(strings.TrimSpace(sc.Text()), "web:"); ok {
+			return strings.TrimSpace(cmd)
+		}
+	}
+	return ""
 }

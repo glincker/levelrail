@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -50,6 +51,39 @@ func LocalRootFromEnv(lookup func(string) (string, bool)) string {
 	return filepath.Clean(v)
 }
 
+var localRootSource atomic.Pointer[func() string]
+
+// SetLocalRootSource makes the stored runtime setting the live root; the env path stays the fallback.
+func SetLocalRootSource(f func() string) { localRootSource.Store(&f) }
+
+// ResolvedLocalRoot returns the current confinement root, read per operation so a saved change applies without a restart.
+func ResolvedLocalRoot() string {
+	if f := localRootSource.Load(); f != nil {
+		v := strings.TrimSpace((*f)())
+		if filepath.IsAbs(v) {
+			return filepath.Clean(v)
+		}
+		if v == "" {
+			return LocalRootFromEnv(func(k string) (string, bool) {
+				if k == EnvLocalRoot {
+					return "", false
+				}
+				return os.LookupEnv(k)
+			})
+		}
+		return ""
+	}
+	return LocalRootFromEnv(os.LookupEnv)
+}
+
+// root prefers the per-operation resolver over the fixed value.
+func (r Routed) root() string {
+	if r.LocalRootFn != nil {
+		return r.LocalRootFn()
+	}
+	return r.LocalRoot
+}
+
 // IsLocal reports whether d is a host directory destination.
 func (d Destination) IsLocal() bool { return strings.HasPrefix(d.Endpoint, LocalEndpointScheme) }
 
@@ -66,22 +100,32 @@ func CleanLocalPath(p string) (string, error) {
 // localPath joins root, the target directory and key, refusing anything that
 // leaves root, including through symlinks already on disk.
 func (r Routed) localPath(d Destination, key string) (string, error) {
-	if r.LocalRoot == "" {
+	root := r.root()
+	if root == "" {
 		return "", ErrLocalRootUnset
 	}
 	sub, err := CleanLocalPath(d.Bucket)
 	if err != nil {
 		return "", err
 	}
-	full := filepath.Join(r.LocalRoot, sub, filepath.FromSlash(key))
-	if !within(r.LocalRoot, full) {
+	full := filepath.Join(root, sub, filepath.FromSlash(key))
+	if !within(root, full) {
 		return "", ErrLocalPathEscapes
 	}
-	if resolved, rerr := filepath.EvalSymlinks(deepestExisting(full)); rerr == nil {
-		root, eerr := filepath.EvalSymlinks(r.LocalRoot)
-		if eerr != nil || !within(root, resolved) {
-			return "", ErrLocalPathEscapes
+	// The default root is not created at install time, so make it before resolving it.
+	if err := os.MkdirAll(root, localDirMode); err != nil {
+		return "", fmt.Errorf("backup: local root %s cannot be created: %w", root, err)
+	}
+	root, eerr := filepath.EvalSymlinks(root)
+	if eerr != nil {
+		return "", fmt.Errorf("backup: local root %s cannot be resolved: %w", root, eerr)
+	}
+	if resolved, rerr := filepath.EvalSymlinks(deepestExisting(full)); rerr == nil && !within(root, resolved) {
+		rel, relErr := filepath.Rel(root, deepestExisting(full))
+		if relErr != nil {
+			rel = sub
 		}
+		return "", fmt.Errorf("%w %s: %s resolves outside it", ErrLocalPathEscapes, root, rel)
 	}
 	return full, nil
 }

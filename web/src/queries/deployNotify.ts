@@ -100,6 +100,7 @@ export async function createDeployNotifyTarget(
 export function useCreateDeployNotifyTarget(appName: string) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (req: CreateDeployNotifyTargetRequest) =>
       createDeployNotifyTarget(appName, req),
     onSuccess: () => {
@@ -134,6 +135,7 @@ export async function deleteDeployNotifyTarget(
 export function useDeleteDeployNotifyTarget(appName: string) {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (id: string) => deleteDeployNotifyTarget(appName, id),
     onSuccess: () => {
       void queryClient.invalidateQueries({

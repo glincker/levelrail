@@ -21,6 +21,7 @@ func newTestRouterWithCPBackups(t *testing.T) (*Router, *store.DB) {
 }
 
 func TestControlPlaneBackups_NotConfigured(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	rec := httptest.NewRecorder()
@@ -31,6 +32,7 @@ func TestControlPlaneBackups_NotConfigured(t *testing.T) {
 }
 
 func TestControlPlaneBackups_Lifecycle(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouterWithCPBackups(t)
 	cookie := loginTestSession(t, rt, db)
 	do := func(method, target string) *httptest.ResponseRecorder {
@@ -82,6 +84,7 @@ func TestControlPlaneBackups_Lifecycle(t *testing.T) {
 }
 
 func TestControlPlaneBackups_BadNames(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouterWithCPBackups(t)
 	cookie := loginTestSession(t, rt, db)
 	for _, name := range []string{"..%2Fetc%2Fpasswd", "levelrail.db", "levelrail-20200101T000000Z.db.tmp", "levelrail-20200101T000000Z.db"} {
@@ -94,6 +97,7 @@ func TestControlPlaneBackups_BadNames(t *testing.T) {
 }
 
 func TestControlPlaneBackups_RequireRoot(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouterWithCPBackups(t)
 	const plaintext = "write-scoped-token" //nolint:gosec // fake fixture
 	if err := db.SaveAPIToken(context.Background(), store.APIToken{

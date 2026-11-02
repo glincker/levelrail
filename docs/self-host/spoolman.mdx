@@ -1,0 +1,66 @@
+---
+title: "Self-host Spoolman with Docker"
+sidebarTitle: "Spoolman"
+description: "A filament spool inventory manager for 3D printers with usage tracking and printer firmware integrations. MIT licensed. On first open, add your filaments and vendors; there is no login, so keep it behind a private network or an auth proxy."
+"og:url": "https://docs.levelrail.com/self-host/spoolman"
+---
+
+A filament spool inventory manager for 3D printers with usage tracking and printer firmware integrations. MIT licensed. On first open, add your filaments and vendors; there is no login, so keep it behind a private network or an auth proxy.
+
+This page describes the Levelrail template for Spoolman (Applications). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/Donkie/Spoolman.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `spoolman` | `ghcr.io/donkie/spoolman:0.27.1` | 8000 | `data -&#62; /home/app/.local/share/spoolman` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `spoolman` | `SPOOLMAN_DB_TYPE` | Preset in the template |
+| `spoolman` | `TZ` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`spoolman`): data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Spoolman with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Spoolman. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy spoolman --name my-spoolman
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Applications templates
+
+- [Budibase](/self-host/budibase)
+- [Cleanuparr](/self-host/cleanuparr)
+- [Cockpit CMS](/self-host/cockpit-cms)
+- [Deluge](/self-host/deluge)
+- [Drupal](/self-host/drupal)
+
+All templates are listed in the [self-host gallery](/self-host).

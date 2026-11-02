@@ -73,7 +73,7 @@ var devtools1Templates = []Template{
     ports: ["8000:8000"]
     command: ["sh", "-c", "/entrypoint.sh db createdb && /entrypoint.sh db migrate && /entrypoint.sh run"]
     environment:
-      BASE_URL: ${SERVICE_FQDN_PLAUSIBLE:-http://localhost:8000}
+      BASE_URL: ${SERVICE_URL_PLAUSIBLE:-http://localhost:8000}
       SECRET_KEY_BASE: $SERVICE_BASE64_64_SECRETKEYBASE
       DATABASE_URL: postgres://plausible:$SERVICE_PASSWORD_DB@db:5432/plausible
       CLICKHOUSE_DATABASE_URL: http://clickhouse:8123/plausible
@@ -224,7 +224,7 @@ var devtools1Templates = []Template{
     environment:
       MM_SQLSETTINGS_DRIVERNAME: postgres
       MM_SQLSETTINGS_DATASOURCE: postgres://mattermost:$SERVICE_PASSWORD_DB@db:5432/mattermost?sslmode=disable
-      MM_SERVICESETTINGS_SITEURL: ${SERVICE_FQDN_MATTERMOST:-http://localhost:8065}
+      MM_SERVICESETTINGS_SITEURL: ${SERVICE_URL_MATTERMOST:-http://localhost:8065}
     volumes:
       - mattermost_data:/mattermost/data
     healthcheck:
@@ -322,7 +322,7 @@ var devtools1Templates = []Template{
     image: docmost/docmost:0.96.0
     ports: ["3000:3000"]
     environment:
-      APP_URL: ${SERVICE_FQDN_DOCMOST:-http://localhost:3000}
+      APP_URL: ${SERVICE_URL_DOCMOST:-http://localhost:3000}
       APP_SECRET: $SERVICE_HEX_64_APPSECRET
       DATABASE_URL: postgresql://docmost:$SERVICE_PASSWORD_DB@db:5432/docmost
       REDIS_URL: redis://redis:6379
@@ -363,7 +363,7 @@ var devtools1Templates = []Template{
       SECRET_KEY: $SERVICE_HEX_64_SECRETKEY
       DATABASE_URL: postgres://glitchtip:$SERVICE_PASSWORD_DB@db:5432/glitchtip
       REDIS_URL: redis://redis:6379
-      GLITCHTIP_DOMAIN: ${SERVICE_FQDN_GLITCHTIP:-http://localhost:8080}
+      GLITCHTIP_DOMAIN: ${SERVICE_URL_GLITCHTIP:-http://localhost:8080}
       DEFAULT_FROM_EMAIL: admin@example.com
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080/_health/"]

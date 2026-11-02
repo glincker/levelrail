@@ -13,6 +13,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/exposure"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 )
 
 // Shared with cmd/levelrail-agent through the same env var, so one setting governs both cadences by default.
@@ -701,13 +702,13 @@ func doctorMinCPUCount(logger *slog.Logger) int {
 	return n
 }
 
-// Resolved here: api.WithAPIRateLimit treats 0 as disabled, not as the default.
+// A limit cannot be switched off: a 0 or a value under the settings floor is raised to the floor.
 func apiRateLimitReadRPM(logger *slog.Logger) int {
-	return apiRateLimitRPM(logger, "APP_API_RATE_LIMIT_READ_RPM", defaultAPIRateLimitReadRPM)
+	return runtimesettings.ClampLimit(runtimesettings.KeyAPIRateLimitRead, apiRateLimitRPM(logger, "APP_API_RATE_LIMIT_READ_RPM", defaultAPIRateLimitReadRPM))
 }
 
 func apiRateLimitWriteRPM(logger *slog.Logger) int {
-	return apiRateLimitRPM(logger, "APP_API_RATE_LIMIT_WRITE_RPM", defaultAPIRateLimitWriteRPM)
+	return runtimesettings.ClampLimit(runtimesettings.KeyAPIRateLimitWrite, apiRateLimitRPM(logger, "APP_API_RATE_LIMIT_WRITE_RPM", defaultAPIRateLimitWriteRPM))
 }
 
 // Keyed per (client IP, app name) since this unauthenticated route has no actor identity.

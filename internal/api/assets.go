@@ -18,11 +18,9 @@ import (
 )
 
 const (
-	envAssetsUploadMaxBytes    = "APP_ASSETS_UPLOAD_MAX_BYTES"
 	envAssetsPresignMaxTTL     = "APP_ASSETS_PRESIGN_MAX_TTL"
 	envAssetsUsageMaxObjects   = "APP_ASSETS_USAGE_MAX_OBJECTS"
 	envAssetsExposureTimeout   = "APP_ASSETS_EXPOSURE_TIMEOUT"
-	defaultAssetsUploadMax     = int64(1) << 30
 	defaultAssetsPresignTTL    = time.Hour
 	defaultAssetsUsageMaxObjs  = int64(100000)
 	defaultAssetsExposureTO    = 10 * time.Second
@@ -526,10 +524,6 @@ func (rt *Router) auditAsset(r *http.Request, action, bucketID string, detail ma
 	if err := rt.auditLog.SaveAuditEntry(r.Context(), entry); err != nil {
 		rt.logger.Warn("api: asset audit: save failed", slog.String("action", action), slog.String("error", err.Error()))
 	}
-}
-
-func assetsUploadMaxBytes() int64 {
-	return envPositiveInt64(envAssetsUploadMaxBytes, defaultAssetsUploadMax)
 }
 
 // assetsPresignMaxTTL reads a Go duration ("30m") or whole seconds.

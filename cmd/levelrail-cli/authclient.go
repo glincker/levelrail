@@ -106,6 +106,7 @@ type tokenResource struct {
 	ID         string      `json:"id"`
 	Name       string      `json:"name"`
 	Abilities  []string    `json:"abilities"`
+	Access     string      `json:"access,omitempty"`
 	CreatedAt  time.Time   `json:"created_at"`
 	LastUsedAt *time.Time  `json:"last_used_at,omitempty"`
 	ExpiresAt  *time.Time  `json:"expires_at,omitempty"`
@@ -122,7 +123,8 @@ type tokenAgent struct {
 // createTokenRequest mirrors internal/api's createTokenRequest.
 type createTokenRequest struct {
 	Name          string      `json:"name"`
-	Abilities     []string    `json:"abilities"`
+	Abilities     []string    `json:"abilities,omitempty"`
+	AllowChanges  bool        `json:"allow_changes,omitempty"`
 	ExpiresInDays int         `json:"expires_in_days,omitempty"`
 	NoExpiry      bool        `json:"no_expiry,omitempty"`
 	Agent         *tokenAgent `json:"agent,omitempty"`

@@ -22,6 +22,7 @@ func seedDatabase(t *testing.T, db *store.DB, name string) {
 }
 
 func TestHandleDatabaseResourceRecommendation_NotConfigured(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t) // no WithTelemetryQuerier
 	cookie := loginTestSession(t, rt, db)
 	seedDatabase(t, db, "main")
@@ -34,6 +35,7 @@ func TestHandleDatabaseResourceRecommendation_NotConfigured(t *testing.T) {
 }
 
 func TestHandleDatabaseResourceRecommendation_DatabaseNotFound(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newTestRouterWithTelemetry(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -45,6 +47,7 @@ func TestHandleDatabaseResourceRecommendation_DatabaseNotFound(t *testing.T) {
 }
 
 func TestHandleDatabaseResourceRecommendation_InsufficientData(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newTestRouterWithTelemetry(t)
 	cookie := loginTestSession(t, rt, db)
 	seedDatabase(t, db, "main")
@@ -67,6 +70,7 @@ func TestHandleDatabaseResourceRecommendation_InsufficientData(t *testing.T) {
 }
 
 func TestHandleDatabaseResourceRecommendation_UsesCurrentLimitsAndUsage(t *testing.T) {
+	t.Parallel()
 	rt, db, tdb := newTestRouterWithTelemetry(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -112,6 +116,7 @@ func TestHandleDatabaseResourceRecommendation_UsesCurrentLimitsAndUsage(t *testi
 }
 
 func TestHandleDatabaseResourceRecommendation_OOMSignalFromLogs(t *testing.T) {
+	t.Parallel()
 	rt, db, tdb := newTestRouterWithTelemetry(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -151,6 +156,7 @@ func TestHandleDatabaseResourceRecommendation_OOMSignalFromLogs(t *testing.T) {
 }
 
 func TestHandleDatabaseResourceRecommendation_RequiresAuth(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newTestRouterWithTelemetry(t)
 	seedDatabase(t, db, "main")
 

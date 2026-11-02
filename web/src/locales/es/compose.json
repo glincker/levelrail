@@ -1,0 +1,102 @@
+{
+  "stack": {
+    "tableLabel": "Servicios de Compose",
+    "title": "Stack de Compose",
+    "open": "Abrir stack",
+    "description": "{{count}} servicios desplegados desde un solo archivo compose, reconciliados uno a uno en orden de dependencia.",
+    "revision": "Revisión {{revision}}",
+    "deployedAt": "desplegado {{when}}",
+    "fromTemplate": "desde la plantilla {{id}}",
+    "phase": {
+      "running": "En ejecución",
+      "progressing": "Iniciando",
+      "degraded": "Degradado",
+      "failed": "Fallido",
+      "stopped": "Detenido"
+    },
+    "columns": {
+      "service": "Servicio",
+      "status": "Estado",
+      "image": "Imagen",
+      "dependsOn": "Depende de",
+      "actions": "Acciones"
+    },
+    "ready": {
+      "True": "Listo",
+      "False": "Fallando",
+      "Unknown": "Esperando"
+    },
+    "healthyDependency": "{{name}} (sano)",
+    "noDependencies": "Ninguna",
+    "logs": "Registros",
+    "redeployService": "Recrear",
+    "redeployServiceLabel": "Recrear {{service}}",
+    "redeployAll": "Recrear todo",
+    "redeployStarted": "Recreando {{services}}",
+    "loadFailed": "No se pudo cargar el estado del stack: {{message}}"
+  },
+  "rollback": {
+    "button": "Revertir",
+    "title": "Revertir el stack",
+    "description": "Vuelve a aplicar un archivo compose anterior por la ruta de despliegue normal y lo registra como una revisión nueva. Las contraseñas generadas se mantienen, así que los datos en los volúmenes siguen funcionando.",
+    "revisionLabel": "Revisión a restaurar",
+    "revisionOption": "Revisión {{revision}}, {{source}}, {{when}}",
+    "current": "actual",
+    "none": "Todavía no hay una revisión anterior a la que revertir.",
+    "confirm": "Revertir",
+    "working": "Revirtiendo...",
+    "done": "Revertido a la revisión {{revision}}"
+  },
+  "down": {
+    "button": "Desmontar",
+    "title": "Desmontar {{app}}",
+    "description": "Elimina todos los servicios y sus contenedores. Los volúmenes con nombre se conservan salvo que también los elimines, así un despliegue posterior con el mismo nombre encuentra sus datos.",
+    "removeVolumes": "Eliminar también los volúmenes del stack (los datos se pierden para siempre)",
+    "confirm": "Desmontar",
+    "working": "Desmontando...",
+    "done": "Se eliminaron {{count}} servicios",
+    "volumesKept": "Volúmenes conservados: {{volumes}}",
+    "cancel": "Cancelar"
+  },
+  "preview": {
+    "title": "Qué se desplegará",
+    "checking": "Comprobando el archivo compose...",
+    "valid": "{{count}} servicios listos para desplegar",
+    "invalid": "Corrige esto antes de desplegar",
+    "skipped": "Omitidos, perfil no habilitado: {{services}}",
+    "profilesAvailable": "Perfiles en este archivo: {{profiles}}. Pásalos en la CLI con --profile-name para incluir esos servicios.",
+    "needsRoot": "Este archivo monta directorios del host con bind mount, lo que requiere la capacidad root.",
+    "port": "puerto {{port}}",
+    "domain": "dominio {{domain}}",
+    "volumes": "Volúmenes",
+    "env": "Entorno",
+    "generated": "generado",
+    "required": "necesita un valor",
+    "secret": "secreto",
+    "dependsOn": "espera a {{services}}",
+    "healthcheck": "Comprobación de salud: {{command}}",
+    "build": "compilar desde el código (no se admite aquí, usa un despliegue desde git)",
+    "loadFailed": "No se pudo comprobar el archivo: {{message}}"
+  },
+  "install": {
+    "title": "Instalar",
+    "description": "Completa los ajustes que pide esta plantilla. Los valores generados se crean una vez, se guardan cifrados y se reutilizan en cada redespliegue.",
+    "nameLabel": "Nombre de la app",
+    "namePlaceholder": "Déjalo vacío para que elijamos uno",
+    "nameHint": "Letras minúsculas, dígitos y guiones. Es el prefijo de cada contenedor y volumen de este stack.",
+    "generatedHint": "Generado automáticamente",
+    "domainLabel": "Dominio para {{service}} (puerto {{port}})",
+    "domainPlaceholder": "app.example.com",
+    "domainHint": "Opcional. Apunta su DNS a este servidor y se configura HTTPS por ti.",
+    "submit": "Instalar",
+    "working": "Instalando...",
+    "success": "{{app}} instalada",
+    "requiredMissing": "{{field}} es obligatorio"
+  },
+  "publishedPortError": {
+    "published_port_invalid": "Usa HOST:CONTENEDOR con un /udp opcional, por ejemplo 51820:51820/udp. Cada puerto del host y protocolo puede aparecer una sola vez.",
+    "published_port_conflict": "Otro servicio ya publica ese puerto del host y protocolo. Elige un puerto libre del host o detén el otro servicio.",
+    "published_port_remote_node": "Los puertos del host solo se pueden publicar en el nodo del propio plano de control. Mueve el servicio a este nodo o quita el puerto del host.",
+    "published_port_in_use": "Otro proceso de este servidor ya usa ese puerto: elige otro puerto del host o detén ese proceso. Un bind privado a 127.0.0.1 no lo bloquean los resolvers del sistema."
+  }
+}

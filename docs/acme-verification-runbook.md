@@ -16,7 +16,7 @@ Most operators do not need the manual steps below. **Get a real certificate** (d
 - A domain you control, with access to create an `A` or `AAAA` record.
 - A control plane reachable from the public internet (installed with `install.sh`, as `levelrail.service`, or in Docker).
 - DNS already pointing at the server's public IP and propagated.
-- Ports 80 and 443 open from the internet. HTTP-01 is the check where the CA requests a file over port 80 to prove you own the domain, so a cloud firewall, a router without port forwarding or `ufw` in default-deny will break issuance while looking fine from the server itself. Wildcards need [DNS-01](/domains-and-ingress#wildcard-domains-dns-01-providers) instead.
+- Ports 80 and 443 open from the internet. HTTP-01 is the check where the CA requests a file over port 80 to prove you own the domain, so a cloud firewall, a router without port forwarding or `ufw` in default-deny will break issuance while looking fine from the server itself. Wildcards need [DNS-01](/domains-and-ingress#wildcard-domains-dns-01-providers) instead. For single hosts behind CGNAT or with port 80 closed, turn on the runtime setting `ingress.dns01_all_hosts` with `levelrail-cli settings ingress dns01 enable` (or the switch on the ingress settings card). It needs a connected DNS provider, applies without a restart, and a stored value wins over `APP_INGRESS_DNS01_ALL_HOSTS`, which only seeds the default. That path is not yet verified against a real CA.
 - A `root` API token or admin dashboard access, since saving ingress settings (`PUT /api/v1/settings/ingress`) needs the `root` ability.
 
 ## Steps
@@ -46,6 +46,23 @@ Switch on **Issue real ACME certificates** and fill in:
 - **Directory URL (optional)**: leave blank for Let's Encrypt production.
 
 For a first run, set the directory URL to Let's Encrypt staging, `https://acme-staging-v02.api.letsencrypt.org/directory`. Staging certificates trigger browser warnings but exercise the same mechanism without touching production rate limits. Use staging only while no domain has a working real certificate: the guided request and the one-click HTTPS flow refuse it otherwise, because switching the CA drops every stored ACME certificate. When staging succeeds, clear the field and save again for a trusted certificate. Saving drops the previous issuer's stored certificates so the new CA re-issues them.
+
+<Note>
+**Let's Encrypt limits cheat sheet.** Checked against letsencrypt.org/docs/rate-limits on 2026-11-02. They change, so check the CA page for current values before relying on them.
+
+| Limit | Value |
+| --- | --- |
+| New certificates per registered domain (or IPv4 address, or IPv6 /64) | 50 per 7 days |
+| New certificates per exact set of identifiers (the duplicate limit) | 5 per 7 days |
+| Authorization failures per identifier per account (the failed validation limit) | 5 per hour |
+| New orders per account | 300 per 3 hours |
+
+ARI-coordinated renewals are exempt from all limits. Other renewals of the same identifiers skip the new-orders and per-registered-domain limits, but still count against the duplicate and failed-validation limits.
+
+Hostnames under a shared parent such as `sslip.io` or `nip.io` all count against one registered-domain budget of 50 per week, unless the parent is on the Public Suffix List. Check the current list at publicsuffix.org before assuming a separate budget. On 2026-11-01 `duckdns.org` was on it and `sslip.io` and `nip.io` were not.
+
+ZeroSSL and Google Trust Services need External Account Binding, which Levelrail does not support yet. You can still use their certificates through the certificate upload in [Domains and ingress](/domains-and-ingress). Issue the certificate with your own ACME client, then upload the certificate and key. You renew and re-upload it yourself.
+</Note>
 
 From the CLI:
 

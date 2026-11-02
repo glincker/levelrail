@@ -11,6 +11,7 @@ import type {
 } from '../../queries/firewallEdge'
 import { AuditView } from './AuditView'
 import { BansTable } from './BansTable'
+import { PortsView } from './PortsView'
 import { OverviewView } from './OverviewView'
 import { RulesView } from './RulesView'
 import { TrafficView } from './TrafficView'
@@ -607,5 +608,40 @@ describe('AuditView', () => {
     expect(
       screen.getByRole('button', { name: 'Try again' }),
     ).toBeInTheDocument()
+  })
+})
+
+describe('PortsView', () => {
+  it('shows each published port with how far it can be reached', async () => {
+    install({
+      'GET /api/v1/firewall/exposure': {
+        generated_at: '2026-11-01T10:00:00Z',
+        exposed: 1,
+        high: 0,
+        nodes: [
+          {
+            node_id: 'n1',
+            node_name: 'local',
+            local: true,
+            status: 'ok',
+            rules_readable: true,
+            findings: [
+              {
+                container: 'shop-web',
+                owner: { kind: 'app', name: 'shop' },
+                protocol: 'tcp',
+                host_port: 3000,
+                binds: ['0.0.0.0'],
+                class: 'exposed',
+              },
+            ],
+          },
+        ],
+      },
+    })
+    wrap(<PortsView />)
+    expect(await screen.findByText('3000/tcp')).toBeInTheDocument()
+    expect(screen.getByText('App shop')).toBeInTheDocument()
+    expect(screen.getByText('Exposed')).toBeInTheDocument()
   })
 })

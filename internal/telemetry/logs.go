@@ -235,7 +235,9 @@ func (db *DB) QueryLogs(ctx context.Context, resourceID string, from, to time.Ti
 		}
 		e.Timestamp = time.Unix(0, tsNano).UTC()
 		e.Structured = structured != 0
-		e.FieldsJSON = fieldsJSON.String
+		// Secrets registered after the row was written must still be hidden on read.
+		e.Message = secretmask.Mask(e.Message)
+		e.FieldsJSON = secretmask.Mask(fieldsJSON.String)
 		out = append(out, e)
 	}
 	if err := rows.Err(); err != nil {

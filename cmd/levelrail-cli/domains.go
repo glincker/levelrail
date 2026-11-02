@@ -38,6 +38,8 @@ func runDomains(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runDomainsCheck(prog, args[1:], stdout, stderr, lookupEnv)
 	case "doctor":
 		return runDomainsDoctor(prog, args[1:], stdout, stderr, lookupEnv)
+	case "cutover":
+		return runDomainsCutover(prog, args[1:], stdout, stderr, lookupEnv)
 	case "diagnose":
 		return runDomainsDiagnose(prog, args[1:], stdout, stderr, lookupEnv)
 	case "add":
@@ -107,6 +109,7 @@ func domainsUsage(prog string) string {
   %[1]s domains check <app> <domain> [flags]    run a real DNS lookup and report whether the domain reaches this control plane
   %[1]s domains doctor <app> <domain> [flags]   run every domain check and print a prioritised fix list
   %[1]s domains diagnose <domain> [flags]       why isn't my domain working: every check with the exact fix, optionally applied with --fix
+  %[1]s domains cutover <domain> [flags]        test before you switch: app, certificate, DNS and downtime risk
   %[1]s domains add <app> <domain>... [flags]   add domains and print the exact DNS records to create
   %[1]s domains summary [flags]                count domains by status and certificates needing attention
   %[1]s domains activity <domain> [flags]       list a domain's recent changes and certificate events

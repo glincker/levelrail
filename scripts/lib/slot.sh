@@ -8,6 +8,7 @@
 #      LEVELRAIL_SLOT_MAX_WAIT  seconds before running anyway with a warning (default 1800)
 #      LEVELRAIL_SLOT_NOTICE    seconds between wait lines (default 30)
 #      LEVELRAIL_SLOT_POLL      seconds between slot probes (default 1)
+#      LEVELRAIL_SLOT_RECLAIM_STALE  seconds before an abandoned reclaim lock is broken (default 10)
 # bash 3.2 compatible (macOS has no flock); mkdir is the atomic lock.
 
 _slot_int() { # <value> <default>
@@ -22,9 +23,48 @@ _slot_say() {
 	if { true >&3; } 2>/dev/null; then echo "$*" >&3; else echo "$*" >&2; fi
 }
 
+# True when the slot dir has no live owner.
+_slot_dead() { # <dir>
+	local d="$1" pid
+	pid="$(cat "$d/pid" 2>/dev/null || true)"
+	# An empty pid file means the owner is between mkdir and write, or died there.
+	{ [ -n "$pid" ] && ! kill -0 "$pid" 2>/dev/null; } ||
+		{ [ -z "$pid" ] && [ -d "$d" ] && [ -n "$(find "$d" -maxdepth 0 -mmin +1 2>/dev/null)" ]; }
+}
+
+# Removes a dead slot under a short-lived lock. Without it, two waiters can both
+# see the same dead owner, a third job claims the slot, and the slower rename
+# then moves the live owner's dir away. The owner is re-checked once locked.
+_slot_reclaim() { # <root> <dir> <owner>
+	local root="$1" d="$2" owner="$3" lock stale now ts
+	lock="$root/reclaim.lock"
+	stale="$(_slot_int "${LEVELRAIL_SLOT_RECLAIM_STALE:-}" 10)"
+	if ! mkdir "$lock" 2>/dev/null; then
+		now="$(date +%s)"
+		ts="$(cat "$lock/ts" 2>/dev/null || true)"
+		case "$ts" in '' | *[!0-9]*) return 0 ;; esac
+		[ $((now - ts)) -ge "$stale" ] || return 0
+		# Rename is atomic, so one waiter breaks an abandoned lock.
+		mv "$lock" "$lock.old.$owner.$RANDOM" 2>/dev/null || return 0
+		rm -rf "$lock".old.* 2>/dev/null || true
+		mkdir "$lock" 2>/dev/null || return 0
+	fi
+	(
+		trap 'rm -rf "$lock"' EXIT
+		trap 'exit 130' INT
+		trap 'exit 143' TERM
+		date +%s >"$lock/ts"
+		if [ -d "$d" ] && _slot_dead "$d"; then
+			if mv "$d" "$d.stale.$owner.$RANDOM" 2>/dev/null; then
+				rm -rf "$d".stale.* 2>/dev/null || true
+			fi
+		fi
+	)
+}
+
 # Prints the claimed slot dir, or nothing when every slot is busy.
 _slot_try() { # <root> <count> <owner>
-	local root="$1" n="$2" owner="$3" i=1 d pid
+	local root="$1" n="$2" owner="$3" i=1 d
 	while [ "$i" -le "$n" ]; do
 		d="$root/heavy.$i"
 		if mkdir "$d" 2>/dev/null; then
@@ -32,14 +72,8 @@ _slot_try() { # <root> <count> <owner>
 			echo "$d"
 			return 0
 		fi
-		pid="$(cat "$d/pid" 2>/dev/null || true)"
-		# An empty pid file means the owner is between mkdir and write, or died there.
-		if { [ -n "$pid" ] && ! kill -0 "$pid" 2>/dev/null; } ||
-			{ [ -z "$pid" ] && [ -d "$d" ] && [ -n "$(find "$d" -maxdepth 0 -mmin +1 2>/dev/null)" ]; }; then
-			# Rename is atomic, so only one reclaimer wins the dead slot.
-			if mv "$d" "$d.stale.$owner.$RANDOM" 2>/dev/null; then
-				rm -rf "$d".stale.* 2>/dev/null || true
-			fi
+		if _slot_dead "$d"; then
+			_slot_reclaim "$root" "$d" "$owner"
 		fi
 		i=$((i + 1))
 	done

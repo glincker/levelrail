@@ -425,10 +425,15 @@ func (rt *Router) prCommandRollback(ctx context.Context, name string, ev webhook
 	}
 	note := fmt.Sprintf("RollbackTo: %s. PR comment by %s on #%d", target.ID, ev.Commenter, ev.Number)
 	if isStaticAttempt(*target) {
-		if status, msg := rt.rollbackStatic(ctx, *target); status != 0 {
+		status, msg, cdnWarning := rt.rollbackStatic(ctx, *target)
+		if status != 0 {
 			return "Rollback failed: " + codeSpan(msg) + "."
 		}
-		return "Rolled back to deploy " + codeSpan(target.ID) + "."
+		out := "Rolled back to deploy " + codeSpan(target.ID) + "."
+		if cdnWarning != "" {
+			out += " Warning: " + cdnWarning
+		}
+		return out
 	}
 	pin := rt.rollbackPin(ctx, *target)
 	ref, status, msg := rt.rollbackImageRef(ctx, *target, pin)

@@ -1,5 +1,6 @@
-// Command gen-template-gallery exports internal/catalog.Templates as the JSON
-// the docs site's self-host gallery pages are built from.
+// Command gen-template-gallery exports internal/catalog.Templates as the
+// versioned catalog index (docs/catalog-index.md) that the docs gallery,
+// the marketing site and a future catalog API all read.
 //
 // Usage (from the repo root): go run ./scripts/gen-template-gallery
 // Pass -check to exit non-zero instead of writing when the file is stale.
@@ -34,20 +35,84 @@ type EnvVar struct {
 	Kind    string `json:"kind"`
 }
 
-// Entry is one template in the exported gallery data.
+// InstallField is one install form field. It never carries a value.
+type InstallField struct {
+	Key         string `json:"key"`
+	Label       string `json:"label"`
+	Required    bool   `json:"required"`
+	DefaultKind string `json:"default_kind"`
+}
+
+// Install says which CLI verb sets the template up and which form it asks.
+type Install struct {
+	Kind   string         `json:"kind"`
+	Fields []InstallField `json:"fields"`
+}
+
+// SchemaVersion is the version of the catalog index contract. Bump it only
+// for a breaking change; additive fields keep the version.
+const SchemaVersion = 1
+
+// Shared with the product API so the site and the dashboard never disagree.
+type (
+	Image        = catalog.ImageFact
+	License      = catalog.License
+	Trust        = catalog.Trust
+	Verification = catalog.Verification
+)
+
+// Listing says who stands behind an entry.
+type Listing struct {
+	By        string `json:"by"`
+	VendorOrg string `json:"vendor_org,omitempty"`
+	Proof     string `json:"proof,omitempty"`
+}
+
+// Entry is one template in the catalog index.
 type Entry struct {
 	ID               string               `json:"id"`
+	Aliases          []string             `json:"aliases"`
 	Name             string               `json:"name"`
 	Slogan           string               `json:"slogan"`
+	Description      string               `json:"description,omitempty"`
+	FirstRun         []string             `json:"first_run"`
 	Category         string               `json:"category"`
-	DocumentationURL string               `json:"docUrl,omitempty"`
-	MemoryMiB        int64                `json:"memoryMiB,omitempty"`
-	RequiresGPU      bool                 `json:"gpu,omitempty"`
-	NeedsConfig      bool                 `json:"needsConfig"`
+	Status           string               `json:"status"`
+	StatusReason     string               `json:"status_reason,omitempty"`
+	ReplacedBy       string               `json:"replaced_by,omitempty"`
+	SourceRepo       string               `json:"source_repo,omitempty"`
+	DocumentationURL string               `json:"documentation_url,omitempty"`
+	License          *License             `json:"license,omitempty"`
+	HostedUse        string               `json:"hosted_use"`
+	Listing          Listing              `json:"listing"`
+	Trust            Trust                `json:"trust"`
+	Arch             map[string]string    `json:"arch"`
+	Verification     *Verification        `json:"verification,omitempty"`
+	Admission        *catalog.Admission   `json:"admission,omitempty"`
+	Images           []Image              `json:"images"`
+	MemoryMiB        int64                `json:"memory_mib,omitempty"`
+	RequiresGPU      bool                 `json:"requires_gpu,omitempty"`
+	NeedsConfig      bool                 `json:"needs_config"`
+	Install          *Install             `json:"install,omitempty"`
 	Services         []Service            `json:"services"`
 	Env              []EnvVar             `json:"env"`
 	Requirements     catalog.Requirements `json:"requirements"`
 }
+
+// Index is the whole file: the stable contract the site and a future API share.
+type Index struct {
+	SchemaVersion int                      `json:"schema_version"`
+	Templates     []Entry                  `json:"templates"`
+	Tombstones    []catalog.TombstoneEntry `json:"tombstones"`
+}
+
+const (
+	installKind   = "install"
+	deployKind    = "deploy"
+	defaultNone   = "none"
+	defaultPreset = "preset"
+	defaultGen    = "generated"
+)
 
 const (
 	kindGenerated = "generated"
@@ -69,16 +134,39 @@ func detectPersist(_, _, _ string) error           { return nil }
 func buildEntry(t catalog.Template) (Entry, error) {
 	e := Entry{
 		ID:               t.ID,
+		Aliases:          []string{},
+		FirstRun:         []string{},
 		Name:             sanitize(t.Name),
 		Slogan:           sanitize(t.Slogan),
+		Description:      sanitize(t.Description),
 		Category:         t.Category,
+		Status:           catalog.StatusActive,
 		DocumentationURL: t.DocumentationURL,
+		HostedUse:        "unknown",
+		Trust:            Trust{Level: catalog.TrustListed},
+		Images:           []Image{},
 		MemoryMiB:        t.RecommendedMemoryBytes / (1 << 20),
 		RequiresGPU:      t.RequiresGPU,
 		Services:         []Service{},
 		Env:              []EnvVar{},
 		Requirements:     catalog.ComputeRequirements(t.Compose),
 	}
+	e.Install = installFor(t.Manifest)
+	mp := catalog.MarketplaceFor(t)
+	e.SourceRepo, e.License, e.HostedUse, e.Aliases = mp.SourceRepo, mp.License, mp.HostedUse, mp.Aliases
+	e.Status, e.StatusReason, e.ReplacedBy = mp.Status, sanitize(mp.StatusReason), mp.ReplacedBy
+	if t.Manifest == nil && e.Description == "" {
+		if meta, ok := catalog.MetaFor(t.ID); ok {
+			e.Description = sanitize(meta.Description)
+		}
+	}
+	if t.Manifest != nil {
+		for _, s := range t.Manifest.FirstRun {
+			e.FirstRun = append(e.FirstRun, sanitize(s))
+		}
+	}
+	e.Listing = Listing{By: mp.Listing.By, VendorOrg: mp.Listing.VendorOrg, Proof: mp.Listing.Proof}
+	e.Admission, e.Verification, e.Images, e.Arch, e.Trust = mp.Admission, mp.Verification, mp.Images, mp.Arch, mp.Trust
 	f, err := compose.Parse([]byte(t.Compose))
 	if err != nil {
 		return e, fmt.Errorf("parse %s: %w", t.ID, err)
@@ -135,6 +223,31 @@ func buildEntry(t catalog.Template) (Entry, error) {
 	return e, nil
 }
 
+// installFor mirrors the CLI: a manifest with an env form is set up with
+// "templates install", everything else with "templates deploy".
+func installFor(m *catalog.Manifest) *Install {
+	in := &Install{Kind: deployKind, Fields: []InstallField{}}
+	if m == nil || len(m.Env) == 0 {
+		return in
+	}
+	in.Kind = installKind
+	for _, p := range m.Env {
+		f := InstallField{Key: p.Key, Label: sanitize(p.Label), DefaultKind: defaultNone}
+		if f.Label == "" {
+			f.Label = p.Key
+		}
+		switch {
+		case p.Generate != "":
+			f.DefaultKind = defaultGen
+		case p.Default != "":
+			f.DefaultKind = defaultPreset
+		}
+		f.Required = p.Required && f.DefaultKind == defaultNone
+		in.Fields = append(in.Fields, f)
+	}
+	return in
+}
+
 func generate(templates []catalog.Template) ([]byte, error) {
 	out := make([]Entry, 0, len(templates))
 	for _, t := range templates {
@@ -149,14 +262,14 @@ func generate(templates []catalog.Template) ([]byte, error) {
 	enc := json.NewEncoder(&buf)
 	enc.SetIndent("", " ")
 	enc.SetEscapeHTML(false)
-	if err := enc.Encode(out); err != nil {
+	if err := enc.Encode(Index{SchemaVersion: SchemaVersion, Templates: out, Tombstones: catalog.Tombstones()}); err != nil {
 		return nil, fmt.Errorf("encode gallery data: %w", err)
 	}
 	return buf.Bytes(), nil
 }
 
 func main() {
-	path := flag.String("out", "scripts/gen-template-gallery/templates.json", "JSON file to write")
+	path := flag.String("out", "scripts/gen-template-gallery/catalog-index.json", "JSON file to write")
 	check := flag.Bool("check", false, "fail instead of writing when the file is stale")
 	flag.Parse()
 

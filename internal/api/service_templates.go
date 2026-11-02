@@ -41,6 +41,7 @@ type serviceTemplateListItem struct {
 	HasVolume     bool `json:"has_volume,omitempty"`
 	// Verified marks a template that passed the last committed live smoke run.
 	Verified bool `json:"verified"`
+	templateFacts
 }
 
 var templateDatabaseImage = regexp.MustCompile(`(?m)^\s*image:\s*["']?(?:[\w.\-]+/)*(postgres|postgis|mysql|mariadb|mongo|redis|valkey|clickhouse|timescaledb)\b`)
@@ -67,15 +68,25 @@ type serviceTemplateDetail struct {
 	RequiresConfiguration  bool                 `json:"requires_configuration"`
 	Manifest               *catalog.Manifest    `json:"manifest,omitempty"`
 	Requirements           catalog.Requirements `json:"requirements"`
+	templateFacts
 }
 
 // handleListServiceTemplates handles GET /api/v1/service-templates: the
 // full catalog.Templates catalog, static and in-memory, no store
 // involved.
-func (rt *Router) handleListServiceTemplates(w http.ResponseWriter, _ *http.Request) {
+func (rt *Router) handleListServiceTemplates(w http.ResponseWriter, r *http.Request) {
+	filter, bad := parseTemplateFilter(r)
+	if bad != "" {
+		writeError(w, http.StatusBadRequest, bad)
+		return
+	}
 	tpls := availableTemplates()
 	out := make([]serviceTemplateListItem, 0, len(tpls))
 	for _, tpl := range tpls {
+		facts := factsFor(tpl.ID)
+		if !filter.keep(facts) {
+			continue
+		}
 		needsDB, hasVol := templateResourceHints(tpl.Compose)
 		out = append(out, serviceTemplateListItem{
 			ID:                     tpl.ID,
@@ -92,6 +103,7 @@ func (rt *Router) handleListServiceTemplates(w http.ResponseWriter, _ *http.Requ
 			NeedsDatabase:          needsDB,
 			HasVolume:              hasVol,
 			Verified:               catalog.IsVerified(tpl.ID),
+			templateFacts:          facts,
 		})
 	}
 	writeJSON(w, http.StatusOK, out)
@@ -136,6 +148,7 @@ type templateView struct {
 	RequiresConfiguration  bool
 	Manifest               *catalog.Manifest
 	Requirements           catalog.Requirements
+	templateFacts
 }
 
 // resolveTemplate looks id up in catalog.Templates first (static, so
@@ -162,8 +175,9 @@ func (rt *Router) resolveTemplate(ctx context.Context, id string) (templateView,
 			RecommendedMemoryBytes: tpl.RecommendedMemoryBytes,
 			RequiresGPU:            tpl.RequiresGPU,
 			RequiresConfiguration:  rt.templateNeedsConfig(tpl.ID),
-			Manifest:               tpl.Manifest,
+			Manifest:               publicManifest(tpl.Manifest),
 			Requirements:           catalog.ComputeRequirements(tpl.Compose),
+			templateFacts:          factsFor(tpl.ID),
 		}, true, nil
 	}
 

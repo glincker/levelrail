@@ -224,6 +224,7 @@ type Store interface {
 	DomainRedirectStore
 	DomainErrorPagesStore
 	DomainSearchVisibilityStore
+	DomainACMEChallengeStore
 	DomainTrafficPolicyStore
 	CachePurgeStore
 	EdgeFirewallStore

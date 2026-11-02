@@ -12,10 +12,10 @@ Every build is timed, counted against a concurrency limit, and recorded. This pa
 | --- | --- | --- |
 | Build timeout | `APP_BUILD_TIMEOUT` | `30m` |
 | Concurrent builds | `APP_BUILD_MAX_CONCURRENT` | `2` |
-| Memory per build | `APP_BUILD_MEMORY_MB` | `0` (no limit) |
+| Memory per build | `APP_BUILD_MEMORY_MB` (seeds the `builds.memory_limit_mb` setting) | `0` (auto, see below) |
 | CPU per build, in thousandths of a core | `APP_BUILD_CPU_MILLIS` | `0` (no limit) |
 
-`0` turns a limit off. A build past the concurrency limit waits in a queue, first in first out, and the wait is recorded but does not count against its timeout. A build that runs past the timeout is stopped and fails with the `build_timeout` code (see [Deploy failures](/deploy-failures)).
+`0` turns a limit off, except memory, where `0` means auto. A build past the concurrency limit waits in a queue, first in first out, and the wait is recorded but does not count against its timeout. A build that runs past the timeout is stopped and fails with the `build_timeout` code (see [Deploy failures](/deploy-failures)).
 
 To change a limit without restarting the control plane, use **Settings, Build performance** in the dashboard (root accounts only) or the CLI. A saved value wins over the environment variable until you reset it.
 
@@ -33,6 +33,31 @@ levelrail-cli apps build-limits show --app web
 ```
 
 Memory and CPU are enforced with a cgroup v2 group per build (`APP_BUILD_CGROUP_ROOT`, default `/sys/fs/cgroup`), so the control plane needs write access to it on a Linux host. Where cgroups are not available the build runs unlimited and the control plane logs a warning. Builds sent to a remote build node are not capped by these two limits. A build killed for exceeding its memory limit is recorded as `memory_limit`, and the Deploys page offers a **Raise memory** button for it, or **Raise timeout** after a timeout.
+
+### Build memory guard
+
+`builds.memory_limit_mb` is a runtime setting (Settings, Deploys). A saved value wins, `APP_BUILD_MEMORY_MB` only seeds it, and a change applies to the next build. Valid values are `0` (auto) or 256 to 1048576 MiB. A saved per-app or global value from the build limits above still wins over it, and a saved `0` there means unlimited on purpose.
+
+Auto is `min(max(host memory * 60 percent, 512), host memory minus 512)`, never below 256. `APP_BUILD_MEMORY_PERCENT` (default `60`) and `APP_BUILD_MEMORY_RESERVE_MB` (default `512`, room for the control plane) tune it. Examples: 1 GB host, 512 MiB; 2 GB, 1228; 4 GB, 2457; 8 GB, 4915.
+
+The cap is a cgroup memory limit, and the build's swap is limited to the same size so it cannot swap past the cap. Railpack Node builds also get `NODE_OPTIONS=--max-old-space-size` at 75 percent of the cap (`APP_BUILD_NODE_HEAP_PERCENT`) unless the plan already sets `NODE_OPTIONS`; the build log says which. Dockerfile builds keep their own `NODE_OPTIONS`. Builds on a remote build node are not capped here.
+
+A build killed by the out of memory killer (exit 137) fails with a message naming `builds.memory_limit_mb`, the limit, the host memory and the options: raise the limit, use a builds-only node, add swap, or build elsewhere. Stuck diagnostics show the same hint. `doctor` warns (never fails) when the host has under 2048 MiB, the documented floor for a Next.js build (1024 MiB for other builds), and a build on such a host logs the same warning. These floors are documented guidance, not measured.
+
+## Sizing a VPS
+
+Measured on real hosts: the control plane resident memory is 264 MB in a 2048 MiB guest (about 434 MiB used by the whole guest after a clean restart) and 137 to 295 MiB on a 6 GiB Oracle arm64 host. Uptime Kuma idles at about 102 to 130 MiB. n8n idles at about 128 MiB.
+
+Not measured: the idle memory of a Next.js app. The table assumes 150 MiB per small Next.js site, and the site counts are arithmetic, not a benchmark. They leave 20 percent of the RAM free and use 434 MiB for the platform.
+
+| Host | Auto build cap | Small Next.js sites running (assumed 150 MiB each) | Building on the same host |
+| --- | --- | --- | --- |
+| 1 GB | 512 MiB | not recommended | Use a builds-only node, or build in GitHub Actions or Cloudflare and deploy the image |
+| 2 GB | 1228 MiB | about 8 | One build at a time (`APP_BUILD_MAX_CONCURRENT=1`) and a swap file |
+| 4 GB | 2457 MiB | about 18 | One build at a time |
+| 8 GB | 4915 MiB | about 40 | Two builds at a time |
+
+A build and the running sites share the same RAM, so keep the sites plus the build cap under the host memory. For a 1 GB host, do not build Next.js on it. Next.js per-site memory has not been measured on a real host (pending a host run). See [Frameworks](/frameworks#sizing-a-nextjs-app).
 
 The limits apply to builds that start after the change. Builds already running keep the timeout they started with.
 

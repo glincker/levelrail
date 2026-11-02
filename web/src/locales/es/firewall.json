@@ -18,9 +18,17 @@
       "overview": "Resumen",
       "traffic": "Tráfico",
       "rules": "Reglas",
+      "ports": "Puertos",
       "audit": "Registro de auditoría"
     },
+    "hostPointer": "Los puertos abiertos y el firewall del servidor están en Ajustes > Firewall.",
+    "hostPointerLink": "Abrir Ajustes > Firewall",
     "help": "Guía del firewall"
+  },
+  "ports": {
+    "loading": "Cargando puertos",
+    "loadError": "No se pudieron cargar los puertos publicados.",
+    "reach": "Accesible desde"
   },
   "outcome": {
     "allowed": "Permitida",

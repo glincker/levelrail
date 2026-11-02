@@ -172,7 +172,7 @@ export function RolloutPolicyCard({ appName }: { appName: string }) {
           </InfoTip>
         </CardTitle>
       </CardHeader>
-      <PolicyForm appName={appName} initial={data.policy ?? {}} />
+      <PolicyForm key={appName} appName={appName} initial={data.policy ?? {}} />
     </Card>
   )
 }

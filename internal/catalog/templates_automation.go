@@ -14,7 +14,7 @@ var automationTemplates = []Template{
     ports: ["5678:5678"]
     environment:
       N8N_ENCRYPTION_KEY: $SERVICE_HEX_64_ENCRYPTIONKEY
-      N8N_HOST: "0.0.0.0"
+      WEBHOOK_URL: ${SERVICE_URL_N8N:-http://localhost:5678}
       N8N_PORT: "5678"
     volumes:
       - n8n_data:/home/node/.n8n
@@ -39,7 +39,7 @@ var automationTemplates = []Template{
     environment:
       AP_ENCRYPTION_KEY: $SERVICE_HEX_32_ENCRYPTIONKEY
       AP_JWT_SECRET: $SERVICE_HEX_32_JWTSECRET
-      AP_FRONTEND_URL: ${SERVICE_FQDN_ACTIVEPIECES:-http://localhost:8080}
+      AP_FRONTEND_URL: ${SERVICE_URL_ACTIVEPIECES:-http://localhost:8080}
       AP_POSTGRES_HOST: db
       AP_POSTGRES_DATABASE: activepieces
       AP_POSTGRES_USERNAME: activepieces

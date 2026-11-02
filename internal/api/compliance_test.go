@@ -32,6 +32,7 @@ func complianceDo(t *testing.T, rt *Router, cookie *http.Cookie, method, path, b
 }
 
 func TestCompliance_NotConfiguredIs501(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	rec := complianceDo(t, rt, cookie, http.MethodGet, "/api/v1/compliance/access-reviews", "")
@@ -41,6 +42,7 @@ func TestCompliance_NotConfiguredIs501(t *testing.T) {
 }
 
 func TestCompliance_AccessReviewLifecycle(t *testing.T) {
+	t.Parallel()
 	rt, cookie := newComplianceRouter(t)
 	rec := complianceDo(t, rt, cookie, http.MethodPost, "/api/v1/compliance/access-reviews", `{"name":"Q4","due_days":7}`)
 	if rec.Code != http.StatusCreated {
@@ -80,6 +82,7 @@ func TestCompliance_AccessReviewLifecycle(t *testing.T) {
 }
 
 func TestCompliance_EvidencePackDownloadAndVerify(t *testing.T) {
+	t.Parallel()
 	rt, cookie := newComplianceRouter(t)
 	rec := complianceDo(t, rt, cookie, http.MethodPost, "/api/v1/compliance/evidence-packs",
 		`{"from":"`+time.Now().AddDate(0, 0, -7).Format("2006-01-02")+`","to":"`+time.Now().Format("2006-01-02")+`"}`)

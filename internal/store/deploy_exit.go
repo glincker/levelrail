@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 // DeployExitLine is one captured output line of an exited container.
@@ -47,9 +49,12 @@ func (db *DB) RecordDeployExit(ctx context.Context, e DeployExit) error {
 			return fmt.Errorf("store: record deploy exit for %q: find attempt: %w", e.ServiceName, err)
 		}
 	}
-	lines := e.LogTail
-	if lines == nil {
-		lines = []DeployExitLine{}
+	// The tail is read straight from the container runtime, so it never passed the log store's mask.
+	e.Message = secretmask.Mask(e.Message)
+	lines := make([]DeployExitLine, len(e.LogTail))
+	for i, l := range e.LogTail {
+		l.Message = secretmask.Mask(l.Message)
+		lines[i] = l
 	}
 	tail, err := json.Marshal(lines)
 	if err != nil {

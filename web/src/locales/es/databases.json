@@ -561,7 +561,8 @@
     "delete": "Eliminar...",
     "stopToast": "Deteniendo \"{{name}}\".",
     "startToast": "Iniciando \"{{name}}\".",
-    "backToList": "Volver a bases de datos"
+    "backToList": "Volver a bases de datos",
+    "branch": "Rama"
   },
   "connection": {
     "forApps": "Para aplicaciones (por la malla)",
@@ -926,5 +927,21 @@
       "failed": "Fallido",
       "unknown": "Iniciando"
     }
+  },
+  "branch": {
+    "title": "Crear una rama de esta base de datos",
+    "description": "Crea una base de datos nueva e independiente a partir de un respaldo o de un momento en el tiempo. \"{{name}}\" no cambia y la rama tiene sus propias credenciales.",
+    "name": "Nombre de la rama",
+    "from": "Partir de",
+    "fromBackup": "Un respaldo",
+    "fromTime": "Un momento en el tiempo",
+    "backup": "Respaldo",
+    "noBackups": "Aún no hay respaldos exitosos",
+    "time": "Hora",
+    "cancel": "Cancelar",
+    "submit": "Crear rama",
+    "starting": "Iniciando...",
+    "started": "Se está creando la rama \"{{name}}\".",
+    "action": "Rama"
   }
 }

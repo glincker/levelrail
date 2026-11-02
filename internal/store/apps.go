@@ -133,6 +133,21 @@ func (db *DB) DeleteApp(ctx context.Context, id string) error {
 	return nil
 }
 
+// DeleteAppIfOrphaned drops the app row only when no service references it,
+// in one statement so a concurrent create cannot link between check and delete
+// (the FK cascade would otherwise delete the new service). Reports whether a row was removed.
+func (db *DB) DeleteAppIfOrphaned(ctx context.Context, id string) (bool, error) {
+	res, err := db.ExecContext(ctx, `DELETE FROM apps WHERE id = ? AND NOT EXISTS (SELECT 1 FROM desired_services WHERE app_id = ?)`, id, id)
+	if err != nil {
+		return false, fmt.Errorf("store: delete orphaned app %q: %w", id, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return false, fmt.Errorf("store: delete orphaned app %q: rows affected: %w", id, err)
+	}
+	return n > 0, nil
+}
+
 // ListServicesByApp returns every service belonging to appID, ordered
 // by name. This is the read side of stage 1 multi-service apps: an
 // app's member services, for a group-status rollup or a detail view.

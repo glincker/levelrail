@@ -193,8 +193,8 @@ var aiml2Templates = []Template{
     environment:
       HOST: 0.0.0.0
       PORT: "3080"
-      DOMAIN_CLIENT: ${SERVICE_FQDN_LIBRECHAT:-http://localhost:3080}
-      DOMAIN_SERVER: ${SERVICE_FQDN_LIBRECHAT:-http://localhost:3080}
+      DOMAIN_CLIENT: ${SERVICE_URL_LIBRECHAT:-http://localhost:3080}
+      DOMAIN_SERVER: ${SERVICE_URL_LIBRECHAT:-http://localhost:3080}
       MONGO_URI: mongodb://mongo:27017/LibreChat
       MEILI_HOST: http://meilisearch:7700
       MEILI_MASTER_KEY: $SERVICE_HEX_32_MEILI

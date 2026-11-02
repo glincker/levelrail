@@ -80,7 +80,7 @@ func TestRun_Templates_Get_RecommendedMemory(t *testing.T) {
 
 	stdout, _ := runCLIExpectOK(t, []string{"templates", "get", "ollama-mistral", "--api-url", srv.URL})
 
-	if !strings.Contains(stdout, "recommended_ram:   ~6 GiB") {
+	if !strings.Contains(stdout, "recommended_ram:   ~6 GiB (working set;") {
 		t.Errorf("stdout = %q, want a recommended_ram line", stdout)
 	}
 }
@@ -205,5 +205,63 @@ func TestRun_Templates_Get_Description(t *testing.T) {
 	stdout, _ := runCLIExpectOK(t, []string{"templates", "get", "rustdesk-server", "--api-url", srv.URL})
 	if !strings.Contains(stdout, "description:\n  Set RELAY.\n  Open TCP 21117.\n") {
 		t.Errorf("stdout = %q, want an indented description block", stdout)
+	}
+}
+
+func TestFormatRecommendedMemory_SubGiBInMiB(t *testing.T) {
+	cases := map[int64]string{0: "-", 256 << 20: "~256 MiB", 512 << 20: "~512 MiB", 1 << 30: "~1 GiB", 6 << 30: "~6 GiB"}
+	for in, want := range cases {
+		if got := formatRecommendedMemory(in); got != want {
+			t.Errorf("formatRecommendedMemory(%d) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestPrintApp_TemplateMemoryLabelsEffectiveLimit(t *testing.T) {
+	var b strings.Builder
+	a := appResource{Name: "mc"}
+	a.MemoryFromTemplate = true
+	a.Resources = &apiclient.ServiceResources{MemoryBytes: 256 << 20}
+	printAppHuman(&b, a)
+	if !strings.Contains(b.String(), "~256 MiB container limit") {
+		t.Errorf("output = %q, want the labelled container limit", b.String())
+	}
+}
+
+func TestPrintTemplateFacts_HonestWording(t *testing.T) {
+	var buf strings.Builder
+	printTemplateFacts(&buf, apiclient.TemplateFacts{
+		License:      &apiclient.TemplateLicense{SPDX: "MIT", Class: "permissive"},
+		Trust:        &apiclient.TemplateTrust{Level: "verified"},
+		Verification: &apiclient.TemplateVerification{Tag: "1.2.3", Arches: []string{"arm64"}},
+		Status:       "deprecated", StatusReason: "unmaintained", ReplacedBy: "newer",
+	})
+	out := buf.String()
+	for _, want := range []string{"license:           MIT (permissive)", "trust:             verified", "smoke passed for image tag 1.2.3 on arm64", "deprecated: unmaintained (replaced by newer)"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("output missing %q:\n%s", want, out)
+		}
+	}
+	buf.Reset()
+	printTemplateFacts(&buf, apiclient.TemplateFacts{})
+	if buf.Len() != 0 {
+		t.Errorf("unknown facts printed %q, want nothing", buf.String())
+	}
+}
+
+func TestRun_Templates_List_FilterQuery(t *testing.T) {
+	var gotQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotQuery = r.URL.RawQuery
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode([]serviceTemplateListItem{{ID: "old", Name: "Old", TemplateFacts: apiclient.TemplateFacts{Status: "deprecated", License: &apiclient.TemplateLicense{Class: "copyleft"}}}})
+	}))
+	defer srv.Close()
+	out, _ := runCLIExpectOK(t, []string{"templates", "list", "--license-class", "copyleft", "--arch", "arm64", "--api-url", srv.URL})
+	if gotQuery != "arch=arm64&license_class=copyleft" {
+		t.Errorf("query = %q", gotQuery)
+	}
+	if !strings.Contains(out, "LICENSE") || !strings.Contains(out, "Old [deprecated]") || !strings.Contains(out, "copyleft") {
+		t.Errorf("table = %q", out)
 	}
 }

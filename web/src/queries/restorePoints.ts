@@ -50,6 +50,7 @@ export function restorePointsQueryOptions() {
 export function useRestoreRestorePoint() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: async (id: string): Promise<{ status: string }> => {
       const res = await fetch(
         `/api/v1/updates/restore-points/${encodeURIComponent(id)}/restore`,

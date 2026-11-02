@@ -12,6 +12,7 @@ import (
 )
 
 func TestHandleStopDatabase_Success(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -36,6 +37,7 @@ func TestHandleStopDatabase_Success(t *testing.T) {
 }
 
 func TestHandleStopDatabase_UnknownDatabase_NotFound(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -47,6 +49,7 @@ func TestHandleStopDatabase_UnknownDatabase_NotFound(t *testing.T) {
 }
 
 func TestHandleStartDatabase_Success(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -74,6 +77,7 @@ func TestHandleStartDatabase_Success(t *testing.T) {
 }
 
 func TestHandleStartDatabase_UnknownDatabase_NotFound(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -86,6 +90,7 @@ func TestHandleStartDatabase_UnknownDatabase_NotFound(t *testing.T) {
 
 // TestHandleStopDatabase_PlainWriteToken_Forbidden checks stop and start need the AbilityWriteSensitive tier.
 func TestHandleStopDatabase_PlainWriteToken_Forbidden(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	ctx := context.Background()
 
@@ -109,6 +114,7 @@ func TestHandleStopDatabase_PlainWriteToken_Forbidden(t *testing.T) {
 }
 
 func TestStopStartDatabaseRoutes_RequireAuth(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouter(t)
 
 	for _, path := range []string{"/api/v1/databases/main/stop", "/api/v1/databases/main/start"} {

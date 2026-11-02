@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -37,6 +38,7 @@ func (rt *Router) attachRuntimeSettings(s Store) {
 		rt.logger.Warn("api: capture runtime settings at boot failed", slog.String("error", err.Error()))
 	}
 	rt.runtimeSettings = svc
+	build.SetNetworkResolver(func(ctx context.Context) (string, error) { return svc.StringChecked(ctx, build.KeyBuildNetwork) })
 	loopbackDistrusted.Store(!svc.Bool(context.Background(), runtimesettings.KeyTrustLoopbackForwarded))
 }
 
@@ -157,7 +159,7 @@ func (rt *Router) handleSetRuntimeSetting(w http.ResponseWriter, r *http.Request
 	}
 	if rt.runtimeSettings.WeakensTo(r.Context(), key, req.Value) && !req.ConfirmWeakening {
 		writeJSON(w, http.StatusBadRequest, runtimeSettingError{
-			Error: "lowering this protection weakens security; send confirm_weakening: true to proceed",
+			Error: "this change weakens a security protection (a protection turned off or shortened, or a limit raised); send confirm_weakening: true to proceed",
 			Code:  errCodeConfirmRequired, Field: "confirm_weakening",
 		})
 		return
@@ -168,6 +170,7 @@ func (rt *Router) handleSetRuntimeSetting(w http.ResponseWriter, r *http.Request
 		return
 	}
 	rt.recordSettingChange(r, before, after)
+	rt.nudgeIfRenderedSetting(key)
 	writeJSON(w, http.StatusOK, after)
 }
 
@@ -181,12 +184,20 @@ func (rt *Router) handleResetRuntimeSetting(w http.ResponseWriter, r *http.Reque
 		rt.writeSettingError(w, "api: reset runtime setting", err)
 		return
 	}
+	if rt.runtimeSettings.WeakensOnReset(r.Context(), key) && r.URL.Query().Get("confirm_weakening") != "true" {
+		writeJSON(w, http.StatusBadRequest, runtimeSettingError{
+			Error: "resetting restores a weaker value from the environment seed; pass --confirm-weakening on the CLI or confirm_weakening=true on the API to proceed",
+			Code:  errCodeConfirmRequired, Field: "confirm_weakening",
+		})
+		return
+	}
 	after, err := rt.runtimeSettings.Reset(r.Context(), key)
 	if err != nil {
 		rt.writeSettingError(w, "api: reset runtime setting", err)
 		return
 	}
 	rt.recordSettingChange(r, before, after)
+	rt.nudgeIfRenderedSetting(key)
 	writeJSON(w, http.StatusOK, after)
 }
 

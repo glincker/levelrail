@@ -29,6 +29,11 @@ const (
 	envHardening     = "APP_CONTAINER_HARDENING"
 	envHardeningCaps = "APP_CONTAINER_HARDENING_CAP_ADD"
 	envHardeningPids = "APP_CONTAINER_PIDS_LIMIT"
+	envReadOnlyRoot  = "APP_CONTAINER_READONLY_ROOTFS"
+	envReadOnlyTmpMB = "APP_CONTAINER_READONLY_TMPFS_MB"
+
+	// DefaultReadOnlyTmpfsMB sizes each automatic tmpfs of a read-only root.
+	DefaultReadOnlyTmpfsMB int64 = 64
 
 	// DefaultPidsLimit is generous enough for forking servers and database
 	// backends while still stopping a fork bomb from exhausting the host.
@@ -59,6 +64,11 @@ type HardeningConfig struct {
 	// ExtraCaps are operator-granted capabilities added on top of
 	// MinimalCapabilities for every container.
 	ExtraCaps []string
+	// ReadOnlyRootfs is the fleet default for app containers that do not
+	// set it themselves. Off unless APP_CONTAINER_READONLY_ROOTFS is true.
+	ReadOnlyRootfs bool
+	// ReadOnlyTmpfsMB sizes the automatic /tmp and /run tmpfs; 0 uses the default.
+	ReadOnlyTmpfsMB int64
 }
 
 // HardeningReport describes what enforce sets, for the doctor endpoint.
@@ -113,6 +123,23 @@ func HardeningFromEnv(runtime RuntimeInfo) (HardeningConfig, error) {
 	if !pidsExplicit && runtime.Rootless {
 		cfg.PidsLimit = 0
 	}
+	if v := strings.TrimSpace(os.Getenv(envReadOnlyRoot)); v != "" {
+		on, err := strconv.ParseBool(v)
+		if err != nil && firstErr == nil {
+			firstErr = fmt.Errorf("docker: %s=%q is not a boolean", envReadOnlyRoot, v)
+		}
+		cfg.ReadOnlyRootfs = err == nil && on
+	}
+	if v := strings.TrimSpace(os.Getenv(envReadOnlyTmpMB)); v != "" {
+		n, err := strconv.ParseInt(v, 10, 64)
+		if err != nil || n <= 0 {
+			if firstErr == nil {
+				firstErr = fmt.Errorf("docker: %s=%q is not a positive integer", envReadOnlyTmpMB, v)
+			}
+		} else {
+			cfg.ReadOnlyTmpfsMB = n
+		}
+	}
 	for _, c := range strings.Split(os.Getenv(envHardeningCaps), ",") {
 		if c = strings.ToUpper(strings.TrimSpace(c)); c != "" {
 			cfg.ExtraCaps = append(cfg.ExtraCaps, strings.TrimPrefix(c, "CAP_"))
@@ -163,7 +190,7 @@ func (h HardeningConfig) Report() HardeningReport {
 func (h HardeningConfig) apply(hc *container.HostConfig, spec ContainerSpec) {
 	if spec.Hardened {
 		hc.CapDrop = []string{"ALL"}
-		hc.CapAdd = nil
+		hc.CapAdd = spec.HardenedCapAdd
 		hc.SecurityOpt = append(hc.SecurityOpt, securityOptNoNewPrivileges)
 		if hc.PidsLimit == nil {
 			limit := DefaultPidsLimit

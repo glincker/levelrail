@@ -20,6 +20,7 @@ export interface AddEndpointInput {
 export function useAddEndpoint() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (v: AddEndpointInput) =>
       requestJson<CreateModelResponse>(
         '/api/v1/models',
@@ -45,6 +46,7 @@ export function useAddEndpoint() {
 
 export function useProbeEndpoint() {
   return useMutation({
+    meta: { errorToast: false },
     mutationFn: (v: Omit<AddEndpointInput, 'name'>) =>
       requestJson<EndpointTestResult>(
         '/api/v1/model-endpoints/test',

@@ -57,6 +57,9 @@ func (c *Controller) BuildJobSpec(ctx context.Context, desired *store.DesiredSer
 		spec.Labels = mergeLabel(spec.Labels, appspec.InstanceLabelKey, c.instanceID)
 	}
 	spec.Labels = mergeLabel(spec.Labels, appspec.AppLabelKey, volumeOwner(desired, "").App)
+	if desired.Incarnation != "" {
+		spec.Labels = mergeLabel(spec.Labels, appspec.IncarnationLabelKey, desired.Incarnation)
+	}
 	if res != nil {
 		merged := docker.Resources{}
 		if spec.Resources != nil {

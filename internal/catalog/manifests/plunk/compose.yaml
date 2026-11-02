@@ -11,9 +11,9 @@ services:
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_SES_CONFIGURATION_SET: ${AWS_SES_CONFIGURATION_SET}
-      NEXT_PUBLIC_API_URI: ${SERVICE_FQDN_PLUNK:-http://localhost:3000}/api
-      APP_URI: ${SERVICE_FQDN_PLUNK:-http://localhost:3000}
-      API_URI: ${SERVICE_FQDN_PLUNK:-http://localhost:3000}/api
+      NEXT_PUBLIC_API_URI: ${SERVICE_URL_PLUNK:-http://localhost:3000}/api
+      APP_URI: ${SERVICE_URL_PLUNK:-http://localhost:3000}
+      API_URI: ${SERVICE_URL_PLUNK:-http://localhost:3000}/api
       DISABLE_SIGNUPS: "False"
       NODE_OPTIONS: --no-network-family-autoselection
     depends_on:

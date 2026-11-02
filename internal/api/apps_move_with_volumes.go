@@ -100,6 +100,10 @@ func (rt *Router) handleMoveAppWithVolumes(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	if err := backup.CheckNoImport(name); err != nil {
+		writeImportBusy(w)
+		return
+	}
 	existing, err := rt.apps.GetDesiredService(r.Context(), name)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
@@ -246,6 +250,9 @@ func (rt *Router) runAppVolumeMove(ctx context.Context, moveID, serviceName, fro
 	}
 
 	if rt.runMoveStep(ctx, steps, moveID, "resume_app", func() error {
+		if err := backup.CheckNoImport(serviceName); err != nil {
+			return err
+		}
 		if err := rt.apps.UpdateServiceSuspended(ctx, serviceName, false); err != nil {
 			return err
 		}

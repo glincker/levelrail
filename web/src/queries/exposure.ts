@@ -76,8 +76,25 @@ export function useApplyRestriction() {
     mutationFn: (input) =>
       request<ExposurePlan>(
         `${BASE}/restrictions/${input.protocol}/${input.port}`,
-        json('PUT', { ...input, confirm: true }),
+        json('PUT', { ...input, confirm: true, auto_revert: true }),
         'apply restriction',
+      ),
+    onSuccess: invalidate,
+  })
+}
+
+export function useConfirmRestriction() {
+  const invalidate = useInvalidate()
+  return useMutation<
+    ExposurePlan,
+    ApiError,
+    { port: number; protocol: string }
+  >({
+    mutationFn: ({ port, protocol }) =>
+      request<ExposurePlan>(
+        `${BASE}/restrictions/${protocol}/${port}/confirm`,
+        { method: 'POST' },
+        'confirm restriction',
       ),
     onSuccess: invalidate,
   })

@@ -309,6 +309,9 @@ func printAppHuman(out io.Writer, a appResource) {
 	if a.NodeID != "" {
 		_, _ = fmt.Fprintf(out, "node:     %s\n", a.NodeID)
 	}
+	if a.Replicas > 1 {
+		_, _ = fmt.Fprintf(out, "replicas: %d, all on the same server (extra replicas add capacity there, not protection if it goes down)\n", a.Replicas)
+	}
 	if a.EnvDirty {
 		_, _ = fmt.Fprintln(out, "env:      pending restart (env vars saved since the running container was last recreated)")
 	}
@@ -333,7 +336,7 @@ func printAppHuman(out io.Writer, a appResource) {
 		_, _ = fmt.Fprintf(out, "strategy: %s (set by the template: %s)\n", a.Strategy, a.StrategyReason)
 	}
 	if a.MemoryFromTemplate && a.Resources != nil {
-		_, _ = fmt.Fprintf(out, "memory:   %s (the template's recommended limit)\n", formatRecommendedMemory(a.Resources.MemoryBytes))
+		_, _ = fmt.Fprintf(out, "memory:   %s container limit (template default, set above its working-set recommendation for peaks)\n", formatRecommendedMemory(a.Resources.MemoryBytes))
 	}
 	for _, v := range a.Volumes {
 		_, _ = fmt.Fprintf(out, "volume:   %s -> %s\n", v.Name, v.ContainerPath)
@@ -760,9 +763,20 @@ func printSystemDoctorHuman(out io.Writer, d systemDoctorResource) {
 	if d.Silenced > 0 {
 		_, _ = fmt.Fprintf(out, "\nSilenced: %d (see status silences)\n", d.Silenced)
 	}
-	if d.OK {
+	warnings := 0
+	for _, c := range d.Checks {
+		if c.Status == "warn" {
+			warnings++
+		}
+	}
+	switch {
+	case d.OK && warnings == 1:
+		_, _ = fmt.Fprintln(out, "\nNo checks failed, 1 warning. See above.")
+	case d.OK && warnings > 1:
+		_, _ = fmt.Fprintf(out, "\nNo checks failed, %d warnings. See above.\n", warnings)
+	case d.OK:
 		_, _ = fmt.Fprintln(out, "\nAll checks passed.")
-	} else {
+	default:
 		_, _ = fmt.Fprintln(out, "\nOne or more checks failed. See above.")
 	}
 }

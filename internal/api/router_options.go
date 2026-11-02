@@ -2,13 +2,17 @@ package api
 
 import (
 	"context"
+	"github.com/GLINCKER/levelrail/internal/backup"
 	"github.com/GLINCKER/levelrail/internal/functions"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/secrets"
+	"path/filepath"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/changelog"
+	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
@@ -537,7 +541,13 @@ func WithTrustRoot(p TrustRootProbe) Option {
 // "optional signal, absence is not an error" shape WithSecretSetter's
 // own absence already has for secret-setting.
 func WithDataDir(path string) Option {
-	return func(rt *Router) { rt.dataDir = path }
+	return func(rt *Router) {
+		rt.dataDir = path
+		// A crash mid-import leaves its staged archive behind; clear it at startup.
+		if path != "" {
+			backup.CleanSpoolDir(filepath.Join(path, runtimesettings.DefaultVolumesTransferSpoolDir))
+		}
+	}
 }
 
 // SetLocalNodeID marks which node's row in GET /api/v1/nodes is the one
@@ -1039,7 +1049,15 @@ func WithPublicHostSource(source string) Option {
 // webhook receiver uses, when a BuildKit connection was successfully
 // established at startup.
 func WithBuilder(b Builder) Option {
-	return func(rt *Router) { rt.builder = b }
+	return func(rt *Router) {
+		rt.builder = b
+		// The closure reads rt lazily, so option order does not matter.
+		if h, ok := b.(interface {
+			SetStaticPublishHook(deploy.StaticPublishHook)
+		}); ok {
+			h.SetStaticPublishHook(rt.purgeAppCache)
+		}
+	}
 }
 
 // WithDeployLogQuerier enables a finished deploy attempt's full log replay

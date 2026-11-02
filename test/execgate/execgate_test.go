@@ -10,13 +10,14 @@ import (
 	"go/token"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 )
 
 var skipDirs = map[string]bool{
-	"node_modules": true, ".git": true, ".claude": true, "docs-local": true, "vendor": true,
+	"node_modules": true, ".git": true, ".claude": true, "vendor": true,
 }
 
 // spawnSelectors are package-qualified calls that start a process.
@@ -108,7 +109,7 @@ func TestNoUnreviewedProcessSpawning(t *testing.T) {
 			return err
 		}
 		if d.IsDir() {
-			if path != root && (skipDirs[d.Name()] || (d.Name() == "web" && filepath.Dir(path) == root)) {
+			if path != root && (skipDirs[d.Name()] || gitIgnored(root, path) || (d.Name() == "web" && filepath.Dir(path) == root)) {
 				return filepath.SkipDir
 			}
 			return nil
@@ -144,4 +145,13 @@ func TestNoUnreviewedProcessSpawning(t *testing.T) {
 			t.Errorf("allowlist entry %s no longer starts a process, remove it", path)
 		}
 	}
+}
+
+// gitIgnored skips top-level folders the local checkout ignores (scratch
+// material); CI has none, so behavior there is unchanged.
+func gitIgnored(root, path string) bool {
+	if filepath.Dir(path) != root {
+		return false
+	}
+	return exec.Command("git", "-C", root, "check-ignore", "-q", path).Run() == nil //nolint:gosec // arguments come from the walked repo tree
 }

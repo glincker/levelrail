@@ -31,6 +31,24 @@ function missing(): string[] {
     .sort()
 }
 
+// Namespaces behind the first-week routes must ship a Spanish file; extend as more are added.
+const FIRST_WEEK = [
+  'errors',
+  'forms',
+  'fixit',
+  'envEditor',
+  'compose',
+  'deploySafety',
+  'images',
+  'migrate',
+]
+
+describe('first-week es namespaces', () => {
+  it.each(FIRST_WEEK)('has an es file for %s', (ns) => {
+    expect(readdirSync(join(root, 'es'))).toContain(`${ns}.json`)
+  })
+})
+
 describe('en/es key parity', () => {
   it('has no new English keys missing from es beyond the baseline', () => {
     const known = new Set(baseline.missing)

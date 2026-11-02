@@ -16,6 +16,7 @@ import (
 )
 
 func TestDeleteAppRemovesPerAppAccessRows(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
@@ -57,6 +58,7 @@ func TestDeleteAppRemovesPerAppAccessRows(t *testing.T) {
 }
 
 func TestDeleteAppRemovesGitSourceAndSecrets(t *testing.T) {
+	t.Parallel()
 	db := openTestDB(t)
 	mk, err := secrets.GenerateMasterKey()
 	if err != nil {
@@ -131,6 +133,7 @@ func TestDeleteAppRemovesGitSourceAndSecrets(t *testing.T) {
 }
 
 func TestDeleteGitSourceRouteErasesItsSecrets(t *testing.T) {
+	t.Parallel()
 	db := openTestDB(t)
 	mk, err := secrets.GenerateMasterKey()
 	if err != nil {
@@ -172,6 +175,7 @@ func TestDeleteGitSourceRouteErasesItsSecrets(t *testing.T) {
 }
 
 func TestBuildSourceFactsScopedCallerGetsNoAppToken(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
 	seedApp(t, db, "site")
 	if err := db.SaveGitSource(context.Background(), store.GitSource{ServiceName: "site", RepoURL: "https://github.com/org/repo.git", Branch: "main", BuildType: "dockerfile"}); err != nil {

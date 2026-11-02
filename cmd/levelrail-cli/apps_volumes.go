@@ -29,6 +29,10 @@ func runAppsVolumes(prog string, args []string, stdout, stderr io.Writer, lookup
 		return runAppsVolumesCp(prog, args[1:], stdout, stderr, lookupEnv)
 	case "rm":
 		return runAppsVolumesRm(prog, args[1:], stdout, stderr, lookupEnv)
+	case "export":
+		return runAppsVolumesExport(prog, args[1:], stdout, stderr, lookupEnv)
+	case "import":
+		return runAppsVolumesImport(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps volumes subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, appsVolumesUsage(prog))
@@ -44,6 +48,8 @@ func appsVolumesUsage(prog string) string {
   %[1]s apps volumes ls <app> <volume> [path] [flags]                  list files in a volume
   %[1]s apps volumes cp <app> <volume> <src> <dst> [flags]             download or upload one file (remote side starts with ':')
   %[1]s apps volumes rm <app> <volume> <path> [flags]                  delete one file
+  %[1]s apps volumes export <app> <volume> --out FILE.tar.gz [flags]   save a whole volume as a tar.gz (also: volumes export)
+  %[1]s apps volumes import <app> <volume> --in FILE.tar.gz [--force]   fill a volume of a stopped app from a tar.gz
 
 NAME is the volume's logical name (lowercase letters, numbers, and
 hyphens, starting with a letter), scoped to this service; PATH is the

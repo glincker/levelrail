@@ -32,6 +32,15 @@ type proxyIntegrationDeps struct {
 	// probe and routerLoaded are overridable in tests.
 	probe        func(ctx context.Context, t proxyroutes.ProbeTarget) proxyroutes.ProbeResult
 	routerLoaded func(ctx context.Context, base, router string, timeout time.Duration) (bool, error)
+	// Evidence collectors for the certificate diagnosis, overridable in tests.
+	routerTLS      func(ctx context.Context, base, router string, timeout time.Duration) (proxyroutes.RouterTLS, error)
+	knownResolvers func(ctx context.Context, base string, timeout time.Duration) ([]string, error)
+	lookupIPs      func(ctx context.Context, host string) ([]string, error)
+	dialOpen       func(ctx context.Context, addr string) bool
+	// proxyLogs returns recent proxy container output; nil when Docker is out of reach.
+	proxyLogs func(ctx context.Context, container string) (string, error)
+	// retryCert nudges the proxy into re-attempting a certificate request.
+	retryCert func(ctx context.Context, domain string) error
 	// routeRetryInterval spaces re-probes while the proxy has no route yet; tests shrink it.
 	routeRetryInterval time.Duration
 	// setupMu makes setup one at a time so two clicks cannot interleave.
@@ -58,6 +67,8 @@ func (rt *Router) SetProxyIntegration(syncer *proxyroutes.Syncer, st ProxyIntegr
 	rt.proxyIntegration = &proxyIntegrationDeps{
 		syncer: syncer, store: st, verifyTimeout: verifyTimeout,
 		probe: proxyroutes.Probe, routerLoaded: proxyroutes.RouterLoaded,
+		routerTLS: proxyroutes.RouterTLSInfo, knownResolvers: proxyroutes.KnownResolvers,
+		lookupIPs: lookupDomainIPs, dialOpen: dialIsOpen, retryCert: syncer.Retry,
 	}
 }
 
@@ -85,6 +96,10 @@ type proxyCertificateResource struct {
 	Issuer   string `json:"issuer"`
 	NotAfter string `json:"not_after"`
 	Valid    bool   `json:"valid"`
+	// Trusted and Expired split Valid so the UI can say which one failed.
+	Trusted bool   `json:"trusted"`
+	Expired bool   `json:"expired"`
+	Class   string `json:"class,omitempty"`
 }
 
 type proxyDomainResource struct {
@@ -100,6 +115,17 @@ type proxyDomainResource struct {
 	CheckedAt   string                    `json:"checked_at"`
 	// Delivered is true once verification proved requests reach the ingress.
 	Delivered bool `json:"delivered"`
+	// Diagnosis is a stable code for why the certificate is not usable; Hint,
+	// Snippet and Evidence explain and fix it. All are empty when healthy.
+	Diagnosis string   `json:"diagnosis"`
+	Hint      string   `json:"hint"`
+	Snippet   string   `json:"snippet"`
+	Evidence  []string `json:"evidence"`
+	// RecheckUntil is set while a certificate is still expected, so the
+	// dashboard can poll until then.
+	RecheckUntil string `json:"recheck_until"`
+	// FirstSeen is when this route was first written, the start of the wait.
+	FirstSeen string `json:"first_seen"`
 }
 
 type proxyStepResource struct {
@@ -190,7 +216,7 @@ func (rt *Router) buildProxyIntegration(ctx context.Context, deps *proxyIntegrat
 		Domains: []proxyDomainResource{},
 	}
 	for _, it := range plan.Items {
-		res.Domains = append(res.Domains, proxyDomain(plan, it, byDomain[it.Domain]))
+		res.Domains = append(res.Domains, proxyDomain(plan, it, byDomain[it.Domain], rt.runtimeSettings.ProxyCertWait(ctx)))
 	}
 	res.Steps = rt.proxySteps(ctx, det, ingress, plan, res.Domains)
 	res.Provider = selectedProxyProvider(plan.Settings)
@@ -198,7 +224,7 @@ func (rt *Router) buildProxyIntegration(ctx context.Context, deps *proxyIntegrat
 	return res, nil
 }
 
-func proxyDomain(plan proxyroutes.Plan, it proxyroutes.Item, st store.ProxyRouteStatus) proxyDomainResource {
+func proxyDomain(plan proxyroutes.Plan, it proxyroutes.Item, st store.ProxyRouteStatus, wait time.Duration) proxyDomainResource {
 	d := proxyDomainResource{Domain: it.Domain, Target: it.Kind, App: it.App, File: it.File}
 	if !plan.Settings.Enabled() {
 		d.State = proxyroutes.StateMissing
@@ -220,9 +246,21 @@ func proxyDomain(plan proxyroutes.Plan, it proxyroutes.Item, st store.ProxyRoute
 		d.ProxyLoaded = &loaded
 	}
 	if st.CertIssuer != "" {
+		expired := time.Now().After(st.CertNotAfter)
 		d.Certificate = &proxyCertificateResource{
 			Issuer: st.CertIssuer, NotAfter: st.CertNotAfter.UTC().Format(time.RFC3339),
-			Valid: st.CertTrusted && time.Now().Before(st.CertNotAfter),
+			Valid: st.CertTrusted && !expired, Trusted: st.CertTrusted, Expired: expired, Class: st.CertClass,
+		}
+	}
+	if !st.WrittenAt.IsZero() {
+		d.FirstSeen = st.WrittenAt.UTC().Format(time.RFC3339)
+	}
+	d.Diagnosis, d.Hint, d.Snippet = st.Diagnosis, st.Hint, st.Snippet
+	d.Evidence = append([]string{}, st.Evidence...)
+	if (st.Diagnosis == proxyroutes.DiagACMEPending || st.Diagnosis == proxyroutes.DiagNoResolver || st.Diagnosis == proxyroutes.DiagDNSMismatch ||
+		st.Diagnosis == proxyroutes.DiagPortUnreachable) && !st.WrittenAt.IsZero() {
+		if until := st.WrittenAt.Add(wait); until.After(time.Now()) {
+			d.RecheckUntil = until.UTC().Format(time.RFC3339)
 		}
 	}
 	if d.LastError == "" {

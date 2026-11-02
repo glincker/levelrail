@@ -47,6 +47,10 @@ Flags for create and update:
   --timeout DURATION     per-attempt timeout, e.g. 10m
   --retries N            retries after a failed attempt
   --retry-backoff DUR    first retry delay, doubled each retry
+  --heartbeat-url URL    ping this URL after each successful run (stored encrypted, only the host is shown)
+  --heartbeat-fail-url URL
+                         ping this URL after a failed run (default: heartbeat-url plus /fail)
+  --heartbeat-clear      remove both heartbeat URLs
   --catch-up POLICY      skip (default) or run_once after control plane downtime
   --catch-up-lookback D  how far back run_once still applies
   --cpu CORES            CPU limit for a fresh container, e.g. 0.5
@@ -89,6 +93,8 @@ type jobFlags struct {
 	cpu                                            float64
 	disabled, background                           bool
 	httpPath, httpMethod, httpBody                 string
+	hbURL, hbFailURL                               string
+	hbClear                                        bool
 	count                                          int
 	status, runID                                  string
 	limit                                          int
@@ -100,6 +106,7 @@ func (f jobFlags) apply(req *scheduledTaskRequest) {
 	req.RetryBackoffSeconds = int(f.retryBackoff.Seconds())
 	req.CatchUpLookbackSeconds, req.WarnAfterSeconds = int(f.catchUpLookback.Seconds()), int(f.warn.Seconds())
 	req.CPULimitMillis, req.MemoryLimitMB = int(f.cpu*1000), f.memoryMB
+	req.HeartbeatURL, req.HeartbeatFailURL, req.HeartbeatClear = f.hbURL, f.hbFailURL, f.hbClear
 	if f.httpPath != "" || f.httpMethod != "" || f.httpBody != "" || f.background {
 		req.HTTP = &apiclient.JobHTTP{Method: f.httpMethod, Path: f.httpPath, Body: f.httpBody, Background: f.background}
 	}
@@ -124,6 +131,9 @@ func runJobsVerb(prog, verb string, args []string, stdout, stderr io.Writer, loo
 	fs.StringVar(&f.httpPath, "http-path", "", "http mode: path to call on the app")
 	fs.StringVar(&f.httpMethod, "http-method", "", "http mode: request method")
 	fs.StringVar(&f.httpBody, "http-body", "", "http mode: request body")
+	fs.StringVar(&f.hbURL, "heartbeat-url", "", "ping this URL after each successful run (stored encrypted)")
+	fs.StringVar(&f.hbFailURL, "heartbeat-fail-url", "", "ping this URL after a failed run (default heartbeat-url plus /fail)")
+	fs.BoolVar(&f.hbClear, "heartbeat-clear", false, "remove the job's heartbeat URLs")
 	fs.BoolVar(&f.background, "background", false, "http mode: await under the background timeout")
 	fs.IntVar(&f.count, "count", 5, "next: how many upcoming runs to print")
 	fs.StringVar(&f.status, "status", "", "history: only runs with this status")
@@ -312,6 +322,10 @@ func printJob(out io.Writer, j scheduledTaskResource) {
 	_, _ = fmt.Fprintf(out, "source:      %s\nlast run:    %s\nfailures:    %d in a row, %d missed\n", orStr(j.Source, "api"), lastRunSummary(j), j.ConsecutiveFailures, j.ConsecutiveMissed)
 	if j.NextRunAt != nil {
 		_, _ = fmt.Fprintf(out, "next run:    %s\n", j.NextRunAt.Format(time.RFC3339))
+	}
+	// Host only: the API never returns the heartbeat URL, and the CLI must not guess at it.
+	if j.HeartbeatConfigured || j.HeartbeatHost != "" {
+		_, _ = fmt.Fprintf(out, "heartbeat:   %s\n", orStr(j.HeartbeatHost, "configured"))
 	}
 }
 

@@ -1,0 +1,24 @@
+id: ombi
+name: Ombi
+description: A request portal where media server users ask for movies and shows and your download apps fill them. GPL-2.0 licensed. On first open, the wizard creates the admin account and connects your media server and Sonarr or Radarr.
+icon: ticket
+category: Applications
+documentation_url: https://docs.ombi.app/
+source_repo: https://github.com/Ombi-app/Ombi
+license: GPL-2.0
+license_class: copyleft
+license_url: https://github.com/Ombi-app/Ombi/blob/develop/LICENSE
+recommended_memory_bytes: 402653184
+env:
+  - key: TZ
+    label: Time zone
+    description: IANA time zone for logs and scheduled jobs.
+    default: Etc/UTC
+domains:
+  - service: ombi
+    port: 3579
+    description: Public address of Ombi.
+healthcheck:
+  service: ombi
+  port: 3579
+  path: /

@@ -8,6 +8,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/cutoververify"
+	"github.com/GLINCKER/levelrail/internal/domaincutover"
 )
 
 // DomainReachability is one entry of AppEnvironmentDomains.Reachability.
@@ -192,6 +195,58 @@ func (c *Client) DomainActivity(ctx context.Context, domain string, limit int, b
 		path += "?" + enc
 	}
 	var out ActivityPage
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
+	return out, err
+}
+
+// DomainCutoverResult is the test-before-you-switch checklist.
+type DomainCutoverResult = domaincutover.Result
+
+// CutoverCertificate is the progress of the pre-switch certificate request.
+type CutoverCertificate struct {
+	State       string `json:"state"`
+	Issuer      string `json:"issuer,omitempty"`
+	Error       string `json:"error,omitempty"`
+	Explanation string `json:"explanation,omitempty"`
+	Challenge   string `json:"challenge,omitempty"`
+}
+
+// DomainCutover calls GET /api/v1/domains/{domain}/cutover.
+func (c *Client) DomainCutover(ctx context.Context, domain string) (DomainCutoverResult, error) {
+	var out DomainCutoverResult
+	err := c.do(ctx, http.MethodGet, "/api/v1/domains/"+PathEscape(domain)+"/cutover", nil, &out)
+	return out, err
+}
+
+// DomainCutoverCertificate calls POST /api/v1/domains/{domain}/cutover/certificate.
+func (c *Client) DomainCutoverCertificate(ctx context.Context, domain string) (CutoverCertificate, error) {
+	var out CutoverCertificate
+	err := c.do(ctx, http.MethodPost, "/api/v1/domains/"+PathEscape(domain)+"/cutover/certificate", nil, &out)
+	return out, err
+}
+
+// DomainCutoverRevertChallenge calls DELETE /api/v1/domains/{domain}/cutover/certificate.
+func (c *Client) DomainCutoverRevertChallenge(ctx context.Context, domain string) (CutoverCertificate, error) {
+	var out CutoverCertificate
+	err := c.do(ctx, http.MethodDelete, "/api/v1/domains/"+PathEscape(domain)+"/cutover/certificate", nil, &out)
+	return out, err
+}
+
+// DomainVerifyReport is the read-only cutover verification of one domain.
+type DomainVerifyReport = cutoververify.Report
+
+// DomainVerify calls GET /api/v1/domains/{domain}/verify. expectIPs overrides
+// the addresses the domain must resolve to when this host's own cannot be read.
+func (c *Client) DomainVerify(ctx context.Context, domain string, expectIPs []string) (DomainVerifyReport, error) {
+	q := url.Values{}
+	for _, ip := range expectIPs {
+		q.Add("expect_ip", ip)
+	}
+	path := "/api/v1/domains/" + PathEscape(domain) + "/verify"
+	if len(q) > 0 {
+		path += "?" + q.Encode()
+	}
+	var out DomainVerifyReport
 	err := c.do(ctx, http.MethodGet, path, nil, &out)
 	return out, err
 }

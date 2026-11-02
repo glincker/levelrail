@@ -12,6 +12,7 @@ import (
 )
 
 func TestHandleKeepTrialApp(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		abilities []string

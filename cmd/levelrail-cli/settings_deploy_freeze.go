@@ -53,7 +53,7 @@ Flags:
   --profile string       named credentials profile to read
   --json                    print the result as JSON to stdout, nothing else
   -h, --help               show this help
-`, prog, envAPIToken, envAPIURL, defaultAPIURL)
+`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
 }
 
 func runSettingsDeployFreezeVerb(prog, verb string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {

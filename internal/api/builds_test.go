@@ -331,6 +331,7 @@ func newPrivateRepoAuthRouter(t *testing.T, fb *fakeBuilder, fetch *fakeFetch, f
 }
 
 func TestHandleTriggerBuild_NotConfigured(t *testing.T) {
+	t.Parallel()
 	// No WithBuilder: the route must return 501, the same "not
 	// configured" shape WithSecretSetter/WithTelemetryQuerier/
 	// WithAlertRules absence already share, not a 404 or a panic.
@@ -347,6 +348,7 @@ func TestHandleTriggerBuild_NotConfigured(t *testing.T) {
 }
 
 func TestHandleTriggerBuild_AppNotFound(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouterWithBuilder(t, newFakeBuilder("levelrail/web:abc123", nil), nil)
 	cookie := loginTestSession(t, rt, db)
 
@@ -358,6 +360,7 @@ func TestHandleTriggerBuild_AppNotFound(t *testing.T) {
 }
 
 func TestHandleTriggerBuild_MissingRepoURL(t *testing.T) {
+	t.Parallel()
 	fb := newFakeBuilder("levelrail/web:abc123", nil)
 	rt, db := newTestRouterWithBuilder(t, fb, nil)
 	cookie := loginTestSession(t, rt, db)
@@ -372,6 +375,7 @@ func TestHandleTriggerBuild_MissingRepoURL(t *testing.T) {
 }
 
 func TestHandleTriggerBuild_RejectsNonHTTPRepoURL(t *testing.T) {
+	t.Parallel()
 	fb := newFakeBuilder("levelrail/web:abc123", nil)
 	fetch := &fakeFetch{}
 	rt, db := newTestRouterWithBuilder(t, fb, fetch)
@@ -390,6 +394,7 @@ func TestHandleTriggerBuild_RejectsNonHTTPRepoURL(t *testing.T) {
 }
 
 func TestHandleTriggerBuild_MissingRef(t *testing.T) {
+	t.Parallel()
 	fb := newFakeBuilder("levelrail/web:abc123", nil)
 	rt, db := newTestRouterWithBuilder(t, fb, nil)
 	cookie := loginTestSession(t, rt, db)
@@ -404,6 +409,7 @@ func TestHandleTriggerBuild_MissingRef(t *testing.T) {
 }
 
 func TestHandleTriggerBuild_UnsupportedBuildType(t *testing.T) {
+	t.Parallel()
 	fb := newFakeBuilder("levelrail/web:abc123", nil)
 	fetch := newFakeFetch(t.TempDir(), nil)
 	rt, db := newTestRouterWithBuilder(t, fb, fetch)
@@ -421,6 +427,7 @@ func TestHandleTriggerBuild_UnsupportedBuildType(t *testing.T) {
 }
 
 func TestHandleTriggerBuild_Success(t *testing.T) {
+	t.Parallel()
 	fb := newFakeBuilder("web-repo:main", nil)
 	checkoutDir := t.TempDir()
 	fetch := newFakeFetch(checkoutDir, nil)
@@ -517,6 +524,7 @@ func TestHandleTriggerBuild_Success(t *testing.T) {
 // the field internal/deploy's resolveBuildRoot scopes the build context
 // with.
 func TestHandleTriggerBuild_BaseDirectoryAccepted(t *testing.T) {
+	t.Parallel()
 	fb := newFakeBuilder("levelrail/web:abc1234", nil)
 	fetch := newFakeFetch(t.TempDir(), nil)
 	rt, db := newTestRouterWithBuilder(t, fb, fetch)
@@ -534,6 +542,7 @@ func TestHandleTriggerBuild_BaseDirectoryAccepted(t *testing.T) {
 // spec.Build the deploy pipeline builds from, for the one build type it's
 // meaningful for.
 func TestHandleTriggerBuild_ArgsAccepted(t *testing.T) {
+	t.Parallel()
 	fb := newFakeBuilder("levelrail/web:abc1234", nil)
 	fetch := newFakeFetch(t.TempDir(), nil)
 	rt, db := newTestRouterWithBuilder(t, fb, fetch)
@@ -553,6 +562,7 @@ func TestHandleTriggerBuild_ArgsAccepted(t *testing.T) {
 // TestHandleTriggerBuild_RailpackWithPathRejected already establishes for
 // railpack's own path field.
 func TestHandleTriggerBuild_RailpackWithArgsRejected(t *testing.T) {
+	t.Parallel()
 	fb := newFakeBuilder("levelrail/web:railpack1", nil)
 	fetch := newFakeFetch(t.TempDir(), nil)
 	rt, db := newTestRouterWithBuilder(t, fb, fetch)
@@ -576,6 +586,7 @@ func TestHandleTriggerBuild_RailpackWithArgsRejected(t *testing.T) {
 // for railpack's own path field: nothing gets built for an image
 // deploy, so there is no build context to scope.
 func TestHandleTriggerBuild_ImageWithBaseDirectoryRejected(t *testing.T) {
+	t.Parallel()
 	fb := newFakeBuilder("registry.example.com/web:v1", nil)
 	fetch := newFakeFetch(t.TempDir(), nil)
 	rt, db := newTestRouterWithBuilder(t, fb, fetch)
@@ -600,6 +611,7 @@ func TestHandleTriggerBuild_ImageWithBaseDirectoryRejected(t *testing.T) {
 // dropped the next time someone triggered POST .../builds, since that
 // path does a full-replace SaveDesiredService like every other write.
 func TestHandleTriggerBuild_PreservesCustomLabels(t *testing.T) {
+	t.Parallel()
 	fb := newFakeBuilder("web-repo:main", nil)
 	checkoutDir := t.TempDir()
 	fetch := newFakeFetch(checkoutDir, nil)
@@ -655,6 +667,7 @@ func TestHandleTriggerBuild_PreservesCustomLabels(t *testing.T) {
 // the recorder's live fan-out via WithDeployRecorder) and finish
 // "succeeded" once fakeBuilder.Deploy returns.
 func TestHandleTriggerBuild_RecordsDeployAttempt_Succeeded(t *testing.T) {
+	t.Parallel()
 	fb := newFakeBuilder("levelrail/web:abc123", nil)
 	fb.release = make(chan struct{})
 	fetch := newFakeFetch(t.TempDir(), nil)
@@ -712,6 +725,7 @@ func TestHandleTriggerBuild_RecordsDeployAttempt_Succeeded(t *testing.T) {
 }
 
 func TestHandleTriggerBuild_RecordsDeployAttempt_Failed(t *testing.T) {
+	t.Parallel()
 	fb := newFakeBuilder("", errors.New("buildkit: boom"))
 	fetch := newFakeFetch(t.TempDir(), nil)
 	db := openTestDB(t)
@@ -734,6 +748,7 @@ func TestHandleTriggerBuild_RecordsDeployAttempt_Failed(t *testing.T) {
 }
 
 func TestHandleTriggerBuild_NoRecorderConfigured_StillRecordsAttemptWithoutLog(t *testing.T) {
+	t.Parallel()
 	// No WithDeployRecorder: handleTriggerBuild must still degrade
 	// gracefully (build.SlogProgress fallback, matching this package's
 	// pre-existing behavior) rather than fail the whole request, and
@@ -755,6 +770,7 @@ func TestHandleTriggerBuild_NoRecorderConfigured_StillRecordsAttemptWithoutLog(t
 }
 
 func TestHandleTriggerBuild_DefaultBuildTypeAndImageRepoOverride(t *testing.T) {
+	t.Parallel()
 	fb := newFakeBuilder("custom-repo:main", nil)
 	fetch := newFakeFetch(t.TempDir(), nil)
 	rt, db := newTestRouterWithBuilder(t, fb, fetch)
@@ -772,6 +788,7 @@ func TestHandleTriggerBuild_DefaultBuildTypeAndImageRepoOverride(t *testing.T) {
 }
 
 func TestHandleTriggerBuild_FetchFailure(t *testing.T) {
+	t.Parallel()
 	fb := newFakeBuilder("levelrail/web:abc123", nil)
 	fetch := newFakeFetch("", errors.New("clone failed: repository not found"))
 	rt, db := newTestRouterWithBuilder(t, fb, fetch)
@@ -792,6 +809,7 @@ func TestHandleTriggerBuild_FetchFailure(t *testing.T) {
 }
 
 func TestHandleTriggerBuild_BuildFailure_ReturnsAcceptedNotLeaky(t *testing.T) {
+	t.Parallel()
 	fb := newFakeBuilder("", errors.New("buildkit: internal socket path /var/run/secret-thing failed"))
 	fetch := newFakeFetch(t.TempDir(), nil)
 	rt, db := newTestRouterWithBuilder(t, fb, fetch)
@@ -818,6 +836,7 @@ func TestHandleTriggerBuild_BuildFailure_ReturnsAcceptedNotLeaky(t *testing.T) {
 }
 
 func TestHandleTriggerBuild_RequiresAuth(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouterWithBuilder(t, newFakeBuilder("", nil), nil)
 
 	rec := httptest.NewRecorder()
@@ -832,6 +851,7 @@ func TestHandleTriggerBuild_RequiresAuth(t *testing.T) {
 // has a real deployRailpack case, only handleTriggerBuild's own
 // pre-fetch rejection was blocking it.
 func TestHandleTriggerBuild_RailpackAccepted(t *testing.T) {
+	t.Parallel()
 	fb := newFakeBuilder("levelrail/web:railpack1", nil)
 	fetch := newFakeFetch(t.TempDir(), nil)
 	rt, db := newTestRouterWithBuilder(t, fb, fetch)
@@ -851,6 +871,7 @@ func TestHandleTriggerBuild_RailpackAccepted(t *testing.T) {
 // deployRailpack) has no path field at all, so a value here would
 // otherwise vanish with no signal to the caller that it did nothing.
 func TestHandleTriggerBuild_RailpackWithPathRejected(t *testing.T) {
+	t.Parallel()
 	fb := newFakeBuilder("levelrail/web:railpack1", nil)
 	fetch := newFakeFetch(t.TempDir(), nil)
 	rt, db := newTestRouterWithBuilder(t, fb, fetch)
@@ -870,6 +891,7 @@ func TestHandleTriggerBuild_RailpackWithPathRejected(t *testing.T) {
 // TestHandleTriggerBuild_StaticAccepted proves the manual build trigger
 // no longer rejects build.type: static.
 func TestHandleTriggerBuild_StaticAccepted(t *testing.T) {
+	t.Parallel()
 	// fakeBuilder.Deploy returns an absolute-looking path, exactly the
 	// shape internal/deploy.Pipeline.deployStatic really returns (the
 	// served-from directory, not an image tag).
@@ -898,6 +920,7 @@ func TestHandleTriggerBuild_StaticAccepted(t *testing.T) {
 // omitted from the request entirely and fetch is never called, unlike
 // every other build type.
 func TestHandleTriggerBuild_ImageAccepted(t *testing.T) {
+	t.Parallel()
 	fb := newFakeBuilder("registry.example.com/web:v1", nil)
 	fetch := newFakeFetch(t.TempDir(), nil)
 	rt, db := newTestRouterWithBuilder(t, fb, fetch)
@@ -919,6 +942,7 @@ func TestHandleTriggerBuild_ImageAccepted(t *testing.T) {
 // image still requires build.image, even though repo_url/ref are not
 // required for this build type.
 func TestHandleTriggerBuild_ImageMissingImageRejected(t *testing.T) {
+	t.Parallel()
 	fb := newFakeBuilder("levelrail/web:abc123", nil)
 	fetch := newFakeFetch(t.TempDir(), nil)
 	rt, db := newTestRouterWithBuilder(t, fb, fetch)
@@ -944,6 +968,7 @@ func TestHandleTriggerBuild_ImageMissingImageRejected(t *testing.T) {
 // A 400, not the old 501: this is a request-shape mismatch, not a
 // missing capability, now that compose is truly implemented elsewhere.
 func TestHandleTriggerBuild_ComposeStillRejected(t *testing.T) {
+	t.Parallel()
 	fb := newFakeBuilder("levelrail/web:abc123", nil)
 	fetch := newFakeFetch(t.TempDir(), nil)
 	rt, db := newTestRouterWithBuilder(t, fb, fetch)
@@ -964,6 +989,7 @@ func TestHandleTriggerBuild_ComposeStillRejected(t *testing.T) {
 // (a caller mistake), the same status code compose's own mismatch gets
 // above, for a different reason (unrecognized vs. wrong request shape).
 func TestHandleTriggerBuild_UnrecognizedBuildTypeRejected(t *testing.T) {
+	t.Parallel()
 	fb := newFakeBuilder("levelrail/web:abc123", nil)
 	fetch := newFakeFetch(t.TempDir(), nil)
 	rt, db := newTestRouterWithBuilder(t, fb, fetch)
@@ -980,6 +1006,7 @@ func TestHandleTriggerBuild_UnrecognizedBuildTypeRejected(t *testing.T) {
 }
 
 func TestHandleTriggerBuild_InvalidBody(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouterWithBuilder(t, newFakeBuilder("", nil), nil)
 	cookie := loginTestSession(t, rt, db)
 	seedWebApp(t, db)
@@ -995,6 +1022,7 @@ func TestHandleTriggerBuild_InvalidBody(t *testing.T) {
 // relies on to decide whether minting a GitHub App installation token is
 // even worth attempting.
 func TestIsGitHubHTTPSRepoURL(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		url          string
 		instanceHost string
@@ -1024,6 +1052,7 @@ func TestIsGitHubHTTPSRepoURL(t *testing.T) {
 // a freshly minted installation token, exactly the credential
 // GitHubAppRepoPicker.tsx's own picker implies is already wired in.
 func TestHandleTriggerBuild_PrivateRepoAuth_MintsAndUsesToken(t *testing.T) {
+	t.Parallel()
 	fb := newFakeBuilder("levelrail/web:abc123", nil)
 	fetch := newFakeFetch(t.TempDir(), nil)
 	fakeClient := &fakeGitHubAppClient{mintToken: githubapp.InstallationToken{Token: "ghs_installtoken"}}
@@ -1058,6 +1087,7 @@ func TestHandleTriggerBuild_PrivateRepoAuth_MintsAndUsesToken(t *testing.T) {
 // reach. The build itself still succeeds (AbilityDeploy is enough to
 // trigger a build), just against an unauthenticated clone.
 func TestHandleTriggerBuild_PrivateRepoAuth_DeployOnlyTokenNeverMintsToken(t *testing.T) {
+	t.Parallel()
 	fb := newFakeBuilder("levelrail/web:abc123", nil)
 	fetch := newFakeFetch(t.TempDir(), nil)
 	fakeClient := &fakeGitHubAppClient{mintToken: githubapp.InstallationToken{Token: "ghs_installtoken"}}
@@ -1086,6 +1116,7 @@ func TestHandleTriggerBuild_PrivateRepoAuth_DeployOnlyTokenNeverMintsToken(t *te
 // a deploy-only caller, no GitHub App mint needed: repoURL matches an
 // already-configured git-source, not an arbitrary caller-controlled one.
 func TestHandleTriggerBuild_StoredGitSourceToken_UsedByDeployOnlyToken(t *testing.T) {
+	t.Parallel()
 	fb := newFakeBuilder("levelrail/web:abc123", nil)
 	fetch := newFakeFetch(t.TempDir(), nil)
 	fakeClient := &fakeGitHubAppClient{mintToken: githubapp.InstallationToken{Token: "ghs_installtoken"}}
@@ -1126,6 +1157,7 @@ func TestHandleTriggerBuild_StoredGitSourceToken_UsedByDeployOnlyToken(t *testin
 // minted installation token, the same tier handleListGitHubAppRepos
 // itself requires for the equivalent disclosure.
 func TestHandleTriggerBuild_PrivateRepoAuth_ReadSensitiveTokenMintsToken(t *testing.T) {
+	t.Parallel()
 	fb := newFakeBuilder("levelrail/web:abc123", nil)
 	fetch := newFakeFetch(t.TempDir(), nil)
 	fakeClient := &fakeGitHubAppClient{mintToken: githubapp.InstallationToken{Token: "ghs_installtoken"}}
@@ -1153,6 +1185,7 @@ func TestHandleTriggerBuild_PrivateRepoAuth_ReadSensitiveTokenMintsToken(t *test
 // is explicit that a manual build trigger's fetch must never hard-fail
 // only because GitHub App auth isn't configured.
 func TestHandleTriggerBuild_PrivateRepoAuth_NotConnectedFallsBackUnauthenticated(t *testing.T) {
+	t.Parallel()
 	fb := newFakeBuilder("levelrail/web:abc123", nil)
 	fetch := newFakeFetch(t.TempDir(), nil)
 	rt, db := newTestRouterWithBuilder(t, fb, fetch)
@@ -1172,6 +1205,7 @@ func TestHandleTriggerBuild_PrivateRepoAuth_NotConnectedFallsBackUnauthenticated
 // even with a fully connected and installed GitHub App: a token minted
 // for GitHub can never authenticate a clone against a different host.
 func TestHandleTriggerBuild_PrivateRepoAuth_NonGitHubHostNeverMintsToken(t *testing.T) {
+	t.Parallel()
 	fb := newFakeBuilder("levelrail/web:abc123", nil)
 	fetch := newFakeFetch(t.TempDir(), nil)
 	fakeClient := &fakeGitHubAppClient{mintToken: githubapp.InstallationToken{Token: "ghs_installtoken"}}
@@ -1197,6 +1231,7 @@ func TestHandleTriggerBuild_PrivateRepoAuth_NonGitHubHostNeverMintsToken(t *test
 // whole build: tokenForRepo's own doc comment is explicit that the
 // public-repo path must keep working regardless.
 func TestHandleTriggerBuild_PrivateRepoAuth_MintErrorFallsBackUnauthenticated(t *testing.T) {
+	t.Parallel()
 	fb := newFakeBuilder("levelrail/web:abc123", nil)
 	fetch := newFakeFetch(t.TempDir(), nil)
 	fakeClient := &fakeGitHubAppClient{mintErr: errFakeSecretNotSet}
@@ -1258,6 +1293,7 @@ func commitTestFile(t *testing.T, repo *git.Repository, dir, content string) str
 // build silently retags the first build's image away and orphans it as a
 // rollback target.
 func TestGitCheckout_ResolvesBranchToCommit(t *testing.T) {
+	t.Parallel()
 	dir, branch, first := initTestGitRepo(t)
 
 	_, commit, cleanup, err := testGitCheckout(context.Background(), dir, branch)
@@ -1294,6 +1330,7 @@ func TestGitCheckout_ResolvesBranchToCommit(t *testing.T) {
 // bare branch name for any other branch resolved only against
 // refs/remotes/origin/* used to fail with "reference not found".
 func TestGitCheckout_ResolvesNonDefaultBranchFromRemoteTrackingRef(t *testing.T) {
+	t.Parallel()
 	dir, _, _ := initTestGitRepo(t)
 	repo, err := git.PlainOpen(dir)
 	if err != nil {
@@ -1336,6 +1373,7 @@ func TestGitCheckout_ResolvesNonDefaultBranchFromRemoteTrackingRef(t *testing.T)
 // refs/remotes/origin/* fallback above stays additive to every case
 // that already worked rather than a silent behavior change.
 func TestGitCheckout_ResolveRefTable(t *testing.T) {
+	t.Parallel()
 	dir, defaultBranch, defaultCommit := initTestGitRepo(t)
 	repo, err := git.PlainOpen(dir)
 	if err != nil {
@@ -1402,6 +1440,7 @@ func TestGitCheckout_ResolveRefTable(t *testing.T) {
 // moved that tag onto new content and left the first build's image
 // untagged, gone as a rollback target.
 func TestHandleTriggerBuild_TagsByResolvedCommitNotRef(t *testing.T) {
+	t.Parallel()
 	const first, second = "1111111111111111111111111111111111111111", "2222222222222222222222222222222222222222"
 	fb := newFakeBuilder("local/web:built", nil)
 	fetch := newFakeFetchWithCommits(t.TempDir(), first, second)
@@ -1447,6 +1486,7 @@ func TestHandleTriggerBuild_TagsByResolvedCommitNotRef(t *testing.T) {
 // require 'docker login'" for the placeholder tag while the real build
 // was still running and about to succeed.
 func TestAppStatus_WhileFirstBuildRuns_ReportsAwaitingBuildNotPullFailure(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fb := newFakeBuilder("local/web:abc", nil)
 	fb.release = make(chan struct{})
@@ -1560,6 +1600,7 @@ func newTestRouterWithRealPipeline(t *testing.T) (*Router, *store.DB, *secrets.M
 // (builds.go) silently reconstructed every secret as optional and this
 // deploy attempt would have shown "succeeded".
 func TestHandleTriggerBuild_RequiredSecretMissing_RejectedSameAsWebhookPath(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newTestRouterWithRealPipeline(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -1586,6 +1627,7 @@ func TestHandleTriggerBuild_RequiredSecretMissing_RejectedSameAsWebhookPath(t *t
 // value set must still deploy successfully via the build-triggered
 // path, matching spec.EnvVar.Required's documented meaning.
 func TestHandleTriggerBuild_OptionalSecretMissing_StillDeploys(t *testing.T) {
+	t.Parallel()
 	rt, db, _ := newTestRouterWithRealPipeline(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -1610,6 +1652,7 @@ func TestHandleTriggerBuild_OptionalSecretMissing_StillDeploys(t *testing.T) {
 // path, the same as a webhook-triggered redeploy of an already-
 // configured app already does.
 func TestHandleTriggerBuild_RequiredSecretAlreadySet_StillDeploys(t *testing.T) {
+	t.Parallel()
 	rt, db, manager := newTestRouterWithRealPipeline(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -1634,6 +1677,7 @@ func TestHandleTriggerBuild_RequiredSecretAlreadySet_StillDeploys(t *testing.T) 
 // TestGitSourceCloneToken_FallsBackToInstallationToken covers the exported
 // resolver the pipeline engine uses for repo reads and builds.
 func TestGitSourceCloneToken_FallsBackToInstallationToken(t *testing.T) {
+	t.Parallel()
 	fb := newFakeBuilder("levelrail/web:abc123", nil)
 	fetch := newFakeFetch(t.TempDir(), nil)
 	fakeClient := &fakeGitHubAppClient{mintToken: githubapp.InstallationToken{Token: "ghs_installtoken"}}
@@ -1649,6 +1693,7 @@ func TestGitSourceCloneToken_FallsBackToInstallationToken(t *testing.T) {
 }
 
 func TestHandleTriggerBuild_NoCache(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		body      string

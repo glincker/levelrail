@@ -16,7 +16,7 @@ var media2Templates = []Template{
     ports: ["2342:2342"]
     environment:
       PHOTOPRISM_ADMIN_PASSWORD: $SERVICE_PASSWORD_ADMIN
-      PHOTOPRISM_SITE_URL: ${SERVICE_FQDN_PHOTOPRISM:-http://localhost:2342}
+      PHOTOPRISM_SITE_URL: ${SERVICE_URL_PHOTOPRISM:-http://localhost:2342}
       PHOTOPRISM_DISABLE_TLS: "true"
     volumes:
       - photoprism_originals:/photoprism/originals
@@ -41,7 +41,7 @@ var media2Templates = []Template{
     image: ghcr.io/plankanban/planka:2.2.1
     ports: ["3000:1337"]
     environment:
-      BASE_URL: ${SERVICE_FQDN_PLANKA:-http://localhost:3000}
+      BASE_URL: ${SERVICE_URL_PLANKA:-http://localhost:3000}
       SECRET_KEY: $SERVICE_HEX_64_SECRETKEY
       DATABASE_URL: postgresql://postgres:$SERVICE_PASSWORD_DB@db/planka
     volumes:

@@ -680,7 +680,6 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: create app failed", err, slog.String("name", req.Name))
 		return
 	}
-	unlockName()
 
 	if req.ProjectID != "" {
 		if err := rt.apps.UpdateServiceProject(r.Context(), req.Name, req.ProjectID); err != nil {
@@ -710,6 +709,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req.AppID = appID
+	unlockName()
 
 	// Skip the git-build path's ":pending" placeholder (cmd/levelrail-cli's
 	// pendingImageTag): its own POST .../builds call records the real
@@ -774,7 +774,7 @@ func (rt *Router) handleGetApp(w http.ResponseWriter, r *http.Request) {
 
 	svc, err := rt.apps.GetDesiredService(r.Context(), name)
 	if errors.Is(err, store.ErrServiceNotFound) {
-		writeError(w, http.StatusNotFound, "app not found")
+		rt.writeAppNotFound(r.Context(), w, name)
 		return
 	}
 	if err != nil {
@@ -844,7 +844,7 @@ type appWithRequests struct {
 // fallbackURLFor returns the automatic https URL for svc, or "" when it has
 // a configured domain, the toggle is off, or no public IP is known.
 func (rt *Router) fallbackURLFor(ctx context.Context, svc store.DesiredService) string {
-	if len(svc.Domains) > 0 {
+	if len(svc.Domains) > 0 || !ingress.ServesHTTP(svc) {
 		return ""
 	}
 	s, err := rt.ingressSettings.GetIngressSettings(ctx)
@@ -1228,7 +1228,7 @@ func (rt *Router) handleStopApp(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if err := rt.apps.UpdateServiceSuspended(r.Context(), name, true); errors.Is(err, store.ErrServiceNotFound) {
-		writeError(w, http.StatusNotFound, "app not found")
+		rt.writeAppNotFound(r.Context(), w, name)
 		return
 	} else if err != nil {
 		rt.internalError(w, "api: stop app failed", err, slog.String("name", name))
@@ -1249,6 +1249,10 @@ func (rt *Router) handleStopApp(w http.ResponseWriter, r *http.Request) {
 func (rt *Router) handleStartApp(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
+	if rt.volumeTransfers.importing(name) {
+		writeError(w, http.StatusConflict, "a volume import is running for this app: start it when the import finishes")
+		return
+	}
 	wasStopped := false
 	if svc, err := rt.apps.GetDesiredService(r.Context(), name); err == nil {
 		if rt.refuseOfflineNode(r.Context(), w, *svc, queueWhileOffline(r)) {
@@ -1440,7 +1444,11 @@ func (rt *Router) deleteApp(ctx context.Context, name string) (teardownErr, err 
 		}
 	}
 	if existing.AppID != "" {
-		if rt.deleteAppIfOrphaned(ctx, existing.AppID) && finalizer != nil && teardownErr == nil {
+		// Name lock covers the window where a same-name create has saved its row but not yet linked it.
+		unlockSweep := lockAppName(name)
+		orphaned := rt.deleteAppIfOrphaned(ctx, existing.AppID)
+		unlockSweep()
+		if orphaned && finalizer != nil && teardownErr == nil {
 			nctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), rt.deleteTeardownTimeout())
 			if err := finalizer.RemoveAppNetwork(nctx, existing.AppID, existing.NodeID); err != nil {
 				rt.logger.Warn("api: delete app: remove app network failed, GC will retry", slog.String("error", err.Error()), slog.String("app_id", existing.AppID))
@@ -1565,19 +1573,12 @@ func (rt *Router) teardownServiceContainers(name, nodeID string) {
 // self-healing problem, not one that should make an otherwise-successful
 // delete request fail.
 func (rt *Router) deleteAppIfOrphaned(ctx context.Context, appID string) bool {
-	remaining, err := rt.appGroups.ListServicesByApp(ctx, appID)
+	deleted, err := rt.appGroups.DeleteAppIfOrphaned(ctx, appID)
 	if err != nil {
-		rt.logger.Error("api: delete app: check remaining siblings failed", slog.String("error", err.Error()), slog.String("app_id", appID))
-		return false
-	}
-	if len(remaining) > 0 {
-		return false
-	}
-	if err := rt.appGroups.DeleteApp(ctx, appID); err != nil && !errors.Is(err, store.ErrAppNotFound) {
 		rt.logger.Error("api: delete app: delete orphaned app row failed", slog.String("error", err.Error()), slog.String("app_id", appID))
 		return false
 	}
-	return true
+	return deleted
 }
 
 // reservedSecretNamespace reports names the control plane seals its own settings under; an app with

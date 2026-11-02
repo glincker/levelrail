@@ -56,6 +56,7 @@ func newTestRouterWithCloudflareTunnelSecrets(t *testing.T, s CloudflareTunnelSe
 }
 
 func TestHandleGetCloudflareTunnelSettings_SeededDefault(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
@@ -81,6 +82,7 @@ func TestHandleGetCloudflareTunnelSettings_SeededDefault(t *testing.T) {
 }
 
 func TestHandleGetCloudflareTunnelSettings_NeverReturnsTokenValue(t *testing.T) {
+	t.Parallel()
 	s := newFakeCloudflareTunnelSecrets()
 	rt, db := newTestRouterWithCloudflareTunnelSecrets(t, s)
 	cookie := loginTestSession(t, rt, db)
@@ -111,6 +113,7 @@ func TestHandleGetCloudflareTunnelSettings_NeverReturnsTokenValue(t *testing.T) 
 }
 
 func TestHandleUpdateCloudflareTunnelSettings_NoSecretsConfigured(t *testing.T) {
+	t.Parallel()
 	rt, db := newTestRouter(t) // no WithCloudflareTunnelSecrets
 	cookie := loginTestSession(t, rt, db)
 
@@ -123,6 +126,7 @@ func TestHandleUpdateCloudflareTunnelSettings_NoSecretsConfigured(t *testing.T) 
 }
 
 func TestHandleUpdateCloudflareTunnelSettings_EnableWithoutTokenRejected(t *testing.T) {
+	t.Parallel()
 	s := newFakeCloudflareTunnelSecrets()
 	rt, db := newTestRouterWithCloudflareTunnelSecrets(t, s)
 	cookie := loginTestSession(t, rt, db)
@@ -136,6 +140,7 @@ func TestHandleUpdateCloudflareTunnelSettings_EnableWithoutTokenRejected(t *test
 }
 
 func TestHandleUpdateCloudflareTunnelSettings_Success(t *testing.T) {
+	t.Parallel()
 	s := newFakeCloudflareTunnelSecrets()
 	rt, db := newTestRouterWithCloudflareTunnelSecrets(t, s)
 	cookie := loginTestSession(t, rt, db)
@@ -160,6 +165,7 @@ func TestHandleUpdateCloudflareTunnelSettings_Success(t *testing.T) {
 }
 
 func TestHandleUpdateCloudflareTunnelSettings_OmittedTokenLeavesExistingIntact(t *testing.T) {
+	t.Parallel()
 	s := newFakeCloudflareTunnelSecrets()
 	rt, db := newTestRouterWithCloudflareTunnelSecrets(t, s)
 	cookie := loginTestSession(t, rt, db)
@@ -179,6 +185,7 @@ func TestHandleUpdateCloudflareTunnelSettings_OmittedTokenLeavesExistingIntact(t
 }
 
 func TestHandleDisconnectCloudflareTunnel_ClearsTokenAndDisables(t *testing.T) {
+	t.Parallel()
 	s := newFakeCloudflareTunnelSecrets()
 	rt, db := newTestRouterWithCloudflareTunnelSecrets(t, s)
 	cookie := loginTestSession(t, rt, db)
@@ -204,6 +211,7 @@ func TestHandleDisconnectCloudflareTunnel_ClearsTokenAndDisables(t *testing.T) {
 }
 
 func TestHandleDisconnectCloudflareTunnel_Idempotent(t *testing.T) {
+	t.Parallel()
 	s := newFakeCloudflareTunnelSecrets()
 	rt, db := newTestRouterWithCloudflareTunnelSecrets(t, s)
 	cookie := loginTestSession(t, rt, db)
@@ -219,6 +227,7 @@ func TestHandleDisconnectCloudflareTunnel_Idempotent(t *testing.T) {
 // PUT /settings/cloudflare-tunnel sits behind AbilityRoot, not just
 // AbilityWrite, mirroring TestHandleUpdateEmailSettings_PlainWriteToken_Forbidden.
 func TestHandleUpdateCloudflareTunnelSettings_PlainWriteToken_Forbidden(t *testing.T) {
+	t.Parallel()
 	s := newFakeCloudflareTunnelSecrets()
 	rt, db := newTestRouterWithCloudflareTunnelSecrets(t, s)
 	ctx := context.Background()
@@ -252,6 +261,7 @@ func TestHandleUpdateCloudflareTunnelSettings_PlainWriteToken_Forbidden(t *testi
 // is the whole-chain proof, mirroring
 // TestHandleUpdateEmailSettings_RealSecretsManager_RoundTripsThroughEncryption.
 func TestHandleUpdateCloudflareTunnelSettings_RealSecretsManager_RoundTripsThroughEncryption(t *testing.T) {
+	t.Parallel()
 	db := openTestDB(t)
 	mk, err := secrets.GenerateMasterKey()
 	if err != nil {
@@ -291,6 +301,7 @@ func TestHandleUpdateCloudflareTunnelSettings_RealSecretsManager_RoundTripsThrou
 }
 
 func TestCloudflareTunnelRoutes_RequireAuth(t *testing.T) {
+	t.Parallel()
 	rt, _ := newTestRouter(t)
 
 	assertRoutesRequireAuth(t, rt, []routeCase{

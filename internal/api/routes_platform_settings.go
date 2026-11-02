@@ -45,6 +45,11 @@ func (rt *Router) registerSettingsRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/settings/email/deliveries", rt.requireAbility(AbilityRoot, rt.handleListEmailDeliveries))
 	mux.HandleFunc("GET /api/v1/settings/email/deliveries/{id}", rt.requireAbility(AbilityRoot, rt.handleGetEmailDelivery))
 
+	// Dynamic DNS updater: the stored setting wins, env is only the default. Root for both, the target URL or token is write-only.
+	mux.HandleFunc("GET /api/v1/settings/ddns", rt.requireAbility(AbilityRoot, rt.handleGetDDNS))
+	mux.HandleFunc("PUT /api/v1/settings/ddns", rt.requireAbility(AbilityRoot, rt.handlePutDDNS))
+	mux.HandleFunc("GET /api/v1/settings/ddns/status", rt.requireAbility(AbilityRoot, rt.handleDDNSStatus))
+
 	// Observability settings: the external Grafana/dashboard link,
 	// same precedent as email settings just above. GET is AbilityRead;
 	// PUT is AbilityRoot, matching every other instance-level config row.
@@ -197,6 +202,7 @@ func (rt *Router) registerSettingsRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/firewall/exposure/preview", rt.requireAbility(AbilityRoot, rt.handleExposurePreview))
 	mux.HandleFunc("PUT /api/v1/firewall/exposure/restrictions/{protocol}/{port}", rt.requireAbility(AbilityRoot, rt.handleExposureRestrict))
 	mux.HandleFunc("DELETE /api/v1/firewall/exposure/restrictions/{protocol}/{port}", rt.requireAbility(AbilityRoot, rt.handleExposureUnrestrict))
+	mux.HandleFunc("POST /api/v1/firewall/exposure/restrictions/{protocol}/{port}/confirm", rt.requireAbility(AbilityRoot, rt.handleExposureConfirm))
 
 	// Registry credential browsing (registry_catalog.go): repository/tag
 	// lookup for a stored external credential, the same generic catalog

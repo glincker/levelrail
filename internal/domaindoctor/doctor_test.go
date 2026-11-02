@@ -123,6 +123,13 @@ func TestRun(t *testing.T) {
 			want: map[string]State{IDDNSResolves: StateWarn, IDDNSPointsHere: StatePass},
 		},
 		{
+			name: "stale local cache but authoritative already points here", tls: goodCert(), http: redirectToHTTPS(), status: StatusHealthy,
+			dns: fakeDNS{answers: []ResolverAnswer{{Resolver: "this server", IPv4: []string{"104.21.17.53"}}, {Resolver: "1.1.1.1", IPv4: []string{serverIP}},
+				{Resolver: "authoritative ns1.example.com", IPv4: []string{serverIP}, Authoritative: true}}},
+			want:     map[string]State{IDDNSResolves: StatePass, IDDNSPointsHere: StatePass, IDDNSProxied: StatePass},
+			contains: map[string]string{IDDNSResolves: "still caches the old answer"},
+		},
+		{
 			name: "traefik default cert behind hsts", status: StatusProblems,
 			dns:      fakeDNS{answers: here()},
 			tls:      PeerCert{Subject: "CN=TRAEFIK DEFAULT CERT", Issuer: "CN=TRAEFIK DEFAULT CERT", DNSNames: []string{"x.traefik.default"}, NotAfter: testNow.Add(300 * 24 * time.Hour)},

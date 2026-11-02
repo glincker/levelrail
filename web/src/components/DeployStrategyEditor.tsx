@@ -4,7 +4,9 @@ import { z } from 'zod'
 import { useTranslation } from 'react-i18next'
 import { RefreshCwGlassIcon } from '@thesvg/ui-react'
 import type { AppDetail } from '../types/appDetail'
+import { useQuery } from '@tanstack/react-query'
 import { useUpdateApp } from '../queries/apps'
+import { autoscaleQueryOptions } from '../queries/autoscale'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -62,7 +64,10 @@ const STRATEGY_LABELS: Record<string, string> = {
 // unsaved edits in a sibling editor.
 export function DeployStrategyEditor({ app }: { app: AppDetail }) {
   const { t } = useTranslation('common')
-  const updateApp = useUpdateApp(app.name)
+  const updateApp = useUpdateApp(app.name, { inlineError: true })
+  // A policy owns the replica count; the API refuses manual edits then.
+  const autoscale = useQuery(autoscaleQueryOptions(app.name))
+  const autoscaleOwnsReplicas = autoscale.isSuccess && autoscale.data != null
   const { control, register, handleSubmit, formState } = useForm<
     DeployStrategyFormInput,
     unknown,
@@ -137,12 +142,23 @@ export function DeployStrategyEditor({ app }: { app: AppDetail }) {
                 step="1"
                 min="1"
                 {...register('replicas')}
+                readOnly={autoscaleOwnsReplicas}
                 aria-invalid={!!formState.errors.replicas}
               />
               <FieldError errors={[formState.errors.replicas]} />
+              {autoscaleOwnsReplicas ? (
+                <p className="text-xs text-muted-foreground">
+                  {t('replicaNotice.autoscaleOwned')}
+                </p>
+              ) : null}
             </Field>
           </div>
 
+          {app.replicas > 1 ? (
+            <p className="text-sm text-muted-foreground">
+              {t('replicaNotice.sameServer', { replicas: app.replicas })}
+            </p>
+          ) : null}
           {app.strategy_reason ? (
             <p className="text-sm text-muted-foreground">
               {t('templateDefaults.strategyReason', {

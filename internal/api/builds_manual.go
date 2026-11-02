@@ -23,9 +23,13 @@ func manualBuildRequest(name string, existing store.DesiredService, req triggerB
 	if buildType == spec.BuildImage {
 		buildCfg = spec.Build{Type: buildType, Image: req.Build.Image}
 	}
+	svc := specServiceFromDesired(existing, buildCfg)
+	if buildType == spec.BuildStatic && req.Build.StaticSPA {
+		svc.Static = &spec.StaticOptions{SPA: true}
+	}
 	return deploy.Request{
 		ServiceName: name,
-		Service:     specServiceFromDesired(existing, buildCfg),
+		Service:     svc,
 		CommitSHA:   req.Ref,
 		ImageRepo:   imageRepo,
 		NoCache:     req.NoCache,
