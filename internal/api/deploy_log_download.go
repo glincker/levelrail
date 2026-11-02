@@ -54,7 +54,7 @@ func (rt *Router) handleDownloadDeployLog(w http.ResponseWriter, r *http.Request
 			unsubscribe()
 		}
 		for _, ev := range lines {
-			fmt.Fprintf(&body, "%s %s\n", ev.Stream, ev.Line)
+			fmt.Fprintf(&body, "%s %s\n", ev.Stream, secretmask.Mask(ev.Line))
 		}
 	} else {
 		if rt.deployLogStore == nil {

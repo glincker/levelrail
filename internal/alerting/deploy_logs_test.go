@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
@@ -74,5 +75,20 @@ func TestSummaryDeployTextIncludesExcerpt(t *testing.T) {
 	got := summaryDeployText(DeployOutcome{AppName: "web", Image: "img:1", Error: "build failed", LogLines: lines})
 	if !strings.Contains(got, "FATAL: cannot bind port") || strings.Count(got, "row xxxxx") > deployLogExcerptLines {
 		t.Errorf("text = %q", got)
+	}
+}
+
+func TestDeployDispatcherAttachLogsMasksSecrets(t *testing.T) {
+	secret := "notify-canary-9f3a-secret" //nolint:gosec // synthetic test value
+	secretmask.Add(secret)
+	for name, d := range map[string]*DeployDispatcher{
+		"build":   {logger: slog.New(slog.NewTextHandler(io.Discard, nil)), buildLogs: fakeBuildLogs{[]string{"token=" + secret + " failed"}}},
+		"runtime": {logger: slog.New(slog.NewTextHandler(io.Discard, nil)), runtime: fakeRuntimeLogs{[]string{"token=" + secret + " failed"}}},
+	} {
+		ev := DeployOutcome{AttemptID: "a"}
+		d.attachLogs(context.Background(), "service:web", &ev)
+		if len(ev.LogLines) != 1 || strings.Contains(ev.LogLines[0], secret) || !strings.Contains(ev.LogLines[0], "token=") {
+			t.Errorf("%s: notification line = %v", name, ev.LogLines)
+		}
 	}
 }

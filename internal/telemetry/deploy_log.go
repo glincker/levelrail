@@ -99,6 +99,7 @@ func (db *DB) QueryDeployLog(ctx context.Context, attemptID string) ([]DeployLog
 			return nil, fmt.Errorf("telemetry: scan deploy log row: %w", err)
 		}
 		e.Timestamp = time.Unix(0, tsNano).UTC()
+		e.Message = secretmask.Mask(e.Message)
 		out = append(out, e)
 	}
 	if err := rows.Err(); err != nil {

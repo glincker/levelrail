@@ -14,6 +14,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/mailtemplates"
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 	"github.com/GLINCKER/levelrail/kit/netguard"
 )
@@ -421,7 +422,7 @@ func (d *DeployDispatcher) attachLogs(ctx context.Context, resourceID string, ev
 	if ev.AttemptID != "" && d.buildLogs != nil {
 		if entries, err := d.buildLogs.QueryDeployLog(ctx, ev.AttemptID); err == nil {
 			for _, e := range entries {
-				lines = append(lines, e.Message)
+				lines = append(lines, secretmask.Mask(e.Message))
 			}
 		}
 	}
@@ -433,7 +434,7 @@ func (d *DeployDispatcher) attachLogs(ctx context.Context, resourceID string, ev
 				slog.String("resource_id", resourceID), slog.String("error", err.Error()))
 		}
 		for _, e := range entries {
-			lines = append(lines, e.Message)
+			lines = append(lines, secretmask.Mask(e.Message))
 		}
 	}
 	if len(lines) > deployLogLines {
