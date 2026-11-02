@@ -145,7 +145,7 @@ Fixed in the wave N pass: `valkey` interpolated its password from the host shell
 
 Generated from the registry scan in `internal/catalog/platforms.json` (`scripts/scan-catalog-platforms`), not from the smoke run. A template is `yes` only when every image it uses lists `linux/arm64` in its manifest. `not checked` means unknown, not unsupported: the scan could not read a manifest or the image tag is set at install time.
 
-Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 2 not checked** of 410 templates.
+Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 10 not checked** of 418 templates.
 
 | Template | arm64 | Verified platforms |
 | --- | --- | --- |
@@ -236,6 +236,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 2 not checked** of 41
 | `excalidraw` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `factorio` | yes | linux/amd64, linux/arm64 |
 | `fastapi-postgres-starter` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/riscv64, linux/s390x |
+| `ferretdb` | not checked | - |
 | `fider` | yes | linux/amd64, linux/arm64 |
 | `filebrowser` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `filebrowser-quantum` | yes | linux/amd64, linux/arm64 |
@@ -350,6 +351,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 2 not checked** of 41
 | `mailhog` | amd64 only | linux/amd64 |
 | `mailpit` | yes | linux/386, linux/amd64, linux/arm64 |
 | `maintainerr` | yes | linux/amd64, linux/arm64 |
+| `mariadb` | not checked | - |
 | `marimo` | yes | linux/amd64, linux/arm64 |
 | `matomo` | yes | linux/amd64, linux/arm64, linux/ppc64le, linux/s390x |
 | `matrix-synapse` | yes | linux/amd64, linux/arm64 |
@@ -376,6 +378,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 2 not checked** of 41
 | `mosquitto` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/s390x |
 | `multi-scrobbler` | yes | linux/amd64, linux/arm64 |
 | `mylar3` | yes | linux/amd64, linux/arm64 |
+| `mysql` | not checked | - |
 | `n8n` | yes | linux/amd64, linux/arm64 |
 | `n8n-ai-starter` | yes | linux/amd64, linux/arm64 |
 | `n8n-postgres` | yes | linux/amd64, linux/arm64 |
@@ -414,6 +417,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 2 not checked** of 41
 | `openclaw` | yes | linux/amd64, linux/arm64 |
 | `opengist` | yes | linux/amd64, linux/arm64 |
 | `openobserve` | yes | linux/amd64, linux/arm64 |
+| `opensearch` | not checked | - |
 | `orangehrm` | amd64 only | linux/amd64 |
 | `organizr` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `osticket` | not checked | - |
@@ -445,6 +449,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 2 not checked** of 41
 | `pocket-id` | yes | linux/amd64, linux/arm64 |
 | `pocketbase` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `portainer` | yes | linux/amd64, linux/arm, linux/arm64, linux/ppc64le, windows/amd64 |
+| `postgres` | not checked | - |
 | `postiz` | yes | linux/amd64, linux/arm64 |
 | `prefect` | yes | linux/amd64, linux/arm64 |
 | `privatebin` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/s390x |
@@ -453,12 +458,14 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 2 not checked** of 41
 | `proxyscotch` | yes | linux/amd64, linux/arm64 |
 | `qbittorrent` | yes | linux/amd64, linux/arm64 |
 | `qdrant` | yes | linux/amd64, linux/arm64 |
+| `questdb` | not checked | - |
 | `rabbitmq` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/riscv64, linux/s390x |
 | `radarr` | yes | linux/amd64, linux/arm64 |
 | `radicale` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `rallly` | yes | linux/amd64, linux/arm64 |
 | `reactive-resume` | yes | linux/amd64, linux/arm64 |
 | `readeck` | yes | linux/amd64, linux/arm64 |
+| `redash` | not checked | - |
 | `redis-cache-starter` | yes | linux/amd64, linux/arm, linux/arm64, linux/s390x |
 | `redis-insight` | yes | linux/amd64, linux/arm64 |
 | `redisinsight` | yes | linux/amd64, linux/arm64 |
@@ -518,6 +525,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 2 not checked** of 41
 | `text-embeddings-inference` | amd64 only | linux/amd64 |
 | `text-generation-inference` | amd64 only | linux/amd64 |
 | `tianji` | yes | linux/amd64, linux/arm64 |
+| `timescaledb` | not checked | - |
 | `tinyauth` | yes | linux/amd64, linux/arm64 |
 | `tolgee` | yes | linux/amd64, linux/arm64 |
 | `traccar` | yes | linux/amd64, linux/arm64 |

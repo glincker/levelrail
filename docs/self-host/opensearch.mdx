@@ -1,0 +1,70 @@
+---
+title: "Self-host OpenSearch with Docker"
+sidebarTitle: "OpenSearch"
+description: "A single node OpenSearch search and analytics engine with the security plugin on, a persistent volume, a generated admin password and a 512 MB Java heap. The API speaks HTTPS with a self signed certificate and is not published on the host, so reach it from other services in this project at opensearch:9200."
+"og:url": "https://docs.levelrail.com/self-host/opensearch"
+---
+
+A single node OpenSearch search and analytics engine with the security plugin on, a persistent volume, a generated admin password and a 512 MB Java heap. The API speaks HTTPS with a self signed certificate and is not published on the host, so reach it from other services in this project at opensearch:9200.
+
+This page describes the Levelrail template for OpenSearch (Database Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://opensearch.org/docs/latest/.
+
+Recommended memory: about 1536 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `opensearch` | `opensearchproject/opensearch:3.3.0` | 9200 | `opensearch_data -&#62; /usr/share/opensearch/data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `opensearch` | `OPENSEARCH_INITIAL_ADMIN_PASSWORD` | Generated at deploy |
+| `opensearch` | `OPENSEARCH_JAVA_OPTS` | Preset in the template |
+| `opensearch` | `bootstrap.memory_lock` | Preset in the template |
+| `opensearch` | `discovery.type` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`opensearch`): OPENSEARCH_INITIAL_ADMIN_PASSWORD.
+- Stores data in named volumes (`opensearch`): opensearch_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy OpenSearch with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select OpenSearch. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy opensearch --name my-opensearch
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Database Tools templates
+
+- [Adminer](/self-host/adminer)
+- [Baserow](/self-host/baserow)
+- [Bytebase](/self-host/bytebase)
+- [Chroma](/self-host/chroma)
+- [ClickHouse](/self-host/clickhouse)
+
+All templates are listed in the [self-host gallery](/self-host).

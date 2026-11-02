@@ -1,0 +1,25 @@
+id: redash
+name: Redash
+description: Connect data sources, write SQL and build shareable dashboards. Runs the Redash web server, a query worker and a scheduler with a bundled PostgreSQL and Redis, persistent volumes and generated secrets. Create the first admin account on first visit.
+icon: chart-bar
+category: Analytics
+documentation_url: https://redash.io/help/
+source_repo: https://github.com/getredash/redash
+license: BSD-2-Clause
+license_class: permissive
+license_url: https://github.com/getredash/redash/blob/master/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 2147483648
+first_run:
+  - Open the page and create the admin account in the setup form, then add a data source under Settings.
+domains:
+  - service: redash
+    port: 5000
+    description: Public address of the Redash web interface.
+healthcheck:
+  service: redash
+  port: 5000
+  path: /ping

@@ -4,7 +4,7 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 "og:url": "https://docs.levelrail.com/self-host"
 ---
 
-410 open-source apps you can run on your own server with a Levelrail template. Each page lists the services, ports, volumes and environment variables the template sets up, and how to deploy it. For how templates work, see the [service template catalog](/templates-and-registry).
+418 open-source apps you can run on your own server with a Levelrail template. Each page lists the services, ports, volumes and environment variables the template sets up, and how to deploy it. For how templates work, see the [service template catalog](/templates-and-registry).
 
 ## AI
 
@@ -54,6 +54,7 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 - [Matomo](/self-host/matomo): A privacy-friendly, self-hosted alternative to Google Analytics with full data ownership.
 - [Metabase](/self-host/metabase): Ask questions of your data and share dashboards, no SQL required.
 - [Plausible Analytics](/self-host/plausible): Lightweight, privacy-friendly, cookie-free web analytics with no consent banner required.
+- [Redash](/self-host/redash): Connect data sources, write SQL and build shareable dashboards. Runs the Redash web server, a query worker and a scheduler with a bundled PostgreSQL and Redis, persistent volumes and generated secrets. Create the first admin account on first visit.
 - [Tianji](/self-host/tianji): An all-in-one insight hub that combines website analytics, uptime monitoring and server status in one dashboard.
 - [Umami](/self-host/umami): Simple, privacy-focused website analytics without tracking cookies or ad-tech.
 
@@ -157,19 +158,26 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [CloudBeaver](/self-host/cloudbeaver): A web-based database manager for browsing and querying Postgres, MySQL, SQLite and more.
 - [CouchDB](/self-host/couchdb): A document database with an HTTP API, built-in replication and the Fauxton admin console.
 - [Elasticsearch + Kibana](/self-host/elasticsearch-kibana): Elasticsearch paired with Kibana for log and document search with a visual dashboard. Kibana has no login, so anyone who can open it controls the data: before attaching a domain, enable Basic Auth or the auth gate on it. Elasticsearch is reachable only from services in this project at elasticsearch:9200 and is not published on the host.
+- [FerretDB](/self-host/ferretdb): A MongoDB compatible database that stores documents in PostgreSQL. Runs FerretDB with a bundled PostgreSQL that has the DocumentDB extension, a persistent volume and a generated password. It is not published on the host, so reach it from other services in this project at ferretdb:27017.
 - [InfluxDB](/self-host/influxdb): An open-source time-series database for metrics, events, and IoT analytics.
+- [MariaDB](/self-host/mariadb): The MariaDB database server on the official image, with a persistent volume, generated root and user passwords, and an application database. It is not published on the host, so reach it from other services in this project at mariadb:3306.
 - [Memcached](/self-host/memcached): A fast in-memory cache for query results, sessions and rendered pages, reachable by other apps on host memcached.
 - [Milvus](/self-host/milvus): A cloud-native vector database built for billion-scale similarity search, run here as a single standalone node. Has no authentication, so reach it from other services in this project at milvus:19530, or attach a domain (it routes to port 19530 only) only behind Basic Auth. Not published on the host.
 - [Mongo Express](/self-host/mongo-express): A web admin console for MongoDB, bundled with its own MongoDB 7 instance and basic auth.
+- [MySQL](/self-host/mysql): The MySQL Community database server on the official image, with a persistent volume, generated root and user passwords, and an application database. It is not published on the host, so reach it from other services in this project at mysql:3306.
 - [Neo4j](/self-host/neo4j): A graph database with the Cypher query language, Community Edition, including the browser console.
 - [NocoDB](/self-host/nocodb): Turn any database into a smart spreadsheet, with a real-time collaborative grid UI.
+- [OpenSearch](/self-host/opensearch): A single node OpenSearch search and analytics engine with the security plugin on, a persistent volume, a generated admin password and a 512 MB Java heap. The API speaks HTTPS with a self signed certificate and is not published on the host, so reach it from other services in this project at opensearch:9200.
 - [PG Back Web](/self-host/pgbackweb): A web UI for scheduling, encrypting, and restoring PostgreSQL backups.
 - [pgAdmin](/self-host/pgadmin): A full-featured web GUI for administering and querying PostgreSQL databases.
 - [pgvector Postgres](/self-host/pgvector): PostgreSQL 17 with the pgvector extension preinstalled, for embeddings next to your relational data.
 - [phpMyAdmin](/self-host/phpmyadmin): A web-based admin tool for MySQL and MariaDB, built for ad-hoc use against any reachable database.
+- [PostgreSQL](/self-host/postgres): The PostgreSQL relational database server on the official Alpine image, with a persistent volume and a generated password. It is not published on the host, so reach it from other services in this project at postgres:5432.
 - [Qdrant](/self-host/qdrant): A vector similarity search engine for storing, searching, and managing embeddings.
+- [QuestDB](/self-host/questdb): A fast time series database with SQL, a web console, the PostgreSQL wire protocol on 8812 and InfluxDB line protocol ingestion on 9009. The console and the PostgreSQL port share one generated password. Only the console is offered a domain.
 - [Redis Insight](/self-host/redis-insight): A GUI for exploring keys, running commands, and profiling workloads on any Redis-compatible server.
 - [RedisInsight](/self-host/redisinsight): A GUI for browsing keys, running commands, and profiling performance on any Redis instance.
+- [TimescaleDB](/self-host/timescaledb): PostgreSQL with the TimescaleDB extension for time series data, with a persistent volume and a generated password. The core is Apache-2.0 and some features fall under the Timescale License. It is not published on the host, so reach it from other services in this project at timescaledb:5432.
 - [Valkey](/self-host/valkey): A Redis-compatible in-memory key-value store under the Linux Foundation, with password auth and append-only persistence.
 - [Weaviate](/self-host/weaviate): An open-source vector database with hybrid search, built-in modules, and a GraphQL and REST API.
 

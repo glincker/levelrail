@@ -65,6 +65,11 @@ export const TEMPLATE_LOGO_LOADERS: Record<
   chatwoot: () => import('@thesvg/react/chatwoot'),
   cloudbeaver: () => import('@thesvg/react/dbeaver'),
   clickhouse: () => import('@thesvg/react/clickhouse'),
+  postgres: () => import('@thesvg/react/postgresql'),
+  mariadb: () => import('@thesvg/react/mariadb'),
+  mysql: () => import('@thesvg/react/mysql'),
+  timescaledb: () => import('@thesvg/react/timescale'),
+  ferretdb: () => import('@thesvg/react/ferretdb'),
   homarr: () => import('@thesvg/react/homarr'),
   verdaccio: () => import('@thesvg/react/verdaccio'),
   directus: () => import('@thesvg/react/directus'),
@@ -151,7 +156,6 @@ export const TEMPLATE_LOGO_LOADERS: Record<
   postgresql: () => import('@thesvg/react/postgresql'),
   redis: () => import('@thesvg/react/redis'),
   mongodb: () => import('@thesvg/react/mongodb'),
-  mariadb: () => import('@thesvg/react/mariadb'),
   nodedotjs: () => import('@thesvg/react/nodedotjs'),
   python: () => import('@thesvg/react/python'),
   php: () => import('@thesvg/react/php'),
@@ -505,6 +509,6 @@ export const COMPOSITE_LOGOS: Record<string, [TechLogoKey, TechLogoKey?]> = {
 
 // No thesvg mark exists for these products yet; they render the monogram tile.
 export const KNOWN_MISSING_LOGOS: readonly string[] =
-  'diun gotenberg lldap campfire once-campfire bugsink imgcompress embystat budge proxyscotch kutt metamcp archivebox backrest crawl4ai headscale open-notebook radicale gatus mail-mox factorio palworld terraria seerr wizarr maintainerr sabnzbd lubelogger spoolman shaarli reactive-resume spliit jellystat gitness cleanuparr docling-serve kokoro-fastapi lychee meshcentral multi-scrobbler mylar3 ombi smokeping tinyauth imgproxy rss-bridge opengist ackee hyperdx romm flagsmith yourls pgweb'.split(
+  'diun gotenberg lldap campfire once-campfire bugsink imgcompress embystat budge proxyscotch kutt metamcp archivebox backrest crawl4ai headscale open-notebook radicale gatus mail-mox factorio palworld terraria seerr wizarr maintainerr sabnzbd lubelogger spoolman shaarli reactive-resume spliit jellystat gitness questdb opensearch redash cleanuparr docling-serve kokoro-fastapi lychee meshcentral multi-scrobbler mylar3 ombi smokeping tinyauth imgproxy rss-bridge opengist ackee hyperdx romm flagsmith yourls pgweb'.split(
     ' ',
   )

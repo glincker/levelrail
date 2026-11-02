@@ -1,0 +1,91 @@
+---
+title: "Self-host Redash with Docker"
+sidebarTitle: "Redash"
+description: "Connect data sources, write SQL and build shareable dashboards. Runs the Redash web server, a query worker and a scheduler with a bundled PostgreSQL and Redis, persistent volumes and generated secrets. Create the first admin account on first visit."
+"og:url": "https://docs.levelrail.com/self-host/redash"
+---
+
+Connect data sources, write SQL and build shareable dashboards. Runs the Redash web server, a query worker and a scheduler with a bundled PostgreSQL and Redis, persistent volumes and generated secrets. Create the first admin account on first visit.
+
+This page describes the Levelrail template for Redash (Analytics). It deploys the services below as one Docker Compose app on your own server. Project site: https://redash.io/help/.
+
+Recommended memory: about 2048 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `postgres` | `postgres:17.11-alpine` | none | `redash_pgdata -&#62; /var/lib/postgresql/data` |
+| `redash` | `redash/redash:25.8.0` | 5000 | none |
+| `redis` | `redis:7.4.5` | none | `redash_redis -&#62; /data` |
+| `scheduler` | `redash/redash:25.8.0` | none | none |
+| `worker` | `redash/redash:25.8.0` | none | none |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `postgres` | `POSTGRES_DB` | Preset in the template |
+| `postgres` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `postgres` | `POSTGRES_USER` | Preset in the template |
+| `redash` | `REDASH_COOKIE_SECRET` | Generated at deploy |
+| `redash` | `REDASH_DATABASE_URL` | Generated at deploy |
+| `redash` | `REDASH_REDIS_URL` | Preset in the template |
+| `redash` | `REDASH_SECRET_KEY` | Generated at deploy |
+| `redash` | `REDASH_WEB_WORKERS` | Preset in the template |
+| `scheduler` | `QUEUES` | Preset in the template |
+| `scheduler` | `REDASH_COOKIE_SECRET` | Generated at deploy |
+| `scheduler` | `REDASH_DATABASE_URL` | Generated at deploy |
+| `scheduler` | `REDASH_REDIS_URL` | Preset in the template |
+| `scheduler` | `REDASH_SECRET_KEY` | Generated at deploy |
+| `scheduler` | `WORKERS_COUNT` | Preset in the template |
+| `worker` | `QUEUES` | Preset in the template |
+| `worker` | `REDASH_COOKIE_SECRET` | Generated at deploy |
+| `worker` | `REDASH_DATABASE_URL` | Generated at deploy |
+| `worker` | `REDASH_REDIS_URL` | Preset in the template |
+| `worker` | `REDASH_SECRET_KEY` | Generated at deploy |
+| `worker` | `WORKERS_COUNT` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`postgres`, `redash`, `scheduler`, `worker`): POSTGRES_PASSWORD, REDASH_COOKIE_SECRET, REDASH_DATABASE_URL, REDASH_SECRET_KEY.
+- No health check, so a deploy is judged by the process starting (`scheduler`, `worker`).
+- Stores data in named volumes (`postgres`, `redis`): redash_pgdata, redash_redis.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Redash with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Redash. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy redash --name my-redash
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Analytics templates
+
+- [Ackee](/self-host/ackee)
+- [EmbyStat](/self-host/embystat)
+- [GoatCounter](/self-host/goatcounter)
+- [Matomo](/self-host/matomo)
+- [Metabase](/self-host/metabase)
+
+All templates are listed in the [self-host gallery](/self-host).

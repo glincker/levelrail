@@ -25,17 +25,17 @@ Set the optional `Description` field on a Go template (manifest templates reuse 
 
 {/* BEGIN GENERATED CATALOG TABLE */}
 
-Generated from `internal/catalog.Templates` (410 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
+Generated from `internal/catalog.Templates` (418 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
 
 | Category | Templates |
 | --- | --- |
 | [AI](#ai) | 36 |
-| [Analytics](#analytics) | 9 |
+| [Analytics](#analytics) | 10 |
 | [Applications](#applications) | 32 |
 | [Automation](#automation) | 8 |
 | [Communication](#communication) | 20 |
 | [Dashboard](#dashboard) | 8 |
-| [Database Tools](#database-tools) | 23 |
+| [Database Tools](#database-tools) | 30 |
 | [Developer Tools](#developer-tools) | 60 |
 | [Finance](#finance) | 11 |
 | [Games](#games) | 5 |
@@ -101,6 +101,7 @@ Generated from `internal/catalog.Templates` (410 entries as of this build). Run 
 | [Matomo](https://matomo.org/faq/how-to-install/install-matomo-with-docker/) | A privacy-friendly, self-hosted alternative to Google Analytics with full data ownership. | `matomo` |  |
 | [Metabase](https://www.metabase.com/docs/latest/) | Ask questions of your data and share dashboards, no SQL required. | `metabase` |  |
 | [Plausible Analytics](https://plausible.io/docs/self-hosting) | Lightweight, privacy-friendly, cookie-free web analytics with no consent banner required. | `plausible` |  |
+| [Redash](https://redash.io/help/) | Connect data sources, write SQL and build shareable dashboards. Runs the Redash web server, a query worker and a scheduler with a bundled PostgreSQL and Redis, persistent volumes and generated secrets. Create the first admin account on first visit. | `redash` |  |
 | [Tianji](https://tianji.dev/docs/intro) | An all-in-one insight hub that combines website analytics, uptime monitoring and server status in one dashboard. | `tianji` |  |
 | [Umami](https://umami.is/docs) | Simple, privacy-focused website analytics without tracking cookies or ad-tech. | `umami` |  |
 
@@ -210,19 +211,26 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [CloudBeaver](https://dbeaver.com/docs/cloudbeaver/) | A web-based database manager for browsing and querying Postgres, MySQL, SQLite and more. | `cloudbeaver` |  |
 | [CouchDB](https://docs.couchdb.org/) | A document database with an HTTP API, built-in replication and the Fauxton admin console. | `couchdb` |  |
 | [Elasticsearch + Kibana](https://www.elastic.co/docs/deploy-manage/deploy/self-managed/install-kibana-with-docker) | Elasticsearch paired with Kibana for log and document search with a visual dashboard. Kibana has no login, so anyone who can open it controls the data: before attaching a domain, enable Basic Auth or the auth gate on it. Elasticsearch is reachable only from services in this project at elasticsearch:9200 and is not published on the host. | `elasticsearch-kibana` |  |
+| [FerretDB](https://docs.ferretdb.io/) | A MongoDB compatible database that stores documents in PostgreSQL. Runs FerretDB with a bundled PostgreSQL that has the DocumentDB extension, a persistent volume and a generated password. It is not published on the host, so reach it from other services in this project at ferretdb:27017. | `ferretdb` |  |
 | [InfluxDB](https://docs.influxdata.com/influxdb/) | An open-source time-series database for metrics, events, and IoT analytics. | `influxdb` |  |
+| [MariaDB](https://mariadb.com/kb/en/documentation/) | The MariaDB database server on the official image, with a persistent volume, generated root and user passwords, and an application database. It is not published on the host, so reach it from other services in this project at mariadb:3306. | `mariadb` |  |
 | [Memcached](https://memcached.org/) | A fast in-memory cache for query results, sessions and rendered pages, reachable by other apps on host memcached. | `memcached` |  |
 | [Milvus](https://milvus.io/docs) | A cloud-native vector database built for billion-scale similarity search, run here as a single standalone node. Has no authentication, so reach it from other services in this project at milvus:19530, or attach a domain (it routes to port 19530 only) only behind Basic Auth. Not published on the host. | `milvus` |  |
 | [Mongo Express](https://github.com/mongo-express/mongo-express) | A web admin console for MongoDB, bundled with its own MongoDB 7 instance and basic auth. | `mongo-express` |  |
+| [MySQL](https://dev.mysql.com/doc/refman/8.4/en/) | The MySQL Community database server on the official image, with a persistent volume, generated root and user passwords, and an application database. It is not published on the host, so reach it from other services in this project at mysql:3306. | `mysql` |  |
 | [Neo4j](https://neo4j.com/docs/) | A graph database with the Cypher query language, Community Edition, including the browser console. | `neo4j` |  |
 | [NocoDB](https://docs.nocodb.com) | Turn any database into a smart spreadsheet, with a real-time collaborative grid UI. | `nocodb` |  |
+| [OpenSearch](https://opensearch.org/docs/latest/) | A single node OpenSearch search and analytics engine with the security plugin on, a persistent volume, a generated admin password and a 512 MB Java heap. The API speaks HTTPS with a self signed certificate and is not published on the host, so reach it from other services in this project at opensearch:9200. | `opensearch` |  |
 | [PG Back Web](https://github.com/eduardolat/pgbackweb) | A web UI for scheduling, encrypting, and restoring PostgreSQL backups. | `pgbackweb` |  |
 | [pgAdmin](https://www.pgadmin.org/docs/) | A full-featured web GUI for administering and querying PostgreSQL databases. | `pgadmin` |  |
 | [pgvector Postgres](https://github.com/pgvector/pgvector) | PostgreSQL 17 with the pgvector extension preinstalled, for embeddings next to your relational data. | `pgvector` |  |
 | [phpMyAdmin](https://www.phpmyadmin.net/docs/) | A web-based admin tool for MySQL and MariaDB, built for ad-hoc use against any reachable database. | `phpmyadmin` |  |
+| [PostgreSQL](https://www.postgresql.org/docs/17/) | The PostgreSQL relational database server on the official Alpine image, with a persistent volume and a generated password. It is not published on the host, so reach it from other services in this project at postgres:5432. | `postgres` |  |
 | [Qdrant](https://qdrant.tech/documentation/) | A vector similarity search engine for storing, searching, and managing embeddings. | `qdrant` |  |
+| [QuestDB](https://questdb.com/docs/) | A fast time series database with SQL, a web console, the PostgreSQL wire protocol on 8812 and InfluxDB line protocol ingestion on 9009. The console and the PostgreSQL port share one generated password. Only the console is offered a domain. | `questdb` |  |
 | [Redis Insight](https://redis.io/docs/latest/operate/redisinsight/) | A GUI for exploring keys, running commands, and profiling workloads on any Redis-compatible server. | `redis-insight` |  |
 | [RedisInsight](https://redis.io/docs/latest/operate/redisinsight/) | A GUI for browsing keys, running commands, and profiling performance on any Redis instance. | `redisinsight` |  |
+| [TimescaleDB](https://docs.timescale.com/) | PostgreSQL with the TimescaleDB extension for time series data, with a persistent volume and a generated password. The core is Apache-2.0 and some features fall under the Timescale License. It is not published on the host, so reach it from other services in this project at timescaledb:5432. | `timescaledb` |  |
 | [Valkey](https://valkey.io/docs/) | A Redis-compatible in-memory key-value store under the Linux Foundation, with password auth and append-only persistence. | `valkey` |  |
 | [Weaviate](https://weaviate.io/developers/weaviate) | An open-source vector database with hybrid search, built-in modules, and a GraphQL and REST API. | `weaviate` |  |
 

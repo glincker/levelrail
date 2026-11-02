@@ -16,7 +16,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 
 **Verified on Arm:** `openclaw` (`ghcr.io/openclaw/openclaw:2026.10.5`), tested 2026-11-02 in the managed desktop VM (4096 MiB, 2 CPUs) on an Apple silicon Mac. The image runs natively on arm64, the container used about 0.9 to 1.27 GiB and the guest 1.6 GiB of 3.9 GiB. A 2048 MiB VM is too tight. See [Desktop runtime](/desktop-runtime#openclaw).
 
-**393 listed, 15 amd64 only, 2 unknown** of 410 templates.
+**393 listed, 15 amd64 only, 10 unknown** of 418 templates.
 
 | Template | arm64 in manifest | Smoke run on Arm host |
 | --- | --- | --- |
@@ -107,6 +107,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `excalidraw` | listed | pass |
 | `factorio` | listed | not tested |
 | `fastapi-postgres-starter` | listed | not tested |
+| `ferretdb` | unknown | not tested |
 | `fider` | listed | not tested |
 | `filebrowser` | listed | pass |
 | `filebrowser-quantum` | listed | pass |
@@ -221,6 +222,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `mailhog` | amd64 only | fail |
 | `mailpit` | listed | pass |
 | `maintainerr` | listed | not tested |
+| `mariadb` | unknown | not tested |
 | `marimo` | listed | not tested |
 | `matomo` | listed | not tested |
 | `matrix-synapse` | listed | not tested |
@@ -247,6 +249,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `mosquitto` | listed | pass |
 | `multi-scrobbler` | listed | not tested |
 | `mylar3` | listed | not tested |
+| `mysql` | unknown | not tested |
 | `n8n` | listed | pass |
 | `n8n-ai-starter` | listed | not tested |
 | `n8n-postgres` | listed | not tested |
@@ -285,6 +288,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `openclaw` | listed | not tested |
 | `opengist` | listed | not tested |
 | `openobserve` | listed | not tested |
+| `opensearch` | unknown | not tested |
 | `orangehrm` | amd64 only | not tested |
 | `organizr` | listed | not tested |
 | `osticket` | unknown | not tested |
@@ -316,6 +320,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `pocket-id` | listed | pass |
 | `pocketbase` | listed | pass |
 | `portainer` | listed | pass |
+| `postgres` | unknown | not tested |
 | `postiz` | listed | not tested |
 | `prefect` | listed | not tested |
 | `privatebin` | listed | pass |
@@ -324,12 +329,14 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `proxyscotch` | listed | not tested |
 | `qbittorrent` | listed | not tested |
 | `qdrant` | listed | not tested |
+| `questdb` | unknown | not tested |
 | `rabbitmq` | listed | pass |
 | `radarr` | listed | not tested |
 | `radicale` | listed | pass |
 | `rallly` | listed | not tested |
 | `reactive-resume` | listed | not tested |
 | `readeck` | listed | pass |
+| `redash` | unknown | not tested |
 | `redis-cache-starter` | listed | not tested |
 | `redis-insight` | listed | not tested |
 | `redisinsight` | listed | not tested |
@@ -389,6 +396,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `text-embeddings-inference` | amd64 only | not tested |
 | `text-generation-inference` | amd64 only | not tested |
 | `tianji` | listed | not tested |
+| `timescaledb` | unknown | not tested |
 | `tinyauth` | listed | not tested |
 | `tolgee` | listed | not tested |
 | `traccar` | listed | not tested |

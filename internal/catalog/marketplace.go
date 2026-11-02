@@ -76,6 +76,8 @@ var (
 		"languagetool": "upstream publishes no server image; erikvl87/languagetool is the maintained community image, linux/amd64 and arm64",
 		"rss-bridge":   "the project publishes its image under its own Docker Hub org rssbridge, while its source org is RSS-Bridge",
 		"hyperdx":      "the project's own Docker Hub org is hyperdx while its source org is hyperdxio",
+		"opensearch":   "the project publishes its image under its own Docker Hub org opensearchproject, while its source org is opensearch-project",
+		"redash":       "the project publishes its image under its own Docker Hub org redash, while its source org is getredash",
 	}
 	fetchExceptions = map[string]string{}
 )

@@ -1,0 +1,30 @@
+id: questdb
+name: QuestDB
+description: A fast time series database with SQL, a web console, the PostgreSQL wire protocol on 8812 and InfluxDB line protocol ingestion on 9009. The console and the PostgreSQL port share one generated password. Only the console is offered a domain.
+icon: database
+category: Database Tools
+documentation_url: https://questdb.com/docs/
+source_repo: https://github.com/questdb/questdb
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/questdb/questdb/blob/master/LICENSE.txt
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 1073741824
+first_run:
+  - Open the console. Queries ask for the user below and the generated password from the app secrets.
+env:
+  - key: QDB_PG_USER
+    label: Database user
+    description: User for the console and the PostgreSQL wire port.
+    default: admin
+domains:
+  - service: questdb
+    port: 9000
+    description: Public address of the QuestDB web console and REST API. Queries need the generated login, the static console page does not.
+healthcheck:
+  service: questdb
+  port: 9000
+  path: /

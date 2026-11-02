@@ -13585,6 +13585,171 @@
    }
   },
   {
+   "id": "ferretdb",
+   "aliases": [],
+   "name": "FerretDB",
+   "slogan": "A MongoDB compatible database that stores documents in PostgreSQL. Runs FerretDB with a bundled PostgreSQL that has the DocumentDB extension, a persistent volume and a generated password. It is not published on the host, so reach it from other services in this project at ferretdb:27017.",
+   "description": "A MongoDB compatible database that stores documents in PostgreSQL. Runs FerretDB with a bundled PostgreSQL that has the DocumentDB extension, a persistent volume and a generated password. It is not published on the host, so reach it from other services in this project at ferretdb:27017.",
+   "first_run": [
+    "Read the generated password from the app secrets, then connect with a MongoDB client as the ferretdb user from a service in the same project."
+   ],
+   "category": "Database Tools",
+   "status": "active",
+   "source_repo": "https://github.com/FerretDB/FerretDB",
+   "documentation_url": "https://docs.ferretdb.io/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/FerretDB/FerretDB/blob/main/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "ferretdb",
+     "image": "ghcr.io/ferretdb/ferretdb",
+     "tag": "2.7.0",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "postgres",
+     "image": "ghcr.io/ferretdb/postgres-documentdb",
+     "tag": "17-0.107.0-ferretdb-2.7.0",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "ferretdb",
+     "image": "ghcr.io/ferretdb/ferretdb:2.7.0",
+     "ports": [
+      27017
+     ],
+     "volumes": []
+    },
+    {
+     "name": "postgres",
+     "image": "ghcr.io/ferretdb/postgres-documentdb:17-0.107.0-ferretdb-2.7.0",
+     "ports": [],
+     "volumes": [
+      "pgdata -> /var/lib/postgresql/data"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "ferretdb",
+     "name": "FERRETDB_POSTGRESQL_URL",
+     "kind": "generated"
+    },
+    {
+     "service": "ferretdb",
+     "name": "FERRETDB_TELEMETRY",
+     "kind": "preset"
+    },
+    {
+     "service": "postgres",
+     "name": "POSTGRES_DB",
+     "kind": "preset"
+    },
+    {
+     "service": "postgres",
+     "name": "POSTGRES_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "postgres",
+     "name": "POSTGRES_USER",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "ferretdb",
+       "postgres"
+      ],
+      "detail": "FERRETDB_POSTGRESQL_URL, POSTGRES_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "ferretdb"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "postgres"
+      ],
+      "detail": "pgdata",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "fider",
    "aliases": [],
    "name": "Fider",
@@ -32241,6 +32406,154 @@
    }
   },
   {
+   "id": "mariadb",
+   "aliases": [],
+   "name": "MariaDB",
+   "slogan": "The MariaDB database server on the official image, with a persistent volume, generated root and user passwords, and an application database. It is not published on the host, so reach it from other services in this project at mariadb:3306.",
+   "description": "The MariaDB database server on the official image, with a persistent volume, generated root and user passwords, and an application database. It is not published on the host, so reach it from other services in this project at mariadb:3306.",
+   "first_run": [
+    "Read the generated passwords from the app secrets, then connect with the application user or as root from a service in the same project."
+   ],
+   "category": "Database Tools",
+   "status": "active",
+   "source_repo": "https://github.com/MariaDB/server",
+   "documentation_url": "https://mariadb.com/kb/en/documentation/",
+   "license": {
+    "spdx": "GPL-2.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/MariaDB/server/blob/main/COPYING"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "mariadb",
+     "image": "mariadb",
+     "tag": "11.4.13",
+     "source_class": "official",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "MARIADB_DATABASE",
+      "label": "Database name",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "MARIADB_USER",
+      "label": "Database user",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "mariadb",
+     "image": "mariadb:11.4.13",
+     "ports": [
+      3306
+     ],
+     "volumes": [
+      "mariadb_data -> /var/lib/mysql"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "mariadb",
+     "name": "MARIADB_DATABASE",
+     "kind": "preset"
+    },
+    {
+     "service": "mariadb",
+     "name": "MARIADB_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "mariadb",
+     "name": "MARIADB_ROOT_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "mariadb",
+     "name": "MARIADB_USER",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "mariadb"
+      ],
+      "detail": "MARIADB_PASSWORD, MARIADB_ROOT_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "mariadb"
+      ],
+      "detail": "mariadb_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "marimo",
    "aliases": [],
    "name": "marimo",
@@ -36376,6 +36689,154 @@
      {
       "code": "https_ingress",
       "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql",
+   "aliases": [],
+   "name": "MySQL",
+   "slogan": "The MySQL Community database server on the official image, with a persistent volume, generated root and user passwords, and an application database. It is not published on the host, so reach it from other services in this project at mysql:3306.",
+   "description": "The MySQL Community database server on the official image, with a persistent volume, generated root and user passwords, and an application database. It is not published on the host, so reach it from other services in this project at mysql:3306.",
+   "first_run": [
+    "Read the generated passwords from the app secrets, then connect with the application user or as root from a service in the same project."
+   ],
+   "category": "Database Tools",
+   "status": "active",
+   "source_repo": "https://github.com/mysql/mysql-server",
+   "documentation_url": "https://dev.mysql.com/doc/refman/8.4/en/",
+   "license": {
+    "spdx": "GPL-2.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/mysql/mysql-server/blob/trunk/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "mysql",
+     "image": "mysql",
+     "tag": "8.4.13",
+     "source_class": "official",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 768,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "MYSQL_DATABASE",
+      "label": "Database name",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "MYSQL_USER",
+      "label": "Database user",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "mysql",
+     "image": "mysql:8.4.13",
+     "ports": [
+      3306
+     ],
+     "volumes": [
+      "mysql_data -> /var/lib/mysql"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "mysql",
+     "name": "MYSQL_DATABASE",
+     "kind": "preset"
+    },
+    {
+     "service": "mysql",
+     "name": "MYSQL_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "mysql",
+     "name": "MYSQL_ROOT_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "mysql",
+     "name": "MYSQL_USER",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "mysql"
+      ],
+      "detail": "MYSQL_PASSWORD, MYSQL_ROOT_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "mysql"
+      ],
+      "detail": "mysql_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
      },
      {
       "code": "volume_backups",
@@ -42180,6 +42641,141 @@
    }
   },
   {
+   "id": "opensearch",
+   "aliases": [],
+   "name": "OpenSearch",
+   "slogan": "A single node OpenSearch search and analytics engine with the security plugin on, a persistent volume, a generated admin password and a 512 MB Java heap. The API speaks HTTPS with a self signed certificate and is not published on the host, so reach it from other services in this project at opensearch:9200.",
+   "description": "A single node OpenSearch search and analytics engine with the security plugin on, a persistent volume, a generated admin password and a 512 MB Java heap. The API speaks HTTPS with a self signed certificate and is not published on the host, so reach it from other services in this project at opensearch:9200.",
+   "first_run": [
+    "Read the generated admin password from the app secrets, then call the API over HTTPS as the admin user from a service in the same project."
+   ],
+   "category": "Database Tools",
+   "status": "active",
+   "source_repo": "https://github.com/opensearch-project/OpenSearch",
+   "documentation_url": "https://opensearch.org/docs/latest/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/opensearch-project/OpenSearch/blob/main/LICENSE.txt"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "opensearch",
+     "image": "opensearchproject/opensearch",
+     "tag": "3.3.0",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 1536,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "opensearch",
+     "image": "opensearchproject/opensearch:3.3.0",
+     "ports": [
+      9200
+     ],
+     "volumes": [
+      "opensearch_data -> /usr/share/opensearch/data"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "opensearch",
+     "name": "OPENSEARCH_INITIAL_ADMIN_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "opensearch",
+     "name": "OPENSEARCH_JAVA_OPTS",
+     "kind": "preset"
+    },
+    {
+     "service": "opensearch",
+     "name": "bootstrap.memory_lock",
+     "kind": "preset"
+    },
+    {
+     "service": "opensearch",
+     "name": "discovery.type",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "opensearch"
+      ],
+      "detail": "OPENSEARCH_INITIAL_ADMIN_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "opensearch"
+      ],
+      "detail": "opensearch_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "orangehrm",
    "aliases": [],
    "name": "OrangeHRM",
@@ -47738,6 +48334,149 @@
    }
   },
   {
+   "id": "postgres",
+   "aliases": [],
+   "name": "PostgreSQL",
+   "slogan": "The PostgreSQL relational database server on the official Alpine image, with a persistent volume and a generated password. It is not published on the host, so reach it from other services in this project at postgres:5432.",
+   "description": "The PostgreSQL relational database server on the official Alpine image, with a persistent volume and a generated password. It is not published on the host, so reach it from other services in this project at postgres:5432.",
+   "first_run": [
+    "Read the generated password from the app secrets, then connect with psql or any client from a service in the same project."
+   ],
+   "category": "Database Tools",
+   "status": "active",
+   "source_repo": "https://github.com/postgres/postgres",
+   "documentation_url": "https://www.postgresql.org/docs/17/",
+   "license": {
+    "spdx": "PostgreSQL",
+    "class": "permissive",
+    "url": "https://www.postgresql.org/about/licence/"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "postgres",
+     "image": "postgres",
+     "tag": "17.11-alpine",
+     "source_class": "official",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "POSTGRES_USER",
+      "label": "Database user",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "POSTGRES_DB",
+      "label": "Database name",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "postgres",
+     "image": "postgres:17.11-alpine",
+     "ports": [
+      5432
+     ],
+     "volumes": [
+      "pgdata -> /var/lib/postgresql/data"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "postgres",
+     "name": "POSTGRES_DB",
+     "kind": "preset"
+    },
+    {
+     "service": "postgres",
+     "name": "POSTGRES_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "postgres",
+     "name": "POSTGRES_USER",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "postgres"
+      ],
+      "detail": "POSTGRES_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "postgres"
+      ],
+      "detail": "pgdata",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "postiz",
    "aliases": [],
    "name": "Postiz",
@@ -48898,6 +49637,155 @@
    }
   },
   {
+   "id": "questdb",
+   "aliases": [],
+   "name": "QuestDB",
+   "slogan": "A fast time series database with SQL, a web console, the PostgreSQL wire protocol on 8812 and InfluxDB line protocol ingestion on 9009. The console and the PostgreSQL port share one generated password. Only the console is offered a domain.",
+   "description": "A fast time series database with SQL, a web console, the PostgreSQL wire protocol on 8812 and InfluxDB line protocol ingestion on 9009. The console and the PostgreSQL port share one generated password. Only the console is offered a domain.",
+   "first_run": [
+    "Open the console. Queries ask for the user below and the generated password from the app secrets."
+   ],
+   "category": "Database Tools",
+   "status": "active",
+   "source_repo": "https://github.com/questdb/questdb",
+   "documentation_url": "https://questdb.com/docs/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/questdb/questdb/blob/master/LICENSE.txt"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "questdb",
+     "image": "questdb/questdb",
+     "tag": "10.1.0",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 1024,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "QDB_PG_USER",
+      "label": "Database user",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "questdb",
+     "image": "questdb/questdb:10.1.0",
+     "ports": [
+      9000,
+      8812,
+      9009
+     ],
+     "volumes": [
+      "questdb_data -> /var/lib/questdb"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "questdb",
+     "name": "QDB_HTTP_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "questdb",
+     "name": "QDB_HTTP_USER",
+     "kind": "preset"
+    },
+    {
+     "service": "questdb",
+     "name": "QDB_PG_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "questdb",
+     "name": "QDB_PG_USER",
+     "kind": "preset"
+    },
+    {
+     "service": "questdb",
+     "name": "QDB_TELEMETRY_ENABLED",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "questdb"
+      ],
+      "detail": "QDB_HTTP_PASSWORD, QDB_PG_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "questdb"
+      ],
+      "detail": "questdb_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "rabbitmq",
    "aliases": [],
    "name": "RabbitMQ",
@@ -49781,6 +50669,300 @@
      {
       "code": "https_ingress",
       "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "redash",
+   "aliases": [],
+   "name": "Redash",
+   "slogan": "Connect data sources, write SQL and build shareable dashboards. Runs the Redash web server, a query worker and a scheduler with a bundled PostgreSQL and Redis, persistent volumes and generated secrets. Create the first admin account on first visit.",
+   "description": "Connect data sources, write SQL and build shareable dashboards. Runs the Redash web server, a query worker and a scheduler with a bundled PostgreSQL and Redis, persistent volumes and generated secrets. Create the first admin account on first visit.",
+   "first_run": [
+    "Open the page and create the admin account in the setup form, then add a data source under Settings."
+   ],
+   "category": "Analytics",
+   "status": "active",
+   "source_repo": "https://github.com/getredash/redash",
+   "documentation_url": "https://redash.io/help/",
+   "license": {
+    "spdx": "BSD-2-Clause",
+    "class": "permissive",
+    "url": "https://github.com/getredash/redash/blob/master/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "postgres",
+     "image": "postgres",
+     "tag": "17.11-alpine",
+     "source_class": "official",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "redash",
+     "image": "redash/redash",
+     "tag": "25.8.0",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "redis",
+     "image": "redis",
+     "tag": "7.4.5",
+     "source_class": "official",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "scheduler",
+     "image": "redash/redash",
+     "tag": "25.8.0",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "worker",
+     "image": "redash/redash",
+     "tag": "25.8.0",
+     "source_class": "community",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 2048,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "postgres",
+     "image": "postgres:17.11-alpine",
+     "ports": [],
+     "volumes": [
+      "redash_pgdata -> /var/lib/postgresql/data"
+     ]
+    },
+    {
+     "name": "redash",
+     "image": "redash/redash:25.8.0",
+     "ports": [
+      5000
+     ],
+     "volumes": []
+    },
+    {
+     "name": "redis",
+     "image": "redis:7.4.5",
+     "ports": [],
+     "volumes": [
+      "redash_redis -> /data"
+     ]
+    },
+    {
+     "name": "scheduler",
+     "image": "redash/redash:25.8.0",
+     "ports": [],
+     "volumes": []
+    },
+    {
+     "name": "worker",
+     "image": "redash/redash:25.8.0",
+     "ports": [],
+     "volumes": []
+    }
+   ],
+   "env": [
+    {
+     "service": "postgres",
+     "name": "POSTGRES_DB",
+     "kind": "preset"
+    },
+    {
+     "service": "postgres",
+     "name": "POSTGRES_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "postgres",
+     "name": "POSTGRES_USER",
+     "kind": "preset"
+    },
+    {
+     "service": "redash",
+     "name": "REDASH_COOKIE_SECRET",
+     "kind": "generated"
+    },
+    {
+     "service": "redash",
+     "name": "REDASH_DATABASE_URL",
+     "kind": "generated"
+    },
+    {
+     "service": "redash",
+     "name": "REDASH_REDIS_URL",
+     "kind": "preset"
+    },
+    {
+     "service": "redash",
+     "name": "REDASH_SECRET_KEY",
+     "kind": "generated"
+    },
+    {
+     "service": "redash",
+     "name": "REDASH_WEB_WORKERS",
+     "kind": "preset"
+    },
+    {
+     "service": "scheduler",
+     "name": "QUEUES",
+     "kind": "preset"
+    },
+    {
+     "service": "scheduler",
+     "name": "REDASH_COOKIE_SECRET",
+     "kind": "generated"
+    },
+    {
+     "service": "scheduler",
+     "name": "REDASH_DATABASE_URL",
+     "kind": "generated"
+    },
+    {
+     "service": "scheduler",
+     "name": "REDASH_REDIS_URL",
+     "kind": "preset"
+    },
+    {
+     "service": "scheduler",
+     "name": "REDASH_SECRET_KEY",
+     "kind": "generated"
+    },
+    {
+     "service": "scheduler",
+     "name": "WORKERS_COUNT",
+     "kind": "preset"
+    },
+    {
+     "service": "worker",
+     "name": "QUEUES",
+     "kind": "preset"
+    },
+    {
+     "service": "worker",
+     "name": "REDASH_COOKIE_SECRET",
+     "kind": "generated"
+    },
+    {
+     "service": "worker",
+     "name": "REDASH_DATABASE_URL",
+     "kind": "generated"
+    },
+    {
+     "service": "worker",
+     "name": "REDASH_REDIS_URL",
+     "kind": "preset"
+    },
+    {
+     "service": "worker",
+     "name": "REDASH_SECRET_KEY",
+     "kind": "generated"
+    },
+    {
+     "service": "worker",
+     "name": "WORKERS_COUNT",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "postgres",
+       "redash",
+       "scheduler",
+       "worker"
+      ],
+      "detail": "POSTGRES_PASSWORD, REDASH_COOKIE_SECRET, REDASH_DATABASE_URL, REDASH_SECRET_KEY",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "no_healthcheck",
+      "severity": "info",
+      "services": [
+       "scheduler",
+       "worker"
+      ],
+      "message": "No health check, so a deploy is judged by the process starting"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "postgres",
+       "redis"
+      ],
+      "detail": "redash_pgdata, redash_redis",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
      },
      {
       "code": "volume_backups",
@@ -58853,6 +60035,149 @@
        "db"
       ],
       "detail": "pgdata",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "timescaledb",
+   "aliases": [],
+   "name": "TimescaleDB",
+   "slogan": "PostgreSQL with the TimescaleDB extension for time series data, with a persistent volume and a generated password. The core is Apache-2.0 and some features fall under the Timescale License. It is not published on the host, so reach it from other services in this project at timescaledb:5432.",
+   "description": "PostgreSQL with the TimescaleDB extension for time series data, with a persistent volume and a generated password. The core is Apache-2.0 and some features fall under the Timescale License. It is not published on the host, so reach it from other services in this project at timescaledb:5432.",
+   "first_run": [
+    "Read the generated password from the app secrets, connect from a service in the same project, The extension is already created in the default database. Run CREATE EXTENSION IF NOT EXISTS timescaledb in any other database you add."
+   ],
+   "category": "Database Tools",
+   "status": "active",
+   "source_repo": "https://github.com/timescale/timescaledb",
+   "documentation_url": "https://docs.timescale.com/",
+   "license": {
+    "spdx": "LicenseRef-Timescale",
+    "class": "source-available",
+    "url": "https://github.com/timescale/timescaledb/blob/main/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "timescaledb",
+     "image": "timescale/timescaledb",
+     "tag": "2.30.2-pg17",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "POSTGRES_USER",
+      "label": "Database user",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "POSTGRES_DB",
+      "label": "Database name",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "timescaledb",
+     "image": "timescale/timescaledb:2.30.2-pg17",
+     "ports": [
+      5432
+     ],
+     "volumes": [
+      "tsdata -> /var/lib/postgresql/data"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "timescaledb",
+     "name": "POSTGRES_DB",
+     "kind": "preset"
+    },
+    {
+     "service": "timescaledb",
+     "name": "POSTGRES_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "timescaledb",
+     "name": "POSTGRES_USER",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "timescaledb"
+      ],
+      "detail": "POSTGRES_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "timescaledb"
+      ],
+      "detail": "tsdata",
       "message": "Stores data in named volumes"
      }
     ],
