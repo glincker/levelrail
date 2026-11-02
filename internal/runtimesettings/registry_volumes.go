@@ -1,7 +1,9 @@
 package runtimesettings
 
 import (
+	"fmt"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -10,10 +12,17 @@ const (
 	KeyVolumesTransferMaxBytes = "volumes.transfer_max_bytes"
 	KeyVolumesTransferTimeout  = "volumes.transfer_timeout"
 	KeyVolumesImportOverwrite  = "volumes.import_overwrite"
-	volumesTransferMaxFloor    = 1 << 20
-	volumesTransferMaxCeiling  = 1 << 42
-	minVolumesTransferTimeout  = time.Minute
-	maxVolumesTransferTimeout  = 24 * time.Hour
+	// KeyVolumesTransferMaxConcurrent bounds uploads staged at once on a control plane.
+	KeyVolumesTransferMaxConcurrent = "volumes.transfer_max_concurrent"
+	// KeyVolumesTransferSpoolDir names the folder under the data dir that stages import archives.
+	KeyVolumesTransferSpoolDir   = "volumes.transfer_spool_dir"
+	volumesTransferMaxFloor      = 1 << 20
+	volumesTransferMaxCeiling    = 1 << 42
+	minVolumesTransferTimeout    = time.Minute
+	maxVolumesTransferTimeout    = 24 * time.Hour
+	volumesTransferConcurrentMax = 16
+	// DefaultVolumesTransferSpoolDir is the spool folder name under the data dir.
+	DefaultVolumesTransferSpoolDir = "volume-transfer"
 )
 
 func init() {
@@ -34,4 +43,23 @@ func init() {
 		Title:       "Allow volume import over existing files",
 		Description: "When on, an import with the overwrite flag may replace a volume that already holds files. Off by default: imports only fill an empty volume. Take a backup first when you turn it on.",
 	})
+	registerLimit(Definition{
+		Key: KeyVolumesTransferMaxConcurrent, Category: CategoryDeploys, Default: "1", Env: "APP_VOLUMES_TRANSFER_MAX_CONCURRENT", Apply: ApplyLive,
+		Title:       "Concurrent volume imports",
+		Description: "How many volume imports this control plane stages at once, from 1 to 16. A further import is refused with HTTP 429 until one finishes. A change applies to the next import.",
+	}, 1, volumesTransferConcurrentMax)
+	Register(Definition{
+		Key: KeyVolumesTransferSpoolDir, Category: CategoryDeploys, Kind: KindString, Default: DefaultVolumesTransferSpoolDir,
+		Env: "APP_VOLUMES_TRANSFER_SPOOL_DIR", Apply: ApplyLive, CheckValue: spoolDirCheck,
+		Title:       "Volume import spool folder",
+		Description: "Folder name under the data directory where an import archive is staged while it is checked. A plain name, no slashes. Leftover files in it are removed when the control plane starts. A change applies to the next import.",
+	})
+}
+
+// spoolDirCheck accepts one plain folder name so the spool can never leave the data dir.
+func spoolDirCheck(v string) error {
+	if v == "" || v == "." || v == ".." || strings.ContainsAny(v, "/\\\x00") {
+		return fmt.Errorf("value must be a plain folder name without slashes")
+	}
+	return nil
 }

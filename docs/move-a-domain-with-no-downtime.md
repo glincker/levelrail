@@ -53,7 +53,7 @@ If the name answers from Cloudflare addresses, the card says so. The cutover wor
 
 ## Verify after the switch
 
-`levelrail-cli domains check --cutover <domain>...` (or `GET /api/v1/domains/{domain}/verify`, read ability) checks one or many domains that are moving here and ends with a PASS, WARN or FAIL per domain. Each line carries the next step: DNS against this host's public addresses (`--expect-ip` overrides them, for a host behind NAT), a proxy such as Cloudflare in front, the http to https redirect, certificate issuer and days left, HSTS, response status and time to first byte as seen from this host, and whether the www or apex partner points at the same place. The command only reads, accepts only domains this server already serves, and requests the name only once DNS points here or at a known proxy. The exit code is 1 when any domain has a FAIL, so it can gate a script.
+`levelrail-cli domains check --cutover <domain>...` (or `GET /api/v1/domains/{domain}/verify`, read ability) checks one or many domains that are moving here and ends with a PASS, WARN or FAIL per domain. Each line carries the next step: DNS against this host's public addresses (`--expect-ip` overrides them, for a host behind NAT; it must be a public address, and the request's Host header is never used), a proxy such as Cloudflare in front, the http to https redirect, certificate issuer and days left, HSTS, response status and time to first byte as seen from this host, and whether the www or apex partner points at the same place. The command only reads, accepts only domains this server already serves, and requests the name only once DNS points here or at a known proxy. DNS is read once per check: that answer is checked against this host's addresses and is the only set the requests connect to, and a name that resolves to a loopback, private, link-local or other non-public address is never requested. Failures show a class (`dns_failed`, `connect_refused`, `timeout`, `tls_failed`) instead of the raw error, and a redirect to a non-public host is not shown. Repeated checks of one domain by the same person are spaced by `cutover.verify_min_interval`, and the server runs a handful at a time, so a busy script gets a 429 with `Retry-After`. The exit code is 1 when any domain has a FAIL, so it can gate a script.
 
 The thresholds are runtime settings (Settings > Runtime in the dashboard, or `levelrail-cli settings runtime set <key> <value>`). A saved value wins, the environment variable only seeds the default, and a change applies to the next check with no restart.
 
@@ -64,6 +64,7 @@ The thresholds are runtime settings (Settings > Runtime in the dashboard, or `le
 | `cutover.verify_slow_ttfb` | `APP_CUTOVER_VERIFY_SLOW_TTFB` | 1.5s | Time to first byte above which the response line warns (100ms to 30s) |
 | `cutover.verify_hsts_min_age` | `APP_CUTOVER_VERIFY_HSTS_MIN_AGE_SECONDS` | 15552000 | Smallest HSTS max-age that counts as enabled (3600 to 63072000) |
 | `cutover.verify_timeout` | `APP_CUTOVER_VERIFY_REQUEST_TIMEOUT` | 5s | Timeout of each request (1s to 1m) |
+| `cutover.verify_min_interval` | `APP_CUTOVER_VERIFY_MIN_INTERVAL` | 10s | Wait before the same person can re-check the same domain (1s to 1h) |
 
 ## API
 

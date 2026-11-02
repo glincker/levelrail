@@ -19,6 +19,7 @@ type transferRuntime struct {
 	bareRuntime
 	listing   string
 	exported  string
+	exportErr error // when set, the export stream fails after exported is read
 	extracted []byte
 	mounts    []docker.VolumeMount
 }
@@ -31,6 +32,9 @@ func (f *transferRuntime) Start(context.Context, string) error        { return n
 func (f *transferRuntime) Remove(context.Context, string, bool) error { return nil }
 func (f *transferRuntime) Exec(_ context.Context, _ string, cmd []string) (io.ReadCloser, error) {
 	if cmd[0] == "tar" {
+		if f.exportErr != nil {
+			return io.NopCloser(io.MultiReader(strings.NewReader(f.exported), errReader{f.exportErr})), nil
+		}
 		return io.NopCloser(strings.NewReader(f.exported)), nil
 	}
 	return io.NopCloser(strings.NewReader(f.listing)), nil

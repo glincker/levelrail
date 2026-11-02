@@ -20,3 +20,17 @@ func TestHardenedSpecIgnoresGlobalMode(t *testing.T) {
 		}
 	}
 }
+
+func TestHardenedCapAddKeepsOnlyListedCaps(t *testing.T) {
+	for _, mode := range []HardeningMode{HardeningOff, HardeningEnforce} {
+		spec := ContainerSpec{Name: "h", Hardened: true, CapAdd: []string{"NET_ADMIN"}, HardenedCapAdd: []string{"CHOWN"}, NetworkMode: "none"}
+		hc := buildHostConfig(spec, nat.PortMap{})
+		HardeningConfig{Mode: mode, ExtraCaps: []string{"KILL"}}.apply(hc, spec)
+		if !reflect.DeepEqual([]string(hc.CapDrop), []string{"ALL"}) || !reflect.DeepEqual([]string(hc.CapAdd), []string{"CHOWN"}) {
+			t.Errorf("mode %s: drop=%v add=%v, want drop ALL and only CHOWN", mode, hc.CapDrop, hc.CapAdd)
+		}
+		if string(hc.NetworkMode) != "none" {
+			t.Errorf("mode %s: network = %q", mode, hc.NetworkMode)
+		}
+	}
+}

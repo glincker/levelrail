@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -74,17 +75,39 @@ func (e *ExportStream) Close() error {
 	return err
 }
 
+// Helper container limits: it only runs tar and rm on one volume.
+const (
+	transferHelperMemory = 256 << 20
+	transferHelperPids   = 64
+)
+
+// transferHelperSpec is the locked-down helper: no network, every capability
+// dropped except what tar needs to keep ownership, no-new-privileges, a
+// read-only root filesystem and memory and process limits.
+func transferHelperSpec(name, volume string, readOnly bool) docker.ContainerSpec {
+	caps := []string{"CHOWN", "DAC_OVERRIDE", "FOWNER", "FSETID"}
+	if readOnly {
+		caps = []string{"DAC_READ_SEARCH"}
+	}
+	return docker.ContainerSpec{
+		Name:           name,
+		Image:          volumeHelperImage,
+		Command:        []string{"sleep", "86400"},
+		Volumes:        []docker.VolumeMount{{Name: volume, ContainerPath: volumeMountPath, ReadOnly: readOnly}},
+		NetworkMode:    "none",
+		Hardened:       true,
+		HardenedCapAdd: caps,
+		PidsLimit:      transferHelperPids,
+		Resources:      &docker.Resources{MemoryBytes: transferHelperMemory, SwapMemoryBytes: transferHelperMemory},
+	}
+}
+
 func (t *VolumeTransfer) helper(ctx context.Context, volume, prefix string, readOnly bool) (string, error) {
 	suffix, err := randomHelperSuffix()
 	if err != nil {
 		return "", fmt.Errorf("generate helper container name: %w", err)
 	}
-	id, err := t.Runtime.Create(ctx, docker.ContainerSpec{
-		Name:    prefix + "-" + suffix,
-		Image:   volumeHelperImage,
-		Command: []string{"sleep", "86400"},
-		Volumes: []docker.VolumeMount{{Name: volume, ContainerPath: volumeMountPath, ReadOnly: readOnly}},
-	})
+	id, err := t.Runtime.Create(ctx, transferHelperSpec(prefix+"-"+suffix, volume, readOnly))
 	if err != nil {
 		return "", fmt.Errorf("create helper container: %w", err)
 	}
@@ -115,30 +138,25 @@ type ImportOptions struct {
 	MaxBytes int64
 	// Overwrite lets Import replace a volume that already holds files.
 	Overwrite bool
+	// SpoolDir holds the staged archive; empty uses the system temp dir.
+	SpoolDir string
+	// BeforeMount runs after the archive is staged and just before the volume
+	// is mounted, so the caller can re-check that the owning app is still stopped.
+	BeforeMount func(ctx context.Context) error
 }
 
 // Import unpacks a tar.gz into a volume. The whole archive is validated and
 // re-written to a temp file before the volume is touched, so a rejected archive
 // leaves the volume as it was.
 func (t *VolumeTransfer) Import(ctx context.Context, volume string, archive io.Reader, opts ImportOptions) (TransferStats, error) {
-	id, err := t.helper(ctx, volume, "volimport", false)
-	if err != nil {
-		return TransferStats{}, fmt.Errorf("backup: import into volume %q: %w", volume, err)
-	}
-	defer func() { _ = t.Runtime.Remove(context.Background(), id, true) }()
-
-	out, err := t.execOutput(ctx, id, []string{"sh", "-c", "ls -A " + volumeMountPath + " | head -n 1"})
-	if err != nil {
-		return TransferStats{}, fmt.Errorf("backup: inspect volume %q: %w", volume, err)
-	}
-	populated := strings.TrimSpace(out) != ""
-	if populated && !opts.Overwrite {
-		return TransferStats{}, ErrVolumeNotEmpty
-	}
-
 	// Validate and rewrite the whole archive first, so a bad late entry cannot
-	// leave a cleared volume behind.
-	spool, err := os.CreateTemp("", "levelrail-volimport-*.tar")
+	// leave a cleared volume behind and the volume is not mounted during upload.
+	if opts.SpoolDir != "" {
+		if err := os.MkdirAll(opts.SpoolDir, 0o700); err != nil {
+			return TransferStats{}, fmt.Errorf("backup: stage import archive: %w", err)
+		}
+	}
+	spool, err := os.CreateTemp(opts.SpoolDir, SpoolFilePrefix+"*.tar")
 	if err != nil {
 		return TransferStats{}, fmt.Errorf("backup: stage import archive: %w", err)
 	}
@@ -153,7 +171,26 @@ func (t *VolumeTransfer) Import(ctx context.Context, volume string, archive io.R
 	if _, err := spool.Seek(0, io.SeekStart); err != nil {
 		return TransferStats{}, fmt.Errorf("backup: stage import archive: %w", err)
 	}
+	if opts.BeforeMount != nil {
+		if err := opts.BeforeMount(ctx); err != nil {
+			return TransferStats{}, err
+		}
+	}
 
+	id, err := t.helper(ctx, volume, "volimport", false)
+	if err != nil {
+		return TransferStats{}, fmt.Errorf("backup: import into volume %q: %w", volume, err)
+	}
+	defer func() { _ = t.Runtime.Remove(context.Background(), id, true) }()
+
+	out, err := t.execOutput(ctx, id, []string{"sh", "-c", "ls -A " + volumeMountPath + " | head -n 1"})
+	if err != nil {
+		return TransferStats{}, fmt.Errorf("backup: inspect volume %q: %w", volume, err)
+	}
+	populated := strings.TrimSpace(out) != ""
+	if populated && !opts.Overwrite {
+		return TransferStats{}, ErrVolumeNotEmpty
+	}
 	if populated {
 		wipe := []string{"sh", "-c", "cd " + volumeMountPath + " && rm -rf -- ..?* .[!.]* *"}
 		if _, err := t.execOutput(ctx, id, wipe); err != nil {
@@ -170,6 +207,22 @@ func (t *VolumeTransfer) Import(ctx context.Context, volume string, archive io.R
 		return TransferStats{}, fmt.Errorf("backup: import into volume %q: %w", volume, err)
 	}
 	return stats, nil
+}
+
+// SpoolFilePrefix names staged import archives so a startup sweep can find leftovers.
+const SpoolFilePrefix = "levelrail-volimport-"
+
+// CleanSpoolDir removes staged archives a crashed import left behind.
+func CleanSpoolDir(dir string) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return
+	}
+	for _, e := range entries {
+		if !e.IsDir() && strings.HasPrefix(e.Name(), SpoolFilePrefix) {
+			_ = os.Remove(filepath.Join(dir, e.Name()))
+		}
+	}
 }
 
 func (t *VolumeTransfer) execOutput(ctx context.Context, id string, cmd []string) (string, error) {
@@ -192,6 +245,13 @@ func unsafeEntry(name, why string) error {
 	return fmt.Errorf("%w: %q %s", ErrUnsafeArchive, name, why)
 }
 
+// archiveState tracks what earlier entries declared, so later ones are judged
+// against the tree the extractor will actually build.
+type archiveState struct {
+	symlinks map[string]string // entry name to its link target
+	regular  map[string]bool   // entry names written as plain files
+}
+
 // sanitizeArchive copies a tar.gz to dst as a plain tar, refusing any entry that
 // could land outside the volume.
 func sanitizeArchive(src io.Reader, dst io.Writer, maxBytes int64) (TransferStats, error) {
@@ -203,7 +263,7 @@ func sanitizeArchive(src io.Reader, dst io.Writer, maxBytes int64) (TransferStat
 	defer func() { _ = zr.Close() }()
 	tr := tar.NewReader(zr)
 	tw := tar.NewWriter(dst)
-	symlinks := map[string]bool{}
+	state := &archiveState{symlinks: map[string]string{}, regular: map[string]bool{}}
 	for {
 		hdr, err := tr.Next()
 		if errors.Is(err, io.EOF) {
@@ -222,7 +282,7 @@ func sanitizeArchive(src io.Reader, dst io.Writer, maxBytes int64) (TransferStat
 		if name == "." {
 			continue
 		}
-		if err := checkEntry(hdr, name, symlinks); err != nil {
+		if err := checkEntry(hdr, name, state); err != nil {
 			return st, err
 		}
 		st.Entries++
@@ -244,6 +304,13 @@ func sanitizeArchive(src io.Reader, dst io.Writer, maxBytes int64) (TransferStat
 			}
 		}
 	}
+	// A link declared before the link it passes through only resolves once the
+	// whole archive is known, so every symlink is judged again against the final tree.
+	for name, target := range state.symlinks {
+		if err := checkSymlinkTarget(name, target, state.symlinks); err != nil {
+			return st, err
+		}
+	}
 	if err := tw.Close(); err != nil {
 		return st, fmt.Errorf("backup: finish archive: %w", err)
 	}
@@ -263,33 +330,84 @@ func cleanEntryName(raw string) (string, error) {
 	return path.Clean(raw), nil
 }
 
-func checkEntry(hdr *tar.Header, name string, symlinks map[string]bool) error {
+func checkEntry(hdr *tar.Header, name string, st *archiveState) error {
 	switch hdr.Typeflag {
 	case tar.TypeReg, tar.TypeDir, tar.TypeSymlink, tar.TypeLink:
 	default:
 		return unsafeEntry(name, "is a device, pipe or other special file")
 	}
-	// A symlink seen earlier must never act as a parent directory of a later entry.
-	for dir := path.Dir(name); dir != "."; dir = path.Dir(dir) {
-		if symlinks[dir] {
-			return unsafeEntry(name, "is written through a symbolic link")
-		}
+	if err := checkParents(name, name, st.symlinks); err != nil {
+		return err
 	}
+	delete(st.regular, name)
 	switch hdr.Typeflag {
+	case tar.TypeReg:
+		st.regular[name] = true
 	case tar.TypeSymlink:
 		target := hdr.Linkname
 		if target == "" || strings.HasPrefix(target, "/") || strings.ContainsRune(target, 0) {
 			return unsafeEntry(name, "links to an absolute or empty target")
 		}
-		resolved := path.Join(path.Dir(name), target) //nolint:gosec // string comparison only, nothing is extracted here
-		if resolved == ".." || strings.HasPrefix(resolved, "../") {
-			return unsafeEntry(name, "links outside the volume")
+		if err := checkSymlinkTarget(name, target, st.symlinks); err != nil {
+			return err
 		}
-		symlinks[name] = true
+		st.symlinks[name] = target
 	case tar.TypeLink:
-		if _, err := cleanEntryName(hdr.Linkname); err != nil {
+		target, err := cleanEntryName(hdr.Linkname)
+		if err != nil {
 			return unsafeEntry(name, "hard links outside the volume")
+		}
+		if err := checkParents(name, target, st.symlinks); err != nil {
+			return err
+		}
+		if !st.regular[target] {
+			return unsafeEntry(name, "hard links to a file that is not earlier in the archive")
 		}
 	}
 	return nil
 }
+
+// checkParents refuses a path whose parent directory is a symlink from the archive.
+func checkParents(entry, p string, symlinks map[string]string) error {
+	for dir := path.Dir(p); dir != "."; dir = path.Dir(dir) {
+		if _, ok := symlinks[dir]; ok {
+			return unsafeEntry(entry, "is written through a symbolic link")
+		}
+	}
+	return nil
+}
+
+// checkSymlinkTarget follows a symlink through the links known so far and
+// refuses one that ends outside the volume or loops.
+func checkSymlinkTarget(name, target string, symlinks map[string]string) error {
+	var stack []string
+	if dir := path.Dir(name); dir != "." {
+		stack = strings.Split(dir, "/")
+	}
+	queue := strings.Split(target, "/")
+	hops := 0
+	for len(queue) > 0 {
+		part := queue[0]
+		queue = queue[1:]
+		switch part {
+		case "", ".":
+		case "..":
+			if len(stack) == 0 {
+				return unsafeEntry(name, "links outside the volume")
+			}
+			stack = stack[:len(stack)-1]
+		default:
+			stack = append(stack, part)
+			if next, ok := symlinks[strings.Join(stack, "/")]; ok {
+				if hops++; hops > maxSymlinkHops {
+					return unsafeEntry(name, "links through too many symbolic links")
+				}
+				stack = stack[:len(stack)-1]
+				queue = append(strings.Split(next, "/"), queue...)
+			}
+		}
+	}
+	return nil
+}
+
+const maxSymlinkHops = 40

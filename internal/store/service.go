@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/spec"
@@ -1449,10 +1448,32 @@ var ErrServiceVolumeNotFound = errors.New("store: service volume not found")
 // reversed. Exact-prefix stripping, not a generic split, so a logical
 // name that itself contains "-" is never misparsed.
 func ServiceVolumeDockerName(svc DesiredService, volumeName string) (string, bool) {
-	prefix := "app-" + svc.Name + "-"
 	for _, v := range svc.Volumes {
-		if strings.TrimPrefix(v.Name, prefix) == volumeName {
+		if v.Name == ServiceVolumeName(svc.Name, volumeName) {
 			return v.Name, true
+		}
+	}
+	return "", false
+}
+
+// ServiceVolumeName is the Docker volume name for a service's logical volume.
+// Two services can map to one name ("a" with "b-c" and "a-b" with "c"), so
+// callers that attach or touch data check ServiceVolumeOwnerConflict too.
+func ServiceVolumeName(serviceName, logicalName string) string {
+	return "app-" + serviceName + "-" + logicalName
+}
+
+// ServiceVolumeOwnerConflict returns another service in all that already holds
+// the Docker volume dockerName, so a volume is never shared by name collision.
+func ServiceVolumeOwnerConflict(all []DesiredService, owner, dockerName string) (string, bool) {
+	for _, other := range all {
+		if other.Name == owner {
+			continue
+		}
+		for _, v := range other.Volumes {
+			if v.Name == dockerName {
+				return other.Name, true
+			}
 		}
 	}
 	return "", false

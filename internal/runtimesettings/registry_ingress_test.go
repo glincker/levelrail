@@ -95,6 +95,13 @@ func TestCutoverVerifyReadsSavedThenEnvAndClamps(t *testing.T) {
 	if v.SlowTTFB != minVerifySlowTTFB || v.Timeout != 2*time.Second || v.HSTSMinAge != 15552000 {
 		t.Fatalf("unexpected thresholds: %+v", v)
 	}
+	if v.MinInterval != 10*time.Second {
+		t.Fatalf("min interval default = %v", v.MinInterval)
+	}
+	floor := New(nil, envOf(map[string]string{"APP_CUTOVER_VERIFY_MIN_INTERVAL": "1ns"})).CutoverVerify(t.Context())
+	if floor.MinInterval != minVerifyInterval {
+		t.Fatalf("min interval floor = %v", floor.MinInterval)
+	}
 	d, _ := svc.definition(KeyCutoverVerifyTimeout)
 	if d.CheckValue("500ms") == nil || d.CheckValue("5s") != nil {
 		t.Fatal("timeout range not enforced")

@@ -1249,6 +1249,10 @@ func (rt *Router) handleStopApp(w http.ResponseWriter, r *http.Request) {
 func (rt *Router) handleStartApp(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
+	if rt.volumeTransfers.importing(name) {
+		writeError(w, http.StatusConflict, "a volume import is running for this app: start it when the import finishes")
+		return
+	}
 	wasStopped := false
 	if svc, err := rt.apps.GetDesiredService(r.Context(), name); err == nil {
 		if rt.refuseOfflineNode(r.Context(), w, *svc, queueWhileOffline(r)) {

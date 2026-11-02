@@ -190,7 +190,7 @@ func (h HardeningConfig) Report() HardeningReport {
 func (h HardeningConfig) apply(hc *container.HostConfig, spec ContainerSpec) {
 	if spec.Hardened {
 		hc.CapDrop = []string{"ALL"}
-		hc.CapAdd = nil
+		hc.CapAdd = spec.HardenedCapAdd
 		hc.SecurityOpt = append(hc.SecurityOpt, securityOptNoNewPrivileges)
 		if hc.PidsLimit == nil {
 			limit := DefaultPidsLimit

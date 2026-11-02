@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -94,6 +95,10 @@ func panicRecoveryMiddleware(logger *slog.Logger) func(http.Handler) http.Handle
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			defer func() {
 				if rec := recover(); rec != nil {
+					// An aborted stream must reach net/http so the client sees a cut-off, not a clean end.
+					if err, ok := rec.(error); ok && errors.Is(err, http.ErrAbortHandler) {
+						panic(rec)
+					}
 					logger.Error("api: panic recovered",
 						slog.String("request_id", requestIDFromContext(r.Context())),
 						slog.String("method", r.Method),

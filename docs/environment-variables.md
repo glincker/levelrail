@@ -63,6 +63,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CUTOVER_VERIFY_CERT_FAIL_DAYS` | [`cutover.verify_cert_fail_days`](/runtime-settings#networking) | `7` |
 | `APP_CUTOVER_VERIFY_CERT_WARN_DAYS` | [`cutover.verify_cert_warn_days`](/runtime-settings#networking) | `21` |
 | `APP_CUTOVER_VERIFY_HSTS_MIN_AGE_SECONDS` | [`cutover.verify_hsts_min_age`](/runtime-settings#networking) | `15552000` |
+| `APP_CUTOVER_VERIFY_MIN_INTERVAL` | [`cutover.verify_min_interval`](/runtime-settings#networking) | `10s` |
 | `APP_CUTOVER_VERIFY_SLOW_TTFB` | [`cutover.verify_slow_ttfb`](/runtime-settings#networking) | `1500ms` |
 | `APP_CUTOVER_VERIFY_REQUEST_TIMEOUT` | [`cutover.verify_timeout`](/runtime-settings#networking) | `5s` |
 | `APP_DOMAINS_DNS_WAIT_BUDGET` | [`domains.dns_wait_budget`](/runtime-settings#networking) | `10m` |
@@ -91,6 +92,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_DEPLOY_WATCH_WINDOW` | [`deploy.watch_window`](/runtime-settings#deploys) | `5m` |
 | `APP_VOLUMES_IMPORT_OVERWRITE` | [`volumes.import_overwrite`](/runtime-settings#deploys) | `false` |
 | `APP_VOLUMES_TRANSFER_MAX_BYTES` | [`volumes.transfer_max_bytes`](/runtime-settings#deploys) | `10737418240` |
+| `APP_VOLUMES_TRANSFER_MAX_CONCURRENT` | [`volumes.transfer_max_concurrent`](/runtime-settings#deploys) | `1` |
+| `APP_VOLUMES_TRANSFER_SPOOL_DIR` | [`volumes.transfer_spool_dir`](/runtime-settings#deploys) | `volume-transfer` |
 | `APP_VOLUMES_TRANSFER_TIMEOUT` | [`volumes.transfer_timeout`](/runtime-settings#deploys) | `30m` |
 | `APP_DISK_CRITICAL_FREE_MB` | [`disk.critical_free_mb`](/runtime-settings#observability) | `512` |
 | `APP_DISK_LOW_FREE_MB` | [`disk.low_free_mb`](/runtime-settings#observability) | `1024` |

@@ -7,6 +7,8 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -51,6 +53,13 @@ func (rt *Router) transferTarget(w http.ResponseWriter, r *http.Request) (store.
 		rt.internalError(w, "api: volume transfer: load app failed", err, slog.String("name", name))
 		return store.DesiredService{}, "", nil, false
 	}
+	if msg, err := rt.volumeOwnerProblem(r.Context(), *svc, dockerVolume); err != nil {
+		rt.internalError(w, "api: volume transfer: owner check failed", err, slog.String("name", name))
+		return store.DesiredService{}, "", nil, false
+	} else if msg != "" {
+		writeError(w, http.StatusConflict, msg)
+		return store.DesiredService{}, "", nil, false
+	}
 	protected, err := rt.volumeProtectedPaths(r.Context(), dockerVolume)
 	if err != nil {
 		rt.internalError(w, "api: volume transfer: protected path check failed", err, slog.String("name", name))
@@ -67,6 +76,22 @@ func (rt *Router) transferTarget(w http.ResponseWriter, r *http.Request) (store.
 		return store.DesiredService{}, "", nil, false
 	}
 	return *svc, dockerVolume, nodeRuntime, true
+}
+
+// volumeOwnerProblem refuses a docker volume that is not this app's own: its name must
+// carry the app's prefix and no other app may hold a record for the same volume.
+func (rt *Router) volumeOwnerProblem(ctx context.Context, svc store.DesiredService, dockerVolume string) (string, error) {
+	if !strings.HasPrefix(dockerVolume, store.ServiceVolumeName(svc.Name, "")) {
+		return "this volume does not belong to the app", nil
+	}
+	all, err := rt.apps.ListDesiredServices(ctx)
+	if err != nil {
+		return "", err
+	}
+	if other, clash := store.ServiceVolumeOwnerConflict(all, svc.Name, dockerVolume); clash {
+		return fmt.Sprintf("this volume name is also claimed by app %q: rename one of the volumes before moving data", other), nil
+	}
+	return "", nil
 }
 
 // handleExportVolume handles GET /api/v1/apps/{name}/volumes/{volume}/export: the volume as a tar.gz,
@@ -98,9 +123,15 @@ func (rt *Router) handleExportVolume(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", app+"-"+vol+".tar.gz"))
 	w.WriteHeader(http.StatusOK)
-	if _, err := io.Copy(w, stream); err != nil {
+	_, err = io.Copy(w, stream)
+	if err == nil {
+		err = ctx.Err() // a timeout can end the helper's stream without a read error
+	}
+	if err != nil {
 		status = http.StatusInternalServerError
 		rt.logger.Error("api: export volume: stream failed", slog.String("error", err.Error()), slog.String("name", app))
+		// Headers are gone, so only an aborted response tells the client the archive is cut short.
+		panic(http.ErrAbortHandler)
 	}
 }
 
@@ -130,11 +161,22 @@ func (rt *Router) handleImportVolume(w http.ResponseWriter, r *http.Request) {
 		fail(http.StatusRequestEntityTooLarge, fmt.Sprintf("archive exceeds the %d MB transfer limit", maxBytes>>20))
 		return
 	}
+	spoolDir := rt.transferSpoolDir(r.Context())
+	release, err := rt.volumeTransfers.beginImport(app, dockerVolume, rt.runtimeSettings.Limit(r.Context(), runtimesettings.KeyVolumesTransferMaxConcurrent), spoolDir)
+	if err != nil {
+		status, msg := importErrorStatus(err)
+		fail(status, msg)
+		return
+	}
+	defer release()
 	ctx, cancel := context.WithTimeout(r.Context(), timeout)
 	defer cancel()
 
 	body := http.MaxBytesReader(w, r.Body, maxBytes)
-	stats, err := (&backup.VolumeTransfer{Runtime: nodeRuntime}).Import(ctx, dockerVolume, body, backup.ImportOptions{MaxBytes: maxBytes, Overwrite: overwrite})
+	stats, err := (&backup.VolumeTransfer{Runtime: nodeRuntime}).Import(ctx, dockerVolume, body, backup.ImportOptions{
+		MaxBytes: maxBytes, Overwrite: overwrite, SpoolDir: spoolDir,
+		BeforeMount: func(ctx context.Context) error { return rt.recheckImportTarget(ctx, app, vol, dockerVolume) },
+	})
 	if err != nil {
 		status, msg := importErrorStatus(err)
 		if status == http.StatusInternalServerError {
@@ -147,9 +189,49 @@ func (rt *Router) handleImportVolume(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, volumeImportResource{Entries: stats.Entries, Bytes: stats.Bytes})
 }
 
+// transferSpoolDir is where uploads are staged: a folder under the data dir, not the shared temp dir.
+func (rt *Router) transferSpoolDir(ctx context.Context) string {
+	name := rt.runtimeSettings.String(ctx, runtimesettings.KeyVolumesTransferSpoolDir)
+	if name == "" || strings.ContainsAny(name, "/\\") || name == ".." {
+		name = runtimesettings.DefaultVolumesTransferSpoolDir
+	}
+	if rt.dataDir == "" {
+		return filepath.Join(os.TempDir(), "levelrail-"+name)
+	}
+	return filepath.Join(rt.dataDir, name)
+}
+
+// recheckImportTarget runs after the upload and just before the volume is mounted: the owning
+// app must still exist, still own the volume, and still be stopped.
+func (rt *Router) recheckImportTarget(ctx context.Context, app, vol, dockerVolume string) error {
+	svc, err := rt.apps.GetDesiredService(ctx, app)
+	if err != nil {
+		return err
+	}
+	if got, ok := store.ServiceVolumeDockerName(*svc, vol); !ok || got != dockerVolume {
+		return errImportAppNotStopped
+	}
+	if !svc.Suspended {
+		return errImportAppNotStopped
+	}
+	if msg, err := rt.volumeOwnerProblem(ctx, *svc, dockerVolume); err != nil || msg != "" {
+		if err == nil {
+			err = errImportAppNotStopped
+		}
+		return err
+	}
+	return nil
+}
+
 func importErrorStatus(err error) (int, string) {
 	var tooBig *http.MaxBytesError
 	switch {
+	case errors.Is(err, errImportVolumeBusy):
+		return http.StatusConflict, "another import into this volume is already running"
+	case errors.Is(err, errImportCapacity):
+		return http.StatusTooManyRequests, "too many volume imports are running: try again when one finishes"
+	case errors.Is(err, errImportAppNotStopped):
+		return http.StatusConflict, "stop the app before importing into its volume, and keep it stopped until the import ends"
 	case errors.Is(err, backup.ErrVolumeNotEmpty):
 		return http.StatusConflict, "the volume already holds files: import into an empty volume, or pass force once volumes.import_overwrite is enabled"
 	case errors.Is(err, backup.ErrTransferTooLarge), errors.As(err, &tooBig):

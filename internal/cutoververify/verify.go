@@ -56,10 +56,11 @@ type CertInfo struct {
 	Trusted  bool
 }
 
-// Prober makes the requests. Implementations must connect to the public name.
+// Prober makes the requests. Implementations must connect only to addrs, the
+// set DNS answered once, while keeping the name for SNI and the Host header.
 type Prober interface {
-	HTTP(ctx context.Context, rawURL string) (HTTPResult, error)
-	Cert(ctx context.Context, host string) (CertInfo, error)
+	HTTP(ctx context.Context, rawURL string, addrs []string) (HTTPResult, error)
+	Cert(ctx context.Context, host string, addrs []string) (CertInfo, error)
 }
 
 // Deps are the seams tests replace.
@@ -118,7 +119,7 @@ func Verify(ctx context.Context, d Deps, domain string, serverIPs []string, o Op
 	v.resolve(ctx)
 	rep.Resolved, rep.CNAME = v.resolved, v.cname
 	v.dnsLine()
-	reachable := v.pointsHere || v.proxiedIP
+	reachable := (v.pointsHere || v.proxiedIP) && !v.nonPublic
 	if reachable {
 		v.probe(ctx)
 	}
@@ -174,7 +175,9 @@ type verifier struct {
 	lookupErr  error
 	pointsHere bool
 	proxiedIP  bool
-	proxy      string
+	// nonPublic is set when DNS answered with an address that must not be probed.
+	nonPublic bool
+	proxy     string
 
 	httpRes, httpsRes HTTPResult
 	httpErr, httpsErr error
@@ -198,6 +201,7 @@ func (v *verifier) resolve(ctx context.Context) {
 	if len(v.resolved) == 0 {
 		return
 	}
+	v.nonPublic = slices.ContainsFunc(v.resolved, func(ip string) bool { return !IsPublicIP(ip) })
 	v.pointsHere = !slices.ContainsFunc(v.resolved, func(ip string) bool { return !containsIP(v.server, ip) })
 	v.proxiedIP = !slices.ContainsFunc(v.resolved, func(ip string) bool { return !v.d.IsProxyIP(ip) })
 }
@@ -213,10 +217,12 @@ func containsIP(list []string, ip string) bool {
 func (v *verifier) dnsLine() {
 	title := "DNS points at this server"
 	switch {
+	case v.nonPublic:
+		v.add(LineDNS, Fail, title, "resolves to a private or reserved address, so nothing was requested", "Point "+v.domain+" at "+firstOr(v.server, "this server's public address")+".")
 	case len(v.resolved) == 0:
 		detail := "the name does not resolve"
 		if v.lookupErr != nil {
-			detail += ": " + v.lookupErr.Error()
+			detail += " (" + classifyLookup(v.lookupErr) + ")"
 		}
 		v.add(LineDNS, Fail, title, detail, "Create an A record for "+v.domain+" pointing at "+firstOr(v.server, "this server's public address")+".")
 	case v.pointsHere:
@@ -265,9 +271,11 @@ func detectPlatform(h map[string]string) string {
 }
 
 func (v *verifier) probe(ctx context.Context) {
-	v.httpRes, v.httpErr = v.d.Prober.HTTP(ctx, "http://"+v.domain+"/")
-	v.httpsRes, v.httpsErr = v.d.Prober.HTTP(ctx, "https://"+v.domain+"/")
-	v.cert, v.certErr = v.d.Prober.Cert(ctx, v.domain)
+	// One resolved set serves the "points here" check and every request below.
+	addrs := slices.Clone(v.resolved)
+	v.httpRes, v.httpErr = v.d.Prober.HTTP(ctx, "http://"+v.domain+"/", addrs)
+	v.httpsRes, v.httpsErr = v.d.Prober.HTTP(ctx, "https://"+v.domain+"/", addrs)
+	v.cert, v.certErr = v.d.Prober.Cert(ctx, v.domain, addrs)
 }
 
 func (v *verifier) proxyLine() {
@@ -298,15 +306,18 @@ func (v *verifier) redirectLine(reachable bool) {
 		return
 	}
 	if v.httpErr != nil {
-		v.add(LineRedirect, Warn, title, "port 80 did not answer: "+v.httpErr.Error(), "Open port 80 so http links redirect and HTTP-01 certificates can renew.")
+		v.add(LineRedirect, Warn, title, "port 80 did not answer ("+Classify(v.httpErr)+")", "Open port 80 so http links redirect and HTTP-01 certificates can renew.")
 		return
 	}
 	r := v.httpRes
+	loc, shown := safeLocation(r.Location)
 	switch {
-	case r.Status >= 300 && r.Status < 400 && strings.HasPrefix(strings.ToLower(r.Location), "https://"):
-		v.add(LineRedirect, Pass, title, fmt.Sprintf("%d to %s", r.Status, r.Location), "Nothing to do.")
+	case r.Status >= 300 && r.Status < 400 && !shown:
+		v.add(LineRedirect, Warn, title, fmt.Sprintf("%d to an address that is not public, not shown", r.Status), "Make the redirect target a public https:// address.")
+	case r.Status >= 300 && r.Status < 400 && strings.HasPrefix(strings.ToLower(loc), "https://"):
+		v.add(LineRedirect, Pass, title, fmt.Sprintf("%d to %s", r.Status, loc), "Nothing to do.")
 	case r.Status >= 300 && r.Status < 400:
-		v.add(LineRedirect, Warn, title, fmt.Sprintf("%d to %s, which is not https", r.Status, r.Location), "Make the redirect target an https:// address.")
+		v.add(LineRedirect, Warn, title, fmt.Sprintf("%d to %s, which is not https", r.Status, loc), "Make the redirect target an https:// address.")
 	default:
 		v.add(LineRedirect, Warn, title, fmt.Sprintf("http answered %d without redirecting", r.Status), "Turn on the HTTPS redirect for this domain.")
 	}
@@ -319,11 +330,11 @@ func (v *verifier) certLine(reachable bool) {
 		return
 	}
 	if v.certErr != nil {
-		v.add(LineCertificate, Fail, title, "no certificate was served: "+v.certErr.Error(), "Request the certificate before switching DNS: levelrail-cli domains cutover "+v.domain+" --get-certificate.")
+		v.add(LineCertificate, Fail, title, "no certificate was served ("+Classify(v.certErr)+")", "Request the certificate before switching DNS: levelrail-cli domains cutover "+v.domain+" --get-certificate.")
 		return
 	}
 	days := int(v.cert.NotAfter.Sub(v.d.Now()).Hours() / 24)
-	detail := fmt.Sprintf("issued by %s, %d days left", v.cert.Issuer, days)
+	detail := fmt.Sprintf("issued by %s, %d days left", clean(v.cert.Issuer), days)
 	switch {
 	case !v.cert.Trusted:
 		v.add(LineCertificate, Fail, title, detail+", not trusted for this name", "Wait for the real certificate to be issued, or fix the route so the right host answers.")
@@ -356,7 +367,7 @@ func (v *verifier) hstsLine(reachable bool) {
 		v.add(LineHSTS, Warn, title, fmt.Sprintf("max-age %d is shorter than %d", age, v.o.HSTSMinAge), "Raise max-age once you are sure HTTPS works everywhere.")
 		return
 	}
-	v.add(LineHSTS, Pass, title, h, "Nothing to do.")
+	v.add(LineHSTS, Pass, title, clean(h), "Nothing to do.")
 }
 
 func hstsMaxAge(h string) int {
@@ -383,7 +394,7 @@ func (v *verifier) responseLine(reachable bool) {
 		return
 	}
 	if v.httpsErr != nil {
-		v.add(LineResponse, Fail, title, "https did not answer: "+v.httpsErr.Error(), "Check that the app is running and the route exists: levelrail-cli domains doctor.")
+		v.add(LineResponse, Fail, title, "https did not answer ("+Classify(v.httpsErr)+")", "Check that the app is running and the route exists: levelrail-cli domains doctor.")
 		return
 	}
 	if p := detectPlatform(v.httpsRes.Header); p != "" && v.proxy == "" {

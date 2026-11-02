@@ -1,12 +1,14 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"regexp"
+	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -56,6 +58,16 @@ func (rt *Router) handleSetAppVolumes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	msg, err := rt.volumeCollision(r.Context(), name, volumes)
+	if err != nil {
+		rt.internalError(w, "api: set app volumes: collision check failed", err, slog.String("name", name))
+		return
+	}
+	if msg != "" {
+		writeError(w, http.StatusConflict, msg)
+		return
+	}
+
 	if err := rt.apps.UpdateServiceVolumes(r.Context(), name, volumes); errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
@@ -90,7 +102,6 @@ func resolveAppVolumes(serviceName string, req []appVolumeResource, existingBind
 		seenPaths[m.ContainerPath] = true
 	}
 
-	prefix := "app-" + serviceName + "-"
 	volumes = make([]store.ServiceVolume, len(req))
 	for i, v := range req {
 		if !volumeNameRe.MatchString(v.Name) {
@@ -107,7 +118,23 @@ func resolveAppVolumes(serviceName string, req []appVolumeResource, existingBind
 			return nil, fmt.Sprintf("mount path %q is already used by another volume or bind mount", v.ContainerPath)
 		}
 		seenPaths[v.ContainerPath] = true
-		volumes[i] = store.ServiceVolume{Name: prefix + v.Name, ContainerPath: v.ContainerPath}
+		volumes[i] = store.ServiceVolume{Name: store.ServiceVolumeName(serviceName, v.Name), ContainerPath: v.ContainerPath}
 	}
 	return volumes, ""
+}
+
+// volumeCollision names the other app that already holds one of the Docker
+// volumes about to be attached; "a" with "b-c" and "a-b" with "c" both map to
+// app-a-b-c, which would hand one app's data to the other.
+func (rt *Router) volumeCollision(ctx context.Context, owner string, volumes []store.ServiceVolume) (string, error) {
+	all, err := rt.apps.ListDesiredServices(ctx)
+	if err != nil {
+		return "", err
+	}
+	for _, v := range volumes {
+		if other, clash := store.ServiceVolumeOwnerConflict(all, owner, v.Name); clash {
+			return fmt.Sprintf("volume name %q would share its data with app %q: pick another volume name", strings.TrimPrefix(v.Name, "app-"+owner+"-"), other), nil
+		}
+	}
+	return "", nil
 }

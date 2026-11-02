@@ -236,6 +236,7 @@ type Router struct {
 	mfaVerify              *loginLimiter // separate budget from logins above: brute-forcing a 6-digit code after a correct password is a distinct attack this must independently rate limit
 	sessionTTL             time.Duration // 0 means "use defaultSessionTTL", set via WithSessionTTL
 	trustRoot              TrustRootProbe
+	volumeTransfers        volumeTransferGuard
 	dataDir                string // "" means "don't report disk usage", set via WithDataDir
 	diskGuard              *diskguard.Guard
 	localNodeID            string // "" means "not mesh-enabled", set via WithLocalNodeID; the one node HostDiskCollector/HostMemoryCollector's readings are real for

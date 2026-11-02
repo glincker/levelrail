@@ -267,6 +267,9 @@ type ContainerSpec struct {
 	// with none added back, no-new-privileges, a PID limit and a small
 	// noexec /tmp. Used for untrusted workloads such as plugins.
 	Hardened bool
+	// HardenedCapAdd lists the only capabilities a Hardened container gets
+	// back after the drop-all, for a helper that must keep file ownership.
+	HardenedCapAdd []string
 	// RestartPolicy is a Docker restart policy name. Empty keeps "no": only a
 	// container no reconciler owns, such as a managed proxy, sets it.
 	RestartPolicy string

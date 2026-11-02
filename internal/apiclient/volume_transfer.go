@@ -1,7 +1,11 @@
 package apiclient
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"context"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 )
@@ -26,7 +30,50 @@ func (c *Client) ExportVolume(ctx context.Context, app, volume string, w io.Writ
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return 0, decodeResponse(resp, nil)
 	}
-	return io.Copy(w, resp.Body)
+	return copyVerifiedArchive(w, resp.Body)
+}
+
+// ErrExportTruncated means the export ended before a complete tar.gz arrived.
+var ErrExportTruncated = errors.New("export truncated")
+
+// copyVerifiedArchive copies a tar.gz to w while reading it through gzip and tar
+// to the end, so a stream the server cut short fails instead of looking finished.
+func copyVerifiedArchive(w io.Writer, body io.Reader) (int64, error) {
+	pr, pw := io.Pipe()
+	verdict := make(chan error, 1)
+	go func() {
+		err := verifyArchiveStream(pr)
+		_, _ = io.Copy(io.Discard, pr) // never leave the writer blocked
+		verdict <- err
+	}()
+	n, copyErr := io.Copy(io.MultiWriter(w, pw), body)
+	_ = pw.Close()
+	verr := <-verdict
+	switch {
+	case copyErr != nil:
+		return n, fmt.Errorf("%w: %w", ErrExportTruncated, copyErr)
+	case verr != nil:
+		return n, fmt.Errorf("%w: %w", ErrExportTruncated, verr)
+	}
+	return n, nil
+}
+
+func verifyArchiveStream(r io.Reader) error {
+	zr, err := gzip.NewReader(r)
+	if err != nil {
+		return err
+	}
+	tr := tar.NewReader(zr)
+	for {
+		if _, err := tr.Next(); errors.Is(err, io.EOF) {
+			break
+		} else if err != nil {
+			return err
+		}
+	}
+	// Reading past the tar end marker to the gzip trailer proves the stream was finished.
+	_, err = io.Copy(io.Discard, zr) //nolint:gosec // output is discarded, only the stream end matters
+	return err
 }
 
 // ImportVolume uploads a tar.gz into a stopped app's volume; force replaces files already there.

@@ -12,6 +12,7 @@ const (
 	KeyCutoverVerifySlowTTFB     = "cutover.verify_slow_ttfb"
 	KeyCutoverVerifyHSTSMinAge   = "cutover.verify_hsts_min_age"
 	KeyCutoverVerifyTimeout      = "cutover.verify_timeout"
+	KeyCutoverVerifyMinInterval  = "cutover.verify_min_interval"
 )
 
 const (
@@ -19,6 +20,8 @@ const (
 	maxVerifySlowTTFB = 30 * time.Second
 	minVerifyTimeout  = time.Second
 	maxVerifyTimeout  = time.Minute
+	minVerifyInterval = time.Second
+	maxVerifyInterval = time.Hour
 )
 
 func init() {
@@ -52,6 +55,12 @@ func init() {
 		Title:       "Cutover verify: request timeout",
 		Description: "How long each request of the cutover verifier may take, from 1s to 1m. The whole check is allowed four times this long. It is separate from the wait after a scheduled cutover. The next check uses a changed value.",
 	})
+	Register(Definition{
+		Key: KeyCutoverVerifyMinInterval, Category: CategoryNetworking, Kind: KindDuration, Default: "10s",
+		Env: "APP_CUTOVER_VERIFY_MIN_INTERVAL", Apply: ApplyLive, CheckValue: durationRangeCheck(minVerifyInterval, maxVerifyInterval),
+		Title:       "Cutover verify: minimum interval",
+		Description: "Shortest wait before the same person can run the cutover verifier again on the same domain, from 1s to 1h. Other people can check that domain after a quarter of this wait. The next check uses a changed value.",
+	})
 }
 
 // CutoverVerify holds the verifier thresholds, forced into their safe ranges
@@ -62,6 +71,7 @@ type CutoverVerify struct {
 	SlowTTFB     time.Duration
 	HSTSMinAge   int
 	Timeout      time.Duration
+	MinInterval  time.Duration
 }
 
 // CutoverVerify reads the thresholds at call time.
@@ -72,6 +82,7 @@ func (s *Service) CutoverVerify(ctx context.Context) CutoverVerify {
 		SlowTTFB:     clampDuration(s.Duration(ctx, KeyCutoverVerifySlowTTFB), minVerifySlowTTFB, maxVerifySlowTTFB),
 		HSTSMinAge:   clampInt(s.Int(ctx, KeyCutoverVerifyHSTSMinAge), 3600, 63072000),
 		Timeout:      clampDuration(s.Duration(ctx, KeyCutoverVerifyTimeout), minVerifyTimeout, maxVerifyTimeout),
+		MinInterval:  clampDuration(s.Duration(ctx, KeyCutoverVerifyMinInterval), minVerifyInterval, maxVerifyInterval),
 	}
 	v.CertWarnDays = max(v.CertWarnDays, v.CertFailDays)
 	return v

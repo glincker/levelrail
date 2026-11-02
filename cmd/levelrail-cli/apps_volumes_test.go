@@ -1,8 +1,11 @@
 package main
 
 import (
+	"archive/tar"
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -178,13 +181,44 @@ func TestRun_AppsVolumes_UnknownSubcommand(t *testing.T) {
 	}
 }
 
+func exportTestArchive(t *testing.T) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	gz := gzip.NewWriter(&buf)
+	tw := tar.NewWriter(gz)
+	_ = tw.WriteHeader(&tar.Header{Name: "a", Mode: 0o644, Size: 2, Typeflag: tar.TypeReg})
+	_, _ = tw.Write([]byte("hi"))
+	_ = tw.Close()
+	_ = gz.Close()
+	return buf.Bytes()
+}
+
+func TestRun_VolumesExport_TruncatedStreamFails(t *testing.T) {
+	full := exportTestArchive(t)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write(full[:len(full)/2])
+	}))
+	defer srv.Close()
+
+	file := filepath.Join(t.TempDir(), "data.tar.gz")
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"volumes", "export", "web", "data", "--out", file, "--api-url", srv.URL}, &stdout, &stderr, envMap())
+	if got == exitOK || !strings.Contains(stderr.String(), "export truncated") {
+		t.Fatalf("exit = %d stderr = %q, want a non-zero exit and export truncated", got, stderr.String())
+	}
+	if _, err := os.Stat(file); !os.IsNotExist(err) {
+		t.Fatal("a truncated export must not leave a finished-looking file")
+	}
+}
+
 func TestRun_VolumesExportImport(t *testing.T) {
+	archive := exportTestArchive(t)
 	var gotPath, gotQuery string
 	var gotBody []byte
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath, gotQuery = r.URL.Path, r.URL.RawQuery
 		if r.Method == http.MethodGet {
-			_, _ = w.Write([]byte("TARBYTES"))
+			_, _ = w.Write(archive)
 			return
 		}
 		gotBody, _ = io.ReadAll(r.Body)
@@ -195,16 +229,16 @@ func TestRun_VolumesExportImport(t *testing.T) {
 
 	file := filepath.Join(t.TempDir(), "data.tar.gz")
 	stdout, _ := runCLIExpectOK(t, []string{"volumes", "export", "web", "data", "--out", file, "--api-url", srv.URL})
-	if gotPath != "/api/v1/apps/web/volumes/data/export" || !strings.Contains(stdout, "8 bytes") {
+	if gotPath != "/api/v1/apps/web/volumes/data/export" || !strings.Contains(stdout, fmt.Sprintf("%d bytes", len(archive))) {
 		t.Fatalf("export path=%s stdout=%q", gotPath, stdout)
 	}
 	b, err := os.ReadFile(file) //nolint:gosec // path built from t.TempDir()
-	if err != nil || string(b) != "TARBYTES" {
+	if err != nil || !bytes.Equal(b, archive) {
 		t.Fatalf("file = %q %v", b, err)
 	}
 
 	stdout, _ = runCLIExpectOK(t, []string{"apps", "volumes", "import", "web", "data", "--in", file, "--force", "--api-url", srv.URL})
-	if gotPath != "/api/v1/apps/web/volumes/data/import" || gotQuery != "force=true" || string(gotBody) != "TARBYTES" {
+	if gotPath != "/api/v1/apps/web/volumes/data/import" || gotQuery != "force=true" || !bytes.Equal(gotBody, archive) {
 		t.Fatalf("import path=%s query=%s body=%q", gotPath, gotQuery, gotBody)
 	}
 	if !strings.Contains(stdout, "imported 2 entries") {
