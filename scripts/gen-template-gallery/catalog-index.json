@@ -5393,7 +5393,7 @@
    "source_repo": "https://github.com/janeczku/calibre-web",
    "documentation_url": "https://github.com/janeczku/calibre-web/wiki",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0-or-later",
     "class": "copyleft",
     "url": "https://github.com/janeczku/calibre-web/blob/master/LICENSE"
    },
@@ -5808,7 +5808,7 @@
    "source_repo": "https://github.com/ad-aures/castopod",
    "documentation_url": "https://docs.castopod.org/",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0-or-later",
     "class": "network-copyleft",
     "url": "https://github.com/ad-aures/castopod/blob/develop/LICENSE.md"
    },
@@ -9160,7 +9160,7 @@
    "source_repo": "https://github.com/deluge-torrent/deluge",
    "documentation_url": "https://deluge.readthedocs.io/",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0-or-later",
     "class": "copyleft",
     "url": "https://github.com/deluge-torrent/deluge/blob/develop/LICENSE"
    },
@@ -11843,8 +11843,8 @@
    "source_repo": "https://github.com/element-hq/element-web",
    "documentation_url": "https://github.com/element-hq/element-web",
    "license": {
-    "spdx": "AGPL-3.0-only",
-    "class": "network-copyleft",
+    "spdx": "AGPL-3.0-or-later OR GPL-3.0-or-later OR LicenseRef-Element-Commercial",
+    "class": "copyleft",
     "url": "https://github.com/element-hq/element-web/blob/develop/LICENSE-AGPL-3.0"
    },
    "hosted_use": "unknown",
@@ -12188,7 +12188,7 @@
    "source_repo": "https://github.com/espocrm/espocrm",
    "documentation_url": "https://docs.espocrm.com",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0-or-later",
     "class": "network-copyleft",
     "url": "https://github.com/espocrm/espocrm/blob/master/LICENSE.txt"
    },
@@ -13311,7 +13311,7 @@
    "source_repo": "https://github.com/firefly-iii/firefly-iii",
    "documentation_url": "https://docs.firefly-iii.org",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0-or-later",
     "class": "network-copyleft",
     "url": "https://github.com/firefly-iii/firefly-iii/blob/main/LICENSE"
    },
@@ -14023,9 +14023,9 @@
    "source_repo": "https://github.com/flipt-io/flipt",
    "documentation_url": "https://www.flipt.io/docs",
    "license": {
-    "spdx": "LicenseRef-FCL-1.0-MIT",
-    "class": "source-available",
-    "url": "https://github.com/flipt-io/flipt/blob/v2/LICENSE"
+    "spdx": "GPL-3.0",
+    "class": "copyleft",
+    "url": "https://github.com/flipt-io/flipt/blob/v1.60.0/LICENSE"
    },
    "hosted_use": "unknown",
    "listing": {
@@ -17345,7 +17345,7 @@
    "source_repo": "https://github.com/glpi-project/glpi",
    "documentation_url": "https://glpi-project.org/documentation/",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0-or-later",
     "class": "copyleft",
     "url": "https://github.com/glpi-project/glpi/blob/12.0/bugfixes/LICENSE"
    },
@@ -18327,7 +18327,7 @@
    "source_repo": "https://github.com/gramps-project/gramps-web",
    "documentation_url": "https://www.grampsweb.org/install_setup/setup/",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0-or-later",
     "class": "network-copyleft",
     "url": "https://github.com/gramps-project/gramps-web/blob/main/LICENSE"
    },
@@ -24690,7 +24690,7 @@
    "source_repo": "https://github.com/kimai/kimai",
    "documentation_url": "https://www.kimai.org/documentation/",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0-or-later",
     "class": "network-copyleft",
     "url": "https://github.com/kimai/kimai/blob/main/LICENSE"
    },
@@ -30468,7 +30468,7 @@
    "source_repo": "https://github.com/matomo-org/matomo",
    "documentation_url": "https://matomo.org/faq/how-to-install/install-matomo-with-docker/",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0-or-later",
     "class": "copyleft",
     "url": "https://github.com/matomo-org/matomo/blob/6.x-dev/LICENSE"
    },
@@ -33432,7 +33432,7 @@
    "source_repo": "https://github.com/monicahq/monica",
    "documentation_url": "https://github.com/monicahq/monica/blob/main/docs/installation/docker.md",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0-or-later",
     "class": "network-copyleft",
     "url": "https://github.com/monicahq/monica/blob/main/LICENSE.md"
    },
@@ -33641,7 +33641,7 @@
    "source_repo": "https://github.com/moodle/moodle",
    "documentation_url": "https://moodle.org",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0-or-later",
     "class": "copyleft",
     "url": "https://github.com/moodle/moodle/blob/main/COPYING.txt"
    },
@@ -35487,7 +35487,7 @@
    "source_repo": "https://github.com/netdata/netdata",
    "documentation_url": "https://learn.netdata.cloud",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0-or-later",
     "class": "copyleft",
     "url": "https://github.com/netdata/netdata/blob/master/LICENSE"
    },
@@ -36497,7 +36497,7 @@
    "license": {
     "spdx": "LicenseRef-NocoBase",
     "class": "source-available",
-    "url": "https://github.com/nocobase/nocobase/blob/main/LICENSE.txt"
+    "url": "https://github.com/nocobase/nocobase/blob/v1.9.33/LICENSE.txt"
    },
    "hosted_use": "unknown",
    "listing": {
@@ -39691,7 +39691,7 @@
    "source_repo": "https://github.com/orangehrm/orangehrm",
    "documentation_url": "https://docs.orangehrm.com/",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0-or-later",
     "class": "copyleft",
     "url": "https://github.com/orangehrm/orangehrm/blob/main/LICENSE"
    },
@@ -43939,7 +43939,7 @@
    "source_repo": "https://github.com/plausible/analytics",
    "documentation_url": "https://plausible.io/docs/self-hosting",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0-or-later",
     "class": "network-copyleft",
     "url": "https://github.com/plausible/analytics/blob/master/LICENSE.md"
    },
@@ -46281,7 +46281,7 @@
    "source_repo": "https://github.com/Kozea/Radicale",
    "documentation_url": "https://radicale.org/v3.html",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0-or-later",
     "class": "copyleft",
     "url": "https://github.com/Kozea/Radicale/blob/master/COPYING.md"
    },
@@ -46412,7 +46412,7 @@
    "source_repo": "https://github.com/lukevella/rallly",
    "documentation_url": "https://support.rallly.co/self-hosting/introduction",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0-or-later",
     "class": "network-copyleft",
     "url": "https://github.com/lukevella/rallly/blob/main/LICENSE"
    },
@@ -47825,7 +47825,7 @@
    "source_repo": "https://github.com/roundcube/roundcubemail",
    "documentation_url": "https://roundcube.net/about",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0-or-later",
     "class": "copyleft",
     "url": "https://github.com/roundcube/roundcubemail/blob/master/LICENSE.md"
    },
@@ -48052,7 +48052,7 @@
    "source_repo": "https://github.com/rustdesk/rustdesk-server",
    "documentation_url": "https://rustdesk.com/docs/en/self-host/rustdesk-server-oss/docker/",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0-or-later",
     "class": "network-copyleft",
     "url": "https://github.com/rustdesk/rustdesk-server/blob/master/LICENSE"
    },
@@ -48467,12 +48467,12 @@
    "first_run": [],
    "category": "Storage",
    "status": "active",
-   "source_repo": "https://github.com/haiwen/seafile",
+   "source_repo": "https://github.com/haiwen/seafile-server",
    "documentation_url": "https://manual.seafile.com",
    "license": {
-    "spdx": "GPL-2.0-only",
-    "class": "copyleft",
-    "url": "https://github.com/haiwen/seafile/blob/master/LICENSE.txt"
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/haiwen/seafile-server/blob/master/LICENSE.txt"
    },
    "hosted_use": "unknown",
    "listing": {
@@ -48727,7 +48727,7 @@
    "source_repo": "https://github.com/searxng/searxng",
    "documentation_url": "https://docs.searxng.org",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0-or-later",
     "class": "network-copyleft",
     "url": "https://github.com/searxng/searxng/blob/master/LICENSE"
    },
@@ -50875,7 +50875,7 @@
    "source_repo": "https://github.com/Sonarr/Sonarr",
    "documentation_url": "https://wiki.servarr.com/sonarr",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0-or-later",
     "class": "copyleft",
     "url": "https://github.com/Sonarr/Sonarr/blob/develop/LICENSE.md"
    },
@@ -55776,7 +55776,7 @@
    "source_repo": "https://github.com/TriliumNext/Trilium",
    "documentation_url": "https://triliumnext.github.io/Docs/",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0-or-later",
     "class": "network-copyleft",
     "url": "https://github.com/TriliumNext/Trilium/blob/main/LICENSE"
    },
@@ -55885,7 +55885,7 @@
    "source_repo": "https://github.com/TriliumNext/Trilium",
    "documentation_url": "https://github.com/TriliumNext/Trilium",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0-or-later",
     "class": "network-copyleft",
     "url": "https://github.com/TriliumNext/Trilium/blob/main/LICENSE"
    },
@@ -57892,7 +57892,7 @@
    "source_repo": "https://github.com/go-vikunja/vikunja",
    "documentation_url": "https://vikunja.io/docs/",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0-or-later",
     "class": "network-copyleft",
     "url": "https://github.com/go-vikunja/vikunja/blob/main/LICENSE"
    },
@@ -59059,7 +59059,7 @@
    "source_repo": "https://github.com/WeblateOrg/weblate",
    "documentation_url": "https://docs.weblate.org",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0-or-later",
     "class": "copyleft",
     "url": "https://github.com/WeblateOrg/weblate/blob/main/LICENSE"
    },

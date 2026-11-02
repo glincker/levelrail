@@ -5,7 +5,7 @@ icon: calendar
 category: Productivity
 documentation_url: https://radicale.org/v3.html
 source_repo: https://github.com/Kozea/Radicale
-license: GPL-3.0-only
+license: GPL-3.0-or-later
 license_class: copyleft
 license_url: https://github.com/Kozea/Radicale/blob/master/COPYING.md
 recommended_memory_bytes: 134217728

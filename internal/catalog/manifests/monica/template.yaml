@@ -5,7 +5,7 @@ icon: users
 category: Productivity
 documentation_url: https://github.com/monicahq/monica/blob/main/docs/installation/docker.md
 source_repo: https://github.com/monicahq/monica
-license: AGPL-3.0-only
+license: AGPL-3.0-or-later
 license_class: network-copyleft
 license_url: https://github.com/monicahq/monica/blob/main/LICENSE.md
 recommended_memory_bytes: 536870912

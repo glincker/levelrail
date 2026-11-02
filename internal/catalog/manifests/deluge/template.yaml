@@ -5,7 +5,7 @@ icon: download-simple
 category: Applications
 documentation_url: https://deluge.readthedocs.io/
 source_repo: https://github.com/deluge-torrent/deluge
-license: GPL-3.0-only
+license: GPL-3.0-or-later
 license_class: copyleft
 license_url: https://github.com/deluge-torrent/deluge/blob/develop/LICENSE
 recommended_memory_bytes: 268435456

@@ -173,7 +173,7 @@
  },
  "calibre-web": {
   "source_repo": "https://github.com/janeczku/calibre-web",
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0-or-later",
   "license_class": "copyleft",
   "license_url": "https://github.com/janeczku/calibre-web/blob/master/LICENSE",
   "description": "A clean web interface for browsing, reading, and downloading your existing Calibre ebook library. Runs as a single container from the calibre-web image, listening on port 8083; data is kept in named volumes."
@@ -190,7 +190,7 @@
  },
  "castopod": {
   "source_repo": "https://github.com/ad-aures/castopod",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0-or-later",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/ad-aures/castopod/blob/develop/LICENSE.md",
   "description": "An open-source podcast hosting platform with built-in analytics, a web player, and ActivityPub federation. Runs 3 containers (castopod, mariadb, redis), with castopod listening on port 8080; data is kept in named volumes."
@@ -412,7 +412,7 @@
  },
  "espocrm": {
   "source_repo": "https://github.com/espocrm/espocrm",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0-or-later",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/espocrm/espocrm/blob/master/LICENSE.txt",
   "description": "An open-source CRM for managing sales, support, and customer relationships end to end. Runs 2 containers (espocrm, espocrm-db), with espocrm listening on port 80; data is kept in named volumes."
@@ -457,7 +457,7 @@
  },
  "firefly-iii": {
   "source_repo": "https://github.com/firefly-iii/firefly-iii",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0-or-later",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/firefly-iii/firefly-iii/blob/main/LICENSE",
   "description": "A self-hosted personal finance manager for tracking budgets, bills, and spending. Runs 2 containers (db, firefly), with firefly listening on port 8080 and keeps its data in named volumes."
@@ -488,9 +488,9 @@
  },
  "flipt": {
   "source_repo": "https://github.com/flipt-io/flipt",
-  "license": "LicenseRef-FCL-1.0-MIT",
-  "license_class": "source-available",
-  "license_url": "https://github.com/flipt-io/flipt/blob/v2/LICENSE",
+  "license": "GPL-3.0",
+  "license_class": "copyleft",
+  "license_url": "https://github.com/flipt-io/flipt/blob/v1.60.0/LICENSE",
   "description": "A self-hosted feature flag and experimentation platform with a built-in UI and REST/gRPC APIs. Runs as a single container from the flipt image, listening on port 8080; data is kept in named volumes."
  },
  "flowise": {
@@ -595,7 +595,7 @@
  },
  "glpi": {
   "source_repo": "https://github.com/glpi-project/glpi",
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0-or-later",
   "license_class": "copyleft",
   "license_url": "https://github.com/glpi-project/glpi/blob/12.0/bugfixes/LICENSE",
   "description": "An IT asset and service management platform with helpdesk ticketing built in. Runs 2 containers (glpi, glpi-db), with glpi listening on port 80; data is kept in named volumes."
@@ -637,7 +637,7 @@
  },
  "gramps-web": {
   "source_repo": "https://github.com/gramps-project/gramps-web",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0-or-later",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/gramps-project/gramps-web/blob/main/LICENSE",
   "description": "An online genealogy system for researching and sharing family trees. Runs 2 containers (grampsweb, grampsweb_redis), with grampsweb listening on port 5000; data is kept in named volumes."
@@ -851,7 +851,7 @@
  },
  "kimai": {
   "source_repo": "https://github.com/kimai/kimai",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0-or-later",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/kimai/kimai/blob/main/LICENSE",
   "description": "A self-hosted time tracking tool for freelancers and teams, with invoicing and reporting. Runs 2 containers (db, kimai), with kimai listening on port 8001; data is kept in named volumes."
@@ -1027,7 +1027,7 @@
  },
  "matomo": {
   "source_repo": "https://github.com/matomo-org/matomo",
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0-or-later",
   "license_class": "copyleft",
   "license_url": "https://github.com/matomo-org/matomo/blob/6.x-dev/LICENSE",
   "description": "A privacy-friendly, self-hosted alternative to Google Analytics with full data ownership. Runs 2 containers (db, matomo), with matomo listening on port 80 and keeps its data in named volumes."
@@ -1119,7 +1119,7 @@
  },
  "moodle": {
   "source_repo": "https://github.com/moodle/moodle",
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0-or-later",
   "license_class": "copyleft",
   "license_url": "https://github.com/moodle/moodle/blob/main/COPYING.txt",
   "description": "A widely used, highly customizable learning management system for online courses. Runs 2 containers (mariadb, moodle), with moodle listening on port 8080; data is kept in named volumes."
@@ -1174,7 +1174,7 @@
  },
  "netdata": {
   "source_repo": "https://github.com/netdata/netdata",
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0-or-later",
   "license_class": "copyleft",
   "license_url": "https://github.com/netdata/netdata/blob/master/LICENSE",
   "description": "Per-second infrastructure metrics with zero configuration and a live dashboard out of the box. Runs as a single container from the netdata image, listening on port 19999; data is kept in named volumes."
@@ -1209,7 +1209,7 @@
   "source_repo": "https://github.com/nocobase/nocobase",
   "license": "LicenseRef-NocoBase",
   "license_class": "source-available",
-  "license_url": "https://github.com/nocobase/nocobase/blob/main/LICENSE.txt",
+  "license_url": "https://github.com/nocobase/nocobase/blob/v1.9.33/LICENSE.txt",
   "description": "An extensible no-code/low-code platform for building internal tools and databases. Runs 2 containers (nocobase, postgres), with nocobase listening on port 13000; data is kept in named volumes."
  },
  "nocodb": {
@@ -1332,7 +1332,7 @@
  },
  "orangehrm": {
   "source_repo": "https://github.com/orangehrm/orangehrm",
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0-or-later",
   "license_class": "copyleft",
   "license_url": "https://github.com/orangehrm/orangehrm/blob/main/LICENSE",
   "description": "An open-source human resources management suite: PTO, recruitment, performance, and an employee directory. Runs 2 containers (mariadb, orangehrm), with orangehrm listening on port 80; data is kept in named volumes."
@@ -1460,7 +1460,7 @@
  },
  "plausible": {
   "source_repo": "https://github.com/plausible/analytics",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0-or-later",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/plausible/analytics/blob/master/LICENSE.md",
   "description": "Lightweight, privacy-friendly, cookie-free web analytics with no consent banner required. Runs 3 containers (clickhouse, db, plausible), with plausible listening on port 8000 and keeps its data in named volumes."
@@ -1557,7 +1557,7 @@
  },
  "rallly": {
   "source_repo": "https://github.com/lukevella/rallly",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0-or-later",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/lukevella/rallly/blob/main/LICENSE",
   "description": "Find a time that works for everyone with polls for scheduling meetings and events. Runs 2 containers (db, rallly), with rallly listening on port 3000; data is kept in named volumes."
@@ -1597,14 +1597,14 @@
  },
  "roundcube": {
   "source_repo": "https://github.com/roundcube/roundcubemail",
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0-or-later",
   "license_class": "copyleft",
   "license_url": "https://github.com/roundcube/roundcubemail/blob/master/LICENSE.md",
   "description": "A browser-based IMAP email client with a clean interface, address books, and plugin support. Runs as a single container from the roundcubemail image, listening on port 80; data is kept in named volumes."
  },
  "rustdesk-server": {
   "source_repo": "https://github.com/rustdesk/rustdesk-server",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0-or-later",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/rustdesk/rustdesk-server/blob/master/LICENSE"
  },
@@ -1616,15 +1616,15 @@
   "description": "A self-hosted tracker for media, fitness, and other parts of life. Runs 2 containers (postgres, ryot), with ryot listening on port 8000; data is kept in named volumes."
  },
  "seafile": {
-  "source_repo": "https://github.com/haiwen/seafile",
-  "license": "GPL-2.0-only",
-  "license_class": "copyleft",
-  "license_url": "https://github.com/haiwen/seafile/blob/master/LICENSE.txt",
+  "source_repo": "https://github.com/haiwen/seafile-server",
+  "license": "AGPL-3.0-only",
+  "license_class": "network-copyleft",
+  "license_url": "https://github.com/haiwen/seafile-server/blob/master/LICENSE.txt",
   "description": "Self-hosted file sync and share with real file-level versioning and client-side encryption options. Runs 3 containers (mariadb, memcached, seafile), with seafile listening on port 80 and keeps its data in named volumes."
  },
  "searxng": {
   "source_repo": "https://github.com/searxng/searxng",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0-or-later",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/searxng/searxng/blob/master/LICENSE",
   "description": "A privacy-respecting metasearch engine that aggregates results from dozens of search services. Runs 2 containers (redis, searxng), with searxng listening on port 8080; data is kept in named volumes."
@@ -1707,7 +1707,7 @@
  },
  "sonarr": {
   "source_repo": "https://github.com/Sonarr/Sonarr",
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0-or-later",
   "license_class": "copyleft",
   "license_url": "https://github.com/Sonarr/Sonarr/blob/develop/LICENSE.md",
   "description": "Watches your favorite indexers for new TV episodes and automatically grabs, sorts, and renames them. Runs as a single container from the sonarr image, listening on port 8989; data is kept in named volumes."
@@ -1865,14 +1865,14 @@
  },
  "trilium": {
   "source_repo": "https://github.com/TriliumNext/Trilium",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0-or-later",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/TriliumNext/Trilium/blob/main/LICENSE",
   "description": "A hierarchical, self-hosted note-taking application built for large personal knowledge bases. Runs as a single container from the trilium image, listening on port 8080; data is kept in named volumes."
  },
  "triliumnext": {
   "source_repo": "https://github.com/TriliumNext/Trilium",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0-or-later",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/TriliumNext/Trilium/blob/main/LICENSE",
   "description": "A hierarchical, self-hosted notebook for building a personal knowledge base, with full-text search. Runs as a single container from the trilium image, listening on port 8080; data is kept in named volumes."
@@ -1959,7 +1959,7 @@
  },
  "vikunja": {
   "source_repo": "https://github.com/go-vikunja/vikunja",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0-or-later",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/go-vikunja/vikunja/blob/main/LICENSE",
   "description": "An open-source task and project manager for teams that outgrew sticky notes. Runs 2 containers (db, vikunja), with vikunja listening on port 3456; data is kept in named volumes."
@@ -2015,7 +2015,7 @@
  },
  "weblate": {
   "source_repo": "https://github.com/WeblateOrg/weblate",
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0-or-later",
   "license_class": "copyleft",
   "license_url": "https://github.com/WeblateOrg/weblate/blob/main/LICENSE",
   "description": "A continuous localization system for translating software with a web-based editor and review flow. Runs 3 containers (db, redis, weblate), with weblate listening on port 8080; data is kept in named volumes."
