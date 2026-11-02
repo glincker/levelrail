@@ -559,9 +559,10 @@
         "error": "Error"
       },
       "certificate": {
-        "issued": "{{issuer}}, válido hasta el {{date}}",
         "expired": "{{issuer}}, venció el {{date}}",
-        "pending": "Certificado predeterminado del proxy, esperando la emisión"
+        "pending": "Certificado predeterminado del proxy, esperando la emisión",
+        "valid": "{{issuer}}, válido hasta el {{date}}",
+        "untrusted": "{{issuer}}, no confiable, válido hasta el {{date}}"
       },
       "checked": "Comprobado {{time}}",
       "neverChecked": "Aún no se ha comprobado",
@@ -571,7 +572,19 @@
       "verifyNotLive": "{{domain}} todavía no está en vivo.",
       "verifyFailed": "No se pudo verificar {{domain}}.",
       "lastError": "Último problema: {{error}}",
-      "makeLive": "Poner este dominio en vivo"
+      "makeLive": "Poner este dominio en vivo",
+      "summary": {
+        "ready": "Certificado listo",
+        "waiting": "Esperando que el proxy obtenga un certificado",
+        "waitingSince": "Esperando que el proxy obtenga un certificado (desde {{time}})",
+        "default": "El proxy sirve su certificado por defecto: no pudo obtener uno",
+        "unwired": "Ruta sin conectar"
+      },
+      "retry": "Reintentar solicitud de certificado",
+      "retrying": "Reintentando...",
+      "retryFailed": "No se pudo reintentar {{domain}}.",
+      "copy": "Copiar",
+      "copied": "Copiado"
     },
     "facts": {
       "title": "Lo que Levelrail detectó",

@@ -559,9 +559,10 @@
         "error": "Error"
       },
       "certificate": {
-        "issued": "{{issuer}}, valid until {{date}}",
         "expired": "{{issuer}}, expired on {{date}}",
-        "pending": "Proxy default certificate, waiting for issuance"
+        "pending": "Proxy default certificate, waiting for issuance",
+        "valid": "{{issuer}}, valid until {{date}}",
+        "untrusted": "{{issuer}}, not trusted, valid until {{date}}"
       },
       "checked": "Checked {{time}}",
       "neverChecked": "Not checked yet",
@@ -571,7 +572,19 @@
       "verifyNotLive": "{{domain}} is not live yet.",
       "verifyFailed": "Could not verify {{domain}}.",
       "lastError": "Last problem: {{error}}",
-      "makeLive": "Make this domain live"
+      "makeLive": "Make this domain live",
+      "summary": {
+        "ready": "Certificate ready",
+        "waiting": "Waiting for the proxy to get a certificate",
+        "waitingSince": "Waiting for the proxy to get a certificate (since {{time}})",
+        "default": "Proxy is serving its default certificate: it could not get one",
+        "unwired": "Route not wired"
+      },
+      "retry": "Retry certificate request",
+      "retrying": "Retrying...",
+      "retryFailed": "Could not retry {{domain}}.",
+      "copy": "Copy",
+      "copied": "Copied"
     },
     "facts": {
       "title": "What Levelrail detected",

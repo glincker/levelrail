@@ -124,6 +124,8 @@ type proxyDomainResource struct {
 	// RecheckUntil is set while a certificate is still expected, so the
 	// dashboard can poll until then.
 	RecheckUntil string `json:"recheck_until"`
+	// FirstSeen is when this route was first written, the start of the wait.
+	FirstSeen string `json:"first_seen"`
 }
 
 type proxyStepResource struct {
@@ -249,6 +251,9 @@ func proxyDomain(plan proxyroutes.Plan, it proxyroutes.Item, st store.ProxyRoute
 			Issuer: st.CertIssuer, NotAfter: st.CertNotAfter.UTC().Format(time.RFC3339),
 			Valid: st.CertTrusted && !expired, Trusted: st.CertTrusted, Expired: expired, Class: st.CertClass,
 		}
+	}
+	if !st.WrittenAt.IsZero() {
+		d.FirstSeen = st.WrittenAt.UTC().Format(time.RFC3339)
 	}
 	d.Diagnosis, d.Hint, d.Snippet = st.Diagnosis, st.Hint, st.Snippet
 	d.Evidence = append([]string{}, st.Evidence...)
