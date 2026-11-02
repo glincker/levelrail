@@ -40,6 +40,7 @@ import {
   type ExperimentalFeature,
 } from '../lib/experimental'
 import type { SearchSpan } from '../queries/search'
+import { registryPath } from '../lib/navRegistry'
 import { allGlobalItems, chordFor } from './shell/navModel'
 
 export interface PaletteItem {
@@ -478,10 +479,14 @@ const EXTRA_PAGES: readonly {
 }[] = [
   {
     id: 'get-started',
-    to: '/get-started',
+    to: registryPath('get-started'),
     icon: <RocketGlassIcon size="1.4em" />,
   },
-  { id: 'migrate', to: '/migrate', icon: <UploadGlassIcon size="1.4em" /> },
+  {
+    id: 'migrate',
+    to: registryPath('migrate'),
+    icon: <UploadGlassIcon size="1.4em" />,
+  },
 ]
 
 // Sidebar destinations the hand-kept list lacks, derived from the nav model so
