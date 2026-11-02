@@ -228,6 +228,7 @@
               "domains",
               "dynamic-dns",
               "dns",
+              "dns-zones",
               "mail-dns",
               "mail-template",
               "mail-mailboxes",
@@ -484,6 +485,7 @@
               "architecture",
               "security",
               "threat-model",
+              "verify-a-release",
               "docker-access",
               "comparison",
               "use-cases",
@@ -1109,6 +1111,7 @@
               "vps-smoke",
               "i18n",
               "design-tokens",
+              "ui-navigation",
               "brand"
             ],
             "icon": "/assets/icons/gear-six.svg"

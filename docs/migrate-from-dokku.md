@@ -13,7 +13,7 @@ Dokku has no HTTP API for Levelrail to read, and Levelrail does not log in to a 
 - Shell access to the Dokku host, to run `dokku` commands and `docker inspect`.
 - The app's git repository, or a registry image, to deploy from.
 
-## What imports automatically
+## What moves
 
 | Route | What it reads | Result |
 | --- | --- | --- |
@@ -29,7 +29,7 @@ Dokku has no HTTP API for Levelrail to read, and Levelrail does not log in to a 
 - **Persistent storage** from `dokku storage:mount`: copy the files by hand.
 - **Procfile process types, cron, and plugin config** are not read.
 
-## What cannot be migrated
+## What does not move
 
 - Live Dokku over SSH. There is no importer that connects to a Dokku host.
 - Dokku's nginx config, certificates (Dokku's Let's Encrypt plugin), and deploy history. Certificates are issued here on first use.
@@ -122,6 +122,12 @@ Dokku's nginx owns ports 80 and 443. Point DNS at a new server, or install Level
 | Build fails without a Dockerfile | Railpack detection may not match a Heroku buildpack app. Add a Dockerfile |
 | Database copy cannot connect | Expose the service port, open the firewall for the new server only |
 | Variables missing | `DOKKU_*` and `GIT_REV` are dropped on purpose. Set the ones your app reads |
+
+## Verify and roll back
+
+Run `levelrail-cli migrate cutover --verify` after you switch DNS. It checks the certificate, the health path and DNS.
+
+The copy only reads the old server, so nothing there is changed. To roll back, restart the old app if you paused it and point DNS back at the old server.
 
 ## Choose to stay if
 

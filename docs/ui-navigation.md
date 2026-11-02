@@ -1,8 +1,7 @@
 ---
+title: "UI navigation"
 description: Rules for where a new dashboard setting or page goes, and the size caps that keep the sidebars lean.
 ---
-
-# UI navigation
 
 ## Where a new setting goes
 

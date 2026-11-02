@@ -115,7 +115,7 @@ The join flow is verified across two real Docker daemons, but not across a real 
 ### Operator surfaces
 
 - Dashboard, `levelrail-cli` (profiles, `--output` and `--query`, shell completion, device login, `doctor`, `apps create --interactive`) and `install.sh`.
-- Migration CLI: `levelrail-cli migrate coolify`, `dokploy` and `caprover`. See [migrating from Coolify, Dokploy and CapRover](/migrating-from-coolify-dokploy-and-caprover).
+- Migration CLI: `levelrail-cli migrate coolify`, `dokploy` and `caprover`. See [Migrate to Levelrail](/migrate-to-levelrail).
 - MCP server (`cmd/levelrail-mcp`): over 240 tools, grouped into toolsets that an agent enables on demand. See [MCP tool surface](/mcp-tool-surface) for the exact, generated numbers, and the [AI assistant](/ai-assistant) page. Tokens are checked against the same abilities as the REST API.
 - `migrate verify`, a parity report that compares the source with this server before DNS moves, shown on the Cutover tab of the Migrate page. See [migration reference](/migration-reference).
 - Cross-release schema migration tests that upgrade real v0.8.2 data across real migrations, with downgrade refusal and automatic restore. See [upgrade safely](/upgrade-safely).

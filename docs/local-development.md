@@ -10,7 +10,7 @@ description: Start a private Levelrail instance on macOS or Linux with one comma
 
 ## Start it
 
-You need Docker running (Docker Desktop on macOS, or the Docker daemon on Linux) and the `levelrail` control plane binary next to `levelrail-cli` or on your `PATH`.
+You need Docker running (Docker Desktop on macOS, or the Docker daemon on Linux) and the `levelrail` control plane binary next to `levelrail-cli` or on your `PATH`. `dev` does not download it. On Linux, take `levelrail-linux-amd64` or `levelrail-linux-arm64` from the [releases page](https://github.com/glincker/levelrail/releases) and rename it to `levelrail`. On macOS, build it from a checkout: `(cd web && npm install && npm run build)`, then `go build -tags embedweb -o levelrail ./cmd/levelrail`, and pass it with `--bin ./levelrail`. See [Build from source](/installing#option-3-build-from-source).
 
 ```bash
 levelrail-cli dev
@@ -72,3 +72,7 @@ Local mode is for developing and trying things out. It is not a way to host anyt
 <Note>
 Checked on macOS (Apple silicon) with Docker Desktop. The same code path runs on Linux, where unprivileged users always get the 8081 and 8443 ingress ports.
 </Note>
+
+## Next step
+
+When you are ready for a real server, follow [Getting started](/getting-started).

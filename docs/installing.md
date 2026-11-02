@@ -43,7 +43,7 @@ Confirm these before you provision a server.
 | OS | Linux, `amd64` or `arm64`, with systemd. Tested in CI on Ubuntu 24.04 and Debian 12; other distros should work but are untested. Windows and non-Linux nodes are not supported. |
 | Docker | 24 or newer. `install.sh` installs it via `get.docker.com` if it is missing. An existing Podman is accepted as best-effort with `--runtime podman`, see [Container runtimes](/container-runtimes). |
 | Access | Root, plus `curl`. |
-| Ports (control-plane node) | `80/tcp` and `443/tcp` inbound from the internet. Port 80 is required for Let's Encrypt HTTP-01. Optionally `443/udp` for HTTP/3. |
+| Ports (control-plane node) | `80/tcp` and `443/tcp` inbound from the internet. Port 80 is required for Let's Encrypt HTTP-01. Optionally `443/udp` for HTTP/3. The dashboard listens on `8080/tcp` over plain HTTP: do not open it to the internet, see [Dashboard port 8080](#dashboard-port-8080). |
 | Ports (agent-only nodes) | None. The agent dials out and the control plane never initiates a connection. See [Multi-node](/multi-node). |
 | Starting size | 1 vCPU, 1 GB RAM, 10 GB disk boots Docker and the control plane. 2 vCPU, 2 GB RAM, 20 GB disk is more comfortable once builds and apps run. |
 
@@ -54,6 +54,22 @@ No official minimum has been benchmarked or published (see the [roadmap](/roadma
 **What `install.sh` preflight checks:** root, architecture, OS, systemd, `curl`, Docker version, RAM, free disk and ports 80/443/8080. It stops on a failed check unless you pass `--force`. RAM below 1 GB only warns (`LEVELRAIL_MIN_RAM_MB`); free disk below 10 GB on the data directory's filesystem fails (`LEVELRAIL_MIN_DISK_GB`).
 
 **After install:** `levelrail-cli doctor` (`GET /api/v1/system/doctor`) checks Docker reachability, free disk (warns below 1 GiB by default), data-directory writability, and that ports 80/443 are free to bind. It checks no memory or CPU floor. If a port is blocked, see [Domains and ingress: firewall](/domains-and-ingress#firewall-ports-80-and-443).
+
+### Dashboard port 8080
+
+Right after the install, the dashboard answers on port 8080 over plain HTTP, on every interface. Treat it as an admin-only port.
+
+- **What the installer opens.** Nothing, unless you set `LEVELRAIL_CONFIGURE_UFW=1`. Then it allows SSH, 80/tcp, 443/tcp and 443/udp in ufw. It does not open 8080, so under ufw the direct address times out until you open the port yourself.
+- **Recommended: an SSH tunnel.** It works with only SSH, 80 and 443 open, and exposes nothing else. The installer prints the same command.
+
+  ```bash
+  ssh -L 8080:127.0.0.1:8080 <user>@<server-ip>
+  ```
+
+  Leave it running and open `http://localhost:8080/login#setup=<token>`.
+- **Alternative: open 8080 to your own IP only.** Add one inbound rule in the cloud firewall or security group (and in the host firewall if one is active) with your address as the source. Remove it once HTTPS is on. Per-provider steps are in [Install on a cloud VM](/install-on-cloud#firewall-ports).
+- **After HTTPS is on.** Once the dashboard URL is `https://`, sign-in over plain HTTP is refused, including `levelrail-cli login --code`. Use the https address from then on and close 8080.
+- **If 8080 was taken,** the installer picks the next free port and prints it. Use the port from your output everywhere this page says 8080.
 
 ## Option 1: install.sh (recommended)
 
@@ -70,6 +86,10 @@ The script:
 - Writes a `levelrail.service` systemd unit, starts it, and waits for `GET /healthz`.
 - Checks that ports 80 and 443 answer on the server's public IP, and prints the `ufw`/`firewalld` commands to open them if not.
 - Prints the dashboard URL, the one-time **setup token** for the first admin, and a reminder to back up `<data dir>/master.key`.
+
+<Warning>
+If something already holds port 80 or 443 (a reverse proxy, another PaaS), the installer switches to coexist mode by itself and moves Levelrail's ingress to 8088 and 8443. Let's Encrypt and visitors then cannot reach Levelrail directly on 80 and 443, so HTTPS issuance does not work until your existing proxy forwards to it. If this server will only run Levelrail, stop the other service first, or pass `--no-coexist` to fail instead. Details: [Server already runs a proxy](#server-already-runs-a-proxy).
+</Warning>
 
 Pass `--profile minimal|standard|suite` to choose how much starts (default `standard`); see [Server profiles](/profiles).
 
@@ -108,7 +128,7 @@ The dashboard shows a "connection is not encrypted" banner until you enable HTTP
 
 <Tabs>
 <Tab title="Dashboard">
-Open the Domains page and click **Enable HTTPS** (the email field is prefilled from your admin account). It issues a real Let's Encrypt certificate for `<dashed-ip>.sslip.io`, no DNS needed. See [Domains and ingress](/domains-and-ingress#zero-dns-setup-sslipio-hostnames-and-one-click-https).
+Open the Domains page and click **Enable HTTPS** (the email field is prefilled from your admin account). It issues a Let's Encrypt certificate for `<dashed-ip>.sslip.io`, no DNS needed. That hostname is a test address: it works only while your resolver answers for sslip.io, so use your own domain for production. See [Domains and ingress](/domains-and-ingress#zero-dns-setup-sslipio-hostnames-and-one-click-https).
 </Tab>
 <Tab title="CLI">
 ```bash
@@ -163,7 +183,7 @@ AI chat, AI models, the [load balancer](/load-balancing), [platform as code](/pl
 <CodeGroup>
 ```bash Pin a specific release
 curl -fsSL https://levelrail.com/install.sh \
-  | sudo LEVELRAIL_VERSION=v0.2.0-beta.5 sh
+  | sudo LEVELRAIL_VERSION=v0.9.0 sh
 ```
 
 ```bash Custom data directory
@@ -247,6 +267,8 @@ Levelrail can run alongside it: ingress on 8088/8443, dashboard on loopback only
 ```
 
 If both ports are free nothing changes. If they are taken, the installer switches to **coexist mode** by itself and says so. Pass `--no-coexist` (or `LEVELRAIL_COEXIST=0`) to fail preflight instead.
+
+In coexist mode Levelrail does not own 80 and 443, so the one-click HTTPS on an `sslip.io` address does not work as it does on a fresh server. How certificates are issued then depends on your existing proxy, see [Run behind an existing proxy](/behind-an-existing-proxy).
 
 | Setting | Coexist value |
 | --- | --- |
@@ -719,3 +741,7 @@ How to confirm: check the original install output for the full URL, or check Set
 
 Fix: on the server, run `sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token` to print a new token, then visit `http://<server>:<port>/login#setup=<token>` with the fresh token.
 
+## Next step
+
+1. [Getting started](/getting-started): sign in, enable HTTPS and deploy your first app.
+2. [First backup in 5 minutes](/backups-and-storage#first-backup-in-5-minutes).

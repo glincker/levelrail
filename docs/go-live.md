@@ -25,7 +25,7 @@ A step that waits on something outside your control (DNS spreading, a certificat
 
 ### 2. Reachable on its port
 
-Every app has the automatic address (an `sslip.io` hostname served by the ingress). When the app exposure feature is allowed for the app, the step also shows the direct `host:port` URL with a copy button. The direct port is plain HTTP and bypasses the domain's TLS, basic auth and sign-in gates: use it to check that the app runs, never as its public address. See [App ports and exposure](/app-exposure).
+Every app has the automatic address (an `sslip.io` hostname served by the ingress). It is a test address that works only while your DNS resolver answers for sslip.io. When the app exposure feature is allowed for the app, the step also shows the direct `host:port` URL with a copy button. The direct port is plain HTTP and bypasses the domain's TLS, basic auth and sign-in gates: use it to check that the app runs, never as its public address. See [App ports and exposure](/app-exposure).
 
 ### 3. Server firewall
 
@@ -81,3 +81,8 @@ Fixes use the existing routes: `POST /api/v1/fixes/{id}/apply` (root), `POST /ap
 ## What has not been verified
 
 The firewall reader and the fixes are tested against recorded tool output and a fake command runner, not against real ufw, firewalld, nftables or iptables hosts. The provider detection and the provider steps and documentation links are tested against fake DMI and metadata responders, not against real cloud accounts. The certificate step uses the same issuance code as [Get a real certificate](/domains-and-ingress); a live Let's Encrypt run of the whole checklist has not been recorded.
+
+## Next step
+
+1. [First backup in 5 minutes](/backups-and-storage#first-backup-in-5-minutes), if you have not taken one yet.
+2. [Domains and ingress](/domains-and-ingress): redirects, wildcard domains and certificate options.

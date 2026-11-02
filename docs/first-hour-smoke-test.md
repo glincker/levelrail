@@ -4,6 +4,8 @@ description: "Run the install-to-rollback journey in a Docker container to prove
 "og:url": "https://docs.levelrail.com/first-hour-smoke-test"
 ---
 
+This page is for contributors and maintainers. If you are installing Levelrail for the first time, start with [Getting started](/getting-started).
+
 `scripts/test-first-hour.sh` replays what a new user does in their first hour, in a systemd Ubuntu 24.04 container on the local Docker: install, setup link, admin, CLI sign-in, deploy a sample app, open it on its zero-config hostname, a second deploy under a request loop, rollback, `doctor`, `domains diagnose` on a made-up hostname, and uninstall. Each step prints a PASS or FAIL line with timings, and the exact output when it fails. It needs no registry login and no GitHub release: the binaries are built locally (or passed in) and the sample app is built on the host and loaded into the container.
 
 ```bash
@@ -38,3 +40,7 @@ Not wired into a workflow yet. A ready-to-use nightly job, to paste into `nightl
   #     - name: First-hour smoke test
   #       run: scripts/test-first-hour.sh
 ```
+
+## Next step
+
+[Getting started](/getting-started) is the same journey as a user walks it.

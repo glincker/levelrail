@@ -15,6 +15,39 @@ This guide covers three related resources:
 
 All three share one pattern: an external system that needs a working credential, which you test on demand instead of finding out it is broken mid-deploy or mid-backup. For the database side of backups (restore, point-in-time recovery, verification), see [Managing databases](/managing-databases). For backing up the control plane itself, see [Control plane backup](/control-plane-backup) and [Disaster recovery](/disaster-recovery).
 
+## First backup in 5 minutes
+
+This path needs no bucket. It uses a `local` target, which stores backups on the server itself. That proves the steps work, but it does not protect you if the server is lost. Finish with step 5.
+
+1. Back up `master.key`. Every stored secret is encrypted with it, and nothing can recover it. Copy `/var/lib/levelrail-data/master.key` (or `<data dir>/master.key`) to a password manager or other storage off the server.
+
+2. Take a snapshot of the control plane database:
+
+   ```bash
+   levelrail-cli control-plane-backups create
+   levelrail-cli control-plane-backups list
+   ```
+
+3. Add a local target and note its ID:
+
+   ```bash
+   levelrail-cli backup-targets create --name nightly --provider local --path nightly
+   levelrail-cli backup-targets list
+   ```
+
+4. If you have a database, back it up now and check the result:
+
+   ```bash
+   levelrail-cli backups trigger <database> --target <backup-target-id>
+   levelrail-cli backups list <database>
+   ```
+
+   The status column reads `succeeded` when it is done. To run it nightly, see [Schedules](#schedules).
+
+5. Replace the local target with an off-server one before you rely on it: follow the [Quick start](#quick-start) below with a Cloudflare R2 or S3 bucket, then point your schedules at it.
+
+The control plane snapshot is also stored on the server's disk. For a copy that survives losing the machine, see [Control plane backup](/control-plane-backup) and [Disaster recovery](/disaster-recovery).
+
 ## Backup lifecycle at a glance
 
 ```mermaid
@@ -559,3 +592,8 @@ Deploy apps that use registry credentials.
 
 </Card>
 </CardGroup>
+
+## Next step
+
+1. [Control plane backup](/control-plane-backup): the off-box copy and restore.
+2. [Go live on your domain](/go-live).

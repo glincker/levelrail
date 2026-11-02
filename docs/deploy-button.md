@@ -4,6 +4,8 @@ description: Add a Deploy to Levelrail button to your project's README so reader
 "og:url": "https://docs.levelrail.com/deploy-button"
 ---
 
+This page is for the author who adds the button and needs every URL parameter. For the CLI command that builds the link and the badge, see [Deploy links and badge](/deploy-link).
+
 A "Deploy to Levelrail" button is a link you put in your README. A reader who clicks it lands on a page that asks for the address of their own Levelrail server, then opens the new-app form on that server with your image, name, port and health check already filled in. Nothing is created until they review the form and press Deploy.
 
 ## How it works

@@ -6,6 +6,10 @@ description: Experimental http, tcp, heartbeat and tls uptime monitors with a bo
 
 <Warning>Monitors are experimental. The API, CLI and storage may change between releases.</Warning>
 
+## Which page do I read?
+
+Use monitors to probe an endpoint, a TCP port or a certificate from the control plane. They are experimental and off by default. To learn whether the whole server is down, use the [off-host heartbeat](/heartbeat), which an outside service watches. [External monitoring](/external-monitoring) compares the two and the public status page.
+
 A monitor probes an endpoint on a schedule from the control plane and records the result. The monitor kinds are `http`, `tcp`, `heartbeat` and `tls`, with a result history and hourly rollups. A down monitor is reported by the `monitor_down` alert rule. Internal incidents and the status page link are opt-in.
 
 The feature is off by default. When `APP_MONITORS_ENABLED` is not true, the `/api/v1/monitors` routes answer 404 and no scheduler runs.

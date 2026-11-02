@@ -31,7 +31,7 @@ scripts/upgrade-matrix.sh [--from N] [--pre] [--binary PATH]
 
 It boots each old release on a private data directory with a bootstrap admin and a few API-created rows, stops it, then boots the new binary on the same data. Per source it checks: healthy `/healthz`, `schema_migrations` max equals the newest migration, no migration or schema ERROR lines in the log, and admin login plus `GET /api/v1/apps`. Docker being unreachable is not a failure. It prints a PASS or FAIL table and exits non-zero on any FAIL.
 
-Sources: `v0.7.0` (always), the latest 0.6.x, and the `N` latest stable releases (default 3). On Linux the release binary is downloaded and its checksum verified; on other hosts the tag is built from source, because releases ship only Linux control plane binaries. `UM_FAKE_SCHEMA=N` injects a higher schema version into each old database to confirm the matrix fails when it should.
+Sources: `v0.7.0` and the latest 0.6.x (fixed oldest sources, always run), and the `N` latest stable releases (default 3), which move forward with every release. For upgrades from recent releases with real data, see the [release harness](/upgrade-safely#upgrading-real-releases-with-real-data). On Linux the release binary is downloaded and its checksum verified; on other hosts the tag is built from source, because releases ship only Linux control plane binaries. `UM_FAKE_SCHEMA=N` injects a higher schema version into each old database to confirm the matrix fails when it should.
 
 ## Bumping the baseline
 

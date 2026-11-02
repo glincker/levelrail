@@ -3,6 +3,8 @@ title: "Domain setup stepper"
 description: The four-step guide on the app Domains tab that adds a domain, shows the DNS records, watches DNS resolve and reports the certificate.
 ---
 
+This page describes the guided setup on an app's Domains tab, the quickest way to attach your own domain to one app. For the whole picture (certificates, wildcard domains, redirects, the dashboard's own domain), read [Domains and ingress](/domains-and-ingress). For a checklist that ends at a live `https://` address, see [Go live on your domain](/go-live).
+
 Open an app, go to Domains and choose Guided setup.
 
 1. **Domain.** Type the hostname. The form validates it, offers the www or apex counterpart, and warns when a wildcard needs a DNS provider.
@@ -18,3 +20,7 @@ Open an app, go to Domains and choose Guided setup.
 | `VITE_DOMAIN_CHECK_MAX_POLLS` | 24 | Automatic checks before polling stops |
 
 The stepper uses the existing domain, server-address and certificate status endpoints. It adds none.
+
+## Next step
+
+[Go live on your domain](/go-live) checks the firewall, DNS and certificate in order.

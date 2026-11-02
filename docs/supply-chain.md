@@ -76,7 +76,7 @@ To let one blocked release through, an operator arms an override with a reason (
 ## What is not covered
 
 - Only Dockerfile builds get an SBOM. Railpack builds, image deploys, static sites and builds dispatched to a remote node record none. Those deploys show no supply chain section data.
-- Provenance is `mode=min` and is recorded, not signed or verified.
+- Provenance for your own Dockerfile builds is `mode=min` and is recorded, not signed or verified. This is separate from Levelrail's own release artifacts, which are signed and carry a build provenance attestation. See [Verify a release](/verify-a-release).
 - Scans run against the SBOM, so they find what the SBOM lists. They do not read the image.
 
 ## Retention

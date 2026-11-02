@@ -4,7 +4,7 @@ description: "Levelrail is an open source Dokploy alternative that skips Docker 
 "og:url": "https://docs.levelrail.com/dokploy-alternative"
 ---
 
-**Self-hosted deploys without betting on Docker Swarm**
+**Self-hosted deploys on plain Docker, without Swarm**
 
 Levelrail runs apps on plain Docker with its own reconciler and a small agent per node. No Swarm and no overlay network to debug.
 

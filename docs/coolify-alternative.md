@@ -1,12 +1,12 @@
 ---
-title: "Coolify alternative: a self-hosted deploy platform that stays light"
+title: "Coolify alternative: a self-hosted deploy platform"
 description: "Levelrail is an open source Coolify alternative: Docker Engine API instead of SSH, built-in metrics and logs, one-click rollback, read-only importer."
 "og:image": "https://docs.levelrail.com/public/og/coolify-alternative.png"
 "twitter:image": "https://docs.levelrail.com/public/og/coolify-alternative.png"
 "og:url": "https://docs.levelrail.com/coolify-alternative"
 ---
 
-**A lighter way to self-host what you deploy with Coolify**
+**A self-hosted deploy platform for Coolify users**
 
 Levelrail is an open source deployment platform for your own servers. Its agent talks to Docker's Engine API directly instead of SSHing in and shelling out, so the platform stays out of your apps' way.
 
@@ -46,7 +46,7 @@ levelrail-cli import platform coolify --url https://coolify.example.com --dry-ru
 levelrail-cli import platform coolify --url https://coolify.example.com --only web,api
 ```
 
-Re-running the import skips what it already created. For the full steps, including database copy and DNS cutover, see [Migrating from Coolify, Dokploy and CapRover](/migrating-from-coolify-dokploy-and-caprover).
+Re-running the import skips what it already created. For the full steps, including database copy and DNS cutover, see [Migrate from Coolify](/migrate-from-coolify).
 
 ## Coolify and Levelrail, side by side
 
@@ -61,6 +61,12 @@ Architecture and design choices, not a ranking. Coolify is a mature project with
 | License | Open source | Apache 2.0, one edition, no paid tier |
 
 [Read the full comparison](/comparison)
+
+## Use Coolify if, use Levelrail if
+
+Use Coolify if it already does what you need and your team knows it. Coolify is a mature project with a wide template catalog, and Levelrail has fewer users and a migration path with little time on production data.
+
+Use Levelrail if you want an agent that dials out over mTLS instead of SSH, metrics and log search in the core, and a rollback target that cleanup cannot remove. If you cannot take a write freeze or test a rollback, wait.
 
 ## Move over in four steps
 
@@ -95,7 +101,7 @@ Architecture and design choices, not a ranking. Coolify is a mature project with
     Nothing. Levelrail is Apache 2.0 with one edition: OAuth and OIDC sign-in, audit logging, IAM and scheduled backups all ship in the same free binary. SAML SSO and SCIM provisioning are beta and off until you turn them on.
   </Accordion>
   <Accordion title="Is it production ready?">
-    Levelrail is in active pre-release development, and single node is the best tested path. Run it next to your current setup first, which the importer's read-only design makes safe.
+    Levelrail is in active pre-release development, and single node is the path with the most testing. Run it next to your current setup first, which the importer's read-only design makes safe.
   </Accordion>
   <Accordion title="Does Levelrail support SSO, SAML and SCIM?">
     Levelrail has password, passkey and TOTP sign-in, OAuth sign-in with 20 providers and generic OpenID Connect, IAM policies, teams and a hash-chained audit log, all in the one free edition. SAML single sign-on and SCIM provisioning exist but are beta: they sit behind the `saml-scim` feature toggle, are off by default, and are tested against a test identity provider rather than a live Okta or Entra ID tenant. See [SAML and SCIM](/sso-saml). For what Coolify supports, see its own documentation.

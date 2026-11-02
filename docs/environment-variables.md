@@ -372,6 +372,8 @@ Public address detection, shared with the updater. Source: `internal/ingress/pub
 
 Pings sent while the control plane is healthy, and per-job pings. See [Off-host heartbeat](/heartbeat) and [Scheduled jobs](/scheduled-jobs#heartbeat-pings). Control plane. Source: `internal/heartbeat/config.go`, `internal/heartbeat/jobping.go`.
 
+The control plane heartbeat variables (`APP_HEARTBEAT_URL`, `APP_HEARTBEAT_FAIL_URL`, `APP_HEARTBEAT_INTERVAL`, `APP_HEARTBEAT_METHOD`, `APP_HEARTBEAT_BODY`, `APP_HEARTBEAT_RECONCILE_WINDOWS`) are listed on the [heartbeat page](/heartbeat). They are not runtime settings. While `APP_HEARTBEAT_URL` is set, it owns the heartbeat and the dashboard and CLI cannot change it. This is the one exception to the rule that a stored value wins.
+
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `APP_HEARTBEAT_TIMEOUT` | `10s` | Timeout of one ping request. Env only: it is shared with the control plane heartbeat, which is read once at boot. |

@@ -1,4 +1,8 @@
-# DNS zones and nameserver delegation
+---
+title: "DNS zones and nameserver delegation"
+description: "Check that your registrar points a domain at the nameservers of its DNS zone, and what each delegation state means."
+"og:url": "https://docs.levelrail.com/dns-zones"
+---
 
 A zone at Cloudflare, Route 53 or Google Cloud DNS only answers for your domain once the registrar points the domain's nameservers at it. The DNS page, `GET /api/v1/dns/zones` and `levelrail-cli domains dns zone <id>` show the nameservers the provider assigned and compare them with the NS set public resolvers return for the zone apex (case and trailing dots ignored).
 

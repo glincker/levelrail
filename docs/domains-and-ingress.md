@@ -10,9 +10,19 @@ description: Automatic TLS, domain routing, WAF, rate limiting, and redirects, a
 
 <div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/caddy/default.svg" alt="Caddy" title="Caddy" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/letsencrypt/default.svg" alt="Let's Encrypt" title="Let's Encrypt" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/cloudflare/default.svg" alt="Cloudflare" title="Cloudflare" width="24" height="24" /></span></div>
 
-Levelrail has nothing to install for ingress. The control plane embeds [Caddy](https://caddyserver.com/) as a Go library (`internal/ingress`) and drives it through its admin API, not a hand-written Caddyfile. Config comes from the app specs the reconciler already knows about, so there is no `caddy` binary, no separate proxy container, and no way for ingress config to drift from desired state. The reasoning is in [ADR 005](https://github.com/glincker/levelrail/blob/main/adr/005-caddy-embedded-ingress.md) and the [comparison](/comparison).
+Ingress needs no install. The control plane embeds [Caddy](https://caddyserver.com/) as a Go library (`internal/ingress`) and drives it through its admin API. It does not use a hand-written Caddyfile. Config comes from the app specs the reconciler already knows about, so there is no `caddy` binary and no separate proxy container. Ingress config cannot drift from desired state. The reasoning is in [ADR 005](https://github.com/glincker/levelrail/blob/main/adr/005-caddy-embedded-ingress.md) and the [comparison](/comparison).
 
-New to this? The [Go live checklist](/go-live) walks one app and domain through firewall, DNS, certificate and a final HTTPS check with live status.
+## Start here
+
+Pick the page for the job you have now.
+
+| Job | Page |
+| --- | --- |
+| Walk one app and domain through firewall, DNS, certificate and a final HTTPS check | [Go live checklist](/go-live) |
+| Step through domain, DNS record, port and certificate in the dashboard | [Domain setup stepper](/domains) |
+| Create and edit DNS records at your provider from Levelrail | [DNS zones and records](/dns-zones) |
+| Find out why a domain does not load | [Diagnose a domain](/domain-diagnosis) |
+| Everything else about routing, TLS and edge controls | This page, using the table below |
 
 ## What this covers
 
@@ -298,9 +308,14 @@ It is routed by the same ingress and gets the same TLS treatment as any other do
 - Toggle it per server (not per app) with the **Automatic app hostnames** setting on the Domains page, or `levelrail-cli settings ingress set --fallback-domains=false`.
 - It needs a public IPv4 address (detected or `APP_PUBLIC_HOST`). With a private address, a hostname, or detection turned off there is nothing to build, and the Network tab says so.
 
-The automatic hostname is a beta test address, and the dashboard labels it that way. It works only while your resolver answers for sslip.io: some routers and DNS filters block it or drop private-looking answers (DNS rebind protection), so check with `dig <name>` before assuming the app is down. sslip.io maps a name to an IP and never to a port, so when ingress cannot own 80 and 443 and listens on fallback ports such as 8081 and 8443, the URL must carry the port (`https://<name>:8443`). The dashboard, CLI and API print it that way. Use your own domain for production.
+The automatic hostname is a test address, and the dashboard labels it beta. Use your own domain for production.
 
-Choose the wildcard-DNS provider under Settings, Domains (default for every app) or on an app's Domains tab (override): sslip.io, nip.io, traefik.me (IPv4 only), or **Custom base domain**, your own wildcard such as `apps.example.com` pointing at this server, which names apps `<app>.apps.example.com`. Changing it re-derives the hostname and updates the route with no downtime, and the old hostname stops working. **Test resolution** resolves a sample hostname and reports ok, wrong IP or not resolving, with a one-click switch to another provider or your own domain. From the CLI: `levelrail-cli domains provider get|set|test [--app <app>]`. Free providers get the internal issuer or plain HTTP only, never a shared private key.
+- It works only while your resolver answers for sslip.io. Some routers and DNS filters block it or drop private-looking answers (DNS rebind protection). Run `dig <name>` before assuming the app is down.
+- sslip.io maps a name to an IP, never to a port. When ingress cannot own 80 and 443 and listens on fallback ports such as 8081 and 8443, the URL carries the port (`https://<name>:8443`). The dashboard, CLI and API print it that way.
+
+Choose the wildcard-DNS provider under Settings, Domains (default for every app) or on an app's Domains tab (override). The options are sslip.io, nip.io, traefik.me (IPv4 only), or **Custom base domain**: your own wildcard such as `apps.example.com` pointing at this server, which names apps `<app>.apps.example.com`.
+
+Changing the provider re-derives the hostname and updates the route with no downtime. The old hostname stops working. **Test resolution** resolves a sample hostname and reports ok, wrong IP or not resolving, with a one-click switch to another provider or your own domain. From the CLI: `levelrail-cli domains provider get|set|test [--app <app>]`. Per-app hostnames on a free provider get the internal issuer or plain HTTP only, never a shared private key. The dashboard's own one-click HTTPS is different: see [Zero DNS setup](#zero-dns-setup-sslipio-hostnames-and-one-click-https).
 
 A request that matches no app, or an app with no healthy replica, gets a small "No app is serving this address" page (plain text for non-browser clients) with the original 404 or 503 status.
 
@@ -1112,6 +1127,8 @@ The dashboard builds its **Open site** button from this field only, so it never 
 
 ## Troubleshooting
 
+For a domain that does not load, start with [Diagnose a domain](/domain-diagnosis). It runs the checks and gives a fix for each result. The entries below cover errors you may see while setting up.
+
 ### If this fails
 
 | Error or symptom | Where you see it | Fix |
@@ -1212,3 +1229,11 @@ Proxy a domain to a port or URL with no app behind it.
 
 </Card>
 </CardGroup>
+
+## Related
+
+- [Go live checklist](/go-live) and [Domain setup stepper](/domains)
+- [DNS zones and records](/dns-zones)
+- [Diagnose a domain](/domain-diagnosis)
+- [Move a domain with no downtime](/move-a-domain-with-no-downtime)
+- [Firewall](/firewall) and [host firewall](/host-firewall)

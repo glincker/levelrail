@@ -82,3 +82,11 @@ levelrail-cli tokens revoke <id>
 ```
 
 Revoking takes effect on the next request. Give assistant tokens a short lifetime (`--expires-in-days 30`) so a forgotten one expires by itself.
+
+## Related
+
+- [AI assistant integration](/ai-assistant): run the server and scope a token
+- [Connect an AI assistant safely](/mcp-safe-setup)
+- [MCP tools, token budget and write mode](/mcp)
+- [MCP recipes](/mcp-recipes)
+- [MCP tool surface](/mcp-tool-surface)

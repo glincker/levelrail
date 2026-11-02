@@ -11,6 +11,10 @@ description: "Run levelrail-mcp over stdio for a local client or over the networ
 
 Source: `cmd/levelrail-mcp` and `internal/mcptools`.
 
+## Which MCP page do I read?
+
+Read this page first to run the server and scope a token. Then [Connect an AI assistant safely](/mcp-safe-setup) covers read-only tokens, scopes, audit and revoking. [MCP tools, token budget and write mode](/mcp) is the reference for flags, write tools, the remote endpoint, prompts and the threat model. [MCP recipes](/mcp-recipes) shows example conversations. [MCP tool surface](/mcp-tool-surface) lists the tool count and token cost per toolset.
+
 ## What it exposes
 
 There is one tool per REST capability: apps, deploys, databases, nodes, domains, certificates, backups, templates, registry credentials, IAM, organizations, alerts, metrics, diagnostics, [feature flags](/feature-flags) and more. See the [API reference](/api-reference) for the underlying routes, and [MCP tool surface](/mcp-tool-surface) for the tool count per toolset.
@@ -199,6 +203,7 @@ Still stuck: See [Agent identity](/ai-assistant#agent-identity) for the token cr
 
 ## See also
 
+- [Connect an AI assistant safely](/mcp-safe-setup), [MCP tools and write mode](/mcp), [MCP recipes](/mcp-recipes) and [MCP tool surface](/mcp-tool-surface): the other MCP pages.
 - [ai-assistant-chat.md](/ai-assistant-chat): the in-app dashboard/CLI chat, a separate feature built on this same engine and confirmation gate, behind the `ai-chat` experimental flag.
 - [identity-and-access.md](/identity-and-access): API tokens, abilities, and the audit log.
 - [api-reference.md](/api-reference): every REST route the MCP tools wrap.
