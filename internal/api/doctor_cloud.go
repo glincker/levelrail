@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -69,7 +70,10 @@ type cloudDeps struct {
 	// failedImages lists image refs of apps whose latest deploy failed and so
 	// have no running container for the port audit to see.
 	failedImages func(ctx context.Context) []string
-	hostArch     string
+	// platformRefusals lists apps whose stored Ready condition is an architecture
+	// refusal. A refused create never records a deploy attempt or leaves an image check to run.
+	platformRefusals func(ctx context.Context) []string
+	hostArch         string
 }
 
 func realCloudDeps() cloudDeps {
@@ -116,6 +120,7 @@ func (rt *Router) doctorCheckCloud(ctx context.Context) []doctorCheckResource {
 		}
 	}
 	d.failedImages = rt.failedDeployImages
+	d.platformRefusals = rt.platformRefusedApps
 	d.ports = func(ctx context.Context) ([]cloudPort, error) {
 		if rt.exposure == nil || rt.apps == nil || rt.databases == nil {
 			return nil, nil
@@ -153,6 +158,51 @@ func (rt *Router) failedDeployImages(ctx context.Context) []string {
 		names = append(names, s.Name)
 	}
 	return latestFailedImages(ctx, names, rt.deployAttempts.ListDeployAttempts)
+}
+
+// platformRefusedApps reads the stored Ready condition of each app, the same
+// source app status shows, and keeps the architecture refusals.
+func (rt *Router) platformRefusedApps(ctx context.Context) []string {
+	if rt.apps == nil || rt.deploys == nil {
+		return nil
+	}
+	services, err := rt.apps.ListDesiredServices(ctx)
+	if err != nil {
+		return nil
+	}
+	controllers := make([]string, len(services))
+	for i, s := range services {
+		controllers[i] = applicationControllerName(s.Name)
+	}
+	conds, err := rt.deploys.GetConditionsForControllers(ctx, controllers)
+	if err != nil {
+		return nil
+	}
+	var out []string
+	for _, s := range services {
+		if msg := platformRefusalMessage(conds[applicationControllerName(s.Name)]); msg != "" {
+			out = append(out, s.Name+" was refused: "+msg)
+		}
+	}
+	return out
+}
+
+// platformRefusalMessage returns the refusal text of a failed Ready condition,
+// or "" when the app is not stuck on an architecture mismatch.
+func platformRefusalMessage(conds []reconcile.Condition) string {
+	const marker = "PlatformMismatch"
+	for _, c := range conds {
+		if c.Status != reconcile.ConditionFalse {
+			continue
+		}
+		if i := strings.Index(c.Message, marker+": "); i >= 0 {
+			return strings.TrimSpace(c.Message[i+len(marker)+2:])
+		}
+		if c.Reason == marker {
+			return strings.TrimSpace(c.Message)
+		}
+	}
+	return ""
 }
 
 // latestFailedImages relies on the list being newest first, like the store.
@@ -464,8 +514,9 @@ func cloudSafeImage(s string) bool {
 }
 
 func imageArchResult(ctx context.Context, d cloudDeps, ports []cloudPort) (doctorCheckResource, bool) {
-	if d.imageArch == nil || d.hostArch == "" {
-		return doctorCheckResource{}, false
+	var bad []string
+	if d.platformRefusals != nil {
+		bad = append(bad, d.platformRefusals(ctx)...)
 	}
 	images := make([]string, 0, len(ports))
 	for _, p := range ports {
@@ -474,8 +525,10 @@ func imageArchResult(ctx context.Context, d cloudDeps, ports []cloudPort) (docto
 	if d.failedImages != nil {
 		images = append(images, d.failedImages(ctx)...)
 	}
+	if d.imageArch == nil || d.hostArch == "" {
+		images = nil
+	}
 	seen := map[string]bool{}
-	var bad []string
 	for _, img := range images {
 		if seen[img] || !cloudSafeImage(img) {
 			continue

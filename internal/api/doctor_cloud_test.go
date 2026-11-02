@@ -362,3 +362,28 @@ func TestRunCloudChecks_ImageArchCoversFailedDeploy(t *testing.T) {
 		t.Fatalf("got %+v", r)
 	}
 }
+
+func TestRunCloudChecks_ImageArchReportsStoredRefusal(t *testing.T) {
+	t.Parallel()
+	// A refused create keeps no deploy attempt and no image check, only this condition.
+	conds := map[string][]reconcile.Condition{
+		"bad": {{Type: "Ready", Status: reconcile.ConditionFalse, Reason: "CreateFailed",
+			Message: `create "bad": PlatformMismatch: image mailhog/mailhog:v1.0.1 is amd64 but this node is linux/arm64`}},
+		"ok":      {{Type: "Ready", Status: reconcile.ConditionTrue, Reason: "Ready"}},
+		"pulling": {{Type: "Ready", Status: reconcile.ConditionFalse, Reason: "ImagePullFailed", Message: "timeout"}},
+	}
+	d := fakeCloudDeps(nil, nil, nil)
+	d.platformRefusals = func(context.Context) []string {
+		var out []string
+		for _, n := range []string{"bad", "ok", "pulling"} {
+			if m := platformRefusalMessage(conds[n]); m != "" {
+				out = append(out, n+" was refused: "+m)
+			}
+		}
+		return out
+	}
+	r := cloudByCode(runCloudChecks(context.Background(), d), "image_arch")
+	if r == nil || !strings.Contains(r.Message, "bad was refused: image mailhog/mailhog:v1.0.1 is amd64") || strings.Contains(r.Message, "pulling") {
+		t.Fatalf("got %+v", r)
+	}
+}
