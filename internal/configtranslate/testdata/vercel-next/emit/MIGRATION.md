@@ -8,6 +8,9 @@ Generated from config files (vercel). Review the documents in a pull request, th
 - Secret values, volumes and database contents are not carried over by the documents.
 - [vercel.build.custom] vercel.json: Railpack runs the package.json build and start scripts, custom build, install and output settings are not applied Fix: Move them into package.json scripts, or use a Dockerfile and build.type dockerfile.
 - [vercel.build.env] vercel.json build.env: vercel.json build.env is not read, only app env vars with a public prefix (NEXT_PUBLIC_, VITE_ and similar) reach a build Fix: Set the NEXT_PUBLIC_* values as plain app env before the first deploy; secrets are never passed to a build.
+- [vercel.dep.analytics] vercel.json @vercel/analytics: @vercel/analytics reports to a hosted dashboard, nothing receives it here Fix: Remove the component, per-app traffic stats are built in, or send events to a self-hosted analytics tool.
+- [vercel.dep.kv] vercel.json @vercel/kv: @vercel/kv is a hosted Redis, there is no such service behind it here Fix: Add a Redis database to the stack and switch to a Redis client (ioredis or redis) reading REDIS_URL.
+- [vercel.dep.og] vercel.json @vercel/og: @vercel/og needs the Vercel runtime image tooling Fix: Import ImageResponse from next/og (bundled with Next.js, runs on Node), or use satori with resvg-js.
 - [vercel.regions.multi] vercel.json iad1,fra1: no equivalent: multi-region deployment, a service runs on one node Fix: Pick the node closest to your users.
 - [vercel.runtime.edge] vercel.json app/api/og/route.ts: no equivalent: Vercel Edge runtime Fix: Move this code to the Node runtime, then drop the runtime setting.
 - [vercel.function.maxduration] vercel.json app/api/report/route.ts: no per-function time limit applies in a container Fix: Remove maxDuration, or enforce a timeout in the app.
