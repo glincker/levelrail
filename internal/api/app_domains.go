@@ -45,6 +45,11 @@ type editDomainsResponse struct {
 	// removed domain with remove_dns). GoLive carries the full step list.
 	DNSResults []domainDNSResult `json:"dns_results,omitempty"`
 	GoLive     []goLiveResult    `json:"go_live,omitempty"`
+	// EnvSkipped names compose members whose domain-derived env was not
+	// rewritten because the caller may not deploy them; EnvSkippedHidden
+	// counts those the caller may not read.
+	EnvSkipped       []string `json:"env_skipped,omitempty"`
+	EnvSkippedHidden int      `json:"env_skipped_hidden,omitempty"`
 }
 
 // errDomainNotSet marks a remove of a domain the app does not have.
@@ -140,16 +145,17 @@ func (rt *Router) handleEditAppDomains(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: edit app domains failed", err, slog.String("name", name))
 		return
 	}
+	var envReport domainEnvReport
 	if changed {
 		if ev, ok := domainChangeEvent(name, before, next); ok {
 			rt.recordAppEvent(r, ev)
 		}
-		rt.rerenderDomainEnv(r, name)
+		envReport = rt.rerenderDomainEnv(r, name, before)
 		rt.nudgeReconciler()
 		added, _ := sliceDiff(before, next)
 		rt.ensureWildcardRecords(r, added)
 	}
-	resp := editDomainsResponse{App: name, Domains: next, Changed: changed}
+	resp := editDomainsResponse{App: name, Domains: next, Changed: changed, EnvSkipped: envReport.Skipped, EnvSkippedHidden: envReport.SkippedHidden}
 	if changed {
 		rt.automateDomainChanges(r, name, req, before, next, &resp)
 	}

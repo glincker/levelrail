@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"log/slog"
-	"maps"
 	"net/http"
 	"regexp"
 	"sort"
@@ -14,10 +13,26 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// serviceEnvPatcher is the env-only write behind the domain re-render.
-// *store.DB provides it.
+// serviceEnvPatcher is the env-only compare-and-set write behind the domain
+// re-render. *store.DB provides it.
 type serviceEnvPatcher interface {
-	PatchServiceEnv(ctx context.Context, name string, set map[string]string) error
+	PatchServiceEnv(ctx context.Context, name string, expect, set map[string]string) ([]string, error)
+}
+
+// domainEnvReport lists members whose env could not be re-rendered because
+// the caller may not deploy them. Names are limited to what the caller may
+// read; the rest are only counted.
+type domainEnvReport struct {
+	Skipped       []string
+	SkippedHidden int
+}
+
+// envPatch is one member's pending re-render: Expect holds the stored value
+// each key must still have, Set the new one.
+type envPatch struct {
+	Name        string
+	Expect, Set map[string]string
+	Kept        []string
 }
 
 // legacyURLKey matches env names that older stored revisions filled with a
@@ -25,55 +40,71 @@ type serviceEnvPatcher interface {
 var legacyURLKey = regexp.MustCompile(`(?i)(url|uri|urls|origin|origins|endpoint|url_root)$|^(domain_client|domain_server|woodpecker_host|uptime_app_client_host)$`)
 
 // rerenderDomainEnv re-resolves SERVICE_FQDN and SERVICE_URL env values of
-// the compose app owning serviceName after its domains changed, then
-// recreates the members whose env moved. Best effort: a domain edit that
-// already landed is never failed by it. Members the caller may not deploy
-// are left untouched, since this path restarts them.
-func (rt *Router) rerenderDomainEnv(r *http.Request, serviceName string) {
+// the compose app owning serviceName after its domains changed from before,
+// then recreates the members whose env moved. Best effort: a domain edit
+// that already landed is never failed by it. Members the caller may not
+// deploy are left untouched and reported, since this path restarts them.
+func (rt *Router) rerenderDomainEnv(r *http.Request, serviceName string, before []string) domainEnvReport {
+	var report domainEnvReport
 	ctx := r.Context()
 	revs := rt.composeRevisionStore()
 	patcher, ok := rt.apps.(serviceEnvPatcher)
 	if revs == nil || rt.appGroups == nil || !ok {
-		return
+		return report
 	}
 	svc, err := rt.apps.GetDesiredService(ctx, serviceName)
 	if err != nil || svc.AppID == "" {
-		return
+		return report
 	}
 	rev, err := revs.GetComposeRevision(ctx, svc.AppID, 0)
 	if err != nil {
-		return
+		return report
 	}
 	members, err := rt.appGroups.ListServicesByApp(ctx, svc.AppID)
 	if err != nil {
 		rt.logger.Warn("api: rerender domain env: list members failed", slog.String("app", svc.AppID), slog.String("error", err.Error()))
-		return
+		return report
 	}
 	principal, err := rt.bulkPrincipal(r)
 	if err != nil {
 		rt.logger.Warn("api: rerender domain env: resolve caller failed", slog.String("error", err.Error()))
-		return
+		return report
 	}
-	updated, err := rerenderMemberEnv(rev, svc.AppID, members)
+	patches, err := rerenderMemberEnv(rev, svc.AppID, members, serviceName, before)
 	if err != nil {
 		rt.logger.Warn("api: rerender domain env failed", slog.String("app", svc.AppID), slog.String("error", err.Error()))
-		return
+		return report
 	}
-	for _, m := range updated {
-		if !principal.allowed(AbilityDeploy, m.Name) {
-			rt.logger.Info("api: rerender domain env: member skipped, caller lacks deploy", slog.String("service", m.Name))
+	for _, p := range patches {
+		for _, k := range p.Kept {
+			rt.logger.Info("api: rerender domain env: key edited by hand, left as is", slog.String("service", p.Name), slog.String("key", k))
+		}
+		if len(p.Set) == 0 {
 			continue
 		}
-		keys := changedEnvKeys(members, m)
-		if err := patcher.PatchServiceEnv(ctx, m.Name, pickEnv(m.Env, keys)); err != nil {
-			rt.logger.Error("api: rerender domain env: save failed", slog.String("service", m.Name), slog.String("error", err.Error()))
+		if !principal.allowed(AbilityDeploy, p.Name) {
+			rt.logger.Info("api: rerender domain env: member skipped, caller lacks deploy", slog.String("service", p.Name))
+			if principal.allowed(AbilityRead, p.Name) {
+				report.Skipped = append(report.Skipped, p.Name)
+			} else {
+				report.SkippedHidden++
+			}
 			continue
 		}
-		rt.auditDomainRerender(r, m.Name, keys)
-		if err := rt.apps.RestartService(ctx, m.Name); err != nil {
-			rt.logger.Error("api: rerender domain env: recreate failed", slog.String("service", m.Name), slog.String("error", err.Error()))
+		applied, err := patcher.PatchServiceEnv(ctx, p.Name, p.Expect, p.Set)
+		if err != nil {
+			rt.logger.Error("api: rerender domain env: save failed", slog.String("service", p.Name), slog.String("error", err.Error()))
+			continue
+		}
+		if len(applied) == 0 {
+			continue
+		}
+		rt.auditDomainRerender(r, p.Name, applied)
+		if err := rt.apps.RestartService(ctx, p.Name); err != nil {
+			rt.logger.Error("api: rerender domain env: recreate failed", slog.String("service", p.Name), slog.String("error", err.Error()))
 		}
 	}
+	return report
 }
 
 // auditDomainRerender records env keys (names only, never values) rewritten
@@ -99,59 +130,86 @@ func (rt *Router) auditDomainRerender(r *http.Request, member string, keys []str
 	}
 }
 
-// changedEnvKeys lists the keys of updated whose value differs from the
-// snapshot of the same member in before.
-func changedEnvKeys(before []store.DesiredService, updated store.DesiredService) []string {
-	var old map[string]string
-	for _, b := range before {
-		if b.Name == updated.Name {
-			old = b.Env
-		}
-	}
-	var keys []string
-	for k, v := range updated.Env {
-		if ov, ok := old[k]; !ok || ov != v {
-			keys = append(keys, k)
-		}
-	}
-	sort.Strings(keys)
-	return keys
-}
-
-func pickEnv(env map[string]string, keys []string) map[string]string {
-	out := make(map[string]string, len(keys))
-	for _, k := range keys {
-		out[k] = env[k]
-	}
-	return out
-}
-
-// rerenderMemberEnv returns the members whose domain-derived env values
-// differ once the stored compose body is resolved against their current
-// domains. Only keys built purely from FQDN or URL tokens are touched, and
-// nothing is generated or persisted, so manual env edits and stored
-// secrets are left alone.
-func rerenderMemberEnv(rev store.ComposeRevision, appID string, members []store.DesiredService) ([]store.DesiredService, error) {
+// rerenderMemberEnv returns, per member, the domain-derived env values that
+// move once the stored compose body is resolved against the current domains.
+// A key is patched only if its stored value still equals what the previous
+// domains (edited member had before) rendered, so hand edits are kept, and
+// only if it resolves fully. Only keys built purely from FQDN or URL tokens
+// are touched and nothing is generated or persisted.
+func rerenderMemberEnv(rev store.ComposeRevision, appID string, members []store.DesiredService, edited string, before []string) ([]envPatch, error) {
 	raw, err := compose.Parse([]byte(rev.Compose))
 	if err != nil {
 		return nil, err
 	}
-	file, err := compose.Parse([]byte(rev.Compose))
+	domains := func(prev bool) map[string]string {
+		out := map[string]string{}
+		for _, m := range members {
+			ds := m.Domains
+			if prev && m.Name == edited {
+				ds = before
+			}
+			if len(ds) > 0 {
+				out[strings.TrimPrefix(m.Name, appID+"-")] = ds[0]
+			}
+		}
+		return out
+	}
+	cur, curUnres, err := renderDomainEnv(rev, domains(false))
 	if err != nil {
 		return nil, err
 	}
-	if _, err := file.ApplyProfiles(rev.Profiles); err != nil {
+	old, _, err := renderDomainEnv(rev, domains(true))
+	if err != nil {
 		return nil, err
 	}
-	// The install-time x-levelrail-domains block is stale after an edit;
-	// the members' current domains are the source of truth.
-	file.Domains = nil
-	file.RuntimeDomains = map[string]string{}
+
+	var out []envPatch
 	for _, m := range members {
-		if len(m.Domains) > 0 {
-			file.RuntimeDomains[strings.TrimPrefix(m.Name, appID+"-")] = m.Domains[0]
+		key := strings.TrimPrefix(m.Name, appID+"-")
+		p := envPatch{Name: m.Name, Expect: map[string]string{}, Set: map[string]string{}}
+		for envKey, tmpl := range raw.Services[key].Environment {
+			if !onlyDomainVars(tmpl) || curUnres[key+"\x00"+envKey] {
+				continue
+			}
+			val, ok := cur[key][envKey]
+			if !ok || m.Env[envKey] == val {
+				continue
+			}
+			prev, prevOK := old[key][envKey]
+			stored, has := m.Env[envKey]
+			if !has {
+				continue
+			}
+			if !prevOK || stored != prev {
+				p.Kept = append(p.Kept, envKey)
+				continue
+			}
+			p.Expect[envKey] = stored
+			p.Set[envKey] = val
+		}
+		if len(p.Set)+len(p.Kept) > 0 {
+			sort.Strings(p.Kept)
+			out = append(out, p)
 		}
 	}
+	return out, nil
+}
+
+// renderDomainEnv resolves the stored body against the given per-service
+// domains and returns each service's env plus the (service, key) pairs left
+// unresolved.
+func renderDomainEnv(rev store.ComposeRevision, runtime map[string]string) (map[string]compose.Environment, map[string]bool, error) {
+	file, err := compose.Parse([]byte(rev.Compose))
+	if err != nil {
+		return nil, nil, err
+	}
+	if _, err := file.ApplyProfiles(rev.Profiles); err != nil {
+		return nil, nil, err
+	}
+	// The install-time x-levelrail-domains block is stale after an edit;
+	// the members' domains are the source of truth.
+	file.Domains = nil
+	file.RuntimeDomains = runtime
 	for svcKey, svc := range file.Services {
 		for envKey, tmpl := range svc.Environment {
 			if legacyURLKey.MatchString(envKey) && isWholeFQDNToken(tmpl) {
@@ -162,35 +220,19 @@ func rerenderMemberEnv(rev store.ComposeRevision, appID string, members []store.
 	}
 	noGen := func(string, string, int) (string, error) { return "", nil }
 	noPersist := func(string, string, string) error { return nil }
-	if _, _, err := compose.ResolveMagicVars(file, noGen, noPersist); err != nil {
-		return nil, err
+	_, unresolved, err := compose.ResolveMagicVars(file, noGen, noPersist)
+	if err != nil {
+		return nil, nil, err
 	}
-
-	var updated []store.DesiredService
-	for _, m := range members {
-		key := strings.TrimPrefix(m.Name, appID+"-")
-		next := maps.Clone(m.Env)
-		changed := false
-		for envKey, tmpl := range raw.Services[key].Environment {
-			if !onlyDomainVars(tmpl) {
-				continue
-			}
-			val, ok := file.Services[key].Environment[envKey]
-			if !ok || next[envKey] == val {
-				continue
-			}
-			if next == nil {
-				next = map[string]string{}
-			}
-			next[envKey] = val
-			changed = true
-		}
-		if changed {
-			m.Env = next
-			updated = append(updated, m)
-		}
+	unres := map[string]bool{}
+	for _, u := range unresolved {
+		unres[u.Service+"\x00"+u.EnvKey] = true
 	}
-	return updated, nil
+	envs := make(map[string]compose.Environment, len(file.Services))
+	for k, svc := range file.Services {
+		envs[k] = svc.Environment
+	}
+	return envs, unres, nil
 }
 
 func isWholeFQDNToken(tmpl string) bool {
