@@ -44,6 +44,8 @@ type result struct {
 	Summary  string          `json:"summary"`
 	Services []serviceResult `json:"services,omitempty"`
 	Seconds  float64         `json:"seconds"`
+	// HTTPStatus is the health path status seen from the host, when probed.
+	HTTPStatus int `json:"http_status,omitempty"`
 }
 
 var unsafeProject = regexp.MustCompile(`[^a-z0-9_-]+`)

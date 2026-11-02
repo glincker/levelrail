@@ -39,6 +39,8 @@ type options struct {
 	project    string
 	plan       bool
 	subnetBase string
+	record     bool
+	runURL     string
 }
 
 func main() {
@@ -90,6 +92,9 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		_, _ = fmt.Fprintln(stderr, "template-smoke:", err)
 		return 2
 	}
+	if opts.record {
+		recordPasses(ctx, results, opts, stderr)
+	}
 	for _, r := range results {
 		if r.Status == statusFail {
 			return 1
@@ -114,10 +119,12 @@ func parseFlags(args []string, stderr io.Writer) (options, error) {
 	project := fs.String("project-prefix", "lrsmoke", "compose project name prefix; every resource created carries it")
 	subnetBase := fs.String("subnet-base", "10.231", "first two octets of the /24 each run's default network gets")
 	plan := fs.Bool("plan", false, "list the selected templates and whether their images are local, without running anything")
+	record := fs.Bool("record", false, "fold each passing template into internal/catalog/verified.json and images.lock.json (opt-in, needs crane for digests)")
+	runURL := fs.String("run-url", "", "CI run link to store with a recorded pass")
 	if err := fs.Parse(args); err != nil {
 		return options{}, err
 	}
-	o := options{
+	o := options{record: *record, runURL: *runURL,
 		category: *category, settle: *settle, timeout: *timeout, parallel: max(1, *parallel),
 		pull: *pull, maxImageGB: *maxGB, jsonOut: *jsonOut, mdOut: *mdOut, project: *project, plan: *plan, subnetBase: *subnetBase,
 		shard: 1, shards: 1,

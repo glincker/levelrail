@@ -2,8 +2,7 @@ name: Template PR
 
 # Checks only the templates a pull request changes. No schedule, no secrets,
 # pull_request (never pull_request_target) so fork code never gets write access.
-# Needs owner review before it is relied on: the scanner image tags below are
-# not digest pinned yet.
+# Needs owner review before it is relied on. The scanner image is digest pinned.
 
 on:
   pull_request:
@@ -22,7 +21,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  TRIVY_IMAGE: aquasec/trivy:0.58.1
+  TRIVY_IMAGE: aquasec/trivy:0.58.1@sha256:ab70a02200597efa04748f210f793936eb647cbcdb0ea69cc30b226d6f5a22c7
   KEV_URL: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
   MAX_IMAGE_GB: '2'
   SMOKE_SETTLE: 30s
@@ -136,6 +135,32 @@ jobs:
           go run ./scripts/template-smoke -only "${{ matrix.id }}" -pull -max-image-gb "$MAX_IMAGE_GB" -settle "$SMOKE_SETTLE" \
             -json "smoke-${{ matrix.id }}-${{ matrix.runner }}.json" -md "smoke-${{ matrix.id }}-${{ matrix.runner }}.md" \
             || [ "${{ matrix.runner }}" = "ubuntu-24.04-arm" ]
+
+      # Artifact only: PR CI never commits. Maintainers fold the uploaded
+      # verified.json and images.lock.json into the catalog after merge.
+      - name: Install crane
+        run: go install github.com/google/go-containerregistry/cmd/crane@v0.20.2
+
+      - name: Prepare verification record
+        if: success() || matrix.runner == 'ubuntu-24.04-arm'
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          ARCH: ${{ matrix.runner == 'ubuntu-24.04-arm' && 'arm64' || 'amd64' }}
+        run: |
+          mkdir -p record
+          cp internal/catalog/verified.json internal/catalog/images.lock.json record/
+          PATH="$PATH:$(go env GOPATH)/bin" go run ./scripts/record-verified -id "${{ matrix.id }}" -arch "$ARCH" -crane \
+            -run-url "$RUN_URL" -smoke-json "smoke-${{ matrix.id }}-${{ matrix.runner }}.json" \
+            -verified record/verified.json -lock record/images.lock.json || rm -rf record
+
+      - name: Upload verification record
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: record-${{ matrix.id }}-${{ matrix.runner }}
+          path: record/
+          if-no-files-found: ignore
+          retention-days: 30
 
       - name: Summary
         if: always()

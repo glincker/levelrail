@@ -7,10 +7,39 @@ import (
 	"io"
 	"os"
 	"regexp"
+	"runtime"
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/catalog"
+	"github.com/GLINCKER/levelrail/scripts/smokerecord"
 )
+
+// recordPasses writes each passing template into the committed catalog data.
+// A template whose digests cannot be resolved is still recorded, without one.
+func recordPasses(ctx context.Context, results []result, o options, stderr io.Writer) {
+	for _, r := range results {
+		if r.Status != statusPass {
+			continue
+		}
+		t, ok := catalog.TemplateByID(r.ID)
+		if !ok {
+			continue
+		}
+		refs, pinned := catalog.PinnedImages(t)
+		if !pinned {
+			_, _ = fmt.Fprintf(stderr, "template-smoke: %s not recorded, images are not pinned\n", r.ID)
+			continue
+		}
+		digests, err := smokerecord.CraneDigests(ctx, refs)
+		if err != nil {
+			_, _ = fmt.Fprintln(stderr, "template-smoke: recording without digests:", err)
+		}
+		run := smokerecord.Run{Arch: runtime.GOARCH, HTTPStatus: r.HTTPStatus, RunURL: o.runURL, Digests: digests}
+		if err := smokerecord.Apply("internal/catalog/verified.json", "internal/catalog/images.lock.json", t, run); err != nil {
+			_, _ = fmt.Fprintln(stderr, "template-smoke:", err)
+		}
+	}
+}
 
 // writeReports writes the JSON and markdown reports where asked, and the
 // markdown to stdout when no file was asked for.
