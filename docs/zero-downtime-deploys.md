@@ -96,7 +96,7 @@ Read the deploy safety guide or try it on a spare server.
 It needs a checkout of this repository (it builds `./cmd/levelrail` from the repo root), Go, a Docker daemon reachable through the current Docker context, and `curl`, `awk` and `sort`. It uses its own ports and never touches the dev app on port 8080. Dev mode and the fixed dev token are for local use only.
 
 ```bash
-scripts/zero-downtime-load/run.sh -r 20 -d 3 -s 8
+scripts/zero-downtime-load/run.sh -r 20 -s 8
 ```
 
 Flags:
@@ -134,9 +134,9 @@ The script prints these lines, in order:
 7. Only when there are failures: `failing window`, the first and last failing timestamps as epoch seconds, and a count per status code.
 8. `control plane log:`, the path to the server log.
 
-The exit status is `0` when every request returned 2xx. It is `1` when any request failed, when the build fails, or when the app never answers.
+The exit status is `0` when every request returned 2xx and every redeploy cut over. It is `1` when any request failed, when any redeploy printed `NEVER CUT OVER`, when the build fails, or when the app never answers. `-d` defaults to 3, the number of redeploys the script has image tags for, and values above that are refused.
 
-Read the `deploy N` lines together with the exit status. Zero failures is not a pass if a deploy says `NEVER CUT OVER`: in that case the requests only reached the old release.
+A deploy that says `NEVER CUT OVER` fails the run even with zero failed requests, because the requests only reached the old release.
 
 ### Recorded result
 

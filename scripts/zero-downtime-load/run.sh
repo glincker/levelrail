@@ -15,8 +15,9 @@ res="zdl.localhost:${ZDL_INGRESS_PORT:-18482}:127.0.0.1"
 tags=(v1.10.3 v1.10.2 v1.10.1 v1.10.0)
 image="${ZDL_IMAGE:-traefik/whoami}"
 export DOCKER_HOST="${DOCKER_HOST:-$(docker context inspect --format "{{.Endpoints.docker.Host}}" 2>/dev/null)}"
-rate=20 deploys=5 settle=8
+rate=20 deploys=$((${#tags[@]} - 1)) settle=8
 while getopts r:d:s: o; do case $o in r) rate=$OPTARG ;; d) deploys=$OPTARG ;; s) settle=$OPTARG ;; *) exit 2 ;; esac; done
+[ "$deploys" -ge 1 ] && [ "$deploys" -le $((${#tags[@]} - 1)) ] || { echo "-d must be between 1 and $((${#tags[@]} - 1)), one per extra image tag" >&2; exit 2; }
 export GOFLAGS="${GOFLAGS:--buildvcs=false}"
 tok="Authorization: Bearer dev-root-token"
 host=zdl.localhost
@@ -56,10 +57,11 @@ log="$dir/load.log"; : >"$log"
 ) &
 loadpid=$!
 sleep 3
+stuck=0
 for n in $(seq 1 "$deploys"); do
 	prev=$(host_of)
 	echo "deploy $n: $(call POST /api/v1/apps/zdl-app/deploys -d "{\"image\":\"$image:${tags[$n]}\"}")"
-	wait_new "$prev" && echo "deploy $n: new release answering" || echo "deploy $n: NEVER CUT OVER"
+	wait_new "$prev" && echo "deploy $n: new release answering" || { echo "deploy $n: NEVER CUT OVER"; stuck=$((stuck + 1)); }
 	sleep "$settle"
 done
 kill "$loadpid" 2>/dev/null; wait "$loadpid" 2>/dev/null; loadpid=""
@@ -78,7 +80,8 @@ if [ "$bad" -gt 0 ]; then
 	echo "failing window: $(awk '$2 !~ /^2/ {print $1}' "$log" | sort -n | sed -n '1p;$p' | tr '\n' ' ')"
 	awk '$2 !~ /^2/ {c[$2]++} END {for (k in c) print "  " c[k] " x status " k}' "$log"
 fi
-[ "$bad" -eq 0 ]
+[ "$bad" -eq 0 ] && [ "$stuck" -eq 0 ]
 rc=$?
+[ "$stuck" -eq 0 ] || echo "$stuck deploy(s) never cut over, so this run proves nothing"
 echo "control plane log: $dir/server.log"
 exit "$rc"
