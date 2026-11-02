@@ -35,6 +35,20 @@ type EnvVar struct {
 	Kind    string `json:"kind"`
 }
 
+// InstallField is one install form field. It never carries a value.
+type InstallField struct {
+	Key         string `json:"key"`
+	Label       string `json:"label"`
+	Required    bool   `json:"required"`
+	DefaultKind string `json:"default_kind"`
+}
+
+// Install says which CLI verb sets the template up and which form it asks.
+type Install struct {
+	Kind   string         `json:"kind"`
+	Fields []InstallField `json:"fields"`
+}
+
 // SchemaVersion is the version of the catalog index contract. Bump it only
 // for a breaking change; additive fields keep the version.
 const SchemaVersion = 1
@@ -107,6 +121,7 @@ type Entry struct {
 	MemoryMiB        int64                `json:"memory_mib,omitempty"`
 	RequiresGPU      bool                 `json:"requires_gpu,omitempty"`
 	NeedsConfig      bool                 `json:"needs_config"`
+	Install          *Install             `json:"install,omitempty"`
 	Services         []Service            `json:"services"`
 	Env              []EnvVar             `json:"env"`
 	Requirements     catalog.Requirements `json:"requirements"`
@@ -128,6 +143,14 @@ const (
 
 // statusPageURL records smoke passes that predate CI run links.
 const statusPageURL = "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
+
+const (
+	installKind   = "install"
+	deployKind    = "deploy"
+	defaultNone   = "none"
+	defaultPreset = "preset"
+	defaultGen    = "generated"
+)
 
 const (
 	kindGenerated = "generated"
@@ -166,6 +189,7 @@ func buildEntry(t catalog.Template) (Entry, error) {
 		Env:              []EnvVar{},
 		Requirements:     catalog.ComputeRequirements(t.Compose),
 	}
+	e.Install = installFor(t.Manifest)
 	if m := t.Manifest; m != nil {
 		applyManifest(&e, m)
 	} else if meta, ok := catalog.MetaFor(t.ID); ok {
@@ -267,6 +291,31 @@ func applyMeta(e *Entry, m catalog.TemplateMeta) {
 	if m.Status != "" {
 		e.Status, e.StatusReason, e.ReplacedBy = m.Status, sanitize(m.StatusReason), m.ReplacedBy
 	}
+}
+
+// installFor mirrors the CLI: a manifest with an env form is set up with
+// "templates install", everything else with "templates deploy".
+func installFor(m *catalog.Manifest) *Install {
+	in := &Install{Kind: deployKind, Fields: []InstallField{}}
+	if m == nil || len(m.Env) == 0 {
+		return in
+	}
+	in.Kind = installKind
+	for _, p := range m.Env {
+		f := InstallField{Key: p.Key, Label: sanitize(p.Label), DefaultKind: defaultNone}
+		if f.Label == "" {
+			f.Label = p.Key
+		}
+		switch {
+		case p.Generate != "":
+			f.DefaultKind = defaultGen
+		case p.Default != "":
+			f.DefaultKind = defaultPreset
+		}
+		f.Required = p.Required && f.DefaultKind == defaultNone
+		in.Fields = append(in.Fields, f)
+	}
+	return in
 }
 
 func applyManifest(e *Entry, m *catalog.Manifest) {

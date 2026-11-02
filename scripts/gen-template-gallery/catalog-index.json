@@ -55,6 +55,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "2fauth",
@@ -235,6 +239,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "activepieces",
@@ -444,6 +452,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "actual",
@@ -552,6 +564,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "actual",
@@ -669,6 +685,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "adguard",
@@ -784,6 +804,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "adminer",
@@ -905,6 +929,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "affine",
@@ -1110,6 +1138,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "alertmanager",
@@ -1209,6 +1241,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "answer",
@@ -1317,6 +1353,10 @@
    ],
    "memory_mib": 2048,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "anythingllm",
@@ -1523,6 +1563,10 @@
    ],
    "memory_mib": 1536,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "admin_frontend",
@@ -1864,6 +1908,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "apprise-api",
@@ -1980,6 +2028,10 @@
    ],
    "memory_mib": 2048,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "appsmith",
@@ -2136,6 +2188,10 @@
    ],
    "memory_mib": 2048,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "appwrite",
@@ -2379,6 +2435,23 @@
    ],
    "memory_mib": 1536,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "ADMIN_USERNAME",
+      "label": "Admin username",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "ADMIN_PASSWORD",
+      "label": "Admin password",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
    "services": [
     {
      "name": "archivebox",
@@ -2513,6 +2586,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "audiobookshelf",
@@ -2638,6 +2715,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "authelia",
@@ -2822,6 +2903,10 @@
    ],
    "memory_mib": 2048,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "authentik",
@@ -3053,6 +3138,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "autobrr",
@@ -3190,6 +3279,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "babybuddy",
@@ -3332,6 +3425,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "backrest",
@@ -3448,6 +3545,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "baserow",
@@ -3562,6 +3663,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "bazarr",
@@ -3693,6 +3798,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "bentopdf",
@@ -3777,6 +3886,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "beszel",
@@ -3914,6 +4027,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "bookstack",
@@ -4099,6 +4216,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "browserless",
@@ -4212,6 +4333,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "budge",
@@ -4419,6 +4544,10 @@
    ],
    "memory_mib": 2048,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "app-service",
@@ -4795,6 +4924,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "mysql",
@@ -4978,6 +5111,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "bytebase",
@@ -5094,6 +5231,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "bytestash",
@@ -5245,6 +5386,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "calcom",
@@ -5427,6 +5572,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "calibre-web",
@@ -5552,6 +5701,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "campfire",
@@ -5704,6 +5857,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "cap",
@@ -5877,6 +6034,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "castopod",
@@ -6097,6 +6258,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "changedetection",
@@ -6243,6 +6408,10 @@
    ],
    "memory_mib": 1536,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "chatwoot",
@@ -6463,6 +6632,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "checkmate",
@@ -6633,6 +6806,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "chibisafe",
@@ -6755,6 +6932,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "chroma",
@@ -6870,6 +7051,17 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TZ",
+      "label": "Time zone",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
    "services": [
     {
      "name": "cleanuparr",
@@ -6990,6 +7182,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "clickhouse",
@@ -7117,6 +7313,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "cloudbeaver",
@@ -7230,6 +7430,10 @@
    ],
    "memory_mib": 32,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "cloudflare-ddns",
@@ -7365,6 +7569,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "cloudreve",
@@ -7567,6 +7775,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "cockpit-cms",
@@ -7677,6 +7889,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "code-server",
@@ -7798,6 +8014,10 @@
    "memory_mib": 8192,
    "requires_gpu": true,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "comfyui",
@@ -7952,6 +8172,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "consul",
@@ -8057,6 +8281,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "convertx",
@@ -8203,6 +8431,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "convertx",
@@ -8358,6 +8590,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "copyparty",
@@ -8488,6 +8724,23 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "COUCHDB_USER",
+      "label": "Admin user",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "COUCHDB_PASSWORD",
+      "label": "Admin password",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
    "services": [
     {
      "name": "couchdb",
@@ -8618,6 +8871,17 @@
    ],
    "memory_mib": 2048,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "API_TOKEN",
+      "label": "API token",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
    "services": [
     {
      "name": "crawl4ai",
@@ -8749,6 +9013,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "cryptgeon",
@@ -8863,6 +9131,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "cyberchef",
@@ -8978,6 +9250,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "dashy",
@@ -9086,6 +9362,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "databasus",
@@ -9194,6 +9474,17 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TZ",
+      "label": "Time zone",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
    "services": [
     {
      "name": "deluge",
@@ -9355,6 +9646,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -9587,6 +9882,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "diun",
@@ -9720,6 +10019,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "registry",
@@ -9832,6 +10135,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "registry",
@@ -9979,6 +10286,17 @@
    ],
    "memory_mib": 3072,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TZ",
+      "label": "Time zone",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
    "services": [
     {
      "name": "docling",
@@ -10111,6 +10429,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -10315,6 +10637,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "database",
@@ -10533,6 +10859,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "docuseal",
@@ -10699,6 +11029,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "dokuwiki",
@@ -10833,6 +11167,10 @@
    ],
    "memory_mib": 768,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -11029,6 +11367,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "drawio",
@@ -11140,6 +11482,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -11283,6 +11629,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "duplicati",
@@ -11445,6 +11795,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "easyappointments",
@@ -11603,6 +11957,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "elasticsearch",
@@ -11726,6 +12084,10 @@
    ],
    "memory_mib": 2048,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "elasticsearch",
@@ -11877,6 +12239,29 @@
    ],
    "memory_mib": 64,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "HOMESERVER_URL",
+      "label": "Homeserver URL",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "HOMESERVER_NAME",
+      "label": "Homeserver name",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "BRAND",
+      "label": "Brand",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
    "services": [
     {
      "name": "element",
@@ -11954,6 +12339,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "emby",
@@ -12089,6 +12478,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "embystat",
@@ -12240,6 +12633,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "espocrm",
@@ -12442,6 +12839,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "etcd",
@@ -12541,6 +12942,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "etherpad",
@@ -12674,6 +13079,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "excalidraw",
@@ -12770,6 +13179,10 @@
    ],
    "memory_mib": 2048,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "factorio",
@@ -12896,6 +13309,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "api",
@@ -13064,6 +13481,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "database",
@@ -13237,6 +13658,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "filebrowser",
@@ -13369,6 +13794,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -13560,6 +13989,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "firefox",
@@ -13676,6 +14109,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "flame",
@@ -13805,6 +14242,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "flaresolverr",
@@ -13916,6 +14357,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "flatnotes",
@@ -14058,6 +14503,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "flipt",
@@ -14167,6 +14616,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "flowise",
@@ -14382,6 +14835,10 @@
    ],
    "memory_mib": 2048,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "cache",
@@ -14586,6 +15043,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "focalboard",
@@ -14686,6 +15147,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "forgejo",
@@ -14831,6 +15296,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -15046,6 +15515,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -15262,6 +15735,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "freescout",
@@ -15486,6 +15963,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -15672,6 +16153,10 @@
    ],
    "memory_mib": 64,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "gatus",
@@ -15778,6 +16263,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -15999,6 +16488,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -16208,6 +16701,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -16413,6 +16910,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -16585,6 +17086,10 @@
    ],
    "memory_mib": 4096,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "gitlab",
@@ -16714,6 +17219,10 @@
    ],
    "memory_mib": 4096,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "gitlab",
@@ -16830,6 +17339,17 @@
    ],
    "memory_mib": 384,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "URL_BASE",
+      "label": "Public URL",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
    "services": [
     {
      "name": "gitness",
@@ -16948,6 +17468,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "glance",
@@ -17058,6 +17582,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "glances",
@@ -17195,6 +17723,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -17396,6 +17928,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "glpi",
@@ -17575,6 +18111,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "goatcounter",
@@ -17684,6 +18224,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "gogs",
@@ -17792,6 +18336,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "gotenberg",
@@ -17895,6 +18443,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "gotify",
@@ -18040,6 +18592,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "grafana",
@@ -18187,6 +18743,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -18384,6 +18944,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "grampsweb",
@@ -18565,6 +19129,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -18779,6 +19347,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -18979,6 +19551,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "grocy",
@@ -19106,6 +19682,23 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "DB_PASSWORD",
+      "label": "Database password",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "ADMIN_SECRET",
+      "label": "Admin secret",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
    "services": [
     {
      "name": "db",
@@ -19272,6 +19865,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "headscale",
@@ -19447,6 +20044,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -19653,6 +20254,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -19835,6 +20440,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "heimdall",
@@ -19993,6 +20602,29 @@
    ],
    "memory_mib": 768,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "SESSION_KEY",
+      "label": "Session key",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "FORM_ENCRYPTION_KEY",
+      "label": "Form encryption key",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "REDIS_PASSWORD",
+      "label": "Redis password",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
    "services": [
     {
      "name": "heyform",
@@ -20167,6 +20799,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "homarr",
@@ -20285,6 +20921,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "home-assistant",
@@ -20394,6 +21034,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "homebox",
@@ -20516,6 +21160,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "homepage",
@@ -20632,6 +21280,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "homer",
@@ -20765,6 +21417,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -20939,6 +21595,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "imgcompress",
@@ -21086,6 +21746,10 @@
    ],
    "memory_mib": 1536,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -21321,6 +21985,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -21515,6 +22183,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "influxdb",
@@ -21706,6 +22378,29 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "DB_PASSWORD",
+      "label": "Database password",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "EVENT_KEY",
+      "label": "Event key",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "SIGNING_KEY",
+      "label": "Signing key",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
    "services": [
     {
      "name": "db",
@@ -21905,6 +22600,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -22117,6 +22816,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "it-tools",
@@ -22210,6 +22913,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "jackett",
@@ -22337,6 +23044,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "jaeger",
@@ -22435,6 +23146,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "jellyfin",
@@ -22544,6 +23259,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "jellyseerr",
@@ -22671,6 +23390,29 @@
    ],
    "memory_mib": 384,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "DB_PASSWORD",
+      "label": "Database password",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "JWT_SECRET",
+      "label": "JWT secret",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "TZ",
+      "label": "Time zone",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
    "services": [
     {
      "name": "db",
@@ -22847,6 +23589,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "jenkins",
@@ -22971,6 +23717,10 @@
    ],
    "memory_mib": 768,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -23164,6 +23914,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "joplin",
@@ -23365,6 +24119,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -23541,6 +24299,10 @@
    "memory_mib": 4096,
    "requires_gpu": true,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "jupyter",
@@ -23670,6 +24432,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "jupyter",
@@ -23800,6 +24566,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "jupyter",
@@ -23928,6 +24698,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "kanboard",
@@ -24051,6 +24825,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "karakeep",
@@ -24234,6 +25012,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "kavita",
@@ -24350,6 +25132,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "keycloak",
@@ -24526,6 +25312,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -24742,6 +25532,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -24917,6 +25711,17 @@
    ],
    "memory_mib": 1536,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TZ",
+      "label": "Time zone",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
    "services": [
     {
      "name": "kokoro",
@@ -25007,6 +25812,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "komga",
@@ -25124,6 +25933,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "kopia",
@@ -25302,6 +26115,29 @@
    ],
    "memory_mib": 384,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "DB_PASSWORD",
+      "label": "Database password",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "JWT_SECRET",
+      "label": "JWT secret",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "DEFAULT_DOMAIN",
+      "label": "Default domain",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
    "services": [
     {
      "name": "db",
@@ -25519,6 +26355,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "label-studio",
@@ -25675,6 +26515,10 @@
    ],
    "memory_mib": 2048,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -25927,6 +26771,10 @@
    ],
    "memory_mib": 4096,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "clickhouse",
@@ -26332,6 +27180,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -26572,6 +27424,10 @@
    ],
    "memory_mib": 2048,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "librechat",
@@ -26786,6 +27642,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "libreoffice",
@@ -26927,6 +27787,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "librespeed",
@@ -27036,6 +27900,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "libretranslate",
@@ -27144,6 +28012,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "lidarr",
@@ -27304,6 +28176,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "limesurvey",
@@ -27523,6 +28399,17 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TZ",
+      "label": "Time zone",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
    "services": [
     {
      "name": "linkace",
@@ -27684,6 +28571,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "linkding",
@@ -27817,6 +28708,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "linkding-plus",
@@ -27982,6 +28877,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -28205,6 +29104,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -28407,6 +29310,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -28567,6 +29474,10 @@
    ],
    "memory_mib": 4096,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "llama-cpp",
@@ -28689,6 +29600,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "lldap",
@@ -28832,6 +29747,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "lobe-chat",
@@ -28954,6 +29873,10 @@
    ],
    "memory_mib": 4096,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "localai",
@@ -29087,6 +30010,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -29260,6 +30187,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "loki",
@@ -29362,6 +30293,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "lowcoder",
@@ -29493,6 +30428,23 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "LC_ALL",
+      "label": "Locale",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "LUBELOGGER_ALLOWED_FILE_EXTENSIONS",
+      "label": "Allowed upload types",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
    "services": [
     {
      "name": "lubelogger",
@@ -29610,6 +30562,17 @@
    ],
    "memory_mib": 384,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TZ",
+      "label": "Time zone",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
    "services": [
     {
      "name": "lychee",
@@ -29770,6 +30733,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "mage",
@@ -29883,6 +30850,65 @@
    ],
    "memory_mib": 256,
    "needs_config": true,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "MAIL_FIRST_DOMAIN",
+      "label": "Mail domain",
+      "required": true,
+      "default_kind": "none"
+     },
+     {
+      "key": "MAIL_HOSTNAME",
+      "label": "Mail server host name",
+      "required": false,
+      "default_kind": "none"
+     },
+     {
+      "key": "MAIL_ADMIN_EMAIL",
+      "label": "Admin address",
+      "required": false,
+      "default_kind": "none"
+     },
+     {
+      "key": "MAIL_TLS_CERT_FILE",
+      "label": "Certificate file",
+      "required": false,
+      "default_kind": "none"
+     },
+     {
+      "key": "MAIL_TLS_KEY_FILE",
+      "label": "Certificate key file",
+      "required": false,
+      "default_kind": "none"
+     },
+     {
+      "key": "MAIL_SMARTHOST_HOST",
+      "label": "Relay host",
+      "required": false,
+      "default_kind": "none"
+     },
+     {
+      "key": "MAIL_SMARTHOST_PORT",
+      "label": "Relay port",
+      "required": false,
+      "default_kind": "none"
+     },
+     {
+      "key": "MAIL_SMARTHOST_USER",
+      "label": "Relay user",
+      "required": false,
+      "default_kind": "none"
+     },
+     {
+      "key": "MAIL_SMARTHOST_PASSWORD",
+      "label": "Relay password",
+      "required": false,
+      "default_kind": "none"
+     }
+    ]
+   },
    "services": [
     {
      "name": "mox",
@@ -30068,6 +31094,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "mailhog",
@@ -30160,6 +31190,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "mailpit",
@@ -30274,6 +31308,17 @@
    ],
    "memory_mib": 384,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TZ",
+      "label": "Time zone",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
    "services": [
     {
      "name": "maintainerr",
@@ -30379,6 +31424,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "marimo",
@@ -30527,6 +31576,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -30701,6 +31754,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "synapse",
@@ -30833,6 +31890,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "postgres",
@@ -31041,6 +32102,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -31218,6 +32283,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "mealie",
@@ -31348,6 +32417,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -31501,6 +32574,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "meilisearch",
@@ -31645,6 +32722,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "memcached",
@@ -31736,6 +32817,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "memos",
@@ -31845,6 +32930,17 @@
    ],
    "memory_mib": 384,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "MESH_HOSTNAME",
+      "label": "Public host name",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
    "services": [
     {
      "name": "meshcentral",
@@ -31982,6 +33078,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "metabase",
@@ -32115,6 +33215,23 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "DB_PASSWORD",
+      "label": "Database password",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "AUTH_SECRET",
+      "label": "Auth secret",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
    "services": [
     {
      "name": "db",
@@ -32300,6 +33417,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "metube",
@@ -32417,6 +33538,10 @@
    ],
    "memory_mib": 4096,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "milvus",
@@ -32532,6 +33657,89 @@
    ],
    "memory_mib": 2560,
    "needs_config": true,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "EULA",
+      "label": "Accept the Minecraft EULA",
+      "required": true,
+      "default_kind": "none"
+     },
+     {
+      "key": "SERVER_TYPE",
+      "label": "Server type",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "SERVER_VERSION",
+      "label": "Minecraft version",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "JAVA_VARIANT",
+      "label": "Java runtime",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "MEMORY",
+      "label": "JVM heap",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "MEMORY_LIMIT",
+      "label": "Container memory limit",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "VIEW_DISTANCE",
+      "label": "View distance",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "SIMULATION_DISTANCE",
+      "label": "Simulation distance",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "ENABLE_WHITELIST",
+      "label": "Use a whitelist",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "ENFORCE_WHITELIST",
+      "label": "Enforce the whitelist",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "WHITELIST",
+      "label": "Whitelisted players",
+      "required": false,
+      "default_kind": "none"
+     },
+     {
+      "key": "OPS",
+      "label": "Operators",
+      "required": false,
+      "default_kind": "none"
+     },
+     {
+      "key": "RCON_PASSWORD",
+      "label": "RCON password",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
    "services": [
     {
      "name": "minecraft",
@@ -32732,6 +33940,29 @@
    ],
    "memory_mib": 2048,
    "needs_config": true,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "EULA",
+      "label": "Accept the Minecraft EULA",
+      "required": true,
+      "default_kind": "none"
+     },
+     {
+      "key": "SERVER_VERSION",
+      "label": "Server version",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "ALLOW_LIST",
+      "label": "Use an allow list",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
    "services": [
     {
      "name": "bedrock",
@@ -32899,6 +34130,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -33064,6 +34299,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "minio",
@@ -33197,6 +34436,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "mlflow",
@@ -33320,6 +34563,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "mongo",
@@ -33491,6 +34738,29 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "DB_PASSWORD",
+      "label": "Database password",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "DB_ROOT_PASSWORD",
+      "label": "Database root password",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "APP_KEY",
+      "label": "Application key",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
    "services": [
     {
      "name": "mariadb",
@@ -33695,6 +34965,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "mariadb",
@@ -33909,6 +35183,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "mosquitto",
@@ -34041,6 +35319,23 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TZ",
+      "label": "Time zone",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "BASE_URL",
+      "label": "Public URL",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
    "services": [
     {
      "name": "multi-scrobbler",
@@ -34161,6 +35456,17 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TZ",
+      "label": "Time zone",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
    "services": [
     {
      "name": "mylar3",
@@ -34285,6 +35591,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "n8n",
@@ -34469,6 +35779,10 @@
    ],
    "memory_mib": 4096,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -34697,6 +36011,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "n8n",
@@ -34904,6 +36222,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "nats",
@@ -35013,6 +36335,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "navidrome",
@@ -35127,6 +36453,17 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "NEO4J_PASSWORD",
+      "label": "Neo4j password",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
    "services": [
     {
      "name": "neo4j",
@@ -35284,6 +36621,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -35526,6 +36867,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "netdata",
@@ -35674,6 +37019,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "new-api",
@@ -35858,6 +37207,10 @@
    ],
    "memory_mib": 1536,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "nextcloud",
@@ -36005,6 +37358,10 @@
    ],
    "memory_mib": 384,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -36153,6 +37510,10 @@
    ],
    "memory_mib": 3072,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "nexus",
@@ -36292,6 +37653,10 @@
    ],
    "memory_mib": 192,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "orders",
@@ -36418,6 +37783,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "npm",
@@ -36552,6 +37921,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "nocobase",
@@ -36742,6 +38115,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "nocodb",
@@ -36865,6 +38242,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -37020,6 +38401,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "nodered",
@@ -37147,6 +38532,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "nodebb",
@@ -37318,6 +38707,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "ntfy",
@@ -37438,6 +38831,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "couchdb",
@@ -37590,6 +38987,10 @@
    ],
    "memory_mib": 2048,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -37753,6 +39154,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "ollama",
@@ -37861,6 +39266,10 @@
    ],
    "memory_mib": 6144,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "ollama",
@@ -37969,6 +39378,10 @@
    ],
    "memory_mib": 7168,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "ollama",
@@ -38077,6 +39490,10 @@
    ],
    "memory_mib": 6144,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "ollama",
@@ -38193,6 +39610,10 @@
    ],
    "memory_mib": 2048,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "ollama-api",
@@ -38325,6 +39746,10 @@
    ],
    "memory_mib": 4096,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "ollama",
@@ -38433,6 +39858,10 @@
    ],
    "memory_mib": 6144,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "ollama",
@@ -38541,6 +39970,17 @@
    ],
    "memory_mib": 384,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TZ",
+      "label": "Time zone",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
    "services": [
     {
      "name": "ombi",
@@ -38656,6 +40096,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "campfire",
@@ -38793,6 +40237,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "onedev",
@@ -38911,6 +40359,29 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "SECRET",
+      "label": "Encryption secret",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "COLONEL_EMAIL",
+      "label": "Admin email",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "PUBLIC_HOST",
+      "label": "Public host",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
    "services": [
     {
      "name": "app",
@@ -39091,6 +40562,29 @@
    ],
    "memory_mib": 1536,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "ENCRYPTION_KEY",
+      "label": "Encryption key",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "APP_PASSWORD",
+      "label": "App password",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "DB_PASSWORD",
+      "label": "Database password",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
    "services": [
     {
      "name": "open_notebook",
@@ -39286,6 +40780,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "ollama",
@@ -39435,6 +40933,10 @@
    ],
    "memory_mib": 2048,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "openclaw-gateway",
@@ -39587,6 +41089,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "openobserve",
@@ -39744,6 +41250,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "mariadb",
@@ -39926,6 +41436,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "organizr",
@@ -40055,6 +41569,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -40303,6 +41821,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -40505,6 +42027,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "overseerr",
@@ -40621,6 +42147,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "owncast",
@@ -40759,6 +42289,41 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "OWNCLOUD_DOMAIN",
+      "label": "Public host",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "ADMIN_USERNAME",
+      "label": "Admin user",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "ADMIN_PASSWORD",
+      "label": "Admin password",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "DB_PASSWORD",
+      "label": "Database password",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "DB_ROOT_PASSWORD",
+      "label": "Database root password",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
    "services": [
     {
      "name": "mariadb",
@@ -40978,6 +42543,23 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TZ",
+      "label": "Time zone",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "RATE_LIMIT",
+      "label": "Rate limit",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
    "services": [
     {
      "name": "pairdrop",
@@ -41076,6 +42658,10 @@
    ],
    "memory_mib": 16384,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "palworld",
@@ -41247,6 +42833,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "paperless",
@@ -41413,6 +43003,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -41639,6 +43233,35 @@
    ],
    "memory_mib": 768,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "DB_PASSWORD",
+      "label": "Database password",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "DB_ROOT_PASSWORD",
+      "label": "Database root password",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "REDIS_PASSWORD",
+      "label": "Redis password",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "APP_KEY",
+      "label": "Application key",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
    "services": [
     {
      "name": "mariadb",
@@ -41942,6 +43565,10 @@
    ],
    "memory_mib": 2048,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "backend",
@@ -42192,6 +43819,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "pgadmin",
@@ -42343,6 +43974,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "pgbackweb",
@@ -42500,6 +44135,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "pgvector",
@@ -42637,6 +44276,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "photoprism",
@@ -42775,6 +44418,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "photoview",
@@ -42918,6 +44565,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "phpmyadmin",
@@ -43024,6 +44675,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "pihole",
@@ -43150,6 +44805,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "pinchflat",
@@ -43269,6 +44928,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "pingvin-share",
@@ -43496,6 +45159,10 @@
    ],
    "memory_mib": 2048,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "api",
@@ -43815,6 +45482,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -44020,6 +45691,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "clickhouse",
@@ -44192,6 +45867,10 @@
    ],
    "memory_mib": 2048,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "plex",
@@ -44359,6 +46038,47 @@
    ],
    "memory_mib": 512,
    "needs_config": true,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "DB_PASSWORD",
+      "label": "Database password",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "JWT_SECRET",
+      "label": "JWT secret",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "AWS_REGION",
+      "label": "AWS region",
+      "required": true,
+      "default_kind": "none"
+     },
+     {
+      "key": "AWS_ACCESS_KEY_ID",
+      "label": "AWS access key ID",
+      "required": true,
+      "default_kind": "none"
+     },
+     {
+      "key": "AWS_SECRET_ACCESS_KEY",
+      "label": "AWS secret access key",
+      "required": true,
+      "default_kind": "none"
+     },
+     {
+      "key": "AWS_SES_CONFIGURATION_SET",
+      "label": "SES configuration set",
+      "required": true,
+      "default_kind": "none"
+     }
+    ]
+   },
    "services": [
     {
      "name": "db",
@@ -44579,6 +46299,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "pocket-id",
@@ -44706,6 +46430,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "pocketbase",
@@ -44824,6 +46552,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "portainer",
@@ -44970,6 +46702,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -45188,6 +46924,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -45356,6 +47096,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "privatebin",
@@ -45474,6 +47218,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "prometheus",
@@ -45582,6 +47330,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "prowlarr",
@@ -45706,6 +47458,10 @@
    ],
    "memory_mib": 64,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "proxyscotch",
@@ -45823,6 +47579,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "qbittorrent",
@@ -45933,6 +47693,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "qdrant",
@@ -46066,6 +47830,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "rabbitmq",
@@ -46198,6 +47966,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "radarr",
@@ -46330,6 +48102,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "radicale",
@@ -46472,6 +48248,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -46658,6 +48438,29 @@
    ],
    "memory_mib": 768,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "DB_PASSWORD",
+      "label": "Database password",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "AUTH_SECRET",
+      "label": "Auth secret",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "APP_URL",
+      "label": "Public URL",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
    "services": [
     {
      "name": "db",
@@ -46817,6 +48620,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "readeck",
@@ -46940,6 +48747,10 @@
    ],
    "memory_mib": 192,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "cache",
@@ -47065,6 +48876,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "redisinsight",
@@ -47184,6 +48999,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "redisinsight",
@@ -47322,6 +49141,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "redlib",
@@ -47439,6 +49262,23 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "DB_PASSWORD",
+      "label": "Database password",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "SECRET_KEY_BASE",
+      "label": "Session signing key",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
    "services": [
     {
      "name": "db",
@@ -47604,6 +49444,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "registry",
@@ -47728,6 +49572,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "mongo",
@@ -47868,6 +49716,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "roundcube",
@@ -47999,6 +49851,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "rsshub",
@@ -48095,6 +49951,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "rustdesk",
@@ -48236,6 +50096,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "postgres",
@@ -48395,6 +50259,17 @@
    ],
    "memory_mib": 384,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TZ",
+      "label": "Time zone",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
    "services": [
     {
      "name": "sabnzbd",
@@ -48546,6 +50421,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "mariadb",
@@ -48795,6 +50674,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "redis",
@@ -48901,7 +50784,7 @@
    "aliases": [],
    "name": "SeaweedFS",
    "slogan": "A distributed file and object store with an S3 gateway, built for billions of small files.",
-   "description": "A distributed file and object store with an S3 gateway, built for billions of small files. Runs as a single container from the seaweedfs image, listening on port 9333 and keeps its data in named volumes.",
+   "description": "A distributed file and object store with an S3 gateway, built for billions of small files. Runs 2 containers (s3, seaweedfs), with seaweedfs listening on port 9333 and the S3 API on its own route at port 8333; data is kept in named volumes.",
    "first_run": [],
    "category": "Storage",
    "status": "active",
@@ -48925,6 +50808,22 @@
    },
    "images": [
     {
+     "service": "s3",
+     "image": "chrislusf/seaweedfs",
+     "tag": "3.99",
+     "source_class": "community",
+     "platforms": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
      "service": "seaweedfs",
      "image": "chrislusf/seaweedfs",
      "tag": "3.99",
@@ -48943,21 +50842,43 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
+    {
+     "name": "s3",
+     "image": "chrislusf/seaweedfs:3.99",
+     "ports": [
+      8333
+     ],
+     "volumes": []
+    },
     {
      "name": "seaweedfs",
      "image": "chrislusf/seaweedfs:3.99",
      "ports": [
       9333,
-      8888,
-      8333
+      8888
      ],
      "volumes": [
       "seaweedfs_data -> /data"
      ]
     }
    ],
-   "env": [],
+   "env": [
+    {
+     "service": "s3",
+     "name": "S3_ACCESS_KEY",
+     "kind": "generated"
+    },
+    {
+     "service": "s3",
+     "name": "S3_SECRET_KEY",
+     "kind": "generated"
+    }
+   ],
    "requirements": {
     "level": "standard",
     "findings": [
@@ -48965,10 +50886,20 @@
       "code": "published_ports",
       "severity": "info",
       "services": [
+       "s3",
        "seaweedfs"
       ],
       "detail": "8333:8333, 8888:8888, 9333:9333",
       "message": "Publishes ports directly on the host"
+     },
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "s3"
+      ],
+      "detail": "S3_ACCESS_KEY, S3_SECRET_KEY",
+      "message": "Passwords and keys are generated at deploy time"
      },
      {
       "code": "persistent_data",
@@ -48984,6 +50915,10 @@
      {
       "code": "https_ingress",
       "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
      },
      {
       "code": "volume_backups",
@@ -49053,6 +50988,17 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TZ",
+      "label": "Time zone",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
    "services": [
     {
      "name": "seerr",
@@ -49168,6 +51114,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "semaphore",
@@ -49323,6 +51273,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "sftpgo",
@@ -49433,6 +51387,17 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TZ",
+      "label": "Time zone",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
    "services": [
     {
      "name": "shaarli",
@@ -49547,6 +51512,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "shiori",
@@ -49655,6 +51624,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "shlink",
@@ -49782,6 +51755,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "silverbullet",
@@ -49910,6 +51887,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "siyuan",
@@ -50052,6 +52033,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "slash",
@@ -50154,6 +52139,17 @@
    ],
    "memory_mib": 192,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TZ",
+      "label": "Time zone",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
    "services": [
     {
      "name": "smokeping",
@@ -50266,6 +52262,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "snapdrop",
@@ -50409,6 +52409,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -50605,6 +52609,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "soketi",
@@ -50752,6 +52760,10 @@
    ],
    "memory_mib": 3072,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -50916,6 +52928,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "sonarr",
@@ -51067,6 +53083,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "postgres",
@@ -51287,6 +53307,10 @@
    ],
    "memory_mib": 2048,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "speaches",
@@ -51401,6 +53425,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "speedtest-tracker",
@@ -51572,6 +53600,17 @@
    ],
    "memory_mib": 384,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "DB_PASSWORD",
+      "label": "Database password",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
    "services": [
     {
      "name": "db",
@@ -51718,6 +53757,17 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TZ",
+      "label": "Time zone",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
    "services": [
     {
      "name": "spoolman",
@@ -51828,6 +53878,10 @@
    "memory_mib": 8192,
    "requires_gpu": true,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "sd-webui",
@@ -51968,6 +54022,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "stalwart",
@@ -52092,6 +54150,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "api",
@@ -52200,6 +54262,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "statusnook",
@@ -52311,6 +54377,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "stirling-pdf",
@@ -52439,6 +54509,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -52636,6 +54710,29 @@
    ],
    "memory_mib": 2048,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "SUPERSET_SECRET_KEY",
+      "label": "Secret key",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "ADMIN_USERNAME",
+      "label": "Admin user",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "ADMIN_PASSWORD",
+      "label": "Admin password",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
    "services": [
     {
      "name": "superset",
@@ -52783,6 +54880,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "postgres",
@@ -52995,6 +55096,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "postgresql",
@@ -53276,6 +55381,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "syncthing",
@@ -53405,6 +55514,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -53608,6 +55721,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "tautulli",
@@ -53732,6 +55849,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "tdarr",
@@ -53942,6 +56063,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "teable",
@@ -54159,6 +56284,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "technitium-dns",
@@ -54324,6 +56453,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -54529,6 +56662,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "guacd",
@@ -54664,6 +56801,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "terraria",
@@ -54771,6 +56912,10 @@
    ],
    "memory_mib": 2048,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "tei",
@@ -54880,6 +57025,10 @@
    "memory_mib": 8192,
    "requires_gpu": true,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "tgi",
@@ -55015,6 +57164,23 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "DB_PASSWORD",
+      "label": "Database password",
+      "required": false,
+      "default_kind": "generated"
+     },
+     {
+      "key": "JWT_SECRET",
+      "label": "JWT secret",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
    "services": [
     {
      "name": "db",
@@ -55189,6 +57355,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -55403,6 +57573,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "traccar",
@@ -55566,6 +57740,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "trailbase",
@@ -55674,6 +57852,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "transmission",
@@ -55819,6 +58001,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "trilium",
@@ -55935,6 +58121,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "triliumnext",
@@ -56087,6 +58277,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "postgres",
@@ -56295,6 +58489,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "typesense",
@@ -56453,6 +58651,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -56625,6 +58827,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "postgres",
@@ -56803,6 +59009,10 @@
    ],
    "memory_mib": 2048,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "unstructured",
@@ -56932,6 +59142,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "kuma",
@@ -57048,6 +59262,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "mariadb",
@@ -57213,6 +59431,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "valkey",
@@ -57333,6 +59555,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "vault",
@@ -57460,6 +59686,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "vaultwarden",
@@ -57594,6 +59824,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "verdaccio",
@@ -57709,6 +59943,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "vert",
@@ -57835,6 +60073,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "victoriametrics",
@@ -57962,6 +60204,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -58145,6 +60391,10 @@
    "memory_mib": 8192,
    "requires_gpu": true,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "vllm",
@@ -58269,6 +60519,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "vvveb",
@@ -58413,6 +60667,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -58596,6 +60854,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "wallabag",
@@ -58737,6 +60999,10 @@
    ],
    "memory_mib": 128,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "wallos",
@@ -58846,6 +61112,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "weaviate",
@@ -59008,6 +61278,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "web-check",
@@ -59139,6 +61413,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -59376,6 +61654,10 @@
    ],
    "memory_mib": 768,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "mongo",
@@ -59502,6 +61784,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "whoogle",
@@ -59640,6 +61926,17 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "DB_PASSWORD",
+      "label": "Database password",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
    "services": [
     {
      "name": "db",
@@ -59824,6 +62121,10 @@
    ],
    "memory_mib": 2048,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -59987,6 +62288,17 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TZ",
+      "label": "Time zone",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
    "services": [
     {
      "name": "wizarr",
@@ -60117,6 +62429,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "woodpecker-agent",
@@ -60330,6 +62646,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -60525,6 +62845,10 @@
    ],
    "memory_mib": 192,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "queue",
@@ -60666,6 +62990,10 @@
    ],
    "memory_mib": 512,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "redis",
@@ -60848,6 +63176,10 @@
    ],
    "memory_mib": 1024,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",
@@ -61079,6 +63411,10 @@
    ],
    "memory_mib": 256,
    "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
    "services": [
     {
      "name": "db",

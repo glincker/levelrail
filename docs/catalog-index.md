@@ -36,6 +36,7 @@ Readers must ignore fields they do not know. A breaking change bumps `schema_ver
 | `admission` | Present when the admission checks ran: `{kev_hit, secrets_allowed, run_url}`. |
 | `images` | One per service: `{service, image, tag, digest, source_class, platforms, signed, provenance, sbom, non_root}`. |
 | `memory_mib`, `requires_gpu`, `needs_config` | Sizing and setup hints. |
+| `install` | Additive, optional. `{kind, fields}`. `kind` is `install` (a template with a settings form, set up with `levelrail-cli templates install <id> --env KEY=VALUE`) or `deploy` (`levelrail-cli templates deploy <id>`). `fields` is `[{key, label, required, default_kind}]`, empty for `deploy`. `required` means no default and no generator. `default_kind` is `generated`, `preset` or `none`. Values are never exported. |
 | `services`, `env`, `requirements` | Ports and volumes per service, environment variable names with a `kind` (never values), and the requirements card. |
 
 ## Trust levels
