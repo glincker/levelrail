@@ -1135,6 +1135,10 @@
     "title": "Etiquetas",
     "valuePlaceholder": "valor"
   },
+  "replicaNotice": {
+    "autoscaleOwned": "El autoescalado define el número de réplicas de esta app. Cambia la política de autoescalado, o quítala, para definir las réplicas a mano.",
+    "sameServer": "Las {{replicas}} réplicas se ejecutan en el mismo servidor. Más réplicas aportan capacidad y reparten la carga allí, pero no protegen la app si ese servidor se cae."
+  },
   "templateDefaults": {
     "memoryNote": "Este límite es el doble de la memoria recomendada de la plantilla, para dejar margen. Edítalo aquí para cambiarlo.",
     "recreateDowntime": "Recrear detiene el contenedor anterior antes de iniciar el nuevo, así que cada despliegue tiene una breve interrupción. Un despliegue que no pasa su comprobación de disponibilidad vuelve a la imagen anterior.",

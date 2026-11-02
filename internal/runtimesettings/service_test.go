@@ -284,7 +284,7 @@ func TestRegistryDefaultsAreValidAndSecure(t *testing.T) {
 			t.Errorf("%s not secure by default", d.Key)
 		}
 	}
-	if len(Definitions()) != 65 {
+	if len(Definitions()) != 66 {
 		t.Fatalf("registry size = %d", len(Definitions()))
 	}
 }
@@ -343,5 +343,16 @@ func TestWeakerThanDefault(t *testing.T) {
 	got, _ = svc.Set(ctx, KeyWebhookReplayWindow, raw(`"30m"`), "alice")
 	if got.WeakerThanDefault {
 		t.Fatal("longer window is stronger")
+	}
+}
+
+func TestDatabasesPoolerDefaultIsOffAndEnvSeeds(t *testing.T) {
+	svc := New(nil, envOf(nil))
+	if got := svc.String(t.Context(), KeyDatabasesPoolerDefault); got != "off" {
+		t.Fatalf("default = %q, want off", got)
+	}
+	svc = New(nil, envOf(map[string]string{"APP_DATABASES_POOLER_DEFAULT": "on"}))
+	if got := svc.String(t.Context(), KeyDatabasesPoolerDefault); got != "on" {
+		t.Fatalf("env seed = %q, want on", got)
 	}
 }

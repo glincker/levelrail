@@ -104,10 +104,22 @@ export function AppOverview({ app }: { app: AppDetail }) {
                 : app.strategy}
             </dd>
           </div>
-          <Field
-            label={t('appOverview.replicas')}
-            value={String(app.replicas)}
-          />
+          <div>
+            <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              {t('appOverview.replicas')}
+            </dt>
+            <dd className="mt-0.5 text-sm text-foreground">
+              {app.replicas}
+              {app.replicas > 1 ? (
+                <span className="mt-0.5 block text-xs text-muted-foreground">
+                  {t('replicaNotice.sameServer', {
+                    ns: 'common',
+                    replicas: app.replicas,
+                  })}
+                </span>
+              ) : null}
+            </dd>
+          </div>
           <div>
             <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
               {t('appOverview.node')}

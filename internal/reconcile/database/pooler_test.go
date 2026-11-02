@@ -118,3 +118,21 @@ func TestPooler_ReplacedWhenPasswordRotates(t *testing.T) {
 		}
 	}
 }
+
+func TestParseShowPools(t *testing.T) {
+	out := "database|user|cl_active|cl_waiting|cl_active_cancel_req|sv_active|maxwait|maxwait_us|pool_mode\n" +
+		"app|app|10|3|0|10|7|500000|transaction\n" +
+		"app|other|1|2|0|1|2|0|transaction\n" +
+		"pgbouncer|pgbouncer|1|0|0|0|0|0|statement\n" +
+		"(3 rows)\n"
+	got, err := ParseShowPools(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ClientsWaiting != 5 || got.MaxWaitSeconds != 7.5 {
+		t.Fatalf("got %+v, want 5 waiting and 7.5s", got)
+	}
+	if _, err := ParseShowPools("psql: error: connection refused"); err == nil {
+		t.Fatal("expected an error for output without a SHOW POOLS header")
+	}
+}

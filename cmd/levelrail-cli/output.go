@@ -309,6 +309,9 @@ func printAppHuman(out io.Writer, a appResource) {
 	if a.NodeID != "" {
 		_, _ = fmt.Fprintf(out, "node:     %s\n", a.NodeID)
 	}
+	if a.Replicas > 1 {
+		_, _ = fmt.Fprintf(out, "replicas: %d, all on the same server (extra replicas add capacity there, not protection if it goes down)\n", a.Replicas)
+	}
 	if a.EnvDirty {
 		_, _ = fmt.Fprintln(out, "env:      pending restart (env vars saved since the running container was last recreated)")
 	}

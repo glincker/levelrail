@@ -476,7 +476,7 @@ func (e *Engine) Tick(ctx context.Context) error {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
-		case KindDatabaseConnections, KindDatabaseDisk, KindDatabaseBackupFailing, KindDatabaseDown, KindDatabaseBackupStale, KindBackupFailed:
+		case KindDatabaseConnections, KindDatabaseDisk, KindDatabaseBackupFailing, KindDatabaseDown, KindDatabaseBackupStale, KindPoolerSaturated, KindBackupFailed:
 			next, backupMissingNoticeText, err = EvaluateDatabaseRuleAll(ctx, e.databaseHealth, e.backups, r, now)
 			if err != nil {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))

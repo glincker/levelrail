@@ -218,3 +218,15 @@ func TestPrintDeployAttemptsHuman_Empty(t *testing.T) {
 		t.Errorf("output = %q, want the empty-state message", buf.String())
 	}
 }
+
+func TestPrintAppHumanReplicasShareServer(t *testing.T) {
+	var one, many bytes.Buffer
+	printAppHuman(&one, appResource{Name: "web", Replicas: 1})
+	printAppHuman(&many, appResource{Name: "web", Replicas: 3})
+	if strings.Contains(one.String(), "same server") {
+		t.Fatalf("single replica should not carry the notice: %q", one.String())
+	}
+	if !strings.Contains(many.String(), "replicas: 3, all on the same server") {
+		t.Fatalf("missing notice: %q", many.String())
+	}
+}

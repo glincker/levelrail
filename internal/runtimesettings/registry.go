@@ -83,6 +83,7 @@ const (
 	KeyExpiredTokenDays        = "retention.expired_token_days" //nolint:gosec // setting key, not a credential
 	KeyDesktopSessionTTL       = "desktop.session_ttl"
 	KeyDomainsDNSWaitBudget    = "domains.dns_wait_budget"
+	KeyDatabasesPoolerDefault  = "databases.pooler_default"
 )
 
 // Definition describes one setting. Default and values are in string form
@@ -214,6 +215,12 @@ func init() {
 		TitleKey: "runtimeSettings:items.containersRestartPolicy.title", DescKey: "runtimeSettings:items.containersRestartPolicy.description",
 		Title:       "Container restart policy",
 		Description: "Docker restart policy for long-running app containers, so apps come back after a host reboot or Docker restart. On a small host (1 GB) many apps starting at boot at once compete for memory; use no to rely on the control plane's sequential start. Applies to containers created on the next deploy or recreate; existing containers keep their old policy.",
+	})
+	Register(Definition{
+		Key: KeyDatabasesPoolerDefault, Category: CategoryDeploys, Kind: KindString, Default: "off",
+		Env: "APP_DATABASES_POOLER_DEFAULT", Apply: ApplyLive, AllowedStrings: []string{"off", "on"},
+		Title:       "Pooler for new Postgres databases",
+		Description: "When on, new Postgres databases get the connection pooler enabled at creation. Existing databases never change. Apps that rely on session features through the pooled url (prepared statements, SET, temp tables) should use direct_url.",
 	})
 	Register(Definition{
 		Key: KeyGameStatusTimeout, Category: CategoryNetworking, Kind: KindDuration, Default: "3s",

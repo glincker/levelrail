@@ -1,7 +1,15 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
 	"os"
+	"strings"
+	"sync"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 	"github.com/GLINCKER/levelrail/internal/version"
@@ -371,6 +379,9 @@ type (
 
 // NewClient identifies requests as this CLI so the audit log can tell CLI actions apart.
 func NewClient(baseURL, token string, extra ...apiclient.Option) *Client {
+	if strings.TrimRight(baseURL, "/") == defaultAPIURL {
+		defaultURLProbe.Do(func() { hintIfNotLevelrail(baseURL, http.DefaultTransport, os.Stderr) })
+	}
 	base := []apiclient.Option{apiclient.WithUserAgent("levelrail-cli/" + version.Version), apiclient.WithRetry(retryPolicyFromEnv(os.LookupEnv))}
 	return apiclient.NewClient(baseURL, token, append(base, extra...)...)
 }
@@ -382,4 +393,30 @@ func pathEscape(s string) string {
 
 func extractErrorMessage(data []byte) string {
 	return apiclient.ExtractErrorMessage(data)
+}
+
+var defaultURLProbe sync.Once
+
+// hintIfNotLevelrail warns once when the zero-config default URL answers but is
+// some other service, so a held port 8080 is not mistaken for a broken login.
+func hintIfNotLevelrail(baseURL string, rt http.RoundTripper, stderr io.Writer) {
+	hc := &http.Client{Transport: rt, Timeout: 700 * time.Millisecond}
+	ctx, cancel := context.WithTimeout(context.Background(), 700*time.Millisecond)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.TrimRight(baseURL, "/")+"/healthz", nil)
+	if err != nil {
+		return
+	}
+	resp, err := hc.Do(req)
+	if err != nil {
+		return
+	}
+	defer func() { _ = resp.Body.Close() }()
+	var body struct {
+		Status string `json:"status"`
+	}
+	if resp.StatusCode == http.StatusOK && json.NewDecoder(io.LimitReader(resp.Body, 4096)).Decode(&body) == nil && body.Status == "ok" {
+		return
+	}
+	_, _ = fmt.Fprintf(stderr, "hint: %s answers but is not a Levelrail API; set %s to your control plane URL\n", baseURL, envLevelrailAPIURL)
 }

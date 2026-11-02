@@ -75,6 +75,7 @@
             "node_offline",
             "node_resource_usage",
             "patch_status",
+            "pooler_saturated",
             "registry_refresh_failing",
             "restore_drill_failed",
             "scheduled_task_failure",

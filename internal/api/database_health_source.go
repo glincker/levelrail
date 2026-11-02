@@ -8,6 +8,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/dbaccess"
+	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -87,4 +88,26 @@ func (rt *Router) DatabaseUp(ctx context.Context, name string) (bool, error) {
 		return false, alerting.ErrDatabaseHealthUnavailable
 	}
 	return state.Running, nil
+}
+
+// PoolerSaturation implements alerting.DatabasePoolerSource. A database without a running pooler reads as unavailable.
+func (rt *Router) PoolerSaturation(ctx context.Context, name string) (int, float64, error) {
+	d, ex, id, err := rt.databaseHealthTarget(ctx, name)
+	if err != nil {
+		return 0, 0, err
+	}
+	if !database.PoolerActive(d) {
+		return 0, 0, alerting.ErrDatabaseHealthUnavailable
+	}
+	pctx, cancel := context.WithTimeout(ctx, databaseHealthTimeout)
+	defer cancel()
+	out, err := dbaccess.ReadPoolerPools(pctx, ex, id, database.PoolerPort)
+	if err != nil {
+		return 0, 0, err
+	}
+	sat, perr := database.ParseShowPools(out)
+	if perr != nil {
+		return 0, 0, alerting.ErrDatabaseHealthUnavailable
+	}
+	return sat.ClientsWaiting, sat.MaxWaitSeconds, nil
 }

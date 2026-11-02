@@ -11,6 +11,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -41,6 +42,21 @@ type databasePoolerResource struct {
 	Status          string `json:"status,omitempty"`
 	Reason          string `json:"reason,omitempty"`
 	Message         string `json:"message,omitempty"`
+}
+
+// enablePoolerAtCreate turns the pooler on for a new Postgres database when databases.pooler_default is on.
+// A failure only logs: the database is usable without a pooler and the operator can enable it later.
+func (rt *Router) enablePoolerAtCreate(ctx context.Context, name, engine string) {
+	if engine != store.EnginePostgres || rt.runtimeSettings == nil || rt.runtimeSettings.String(ctx, runtimesettings.KeyDatabasesPoolerDefault) != "on" {
+		return
+	}
+	ps, ok := rt.databases.(databasePoolerStore)
+	if !ok {
+		return
+	}
+	if err := ps.SetDatabasePooler(ctx, name, true); err != nil {
+		rt.logger.Warn("api: create database: enable pooler failed", slog.String("name", name), slog.String("error", err.Error()))
+	}
 }
 
 const poolerPasswordPlaceholder = "<password>"

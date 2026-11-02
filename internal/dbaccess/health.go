@@ -107,3 +107,9 @@ func parseTwoInts(out string) (int, int, error) {
 	}
 	return a, b, nil
 }
+
+// ReadPoolerPools returns raw pgbouncer SHOW POOLS output, read through the database container's psql so no pooler image tooling is needed.
+func ReadPoolerPools(ctx context.Context, ex Exec, containerID string, port int) (string, error) {
+	return runHealthScript(ctx, ex, containerID, `PGPASSWORD="$POSTGRES_PASSWORD" exec psql -X -A -F '|' --no-password -h 127.0.0.1 -p `+
+		strconv.Itoa(port)+` -U "$POSTGRES_USER" pgbouncer -c 'SHOW POOLS'`)
+}

@@ -3,6 +3,7 @@ import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import commonEn from '../locales/en/common.json'
+import exposureEn from '../locales/en/exposure.json'
 import firewallEn from '../locales/en/firewall.json'
 import rulesEn from '../locales/en/rules.json'
 
@@ -10,10 +11,15 @@ const testI18n = i18next.createInstance()
 void testI18n.use(initReactI18next).init({
   lng: 'en',
   fallbackLng: 'en',
-  ns: ['common', 'firewall', 'rules'],
+  ns: ['common', 'firewall', 'rules', 'exposure'],
   defaultNS: 'common',
   resources: {
-    en: { common: commonEn, firewall: firewallEn, rules: rulesEn },
+    en: {
+      common: commonEn,
+      firewall: firewallEn,
+      rules: rulesEn,
+      exposure: exposureEn,
+    },
   },
   interpolation: { escapeValue: false },
 })

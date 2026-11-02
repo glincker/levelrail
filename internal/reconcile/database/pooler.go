@@ -1,6 +1,7 @@
 package database
 
 import (
+	"bufio"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -78,6 +79,7 @@ func poolerEnv(user, password string, poolSize, maxClientConn int) map[string]st
 		"LISTEN_PORT":        strconv.Itoa(PoolerPort),
 		"POOL_MODE":          "transaction",
 		"AUTH_TYPE":          "scram-sha-256",
+		"STATS_USERS":        user,
 		"SERVER_TLS_SSLMODE": "prefer",
 	}
 	// A per-database value wins over the control plane env default.
@@ -235,4 +237,60 @@ func (c *Controller) removePooler(ctx context.Context) error {
 		return fmt.Errorf("database/%s: %w", c.dbName, err)
 	}
 	return nil
+}
+
+// PoolSaturation is the client queue pgbouncer reports across the pools of one database.
+type PoolSaturation struct {
+	ClientsWaiting int
+	MaxWaitSeconds float64
+}
+
+// ParseShowPools reads psql -A output of pgbouncer SHOW POOLS (header row, then one row per pool, separated by |).
+// Columns are found by header name because their order differs between pgbouncer releases.
+func ParseShowPools(out string) (PoolSaturation, error) {
+	var sat PoolSaturation
+	var cols map[string]int
+	sc := bufio.NewScanner(strings.NewReader(out))
+	for sc.Scan() {
+		line := strings.TrimSpace(sc.Text())
+		if line == "" || strings.HasPrefix(line, "(") {
+			continue
+		}
+		fields := strings.Split(line, "|")
+		if cols == nil {
+			cols = make(map[string]int, len(fields))
+			for i, f := range fields {
+				cols[strings.TrimSpace(f)] = i
+			}
+			if _, ok := cols["cl_waiting"]; !ok {
+				return PoolSaturation{}, fmt.Errorf("pooler: SHOW POOLS output has no cl_waiting column")
+			}
+			continue
+		}
+		if i, ok := cols["database"]; ok && i < len(fields) && strings.TrimSpace(fields[i]) == "pgbouncer" {
+			continue
+		}
+		if n, err := strconv.Atoi(cell(fields, cols["cl_waiting"])); err == nil {
+			sat.ClientsWaiting += n
+		}
+		if i, ok := cols["maxwait"]; ok {
+			w, _ := strconv.ParseFloat(cell(fields, i), 64)
+			if i2, ok := cols["maxwait_us"]; ok {
+				us, _ := strconv.ParseFloat(cell(fields, i2), 64)
+				w += us / 1e6
+			}
+			sat.MaxWaitSeconds = max(sat.MaxWaitSeconds, w)
+		}
+	}
+	if cols == nil {
+		return PoolSaturation{}, fmt.Errorf("pooler: SHOW POOLS returned no rows")
+	}
+	return sat, nil
+}
+
+func cell(fields []string, i int) string {
+	if i < 0 || i >= len(fields) {
+		return ""
+	}
+	return strings.TrimSpace(fields[i])
 }
