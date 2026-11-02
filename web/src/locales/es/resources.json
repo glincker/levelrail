@@ -112,5 +112,38 @@
     "view": "Vista guardada: {{name}}",
     "bucket": "Bucket {{name}}",
     "network": "Red privada {{name}}"
+  },
+  "scale": {
+    "title": "Escala",
+    "tag": "Después de desplegar",
+    "description": "Lo que usa esta app ahora y cómo darle más espacio. Todos los números se leen en vivo de este servidor.",
+    "replicas": "Réplicas",
+    "memoryLimit": "Límite de memoria",
+    "noLimit": "Sin límite",
+    "cpu": "CPU (app completa)",
+    "memory": "Memoria (app completa)",
+    "unknown": "Aún sin datos",
+    "autoscale": "Autoescalado",
+    "autoscaleOff": "Desactivado",
+    "autoscaleOn": "Activado, entre {{min}} y {{max}} réplicas",
+    "lastDecision": "Última decisión: {{reason}} a las {{at}}",
+    "noDecision": "Aún no hay decisiones registradas",
+    "replicaHealth": "Estado de las réplicas",
+    "noReplicaHealth": "El estado por réplica aparece aquí cuando se configura un balanceador de carga para esta app.",
+    "replicaRow": "Réplica {{n}}",
+    "state": {
+      "healthy": "Sana",
+      "unhealthy": "Con fallos",
+      "draining": "Drenando",
+      "disabled": "Desactivada",
+      "unknown": "Desconocido"
+    },
+    "guide": {
+      "title": "Qué hacer después",
+      "resize": "Dar más espacio a cada réplica: sube el límite de memoria en la sección Recursos de arriba y vuelve a desplegar. Súbelo cuando la memoria esté cerca del límite.",
+      "replicas": "Atender más tráfico: sube el número de réplicas en Ajustes de despliegue. Cada réplica es una copia de la app que comparte la carga.",
+      "autoscale": "Seguir la carga automáticamente: activa el autoescalado más abajo y elige un mínimo y un máximo. Está desactivado hasta que lo configures.",
+      "biggerHost": "Pasa a un host más grande cuando el propio servidor se quede corto: la CPU o la memoria del host sigue alta tras ajustar el límite, o más réplicas ya no bajan la carga. Las réplicas de un servidor comparten ese servidor."
+    }
   }
 }

@@ -19,6 +19,10 @@ import {
   type CutoverStep,
   type DomainCutover,
 } from '../../queries/domainCutover'
+import {
+  domainCutoverVerifyQueryOptions,
+  type CutoverVerifyVerdict,
+} from '../../queries/domainCutoverVerify'
 
 const STATE_ICON: Record<CutoverState, { icon: UiIcon; className: string }> = {
   pass: { icon: CircleCheckGlassIcon, className: 'text-emerald-600' },
@@ -187,6 +191,47 @@ export function CutoverChecklist({ data }: { data: DomainCutover }) {
   )
 }
 
+const VERIFY_BADGE: Record<
+  CutoverVerifyVerdict,
+  'success' | 'destructive' | 'muted'
+> = { PASS: 'success', WARN: 'muted', FAIL: 'destructive' }
+
+export function CutoverVerifyLine({ domain }: { domain: string }) {
+  const { t } = useTranslation('domains')
+  const { data, isPending, error, refetch, isFetching } = useQuery(
+    domainCutoverVerifyQueryOptions(domain),
+  )
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-sm">
+      {isPending ? (
+        <span className="text-muted-foreground">
+          {t('cutover.verify.loading')}
+        </span>
+      ) : error || !data ? (
+        <span className="text-destructive">{t('cutover.verify.error')}</span>
+      ) : (
+        <>
+          <Badge variant={VERIFY_BADGE[data.verdict]}>
+            {t(`cutover.verify.verdict.${data.verdict}`)}
+          </Badge>
+          <span>{data.summary}</span>
+        </>
+      )}
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        disabled={isFetching}
+        onClick={() => {
+          void refetch()
+        }}
+      >
+        {t('cutover.verify.recheck')}
+      </Button>
+    </div>
+  )
+}
+
 export function DomainCutoverCard({ domain }: { domain: string }) {
   const { t } = useTranslation('domains')
   const { data, isPending, error } = useQuery(domainCutoverQueryOptions(domain))
@@ -198,5 +243,10 @@ export function DomainCutoverCard({ domain }: { domain: string }) {
   if (error || !data) {
     return <p className="text-sm text-destructive">{t('cutover.error')}</p>
   }
-  return <CutoverChecklist data={data} />
+  return (
+    <div className="space-y-3">
+      <CutoverChecklist data={data} />
+      <CutoverVerifyLine domain={domain} />
+    </div>
+  )
 }

@@ -5,20 +5,13 @@ import (
 	"net"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/GLINCKER/levelrail/internal/cutoververify"
 	"github.com/GLINCKER/levelrail/internal/domaindoctor"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 )
 
-// Env knobs of the cutover verifier.
 const (
-	envVerifyCertWarnDays = "APP_CUTOVER_VERIFY_CERT_WARN_DAYS"
-	envVerifyCertFailDays = "APP_CUTOVER_VERIFY_CERT_FAIL_DAYS"
-	envVerifySlowTTFB     = "APP_CUTOVER_VERIFY_SLOW_TTFB"
-	envVerifyHSTSMinAge   = "APP_CUTOVER_VERIFY_HSTS_MIN_AGE_SECONDS"
-	envVerifyTimeout      = "APP_CUTOVER_VERIFY_TIMEOUT"
-
 	verifyMaxExpectIPs = 16
 )
 
@@ -49,7 +42,8 @@ func (rt *Router) handleDomainCutoverVerify(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	ctx := r.Context()
-	timeout := envDurationOr(envVerifyTimeout, 5*time.Second)
+	cv := rt.cutoverVerifySettings(ctx)
+	timeout := cv.Timeout
 	var server []string
 	for _, ip := range r.URL.Query()["expect_ip"] {
 		if net.ParseIP(strings.TrimSpace(ip)) == nil || len(server) >= verifyMaxExpectIPs {
@@ -85,12 +79,22 @@ func (rt *Router) handleDomainCutoverVerify(w http.ResponseWriter, r *http.Reque
 		d.Prober = cutoververify.NetProber{Timeout: timeout, HTTPSPort: port}
 	}
 	opts := cutoververify.Options{
-		CertWarnDays: envIntDefault(envVerifyCertWarnDays, 21),
-		CertFailDays: envIntDefault(envVerifyCertFailDays, 7),
-		SlowTTFB:     envDurationOr(envVerifySlowTTFB, 1500*time.Millisecond),
-		HSTSMinAge:   envIntDefault(envVerifyHSTSMinAge, 15552000),
+		CertWarnDays: cv.CertWarnDays,
+		CertFailDays: cv.CertFailDays,
+		SlowTTFB:     cv.SlowTTFB,
+		HSTSMinAge:   cv.HSTSMinAge,
 	}
 	vctx, cancel := context.WithTimeout(ctx, timeout*4)
 	defer cancel()
 	writeJSON(w, http.StatusOK, cutoververify.Verify(vctx, d, domain, server, opts))
+}
+
+// cutoverVerifySettings reads the thresholds at request time; without a
+// settings service the registered defaults apply.
+func (rt *Router) cutoverVerifySettings(ctx context.Context) runtimesettings.CutoverVerify {
+	svc := rt.runtimeSettings
+	if svc == nil {
+		svc = runtimesettings.New(nil, func(string) (string, bool) { return "", false })
+	}
+	return svc.CutoverVerify(ctx)
 }

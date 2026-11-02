@@ -80,3 +80,23 @@ func TestFallbackCertsSetting(t *testing.T) {
 		t.Errorf("after set = %q, want lazy", got)
 	}
 }
+
+func TestCutoverVerifyReadsSavedThenEnvAndClamps(t *testing.T) {
+	svc := New(nil, envOf(map[string]string{
+		"APP_CUTOVER_VERIFY_CERT_WARN_DAYS":  "3",
+		"APP_CUTOVER_VERIFY_CERT_FAIL_DAYS":  "9",
+		"APP_CUTOVER_VERIFY_SLOW_TTFB":       "1ns",
+		"APP_CUTOVER_VERIFY_REQUEST_TIMEOUT": "2s",
+	}))
+	v := svc.CutoverVerify(t.Context())
+	if v.CertFailDays != 9 || v.CertWarnDays != 9 {
+		t.Fatalf("warn must not fall below fail: %+v", v)
+	}
+	if v.SlowTTFB != minVerifySlowTTFB || v.Timeout != 2*time.Second || v.HSTSMinAge != 15552000 {
+		t.Fatalf("unexpected thresholds: %+v", v)
+	}
+	d, _ := svc.definition(KeyCutoverVerifyTimeout)
+	if d.CheckValue("500ms") == nil || d.CheckValue("5s") != nil {
+		t.Fatal("timeout range not enforced")
+	}
+}

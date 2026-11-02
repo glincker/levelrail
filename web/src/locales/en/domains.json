@@ -1194,6 +1194,16 @@
       "switch_dns": "Switch DNS to this server",
       "authoritative": "Verified from authoritative servers",
       "live": "Verified end to end over the real name"
+    },
+    "verify": {
+      "loading": "Checking the live name...",
+      "error": "Could not check the live name.",
+      "recheck": "Check again",
+      "verdict": {
+        "PASS": "Ready",
+        "WARN": "Warnings",
+        "FAIL": "Failed"
+      }
     }
   }
 }

@@ -64,6 +64,7 @@ func generateBlock(templates []catalog.Template) string {
 		byCategory[t.Category] = append(byCategory[t.Category], t)
 	}
 	order := append([]string{}, categoryOrder...)
+	var extra []string
 	for cat := range byCategory {
 		found := false
 		for _, c := range order {
@@ -73,9 +74,12 @@ func generateBlock(templates []catalog.Template) string {
 			}
 		}
 		if !found {
-			order = append(order, cat)
+			extra = append(extra, cat)
 		}
 	}
+	// Sorted so map iteration order cannot reshuffle the generated doc.
+	sort.Strings(extra)
+	order = append(order, extra...)
 
 	var b strings.Builder
 	fmt.Fprintf(&b, "Generated from `internal/catalog.Templates` (%d entries as of this build). ", len(templates))

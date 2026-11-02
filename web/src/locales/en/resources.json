@@ -112,5 +112,38 @@
     "view": "Saved view: {{name}}",
     "bucket": "Bucket {{name}}",
     "network": "Private network {{name}}"
+  },
+  "scale": {
+    "title": "Scale",
+    "tag": "After you deploy",
+    "description": "What this app is using right now and how to give it more room. Every number here is read live from this server.",
+    "replicas": "Replicas",
+    "memoryLimit": "Memory limit",
+    "noLimit": "No limit set",
+    "cpu": "CPU (whole app)",
+    "memory": "Memory (whole app)",
+    "unknown": "Not reported yet",
+    "autoscale": "Autoscale",
+    "autoscaleOff": "Off",
+    "autoscaleOn": "On, between {{min}} and {{max}} replicas",
+    "lastDecision": "Last decision: {{reason}} at {{at}}",
+    "noDecision": "No decision recorded yet",
+    "replicaHealth": "Replica health",
+    "noReplicaHealth": "Per-replica health appears here once a load balancer is set up for this app.",
+    "replicaRow": "Replica {{n}}",
+    "state": {
+      "healthy": "Healthy",
+      "unhealthy": "Unhealthy",
+      "draining": "Draining",
+      "disabled": "Disabled",
+      "unknown": "Unknown"
+    },
+    "guide": {
+      "title": "What to do next",
+      "resize": "Give each replica more room: raise the memory limit in the Resources section above, then redeploy. Raise it when memory sits close to the limit.",
+      "replicas": "Handle more traffic: raise the replica count in Deploy settings. Each replica is a copy of the app that shares the load.",
+      "autoscale": "Let the app follow load: turn on autoscaling below and choose a minimum and a maximum. It is off until you set it up.",
+      "biggerHost": "Move to a bigger host when the server itself runs short: CPU or memory stays high on the host after you resize, or adding replicas no longer lowers the load. Replicas on one server share that server."
+    }
   }
 }

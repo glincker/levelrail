@@ -1194,6 +1194,16 @@
       "switch_dns": "Cambiar el DNS a este servidor",
       "authoritative": "Verificado en los servidores autoritativos",
       "live": "Verificado de extremo a extremo con el nombre real"
+    },
+    "verify": {
+      "loading": "Comprobando el nombre real...",
+      "error": "No se pudo comprobar el nombre real.",
+      "recheck": "Comprobar de nuevo",
+      "verdict": {
+        "PASS": "Listo",
+        "WARN": "Avisos",
+        "FAIL": "Fallido"
+      }
     }
   }
 }
