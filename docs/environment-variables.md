@@ -94,6 +94,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_COOKIE_SECURE` | unset (Secure only when the dashboard URL is `https://`) | Set to `true` to always mark the session cookie Secure. Use it when a proxy terminates TLS in front of an `http://` dashboard URL. Control plane. |
 | `APP_STATIC_ASSET_MAX_AGE` | `31536000` | Lifetime in seconds of the `immutable` `Cache-Control` sent for fingerprinted static site assets. See [Static routing](/static-routing#default-caching-and-compression). Ingress. |
 | `APP_STATIC_COMPRESS_MIN_LENGTH` | `256` | Smallest static site response in bytes that is compressed. Ingress. |
+| `APP_AUTH_APPROVER_SESSION_FRESH_FOR` | ``30m`` | How recently an approver must have signed in to approve a new device or sign-in. Control plane. |
 
 ## Supply chain gate
 
@@ -117,6 +118,15 @@ The control plane builds images with BuildKit. By default each build starts from
 | `APP_BUILD_CGROUP_ROOT` | `/sys/fs/cgroup` | Where the control plane creates the per-build cgroups that enforce the memory and CPU limits. |
 | `APP_REGISTRY_ALLOW_PRIVATE_NETWORKS` | unset (off) | Registries on private LAN ranges (RFC 1918, `fc00::/7`) work by default when you add or browse a registry credential. Set to `true` to also allow loopback registries. Link-local and cloud metadata addresses are always refused. Control plane. |
 | `APP_PLATFORM_MISMATCH` | `refuse-when-no-emulation` | What a deploy does when the image has no build for the node CPU architecture. `refuse-when-no-emulation` fails the deploy with a clear reason unless the node has qemu binfmt emulation for the image architecture (it then warns that the app runs under emulation and may be slow, and only warns if emulation cannot be checked). `warn` never refuses. `refuse` always refuses. Control plane. |
+| `APP_BUILDKIT_IMAGE` | ``docker.io/moby/buildkit:v0.34.1-rootless`` | BuildKit image the build daemon runs. Control plane. |
+| `APP_BUILDKIT_SNAPSHOTTER` | ``auto`` | Snapshotter the build daemon uses. An unknown value fails startup. Control plane. |
+| `APP_BUILDKIT_GC_KEEP_MB` | computed | Build cache size in MB that garbage collection keeps. Control plane. |
+| `APP_BUILDKIT_GC_KEEP_DURATION` | computed | How long unused build cache is kept before garbage collection. Control plane. |
+| `APP_BUILDKIT_HEALTH_TIMEOUT` | computed | Time limit for the build daemon health check. Control plane. |
+| `APP_BUILDKIT_IDLE_STOP` | computed | How long the build daemon may sit idle before it stops. Control plane. |
+| `APP_BUILDKIT_RESTART_BACKOFF` | computed | First wait before restarting a failed build daemon. Control plane. |
+| `APP_BUILDKIT_RESTART_BACKOFF_MAX` | computed | Longest wait between build daemon restart attempts. Control plane. |
+| `APP_BUILDKIT_UPGRADE_WAIT` | computed | How long an upgrade waits for the build daemon to finish before it is replaced. Control plane. |
 
 ## Source cache and git fetches
 
@@ -163,6 +173,9 @@ The pipeline engine's own tuning variables are listed in [Pipelines](/pipelines)
 | `APP_OIDC_KEY_RETIRE_GRACE` | `24h` | How long a rotated-out signing key stays published in the JWKS document before it is removed. Control plane. |
 | `APP_OIDC_JWKS_RATE_LIMIT_PER_MINUTE` | `60` | Rate limit on the unauthenticated JWKS endpoint. Positive integer. Control plane. |
 | `APP_OIDC_TOKEN_REQUEST_PORT` | `9095` | Port of the runtime token request endpoint, bound to the Docker bridge gateway address so only job containers can reach it. Positive integer. Control plane. |
+| `APP_OIDC_ISSUER_URL` | computed | Issuer URL in pipeline OIDC tokens. Defaults to the dashboard URL over HTTPS when unset. Control plane. |
+| `APP_OIDC_TOKEN_REQUEST_RETRY` | ``5s`` | How long the pipeline token endpoint waits between retries when its listener cannot bind yet. Control plane. |
+| `APP_PIPELINE_ARTIFACT_DIR` | computed | Directory where pipeline artifacts are stored. When unset, jobs that declare artifacts fail with a clear error. Control plane. |
 
 ## Scheduling and background intervals
 
@@ -187,6 +200,9 @@ These tune the scheduled off-box copy of the control plane's own state and its r
 | --- | --- | --- |
 | `APP_CONTROL_PLANE_OFFBOX_RETAIN_WEEKLY` | `4` | Number of weekly backups kept. Positive integer. |
 | `APP_CONTROL_PLANE_OFFBOX_RETAIN_MONTHLY` | `6` | Number of monthly backups kept. Positive integer. |
+| `APP_BACKUP_ENCRYPTION_KEY_FILE` | computed | Key file that encrypts backups when backup encryption is on. Control plane. |
+| `APP_BACKUP_LOCAL_ROOT` | computed | Absolute directory that confines local backup targets. Local targets fail unless this or APP_DATA_DIR is an absolute path. Control plane. |
+| `APP_CONTROL_PLANE_DRILL_IDENTITY_FILE` | computed | Age identity file the disaster-recovery drill uses to decrypt backups when it tests a restore. Control plane. |
 
 ## Point-in-time restore
 
@@ -240,6 +256,7 @@ How these are used is on [Data export](/data-export). Positive values only; anyt
 | `APP_EXPORT_AUDIT_BATCH` | `500` | Audit rows per batch and per page of a download. Integer. |
 | `APP_EXPORT_AUDIT_MAX_ROWS` | `1000000` | Maximum rows in one audit log download. Integer. |
 | `APP_EXPORT_METRICS_INTERVAL` | `60s` | Default OTLP metrics push interval. Duration. |
+| `APP_EXPORT_SPOOL_DIR` | computed | Directory where log export destinations keep their on-disk backlog. Unset uses a folder under the data directory, and APP_EXPORT_SPOOL=false turns the backlog off. Control plane. |
 
 ## Event webhooks
 
@@ -252,6 +269,7 @@ Signed JSON posts sent when audited actions succeed. Positive durations only; an
 | `APP_EVENT_WEBHOOK_BACKOFF_MAX` | `1h` | Cap on the retry wait. Duration. |
 | `APP_EVENT_WEBHOOK_TIMEOUT` | `10s` | Timeout of one delivery request. Duration. |
 | `APP_EVENT_WEBHOOK_QUEUE_SIZE` | `1024` | Events held in memory while waiting to be sent. Positive integer. |
+| `APP_STATUS_WEBHOOK_BACKOFF_MAX` | ``1h`` | Longest wait between status webhook retries. Control plane. |
 
 ## Ingress
 
@@ -262,6 +280,11 @@ The edge hardening limits are in [Domains and ingress](/domains-and-ingress#edge
 | `APP_INGRESS_RETRY_INTERVAL` | `250ms` | Pause between retries when a proxied backend cannot be reached during the `APP_INGRESS_RETRY_WINDOW`. A negative or unparseable value is a startup error, not a silent fallback. |
 | `APP_INGRESS_SOCKET_ACTIVATION` | `auto` | Controls use of sockets inherited from systemd. `auto` uses them if present. `true` (also `1`, `on`) makes missing inherited sockets a startup error. `false` (also `0`, `off`) ignores them. See [Surviving a control plane restart](/domains-and-ingress#surviving-a-control-plane-restart). |
 | `APP_CLOUDFLARED_IMAGE` | `cloudflare/cloudflared:2026.10.7` | Image that runs the Cloudflare Tunnel daemon. Set it to bump the pinned tag or point at a mirror without a new release. Control plane. Source: `internal/reconcile/cloudflaretunnel/controller.go`. |
+| `APP_INGRESS_CACHE_REASON_KEYS` | ``32`` | Distinct reason keys counted per cache window. Keys past the limit are folded together. Ingress. |
+| `APP_INGRESS_CACHE_TOP_REASONS` | ``5`` | How many top reasons the API lists per app. Ingress. |
+| `APP_SHIELD_BOT_LIST_FILE` | computed | Path to a bot list file the traffic shield uses. Ingress. |
+| `APP_GATE_SWEEP_INTERVAL` | ``1h`` | How often the auth gate sweeper clears expired gate tokens. Ingress. |
+| `APP_PUBLIC_HOST` | computed | Public host name used in generated links, overriding the detected host. Control plane. |
 
 ## Dynamic DNS
 
@@ -292,6 +315,9 @@ Public address detection, shared with the updater. Source: `internal/ingress/pub
 | `APP_PUBLIC_IP_DETECT` | on | `off`, `0`, `false`, `no` or `disabled` stops address detection and keeps the dynamic DNS env default off. |
 | `APP_PUBLIC_IP_PROBE_URLS` | `https://api.ipify.org`, `https://icanhazip.com`, `https://ifconfig.me/ip` | Probe URLs, comma or space separated. |
 | `APP_PUBLIC_IP_PROBE_TIMEOUT` | `4s` | Time limit for boot-time detection. |
+| `APP_DNS_AUTOMATION_TIMEOUT` | ``20s`` | Time budget for DNS lookups made by DNS automation. Control plane. |
+| `APP_DNS_RECORDS_PAGE_LIMIT` | ``500`` | Records returned per page of the DNS records list when no limit is given. Control plane. |
+| `APP_DNS_RECORDS_PAGE_MAX` | ``1000`` | Largest page size the DNS records list accepts. Control plane. |
 
 ## Off-host heartbeat
 
@@ -316,6 +342,10 @@ Pings sent while the control plane is healthy, and per-job pings. See [Off-host 
 | `APP_CRITICAL_REQUEST_THRESHOLD` | `2s` | API requests slower than this are logged at Error level. Control plane. |
 | `APP_DASHBOARD_CACHE_TTL` | `5s` | How long the dashboard's aggregate reads (app and node resource usage, apps metrics, system status, doctor) are reused between requests. `0` disables the cache. Control plane. |
 | `APP_DASHBOARD_CACHE_STALE` | `1m` | How long past the TTL a cached aggregate may still be served while one background refresh runs. Control plane. |
+| `APP_CLI_PAIRING_CREATE_PER_MINUTE` | ``5`` | Pairing codes a client may create per minute. Control plane. |
+| `APP_DB_REVEAL_PER_MINUTE` | ``5`` | Database credential reveals allowed per minute. Control plane. |
+| `APP_INSTANCE_INFO_RATE_PER_MINUTE` | ``60`` | Requests per minute the instance info endpoint accepts. Control plane. |
+| `APP_SCIM_REQUESTS_PER_TOKEN_PER_MINUTE` | ``600`` | SCIM requests each token may make per minute. Control plane. |
 
 For all of these, a value that does not parse logs a warning and uses the default. For the two request thresholds, zero or a negative duration also means the default.
 
@@ -336,12 +366,34 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 | `APP_DIAGNOSE_PROBE_TIMEOUT` | `4s` | Time limit for each live probe (container state and container logs) when diagnosing an app. Zero or invalid values use the default. Control plane. |
 | `APP_ATTENTION_COPY_FAILURE_DAYS` | `14` | Days a failed data copy stays in the attention feed before it drops to history. Positive integer. Control plane. |
 | `APP_ATTENTION_DIAGNOSE_LIMIT` | `10` | Maximum number of distinct apps `levelrail-cli attention` asks the control plane to diagnose when it marks items as fixable. Integer, `0` skips diagnosis. CLI. |
+| `APP_ANALYSIS_DEPLOY_PROXIMITY` | ``1h`` | How close to a deploy an event must be before the analysis links it to that deploy. Control plane. |
+| `APP_ANALYSIS_LOG_ERROR_MIN` | ``5`` | Error log lines needed before the analysis reports an error pattern. Control plane. |
+| `APP_ANALYSIS_LOG_GROUPS` | ``10`` | Most log groups the analysis reports per app. Control plane. |
+| `APP_ANALYSIS_LOG_SAMPLE_BYTES` | ``200`` | Bytes of each log line kept as a sample in the analysis output. Control plane. |
+| `APP_ANALYSIS_MAX_CONCURRENT` | ``2`` | How many app analyses may run at once. Control plane. |
+| `APP_ANALYSIS_MAX_EVENTS` | ``50`` | Most events the analysis keeps for one app. Control plane. |
+| `APP_ANALYSIS_RESTART_THRESHOLD` | ``3`` | Restarts in the analysis window before a restart finding is raised. Control plane. |
+| `APP_ANALYSIS_TIMEOUT` | ``30s`` | Time limit for one analysis run. Control plane. |
+| `APP_ANALYSIS_TREND_PCT` | ``10`` | Percent change between windows that counts as a trend. Control plane. |
+| `APP_ANALYSIS_UTILIZATION_PCT` | ``85`` | Resource use percent that raises a utilization finding. Control plane. |
+| `APP_SPF_LOOKUP_LIMIT` | ``10`` | DNS lookups the SPF check counts before it reports a failure. The protocol limit is 10. Control plane. |
+| `APP_SPF_DEPTH_LIMIT` | ``10`` | Deepest nesting of SPF include and redirect records the check follows. Control plane. |
+| `APP_FIXIT_DISK_FREE_PERCENT` | ``10`` | Free disk percent below which the fix-it page warns about disk space. Control plane. |
+| `APP_CLI_CONSOLE_HOST` | computed | Set to off, false, 0, no or disabled to turn off host diagnostics in the CLI console. Control plane. |
+| `APP_READINESS_MIN_DISK_GB` | ``10`` | Free disk in GB that the server readiness check requires. Control plane. |
+| `APP_READINESS_MIN_RAM_MB` | ``1024`` | Memory in MB that the server readiness check requires. Control plane. |
+| `APP_READINESS_MIN_DOCKER_MAJOR` | ``24`` | Minimum Docker major version that the server readiness check requires. Control plane. |
 
 ## Updates
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `APP_UPDATE_CHECK_INTERVAL` | `1h` | How often the control plane checks the configured release channel for a newer version. Control plane. |
+| `APP_DOCKER_KNOWN_BAD_FILE` | computed | Path to a known-bad Docker version list that replaces the built-in list in the upgrade preflight. Control plane. |
+| `APP_IMAGE_VERIFY_PUBKEY_FILE` | computed | Public key file for image signature checks, used when image verification is enforced. Control plane. |
+| `APP_ADVISORY_FEED_PUBKEY` | computed | Public key that verifies signed advisory feed entries. Control plane. |
+| `APP_UPGRADE_SCHEDULER_INTERVAL` | computed | How often the upgrade scheduler checks for upgrades that are due. Control plane. |
+| `APP_UPGRADE_START_TIMEOUT` | computed | Time limit for starting a scheduled upgrade. Control plane. |
 
 ## Plugin egress proxy
 
@@ -372,6 +424,7 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `APP_MESH_KEY_FILE` | `levelrail-agent-mesh.key` in the same directory as the agent identity file | Path where the agent stores its WireGuard private key. Only used when `APP_MESH_ENABLED=1`. Agent. See [Network topology](/network-topology). |
+| `APP_MESH_DNS_ADDR` | ``:5390`` | Address the mesh DNS server listens on. The port is unprivileged so the process can bind without root. Control plane. |
 
 ## App networks
 
@@ -389,6 +442,259 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 | `APP_SECRET_ROTATION_MAX_PER_PASS` | `10` | Most scheduled rotations one sweep starts, so restarts spread out. Positive integer. Control plane. |
 | `APP_SECRET_ROTATION_GRACE_HOURS` | `24` | How long a manually rotated app secret or Vault credential keeps its previous value. Positive integer of hours. Control plane. |
 | `APP_SECRET_ROTATION_DEFAULT_INTERVAL_DAYS` | `90` | Rotation interval given to a secret that is rotated by hand before it has a policy. Positive integer. Control plane. |
+| `APP_KMS_PROVIDER` | computed | External key service that wraps the master key, selected by the wrap-master-key command. Control plane. |
+| `APP_VAULT_ADDR` | unset | Address of the Vault server used as the external key service. Control plane. |
+| `APP_VAULT_NAMESPACE` | unset | Vault namespace for the external key service, when Vault uses namespaces. Control plane. |
+| `APP_VAULT_TOKEN` | unset | Vault token for the transit key service. Prefer APP_VAULT_TOKEN_FILE so the token stays out of the environment. Control plane. |
+| `APP_VAULT_TOKEN_FILE` | unset | Path to a file holding the Vault token, read when APP_VAULT_TOKEN is empty. Control plane. |
+| `APP_VAULT_TRANSIT_KEY` | unset | Name of the Vault transit key that wraps the master key. Control plane. |
+| `APP_VAULT_TRANSIT_MOUNT` | computed | Mount path of the Vault transit secrets engine. Control plane. |
+| `APP_MASTER_KEY` | unset | Master key material given inline, used for disaster recovery instead of the master key file. Keep it out of shared logs. Control plane. |
+| `APP_MASTER_KEY_FILE` | computed | Absolute path to the master key file, replacing the default file in the data directory. Control plane. |
+
+## Bootstrap and paths
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_ADMIN_PASSWORD` | unset | Password for the first admin account, read only while no user exists and used with APP_ADMIN_USERNAME. It is needed before the database opens, so changing it needs a restart. Control plane. |
+| `APP_SETUP_TOKEN` | unset | Setup token the host prints, passed to the CLI setup admin command to create the first admin on a fresh server. CLI. |
+| `APP_BRAND_FILE` | computed | Path to a brand.yaml file that sets the product names and docs URL before environment overrides apply. Defaults to ./brand.yaml. CLI and agent. |
+| `APP_BRAND_NAME` | computed | Product name the CLI uses, overriding the built-in brand. CLI. |
+| `APP_BRAND_SHORT_NAME` | computed | Short brand name the CLI uses for its server credentials key, lowercased. CLI. |
+| `APP_BRAND_BINARY_NAME` | computed | CLI binary name shown in help and install output. The MCP binary name is derived from it. CLI. |
+| `APP_BRAND_DOCS_URL` | computed | Base URL the deploy command uses for its launcher link, with /deploy.html appended. CLI. |
+| `APP_CHANGELOG_FILE` | ``./CHANGELOG.md`` | Path to the changelog shown in the what's-new panel. A missing file is not an error, and the panel is simply empty. Control plane. |
+| `APP_CLI_BINARY` | computed | Path to the CLI binary the control plane console runs. Unset looks for it next to the control plane binary, never on PATH. Control plane. |
+| `APP_AUDIT_ANCHOR_DIR` | computed | Local directory where audit log anchors, which are checkpoints of the audit log, are written. Control plane. |
+
+## Startup and restarts
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_BOOT_BACKOFF_BASE` | ``2s`` | First wait before the next startup attempt after a failed boot. The wait doubles per failure up to the maximum. Control plane. |
+| `APP_BOOT_BACKOFF_MAX` | ``1m`` | Longest wait between startup attempts after failed boots. Control plane. |
+| `APP_BOOT_HEALTHY_AFTER` | ``30s`` | How long a boot must stay up before the failure count resets. Control plane. |
+| `APP_SAFE_MODE_AFTER_FAILURES` | ``3`` | Consecutive failed boots before the control plane starts in safe mode. Control plane. |
+| `APP_RESTART_SUPERVISED` | computed | Set to 1 or true when a supervisor relaunches the control plane after it exits. This overrides automatic detection. Control plane. |
+| `APP_LOCAL_MODE` | computed | Set to 1, true, yes or on to run the process as a local instance on one machine. Control plane. |
+
+## Docker engine
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_DOCKER_BOOT_TIMEOUT` | ``10s`` | How long the control plane waits for the Docker engine to answer at startup. Control plane. |
+| `APP_DOCKER_CALL_TIMEOUT` | ``30s`` | Time limit for each call to the Docker engine. Control plane. |
+| `APP_DOCKER_GUARD_SOCKET` | computed | Unix socket where the Docker API guard listens for app containers. The path must fit the socket path length limit. Control plane. |
+| `APP_CONTAINER_RUNTIME_SOCKET` | computed | Engine socket tried first in local mode, before DOCKER_HOST and the default Docker socket paths. Control plane. |
+| `APP_LEFTOVER_VOLUME_CHECK_TIMEOUT` | ``5s`` | Time limit for the Docker call that checks for leftover volumes before a create. Control plane. |
+| `APP_DISK_DOCKER_ROOT` | ``/var/lib/docker`` | Docker data directory the disk guard watches for free space. Control plane. |
+
+## Node agent and capacity
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_AGENT_ADDR` | computed | Address the agent gRPC listener binds to. Unset binds to loopback only on the minimal profile until a remote node exists. Control plane. |
+| `APP_AGENT_ADVERTISE_HOST` | ``127.0.0.1`` | Host name or IP agents dial for the gRPC server. It must match the server's TLS certificate, so the default only works on one machine. Control plane. |
+| `APP_AGENT_IDENTITY_FILE` | ``./levelrail-agent-identity.json`` | File where the agent stores its enrolled identity. Agent. |
+| `APP_AGENT_LOG_BATCH_MAX` | ``5000`` | Most log lines the agent sends in one relay batch. Agent. |
+| `APP_AGENT_MIN_SAFE_VERSION` | ``0.8.5`` | Oldest agent version a node may run before database changes on it are held back. Control plane. |
+| `APP_AGENT_STORAGE_DIR` | computed | Directory for the agent's file storage. Unset keeps the agent's default storage. Agent. |
+| `APP_JOIN_TOKEN` | computed | Join token the agent uses to enroll on first start, and only when no identity file exists yet. Agent. |
+| `APP_REENROLL_TOKEN` | computed | Token the agent uses to enroll again after its identity is lost. Agent. |
+| `APP_REMOTE_LOG_POLL` | ``2s`` | How often the agent log relay polls for new remote log lines. Agent. |
+| `APP_NODE_ONBOARDING_SYNC_INTERVAL` | ``10s`` | How often node onboarding applies each node's detected provider, region and zone. Control plane. |
+| `APP_NODE_RECOVERY_WINDOW` | ``2m`` | How long after a node comes back online it still counts as recently recovered. Control plane. |
+| `APP_NODE_INODE_WARN_FREE_PCT` | ``15`` | Free inode percent below which a node shows a warning. Control plane. |
+| `APP_NODE_INODE_CRIT_FREE_PCT` | ``5`` | Free inode percent below which a node is critical. Control plane. |
+| `APP_NODE_MEM_WARN_AVAIL_PCT` | ``10`` | Available memory percent below which a node shows a warning. Control plane. |
+| `APP_NODE_MEM_CRIT_AVAIL_PCT` | ``4`` | Available memory percent below which a node is critical. Control plane. |
+| `APP_NODE_SWAP_WARN_USED_PCT` | ``50`` | Swap used percent above which a node shows a warning. Control plane. |
+| `APP_NODE_SWAP_CRIT_USED_PCT` | ``85`` | Swap used percent above which a node is critical. Control plane. |
+
+## Deploys and databases
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_DEPLOY_APPROVAL_CLAIM_TIMEOUT` | ``15m`` | How long an approving claim on a deploy approval may stand before recovery treats the claimer as gone. Control plane. |
+| `APP_DEPLOY_ROLLOUT_CRASHLOOP_RESTARTS` | ``2`` | Restarts during a rollout before it counts as a crash loop and fails. Control plane. |
+| `APP_DEFAULT_ALERTS` | computed | Set to off to skip creating the default alert rules on first start. Control plane. |
+| `APP_DB_CRASH_LOOP_RESTARTS` | ``3`` | Restarts before a database counts as crash-looping. Control plane. |
+| `APP_DB_PROVISION_STREAM_INTERVAL` | ``1s`` | How often the database provision stream sends progress to the dashboard. Control plane. |
+| `APP_DB_RECREATE_LIMIT` | ``5`` | Database recreates allowed inside the recreate window before backoff starts. Control plane. |
+| `APP_DB_RECREATE_WINDOW` | ``10m`` | Time window over which database recreates are counted. Control plane. |
+| `APP_DB_RECREATE_BACKOFF_BASE` | ``30s`` | First wait before another database recreate once the limit is reached. Each recreate past the limit doubles the wait. Control plane. |
+| `APP_DB_RECREATE_BACKOFF_MAX` | ``15m`` | Longest wait between database recreates under backoff. Control plane. |
+| `APP_EXTERNAL_DB_PROBE_TIMEOUT` | ``2m`` | Time limit for probing an external database connection. Control plane. |
+| `APP_PREVIEW_SEED_TIMEOUT` | ``30m`` | Time limit for seeding a preview's database from the newest source backup. Control plane. |
+| `APP_FAILURE_CONTEXT_QUIET` | ``2m`` | How long an app must run without restarting after recovery before a past crash loop stops showing as current. Control plane. |
+| `APP_RERUN_CHAIN_MAX_DEPTH` | ``50`` | Longest chain of deploy reruns followed when counting attempts. Control plane. |
+| `APP_LB_TRAFFIC_WINDOW` | ``5m`` | Time window over which load balancer traffic is counted. Control plane. |
+| `APP_SECRETMASK_MAX_VALUES` | ``20000`` | Most secret values the output redactor tracks at once. Control plane. |
+| `APP_TOKEN_CLEANUP_MAX_BATCHES` | ``25`` | Most batches the token cleanup deletes in one run. Control plane. |
+
+## Infrastructure stacks
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_STACK_HISTORY_LIMIT` | ``50`` | Apply runs kept in each stack's history. Control plane. |
+| `APP_STACK_DRIFT_SUMMARY_MAX` | ``50`` | Most drifted resources listed in a stack drift summary. Control plane. |
+| `APP_STACK_LOCK_TTL` | ``10m`` | How long a stack apply lock lasts without renewal before it expires. Control plane. |
+| `APP_STACK_LOCK_RENEW_FRACTION` | ``3`` | The apply lock renews every TTL divided by this value, so one missed renewal is survivable. Values below 2 are ignored. Control plane. |
+| `APP_STACK_OIDC_TTL` | ``15m`` | Lifetime of the OIDC token minted for a stack apply. Control plane. |
+
+## Assets and object storage
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_ASSETS_UPLOAD_MAX_BYTES` | computed | Largest single asset upload the API accepts, in bytes. Control plane. |
+| `APP_ASSETS_PRESIGN_MAX_TTL` | ``1h`` | Longest lifetime a presigned asset URL may be requested with. Accepts a Go duration such as 30m. Control plane. |
+| `APP_ASSETS_EXPOSURE_TIMEOUT` | ``10s`` | Time limit for the public exposure probe of an asset bucket. Control plane. |
+| `APP_ASSETS_USAGE_MAX_OBJECTS` | computed | Most objects the asset usage report counts before it stops and marks the result truncated. Control plane. |
+
+## Local models
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_MODEL_WEIGHTS_DIR` | computed | Directory where downloaded model weights are stored. Control plane. |
+| `APP_MODEL_DOWNLOAD_RETRY_SECONDS` | ``15s`` | Wait before retrying a failed model weight download. Control plane. |
+| `APP_MODEL_CPU_OVERHEAD_MIB` | ``512`` | Memory in MiB kept free for the model runtime on CPU hosts, on top of the model itself. Control plane. |
+| `APP_MODEL_BENCH_MAX_TOKENS` | ``64`` | Tokens generated in each model benchmark run. Control plane. |
+
+## Mail server
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_MAIL_ADMIN_PORT` | ``8080`` | Port of the mail server's admin API on the app network. The control plane resolves the host, and the port is not reachable from outside that network. Control plane. |
+| `APP_MAIL_API_TIMEOUT` | ``10s`` | Time limit for each call to the mail server API. Control plane. |
+| `APP_MAIL_API_MAX_BYTES` | ``1 MiB`` | Largest mail server API response the control plane reads. Control plane. |
+| `APP_MAIL_CERT_POLL_SECONDS` | computed | Seconds between checks while waiting for a mail certificate to be issued. Control plane. |
+| `APP_MAIL_CERT_PROBE_TIMEOUT_SECONDS` | computed | Seconds allowed for one mail certificate probe. Control plane. |
+| `APP_MAIL_MTASTS_MAX_AGE` | ``86400`` | MTA-STS policy max age in seconds, written into generated mail records when the record set does not give one. Control plane. |
+| `APP_SMTP_HOST` | computed | SMTP server host for the env-only mail fallback, used when no mail setting is stored. Control plane. |
+| `APP_SMTP_PORT` | computed | SMTP server port for the env-only mail fallback. Control plane. |
+| `APP_SMTP_PASSWORD` | unset | Password for SMTP login in the env-only mail fallback, used with APP_SMTP_USERNAME. Control plane. |
+
+## Plugin runtime
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_PLUGIN_CPUS` | computed | CPU limit per plugin container, as a number of CPUs. Control plane. |
+| `APP_PLUGIN_MEMORY_MB` | computed | Memory limit per plugin container, in MiB. Control plane. |
+| `APP_PLUGIN_MAX_CONCURRENT` | computed | Most plugin calls that may run at once. Control plane. |
+| `APP_PLUGIN_MAX_PAYLOAD_KB` | computed | Largest plugin event payload, in KiB. Control plane. |
+| `APP_PLUGIN_START_TIMEOUT` | computed | Time limit for a plugin to start. Control plane. |
+| `APP_PLUGIN_BACKOFF_MAX` | computed | Longest wait between plugin restart attempts. Control plane. |
+| `APP_PLUGIN_BREAKER_FAILURES` | computed | Failures before a plugin's circuit breaker opens. Control plane. |
+| `APP_PLUGIN_RECONCILE_INTERVAL` | computed | How often the plugin manager reconciles running plugins. Control plane. |
+| `APP_MARKETPLACE_ROOT_KEY` | computed | Root public key that verifies plugin marketplace signatures. Control plane. |
+
+## MCP server
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_MCP_MODE` | computed | Transport mode the MCP server starts in when the --mode flag is not given. MCP server. |
+| `APP_MCP_TOOLSETS` | computed | Toolsets the MCP server loads when the flag is not given. MCP server. |
+| `APP_MCP_TOOL_PROFILE` | computed | Named tool profile the MCP server loads when the flag is not given. MCP server. |
+| `APP_MCP_ALL` | computed | Set to true to load every MCP tool instead of the dynamic tool set. MCP server. |
+| `APP_MCP_OUTPUT_SCHEMAS` | computed | Set to true to include output schemas in MCP tool definitions. MCP server. |
+| `APP_MCP_READONLY` | computed | Set to true to make the MCP server refuse write tools. MCP server. |
+
+## Migration and app import
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_CONTROL_PLANE_ADDR` | computed | Control plane address the migration tool connects to. Migration tool. |
+| `APP_MIGRATION_TOKEN` | computed | Token the migration tool uses to authenticate to the control plane. Keep it secret. Migration tool. |
+| `APP_CA_FINGERPRINT` | computed | Control plane CA fingerprint the migration tool checks before it connects. Migration tool. |
+| `APP_MIGRATE_STATE_DIR` | computed | Directory where the migration tool keeps its state between runs. Migration tool. |
+| `APP_MIGRATE_DOCKER_SOCKET` | ``/var/run/docker.sock`` | Docker socket the migration tool reads from on the source host. Migration tool. |
+| `APP_DOCKER_VOLUMES_DIR` | computed | Directory of Docker volume data that the migration agent reads. Migration tool. |
+| `APP_MIGRATE_HEARTBEAT` | ``15s`` | How often the migration tool sends a heartbeat. Migration tool. |
+| `APP_MIGRATE_RECONNECT_MAX` | ``30s`` | Longest wait between reconnect attempts of the migration tool. Migration tool. |
+| `APP_MIGRATE_MAX_RESPONSE` | ``32 MiB`` | Largest response the migration tool reads from the source platform. Migration tool. |
+| `APP_MIGRATE_SCAN_TIMEOUT` | ``10m`` | Time limit for one migration scan of the source host. Migration tool. |
+| `APP_MIGRATE_SCAN_MAX_TARGETS` | ``64`` | Most scan targets one migration scan may read. Migration tool. |
+| `APP_MIGRATE_SCAN_MAX_ENTRIES` | ``20000000`` | Most filesystem entries one migration scan may list. Migration tool. |
+| `APP_MIGRATE_SCAN_MAX_DEPTH` | ``128`` | Deepest directory level a migration scan descends into. Migration tool. |
+| `APP_K8S_IMPORT_DEFAULT_PORT` | ``8080`` | Port given to a Kubernetes workload that names none, because every app needs one. Control plane. |
+| `APP_MIGRATE_APP_READY_TIMEOUT` | ``5m`` | How long an app import waits for each imported app to become ready during verification. Control plane. |
+| `APP_MIGRATE_INVENTORY_TIMEOUT` | ``2m`` | How long a migration hub session waits for the source inventory. Control plane. |
+| `APP_MIGRATE_HELPER_VERSION` | computed | Helper image version used to inventory a source server in a migration hub session. Control plane. |
+| `APP_MIGRATE_SSH_TIMEOUT` | ``2m`` | Time limit for the SSH connection during an app import. Control plane. |
+| `APP_MIGRATE_TARGET_READY_TIMEOUT` | ``5m`` | How long a migration hub run waits for the target app to reach running. Control plane. |
+| `APP_MIGRATE_VOLUME_TIMEOUT` | ``4h`` | Time limit for copying one app volume during an app import. Control plane. |
+
+## AI assistant
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_AI_EMPTY_RESULT_LIMIT` | ``3`` | Empty tool results in a row the AI assistant tolerates before it stops the run. Control plane. |
+| `APP_AI_REPEAT_LIMIT` | ``3`` | Times the AI assistant may repeat the same tool call before it stops the run. Control plane. |
+
+## Command line client
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_API_TOKEN` | computed | API token the CLI uses when no --token flag or profile token is given. CLI. |
+| `APP_AUDIT_ANCHOR_FETCH_TIMEOUT` | ``30s`` | Time limit for the CLI to fetch an audit anchor. CLI. |
+| `APP_CLI_PROVISION_POLL_INTERVAL` | ``1s`` | How often the CLI polls a database provision for progress. CLI. |
+| `APP_CLI_PROVISION_WAIT_TIMEOUT` | ``15m`` | How long the CLI waits for a database provision before it gives up. CLI. |
+| `APP_DEPLOY_CERT_WAIT` | ``2m`` | How long the deploy command waits for the certificate to become ready. CLI. |
+| `APP_UPLOAD_MAX_BYTES` | computed | Largest deploy upload the CLI sends, in bytes. CLI. |
+| `APP_EXTERNAL_DB_PASSWORD` | computed | Password for an external database added from the CLI. Prefer the stdin flag so the value stays out of shell history. CLI. |
+| `APP_IMPORT_SOURCE_TOKEN` | computed | Token for the source platform in a platform import, which keeps it out of shell history. CLI. |
+| `APP_IMPORT_SSH_PASSWORD` | computed | SSH password for an SSH app import when no key is given. CLI. |
+| `APP_IMPORT_SSH_PASSPHRASE` | computed | Passphrase for the SSH key used in an SSH app import. CLI. |
+| `APP_MIGRATE_SOURCE_TOKEN` | computed | API token for the source platform in migrate plan and wizard runs. CLI. |
+| `APP_MIGRATE_SOURCE_DB_PASSWORD` | computed | Password for the source database in a migrate db-copy run. CLI. |
+| `APP_INSTANCE_ID` | computed | Instance identifier stored in a CLI profile's credentials file. CLI. |
+| `APP_SERVER_NAME` | computed | Server name stored in a CLI profile's credentials file. CLI. |
+| `APP_SERVER_FINGERPRINT` | computed | Server certificate fingerprint stored in a CLI profile's credentials file. CLI. |
+| `APP_LOGIN_APPROVAL_TIMEOUT` | computed | How long the CLI waits for new-device approval before it gives up. CLI. |
+| `APP_LOGIN_APPROVAL_WAIT` | computed | Set to true so the CLI waits for new-device approval even when it is not running in a terminal. CLI. |
+| `APP_REHYDRATE_POLL_INTERVAL` | ``2s`` | How often the CLI checks a control plane rehydrate run for progress. CLI. |
+| `APP_RESTART_WAIT_TIMEOUT` | computed | How long apps restart --wait waits for readiness before it fails. Defaults to 10 minutes. CLI. |
+| `APP_TUI_REFRESH` | computed | How often the terminal UI refreshes, with a minimum of 2s. CLI. |
+| `APP_TUI_LOG_BUFFER` | computed | Number of log lines the terminal UI keeps. CLI. |
+| `APP_DEV_CONTROL_PLANE_BIN` | computed | Control plane binary that levelrail dev runs. Defaults to the binary next to the CLI, then PATH. CLI. |
+| `APP_DEV_DATA_DIR` | computed | Data directory for the local instance started by levelrail dev. Defaults to a per-user directory. CLI. |
+
+## Internal and developer
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_DEV_FIXTURES_FILE` | ``./test/fixtures/dev-fixtures.yml`` | Fixture file seeded into a development database at startup. Developer only, never for production. Control plane. |
+
+## Security switches
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_ALLOW_UNPINNED_ENROLL` | computed | Set to 1 to let an agent enroll without a pinned control plane CA fingerprint, trusting whichever server answers first. Widens which servers receive the join token; leave off unless you cannot copy the fingerprint from the join command. Agent. |
+| `APP_AUTH_ENGINE_OAUTH_ALLOWED_HOSTS` | computed | Comma-separated extra hosts that OAuth sign-in may redirect to, on top of the dashboard and base URL hosts. Widens which destinations the server may send users to; leave off unless an identity provider must return to another host. Control plane. |
+| `APP_DEVICE_TOKEN_ALLOW_ROOT` | computed | Set to true to let a device token keep the root ability when its approver is root. Widens what a device token can do; leave off unless a device must act as root. Control plane. |
+| `APP_FIRST_LOGIN_TRUST_WINDOW` | ``30m`` | How long after the first login a new device is trusted without approval. Set to off to require approval from the first login. Skips a new-device check for this long; leave it at the default unless first-time setup needs the window. Control plane. |
+| `APP_DOCKER_GUARD_ALLOW_HOST_NETWORK` | computed | Lets a container use host networking when its app declares it. Widens container isolation; leave off unless an app must bind host ports. Control plane. |
+| `APP_EXTERNAL_DB_ALLOW_LINK_LOCAL` | computed | Lets external database connections reach link-local addresses, such as cloud metadata addresses. Widens which destinations the server may call; leave off unless the database sits on a link-local address. Control plane. |
+| `APP_FORWARDER_ALLOW_LOOPBACK` | computed | Lets the traffic forwarder reach loopback addresses on this host. Widens which destinations the server may call; leave off unless a forwarded service runs on this host. Ingress. |
+| `APP_FORWARDER_ALLOW_PRIVATE_NETWORKS` | computed | Lets the traffic forwarder reach private network addresses. Widens which destinations the server may call; leave off unless forwarded services run on an internal network. Ingress. |
+| `APP_GATE_ALLOW_HTTP` | computed | Allows the auth gate check endpoint to use plain HTTP. Widens which destinations the server may call and sends gate checks unencrypted; leave off unless the gate runs on a trusted private network. Ingress. |
+| `APP_GIT_ALLOW_PRIVATE_NETWORKS` | computed | Lets git fetches reach private network hosts, so repository URLs on internal hosts work. Widens which destinations the server may call; leave off unless your repositories live on an internal host. Control plane. |
+| `APP_GIT_WEBHOOK_ALLOW_PRIVATE` | computed | Lets git webhook targets resolve to private addresses. Widens which destinations the server may call; leave off unless the webhook receiver is internal. Control plane. |
+| `APP_IMPORT_ALLOW_LOOPBACK` | computed | Lets platform imports reach loopback addresses on the source. Widens which destinations the server may call; leave off unless the source platform runs on this host. Control plane. |
+| `APP_IMPORT_ALLOW_PRIVATE_NETWORKS` | computed | Lets platform imports reach private network addresses. Widens which destinations the server may call; leave off unless the source platform sits on an internal network. Control plane. |
+| `APP_INGRESS_TRUSTED_PROXIES` | computed | Addresses whose forwarded client IP headers the ingress trusts. Widens which senders can set the client address, so a wrong entry lets callers spoof their IP; leave off unless a load balancer sits in front of ingress. Ingress. |
+| `APP_MCP_ALLOW_WRITE` | computed | Lets the MCP server call tools that change state. Off keeps it read-only. Widens what an MCP client may change on the platform; leave off unless the assistant must make changes. MCP server. |
+| `APP_MCP_HTTP_ALLOWED_ORIGINS` | computed | Extra browser origins allowed to call the MCP HTTP endpoint, comma separated. Widens which browser pages may call the endpoint with your session; leave off unless a web client on another origin must connect. Control plane. |
+| `APP_MIGRATE_HOSTED_ALLOW_INSECURE` | computed | Lets a hosted Postgres migration connect without TLS verification. Weakens the connection check for the data copy; leave off unless the source has no valid certificate. Control plane. |
+| `APP_MIGRATE_VERIFY_ALLOW_PRIVATE_PROBES` | computed | Lets migration verify probes reach private and loopback addresses. Widens which destinations the CLI may probe; leave off unless the source domains resolve to private addresses. CLI. |
+| `APP_MAIL_STORAGE_ALLOW_PRIVATE` | computed | Lets the mail storage client reach S3-compatible endpoints on private addresses. Widens which destinations the server may call; leave off unless the mail bucket sits on an internal endpoint. Control plane. |
+| `APP_MODEL_ENDPOINT_ALLOW_PRIVATE_NETWORKS` | computed | Lets model endpoints, such as a self-hosted model server, use private addresses. Widens which destinations the server may call; leave off unless models run on an internal network. Control plane. |
+| `APP_NOTIFY_ALLOW_PRIVATE_NETWORKS` | computed | Lets outgoing notifications reach private network addresses. Widens which destinations the server may call; leave off unless notification targets are internal. Control plane. |
+| `APP_PLUGIN_ALLOW_UNSIGNED` | computed | Lets plugins without a valid signature load. Lets unsigned code run on the host; leave off unless you develop a plugin locally. Control plane. |
+| `APP_STATUS_WEBHOOK_ALLOW_HTTP` | computed | Lets status page webhooks use plain HTTP URLs. Widens which destinations the server may call and sends updates unencrypted; leave off unless the receiver has no TLS and sits on a trusted network. Control plane. |
+| `APP_STATUS_WEBHOOK_ALLOW_PRIVATE` | computed | Lets status page webhooks reach private network addresses. Widens which destinations the server may call; leave off unless the receiver is internal. Control plane. |
+| `APP_TRAFFIC_EXPORT_ALLOW_PRIVATE` | computed | Lets traffic log export sinks deliver to loopback and link-local addresses. Widens which destinations the server may call, including this host; leave off unless the sink runs on this host. Control plane. |
+| `APP_TRUST_SERVER` | computed | Set to 1, yes or true to trust a server's certificate without the fingerprint prompt when the CLI first pins it. Skips the check on the first connection; leave off unless you script a first login against a server you have verified. CLI. |
 
 ## Behavior to know about
 
