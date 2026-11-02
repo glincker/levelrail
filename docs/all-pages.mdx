@@ -32,10 +32,14 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Tutorials](/tutorials/index): Step-by-step tutorials for self-hosting with Levelrail, from Docker deploys and Postgres to S3 backups, GitHub Actions, and built-in logs and metrics.
 - [Connect an app to a managed Postgres database](/tutorials/connect-an-app-to-postgres): Create a managed Postgres database on your own server, connect an app with one command, and confirm the connection string reaches the container.
 - [Deploy to your own server from GitHub Actions](/tutorials/deploy-from-github-actions): Build an image in GitHub Actions and deploy it to your own server with Levelrail on every push, failing the pipeline if the rollout fails. About 15 minutes.
+- [Deploy a Next.js app to your own server](/tutorials/deploy-nextjs): Deploy a Next.js app from a git repository to a server you run, with a domain, HTTPS, a health check and a rollback.
 - [Environment variables and secrets](/environment-and-secrets): Masking, reveal policies, and protection for app environment variables and secrets.
 - [Back up Postgres to S3 and test the restore](/tutorials/back-up-postgres-to-s3): Send Postgres backups to S3, R2, or any S3-compatible bucket on a schedule, verify them, and prove the restore works on your own server.
 - [Zero-downtime deploys with health checks](/tutorials/zero-downtime-deploys-with-health-checks): Add a readiness health check so a bad release fails before it takes over, read the structured failure, then fix it or roll back.
 - [Debug an app with built-in logs and metrics](/tutorials/debug-an-app-with-logs-and-metrics): Find out why an app is failing or slow with Levelrail's built-in log search and metrics, with no Grafana or Loki to install.
+- [Get a ping when your Levelrail server stops](/tutorials/heartbeat-ping-out): Point the off-host heartbeat at a monitor you control, so you are alerted when the control plane stops pinging, even if it cannot send its own alerts.
+- [Send a crashloop alert to ntfy](/tutorials/alerts-to-ntfy): Connect an ntfy topic as a notification channel, alert when an app restarts in a loop, and confirm that the alert reaches your phone.
+- [Get a certificate behind CGNAT with DNS-01 and dynamic DNS](/tutorials/dns-01-behind-cgnat): Get trusted certificates for a home server behind carrier-grade NAT, where the certificate authority cannot reach the server on port 80, using DNS-01 and dynamic DNS.
 - [Multi-node quickstart](/multi-node-quickstart): The short path to a second server, what has been verified on real infrastructure, and what to check before relying on the WireGuard mesh across hosts.
 - [Self-host Vaultwarden on your own server](/tutorials/self-host-vaultwarden): Self-host Vaultwarden, a Bitwarden-compatible password manager, with one Levelrail command, then add a domain and back up its data.
 - [Troubleshooting](/troubleshooting): Fixes for the most common problems when deploying, logging in, or running Levelrail.
@@ -256,6 +260,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Traffic observability: rate, errors and duration](/traffic-observability): Per app and per replica request rate, error rate and p50/p95/p99 latency measured at the ingress, with slow request samples and SLO error-budget burn.
 - [Public status page](/status-page): An opt-in public status page with operator-chosen components, 90 day uptime bars, incidents, maintenance announcements and an RSS feed.
 - [Monitors](/monitors): Experimental http, tcp, heartbeat and tls uptime monitors with a bounded result history and hourly rollups, off unless APP_MONITORS_ENABLED is set.
+- [External monitoring](/external-monitoring): Watch Levelrail from outside the server with the built-in public status page and the off-host heartbeat ping, and know which one answers which question.
 - [Scheduled maintenance](/scheduled-maintenance): Announce planned downtime ahead of time with a dashboard banner, a status page entry and a channel notice, and optionally hold automatic deploys for the window.
 - [Deploy policies](/deploy-policies): Guardrails checked before every deploy at organization, project and environment scope, with warn or enforce modes and an audited override.
 - [What's new panel](/whats-new-panel): The dashboard's "What's new" panel shows recent release notes after an upgrade, sourced from the control plane's own CHANGELOG.md.
@@ -284,6 +289,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Migration wizard](/migration-wizard): Move apps, databases and volumes off Coolify, Dokploy, CapRover or an old server in one guided, resumable job with live progress and a safe-to-delete gate.
 - [Migrate from Coolify](/migrate-from-coolify): Move Coolify apps, databases, env vars and domains to Levelrail with a read-only plan, staged copies and a reversible cutover. Coolify keeps serving.
 - [Coolify exit gap report](/coolify-exit-gap-report): What the Coolify importer carries over, what it reports for you to finish, and what it cannot see yet, audited against what a real Coolify instance holds.
+- [Move a Coolify one-click service to a Compose app](/coolify-service-to-compose): How migrate coolify stages a Coolify one-click service as a Compose file with its magic variables translated, what it leaves for you to fix, and a manual path when you need one.
 - [Migrate from Dokploy](/migrate-from-dokploy): Import Dokploy applications, databases, env vars and domains into Levelrail with a read-only dry run, then copy data and switch DNS while Dokploy keeps serving.
 - [Migrate from CapRover](/migrate-from-caprover): Import CapRover apps, env vars, domains and volumes into Levelrail with a read-only dry run. CapRover builds locally, so images need a repo or registry.
 - [Migrate from Dokku](/migrate-from-dokku): Move Dokku apps to Levelrail by importing the env dump or a docker inspect snapshot. Live Dokku over SSH is not supported, so some steps are manual.
@@ -360,6 +366,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [glinr-bot](/glinr-bot): How the repo's GitHub App bot evaluates pull requests against a policy file, comments its reasoning and, in enforce mode, approves and arms auto-merge.
 - [Run behind an existing proxy](/behind-an-existing-proxy): Run Levelrail behind the proxy that already owns ports 80 and 443, with managed routes for Traefik (including Coolify) and Nginx.
 - [Run behind Cloudflare](/behind-cloudflare): Put Cloudflare's proxy in front of Levelrail: SSL mode, certificates, websockets, upload limits, real client IPs, cache purge, and an honest list of what the proxy does not hide.
+- [Cloudflare in front checklist](/cloudflare-in-front): The order to set up Cloudflare's proxy in front of a Levelrail server: SSL mode, client addresses, the per-app proxy, cache purge, and what a rollback does not change.
 - [Shared hosts](/shared-hosts): What Levelrail touches and does not touch on a server that already runs other containers or a control panel.
 - [Security advisories](/security-advisories): Every security issue Levelrail has found and fixed, with a stable ID, severity, affected versions, the fix, and how we disclose.
 - [Advisory feed](/advisory-feed): Match the images your apps run against a local, optionally signed advisory feed.

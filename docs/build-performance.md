@@ -57,7 +57,7 @@ Not measured: the idle memory of a Next.js app. The table assumes 150 MiB per sm
 | 4 GB | 2457 MiB | about 18 | One build at a time |
 | 8 GB | 4915 MiB | about 40 | Two builds at a time |
 
-A build and the running sites share the same RAM, so keep the sites plus the build cap under the host memory. For a 1 GB host, do not build Next.js on it.
+A build and the running sites share the same RAM, so keep the sites plus the build cap under the host memory. For a 1 GB host, do not build Next.js on it. Next.js per-site memory has not been measured on a real host (pending a host run). See [Frameworks](/frameworks#sizing-a-nextjs-app).
 
 The limits apply to builds that start after the change. Builds already running keep the timeout they started with.
 

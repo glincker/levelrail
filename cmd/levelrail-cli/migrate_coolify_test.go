@@ -143,7 +143,7 @@ func TestRun_MigrateCoolify_StagesDiscoveredService(t *testing.T) {
 	if hasRawMagicVar(string(raw)) || strings.Contains(string(raw), "SERVICE_PASSWORD") || !strings.Contains(string(raw), "plausible.apps.test") {
 		t.Errorf("staged compose not translated:\n%s", raw)
 	}
-	if !strings.Contains(stdout.String(), "levelrail compose deploy plausible -f "+path) {
+	if !strings.Contains(stdout.String(), "levelrail-cli compose deploy plausible -f "+path) {
 		t.Errorf("report lacks the deploy command: %s", stdout.String())
 	}
 	if strings.Contains(stdout.String(), "SECRET_KEY") {

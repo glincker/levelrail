@@ -94,6 +94,6 @@ func stageComposeApp(a *mappedApp, dir string) {
 		return
 	}
 	a.Compose.StagedPath = path
-	a.Compose.Deploy = fmt.Sprintf("levelrail compose deploy %s -f %s", a.ServiceName, path)
+	a.Compose.Deploy = fmt.Sprintf("levelrail-cli compose deploy %s -f %s", a.ServiceName, path)
 	a.Applied = a.CreateError == ""
 }

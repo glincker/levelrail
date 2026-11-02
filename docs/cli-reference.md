@@ -1874,6 +1874,8 @@ levelrail-cli migrate caprover --url URL --token TOKEN [flags]
 
 One way migration from a live instance. By default it writes `app.yaml` files plus a migration report into `--out-dir` (default `./migrated`); `--apply` creates the apps directly on a target instance instead, using `--target-token`, `--target-api-url` and `--target-profile`. `--include-secret-values` also fetches real env var values. For Coolify, `--token` is an API bearer token (with the `read:sensitive` ability if you want secret values); for Dokploy it is an API key; for CapRover it is the login password.
 
+For Coolify one-click services, `--stage-dir` (default `./migrated/compose`) receives one `compose.yaml` per service with its magic variables translated, and `--domain-suffix` (default `localhost`) sets the parent domain of the staged hosts. Staging writes files only and starts nothing. See [Move a Coolify one-click service to a Compose app](/coolify-service-to-compose).
+
 ## Stack templates {#stack-templates}
 
 ```

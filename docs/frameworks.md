@@ -60,6 +60,14 @@ Next.js (App Router and Pages Router) builds with Railpack, which starts the app
 
 Set `NEXT_PUBLIC_*` values as plain (non-secret) app env before the first deploy: Next.js inlines them at `next build`. Every framework build receives the literal, non-secret app env vars whose names start with `NEXT_PUBLIC_`, `VITE_`, `PUBLIC_`, `REACT_APP_`, `NUXT_PUBLIC_`, `GATSBY_` or `EXPO_PUBLIC_` (the list is `APP_STATIC_BUILD_ENV_PREFIXES`). With a Dockerfile, a value is passed only when the Dockerfile declares `ARG NAME`, and explicit `build.args` win. Secrets, `from` references and vault values are never passed to a build; use `build.secrets` for a Dockerfile build that needs one. The build log has a `build env` line naming the keys passed (never the values), so a missing variable is easy to spot. Changing a value needs a new build, not just a restart. `sharp` on arm64 ships in the standalone trace (unverified on a real arm64 host).
 
+### Sizing a Next.js app
+
+A Next.js build is the heaviest step on a small server. The build memory cap is set per build (see [Build memory guard](/build-performance#build-memory-guard)), and building on a 1 GB host is not recommended. Build on a builds-only node ([Build node routing](/build-node-routing)) or in CI, then deploy the image.
+
+How many Next.js sites one server can run depends on the idle memory of each site, which has not been measured (pending a host run). The per-site figure in [Build performance](/build-performance#sizing-a-vps) is an assumption used for arithmetic, not a benchmark.
+
+Host swap is a safety margin for the platform and the running sites. It does not add build memory, because a build's swap is limited to the same size as its cap.
+
 ### Next.js static export
 
 With `output: 'export'` the detector chooses the static preset. The `out` directory is served directly.
