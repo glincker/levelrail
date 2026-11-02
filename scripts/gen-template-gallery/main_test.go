@@ -65,9 +65,19 @@ func TestTrustLevels(t *testing.T) {
 	signed := &catalog.SignedBy{Method: "keyless", Identity: "x"}
 	e := Entry{Images: []Image{{SourceClass: catalog.SourceUpstream, Signed: signed, Provenance: true}}}
 	hist := catalog.VerifiedRecord{Arches: []string{"arm64"}}
-	if got := trustFor(e, hist, true).Level; got != trustListed {
-		t.Errorf("historical local run = %q, want listed", got)
+	got := trustFor(e, hist, true)
+	if got.Level != trustVerifiedSigned || got.EvidenceURL != statusPageURL {
+		t.Errorf("arm64 local pass = %+v, want signed with status page evidence", got)
 	}
+	e.Images[0].Signed = nil
+	got = trustFor(e, hist, true)
+	if got.Level != trustVerified {
+		t.Errorf("arm64 local pass unsigned = %q, want verified", got.Level)
+	}
+	if got := trustFor(e, catalog.VerifiedRecord{}, true).Level; got != trustListed {
+		t.Errorf("record without arches = %q, want listed", got)
+	}
+	e.Images[0].Signed = signed
 	ci := catalog.VerifiedRecord{Arches: []string{"amd64"}, RunURL: "https://example.com/run/1"}
 	if got := trustFor(e, ci, true).Level; got != trustVerifiedSigned {
 		t.Errorf("signed CI run = %q, want verified_signed", got)

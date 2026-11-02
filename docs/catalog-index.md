@@ -41,10 +41,10 @@ Readers must ignore fields they do not know. A breaking change bumps `schema_ver
 ## Trust levels
 
 - **Listed**: merged, the loader guards pass, every image has an exact version tag from an allowed namespace, and the admission check found no known-exploited vulnerability and no unallowed secret.
-- **Verified**: Listed, plus a recorded passing smoke run on an amd64 host from the project's own CI, for the exact tag and digest in `verification`. The health path answered 200 to 399, or the status the template declares.
+- **Verified**: Listed, plus a recorded passing smoke run for the exact pinned images in `verification`. All services stayed up and the health path answered 200 to 399, or the status the template declares. `verification.arches` lists exactly the architectures that were tested, so a page can say "Verified on arm64". `trust.evidence_url` is the CI run when one is recorded, else the public status page that records the pass.
 - **Verified and signed**: Verified, plus a signature verified against an identity in `source_repo` and a provenance attestation on the upstream image.
 
-Verified is a fact about a pinned tag, not a date. When the tag changes, the record stops matching and the entry drops back to Listed until the new tag passes. Older records made on a developer machine are kept as `verification` with their arch, but they do not raise the level because they have no CI run.
+Verified is a fact about a pinned tag, not a date. When the tag changes, the record stops matching and the entry drops back to Listed until the new tag passes. Records made on a developer machine count, with their architecture disclosed; CI run links are added as the template PR workflow records them.
 
 The admission wording is: no known-exploited vulnerability (CISA KEV) in this image when this version was accepted, with the run linked. It describes an event, not the present state, and the index carries no vulnerability counts.
 

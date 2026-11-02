@@ -15,7 +15,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -391,7 +392,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -710,7 +712,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -1030,7 +1033,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -1764,7 +1768,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -1872,7 +1877,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -2257,7 +2263,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -2501,7 +2508,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -2645,7 +2653,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -3165,7 +3174,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -3513,7 +3523,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -3703,7 +3714,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -4860,7 +4872,8 @@
     "by": "community"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -5832,7 +5845,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -7603,7 +7617,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -8118,7 +8133,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -8242,7 +8258,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -8580,7 +8597,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -8898,7 +8916,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -9288,7 +9307,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -11929,7 +11949,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -12694,7 +12715,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -12803,7 +12825,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -13343,7 +13366,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -14088,7 +14112,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -15128,7 +15153,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -15543,7 +15569,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -16269,7 +16296,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -16868,7 +16896,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -17069,7 +17098,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -17163,7 +17193,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -17302,7 +17333,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -18493,7 +18525,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -19034,7 +19067,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -19678,7 +19712,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -19786,7 +19821,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -20172,7 +20208,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -20633,7 +20670,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -21214,7 +21252,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -21511,7 +21550,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -23261,7 +23301,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -23370,7 +23411,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -24108,7 +24150,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -25861,7 +25904,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -26583,7 +26627,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -27063,7 +27108,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -27550,7 +27596,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -28093,7 +28140,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -28966,7 +29014,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -29994,7 +30043,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -30268,7 +30318,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -30399,7 +30450,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -30486,7 +30538,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -31773,7 +31826,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -32580,7 +32634,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -32940,7 +32995,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -33534,7 +33590,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -33636,7 +33693,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -34455,7 +34513,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -35318,7 +35377,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -35871,7 +35931,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -37542,7 +37603,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -37729,7 +37791,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -38682,7 +38745,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -39375,7 +39439,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -39619,7 +39684,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -40253,7 +40319,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -40564,7 +40631,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -41249,7 +41317,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -42279,7 +42348,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -42856,7 +42926,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -42974,7 +43045,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -43082,7 +43154,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -43591,7 +43664,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -43702,7 +43776,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -44262,7 +44337,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -44516,7 +44592,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -44989,7 +45066,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -45854,7 +45932,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -46126,7 +46205,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -46868,7 +46948,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -47598,7 +47679,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -47818,7 +47900,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -48739,7 +48822,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -50373,7 +50457,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -51201,7 +51286,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -51518,7 +51604,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -53751,7 +53838,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -54097,7 +54185,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -54228,7 +54317,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -54710,7 +54800,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -54975,7 +55066,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -55208,7 +55300,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -55335,7 +55428,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -55660,7 +55754,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -56090,7 +56185,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -56418,7 +56514,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",
@@ -57924,7 +58021,8 @@
     "by": "maintainers"
    },
    "trust": {
-    "level": "listed"
+    "level": "verified",
+    "evidence_url": "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
    },
    "arch": {
     "amd64": "published",

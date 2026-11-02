@@ -121,7 +121,7 @@ Nothing runs on a schedule for your template.
 
 ## What Verified means
 
-Every merged template is **Listed**. **Verified** means the project's own CI ran this exact image tag and digest on an amd64 host, all services stayed up, and the health path answered 200 to 399 (or the status you declared). The record is bound to the pinned tag, not to a date: when the tag changes the record stops matching until the new tag passes. **Verified and signed** adds a signature from your repository's build and a provenance attestation. Arm64 is reported separately as tested, image published or amd64 only.
+Every merged template is **Listed**. **Verified** means a smoke run passed for this exact pinned image on the listed architectures: all services stayed up and the health path answered 200 to 399 (or the status you declared). CI-run links are added as the template PR workflow records them. The record is bound to the pinned tag, not to a date: when the tag changes the record stops matching until the new tag passes. **Verified and signed** adds a signature from your repository's build and a provenance attestation. Arm64 is reported separately as tested, image published or amd64 only.
 
 Admission wording: no known-exploited vulnerability (CISA KEV) in this image when this version was accepted. It describes the moment of acceptance and links the CI run.
 

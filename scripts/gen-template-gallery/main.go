@@ -126,6 +126,9 @@ const (
 	trustVerifiedSigned = "verified_signed"
 )
 
+// statusPageURL records smoke passes that predate CI run links.
+const statusPageURL = "https://github.com/glincker/levelrail/blob/main/docs/templates-status.md"
+
 const (
 	kindGenerated = "generated"
 	kindRequired  = "required"
@@ -323,17 +326,23 @@ func hasPlatform(list []string, p string) bool {
 	return false
 }
 
-// trustFor: verified needs an amd64 pass from a CI run; signed adds a cosign
-// identity and provenance on the primary image. Historical local runs stay listed.
+// trustFor: verified needs a recorded smoke pass on the pinned images; the
+// tested architectures are disclosed in verification.arches. Signed adds a
+// cosign identity and provenance on every upstream image.
 func trustFor(e Entry, rec catalog.VerifiedRecord, verified bool) Trust {
 	tr := Trust{Level: trustListed}
 	if e.Admission != nil {
 		tr.EvidenceURL = e.Admission.RunURL
 	}
-	if !verified || rec.RunURL == "" || !hasPlatform(rec.Arches, "amd64") {
+	if !verified || len(rec.Arches) == 0 {
 		return tr
 	}
-	tr = Trust{Level: trustVerified, EvidenceURL: rec.RunURL}
+	// Without a CI run link the public status page is the evidence of record.
+	evidence := rec.RunURL
+	if evidence == "" {
+		evidence = statusPageURL
+	}
+	tr = Trust{Level: trustVerified, EvidenceURL: evidence}
 	upstream := 0
 	for _, im := range e.Images {
 		if im.SourceClass != catalog.SourceUpstream {
