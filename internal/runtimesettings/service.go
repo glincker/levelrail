@@ -46,8 +46,10 @@ type Setting struct {
 	AllowedValues  []int           `json:"allowed_values,omitempty"`
 	AllowedStrings []string        `json:"allowed_strings,omitempty"`
 	PendingRestart bool            `json:"pending_restart"`
-	UpdatedAt      *time.Time      `json:"updated_at"`
-	UpdatedBy      string          `json:"updated_by"`
+	// WeakerThanDefault is true when a weakens_security setting now holds a weaker value than its default.
+	WeakerThanDefault bool       `json:"weaker_than_default"`
+	UpdatedAt         *time.Time `json:"updated_at"`
+	UpdatedBy         string     `json:"updated_by"`
 }
 
 // Service resolves settings. A nil *Service resolves env then default only,
@@ -242,6 +244,9 @@ func (s *Service) build(r resolved) Setting {
 		Apply: string(d.Apply), Risk: string(d.Risk), Onboarding: d.Onboarding, Sensitive: d.Sensitive,
 		AllowedValues: d.AllowedInts, AllowedStrings: d.AllowedStrings,
 	}
+	if d.Risk == RiskWeakensSecurity && r.canonical != def {
+		out.WeakerThanDefault = weaker(d, def, r.canonical)
+	}
 	if d.Sensitive {
 		out.Default, out.Value = maskSensitive(out.Default), maskSensitive(out.Value)
 	}
@@ -375,21 +380,26 @@ func (s *Service) WeakensTo(ctx context.Context, key string, raw json.RawMessage
 		return false
 	}
 	cur, _ := s.resolve(ctx, d)
+	return weaker(d, cur.canonical, next)
+}
+
+// weaker reports whether next is a weaker canonical value than base for d.
+func weaker(d Definition, base, next string) bool {
 	switch d.Kind {
 	case KindBool:
 		return next == "false"
 	case KindDuration:
-		return durationOf(next) < durationOf(cur.canonical)
+		return durationOf(next) < durationOf(base)
 	case KindString:
 		order := d.StrengthOrder
-		return slices.Index(order, cur.canonical) >= 0 && slices.Index(order, next) < slices.Index(order, cur.canonical)
+		return slices.Index(order, base) >= 0 && slices.Index(order, next) < slices.Index(order, base)
 	case KindInt:
 		if d.HigherIsWeaker {
-			return intOf(next) > intOf(cur.canonical)
+			return intOf(next) > intOf(base)
 		}
-		return shorterDays(cur.canonical, next)
+		return shorterDays(base, next)
 	case KindStringList:
-		old := listOf(cur.canonical)
+		old := listOf(base)
 		if len(old) == 0 {
 			return false
 		}

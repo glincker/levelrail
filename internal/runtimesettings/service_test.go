@@ -324,3 +324,24 @@ func TestInvalidEnvIsReportedOnce(t *testing.T) {
 
 // isRegisteredLimit exempts only the numeric limit keys from the credential-name guard (a "token redeem" budget is not a credential).
 func isRegisteredLimit(key string) bool { _, ok := limitRanges[key]; return ok }
+
+func TestWeakerThanDefault(t *testing.T) {
+	svc := New(newFakeStore(), envOf(nil))
+	ctx := t.Context()
+	got, _ := svc.Get(ctx, KeyWebhookReplayProtection)
+	if got.WeakerThanDefault {
+		t.Fatal("default value must not be flagged weaker")
+	}
+	got, _ = svc.Set(ctx, KeyWebhookReplayProtection, raw(`false`), "alice")
+	if !got.WeakerThanDefault {
+		t.Fatal("false against a true default must be flagged weaker")
+	}
+	got, _ = svc.Set(ctx, KeyWebhookReplayWindow, raw(`"1m"`), "alice")
+	if !got.WeakerThanDefault {
+		t.Fatalf("shorter window must be flagged weaker: %+v", got)
+	}
+	got, _ = svc.Set(ctx, KeyWebhookReplayWindow, raw(`"30m"`), "alice")
+	if got.WeakerThanDefault {
+		t.Fatal("longer window is stronger")
+	}
+}

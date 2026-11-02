@@ -34,6 +34,8 @@ export interface RuntimeSetting {
   /** Set for a string setting limited to a fixed list of words. */
   allowed_strings?: string[]
   pending_restart: boolean
+  /** True when a weakens_security setting holds a weaker value than its default. */
+  weaker_than_default?: boolean
   updated_at?: string
   updated_by?: string
 }

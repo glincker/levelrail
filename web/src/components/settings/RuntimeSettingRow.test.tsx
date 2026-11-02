@@ -81,3 +81,26 @@ describe('RuntimeSettingRow weakening reset', () => {
     vi.unstubAllGlobals()
   })
 })
+
+describe('RuntimeSettingRow risk badge', () => {
+  function renderRow(setting: RuntimeSetting) {
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <AllI18n>
+          <RuntimeSettingRow setting={setting} canEdit />
+        </AllI18n>
+      </QueryClientProvider>,
+    )
+  }
+
+  it('shows a neutral marker on a safe default', () => {
+    renderRow(buildNetwork)
+    expect(screen.queryByText('Weakens security')).toBeNull()
+    expect(screen.getByText('Security setting')).toBeTruthy()
+  })
+
+  it('warns only when the value is weaker than the default', () => {
+    renderRow({ ...buildNetwork, value: 'none', weaker_than_default: true })
+    expect(screen.getByText('Weakens security')).toBeTruthy()
+  })
+})

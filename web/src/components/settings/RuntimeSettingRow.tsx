@@ -134,7 +134,11 @@ export function RuntimeSettingRow({
   const badges = (
     <>
       {setting.risk === 'weakens_security' ? (
-        <Badge variant="destructive">{t('badges.weakens')}</Badge>
+        setting.weaker_than_default ? (
+          <Badge variant="destructive">{t('badges.weakens')}</Badge>
+        ) : (
+          <Badge variant="muted">{t('badges.security')}</Badge>
+        )
       ) : null}
       {setting.source !== 'default' ? (
         <Badge
@@ -267,7 +271,7 @@ export function RuntimeSettingRow({
           {setting.env ? (
             <button
               type="button"
-              className="inline-flex items-center gap-1 font-mono text-[11px] text-muted-foreground/70 hover:text-foreground"
+              className="inline-flex min-h-7 items-center gap-1.5 rounded px-1.5 font-mono text-[11px] text-muted-foreground/70 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
               title={t('row.envCopy', { env: setting.env })}
               aria-label={t('row.envCopy', { env: setting.env })}
               onClick={() => {
@@ -275,7 +279,7 @@ export function RuntimeSettingRow({
               }}
             >
               {setting.env}
-              <CopyGlassIcon size="1.2em" aria-hidden="true" />
+              <CopyGlassIcon size="1.6em" aria-hidden="true" />
             </button>
           ) : null}
           {setting.source === 'saved' && setting.updated_by ? (

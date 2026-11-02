@@ -23,7 +23,8 @@
   },
   "badges": {
     "restart": "Requiere reinicio",
-    "weakens": "Reduce la seguridad"
+    "weakens": "Reduce la seguridad",
+    "security": "Ajuste de seguridad"
   },
   "options": {
     "open": "Abierta (sin restricción)",
@@ -226,7 +227,8 @@
     "reset": "Restablecer valor por defecto",
     "resetting": "Restableciendo",
     "invalid": "Introduce un número entero.",
-    "envCopy": "Copiar {{env}}"
+    "envCopy": "Copiar {{env}}",
+    "envHint": "Variable de entorno: {{env}}"
   },
   "toast": {
     "saved": "{{title}} guardado.",
@@ -293,7 +295,7 @@
   },
   "toolbar": {
     "searchLabel": "Buscar ajustes",
-    "searchPlaceholder": "Buscar por nombre, descripción o variable de entorno",
+    "searchPlaceholder": "Buscar ajustes",
     "changedOnly": "Cambiados respecto al valor por defecto",
     "clear": "Quitar filtros",
     "count": "{{shown}} de {{total}}",

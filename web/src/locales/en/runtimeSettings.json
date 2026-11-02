@@ -23,7 +23,8 @@
   },
   "badges": {
     "restart": "Restart required",
-    "weakens": "Weakens security"
+    "weakens": "Weakens security",
+    "security": "Security setting"
   },
   "options": {
     "open": "Open (no restriction)",
@@ -226,7 +227,8 @@
     "reset": "Reset to default",
     "resetting": "Resetting",
     "invalid": "Enter a whole number.",
-    "envCopy": "Copy {{env}}"
+    "envCopy": "Copy {{env}}",
+    "envHint": "Environment variable: {{env}}"
   },
   "toast": {
     "saved": "{{title}} saved.",
@@ -293,7 +295,7 @@
   },
   "toolbar": {
     "searchLabel": "Search settings",
-    "searchPlaceholder": "Search by name, description or environment variable",
+    "searchPlaceholder": "Search settings",
     "changedOnly": "Changed from default",
     "clear": "Clear filters",
     "count": "{{shown}} of {{total}}",
