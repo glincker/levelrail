@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -115,6 +116,8 @@ type JobPinger struct {
 	tuning  func(context.Context) JobTuning
 	sleep   func(ctx context.Context, d time.Duration) error
 	jitter  func(limit int64) int64
+	base    atomic.Pointer[context.Context]
+	started sync.Once
 }
 
 // NewJobPinger builds a sender; secrets must be non-nil.
@@ -209,6 +212,16 @@ func (p *JobPinger) Host(ctx context.Context, taskID string) (string, bool) {
 	return HostOf(raw), true
 }
 
+// Start records the lifetime context and defers the drain goroutine to the first queued ping, so an
+// idle box with no scheduled-job pings runs no worker.
+func (p *JobPinger) Start(ctx context.Context) { p.base.Store(&ctx) }
+
+func (p *JobPinger) ensureRunning() {
+	if c := p.base.Load(); c != nil {
+		p.started.Do(func() { go p.Run(*c) })
+	}
+}
+
 // Notify queues a ping for a settled run; a full queue drops it so the job is never delayed.
 func (p *JobPinger) Notify(taskID, runID, status string) {
 	if !pingWanted(status) {
@@ -217,6 +230,7 @@ func (p *JobPinger) Notify(taskID, runID, status string) {
 	if int(p.pending.Add(1)) <= p.limits(context.Background()).Queue {
 		select {
 		case p.queue <- jobEvent{taskID, runID, status}:
+			p.ensureRunning()
 			return
 		default:
 		}

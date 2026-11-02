@@ -61,7 +61,7 @@ func (s *bootState) startJobHeartbeat() {
 	})
 	s.scheduledTaskRunner.Pinger = pinger
 	s.apiRouter.SetJobPings(pinger)
-	go pinger.Run(s.ctx)
+	pinger.Start(s.ctx)
 }
 
 // heartbeatHealth is the gate for the ping: a box that is up but not converging must stop pinging.
