@@ -26,6 +26,8 @@ func runSettingsIngress(prog string, args []string, stdout, stderr io.Writer, lo
 		return runSettingsIngressHTTPS(prog, args[1:], stdout, stderr, lookupEnv)
 	case "dns01":
 		return runSettingsIngressDNS01(prog, args[1:], stdout, stderr, lookupEnv)
+	case "cloudflare":
+		return runSettingsIngressCloudflare(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown settings ingress subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, settingsIngressUsage(prog))
@@ -39,6 +41,7 @@ func settingsIngressUsage(prog string) string {
   %[1]s settings ingress set [--primary-domain DOMAIN] [--acme-enabled] [--acme-email EMAIL] [--hsts-enabled] [--fallback-domains=false] [--public-https-port N] [--tls-terminated-upstream] [--apps-base-domain HOST] [--dns-cname-target HOST] [--dns-ttl SECONDS] [--dns-proxied] [flags]
   %[1]s settings ingress https [status] | enable --email EMAIL [--staging] [--wait] [flags]
   %[1]s settings ingress dns01 [show] | enable | disable [flags]
+  %[1]s settings ingress cloudflare [show] | set --preset none|cloudflare [--confirm-weakening] [flags]
 
 Configures the platform-wide primary domain and ACME (Let's Encrypt)
 certificate automation. --acme-email is required whenever --acme-enabled

@@ -1,0 +1,17 @@
+{
+  "cloudflare": {
+    "label": "Confiar en Cloudflare para la dirección del visitante",
+    "helper": "Lee la dirección del visitante de CF-Connecting-IP, pero solo en conexiones desde los rangos publicados de Cloudflare; una cabecera falsificada desde otro origen se ignora. Cualquier cliente de Cloudflare puede llegar a tu servidor con su propio registro proxificado, así que esto no demuestra que la petición pasó por tu zona.",
+    "ranges": "{{count}} rangos ({{source}}), actualizados cada {{interval}}.",
+    "source": {
+      "embedded": "incluidos en la app",
+      "fetched": "desde Cloudflare"
+    },
+    "lastRefresh": "Última actualización: {{when}}.",
+    "neverRefreshed": "Aún sin actualizar, se usa la lista incluida.",
+    "lastError": "Error de la última actualización: {{error}}",
+    "saved": "La IP de cliente de Cloudflare está activada",
+    "savedOff": "La IP de cliente de Cloudflare está desactivada",
+    "failed": "No se pudo cambiar el ajuste de IP de cliente de Cloudflare"
+  }
+}

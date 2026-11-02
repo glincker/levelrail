@@ -55,14 +55,20 @@ Cloudflare caps request bodies by plan, and the cap is lower than Levelrail's ow
 
 ## Real client IP
 
-Without configuration, every visitor looks like a Cloudflare address to access logs, [Shield](/domain-traffic-controls#bot-and-abuse-shield) rate limits, country rules and bans. Tell the ingress to trust Cloudflare's published ranges and read `CF-Connecting-IP`:
+Without configuration, every visitor looks like a Cloudflare address to access logs, [Shield](/domain-traffic-controls#bot-and-abuse-shield) rate limits, country rules and bans. Turn on the Cloudflare preset and the ingress reads the visitor address from `CF-Connecting-IP`, but only when the connection comes from Cloudflare's published ranges. A forged header from any other peer is ignored.
 
 ```bash
-APP_INGRESS_TRUSTED_PROXIES=<Cloudflare ranges from cloudflare.com/ips>
-APP_INGRESS_CLIENT_IP_HEADERS=CF-Connecting-IP
+levelrail-cli settings ingress cloudflare show
+levelrail-cli settings ingress cloudflare set --preset cloudflare --confirm-weakening
 ```
 
-The list changes over time, so you have to keep it current by hand. See [Real client IPs behind a CDN or proxy](/domains-and-ingress#real-client-ips-behind-a-cdn-or-proxy). Keep the list to Cloudflare ranges only: anything listed can claim any client address.
+The same switch is in the dashboard under Domains, Platform settings, "Cloudflare client IP", and in the API at `GET`/`PUT /api/v1/settings/ingress/cloudflare` (root only; `confirm_weakening` is required because the ingress starts trusting a header). It is a stored setting that applies at once. `APP_INGRESS_TRUSTED_PROXY_PRESET` only seeds the default, and entries in `APP_INGRESS_TRUSTED_PROXIES` stay trusted.
+
+- A snapshot of the ranges ships in the binary and is refreshed in the background from Cloudflare's official endpoint. The last good list is kept if a fetch fails or returns too few ranges. The interval (default 24h), timeout, size limit and sanity floor are runtime settings `ingress.cloudflare_ips_*`, and the last refresh and error show in the settings.
+- Shield never bans or rate limits an address inside the Cloudflare ranges, whatever the preset, because that would block every visitor behind it. It logs a warning once.
+- Any Cloudflare customer can point a proxied record at your server, so trusting Cloudflare's ranges does not prove a request came through your zone.
+
+See also [Real client IPs behind a CDN or proxy](/domains-and-ingress#real-client-ips-behind-a-cdn-or-proxy).
 
 ## Cache purge
 
@@ -87,7 +93,7 @@ Levelrail's own checks run on the server, so they report configuration and canno
 1. Connect Cloudflare DNS in Levelrail and issue certificates with DNS-01.
 2. Set the zone's SSL/TLS mode to Full (strict) after the certificate is valid.
 3. Turn the proxy on per app and check `levelrail-cli apps cdn get <app>`.
-4. Trust Cloudflare's ranges for client IPs.
+4. Turn on the Cloudflare client IP preset.
 5. List every DNS only record in the zone and remove or proxy the ones that are not mail or agent records.
 6. Disable automatic hostnames if you want the address out of certificate logs.
 7. Restrict ports 80 and 443 to Cloudflare ranges at your cloud firewall, keeping SSH on a port you can still reach.

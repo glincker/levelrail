@@ -938,7 +938,7 @@ APP_INGRESS_CLIENT_IP_HEADERS=CF-Connecting-IP   # optional, defaults to X-Forwa
 Keep the trusted list to the proxies you actually run: anything listed can claim any client address.
 </Warning>
 
-For Cloudflare, see [Run behind Cloudflare](/behind-cloudflare) for the full setup and what the proxy leaves exposed.
+For Cloudflare, switch on the Cloudflare client IP preset (`levelrail-cli settings ingress cloudflare set --preset cloudflare --confirm-weakening`) instead of pasting ranges; see [Run behind Cloudflare](/behind-cloudflare) for the full setup and what the proxy leaves exposed.
 
 ### Running behind a TLS proxy
 

@@ -1941,6 +1941,7 @@ levelrail-cli settings ingress set [--primary-domain D] [--acme-enabled] [--publ
 levelrail-cli settings ingress https status [flags]
 levelrail-cli settings ingress https enable [--email EMAIL] [--staging] [--wait 2m] [flags]
 levelrail-cli settings ingress dns01 show|enable|disable [flags]
+levelrail-cli settings ingress cloudflare show|set --preset none|cloudflare [--confirm-weakening] [flags]
 levelrail-cli settings ddns show|enable|disable|status [flags]
 levelrail-cli settings ddns set [--provider generic|duckdns] [--domains LIST] [--target URL|TOKEN] [flags]
 levelrail-cli settings edge get [flags]

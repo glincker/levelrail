@@ -1129,6 +1129,8 @@ Endpoints for:
 | POST | /api/v1/settings/email/branding/preview | AbilityRoot | handlePreviewEmailBranding |
 | GET | /api/v1/settings/ingress/dns01 | AbilityRoot | handleGetIngressDNS01 |
 | PUT | /api/v1/settings/ingress/dns01 | AbilityRoot | handlePutIngressDNS01 |
+| GET | /api/v1/settings/ingress/cloudflare | AbilityRoot | handleGetIngressCloudflare |
+| PUT | /api/v1/settings/ingress/cloudflare | AbilityRoot | handlePutIngressCloudflare |
 
 </Accordion>
 

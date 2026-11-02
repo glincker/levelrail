@@ -32,6 +32,8 @@ func (rt *Router) registerIngressRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/settings/ingress/https", rt.requireAbility(AbilityRoot, rt.handleEnableHTTPS))
 	mux.HandleFunc("GET /api/v1/settings/ingress/dns01", rt.requireAbility(AbilityRoot, rt.handleGetIngressDNS01))
 	mux.HandleFunc("PUT /api/v1/settings/ingress/dns01", rt.requireAbility(AbilityRoot, rt.handlePutIngressDNS01))
+	mux.HandleFunc("GET /api/v1/settings/ingress/cloudflare", rt.requireAbility(AbilityRoot, rt.handleGetIngressCloudflare))
+	mux.HandleFunc("PUT /api/v1/settings/ingress/cloudflare", rt.requireAbility(AbilityRoot, rt.handlePutIngressCloudflare))
 	mux.HandleFunc("GET /api/v1/settings/ingress/check", rt.requireAbility(AbilityRoot, rt.handleCheckIngressDomain))
 
 	mux.HandleFunc("GET /api/v1/settings/dns-provider", rt.requireAbility(AbilityRead, rt.handleGetDNSProvider))

@@ -13,6 +13,7 @@ import { AcmeBlockedNotice } from './AcmeBlockedNotice'
 import { DomainCheckPanel } from './DomainDnsCheck'
 import { InfoTip } from './kit/InfoTip'
 import { IngressDns01Switch } from './IngressDns01Switch'
+import { IngressCloudflareSwitch } from './IngressCloudflareSwitch'
 import { IngressUpstreamFields } from './IngressUpstreamFields'
 import { isValidPublicPort, publicPortError } from '../lib/publicPort'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -339,6 +340,8 @@ export function IngressSettingsCard({
           </div>
 
           <IngressDns01Switch />
+
+          <IngressCloudflareSwitch />
 
           <div className="rounded-md border border-border p-3">
             <Field orientation="horizontal">

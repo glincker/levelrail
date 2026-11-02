@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1917 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1919 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -877,6 +877,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/settings/ingress", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleUpdateIngressSettings", Description: ""},
 	{Method: "POST", Path: "/api/v1/settings/ingress/apps-base-domain/backfill", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleBackfillBaseDomain", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/ingress/check", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleCheckIngressDomain", Description: ""},
+	{Method: "GET", Path: "/api/v1/settings/ingress/cloudflare", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetIngressCloudflare", Description: ""},
+	{Method: "PUT", Path: "/api/v1/settings/ingress/cloudflare", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handlePutIngressCloudflare", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/ingress/dns01", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetIngressDNS01", Description: ""},
 	{Method: "PUT", Path: "/api/v1/settings/ingress/dns01", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handlePutIngressDNS01", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/ingress/edge", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetIngressEdge", Description: ""},

@@ -432,7 +432,7 @@ var Tree = map[string]*Node{
 		"oauth":         {Subs: map[string]*Node{"list": nil, "set": nil}},
 		"email":         {Subs: map[string]*Node{"get": nil, "set": nil, "providers": {Subs: map[string]*Node{"list": nil, "add": nil, "set": nil, "rm": nil, "test": nil, "promote": nil, "reveal": nil}}, "branding": {Subs: map[string]*Node{"get": nil, "set": nil, "preview": nil}}}},
 		"edge":          {Subs: map[string]*Node{"get": nil, "set": nil, "fix": nil}},
-		"ingress":       {Subs: map[string]*Node{"get": nil, "set": nil, "https": {Subs: map[string]*Node{"status": nil, "enable": nil}}, "dns01": {Subs: map[string]*Node{"show": nil, "enable": nil, "disable": nil}}}},
+		"ingress":       {Subs: map[string]*Node{"get": nil, "set": nil, "https": {Subs: map[string]*Node{"status": nil, "enable": nil}}, "dns01": {Subs: map[string]*Node{"show": nil, "enable": nil, "disable": nil}}, "cloudflare": {Subs: map[string]*Node{"show": nil, "set": nil}}}},
 		"ddns":          {Subs: map[string]*Node{"show": nil, "set": nil, "enable": nil, "disable": nil, "status": nil}},
 		"dashboard-url": {Subs: map[string]*Node{"get": nil, "set": nil, "fix": nil}},
 		"runtime":       {Subs: map[string]*Node{"list": nil, "get": nil, "set": nil, "reset": nil, "apply": nil}},

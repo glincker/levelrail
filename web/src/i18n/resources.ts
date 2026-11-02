@@ -44,6 +44,7 @@ import type dnsSetup from '../locales/en/dnsSetup.json'
 import type dnsProviders from '../locales/en/dnsProviders.json'
 import type ddns from '../locales/en/ddns.json'
 import type dns01 from '../locales/en/dns01.json'
+import type ingressProtection from '../locales/en/ingressProtection.json'
 import type platformSettings from '../locales/en/platformSettings.json'
 import type databaseAccess from '../locales/en/databaseAccess.json'
 import type databaseUpgrades from '../locales/en/databaseUpgrades.json'
@@ -169,6 +170,7 @@ declare module 'i18next' {
       platformSettings: typeof platformSettings
       ddns: typeof ddns
       dns01: typeof dns01
+      ingressProtection: typeof ingressProtection
       databaseAccess: typeof databaseAccess
       databaseUpgrades: typeof databaseUpgrades
       databaseVersions: typeof databaseVersions
