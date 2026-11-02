@@ -99,7 +99,8 @@ func (rt *Router) handleCreateToken(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "name is required")
 		return
 	}
-	if len(req.Abilities) == 0 {
+	defaulted := len(req.Abilities) == 0
+	if defaulted {
 		req.Abilities = rt.defaultTokenAbilities(r.Context(), req.AllowChanges)
 	} else if req.AllowChanges {
 		writeError(w, http.StatusBadRequest, "allow_changes only applies when abilities is omitted")
@@ -144,6 +145,10 @@ func (rt *Router) handleCreateToken(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		rt.internalError(w, "api: create token: resolve caller abilities failed", err)
 		return
+	}
+	// A defaulted token never exceeds the caller: a read_write policy gives a reader a read token, not a 403.
+	if defaulted && !req.AllowChanges && !hasAbility(callerAbilities, AbilityWrite) {
+		req.Abilities = []string{AbilityRead}
 	}
 	for _, a := range req.Abilities {
 		if a == AbilitySignInApprove {

@@ -20,7 +20,7 @@ In the dashboard, Settings > Tokens > Create token starts with read only selecte
 
 Every token shows an access label in `tokens list`, the dashboard and the API (`access`): `read_only` when nothing it holds can change anything, `can_change` otherwise. A token with an IAM policy attached always shows `can_change`, because a policy can allow changes its base abilities do not. Tokens that existed before this default keep exactly the abilities they had; only the label is new, so you can spot the ones that can write.
 
-You can only grant what you hold yourself. A user with only `read` cannot create a token with `--allow-changes`.
+You can only grant what you hold yourself. A user with only `read` cannot create a token with `--allow-changes` or with explicit abilities they lack. When `abilities` is omitted, the default is capped at what the caller holds: under a `read_write` policy, a caller without `write` gets a read token instead of an error.
 
 ## What each scope allows
 
@@ -63,6 +63,16 @@ levelrail-cli audit-log --client-kind mcp
 ```
 
 Stdio rows are client-reported labels, not proof. See [MCP tools and write mode](/mcp) for the exact fields.
+
+## Behaviour changes
+
+If you upgrade from a release before these safe defaults, expect:
+
+- `tools/list` for a plain `read` token no longer shows the sensitive tools (database users, backup targets, registry credentials, notification targets and similar), and `tools/call` refuses them. Grant `read:sensitive` if the assistant needs them.
+- `POST /auth/tokens` with no `abilities` now creates a read token instead of returning a 400.
+- `levelrail-cli tokens create` works without `--abilities` and gives a read token. Add `--allow-changes` for write.
+- `levelrail-cli tokens list` has a new ACCESS column (`read_only` or `can_change`), and the API returns `access` on every token.
+- Resetting a security runtime setting to a weaker environment seed or default now needs `--confirm-weakening`.
 
 ## Revoke a token
 

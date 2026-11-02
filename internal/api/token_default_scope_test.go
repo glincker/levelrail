@@ -150,3 +150,20 @@ func TestTokenListAccess_PolicyAttachedIsCanChange(t *testing.T) {
 		}
 	}
 }
+
+func TestCreateToken_ReadWritePolicyCapsDefaultAtCallerAbilities(t *testing.T) {
+	rt, db := newTestRouter(t)
+	admin := loginTestSession(t, rt, db)
+	if rec := rsDo(t, rt, admin, http.MethodPut, rsBase+"/"+KeyMCPDefaultTokenScope, `{"value":"read_write","confirm_weakening":true}`); rec.Code != http.StatusOK {
+		t.Fatalf("set policy = %d %s", rec.Code, rec.Body.String())
+	}
+	reader := storeUserWithAbilitiesForTest(t, db, "reader-cap@example.com", []string{AbilityRead})
+	cookie := sessionCookieForTest(t, rt, reader.ID)
+	code, got := mintToken(t, rt, cookie, `{"name":"r"}`)
+	if code != http.StatusCreated || !slices.Equal(got.Abilities, []string{AbilityRead}) {
+		t.Fatalf("default for a reader = %d %v, want a read token", code, got.Abilities)
+	}
+	if code, _ := mintToken(t, rt, cookie, `{"name":"r2","abilities":["read","write"]}`); code != http.StatusForbidden {
+		t.Fatalf("explicit write by a reader = %d, want 403", code)
+	}
+}
