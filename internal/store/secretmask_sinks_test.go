@@ -101,7 +101,7 @@ func TestGateAndDeployFailureRowsMaskRegisteredSecrets(t *testing.T) {
 	secretmask.Add(sinkSecret)
 	db := openTestDB(t)
 	ctx := context.Background()
-	saveSucceededAttempt(t, db, "dep_s", "web", "app:v1", time.Now())
+	saveSucceededAttempt(t, db, "dep_s", "app:v1", time.Now())
 	probe := "readiness probe GET /health?key=" + sinkSecret + " returned 500"
 	if err := db.RecordGateEvent(ctx, DeployGateEvent{DeployAttemptID: "dep_s", ServiceName: "web", Phase: "readiness", Status: "failed", Reason: "probe", Message: probe}); err != nil {
 		t.Fatal(err)
@@ -217,7 +217,7 @@ func TestDeployAttemptReasonWritersMaskRegisteredSecrets(t *testing.T) {
 	secretmask.Add(sinkSecret)
 	db := openTestDB(t)
 	ctx := context.Background()
-	saveSucceededAttempt(t, db, "dep_r1", "web", "app:v1", time.Now())
+	saveSucceededAttempt(t, db, "dep_r1", "app:v1", time.Now())
 	if err := db.MarkRolloutFailureReason(ctx, "web", "app:v1", "probe key="+sinkSecret+" refused"); err != nil {
 		t.Fatal(err)
 	}

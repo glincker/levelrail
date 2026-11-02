@@ -417,7 +417,7 @@ func (e *vmEnv) swapAndGate(ctx context.Context, s vmruntime.Settings, bin strin
 	if err := e.guestSh(gctx, "sudo", "systemctl", "restart", guest.CheckUnit); err != nil {
 		return err
 	}
-	if _, err := e.waitIsolation(gctx, deadline); err != nil {
+	if err := e.waitIsolation(gctx, deadline); err != nil {
 		return fmt.Errorf("%w: %w", errIsolation, err)
 	}
 	return nil

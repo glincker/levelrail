@@ -40,7 +40,8 @@ const (
 var (
 	// ErrNotLoopback is returned for any target but this host's loopback.
 	ErrNotLoopback = errors.New("gamestatus: target must be a loopback address")
-	ErrBadPacket   = errors.New("gamestatus: malformed status response")
+	// ErrBadPacket is returned when the server reply is not a valid status packet.
+	ErrBadPacket = errors.New("gamestatus: malformed status response")
 )
 
 // Status is one probe result.
@@ -106,7 +107,7 @@ func ReadMinecraftStatus(rw io.ReadWriter, host string, port uint16) (Status, er
 	var hs bytes.Buffer
 	putVarInt(&hs, packetHandshake)
 	putVarInt(&hs, handshakeProtocol)
-	putVarInt(&hs, int32(len(host)))
+	putVarInt(&hs, int32(len(host))) //nolint:gosec // host is a short loopback name
 	hs.WriteString(host)
 	_ = binary.Write(&hs, binary.BigEndian, port)
 	putVarInt(&hs, nextStateStatus)

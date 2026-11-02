@@ -508,7 +508,7 @@ func (e *vmEnv) bootID(ctx context.Context) (string, error) {
 }
 
 // waitIsolation polls the guest self-check; a fail result returns at once.
-func (e *vmEnv) waitIsolation(ctx context.Context, deadline time.Time) (guest.Status, error) {
+func (e *vmEnv) waitIsolation(ctx context.Context, deadline time.Time) error {
 	for {
 		raw, err := e.guestRead(ctx, guest.StatusPath)
 		if err == nil {
@@ -516,14 +516,14 @@ func (e *vmEnv) waitIsolation(ctx context.Context, deadline time.Time) (guest.St
 			if berr == nil {
 				if st, perr := guest.ParseStatus(raw, boot); perr == nil {
 					if !st.Passed() {
-						return st, errors.New("guest isolation check failed")
+						return errors.New("guest isolation check failed")
 					}
-					return st, nil
+					return nil
 				}
 			}
 		}
 		if time.Now().After(deadline) {
-			return guest.Status{}, errors.New("guest isolation status did not appear in time")
+			return errors.New("guest isolation status did not appear in time")
 		}
 		e.sleep(vmPollInterval)
 	}
@@ -566,7 +566,7 @@ func (e *vmEnv) start(ctx context.Context, bin string, stdout io.Writer, lookupE
 			return fmt.Errorf("start failed, VM stopped: %w", err)
 		}
 	}
-	if _, err := e.waitIsolation(bctx, deadline); err != nil {
+	if err := e.waitIsolation(bctx, deadline); err != nil {
 		e.failClosed(ctx)
 		return fmt.Errorf("%w; the VM was stopped (limit %s)", err, timeout)
 	}

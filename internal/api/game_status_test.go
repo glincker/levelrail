@@ -24,7 +24,7 @@ func fakeMinecraft(t *testing.T) (port int, conns *atomic.Int32) {
 	t.Cleanup(func() { _ = ln.Close() })
 	conns = &atomic.Int32{}
 	js := `{"version":{"name":"1.21.11"},"players":{"online":3,"max":20},"description":"hello"}`
-	reply := append([]byte{byte(len(js) + 2), 0x00, byte(len(js))}, js...)
+	reply := append([]byte{byte(len(js) + 2), 0x00, byte(len(js))}, js...) //nolint:gosec // small test fixture
 	go func() {
 		for {
 			c, err := ln.Accept()

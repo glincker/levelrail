@@ -35,7 +35,7 @@ func TestLimitSettings_ReachConsumersWithoutRestart(t *testing.T) {
 		t.Fatal("request 21 passed although the saved budget is 20")
 	}
 	// A larger budget must not forgive the caller that already drained its bucket.
-	if code := putLimit(t, rt, cookie, runtimesettings.KeyAPIRateLimitWrite, "5000"); code != http.StatusOK {
+	if code := putLimit(t, rt, cookie, runtimesettings.KeyAPIRateLimitWrite, "25"); code != http.StatusOK {
 		t.Fatalf("raise write rpm = %d", code)
 	}
 	if ok, _ := rt.apiRateLimit.writes.allow("k"); ok {

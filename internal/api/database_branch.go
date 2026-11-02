@@ -205,7 +205,7 @@ func (rt *Router) prepareBranchAtTime(w http.ResponseWriter, r *http.Request, so
 
 // finishBranchSetup keeps the pooler off: a branch starts with no pooler until
 // someone enables it. The size preset is copied at create so quota covers it.
-func (rt *Router) finishBranchSetup(w http.ResponseWriter, r *http.Request, sourceDB *store.DesiredDatabase, name string) bool {
+func (rt *Router) finishBranchSetup(w http.ResponseWriter, r *http.Request, _ *store.DesiredDatabase, name string) bool {
 	desired, err := rt.databases.GetDesiredDatabase(r.Context(), name)
 	if err != nil {
 		rt.internalError(w, "api: branch database: reload new database failed", err, slog.String("name", name))

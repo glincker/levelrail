@@ -16,7 +16,7 @@ func framed(parts ...func(*bytes.Buffer)) []byte {
 		p(&body)
 	}
 	var out bytes.Buffer
-	putVarInt(&out, int32(body.Len()))
+	putVarInt(&out, int32(body.Len())) //nolint:gosec // small test fixture
 	out.Write(body.Bytes())
 	return out.Bytes()
 }
@@ -24,7 +24,10 @@ func framed(parts ...func(*bytes.Buffer)) []byte {
 func statusPacket(js string) []byte {
 	return framed(
 		func(b *bytes.Buffer) { putVarInt(b, 0) },
-		func(b *bytes.Buffer) { putVarInt(b, int32(len(js))); b.WriteString(js) },
+		func(b *bytes.Buffer) {
+			putVarInt(b, int32(len(js))) //nolint:gosec // small test fixture
+			b.WriteString(js)
+		},
 	)
 }
 
