@@ -192,6 +192,10 @@ describe('FailureContextCard', () => {
       total_lines: 200,
     }
     renderObs(<FailureContextCard appName="web" />)
+    expect(
+      screen.queryByLabelText('Last log lines of the failing container'),
+    ).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Show details' }))
     expect(screen.getByText('This app is crashlooping')).toBeInTheDocument()
     const lines = screen.getByLabelText(
       'Last log lines of the failing container',

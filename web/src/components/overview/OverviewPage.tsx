@@ -170,7 +170,7 @@ export function OverviewPage({
         >
           {layout.containerMetrics ? <ResourceTiles reading={reading} /> : null}
           {layout.traffic !== 'hidden' ? (
-            <TrafficTiles appName={app.name} url={url} />
+            <TrafficTiles appName={app.name} url={url} hideEmpty />
           ) : null}
         </section>
         {layout.traffic !== 'hidden' ? (
@@ -178,6 +178,7 @@ export function OverviewPage({
         ) : null}
       </div>
     ),
+    failure: <FailureContextCard appName={app.name} />,
     health: <AppHealthScorePanel appName={app.name} />,
     activity: (
       <div className="space-y-6">
@@ -229,8 +230,7 @@ export function OverviewPage({
         }
         onDeploy={setDeployTab}
       />
-      <FailureContextCard appName={app.name} />
-      <RecommendedNextCard app={app} latest={latest} />
+      <RecommendedNextCard app={app} latest={latest} omit={['add_domain']} />
       {layout.sections.map((id) => (
         <Fragment key={id}>{sections[id]}</Fragment>
       ))}

@@ -1102,6 +1102,8 @@
       "title": "Sin comprobación de salud"
     },
     "dismiss": "Descartar: {{title}}",
+    "less": "Mostrar menos",
+    "more": "+{{count}} más",
     "enable_backups": {
       "button": "Activar copias de seguridad",
       "title": "Una base de datos no tiene programación de copias de seguridad"
