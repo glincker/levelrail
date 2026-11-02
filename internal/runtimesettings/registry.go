@@ -79,6 +79,7 @@ const (
 	KeyContainersRestartPolicy = "containers.restart_policy"
 	KeyRevokedTokenDays        = "retention.revoked_token_days" //nolint:gosec // setting key, not a credential
 	KeyExpiredTokenDays        = "retention.expired_token_days" //nolint:gosec // setting key, not a credential
+	KeyDesktopSessionTTL       = "desktop.session_ttl"
 )
 
 // Definition describes one setting. Default and values are in string form
@@ -235,6 +236,12 @@ func init() {
 		Description: "Upper bound on the wait between retries of a failed certificate authority switch.",
 	})
 	registerHeartbeatJobSettings()
+	Register(Definition{
+		Key: KeyDesktopSessionTTL, Category: CategorySecurity, Kind: KindDuration, Default: "12h",
+		Env: "APP_DESKTOP_SESSION_TTL", Apply: ApplyLive,
+		Title:       "Desktop app session lifetime",
+		Description: "How long a dashboard session issued to the desktop app stays valid before it must exchange its token again.",
+	})
 	Register(Definition{
 		Key: KeyRevokedTokenDays, Category: CategoryRetention, Kind: KindInt, Default: "90", AllowedInts: TokenRetentionPresets,
 		Env: "APP_RETENTION_REVOKED_TOKEN_DAYS", Apply: ApplyLive,

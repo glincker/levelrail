@@ -186,6 +186,7 @@ func (s *bootState) wireRouter() {
 		scheduledTaskRunner: scheduledTaskRunner, functionQueue: s.functionQueue, engine: engine, ingressDriver: ingressDriver,
 		pushVAPIDPublicKey: pushVAPIDPublicKey,
 	})
+	apiHandler = wrapDesktopMode(logger, db, apiRouter, apiHandler)
 	apiRouter.WarmTrustRoot()
 	if buildLimiter != nil {
 		apiRouter.SetBuildLoad(buildLimiter)
