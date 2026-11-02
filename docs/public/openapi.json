@@ -146172,6 +146172,62 @@
         "x-required-ability": "write"
       }
     },
+    "/api/v1/tokens/unused": {
+      "get": {
+        "description": "Read-only list of idle tokens, same audience as the token list.\n\nRequires a signed-in dashboard session.",
+        "operationId": "handleUnusedTokens",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not signed in."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "summary": "Read-only list of idle tokens, same audience as the token list.",
+        "tags": [
+          "Other"
+        ],
+        "x-required-ability": "session"
+      }
+    },
     "/api/v1/traffic/summary": {
       "get": {
         "description": "Counts for the sidebar attention badge and the domains health strip, from stored state and the last known DNS checks only.\n\nRequires the `read` ability.",

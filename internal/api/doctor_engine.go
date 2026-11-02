@@ -110,6 +110,7 @@ func (rt *Router) doctorDefs() []doctorCheckDef {
 		one("secret_reveal_policy", doctorGroupSecurity, func(context.Context) doctorCheckResource { return doctorCheckSecretReveal() }),
 		one("legacy_tokens", doctorGroupSecurity, rt.doctorCheckLegacyTokens),
 		one("git_connections", doctorGroupSecurity, rt.doctorCheckGitConnections),
+		one("token_hygiene", doctorGroupSecurity, rt.doctorCheckTokenHygiene),
 		one("signature_pin", doctorGroupSecurity, func(context.Context) doctorCheckResource { return rt.doctorCheckReleaseSignature() }),
 
 		one("control_plane_backup", doctorGroupBackups, func(context.Context) doctorCheckResource { return rt.doctorCheckControlPlaneBackup() }),

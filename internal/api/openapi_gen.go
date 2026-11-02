@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1940 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1941 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1689,6 +1689,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/teams/{id}/transfer", Ability: "AbilityWrite", Group: "Other", Handler: "handleTransferTeam", Description: ""},
 	{Method: "GET", Path: "/api/v1/templates/custom", Ability: "AbilityRead", Group: "Other", Handler: "handleListCustomTemplates", Description: "Custom templates (service_templates_custom.go): operator-defined templates captured from a running app. Deploy reuses the service-templates/{id}/deploy route above, no second deploy path."},
 	{Method: "DELETE", Path: "/api/v1/templates/custom/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteCustomTemplate", Description: ""},
+	{Method: "GET", Path: "/api/v1/tokens/unused", Ability: "Session", Group: "Other", Handler: "handleUnusedTokens", Description: "Read-only list of idle tokens, same audience as the token list."},
 	{Method: "GET", Path: "/api/v1/traffic/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleTrafficSummary", Description: "Counts for the sidebar attention badge and the domains health strip, from stored state and the last known DNS checks only."},
 	{Method: "GET", Path: "/api/v1/usage/budgets", Ability: "AbilityRead", Group: "Other", Handler: "handleListUsageBudgets", Description: ""},
 	{Method: "PUT", Path: "/api/v1/usage/budgets", Ability: "AbilityWrite", Group: "Other", Handler: "handlePutUsageBudget", Description: ""},

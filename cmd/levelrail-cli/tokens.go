@@ -23,6 +23,8 @@ func runTokens(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		return runTokensList(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	case "revoke":
 		return runTokensRevoke(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
+	case "unused":
+		return runTokensUnused(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	case "cleanup":
 		return runTokensCleanup(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
@@ -37,6 +39,7 @@ func tokensUsage(prog string) string {
   %[1]s tokens create --name NAME --abilities LIST [flags]   mint a new API token
   %[1]s tokens list [flags]                                       list tokens (never shows a secret)
   %[1]s tokens revoke <id> [flags]                              revoke a token
+  %[1]s tokens unused [flags]                                     list tokens idle past tokens.unused_alert_days
   %[1]s tokens cleanup [--older-than-days N]                   remove old revoked tokens (root API token)
 
 Every subcommand here requires a username and password (prompted if

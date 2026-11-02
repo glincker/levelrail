@@ -100,6 +100,9 @@ func runTokensCreate(prog string, args []string, stdout, stderr io.Writer, looku
 
 	return writeScheduledTaskResult(stdout, stderr, of, created, func() {
 		_, _ = fmt.Fprintf(stdout, "token %q (id %s) created, access %s\n", created.Name, created.ID, created.Access)
+		if created.Access == "read_only" {
+			_, _ = fmt.Fprintln(stdout, "this token can only read; pass --allow-changes (or --abilities) to let it change things")
+		}
 		_, _ = fmt.Fprintf(stdout, "token value (shown once, not recoverable again): %s\n", created.Token)
 	})
 }

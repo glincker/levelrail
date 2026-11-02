@@ -25,6 +25,7 @@ import {
 } from '../../../components/DatabaseRow'
 import { Breadcrumbs } from '../../../components/Breadcrumbs'
 import { DeleteProjectDialog } from '../../../components/DeleteProjectDialog'
+import { ExportProjectDialog } from '../../../components/projects/ExportProjectDialog'
 import { PauseResumeProjectButton } from '../../../components/PauseResumeProjectButton'
 import { MoveToOrganizationDialog } from '../../../components/MoveToOrganizationDialog'
 import { RestartProjectButton } from '../../../components/RestartProjectButton'
@@ -113,6 +114,11 @@ function ProjectDetailPage() {
             {isEmpty ? null : (
               <PauseResumeProjectButton id={project.id} name={project.name} />
             )}
+            <ExportProjectDialog
+              projectId={project.id}
+              projectName={project.name}
+              appNames={projectApps.map((a) => a.name)}
+            />
             <RestartProjectButton
               id={project.id}
               disabled={projectApps.length === 0}

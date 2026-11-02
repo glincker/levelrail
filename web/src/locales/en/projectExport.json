@@ -1,0 +1,24 @@
+{
+  "trigger": "Export",
+  "title": "Export project",
+  "description": "Take this project with you. You get plain files that run with Docker alone.",
+  "includes": "You get a docker-compose.yml, an .env.example with placeholders, a volumes list and a README.",
+  "gaps": "Not carried over: the pinned host port, hooks, labels, probes, registry logins, and some resource limits. The README lists what applies to this project.",
+  "secrets": {
+    "title": "Include secret values",
+    "description": "Adds a .env file with real secrets. Off by default.",
+    "warning": "The archive will hold live secrets in plain text. Store it somewhere private and delete it when done. This action is recorded in the audit log."
+  },
+  "download": "Download",
+  "downloading": "Preparing...",
+  "done": "Export downloaded.",
+  "cancel": "Close",
+  "stepUp": "Exporting secret values of {{app}} needs a fresh confirmation.",
+  "cli": {
+    "summary": "Use the CLI",
+    "hint": "Writes the same files to a folder."
+  },
+  "errors": {
+    "stepUpExhausted": "Confirmation did not unlock the export. Try again."
+  }
+}

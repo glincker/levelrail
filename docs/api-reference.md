@@ -2164,6 +2164,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/mail/dns/status | AbilityRead | handleMailDNSStatus |
 | GET | /api/v1/dns/zones/{provider}/{id} | AbilityRead | handleGetDNSZoneDetail |
 | POST | /api/v1/firewall/exposure/restrictions/{protocol}/{port}/confirm | AbilityRoot | handleExposureConfirm |
+| GET | /api/v1/tokens/unused | Session | handleUnusedTokens |
 | POST | /mcp | Public |  |
 
 ## See also

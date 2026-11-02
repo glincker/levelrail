@@ -1,0 +1,43 @@
+{
+  "budget": {
+    "title": "Presupuesto de certificados",
+    "usage": "{{issued}} de {{warn}} certificados en los ultimos {{days}} dias",
+    "meterLabel": "Certificados emitidos en los ultimos {{days}} dias",
+    "status": {
+      "ok": "Dentro del presupuesto",
+      "near": "Cerca del limite",
+      "over": "Limite superado"
+    },
+    "body": {
+      "ok": "Queda margen de sobra antes del umbral de aviso.",
+      "near": "Las direcciones automaticas gastan el presupuesto compartido de Let's Encrypt. Vigilalo antes de desplegar muchas apps nuevas.",
+      "over": "Las direcciones automaticas gastan el presupuesto compartido de Let's Encrypt. La limitacion de peticiones puede romper los primeros despliegues hasta que pase la ventana."
+    },
+    "threshold": "Avisar en",
+    "thresholdHelp": "Se aplica al instante. Solo avisa, no bloquea nada.",
+    "save": "Guardar",
+    "saving": "Guardando",
+    "saved": "Guardado",
+    "saveFailed": "No se pudo guardar",
+    "invalid": "Introduce un numero entero de al menos 1.",
+    "doctor": "Abrir la comprobacion de estado",
+    "loadError": "No se pudo cargar el presupuesto de certificados.",
+    "retry": "Reintentar"
+  },
+  "autoHost": {
+    "title": "Apps con direccion automatica",
+    "help": "Al desactivarla se quita la direccion automatica y su certificado de esa app. Los dominios propios no cambian.",
+    "search": "Buscar apps",
+    "empty": "Aun no hay apps. Al crear una, recibe una direccion automatica por defecto.",
+    "noMatch": "Ninguna app coincide con la busqueda.",
+    "name": "App",
+    "address": "Direccion",
+    "on": "Activa",
+    "off": "Desactivada",
+    "toggle": "Direccion automatica de {{name}}",
+    "loadError": "No se pudieron cargar las apps.",
+    "retry": "Reintentar",
+    "showing": "Mostrando {{shown}} de {{total}}",
+    "more": "Mostrar mas"
+  }
+}

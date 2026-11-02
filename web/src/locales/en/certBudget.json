@@ -1,0 +1,43 @@
+{
+  "budget": {
+    "title": "Certificate budget",
+    "usage": "{{issued}} of {{warn}} certificates in the last {{days}} days",
+    "meterLabel": "Certificates issued in the last {{days}} days",
+    "status": {
+      "ok": "Within budget",
+      "near": "Close to the limit",
+      "over": "Over the limit"
+    },
+    "body": {
+      "ok": "Plenty of room left before the warning threshold.",
+      "near": "Automatic addresses spend the shared Let's Encrypt budget. Keep an eye on it before deploying many new apps.",
+      "over": "Automatic addresses spend the shared Let's Encrypt budget. Rate limiting can now break first deploys until the window moves on."
+    },
+    "threshold": "Warn at",
+    "thresholdHelp": "Applies live. Only warns, nothing is blocked.",
+    "save": "Save",
+    "saving": "Saving",
+    "saved": "Saved",
+    "saveFailed": "Could not save",
+    "invalid": "Enter a whole number of at least 1.",
+    "doctor": "Open the health check",
+    "loadError": "Could not load the certificate budget.",
+    "retry": "Try again"
+  },
+  "autoHost": {
+    "title": "Apps using an automatic address",
+    "help": "Turning it off removes the automatic address and its certificate for that app. Custom domains are not affected.",
+    "search": "Search apps",
+    "empty": "No apps yet. Create an app and it gets an automatic address by default.",
+    "noMatch": "No app matches your search.",
+    "name": "App",
+    "address": "Address",
+    "on": "On",
+    "off": "Off",
+    "toggle": "Automatic address for {{name}}",
+    "loadError": "Could not load apps.",
+    "retry": "Try again",
+    "showing": "Showing {{shown}} of {{total}}",
+    "more": "Show more"
+  }
+}

@@ -7,6 +7,7 @@ import type passkeys from '../locales/en/passkeys.json'
 import type account from '../locales/en/account.json'
 import type palette from '../locales/en/palette.json'
 import type paletteSettings from '../locales/en/paletteSettings.json'
+import type projectExport from '../locales/en/projectExport.json'
 import type rules from '../locales/en/rules.json'
 import type deploys from '../locales/en/deploys.json'
 import type settings from '../locales/en/settings.json'
@@ -32,6 +33,7 @@ import type assets from '../locales/en/assets.json'
 import type uiShared from '../locales/en/uiShared.json'
 import type relatedLinks from '../locales/en/relatedLinks.json'
 import type gitSource from '../locales/en/gitSource.json'
+import type certBudget from '../locales/en/certBudget.json'
 import type exposure from '../locales/en/exposure.json'
 import type appExposure from '../locales/en/appExposure.json'
 import type appAccess from '../locales/en/appAccess.json'
@@ -159,6 +161,7 @@ declare module 'i18next' {
       assets: typeof assets
       uiShared: typeof uiShared
       relatedLinks: typeof relatedLinks
+      certBudget: typeof certBudget
       exposure: typeof exposure
       appExposure: typeof appExposure
       appAccess: typeof appAccess
@@ -264,6 +267,7 @@ declare module 'i18next' {
       palette: typeof palette
       paletteSettings: typeof paletteSettings
       gitSource: typeof gitSource
+      projectExport: typeof projectExport
     }
   }
 }
