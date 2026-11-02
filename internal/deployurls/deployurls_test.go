@@ -485,3 +485,24 @@ func TestSync_CopyBornSuspendedInOneWrite(t *testing.T) {
 		}
 	}
 }
+
+func TestSyncNoHostCreatesNoCopy(t *testing.T) {
+	f := newFake()
+	f.services = []store.DesiredService{{Name: "web", Image: "web:ccccccc", Port: 80}}
+	f.attempts["web"] = []store.DeployAttempt{
+		attempt(1, store.DeployAttemptStatusSucceeded, "aaaaaaa"),
+		attempt(2, store.DeployAttemptStatusSucceeded, "ccccccc"),
+	}
+	s := &Syncer{
+		Store: f, Config: Config{Keep: 3, IdleMinutes: 5, Interval: time.Minute, MaxCopies: 2},
+		HostFor: func(context.Context, string) string { return "" },
+		Remove:  f.remove, Nudge: func() {}, Now: func() time.Time { return t0 },
+		Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+	}
+	if err := s.Sync(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(f.rows) != 0 || len(f.services) != 1 || len(f.services[0].Domains) != 0 {
+		t.Fatalf("rows = %+v services = %+v, want no copy and no domain", f.rows, f.services)
+	}
+}

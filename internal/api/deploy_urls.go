@@ -32,12 +32,18 @@ func (rt *Router) deployURLsByAttempt(ctx context.Context, app string) map[strin
 }
 
 // DeployURLHost is the hostname a retained deploy service is served on: one
-// label under the apps base domain, else the sslip fallback for the public IP.
+// label under the apps base domain, else the sslip fallback for the public IP
+// unless automatic hostnames are switched off.
 func (rt *Router) DeployURLHost(ctx context.Context, serviceName string) string {
 	if base := rt.appsBaseDomain(ctx); base != "" {
 		return appBaseHost(serviceName, base)
 	}
 	if rt.publicHost == "" {
+		return ""
+	}
+	// A retained copy carries an explicit domain, so it would be routed and get a
+	// certificate even with automatic hostnames off.
+	if s, err := rt.ingressSettings.GetIngressSettings(ctx); err == nil && s.FallbackDomainsDisabled {
 		return ""
 	}
 	host, _ := rt.autoHost(ctx, serviceName)

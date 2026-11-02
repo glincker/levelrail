@@ -442,3 +442,26 @@ func TestValidateHostname(t *testing.T) {
 		}
 	}
 }
+
+func TestDeployURLHostHonoursFallbackDomains(t *testing.T) {
+	f := newGoLiveFixture(t, "203.0.113.5")
+	ctx := context.Background()
+	set := func(s store.IngressSettings) {
+		t.Helper()
+		if err := f.db.UpdateIngressSettings(ctx, s); err != nil {
+			t.Fatal(err)
+		}
+	}
+	set(store.IngressSettings{})
+	if got := f.rt.DeployURLHost(ctx, "web-dep1"); got != "web-dep1.203-0-113-5.sslip.io" {
+		t.Fatalf("fallback on = %q", got)
+	}
+	set(store.IngressSettings{FallbackDomainsDisabled: true})
+	if got := f.rt.DeployURLHost(ctx, "web-dep1"); got != "" {
+		t.Fatalf("fallback off without base domain = %q, want none", got)
+	}
+	set(store.IngressSettings{FallbackDomainsDisabled: true, AppsBaseDomain: "apps.example.com"})
+	if got := f.rt.DeployURLHost(ctx, "web-dep1"); got != "web-dep1.apps.example.com" {
+		t.Fatalf("base domain = %q", got)
+	}
+}

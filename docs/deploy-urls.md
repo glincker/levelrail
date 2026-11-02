@@ -45,7 +45,11 @@ affected.
 
 The hostname is one label under the apps base domain. Without a base domain it
 falls back to the sslip.io address of the control plane's public IP. With
-neither, no URLs are created.
+neither, or when automatic hostnames are switched off (`settings ingress
+--fallback-domains=false`) and there is no base domain, no URLs are created, so
+no certificate is requested for a copy. Copies that already exist are not
+removed when you switch automatic hostnames off; they keep their hostname until
+they age out of the retention window or `APP_DEPLOY_URL_KEEP` is set to 0.
 
 ## Retention
 
