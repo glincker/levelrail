@@ -5,7 +5,7 @@ icon: mail
 category: Communication
 documentation_url: https://docs.useplunk.com/self-hosting/introduction
 source_repo: https://github.com/useplunk/plunk
-license: AGPL-3.0-only
+license: AGPL-3.0
 license_class: network-copyleft
 license_url: https://github.com/useplunk/plunk/blob/next/LICENSE
 recommended_memory_bytes: 536870912

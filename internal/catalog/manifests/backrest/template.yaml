@@ -5,7 +5,7 @@ icon: archive
 category: Backups
 documentation_url: https://garethgeorge.github.io/backrest/
 source_repo: https://github.com/garethgeorge/backrest
-license: GPL-3.0-only
+license: GPL-3.0
 license_class: copyleft
 license_url: https://github.com/garethgeorge/backrest/blob/main/LICENSE
 recommended_memory_bytes: 268435456

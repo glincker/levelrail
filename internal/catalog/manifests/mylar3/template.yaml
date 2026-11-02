@@ -5,7 +5,7 @@ icon: books
 category: Applications
 documentation_url: https://github.com/mylar3/mylar3/wiki
 source_repo: https://github.com/mylar3/mylar3
-license: GPL-3.0-only
+license: GPL-3.0
 license_class: copyleft
 license_url: https://github.com/mylar3/mylar3/blob/master/LICENSE
 recommended_memory_bytes: 268435456

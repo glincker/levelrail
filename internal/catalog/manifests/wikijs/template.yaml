@@ -5,7 +5,7 @@ icon: book
 category: Productivity
 documentation_url: https://docs.requarks.io
 source_repo: https://github.com/requarks/wiki
-license: AGPL-3.0-only
+license: AGPL-3.0
 license_class: network-copyleft
 license_url: https://github.com/requarks/wiki/blob/scarlett/LICENSE
 recommended_memory_bytes: 536870912

@@ -5,7 +5,7 @@ icon: share
 category: Productivity
 documentation_url: https://github.com/schlagmichdoch/PairDrop
 source_repo: https://github.com/schlagmichdoch/PairDrop
-license: GPL-3.0-only
+license: GPL-3.0
 license_class: copyleft
 license_url: https://github.com/schlagmichdoch/PairDrop/blob/master/LICENSE
 recommended_memory_bytes: 268435456

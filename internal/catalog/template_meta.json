@@ -1,7 +1,7 @@
 {
  "2fauth": {
   "source_repo": "https://github.com/Bubka/2FAuth",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/Bubka/2FAuth/blob/master/LICENSE",
   "description": "A web app to manage your two-factor authentication accounts and generate one-time codes. Runs as a single container from the 2fauth image, listening on port 8000 and keeps its data in named volumes."
@@ -29,7 +29,7 @@
  },
  "adguard-home": {
   "source_repo": "https://github.com/AdguardTeam/AdGuardHome",
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0",
   "license_class": "copyleft",
   "license_url": "https://github.com/AdguardTeam/AdGuardHome/blob/master/LICENSE.txt",
   "description": "Network-wide ad and tracker blocking with a DNS server and a friendly admin dashboard. Runs as a single container from the adguardhome image, listening on port 3000 and keeps its data in named volumes."
@@ -80,7 +80,7 @@
  },
  "audiobookshelf": {
   "source_repo": "https://github.com/advplyr/audiobookshelf",
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0",
   "license_class": "copyleft",
   "license_url": "https://github.com/advplyr/audiobookshelf/blob/master/LICENSE",
   "description": "A self-hosted server for your audiobooks and podcasts, with sync across every device. Runs as a single container from the audiobookshelf image, listening on port 80; data is kept in named volumes."
@@ -94,7 +94,7 @@
  },
  "autobrr": {
   "source_repo": "https://github.com/autobrr/autobrr",
-  "license": "GPL-2.0-only",
+  "license": "GPL-2.0-or-later",
   "license_class": "copyleft",
   "license_url": "https://github.com/autobrr/autobrr/blob/develop/LICENSE",
   "description": "Matches torrent releases from your indexers against filters and pushes hits straight to your download client. Runs as a single container from the autobrr image, listening on port 7474 and keeps its data in named volumes."
@@ -111,7 +111,7 @@
  },
  "bazarr": {
   "source_repo": "https://github.com/morpheus65535/bazarr",
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0",
   "license_class": "copyleft",
   "license_url": "https://github.com/morpheus65535/bazarr/blob/master/LICENSE",
   "description": "Companion to Sonarr and Radarr that finds and downloads subtitles for your media library. Runs as a single container from the bazarr image, listening on port 6767; data is kept in named volumes."
@@ -146,7 +146,7 @@
  },
  "budibase": {
   "source_repo": "https://github.com/Budibase/budibase",
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0",
   "license_class": "copyleft",
   "license_url": "https://github.com/Budibase/budibase/blob/master/LICENSE",
   "description": "An open-source low-code platform for building internal tools, forms, and admin panels. Runs 6 containers (app-service, couchdb-service, minio-service, proxy-service, redis-service, worker-service), with proxy-service listening on port 10000; data is kept in named volumes."
@@ -163,7 +163,7 @@
  },
  "bytestash": {
   "source_repo": "https://github.com/jordan-dalby/ByteStash",
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0",
   "license_class": "copyleft",
   "license_url": "https://github.com/jordan-dalby/ByteStash/blob/main/LICENSE",
   "description": "A fast, self-hosted code snippet manager with syntax highlighting, tagging, and a built-in MCP endpoint for AI assistants. Runs as a single container from the bytestash image, listening on port 5000; data is kept in named volumes."
@@ -211,7 +211,7 @@
  },
  "checkmate": {
   "source_repo": "https://github.com/bluewave-labs/Checkmate",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/bluewave-labs/Checkmate/blob/develop/LICENSE",
   "description": "An open-source uptime and server monitoring app with incident history and status pages. Runs 2 containers (checkmate, mongo), with checkmate listening on port 52345; data is kept in named volumes."
@@ -252,7 +252,7 @@
  },
  "cloudreve": {
   "source_repo": "https://github.com/cloudreve/cloudreve",
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0",
   "license_class": "copyleft",
   "license_url": "https://github.com/cloudreve/cloudreve/blob/master/LICENSE",
   "description": "A self-hosted file management and sharing system with multiple storage backends. Runs 3 containers (cloudreve, postgres, redis), with cloudreve listening on port 5212 and keeps its data in named volumes."
@@ -276,14 +276,14 @@
  },
  "convertx": {
   "source_repo": "https://github.com/C4illin/ConvertX",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/C4illin/ConvertX/blob/main/LICENSE",
   "description": "A self-hosted file converter that handles well over a thousand image, document, and media formats. Runs as a single container from the convertx image, listening on port 3000; data is kept in named volumes."
  },
  "convertx-app": {
   "source_repo": "https://github.com/C4illin/ConvertX",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/C4illin/ConvertX/blob/main/LICENSE",
   "description": "A self-hosted online file converter supporting over a thousand formats. Runs as a single container from the convertx image, listening on port 3000; data is kept in named volumes."
@@ -345,28 +345,28 @@
  },
  "docmost": {
   "source_repo": "https://github.com/docmost/docmost",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/docmost/docmost/blob/main/LICENSE",
   "description": "An open-source, Notion-style collaborative wiki and documentation workspace. Runs 3 containers (db, docmost, redis), with docmost listening on port 3000; data is kept in named volumes."
  },
  "documenso": {
   "source_repo": "https://github.com/documenso/documenso",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/documenso/documenso/blob/main/LICENSE",
   "description": "An open-source document signing platform, a self-hosted alternative to DocuSign. Runs 2 containers (database, documenso), with documenso listening on port 3000; data is kept in named volumes."
  },
  "docuseal": {
   "source_repo": "https://github.com/docusealco/docuseal",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/docusealco/docuseal/blob/master/LICENSE",
   "description": "A free, open-source document signing tool, a lighter alternative to DocuSign. Runs 2 containers (docuseal, postgresql), with docuseal listening on port 3000; data is kept in named volumes."
  },
  "dokuwiki": {
   "source_repo": "https://github.com/dokuwiki/dokuwiki",
-  "license": "GPL-2.0-only",
+  "license": "GPL-2.0",
   "license_class": "copyleft",
   "license_url": "https://github.com/dokuwiki/dokuwiki/blob/master/COPYING",
   "description": "A simple, database-free wiki that stores pages as plain text files, easy to back up. Runs as a single container from the dokuwiki image, listening on port 80; data is kept in named volumes."
@@ -389,7 +389,7 @@
  },
  "easyappointments": {
   "source_repo": "https://github.com/alextselegidis/easyappointments",
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0",
   "license_class": "copyleft",
   "license_url": "https://github.com/alextselegidis/easyappointments/blob/main/LICENSE",
   "description": "An open-source appointment scheduler for managing bookings, staff, and services. Runs 2 containers (easyappointments, mysql), with easyappointments listening on port 80; data is kept in named volumes."
@@ -443,7 +443,7 @@
  },
  "fider": {
   "source_repo": "https://github.com/getfider/fider",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/getfider/fider/blob/main/LICENSE",
   "description": "A feedback platform for collecting and prioritizing user feature requests. Runs 2 containers (database, fider), with fider listening on port 3000; data is kept in named volumes."
@@ -522,14 +522,14 @@
  },
  "freescout": {
   "source_repo": "https://github.com/freescout-help-desk/freescout",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/freescout-help-desk/freescout/blob/dist/LICENSE",
   "description": "A free, self-hosted help desk and shared mailbox, a lighter alternative to Zendesk or Help Scout. Runs 2 containers (freescout, mariadb), with freescout listening on port 80; data is kept in named volumes."
  },
  "freshrss": {
   "source_repo": "https://github.com/FreshRSS/FreshRSS",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/FreshRSS/FreshRSS/blob/edge/LICENSE.txt",
   "description": "A lightweight, self-hosted RSS aggregator with multi-user support and a mobile-friendly API. Runs 2 containers (db, freshrss), with freshrss listening on port 80; data is kept in named volumes."
@@ -543,7 +543,7 @@
  },
  "ghostfolio": {
   "source_repo": "https://github.com/ghostfolio/ghostfolio",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/ghostfolio/ghostfolio/blob/main/LICENSE",
   "description": "A privacy-first wealth tracker for stocks, ETFs, and crypto, with portfolio analytics and no ads. Runs 3 containers (db, ghostfolio, redis), with ghostfolio listening on port 3333 and keeps its data in named volumes."
@@ -574,7 +574,7 @@
  },
  "glance": {
   "source_repo": "https://github.com/glanceapp/glance",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/glanceapp/glance/blob/main/LICENSE",
   "description": "A fast, self-hosted dashboard that pulls RSS, weather, and other widgets onto one page. Runs as a single container from the glance image, listening on port 8080 and keeps its data in named volumes."
@@ -644,7 +644,7 @@
  },
  "grimmory": {
   "source_repo": "https://github.com/grimmory-tools/grimmory",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/grimmory-tools/grimmory/blob/develop/LICENSE",
   "description": "Organize, read, annotate, and sync your entire book collection from one place. Runs 2 containers (db, grimmory), with grimmory listening on port 80; data is kept in named volumes."
@@ -700,14 +700,14 @@
  },
  "homebox": {
   "source_repo": "https://github.com/sysadminsmedia/homebox",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/sysadminsmedia/homebox/blob/main/LICENSE",
   "description": "A home inventory and organization system for tracking what you own and where it is. Runs as a single container from the homebox image, listening on port 7745; data is kept in named volumes."
  },
  "homepage": {
   "source_repo": "https://github.com/gethomepage/homepage",
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0",
   "license_class": "copyleft",
   "license_url": "https://github.com/gethomepage/homepage/blob/dev/LICENSE",
   "description": "A fast, static, highly customizable start page for all your self-hosted services. Runs as a single container from the homepage image, listening on port 3000 and keeps its data in named volumes."
@@ -728,14 +728,14 @@
  },
  "imgcompress": {
   "source_repo": "https://github.com/karimz1/imgcompress",
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0-or-later",
   "license_class": "copyleft",
   "license_url": "https://github.com/karimz1/imgcompress/blob/main/LICENSE",
   "description": "An offline image compression, format conversion, and background-removal API for self-hosted pipelines. Runs as a single container from the imgcompress image, listening on port 5000."
  },
  "immich": {
   "source_repo": "https://github.com/immich-app/immich",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/immich-app/immich/blob/main/LICENSE",
   "description": "Self-hosted photo and video backup with mobile apps, facial recognition, and timeline search. Runs 4 containers (db, immich-machine-learning, immich-server, redis), with immich-server listening on port 2283; data is kept in named volumes."
@@ -763,21 +763,21 @@
  },
  "it-tools": {
   "source_repo": "https://github.com/CorentinTh/it-tools",
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0",
   "license_class": "copyleft",
   "license_url": "https://github.com/CorentinTh/it-tools/blob/main/LICENSE",
   "description": "A collection of handy online tools for developers: converters, generators, formatters, and more. Runs as a single container from the it-tools image, listening on port 80."
  },
  "jackett": {
   "source_repo": "https://github.com/Jackett/Jackett",
-  "license": "GPL-2.0-only",
+  "license": "GPL-2.0",
   "license_class": "copyleft",
   "license_url": "https://github.com/Jackett/Jackett/blob/master/LICENSE",
   "description": "A proxy that translates queries from your media apps into torrent tracker searches. Runs as a single container from the jackett image, listening on port 9117; data is kept in named volumes."
  },
  "jellyfin": {
   "source_repo": "https://github.com/jellyfin/jellyfin",
-  "license": "GPL-2.0-only",
+  "license": "GPL-2.0",
   "license_class": "copyleft",
   "license_url": "https://github.com/jellyfin/jellyfin/blob/master/LICENSE",
   "description": "A free media server for streaming your own movies, shows, and music to any device. Runs as a single container from the jellyfin image, listening on port 8096; data is kept in named volumes."
@@ -823,14 +823,14 @@
  },
  "karakeep": {
   "source_repo": "https://github.com/karakeep-app/karakeep",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/karakeep-app/karakeep/blob/main/LICENSE",
   "description": "A self-hosted bookmark, note, and read-it-later manager with full-text search and tagging. Runs 2 containers (karakeep, meilisearch), with karakeep listening on port 3000; data is kept in named volumes."
  },
  "kavita": {
   "source_repo": "https://github.com/Kareadita/Kavita",
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0",
   "license_class": "copyleft",
   "license_url": "https://github.com/Kareadita/Kavita/blob/develop/LICENSE",
   "description": "A fast, feature-rich reader server for manga, comics, and ebooks. Runs as a single container from the kavita image, listening on port 5000; data is kept in named volumes."
@@ -917,14 +917,14 @@
  },
  "libretranslate": {
   "source_repo": "https://github.com/LibreTranslate/LibreTranslate",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/LibreTranslate/LibreTranslate/blob/main/LICENSE",
   "description": "A free and open machine translation API that runs entirely on your own hardware. Runs as a single container from the libretranslate image, listening on port 5000; data is kept in named volumes."
  },
  "lidarr": {
   "source_repo": "https://github.com/Lidarr/Lidarr",
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0",
   "license_class": "copyleft",
   "license_url": "https://github.com/Lidarr/Lidarr/blob/develop/LICENSE.md",
   "description": "Watches your indexers for new albums from artists you follow and automatically grabs and organizes them. Runs as a single container from the lidarr image, listening on port 8686; data is kept in named volumes."
@@ -952,14 +952,14 @@
  },
  "linkwarden": {
   "source_repo": "https://github.com/linkwarden/linkwarden",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/linkwarden/linkwarden/blob/main/LICENSE.md",
   "description": "A bookmark manager that archives full page snapshots, not just links, so pages stay readable. Runs 3 containers (db, linkwarden, meilisearch), with linkwarden listening on port 3000; data is kept in named volumes."
  },
  "listmonk": {
   "source_repo": "https://github.com/knadh/listmonk",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/knadh/listmonk/blob/master/LICENSE",
   "description": "A self-hosted newsletter and mailing list manager with a fast, dependency-light core. Runs 2 containers (db, listmonk), with listmonk listening on port 9000; data is kept in named volumes."
@@ -1074,14 +1074,14 @@
  },
  "metabase": {
   "source_repo": "https://github.com/metabase/metabase",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/metabase/metabase/blob/master/LICENSE.txt",
   "description": "Ask questions of your data and share dashboards, no SQL required. Runs as a single container from the metabase image, listening on port 3000 and keeps its data in named volumes."
  },
  "metube": {
   "source_repo": "https://github.com/alexta69/metube",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/alexta69/metube/blob/master/LICENSE",
   "description": "A tidy web front end for yt-dlp: paste a link, pick a format, and download video or audio. Runs as a single container from the metube image, listening on port 8081; data is kept in named volumes."
@@ -1160,7 +1160,7 @@
  },
  "navidrome": {
   "source_repo": "https://github.com/navidrome/navidrome",
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0",
   "license_class": "copyleft",
   "license_url": "https://github.com/navidrome/navidrome/blob/master/LICENSE",
   "description": "Stream your own music collection from a Subsonic-compatible server to any device, anywhere. Runs as a single container from the navidrome image, listening on port 4533; data is kept in named volumes."
@@ -1181,7 +1181,7 @@
  },
  "new-api": {
   "source_repo": "https://github.com/QuantumNous/new-api",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/QuantumNous/new-api/blob/main/LICENSE",
   "description": "An LLM gateway and AI asset management system that unifies many model providers. Runs 3 containers (new-api, postgres, redis), with new-api listening on port 3000; data is kept in named volumes."
@@ -1231,7 +1231,7 @@
  },
  "nodebb": {
   "source_repo": "https://github.com/NodeBB/NodeBB",
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0",
   "license_class": "copyleft",
   "license_url": "https://github.com/NodeBB/NodeBB/blob/master/LICENSE",
   "description": "A modern forum platform with real-time discussions, SSO, and a plugin ecosystem, backed by Postgres. Runs 2 containers (nodebb, postgres), with nodebb listening on port 4567; data is kept in named volumes."
@@ -1325,7 +1325,7 @@
  },
  "openobserve": {
   "source_repo": "https://github.com/openobserve/openobserve",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/openobserve/openobserve/blob/main/LICENSE",
   "description": "A lightweight, single-binary observability platform for logs, metrics, and traces with a built-in UI. Runs as a single container from the openobserve image, listening on port 5080; data is kept in named volumes."
@@ -1339,7 +1339,7 @@
  },
  "organizr": {
   "source_repo": "https://github.com/causefx/Organizr",
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0",
   "license_class": "copyleft",
   "license_url": "https://github.com/causefx/Organizr/blob/v2-master/LICENSE",
   "description": "A unified homepage and tabbed dashboard for linking every self-hosted app behind one interface. Runs as a single container from the organizr image, listening on port 80 and keeps its data in named volumes."
@@ -1370,7 +1370,7 @@
  },
  "paperless-ngx": {
   "source_repo": "https://github.com/paperless-ngx/paperless-ngx",
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0",
   "license_class": "copyleft",
   "license_url": "https://github.com/paperless-ngx/paperless-ngx/blob/dev/LICENSE",
   "description": "Scan, index, and archive your paper documents into a searchable digital library. Runs 2 containers (paperless, redis), with paperless listening on port 8000; data is kept in named volumes."
@@ -1390,7 +1390,7 @@
  },
  "pgbackweb": {
   "source_repo": "https://github.com/eduardolat/pgbackweb",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/eduardolat/pgbackweb/blob/main/LICENSE",
   "description": "A web UI for scheduling, encrypting, and restoring PostgreSQL backups. Runs 2 containers (pgbackweb, pgbackweb-db), with pgbackweb listening on port 8085; data is kept in named volumes."
@@ -1404,14 +1404,14 @@
  },
  "photoprism": {
   "source_repo": "https://github.com/photoprism/photoprism",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/photoprism/photoprism/blob/develop/LICENSE",
   "description": "An AI-powered photo management app that indexes and organizes your library as you own it. Runs as a single container from the photoprism image, listening on port 2342; data is kept in named volumes."
  },
  "photoview": {
   "source_repo": "https://github.com/photoview/photoview",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/photoview/photoview/blob/master/LICENSE.txt",
   "description": "A fast, simple photo gallery that indexes an existing folder tree without importing or duplicating files. Runs as a single container from the photoview image, listening on port 80; data is kept in named volumes."
@@ -1432,7 +1432,7 @@
  },
  "pinchflat": {
   "source_repo": "https://github.com/kieraneglin/pinchflat",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/kieraneglin/pinchflat/blob/master/LICENSE",
   "description": "Automatically download and organize YouTube channels and playlists into your media library. Runs as a single container from the pinchflat image, listening on port 8945; data is kept in named volumes."
@@ -1446,7 +1446,7 @@
  },
  "plane": {
   "source_repo": "https://github.com/makeplane/plane",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/makeplane/plane/blob/preview/LICENSE.txt",
   "description": "An open-source project management tool for tracking issues and cycles, an alternative to Linear and Jira. Runs 7 containers (api, plane-db, plane-minio, plane-mq, plane-redis, proxy, web), with proxy listening on port 80; data is kept in named volumes."
@@ -1491,7 +1491,7 @@
  },
  "postiz": {
   "source_repo": "https://github.com/gitroomhq/postiz-app",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/gitroomhq/postiz-app/blob/main/LICENSE",
   "description": "Schedules and publishes posts across social platforms from one calendar, with basic analytics. Runs 3 containers (db, postiz, redis), with postiz listening on port 5000; data is kept in named volumes."
@@ -1519,7 +1519,7 @@
  },
  "prowlarr": {
   "source_repo": "https://github.com/Prowlarr/Prowlarr",
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0",
   "license_class": "copyleft",
   "license_url": "https://github.com/Prowlarr/Prowlarr/blob/develop/LICENSE",
   "description": "An indexer manager that syncs your torrent and Usenet indexers across the whole Arr stack. Runs as a single container from the prowlarr image, listening on port 9696; data is kept in named volumes."
@@ -1550,7 +1550,7 @@
  },
  "radarr": {
   "source_repo": "https://github.com/Radarr/Radarr",
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0",
   "license_class": "copyleft",
   "license_url": "https://github.com/Radarr/Radarr/blob/develop/LICENSE",
   "description": "Watches your favorite indexers for movies and automatically grabs, sorts, and renames them. Runs as a single container from the radarr image, listening on port 7878; data is kept in named volumes."
@@ -1610,7 +1610,7 @@
  },
  "ryot": {
   "source_repo": "https://github.com/IgnisDa/ryot",
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0",
   "license_class": "copyleft",
   "license_url": "https://github.com/IgnisDa/ryot/blob/main/LICENSE",
   "description": "A self-hosted tracker for media, fitness, and other parts of life. Runs 2 containers (postgres, ryot), with ryot listening on port 8000; data is kept in named volumes."
@@ -1673,21 +1673,21 @@
  },
  "siyuan": {
   "source_repo": "https://github.com/siyuan-note/siyuan",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/siyuan-note/siyuan/blob/master/LICENSE",
   "description": "A privacy-first, self-hosted personal knowledge management app with block-based markdown notes. Runs as a single container from the siyuan image, listening on port 6806; data is kept in named volumes."
  },
  "slash": {
   "source_repo": "https://github.com/yourselfhosted/slash",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/yourselfhosted/slash/blob/main/LICENSE",
   "description": "A self-hosted link shortener and bookmark sharing platform with tags and full-text search. Runs as a single container from the slash image, listening on port 5231; data is kept in named volumes."
  },
  "snapdrop": {
   "source_repo": "https://github.com/RobinLinus/snapdrop",
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0",
   "license_class": "copyleft",
   "license_url": "https://github.com/RobinLinus/snapdrop/blob/master/LICENSE",
   "description": "Local network file sharing in the browser, inspired by AirDrop. Runs as a single container from the snapdrop image, listening on port 80; data is kept in named volumes."
@@ -1697,7 +1697,7 @@
  },
  "soketi": {
   "source_repo": "https://github.com/soketi/soketi",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/soketi/soketi/blob/1.x/LICENSE",
   "description": "A simple, fast, Pusher-protocol-compatible WebSockets server for real-time app features. Runs as a single container from the soketi image, listening on port 6001."
@@ -1731,7 +1731,7 @@
  },
  "stable-diffusion-webui": {
   "source_repo": "https://github.com/AUTOMATIC1111/stable-diffusion-webui",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/AUTOMATIC1111/stable-diffusion-webui/blob/master/LICENSE.txt",
   "description": "A browser interface for generating and editing images with Stable Diffusion checkpoints. Runs as a single container from the stable-diffusion-webui image, listening on port 7860; data is kept in named volumes."
@@ -1764,7 +1764,7 @@
  },
  "sure": {
   "source_repo": "https://github.com/we-promise/sure",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/we-promise/sure/blob/main/LICENSE",
   "description": "A privacy-first personal finance app for tracking net worth, budgets, and investments across every account. Runs 4 containers (postgresql, valkey, web, worker), with web listening on port 3000 and keeps its data in named volumes."
@@ -1785,7 +1785,7 @@
  },
  "tautulli": {
   "source_repo": "https://github.com/Tautulli/Tautulli",
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0",
   "license_class": "copyleft",
   "license_url": "https://github.com/Tautulli/Tautulli/blob/nightly/LICENSE",
   "description": "Monitors your Plex server and shows who watched what, with history, stats, and notifications. Runs as a single container from the tautulli image, listening on port 8181; data is kept in named volumes."
@@ -1799,14 +1799,14 @@
  },
  "teable": {
   "source_repo": "https://github.com/teableio/teable",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/teableio/teable/blob/develop/LICENSE",
   "description": "A spreadsheet-style visual database backed by real PostgreSQL, an Airtable alternative. Runs 4 containers (teable, teable-cache, teable-db, teable-db-migrate), with teable listening on port 3000; data is kept in named volumes."
  },
  "technitium-dns": {
   "source_repo": "https://github.com/TechnitiumSoftware/DnsServer",
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0",
   "license_class": "copyleft",
   "license_url": "https://github.com/TechnitiumSoftware/DnsServer/blob/master/LICENSE",
   "description": "A full-featured authoritative and recursive DNS server with DNS-over-HTTPS/TLS and a web console. Runs as a single container from the dns-server image, listening on port 5380 and keeps its data in named volumes."
@@ -1879,14 +1879,14 @@
  },
  "twenty": {
   "source_repo": "https://github.com/twentyhq/twenty",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/twentyhq/twenty/blob/main/LICENSE",
   "description": "An open-source CRM you fully control, built to look and feel like a modern spreadsheet. Runs 3 containers (postgres, redis, twenty), with twenty listening on port 3000; data is kept in named volumes."
  },
  "typesense": {
   "source_repo": "https://github.com/typesense/typesense",
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0",
   "license_class": "copyleft",
   "license_url": "https://github.com/typesense/typesense/blob/v31/LICENSE.txt",
   "description": "A fast, typo-tolerant search engine API built as a lighter alternative to Elasticsearch. Runs as a single container from the typesense image, listening on port 8108; data is kept in named volumes."
@@ -1945,7 +1945,7 @@
  },
  "vert": {
   "source_repo": "https://github.com/VERT-sh/VERT",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/VERT-sh/VERT/blob/main/LICENSE",
   "description": "A fast file converter for images, video, audio, and documents, processed entirely without a third-party upload. Runs as a single container from the vert image, listening on port 80."
@@ -1973,7 +1973,7 @@
  },
  "vvveb": {
   "source_repo": "https://github.com/givanz/Vvveb",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0-or-later",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/givanz/Vvveb/blob/master/LICENSE",
   "description": "A CMS for building websites, blogs, and ecommerce stores. Runs as a single container from the vvvebcms image, listening on port 80; data is kept in named volumes."
@@ -1994,7 +1994,7 @@
  },
  "wallos": {
   "source_repo": "https://github.com/ellite/Wallos",
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0",
   "license_class": "copyleft",
   "license_url": "https://github.com/ellite/Wallos/blob/main/LICENSE.md",
   "description": "A personal subscription tracker that shows what you pay each month, with reminders and multi-currency support. Runs as a single container from the wallos image, listening on port 80 and keeps its data in named volumes."
@@ -2029,7 +2029,7 @@
  },
  "windmill": {
   "source_repo": "https://github.com/windmill-labs/windmill",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/windmill-labs/windmill/blob/main/LICENSE",
   "description": "Turn scripts in Python, TypeScript, Go, and SQL into webhooks, workflows, and internal UIs. Runs 2 containers (db, windmill), with windmill listening on port 8000 and keeps its data in named volumes."
@@ -2053,7 +2053,7 @@
  },
  "yamtrack": {
   "source_repo": "https://github.com/FuzzyGrim/Yamtrack",
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "license_class": "network-copyleft",
   "license_url": "https://github.com/FuzzyGrim/Yamtrack/blob/dev/LICENSE",
   "description": "A self-hosted media tracker for movies, TV, anime, manga, games, and books. Runs 2 containers (redis, yamtrack), with yamtrack listening on port 8000; data is kept in named volumes."

@@ -13,7 +13,7 @@
    "source_repo": "https://github.com/Bubka/2FAuth",
    "documentation_url": "https://docs.2fauth.app",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/Bubka/2FAuth/blob/master/LICENSE"
    },
@@ -633,7 +633,7 @@
    "source_repo": "https://github.com/AdguardTeam/AdGuardHome",
    "documentation_url": "https://github.com/AdguardTeam/AdGuardHome/wiki/Docker",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0",
     "class": "copyleft",
     "url": "https://github.com/AdguardTeam/AdGuardHome/blob/master/LICENSE.txt"
    },
@@ -2480,7 +2480,7 @@
    "source_repo": "https://github.com/advplyr/audiobookshelf",
    "documentation_url": "https://www.audiobookshelf.org/docs",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0",
     "class": "copyleft",
     "url": "https://github.com/advplyr/audiobookshelf/blob/master/LICENSE"
    },
@@ -3014,7 +3014,7 @@
    "source_repo": "https://github.com/autobrr/autobrr",
    "documentation_url": "https://autobrr.com/installation/docker",
    "license": {
-    "spdx": "GPL-2.0-only",
+    "spdx": "GPL-2.0-or-later",
     "class": "copyleft",
     "url": "https://github.com/autobrr/autobrr/blob/develop/LICENSE"
    },
@@ -3290,7 +3290,7 @@
    "source_repo": "https://github.com/garethgeorge/backrest",
    "documentation_url": "https://garethgeorge.github.io/backrest/",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0",
     "class": "copyleft",
     "url": "https://github.com/garethgeorge/backrest/blob/main/LICENSE"
    },
@@ -3529,7 +3529,7 @@
    "source_repo": "https://github.com/morpheus65535/bazarr",
    "documentation_url": "https://wiki.bazarr.media",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0",
     "class": "copyleft",
     "url": "https://github.com/morpheus65535/bazarr/blob/master/LICENSE"
    },
@@ -4311,7 +4311,7 @@
    "source_repo": "https://github.com/Budibase/budibase",
    "documentation_url": "https://docs.budibase.com/docs/docker-compose",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0",
     "class": "copyleft",
     "url": "https://github.com/Budibase/budibase/blob/master/LICENSE"
    },
@@ -5052,7 +5052,7 @@
    "source_repo": "https://github.com/jordan-dalby/ByteStash",
    "documentation_url": "https://github.com/jordan-dalby/ByteStash",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0",
     "class": "copyleft",
     "url": "https://github.com/jordan-dalby/ByteStash/blob/main/LICENSE"
    },
@@ -6414,7 +6414,7 @@
    "source_repo": "https://github.com/bluewave-labs/Checkmate",
    "documentation_url": "https://docs.checkmate.so",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/bluewave-labs/Checkmate/blob/develop/LICENSE"
    },
@@ -6836,7 +6836,7 @@
    "source_repo": "https://github.com/Cleanuparr/Cleanuparr",
    "documentation_url": "https://cleanuparr.github.io/Cleanuparr/",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0",
     "class": "copyleft",
     "url": "https://github.com/Cleanuparr/Cleanuparr/blob/main/LICENSE"
    },
@@ -7293,7 +7293,7 @@
    "source_repo": "https://github.com/cloudreve/cloudreve",
    "documentation_url": "https://docs.cloudreve.org/",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0",
     "class": "copyleft",
     "url": "https://github.com/cloudreve/cloudreve/blob/master/LICENSE"
    },
@@ -8023,7 +8023,7 @@
    "source_repo": "https://github.com/C4illin/ConvertX",
    "documentation_url": "https://github.com/C4illin/ConvertX",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/C4illin/ConvertX/blob/main/LICENSE"
    },
@@ -8169,7 +8169,7 @@
    "source_repo": "https://github.com/C4illin/ConvertX",
    "documentation_url": "https://github.com/C4illin/ConvertX",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/C4illin/ConvertX/blob/main/LICENSE"
    },
@@ -10039,7 +10039,7 @@
    "source_repo": "https://github.com/docmost/docmost",
    "documentation_url": "https://docmost.com/docs",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/docmost/docmost/blob/main/LICENSE"
    },
@@ -10262,7 +10262,7 @@
    "source_repo": "https://github.com/documenso/documenso",
    "documentation_url": "https://docs.documenso.com/",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/documenso/documenso/blob/main/LICENSE"
    },
@@ -10480,7 +10480,7 @@
    "source_repo": "https://github.com/docusealco/docuseal",
    "documentation_url": "https://www.docuseal.co/",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/docusealco/docuseal/blob/master/LICENSE"
    },
@@ -10665,7 +10665,7 @@
    "source_repo": "https://github.com/dokuwiki/dokuwiki",
    "documentation_url": "https://www.dokuwiki.org/manual",
    "license": {
-    "spdx": "GPL-2.0-only",
+    "spdx": "GPL-2.0",
     "class": "copyleft",
     "url": "https://github.com/dokuwiki/dokuwiki/blob/master/COPYING"
    },
@@ -11397,7 +11397,7 @@
    "source_repo": "https://github.com/alextselegidis/easyappointments",
    "documentation_url": "https://easyappointments.org/docs.html",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0",
     "class": "copyleft",
     "url": "https://github.com/alextselegidis/easyappointments/blob/main/LICENSE"
    },
@@ -13011,7 +13011,7 @@
    "source_repo": "https://github.com/getfider/fider",
    "documentation_url": "https://fider.io",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/getfider/fider/blob/main/LICENSE"
    },
@@ -15209,7 +15209,7 @@
    "source_repo": "https://github.com/freescout-help-desk/freescout",
    "documentation_url": "https://github.com/freescout-helpdesk/freescout/wiki",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/freescout-help-desk/freescout/blob/dist/LICENSE"
    },
@@ -15432,7 +15432,7 @@
    "source_repo": "https://github.com/FreshRSS/FreshRSS",
    "documentation_url": "https://freshrss.github.io/FreshRSS/",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/FreshRSS/FreshRSS/blob/edge/LICENSE.txt"
    },
@@ -15923,7 +15923,7 @@
    "source_repo": "https://github.com/ghostfolio/ghostfolio",
    "documentation_url": "https://github.com/ghostfolio/ghostfolio",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/ghostfolio/ghostfolio/blob/main/LICENSE"
    },
@@ -16903,7 +16903,7 @@
    "source_repo": "https://github.com/glanceapp/glance",
    "documentation_url": "https://github.com/glanceapp/glance/blob/main/docs/configuration.md",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/glanceapp/glance/blob/main/LICENSE"
    },
@@ -18512,7 +18512,7 @@
    "source_repo": "https://github.com/grimmory-tools/grimmory",
    "documentation_url": "https://github.com/grimmory-tools/grimmory",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/grimmory-tools/grimmory/blob/develop/LICENSE"
    },
@@ -19922,7 +19922,7 @@
    "source_repo": "https://github.com/heyform/heyform",
    "documentation_url": "https://docs.heyform.net/open-source/installation",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/heyform/heyform/blob/next/LICENSE"
    },
@@ -20355,7 +20355,7 @@
    "source_repo": "https://github.com/sysadminsmedia/homebox",
    "documentation_url": "https://homebox.software/en/quick-start/install/",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/sysadminsmedia/homebox/blob/main/LICENSE"
    },
@@ -20470,7 +20470,7 @@
    "source_repo": "https://github.com/gethomepage/homepage",
    "documentation_url": "https://gethomepage.dev/latest/",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0",
     "class": "copyleft",
     "url": "https://github.com/gethomepage/homepage/blob/dev/LICENSE"
    },
@@ -20901,7 +20901,7 @@
    "source_repo": "https://github.com/karimz1/imgcompress",
    "documentation_url": "https://imgcompress.karimzouine.com",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0-or-later",
     "class": "copyleft",
     "url": "https://github.com/karimz1/imgcompress/blob/main/LICENSE"
    },
@@ -20994,7 +20994,7 @@
    "source_repo": "https://github.com/immich-app/immich",
    "documentation_url": "https://immich.app/docs",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/immich-app/immich/blob/main/LICENSE"
    },
@@ -22072,7 +22072,7 @@
    "source_repo": "https://github.com/CorentinTh/it-tools",
    "documentation_url": "https://it-tools.tech",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0",
     "class": "copyleft",
     "url": "https://github.com/CorentinTh/it-tools/blob/main/LICENSE"
    },
@@ -22172,7 +22172,7 @@
    "source_repo": "https://github.com/Jackett/Jackett",
    "documentation_url": "https://github.com/Jackett/Jackett#readme",
    "license": {
-    "spdx": "GPL-2.0-only",
+    "spdx": "GPL-2.0",
     "class": "copyleft",
     "url": "https://github.com/Jackett/Jackett/blob/master/LICENSE"
    },
@@ -22390,7 +22390,7 @@
    "source_repo": "https://github.com/jellyfin/jellyfin",
    "documentation_url": "https://jellyfin.org/docs/",
    "license": {
-    "spdx": "GPL-2.0-only",
+    "spdx": "GPL-2.0",
     "class": "copyleft",
     "url": "https://github.com/jellyfin/jellyfin/blob/master/LICENSE"
    },
@@ -23999,7 +23999,7 @@
    "source_repo": "https://github.com/karakeep-app/karakeep",
    "documentation_url": "https://docs.karakeep.app",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/karakeep-app/karakeep/blob/main/LICENSE"
    },
@@ -24188,7 +24188,7 @@
    "source_repo": "https://github.com/Kareadita/Kavita",
    "documentation_url": "https://wiki.kavitareader.com/installation/docker/",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0",
     "class": "copyleft",
     "url": "https://github.com/Kareadita/Kavita/blob/develop/LICENSE"
    },
@@ -26998,7 +26998,7 @@
    "source_repo": "https://github.com/LibreTranslate/LibreTranslate",
    "documentation_url": "https://github.com/LibreTranslate/LibreTranslate",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/LibreTranslate/LibreTranslate/blob/main/LICENSE"
    },
@@ -27106,7 +27106,7 @@
    "source_repo": "https://github.com/Lidarr/Lidarr",
    "documentation_url": "https://wiki.servarr.com/lidarr",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0",
     "class": "copyleft",
     "url": "https://github.com/Lidarr/Lidarr/blob/develop/LICENSE.md"
    },
@@ -27484,7 +27484,7 @@
    "source_repo": "https://github.com/Kovah/LinkAce",
    "documentation_url": "https://www.linkace.org/docs/",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0-or-later",
     "class": "copyleft",
     "url": "https://github.com/Kovah/LinkAce/blob/2.x/LICENSE.md"
    },
@@ -27911,7 +27911,7 @@
    "source_repo": "https://github.com/linkwarden/linkwarden",
    "documentation_url": "https://docs.linkwarden.app/self-hosting/setup",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/linkwarden/linkwarden/blob/main/LICENSE.md"
    },
@@ -28140,7 +28140,7 @@
    "source_repo": "https://github.com/knadh/listmonk",
    "documentation_url": "https://listmonk.app/docs/",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/knadh/listmonk/blob/master/LICENSE"
    },
@@ -31945,7 +31945,7 @@
    "source_repo": "https://github.com/metabase/metabase",
    "documentation_url": "https://www.metabase.com/docs/latest/",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/metabase/metabase/blob/master/LICENSE.txt"
    },
@@ -32262,7 +32262,7 @@
    "source_repo": "https://github.com/alexta69/metube",
    "documentation_url": "https://github.com/alexta69/metube",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/alexta69/metube/blob/master/LICENSE"
    },
@@ -34123,7 +34123,7 @@
    "source_repo": "https://github.com/mylar3/mylar3",
    "documentation_url": "https://github.com/mylar3/mylar3/wiki",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0",
     "class": "copyleft",
     "url": "https://github.com/mylar3/mylar3/blob/master/LICENSE"
    },
@@ -34966,7 +34966,7 @@
    "source_repo": "https://github.com/navidrome/navidrome",
    "documentation_url": "https://www.navidrome.org/docs/",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0",
     "class": "copyleft",
     "url": "https://github.com/navidrome/navidrome/blob/master/LICENSE"
    },
@@ -35598,7 +35598,7 @@
    "source_repo": "https://github.com/QuantumNous/new-api",
    "documentation_url": "https://docs.newapi.pro/en/getting-started/",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/QuantumNous/new-api/blob/main/LICENSE"
    },
@@ -37090,7 +37090,7 @@
    "source_repo": "https://github.com/NodeBB/NodeBB",
    "documentation_url": "https://docs.nodebb.org/",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0",
     "class": "copyleft",
     "url": "https://github.com/NodeBB/NodeBB/blob/master/LICENSE"
    },
@@ -38503,7 +38503,7 @@
    "source_repo": "https://github.com/Ombi-app/Ombi",
    "documentation_url": "https://docs.ombi.app/",
    "license": {
-    "spdx": "GPL-2.0-only",
+    "spdx": "GPL-2.0",
     "class": "copyleft",
     "url": "https://github.com/Ombi-app/Ombi/blob/develop/LICENSE"
    },
@@ -39549,7 +39549,7 @@
    "source_repo": "https://github.com/openobserve/openobserve",
    "documentation_url": "https://openobserve.ai/docs",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/openobserve/openobserve/blob/main/LICENSE"
    },
@@ -39887,7 +39887,7 @@
    "source_repo": "https://github.com/causefx/Organizr",
    "documentation_url": "https://docs.organizr.app/",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0",
     "class": "copyleft",
     "url": "https://github.com/causefx/Organizr/blob/v2-master/LICENSE"
    },
@@ -40931,7 +40931,7 @@
    "source_repo": "https://github.com/schlagmichdoch/PairDrop",
    "documentation_url": "https://github.com/schlagmichdoch/PairDrop",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0",
     "class": "copyleft",
     "url": "https://github.com/schlagmichdoch/PairDrop/blob/master/LICENSE"
    },
@@ -41183,7 +41183,7 @@
    "source_repo": "https://github.com/paperless-ngx/paperless-ngx",
    "documentation_url": "https://docs.paperless-ngx.com",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0",
     "class": "copyleft",
     "url": "https://github.com/paperless-ngx/paperless-ngx/blob/dev/LICENSE"
    },
@@ -42284,7 +42284,7 @@
    "source_repo": "https://github.com/eduardolat/pgbackweb",
    "documentation_url": "https://github.com/eduardolat/pgbackweb",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/eduardolat/pgbackweb/blob/main/LICENSE"
    },
@@ -42597,7 +42597,7 @@
    "source_repo": "https://github.com/photoprism/photoprism",
    "documentation_url": "https://docs.photoprism.app/getting-started/docker-compose/",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/photoprism/photoprism/blob/develop/LICENSE"
    },
@@ -42735,7 +42735,7 @@
    "source_repo": "https://github.com/photoview/photoview",
    "documentation_url": "https://photoview.github.io/docs/",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/photoview/photoview/blob/master/LICENSE.txt"
    },
@@ -43111,7 +43111,7 @@
    "source_repo": "https://github.com/kieraneglin/pinchflat",
    "documentation_url": "https://github.com/kieraneglin/pinchflat/wiki",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/kieraneglin/pinchflat/blob/master/LICENSE"
    },
@@ -43360,7 +43360,7 @@
    "source_repo": "https://github.com/makeplane/plane",
    "documentation_url": "https://docs.plane.so/self-hosting/methods/docker-compose",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/makeplane/plane/blob/preview/LICENSE.txt"
    },
@@ -44280,7 +44280,7 @@
    "source_repo": "https://github.com/useplunk/plunk",
    "documentation_url": "https://docs.useplunk.com/self-hosting/introduction",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/useplunk/plunk/blob/next/LICENSE"
    },
@@ -44891,7 +44891,7 @@
    "source_repo": "https://github.com/gitroomhq/postiz-app",
    "documentation_url": "https://docs.postiz.com/installation/docker",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/gitroomhq/postiz-app/blob/main/LICENSE"
    },
@@ -45541,7 +45541,7 @@
    "source_repo": "https://github.com/Prowlarr/Prowlarr",
    "documentation_url": "https://wiki.servarr.com/prowlarr",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0",
     "class": "copyleft",
     "url": "https://github.com/Prowlarr/Prowlarr/blob/develop/LICENSE"
    },
@@ -46157,7 +46157,7 @@
    "source_repo": "https://github.com/Radarr/Radarr",
    "documentation_url": "https://wiki.servarr.com/radarr",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0",
     "class": "copyleft",
     "url": "https://github.com/Radarr/Radarr/blob/develop/LICENSE"
    },
@@ -47951,7 +47951,7 @@
    "source_repo": "https://github.com/DIYgod/RSSHub",
    "documentation_url": "https://docs.rsshub.app/deploy/",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/DIYgod/RSSHub/blob/master/LICENSE"
    },
@@ -48176,7 +48176,7 @@
    "source_repo": "https://github.com/IgnisDa/ryot",
    "documentation_url": "https://github.com/ignisda/ryot",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0",
     "class": "copyleft",
     "url": "https://github.com/IgnisDa/ryot/blob/main/LICENSE"
    },
@@ -49868,7 +49868,7 @@
    "source_repo": "https://github.com/siyuan-note/siyuan",
    "documentation_url": "https://github.com/siyuan-note/siyuan",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/siyuan-note/siyuan/blob/master/LICENSE"
    },
@@ -50011,7 +50011,7 @@
    "source_repo": "https://github.com/yourselfhosted/slash",
    "documentation_url": "https://github.com/yourselfhosted/slash",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/yourselfhosted/slash/blob/main/LICENSE"
    },
@@ -50229,7 +50229,7 @@
    "source_repo": "https://github.com/RobinLinus/snapdrop",
    "documentation_url": "https://github.com/RobinLinus/snapdrop",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0",
     "class": "copyleft",
     "url": "https://github.com/RobinLinus/snapdrop/blob/master/LICENSE"
    },
@@ -50563,7 +50563,7 @@
    "source_repo": "https://github.com/soketi/soketi",
    "documentation_url": "https://docs.soketi.app",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/soketi/soketi/blob/1.x/LICENSE"
    },
@@ -51787,7 +51787,7 @@
    "source_repo": "https://github.com/AUTOMATIC1111/stable-diffusion-webui",
    "documentation_url": "https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/AUTOMATIC1111/stable-diffusion-webui/blob/master/LICENSE.txt"
    },
@@ -52905,7 +52905,7 @@
    "source_repo": "https://github.com/we-promise/sure",
    "documentation_url": "https://github.com/we-promise/sure",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/we-promise/sure/blob/main/LICENSE"
    },
@@ -53560,7 +53560,7 @@
    "source_repo": "https://github.com/Tautulli/Tautulli",
    "documentation_url": "https://docs.tautulli.com",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0",
     "class": "copyleft",
     "url": "https://github.com/Tautulli/Tautulli/blob/nightly/LICENSE"
    },
@@ -53849,7 +53849,7 @@
    "source_repo": "https://github.com/teableio/teable",
    "documentation_url": "https://help.teable.io/",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/teableio/teable/blob/develop/LICENSE"
    },
@@ -54117,7 +54117,7 @@
    "source_repo": "https://github.com/TechnitiumSoftware/DnsServer",
    "documentation_url": "https://technitium.com/dns/",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0",
     "class": "copyleft",
     "url": "https://github.com/TechnitiumSoftware/DnsServer/blob/master/LICENSE"
    },
@@ -56007,7 +56007,7 @@
    "source_repo": "https://github.com/twentyhq/twenty",
    "documentation_url": "https://docs.twenty.com",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/twentyhq/twenty/blob/main/LICENSE"
    },
@@ -56246,7 +56246,7 @@
    "source_repo": "https://github.com/typesense/typesense",
    "documentation_url": "https://typesense.org/docs/guide/install-typesense.html",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0",
     "class": "copyleft",
     "url": "https://github.com/typesense/typesense/blob/v31/LICENSE.txt"
    },
@@ -57667,7 +57667,7 @@
    "source_repo": "https://github.com/VERT-sh/VERT",
    "documentation_url": "https://github.com/vert-sh/vert",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/VERT-sh/VERT/blob/main/LICENSE"
    },
@@ -58225,7 +58225,7 @@
    "source_repo": "https://github.com/givanz/Vvveb",
    "documentation_url": "https://docs.vvveb.com",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0-or-later",
     "class": "network-copyleft",
     "url": "https://github.com/givanz/Vvveb/blob/master/LICENSE"
    },
@@ -58687,7 +58687,7 @@
    "source_repo": "https://github.com/ellite/Wallos",
    "documentation_url": "https://github.com/ellite/Wallos",
    "license": {
-    "spdx": "GPL-3.0-only",
+    "spdx": "GPL-3.0",
     "class": "copyleft",
     "url": "https://github.com/ellite/Wallos/blob/main/LICENSE.md"
    },
@@ -59578,7 +59578,7 @@
    "source_repo": "https://github.com/requarks/wiki",
    "documentation_url": "https://docs.requarks.io",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/requarks/wiki/blob/scarlett/LICENSE"
    },
@@ -59762,7 +59762,7 @@
    "source_repo": "https://github.com/windmill-labs/windmill",
    "documentation_url": "https://www.windmill.dev/docs",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/windmill-labs/windmill/blob/main/LICENSE"
    },
@@ -60604,7 +60604,7 @@
    "source_repo": "https://github.com/FuzzyGrim/Yamtrack",
    "documentation_url": "https://github.com/FuzzyGrim/Yamtrack/wiki",
    "license": {
-    "spdx": "AGPL-3.0-only",
+    "spdx": "AGPL-3.0",
     "class": "network-copyleft",
     "url": "https://github.com/FuzzyGrim/Yamtrack/blob/dev/LICENSE"
    },

@@ -5,7 +5,7 @@ icon: link
 category: Productivity
 documentation_url: https://www.linkace.org/docs/
 source_repo: https://github.com/Kovah/LinkAce
-license: GPL-3.0-only
+license: GPL-3.0-or-later
 license_class: copyleft
 license_url: https://github.com/Kovah/LinkAce/blob/2.x/LICENSE.md
 recommended_memory_bytes: 268435456
