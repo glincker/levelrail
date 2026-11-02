@@ -42,6 +42,10 @@ vi.mock('../queries/apps', () => ({
   useUpdateApp: () => ({ mutate: updateMutate, ...updateState }),
 }))
 
+vi.mock('../queries/staticSites', () => ({
+  useIsStaticSite: () => false,
+}))
+
 vi.mock('../queries/certificates', () => ({
   useCertificates: () => ({ data: [] }),
 }))

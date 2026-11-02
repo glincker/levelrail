@@ -257,3 +257,143 @@ func TestParkedDomainsAPI_StaticSites(t *testing.T) {
 		t.Fatalf("bad kind = %d", rec.Code)
 	}
 }
+
+// staticDenyUser is a root caller with one IAM Deny; blog is a static site
+// with a same-named app, loner an orphan static site.
+func staticDenyUser(t *testing.T, action, resource string) (*Router, *http.Cookie) {
+	t.Helper()
+	rt, db := newTestRouter(t)
+	bootstrapTestAdmin(t, db)
+	ctx := context.Background()
+	for _, err := range []error{
+		db.SaveDesiredService(ctx, store.DesiredService{Name: "blog", Image: "img:v1", Port: 80}),
+		db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "img:v1", Port: 80}),
+		db.SaveStaticSite(ctx, store.StaticSite{Name: "blog", Domains: []string{"blog.example.com"}, RootDir: "/srv/blog"}),
+		db.SaveStaticSite(ctx, store.StaticSite{Name: "loner", Domains: []string{"loner.example.com"}, RootDir: "/srv/loner"}),
+	} {
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	user := storeUserWithAbilitiesForTest(t, db, "scoped@example.com", []string{AbilityRoot})
+	if resource != "" {
+		attachTestPolicy(t, db, "deny-one", "Deny", action, resource, store.PrincipalTypeUser, user.ID)
+	}
+	return rt, sessionCookieForTest(t, rt, user.ID)
+}
+
+func TestParkedDomainsAPI_StaticSiteDeniedByEitherRef(t *testing.T) {
+	for _, tc := range []struct{ name, action, resource string }{
+		{"app deny", "*", "app:blog"},
+		{"static site deny", "*", "static_site:blog"},
+		{"write_sensitive deny", AbilityWriteSensitive, "static_site:blog"},
+		{"write_sensitive app deny", AbilityWriteSensitive, "app:blog"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			rt, cookie := staticDenyUser(t, tc.action, tc.resource)
+			for _, c := range []struct{ name, path, body string }{
+				{"park", "/api/v1/domains/park", `{"app":"blog","target_kind":"static_site","domain":"blog.example.com"}`},
+				{"move from", "/api/v1/domains/move", `{"domain":"blog.example.com","from":"blog","from_kind":"static_site","to":"web","confirm":true}`},
+				{"move to", "/api/v1/domains/move", `{"domain":"loner.example.com","from":"loner","from_kind":"static_site","to":"blog","to_kind":"static_site","confirm":true}`},
+				{"attach", "/api/v1/domains/parked/x.example.com/attach", `{"app":"blog","target_kind":"static_site"}`},
+			} {
+				rec := sdReq(t, rt, cookie, http.MethodPost, c.path, c.body)
+				if rec.Code != http.StatusNotFound || !strings.Contains(rec.Body.String(), "static site not found") {
+					t.Fatalf("%s = %d %s, want 404 static site not found", c.name, rec.Code, rec.Body.String())
+				}
+			}
+		})
+	}
+}
+
+func TestParkedDomainsAPI_OrphanStaticSiteUnrelatedDenyStillAllowed(t *testing.T) {
+	rt, cookie := staticDenyUser(t, "*", "app:other")
+	rec := sdReq(t, rt, cookie, http.MethodPost, "/api/v1/domains/park", `{"app":"loner","target_kind":"static_site","domain":"loner.example.com"}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("park orphan site = %d %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestParkedDomainsAPI_TeamMemberClosedOutOfOtherTeamParkedRows(t *testing.T) {
+	f := newTeamFixture(t)
+	ctx := context.Background()
+	if err := f.db.SaveDesiredService(ctx, store.DesiredService{Name: appB, Image: "nginx:1", Port: 80, Domains: []string{"b.example.com"}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.db.ParkDomainFrom(ctx, store.DomainTarget{Kind: store.DomainKindApp, Name: appB}, "b.example.com", "root", ""); err != nil {
+		t.Fatal(err)
+	}
+	for _, role := range []string{store.TeamRoleOwner, store.TeamRoleAdmin} {
+		mem := withCookie(f.cookies[role])
+		code, body := teamDo(t, f.rt, http.MethodGet, "/api/v1/domains/parked", "", mem)
+		if code == http.StatusOK && strings.Contains(body, "b.example.com") {
+			t.Fatalf("%s lists other team parked row: %s", role, body)
+		}
+		code, body = teamDo(t, f.rt, http.MethodPost, "/api/v1/domains/parked/b.example.com/attach", `{"app":"`+appA+`"}`, mem)
+		if code == http.StatusOK {
+			t.Fatalf("%s attached other team parked row: %s", role, body)
+		}
+		code, body = teamDo(t, f.rt, http.MethodDelete, "/api/v1/domains/parked/b.example.com", "", mem)
+		if code == http.StatusNoContent {
+			t.Fatalf("%s deleted other team parked row: %s", role, body)
+		}
+	}
+	if _, err := f.db.GetParkedDomain(ctx, "b.example.com"); err != nil {
+		t.Fatalf("row gone: %v", err)
+	}
+}
+
+func TestParkedDomainsAPI_DeniedOriginHidesAndBlocksRow(t *testing.T) {
+	for _, tc := range []struct{ name, resource, origin, kind, msg string }{
+		{"app origin", "app:blog", "blog", "", "app not found"},
+		{"static origin by site deny", "static_site:blog", "blog", "static_site", "static site not found"},
+		{"static origin by app deny", "app:blog", "blog", "static_site", "static site not found"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			rt, db := newTestRouter(t)
+			bootstrapTestAdmin(t, db)
+			ctx := context.Background()
+			for _, err := range []error{
+				db.SaveDesiredService(ctx, store.DesiredService{Name: "blog", Image: "img:v1", Port: 80, Domains: []string{"blog.example.com"}}),
+				db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Domains: []string{"web.example.com"}}),
+				db.SaveStaticSite(ctx, store.StaticSite{Name: "blog", Domains: []string{"site.example.com"}, RootDir: "/srv/blog"}),
+			} {
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+			kind, dom := store.DomainKindApp, "blog.example.com"
+			if tc.kind != "" {
+				kind, dom = tc.kind, "site.example.com"
+			}
+			if err := db.ParkDomainFrom(ctx, store.DomainTarget{Kind: kind, Name: tc.origin}, dom, "root", ""); err != nil {
+				t.Fatal(err)
+			}
+			if err := db.ParkDomainFrom(ctx, store.DomainTarget{Kind: store.DomainKindApp, Name: "web"}, "web.example.com", "root", ""); err != nil {
+				t.Fatal(err)
+			}
+			user := storeUserWithAbilitiesForTest(t, db, "scoped@example.com", []string{AbilityRoot})
+			attachTestPolicy(t, db, "deny-origin", "Deny", "*", tc.resource, store.PrincipalTypeUser, user.ID)
+			cookie := sessionCookieForTest(t, rt, user.ID)
+
+			rec := sdReq(t, rt, cookie, http.MethodGet, "/api/v1/domains/parked", "")
+			if rec.Code != http.StatusOK || strings.Contains(rec.Body.String(), dom) || !strings.Contains(rec.Body.String(), "web.example.com") {
+				t.Fatalf("list = %d %s", rec.Code, rec.Body.String())
+			}
+			rec = sdReq(t, rt, cookie, http.MethodPost, "/api/v1/domains/parked/"+dom+"/attach", `{"app":"web"}`)
+			if rec.Code != http.StatusNotFound || !strings.Contains(rec.Body.String(), tc.msg) {
+				t.Fatalf("attach = %d %s", rec.Code, rec.Body.String())
+			}
+			rec = sdReq(t, rt, cookie, http.MethodDelete, "/api/v1/domains/parked/"+dom, "")
+			if rec.Code != http.StatusNotFound || !strings.Contains(rec.Body.String(), tc.msg) {
+				t.Fatalf("delete = %d %s", rec.Code, rec.Body.String())
+			}
+			if _, err := db.GetParkedDomain(ctx, dom); err != nil {
+				t.Fatalf("row gone: %v", err)
+			}
+			if rec = sdReq(t, rt, cookie, http.MethodDelete, "/api/v1/domains/parked/web.example.com", ""); rec.Code != http.StatusNoContent {
+				t.Fatalf("delete open row = %d %s", rec.Code, rec.Body.String())
+			}
+		})
+	}
+}

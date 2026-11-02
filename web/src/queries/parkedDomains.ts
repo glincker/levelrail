@@ -15,12 +15,16 @@ import {
   parkRequestBody,
 } from '../lib/domainLifecycle'
 
+// What a domain points at: an app (default) or a static site.
+export type TargetKind = 'app' | 'static_site'
+
 export interface ParkedDomain {
   domain: string
   kind: 'parked'
   parked_from?: string
   // Environment name the domain was parked from; empty for the default list.
   parked_from_environment?: string
+  parked_from_kind?: TargetKind
   note?: string
   parked_by?: string
   parked_at?: string
@@ -52,6 +56,9 @@ export interface DomainLifecycleResult {
   applied: boolean
   requires_confirmation?: boolean
   message?: string
+  kind?: TargetKind
+  from_kind?: TargetKind
+  to_kind?: TargetKind
 }
 
 export interface AttachResult extends DomainLifecycleResult {
@@ -64,6 +71,7 @@ export interface ParkInput {
   note?: string
   // Environment ID, name or kind; omitted for the app's default list.
   environment?: string
+  targetKind?: TargetKind
 }
 
 export interface MoveInput {
@@ -73,6 +81,8 @@ export interface MoveInput {
   confirm?: boolean
   fromEnvironment?: string
   toEnvironment?: string
+  fromKind?: TargetKind
+  toKind?: TargetKind
 }
 
 export interface AttachInput {
@@ -80,6 +90,7 @@ export interface AttachInput {
   app: string
   discardSettings?: boolean
   environment?: string
+  targetKind?: TargetKind
 }
 
 export const parkedDomainKeys = {

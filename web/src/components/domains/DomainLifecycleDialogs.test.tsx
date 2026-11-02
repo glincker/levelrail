@@ -34,6 +34,9 @@ function res(body: unknown): Response {
 
 function stubFetch() {
   const fetchMock = vi.fn((url: string) => {
+    if (url.includes('/static-sites')) {
+      return Promise.resolve(res([{ name: 'docs', domains: [] }]))
+    }
     if (url.includes('/attach')) {
       return Promise.resolve(
         res({ domain: 'a.com', applied: true, restored_settings: ['waf'] }),
@@ -210,7 +213,7 @@ describe('environment payloads', () => {
     await waitFor(() => {
       expect(screen.getByRole('option', { name: 'UAT' })).toBeInTheDocument()
     })
-    await user.selectOptions(screen.getByLabelText('Move to'), 'web')
+    await user.selectOptions(screen.getByLabelText('Move to'), 'app:web')
     await user.selectOptions(screen.getByLabelText('Environment'), 'env-uat')
     await user.click(screen.getByRole('button', { name: 'Check and move' }))
     await waitFor(() => {
@@ -221,6 +224,60 @@ describe('environment payloads', () => {
         confirm: false,
         from_environment: 'env-dev',
         to_environment: 'env-uat',
+      })
+    })
+  })
+
+  it('warns and sends kinds when moving an app domain to a static site', async () => {
+    const user = userEvent.setup()
+    const fetchMock = stubFetch()
+    wrap(
+      <MoveDomainDialog
+        from="web"
+        domain="a.com"
+        open
+        onOpenChange={() => undefined}
+      />,
+    )
+    await waitFor(() => {
+      expect(screen.getByRole('option', { name: 'docs' })).toBeInTheDocument()
+    })
+    await user.selectOptions(
+      screen.getByLabelText('Move to'),
+      'static_site:docs',
+    )
+    expect(screen.queryByLabelText('Environment')).not.toBeInTheDocument()
+    expect(screen.getByText(/no per-domain settings/)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Check and move' }))
+    await waitFor(() => {
+      expect(lastBody(fetchMock, '/move')).toEqual({
+        domain: 'a.com',
+        from: 'web',
+        to: 'docs',
+        confirm: false,
+        to_kind: 'static_site',
+      })
+    })
+  })
+
+  it('parks a static site domain with its kind', async () => {
+    const user = userEvent.setup()
+    const fetchMock = stubFetch()
+    wrap(
+      <ParkDomainDialog
+        app="docs"
+        domain="a.com"
+        kind="static_site"
+        open
+        onOpenChange={() => undefined}
+      />,
+    )
+    await user.click(screen.getByRole('button', { name: 'Park domain' }))
+    await waitFor(() => {
+      expect(lastBody(fetchMock, '/park')).toEqual({
+        app: 'docs',
+        domain: 'a.com',
+        target_kind: 'static_site',
       })
     })
   })

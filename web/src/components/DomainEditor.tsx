@@ -12,6 +12,7 @@ import { DomainStepper } from './domains/DomainStepper'
 import type { AppDetail } from '../types/appDetail'
 import { useUpdateApp } from '../queries/apps'
 import { useCertificates } from '../queries/certificates'
+import { useIsStaticSite } from '../queries/staticSites'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { AutomaticDomainRow } from './AutomaticDomainRow'
 import { DomainDnsCheck } from './DomainDnsCheck'
@@ -62,6 +63,7 @@ function toFieldValues(domains?: string[]): { value: string }[] {
 // being a separate panel shown only after the fact.
 export function DomainEditor({ app }: { app: AppDetail }) {
   const { t } = useTranslation('domains')
+  const isStatic = useIsStaticSite(app.name)
   const [wizardOpen, setWizardOpen] = useState(false)
   const updateApp = useUpdateApp(app.name, { inlineError: true })
   const domainSchema = useMemo(() => buildDomainSchema(t), [t])
@@ -229,6 +231,7 @@ export function DomainEditor({ app }: { app: AppDetail }) {
                               <DomainRowTools
                                 appName={app.name}
                                 domain={domain}
+                                kind={isStatic ? 'static_site' : 'app'}
                               />
                             </>
                           ) : null}

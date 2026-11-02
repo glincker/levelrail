@@ -97,6 +97,9 @@ export function ParkedDomainsGroup() {
                   : t('parked.from', { app: p.parked_from })}
               </span>
             ) : null}
+            {p.parked_from_kind === 'static_site' ? (
+              <Badge variant="outline">{t('parked.staticSite')}</Badge>
+            ) : null}
             <ParkedDnsBadge dns={p.dns} />
             <ParkedTlsBadge tls={p.tls} />
             {p.has_settings ? (

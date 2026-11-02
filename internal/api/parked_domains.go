@@ -131,6 +131,31 @@ func (rt *Router) handleListParkedDomains(w http.ResponseWriter, r *http.Request
 		rt.internalError(w, "api: list parked domains", err)
 		return
 	}
+	allowed, err := rt.authorizeRefPredicate(r, AbilityWriteSensitive)
+	if err != nil {
+		rt.internalError(w, "api: parked domains authz", err)
+		return
+	}
+	rows = slices.DeleteFunc(rows, func(p store.ParkedDomain) bool {
+		if p.ParkedFrom == "" || err != nil {
+			return false
+		}
+		refs, _ := domainTargetRefs(store.DomainTarget{Kind: kindOrAppName(p.ParkedFromKind), Name: p.ParkedFrom})
+		for _, ref := range refs {
+			ok, e := allowed(ref)
+			if e != nil {
+				err = e
+			}
+			if e != nil || !ok {
+				return true
+			}
+		}
+		return false
+	})
+	if err != nil {
+		rt.internalError(w, "api: parked domains authz", err)
+		return
+	}
 	domains := make([]string, 0, len(rows))
 	for _, p := range rows {
 		domains = append(domains, p.Domain)
@@ -167,7 +192,12 @@ func (rt *Router) handleParkDomain(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "domain and app are required")
 		return
 	}
-	if !rt.authorizeRefs(w, r, AbilityWrite, notFoundAs(http.StatusNotFound, "app not found"), appRef(req.App)) {
+	kind, ok := normalizeDomainKind(req.TargetKind)
+	if !ok {
+		writeError(w, http.StatusBadRequest, "kind must be app or static_site")
+		return
+	}
+	if !rt.authorizeDomainTargets(w, r, store.DomainTarget{Kind: kind, Name: req.App}) {
 		return
 	}
 	side, ok := rt.resolveDomainTarget(w, r, req.TargetKind, req.App, req.Environment)
@@ -206,7 +236,7 @@ func (rt *Router) handleMoveDomain(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "domain, from and to are required, and the source and target must differ")
 		return
 	}
-	if !rt.authorizeRefs(w, r, AbilityWrite, notFoundAs(http.StatusNotFound, "app not found"), appRef(req.From), appRef(req.To)) {
+	if !rt.authorizeDomainTargets(w, r, store.DomainTarget{Kind: fromKind, Name: req.From}, store.DomainTarget{Kind: toKind, Name: req.To}) {
 		return
 	}
 	from, ok := rt.resolveDomainTarget(w, r, fromKind, req.From, req.FromEnvironment)
@@ -281,12 +311,12 @@ func (rt *Router) handleAttachParkedDomain(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusBadRequest, "app is required")
 		return
 	}
-	if !rt.authorizeRefs(w, r, AbilityWrite, notFoundAs(http.StatusNotFound, "app not found"), appRef(req.App)) {
-		return
-	}
 	kind, ok := normalizeDomainKind(req.TargetKind)
 	if !ok {
 		writeError(w, http.StatusBadRequest, "kind must be app or static_site")
+		return
+	}
+	if !rt.authorizeDomainTargets(w, r, store.DomainTarget{Kind: kind, Name: req.App}) || !rt.authorizeParkedOrigin(w, r, st, domain) {
 		return
 	}
 	if kind == store.DomainKindApp && !rt.appHasHTTPPort(w, r, req.App,
@@ -321,6 +351,9 @@ func (rt *Router) handleDeleteParkedDomain(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	domain := normalizeStandaloneDomain(r.PathValue("domain"))
+	if !rt.authorizeParkedOrigin(w, r, st, domain) {
+		return
+	}
 	if !rt.writeLifecycleError(w, st.DeleteParkedDomain(r.Context(), domain), domain) {
 		return
 	}

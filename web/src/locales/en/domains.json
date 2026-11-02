@@ -1230,7 +1230,8 @@
       "keepsDnsCert": "DNS records and the automatic certificate state are kept too.",
       "confirm": "Park domain",
       "done": "{{domain}} is parked",
-      "savesSettings": "Parking saves this domain's own settings (WAF and rate limit, own certificate, basic auth, auth gate, maintenance, redirect, error pages, search visibility, traffic policies) with the parked domain. They are restored when it is attached."
+      "savesSettings": "Parking saves this domain's own settings (WAF and rate limit, own certificate, basic auth, auth gate, maintenance, redirect, error pages, search visibility, traffic policies) with the parked domain. They are restored when it is attached.",
+      "staticNoSettings": "A static site keeps no per-domain settings, so nothing is saved with the parked domain."
     },
     "move": {
       "title": "Move {{domain}}",
@@ -1240,7 +1241,9 @@
       "check": "Check and move",
       "confirm": "Confirm move",
       "needsConfirm": "Traffic for this domain changes owner. Confirm to continue.",
-      "done": "{{domain}} moved to {{app}}"
+      "done": "{{domain}} moved to {{app}}",
+      "dropsSettings": "Moving to a static site drops this domain's own settings. DNS and certificate state are kept.",
+      "dropsWarning": "Static sites have no per-domain settings. WAF, own certificate, basic auth and other settings on this domain will be dropped."
     },
     "delete": {
       "title": "Delete {{domain}}?",
@@ -1269,7 +1272,8 @@
         "domain_error_page": "error pages",
         "domain_search_visibility": "search visibility",
         "domain_traffic_policies": "traffic policies"
-      }
+      },
+      "dropsWarning": "Static sites have no per-domain settings. The saved settings for this domain will be dropped, not restored."
     },
     "deleteParked": {
       "title": "Delete parked domain {{domain}}?",
@@ -1278,6 +1282,10 @@
     "environment": {
       "label": "Environment",
       "default": "Default list"
+    },
+    "target": {
+      "apps": "Apps",
+      "staticSites": "Static sites"
     }
   },
   "parked": {
@@ -1296,7 +1304,8 @@
       "pending": "Certificate pending",
       "none": "No certificate"
     },
-    "fromEnvironment": "Parked from {{app}} ({{environment}})"
+    "fromEnvironment": "Parked from {{app}} ({{environment}})",
+    "staticSite": "Static site"
   },
   "detail": {
     "description": "Settings for this domain on {{app}}.",

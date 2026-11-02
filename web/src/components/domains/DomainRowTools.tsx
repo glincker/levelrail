@@ -7,6 +7,7 @@ import {
   UnlinkGlassIcon,
 } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
+import type { TargetKind } from '../../queries/parkedDomains'
 import { DomainDetailSheet } from './DomainDetailSheet'
 import {
   DeleteDomainDialog,
@@ -23,12 +24,16 @@ export function DomainRowTools({
   appName,
   domain,
   environment,
+  kind = 'app',
 }: {
   appName: string
   domain: string
   environment?: string
+  kind?: TargetKind
 }) {
   const scoped = environment !== undefined
+  // Static sites keep no per-domain settings, so there is no details sheet.
+  const hideDetails = scoped || kind === 'static_site'
   const { t } = useTranslation('domains')
   const [tool, setTool] = useState<Tool | null>(null)
   const close = (open: boolean) => {
@@ -36,7 +41,7 @@ export function DomainRowTools({
   }
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      {scoped ? null : (
+      {hideDetails ? null : (
         <Button
           type="button"
           size="sm"
@@ -97,6 +102,7 @@ export function DomainRowTools({
           app={appName}
           domain={domain}
           environment={environment}
+          kind={kind}
           open
           onOpenChange={close}
         />
@@ -106,6 +112,7 @@ export function DomainRowTools({
           from={appName}
           domain={domain}
           fromEnvironment={environment}
+          fromKind={kind}
           open
           onOpenChange={close}
         />

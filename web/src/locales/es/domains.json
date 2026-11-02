@@ -1230,7 +1230,8 @@
       "keepsDnsCert": "También se conservan los registros DNS y el estado del certificado automático.",
       "confirm": "Aparcar dominio",
       "done": "{{domain}} aparcado",
-      "savesSettings": "Aparcar guarda los ajustes propios del dominio (WAF y límite de peticiones, certificado propio, autenticación básica, acceso protegido, mantenimiento, redirección, páginas de error, visibilidad en buscadores, políticas de tráfico) junto al dominio aparcado. Se restauran al asociarlo."
+      "savesSettings": "Aparcar guarda los ajustes propios del dominio (WAF y límite de peticiones, certificado propio, autenticación básica, acceso protegido, mantenimiento, redirección, páginas de error, visibilidad en buscadores, políticas de tráfico) junto al dominio aparcado. Se restauran al asociarlo.",
+      "staticNoSettings": "Un sitio estático no tiene ajustes por dominio, así que no se guarda nada con el dominio aparcado."
     },
     "move": {
       "title": "Mover {{domain}}",
@@ -1240,7 +1241,9 @@
       "check": "Comprobar y mover",
       "confirm": "Confirmar movimiento",
       "needsConfirm": "El tráfico de este dominio cambia de dueño. Confirma para continuar.",
-      "done": "{{domain}} movido a {{app}}"
+      "done": "{{domain}} movido a {{app}}",
+      "dropsSettings": "Mover a un sitio estático descarta los ajustes propios de este dominio. Se conservan el DNS y el estado del certificado.",
+      "dropsWarning": "Los sitios estáticos no tienen ajustes por dominio. El WAF, el certificado propio, la autenticación básica y otros ajustes de este dominio se descartarán."
     },
     "delete": {
       "title": "¿Eliminar {{domain}}?",
@@ -1269,7 +1272,8 @@
         "domain_error_page": "páginas de error",
         "domain_search_visibility": "visibilidad en buscadores",
         "domain_traffic_policies": "políticas de tráfico"
-      }
+      },
+      "dropsWarning": "Los sitios estáticos no tienen ajustes por dominio. Los ajustes guardados de este dominio se descartarán, no se restaurarán."
     },
     "deleteParked": {
       "title": "¿Eliminar el dominio aparcado {{domain}}?",
@@ -1278,6 +1282,10 @@
     "environment": {
       "label": "Entorno",
       "default": "Lista por defecto"
+    },
+    "target": {
+      "apps": "Apps",
+      "staticSites": "Sitios estáticos"
     }
   },
   "parked": {
@@ -1296,7 +1304,8 @@
       "pending": "Certificado pendiente",
       "none": "Sin certificado"
     },
-    "fromEnvironment": "Aparcado desde {{app}} ({{environment}})"
+    "fromEnvironment": "Aparcado desde {{app}} ({{environment}})",
+    "staticSite": "Sitio estático"
   },
   "detail": {
     "description": "Ajustes de este dominio en {{app}}.",

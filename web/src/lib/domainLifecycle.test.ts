@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
   canParkOrMove,
+  attachDropsSettings,
+  decodeTarget,
+  encodeTarget,
+  groupedTargets,
+  moveDropsSettings,
   attachRequestBody,
   humanizeSettingKind,
   isNoopMove,
@@ -93,5 +98,63 @@ describe('domainLifecycle', () => {
         environment: 'env-1',
       }),
     ).toEqual({ app: 'a', discard_settings: true, environment: 'env-1' })
+  })
+  it('names the kind only for static sites', () => {
+    expect(parkRequestBody({ app: 's', domain: 'a.com' })).toEqual({
+      app: 's',
+      domain: 'a.com',
+    })
+    expect(
+      parkRequestBody({
+        app: 's',
+        domain: 'a.com',
+        environment: 'uat',
+        targetKind: 'static_site',
+      }),
+    ).toEqual({ app: 's', domain: 'a.com', target_kind: 'static_site' })
+    expect(
+      moveRequestBody({
+        domain: 'a.com',
+        from: 'x',
+        to: 's',
+        toEnvironment: 'uat',
+        fromKind: 'app',
+        toKind: 'static_site',
+      }),
+    ).toEqual({
+      domain: 'a.com',
+      from: 'x',
+      to: 's',
+      confirm: false,
+      to_kind: 'static_site',
+    })
+    expect(
+      attachRequestBody({
+        domain: 'a.com',
+        app: 's',
+        targetKind: 'static_site',
+      }),
+    ).toEqual({ app: 's', discard_settings: false, target_kind: 'static_site' })
+  })
+  it('round-trips target values', () => {
+    const t = { name: 'docs', kind: 'static_site' as const }
+    expect(decodeTarget(encodeTarget(t))).toEqual(t)
+    expect(decodeTarget('nope')).toBeNull()
+  })
+  it('groups apps and static sites without the source', () => {
+    const g = groupedTargets(
+      [{ name: 'a' }, { name: 'b' }],
+      [{ name: 'a' }, { name: 'docs' }],
+      { name: 'a', kind: 'app' },
+    )
+    expect(g.apps.map((t) => t.name)).toEqual(['b'])
+    expect(g.sites.map((t) => t.name)).toEqual(['docs'])
+  })
+  it('flags moves and attaches that drop settings', () => {
+    expect(moveDropsSettings('app', 'static_site')).toBe(true)
+    expect(moveDropsSettings('static_site', 'static_site')).toBe(false)
+    expect(moveDropsSettings('static_site', 'app')).toBe(false)
+    expect(attachDropsSettings(true, 'static_site')).toBe(true)
+    expect(attachDropsSettings(false, 'static_site')).toBe(false)
   })
 })

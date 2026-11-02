@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label'
 import { NativeSelect } from '@/components/ui/native-select'
 import { toast } from '@/components/ui/toast'
 import { appListQueryOptions } from '../../queries/apps'
+import { staticSitesQueryOptions } from '../../queries/staticSites'
 import {
   appEnvironmentDomainsQueryOptions,
   useEditAppDomains,
@@ -15,16 +16,81 @@ import {
   useDeleteParkedDomain,
   useMoveDomain,
   useParkDomain,
+  type TargetKind,
 } from '../../queries/parkedDomains'
 import {
+  attachDropsSettings,
+  decodeTarget,
+  encodeTarget,
+  groupedTargets,
   humanizeSettingKind,
   isNoopMove,
-  moveTargets,
+  moveDropsSettings,
+  type TargetOption,
 } from '../../lib/domainLifecycle'
 
 interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
+}
+
+// Static sites live in their own list; a failed read just hides the group.
+function useTargetGroups(source: TargetOption, allowSame: boolean) {
+  const { data: apps = [] } = useQuery(appListQueryOptions())
+  const { data: sites = [] } = useQuery(staticSitesQueryOptions())
+  return groupedTargets(apps, sites, source, allowSame)
+}
+
+function TargetSelect({
+  id,
+  value,
+  groups,
+  onChange,
+}: {
+  id: string
+  value: string
+  groups: { apps: TargetOption[]; sites: TargetOption[] }
+  onChange: (value: string) => void
+}) {
+  const { t } = useTranslation('domains')
+  const options = (list: TargetOption[]) =>
+    list.map((o) => (
+      <option key={encodeTarget(o)} value={encodeTarget(o)}>
+        {o.name}
+      </option>
+    ))
+  return (
+    <div className="flex items-center gap-2">
+      <Label htmlFor={id} className="shrink-0">
+        {t('lifecycle.move.target')}
+      </Label>
+      <NativeSelect
+        id={id}
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value)
+        }}
+      >
+        {groups.apps.length > 0 ? (
+          <optgroup label={t('lifecycle.target.apps')}>
+            {options(groups.apps)}
+          </optgroup>
+        ) : null}
+        {groups.sites.length > 0 ? (
+          <optgroup label={t('lifecycle.target.staticSites')}>
+            {options(groups.sites)}
+          </optgroup>
+        ) : null}
+      </NativeSelect>
+    </div>
+  )
+}
+
+function firstTarget(groups: {
+  apps: TargetOption[]
+  sites: TargetOption[]
+}): TargetOption | null {
+  return groups.apps[0] ?? groups.sites[0] ?? null
 }
 
 // Environment choice for a target app: the default list first, then each
@@ -77,11 +143,18 @@ export function ParkDomainDialog({
   app,
   domain,
   environment,
+  kind = 'app',
   open,
   onOpenChange,
-}: Props & { app: string; domain: string; environment?: string }) {
+}: Props & {
+  app: string
+  domain: string
+  environment?: string
+  kind?: TargetKind
+}) {
   const { t } = useTranslation('domains')
   const park = useParkDomain()
+  const isStatic = kind === 'static_site'
   return (
     <ConfirmDialog
       open={open}
@@ -89,7 +162,9 @@ export function ParkDomainDialog({
       title={t('lifecycle.park.title', { domain })}
       description={t('lifecycle.park.body', { app })}
       consequences={[
-        t('lifecycle.park.savesSettings'),
+        isStatic
+          ? t('lifecycle.park.staticNoSettings')
+          : t('lifecycle.park.savesSettings'),
         t('lifecycle.park.keepsDnsCert'),
       ]}
       confirmLabel={t('lifecycle.park.confirm')}
@@ -99,11 +174,12 @@ export function ParkDomainDialog({
       error={errorText(park.error)}
       onConfirm={() => {
         park.mutate(
-          { app, domain, environment },
+          { app, domain, environment, targetKind: kind },
           {
-            onSuccess: () => {
+            onSuccess: (result) => {
               toast.add({
                 title: t('lifecycle.park.done', { domain }),
+                description: result.message,
                 type: 'success',
               })
               onOpenChange(false)
@@ -121,20 +197,39 @@ export function MoveDomainDialog({
   from,
   domain,
   fromEnvironment,
+  fromKind = 'app',
   open,
   onOpenChange,
-}: Props & { from: string; domain: string; fromEnvironment?: string }) {
+}: Props & {
+  from: string
+  domain: string
+  fromEnvironment?: string
+  fromKind?: TargetKind
+}) {
   const { t } = useTranslation('domains')
-  const { data: apps = [] } = useQuery(appListQueryOptions())
-  const { data: fromSets } = useQuery(appEnvironmentDomainsQueryOptions(from))
+  const fromStatic = fromKind === 'static_site'
+  const { data: fromSets } = useQuery({
+    ...appEnvironmentDomainsQueryOptions(from),
+    enabled: !fromStatic,
+  })
   const hasEnvironments = (fromSets?.environments.length ?? 0) > 0
-  const targets = moveTargets(apps, from, hasEnvironments)
+  const groups = useTargetGroups(
+    { name: from, kind: fromKind },
+    hasEnvironments,
+  )
   const [to, setTo] = useState('')
   const [toEnvironment, setToEnvironment] = useState('')
   const [warning, setWarning] = useState<string | null>(null)
   const move = useMoveDomain()
-  const target = to || targets.find((n) => n !== from) || targets[0] || ''
-  const noop = isNoopMove({ from, to: target, fromEnvironment, toEnvironment })
+  const chosen = decodeTarget(to) ?? firstTarget(groups)
+  const target = chosen?.name ?? ''
+  const toKind = chosen?.kind ?? 'app'
+  const toStatic = toKind === 'static_site'
+  const noop =
+    chosen !== null &&
+    fromKind === toKind &&
+    isNoopMove({ from, to: target, fromEnvironment, toEnvironment })
+  const drops = moveDropsSettings(fromKind, toKind)
   return (
     <ConfirmDialog
       open={open}
@@ -144,7 +239,11 @@ export function MoveDomainDialog({
       }}
       title={t('lifecycle.move.title', { domain })}
       description={t('lifecycle.move.body', { app: from })}
-      consequences={[t('lifecycle.move.keepsSettings')]}
+      consequences={[
+        drops
+          ? t('lifecycle.move.dropsSettings')
+          : t('lifecycle.move.keepsSettings'),
+      ]}
       confirmLabel={
         warning ? t('lifecycle.move.confirm') : t('lifecycle.move.check')
       }
@@ -161,12 +260,15 @@ export function MoveDomainDialog({
             confirm: warning !== null,
             fromEnvironment,
             toEnvironment,
+            fromKind,
+            toKind,
           },
           {
             onSuccess: (result) => {
               if (result.applied) {
                 toast.add({
                   title: t('lifecycle.move.done', { domain, app: target }),
+                  description: result.message,
                   type: 'success',
                 })
                 setWarning(null)
@@ -179,35 +281,32 @@ export function MoveDomainDialog({
         )
       }}
     >
-      <div className="flex items-center gap-2">
-        <Label htmlFor="move-target" className="shrink-0">
-          {t('lifecycle.move.target')}
-        </Label>
-        <NativeSelect
-          id="move-target"
-          value={target}
-          onChange={(e) => {
-            setTo(e.target.value)
-            setToEnvironment('')
-            setWarning(null)
-          }}
-        >
-          {targets.map((name) => (
-            <option key={name} value={name}>
-              {name}
-            </option>
-          ))}
-        </NativeSelect>
-      </div>
-      <EnvironmentTargetSelect
-        id="move-target-environment"
-        app={target}
-        value={toEnvironment}
+      <TargetSelect
+        id="move-target"
+        value={chosen ? encodeTarget(chosen) : ''}
+        groups={groups}
         onChange={(v) => {
-          setToEnvironment(v)
+          setTo(v)
+          setToEnvironment('')
           setWarning(null)
         }}
       />
+      {toStatic ? null : (
+        <EnvironmentTargetSelect
+          id="move-target-environment"
+          app={target}
+          value={toEnvironment}
+          onChange={(v) => {
+            setToEnvironment(v)
+            setWarning(null)
+          }}
+        />
+      )}
+      {drops ? (
+        <p role="alert" className="text-sm text-tone-warning">
+          {t('lifecycle.move.dropsWarning')}
+        </p>
+      ) : null}
       {warning ? (
         <p role="alert" className="text-sm text-tone-warning">
           {warning}
@@ -264,12 +363,16 @@ export function AttachParkedDialog({
   onOpenChange,
 }: Props & { domain: string; hasSettings?: boolean }) {
   const { t } = useTranslation('domains')
-  const { data: apps = [] } = useQuery(appListQueryOptions())
+  const groups = useTargetGroups({ name: '', kind: 'app' }, true)
   const [to, setTo] = useState('')
   const [environment, setEnvironment] = useState('')
   const [fresh, setFresh] = useState(false)
   const attach = useAttachParkedDomain()
-  const target = to || apps[0]?.name || ''
+  const chosen = decodeTarget(to) ?? firstTarget(groups)
+  const target = chosen?.name ?? ''
+  const targetKind = chosen?.kind ?? 'app'
+  const toStatic = targetKind === 'static_site'
+  const drops = attachDropsSettings(hasSettings, targetKind)
   return (
     <ConfirmDialog
       open={open}
@@ -286,8 +389,9 @@ export function AttachParkedDialog({
           {
             domain,
             app: target,
-            discardSettings: hasSettings && fresh,
+            discardSettings: hasSettings && fresh && !toStatic,
             environment,
+            targetKind,
           },
           {
             onSuccess: (result) => {
@@ -299,12 +403,17 @@ export function AttachParkedDialog({
               toast.add({
                 title: t('lifecycle.attach.done', { domain, app: target }),
                 description:
-                  kinds.length > 0
-                    ? t('lifecycle.attach.restored', {
-                        kinds: kinds.join(', '),
-                      })
-                    : undefined,
-                type: 'success',
+                  [
+                    kinds.length > 0
+                      ? t('lifecycle.attach.restored', {
+                          kinds: kinds.join(', '),
+                        })
+                      : '',
+                    result.message ?? '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ') || undefined,
+                type: result.message ? 'warning' : 'success',
               })
               onOpenChange(false)
             },
@@ -312,32 +421,29 @@ export function AttachParkedDialog({
         )
       }}
     >
-      <div className="flex items-center gap-2">
-        <Label htmlFor="attach-target" className="shrink-0">
-          {t('lifecycle.move.target')}
-        </Label>
-        <NativeSelect
-          id="attach-target"
-          value={target}
-          onChange={(e) => {
-            setTo(e.target.value)
-            setEnvironment('')
-          }}
-        >
-          {apps.map((a) => (
-            <option key={a.name} value={a.name}>
-              {a.name}
-            </option>
-          ))}
-        </NativeSelect>
-      </div>
-      <EnvironmentTargetSelect
-        id="attach-target-environment"
-        app={target}
-        value={environment}
-        onChange={setEnvironment}
+      <TargetSelect
+        id="attach-target"
+        value={chosen ? encodeTarget(chosen) : ''}
+        groups={groups}
+        onChange={(v) => {
+          setTo(v)
+          setEnvironment('')
+        }}
       />
-      {hasSettings ? (
+      {toStatic ? null : (
+        <EnvironmentTargetSelect
+          id="attach-target-environment"
+          app={target}
+          value={environment}
+          onChange={setEnvironment}
+        />
+      )}
+      {drops ? (
+        <p role="alert" className="text-sm text-tone-warning">
+          {t('lifecycle.attach.dropsWarning')}
+        </p>
+      ) : null}
+      {hasSettings && !toStatic ? (
         <fieldset className="space-y-1">
           <legend className="text-sm font-medium">
             {t('lifecycle.attach.settingsLegend')}
