@@ -1,6 +1,7 @@
 package proxyroutes
 
 import (
+	"bytes"
 	"context"
 	"crypto/subtle"
 	"crypto/tls"
@@ -45,6 +46,8 @@ type ProbeResult struct {
 	CertIssuer   string
 	CertNotAfter time.Time
 	CertTrusted  bool
+	// CertClass says what kind of certificate was presented (see ClassifyCert).
+	CertClass string
 	// NoRoute is true when the proxy answered with its own "no router matched" 404.
 	NoRoute bool
 	// Delivered is true when the Marker reply came back: the proxy handed
@@ -85,6 +88,8 @@ func Probe(ctx context.Context, t ProbeTarget) ProbeResult {
 			}
 			_, err := leaf.Verify(x509.VerifyOptions{DNSName: t.Domain, Intermediates: inter, Roots: t.Roots})
 			res.CertTrusted = err == nil
+			res.CertClass = ClassifyCert(leaf.Issuer.CommonName, firstOrg(leaf.Issuer.Organization), leaf.Subject.CommonName,
+				bytes.Equal(leaf.RawIssuer, leaf.RawSubject), res.CertTrusted)
 			return nil
 		},
 	}
@@ -131,9 +136,16 @@ func Probe(ctx context.Context, t ProbeTarget) ProbeResult {
 		res.Reachable = true
 	}
 	if res.Reachable && !res.CertTrusted {
-		res.Err = "reachable, but the certificate (issued by " + res.CertIssuer + ") is not trusted yet: the proxy may still be requesting one from Let's Encrypt"
+		res.Err = UntrustedMessage(res.CertClass, res.CertIssuer)
 	}
 	return res
+}
+
+func firstOrg(o []string) string {
+	if len(o) > 0 {
+		return o[0]
+	}
+	return ""
 }
 
 func issuerName(c *x509.Certificate) string {

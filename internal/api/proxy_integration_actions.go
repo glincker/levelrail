@@ -34,6 +34,7 @@ const (
 	proxyCodeIncomplete  = "detection_incomplete"
 	proxyCodeDirInvalid  = "dynamic_dir_invalid"
 	proxyCodeDisabled    = "integration_off"
+	proxyCodeRetryFailed = "retry_failed"
 )
 
 type proxyConflict struct {
@@ -224,6 +225,12 @@ func (rt *Router) handleVerifyProxyIntegration(w http.ResponseWriter, r *http.Re
 	}
 	det := rt.detectProxy(r.Context())
 	domain := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("domain")))
+	if r.URL.Query().Get("retry") == "1" && domain != "" {
+		if err := rt.retryProxyCert(r.Context(), deps, domain); err != nil {
+			writeJSON(w, http.StatusConflict, proxyConflict{Code: proxyCodeRetryFailed, Error: err.Error()})
+			return
+		}
+	}
 	found, err := rt.verifyProxyRoutes(r.Context(), deps, det, domain)
 	if err != nil {
 		rt.internalError(w, "proxy integration: verify", err)
@@ -278,14 +285,14 @@ func (rt *Router) verifyProxyRoutes(ctx context.Context, deps *proxyIntegrationD
 		wg.Add(1)
 		go func(it proxyroutes.Item) {
 			defer wg.Done()
-			rt.verifyProxyRoute(ctx, deps, det, it, addr)
+			rt.verifyProxyRoute(ctx, deps, det, plan.Settings, it, addr)
 		}(it)
 	}
 	wg.Wait()
 	return found, nil
 }
 
-func (rt *Router) verifyProxyRoute(ctx context.Context, deps *proxyIntegrationDeps, det proxyroutes.Detection, it proxyroutes.Item, addr string) {
+func (rt *Router) verifyProxyRoute(ctx context.Context, deps *proxyIntegrationDeps, det proxyroutes.Detection, settings store.ProxyIntegrationSettings, it proxyroutes.Item, addr string) {
 	path := "/"
 	if it.Kind == proxyroutes.TargetDashboard {
 		path = "/healthz"
@@ -338,6 +345,8 @@ func (rt *Router) verifyProxyRoute(ctx context.Context, deps *proxyIntegrationDe
 			}
 		}
 	}
+	st.CertClass = res.CertClass
+	rt.applyProxyDiagnosis(ctx, deps, det, settings, it, addr, res, &st)
 	if err := deps.store.SaveProxyRouteVerification(ctx, st); err != nil {
 		rt.logger.WarnContext(ctx, "proxy integration: save verification", "domain", it.Domain, "error", err.Error())
 	}

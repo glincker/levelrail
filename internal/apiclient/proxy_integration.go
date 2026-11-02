@@ -59,6 +59,9 @@ type ProxyCertificate struct {
 	Issuer   string `json:"issuer"`
 	NotAfter string `json:"not_after"`
 	Valid    bool   `json:"valid"`
+	Trusted  bool   `json:"trusted"`
+	Expired  bool   `json:"expired"`
+	Class    string `json:"class,omitempty"`
 }
 
 // ProxyDomain is one managed route.
@@ -73,6 +76,14 @@ type ProxyDomain struct {
 	Certificate *ProxyCertificate `json:"certificate"`
 	LastError   string            `json:"last_error"`
 	CheckedAt   string            `json:"checked_at"`
+	Delivered   bool              `json:"delivered"`
+	// Diagnosis is a stable code explaining an unusable certificate; Hint,
+	// Snippet and Evidence say what to do about it.
+	Diagnosis    string   `json:"diagnosis"`
+	Hint         string   `json:"hint"`
+	Snippet      string   `json:"snippet"`
+	Evidence     []string `json:"evidence"`
+	RecheckUntil string   `json:"recheck_until"`
 }
 
 // ProxyStep is one item of the setup checklist.
@@ -130,9 +141,22 @@ func (c *Client) ApplyProxyIntegration(ctx context.Context) (ProxyIntegration, e
 
 // VerifyProxyIntegration probes every route, or only domain when set.
 func (c *Client) VerifyProxyIntegration(ctx context.Context, domain string) (ProxyIntegration, error) {
+	return c.VerifyProxyIntegrationOpts(ctx, domain, false)
+}
+
+// VerifyProxyIntegrationOpts is VerifyProxyIntegration; retry first nudges the
+// proxy into re-attempting domain's certificate request.
+func (c *Client) VerifyProxyIntegrationOpts(ctx context.Context, domain string, retry bool) (ProxyIntegration, error) {
 	path := "/api/v1/system/proxy-integration/verify"
+	q := url.Values{}
 	if domain != "" {
-		path += "?" + url.Values{"domain": {domain}}.Encode()
+		q.Set("domain", domain)
+		if retry {
+			q.Set("retry", "1")
+		}
+	}
+	if len(q) > 0 {
+		path += "?" + q.Encode()
 	}
 	var out ProxyIntegration
 	err := c.do(ctx, http.MethodPost, path, nil, &out)

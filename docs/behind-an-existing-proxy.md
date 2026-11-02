@@ -397,6 +397,41 @@ How to confirm: check the proxy configuration (Traefik, nginx, Caddy) and verify
 
 Fix: verify Levelrail is running and listening on the correct port (set with `APP_INGRESS_HTTP_ADDR` or via the installer). Then add or update the proxy's route to forward the domain to that port. Refer to [Example proxy configs](/behind-an-existing-proxy#example-proxy-configs) above for the correct syntax for your proxy.
 
+### The domain shows the proxy's default certificate
+
+The status line names what the proxy served and, when it can, the reason. The
+diagnosis code is also returned by `levelrail proxy status` and the API. A proxy
+fallback certificate (Traefik `TRAEFIK DEFAULT CERT`, a Caddy local authority, the
+nginx `localhost` certificate or the ingress controller fake certificate) means the
+proxy holds no certificate for this host. It is not an expired certificate.
+
+| Diagnosis | What it means | What to do |
+| --- | --- | --- |
+| `acme_pending` | The route is new and the proxy is still asking for a certificate. | Wait. The dashboard rechecks on its own until the wait budget passes. |
+| `acme_failed` | The proxy log has an ACME error for this domain (shown as evidence). | Fix the cause in that line, then run `levelrail proxy verify --domain D --retry-cert` or use Retry certificate request. |
+| `acme_rate_limited` | The certificate authority is limiting this domain. | Fix the failing cause first and wait for the limit to lift. |
+| `acme_stuck` | No certificate after the wait budget and no log line was readable. | Read the proxy logs, for Traefik `docker logs <container> 2>&1 \| grep -i acme`. |
+| `dns_mismatch` | The domain does not resolve to this server, or is proxied by a CDN. | Point the A or AAAA record at the proxy host, or switch the record to DNS only until the certificate exists. |
+| `port_unreachable` | Port 80 does not accept connections, so HTTP-01 cannot pass. | Open ports 80 and 443 on the firewall and cloud security group and publish them on the proxy. |
+| `no_cert_resolver` | The router has TLS but no `certResolver`. | Set the resolver in the proxy integration settings, or add `traefik.http.routers.<name>.tls.certresolver=<resolver>`. |
+| `router_no_tls` | The router does not enable TLS. | Enable TLS on the router and add a resolver. |
+| `origin_cert` | The proxy serves a CDN origin certificate. | Proxy the record through the CDN or install a public certificate. |
+| `private_ca` | The proxy serves a certificate from a private authority. | Use a public resolver, or trust the authority on every client. |
+| `cert_expired` | A trusted certificate passed its end date. | Check why renewal fails in the proxy logs. |
+
+The wait budget is the runtime setting `ingress.proxy_cert_wait` (default 5m, seeded
+by `APP_PROXY_CERT_WAIT`, listed by `levelrail settings runtime`). A change applies on
+the next check.
+
+Retry certificate request rewrites the route file twice, about two seconds apart, with a
+router priority one higher and then the normal value. Traefik skips a reload whose
+parsed configuration is unchanged, so a comment would do nothing; a priority change
+reloads it, and Traefik looks again for domains that have no certificate. This is
+based on how Traefik handles configuration changes and has not been proven here on a
+live host. If the retry changes nothing, restart the proxy container once. It only
+works for Traefik file routes. The proxy log is read through the Docker API, and the
+line shown has secrets masked.
+
 ### The dashboard shows mixed HTTP/HTTPS content
 
 The browser blocks some resources because they are loaded over HTTP while the page came over HTTPS.

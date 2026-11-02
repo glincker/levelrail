@@ -24,7 +24,7 @@ func TestProbe(t *testing.T) {
 				http.Error(w, "wrong host", http.StatusBadRequest)
 			}
 		}, true, true, ""},
-		{"ok but untrusted cert", func(http.ResponseWriter, *http.Request) {}, false, true, "not trusted"},
+		{"ok but untrusted cert", func(http.ResponseWriter, *http.Request) {}, false, true, "fallback certificate"},
 		{"traefik 404", func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusNotFound)
 			_, _ = fmt.Fprintln(w, "404 page not found")
