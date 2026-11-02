@@ -1,0 +1,65 @@
+---
+title: "Self-host HyperDX with Docker"
+sidebarTitle: "HyperDX"
+description: "An observability platform that brings logs, traces, metrics and session replays together in one search UI. MIT licensed. Runs the all-in-one image with its bundled ClickHouse, MongoDB and OpenTelemetry collector, so it needs about 2 GB of memory. On first open, the setup page asks you to create the admin login."
+"og:url": "https://docs.levelrail.com/self-host/hyperdx"
+---
+
+An observability platform that brings logs, traces, metrics and session replays together in one search UI. MIT licensed. Runs the all-in-one image with its bundled ClickHouse, MongoDB and OpenTelemetry collector, so it needs about 2 GB of memory. On first open, the setup page asks you to create the admin login.
+
+This page describes the Levelrail template for HyperDX (Monitoring). It deploys the services below as one Docker Compose app on your own server. Project site: https://clickhouse.com/docs/use-cases/observability/clickstack.
+
+Recommended memory: about 2048 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `hyperdx` | `hyperdx/hyperdx-all-in-one:2.43.1` | 8080 | `mongo -&#62; /data/db`<br />`ch_data -&#62; /var/lib/clickhouse`<br />`ch_logs -&#62; /var/log/clickhouse-server` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `hyperdx` | `FRONTEND_URL` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Stores data in named volumes (`hyperdx`): ch_data, ch_logs, mongo.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy HyperDX with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select HyperDX. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy hyperdx --name my-hyperdx
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Monitoring templates
+
+- [Alertmanager](/self-host/alertmanager)
+- [Beszel](/self-host/beszel)
+- [Bugsink](/self-host/bugsink)
+- [Changedetection.io](/self-host/changedetection)
+- [Checkmate](/self-host/checkmate)
+
+All templates are listed in the [self-host gallery](/self-host).

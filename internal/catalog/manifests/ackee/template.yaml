@@ -1,0 +1,29 @@
+id: ackee
+name: Ackee
+description: A self-hosted, privacy-friendly web analytics tool that tracks page views without cookies or personal data. MIT licensed. Runs with a MongoDB service. The admin password is generated for you and shown in the deployment variables.
+icon: chart
+category: Analytics
+documentation_url: https://github.com/electerious/Ackee/blob/master/docs/Get%20started.md
+source_repo: https://github.com/electerious/Ackee
+license: MIT
+license_class: permissive
+license_url: https://github.com/electerious/Ackee/blob/master/LICENSE
+recommended_memory_bytes: 671088640
+first_run:
+  - Sign in with the admin username and the generated password, then add your site to get the tracking snippet.
+env:
+  - key: ACKEE_USERNAME
+    label: Admin username
+    description: Username for the Ackee dashboard.
+    default: admin
+domains:
+  - service: ackee
+    port: 3000
+    description: Public address of Ackee. Also serves the tracker script.
+healthcheck:
+  service: ackee
+  port: 3000
+  path: /
+status: active
+listing:
+  by: community

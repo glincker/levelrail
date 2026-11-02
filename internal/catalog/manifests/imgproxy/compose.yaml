@@ -1,0 +1,16 @@
+services:
+  imgproxy:
+    image: ghcr.io/imgproxy/imgproxy:v4.0.20
+    ports: ["8080"]
+    environment:
+      IMGPROXY_BIND: ":8080"
+      IMGPROXY_KEY: $SERVICE_HEX_64_KEY
+      IMGPROXY_SALT: $SERVICE_HEX_64_SALT
+      IMGPROXY_USE_ETAG: "true"
+      IMGPROXY_ENABLE_DEBUG_HEADERS: "false"
+    healthcheck:
+      test: ["CMD", "imgproxy", "health"]
+      interval: 15s
+      timeout: 6s
+      retries: 10
+      start_period: 15s

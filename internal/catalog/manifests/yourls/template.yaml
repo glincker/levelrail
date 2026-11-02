@@ -1,0 +1,37 @@
+id: yourls
+name: YOURLS
+description: A self-hosted URL shortener with custom keywords, click statistics and a plugin system. Runs with a bundled MariaDB database. The admin login is the user and password you set in the install form.
+icon: link
+category: Applications
+documentation_url: https://yourls.org/docs/
+source_repo: https://github.com/YOURLS/YOURLS
+license: MIT
+license_class: permissive
+license_url: https://github.com/YOURLS/YOURLS/blob/master/LICENSE
+hosted_use: unknown
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 268435456
+first_run:
+  - Open /admin/install.php on the app address and click Install YOURLS once.
+  - Sign in at /admin/ with the user and password from the install form.
+env:
+  - key: YOURLS_USER
+    label: Admin user
+    description: Username for the YOURLS admin login.
+    default: admin
+    required: true
+  - key: YOURLS_PASS
+    label: Admin password
+    description: Password for the YOURLS admin login.
+    required: true
+    secret: true
+domains:
+  - service: yourls
+    port: 8080
+    description: Public address of YOURLS.
+healthcheck:
+  service: yourls
+  port: 8080
+  path: /admin/install.php

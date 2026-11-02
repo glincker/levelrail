@@ -157,6 +157,173 @@
    }
   },
   {
+   "id": "ackee",
+   "aliases": [],
+   "name": "Ackee",
+   "slogan": "A self-hosted, privacy-friendly web analytics tool that tracks page views without cookies or personal data. MIT licensed. Runs with a MongoDB service. The admin password is generated for you and shown in the deployment variables.",
+   "description": "A self-hosted, privacy-friendly web analytics tool that tracks page views without cookies or personal data. MIT licensed. Runs with a MongoDB service. The admin password is generated for you and shown in the deployment variables.",
+   "first_run": [
+    "Sign in with the admin username and the generated password, then add your site to get the tracking snippet."
+   ],
+   "category": "Analytics",
+   "status": "active",
+   "source_repo": "https://github.com/electerious/Ackee",
+   "documentation_url": "https://github.com/electerious/Ackee/blob/master/docs/Get%20started.md",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/electerious/Ackee/blob/master/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "published",
+    "arm64": "published"
+   },
+   "images": [
+    {
+     "service": "ackee",
+     "image": "electerious/ackee",
+     "tag": "3.7.1",
+     "source_class": "upstream",
+     "platforms": [
+      "linux/amd64",
+      "linux/arm64"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "mongo",
+     "image": "mongo",
+     "tag": "7.0.45",
+     "source_class": "official",
+     "platforms": [
+      "linux/amd64",
+      "linux/arm64",
+      "windows/amd64"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 640,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "ACKEE_USERNAME",
+      "label": "Admin username",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "ackee",
+     "image": "electerious/ackee:3.7.1",
+     "ports": [
+      3000
+     ],
+     "volumes": []
+    },
+    {
+     "name": "mongo",
+     "image": "mongo:7.0.45",
+     "ports": [],
+     "volumes": [
+      "mongo -> /data/db"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "ackee",
+     "name": "ACKEE_MONGODB",
+     "kind": "preset"
+    },
+    {
+     "service": "ackee",
+     "name": "ACKEE_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "ackee",
+     "name": "ACKEE_TRACKER",
+     "kind": "preset"
+    },
+    {
+     "service": "ackee",
+     "name": "ACKEE_USERNAME",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "ackee"
+      ],
+      "detail": "ACKEE_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "mongo"
+      ],
+      "detail": "mongo",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "activepieces",
    "aliases": [],
    "name": "Activepieces",
@@ -14199,6 +14366,213 @@
    }
   },
   {
+   "id": "flagsmith",
+   "aliases": [],
+   "name": "Flagsmith",
+   "slogan": "A feature flag and remote config service with a dashboard, environments, segments and an SDK API. Runs the API and dashboard in one container with a bundled Postgres database. On first open, the sign-up page creates the first organisation and admin.",
+   "description": "A feature flag and remote config service with a dashboard, environments, segments and an SDK API. Runs the API and dashboard in one container with a bundled Postgres database. On first open, the sign-up page creates the first organisation and admin.",
+   "first_run": [
+    "Open the app and sign up. The first account becomes the organisation admin."
+   ],
+   "category": "Developer Tools",
+   "status": "active",
+   "source_repo": "https://github.com/Flagsmith/flagsmith",
+   "documentation_url": "https://docs.flagsmith.com/",
+   "license": {
+    "spdx": "BSD-3-Clause",
+    "class": "permissive",
+    "url": "https://github.com/Flagsmith/flagsmith/blob/main/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "published",
+    "arm64": "published"
+   },
+   "images": [
+    {
+     "service": "db",
+     "image": "postgres",
+     "tag": "16-alpine",
+     "source_class": "official",
+     "platforms": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/riscv64",
+      "linux/s390x"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "flagsmith",
+     "image": "flagsmith/flagsmith",
+     "tag": "2.288.2",
+     "source_class": "upstream",
+     "platforms": [
+      "linux/amd64",
+      "linux/arm64"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 768,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TZ",
+      "label": "Time zone",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "db",
+     "image": "postgres:16-alpine",
+     "ports": [],
+     "volumes": [
+      "pgdata -> /var/lib/postgresql/data"
+     ]
+    },
+    {
+     "name": "flagsmith",
+     "image": "flagsmith/flagsmith:2.288.2",
+     "ports": [
+      8000
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [
+    {
+     "service": "db",
+     "name": "POSTGRES_DB",
+     "kind": "preset"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "db",
+     "name": "POSTGRES_USER",
+     "kind": "preset"
+    },
+    {
+     "service": "flagsmith",
+     "name": "DATABASE_URL",
+     "kind": "generated"
+    },
+    {
+     "service": "flagsmith",
+     "name": "DISABLE_INFLUXDB_FEATURES",
+     "kind": "preset"
+    },
+    {
+     "service": "flagsmith",
+     "name": "DJANGO_ALLOWED_HOSTS",
+     "kind": "preset"
+    },
+    {
+     "service": "flagsmith",
+     "name": "DJANGO_SECRET_KEY",
+     "kind": "generated"
+    },
+    {
+     "service": "flagsmith",
+     "name": "ENABLE_ADMIN_ACCESS_USER_PASS",
+     "kind": "preset"
+    },
+    {
+     "service": "flagsmith",
+     "name": "FLAGSMITH_DOMAIN",
+     "kind": "preset"
+    },
+    {
+     "service": "flagsmith",
+     "name": "TZ",
+     "kind": "preset"
+    },
+    {
+     "service": "flagsmith",
+     "name": "USE_X_FORWARDED_HOST",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "db",
+       "flagsmith"
+      ],
+      "detail": "DATABASE_URL, DJANGO_SECRET_KEY, POSTGRES_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "db"
+      ],
+      "detail": "pgdata",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "flame",
    "aliases": [],
    "name": "Flame",
@@ -21684,6 +22058,119 @@
    }
   },
   {
+   "id": "hyperdx",
+   "aliases": [],
+   "name": "HyperDX",
+   "slogan": "An observability platform that brings logs, traces, metrics and session replays together in one search UI. MIT licensed. Runs the all-in-one image with its bundled ClickHouse, MongoDB and OpenTelemetry collector, so it needs about 2 GB of memory. On first open, the setup page asks you to create the admin login.",
+   "description": "An observability platform that brings logs, traces, metrics and session replays together in one search UI. MIT licensed. Runs the all-in-one image with its bundled ClickHouse, MongoDB and OpenTelemetry collector, so it needs about 2 GB of memory. On first open, the setup page asks you to create the admin login.",
+   "first_run": [
+    "Open the app and register the first user on the sign-up page."
+   ],
+   "category": "Monitoring",
+   "status": "active",
+   "source_repo": "https://github.com/hyperdxio/hyperdx",
+   "documentation_url": "https://clickhouse.com/docs/use-cases/observability/clickstack",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/hyperdxio/hyperdx/blob/main/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "published",
+    "arm64": "published"
+   },
+   "images": [
+    {
+     "service": "hyperdx",
+     "image": "hyperdx/hyperdx-all-in-one",
+     "tag": "2.43.1",
+     "source_class": "community",
+     "platforms": [
+      "linux/amd64",
+      "linux/arm64"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 2048,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "hyperdx",
+     "image": "hyperdx/hyperdx-all-in-one:2.43.1",
+     "ports": [
+      8080
+     ],
+     "volumes": [
+      "mongo -> /data/db",
+      "ch_data -> /var/lib/clickhouse",
+      "ch_logs -> /var/log/clickhouse-server"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "hyperdx",
+     "name": "FRONTEND_URL",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "hyperdx"
+      ],
+      "detail": "ch_data, ch_logs, mongo",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "imgcompress",
    "aliases": [],
    "name": "ImgCompress",
@@ -21760,6 +22247,133 @@
      {
       "code": "https_ingress",
       "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "imgproxy",
+   "aliases": [],
+   "name": "imgproxy",
+   "slogan": "A fast image processing server that resizes, crops and converts images on the fly from signed URLs. Apache-2.0 licensed. A signing key and salt are generated for you, so only URLs signed with them are served.",
+   "description": "A fast image processing server that resizes, crops and converts images on the fly from signed URLs. Apache-2.0 licensed. A signing key and salt are generated for you, so only URLs signed with them are served.",
+   "first_run": [],
+   "category": "Infrastructure",
+   "status": "active",
+   "source_repo": "https://github.com/imgproxy/imgproxy",
+   "documentation_url": "https://docs.imgproxy.net/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/imgproxy/imgproxy/blob/master/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "published",
+    "arm64": "published"
+   },
+   "images": [
+    {
+     "service": "imgproxy",
+     "image": "ghcr.io/imgproxy/imgproxy",
+     "tag": "v4.0.20",
+     "source_class": "upstream",
+     "platforms": [
+      "linux/amd64",
+      "linux/arm64"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "imgproxy",
+     "image": "ghcr.io/imgproxy/imgproxy:v4.0.20",
+     "ports": [
+      8080
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [
+    {
+     "service": "imgproxy",
+     "name": "IMGPROXY_BIND",
+     "kind": "preset"
+    },
+    {
+     "service": "imgproxy",
+     "name": "IMGPROXY_ENABLE_DEBUG_HEADERS",
+     "kind": "preset"
+    },
+    {
+     "service": "imgproxy",
+     "name": "IMGPROXY_KEY",
+     "kind": "generated"
+    },
+    {
+     "service": "imgproxy",
+     "name": "IMGPROXY_SALT",
+     "kind": "generated"
+    },
+    {
+     "service": "imgproxy",
+     "name": "IMGPROXY_USE_ETAG",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "imgproxy"
+      ],
+      "detail": "IMGPROXY_KEY, IMGPROXY_SALT",
+      "message": "Passwords and keys are generated at deploy time"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
      },
      {
       "code": "health_gated_deploy",
@@ -27210,6 +27824,120 @@
      {
       "code": "secret_masking",
       "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "languagetool",
+   "aliases": [],
+   "name": "LanguageTool",
+   "slogan": "A multilingual grammar, style and spell checking server with an HTTP API at /v2/check. LGPL-2.1 licensed. Runs the community server image in one container without the optional n-gram data. There is no web login, so keep the address private or put it behind an access rule.",
+   "description": "A multilingual grammar, style and spell checking server with an HTTP API at /v2/check. LGPL-2.1 licensed. Runs the community server image in one container without the optional n-gram data. There is no web login, so keep the address private or put it behind an access rule.",
+   "first_run": [],
+   "category": "Productivity",
+   "status": "active",
+   "source_repo": "https://github.com/languagetool-org/languagetool",
+   "documentation_url": "https://dev.languagetool.org/http-server",
+   "license": {
+    "spdx": "LGPL-2.1-or-later",
+    "class": "copyleft",
+    "url": "https://github.com/languagetool-org/languagetool/blob/master/COPYING.txt"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "published",
+    "arm64": "published"
+   },
+   "images": [
+    {
+     "service": "languagetool",
+     "image": "erikvl87/languagetool",
+     "tag": "6.8",
+     "source_class": "community",
+     "platforms": [
+      "linux/amd64",
+      "linux/arm64"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 1024,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "languagetool",
+     "image": "erikvl87/languagetool:6.8",
+     "ports": [
+      8010
+     ],
+     "volumes": [
+      "ngrams -> /ngrams"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "languagetool",
+     "name": "Java_Xms",
+     "kind": "preset"
+    },
+    {
+     "service": "languagetool",
+     "name": "Java_Xmx",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "languagetool"
+      ],
+      "detail": "ngrams",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
      },
      {
       "code": "volume_backups",
@@ -41178,6 +41906,125 @@
    }
   },
   {
+   "id": "opengist",
+   "aliases": [],
+   "name": "Opengist",
+   "slogan": "A self-hosted pastebin powered by Git, for sharing snippets and gists with revisions, topics and search. AGPL-3.0 licensed. Uses SQLite in one container. SSH Git access is off, so clone and push over HTTPS. The first account you register becomes the admin.",
+   "description": "A self-hosted pastebin powered by Git, for sharing snippets and gists with revisions, topics and search. AGPL-3.0 licensed. Uses SQLite in one container. SSH Git access is off, so clone and push over HTTPS. The first account you register becomes the admin.",
+   "first_run": [],
+   "category": "Developer Tools",
+   "status": "active",
+   "source_repo": "https://github.com/thomiceli/opengist",
+   "documentation_url": "https://opengist.io/docs",
+   "license": {
+    "spdx": "AGPL-3.0",
+    "class": "network-copyleft",
+    "url": "https://github.com/thomiceli/opengist/blob/master/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "published",
+    "arm64": "published"
+   },
+   "images": [
+    {
+     "service": "opengist",
+     "image": "ghcr.io/thomiceli/opengist",
+     "tag": "1.15.3",
+     "source_class": "upstream",
+     "platforms": [
+      "linux/amd64",
+      "linux/arm64"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "opengist",
+     "image": "ghcr.io/thomiceli/opengist:1.15.3",
+     "ports": [
+      6157
+     ],
+     "volumes": [
+      "data -> /opengist"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "opengist",
+     "name": "OG_EXTERNAL_URL",
+     "kind": "preset"
+    },
+    {
+     "service": "opengist",
+     "name": "OG_LOG_LEVEL",
+     "kind": "preset"
+    },
+    {
+     "service": "opengist",
+     "name": "OG_SSH_GIT_ENABLED",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "opengist"
+      ],
+      "detail": "data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "openobserve",
    "aliases": [],
    "name": "OpenObserve",
@@ -44344,6 +45191,135 @@
      {
       "code": "volume_backups",
       "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "pgweb",
+   "aliases": [],
+   "name": "Pgweb",
+   "slogan": "A small web client for browsing and querying PostgreSQL databases, with a table browser, query editor and export. Runs as one container with no storage of its own. Sign in with the username and password from the install form, then enter the connection details of your database.",
+   "description": "A small web client for browsing and querying PostgreSQL databases, with a table browser, query editor and export. Runs as one container with no storage of its own. Sign in with the username and password from the install form, then enter the connection details of your database.",
+   "first_run": [
+    "Sign in with the username and password from the install form.",
+    "Enter the host, user, password and database of the Postgres server you want to browse."
+   ],
+   "category": "Developer Tools",
+   "status": "active",
+   "source_repo": "https://github.com/sosedoff/pgweb",
+   "documentation_url": "https://github.com/sosedoff/pgweb/wiki",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/sosedoff/pgweb/blob/main/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "published",
+    "arm64": "published"
+   },
+   "images": [
+    {
+     "service": "pgweb",
+     "image": "sosedoff/pgweb",
+     "tag": "0.17.0",
+     "source_class": "upstream",
+     "platforms": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 64,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "PGWEB_AUTH_USER",
+      "label": "Username",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "PGWEB_AUTH_PASS",
+      "label": "Password",
+      "required": false,
+      "default_kind": "generated"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "pgweb",
+     "image": "sosedoff/pgweb:0.17.0",
+     "ports": [
+      8081
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [
+    {
+     "service": "pgweb",
+     "name": "PGWEB_AUTH_PASS",
+     "kind": "generated"
+    },
+    {
+     "service": "pgweb",
+     "name": "PGWEB_AUTH_USER",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "pgweb"
+      ],
+      "detail": "PGWEB_AUTH_PASS",
+      "message": "Passwords and keys are generated at deploy time"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
      },
      {
       "code": "health_gated_deploy",
@@ -49803,6 +50779,228 @@
    }
   },
   {
+   "id": "romm",
+   "aliases": [],
+   "name": "RomM",
+   "slogan": "A self-hosted retro game library manager. It scans your ROM collection, matches metadata and cover art, and lets you browse, search and play games in the browser. Runs with a bundled MariaDB database. On first open, the setup page asks you to create the admin login.",
+   "description": "A self-hosted retro game library manager. It scans your ROM collection, matches metadata and cover art, and lets you browse, search and play games in the browser. Runs with a bundled MariaDB database. On first open, the setup page asks you to create the admin login.",
+   "first_run": [
+    "Open the app and create the admin account on the setup page.",
+    "Copy your ROM files into the library volume, one folder per platform, then run a scan from the app."
+   ],
+   "category": "Media",
+   "status": "active",
+   "source_repo": "https://github.com/rommapp/romm",
+   "documentation_url": "https://docs.romm.app/latest/",
+   "license": {
+    "spdx": "AGPL-3.0",
+    "class": "network-copyleft",
+    "url": "https://github.com/rommapp/romm/blob/master/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "published",
+    "arm64": "published"
+   },
+   "images": [
+    {
+     "service": "db",
+     "image": "mariadb",
+     "tag": "11.8.9",
+     "source_class": "official",
+     "platforms": [
+      "linux/amd64",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/s390x"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "romm",
+     "image": "rommapp/romm",
+     "tag": "5.4.1",
+     "source_class": "upstream",
+     "platforms": [
+      "linux/amd64",
+      "linux/arm64"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 1024,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TZ",
+      "label": "Time zone",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "db",
+     "image": "mariadb:11.8.9",
+     "ports": [],
+     "volumes": [
+      "dbdata -> /var/lib/mysql"
+     ]
+    },
+    {
+     "name": "romm",
+     "image": "rommapp/romm:5.4.1",
+     "ports": [
+      8080
+     ],
+     "volumes": [
+      "resources -> /romm/resources",
+      "library -> /romm/library",
+      "assets -> /romm/assets",
+      "config -> /romm/config",
+      "redis -> /redis-data"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "db",
+     "name": "MARIADB_DATABASE",
+     "kind": "preset"
+    },
+    {
+     "service": "db",
+     "name": "MARIADB_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "db",
+     "name": "MARIADB_ROOT_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "db",
+     "name": "MARIADB_USER",
+     "kind": "preset"
+    },
+    {
+     "service": "romm",
+     "name": "DB_HOST",
+     "kind": "preset"
+    },
+    {
+     "service": "romm",
+     "name": "DB_NAME",
+     "kind": "preset"
+    },
+    {
+     "service": "romm",
+     "name": "DB_PASSWD",
+     "kind": "generated"
+    },
+    {
+     "service": "romm",
+     "name": "DB_PORT",
+     "kind": "preset"
+    },
+    {
+     "service": "romm",
+     "name": "DB_USER",
+     "kind": "preset"
+    },
+    {
+     "service": "romm",
+     "name": "DISABLE_DOWNLOAD_ENDPOINT_AUTH",
+     "kind": "preset"
+    },
+    {
+     "service": "romm",
+     "name": "ROMM_AUTH_SECRET_KEY",
+     "kind": "generated"
+    },
+    {
+     "service": "romm",
+     "name": "ROMM_DB_DRIVER",
+     "kind": "preset"
+    },
+    {
+     "service": "romm",
+     "name": "TZ",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "db",
+       "romm"
+      ],
+      "detail": "DB_PASSWD, ROMM_AUTH_SECRET_KEY, MARIADB_PASSWORD, MARIADB_ROOT_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "db",
+       "romm"
+      ],
+      "detail": "assets, config, dbdata, library, redis, resources",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "roundcube",
    "aliases": [],
    "name": "Roundcube Webmail",
@@ -49901,6 +51099,110 @@
        "roundcube"
       ],
       "detail": "roundcube_db",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "rss-bridge",
+   "aliases": [],
+   "name": "RSS-Bridge",
+   "slogan": "Generates RSS and Atom feeds for websites that do not offer them, using a library of small bridges. Unlicense (public domain). Runs in one container with no database. Public to anyone with the link, so restrict it if you only want private use.",
+   "description": "Generates RSS and Atom feeds for websites that do not offer them, using a library of small bridges. Unlicense (public domain). Runs in one container with no database. Public to anyone with the link, so restrict it if you only want private use.",
+   "first_run": [],
+   "category": "Applications",
+   "status": "active",
+   "source_repo": "https://github.com/RSS-Bridge/rss-bridge",
+   "documentation_url": "https://rss-bridge.github.io/rss-bridge/",
+   "license": {
+    "spdx": "Unlicense",
+    "class": "permissive",
+    "url": "https://github.com/RSS-Bridge/rss-bridge/blob/master/UNLICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "published",
+    "arm64": "published"
+   },
+   "images": [
+    {
+     "service": "rss-bridge",
+     "image": "rssbridge/rss-bridge",
+     "tag": "2025-08-05",
+     "source_class": "community",
+     "platforms": [
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "rss-bridge",
+     "image": "rssbridge/rss-bridge:2025-08-05",
+     "ports": [
+      80
+     ],
+     "volumes": [
+      "config -> /config"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "rss-bridge"
+      ],
+      "detail": "config",
       "message": "Stores data in named volumes"
      }
     ],
@@ -63489,6 +64791,231 @@
        "yamtrack"
       ],
       "detail": "yamtrack_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "yourls",
+   "aliases": [],
+   "name": "YOURLS",
+   "slogan": "A self-hosted URL shortener with custom keywords, click statistics and a plugin system. Runs with a bundled MariaDB database. The admin login is the user and password you set in the install form.",
+   "description": "A self-hosted URL shortener with custom keywords, click statistics and a plugin system. Runs with a bundled MariaDB database. The admin login is the user and password you set in the install form.",
+   "first_run": [
+    "Open /admin/install.php on the app address and click Install YOURLS once.",
+    "Sign in at /admin/ with the user and password from the install form."
+   ],
+   "category": "Applications",
+   "status": "active",
+   "source_repo": "https://github.com/YOURLS/YOURLS",
+   "documentation_url": "https://yourls.org/docs/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/YOURLS/YOURLS/blob/master/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "published",
+    "arm64": "published"
+   },
+   "images": [
+    {
+     "service": "db",
+     "image": "mariadb",
+     "tag": "11.8.9",
+     "source_class": "official",
+     "platforms": [
+      "linux/amd64",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/s390x"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    },
+    {
+     "service": "yourls",
+     "image": "yourls",
+     "tag": "1.10.6",
+     "source_class": "official",
+     "platforms": [
+      "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/riscv64",
+      "linux/s390x"
+     ],
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 256,
+   "needs_config": true,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "YOURLS_USER",
+      "label": "Admin user",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "YOURLS_PASS",
+      "label": "Admin password",
+      "required": true,
+      "default_kind": "none"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "db",
+     "image": "mariadb:11.8.9",
+     "ports": [],
+     "volumes": [
+      "dbdata -> /var/lib/mysql"
+     ]
+    },
+    {
+     "name": "yourls",
+     "image": "yourls:1.10.6",
+     "ports": [
+      8080
+     ],
+     "volumes": []
+    }
+   ],
+   "env": [
+    {
+     "service": "db",
+     "name": "MARIADB_DATABASE",
+     "kind": "preset"
+    },
+    {
+     "service": "db",
+     "name": "MARIADB_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "db",
+     "name": "MARIADB_ROOT_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "db",
+     "name": "MARIADB_USER",
+     "kind": "preset"
+    },
+    {
+     "service": "yourls",
+     "name": "YOURLS_DB_HOST",
+     "kind": "preset"
+    },
+    {
+     "service": "yourls",
+     "name": "YOURLS_DB_NAME",
+     "kind": "preset"
+    },
+    {
+     "service": "yourls",
+     "name": "YOURLS_DB_PASS",
+     "kind": "generated"
+    },
+    {
+     "service": "yourls",
+     "name": "YOURLS_DB_USER",
+     "kind": "preset"
+    },
+    {
+     "service": "yourls",
+     "name": "YOURLS_PASS",
+     "kind": "required"
+    },
+    {
+     "service": "yourls",
+     "name": "YOURLS_SITE",
+     "kind": "preset"
+    },
+    {
+     "service": "yourls",
+     "name": "YOURLS_USER",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "required_secrets",
+      "severity": "info",
+      "services": [
+       "yourls"
+      ],
+      "detail": "YOURLS_PASS",
+      "message": "You must provide one or more secrets before it can deploy"
+     },
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "db",
+       "yourls"
+      ],
+      "detail": "MARIADB_PASSWORD, MARIADB_ROOT_PASSWORD, YOURLS_DB_PASS",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "db"
+      ],
+      "detail": "dbdata",
       "message": "Stores data in named volumes"
      }
     ],

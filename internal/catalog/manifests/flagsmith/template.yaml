@@ -1,0 +1,30 @@
+id: flagsmith
+name: Flagsmith
+description: A feature flag and remote config service with a dashboard, environments, segments and an SDK API. Runs the API and dashboard in one container with a bundled Postgres database. On first open, the sign-up page creates the first organisation and admin.
+icon: flag
+category: Developer Tools
+documentation_url: https://docs.flagsmith.com/
+source_repo: https://github.com/Flagsmith/flagsmith
+license: BSD-3-Clause
+license_class: permissive
+license_url: https://github.com/Flagsmith/flagsmith/blob/main/LICENSE
+hosted_use: unknown
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 805306368
+first_run:
+  - Open the app and sign up. The first account becomes the organisation admin.
+env:
+  - key: TZ
+    label: Time zone
+    description: IANA time zone for dates and logs.
+    default: Etc/UTC
+domains:
+  - service: flagsmith
+    port: 8000
+    description: Public address of the Flagsmith dashboard and API.
+healthcheck:
+  service: flagsmith
+  port: 8000
+  path: /health

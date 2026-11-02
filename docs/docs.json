@@ -567,6 +567,7 @@
           {
             "group": "Analytics",
             "pages": [
+              "self-host/ackee",
               "self-host/superset",
               "self-host/embystat",
               "self-host/goatcounter",
@@ -603,13 +604,15 @@
               "self-host/ombi",
               "self-host/orangehrm",
               "self-host/redlib",
+              "self-host/rss-bridge",
               "self-host/sabnzbd",
               "self-host/searxng",
               "self-host/seerr",
               "self-host/spoolman",
               "self-host/vvveb",
               "self-host/wizarr",
-              "self-host/wordpress"
+              "self-host/wordpress",
+              "self-host/yourls"
             ]
           },
           {
@@ -712,6 +715,7 @@
               "self-host/docker-registry",
               "self-host/registry",
               "self-host/docker-registry-auth",
+              "self-host/flagsmith",
               "self-host/flaresolverr",
               "self-host/flipt",
               "self-host/forgejo",
@@ -739,6 +743,8 @@
               "self-host/meilisearch",
               "self-host/nocobase",
               "self-host/onedev",
+              "self-host/opengist",
+              "self-host/pgweb",
               "self-host/pocketbase",
               "self-host/proxyscotch",
               "self-host/semaphore",
@@ -794,6 +800,7 @@
               "self-host/elasticsearch",
               "self-host/etcd",
               "self-host/headscale",
+              "self-host/imgproxy",
               "self-host/meshcentral",
               "self-host/nats",
               "self-host/netbox",
@@ -841,6 +848,7 @@
               "self-host/prowlarr",
               "self-host/qbittorrent",
               "self-host/radarr",
+              "self-host/romm",
               "self-host/sonarr",
               "self-host/tdarr",
               "self-host/transmission",
@@ -863,6 +871,7 @@
               "self-host/grafana-postgres",
               "self-host/loki",
               "self-host/healthchecks",
+              "self-host/hyperdx",
               "self-host/jaeger",
               "self-host/jellystat",
               "self-host/librespeed",
@@ -915,6 +924,7 @@
               "self-host/kanboard",
               "self-host/karakeep",
               "self-host/kimai",
+              "self-host/languagetool",
               "self-host/leantime",
               "self-host/libreoffice",
               "self-host/limesurvey",

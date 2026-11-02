@@ -145,11 +145,12 @@ Fixed in the wave N pass: `valkey` interpolated its password from the host shell
 
 Generated from the registry scan in `internal/catalog/platforms.json` (`scripts/scan-catalog-platforms`), not from the smoke run. A template is `yes` only when every image it uses lists `linux/arm64` in its manifest. `not checked` means unknown, not unsupported: the scan could not read a manifest or the image tag is set at install time.
 
-Last scan: 2026-11-01T23:30:55Z. **383 yes, 15 amd64 only, 2 not checked** of 400 templates.
+Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 2 not checked** of 410 templates.
 
 | Template | arm64 | Verified platforms |
 | --- | --- | --- |
 | `2fauth` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
+| `ackee` | yes | linux/amd64, linux/arm64 |
 | `activepieces` | yes | linux/amd64, linux/arm64 |
 | `actual-budget` | yes | linux/amd64, linux/arm64 |
 | `actualbudget` | yes | linux/amd64, linux/arm64 |
@@ -240,6 +241,7 @@ Last scan: 2026-11-01T23:30:55Z. **383 yes, 15 amd64 only, 2 not checked** of 40
 | `filebrowser-quantum` | yes | linux/amd64, linux/arm64 |
 | `firefly-iii` | yes | linux/amd64, linux/arm64 |
 | `firefox-browser` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
+| `flagsmith` | yes | linux/amd64, linux/arm64 |
 | `flame` | amd64 only | linux/amd64 |
 | `flaresolverr` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
 | `flatnotes` | yes | linux/amd64, linux/arm64 |
@@ -286,7 +288,9 @@ Last scan: 2026-11-01T23:30:55Z. **383 yes, 15 amd64 only, 2 not checked** of 40
 | `homepage` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `homer` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `hoppscotch` | yes | linux/amd64, linux/arm64 |
+| `hyperdx` | yes | linux/amd64, linux/arm64 |
 | `imgcompress` | yes | linux/amd64, linux/arm64 |
+| `imgproxy` | yes | linux/amd64, linux/arm64 |
 | `immich` | yes | linux/amd64, linux/arm64 |
 | `infisical` | yes | linux/amd64, linux/arm64 |
 | `influxdb` | yes | linux/amd64, linux/arm64 |
@@ -318,6 +322,7 @@ Last scan: 2026-11-01T23:30:55Z. **383 yes, 15 amd64 only, 2 not checked** of 40
 | `label-studio` | yes | linux/amd64, linux/arm64 |
 | `langflow` | yes | linux/amd64, linux/arm64 |
 | `langfuse` | yes | linux/amd64, linux/arm64 |
+| `languagetool` | yes | linux/amd64, linux/arm64 |
 | `leantime` | yes | linux/amd64, linux/arm64 |
 | `librechat` | yes | linux/amd64, linux/arm64 |
 | `libreoffice` | yes | linux/amd64, linux/arm64 |
@@ -407,6 +412,7 @@ Last scan: 2026-11-01T23:30:55Z. **383 yes, 15 amd64 only, 2 not checked** of 40
 | `open-notebook` | yes | linux/amd64, linux/arm64 |
 | `open-webui` | yes | linux/amd64, linux/arm64 |
 | `openclaw` | yes | linux/amd64, linux/arm64 |
+| `opengist` | yes | linux/amd64, linux/arm64 |
 | `openobserve` | yes | linux/amd64, linux/arm64 |
 | `orangehrm` | amd64 only | linux/amd64 |
 | `organizr` | yes | linux/amd64, linux/arm, linux/arm64 |
@@ -424,6 +430,7 @@ Last scan: 2026-11-01T23:30:55Z. **383 yes, 15 amd64 only, 2 not checked** of 40
 | `pgadmin` | yes | linux/amd64, linux/arm64 |
 | `pgbackweb` | yes | linux/amd64, linux/arm64 |
 | `pgvector` | yes | linux/amd64, linux/arm64 |
+| `pgweb` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `photoprism` | yes | linux/amd64, linux/arm64 |
 | `photoview` | yes | linux/amd64, linux/arm64 |
 | `phpmyadmin` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/riscv64, linux/s390x |
@@ -459,7 +466,9 @@ Last scan: 2026-11-01T23:30:55Z. **383 yes, 15 amd64 only, 2 not checked** of 40
 | `redmine` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/riscv64, linux/s390x |
 | `registry` | yes | linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/s390x |
 | `rocketchat` | yes | linux/amd64, linux/arm64 |
+| `romm` | yes | linux/amd64, linux/arm64 |
 | `roundcube` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
+| `rss-bridge` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `rsshub` | yes | linux/amd64, linux/arm64 |
 | `rustdesk-server` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
 | `rustfs` | yes | linux/amd64, linux/arm64 |
@@ -547,6 +556,7 @@ Last scan: 2026-11-01T23:30:55Z. **383 yes, 15 amd64 only, 2 not checked** of 40
 | `wordpress` | yes | linux/amd64, linux/arm64 |
 | `worker-redis-queue-starter` | yes | linux/amd64, linux/arm, linux/arm64, linux/s390x |
 | `yamtrack` | yes | linux/amd64, linux/arm64 |
+| `yourls` | yes | linux/amd64, linux/arm64, linux/ppc64le, linux/s390x |
 | `zabbix` | yes | linux/amd64, linux/arm64, linux/ppc64le, linux/riscv64, linux/s390x |
 | `zipline` | yes | linux/amd64, linux/arm64 |
 {/* END GENERATED ARM64 TABLE */}

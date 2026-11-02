@@ -1,0 +1,78 @@
+---
+title: "Self-host Flagsmith with Docker"
+sidebarTitle: "Flagsmith"
+description: "A feature flag and remote config service with a dashboard, environments, segments and an SDK API. Runs the API and dashboard in one container with a bundled Postgres database. On first open, the sign-up page creates the first organisation and admin."
+"og:url": "https://docs.levelrail.com/self-host/flagsmith"
+---
+
+A feature flag and remote config service with a dashboard, environments, segments and an SDK API. Runs the API and dashboard in one container with a bundled Postgres database. On first open, the sign-up page creates the first organisation and admin.
+
+This page describes the Levelrail template for Flagsmith (Developer Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.flagsmith.com/.
+
+Recommended memory: about 768 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `postgres:16-alpine` | none | `pgdata -&#62; /var/lib/postgresql/data` |
+| `flagsmith` | `flagsmith/flagsmith:2.288.2` | 8000 | none |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `POSTGRES_DB` | Preset in the template |
+| `db` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `db` | `POSTGRES_USER` | Preset in the template |
+| `flagsmith` | `DATABASE_URL` | Generated at deploy |
+| `flagsmith` | `DISABLE_INFLUXDB_FEATURES` | Preset in the template |
+| `flagsmith` | `DJANGO_ALLOWED_HOSTS` | Preset in the template |
+| `flagsmith` | `DJANGO_SECRET_KEY` | Generated at deploy |
+| `flagsmith` | `ENABLE_ADMIN_ACCESS_USER_PASS` | Preset in the template |
+| `flagsmith` | `FLAGSMITH_DOMAIN` | Preset in the template |
+| `flagsmith` | `TZ` | Preset in the template |
+| `flagsmith` | `USE_X_FORWARDED_HOST` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`db`, `flagsmith`): DATABASE_URL, DJANGO_SECRET_KEY, POSTGRES_PASSWORD.
+- Stores data in named volumes (`db`): pgdata.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy Flagsmith with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Flagsmith. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy flagsmith --name my-flagsmith
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Developer Tools templates
+
+- [Appsmith](/self-host/appsmith)
+- [Appwrite](/self-host/appwrite)
+- [Browserless](/self-host/browserless)
+- [ByteStash](/self-host/bytestash)
+- [code-server](/self-host/code-server)
+
+All templates are listed in the [self-host gallery](/self-host).

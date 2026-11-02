@@ -1,0 +1,22 @@
+id: rss-bridge
+name: RSS-Bridge
+description: Generates RSS and Atom feeds for websites that do not offer them, using a library of small bridges. Unlicense (public domain). Runs in one container with no database. Public to anyone with the link, so restrict it if you only want private use.
+icon: rss
+category: Applications
+documentation_url: https://rss-bridge.github.io/rss-bridge/
+source_repo: https://github.com/RSS-Bridge/rss-bridge
+license: Unlicense
+license_class: permissive
+license_url: https://github.com/RSS-Bridge/rss-bridge/blob/master/UNLICENSE
+recommended_memory_bytes: 134217728
+domains:
+  - service: rss-bridge
+    port: 80
+    description: Public address of RSS-Bridge.
+healthcheck:
+  service: rss-bridge
+  port: 80
+  path: /
+status: active
+listing:
+  by: community

@@ -1,5 +1,5 @@
 {
-  "scanned_at": "2026-11-01T23:30:55Z",
+  "scanned_at": "2026-11-02T03:14:45Z",
   "images": [
     {
       "image": "1dev/server",
@@ -360,15 +360,6 @@
       "checked_at": "2026-10-31T23:53:56Z"
     },
     {
-      "image": "chibisafe/chibisafe",
-      "tag": "v6.5.5",
-      "platforms": [
-        "linux/amd64",
-        "linux/arm64"
-      ],
-      "checked_at": "2026-10-31T23:53:56Z"
-    },
-    {
       "image": "chibisafe/chibisafe-server",
       "tag": "v6.5.5",
       "platforms": [
@@ -376,6 +367,15 @@
         "linux/arm64"
       ],
       "checked_at": "2026-11-01T00:10:24Z"
+    },
+    {
+      "image": "chibisafe/chibisafe",
+      "tag": "v6.5.5",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:53:56Z"
     },
     {
       "image": "chrislusf/seaweedfs",
@@ -751,6 +751,15 @@
       "checked_at": "2026-10-31T23:54:42Z"
     },
     {
+      "image": "electerious/ackee",
+      "tag": "3.7.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-11-02T03:14:45Z"
+    },
+    {
       "image": "elestio/strapi-production",
       "tag": "v5.33.4",
       "platforms": [
@@ -758,6 +767,15 @@
         "linux/arm64"
       ],
       "checked_at": "2026-11-01T00:10:24Z"
+    },
+    {
+      "image": "erikvl87/languagetool",
+      "tag": "6.8",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-11-02T03:14:45Z"
     },
     {
       "image": "espocrm/espocrm",
@@ -839,6 +857,15 @@
         "linux/arm64"
       ],
       "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "flagsmith/flagsmith",
+      "tag": "2.288.2",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-11-02T03:14:45Z"
     },
     {
       "image": "flowiseai/flowise",
@@ -1261,6 +1288,15 @@
       "checked_at": "2026-10-31T23:54:42Z"
     },
     {
+      "image": "ghcr.io/imgproxy/imgproxy",
+      "tag": "v4.0.20",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-11-02T03:14:45Z"
+    },
+    {
       "image": "ghcr.io/immich-app/immich-machine-learning",
       "tag": "v1.126.1",
       "platforms": [
@@ -1583,6 +1619,15 @@
       "checked_at": "2026-10-31T23:54:42Z"
     },
     {
+      "image": "ghcr.io/teableio/teable-db-migrate",
+      "tag": "latest",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
       "image": "ghcr.io/teableio/teable",
       "tag": "latest",
       "platforms": [
@@ -1592,13 +1637,13 @@
       "checked_at": "2026-10-31T23:54:42Z"
     },
     {
-      "image": "ghcr.io/teableio/teable-db-migrate",
-      "tag": "latest",
+      "image": "ghcr.io/thomiceli/opengist",
+      "tag": "1.15.3",
       "platforms": [
         "linux/amd64",
         "linux/arm64"
       ],
-      "checked_at": "2026-10-31T23:54:42Z"
+      "checked_at": "2026-11-02T03:14:45Z"
     },
     {
       "image": "ghcr.io/tinyauthapp/tinyauth",
@@ -1964,6 +2009,15 @@
       "checked_at": "2026-10-31T23:54:42Z"
     },
     {
+      "image": "hyperdx/hyperdx-all-in-one",
+      "tag": "2.43.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-11-02T03:14:45Z"
+    },
+    {
       "image": "ignisda/ryot",
       "tag": "v10.3.0",
       "platforms": [
@@ -2197,15 +2251,6 @@
       "checked_at": "2026-10-31T23:54:42Z"
     },
     {
-      "image": "langfuse/langfuse",
-      "tag": "3.225.11",
-      "platforms": [
-        "linux/amd64",
-        "linux/arm64"
-      ],
-      "checked_at": "2026-10-31T23:54:42Z"
-    },
-    {
       "image": "langfuse/langfuse-worker",
       "tag": "3.225.11",
       "platforms": [
@@ -2213,6 +2258,15 @@
         "linux/arm64"
       ],
       "checked_at": "2026-11-01T00:10:24Z"
+    },
+    {
+      "image": "langfuse/langfuse",
+      "tag": "3.225.11",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
     },
     {
       "image": "leantime/leantime",
@@ -2724,6 +2778,17 @@
     },
     {
       "image": "mariadb",
+      "tag": "11.8.9",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-11-02T03:14:45Z"
+    },
+    {
+      "image": "mariadb",
       "tag": "12.3",
       "platforms": [
         "linux/amd64",
@@ -2848,6 +2913,15 @@
       "checked_at": "2026-10-31T23:54:42Z"
     },
     {
+      "image": "mongo-express",
+      "tag": "1.0.2-20-alpine3.19",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
       "image": "mongo",
       "tag": "7",
       "platforms": [
@@ -2858,13 +2932,14 @@
       "checked_at": "2026-10-31T23:54:42Z"
     },
     {
-      "image": "mongo-express",
-      "tag": "1.0.2-20-alpine3.19",
+      "image": "mongo",
+      "tag": "7.0.45",
       "platforms": [
         "linux/amd64",
-        "linux/arm64"
+        "linux/arm64",
+        "windows/amd64"
       ],
-      "checked_at": "2026-10-31T23:54:42Z"
+      "checked_at": "2026-11-02T03:14:45Z"
     },
     {
       "image": "monica",
@@ -3359,7 +3434,7 @@
         "linux/riscv64",
         "linux/s390x"
       ],
-      "checked_at": "2026-11-01T04:36:49Z"
+      "checked_at": "2026-11-02T03:14:45Z"
     },
     {
       "image": "postgres",
@@ -3594,6 +3669,15 @@
       "checked_at": "2026-10-31T23:54:42Z"
     },
     {
+      "image": "redis/redisinsight",
+      "tag": "2.70",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
       "image": "redis",
       "tag": "7-alpine",
       "platforms": [
@@ -3675,15 +3759,6 @@
       "checked_at": "2026-10-31T23:54:42Z"
     },
     {
-      "image": "redis/redisinsight",
-      "tag": "2.70",
-      "platforms": [
-        "linux/amd64",
-        "linux/arm64"
-      ],
-      "checked_at": "2026-10-31T23:54:42Z"
-    },
-    {
       "image": "redmine",
       "tag": "6-alpine",
       "platforms": [
@@ -3694,6 +3769,15 @@
         "linux/ppc64le",
         "linux/riscv64",
         "linux/s390x"
+      ],
+      "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "registry.supertokens.io/supertokens/supertokens-postgresql",
+      "tag": "latest",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
       ],
       "checked_at": "2026-10-31T23:54:42Z"
     },
@@ -3723,15 +3807,6 @@
       "checked_at": "2026-10-31T23:54:42Z"
     },
     {
-      "image": "registry.supertokens.io/supertokens/supertokens-postgresql",
-      "tag": "latest",
-      "platforms": [
-        "linux/amd64",
-        "linux/arm64"
-      ],
-      "checked_at": "2026-10-31T23:54:42Z"
-    },
-    {
       "image": "rocketchat/rocket.chat",
       "tag": "8.0.1",
       "platforms": [
@@ -3739,6 +3814,15 @@
         "linux/arm64"
       ],
       "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "rommapp/romm",
+      "tag": "5.4.1",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-11-02T03:14:45Z"
     },
     {
       "image": "roundcube/roundcubemail",
@@ -3750,6 +3834,16 @@
         "linux/arm64"
       ],
       "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "rssbridge/rss-bridge",
+      "tag": "2025-08-05",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-11-02T03:14:45Z"
     },
     {
       "image": "rustdesk/rustdesk-server-s6",
@@ -3885,6 +3979,16 @@
         "linux/arm64"
       ],
       "checked_at": "2026-10-31T23:54:42Z"
+    },
+    {
+      "image": "sosedoff/pgweb",
+      "tag": "0.17.0",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64"
+      ],
+      "checked_at": "2026-11-02T03:14:45Z"
     },
     {
       "image": "stalwartlabs/stalwart",
@@ -4269,6 +4373,20 @@
       "checked_at": "2026-10-31T23:54:42Z"
     },
     {
+      "image": "yourls",
+      "tag": "1.10.6",
+      "platforms": [
+        "linux/386",
+        "linux/amd64",
+        "linux/arm",
+        "linux/arm64",
+        "linux/ppc64le",
+        "linux/riscv64",
+        "linux/s390x"
+      ],
+      "checked_at": "2026-11-02T03:14:45Z"
+    },
+    {
       "image": "yourselfhosted/slash",
       "tag": "0.5.3",
       "platforms": [
@@ -4307,6 +4425,10 @@
       "linux/386",
       "linux/amd64",
       "linux/arm",
+      "linux/arm64"
+    ],
+    "ackee": [
+      "linux/amd64",
       "linux/arm64"
     ],
     "activepieces": [
@@ -4727,6 +4849,10 @@
       "linux/arm",
       "linux/arm64"
     ],
+    "flagsmith": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
     "flame": [
       "linux/amd64"
     ],
@@ -4931,7 +5057,15 @@
       "linux/amd64",
       "linux/arm64"
     ],
+    "hyperdx": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
     "imgcompress": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "imgproxy": [
       "linux/amd64",
       "linux/arm64"
     ],
@@ -5066,6 +5200,10 @@
       "linux/arm64"
     ],
     "langfuse": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "languagetool": [
       "linux/amd64",
       "linux/arm64"
     ],
@@ -5476,6 +5614,10 @@
       "linux/amd64",
       "linux/arm64"
     ],
+    "opengist": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
     "openobserve": [
       "linux/amd64",
       "linux/arm64"
@@ -5544,6 +5686,11 @@
     ],
     "pgvector": [
       "linux/amd64",
+      "linux/arm64"
+    ],
+    "pgweb": [
+      "linux/amd64",
+      "linux/arm",
       "linux/arm64"
     ],
     "photoprism": [
@@ -5720,8 +5867,17 @@
       "linux/amd64",
       "linux/arm64"
     ],
+    "romm": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
     "roundcube": [
       "linux/386",
+      "linux/amd64",
+      "linux/arm",
+      "linux/arm64"
+    ],
+    "rss-bridge": [
       "linux/amd64",
       "linux/arm",
       "linux/arm64"
@@ -6111,6 +6267,12 @@
     "yamtrack": [
       "linux/amd64",
       "linux/arm64"
+    ],
+    "yourls": [
+      "linux/amd64",
+      "linux/arm64",
+      "linux/ppc64le",
+      "linux/s390x"
     ],
     "zabbix": [
       "linux/amd64",

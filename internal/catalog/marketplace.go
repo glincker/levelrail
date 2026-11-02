@@ -69,9 +69,15 @@ var mutableTags = map[string]bool{
 // Maintainer exception lists. Each entry needs a reason; the lists start empty
 // and a review that grants one adds a line here.
 var (
-	shortTagExceptions       = map[string]string{}
-	communityImageExceptions = map[string]string{}
-	fetchExceptions          = map[string]string{}
+	shortTagExceptions = map[string]string{
+		"languagetool": "the community image erikvl87/languagetool publishes X.Y tags only (6.8, last pushed 2026-06-15), no X.Y.Z tags exist",
+	}
+	communityImageExceptions = map[string]string{
+		"languagetool": "upstream publishes no server image; erikvl87/languagetool is the maintained community image, linux/amd64 and arm64",
+		"rss-bridge":   "the project publishes its image under its own Docker Hub org rssbridge, while its source org is RSS-Bridge",
+		"hyperdx":      "the project's own Docker Hub org is hyperdx while its source org is hyperdxio",
+	}
+	fetchExceptions = map[string]string{}
 )
 
 // rebuilderNamespaces are registries that rebuild upstream software under their own name.
