@@ -1,10 +1,8 @@
 package hostfw
 
 import (
-	"context"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // OpenCommand is text for the operator to run; this package never executes it.
@@ -19,36 +17,6 @@ type OpenCommand struct {
 func ValidPort(p int) bool { return p >= 1 && p <= 65535 }
 
 var openBackends = []Backend{BackendUFW, BackendFirewalld, BackendNftables, BackendIptables}
-
-// serviceUnit maps a backend to the systemd unit that says it is enforcing.
-var serviceUnit = map[Backend]string{BackendUFW: "ufw", BackendFirewalld: "firewalld", BackendNftables: "nftables"}
-
-const probeTimeout = 3 * time.Second
-
-// DetectOpenBackend picks the backend whose command to print, read only.
-// firewalld beats nftables, ufw beats iptables; a bare iptables binary counts
-// last, and BackendNone means the caller should list every option.
-func DetectOpenBackend(ctx context.Context, d Deps) Backend {
-	tools := map[Backend]string{BackendUFW: "ufw", BackendFirewalld: "firewall-cmd", BackendNftables: "nft", BackendIptables: "iptables"}
-	active := func(b Backend) bool {
-		if _, err := d.LookPath(tools[b]); err != nil {
-			return false
-		}
-		if b == BackendIptables {
-			return true
-		}
-		cctx, cancel := context.WithTimeout(ctx, probeTimeout)
-		defer cancel()
-		out, err := d.Run(cctx, "systemctl", "is-active", serviceUnit[b])
-		return err == nil && strings.TrimSpace(string(out)) == "active"
-	}
-	for _, b := range []Backend{BackendFirewalld, BackendUFW, BackendNftables, BackendIptables} {
-		if active(b) {
-			return b
-		}
-	}
-	return BackendNone
-}
 
 // OpenCommands returns one command per valid port for backend b, or one per
 // backend and port when b is BackendNone. Invalid ports are dropped, and the
@@ -94,4 +62,25 @@ func openCommand(b Backend, p int) OpenCommand {
 		c.Note = "Not persistent: save with netfilter-persistent save (Debian) or service iptables save (RHEL)."
 	}
 	return c
+}
+
+// OpenFix joins the open commands for b into one sudo line, so the doctor and
+// the host card print the same text. firewalld gets a single reload at the end.
+func OpenFix(b Backend, ports []int) string {
+	cmds := OpenCommands(b, ports)
+	if len(cmds) == 0 {
+		return ""
+	}
+	if b == BackendFirewalld {
+		var adds []string
+		for _, c := range cmds {
+			adds = append(adds, "--add-port="+strconv.Itoa(c.Port)+"/tcp")
+		}
+		return "sudo firewall-cmd --permanent " + strings.Join(adds, " ") + " && sudo firewall-cmd --reload"
+	}
+	parts := make([]string, 0, len(cmds))
+	for _, c := range cmds {
+		parts = append(parts, "sudo "+c.Command)
+	}
+	return strings.Join(parts, " && ")
 }

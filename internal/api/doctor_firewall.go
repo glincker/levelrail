@@ -146,7 +146,7 @@ func doctorCheckFirewalld(ctx context.Context, lookPath func(string) (string, er
 		return doctorCheckResource{
 			Code: "firewall", Name: name, Status: doctorStatusWarn,
 			Message:  "firewalld installed but not running",
-			Fix:      "sudo systemctl enable --now firewalld && sudo firewall-cmd --permanent --add-service=http --add-service=https && sudo firewall-cmd --reload",
+			Fix:      "sudo systemctl enable --now firewalld && " + hostfw.OpenFix(hostfw.BackendFirewalld, hostfw.WebPorts),
 			DocsPath: doctorFirewallDocsPath,
 		}, true
 	}
@@ -162,7 +162,7 @@ func doctorCheckFirewalld(ctx context.Context, lookPath func(string) (string, er
 		return doctorCheckResource{
 			Code: "firewall", Name: name, Status: doctorStatusWarn,
 			Message:  "firewalld running, but the http and/or https service isn't open",
-			Fix:      "sudo firewall-cmd --permanent --add-service=http --add-service=https && sudo firewall-cmd --reload",
+			Fix:      hostfw.OpenFix(hostfw.BackendFirewalld, hostfw.WebPorts),
 			DocsPath: doctorFirewallDocsPath,
 		}, true
 	}
@@ -185,7 +185,7 @@ func doctorCheckNftables(ctx context.Context, lookPath func(string) (string, err
 	}
 
 	text := string(out)
-	const fix = "sudo nft add rule inet filter input tcp dport { 80, 443 } accept"
+	fix := hostfw.OpenFix(hostfw.BackendNftables, hostfw.WebPorts)
 	if strings.TrimSpace(text) == "" {
 		return doctorCheckResource{
 			Code: "firewall", Name: name, Status: doctorStatusWarn,
@@ -233,9 +233,8 @@ func doctorCheckIptables(ctx context.Context, lookPath func(string) (string, err
 	}
 	return doctorCheckResource{
 		Code: "firewall", Name: name, Status: doctorStatusWarn,
-		Message: "iptables is this host's firewall tool, but no explicit rule for ports 80/443 was found",
-		Fix: "sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT && sudo iptables -A INPUT -p tcp --dport 443 -j ACCEPT " +
-			"(persist with iptables-persistent or your distribution's equivalent)",
+		Message:  "iptables is this host's firewall tool, but no explicit rule for ports 80/443 was found",
+		Fix:      hostfw.OpenFix(hostfw.BackendIptables, hostfw.WebPorts) + " (persist with iptables-persistent or your distribution's equivalent)",
 		DocsPath: doctorFirewallDocsPath,
 	}, true
 }

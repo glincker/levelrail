@@ -1,8 +1,6 @@
 package hostfw
 
 import (
-	"context"
-	"errors"
 	"strings"
 	"testing"
 )
@@ -52,44 +50,23 @@ func TestOpenCommandsNoneListsAllFour(t *testing.T) {
 	}
 }
 
-func TestDetectOpenBackendPrecedence(t *testing.T) {
+func TestOpenFixPerBackend(t *testing.T) {
+	web := []int{80, 443}
 	tests := []struct {
-		name    string
-		present []string
-		active  []string
-		want    Backend
+		b    Backend
+		want string
 	}{
-		{"firewalld beats nftables", []string{"firewall-cmd", "nft"}, []string{"firewalld", "nftables"}, BackendFirewalld},
-		{"ufw beats iptables", []string{"ufw", "iptables"}, []string{"ufw"}, BackendUFW},
-		{"nftables active", []string{"nft", "iptables"}, []string{"nftables"}, BackendNftables},
-		{"bare iptables", []string{"iptables"}, nil, BackendIptables},
-		{"inactive services only", []string{"ufw", "nft"}, nil, BackendNone},
-		{"nothing", nil, nil, BackendNone},
+		{BackendUFW, "sudo ufw allow 80/tcp && sudo ufw allow 443/tcp"},
+		{BackendFirewalld, "sudo firewall-cmd --permanent --add-port=80/tcp --add-port=443/tcp && sudo firewall-cmd --reload"},
+		{BackendNftables, "sudo nft add rule inet filter input tcp dport 80 accept && sudo nft add rule inet filter input tcp dport 443 accept"},
+		{BackendIptables, "sudo iptables -I INPUT -p tcp --dport 80 -j ACCEPT && sudo iptables -I INPUT -p tcp --dport 443 -j ACCEPT"},
 	}
 	for _, tc := range tests {
-		d := Deps{
-			LookPath: func(n string) (string, error) {
-				for _, p := range tc.present {
-					if p == n {
-						return n, nil
-					}
-				}
-				return "", errors.New("missing")
-			},
-			Run: func(_ context.Context, name string, args ...string) ([]byte, error) {
-				if name != "systemctl" || args[0] != "is-active" {
-					t.Errorf("unexpected command %s %v", name, args)
-				}
-				for _, a := range tc.active {
-					if a == args[1] {
-						return []byte("active\n"), nil
-					}
-				}
-				return []byte("inactive\n"), errors.New("exit 3")
-			},
+		if got := OpenFix(tc.b, web); got != tc.want {
+			t.Errorf("%s: got %q, want %q", tc.b, got, tc.want)
 		}
-		if got := DetectOpenBackend(context.Background(), d); got != tc.want {
-			t.Errorf("%s: got %s, want %s", tc.name, got, tc.want)
-		}
+	}
+	if OpenFix(BackendUFW, []int{0}) != "" {
+		t.Error("invalid port produced a fix")
 	}
 }

@@ -266,10 +266,12 @@ func hostFirewallCommands(b hostfw.Backend, filtering bool, required []hostFirew
 	return out
 }
 
-func requiredTCPPorts(req []hostFirewallPort) []int {
+// blockedTCPPorts lists required TCP ports still closed, so guidance shows
+// only when a port is really blocked. Only ufw is read per port.
+func blockedTCPPorts(req []hostFirewallPort, ufwText string, perPort bool) []int {
 	var out []int
 	for _, p := range req {
-		if p.Protocol == "tcp" {
+		if p.Protocol == "tcp" && (!perPort || !ufwAllowed(ufwText, p.Port, p.Protocol)) {
 			out = append(out, p.Port)
 		}
 	}
@@ -309,7 +311,9 @@ func (rt *Router) hostFirewallStatus(ctx context.Context) hostFirewallResource {
 		}
 		filtered = res.Active
 	}
-	res.OpenCommands = hostfw.OpenCommands(hostfw.DetectOpenBackend(ctx, rt.hostFirewallDeps()), requiredTCPPorts(res.Required))
+	if filtered {
+		res.OpenCommands = hostfw.OpenCommands(det.Backend, blockedTCPPorts(res.Required, text, res.Managed))
+	}
 	res.Commands = hostFirewallCommands(det.Backend, res.Active, res.Required)
 	for i, row := range res.PublishedPorts {
 		res.PublishedPorts[i].Filtered = filtered
