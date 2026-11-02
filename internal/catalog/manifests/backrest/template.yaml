@@ -4,6 +4,10 @@ description: A web UI for restic backups with scheduled snapshots, retention pol
 icon: archive
 category: Backups
 documentation_url: https://garethgeorge.github.io/backrest/
+source_repo: https://github.com/garethgeorge/backrest
+license: GPL-3.0-only
+license_class: copyleft
+license_url: https://github.com/garethgeorge/backrest/blob/main/LICENSE
 recommended_memory_bytes: 268435456
 domains:
   - service: backrest

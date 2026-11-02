@@ -168,6 +168,8 @@ func buildEntry(t catalog.Template) (Entry, error) {
 	}
 	if m := t.Manifest; m != nil {
 		applyManifest(&e, m)
+	} else if meta, ok := catalog.MetaFor(t.ID); ok {
+		applyMeta(&e, meta)
 	}
 	l := catalog.ListingFor(t)
 	e.Listing = Listing{By: l.By, VendorOrg: l.VendorOrg, Proof: l.Proof}
@@ -250,6 +252,18 @@ func archesOf(platforms []string) []string {
 		}
 	}
 	return out
+}
+
+// applyMeta fills the marketplace fields of a Go-literal template from the
+// recorded metadata, never overriding text the template already carries.
+func applyMeta(e *Entry, m catalog.TemplateMeta) {
+	e.SourceRepo = m.SourceRepo
+	if m.License != "" {
+		e.License = &License{SPDX: m.License, Class: m.LicenseClass, URL: m.LicenseURL}
+	}
+	if e.Description == "" {
+		e.Description = sanitize(m.Description)
+	}
 }
 
 func applyManifest(e *Entry, m *catalog.Manifest) {

@@ -4,6 +4,10 @@ description: A remote device management server with web-based desktop, terminal 
 icon: monitor
 category: Infrastructure
 documentation_url: https://meshcentral.com/docs/
+source_repo: https://github.com/Ylianst/MeshCentral
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/Ylianst/MeshCentral/blob/master/LICENSE
 recommended_memory_bytes: 402653184
 env:
   - key: MESH_HOSTNAME

@@ -6,10 +6,17 @@
    "aliases": [],
    "name": "2FAuth",
    "slogan": "A web app to manage your two-factor authentication accounts and generate one-time codes.",
+   "description": "A web app to manage your two-factor authentication accounts and generate one-time codes. Runs as a single container from the 2fauth image, listening on port 8000 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Security",
    "status": "active",
+   "source_repo": "https://github.com/Bubka/2FAuth",
    "documentation_url": "https://docs.2fauth.app",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/Bubka/2FAuth/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -150,10 +157,17 @@
    "aliases": [],
    "name": "Activepieces",
    "slogan": "An open-source, no-code automation tool for connecting apps and building AI-powered workflows.",
+   "description": "An open-source, no-code automation tool for connecting apps and building AI-powered workflows. Runs 3 containers (activepieces, db, redis), with activepieces listening on port 80 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Automation",
    "status": "active",
+   "source_repo": "https://github.com/activepieces/activepieces",
    "documentation_url": "https://www.activepieces.com/docs",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/activepieces/activepieces/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -170,7 +184,7 @@
      "service": "activepieces",
      "image": "ghcr.io/activepieces/activepieces",
      "tag": "0.75.0",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -383,10 +397,17 @@
    "aliases": [],
    "name": "Actual Budget",
    "slogan": "A local-first, envelope-style budgeting app with optional multi-device sync.",
+   "description": "A local-first, envelope-style budgeting app with optional multi-device sync. Runs as a single container from the actual-server image, listening on port 5006 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Finance",
    "status": "active",
+   "source_repo": "https://github.com/actualbudget/actual",
    "documentation_url": "https://actualbudget.org/docs/install/docker/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/actualbudget/actual/blob/master/LICENSE.txt"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -410,7 +431,7 @@
      "service": "actual",
      "image": "actualbudget/actual-server",
      "tag": "26.9.0",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -491,10 +512,17 @@
    "aliases": [],
    "name": "Actual Budget",
    "slogan": "A local-first personal finance and budgeting app with multi-device sync you fully own.",
+   "description": "A local-first personal finance and budgeting app with multi-device sync you fully own. Runs as a single container from the actual-server image, listening on port 5006 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Finance",
    "status": "active",
+   "source_repo": "https://github.com/actualbudget/actual",
    "documentation_url": "https://actualbudget.org/docs/install/docker",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/actualbudget/actual/blob/master/LICENSE.txt"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -511,7 +539,7 @@
      "service": "actual",
      "image": "actualbudget/actual-server",
      "tag": "edge",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -598,10 +626,17 @@
    "aliases": [],
    "name": "AdGuard Home",
    "slogan": "Network-wide ad and tracker blocking with a DNS server and a friendly admin dashboard.",
+   "description": "Network-wide ad and tracker blocking with a DNS server and a friendly admin dashboard. Runs as a single container from the adguardhome image, listening on port 3000 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Infrastructure",
    "status": "active",
+   "source_repo": "https://github.com/AdguardTeam/AdGuardHome",
    "documentation_url": "https://github.com/AdguardTeam/AdGuardHome/wiki/Docker",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/AdguardTeam/AdGuardHome/blob/master/LICENSE.txt"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -2502,7 +2537,13 @@
    "first_run": [],
    "category": "Security",
    "status": "active",
+   "source_repo": "https://github.com/authelia/authelia",
    "documentation_url": "https://www.authelia.com/configuration/prologue/introduction/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/authelia/authelia/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -2526,7 +2567,7 @@
      "service": "authelia",
      "image": "authelia/authelia",
      "tag": "4.39.28",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm",
@@ -2644,10 +2685,17 @@
    "aliases": [],
    "name": "authentik",
    "slogan": "An identity provider and SSO platform with flows, policies, and support for OIDC, SAML, LDAP, and proxy auth.",
+   "description": "An identity provider and SSO platform with flows, policies, and support for OIDC, SAML, LDAP, and proxy auth. Runs 3 containers (authentik, db, worker), with authentik listening on port 9000 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Security",
    "status": "active",
+   "source_repo": "https://github.com/goauthentik/authentik",
    "documentation_url": "https://docs.goauthentik.io",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/goauthentik/authentik/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -2671,7 +2719,7 @@
      "service": "authentik",
      "image": "ghcr.io/goauthentik/server",
      "tag": "2026.8.3",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -2704,7 +2752,7 @@
      "service": "worker",
      "image": "ghcr.io/goauthentik/server",
      "tag": "2026.8.3",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -2902,10 +2950,17 @@
    "aliases": [],
    "name": "autobrr",
    "slogan": "Matches torrent releases from your indexers against filters and pushes hits straight to your download client.",
+   "description": "Matches torrent releases from your indexers against filters and pushes hits straight to your download client. Runs as a single container from the autobrr image, listening on port 7474 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Automation",
    "status": "active",
+   "source_repo": "https://github.com/autobrr/autobrr",
    "documentation_url": "https://autobrr.com/installation/docker",
+   "license": {
+    "spdx": "GPL-2.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/autobrr/autobrr/blob/develop/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -2922,7 +2977,7 @@
      "service": "autobrr",
      "image": "ghcr.io/autobrr/autobrr",
      "tag": "v1.87.0",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/386",
       "linux/amd64",
@@ -3168,7 +3223,13 @@
    "first_run": [],
    "category": "Backups",
    "status": "active",
+   "source_repo": "https://github.com/garethgeorge/backrest",
    "documentation_url": "https://garethgeorge.github.io/backrest/",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/garethgeorge/backrest/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -3192,7 +3253,7 @@
      "service": "backrest",
      "image": "garethgeorge/backrest",
      "tag": "v1.14.1",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/386",
       "linux/amd64",
@@ -4011,10 +4072,17 @@
    "aliases": [],
    "name": "Budge",
    "slogan": "A self-hosted envelope budgeting app for personal finance.",
+   "description": "A self-hosted envelope budgeting app for personal finance. Runs as a single container from the budge image, listening on port 80 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Finance",
    "status": "active",
+   "source_repo": "https://github.com/linuxserver/budge",
    "documentation_url": "https://github.com/linuxserver/budge",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/linuxserver/budge/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -5449,6 +5517,7 @@
    "aliases": [],
    "name": "Cap",
    "slogan": "A lightweight, privacy-friendly proof-of-work CAPTCHA, an alternative to reCAPTCHA or hCaptcha.",
+   "description": "A lightweight, privacy-friendly proof-of-work CAPTCHA, an alternative to reCAPTCHA or hCaptcha. Runs 2 containers (cap, valkey), with cap listening on port 3000 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Security",
    "status": "active",
@@ -6345,10 +6414,17 @@
    "aliases": [],
    "name": "Chibisafe",
    "slogan": "A file vault for uploading and sharing files from the cloud.",
+   "description": "A file vault for uploading and sharing files from the cloud. Runs 2 containers (chibisafe, chibisafe-server), with chibisafe listening on port 8001 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Storage",
    "status": "active",
+   "source_repo": "https://github.com/chibisafe/chibisafe",
    "documentation_url": "https://chibisafe.app/docs/intro",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/chibisafe/chibisafe/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -6365,7 +6441,7 @@
      "service": "chibisafe",
      "image": "chibisafe/chibisafe",
      "tag": "v6.5.5",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -6379,7 +6455,7 @@
      "service": "chibisafe-server",
      "image": "chibisafe/chibisafe-server",
      "tag": "v6.5.5",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -6921,7 +6997,13 @@
    "first_run": [],
    "category": "Infrastructure",
    "status": "active",
+   "source_repo": "https://github.com/favonia/cloudflare-ddns",
    "documentation_url": "https://github.com/favonia/cloudflare-ddns",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/favonia/cloudflare-ddns/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -6938,7 +7020,7 @@
      "service": "cloudflare-ddns",
      "image": "favonia/cloudflare-ddns",
      "tag": "1.15.1",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/386",
       "linux/amd64",
@@ -7013,10 +7095,17 @@
    "aliases": [],
    "name": "Cloudreve",
    "slogan": "A self-hosted file management and sharing system with multiple storage backends.",
+   "description": "A self-hosted file management and sharing system with multiple storage backends. Runs 3 containers (cloudreve, postgres, redis), with cloudreve listening on port 5212 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Storage",
    "status": "active",
+   "source_repo": "https://github.com/cloudreve/cloudreve",
    "documentation_url": "https://docs.cloudreve.org/",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/cloudreve/cloudreve/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -7033,7 +7122,7 @@
      "service": "cloudreve",
      "image": "cloudreve/cloudreve",
      "tag": "4.10.1",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -7611,7 +7700,13 @@
    "first_run": [],
    "category": "Infrastructure",
    "status": "active",
+   "source_repo": "https://github.com/hashicorp/consul",
    "documentation_url": "https://developer.hashicorp.com/consul/docs",
+   "license": {
+    "spdx": "LicenseRef-BUSL-1.1",
+    "class": "source-available",
+    "url": "https://github.com/hashicorp/consul/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -7635,7 +7730,7 @@
      "service": "consul",
      "image": "hashicorp/consul",
      "tag": "1.20",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/386",
       "linux/amd64",
@@ -7998,10 +8093,17 @@
    "aliases": [],
    "name": "copyparty",
    "slogan": "A portable file server with resumable uploads, a media player, and search, in a single small image.",
+   "description": "A portable file server with resumable uploads, a media player, and search, in a single small image. Runs as a single container from the ac image, listening on port 3923 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Storage",
    "status": "active",
+   "source_repo": "https://github.com/9001/copyparty",
    "documentation_url": "https://github.com/9001/copyparty",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/9001/copyparty/blob/hovudstraum/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -8361,10 +8463,17 @@
    "aliases": [],
    "name": "Cryptgeon",
    "slogan": "A self-destructing note and file sharing service inspired by PrivNote, with end-to-end encryption.",
+   "description": "A self-destructing note and file sharing service inspired by PrivNote, with end-to-end encryption. Runs 2 containers (cryptgeon, redis), with cryptgeon listening on port 8000.",
    "first_run": [],
    "category": "Security",
    "status": "active",
+   "source_repo": "https://github.com/cupcakearmy/cryptgeon",
    "documentation_url": "https://github.com/cupcakearmy/cryptgeon",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/cupcakearmy/cryptgeon/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -8381,7 +8490,7 @@
      "service": "cryptgeon",
      "image": "cupcakearmy/cryptgeon",
      "tag": "2.9.3",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -8588,10 +8697,17 @@
    "aliases": [],
    "name": "Dashy",
    "slogan": "A feature-rich, self-hosted start page with widgets, status checks, and full visual customization.",
+   "description": "A feature-rich, self-hosted start page with widgets, status checks, and full visual customization. Runs as a single container from the dashy image, listening on port 8080 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Dashboard",
    "status": "active",
+   "source_repo": "https://github.com/lissy93/dashy",
    "documentation_url": "https://dashy.to/docs",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/lissy93/dashy/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -8615,7 +8731,7 @@
      "service": "dashy",
      "image": "lissy93/dashy",
      "tag": "4.7.8",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -10370,6 +10486,7 @@
    "aliases": [],
    "name": "Dolibarr",
    "slogan": "An open-source ERP and CRM for small businesses: invoicing, contacts, stock, and accounting in one app.",
+   "description": "An open-source ERP and CRM for small businesses: invoicing, contacts, stock, and accounting in one app. Runs 2 containers (db, dolibarr), with dolibarr listening on port 80 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Finance",
    "status": "active",
@@ -10827,6 +10944,7 @@
    "aliases": [],
    "name": "Duplicati",
    "slogan": "Scheduled, encrypted backups of your files to local storage, network shares, or cloud storage.",
+   "description": "Scheduled, encrypted backups of your files to local storage, network shares, or cloud storage. Runs as a single container from the duplicati image, listening on port 8200 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Storage",
    "status": "active",
@@ -11139,6 +11257,7 @@
    "aliases": [],
    "name": "Elasticsearch",
    "slogan": "A distributed, RESTful search and analytics engine for full-text search and log analytics. Security is off, so reach it from other services in this project at elasticsearch:9200, or attach a domain only behind Basic Auth. Not published on the host.",
+   "description": "A distributed, RESTful search and analytics engine for full-text search and log analytics. Security is off, so reach it from other services in this project at elasticsearch:9200, or attach a domain only behind Basic Auth. Not published on the host. Runs as a single container from the elasticsearch image, listening on port 9200 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Infrastructure",
    "status": "active",
@@ -11610,10 +11729,17 @@
    "aliases": [],
    "name": "EmbyStat",
    "slogan": "Watch statistics and insight dashboards for your Emby or Jellyfin server.",
+   "description": "Watch statistics and insight dashboards for your Emby or Jellyfin server. Runs as a single container from the embystat image, listening on port 6555 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Analytics",
    "status": "active",
+   "source_repo": "https://github.com/mregni/EmbyStat",
    "documentation_url": "https://github.com/mregni/EmbyStat",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/mregni/EmbyStat/blob/develop/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -11940,10 +12066,17 @@
    "aliases": [],
    "name": "etcd",
    "slogan": "A distributed key-value store for configuration and coordination, running as a single member.",
+   "description": "A distributed key-value store for configuration and coordination, running as a single member. Runs as a single container from the etcd image, listening on port 2379 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Infrastructure",
    "status": "active",
+   "source_repo": "https://github.com/etcd-io/etcd",
    "documentation_url": "https://etcd.io/docs/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/etcd-io/etcd/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -12364,6 +12497,7 @@
    "aliases": [],
    "name": "FastAPI + PostgreSQL",
    "slogan": "A minimal Python HTTP service wired to a Postgres database, the reference pairing for a FastAPI backend.",
+   "description": "A minimal Python HTTP service wired to a Postgres database, the reference pairing for a FastAPI backend. Runs 2 containers (api, db), with api listening on port 8000 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Starter Kits",
    "status": "active",
@@ -12706,10 +12840,17 @@
    "aliases": [],
    "name": "File Browser",
    "slogan": "A simple web UI for browsing, uploading, and sharing files from your own storage.",
+   "description": "A simple web UI for browsing, uploading, and sharing files from your own storage. Runs as a single container from the filebrowser image, listening on port 80 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Storage",
    "status": "active",
+   "source_repo": "https://github.com/filebrowser/filebrowser",
    "documentation_url": "https://filebrowser.org",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/filebrowser/filebrowser/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -12733,7 +12874,7 @@
      "service": "filebrowser",
      "image": "filebrowser/filebrowser",
      "tag": "v2.31.2",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm",
@@ -12816,10 +12957,17 @@
    "aliases": [],
    "name": "Firefly III",
    "slogan": "A self-hosted personal finance manager for tracking budgets, bills, and spending.",
+   "description": "A self-hosted personal finance manager for tracking budgets, bills, and spending. Runs 2 containers (db, firefly), with firefly listening on port 8080 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Finance",
    "status": "active",
+   "source_repo": "https://github.com/firefly-iii/firefly-iii",
    "documentation_url": "https://docs.firefly-iii.org",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/firefly-iii/firefly-iii/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -13139,10 +13287,17 @@
    "aliases": [],
    "name": "Flame",
    "slogan": "A self-hosted start page with an app launcher, bookmarks, and Docker label integration.",
+   "description": "A self-hosted start page with an app launcher, bookmarks, and Docker label integration. Runs as a single container from the flame image, listening on port 5005 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Dashboard",
    "status": "active",
+   "source_repo": "https://github.com/pawelmalak/flame",
    "documentation_url": "https://github.com/pawelmalak/flame#readme",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/pawelmalak/flame/blob/master/LICENSE.md"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -13159,7 +13314,7 @@
      "service": "flame",
      "image": "pawelmalak/flame",
      "tag": "2.3.1",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64"
      ],
@@ -15342,10 +15497,17 @@
    "aliases": [],
    "name": "Ghostfolio",
    "slogan": "A privacy-first wealth tracker for stocks, ETFs, and crypto, with portfolio analytics and no ads.",
+   "description": "A privacy-first wealth tracker for stocks, ETFs, and crypto, with portfolio analytics and no ads. Runs 3 containers (db, ghostfolio, redis), with ghostfolio listening on port 3333 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Finance",
    "status": "active",
+   "source_repo": "https://github.com/ghostfolio/ghostfolio",
    "documentation_url": "https://github.com/ghostfolio/ghostfolio",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/ghostfolio/ghostfolio/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -15381,7 +15543,7 @@
      "service": "ghostfolio",
      "image": "ghostfolio/ghostfolio",
      "tag": "3.72.0",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm",
@@ -16287,10 +16449,17 @@
    "aliases": [],
    "name": "Glance",
    "slogan": "A fast, self-hosted dashboard that pulls RSS, weather, and other widgets onto one page.",
+   "description": "A fast, self-hosted dashboard that pulls RSS, weather, and other widgets onto one page. Runs as a single container from the glance image, listening on port 8080 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Dashboard",
    "status": "active",
+   "source_repo": "https://github.com/glanceapp/glance",
    "documentation_url": "https://github.com/glanceapp/glance/blob/main/docs/configuration.md",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/glanceapp/glance/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -16314,7 +16483,7 @@
      "service": "glance",
      "image": "glanceapp/glance",
      "tag": "v0.8.6",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm",
@@ -16887,6 +17056,7 @@
    "aliases": [],
    "name": "GoatCounter",
    "slogan": "A privacy-friendly, open-source web analytics platform that never tracks individual visitors.",
+   "description": "A privacy-friendly, open-source web analytics platform that never tracks individual visitors. Runs as a single container from the goatcounter image, listening on port 8080 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Analytics",
    "status": "active",
@@ -19058,10 +19228,17 @@
    "aliases": [],
    "name": "Heimdall",
    "slogan": "An application dashboard that gathers links to all your self-hosted services on one start page.",
+   "description": "An application dashboard that gathers links to all your self-hosted services on one start page. Runs as a single container from the heimdall image, listening on port 80 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Dashboard",
    "status": "active",
+   "source_repo": "https://github.com/linuxserver/Heimdall",
    "documentation_url": "https://github.com/linuxserver/Heimdall",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/linuxserver/Heimdall/blob/2.x/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -19382,10 +19559,17 @@
    "aliases": [],
    "name": "Homarr",
    "slogan": "A customizable start page dashboard for your self-hosted services with drag-and-drop widgets.",
+   "description": "A customizable start page dashboard for your self-hosted services with drag-and-drop widgets. Runs as a single container from the homarr image, listening on port 7575 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Dashboard",
    "status": "active",
+   "source_repo": "https://github.com/ajnart/homarr",
    "documentation_url": "https://homarr.dev/docs/getting-started/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/ajnart/homarr/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -19402,7 +19586,7 @@
      "service": "homarr",
      "image": "ghcr.io/ajnart/homarr",
      "tag": "0.15.10",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm",
@@ -19492,10 +19676,17 @@
    "aliases": [],
    "name": "Home Assistant",
    "slogan": "Open-source home automation that puts local control and privacy first.",
+   "description": "Open-source home automation that puts local control and privacy first. Runs as a single container from the home-assistant image, listening on port 8123 and keeps its data in named volumes.",
    "first_run": [],
    "category": "IoT",
    "status": "active",
+   "source_repo": "https://github.com/home-assistant/core",
    "documentation_url": "https://www.home-assistant.io/docs/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/home-assistant/core/blob/dev/LICENSE.md"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -19512,7 +19703,7 @@
      "service": "home-assistant",
      "image": "ghcr.io/home-assistant/home-assistant",
      "tag": "2025.10.2",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/386",
       "linux/amd64",
@@ -19703,10 +19894,17 @@
    "aliases": [],
    "name": "Homepage",
    "slogan": "A fast, static, highly customizable start page for all your self-hosted services.",
+   "description": "A fast, static, highly customizable start page for all your self-hosted services. Runs as a single container from the homepage image, listening on port 3000 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Dashboard",
    "status": "active",
+   "source_repo": "https://github.com/gethomepage/homepage",
    "documentation_url": "https://gethomepage.dev/latest/",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/gethomepage/homepage/blob/dev/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -19730,7 +19928,7 @@
      "service": "homepage",
      "image": "ghcr.io/gethomepage/homepage",
      "tag": "v0.10.4",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm",
@@ -19812,10 +20010,17 @@
    "aliases": [],
    "name": "Homer",
    "slogan": "A dead simple static start page for your services, configured with a single YAML file.",
+   "description": "A dead simple static start page for your services, configured with a single YAML file. Runs as a single container from the homer image, listening on port 8080 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Dashboard",
    "status": "active",
+   "source_repo": "https://github.com/bastienwirtz/homer",
    "documentation_url": "https://github.com/bastienwirtz/homer/blob/main/docs/configuration.md",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/bastienwirtz/homer/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -20443,10 +20648,17 @@
    "aliases": [],
    "name": "Infisical",
    "slogan": "An open-source secrets manager to centralize API keys, database credentials, and app config.",
+   "description": "An open-source secrets manager to centralize API keys, database credentials, and app config. Runs 3 containers (db, infisical, redis), with infisical listening on port 8080 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Security",
    "status": "active",
+   "source_repo": "https://github.com/Infisical/infisical",
    "documentation_url": "https://infisical.com/docs/self-hosting/overview",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/Infisical/infisical/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -20482,7 +20694,7 @@
      "service": "infisical",
      "image": "infisical/infisical",
      "tag": "v0.154.6",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -21010,10 +21222,17 @@
    "aliases": [],
    "name": "Invoice Ninja",
    "slogan": "Self-hosted invoicing, quotes, and payments for freelancers and small businesses.",
+   "description": "Self-hosted invoicing, quotes, and payments for freelancers and small businesses. Runs 3 containers (db, invoiceninja, redis), with invoiceninja listening on port 80 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Finance",
    "status": "active",
+   "source_repo": "https://github.com/invoiceninja/invoiceninja",
    "documentation_url": "https://invoiceninja.github.io",
+   "license": {
+    "spdx": "LicenseRef-Elastic-2.0",
+    "class": "source-available",
+    "url": "https://github.com/invoiceninja/invoiceninja/blob/v5-stable/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -21046,7 +21265,7 @@
      "service": "invoiceninja",
      "image": "invoiceninja/invoiceninja",
      "tag": "5",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -23402,10 +23621,17 @@
    "aliases": [],
    "name": "Keycloak",
    "slogan": "An open-source identity and access management server with SSO, OAuth2, and SAML support.",
+   "description": "An open-source identity and access management server with SSO, OAuth2, and SAML support. Runs as a single container from the keycloak image, listening on port 8080 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Security",
    "status": "active",
+   "source_repo": "https://github.com/keycloak/keycloak",
    "documentation_url": "https://www.keycloak.org/documentation",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/keycloak/keycloak/blob/main/LICENSE.txt"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -23429,7 +23655,7 @@
      "service": "keycloak",
      "image": "quay.io/keycloak/keycloak",
      "tag": "26.1",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -23559,10 +23785,17 @@
    "aliases": [],
    "name": "Keycloak (Postgres)",
    "slogan": "Keycloak backed by Postgres instead of its default embedded database, for a real multi-instance setup.",
+   "description": "Keycloak backed by Postgres instead of its default embedded database, for a real multi-instance setup. Runs 2 containers (db, keycloak), with keycloak listening on port 8080 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Security",
    "status": "active",
+   "source_repo": "https://github.com/keycloak/keycloak",
    "documentation_url": "https://www.keycloak.org/documentation",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/keycloak/keycloak/blob/main/LICENSE.txt"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -23598,7 +23831,7 @@
      "service": "keycloak",
      "image": "quay.io/keycloak/keycloak",
      "tag": "26.1",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -24141,10 +24374,17 @@
    "aliases": [],
    "name": "Kopia",
    "slogan": "Fast, incremental, encrypted backups to a repository, driven from a web UI instead of a cron script.",
+   "description": "Fast, incremental, encrypted backups to a repository, driven from a web UI instead of a cron script. Runs as a single container from the kopia image, listening on port 51515 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Storage",
    "status": "active",
+   "source_repo": "https://github.com/kopia/kopia",
    "documentation_url": "https://kopia.io/docs/installation/#quick-setup-using-docker",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/kopia/kopia/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -24168,7 +24408,7 @@
      "service": "kopia",
      "image": "kopia/kopia",
      "tag": "0.19.0",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm",
@@ -27587,10 +27827,17 @@
    "aliases": [],
    "name": "lldap",
    "slogan": "A lightweight LDAP server with a friendly web UI, built for homelab and small-team authentication.",
+   "description": "A lightweight LDAP server with a friendly web UI, built for homelab and small-team authentication. Runs as a single container from the lldap image, listening on port 17170 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Security",
    "status": "active",
+   "source_repo": "https://github.com/lldap/lldap",
    "documentation_url": "https://github.com/lldap/lldap",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/lldap/lldap/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -27614,7 +27861,7 @@
      "service": "lldap",
      "image": "lldap/lldap",
      "tag": "v0.6.3",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm",
@@ -27954,10 +28201,17 @@
    "aliases": [],
    "name": "Logto",
    "slogan": "Modern, developer-first customer identity: sign-in experiences, social login, and OIDC without the plumbing.",
+   "description": "Modern, developer-first customer identity: sign-in experiences, social login, and OIDC without the plumbing. Runs 2 containers (db, logto), with logto listening on port 3001 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Security",
    "status": "active",
+   "source_repo": "https://github.com/logto-io/logto",
    "documentation_url": "https://docs.logto.io",
+   "license": {
+    "spdx": "MPL-2.0",
+    "class": "copyleft",
+    "url": "https://github.com/logto-io/logto/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -29339,10 +29593,17 @@
    "aliases": [],
    "name": "Matomo",
    "slogan": "A privacy-friendly, self-hosted alternative to Google Analytics with full data ownership.",
+   "description": "A privacy-friendly, self-hosted alternative to Google Analytics with full data ownership. Runs 2 containers (db, matomo), with matomo listening on port 80 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Analytics",
    "status": "active",
+   "source_repo": "https://github.com/matomo-org/matomo",
    "documentation_url": "https://matomo.org/faq/how-to-install/install-matomo-with-docker/",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/matomo-org/matomo/blob/6.x-dev/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -30642,7 +30903,13 @@
    "first_run": [],
    "category": "Infrastructure",
    "status": "active",
+   "source_repo": "https://github.com/Ylianst/MeshCentral",
    "documentation_url": "https://meshcentral.com/docs/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/Ylianst/MeshCentral/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -30659,7 +30926,7 @@
      "service": "meshcentral",
      "image": "ghcr.io/ylianst/meshcentral",
      "tag": "1.3.1",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm",
@@ -30771,10 +31038,17 @@
    "aliases": [],
    "name": "Metabase",
    "slogan": "Ask questions of your data and share dashboards, no SQL required.",
+   "description": "Ask questions of your data and share dashboards, no SQL required. Runs as a single container from the metabase image, listening on port 3000 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Analytics",
    "status": "active",
+   "source_repo": "https://github.com/metabase/metabase",
    "documentation_url": "https://www.metabase.com/docs/latest/",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/metabase/metabase/blob/master/LICENSE.txt"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -30791,7 +31065,7 @@
      "service": "metabase",
      "image": "metabase/metabase",
      "tag": "v0.50.8",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64"
      ],
@@ -31817,6 +32091,7 @@
    "aliases": [],
    "name": "MinIO",
    "slogan": "S3-compatible object storage you run yourself, with a built-in web console.",
+   "description": "S3-compatible object storage you run yourself, with a built-in web console. Runs as a single container from the minio image, listening on port 9000 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Storage",
    "status": "active",
@@ -32628,7 +32903,13 @@
    "first_run": [],
    "category": "IoT",
    "status": "active",
+   "source_repo": "https://github.com/eclipse-mosquitto/mosquitto",
    "documentation_url": "https://mosquitto.org/documentation/",
+   "license": {
+    "spdx": "EPL-2.0 OR BSD-3-Clause",
+    "class": "copyleft",
+    "url": "https://github.com/eclipse-mosquitto/mosquitto/blob/master/LICENSE.txt"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -32986,10 +33267,17 @@
    "aliases": [],
    "name": "n8n",
    "slogan": "Build automations and connect your tools with a visual, node-based workflow editor.",
+   "description": "Build automations and connect your tools with a visual, node-based workflow editor. Runs as a single container from the n8n image, listening on port 5678 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Automation",
    "status": "active",
+   "source_repo": "https://github.com/n8n-io/n8n",
    "documentation_url": "https://docs.n8n.io",
+   "license": {
+    "spdx": "LicenseRef-n8n-SUL",
+    "class": "source-available",
+    "url": "https://github.com/n8n-io/n8n/blob/master/LICENSE.md"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -33372,10 +33660,17 @@
    "aliases": [],
    "name": "n8n (Postgres)",
    "slogan": "n8n backed by Postgres instead of its default SQLite file, for production workflow volumes.",
+   "description": "n8n backed by Postgres instead of its default SQLite file, for production workflow volumes. Runs 2 containers (n8n, postgres), with n8n listening on port 5678 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Automation",
    "status": "active",
+   "source_repo": "https://github.com/n8n-io/n8n",
    "documentation_url": "https://docs.n8n.io/hosting/installation/server-setups/postgresql/",
+   "license": {
+    "spdx": "LicenseRef-n8n-SUL",
+    "class": "source-available",
+    "url": "https://github.com/n8n-io/n8n/blob/master/LICENSE.md"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -33581,10 +33876,17 @@
    "aliases": [],
    "name": "NATS",
    "slogan": "A lightweight messaging server for pub/sub, request/reply and durable streams, with JetStream persistence enabled.",
+   "description": "A lightweight messaging server for pub/sub, request/reply and durable streams, with JetStream persistence enabled. Runs as a single container from the nats image, listening on port 4222 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Infrastructure",
    "status": "active",
+   "source_repo": "https://github.com/nats-io/nats-server",
    "documentation_url": "https://docs.nats.io/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/nats-io/nats-server/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -33919,10 +34221,17 @@
    "aliases": [],
    "name": "NetBox",
    "slogan": "Source-of-truth IPAM and DCIM for tracking IP space, racks, devices, and cabling.",
+   "description": "Source-of-truth IPAM and DCIM for tracking IP space, racks, devices, and cabling. Runs 3 containers (db, netbox, redis), with netbox listening on port 8080 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Infrastructure",
    "status": "active",
+   "source_repo": "https://github.com/netbox-community/netbox",
    "documentation_url": "https://github.com/netbox-community/netbox-docker",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/netbox-community/netbox/blob/main/LICENSE.txt"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -34641,6 +34950,7 @@
    "aliases": [],
    "name": "Next.js + PostgreSQL",
    "slogan": "The SSR-plus-database pairing behind most Next.js apps, wired with a healthchecked Postgres.",
+   "description": "The SSR-plus-database pairing behind most Next.js apps, wired with a healthchecked Postgres. Runs 2 containers (db, web), with web listening on port 3000 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Starter Kits",
    "status": "active",
@@ -34910,6 +35220,7 @@
    "aliases": [],
    "name": "Nginx Reverse Proxy (Multi-Backend)",
    "slogan": "One Nginx entrypoint routing to two independent backend services, demonstrating depends_on across three services.",
+   "description": "One Nginx entrypoint routing to two independent backend services, demonstrating depends_on across three services. Runs 3 containers (orders, payments, proxy), with proxy listening on port 80.",
    "first_run": [],
    "category": "Starter Kits",
    "status": "active",
@@ -35065,10 +35376,17 @@
    "aliases": [],
    "name": "Nginx Proxy Manager",
    "slogan": "A web UI for managing Nginx reverse-proxy hosts, redirects, and Let's Encrypt certificates.",
+   "description": "A web UI for managing Nginx reverse-proxy hosts, redirects, and Let's Encrypt certificates. Runs as a single container from the nginx-proxy-manager image, listening on port 81 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Infrastructure",
    "status": "active",
+   "source_repo": "https://github.com/NginxProxyManager/nginx-proxy-manager",
    "documentation_url": "https://nginxproxymanager.com/guide/",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/NginxProxyManager/nginx-proxy-manager/blob/develop/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -35477,6 +35795,7 @@
    "aliases": [],
    "name": "Node.js API + PostgreSQL",
    "slogan": "A minimal Node HTTP service wired to a Postgres database, the most common backend pairing.",
+   "description": "A minimal Node HTTP service wired to a Postgres database, the most common backend pairing. Runs 2 containers (db, web), with web listening on port 3000 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Starter Kits",
    "status": "active",
@@ -35645,10 +35964,17 @@
    "aliases": [],
    "name": "Node-RED",
    "slogan": "A flow-based visual editor for wiring together hardware, APIs, and online services.",
+   "description": "A flow-based visual editor for wiring together hardware, APIs, and online services. Runs as a single container from the node-red image, listening on port 1880 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Automation",
    "status": "active",
+   "source_repo": "https://github.com/node-red/node-red",
    "documentation_url": "https://nodered.org/docs/getting-started/docker",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/node-red/node-red/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -37425,7 +37751,13 @@
    "first_run": [],
    "category": "Security",
    "status": "active",
+   "source_repo": "https://github.com/onetimesecret/onetimesecret",
    "documentation_url": "https://docs.onetimesecret.com",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/onetimesecret/onetimesecret/blob/main/LICENSE.txt"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -37442,7 +37774,7 @@
      "service": "app",
      "image": "onetimesecret/onetimesecret",
      "tag": "v0.26.14",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -38414,10 +38746,17 @@
    "aliases": [],
    "name": "Organizr",
    "slogan": "A unified homepage and tabbed dashboard for linking every self-hosted app behind one interface.",
+   "description": "A unified homepage and tabbed dashboard for linking every self-hosted app behind one interface. Runs as a single container from the organizr image, listening on port 80 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Dashboard",
    "status": "active",
+   "source_repo": "https://github.com/causefx/Organizr",
    "documentation_url": "https://docs.organizr.app/",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/causefx/Organizr/blob/v2-master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -39847,6 +40186,7 @@
    "aliases": [],
    "name": "Passbolt",
    "slogan": "An open-source password manager built for teams, compatible with the usual browser extensions.",
+   "description": "An open-source password manager built for teams, compatible with the usual browser extensions. Runs 2 containers (db, passbolt), with passbolt listening on port 80 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Security",
    "status": "active",
@@ -40052,7 +40392,13 @@
    "first_run": [],
    "category": "Finance",
    "status": "active",
+   "source_repo": "https://github.com/Paymenter/Paymenter",
    "documentation_url": "https://paymenter.org/docs/guides/docker",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/Paymenter/Paymenter/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -40085,7 +40431,7 @@
      "service": "paymenter",
      "image": "ghcr.io/paymenter/paymenter",
      "tag": "v1.4.5",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -41417,6 +41763,7 @@
    "aliases": [],
    "name": "Pi-hole",
    "slogan": "Network-wide ad blocking that works as a DNS sinkhole for your whole network.",
+   "description": "Network-wide ad blocking that works as a DNS sinkhole for your whole network. Runs as a single container from the pihole image, listening on port 80 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Infrastructure",
    "status": "active",
@@ -41649,10 +41996,17 @@
    "aliases": [],
    "name": "Pingvin Share",
    "slogan": "A self-hosted, ad-free alternative to WeTransfer for sending files with expiring links.",
+   "description": "A self-hosted, ad-free alternative to WeTransfer for sending files with expiring links. Runs as a single container from the pingvin-share image, listening on port 3000 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Storage",
    "status": "active",
+   "source_repo": "https://github.com/stonith404/pingvin-share",
    "documentation_url": "https://github.com/stonith404/pingvin-share",
+   "license": {
+    "spdx": "BSD-2-Clause",
+    "class": "permissive",
+    "url": "https://github.com/stonith404/pingvin-share/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -41669,7 +42023,7 @@
      "service": "pingvin-share",
      "image": "stonith404/pingvin-share",
      "tag": "v1.13.0",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -42339,10 +42693,17 @@
    "aliases": [],
    "name": "Plausible Analytics",
    "slogan": "Lightweight, privacy-friendly, cookie-free web analytics with no consent banner required.",
+   "description": "Lightweight, privacy-friendly, cookie-free web analytics with no consent banner required. Runs 3 containers (clickhouse, db, plausible), with plausible listening on port 8000 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Analytics",
    "status": "active",
+   "source_repo": "https://github.com/plausible/analytics",
    "documentation_url": "https://plausible.io/docs/self-hosting",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/plausible/analytics/blob/master/LICENSE.md"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -42399,7 +42760,7 @@
      "service": "plausible",
      "image": "ghcr.io/plausible/community-edition",
      "tag": "v3.0.1",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -42917,10 +43278,17 @@
    "aliases": [],
    "name": "Pocket ID",
    "slogan": "A simple, secure OIDC provider that authenticates with passkeys instead of passwords.",
+   "description": "A simple, secure OIDC provider that authenticates with passkeys instead of passwords. Runs as a single container from the pocket-id image, listening on port 1411 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Security",
    "status": "active",
+   "source_repo": "https://github.com/pocket-id/pocket-id",
    "documentation_url": "https://pocket-id.org/docs/setup/installation",
+   "license": {
+    "spdx": "BSD-2-Clause",
+    "class": "permissive",
+    "url": "https://github.com/pocket-id/pocket-id/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -42944,7 +43312,7 @@
      "service": "pocket-id",
      "image": "ghcr.io/pocket-id/pocket-id",
      "tag": "v1.13",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -43145,10 +43513,17 @@
    "aliases": [],
    "name": "Portainer",
    "slogan": "A web UI for managing containers, images, volumes, and networks.",
+   "description": "A web UI for managing containers, images, volumes, and networks. Runs as a single container from the portainer-ce image, listening on port 9443 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Infrastructure",
    "status": "active",
+   "source_repo": "https://github.com/portainer/portainer",
    "documentation_url": "https://docs.portainer.io",
+   "license": {
+    "spdx": "Zlib",
+    "class": "permissive",
+    "url": "https://github.com/portainer/portainer/blob/develop/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -43172,7 +43547,7 @@
      "service": "portainer",
      "image": "portainer/portainer-ce",
      "tag": "2.21.0",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm",
@@ -43486,10 +43861,17 @@
    "aliases": [],
    "name": "Prefect",
    "slogan": "Python-native workflow orchestration with scheduling, retries, and a dashboard for every flow run.",
+   "description": "Python-native workflow orchestration with scheduling, retries, and a dashboard for every flow run. Runs 2 containers (db, prefect), with prefect listening on port 4200 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Automation",
    "status": "active",
+   "source_repo": "https://github.com/PrefectHQ/prefect",
    "documentation_url": "https://docs.prefect.io",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/PrefectHQ/prefect/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -43525,7 +43907,7 @@
      "service": "prefect",
      "image": "prefecthq/prefect",
      "tag": "3-latest",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -43655,10 +44037,17 @@
    "aliases": [],
    "name": "PrivateBin",
    "slogan": "A minimalist, encrypted pastebin where the server has zero knowledge of what you paste.",
+   "description": "A minimalist, encrypted pastebin where the server has zero knowledge of what you paste. Runs as a single container from the nginx-fpm-alpine image, listening on port 8080 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Security",
    "status": "active",
+   "source_repo": "https://github.com/PrivateBin/PrivateBin",
    "documentation_url": "https://github.com/PrivateBin/PrivateBin/blob/master/doc/README.md",
+   "license": {
+    "spdx": "Zlib",
+    "class": "permissive",
+    "url": "https://github.com/PrivateBin/PrivateBin/blob/master/LICENSE.md"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -43682,7 +44071,7 @@
      "service": "privatebin",
      "image": "privatebin/nginx-fpm-alpine",
      "tag": "1.7.4",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/386",
       "linux/amd64",
@@ -44328,6 +44717,7 @@
    "aliases": [],
    "name": "RabbitMQ",
    "slogan": "A widely used open-source message broker supporting AMQP, MQTT, and STOMP.",
+   "description": "A widely used open-source message broker supporting AMQP, MQTT, and STOMP. Runs as a single container from the rabbitmq image, listening on port 15672 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Infrastructure",
    "status": "active",
@@ -45165,6 +45555,7 @@
    "aliases": [],
    "name": "Redis Cache Starter",
    "slogan": "A web service backed by a Redis cache, the cache-aside pattern most apps reach for first.",
+   "description": "A web service backed by a Redis cache, the cache-aside pattern most apps reach for first. Runs 2 containers (cache, web), with web listening on port 3000 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Starter Kits",
    "status": "active",
@@ -46294,7 +46685,13 @@
    "first_run": [],
    "category": "Infrastructure",
    "status": "active",
+   "source_repo": "https://github.com/rustdesk/rustdesk-server",
    "documentation_url": "https://rustdesk.com/docs/en/self-host/rustdesk-server-oss/docker/",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/rustdesk/rustdesk-server/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -46311,7 +46708,7 @@
      "service": "rustdesk",
      "image": "rustdesk/rustdesk-server-s6",
      "tag": "1.1.16",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/386",
       "linux/amd64",
@@ -46689,10 +47086,17 @@
    "aliases": [],
    "name": "Seafile",
    "slogan": "Self-hosted file sync and share with real file-level versioning and client-side encryption options.",
+   "description": "Self-hosted file sync and share with real file-level versioning and client-side encryption options. Runs 3 containers (mariadb, memcached, seafile), with seafile listening on port 80 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Storage",
    "status": "active",
+   "source_repo": "https://github.com/haiwen/seafile",
    "documentation_url": "https://manual.seafile.com",
+   "license": {
+    "spdx": "GPL-2.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/haiwen/seafile/blob/master/LICENSE.txt"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -47105,10 +47509,17 @@
    "aliases": [],
    "name": "SeaweedFS",
    "slogan": "A distributed file and object store with an S3 gateway, built for billions of small files.",
+   "description": "A distributed file and object store with an S3 gateway, built for billions of small files. Runs as a single container from the seaweedfs image, listening on port 9333 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Storage",
    "status": "active",
+   "source_repo": "https://github.com/seaweedfs/seaweedfs",
    "documentation_url": "https://github.com/seaweedfs/seaweedfs/wiki",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/seaweedfs/seaweedfs/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -47465,10 +47876,17 @@
    "aliases": [],
    "name": "SFTPGo",
    "slogan": "An SFTP, FTP/S, and WebDAV server with a web admin UI and per-user storage backends.",
+   "description": "An SFTP, FTP/S, and WebDAV server with a web admin UI and per-user storage backends. Runs as a single container from the sftpgo image, listening on port 8080 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Storage",
    "status": "active",
+   "source_repo": "https://github.com/drakkan/sftpgo",
    "documentation_url": "https://docs.sftpgo.com/latest/",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/drakkan/sftpgo/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -47485,7 +47903,7 @@
      "service": "sftpgo",
      "image": "drakkan/sftpgo",
      "tag": "v2.6.6",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm",
@@ -48488,6 +48906,7 @@
    "aliases": [],
    "name": "Snipe-IT",
    "slogan": "IT asset management for tracking hardware, licenses, and accessories, and who currently has what.",
+   "description": "IT asset management for tracking hardware, licenses, and accessories, and who currently has what. Runs 2 containers (db, snipeit), with snipeit listening on port 80 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Infrastructure",
    "status": "active",
@@ -49615,7 +50034,13 @@
    "first_run": [],
    "category": "Finance",
    "status": "active",
+   "source_repo": "https://github.com/spliit-app/spliit",
    "documentation_url": "https://github.com/spliit-app/spliit",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/spliit-app/spliit/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -49651,7 +50076,7 @@
      "service": "spliit",
      "image": "ghcr.io/spliit-app/spliit",
      "tag": "1.30.0",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -50115,6 +50540,7 @@
    "aliases": [],
    "name": "Static Site + API Backend",
    "slogan": "A static frontend and a separate API service deployed together, the split most SPAs actually run.",
+   "description": "A static frontend and a separate API service deployed together, the split most SPAs actually run. Runs 2 containers (api, static), with api listening on port 4000.",
    "first_run": [],
    "category": "Starter Kits",
    "status": "active",
@@ -50668,7 +51094,13 @@
    "first_run": [],
    "category": "Analytics",
    "status": "active",
+   "source_repo": "https://github.com/apache/superset",
    "documentation_url": "https://superset.apache.org/docs/intro",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/apache/superset/blob/master/LICENSE.txt"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -50685,7 +51117,7 @@
      "service": "superset",
      "image": "apache/superset",
      "tag": "4.1.1",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -50786,10 +51218,17 @@
    "aliases": [],
    "name": "SuperTokens",
    "slogan": "A self-hosted authentication backend with session management, social login, and passwordless, backed by Postgres.",
+   "description": "A self-hosted authentication backend with session management, social login, and passwordless, backed by Postgres. Runs 2 containers (postgres, supertokens), with supertokens listening on port 3567 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Security",
    "status": "active",
+   "source_repo": "https://github.com/supertokens/supertokens-core",
    "documentation_url": "https://supertokens.com/docs/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/supertokens/supertokens-core/blob/master/LICENSE.md"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -50825,7 +51264,7 @@
      "service": "supertokens",
      "image": "registry.supertokens.io/supertokens/supertokens-postgresql",
      "tag": "latest",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -50961,10 +51400,17 @@
    "aliases": [],
    "name": "Sure",
    "slogan": "A privacy-first personal finance app for tracking net worth, budgets, and investments across every account.",
+   "description": "A privacy-first personal finance app for tracking net worth, budgets, and investments across every account. Runs 4 containers (postgresql, valkey, web, worker), with web listening on port 3000 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Finance",
    "status": "active",
+   "source_repo": "https://github.com/we-promise/sure",
    "documentation_url": "https://github.com/we-promise/sure",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/we-promise/sure/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -51016,7 +51462,7 @@
      "service": "web",
      "image": "ghcr.io/we-promise/sure",
      "tag": "0.6.7",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -51030,7 +51476,7 @@
      "service": "worker",
      "image": "ghcr.io/we-promise/sure",
      "tag": "0.6.7",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -51277,10 +51723,17 @@
    "aliases": [],
    "name": "Syncthing",
    "slogan": "Continuous, peer-to-peer file synchronization between your own devices, no cloud in between.",
+   "description": "Continuous, peer-to-peer file synchronization between your own devices, no cloud in between. Runs as a single container from the syncthing image, listening on port 8384 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Storage",
    "status": "active",
+   "source_repo": "https://github.com/syncthing/syncthing",
    "documentation_url": "https://docs.syncthing.net",
+   "license": {
+    "spdx": "MPL-2.0",
+    "class": "copyleft",
+    "url": "https://github.com/syncthing/syncthing/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -52131,10 +52584,17 @@
    "aliases": [],
    "name": "Technitium DNS Server",
    "slogan": "A full-featured authoritative and recursive DNS server with DNS-over-HTTPS/TLS and a web console.",
+   "description": "A full-featured authoritative and recursive DNS server with DNS-over-HTTPS/TLS and a web console. Runs as a single container from the dns-server image, listening on port 5380 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Infrastructure",
    "status": "active",
+   "source_repo": "https://github.com/TechnitiumSoftware/DnsServer",
    "documentation_url": "https://technitium.com/dns/",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/TechnitiumSoftware/DnsServer/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -52257,10 +52717,17 @@
    "aliases": [],
    "name": "Temporal",
    "slogan": "Durable workflow execution: write long-running business logic as code and let Temporal survive failures.",
+   "description": "Durable workflow execution: write long-running business logic as code and let Temporal survive failures. Runs 3 containers (db, temporal, temporal-ui), with temporal listening on port 7233 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Automation",
    "status": "active",
+   "source_repo": "https://github.com/temporalio/temporal",
    "documentation_url": "https://docs.temporal.io",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/temporalio/temporal/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -52296,7 +52763,7 @@
      "service": "temporal",
      "image": "temporalio/auto-setup",
      "tag": "1.29.7",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -52310,7 +52777,7 @@
      "service": "temporal-ui",
      "image": "temporalio/ui",
      "tag": "2.54.1",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -52937,7 +53404,13 @@
    "first_run": [],
    "category": "Analytics",
    "status": "active",
+   "source_repo": "https://github.com/msgbyte/tianji",
    "documentation_url": "https://tianji.dev/docs/intro",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/msgbyte/tianji/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -53308,10 +53781,17 @@
    "aliases": [],
    "name": "Traccar",
    "slogan": "An open-source GPS tracking platform supporting over 170 device protocols.",
+   "description": "An open-source GPS tracking platform supporting over 170 device protocols. Runs 2 containers (traccar, traccar-db), with traccar listening on port 8082 and keeps its data in named volumes.",
    "first_run": [],
    "category": "IoT",
    "status": "active",
+   "source_repo": "https://github.com/traccar/traccar",
    "documentation_url": "https://www.traccar.org/documentation/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/traccar/traccar/blob/master/LICENSE.txt"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -53328,7 +53808,7 @@
      "service": "traccar",
      "image": "traccar/traccar",
      "tag": "6.6",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -54308,10 +54788,17 @@
    "aliases": [],
    "name": "Umami",
    "slogan": "Simple, privacy-focused website analytics without tracking cookies or ad-tech.",
+   "description": "Simple, privacy-focused website analytics without tracking cookies or ad-tech. Runs 2 containers (db, umami), with umami listening on port 3000 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Analytics",
    "status": "active",
+   "source_repo": "https://github.com/umami-software/umami",
    "documentation_url": "https://umami.is/docs",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/umami-software/umami/blob/master/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -54354,7 +54841,7 @@
      "service": "umami",
      "image": "ghcr.io/umami-software/umami",
      "tag": "postgresql-v2.19.0",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -55177,10 +55664,17 @@
    "aliases": [],
    "name": "Vault",
    "slogan": "HashiCorp Vault for secrets storage, encryption as a service, and dynamic credentials, in file-storage mode.",
+   "description": "HashiCorp Vault for secrets storage, encryption as a service, and dynamic credentials, in file-storage mode. Runs as a single container from the vault image, listening on port 8200 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Security",
    "status": "active",
+   "source_repo": "https://github.com/hashicorp/vault",
    "documentation_url": "https://developer.hashicorp.com/vault/docs/deploy/run-container",
+   "license": {
+    "spdx": "LicenseRef-BUSL-1.1",
+    "class": "source-available",
+    "url": "https://github.com/hashicorp/vault/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -55197,7 +55691,7 @@
      "service": "vault",
      "image": "hashicorp/vault",
      "tag": "1.18",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/386",
       "linux/amd64",
@@ -55291,10 +55785,17 @@
    "aliases": [],
    "name": "Vaultwarden",
    "slogan": "A lightweight, self-hosted password manager server compatible with the Bitwarden clients.",
+   "description": "A lightweight, self-hosted password manager server compatible with the Bitwarden clients. Runs as a single container from the server image, listening on port 80 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Security",
    "status": "active",
+   "source_repo": "https://github.com/dani-garcia/vaultwarden",
    "documentation_url": "https://github.com/dani-garcia/vaultwarden/wiki",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/dani-garcia/vaultwarden/blob/main/LICENSE.txt"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -56505,10 +57006,17 @@
    "aliases": [],
    "name": "Wallos",
    "slogan": "A personal subscription tracker that shows what you pay each month, with reminders and multi-currency support.",
+   "description": "A personal subscription tracker that shows what you pay each month, with reminders and multi-currency support. Runs as a single container from the wallos image, listening on port 80 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Finance",
    "status": "active",
+   "source_repo": "https://github.com/ellite/Wallos",
    "documentation_url": "https://github.com/ellite/Wallos",
+   "license": {
+    "spdx": "GPL-3.0-only",
+    "class": "copyleft",
+    "url": "https://github.com/ellite/Wallos/blob/main/LICENSE.md"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -57242,10 +57750,17 @@
    "aliases": [],
    "name": "Whoogle Search",
    "slogan": "A privacy-focused front end for Google search results, with no tracking, ads, or JavaScript required.",
+   "description": "A privacy-focused front end for Google search results, with no tracking, ads, or JavaScript required. Runs as a single container from the whoogle-search image, listening on port 5000 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Security",
    "status": "active",
+   "source_repo": "https://github.com/benbusby/whoogle-search",
    "documentation_url": "https://github.com/benbusby/whoogle-search",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/benbusby/whoogle-search/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -57262,7 +57777,7 @@
      "service": "whoogle",
      "image": "benbusby/whoogle-search",
      "tag": "0.9.3",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm",
@@ -57533,10 +58048,17 @@
    "aliases": [],
    "name": "Windmill",
    "slogan": "Turn scripts in Python, TypeScript, Go, and SQL into webhooks, workflows, and internal UIs.",
+   "description": "Turn scripts in Python, TypeScript, Go, and SQL into webhooks, workflows, and internal UIs. Runs 2 containers (db, windmill), with windmill listening on port 8000 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Automation",
    "status": "active",
+   "source_repo": "https://github.com/windmill-labs/windmill",
    "documentation_url": "https://www.windmill.dev/docs",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/windmill-labs/windmill/blob/main/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -57572,7 +58094,7 @@
      "service": "windmill",
      "image": "ghcr.io/windmill-labs/windmill",
      "tag": "1.365.0",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"
@@ -58211,6 +58733,7 @@
    "aliases": [],
    "name": "Background Worker + Redis Queue",
    "slogan": "A worker process pulling jobs off a Redis-backed queue, the base shape for async job processing.",
+   "description": "A worker process pulling jobs off a Redis-backed queue, the base shape for async job processing. Runs 2 containers (queue, worker) and keeps its data in named volumes.",
    "first_run": [],
    "category": "Starter Kits",
    "status": "active",
@@ -58746,10 +59269,17 @@
    "aliases": [],
    "name": "Zipline",
    "slogan": "A self-hosted file and screenshot host with a share-first upload flow and its own URL shortener.",
+   "description": "A self-hosted file and screenshot host with a share-first upload flow and its own URL shortener. Runs 2 containers (db, zipline), with zipline listening on port 3000 and keeps its data in named volumes.",
    "first_run": [],
    "category": "Storage",
    "status": "active",
+   "source_repo": "https://github.com/diced/zipline",
    "documentation_url": "https://zipline.diced.sh/docs",
+   "license": {
+    "spdx": "MIT",
+    "class": "permissive",
+    "url": "https://github.com/diced/zipline/blob/trunk/LICENSE"
+   },
    "hosted_use": "unknown",
    "listing": {
     "by": "maintainers"
@@ -58785,7 +59315,7 @@
      "service": "zipline",
      "image": "ghcr.io/diced/zipline",
      "tag": "3.7.9",
-     "source_class": "community",
+     "source_class": "upstream",
      "platforms": [
       "linux/amd64",
       "linux/arm64"

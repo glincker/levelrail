@@ -4,6 +4,10 @@ description: "Single sign-on and two-factor portal. The admin user is created at
 icon: shield-check
 category: Security
 documentation_url: https://www.authelia.com/configuration/prologue/introduction/
+source_repo: https://github.com/authelia/authelia
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/authelia/authelia/blob/master/LICENSE
 recommended_memory_bytes: 268435456
 domains:
   - service: authelia
