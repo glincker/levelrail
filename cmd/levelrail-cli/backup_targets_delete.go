@@ -43,8 +43,9 @@ func backupTargetsDeleteUsage(prog string) string {
 Disconnects a backup target. Fails with a conflict, listing what uses it, while
 a live schedule, policy, running backup or restore, or the backup history of an
 existing database or app still references it. History of deleted resources is
-kept and shown as target deleted; restoring it needs a target added again.
-Bucket objects are never deleted.
+kept and shown as target deleted, but those backups cannot be restored from the
+console. The objects stay in the bucket, and creating a target again does not
+reattach the history.
 
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)

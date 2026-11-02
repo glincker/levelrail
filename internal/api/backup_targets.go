@@ -42,7 +42,7 @@ type BackupTargetStore interface {
 	ListBackupTargets(ctx context.Context) ([]store.BackupTarget, error)
 	UpdateBackupTarget(ctx context.Context, id, name, provider, endpoint, region, bucket string) error
 	DeleteBackupTarget(ctx context.Context, id string) error
-	RetireBackupTarget(ctx context.Context, id string) (int, error)
+	RetireBackupTarget(ctx context.Context, id string) (store.RetireResult, error)
 }
 
 // BackupSecretsSetter is the surface backup target creation needs from
@@ -378,7 +378,7 @@ func (rt *Router) handleDeleteBackupTarget(w http.ResponseWriter, r *http.Reques
 // retireBackupTarget answers 409 with the live references, or detaches the
 // history of deleted resources and records how many rows were detached.
 func (rt *Router) retireBackupTarget(w http.ResponseWriter, r *http.Request, id, noun string) {
-	detached, err := rt.backupTargets.RetireBackupTarget(r.Context(), id)
+	res, err := rt.backupTargets.RetireBackupTarget(r.Context(), id)
 	var inUse *store.BackupTargetInUseError
 	switch {
 	case errors.Is(err, store.ErrBackupTargetNotFound):
@@ -387,15 +387,18 @@ func (rt *Router) retireBackupTarget(w http.ResponseWriter, r *http.Request, id,
 	case errors.As(err, &inUse):
 		writeError(w, http.StatusConflict, noun+" is still in use by "+strings.Join(inUse.Blockers, "; ")+"; remove those first")
 		return
+	case err != nil && strings.Contains(err.Error(), "FOREIGN KEY"):
+		writeError(w, http.StatusConflict, noun+" is still referenced by other records; remove those first")
+		return
 	case err != nil:
 		rt.internalError(w, "api: delete "+noun+": retire failed", err, slog.String("id", id))
 		return
 	}
-	rt.auditBackupTargetDeleted(r, id, detached)
+	rt.auditBackupTargetDeleted(r, id, res)
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (rt *Router) auditBackupTargetDeleted(r *http.Request, id string, detached int) {
+func (rt *Router) auditBackupTargetDeleted(r *http.Request, id string, res store.RetireResult) {
 	if rt.auditLog == nil {
 		return
 	}
@@ -405,7 +408,7 @@ func (rt *Router) auditBackupTargetDeleted(r *http.Request, id string, detached 
 		return
 	}
 	a := rt.accessActor(r)
-	detail, _ := json.Marshal(map[string]any{"target_id": id, "detached_history_rows": detached})
+	detail, _ := json.Marshal(map[string]any{"target_id": id, "detached_history_rows": res.Detached, "pruned_failed_attempts": res.Pruned})
 	entry := store.AuditEntry{
 		ID: entryID, ActorType: a.kind, ActorID: a.id, ActorName: a.name,
 		Ability: AbilityWriteSensitive, Method: r.Method, Path: r.URL.Path, StatusCode: http.StatusNoContent,

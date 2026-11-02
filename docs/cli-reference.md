@@ -1145,7 +1145,7 @@ levelrail-cli backup-targets update <id> --name NAME --provider PROVIDER --bucke
 levelrail-cli backup-targets delete <id> [flags]
 levelrail-cli backup-targets test <id> [flags]
 ```
-S3 compatible backup destinations. Valid `--provider` values are `aws`, `r2` and `custom`; `--endpoint` is required for `r2` and `custom`. `test` probes the bucket over its stored credentials without uploading or deleting anything. `delete` answers 409 and lists what uses the target (schedules, policies, running work, history of existing databases or apps); history of deleted resources is kept, shown as target deleted, and never touches bucket objects.
+S3 compatible backup destinations. Valid `--provider` values are `aws`, `r2` and `custom`; `--endpoint` is required for `r2` and `custom`. `test` probes the bucket over its stored credentials without uploading or deleting anything. `delete` answers 409 and lists what uses the target (schedules, policies, running work, history of existing databases or apps); history of deleted resources is kept and shown as target deleted, but it cannot be restored from the console and creating a target again does not reattach it. Bucket objects stay in the bucket.
 
 ## Storage
 

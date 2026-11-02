@@ -649,3 +649,21 @@ func TestHandleDeleteBackupTarget_LiveScheduleListed(t *testing.T) {
 		t.Fatalf("delete = %d, body = %s, want 409 naming livedb", rec.Code, rec.Body.String())
 	}
 }
+
+func TestHandleDeleteBackupTarget_BoundBucketIs409(t *testing.T) {
+	t.Parallel()
+	rt, db := newTestRouterWithBackupSecrets(t, &fakeBackupSecretsSetter{})
+	cookie := loginTestSession(t, rt, db)
+	id := createRetireTarget(t, rt, cookie)
+	if _, err := db.ExecContext(context.Background(), `INSERT INTO storage_buckets (id, name, target_id, prefix, created_at) VALUES ('b1', 'media', ?, 'p/', 'now')`, id); err != nil {
+		t.Fatal(err)
+	}
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/backup-targets/"+id, ""))
+	if rec.Code != http.StatusConflict || !strings.Contains(rec.Body.String(), "media") {
+		t.Fatalf("delete = %d, body = %s, want 409 naming the bucket", rec.Code, rec.Body.String())
+	}
+	if _, err := db.GetBackupTarget(context.Background(), id); err != nil {
+		t.Fatalf("target must stay live: %v", err)
+	}
+}

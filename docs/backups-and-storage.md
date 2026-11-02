@@ -448,7 +448,7 @@ levelrail-cli backup-targets test <id>
 levelrail-cli backup-targets create --name NAME --provider PROVIDER --bucket BUCKET --access-key-id ID --secret-access-key KEY [--endpoint URL] [--region REGION]
 # --endpoint is required for r2 and custom, --region is also required for custom.
 levelrail-cli backup-targets update <id> --name NAME --provider PROVIDER --bucket BUCKET [--access-key-id ID --secret-access-key KEY] [--endpoint URL] [--region REGION]
-# delete returns 409 listing live users of the target. History of deleted resources is kept (shown as target deleted) and cannot be restored from the console until a target is added again; bucket objects are never removed.
+# delete returns 409 listing live users of the target. History of deleted resources is kept (shown as target deleted) but cannot be restored from the console; recreating a target does not reattach it. Bucket objects stay in the bucket.
 
 levelrail-cli registry-credentials list
 levelrail-cli registry-credentials get <id>
