@@ -186,6 +186,8 @@ func newTestRouterWithAPIRateLimit(t *testing.T, readPerMinute, writePerMinute i
 	t.Helper()
 	db := openTestDB(t)
 	rt := NewRouter(discardLogger(), testBrand(), db, WithAPIRateLimit(readPerMinute, writePerMinute))
+	// These tests pin tiny budgets below the settings floor, so they bypass the live source.
+	rt.apiRateLimit.reads.source, rt.apiRateLimit.writes.source = nil, nil
 	return rt, db
 }
 

@@ -138,7 +138,7 @@ func runSettingsRuntimeSet(prog string, args []string, stdout, stderr io.Writer,
 	}
 	weakening := current.Risk == runtimeRiskWeakensSecurity
 	if weakening && !confirmWeakening {
-		_, _ = fmt.Fprintf(stderr, "%s: %s weakens a security protection; re-run with --confirm-weakening to change it (the change is audited)\n", prog, key)
+		_, _ = fmt.Fprintf(stderr, "%s: changing %s can weaken a security protection (turning it off, shortening it or raising a limit); re-run with --confirm-weakening to change it (the change is audited)\n", prog, key)
 		return exitValidation
 	}
 

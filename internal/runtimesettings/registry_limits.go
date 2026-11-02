@@ -46,7 +46,11 @@ func registerLimit(d Definition, lo, hi int) {
 // Limit returns an int limit setting forced into its safe range. API writes are already range-checked;
 // this also covers env seeds, which are only parsed, so a stray 0 or huge value can never disable a limit.
 func (s *Service) Limit(ctx context.Context, key string) int {
-	n := s.Int(ctx, key)
+	return ClampLimit(key, s.Int(ctx, key))
+}
+
+// ClampLimit forces n into the safe range of a limit setting; boot code uses it so nothing starts below a floor.
+func ClampLimit(key string, n int) int {
 	r, ok := limitRanges[key]
 	if !ok {
 		return n
@@ -64,39 +68,39 @@ func (s *Service) Limit(ctx context.Context, key string) int {
 
 func init() {
 	registerLimit(Definition{
-		Key: KeyAPIRateLimitRead, Category: CategorySecurity, Default: "600", Env: "APP_API_RATE_LIMIT_READ_RPM", Apply: ApplyLive,
+		Key: KeyAPIRateLimitRead, Category: CategorySecurity, Default: "600", Env: "APP_API_RATE_LIMIT_READ_RPM", Apply: ApplyLive, Risk: RiskWeakensSecurity, HigherIsWeaker: true,
 		Title:       "API read rate limit",
-		Description: "Read requests per minute allowed for each API token, signed-in user or client address. Requests over the budget get HTTP 429 with a Retry-After header. Minimum 60 so the dashboard keeps working; a change applies at once and keeps each caller's current budget.",
+		Description: "Read requests per minute allowed for each API token, signed-in user or client address. Requests over the budget get HTTP 429 with a Retry-After header. Minimum 60 so the dashboard keeps working; a change applies at once and keeps each caller's current budget. A limit cannot be switched off: an environment value of 0 or below the minimum is raised to the minimum (older releases treated 0 as off).",
 	}, 60, rateLimitCeiling)
 	registerLimit(Definition{
-		Key: KeyAPIRateLimitWrite, Category: CategorySecurity, Default: "120", Env: "APP_API_RATE_LIMIT_WRITE_RPM", Apply: ApplyLive,
+		Key: KeyAPIRateLimitWrite, Category: CategorySecurity, Default: "120", Env: "APP_API_RATE_LIMIT_WRITE_RPM", Apply: ApplyLive, Risk: RiskWeakensSecurity, HigherIsWeaker: true,
 		Title:       "API write rate limit",
-		Description: "Write and deploy requests per minute allowed for each API token, signed-in user or client address. Requests over the budget get HTTP 429 with a Retry-After header. Minimum 20 so an operator cannot lock themselves out; a change applies at once.",
+		Description: "Write and deploy requests per minute allowed for each API token, signed-in user or client address. Requests over the budget get HTTP 429 with a Retry-After header. Minimum 20 so an operator cannot lock themselves out; a change applies at once. A limit cannot be switched off: an environment value of 0 or below the minimum is raised to the minimum (older releases treated 0 as off).",
 	}, 20, rateLimitCeiling)
 	registerLimit(Definition{
-		Key: KeyAPIRateLimitRedeem, Category: CategorySecurity, Default: "10", Env: "APP_API_RATE_LIMIT_TOKEN_REDEEM_RPM", Apply: ApplyLive,
+		Key: KeyAPIRateLimitRedeem, Category: CategorySecurity, Default: "10", Env: "APP_API_RATE_LIMIT_TOKEN_REDEEM_RPM", Apply: ApplyLive, Risk: RiskWeakensSecurity, HigherIsWeaker: true,
 		Title:       "Password reset and invite redeem rate limit",
-		Description: "Password reset and invite accept requests per minute allowed from one client address. Requests over the budget get HTTP 429. Minimum 3; a change applies at once.",
+		Description: "Password reset and invite accept requests per minute allowed from one client address. Requests over the budget get HTTP 429. Minimum 3; a change applies at once. A limit cannot be switched off: an environment value of 0 or below the minimum is raised to the minimum (older releases treated 0 as off).",
 	}, 3, rateLimitCeiling)
 	registerLimit(Definition{
-		Key: KeyAuthRateLimitPerIP, Category: CategorySecurity, Default: "60", Env: "APP_AUTH_ENGINE_RATE_LIMIT_PER_IP", Apply: ApplyRestart,
+		Key: KeyAuthRateLimitPerIP, Category: CategorySecurity, Default: "60", Env: "APP_AUTH_ENGINE_RATE_LIMIT_PER_IP", Apply: ApplyRestart, Risk: RiskWeakensSecurity, HigherIsWeaker: true,
 		Title:       "Sign-in rate limit per address",
-		Description: "Credential requests (sign in, password reset, MFA) per minute allowed from one client address before it gets HTTP 429. This slows credential stuffing; it cannot be turned off and the minimum is 10 so an admin can still sign in. Needs a restart because the auth library holds the budget.",
+		Description: "Credential requests (sign in, password reset, MFA) per minute allowed from one client address before it gets HTTP 429. This slows credential stuffing; it cannot be turned off and the minimum is 10 so an admin can still sign in. An environment value below 10 is raised to 10. Needs a restart because the auth library holds the budget.",
 	}, AuthRateLimitFloor, 100_000)
 	registerLimit(Definition{
-		Key: KeyAuthRateLimitPerEmail, Category: CategorySecurity, Default: "60", Env: "APP_AUTH_ENGINE_RATE_LIMIT_PER_EMAIL", Apply: ApplyRestart,
+		Key: KeyAuthRateLimitPerEmail, Category: CategorySecurity, Default: "60", Env: "APP_AUTH_ENGINE_RATE_LIMIT_PER_EMAIL", Apply: ApplyRestart, Risk: RiskWeakensSecurity, HigherIsWeaker: true,
 		Title:       "Sign-in rate limit per account",
-		Description: "Credential requests per minute allowed for one account name from any address before it gets HTTP 429. This slows targeted password guessing; it cannot be turned off and the minimum is 10 so the owner can still sign in. Needs a restart because the auth library holds the budget.",
+		Description: "Credential requests per minute allowed for one account name from any address before it gets HTTP 429. This slows targeted password guessing; it cannot be turned off and the minimum is 10 so the owner can still sign in. An environment value below 10 is raised to 10. Needs a restart because the auth library holds the budget.",
 	}, AuthRateLimitFloor, 100_000)
 	registerLimit(Definition{
-		Key: KeyAPIMaxBodyBytes, Category: CategoryNetworking, Default: strconv.Itoa(16 << 20), Env: "APP_API_MAX_BODY_BYTES", Apply: ApplyLive,
+		Key: KeyAPIMaxBodyBytes, Category: CategoryNetworking, Default: strconv.Itoa(16 << 20), Env: "APP_API_MAX_BODY_BYTES", Apply: ApplyLive, Risk: RiskWeakensSecurity, HigherIsWeaker: true,
 		Title:       "API request body limit",
 		Description: "Largest JSON request body in bytes the API reads before any handler runs; a bigger body is cut off and the request fails with HTTP 413. Source uploads, git pushes and asset uploads have their own limits. Between 1 MiB and 1 GiB; a change applies to the next request.",
 	}, bodyLimitFloor, apiMaxBodyCeiling)
 	registerLimit(Definition{
 		Key: KeyAssetsUploadMaxBytes, Category: CategoryNetworking, Default: strconv.Itoa(1 << 30), Env: "APP_ASSETS_UPLOAD_MAX_BYTES", Apply: ApplyLive,
 		Title:       "Asset upload size limit",
-		Description: "Largest single asset object in bytes accepted by a direct or presigned upload; a bigger upload is refused with HTTP 413. Between 1 MiB and 1 TiB; a change applies to the next upload.",
+		Description: "Largest single asset object in bytes accepted by a direct or presigned upload; a bigger upload is refused with HTTP 413. Between 1 MiB and 1 TiB; direct uploads are exempt from the API request body limit and obey only this one. A change applies to the next upload.",
 	}, bodyLimitFloor, assetsUploadCeiling)
 	registerLimit(Definition{
 		Key: KeyDeployMaxConcurrent, Category: CategoryDeploys, Default: "0", Env: "APP_DEPLOY_MAX_CONCURRENT", Apply: ApplyLive,

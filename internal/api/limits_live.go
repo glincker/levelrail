@@ -20,15 +20,9 @@ func (rt *Router) attachLiveLimits() {
 	}
 }
 
-// limitSource lets a saved value win and otherwise keeps the construction value (the env seed or default), so a reset restores it.
+// limitSource reads the clamped setting every time, so an env seed of 0 or a value under the floor never weakens a limiter and a reset restores the seed.
 func (rt *Router) limitSource(l *apiRateLimiter, key string) {
-	seed := int(l.ratePerMinute)
-	l.source = func() int {
-		if rt.runtimeSettings.Source(context.Background(), key) == runtimesettings.SourceSaved {
-			return rt.runtimeSettings.Limit(context.Background(), key)
-		}
-		return seed
-	}
+	l.source = func() int { return rt.runtimeSettings.Limit(context.Background(), key) }
 }
 
 // maxBodyBytes is the live API body backstop; a router without settings serves the registry default and env seed.
@@ -43,7 +37,8 @@ func (rt *Router) assetsUploadMax(ctx context.Context) int64 {
 
 // deployCap is the live deploy concurrency limit; 0 means unlimited.
 func (rt *Router) deployCap(ctx context.Context) int {
-	if rt.runtimeSettings == nil || rt.runtimeSettings.Source(ctx, runtimesettings.KeyDeployMaxConcurrent) != runtimesettings.SourceSaved {
+	// With nothing saved or in env the option value (an embedder's cap) stands; boot passes the clamped env value there.
+	if rt.runtimeSettings == nil || rt.runtimeSettings.Source(ctx, runtimesettings.KeyDeployMaxConcurrent) == runtimesettings.SourceDefault {
 		return rt.deployMaxConcurrent
 	}
 	return rt.runtimeSettings.Limit(ctx, runtimesettings.KeyDeployMaxConcurrent)

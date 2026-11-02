@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"os"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -63,6 +64,17 @@ type Service struct {
 	saved  map[string]store.RuntimeSettingRow
 	loaded bool
 	boot   map[string]string
+	// lastGood and retryAt serve the previous rows briefly after a failed load, so a database error is not a query per request.
+	lastGood map[string]store.RuntimeSettingRow
+	retryAt  time.Time
+}
+
+// loadRetryInterval is how long a failed load is not retried; APP_RUNTIME_SETTINGS_LOAD_RETRY overrides the 2s default.
+func loadRetryInterval() time.Duration {
+	if d, err := time.ParseDuration(os.Getenv("APP_RUNTIME_SETTINGS_LOAD_RETRY")); err == nil && d > 0 {
+		return d
+	}
+	return 2 * time.Second
 }
 
 // New builds a Service over the global registry. lookup defaults to os.LookupEnv.
@@ -140,9 +152,22 @@ func (s *Service) load(ctx context.Context) (map[string]store.RuntimeSettingRow,
 		s.mu.RUnlock()
 		return m, nil
 	}
+	stale, retryAt := s.lastGood, s.retryAt
 	s.mu.RUnlock()
+	if time.Now().Before(retryAt) {
+		if stale != nil {
+			return stale, nil
+		}
+		return nil, errors.New("runtimesettings: load saved values: database unavailable, retrying shortly")
+	}
 	rows, err := s.store.ListRuntimeSettings(ctx)
 	if err != nil {
+		s.mu.Lock()
+		s.retryAt = time.Now().Add(loadRetryInterval())
+		s.mu.Unlock()
+		if stale != nil {
+			return stale, nil
+		}
 		return nil, fmt.Errorf("runtimesettings: load saved values: %w", err)
 	}
 	m := make(map[string]store.RuntimeSettingRow, len(rows))
@@ -150,14 +175,14 @@ func (s *Service) load(ctx context.Context) (map[string]store.RuntimeSettingRow,
 		m[r.Key] = r
 	}
 	s.mu.Lock()
-	s.saved, s.loaded = m, true
+	s.saved, s.loaded, s.lastGood, s.retryAt = m, true, m, time.Time{}
 	s.mu.Unlock()
 	return m, nil
 }
 
 func (s *Service) invalidate() {
 	s.mu.Lock()
-	s.loaded, s.saved = false, nil
+	s.loaded, s.saved, s.retryAt = false, nil, time.Time{}
 	s.mu.Unlock()
 }
 
@@ -335,6 +360,9 @@ func (s *Service) WeakensTo(ctx context.Context, key string, raw json.RawMessage
 		order := d.StrengthOrder
 		return slices.Index(order, cur.canonical) >= 0 && slices.Index(order, next) < slices.Index(order, cur.canonical)
 	case KindInt:
+		if d.HigherIsWeaker {
+			return intOf(next) > intOf(cur.canonical)
+		}
 		return shorterDays(cur.canonical, next)
 	case KindStringList:
 		old := listOf(cur.canonical)
@@ -494,6 +522,11 @@ func shorterDays(cur, next string) bool {
 		return true
 	}
 	return n < c
+}
+
+func intOf(canonical string) int {
+	n, _ := strconv.Atoi(canonical)
+	return n
 }
 
 // Int returns an int setting.

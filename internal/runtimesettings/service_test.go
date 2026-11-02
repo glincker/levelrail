@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"regexp"
-	"strings"
 	"testing"
 	"time"
 
@@ -308,7 +307,7 @@ func TestMaskSensitive(t *testing.T) {
 func TestRegistryMarksCredentialSettingsSensitive(t *testing.T) {
 	credential := regexp.MustCompile(`(?i)secret|token|password|api[_.-]?key`)
 	for _, d := range Definitions() {
-		if d.Category != CategoryRetention && !strings.HasSuffix(d.Key, "_rpm") && (credential.MatchString(d.Key) || credential.MatchString(d.Env)) && !d.Sensitive {
+		if d.Category != CategoryRetention && !isRegisteredLimit(d.Key) && (credential.MatchString(d.Key) || credential.MatchString(d.Env)) && !d.Sensitive {
 			t.Errorf("setting %s looks like a credential but is not marked Sensitive, so its value would reach API responses and the audit log", d.Key)
 		}
 	}
@@ -322,3 +321,6 @@ func TestInvalidEnvIsReportedOnce(t *testing.T) {
 		t.Fatal("an invalid environment value was ignored silently")
 	}
 }
+
+// isRegisteredLimit exempts only the numeric limit keys from the credential-name guard (a "token redeem" budget is not a credential).
+func isRegisteredLimit(key string) bool { _, ok := limitRanges[key]; return ok }

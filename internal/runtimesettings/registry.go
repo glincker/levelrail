@@ -113,6 +113,8 @@ type Definition struct {
 	EnvLoose bool
 	// FailClosed makes StringChecked fail instead of falling back to the default when a saved or env value is invalid.
 	FailClosed bool
+	// HigherIsWeaker marks an int limit where raising the value weakens a protection, so a raise asks for confirmation.
+	HigherIsWeaker bool
 	// StrengthOrder lists a string setting's allowed values from weakest to strongest, so WeakensTo can tell a downgrade.
 	StrengthOrder []string
 }
