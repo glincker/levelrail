@@ -70,6 +70,11 @@ func smokeTemplate(ctx context.Context, t catalog.Template, o options) (r result
 	}
 	p := project{dir: dir, name: unsafeProject.ReplaceAllString(strings.ToLower(o.project+"-"+t.ID), "-"), override: true, subnet: nextSubnet(o.subnetBase)}
 	volumes := namedVolumes(t.Compose)
+	var hc *catalog.ManifestHealthcheck
+	if t.Manifest != nil && t.Manifest.Healthcheck != nil && t.Manifest.Healthcheck.Port > 0 {
+		hc = t.Manifest.Healthcheck
+		p.probeSvc, p.probePort = hc.Service, hc.Port
+	}
 	if err := p.writeOverride(volumes, nil); err != nil {
 		return failed(r, err.Error())
 	}
@@ -104,7 +109,16 @@ func smokeTemplate(ctx context.Context, t catalog.Template, o options) (r result
 	ictx, icancel := context.WithTimeout(context.Background(), inspectTimeout)
 	defer icancel()
 	r.Services = p.inspect(ictx, services)
-	return classify(r, upErr)
+	r = classify(r, upErr)
+	if hc != nil && r.Status == statusPass {
+		status, ok, detail := probeHealth(ictx, p, *hc, o.probeWait)
+		r.HTTPStatus = status
+		if !ok {
+			return failed(r, detail)
+		}
+		r.Summary += "; " + detail
+	}
+	return r
 }
 
 func skipped(r result, why string) result {
@@ -152,6 +166,12 @@ func classify(r result, upErr error) result {
 // disables Docker restarts so an exit stays visible. It also declares the
 // named volumes a deploy creates implicitly but docker compose requires.
 func overrideFor(volumes, services []string, subnet string) string {
+	return overrideWithProbe(volumes, services, subnet, "", 0)
+}
+
+// overrideWithProbe is overrideFor, except the probed service keeps a
+// loopback-only ephemeral host port for the health probe.
+func overrideWithProbe(volumes, services []string, subnet, probeSvc string, probePort int) string {
 	var b strings.Builder
 	if subnet != "" {
 		fmt.Fprintf(&b, "networks:\n  default:\n    ipam:\n      config:\n        - subnet: %s\n", subnet)
@@ -160,7 +180,11 @@ func overrideFor(volumes, services []string, subnet string) string {
 		b.WriteString("services:\n")
 	}
 	for _, s := range services {
-		fmt.Fprintf(&b, "  %s:\n    ports: !reset []\n    container_name: !reset null\n    restart: \"no\"\n", s)
+		ports := "    ports: !reset []\n"
+		if s == probeSvc && probePort > 0 {
+			ports = publishedProbe(probePort)
+		}
+		fmt.Fprintf(&b, "  %s:\n%s    container_name: !reset null\n    restart: \"no\"\n", s, ports)
 	}
 	if len(volumes) > 0 {
 		b.WriteString("volumes:\n")
@@ -188,7 +212,8 @@ func namedVolumes(composeBody string) []string {
 }
 
 func (p project) writeOverride(volumes, services []string) error {
-	if err := os.WriteFile(filepath.Join(p.dir, "override.yaml"), []byte(overrideFor(volumes, services, p.subnet)), 0o600); err != nil {
+	body := overrideWithProbe(volumes, services, p.subnet, p.probeSvc, p.probePort)
+	if err := os.WriteFile(filepath.Join(p.dir, "override.yaml"), []byte(body), 0o600); err != nil {
 		return fmt.Errorf("write override: %w", err)
 	}
 	return nil
@@ -199,6 +224,9 @@ type project struct {
 	name     string
 	override bool
 	subnet   string
+	// probeSvc and probePort name the service port the health probe reaches.
+	probeSvc  string
+	probePort int
 }
 
 var subnetSeq atomic.Uint32
