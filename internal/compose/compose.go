@@ -69,6 +69,11 @@ type File struct {
 	// Unsupported lists keys that parsed but are not read, so Notices can
 	// report them instead of dropping them silently.
 	Unsupported []UnsupportedKey
+	// InterpVars are the variables ${VAR:-default} forms in env values read
+	// (app env and saved env keys); nil means every variable is unset.
+	InterpVars map[string]string
+	// InterpWarnings collects names-only notes about unset variables.
+	InterpWarnings []string
 }
 
 // Service is one entry under services:.

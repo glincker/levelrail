@@ -50,6 +50,17 @@ func ResolveMagicVars(
 	generate func(kind, key string, length int) (string, error),
 	persist func(serviceKey, envKey, value string) error,
 ) (secretEnv map[string][]string, unresolved []UnresolvedVar, err error) {
+	return resolveMagicVars(f, generate, persist, true)
+}
+
+// resolveMagicVars is ResolveMagicVars with the generic ${VAR:-default}
+// pass switchable, so a test can compare against the SERVICE_-only result.
+func resolveMagicVars(
+	f *File,
+	generate func(kind, key string, length int) (string, error),
+	persist func(serviceKey, envKey, value string) error,
+	interpolate bool,
+) (secretEnv map[string][]string, unresolved []UnresolvedVar, err error) {
 	secretEnv = make(map[string][]string)
 	generated := make(map[string]string)
 
@@ -76,9 +87,18 @@ func ResolveMagicVars(
 		}
 		newEnv := make(Environment, len(svc.Environment))
 		for envKey, value := range svc.Environment {
+			if interpolate {
+				var ierr error
+				value, ierr = interpolateValue(value, f.InterpVars, func(w string) {
+					f.InterpWarnings = append(f.InterpWarnings, fmt.Sprintf("service %q: env %q: %s", svcKey, envKey, w))
+				})
+				if ierr != nil {
+					return nil, nil, fmt.Errorf("service %q: env %q: %w", svcKey, envKey, ierr)
+				}
+			}
 			vars := FindMagicVars(value)
 			if len(vars) == 0 {
-				newEnv[envKey] = value
+				newEnv[envKey] = unescapeDollar(value)
 				continue
 			}
 
@@ -129,6 +149,7 @@ func ResolveMagicVars(
 				}
 				unresolved = append(unresolved, UnresolvedVar{Service: svcKey, EnvKey: envKey, Token: v.Token})
 			}
+			resolved = unescapeDollar(resolved)
 			if hasSecret {
 				if err := persist(svcKey, envKey, resolved); err != nil {
 					return nil, nil, fmt.Errorf("service %q: env %q: persist secret: %w", svcKey, envKey, err)

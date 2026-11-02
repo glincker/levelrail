@@ -70,6 +70,16 @@ Templates use `$SERVICE_<KIND>_<NAME>` tokens in place of literal secrets. At de
 - `BASE64BYTES` is standard padded base64 of N random bytes (default 32), written `$SERVICE_BASE64BYTES_<N>_<NAME>`. There is no prefix option: a framework key such as a Laravel `APP_KEY` is composed as `base64:$SERVICE_BASE64BYTES_32_APPKEY`. `BASE64` and `REALBASE64` instead produce N characters, not N bytes.
 - `$SERVICE_FQDN_<NAME>` resolves to the service's own assigned domain as a bare host, and `$SERVICE_URL_<NAME>` to `https://` plus that host. The suffix is ignored: both always mean this service's own domain. With no domain assigned, write a default such as `${SERVICE_URL_APP:-http://localhost:5678}`. Adding, changing or removing a domain re-renders these values and recreates the service.
 - Any token written with a default (`${SERVICE_FOO:-value}`) uses that default.
+
+### Variable interpolation in env values
+
+Environment values (not `command:` or `healthcheck:`, which the container shell expands itself) accept the standard compose forms for variables the app knows (its env and saved env keys):
+
+- `${VAR}` the value; `${VAR:-d}` the default when unset or empty; `${VAR-d}` the default only when unset.
+- `${VAR:+alt}` and `${VAR+alt}` the alternative when set; `${VAR:?msg}` and `${VAR?msg}` fail the import with `msg` when missing.
+- `$$` is a literal `$`.
+
+A plain `${VAR}` with no value is left as written and reported as a warning (names only, never values). `SERVICE_*` tokens behave exactly as before.
 - Anything else has no value and is reported as unresolved. A template with an unresolved token is marked `requires_configuration`, and the one-click route refuses it. Deploy it through the dashboard's Compose editor, or with `apps deploy-compose`, after filling the value in.
 
 ## Save an app as a template
