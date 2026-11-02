@@ -236,7 +236,11 @@
       "signInApproveAgent": "A token that approves sign-ins cannot be issued to an agent",
       "secretsReveal": "Reveal secret values",
       "secretsRevealHint": "Lets this token read a secret value, but only when the server allows token reveal (APP_SECRET_REVEAL_TOKENS=on) and the request carries your password. Every reveal is audited. Root does not include it.",
-      "secretsRevealNeedsSensitive": "Revealing secrets also needs read:sensitive"
+      "secretsRevealNeedsSensitive": "Revealing secrets also needs read:sensitive",
+      "allowChanges": "Allow changes",
+      "readOnlyNote": "Read only: this token can view apps, deploys and logs but cannot change anything.",
+      "allowChangesOn": "This token can change configuration. Pick exactly what below.",
+      "allowChangesWarning": "A token that can change things can be misused by anything that holds it, including an AI assistant tricked by text in logs or env values. Grant only what the integration needs."
     },
     "devFixtureBadge": "Dev fixture, local only",
     "devFixtureRootWarning": "Full access with a publicly known secret. Never expose this server to a network.",
@@ -245,7 +249,11 @@
     "devFixtureGroupCount_other": "{{count}} tokens",
     "devFixtureGroupBody": "Seeded for local testing, with public secrets. Never created in release builds. Safe to ignore.",
     "rotate": "Rotate",
-    "rotateLabel": "Rotate {{name}}"
+    "rotateLabel": "Rotate {{name}}",
+    "access": {
+      "read_only": "Read only",
+      "can_change": "Can change"
+    }
   },
   "hostFirewall": {
     "title": "Host firewall",

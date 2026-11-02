@@ -645,7 +645,11 @@
       "signInApproveHint": "Permite que este token muestre tus códigos de inicio de sesión y apruebe navegadores nuevos desde la CLI. Root no lo incluye y un inicio de sesión de dispositivo nunca lo otorga. Debe expirar en 30 días y se revoca cuando cambias o restableces tu contraseña o cierras tus otras sesiones.",
       "submit": "Crear token",
       "submitting": "Creando...",
-      "title": "Crear token"
+      "title": "Crear token",
+      "allowChanges": "Permitir cambios",
+      "readOnlyNote": "Solo lectura: este token puede ver apps, despliegues y registros, pero no cambiar nada.",
+      "allowChangesOn": "Este token puede cambiar la configuración. Elige exactamente qué abajo.",
+      "allowChangesWarning": "Un token que puede cambiar cosas puede ser mal usado por quien lo tenga, incluido un asistente de IA engañado por texto en registros o variables. Concede solo lo que la integración necesita."
     },
     "created": "Creado",
     "devFixtureBadge": "Datos de prueba de desarrollo, solo local",
@@ -667,7 +671,11 @@
     "rotateLabel": "Rotar {{name}}",
     "server": "Servidor",
     "status": "Estado",
-    "tableLabel": "Tokens de API"
+    "tableLabel": "Tokens de API",
+    "access": {
+      "read_only": "Solo lectura",
+      "can_change": "Puede cambiar"
+    }
   },
   "tokensPage": {
     "activeCount_one": "{{count}} token activo",

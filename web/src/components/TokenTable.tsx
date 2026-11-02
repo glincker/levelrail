@@ -145,6 +145,13 @@ function TokenRows({ tokens, rotatableIds }: TokenTableProps) {
       priority: 2,
       cell: (token) => (
         <div className="flex flex-wrap gap-1">
+          {token.access ? (
+            <Badge
+              variant={token.access === 'can_change' ? 'destructive' : 'muted'}
+            >
+              {t(`tokens.access.${token.access}`)}
+            </Badge>
+          ) : null}
           {token.abilities.map((ability) => (
             <Badge key={ability} variant={TOKEN_ABILITY_BADGE_VARIANT[ability]}>
               {ability}

@@ -69,9 +69,11 @@ describe('CreateTokenDialog', () => {
     expect(screen.getByLabelText('Step 1 of 2: Details')).toBeInTheDocument()
 
     await user.type(screen.getByLabelText('Name'), 'ci-deploy')
-    // At least one ability is required before the form can submit.
-    const abilityCheckboxes = screen.getAllByRole('checkbox')
-    await user.click(abilityCheckboxes[0]!)
+    // Read only is preselected and nothing else is offered until opted in.
+    expect(screen.queryAllByRole('checkbox')).toHaveLength(0)
+    expect(
+      screen.getByRole('switch', { name: 'Allow changes' }),
+    ).not.toBeChecked()
 
     await user.click(
       within(screen.getByRole('dialog')).getByRole('button', {
@@ -116,6 +118,9 @@ describe('CreateTokenDialog', () => {
     renderDialog()
     await user.click(screen.getByRole('button', { name: 'Create token' }))
     await user.type(screen.getByLabelText('Name'), 'approver')
+    await user.click(screen.getByRole('switch', { name: 'Allow changes' }))
+    await user.click(screen.getAllByRole('checkbox')[0]!)
+    await user.click(screen.getAllByRole('checkbox')[2]!)
     await user.click(
       screen.getByRole('checkbox', { name: /Approve my sign-ins/ }),
     )
@@ -143,6 +148,9 @@ describe('CreateTokenDialog', () => {
     await user.click(screen.getByRole('button', { name: 'Create token' }))
     await user.type(screen.getByLabelText('Name'), 'approver')
     await user.type(screen.getByLabelText('Agent name (optional)'), 'bot')
+    await user.click(screen.getByRole('switch', { name: 'Allow changes' }))
+    await user.click(screen.getAllByRole('checkbox')[0]!)
+    await user.click(screen.getAllByRole('checkbox')[2]!)
     await user.click(
       screen.getByRole('checkbox', { name: /Approve my sign-ins/ }),
     )
@@ -160,5 +168,33 @@ describe('CreateTokenDialog', () => {
       (call) => call[1]?.method === 'POST',
     )
     expect(posts).toHaveLength(0)
+  })
+  it('creates a read-only token by default', async () => {
+    const bodies: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((_url: string, init?: RequestInit) => {
+        if (init?.method === 'POST') bodies.push(init.body as string)
+        return Promise.resolve({
+          ok: true,
+          status: 201,
+          json: () => Promise.resolve({ id: 't3', name: 'mcp', token: 'tok' }),
+        } as unknown as Response)
+      }),
+    )
+    const user = userEvent.setup()
+    renderDialog()
+    await user.click(screen.getByRole('button', { name: 'Create token' }))
+    await user.type(screen.getByLabelText('Name'), 'mcp')
+    await user.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Create token',
+      }),
+    )
+    await waitFor(() => {
+      expect(bodies.length).toBe(1)
+    })
+    const body = JSON.parse(bodies[0] ?? '{}') as { abilities: string[] }
+    expect(body.abilities).toEqual(['read'])
   })
 })

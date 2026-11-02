@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Switch } from '@/components/ui/switch'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   Select,
   SelectContent,
@@ -60,6 +62,7 @@ function createTokenSchema(t: TFunction<'settings'>) {
           'root',
         ]),
       ),
+      allowChanges: z.boolean(),
       signInApprove: z.boolean(),
       secretsReveal: z.boolean(),
     })
@@ -110,17 +113,21 @@ export function CreateTokenDialog() {
     reset,
     getValues,
     setValue,
+    watch,
   } = useForm<CreateTokenFormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       name: '',
       expiration: '90',
       agentName: '',
-      abilities: [],
+      abilities: ['read'],
+      allowChanges: false,
       signInApprove: false,
       secretsReveal: false,
     },
   })
+
+  const allowChanges = watch('allowChanges')
 
   const onSubmit = handleSubmit((values) => {
     const days = EXPIRATION_OPTIONS.find(
@@ -242,80 +249,128 @@ export function CreateTokenDialog() {
 
             <Controller
               control={control}
-              name="abilities"
+              name="allowChanges"
               render={({ field }) => (
-                <AbilitiesField
-                  value={field.value}
-                  onChange={field.onChange}
-                  error={formState.errors.abilities}
-                />
-              )}
-            />
-
-            <Controller
-              control={control}
-              name="signInApprove"
-              render={({ field }) => (
-                <Field>
-                  <FieldLabel>
-                    <Field orientation="horizontal">
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={(checked) => {
-                          field.onChange(checked === true)
-                          const current = getValues('expiration')
-                          if (
-                            checked === true &&
-                            !SIGN_IN_APPROVE_EXPIRATIONS.some(
-                              (e) => e === current,
-                            )
-                          ) {
-                            setValue('expiration', '30')
-                          }
-                        }}
-                      />
-                      <FieldContent>
-                        <FieldTitle>
-                          {t('tokens.create.signInApprove')}
-                        </FieldTitle>
-                        <FieldDescription className="text-xs">
-                          {t('tokens.create.signInApproveHint')}
-                        </FieldDescription>
-                      </FieldContent>
-                    </Field>
-                  </FieldLabel>
-                  <FieldError errors={[formState.errors.signInApprove]} />
+                <Field orientation="horizontal">
+                  <Switch
+                    id="token-allow-changes"
+                    checked={field.value}
+                    onCheckedChange={(checked) => {
+                      field.onChange(checked)
+                      setValue(
+                        'abilities',
+                        checked ? ['read', 'write'] : ['read'],
+                      )
+                      if (!checked) {
+                        setValue('signInApprove', false)
+                        setValue('secretsReveal', false)
+                      }
+                    }}
+                  />
+                  <FieldContent>
+                    <FieldLabel htmlFor="token-allow-changes">
+                      {t('tokens.create.allowChanges')}
+                    </FieldLabel>
+                    <FieldDescription className="text-xs">
+                      {field.value
+                        ? t('tokens.create.allowChangesOn')
+                        : t('tokens.create.readOnlyNote')}
+                    </FieldDescription>
+                  </FieldContent>
                 </Field>
               )}
             />
 
-            <Controller
-              control={control}
-              name="secretsReveal"
-              render={({ field }) => (
-                <Field>
-                  <FieldLabel>
-                    <Field orientation="horizontal">
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={(checked) => {
-                          field.onChange(checked === true)
-                        }}
-                      />
-                      <FieldContent>
-                        <FieldTitle>
-                          {t('tokens.create.secretsReveal')}
-                        </FieldTitle>
-                        <FieldDescription className="text-xs">
-                          {t('tokens.create.secretsRevealHint')}
-                        </FieldDescription>
-                      </FieldContent>
-                    </Field>
-                  </FieldLabel>
-                  <FieldError errors={[formState.errors.secretsReveal]} />
-                </Field>
-              )}
-            />
+            {allowChanges ? (
+              <Alert variant="destructive">
+                <AlertDescription>
+                  {t('tokens.create.allowChangesWarning')}
+                </AlertDescription>
+              </Alert>
+            ) : null}
+
+            {allowChanges ? (
+              <Controller
+                control={control}
+                name="abilities"
+                render={({ field }) => (
+                  <AbilitiesField
+                    value={field.value}
+                    onChange={field.onChange}
+                    error={formState.errors.abilities}
+                  />
+                )}
+              />
+            ) : null}
+
+            {allowChanges ? (
+              <Controller
+                control={control}
+                name="signInApprove"
+                render={({ field }) => (
+                  <Field>
+                    <FieldLabel>
+                      <Field orientation="horizontal">
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked === true)
+                            const current = getValues('expiration')
+                            if (
+                              checked === true &&
+                              !SIGN_IN_APPROVE_EXPIRATIONS.some(
+                                (e) => e === current,
+                              )
+                            ) {
+                              setValue('expiration', '30')
+                            }
+                          }}
+                        />
+                        <FieldContent>
+                          <FieldTitle>
+                            {t('tokens.create.signInApprove')}
+                          </FieldTitle>
+                          <FieldDescription className="text-xs">
+                            {t('tokens.create.signInApproveHint')}
+                          </FieldDescription>
+                        </FieldContent>
+                      </Field>
+                    </FieldLabel>
+                    <FieldError errors={[formState.errors.signInApprove]} />
+                  </Field>
+                )}
+              />
+            ) : null}
+
+            {allowChanges ? (
+              <Controller
+                control={control}
+                name="secretsReveal"
+                render={({ field }) => (
+                  <Field>
+                    <FieldLabel>
+                      <Field orientation="horizontal">
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked === true)
+                          }}
+                        />
+                        <FieldContent>
+                          <FieldTitle>
+                            {t('tokens.create.secretsReveal')}
+                          </FieldTitle>
+                          <FieldDescription className="text-xs">
+                            {t('tokens.create.secretsRevealHint')}
+                          </FieldDescription>
+                        </FieldContent>
+                      </Field>
+                    </FieldLabel>
+                    <FieldError errors={[formState.errors.secretsReveal]} />
+                  </Field>
+                )}
+              />
+            ) : null}
           </CreateFlowShell>
         )}
       </DialogContent>
