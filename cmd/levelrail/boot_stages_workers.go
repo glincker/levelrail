@@ -21,6 +21,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/imageupdate"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/objectstore"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/scheduledeploy"
 	"github.com/GLINCKER/levelrail/internal/scheduledtask"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
@@ -31,6 +32,7 @@ import (
 
 // startTelemetry starts the metric and log collectors.
 func (s *bootState) startTelemetry() {
+	s.wireStorageSettings()
 	ctx, logger := s.ctx, s.logger
 	agentDataDir := s.agentDataDir
 	agentRegistry := s.agentRegistry
@@ -85,7 +87,7 @@ func (s *bootState) startTelemetry() {
 		}
 	}()
 	go wakeLogCollectorOnContainerEvents(ctx, client, logCollector)
-	go runLogsRetentionSweep(ctx, telemetryDB, logger)
+	go runLogsRetentionSweep(ctx, telemetryDB, retentionSetting(s.apiRouter, runtimesettings.KeyLogsRetention, profileRetention), logger)
 
 	// A pure extra consumer of the log stream: never touches logCollector or its store writes.
 	drainForwarder := telemetry.NewDrainForwarder(logBroadcaster, notifyClient, logger, b.ShortName)

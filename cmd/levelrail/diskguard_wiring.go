@@ -15,6 +15,7 @@ import (
 // startDiskGuard watches the data dir and Docker root, refuses risky operations below the critical floor and notifies on a drop.
 func startDiskGuard(ctx context.Context, logger *slog.Logger, dataDir string, channels *alerting.DB, notifier keyreminder.Notifier, router *api.Router, db api.NodeGuardrailStore) {
 	g := diskguard.New(dataDir, diskguard.DockerRootFromEnv(os.LookupEnv), diskguard.ThresholdsFromEnv(os.LookupEnv), nil, logger)
+	g.SetThresholdSource(diskThresholdSource(router))
 	g.Notify = func(ctx context.Context, text string) {
 		list, err := channels.ListNotificationChannels(ctx)
 		if err != nil {

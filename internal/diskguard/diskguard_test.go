@@ -113,3 +113,24 @@ func TestIsNoSpace(t *testing.T) {
 		t.Fatal("IsNoSpace misclassified")
 	}
 }
+
+func TestThresholdSourceAppliesWithoutRestart(t *testing.T) {
+	free := 450 * mib
+	g := New(t.TempDir(), "", testThresholds(), fakeStat(&free), nil)
+	if g.Status().Worst != LevelOK {
+		t.Fatalf("worst = %s, want ok", g.Status().Worst)
+	}
+	cur := Thresholds{LowFree: 500 * mib, CriticalFree: 100 * mib}
+	g.SetThresholdSource(func() Thresholds { return cur })
+	if g.Status().Worst != LevelLow {
+		t.Fatalf("worst = %s, want low after a live change", g.Status().Worst)
+	}
+	cur = Thresholds{LowFree: 400 * mib, CriticalFree: 900 * mib}
+	if g.Status().Thresholds.CriticalFree != 400*mib {
+		t.Fatal("critical must clamp to low")
+	}
+	cur = Thresholds{LowFree: 500 * mib, CriticalFree: 460 * mib}
+	if g.Status().Worst != LevelCritical {
+		t.Fatalf("worst = %s, want critical after a live change", g.Status().Worst)
+	}
+}

@@ -10,6 +10,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/incident"
 	"github.com/GLINCKER/levelrail/internal/monitor"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -44,6 +45,7 @@ func (s *bootState) startMonitors() {
 		opts.Secrets = s.secretsManager
 	}
 	svc := monitor.New(opts)
+	svc.SetRawRetentionSource(retentionSetting(s.apiRouter, runtimesettings.KeyMonitorRawRetained, 0))
 	s.apiRouter.SetMonitors(svc)
 	go svc.Run(s.ctx)
 	if linker != nil {

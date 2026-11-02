@@ -36,18 +36,19 @@ type Secrets interface {
 
 // Service owns the scheduler, workers, batcher and pruner.
 type Service struct {
-	cfg     Config
-	store   Store
-	secrets Secrets
-	checker *Checker
-	sched   *Scheduler
-	batcher *Batcher
-	tracker *Tracker
-	logger  *slog.Logger
-	now     func() time.Time
-	onDel   func(id string)
-	hb      HeartbeatStore
-	started time.Time
+	cfg            Config
+	rawRetentionFn func() time.Duration
+	store          Store
+	secrets        Secrets
+	checker        *Checker
+	sched          *Scheduler
+	batcher        *Batcher
+	tracker        *Tracker
+	logger         *slog.Logger
+	now            func() time.Time
+	onDel          func(id string)
+	hb             HeartbeatStore
+	started        time.Time
 }
 
 // Options configures a Service. Secrets may be nil, which rejects monitors that carry headers.
@@ -88,6 +89,18 @@ func (s *Service) Status(id string) Status { return s.tracker.Status(id) }
 
 // Config returns the engine settings.
 func (s *Service) Config() Config { return s.cfg }
+
+// SetRawRetentionSource makes raw result retention follow fn on each prune and history read. Call before Run.
+func (s *Service) SetRawRetentionSource(fn func() time.Duration) { s.rawRetentionFn = fn }
+
+func (s *Service) rawRetention() time.Duration {
+	if s.rawRetentionFn != nil {
+		if d := s.rawRetentionFn(); d > 0 {
+			return d
+		}
+	}
+	return s.cfg.RawRetention
+}
 
 func secretService(id string) string { return "monitor-" + id }
 func headerKey(name string) string   { return "hdr:" + name }
@@ -222,7 +235,7 @@ func (s *Service) Prune(ctx context.Context) error {
 		return fmt.Errorf("monitors: list for prune: %w", err)
 	}
 	now := s.now()
-	rawBefore := now.Add(-s.cfg.RawRetention).Unix()
+	rawBefore := now.Add(-s.rawRetention()).Unix()
 	hourBefore := HourBucket(now.Add(-s.cfg.HourRetention).Unix())
 	for _, m := range list {
 		for {
@@ -394,7 +407,7 @@ func (s *Service) Results(ctx context.Context, id string, window time.Duration, 
 		window = s.cfg.HourRetention
 	}
 	now := s.now()
-	rawSince := now.Add(-min(window, s.cfg.RawRetention)).Unix()
+	rawSince := now.Add(-min(window, s.rawRetention())).Unix()
 	raw, err := s.store.ListResults(ctx, id, rawSince, limit)
 	if err != nil {
 		return History{}, err

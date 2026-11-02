@@ -75,11 +75,20 @@ func (db *DB) Configure(cfg TierConfig) { db.tiers = &cfg }
 // maintenance; tests use it to drive a fake clock.
 func (db *DB) SetClock(now func() time.Time) { db.clock = now }
 
+// SetRawRetentionSource makes the raw sample retention follow fn on every prune and query. Call before the DB is shared.
+func (db *DB) SetRawRetentionSource(fn func() time.Duration) { db.rawRetentionFn = fn }
+
 func (db *DB) tierConfig() TierConfig {
-	if db.tiers == nil {
-		return DefaultTierConfig()
+	cfg := DefaultTierConfig()
+	if db.tiers != nil {
+		cfg = *db.tiers
 	}
-	return *db.tiers
+	if db.rawRetentionFn != nil {
+		if d := db.rawRetentionFn(); d > 0 {
+			cfg.RawRetention = d
+		}
+	}
+	return cfg
 }
 
 func (db *DB) now() time.Time {

@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -23,8 +24,16 @@ const (
 	logRowBytes = `length(message) + COALESCE(length(fields_json), 0)`
 )
 
-// DefaultLogBudgetBytes reads APP_LOG_BUDGET_MB; 0 or unset means unlimited.
+var logBudgetSource atomic.Pointer[func() int64]
+
+// SetLogBudgetSource makes DefaultLogBudgetBytes follow fn, so a saved setting applies on the next sweep or request.
+func SetLogBudgetSource(fn func() int64) { logBudgetSource.Store(&fn) }
+
+// DefaultLogBudgetBytes returns the per-app log budget; 0 means unlimited. Without a source it reads APP_LOG_BUDGET_MB.
 func DefaultLogBudgetBytes() int64 {
+	if fn := logBudgetSource.Load(); fn != nil {
+		return max((*fn)(), 0)
+	}
 	mb, err := strconv.ParseInt(strings.TrimSpace(os.Getenv("APP_LOG_BUDGET_MB")), 10, 64)
 	if err != nil || mb <= 0 {
 		return 0

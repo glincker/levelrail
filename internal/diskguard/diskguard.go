@@ -149,6 +149,7 @@ type target struct{ name, path string }
 // Guard reads volumes on demand; Tick keeps the reserve and the alert state current.
 type Guard struct {
 	th      Thresholds
+	thFn    func() Thresholds
 	stat    StatFunc
 	targets []target
 	reserve string
@@ -179,11 +180,25 @@ func New(dataDir, dockerRoot string, th Thresholds, stat StatFunc, logger *slog.
 	return g
 }
 
+// SetThresholdSource makes every check read the floors from fn, so a saved setting applies on the next check. Call before Run.
+func (g *Guard) SetThresholdSource(fn func() Thresholds) { g.thFn = fn }
+
+func (g *Guard) thresholds() Thresholds {
+	if g.thFn == nil {
+		return g.th
+	}
+	t := g.thFn()
+	// Critical above low would make the low level unreachable.
+	t.CriticalFree = min(t.CriticalFree, t.LowFree)
+	return t
+}
+
 func (g *Guard) level(free int64) Level {
+	th := g.thresholds()
 	switch {
-	case free < g.th.CriticalFree:
+	case free < th.CriticalFree:
 		return LevelCritical
-	case free < g.th.LowFree:
+	case free < th.LowFree:
 		return LevelLow
 	}
 	return LevelOK
@@ -203,7 +218,7 @@ func rank(l Level) int {
 
 // Status reads every volume now. An unreadable volume is reported unknown, never as a refusal.
 func (g *Guard) Status() Status {
-	st := Status{Thresholds: g.th, Worst: LevelOK, Volumes: []Volume{}}
+	st := Status{Thresholds: g.thresholds(), Worst: LevelOK, Volumes: []Volume{}}
 	for _, t := range g.targets {
 		v := Volume{Name: t.name, Path: t.path, Level: LevelUnknown}
 		if free, total, err := g.stat(t.path); err == nil && total > 0 {
@@ -243,7 +258,7 @@ func (g *Guard) Refuse(op Op) error {
 	}
 	for _, v := range g.Status().Volumes {
 		if want[v.Name] && v.Level == LevelCritical {
-			return &LowDiskError{Op: op, Volume: v.Name, Path: v.Path, FreeBytes: v.FreeBytes, NeedBytes: g.th.CriticalFree}
+			return &LowDiskError{Op: op, Volume: v.Name, Path: v.Path, FreeBytes: v.FreeBytes, NeedBytes: g.thresholds().CriticalFree}
 		}
 	}
 	return nil
@@ -283,7 +298,8 @@ func describe(st Status) string {
 }
 
 func (g *Guard) syncReserve(st Status) {
-	if g.reserve == "" || g.th.Reserve <= 0 {
+	th := g.thresholds()
+	if g.reserve == "" || th.Reserve <= 0 {
 		return
 	}
 	var data *Volume
@@ -301,10 +317,10 @@ func (g *Guard) syncReserve(st Status) {
 		}
 		return
 	}
-	if st.ReserveBytes == g.th.Reserve || data.FreeBytes < g.th.LowFree+g.th.Reserve {
+	if st.ReserveBytes == th.Reserve || data.FreeBytes < th.LowFree+th.Reserve {
 		return
 	}
-	if err := writeReserve(g.reserve, g.th.Reserve); err != nil {
+	if err := writeReserve(g.reserve, th.Reserve); err != nil {
 		g.logger.Warn("diskguard: could not create the disk reserve", slog.String("error", err.Error()))
 	}
 }
