@@ -250,6 +250,9 @@ func (s *bootState) startSchedulers() {
 		scheduler.Verifier = backupVerifyRunner
 		scheduler.Policies, scheduler.GFS = db, db
 		scheduler.Tombstones = db
+		scheduler.DefaultRetentionHours = func(ctx context.Context) int {
+			return s.apiRouter.RuntimeSettings().Int(ctx, runtimesettings.KeyBackupDefaultRetentionHours)
+		}
 		scheduler.BaseBackups = newBaseBackupRunner(db, secretsManager, client, backupRunner, logger)
 		walShip := newWALShipScheduler(db, client, backupRunner, func(nodeID string) bool {
 			return nodeID == "" || (meshCfg != nil && nodeID == meshCfg.localNodeID)

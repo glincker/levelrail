@@ -160,7 +160,10 @@ type Scheduler struct {
 	GFS      GFSStore
 	// Tombstones, if set, keeps failed object deletes for retry instead of only logging them.
 	Tombstones TombstoneStore
-	Logger     *slog.Logger
+	// DefaultRetentionHours, if set, gives backups with no count or age rule of their own a
+	// maximum age in hours (0 keeps them). It runs right after a fresh success, so the newest backup always survives.
+	DefaultRetentionHours func(ctx context.Context) int
+	Logger                *slog.Logger
 	// Now returns the current time, the same testable-clock field
 	// Runner.Now already establishes in runner.go: production code
 	// leaves it nil and Tick falls back to time.Now, tests set it for
@@ -208,6 +211,23 @@ func NewScheduler(store ScheduleStore, runner ScheduledBackupRunner, deleter Del
 // service/volume names are plain identifiers) already guarantees.
 func volumeScheduleKey(serviceName, volumeName string) string {
 	return serviceName + "/" + volumeName
+}
+
+// retentionRule resolves a resource's own count and age rule, falling back to the default window only
+// when it has neither.
+func (s *Scheduler) retentionRule(ctx context.Context, keep, days int) (int, time.Time, bool) {
+	var olderThan time.Time
+	switch {
+	case keep > 0 || days > 0:
+		if days > 0 {
+			olderThan = s.now().AddDate(0, 0, -days)
+		}
+	case s.DefaultRetentionHours != nil && s.DefaultRetentionHours(ctx) > 0:
+		olderThan = s.now().Add(-time.Duration(s.DefaultRetentionHours(ctx)) * time.Hour)
+	default:
+		return 0, time.Time{}, false
+	}
+	return keep, olderThan, true
 }
 
 func (s *Scheduler) now() time.Time {
@@ -449,12 +469,8 @@ func (s *Scheduler) runScheduled(ctx context.Context, d store.DesiredDatabase) e
 		s.runScheduledBaseBackup(ctx, d, containerName, d.BackupTargetID)
 	}
 
-	if d.BackupRetain > 0 || d.BackupRetainDays > 0 {
-		var olderThan time.Time
-		if d.BackupRetainDays > 0 {
-			olderThan = s.now().AddDate(0, 0, -d.BackupRetainDays)
-		}
-		pruned, pruneErr := s.Store.PruneBackupHistory(ctx, d.Name, d.BackupRetain, olderThan)
+	if keep, olderThan, ok := s.retentionRule(ctx, d.BackupRetain, d.BackupRetainDays); ok {
+		pruned, pruneErr := s.Store.PruneBackupHistory(ctx, d.Name, keep, olderThan)
 		if pruneErr != nil {
 			s.log().Error("backup: scheduled retention prune failed",
 				slog.String("database", d.Name), slog.String("error", pruneErr.Error()))
@@ -522,12 +538,8 @@ func (s *Scheduler) runScheduledVolume(ctx context.Context, v store.ServiceVolum
 
 	s.pruneGFS(ctx, v)
 
-	if v.BackupRetain > 0 || v.BackupRetainDays > 0 {
-		var olderThan time.Time
-		if v.BackupRetainDays > 0 {
-			olderThan = s.now().AddDate(0, 0, -v.BackupRetainDays)
-		}
-		pruned, pruneErr := s.Store.PruneServiceVolumeBackupHistory(ctx, v.ServiceName, v.VolumeName, v.BackupRetain, olderThan)
+	if keep, olderThan, ok := s.retentionRule(ctx, v.BackupRetain, v.BackupRetainDays); ok {
+		pruned, pruneErr := s.Store.PruneServiceVolumeBackupHistory(ctx, v.ServiceName, v.VolumeName, keep, olderThan)
 		if pruneErr != nil {
 			s.log().Error("backup: scheduled volume retention prune failed",
 				slog.String("service_volume", label), slog.String("error", pruneErr.Error()))

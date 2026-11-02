@@ -284,7 +284,9 @@
     "never": "No borrar nunca",
     "days_one": "{{count}} día",
     "days_other": "{{count}} días",
-    "year": "1 año"
+    "year": "1 año",
+    "hours_one": "{{count}} hora",
+    "hours_other": "{{count}} horas"
   },
   "overview": {
     "title": "Retención de datos",

@@ -20,12 +20,15 @@ export function RetentionDaysSelect({
   disabled,
   ariaLabel,
   floor = 0,
+  unit = 'days',
   lockedHint,
   onChange,
 }: {
   id?: string
   value: number
   allowed: number[]
+  /** Hours mode shows values under 48 as hours and larger multiples of 24 as days. */
+  unit?: 'days' | 'hours'
   /** Positive windows shorter than this are shown but cannot be picked. */
   floor?: number
   /** Describes why a window below the floor is locked; read by screen readers on the option. */
@@ -38,6 +41,11 @@ export function RetentionDaysSelect({
   const hintId = useId()
   const label = (days: number) => {
     if (days === 0) return t('retention.never')
+    if (unit === 'hours') {
+      return days < 48
+        ? t('retention.hours', { count: days })
+        : t('retention.days', { count: days / 24 })
+    }
     if (days === DAYS_PER_YEAR) return t('retention.year')
     return t('retention.days', { count: days })
   }

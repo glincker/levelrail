@@ -284,7 +284,9 @@
     "never": "Never delete",
     "days_one": "{{count}} day",
     "days_other": "{{count}} days",
-    "year": "1 year"
+    "year": "1 year",
+    "hours_one": "{{count}} hour",
+    "hours_other": "{{count}} hours"
   },
   "overview": {
     "title": "Data retention",

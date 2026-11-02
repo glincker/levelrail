@@ -111,6 +111,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_LOG_BUDGET_MB` | [`telemetry.log_budget_mb`](/runtime-settings#observability) | `0` |
 | `APP_LOGS_RETENTION` | [`telemetry.logs_retention`](/runtime-settings#observability) | `360h` |
 | `APP_METRICS_RETENTION` | [`telemetry.metrics_retention`](/runtime-settings#observability) | `360h` |
+| `APP_BACKUP_DEFAULT_RETENTION_HOURS` | [`backup.default_retention_hours`](/runtime-settings#data-retention) | `168` |
 | `APP_CLEANUP_ENABLED` | [`cleanup.enabled`](/runtime-settings#data-retention) | `true` |
 | `APP_CLEANUP_INTERVAL` | [`cleanup.interval`](/runtime-settings#data-retention) | `6h` |
 | `APP_RETENTION_AI_HISTORY_DAYS` | [`retention.ai_history_days`](/runtime-settings#data-retention) | `90` |

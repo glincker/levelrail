@@ -188,6 +188,7 @@ export function RuntimeSettingRow({
                 id={fieldId}
                 value={Number(draft)}
                 allowed={setting.allowed_values}
+                unit={setting.key.endsWith('_hours') ? 'hours' : 'days'}
                 disabled={!canEdit || busy}
                 ariaLabel={title}
                 onChange={(days) => {
