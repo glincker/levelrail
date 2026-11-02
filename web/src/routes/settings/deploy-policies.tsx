@@ -162,7 +162,7 @@ function DeployPoliciesPage() {
           </Select>
         </Field>
         {scope === 'org' ? null : (
-          <Field>
+          <Field data-invalid={formError ? true : undefined}>
             <FieldLabel htmlFor="dp-scope-id">{t('scope.idLabel')}</FieldLabel>
             <Input
               id="dp-scope-id"
@@ -171,6 +171,7 @@ function DeployPoliciesPage() {
               onChange={(e) => {
                 setScopeId(e.target.value)
               }}
+              aria-invalid={!!formError}
             />
           </Field>
         )}
