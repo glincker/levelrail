@@ -33,10 +33,13 @@ const (
 // Defaults block: the only place guest network numbers live.
 const (
 	// The vz user network has no separate resolver: DNS is the gateway itself, port 53 only.
-	defaultHostGateway     = "192.168.5.2"
-	defaultDockerPool      = "172.28.0.0/14"
-	defaultDockerBridge    = "172.28.0.1/16"
-	defaultDockerPoolBase  = "172.29.0.0/16"
+	defaultHostGateway    = "192.168.5.2"
+	defaultDockerPool     = "172.28.0.0/14"
+	defaultDockerBridge   = "172.28.0.1/16"
+	defaultDockerPoolBase = "172.29.0.0/16"
+	// One constant for the firewall and the control plane unit so they cannot drift:
+	// a /15 beside the bridge and the daemon pool, about 500 app networks.
+	DefaultAppNetworkPool  = "172.30.0.0/15"
 	defaultPublishIP       = "127.0.0.1"
 	defaultLANProbe        = "10.99.98.2"
 	defaultProbeTimeoutSec = 2
@@ -51,6 +54,7 @@ type Options struct {
 	DockerPool      string   // The only 172.16/12 slice containers may talk to.
 	DockerBridge    string   // docker0 address, inside DockerPool.
 	DockerPoolBase  string   // User network pool, inside DockerPool.
+	AppNetworkPool  string   // Control plane per-app network block, inside DockerPool and clear of the bridge and pool base.
 	PublishIP       string   // Default bind address for published ports.
 	LANProbe        string   // Address the self-check expects to be unreachable.
 	ProbeTimeoutSec int
@@ -65,6 +69,7 @@ func DefaultOptions() Options {
 		DockerPool:      defaultDockerPool,
 		DockerBridge:    defaultDockerBridge,
 		DockerPoolBase:  defaultDockerPoolBase,
+		AppNetworkPool:  DefaultAppNetworkPool,
 		PublishIP:       defaultPublishIP,
 		LANProbe:        defaultLANProbe,
 		ProbeTimeoutSec: defaultProbeTimeoutSec,
@@ -111,6 +116,15 @@ func (o Options) Validate() error {
 		p, err := netip.ParsePrefix(v)
 		if err != nil || !p.Addr().Is4() || p.Addr().Zone() != "" || !pool.Contains(p.Addr()) {
 			return fmt.Errorf("docker %s %q must sit inside %s", name, v, o.DockerPool)
+		}
+	}
+	app, err := netip.ParsePrefix(o.AppNetworkPool)
+	if err != nil || !app.Addr().Is4() || app.Addr().Zone() != "" || app.Masked() != app || !pool.Contains(app.Addr()) || app.Bits() < pool.Bits() {
+		return fmt.Errorf("app network pool %q must be an IPv4 prefix inside %s", o.AppNetworkPool, o.DockerPool)
+	}
+	for name, v := range map[string]string{"bridge": o.DockerBridge, "pool base": o.DockerPoolBase} {
+		if p := netip.MustParsePrefix(v); app.Overlaps(p.Masked()) {
+			return fmt.Errorf("app network pool %q overlaps the docker %s %q", o.AppNetworkPool, name, v)
 		}
 	}
 	if a, err := netip.ParseAddr(o.PublishIP); err != nil || !a.Is4() || a.Zone() != "" || !a.IsLoopback() {

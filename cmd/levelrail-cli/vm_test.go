@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/GLINCKER/levelrail/internal/vmruntime/guest"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -169,7 +170,7 @@ func TestVMInitSeedsFromEnvAndStarts(t *testing.T) {
 	if !strings.Contains(string(yaml), "APP_DESKTOP_ALLOWED_PORTS") {
 		t.Fatal("sidecar unit lacks allowed ports")
 	}
-	for _, want := range []string{"APP_INGRESS_HTTPS_ADDR=127.0.0.1:", "APP_AGENT_ADDR=127.0.0.1:", "EnvironmentFile=-" + vmGuestEnvFile} {
+	for _, want := range []string{"APP_INGRESS_HTTPS_ADDR=127.0.0.1:", "APP_AGENT_ADDR=127.0.0.1:", "APP_NETWORK_POOL=" + guest.DefaultAppNetworkPool, "EnvironmentFile=-" + vmGuestEnvFile} {
 		if !strings.Contains(string(yaml), want) {
 			t.Fatalf("sidecar unit lacks %q", want)
 		}

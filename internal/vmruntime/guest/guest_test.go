@@ -1,6 +1,7 @@
 package guest
 
 import (
+	"net/netip"
 	"regexp"
 	"strings"
 	"testing"
@@ -140,3 +141,37 @@ func TestParseStatus(t *testing.T) {
 
 // Matches a bare 0.0.0.0 but not 10.0.0.0/8.
 var wildcard = regexp.MustCompile(`(^|[^0-9.])0\.0\.0\.0`)
+
+func TestAppNetworkPoolInsideAllowedRange(t *testing.T) {
+	o := DefaultOptions()
+	pool := netip.MustParsePrefix(o.AppNetworkPool)
+	if !netip.MustParsePrefix(o.DockerPool).Contains(pool.Addr()) {
+		t.Fatalf("app pool %s is outside the allowed docker pool %s", pool, o.DockerPool)
+	}
+	dropped := []string{"10.0.0.0/8", "192.168.0.0/16", "169.254.0.0/16", "100.64.0.0/10", "127.0.0.0/8", "224.0.0.0/4", o.HostGateway + "/32", o.DockerBridge, o.DockerPoolBase}
+	for _, d := range dropped {
+		if pool.Overlaps(netip.MustParsePrefix(d).Masked()) {
+			t.Errorf("app pool %s overlaps %s", pool, d)
+		}
+	}
+	for _, bad := range []string{"10.88.0.0/14", "172.20.0.0/15", "172.28.0.0/15", "172.29.0.0/16", "172.30.0.5/15"} {
+		o := DefaultOptions()
+		o.AppNetworkPool = bad
+		if o.Validate() == nil {
+			t.Errorf("pool %s should be rejected", bad)
+		}
+	}
+	rules, err := EgressRules(o)
+	if err != nil || !strings.Contains(rules, "ip daddr != "+o.DockerPool+" drop") {
+		t.Errorf("firewall does not allow the docker pool: %v", err)
+	}
+	files, err := Files(o, Sidecar{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, f := range files {
+		if f.Path == CheckScriptPath && !strings.Contains(f.Content, "app_pool_allowed") {
+			t.Error("isolation check must verify the app pool")
+		}
+	}
+}

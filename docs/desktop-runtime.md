@@ -104,7 +104,7 @@ Real use with apps such as OpenClaw, and use on an 8 GB machine, is not measured
 
 ## What the isolation guarantees
 
-On every start, the guest runs an eight-check self-check, and `vm status` shows the result. The checks are `rules_loaded`, `publish_loopback`, `no_wildcard_publish`, `no_docker_tcp`, `host_mounts`, `host_unreachable`, `lan_unreachable` and `dns_allowed`. A failing check stops the VM.
+On every start, the guest runs a nine-check self-check, and `vm status` shows the result. The checks are `rules_loaded`, `publish_loopback`, `no_wildcard_publish`, `no_docker_tcp`, `app_pool_allowed`, `host_mounts`, `host_unreachable`, `lan_unreachable` and `dns_allowed`. A failing check stops the VM.
 
 - **No host files.** Nothing from your Mac is mounted, and your home directory is not visible in the guest.
 - **Shared folders are off.** `vm status` prints `Shares: none`. No share command exists in this release.
@@ -112,6 +112,7 @@ On every start, the guest runs an eight-check self-check, and `vm status` shows 
 - **No Docker socket on the host.** The host needs no Docker installation.
 - **No host clipboard or sound device.**
 - **The guest cannot reach your Mac.** Guest and container traffic to the Mac's loopback is blocked, including through the gateway address and from containers that use host networking. The guest also cannot reach private and LAN addresses. Internet access works, and DNS works through the gateway.
+- **App networks stay reachable.** The control plane unit sets `APP_NETWORK_POOL=172.30.0.0/15`, inside the Docker range the firewall allows. A pool in a dropped range (for example the default `10.88.0.0/14`) would make every app time out, so `app_pool_allowed` fails the check if `/etc/levelrail/controlplane.env` overrides it outside that range. `vm upgrade` rewrites the unit, so existing VMs pick the pool up.
 - **Direct app access.** Apps are reached through ingress at `<app>.localhost`, with the normal ingress shield and authentication.
 
 ### What it does not guarantee

@@ -46,6 +46,16 @@ else
   add rules_loaded fail missing
 fi
 
+# The control plane carves app networks from APP_NETWORK_POOL; a pool outside the allowed Docker range is silently firewalled.
+APP_POOL="{{.AppNetworkPool}}"
+ENV_POOL=$(sed -n 's/^APP_NETWORK_POOL=//p' /etc/levelrail/controlplane.env 2>/dev/null | tail -n1 | tr -d '"')
+[ -n "$ENV_POOL" ] && APP_POOL="$ENV_POOL"
+if python3 -c 'import ipaddress,sys;sys.exit(0 if ipaddress.ip_network(sys.argv[1]).subnet_of(ipaddress.ip_network(sys.argv[2])) else 1)' "$APP_POOL" "{{.DockerPool}}" 2>/dev/null; then
+  add app_pool_allowed pass ok
+else
+  add app_pool_allowed fail pool_outside_allowed_range
+fi
+
 if grep -q '"ip": "{{.PublishIP}}"' /etc/docker/daemon.json 2>/dev/null; then
   add publish_loopback pass ok
 else

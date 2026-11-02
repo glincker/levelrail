@@ -341,6 +341,7 @@ Environment=APP_HTTP_ADDR=127.0.0.1:%[3]d
 Environment=APP_INGRESS_HTTP_ADDR=127.0.0.1:%[4]d
 Environment=APP_INGRESS_HTTPS_ADDR=127.0.0.1:%[7]d
 Environment=APP_AGENT_ADDR=127.0.0.1:%[8]d
+Environment=APP_NETWORK_POOL=%[10]s
 EnvironmentFile=-%[9]s
 Environment=APP_INGRESS_HTTP_REDIRECT=false
 Environment=APP_PUBLIC_HOST=localhost
@@ -348,7 +349,7 @@ Environment=APP_CONTAINER_RUNTIME_SOCKET=unix:///var/run/docker.sock
 
 [Install]
 WantedBy=multi-user.target
-`, vmGuestBin, vmGuestData, lima.DefaultDashboardGuest, lima.DefaultIngressGuest, s.DashboardPort, s.IngressPort, vmGuestHTTPS, vmGuestAgent, vmGuestEnvFile)
+`, vmGuestBin, vmGuestData, lima.DefaultDashboardGuest, lima.DefaultIngressGuest, s.DashboardPort, s.IngressPort, vmGuestHTTPS, vmGuestAgent, vmGuestEnvFile, s.ToLima().Guest.AppNetworkPool)
 	return guest.Sidecar{BinaryPath: vmGuestBin, UnitName: vmGuestUnit, UnitContent: unit}
 }
 
