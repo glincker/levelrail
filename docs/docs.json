@@ -483,6 +483,7 @@
               "white-labeling",
               "glinr-bot",
               "behind-an-existing-proxy",
+              "behind-cloudflare",
               "shared-hosts",
               "security-advisories",
               "advisory-feed"

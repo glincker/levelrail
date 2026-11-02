@@ -121,7 +121,7 @@ Domain redirects, maintenance mode, basic auth, the WAF, [Shield](/domain-traffi
 
 ## Putting a CDN in front
 
-A CDN such as Cloudflare, Akamai or Fastly can sit in front of the ingress. Levelrail does not manage it yet, but these settings make the two work together:
+A CDN such as Cloudflare, Akamai or Fastly can sit in front of the ingress. For the Cloudflare specifics (SSL mode, certificates, upload limits, and what the proxy does not hide) see [Run behind Cloudflare](/behind-cloudflare). Levelrail does not manage the CDN itself, but these settings make the two work together:
 
 - Send correct `Cache-Control` from your app (`public, max-age=...` or `s-maxage=...` for shared caches, `private` or `no-store` for anything personal). Both the CDN and the ingress follow it. Send a tag header such as `Cache-Tag` if you purge Levelrail by tag; check which header your CDN uses for its own tags, since the names differ.
 - Add the CDN's address ranges to `APP_INGRESS_TRUSTED_PROXIES` so visitor addresses, Shield rate limits and country rules use the real client address from `X-Forwarded-For` rather than the CDN's. See [behind an existing proxy](/behind-an-existing-proxy).
