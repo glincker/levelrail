@@ -150,11 +150,13 @@ func quoteDotenvValue(v string) string {
 // envImportPlan classifies incoming .env entries against an app's current
 // plain env. Later duplicates of a key win.
 type envImportPlan struct {
-	New       []string          `json:"new"`
-	Changed   []string          `json:"changed"`
-	Unchanged []string          `json:"unchanged"`
-	Secret    []string          `json:"skipped_secret"`
-	Merged    map[string]string `json:"-"`
+	New       []string `json:"new"`
+	Changed   []string `json:"changed"`
+	Unchanged []string `json:"unchanged"`
+	Secret    []string `json:"skipped_secret"`
+	// Platform lists keys the source platform injects itself (vercel env pull adds VERCEL_*).
+	Platform []string          `json:"skipped_platform,omitempty"`
+	Merged   map[string]string `json:"-"`
 }
 
 func planEnvImport(current map[string]string, entries []envFileEntry, secretKeys []string, keepExisting bool) envImportPlan {
@@ -178,6 +180,8 @@ func planEnvImport(current map[string]string, entries []envFileEntry, secretKeys
 	for _, k := range order {
 		cur, exists := current[k]
 		switch {
+		case strings.HasPrefix(k, "VERCEL_"):
+			plan.Platform = append(plan.Platform, k)
 		case secrets[k]:
 			plan.Secret = append(plan.Secret, k)
 		case exists && cur == apiclient.MaskedEnvValue && (incoming[k] == "" || incoming[k] == apiclient.MaskedEnvValue):

@@ -129,3 +129,35 @@ func TestInterpolateBoundsNestingAndLength(t *testing.T) {
 		t.Fatal("expansion over the cap must fail")
 	}
 }
+
+func TestInterpolateAuditMatrix(t *testing.T) {
+	vars := map[string]string{"SET": "v", "EMPTY": "", "OTHER": "o"}
+	cases := []struct{ in, want string }{
+		{"${UNSET:-}", ""},
+		{"${UNSET-}", ""},
+		{"${UNSET:-${UNSET2:-${OTHER}}}", "o"},
+		{"${SET:+${OTHER}}", "o"},
+		{"${UNSET:-$$x}", dollarSentinel + "x"},
+		{"$${SET}", dollarSentinel + "{SET}"},
+		{"${SET}${OTHER}", "vo"},
+		{"${SET:-a}${EMPTY:-b}${UNSET-c}", "vbc"},
+		{"${UNSET:=d}", "${UNSET:=d}"},
+		{"price$", "price$"},
+		{"$SET", "$SET"},
+		{"${SET:?}", "v"},
+		{"${1BAD:-x}", "${1BAD:-x}"},
+		{"http://${UNSET:-localhost}:${PORT:-8080}/", "http://localhost:8080/"},
+	}
+	for _, c := range cases {
+		got, err := interpolateValue(c.in, vars, func(string) {})
+		if err != nil || got != c.want {
+			t.Errorf("%q: got %q, %v want %q", c.in, got, err, c.want)
+		}
+	}
+	if _, err := interpolateValue("${UNSET:?}", vars, func(string) {}); err == nil || !strings.Contains(err.Error(), "UNSET") {
+		t.Errorf("empty :? message must still error naming the variable: %v", err)
+	}
+	if _, err := interpolateValue("${UNSET:?${OTHER}}", vars, func(string) {}); err == nil {
+		t.Errorf("nested message form must still error")
+	}
+}

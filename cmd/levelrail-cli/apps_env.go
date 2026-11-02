@@ -172,6 +172,7 @@ func printEnvImportHuman(w io.Writer, name string, r envImportResult) {
 		{"~", "changed", r.Plan.Changed},
 		{"=", "unchanged", r.Plan.Unchanged},
 		{"!", "skipped, key is a secret", r.Plan.Secret},
+		{"-", "skipped, set by the source platform", r.Plan.Platform},
 	}
 	for _, row := range rows {
 		for _, k := range row.keys {

@@ -63,6 +63,7 @@ func (rt *Router) doctorDefs() []doctorCheckDef {
 	}
 	return []doctorCheckDef{
 		one("docker", doctorGroupRuntime, rt.relabelEngine(rt.doctorCheckDocker)),
+		one("docker_version", doctorGroupRuntime, rt.doctorCheckDockerVersion),
 		one("install_state", doctorGroupRuntime, rt.doctorCheckInstallState),
 		one("container_runtime", doctorGroupRuntime, rt.doctorCheckContainerRuntime),
 		one("docker_guard", doctorGroupRuntime, rt.relabelEngine(rt.doctorCheckDockerGuard)),

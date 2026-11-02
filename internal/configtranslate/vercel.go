@@ -116,6 +116,7 @@ func translateVercel(files map[string][]byte, o options) (Fragment, []Finding) {
 		fs = append(fs, edgeSourceFinding(edge))
 	}
 	fs = append(fs, vercelDepFindings(files)...)
+	fs = append(fs, nextStandaloneFinding(files, fw, isStatic)...)
 	if len(v.Builds) > 0 || len(v.Routes) > 0 {
 		add("vercel.legacy", SeverityWarn, "builds/routes", "legacy builds and routes keys are not translated", "Port them to the current rewrites, redirects and headers keys first.")
 	}

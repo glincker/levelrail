@@ -61,6 +61,9 @@ func (r Result) EmitInput(o EmitOptions) (platformimport.EmitInput, error) {
 		}
 		in.Notes = append(in.Notes, n)
 	}
+	if r.hasFormat(FormatVercel) {
+		in.Notes = append(in.Notes, vercelCutoverChecklist()...)
+	}
 	if len(r.Fragment.Databases) > 0 {
 		in.Notes = append(in.Notes, "Databases are created empty. Copy the data in with `levelrail-cli migrate db-copy`.")
 	}
