@@ -247,3 +247,26 @@ func TestWithHSTS(t *testing.T) {
 		t.Fatal("HSTS must not be sent over plain http")
 	}
 }
+
+func TestEnableHTTPSUsesStoredEmail(t *testing.T) {
+	db := openTestDB(t)
+	rt := NewRouter(discardLogger(), testBrand(), db, WithPublicHost("203.0.113.5"))
+	rt.doctorDialContext = fakeDoctorOfflineDialContext
+	cookie := loginTestSession(t, rt, db)
+	cur, err := db.GetIngressSettings(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	cur.ACMEEmail = "stored@glincker.com"
+	if err := db.UpdateIngressSettings(t.Context(), cur); err != nil {
+		t.Fatal(err)
+	}
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/settings/ingress/https", `{"staging":true}`))
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("enable without email: %d %s", rec.Code, rec.Body.String())
+	}
+	if s, err := db.GetIngressSettings(t.Context()); err != nil || s.ACMEEmail != "stored@glincker.com" {
+		t.Fatalf("acme email = %q, %v", s.ACMEEmail, err)
+	}
+}

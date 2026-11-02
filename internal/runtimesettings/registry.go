@@ -70,6 +70,8 @@ const (
 	KeyBindAllowedRoots        = "security.bind_allowed_roots"
 	KeyTrustLoopbackForwarded  = "security.trust_loopback_forwarded_headers"
 	KeyIngressDNS01AllHosts    = "ingress.dns01_all_hosts"
+	KeyIngressCARetryBase      = "ingress.ca_switch_retry_base"
+	KeyIngressCARetryMax       = "ingress.ca_switch_retry_max"
 	KeyHeartbeatJobAttempts    = "heartbeat.job_max_attempts"
 	KeyHeartbeatJobBackoffBase = "heartbeat.job_backoff_base"
 	KeyHeartbeatJobBackoffMax  = "heartbeat.job_backoff_max"
@@ -211,6 +213,18 @@ func init() {
 		Env: "APP_INGRESS_DNS01_ALL_HOSTS", Apply: ApplyLive,
 		Title:       "DNS-01 for every host",
 		Description: "Issue certificates for single hosts over DNS-01 as well as wildcards, so servers with port 80 closed can still get one. Needs a connected DNS provider; not yet verified against a real CA.",
+	})
+	Register(Definition{
+		Key: KeyIngressCARetryBase, Category: CategoryNetworking, Kind: KindDuration, Default: "1m",
+		Env: "APP_INGRESS_CA_RETRY_BACKOFF", Apply: ApplyLive,
+		Title:       "CA switch retry delay",
+		Description: "First wait before retrying a certificate authority switch that failed to load; it doubles on each failure up to the maximum.",
+	})
+	Register(Definition{
+		Key: KeyIngressCARetryMax, Category: CategoryNetworking, Kind: KindDuration, Default: "1h",
+		Env: "APP_INGRESS_CA_RETRY_BACKOFF_MAX", Apply: ApplyLive,
+		Title:       "CA switch maximum retry delay",
+		Description: "Upper bound on the wait between retries of a failed certificate authority switch.",
 	})
 	registerHeartbeatJobSettings()
 	Register(Definition{

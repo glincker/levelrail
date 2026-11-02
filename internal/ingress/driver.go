@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
-	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -69,28 +68,91 @@ var validateConfig = func(payload []byte) error {
 	return caddy.Validate(&c)
 }
 
-// caRetryBackoff bounds how long an identical failed CA switch is skipped, so
-// a transient failure heals without a settings change.
-func caRetryBackoff() time.Duration {
-	if d, err := time.ParseDuration(strings.TrimSpace(os.Getenv("APP_INGRESS_CA_RETRY_BACKOFF"))); err == nil && d >= 0 {
-		return d
+// CARetryBackoff supplies the base and cap of the wait before an identical
+// failed CA switch is retried; nil falls back to one minute and one hour.
+type CARetryBackoff func(ctx context.Context) (base, ceiling time.Duration)
+
+// SetCARetryBackoff makes the backoff a live runtime setting.
+func (d *Driver) SetCARetryBackoff(f CARetryBackoff) {
+	d.mu.Lock()
+	d.backoff = f
+	d.mu.Unlock()
+}
+
+func (d *Driver) backoffFor(ctx context.Context, fails int) time.Duration {
+	d.mu.Lock()
+	f := d.backoff
+	d.mu.Unlock()
+	base, ceiling := time.Minute, time.Hour
+	if f != nil {
+		if b, m := f(ctx); b > 0 {
+			base, ceiling = b, m
+		}
 	}
-	return time.Minute
+	if ceiling < base {
+		ceiling = base
+	}
+	delay := base
+	for i := 1; i < fails && delay < ceiling; i++ {
+		delay *= 2
+	}
+	return min(delay, ceiling)
+}
+
+var (
+	caNoticeMu sync.Mutex
+	caNotice   string
+)
+
+// CASwitchNotice describes a failed CA switch that is waiting to be retried,
+// or "" when there is none.
+func CASwitchNotice() string {
+	caNoticeMu.Lock()
+	defer caNoticeMu.Unlock()
+	return caNotice
+}
+
+func setCASwitchNotice(s string) {
+	caNoticeMu.Lock()
+	caNotice = s
+	caNoticeMu.Unlock()
 }
 
 // restorePrevious reloads the last working config after a failed CA switch
 // left Caddy on the empty one.
-func (d *Driver) restorePrevious(ctx context.Context, prev []byte) {
-	if prev == nil {
-		return
-	}
+func (d *Driver) restorePrevious(ctx context.Context, prev []byte) bool {
 	if err := loadConfig(prev, true); err != nil {
 		d.logger.ErrorContext(ctx, "ingress: restore previous config failed", slog.String("error", err.Error()))
-		return
+		return false
 	}
 	d.mu.Lock()
 	d.lastApplied = prev
 	d.mu.Unlock()
+	return true
+}
+
+// noteSwitchFailure schedules the next retry with exponential backoff. When
+// the restore failed nothing is serving, so the next tick retries at once.
+func (d *Driver) noteSwitchFailure(ctx context.Context, payload []byte, restored bool) {
+	d.mu.Lock()
+	if !restored {
+		d.failedReset, d.failCount = nil, 0
+		d.mu.Unlock()
+		return
+	}
+	if bytes.Equal(d.failedReset, payload) {
+		d.failCount++
+	} else {
+		d.failCount = 1
+	}
+	fails := d.failCount
+	d.mu.Unlock()
+	delay := d.backoffFor(ctx, fails)
+	d.mu.Lock()
+	d.failedReset = append([]byte(nil), payload...)
+	d.failedAt, d.retryAfter = time.Now(), delay
+	d.mu.Unlock()
+	setCASwitchNotice(fmt.Sprintf("a previous CA switch failed, retrying after %s", delay.Round(time.Second)))
 }
 
 // Driver drives an in-process Caddy instance through the same code path as
@@ -109,6 +171,10 @@ type Driver struct {
 	lastCASig   string
 	failedReset []byte
 	failedAt    time.Time
+	retryAfter  time.Duration
+	failCount   int
+	lastGood    []byte
+	backoff     CARetryBackoff
 
 	snapshot            *SnapshotStore
 	snapshotFingerprint string
@@ -152,14 +218,16 @@ func (d *Driver) Apply(ctx context.Context, cfg *Config) error {
 	sig := acmeCASignature(cfg)
 	d.mu.Lock()
 	switchedCA := d.lastCASig != "" && sig != "" && sig != d.lastCASig
-	prev := d.lastApplied
-	failedReset, failedAt := d.failedReset, d.failedAt
+	prev := d.lastGood
+	failedReset, failedAt, retryAfter := d.failedReset, d.failedAt, d.retryAfter
 	d.mu.Unlock()
-	if switchedCA {
+	// Without a known-good config to restore, a reset could leave nothing serving.
+	if switchedCA && prev != nil {
 		// One reset attempt per changed payload, so a failing switch is not
 		// retried on every reconcile tick.
-		if failedReset != nil && bytes.Equal(failedReset, payload) && time.Since(failedAt) < caRetryBackoff() {
-			return fmt.Errorf("ingress: apply: CA switch previously failed for this config")
+		if failedReset != nil && bytes.Equal(failedReset, payload) && time.Since(failedAt) < retryAfter {
+			wait := (retryAfter - time.Since(failedAt)).Round(time.Second)
+			return fmt.Errorf("ingress: apply: a previous CA switch failed, retrying after %s", wait)
 		}
 		// Validate first: the reset drops every server, so a bad payload must
 		// never reach it.
@@ -176,11 +244,8 @@ func (d *Driver) Apply(ctx context.Context, cfg *Config) error {
 		d.lastApplied = nil
 		d.mu.Unlock()
 		if err := loadConfig(payload, true); err != nil {
-			d.restorePrevious(ctx, prev)
-			d.mu.Lock()
-			d.failedReset = append([]byte(nil), payload...)
-			d.failedAt = time.Now()
-			d.mu.Unlock()
+			restored := d.restorePrevious(ctx, prev)
+			d.noteSwitchFailure(ctx, payload, restored)
 			return fmt.Errorf("ingress: apply: load config: %w", err)
 		}
 	} else if err := loadConfig(payload, true); err != nil {
@@ -196,10 +261,12 @@ func (d *Driver) Apply(ctx context.Context, cfg *Config) error {
 	if sig != "" {
 		d.lastCASig = sig
 	}
-	d.failedReset = nil
+	d.failedReset, d.failCount = nil, 0
+	d.lastGood = payload
 	d.listenPorts = listenPortsOf(cfg)
 	d.lastApplied = payload
 	d.mu.Unlock()
+	setCASwitchNotice("")
 	d.saveSnapshot(payload)
 
 	d.logger.InfoContext(ctx, "ingress config applied",
@@ -216,7 +283,7 @@ func (d *Driver) Stop(ctx context.Context) error {
 	}
 	d.mu.Lock()
 	d.listenPorts = nil
-	d.lastApplied = nil
+	d.lastApplied, d.lastGood = nil, nil
 	d.mu.Unlock()
 	d.logger.InfoContext(ctx, "ingress stopped")
 	return nil

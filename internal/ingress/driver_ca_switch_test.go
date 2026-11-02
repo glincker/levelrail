@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"strings"
 	"testing"
+	"time"
 )
 
 func acmeTLSConfig(ca string) *Config {
@@ -147,7 +149,6 @@ func TestDriverApply_CASigKeptAcrossACMEDisabled(t *testing.T) {
 }
 
 func TestDriverApply_CASwitchRetriesAfterBackoff(t *testing.T) {
-	t.Setenv("APP_INGRESS_CA_RETRY_BACKOFF", "0s")
 	loads := stubLoads(t, func(n int, _ []byte) error {
 		if n == 3 {
 			return errors.New("transient")
@@ -155,12 +156,87 @@ func TestDriverApply_CASwitchRetriesAfterBackoff(t *testing.T) {
 		return nil
 	})
 	d := New(nil)
+	d.SetCARetryBackoff(func(context.Context) (time.Duration, time.Duration) { return time.Nanosecond, time.Nanosecond })
 	ctx := context.Background()
 	_ = d.Apply(ctx, acmeTLSConfig(stagingCA))
 	if err := d.Apply(ctx, acmeTLSConfig("")); err == nil {
 		t.Fatal("want error")
 	}
+	time.Sleep(time.Millisecond)
 	if err := d.Apply(ctx, acmeTLSConfig("")); err != nil || len(*loads) < 6 {
 		t.Fatalf("identical payload must retry after backoff: err=%v loads=%d", err, len(*loads))
+	}
+}
+
+func TestDriverApply_CASwitchBackoffGrowsAndExplains(t *testing.T) {
+	stubLoads(t, func(n int, _ []byte) error {
+		if n == 3 {
+			return errors.New("port busy")
+		}
+		return nil
+	})
+	d := New(nil)
+	d.SetCARetryBackoff(func(context.Context) (time.Duration, time.Duration) { return time.Minute, 3 * time.Minute })
+	for fails, want := range []time.Duration{time.Minute, 2 * time.Minute, 3 * time.Minute, 3 * time.Minute} {
+		if got := d.backoffFor(context.Background(), fails+1); got != want {
+			t.Fatalf("fails=%d delay=%s want %s", fails+1, got, want)
+		}
+	}
+	ctx := context.Background()
+	_ = d.Apply(ctx, acmeTLSConfig(stagingCA))
+	_ = d.Apply(ctx, acmeTLSConfig(""))
+	err := d.Apply(ctx, acmeTLSConfig(""))
+	if err == nil || !strings.Contains(err.Error(), "previous CA switch failed, retrying after") {
+		t.Fatalf("backoff error = %v", err)
+	}
+	if !strings.Contains(CASwitchNotice(), "retrying after") {
+		t.Fatalf("notice = %q", CASwitchNotice())
+	}
+}
+
+func TestDriverApply_NoResetWithoutKnownGoodConfig(t *testing.T) {
+	loads := stubLoads(t, func(n int, _ []byte) error {
+		if n == 2 {
+			return errors.New("bad")
+		}
+		return nil
+	})
+	d := New(nil)
+	ctx := context.Background()
+	_ = d.Apply(ctx, acmeTLSConfig(stagingCA)) // load 1: ok
+	// A failed normal load clears lastApplied but must keep lastGood.
+	bad := acmeTLSConfig(stagingCA)
+	bad.Apps.TLS.Automation.Policies[0].Subjects = []string{"x.example.org"}
+	if err := d.Apply(ctx, bad); err == nil {
+		t.Fatal("want error")
+	}
+	if d.lastGood == nil {
+		t.Fatal("lastGood must survive a failed normal load")
+	}
+	d.mu.Lock()
+	d.lastGood = nil
+	d.mu.Unlock()
+	before := len(*loads)
+	if err := d.Apply(ctx, acmeTLSConfig("")); err != nil {
+		t.Fatal(err)
+	}
+	if len(*loads)-before != 1 {
+		t.Fatalf("no known-good config: want a single load without reset, got %d", len(*loads)-before)
+	}
+}
+
+func TestDriverApply_RestoreFailureRetriesNextTick(t *testing.T) {
+	stubLoads(t, func(n int, _ []byte) error {
+		if n >= 3 {
+			return errors.New("down")
+		}
+		return nil
+	})
+	d := New(nil)
+	ctx := context.Background()
+	_ = d.Apply(ctx, acmeTLSConfig(stagingCA))
+	_ = d.Apply(ctx, acmeTLSConfig(""))
+	if d.failedReset != nil {
+		t.Fatal("failed restore must clear failedReset so the next tick retries")
 	}
 }

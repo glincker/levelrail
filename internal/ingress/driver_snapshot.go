@@ -65,6 +65,7 @@ func (d *Driver) RestoreSnapshot(ctx context.Context) (bool, error) {
 	}
 	d.mu.Lock()
 	d.lastApplied = append([]byte(nil), data.Config...)
+	d.lastGood = d.lastApplied
 	d.listenPorts = make(map[int]bool, len(data.Ports))
 	for _, p := range data.Ports {
 		d.listenPorts[p] = true

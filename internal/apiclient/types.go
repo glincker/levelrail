@@ -4192,6 +4192,7 @@ type HTTPSStatusResource struct {
 	Hint             string     `json:"hint,omitempty"`
 	DashboardURL     string     `json:"dashboard_url,omitempty"`
 	DefaultEmail     string     `json:"default_email,omitempty"`
+	Notice           string     `json:"notice,omitempty"`
 	// Preflight is set on the enable response only.
 	Preflight []HTTPSPreflightPort `json:"preflight,omitempty"`
 }
