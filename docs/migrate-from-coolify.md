@@ -38,7 +38,8 @@ Coolify has the most complete path. You can stage apps, move images that were bu
 
 ## What cannot be migrated
 
-- Coolify one-click services and Docker Compose apps (multi-service). They are listed as skipped. Deploy their compose file with [compose apps](/compose-apps).
+- Coolify one-click services are not created as apps. `migrate coolify` reads each service's compose file and env, translates its `SERVICE_` magic variables and stages the result as `compose.yaml` under `--stage-dir` (default `./migrated/compose`), with hosts under `--domain-suffix`. Nothing is deployed. Review the file, then deploy it with `levelrail-cli compose deploy`. The file and `--apply` modes stage services. The dry-run and verify reports list them as skipped. See [one-click services to Compose](/coolify-service-to-compose). Staging is pending run against a real Coolify instance.
+- Coolify Docker Compose applications (the `dockercompose` build pack, multi-service) are blocked and not translated. Stage their compose file by hand with the manual path in [one-click services to Compose](/coolify-service-to-compose), then deploy it with [compose apps](/compose-apps).
 - TLS certificates, DNS records, deploy history, logs and metrics. Certificates are issued here on first use.
 - ClickHouse, KeyDB and Dragonfly databases. They are listed as skipped, and the copy step does not handle them. Use their own dump tools and the [restore tools](/backups-and-storage).
 
@@ -62,8 +63,8 @@ The dashboard shows the report on the import page ("Exit report"), the API serve
 
 How to read it:
 
-- **Skipped** rows never move on their own. Compose apps, one-click services and engines without a managed equivalent land here.
-- **Manual** rows are the work list: volume data, database data (with the exact `migrate db-copy` command), backup schedules, webhooks on your code host, a proxy that owns ports 80 and 443.
+- **Skipped** rows never move on their own. One-click services, engines without a managed equivalent, and backup schedules and S3 storage destinations (with the `backups schedule set` or `backup-targets create` command that recreates them) land here. Staged one-click services are written as compose files and still need a deploy.
+- **Manual** rows are the work list: volume data, database data (with the exact `migrate db-copy` command), backup schedules of imported databases, webhooks on your code host, a proxy that owns ports 80 and 443.
 - The report says `ready_to_retire` only when nothing is manual or skipped.
 
 DNS switch order, least risky first:

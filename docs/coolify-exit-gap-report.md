@@ -21,7 +21,8 @@ Status words: **moves** means created on the new side, **reported** means the to
 | --- | --- | --- |
 | Applications from git (Dockerfile, Nixpacks, static) | moves | Created stopped. Nixpacks becomes Railpack and is flagged because the build may differ. Connecting a private repo is a manual step |
 | Applications from a registry image | moves | Image and tag kept |
-| Docker Compose applications and one-click services | reported | Listed as skipped with the reason. Deploy the compose file with [compose apps](/compose-apps) |
+| One-click services | reported | Compose body and env are read. The file and `--apply` modes of `migrate coolify` stage each one as `compose.yaml` under `--stage-dir`, with `SERVICE_` magic variables translated. Nothing is deployed. Dry-run and verify list it as skipped. See [one-click services to Compose](/coolify-service-to-compose). Pending run against a real instance |
+| Docker Compose applications (`dockercompose` build pack) | reported | Blocked and not translated. Stage the compose file by hand with the manual path in [one-click services to Compose](/coolify-service-to-compose), then deploy it with [compose apps](/compose-apps) |
 | Environment variables and secrets | moves | Secret-looking names go through the encrypted store. Preview duplicates are dropped. Secrets the token could not read are listed by name |
 | Build-time only flag on variables | reported | Variables are imported as runtime variables, and the names are listed |
 | Install, build and start commands | reported | Silently dropped before this audit. Now listed with their values |
@@ -36,7 +37,7 @@ Status words: **moves** means created on the new side, **reported** means the to
 | File mounts | reported | Content is not copied |
 | Databases: PostgreSQL, MySQL, MariaDB, MongoDB, Redis | moves | Created empty at the same major version. Data copy uses `migrate db-copy`, and the report prints the command with the public port, user and database name read from Coolify |
 | Databases: KeyDB, Dragonfly, ClickHouse | reported | Silently dropped before this audit. Now listed as skipped with the dump tool to use |
-| Database backup schedules | reported | New. One row per schedule, with a note when it also uploads to S3 |
+| Database backup schedules | reported | One row per schedule with the `backups schedule set` command. Imported databases also get a manual row for their schedule |
 | Scheduled tasks (cron) | moves | Was report-only. Enabled tasks become scheduled jobs that run `sh -c COMMAND` inside the app. Disabled tasks are skipped. Staged apps get their jobs disabled until cutover so a job never runs on both hosts |
 | Git webhook secrets (auto deploy) | reported | New. The git host still calls Coolify until you add a webhook pointing here |
 | HTTP health checks | moves | Path, interval, timeout and retries |
@@ -47,7 +48,8 @@ Status words: **moves** means created on the new side, **reported** means the to
 | Servers and destinations | reported | New. The report lists every server, the proxy that holds ports 80 and 443, and warns when there is more than one deploy server. Staged apps land on the control plane node |
 | Docker networks | invisible | Apps that rely on a custom Coolify network are not detected |
 | Team members, roles, API tokens | invisible | Not migrated by design. Recreate users and tokens here |
-| S3 storage destinations, SSH keys, GitHub App credentials | invisible | Credentials are never read. Add them again |
+| S3 storage destinations | reported | One row per destination with a `backup-targets create` command. Keys and bucket secrets are never read, so you enter them again |
+| SSH keys, GitHub App credentials | invisible | Credentials are never read. Add them again |
 | Notification channels (Discord, Slack, email) | invisible | Recreate them as [alert channels](/alert-inbox) |
 | Deploy history, logs, metrics | invisible | Not migrated |
 
@@ -64,6 +66,7 @@ Status words: **moves** means created on the new side, **reported** means the to
 - That Coolify's API returns the fields above for every build pack and version.
 - Restoring a backup copied across, and the write pause needed for a database that takes writes during the final copy.
 - Fallback to Coolify after the first write lands on the new database. Copy the data back first.
+- One-click service staging (compose translation, generated secrets and the `compose deploy` step) against a real Coolify instance. Pending run.
 
 ## Next gaps, by value
 
