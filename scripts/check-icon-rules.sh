@@ -34,7 +34,7 @@ for f in "${files[@]}"; do
 	fi
 
 	case "$f" in
-	web/src/components/BrandIcon.tsx | web/src/lib/templateLogos.ts | *.test.ts | *.test.tsx) ;;
+	web/src/components/BrandIcon.tsx | web/src/lib/templateLogos.ts | web/src/lib/templateLogos.generated.ts | *.test.ts | *.test.tsx) ;;
 	*)
 		if grep -n -E "(from|import\()\s*'@thesvg/react" "$f" >/dev/null; then
 			note "$f imports @thesvg/react directly; go through BrandIcon / BrandTile or lib/templateLogos.ts"
