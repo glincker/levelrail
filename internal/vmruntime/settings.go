@@ -2,9 +2,11 @@
 package vmruntime
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -28,7 +30,22 @@ const (
 	EnvBootTimeout     = "APP_VM_BOOT_TIMEOUT"
 	EnvDashboardPort   = "APP_VM_DASHBOARD_PORT"
 	EnvIngressPort     = "APP_VM_INGRESS_PORT"
+	EnvUpgradeHealth   = "APP_VM_UPGRADE_HEALTH_TIMEOUT"
+	EnvSocketPathMax   = "APP_VM_SOCKET_PATH_MAX"
 	DefaultBootTimeout = 180 * time.Second
+	// DefaultUpgradeHealth is how long vm upgrade waits for the new control plane before rolling back.
+	DefaultUpgradeHealth = 5 * time.Minute
+	// DefaultSocketPathMax is the unix socket path limit on macOS (sun_path, with its NUL).
+	DefaultSocketPathMax = 104
+)
+
+// Guest names the host side reaches over limactl.
+const (
+	Instance  = "levelrail"
+	TokenPath = "/var/lib/levelrail/data/desktop-token" //nolint:gosec // a guest file path, not a credential
+	// ExchangePath and SessionCookie mirror internal/desktopmode.
+	ExchangePath  = "/api/desktop/exchange"
+	SessionCookie = "session_token"
 )
 
 // DashboardHost is the only host name desktop mode serves on, so cookies stay
@@ -57,6 +74,98 @@ type Settings struct {
 	DashboardPort int      `json:"dashboard_port"`
 	IngressPort   int      `json:"ingress_port"`
 	Applied       *Applied `json:"applied,omitempty"`
+	// UpgradeHealth is a Go duration, seeded from env at init; the stored value wins.
+	UpgradeHealth string         `json:"upgrade_health_timeout,omitempty"`
+	UpgradeBackup *UpgradeBackup `json:"upgrade_backup,omitempty"`
+}
+
+// UpgradeBackup records the last guest data backup taken by vm upgrade.
+type UpgradeBackup struct {
+	Path   string `json:"path"`
+	At     string `json:"at"`
+	Result string `json:"result"`
+}
+
+// UpgradeTimeout is the stored health gate, else env, else the default.
+func (s Settings) UpgradeTimeout(env Lookup) (time.Duration, error) {
+	raw := strings.TrimSpace(s.UpgradeHealth)
+	if raw == "" {
+		raw, _ = env(EnvUpgradeHealth)
+		raw = strings.TrimSpace(raw)
+	}
+	if raw == "" {
+		return DefaultUpgradeHealth, nil
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil || d <= 0 {
+		return 0, fmt.Errorf("%s must be a positive duration such as 5m, got %q", EnvUpgradeHealth, raw)
+	}
+	return d, nil
+}
+
+// SocketPathMax reads the unix socket path limit used to choose the Lima home.
+func SocketPathMax(env Lookup) (int, error) {
+	n, err := IntEnv(env, EnvSocketPathMax, DefaultSocketPathMax)
+	if err != nil || n == 0 {
+		return DefaultSocketPathMax, err
+	}
+	return n, nil
+}
+
+// Runner is the part of limactl access ReadToken needs.
+type Runner interface {
+	Run(ctx context.Context, args ...string) ([]byte, error)
+}
+
+// ReadToken returns the guest desktop token. It is held in memory only and never logged.
+func ReadToken(ctx context.Context, r Runner) (string, error) {
+	out, err := r.Run(ctx, "shell", Instance, "--", "sudo", "cat", TokenPath)
+	if err != nil {
+		return "", errors.New("read the desktop token: the VM is not running or the token is missing")
+	}
+	tok := strings.TrimSpace(string(out))
+	if tok == "" {
+		return "", errors.New("the desktop token file is empty")
+	}
+	return tok, nil
+}
+
+// TokenExists reports whether the guest token file is present.
+func TokenExists(ctx context.Context, r Runner) bool {
+	_, err := r.Run(ctx, "shell", Instance, "--", "sudo", "test", "-f", TokenPath)
+	return err == nil
+}
+
+// Exchange trades the token for a dashboard session on the loopback port. The Host header is
+// the desktop name, which is all the control plane serves.
+func Exchange(ctx context.Context, client *http.Client, port int, token string) (*http.Cookie, string, error) {
+	p := strconv.Itoa(port)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "http://127.0.0.1:"+p+ExchangePath, nil)
+	if err != nil {
+		return nil, "", err
+	}
+	req.Host = DashboardHost + ":" + p
+	req.Header.Set("Authorization", "Bearer "+token)
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, "", fmt.Errorf("exchange: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusOK {
+		return nil, "", fmt.Errorf("exchange refused: HTTP %d", resp.StatusCode)
+	}
+	var body struct {
+		ExpiresAt string `json:"expires_at"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		return nil, "", fmt.Errorf("exchange reply: %w", err)
+	}
+	for _, c := range resp.Cookies() {
+		if c.Name == SessionCookie {
+			return c, body.ExpiresAt, nil
+		}
+	}
+	return nil, "", errors.New("exchange reply carried no session cookie")
 }
 
 // Lookup reads one env value, like os.LookupEnv.
@@ -79,6 +188,15 @@ func SeedFromEnv(env Lookup) (Settings, error) {
 			return s, err
 		}
 		*f.dst = v
+	}
+	raw, _ := env(EnvUpgradeHealth)
+	if raw = strings.TrimSpace(raw); raw != "" {
+		if _, err := s.UpgradeTimeout(env); err != nil {
+			return s, err
+		}
+		s.UpgradeHealth = raw
+	} else {
+		s.UpgradeHealth = DefaultUpgradeHealth.String()
 	}
 	return s, nil
 }

@@ -23,12 +23,27 @@ type fakeLima struct {
 	isoResult string
 	bootID    string
 	failStart bool
+	hook      func(line string)
+	token     string
 }
 
 func (f *fakeLima) Run(_ context.Context, args ...string) ([]byte, error) {
 	line := strings.Join(args, " ")
 	f.calls = append(f.calls, line)
+	if f.hook != nil {
+		f.hook(line)
+	}
 	switch {
+	case strings.HasSuffix(line, "desktop-token"):
+		if f.token == "" {
+			return nil, errors.New("missing")
+		}
+		if strings.Contains(line, "test -f") {
+			return nil, nil
+		}
+		return []byte(f.token + "\n"), nil
+	case strings.Contains(line, "tar -C"):
+		return []byte("TARDATA"), nil
 	case args[0] == "list":
 		if f.status == "" {
 			return nil, nil

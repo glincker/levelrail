@@ -62,10 +62,18 @@ type vmEnv struct {
 	portFree     localmode.PortFree
 	probe        func(ctx context.Context, port int) error
 	sleep        func(time.Duration)
+	limaHome     string // empty means dataDir/lima
+	limaShort    bool
 }
 
-func (e *vmEnv) adminPath() string   { return filepath.Join(e.dataDir, vmAdminFile) }
-func (e *vmEnv) instanceDir() string { return filepath.Join(e.dataDir, "lima", vmInstance) }
+func (e *vmEnv) adminPath() string { return filepath.Join(e.dataDir, vmAdminFile) }
+func (e *vmEnv) limaDir() string {
+	if e.limaHome != "" {
+		return e.limaHome
+	}
+	return filepath.Join(e.dataDir, "lima")
+}
+func (e *vmEnv) instanceDir() string { return filepath.Join(e.limaDir(), vmInstance) }
 
 const vmUsage = `Usage:
   %[1]s vm init [--memory MiB] [--cpus N] [--disk GiB] [--dashboard-port P] [--ingress-port P] [--control-plane-bin PATH] [--no-start]
@@ -74,6 +82,11 @@ const vmUsage = `Usage:
   %[1]s vm status [--json]
   %[1]s vm shell   (a guest shell; the VM user has passwordless sudo, the VM is the boundary)
   %[1]s vm set <memory|cpus|disk|dashboard-port|ingress-port> <value>
+  %[1]s vm export [--encrypt AGE_RECIPIENT] <file>
+  %[1]s vm upgrade --control-plane-bin PATH
+  %[1]s vm reset --yes [--keep-credentials]
+  %[1]s vm uninstall --yes
+  %[1]s vm token (--check | --exchange --cookie-jar PATH) [--json]
 
 Runs Levelrail in a private Linux VM with no host folders mounted (macOS, experimental).
 Enable with APP_VM_EXPERIMENTAL=on. Settings live in a host file; env only seeds it at init.
@@ -88,6 +101,15 @@ Flags:
   --no-start               init: create the VM but do not boot it
   --json                   status: print JSON
 
+  --encrypt RECIPIENT      export: encrypt with an age X25519 public key (age1...)
+  --yes                    reset, uninstall: confirm the deletion listed first
+  --keep-credentials       reset: keep the first-admin credentials file
+  --cookie-jar PATH        token --exchange: write the session cookie here (mode 0600)
+
+An export archive holds the control plane database and its secrets. Keep it private; without
+--encrypt it is clear text. The token is never printed: --check tests it, --exchange uses it.
+
+Limits: APP_VM_UPGRADE_HEALTH_TIMEOUT (5m, stored in the settings file), APP_VM_SOCKET_PATH_MAX (104).
 Limits: APP_VM_MEMORY_MAX_PERCENT (50), APP_VM_MEMORY_MIN_MIB (2048), APP_VM_BOOT_TIMEOUT (180s).
 `
 
@@ -128,6 +150,8 @@ type vmFlags struct {
 	memory, cpus, disk, dashPort, ingPort int
 	bin                                   string
 	noStart, jsonOut                      bool
+	yes, keepCreds, check, exchange       bool
+	encrypt, cookieJar                    string
 }
 
 func parseVMFlags(prog, sub string, args []string, stderr io.Writer) (vmFlags, []string, error) {
@@ -147,6 +171,20 @@ func parseVMFlags(prog, sub string, args []string, stderr io.Writer) (vmFlags, [
 		fs.StringVar(&f.bin, "control-plane-bin", "", "linux control plane binary to copy into the guest")
 	case "status":
 		fs.BoolVar(&f.jsonOut, "json", false, "print the result as JSON")
+	case "export":
+		fs.StringVar(&f.encrypt, "encrypt", "", "encrypt the archive to this age X25519 public key")
+	case "upgrade":
+		fs.StringVar(&f.bin, "control-plane-bin", "", "linux control plane binary to install in the guest")
+	case "reset":
+		fs.BoolVar(&f.yes, "yes", false, "confirm the deletion")
+		fs.BoolVar(&f.keepCreds, "keep-credentials", false, "keep the first-admin credentials file")
+	case "uninstall":
+		fs.BoolVar(&f.yes, "yes", false, "confirm the deletion")
+	case "token":
+		fs.BoolVar(&f.check, "check", false, "exit 0 when the guest token file exists")
+		fs.BoolVar(&f.exchange, "exchange", false, "exchange the token for a dashboard session")
+		fs.StringVar(&f.cookieJar, "cookie-jar", "", "file that receives the session cookie (mode 0600)")
+		fs.BoolVar(&f.jsonOut, "json", false, "print the result as JSON")
 	}
 	if err := fs.Parse(args); err != nil {
 		return f, nil, err
@@ -157,9 +195,9 @@ func parseVMFlags(prog, sub string, args []string, stderr io.Writer) (vmFlags, [
 func vmDispatch(ctx context.Context, env *vmEnv, prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	sub := args[0]
 	switch sub {
-	case "init", "start", "stop", "status", "shell", "set":
+	case "init", "start", "stop", "status", "shell", "set", "export", "upgrade", "reset", "uninstall", "token":
 	default:
-		_, _ = fmt.Fprintf(stderr, "%s vm: unknown command %q (init, start, stop, status, shell, set)\n", prog, sub)
+		_, _ = fmt.Fprintf(stderr, "%s vm: unknown command %q (init, start, stop, status, shell, set, export, upgrade, reset, uninstall, token)\n", prog, sub)
 		return exitUsage
 	}
 	f, rest, err := parseVMFlags(prog, sub, args[1:], stderr)
@@ -169,7 +207,7 @@ func vmDispatch(ctx context.Context, env *vmEnv, prog string, args []string, std
 		}
 		return exitUsage
 	}
-	if sub != "set" && len(rest) > 0 {
+	if sub != "set" && sub != "export" && len(rest) > 0 {
 		_, _ = fmt.Fprintf(stderr, "%s vm %s: unexpected argument %q\n", prog, sub, rest[0])
 		return exitUsage
 	}
@@ -191,6 +229,23 @@ func vmDispatch(ctx context.Context, env *vmEnv, prog string, args []string, std
 			return exitUsage
 		}
 		err = env.set(ctx, rest[0], rest[1], stdout, lookupEnv)
+	case "export":
+		if len(rest) != 1 {
+			_, _ = fmt.Fprintf(stderr, "%s vm export: want <file>\n", prog)
+			return exitUsage
+		}
+		err = env.export(ctx, rest[0], f.encrypt, stdout)
+	case "upgrade":
+		err = env.upgrade(ctx, f.bin, stdout, lookupEnv)
+	case "reset", "uninstall":
+		if !f.yes {
+			env.printDeletion(stdout, sub == "uninstall", f.keepCreds)
+			_, _ = fmt.Fprintf(stderr, "%s vm %s: nothing deleted; add --yes to confirm\n", prog, sub)
+			return exitUsage
+		}
+		err = env.reset(ctx, sub == "uninstall", f.keepCreds, stdout)
+	case "token":
+		err = env.token(ctx, f, stdout)
 	}
 	if err != nil {
 		_, _ = fmt.Fprintf(stderr, "%s vm %s: %v\n", prog, sub, err)
@@ -203,7 +258,7 @@ func vmDispatch(ctx context.Context, env *vmEnv, prog string, args []string, std
 // them into every instance, which could undo the isolation. Its own generated ssh keys in _config are fine.
 func (e *vmEnv) checkLimaHome() error {
 	for _, n := range []string{"default.yaml", "override.yaml", "always.yaml"} {
-		cfg := filepath.Join(e.dataDir, "lima", "_config", n)
+		cfg := filepath.Join(e.limaDir(), "_config", n)
 		if _, err := os.Stat(cfg); err == nil {
 			return fmt.Errorf("%s exists; remove it, Lima merges its files into every instance", cfg)
 		}
@@ -384,7 +439,7 @@ func (e *vmEnv) init(ctx context.Context, f vmFlags, stdout io.Writer, lookupEnv
 	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(filepath.Join(e.dataDir, "lima"), 0o700); err != nil {
+	if err := os.MkdirAll(e.limaDir(), 0o700); err != nil {
 		return err
 	}
 	adminPW, err := e.ensureAdmin()
@@ -656,21 +711,23 @@ var vmNotes = []string{
 }
 
 type vmStatusReport struct {
-	State         string        `json:"state"`
-	MemoryMiB     int           `json:"memory_mib"`
-	CPUs          int           `json:"cpus"`
-	DiskGiB       int           `json:"disk_gib"`
-	DashboardURL  string        `json:"dashboard_url"`
-	IngressPort   int           `json:"ingress_port"`
-	Forwards      []string      `json:"forwards"`
-	Shares        []string      `json:"shares"`
-	Pending       []string      `json:"pending_restart"`
-	EnvDiffers    []string      `json:"env_differs,omitempty"`
-	Isolation     string        `json:"isolation"`
-	IsolationInfo []guest.Check `json:"isolation_checks,omitempty"`
-	DiskUsage     string        `json:"disk_usage,omitempty"`
-	ImageOverride bool          `json:"image_override"`
-	Notes         []string      `json:"notes"`
+	State         string                   `json:"state"`
+	MemoryMiB     int                      `json:"memory_mib"`
+	CPUs          int                      `json:"cpus"`
+	DiskGiB       int                      `json:"disk_gib"`
+	DashboardURL  string                   `json:"dashboard_url"`
+	IngressPort   int                      `json:"ingress_port"`
+	Forwards      []string                 `json:"forwards"`
+	Shares        []string                 `json:"shares"`
+	Pending       []string                 `json:"pending_restart"`
+	EnvDiffers    []string                 `json:"env_differs,omitempty"`
+	Isolation     string                   `json:"isolation"`
+	IsolationInfo []guest.Check            `json:"isolation_checks,omitempty"`
+	DiskUsage     string                   `json:"disk_usage,omitempty"`
+	ImageOverride bool                     `json:"image_override"`
+	LimaHomeShort bool                     `json:"lima_home_short"`
+	UpgradeBackup *vmruntime.UpgradeBackup `json:"upgrade_backup,omitempty"`
+	Notes         []string                 `json:"notes"`
 }
 
 func (e *vmEnv) status(ctx context.Context, jsonOut bool, stdout io.Writer, lookupEnv vmruntime.Lookup) error {
@@ -688,6 +745,7 @@ func (e *vmEnv) status(ctx context.Context, jsonOut bool, stdout io.Writer, look
 		Forwards: []string{fmt.Sprintf("127.0.0.1:%d -> dashboard (%s)", s.DashboardPort, vmruntime.DashboardHost), fmt.Sprintf("127.0.0.1:%d -> app ingress", s.IngressPort)},
 		Shares:   []string{}, Pending: s.Pending(), Isolation: "unknown (VM not running)",
 		ImageOverride: lima.ImageOverrideFromEnv() != "", Notes: vmNotes,
+		LimaHomeShort: e.limaShort, UpgradeBackup: s.UpgradeBackup,
 	}
 	if r.Pending == nil {
 		r.Pending = []string{}
@@ -743,6 +801,9 @@ func (e *vmEnv) status(ctx context.Context, jsonOut bool, stdout io.Writer, look
 	_, _ = fmt.Fprintln(stdout, "Shares:     none")
 	if r.DiskUsage != "" {
 		_, _ = fmt.Fprintf(stdout, "Disk use:   %s\n", r.DiskUsage)
+	}
+	if b := r.UpgradeBackup; b != nil {
+		_, _ = fmt.Fprintf(stdout, "Upgrade:    %s at %s, backup %s\n", b.Result, b.At, b.Path)
 	}
 	if r.ImageOverride {
 		_, _ = fmt.Fprintln(stdout, "Warning:    image override active (testing only)")

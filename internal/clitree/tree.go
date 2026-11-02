@@ -13,7 +13,7 @@ var Tree = map[string]*Node{
 	"up":        nil,
 	"open":      nil,
 	"dev":       {Subs: map[string]*Node{"stop": nil, "status": nil}},
-	"vm":        {Subs: map[string]*Node{"init": nil, "start": nil, "stop": nil, "status": nil, "shell": nil, "set": nil}},
+	"vm":        {Subs: map[string]*Node{"init": nil, "start": nil, "stop": nil, "status": nil, "shell": nil, "set": nil, "export": nil, "reset": nil, "upgrade": nil, "uninstall": nil, "token": nil}},
 	"login":     nil,
 	"backup":    nil,
 	"restore":   nil,

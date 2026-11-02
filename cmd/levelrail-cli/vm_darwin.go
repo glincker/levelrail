@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -53,7 +54,22 @@ func (r limactlRunner) Interactive(ctx context.Context, args ...string) error {
 	return c.Run()
 }
 
-func newVMEnv(_ func(string) (string, bool)) (*vmEnv, error) {
+// Stream copies stdout straight to w so a large export never sits in memory.
+func (r limactlRunner) Stream(ctx context.Context, w io.Writer, args ...string) error {
+	var errb bytes.Buffer
+	c := r.cmd(ctx, args)
+	c.Stdout, c.Stderr = w, &errb
+	if err := c.Run(); err != nil {
+		msg := strings.TrimSpace(errb.String())
+		if len(msg) > 400 {
+			msg = msg[len(msg)-400:]
+		}
+		return fmt.Errorf("limactl %s: %w: %s", args[0], err, msg)
+	}
+	return nil
+}
+
+func newVMEnv(lookup func(string) (string, bool)) (*vmEnv, error) {
 	settings, err := vmruntime.DefaultPath()
 	if err != nil {
 		return nil, err
@@ -70,6 +86,19 @@ func newVMEnv(_ func(string) (string, bool)) (*vmEnv, error) {
 			return nil, errors.New("limactl not found; install Lima (the pinned download lands in a later slice)")
 		}
 	}
+	maxPath, err := vmruntime.SocketPathMax(lookup)
+	if err != nil {
+		return nil, err
+	}
+	limaHome, short, err := chooseLimaHome(filepath.Join(dataDir, "lima"), home, vmInstance, maxPath)
+	if err != nil {
+		return nil, err
+	}
+	if short {
+		if err := ensureLimaHome(limaHome); err != nil {
+			return nil, err
+		}
+	}
 	out, err := exec.CommandContext(context.Background(), "sysctl", "-n", "hw.memsize").Output()
 	if err != nil {
 		return nil, fmt.Errorf("read host memory: %w", err)
@@ -79,7 +108,9 @@ func newVMEnv(_ func(string) (string, bool)) (*vmEnv, error) {
 		return nil, err
 	}
 	return &vmEnv{
-		runner:       limactlRunner{bin: bin, home: filepath.Join(dataDir, "lima")},
+		runner:       limactlRunner{bin: bin, home: limaHome},
+		limaHome:     limaHome,
+		limaShort:    short,
 		settingsPath: settings,
 		dataDir:      dataDir,
 		homeDir:      home,
