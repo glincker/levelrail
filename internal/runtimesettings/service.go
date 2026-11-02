@@ -338,6 +338,30 @@ func (s *Service) Reset(ctx context.Context, key string) (Setting, error) {
 	return s.Get(ctx, key)
 }
 
+// WeakensOnReset reports whether deleting the saved value would leave a weaker
+// effective value (the env seed or the default) than the one in force now.
+func (s *Service) WeakensOnReset(ctx context.Context, key string) bool {
+	d, ok := s.definition(key)
+	if !ok || d.Risk != RiskWeakensSecurity {
+		return false
+	}
+	cur, _ := s.resolve(ctx, d)
+	if cur.source != SourceSaved {
+		return false
+	}
+	target := d.Default
+	if v, ok := s.lookupEnv(d.Env); ok && v != "" {
+		if c, err := canonicalEnv(d, v); err == nil {
+			target = c
+		}
+	}
+	c, err := canonicalFromString(d, target)
+	if err != nil {
+		return false
+	}
+	return s.WeakensTo(ctx, key, typed(d, c))
+}
+
 // WeakensTo reports whether saving raw would make a weakens_security setting
 // weaker than it is now: a bool turned off, an allowlist cleared or widened,
 // or a duration shortened.

@@ -4390,9 +4390,14 @@ func (c *Client) PutRuntimeSetting(ctx context.Context, key string, req RuntimeS
 }
 
 // DeleteRuntimeSetting calls DELETE /api/v1/settings/runtime/{key}, dropping the saved value.
-func (c *Client) DeleteRuntimeSetting(ctx context.Context, key string) (RuntimeSettingResource, error) {
+// confirmWeakening acknowledges a reset that restores a weaker env or default value.
+func (c *Client) DeleteRuntimeSetting(ctx context.Context, key string, confirmWeakening bool) (RuntimeSettingResource, error) {
 	var out RuntimeSettingResource
-	err := c.do(ctx, http.MethodDelete, "/api/v1/settings/runtime/"+url.PathEscape(key), nil, &out)
+	path := "/api/v1/settings/runtime/" + url.PathEscape(key)
+	if confirmWeakening {
+		path += "?confirm_weakening=true"
+	}
+	err := c.do(ctx, http.MethodDelete, path, nil, &out)
 	return out, err
 }
 

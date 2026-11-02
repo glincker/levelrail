@@ -286,3 +286,31 @@ func TestLoopbackTrustFlag(t *testing.T) {
 		t.Fatal("loopback must be trusted by default")
 	}
 }
+
+func TestRuntimeSettings_ResetThatWeakensNeedsConfirm(t *testing.T) {
+	cases := []struct {
+		key, strong, env, envVal string
+	}{
+		{KeyMCPDefaultTokenScope, "read_only", EnvMCPDefaultTokenScope, "read_write"},
+		{"security.build_network", "none", "", ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.key, func(t *testing.T) {
+			if tc.env != "" {
+				t.Setenv(tc.env, tc.envVal)
+			}
+			rt, db := newTestRouter(t)
+			cookie := loginTestSession(t, rt, db)
+			path := rsBase + "/" + tc.key
+			if rec := rsDo(t, rt, cookie, http.MethodPut, path, `{"value":"`+tc.strong+`"}`); rec.Code != http.StatusOK {
+				t.Fatalf("save strong value = %d %s", rec.Code, rec.Body.String())
+			}
+			if rec := rsDo(t, rt, cookie, http.MethodDelete, path, ""); rec.Code != http.StatusBadRequest {
+				t.Fatalf("weakening reset = %d, want 400", rec.Code)
+			}
+			if rec := rsDo(t, rt, cookie, http.MethodDelete, path+"?confirm_weakening=true", ""); rec.Code != http.StatusOK {
+				t.Fatalf("confirmed reset = %d %s", rec.Code, rec.Body.String())
+			}
+		})
+	}
+}

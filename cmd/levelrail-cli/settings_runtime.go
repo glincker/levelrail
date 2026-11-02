@@ -157,8 +157,10 @@ func runSettingsRuntimeSet(prog string, args []string, stdout, stderr io.Writer,
 
 func runSettingsRuntimeReset(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "settings runtime reset", "print the reset setting as JSON to stdout and nothing else", stderr)
+	var confirmWeakening bool
+	fs.BoolVar(&confirmWeakening, "confirm-weakening", false, "required when the reset restores a weaker environment or default value for a weakens_security setting")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s settings runtime reset KEY [flags]\n\nDeletes the saved value so the setting falls back to its environment variable or default.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s settings runtime reset KEY [flags]\n\nDeletes the saved value so the setting falls back to its environment variable or default.\nA reset that restores a weaker value needs --confirm-weakening.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -171,7 +173,7 @@ func runSettingsRuntimeReset(prog string, args []string, stdout, stderr io.Write
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-	setting, err := client.DeleteRuntimeSetting(context.Background(), rest[0])
+	setting, err := client.DeleteRuntimeSetting(context.Background(), rest[0], confirmWeakening)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("reset runtime setting %s: %w", rest[0], err))
 	}

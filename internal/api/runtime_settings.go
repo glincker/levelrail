@@ -183,6 +183,13 @@ func (rt *Router) handleResetRuntimeSetting(w http.ResponseWriter, r *http.Reque
 		rt.writeSettingError(w, "api: reset runtime setting", err)
 		return
 	}
+	if rt.runtimeSettings.WeakensOnReset(r.Context(), key) && r.URL.Query().Get("confirm_weakening") != "true" {
+		writeJSON(w, http.StatusBadRequest, runtimeSettingError{
+			Error: "resetting restores a weaker value (the environment seed or the default); send confirm_weakening=true to proceed",
+			Code:  errCodeConfirmRequired, Field: "confirm_weakening",
+		})
+		return
+	}
 	after, err := rt.runtimeSettings.Reset(r.Context(), key)
 	if err != nil {
 		rt.writeSettingError(w, "api: reset runtime setting", err)
