@@ -191,3 +191,12 @@ func (db *DB) CountAppStreamsByService(ctx context.Context) (map[string]int, err
 	}
 	return out, rows.Err()
 }
+
+// DeleteAppSleepIfOrphan drops the sleep row only while no desired service
+// carries the name, so a delete-then-recreate cannot lose the new row.
+func (db *DB) DeleteAppSleepIfOrphan(ctx context.Context, serviceName string) error {
+	if _, err := db.ExecContext(ctx, `DELETE FROM app_sleep WHERE service_name = ? AND NOT EXISTS (SELECT 1 FROM desired_services WHERE name = ?)`, serviceName, serviceName); err != nil {
+		return fmt.Errorf("store: delete orphan app sleep for %q: %w", serviceName, err)
+	}
+	return nil
+}

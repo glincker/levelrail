@@ -182,6 +182,8 @@ type Store interface {
 	SaveSuspendedDesiredService(ctx context.Context, svc store.DesiredService) error
 	ListAppSleep(ctx context.Context) ([]store.AppSleep, error)
 	DeleteAppSleep(ctx context.Context, serviceName string) error
+	// DeleteAppSleepIfOrphan deletes only while no desired service has the name.
+	DeleteAppSleepIfOrphan(ctx context.Context, serviceName string) error
 	ListDeployAttempts(ctx context.Context, serviceName string) ([]store.DeployAttempt, error)
 	ListRollbackPins(ctx context.Context, serviceName string) ([]store.RollbackPin, error)
 	SetAppSleepIdle(ctx context.Context, serviceName string, minutes int, now time.Time) error
@@ -279,7 +281,7 @@ func (s *Syncer) pruneOrphanSleep(ctx context.Context, sleeps []store.AppSleep, 
 		if existing[a.ServiceName] {
 			continue
 		}
-		if err := s.Store.DeleteAppSleep(ctx, a.ServiceName); err != nil {
+		if err := s.Store.DeleteAppSleepIfOrphan(ctx, a.ServiceName); err != nil {
 			s.Logger.WarnContext(ctx, "deploy urls: prune orphan sleep row failed", slog.String("service", a.ServiceName), slog.String("error", err.Error()))
 		}
 	}

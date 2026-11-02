@@ -127,3 +127,23 @@ func TestSuspendedSaveAndSleepClearedOnDelete(t *testing.T) {
 		t.Fatalf("sleep rows after delete = %+v, want none", rows)
 	}
 }
+
+func TestDeleteAppSleepIfOrphanKeepsRecreatedService(t *testing.T) {
+	db := openTestDB(t)
+	ctx := t.Context()
+	if err := db.SaveDesiredService(ctx, DesiredService{Name: "web", Image: "web:1", Port: 80}); err != nil {
+		t.Fatal(err)
+	}
+	for _, n := range []string{"web", "gone"} {
+		if err := db.SetAppSleepIdle(ctx, n, 5, time.Now()); err != nil {
+			t.Fatal(err)
+		}
+		if err := db.DeleteAppSleepIfOrphan(ctx, n); err != nil {
+			t.Fatal(err)
+		}
+	}
+	rows, _ := db.ListAppSleep(ctx)
+	if len(rows) != 1 || rows[0].ServiceName != "web" {
+		t.Fatalf("sleep rows = %+v, want only the live service", rows)
+	}
+}

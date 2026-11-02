@@ -81,6 +81,15 @@ func (f *fakeStore) DeleteAppSleep(_ context.Context, name string) error {
 	return nil
 }
 
+func (f *fakeStore) DeleteAppSleepIfOrphan(ctx context.Context, name string) error {
+	for _, svc := range f.services {
+		if svc.Name == name {
+			return nil
+		}
+	}
+	return f.DeleteAppSleep(ctx, name)
+}
+
 func (f *fakeStore) ListDeployAttempts(_ context.Context, name string) ([]store.DeployAttempt, error) {
 	return f.attempts[name], nil
 }
