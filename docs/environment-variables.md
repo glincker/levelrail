@@ -64,8 +64,13 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_GAME_STATUS_TIMEOUT` | [`games.status_timeout`](/runtime-settings#networking) | `3s` |
 | `APP_INGRESS_CA_RETRY_BACKOFF` | [`ingress.ca_switch_retry_base`](/runtime-settings#networking) | `1m` |
 | `APP_INGRESS_CA_RETRY_BACKOFF_MAX` | [`ingress.ca_switch_retry_max`](/runtime-settings#networking) | `1h` |
+| `APP_CLOUDFLARE_IPS_MAX_BYTES` | [`ingress.cloudflare_ips_max_bytes`](/runtime-settings#networking) | `1048576` |
+| `APP_CLOUDFLARE_IPS_MIN_RANGES` | [`ingress.cloudflare_ips_min_ranges`](/runtime-settings#networking) | `10` |
+| `APP_CLOUDFLARE_IPS_REFRESH` | [`ingress.cloudflare_ips_refresh`](/runtime-settings#networking) | `24h` |
+| `APP_CLOUDFLARE_IPS_TIMEOUT` | [`ingress.cloudflare_ips_timeout`](/runtime-settings#networking) | `15s` |
 | `APP_INGRESS_DNS01_ALL_HOSTS` | [`ingress.dns01_all_hosts`](/runtime-settings#networking) | `false` |
 | `APP_INGRESS_MAX_BODY_BYTES` | [`ingress.max_body_bytes`](/runtime-settings#networking) | `1073741824` |
+| `APP_INGRESS_TRUSTED_PROXY_PRESET` | [`ingress.trusted_proxy_preset`](/runtime-settings#networking) | `none` |
 | `APP_TRUST_LOOPBACK_FORWARDED` | [`security.trust_loopback_forwarded_headers`](/runtime-settings#networking) | `true` |
 | `APP_BUILD_MEMORY_MB` | [`builds.memory_limit_mb`](/runtime-settings#deploys) | `0` |
 | `APP_COMPOSE_DEPENDS_ON_TIMEOUT` | [`compose.depends_on_timeout`](/runtime-settings#deploys) | `120s` |

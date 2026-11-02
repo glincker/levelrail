@@ -1,12 +1,28 @@
 package edgefw
 
 import (
+	"log/slog"
 	"net/netip"
 	"sort"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/cloudflareips"
 )
+
+var warnCloudflareOnce sync.Once
+
+// protected is true for Cloudflare edge addresses: banning one would block every visitor behind it.
+func protected(ip netip.Addr) bool {
+	if !cloudflareips.Default().Contains(ip) {
+		return false
+	}
+	warnCloudflareOnce.Do(func() {
+		slog.Warn("shield skipped a Cloudflare address; set the trusted proxy preset to cloudflare so visitors are seen by their own address")
+	})
+	return true
+}
 
 // Ban is one automatic temporary block ("persistent action"). Bans live in
 // memory only and are gone after a restart.
@@ -48,7 +64,7 @@ func (b *Bans) SetLimits(l Limits) {
 
 // Strike counts one denial for ip and reports whether it just became banned.
 func (b *Bans) Strike(ip netip.Addr, reason string, now time.Time) bool {
-	if !ip.IsValid() {
+	if !ip.IsValid() || protected(ip) {
 		return false
 	}
 	b.mu.Lock()
@@ -75,7 +91,7 @@ func (b *Bans) Strike(ip netip.Addr, reason string, now time.Time) bool {
 
 // Add bans ip for d.
 func (b *Bans) Add(ip netip.Addr, reason string, d time.Duration, now time.Time) {
-	if !ip.IsValid() {
+	if !ip.IsValid() || protected(ip) {
 		return
 	}
 	b.mu.Lock()

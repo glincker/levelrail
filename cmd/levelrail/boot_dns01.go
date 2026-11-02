@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/cloudflareips"
 	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 )
@@ -15,6 +16,7 @@ func (s *bootState) setupDNS01Check() {
 		rs := s.apiRouter.RuntimeSettings()
 		return rs.Duration(c, runtimesettings.KeyIngressCARetryBase), rs.Duration(c, runtimesettings.KeyIngressCARetryMax)
 	})
+	s.startCloudflareIPsRefresh()
 	s.apiRouter.SetDNS01ProviderCheck(func(ctx context.Context) bool {
 		if sec == nil {
 			return false
@@ -24,4 +26,18 @@ func (s *bootState) setupDNS01Check() {
 			ingressreconcile.WithRoute53DNSCredentials(sec),
 			ingressreconcile.WithGoogleCloudDNSKey(sec))
 	})
+}
+
+// startCloudflareIPsRefresh keeps the Cloudflare range list current; every knob is re-read from stored settings each round.
+func (s *bootState) startCloudflareIPsRefresh() {
+	rs := s.apiRouter.RuntimeSettings()
+	limits := func(c context.Context) cloudflareips.Limits {
+		return cloudflareips.Limits{
+			Timeout:   rs.Duration(c, runtimesettings.KeyCloudflareIPsTimeout),
+			MaxBytes:  int64(rs.Int(c, runtimesettings.KeyCloudflareIPsMaxBytes)),
+			MinRanges: rs.Int(c, runtimesettings.KeyCloudflareIPsMinRanges),
+		}
+	}
+	next := func(c context.Context) time.Duration { return rs.Duration(c, runtimesettings.KeyCloudflareIPsRefresh) }
+	go cloudflareips.Default().Run(s.ctx, limits, next, s.engine.Nudge)
 }

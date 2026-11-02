@@ -33,6 +33,9 @@ func (l *rateLimiter) same(count, windowSeconds int) bool {
 // allow records one request from ip and reports whether it is within the
 // limit; when it is not, retryAfter is the seconds until the window resets.
 func (l *rateLimiter) allow(ip netip.Addr, now time.Time) (ok bool, retryAfter int) {
+	if protected(ip) {
+		return true, 0
+	}
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	e, found := l.entries[ip]

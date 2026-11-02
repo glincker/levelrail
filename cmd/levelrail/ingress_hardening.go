@@ -10,6 +10,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/brand"
+	"github.com/GLINCKER/levelrail/internal/cloudflareips"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
@@ -91,6 +92,10 @@ func (e ingressEdge) effectiveHardening(ctx context.Context, db edgeOverrideStor
 	h := e.layeredHardening(ctx, db, logger)
 	if h != nil && rs != nil {
 		h.MaxBodyBytes = ingressBodyCap(ctx, rs, h.MaxBodyBytes)
+		if rs.TrustedProxyPreset(ctx) == runtimesettings.TrustedProxyPresetCloudflare {
+			m := h.WithCloudflarePreset(cloudflareips.Default().CIDRs())
+			h = &m
+		}
 	}
 	return h
 }
