@@ -3,7 +3,17 @@ package runtimesettings
 // KeyNextjsGenerateActionsKey turns on the one-time Server Actions key for wizard-created Next.js apps.
 const KeyNextjsGenerateActionsKey = "nextjs.generate_actions_key"
 
+// KeyNextjsMemoryFloorMB is the memory limit under which the doctor warns about Next.js apps.
+const KeyNextjsMemoryFloorMB = "nextjs.memory_floor_mb"
+
 func init() {
+	Register(Definition{
+		Key: KeyNextjsMemoryFloorMB, Category: CategoryDeploys, Kind: KindInt, Default: "256",
+		Apply: ApplyLive, CheckValue: intRangeCheck(0, 65536),
+		Title:       "Next.js: memory warning floor",
+		Description: "The doctor warns when a Next.js app has a memory limit below this many MiB, because the server risks being killed for running out of memory. 0 turns the warning off. The warning is advisory and never blocks a deploy.",
+	})
+
 	// Safe to default on: it only adds a missing app secret for apps the wizard
 	// detected as Next.js, never changes an existing key, and is off with one switch.
 	Register(Definition{

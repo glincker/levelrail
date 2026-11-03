@@ -5,11 +5,9 @@ import (
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/fixit"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
-
-// nextjsMinMemoryMB is the limit under which a Next.js server risks being OOM-killed.
-const nextjsMinMemoryMB = 256
 
 // nextjsFixes registers the Next.js doctor fixes for apps whose last deploy
 // detected Next.js. Other apps cost one list call at startup and nothing after.
@@ -52,9 +50,13 @@ func (rt *Router) nextjsFacts(ctx context.Context, app string) (fixit.NextjsFact
 	if err != nil || svc == nil {
 		return fixit.NextjsFacts{}, false, err
 	}
+	floor := 256 // matches the registered default when settings are unavailable
+	if rt.runtimeSettings != nil {
+		floor = rt.runtimeSettings.Int(ctx, runtimesettings.KeyNextjsMemoryFloorMB)
+	}
 	f := fixit.NextjsFacts{
 		App: app, Standalone: true, StaticCopied: true, SharpAvailable: true,
-		MinMemoryMB: nextjsMinMemoryMB, Replicas: svc.Replicas,
+		MinMemoryMB: floor, Replicas: svc.Replicas,
 		ActionsKeySet: rt.sharedEnvHasKey(ctx, *svc, nextActionsKeyEnv),
 		SharedCache:   hasRedisLink(svc),
 	}

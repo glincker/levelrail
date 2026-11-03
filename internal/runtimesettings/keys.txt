@@ -67,6 +67,7 @@ ingress.proxy_cert_wait
 ingress.trusted_proxy_preset
 monitors.raw_retention
 nextjs.generate_actions_key
+nextjs.memory_floor_mb
 onboarding.enabled
 retention.ai_history_days
 retention.alert_history_days
