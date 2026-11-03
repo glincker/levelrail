@@ -10,7 +10,7 @@ import { useBrand } from '../../hooks/useBrand'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Badge } from '@/components/ui/badge'
-import { Banner } from '@/components/ui/banner'
+import { TokensNotices } from '../../components/tokens/TokensNotices'
 import { useTranslation } from 'react-i18next'
 import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
 
@@ -53,33 +53,11 @@ function TokensPage() {
       }
       actions={<CreateTokenDialog />}
       banners={
-        expiringSoon + longLivedRoot > 0 ? (
-          <Banner
-            variant="warning"
-            title={t('tokensPage.attention.title', {
-              count: (expiringSoon > 0 ? 1 : 0) + (longLivedRoot > 0 ? 1 : 0),
-            })}
-          >
-            <ul className="list-disc space-y-1 pl-4">
-              {expiringSoon > 0 ? (
-                <li>
-                  <span className="font-medium">
-                    {t('tokensPage.expiring.title', { count: expiringSoon })}
-                  </span>{' '}
-                  {t('tokensPage.expiring.body')}
-                </li>
-              ) : null}
-              {longLivedRoot > 0 ? (
-                <li>
-                  <span className="font-medium">
-                    {t('tokensPage.banner.title', { count: longLivedRoot })}
-                  </span>{' '}
-                  {t('tokensPage.banner.body')}
-                </li>
-              ) : null}
-            </ul>
-          </Banner>
-        ) : null
+        <TokensNotices
+          expiringSoon={expiringSoon}
+          longLivedRoot={longLivedRoot}
+          active={active}
+        />
       }
     >
       {brand.DocsURL ? (

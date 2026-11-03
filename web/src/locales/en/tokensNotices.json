@@ -1,0 +1,11 @@
+{
+  "title_one": "{{count}} token needs attention",
+  "title_other": "{{count}} tokens need attention",
+  "expiring": "{{count}} expiring within 14 days",
+  "longLivedRoot": "{{count}} root without expiry",
+  "unusedIntro": "Unused for {{days}} days or more:",
+  "neverUsed": "never used",
+  "lastUsed": "last used",
+  "revoke": "Revoke",
+  "revokeLabel": "Revoke {{name}}"
+}
