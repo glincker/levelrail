@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -32,8 +31,8 @@ func (rt *Router) handleChangePassword(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if len(req.NewPassword) < minPasswordLength {
-		writeError(w, http.StatusBadRequest, fmt.Sprintf("new password must be at least %d characters", minPasswordLength))
+	if msg := rt.passwordProblem(r.Context(), "new password", req.NewPassword); msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
 		return
 	}
 

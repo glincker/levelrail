@@ -7,6 +7,8 @@ audit.anchor_webhook_secret
 audit.anchor_webhook_url
 auth.engine_rate_limit_per_email
 auth.engine_rate_limit_per_ip
+auth.password_min_length
+auth.password_require_classes
 backup.default_retention_hours
 backup.local_root
 boot.event_recheck

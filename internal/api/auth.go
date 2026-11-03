@@ -722,16 +722,12 @@ func (rt *Router) handleRegister(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusForbidden, "a valid setup token is required; print it on the server with the setup-token subcommand")
 		return
 	}
-	if len(req.Password) < minPasswordLength {
-		writeError(w, http.StatusBadRequest, fmt.Sprintf("password must be at least %d characters", minPasswordLength))
+	if msg := rt.passwordProblem(r.Context(), "password", req.Password); msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
 		return
 	}
 	rt.libRegister(w, r, req)
 }
-
-// minPasswordLength is a security floor, not a deployment preference,
-// so it stays a constant rather than an env var.
-const minPasswordLength = 8
 
 // BootstrapAdmin ensures at least one user exists, creating one from
 // username/password if none does yet, with AbilityRoot: it's the only

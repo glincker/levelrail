@@ -101,8 +101,8 @@ func (rt *Router) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "token is required")
 		return
 	}
-	if len(req.NewPassword) < minPasswordLength {
-		writeError(w, http.StatusBadRequest, fmt.Sprintf("new password must be at least %d characters", minPasswordLength))
+	if msg := rt.passwordProblem(r.Context(), "new password", req.NewPassword); msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
 		return
 	}
 	rt.resetLibPassword(w, r, req)

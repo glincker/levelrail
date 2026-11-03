@@ -243,7 +243,7 @@ func (rt *Router) writeLibRegisterError(w http.ResponseWriter, err error) {
 	}
 	switch le.Code {
 	case authengine.CodeWeakPassword:
-		writeError(w, http.StatusBadRequest, fmt.Sprintf("password must be at least %d characters", minPasswordLength))
+		writeError(w, http.StatusBadRequest, rt.passwordPolicyNow(context.Background()).Check("password", ""))
 	case authengine.CodeEmailTaken, authengine.CodeSignupClosed:
 		writeError(w, http.StatusConflict, "an account already exists; sign in instead")
 	case authengine.CodeSetupTokenInvalid:
