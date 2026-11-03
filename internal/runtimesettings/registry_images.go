@@ -3,6 +3,7 @@ package runtimesettings
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/GLINCKER/levelrail/kit/cronexpr"
 )
@@ -23,8 +24,13 @@ func pruneScheduleCheck(canonical string) error {
 	if v == ImagesPruneOff {
 		return nil
 	}
-	if _, err := cronexpr.Parse(v); err != nil {
+	sched, err := cronexpr.Parse(v)
+	if err != nil {
 		return fmt.Errorf("must be %q or a cron expression such as 0 3 * * 0: %w", ImagesPruneOff, err)
+	}
+	// A date that never exists, such as 30 February, parses but never fires.
+	if sched.Next(time.Now()).IsZero() {
+		return fmt.Errorf("this schedule never matches a real date; use %q or a schedule such as 0 3 * * 0", ImagesPruneOff)
 	}
 	return nil
 }

@@ -2,12 +2,15 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
+	"net/http"
 	"os"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/imagelife"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/kit/cronexpr"
 )
 
@@ -58,7 +61,8 @@ func (rt *Router) imagePruneDue(ctx context.Context, last, now time.Time) bool {
 	if err != nil {
 		return false
 	}
-	return !now.Before(sched.Next(last))
+	next := sched.Next(last)
+	return !next.IsZero() && !now.Before(next)
 }
 
 func (rt *Router) pruneImagesOnce(ctx context.Context) {
@@ -76,13 +80,36 @@ func (rt *Router) pruneImagesOnce(ctx context.Context) {
 		return
 	}
 	plan := imagelife.PlanGC(entries)
-	removed, failed := 0, 0
+	removed, failed := []string{}, 0
 	for _, e := range plan.Remove {
 		if err := removeImageEntry(ctx, inv, e); err != nil {
 			failed++
 			continue
 		}
-		removed++
+		removed = append(removed, e.ID)
 	}
-	rt.logger.Info("api: scheduled image prune finished", slog.Int("removed", removed), slog.Int("failed", failed))
+	rt.logger.Info("api: scheduled image prune finished", slog.Int("removed", len(removed)), slog.Int("failed", failed))
+	if len(removed) > 0 {
+		rt.auditSystemImagePrune(ctx, "images.prune_scheduled", removed)
+	}
+}
+
+// auditSystemImagePrune records which images a prune removed, under the system actor.
+func (rt *Router) auditSystemImagePrune(ctx context.Context, action string, ids []string) {
+	if rt.auditLog == nil {
+		return
+	}
+	id, err := store.NewAuditEntryID()
+	if err != nil {
+		return
+	}
+	detail, _ := json.Marshal(map[string]any{"removed": ids})
+	entry := store.AuditEntry{
+		ID: id, ActorType: "system", ActorID: "image-prune", ActorName: "image prune",
+		Ability: AbilityWrite, Method: http.MethodPost, Path: "/api/v1/images/gc", StatusCode: http.StatusOK,
+		CreatedAt: store.FormatAuditTime(time.Now()), Action: action, Detail: string(detail),
+	}
+	if err := rt.auditLog.SaveAuditEntry(ctx, entry); err != nil {
+		rt.logger.Warn("api: save image prune audit failed", slog.String("error", err.Error()))
+	}
 }
