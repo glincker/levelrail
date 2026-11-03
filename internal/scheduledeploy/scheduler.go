@@ -150,6 +150,11 @@ func (s *Scheduler) tickOne(ctx context.Context, sch store.AppSchedule, now time
 
 	if sch.NextFireAt == nil {
 		next := cronexpr.NextInLocation(sched, now, loc)
+		if !validNext(next, now) {
+			s.log().Warn("scheduledeploy: scheduler: schedule never fires, not arming",
+				slog.String("app", sch.ServiceName), slog.String("cron", sch.Cron))
+			return nil
+		}
 		if err := s.Store.ArmAppScheduleNextRun(ctx, sch.ServiceName, next); err != nil {
 			return fmt.Errorf("arm first run: %w", err)
 		}
@@ -161,6 +166,13 @@ func (s *Scheduler) tickOne(ctx context.Context, sch store.AppSchedule, now time
 
 	due := *sch.NextFireAt
 	next := cronexpr.NextInLocation(sched, now, loc)
+	if !validNext(next, now) {
+		// Nothing left to fire after this run; disable so a stale next_fire_at cannot re-fire every tick.
+		if err := s.Store.CompleteAppSchedule(ctx, sch.ServiceName, now); err != nil {
+			return fmt.Errorf("complete schedule with no next run: %w", err)
+		}
+		return s.fire(ctx, sch, due, now)
+	}
 	if err := s.Store.ArmAppScheduleNextRun(ctx, sch.ServiceName, next); err != nil {
 		return fmt.Errorf("re-arm next run: %w", err)
 	}

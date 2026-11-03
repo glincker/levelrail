@@ -143,6 +143,10 @@ func (rt *Router) handleSetAppSchedule(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, fmt.Sprintf("invalid timezone: %s", err.Error()))
 		return
 	}
+	if sched != nil && !validNextFire(cronexpr.NextInLocation(sched, time.Now(), loc), time.Now()) {
+		writeError(w, http.StatusBadRequest, "invalid cron expression: it never matches a real date within four years")
+		return
+	}
 	enabled := true
 	if req.Enabled != nil {
 		enabled = *req.Enabled

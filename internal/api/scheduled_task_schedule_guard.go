@@ -14,8 +14,14 @@ func checkScheduleFires(expr string) error {
 	if err != nil {
 		return err
 	}
-	if sched.Next(time.Now()).IsZero() {
+	if !validNextFire(sched.Next(time.Now()), time.Now()) {
 		return errors.New("this schedule never matches a real date within four years")
 	}
 	return nil
+}
+
+// validNextFire is false for the zero time, year 1 (a zero turned into a
+// local time) and anything not strictly after now. TODO: swap for the shared cronexpr validator.
+func validNextFire(next, now time.Time) bool {
+	return !next.IsZero() && next.Year() > 1 && next.After(now)
 }

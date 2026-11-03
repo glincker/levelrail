@@ -226,6 +226,9 @@ func (db *DB) ListEnabledAppSchedules(ctx context.Context) ([]AppSchedule, error
 // should fire. A no-op (not an error) once the schedule has been deleted
 // or disabled out from under an in-flight tick.
 func (db *DB) ArmAppScheduleNextRun(ctx context.Context, serviceName string, next time.Time) error {
+	if next.IsZero() || next.UTC().Year() <= 1 {
+		return fmt.Errorf("store: arm app schedule next run for %q: refusing a zero fire time", serviceName)
+	}
 	_, err := db.ExecContext(ctx, `
 		UPDATE app_schedules SET next_fire_at = ?, updated_at = ? WHERE service_name = ?
 	`, next.UTC().Format(time.RFC3339Nano), time.Now().UTC().Format(time.RFC3339Nano), serviceName)
