@@ -690,6 +690,7 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/auto-host | AbilityRead | handleGetAppAutoHost |
 | PUT | /api/v1/apps/{name}/auto-host | AbilityWriteSensitive | handleSetAppAutoHost |
 | GET | /api/v1/apps/{name}/visitors/export | AbilityRead | handleAppVisitorsExport |
+| POST | /api/v1/apps/repo-plan | AbilityWrite | handleRepoPlan |
 
 </Accordion>
 

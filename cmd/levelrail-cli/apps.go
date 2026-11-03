@@ -221,6 +221,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsUpgradePlan(prog, args[1:], stdout, stderr, lookupEnv)
 	case "analyze":
 		return runAppsAnalyze(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "plan":
+		return runAppsPlan(prog, args[1:], stdout, stderr, lookupEnv)
 	case "git-source":
 		return runAppsGitSource(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "webhook-deliveries":

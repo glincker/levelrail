@@ -39,6 +39,7 @@ var Tree = map[string]*Node{
 		"create":                  nil,
 		"placement":               nil,
 		"analyze":                 nil,
+		"plan":                    nil,
 		"list":                    nil,
 		"get":                     nil,
 		"deploy":                  nil,
