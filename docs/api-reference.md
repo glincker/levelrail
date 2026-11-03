@@ -119,6 +119,7 @@ System endpoints for:
 | GET | /api/v1/updates/self-upgrade/status | AbilityRead | handleSelfUpgradeStatus |
 | GET | /api/v1/system/footprint | AbilityRead | handleGetIdleFootprint |
 | POST | /api/v1/updates/self-upgrade/attempts/{id}/cancel | AbilityWrite | handleSelfUpgradeAttemptCancel |
+| POST | /api/v1/updates/migration-dry-run | AbilityWrite | handleMigrationDryRun |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 

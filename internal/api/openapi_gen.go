@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1945 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1946 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1936,6 +1936,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/updates/backup-now", Ability: "AbilityRoot", Group: "System", Handler: "handleUpgradeBackupNow", Description: ""},
 	{Method: "GET", Path: "/api/v1/updates/history", Ability: "AbilityRead", Group: "System", Handler: "handleUpgradeHistory", Description: ""},
 	{Method: "POST", Path: "/api/v1/updates/history/{id}/ack", Ability: "AbilityWrite", Group: "System", Handler: "handleAckUpgrade", Description: ""},
+	{Method: "POST", Path: "/api/v1/updates/migration-dry-run", Ability: "AbilityWrite", Group: "System", Handler: "handleMigrationDryRun", Description: ""},
 	{Method: "GET", Path: "/api/v1/updates/preflight", Ability: "AbilityRead", Group: "System", Handler: "handleUpdatePreflight", Description: ""},
 	{Method: "GET", Path: "/api/v1/updates/releases", Ability: "AbilityRead", Group: "System", Handler: "handleReleaseHistory", Description: ""},
 	{Method: "GET", Path: "/api/v1/updates/restore-points", Ability: "AbilityRoot", Group: "System", Handler: "handleRestorePointList", Description: ""},

@@ -252,3 +252,20 @@ func (c *Client) GetSelfUpgradeStatus(ctx context.Context) (SelfUpgradeStatus, e
 	err := c.do(ctx, http.MethodGet, "/api/v1/updates/self-upgrade/status", nil, &out)
 	return out, err
 }
+
+// MigrationDryRun is POST /api/v1/updates/migration-dry-run's response.
+type MigrationDryRun struct {
+	OK         bool               `json:"ok"`
+	Applied    []PendingMigration `json:"applied"`
+	DurationMS int64              `json:"duration_ms"`
+	Error      string             `json:"error,omitempty"`
+	FromSchema int                `json:"from_schema"`
+	ToSchema   int                `json:"to_schema"`
+}
+
+// RunMigrationDryRun applies the running binary's pending migrations to a scratch copy of the database.
+func (c *Client) RunMigrationDryRun(ctx context.Context) (MigrationDryRun, error) {
+	var out MigrationDryRun
+	err := c.do(ctx, http.MethodPost, "/api/v1/updates/migration-dry-run", nil, &out)
+	return out, err
+}
