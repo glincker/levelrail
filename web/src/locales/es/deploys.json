@@ -149,6 +149,21 @@
       "errorTitle": "No se pudo actualizar la actualización automática de imagen.",
       "checkFailed": "Falló la comprobación de la imagen."
     },
+    "window": {
+      "label": "Actualizar solo dentro de una ventana",
+      "switchAriaLabel": "Limitar las actualizaciones a una ventana",
+      "presetsLabel": "Ventanas predefinidas",
+      "presets": {
+        "nightly": "Cada noche 03:00",
+        "weekends": "Fines de semana 03:00"
+      },
+      "cronLabel": "Inicio de la ventana (cron)",
+      "minutesLabel": "Minutos abierta",
+      "save": "Guardar ventana",
+      "saved": "Ventana de actualización guardada.",
+      "invalid": "Indica una programación cron y una duración de al menos 1 minuto.",
+      "waiting": "Hay una imagen más reciente esperando la próxima ventana de actualización."
+    },
     "webhookHelp": "Webhook de push del registro: actualiza al recibir un push en lugar de esperar al siguiente intervalo.",
     "webhookSet": "Hay un webhook de push del registro configurado. Crear uno nuevo lo reemplaza.",
     "webhookCreate": "Crear URL de webhook",

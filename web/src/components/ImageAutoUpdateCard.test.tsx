@@ -160,4 +160,42 @@ describe('ImageAutoUpdateCard', () => {
       `${window.location.origin}/api/v1/hooks/image-update/demo-app/tok`,
     )
   })
+
+  it('saves the update window with cron and minutes', async () => {
+    fetchMock.mockImplementation(
+      (_input: RequestInfo | URL, init?: RequestInit) =>
+        Promise.resolve(
+          init?.method === 'PUT'
+            ? json({
+                enabled: false,
+                window_cron: '0 3 * * *',
+                window_minutes: 120,
+              })
+            : json({ enabled: false }),
+        ),
+    )
+
+    const user = userEvent.setup()
+    renderCard()
+    await user.click(
+      await screen.findByRole('switch', {
+        name: 'Restrict updates to a window',
+      }),
+    )
+    await user.click(screen.getByRole('button', { name: 'Nightly 03:00' }))
+    await user.click(screen.getByRole('button', { name: 'Save window' }))
+
+    await waitFor(() => {
+      const put = fetchMock.mock.calls.find(
+        ([, init]) => (init as RequestInit | undefined)?.method === 'PUT',
+      )
+      expect(
+        JSON.parse((put?.[1] as { body: string }).body) as unknown,
+      ).toEqual({
+        enabled: false,
+        window_cron: '0 3 * * *',
+        window_minutes: 120,
+      })
+    })
+  })
 })

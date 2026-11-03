@@ -149,6 +149,21 @@
       "errorTitle": "Could not update image auto-update.",
       "checkFailed": "Image check failed."
     },
+    "window": {
+      "label": "Only update during a window",
+      "switchAriaLabel": "Restrict updates to a window",
+      "presetsLabel": "Window presets",
+      "presets": {
+        "nightly": "Nightly 03:00",
+        "weekends": "Weekends 03:00"
+      },
+      "cronLabel": "Window starts (cron)",
+      "minutesLabel": "Minutes open",
+      "save": "Save window",
+      "saved": "Update window saved.",
+      "invalid": "Enter a cron schedule and a window length of at least 1 minute.",
+      "waiting": "A newer image is waiting for the next update window."
+    },
     "webhookHelp": "Registry push webhook: update on push instead of waiting for the next interval.",
     "webhookSet": "A registry push webhook is set. Creating a new one replaces it.",
     "webhookCreate": "Create webhook URL",
