@@ -326,6 +326,7 @@
               "emergency-access",
               "master-key-rotation",
               "secret-rotation",
+              "vault-secret-references",
               "account",
               "access-control",
               "labels",
