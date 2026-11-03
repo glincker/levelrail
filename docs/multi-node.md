@@ -351,7 +351,7 @@ When you create an app or database without specifying a node, the server decides
 - Create responses carry `auto_placed: true` with the `node_id` picked, and the dashboard shows a toast, so it is never a silent decision.
 
 <Note>
-This is a fit check plus a spread, not bin-packing, and there are no affinity rules. Capacity, the overcommit policy, unknown-capacity handling and the "why here" explanation are in [Resource-aware placement](/resource-aware-placement).
+By default this is a fit check plus a spread. Set the **Placement score mode** runtime setting (`placement.score_mode`, seeded by `APP_PLACEMENT_SCORE_MODE`) to `binpack` to fill the fullest node that still fits instead; it applies to the next placement without a restart. Capacity, the overcommit policy, unknown-capacity handling and the "why here" explanation are in [Resource-aware placement](/resource-aware-placement).
 </Note>
 
 GPU apps: a new app with `resources.gpu` is only auto-placed on a node with a working nvidia runtime and enough free GPUs (least loaded among those), falling back to the local host if it fits. If none fits, the create is refused with `409` and the reason per node; pass `node_id` to override. See [GPU scheduling](/ai-models#gpu-scheduling).
@@ -419,6 +419,50 @@ levelrail-cli nodes placement database main disk=ssd
 - `GET` and `PUT /api/v1/nodes/{id}/labels` read and replace a node's whole label set. Keys are lowercase letters, digits, `.`, `_`, `-` and `/`, 1 to 63 characters. Values are letters, digits, `.`, `_` and `-`, 1 to 63 characters. At most 32 labels. Invalid input returns `400` with the reason.
 - `GET` and `PUT /api/v1/apps/{name}/placement` (and the same for `databases`) read and set a `node_selector`. The response lists `eligible_node_ids` and the `rejected` nodes with a reason each. Setting a selector never moves anything by itself.
 - The dashboard has a **Labels** card on the node page and a **Placement** card on the app and database pages.
+
+### Taints: keep workloads off a node
+
+A taint reserves a node. Apps and databases are not placed on a tainted node unless they tolerate the taint.
+
+```bash
+levelrail-cli nodes taint <id> dedicated=gpu:NoSchedule
+levelrail-cli nodes taint <id> --clear
+```
+
+- A taint is `key`, an optional `value` and an `effect`. `NoSchedule` and `NoExecute` keep new placements off the node. `PreferNoSchedule` only ranks the node lower. Moving workloads that already run on a `NoExecute` node is done with a drain.
+- `GET` and `PUT /api/v1/nodes/{id}/taints` read and replace a node's whole taint set. Keys and values follow the label rules and at most 32 taints are allowed. Invalid input returns `400` with the reason.
+- `nodes get` lists a node's taints.
+
+### Tolerations and affinity for an app
+
+An app can tolerate a taint, and can ask to run with or away from other apps.
+
+```bash
+# let the app run on nodes tainted dedicated=gpu:NoSchedule
+levelrail-cli nodes placement app web --toleration dedicated=gpu:NoSchedule
+# tolerate any value of a key
+levelrail-cli nodes placement app web --toleration-exists dedicated
+# node and app affinity from a file, or remove all rules
+levelrail-cli nodes placement app web --affinity-file affinity.yaml
+levelrail-cli nodes placement app web --clear-placement-rules
+```
+
+```yaml
+node_required:            # the node must match every term
+  - {key: disk, op: In, values: [ssd]}
+node_preferred:           # a soft preference, weight 1 to 100
+  - weight: 50
+    term: {key: zone, op: In, values: [eu-1]}
+apart:                    # stay off nodes (or zones) running matching apps
+  - match: [{key: name, op: In, values: [db]}]
+    topology: zone
+```
+
+- The same fields go under a service in `app.yaml` as `tolerations` and `affinity`.
+- `together` attracts an app to nodes running matching apps; `apart` repels it. Weight `0` makes a term required.
+- Apps are matched by their labels and by `name=<app name>`.
+- At most 8 affinity terms are allowed per app; set `APP_PLACEMENT_AFFINITY_MAX_TERMS` to change it. Invalid rules return `400` with the reason.
+- `nodes placement app <name>` and the placement decision explain why a node was skipped.
 
 ### Failure domains: region, zone and provider
 
@@ -1012,6 +1056,8 @@ Node routes require the `root` ability, not `read` or `write`, because node mana
 | `GET` | `/api/v1/nodes/zones` | `root` |
 | `GET` | `/api/v1/nodes/{id}/labels` | `root` |
 | `PUT` | `/api/v1/nodes/{id}/labels` | `root` |
+| `GET` | `/api/v1/nodes/{id}/taints` | `root` |
+| `PUT` | `/api/v1/nodes/{id}/taints` | `root` |
 | `GET` | `/api/v1/apps/{name}/placement` | `root` |
 | `PUT` | `/api/v1/apps/{name}/placement` | `root` |
 | `GET` | `/api/v1/databases/{name}/placement` | `root` |
@@ -1042,6 +1088,7 @@ levelrail-cli nodes drains <id> [flags]
 levelrail-cli nodes add [--name NAME] [--mesh] [flags]
 levelrail-cli nodes move app|database <name> [--to <node-id>] [--wait] [flags]
 levelrail-cli nodes labels <id> [key=value ...] [flags]
+levelrail-cli nodes taint <id> [key[=value]:Effect ...] [flags]
 levelrail-cli nodes zones [flags]
 levelrail-cli nodes simulate [--cpu MILLI] [--memory MIB] [--count N] [--selector k=v] [flags]
 levelrail-cli nodes failure --zone Z | --node ID [flags]

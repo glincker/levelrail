@@ -51,7 +51,16 @@ type Policy struct {
 	MemoryOvercommitPercent int  `json:"memory_overcommit_percent"`
 	MinFreeDiskPercent      int  `json:"min_free_disk_percent"`
 	RejectUnknown           bool `json:"reject_unknown"`
+	// ScoreMode is ScoreSpread (default) or ScoreBinpack.
+	ScoreMode string `json:"score_mode,omitempty"`
 }
+
+// Score modes: spread keeps the most headroom, binpack fills the fullest node
+// that still fits so the others can stay empty.
+const (
+	ScoreSpread  = "spread"
+	ScoreBinpack = "binpack"
+)
 
 // DefaultPolicy never overcommits, keeps 10 percent of disk free and ranks
 // unverifiable nodes last rather than refusing them.
@@ -70,10 +79,18 @@ func (p Policy) Validate() error {
 	if p.MinFreeDiskPercent < 0 || p.MinFreeDiskPercent > 90 {
 		return fmt.Errorf("minimum free disk percent must be 0 to 90, got %d", p.MinFreeDiskPercent)
 	}
+	switch p.ScoreMode {
+	case "", ScoreSpread, ScoreBinpack:
+	default:
+		return fmt.Errorf("score mode must be %s or %s, got %q", ScoreSpread, ScoreBinpack, p.ScoreMode)
+	}
 	return nil
 }
 
 func (p Policy) withDefaults() Policy {
+	if p.ScoreMode == "" {
+		p.ScoreMode = ScoreSpread
+	}
 	if p.CPUOvercommitPercent == 0 {
 		p.CPUOvercommitPercent = 100
 	}

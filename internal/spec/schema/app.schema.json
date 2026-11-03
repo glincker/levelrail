@@ -107,6 +107,12 @@
           "minItems": 1
         },
         "egress": { "description": "Outbound network allowlist for the container.", "$ref": "#/$defs/egress" },
+        "tolerations": {
+          "description": "Node taints this service may be placed despite.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/toleration" }
+        },
+        "affinity": { "description": "Rules that attract or repel this service by node and workload labels.", "$ref": "#/$defs/affinity" },
         "loadbalancer": { "description": "Load balancing, health and timeout settings across replicas.", "$ref": "#/$defs/loadbalancer" },
         "budget": { "description": "Egress and cost limits with an action when crossed.", "$ref": "#/$defs/budget" },
         "autoscale": { "description": "Autoscaling of replicas on a metric target.", "$ref": "#/$defs/autoscale" },
@@ -327,6 +333,55 @@
           "type": "array",
           "items": { "$ref": "#/$defs/egressAllow" }
         }
+      }
+    },
+    "toleration": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "key": { "description": "Taint key to tolerate; empty with operator Exists tolerates every taint.", "type": "string" },
+        "operator": { "description": "Equal matches key and value; Exists matches the key alone.", "enum": ["Equal", "Exists"] },
+        "value": { "description": "Taint value for operator Equal.", "type": "string" },
+        "effect": { "description": "Taint effect to tolerate; empty tolerates all.", "enum": ["NoSchedule", "PreferNoSchedule", "NoExecute"] }
+      }
+    },
+    "labelTerm": {
+      "type": "object",
+      "required": ["key", "op"],
+      "additionalProperties": false,
+      "properties": {
+        "key": { "description": "Label key to test.", "type": "string", "minLength": 1 },
+        "op": { "description": "How the label is compared.", "enum": ["In", "NotIn", "Exists", "DoesNotExist"] },
+        "values": { "description": "Values for In and NotIn.", "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "weightedNodeTerm": {
+      "type": "object",
+      "required": ["weight", "term"],
+      "additionalProperties": false,
+      "properties": {
+        "weight": { "description": "Preference strength, 1 to 100.", "type": "integer", "minimum": 1, "maximum": 100 },
+        "term": { "$ref": "#/$defs/labelTerm" }
+      }
+    },
+    "workloadTerm": {
+      "type": "object",
+      "required": ["match"],
+      "additionalProperties": false,
+      "properties": {
+        "match": { "description": "Label tests that pick the other workloads.", "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/labelTerm" } },
+        "topology": { "description": "node, or a node label key such as zone.", "type": "string" },
+        "weight": { "description": "0 makes the term required; 1 to 100 makes it a preference.", "type": "integer", "minimum": 0, "maximum": 100 }
+      }
+    },
+    "affinity": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "node_required": { "description": "Label tests every candidate node must pass.", "type": "array", "items": { "$ref": "#/$defs/labelTerm" } },
+        "node_preferred": { "description": "Weighted node label preferences.", "type": "array", "items": { "$ref": "#/$defs/weightedNodeTerm" } },
+        "together": { "description": "Run near workloads that match.", "type": "array", "items": { "$ref": "#/$defs/workloadTerm" } },
+        "apart": { "description": "Stay away from workloads that match.", "type": "array", "items": { "$ref": "#/$defs/workloadTerm" } }
       }
     },
     "egressAllow": {

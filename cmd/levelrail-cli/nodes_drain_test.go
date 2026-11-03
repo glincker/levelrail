@@ -135,3 +135,23 @@ func TestRun_NodesLabels(t *testing.T) {
 		t.Errorf("invalid label exit = %d, want usage", code)
 	}
 }
+
+func TestRun_NodesTaint(t *testing.T) {
+	var gotMethod, gotBody string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		buf := new(bytes.Buffer)
+		_, _ = buf.ReadFrom(r.Body)
+		gotMethod, gotBody = r.Method, buf.String()
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(apiclient.NodeTaints{Taints: []apiclient.NodeTaint{{Key: "dedicated", Value: "gpu", Effect: "NoSchedule"}}})
+	}))
+	defer srv.Close()
+	stdout, _ := runCLIExpectOK(t, []string{"nodes", "taint", "nd_1", "dedicated=gpu:NoSchedule", "--api-url", srv.URL})
+	if gotMethod != http.MethodPut || !strings.Contains(gotBody, `"effect":"NoSchedule"`) || !strings.Contains(stdout, "dedicated=gpu:NoSchedule") {
+		t.Errorf("%s %s -> %q", gotMethod, gotBody, stdout)
+	}
+	var stderr bytes.Buffer
+	if code := run("levelrail-cli-test", []string{"nodes", "taint", "nd_1", "nocolon", "--api-url", srv.URL}, &bytes.Buffer{}, &stderr, envMap()); code != exitUsage {
+		t.Errorf("invalid taint exit = %d, want usage", code)
+	}
+}

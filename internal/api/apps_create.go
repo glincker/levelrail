@@ -71,7 +71,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	// true when that pick actually lands somewhere other than local. A
 	// domain-bearing app prefers the control plane's own node, since
 	// ingress has no mesh path to a worker node yet (CrossNodeIngress).
-	cp := &createPlacement{Kind: store.NodeMoveKindApp, Name: req.Name, Needs: serviceRequests(req.Resources, req.Replicas)}
+	cp := &createPlacement{Kind: store.NodeMoveKindApp, Name: req.Name, Needs: serviceRequests(req.Resources, req.Replicas), Rules: placementRules{Tolerations: req.Tolerations, Affinity: normalizeAffinity(req.Affinity)}}
 	if !rt.resolveCreateNodePlacement(w, r, body, &req.NodeID, &req.AutoPlaced, len(req.Domains) > 0, cp, "api: create app") {
 		return
 	}

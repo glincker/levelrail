@@ -63,7 +63,11 @@ func (rt *Router) recordPinned(ctx context.Context, kind, name, nodeID, trigger 
 	if err != nil {
 		return
 	}
-	rt.recordPlacement(ctx, kind, name, trigger, placement.Pinned(cands, placement.Request{Needs: needs, Policy: rt.placementPolicy}, nodeID))
+	cands, req, err := rt.ruledRequest(ctx, kind, name, cands, placement.Request{Needs: needs, Policy: rt.currentPlacementPolicy(ctx)})
+	if err != nil {
+		return
+	}
+	rt.recordPlacement(ctx, kind, name, trigger, placement.Pinned(cands, req, nodeID))
 }
 
 // resourceNeeds is what an existing app or database asks for.
@@ -127,7 +131,11 @@ func (rt *Router) placementDecisionView(ctx context.Context, kind, name string) 
 		}
 	}
 	out := placementDecisionResource{Kind: kind, Name: name, NodeID: nodeID}
-	out.Preview, _ = placement.Spread(cands, placement.Request{Selector: sel, Needs: needs, Policy: rt.placementPolicy})
+	cands, req, err := rt.ruledRequest(ctx, kind, name, cands, placement.Request{Selector: sel, Needs: needs, Policy: rt.currentPlacementPolicy(ctx)})
+	if err != nil {
+		return placementDecisionResource{}, err
+	}
+	out.Preview, _ = placement.Spread(cands, req)
 	if rt.decisions == nil {
 		return out, nil
 	}
@@ -191,13 +199,28 @@ func (rt *Router) handleNodeAllocations(w http.ResponseWriter, r *http.Request) 
 		rt.internalError(w, "api: node allocations: candidates failed", err)
 		return
 	}
-	out := nodeAllocationsResponse{Policy: rt.placementPolicy, Nodes: make([]nodeAllocationResource, 0, len(cands))}
+	out := nodeAllocationsResponse{Policy: rt.currentPlacementPolicy(r.Context()), Nodes: make([]nodeAllocationResource, 0, len(cands))}
 	for _, c := range cands {
-		e := placement.Evaluate(c, placement.Request{Policy: rt.placementPolicy})
+		e := placement.Evaluate(c, placement.Request{Policy: rt.currentPlacementPolicy(r.Context())})
 		out.Nodes = append(out.Nodes, nodeAllocationResource{
 			NodeID: c.ID, Name: c.Name, IsLocal: c.ID == rt.localNodeID, Schedulable: c.Schedulable,
 			Online: c.Online, Workloads: c.Load, Dimensions: e.Dimensions,
 		})
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+// KeyPlacementScoreMode is the runtime setting that picks spread or bin-pack.
+const KeyPlacementScoreMode = "placement.score_mode"
+
+// currentPlacementPolicy is the boot policy with the live score mode, so a
+// change in settings applies to the next decision without a restart.
+func (rt *Router) currentPlacementPolicy(ctx context.Context) placement.Policy {
+	p := rt.placementPolicy
+	mode := rt.runtimeSettings.String(ctx, KeyPlacementScoreMode)
+	if mode != placement.ScoreBinpack {
+		mode = placement.ScoreSpread
+	}
+	p.ScoreMode = mode
+	return p
 }

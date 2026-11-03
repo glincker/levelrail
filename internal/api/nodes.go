@@ -16,6 +16,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/gpu"
 	"github.com/GLINCKER/levelrail/internal/models"
+	"github.com/GLINCKER/levelrail/internal/placement"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -98,6 +99,7 @@ type nodeResource struct {
 	PlacedApps      []string          `json:"placed_apps,omitempty"`
 	PlacedDatabases []string          `json:"placed_databases,omitempty"`
 	Labels          map[string]string `json:"labels,omitempty"`
+	Taints          []placement.Taint `json:"taints,omitempty"`
 }
 
 // nodeAlertStatusResource is alerting.NodeAlertStatus's wire shape: each
@@ -845,6 +847,9 @@ func (rt *Router) fillNodeWorkloads(ctx context.Context, res *nodeResource) {
 	if rt.multiNode != nil {
 		if labels, err := rt.multiNode.store.GetNodeLabels(ctx, res.ID); err == nil && len(labels) > 0 {
 			res.Labels = labels
+		}
+		if taints, err := rt.multiNode.store.GetNodeTaints(ctx, res.ID); err == nil && len(taints) > 0 {
+			res.Taints = toPlacementTaints(taints)
 		}
 	}
 }

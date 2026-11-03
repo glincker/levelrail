@@ -53,6 +53,14 @@ func (db *DB) UpdateServiceEgressPolicy(ctx context.Context, name string, policy
 	`, policy)
 }
 
+// UpdateServicePlacementRules replaces an app's tolerations and affinity as a
+// whole, without SaveDesiredService's full-record replace.
+func (db *DB) UpdateServicePlacementRules(ctx context.Context, name string, tj, aj json.RawMessage) error {
+	return db.updateServiceRow(ctx, "update placement rules", name, `
+		UPDATE desired_services SET tolerations = ?, affinity = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE name = ?
+	`, string(tj), string(aj), name)
+}
+
 // UpdateServiceVolumes replaces svc's named-volume list as a whole,
 // without SaveDesiredService's full-record replace: the dedicated
 // dual-write path Volumes lacked until now, mirroring

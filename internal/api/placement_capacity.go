@@ -99,6 +99,13 @@ func (rt *Router) candidatesFrom(ctx context.Context, inv placementInventory) ([
 			return nil, err
 		}
 	}
+	var taints map[string][]store.NodeTaint
+	if rt.multiNode != nil {
+		var err error
+		if taints, err = rt.multiNode.store.ListNodeTaints(ctx); err != nil {
+			return nil, err
+		}
+	}
 	out := make([]placement.Candidate, 0, len(inv.nodes))
 	for _, n := range inv.nodes {
 		load, requested := inv.counts[n.ID], inv.requested[n.ID]
@@ -110,7 +117,7 @@ func (rt *Router) candidatesFrom(ctx context.Context, inv placementInventory) ([
 		out = append(out, placement.Candidate{
 			ID: n.ID, Name: n.Name, Labels: nodeLabels, Schedulable: n.Schedulable && rt.nodeBlockReason(ctx, n.ID) == "",
 			Online: n.Status == store.NodeStatusOnline, Load: load,
-			Capacity: rt.nodeCapacity(n.ID), Requested: requested,
+			Capacity: rt.nodeCapacity(n.ID), Requested: requested, Taints: toPlacementTaints(taints[n.ID]),
 		})
 	}
 	return out, nil

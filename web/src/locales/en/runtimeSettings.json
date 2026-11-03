@@ -38,6 +38,10 @@
       "title": "Build network",
       "description": "Network for RUN steps of a build: open, none, or block-private (reserved: builds fail until it can be enforced). Read on every build."
     },
+    "placementScoreMode": {
+      "title": "Placement score mode",
+      "description": "How new workloads pick a node: spread keeps the most headroom free on each node, binpack fills the fullest node that still fits. Read on every placement."
+    },
     "mcpDefaultTokenScope": {
       "title": "Default token scope",
       "description": "Scope for a new token created without explicit abilities: read_only or read_write. Existing tokens keep their scope."

@@ -1,5 +1,39 @@
 {
   "$defs": {
+    "affinity": {
+      "additionalProperties": false,
+      "properties": {
+        "apart": {
+          "description": "Stay away from workloads that match.",
+          "items": {
+            "$ref": "#/$defs/workloadTerm"
+          },
+          "type": "array"
+        },
+        "node_preferred": {
+          "description": "Weighted node label preferences.",
+          "items": {
+            "$ref": "#/$defs/weightedNodeTerm"
+          },
+          "type": "array"
+        },
+        "node_required": {
+          "description": "Label tests every candidate node must pass.",
+          "items": {
+            "$ref": "#/$defs/labelTerm"
+          },
+          "type": "array"
+        },
+        "together": {
+          "description": "Run near workloads that match.",
+          "items": {
+            "$ref": "#/$defs/workloadTerm"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
     "alertRuleSpec": {
       "additionalProperties": false,
       "properties": {
@@ -849,6 +883,37 @@
       ],
       "type": "object"
     },
+    "labelTerm": {
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "description": "Label key to test.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "op": {
+          "description": "How the label is compared.",
+          "enum": [
+            "In",
+            "NotIn",
+            "Exists",
+            "DoesNotExist"
+          ]
+        },
+        "values": {
+          "description": "Values for In and NotIn.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "key",
+        "op"
+      ],
+      "type": "object"
+    },
     "literalEnv": {
       "additionalProperties": {
         "type": "string"
@@ -1329,6 +1394,10 @@
         }
       ],
       "properties": {
+        "affinity": {
+          "$ref": "#/$defs/affinity",
+          "description": "Rules that attract or repel this service by node and workload labels."
+        },
         "autoscale": {
           "$ref": "#/$defs/autoscale",
           "description": "Autoscaling of replicas on a metric target."
@@ -1527,6 +1596,13 @@
             "canary"
           ]
         },
+        "tolerations": {
+          "description": "Node taints this service may be placed despite.",
+          "items": {
+            "$ref": "#/$defs/toleration"
+          },
+          "type": "array"
+        },
         "volumes": {
           "description": "Named volumes or host bind mounts to mount into the container.",
           "items": {
@@ -1577,6 +1653,35 @@
       "pattern": "^[1-5][0-9]{2}(-[1-5][0-9]{2})?$",
       "type": "string"
     },
+    "toleration": {
+      "additionalProperties": false,
+      "properties": {
+        "effect": {
+          "description": "Taint effect to tolerate; empty tolerates all.",
+          "enum": [
+            "NoSchedule",
+            "PreferNoSchedule",
+            "NoExecute"
+          ]
+        },
+        "key": {
+          "description": "Taint key to tolerate; empty with operator Exists tolerates every taint.",
+          "type": "string"
+        },
+        "operator": {
+          "description": "Equal matches key and value; Exists matches the key alone.",
+          "enum": [
+            "Equal",
+            "Exists"
+          ]
+        },
+        "value": {
+          "description": "Taint value for operator Equal.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "volume": {
       "additionalProperties": false,
       "oneOf": [
@@ -1614,6 +1719,52 @@
       },
       "required": [
         "path"
+      ],
+      "type": "object"
+    },
+    "weightedNodeTerm": {
+      "additionalProperties": false,
+      "properties": {
+        "term": {
+          "$ref": "#/$defs/labelTerm"
+        },
+        "weight": {
+          "description": "Preference strength, 1 to 100.",
+          "maximum": 100,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "weight",
+        "term"
+      ],
+      "type": "object"
+    },
+    "workloadTerm": {
+      "additionalProperties": false,
+      "properties": {
+        "match": {
+          "description": "Label tests that pick the other workloads.",
+          "items": {
+            "$ref": "#/$defs/labelTerm"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "topology": {
+          "description": "node, or a node label key such as zone.",
+          "type": "string"
+        },
+        "weight": {
+          "description": "0 makes the term required; 1 to 100 makes it a preference.",
+          "maximum": 100,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "match"
       ],
       "type": "object"
     }

@@ -68,6 +68,7 @@ data: {"type":"MODIFIED","object":{...}}
 | `APP_RESOURCE_CHANGES_RETAIN` | 10000 | Changes kept by count |
 | `APP_RESOURCE_CHANGES_MAX_AGE` | 168h | Changes kept by age |
 | `APP_RESOURCE_CHANGES_COMPACT_EVERY` | 100 | Compact once every this many changes |
+| `APP_RESOURCE_BOOT_GAP` | 1000000 | How far the version counter jumps when the control plane starts |
 | `APP_WATCH_BUFFER` | 256 | Events read per poll and the lag allowed before a client is dropped |
 | `APP_WATCH_MAX_STREAMS` | 64 | Open watch streams per control plane; more get 429 |
 | `APP_WATCH_BOOKMARK_INTERVAL` | 30s | Bookmark cadence |
@@ -75,6 +76,8 @@ data: {"type":"MODIFIED","object":{...}}
 | `APP_WATCH_WRITE_TIMEOUT` | 10s | Per event write deadline |
 
 Compaction always keeps the newest change of every live object, so object versions survive it.
+
+When the control plane starts with an existing change log, the version counter jumps by `APP_RESOURCE_BOOT_GAP` and every watch from an earlier version gets `410 Gone`. This keeps a restore or a standby promotion from reusing a version a client already saw. List again and watch from the list's version.
 
 ## Go client
 

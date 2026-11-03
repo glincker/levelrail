@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/placement"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -111,6 +112,8 @@ func toDesiredService(name, image string, svc spec.Service) (store.DesiredServic
 	if svc.Egress != nil {
 		d.Egress = toServiceEgressPolicy(*svc.Egress)
 	}
+
+	d.Tolerations, d.Affinity = placement.EncodeRules(svc.Tolerations, svc.Affinity)
 
 	d.Files = toServiceFiles(name, svc.Files)
 

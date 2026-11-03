@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
+	"github.com/GLINCKER/levelrail/internal/placement"
 )
 
 // egressHostLike restricts egress.allow hosts to a hostname or IPv4
@@ -129,6 +130,9 @@ func (svc *Service) validate(name string) error {
 	}
 	if err := svc.validateEgress(name); err != nil {
 		return err
+	}
+	if err := placement.ValidateRules(svc.Tolerations, svc.Affinity); err != nil {
+		return fmt.Errorf("spec: service %q: %w", name, err)
 	}
 	if err := svc.LoadBalancer.Validate(); err != nil {
 		return fmt.Errorf("spec: service %q: %w", name, err)

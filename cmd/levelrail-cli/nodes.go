@@ -91,6 +91,8 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesMoves(prog, rest, stdout, stderr, lookupEnv)
 	case "drains":
 		return runNodesDrains(prog, rest, stdout, stderr, lookupEnv)
+	case "taint":
+		return runNodesTaint(prog, rest, stdout, stderr, lookupEnv)
 	case "labels":
 		return runNodesLabels(prog, rest, stdout, stderr, lookupEnv)
 	case "zones":
@@ -141,6 +143,7 @@ func nodesUsage(prog string) string {
   %[1]s nodes move <app|database> <name> [--to ID] [--wait] [flags]  move one app or database, verified, with rollback
   %[1]s nodes moves [--kind K] [--resource N] [flags]                list node moves
   %[1]s nodes labels <id> [key=value ...] [flags]                    show or replace a node's labels
+  %[1]s nodes taint <id> [key[=value]:Effect ...] [--clear]          show or replace the taints that keep workloads off a node
   %[1]s nodes placement <app|database> <name> [key=value ...]        show or set which node labels a resource requires
   %[1]s nodes zones [flags]                                          failure domains with their nodes and workloads
   %[1]s nodes simulate [--cpu M] [--memory MiB] [--count N]          dry run: where new apps would land and why
