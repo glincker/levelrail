@@ -1171,9 +1171,10 @@
     "httpsOn": "HTTPS activado",
     "httpsOff": "HTTPS no activado",
     "address": "Servidor",
-    "fixHttps": "Arreglar: activar HTTPS",
     "fixAddress": "Arreglar: revisar dirección",
-    "details": "Detalles de la dirección"
+    "details": "Detalles de la dirección",
+    "enableHttps": "Activar HTTPS",
+    "parked": "{{count}} aparcados"
   },
   "cutover": {
     "title": "Lista de migración",

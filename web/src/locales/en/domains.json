@@ -1171,9 +1171,10 @@
     "httpsOn": "HTTPS enabled",
     "httpsOff": "HTTPS not enabled",
     "address": "Server",
-    "fixHttps": "Fix: enable HTTPS",
     "fixAddress": "Fix: check address",
-    "details": "Address details"
+    "details": "Address details",
+    "enableHttps": "Enable HTTPS",
+    "parked": "{{count}} parked"
   },
   "cutover": {
     "title": "Cutover checklist",

@@ -3,11 +3,7 @@ import type { ErrorComponentProps } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  CircleAlertGlassIcon,
-  GlobeGlassIcon,
-  PlusGlassIcon,
-} from '@thesvg/ui-react'
+import { CircleAlertGlassIcon, GlobeGlassIcon } from '@thesvg/ui-react'
 import { routeErrorMessage } from '@/lib/apiError'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -33,7 +29,6 @@ import { HelpLink } from '../../components/HelpLink'
 import { PageBanner } from '../../components/PageBanner'
 import { LazyDomainsDiagram } from '../../components/banners/LazyDiagrams'
 import { PageTemplate } from '../../components/shell/PageTemplate'
-import { SetupStepHint } from '../../components/getStarted/SetupStepHint'
 
 // The loader primes every query the page uses, so nothing fetches in a
 // component body. Old /domains#dashboard-url links land on the new page.
@@ -97,18 +92,6 @@ function DomainsPage() {
 
   const noDomains = domains.length === 0
   const bannerSize = noDomains ? 'hero' : 'compact'
-  const addButton = (
-    <Button
-      size="sm"
-      onClick={() => {
-        setAddOpen(true)
-      }}
-    >
-      <PlusGlassIcon size="1.4em" />
-      {t('page.add')}
-    </Button>
-  )
-
   return (
     <PageTemplate
       title={t('page.title')}
@@ -140,7 +123,6 @@ function DomainsPage() {
                 >
                   {t('banner.noAppsAction')}
                 </Button>
-                {addButton}
               </>
             ) : (
               <>
@@ -148,7 +130,6 @@ function DomainsPage() {
                   path="/domains-and-ingress"
                   label={t('page.helpLabel')}
                 />
-                {addButton}
               </>
             )
           }
@@ -156,9 +137,12 @@ function DomainsPage() {
           size={bannerSize}
         />
       }
-      banners={<SetupStepHint step="app_domain" />}
     >
-      <DomainsStatusBar />
+      <DomainsStatusBar
+        onAdd={() => {
+          setAddOpen(true)
+        }}
+      />
 
       {noDomains ? null : (
         <DomainsTable

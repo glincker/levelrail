@@ -5,6 +5,7 @@ import {
   CheckGlassIcon,
   ChevronDownGlassIcon,
   CopyGlassIcon,
+  PlusGlassIcon,
 } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -16,19 +17,22 @@ import {
 import { cn } from '@/lib/utils'
 import { useCopyToClipboard } from '../../hooks/useCopyToClipboard'
 import { useServerAddress } from '../../queries/serverAddress'
+import { useParkedDomains } from '../../queries/parkedDomains'
 import { useProxyIntegration } from '../../queries/proxyIntegration'
 import { usePlatformStatus } from '../platform/usePlatformStatus'
 import { ProxySetupCard } from '../ProxySetupCard'
+import { SetupStepHint } from '../getStarted/SetupStepHint'
 import { ReachabilityPill } from './ReachabilityPill'
 import { ServerAddressCard } from './ServerAddressCard'
 
-// One row for HTTPS, server address and the single thing to fix. The
-// override form and the proxy setup open below it only when needed.
-export function DomainsStatusBar() {
+// One bar for HTTPS, address, reachability and parked count, with the one
+// primary action on the right. Setup hint and address details sit in the disclosure.
+export function DomainsStatusBar({ onAdd }: { onAdd: () => void }) {
   const { t } = useTranslation('domains')
   const { httpsOff } = usePlatformStatus()
   const { data: address } = useServerAddress()
   const { data: proxy } = useProxyIntegration()
+  const { data: parked = [] } = useParkedDomains()
   const { copied, copy } = useCopyToClipboard()
   const [open, setOpen] = useState(false)
 
@@ -80,14 +84,7 @@ export function DomainsStatusBar() {
               <span>{t('serverAddress.none')}</span>
             )}
           </span>
-          {httpsOff ? (
-            <Link
-              to="/settings/platform/https"
-              className={cn(buttonVariants({ size: 'xs', variant: 'outline' }))}
-            >
-              {t('statusBar.fixHttps')}
-            </Link>
-          ) : addressProblem ? (
+          {httpsOff === false && addressProblem ? (
             <Button
               type="button"
               size="xs"
@@ -99,13 +96,39 @@ export function DomainsStatusBar() {
               {t('statusBar.fixAddress')}
             </Button>
           ) : null}
-          {httpsOff ? <ReachabilityPill /> : null}
-          <CollapsibleTrigger className="ml-auto flex w-auto items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-            {t('statusBar.details')}
-            <ChevronDownGlassIcon className="size-4.5" aria-hidden="true" />
-          </CollapsibleTrigger>
+          <ReachabilityPill />
+          {parked.length > 0 ? (
+            <a
+              href="#parked-domains-heading"
+              className="rounded-md hover:opacity-80"
+            >
+              <Badge variant="muted">
+                {t('statusBar.parked', { count: parked.length })}
+              </Badge>
+            </a>
+          ) : null}
+          <div className="ml-auto flex items-center gap-3">
+            <CollapsibleTrigger className="flex w-auto items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+              {t('statusBar.details')}
+              <ChevronDownGlassIcon className="size-4.5" aria-hidden="true" />
+            </CollapsibleTrigger>
+            {httpsOff ? (
+              <Link
+                to="/settings/platform/https"
+                className={cn(buttonVariants({ size: 'sm' }))}
+              >
+                {t('statusBar.enableHttps')}
+              </Link>
+            ) : (
+              <Button type="button" size="sm" onClick={onAdd}>
+                <PlusGlassIcon size="1.4em" />
+                {t('page.add')}
+              </Button>
+            )}
+          </div>
         </div>
-        <CollapsiblePanel className="pt-3">
+        <CollapsiblePanel className="space-y-3 pt-3">
+          <SetupStepHint step="app_domain" />
           <ServerAddressCard />
         </CollapsiblePanel>
       </Collapsible>
