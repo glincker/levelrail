@@ -30,6 +30,12 @@ export interface DiagnoseFix {
   action?: DiagnoseAction
   records?: DiagnoseRecord[]
   cli?: string
+  // Added by the plain-words doctor; absent on an older backend.
+  id?: string
+  label?: string
+  steps?: string[]
+  link?: string
+  cli_hint?: string
 }
 
 export interface DiagnoseCheck {
@@ -38,6 +44,8 @@ export interface DiagnoseCheck {
   state: DiagnoseState
   tier: number
   detail?: string
+  cause?: string
+  evidence?: string[]
   fix?: DiagnoseFix
 }
 
