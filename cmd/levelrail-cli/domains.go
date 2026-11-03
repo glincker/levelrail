@@ -34,6 +34,10 @@ func runDomains(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runDomainsRedirect(prog, args[1:], stdout, stderr, lookupEnv)
 	case "tls-cert":
 		return runDomainsTLSCert(prog, args[1:], stdout, stderr, lookupEnv)
+	case "wait":
+		return runDomainsWait(prog, args[1:], stdout, stderr, lookupEnv)
+	case "watch":
+		return runDomainsWatch(prog, args[1:], stdout, stderr, lookupEnv)
 	case "check":
 		return runDomainsCheck(prog, args[1:], stdout, stderr, lookupEnv)
 	case "doctor":
@@ -115,6 +119,8 @@ func domainsUsage(prog string) string {
   %[1]s domains redirect <verb> [flags]         point one of an app's domains at a target URL
   %[1]s domains tls-cert <verb> [flags]         upload or clear a domain's own (BYO) TLS certificate
   %[1]s domains check <app> <domain> [flags]    run a real DNS lookup and report whether the domain reaches this control plane
+  %[1]s domains wait <domain> [--timeout 10m]   wait until a new domain is live (DNS and certificate)
+  %[1]s domains watch list [flags]              list the domains being followed in the background
   %[1]s domains doctor <app> <domain> [flags]   run every domain check and print a prioritised fix list
   %[1]s domains diagnose <domain> [flags]       why isn't my domain working: every check with the exact fix, optionally applied with --fix
   %[1]s domains cutover <domain> [flags]        test before you switch: app, certificate, DNS and downtime risk

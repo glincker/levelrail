@@ -439,6 +439,12 @@ func (rt *Router) afterDomainLifecycle(r *http.Request, action, domain, detail s
 		}
 	}
 	rt.nudgeReconciler()
+	switch {
+	case action == auditActionDomainParked:
+		rt.unwatchDomain(r.Context(), domain)
+	case len(sides) > 0 && (action == auditActionDomainMoved || action == auditActionDomainAttached):
+		rt.watchDomain(r.Context(), sides[0].target.Name, domain)
+	}
 	rt.recordDomainLifecycleAudit(r, action, domain, detail)
 }
 

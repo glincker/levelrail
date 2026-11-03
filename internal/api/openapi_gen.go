@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1950 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1952 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1837,6 +1837,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/domains/standalone/validate", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleValidateStandaloneDomain", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/domains/standalone/{domain}", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDeleteStandaloneDomain", Description: ""},
 	{Method: "PUT", Path: "/api/v1/domains/standalone/{domain}", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleUpdateStandaloneDomain", Description: ""},
+	{Method: "GET", Path: "/api/v1/domains/watch", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDomainsWatch", Description: ""},
 	{Method: "GET", Path: "/api/v1/domains/{domain}/activity", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDomainActivity", Description: "One domain's activity timeline: audit rows plus certificate failures, cursor paginated by ?before. Visible to callers who can see its app."},
 	{Method: "POST", Path: "/api/v1/domains/{domain}/cert", Ability: "AbilityRoot", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleGetCert", Description: ""},
 	{Method: "GET", Path: "/api/v1/domains/{domain}/cert/preflight", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleCertPreflight", Description: "Guided public certificate: preflight, request, progress. Request is root tier."},
@@ -1847,6 +1848,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/domains/{domain}/diagnose", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDomainDiagnose", Description: "Same doctor addressed by domain alone, as one JSON report or a stream of checks; the owning app is looked up and visibility enforced."},
 	{Method: "GET", Path: "/api/v1/domains/{domain}/diagnose/stream", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDomainDiagnoseStream", Description: ""},
 	{Method: "GET", Path: "/api/v1/domains/{domain}/verify", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDomainCutoverVerify", Description: "Read-only verifier for a domain that already moved: DNS, proxy, redirect, certificate, HSTS, response, www/apex."},
+	{Method: "GET", Path: "/api/v1/domains/{domain}/watch", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDomainWatchSnapshot", Description: ""},
 	{Method: "GET", Path: "/api/v1/registry-credentials", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleListRegistryCredentials", Description: "Registry credentials (registry_credentials.go): same ability tiers as backup targets just above, same reasoning (POST/PUT/DELETE handle live pull credentials)."},
 	{Method: "POST", Path: "/api/v1/registry-credentials", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleCreateRegistryCredential", Description: ""},
 	{Method: "POST", Path: "/api/v1/registry-credentials/presets/test", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleTestRegistryPreset", Description: ""},

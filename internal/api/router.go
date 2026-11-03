@@ -99,6 +99,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/cleanup"
 	"github.com/GLINCKER/levelrail/internal/dnsinspect"
+	"github.com/GLINCKER/levelrail/internal/dnsstatus"
 	"github.com/GLINCKER/levelrail/internal/dnszones"
 	"github.com/GLINCKER/levelrail/internal/janitor"
 	"github.com/GLINCKER/levelrail/internal/meshpath"
@@ -285,9 +286,11 @@ type Router struct {
 	imageResolver          docker.ImageResolver // nil deploys image tags unresolved, see WithDeploySafety
 	deployGate             DeployGateStore      // nil disables the gate timeline and rollback pins, see WithDeployGate
 	deployGateDefaults     deploysafety.Effective
-	reconcileNudger        ReconcileNudger             // nil is valid: a desired-state-changing handler just waits for the next resync tick instead of nudging, same "absence degrades, never errors" shape as dockerPinger above
-	certs                  CertStore                   // always set, part of the core Store interface: unlike dockerPinger/images this isn't an optional plug-in, every *store.DB already has it
-	ingressSettings        IngressSettingsStore        // always set, same "core Store interface, not an optional plug-in" shape as certs above: the settings row always exists (migrations/0023's own seeded row)
+	reconcileNudger        ReconcileNudger      // nil is valid: a desired-state-changing handler just waits for the next resync tick instead of nudging, same "absence degrades, never errors" shape as dockerPinger above
+	certs                  CertStore            // always set, part of the core Store interface: unlike dockerPinger/images this isn't an optional plug-in, every *store.DB already has it
+	ingressSettings        IngressSettingsStore // always set, same "core Store interface, not an optional plug-in" shape as certs above: the settings row always exists (migrations/0023's own seeded row)
+	dnsWatcher             *dnsstatus.Watcher   // built lazily from the store; nil when it cannot persist
+	dnsWatcherOnce         sync.Once
 	domains                DomainStore                 // always set, same shape as ingressSettings above: service_domains is always queryable, empty is a valid, non-error result
 	domainBasicAuth        DomainBasicAuthStore        // always set, same "core Store interface" shape as domains above
 	domainBasicAuthSecrets DomainBasicAuthSecrets      // nil is valid: PUT/DELETE .../domains/{domain}/auth return 501, same shape as cloudflareTunnelSecrets above
@@ -707,6 +710,7 @@ type Router struct {
 	route53DNSSecrets            Route53DNSSecrets                                          // nil is valid: PUT/DELETE /api/v1/settings/route53-dns return 501, same shape as cloudflareDNSSecrets above
 	cloudflareDNSTokenResolver   CloudflareDNSTokenResolver                                 // nil is valid: dns-records routes return 501, same shape as cloudflareDNSSecrets above but resolves the plaintext token instead of just checking presence
 	route53DNSCredentialResolver Route53DNSCredentialResolver                               // nil is valid: dns-records routes return 501, same shape as cloudflareDNSTokenResolver above
+	dnsVerifyProvider            func(name string) dnszones.Provider                        // nil outside tests: a client is built from the submitted credential
 	googleCloudDNS               GoogleCloudDNSStore                                        // always set, same shape as route53DNS
 	googleCloudDNSSecrets        GoogleCloudDNSSecrets                                      // nil is valid: PUT/DELETE /api/v1/settings/google-cloud-dns return 501 and records stay unavailable
 	googleCloudDNSProvider       func(serviceAccountJSON string) (dnszones.Provider, error) // test seam, defaults to dnszones.NewGoogleCloud

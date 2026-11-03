@@ -325,3 +325,69 @@ func TestJournalRoundTrip(t *testing.T) {
 		t.Fatalf("list = %+v, %v", list, err)
 	}
 }
+
+func rollbackWaits(t *testing.T, limits Limits, timeout time.Duration, oldFails bool) (newWait, oldWait time.Duration, out Attempt, err error) {
+	t.Helper()
+	h := newFakeHost(t)
+	h.healthy = func() error { return errors.New("boom") }
+	d := h.deps()
+	d.Limits = limits
+	d.WaitHealthy = func(_ context.Context, w time.Duration) error {
+		if h.read(h.bin) == "NEW" {
+			newWait = w
+			return errors.New("boom")
+		}
+		oldWait = w
+		if oldFails && w < 30*time.Second {
+			return errors.New("connection refused")
+		}
+		return nil
+	}
+	r := req()
+	r.HealthTimeout = timeout
+	out, err = Apply(context.Background(), d, r)
+	return newWait, oldWait, out, err
+}
+
+func TestRollbackHealthFloor(t *testing.T) {
+	t.Run("short timeout gets the floor and a slow old release recovers", func(t *testing.T) {
+		newWait, oldWait, out, _ := rollbackWaits(t, Limits{}, 6*time.Second, true)
+		if newWait != 6*time.Second {
+			t.Fatalf("new release wait %v, want 6s", newWait)
+		}
+		if oldWait != DefaultRollbackHealthFloor {
+			t.Fatalf("rollback wait %v, want %v", oldWait, DefaultRollbackHealthFloor)
+		}
+		if out.Outcome != OutcomeRolledBack {
+			t.Fatalf("outcome %q, want rolled back", out.Outcome)
+		}
+	})
+	t.Run("floor never lowers a larger timeout", func(t *testing.T) {
+		newWait, oldWait, _, _ := rollbackWaits(t, Limits{}, 120*time.Second, false)
+		if newWait != 120*time.Second || oldWait != 120*time.Second {
+			t.Fatalf("waits new=%v old=%v, want 120s both", newWait, oldWait)
+		}
+	})
+	t.Run("configured floor applies", func(t *testing.T) {
+		_, oldWait, _, _ := rollbackWaits(t, Limits{RollbackHealthFloor: 200 * time.Second}, 6*time.Second, false)
+		if oldWait != 200*time.Second {
+			t.Fatalf("rollback wait %v, want 200s", oldWait)
+		}
+	})
+}
+
+func TestRollbackFloorFromEnv(t *testing.T) {
+	get := func(v string) func(string) string {
+		return func(k string) string {
+			if k == EnvRollbackFloor {
+				return v
+			}
+			return ""
+		}
+	}
+	for v, want := range map[string]time.Duration{"": 60 * time.Second, "120": 120 * time.Second, "5": 60 * time.Second, "601": 60 * time.Second, "x": 60 * time.Second, "10": 10 * time.Second} {
+		if got := LimitsFromEnv(get(v)).RollbackHealthFloor; got != want {
+			t.Errorf("env %q: floor %v, want %v", v, got, want)
+		}
+	}
+}

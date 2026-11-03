@@ -207,7 +207,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		api.WithPublicHost(publicHost()),
 		api.WithPublicHostSource(publicHostSource()),
 		api.WithStandaloneSafety(standaloneSafety()),
-		api.WithHTTPSEnableLimits(apiRateLimitRPM(logger, "APP_ACME_MAX_ATTEMPTS_PER_HOUR", 0), acmePendingTimeout(logger)),
+		api.WithHTTPSEnableLimits(0, acmePendingTimeout(logger)),
 		api.WithACMEDefaultDirectory(acmeDefaultDirectory()),
 		api.WithDeployLogQuerier(telemetryDB),
 		api.WithDeployRecorder(deployRecorder),

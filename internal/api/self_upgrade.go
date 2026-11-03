@@ -94,6 +94,7 @@ var hostEnvPassthrough = []string{
 	"APP_UPGRADE_RESTORE_POINTS", "APP_UPGRADE_RESTORE_POINTS_MAX_MB", "APP_UPGRADE_VERIFY_WINDOW",
 	"LEVELRAIL_RELEASE_BASE_URL", "LEVELRAIL_INSECURE_MIRROR",
 	selfupgrade.EnvDownloadStall, selfupgrade.EnvDownloadDeadline, selfupgrade.EnvHeartbeat, selfupgrade.EnvOrphanAfter,
+	selfupgrade.EnvRollbackFloor,
 }
 
 // systemdRunArgs builds the systemd-run argv. A transient unit starts with an

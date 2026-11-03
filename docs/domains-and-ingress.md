@@ -259,13 +259,13 @@ The public CA is retried each time the fallback certificate renews, every `APP_I
 
 <Accordion title="Staging, rate limits and switching CA">
 
-Tick "Test with Let's Encrypt staging first" (or pass `--staging`) to use the staging CA: certificates are not browser trusted, but there are no meaningful limits. Production enable attempts are capped at 5 per hour per control plane (`APP_ACME_MAX_ATTEMPTS_PER_HOUR`) so a misconfiguration cannot burn Let's Encrypt's failed-validation limit; staging is never capped.
+Tick "Test with Let's Encrypt staging first" (or pass `--staging`) to use the staging CA: certificates are not browser trusted, but there are no meaningful limits. Production enable attempts are capped at 5 per hour per control plane (runtime setting `domains.https_attempts_per_hour`, 1 to 100, applies live) so a misconfiguration cannot burn Let's Encrypt's failed-validation limit; staging is never capped.
 
 | Variable | Effect |
 |---|---|
 | `APP_ACME_STAGING=true` | Makes staging the default CA. |
 | `APP_ACME_DIRECTORY_URL` | Points at any other RFC 8555 CA. |
-| `APP_ACME_MAX_ATTEMPTS_PER_HOUR` | Production enable cap (default 5). |
+| `APP_ACME_MAX_ATTEMPTS_PER_HOUR` | Seeds `domains.https_attempts_per_hour` (default 5). |
 | `APP_ACME_PENDING_TIMEOUT` | A request that never settles is reported as failed after this long (default 2 minutes). |
 
 Switching CA (staging to production, or from the internal issuer to ACME) drops the certificates stored for the previous issuer so they are re-issued. Without this, Caddy keeps serving the old still-valid certificate and never asks the new CA.

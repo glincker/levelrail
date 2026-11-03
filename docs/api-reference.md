@@ -1206,6 +1206,8 @@ Endpoints for:
 | DELETE | /api/v1/domains/parked/{domain} | AbilityWriteSensitive | handleDeleteParkedDomain |
 | POST | /api/v1/domains/batch | AbilityWriteSensitive | handleDomainsBatch |
 | GET | /api/v1/domains/parked/retention | AbilityRead | handleParkedRetention |
+| GET | /api/v1/domains/watch | AbilityRead | handleDomainsWatch |
+| GET | /api/v1/domains/{domain}/watch | AbilityRead | handleDomainWatchSnapshot |
 
 ## Built-in Container Registry
 

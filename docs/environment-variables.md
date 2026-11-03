@@ -69,8 +69,12 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CUTOVER_VERIFY_MIN_INTERVAL` | [`cutover.verify_min_interval`](/runtime-settings#networking) | `10s` |
 | `APP_CUTOVER_VERIFY_SLOW_TTFB` | [`cutover.verify_slow_ttfb`](/runtime-settings#networking) | `1500ms` |
 | `APP_CUTOVER_VERIFY_REQUEST_TIMEOUT` | [`cutover.verify_timeout`](/runtime-settings#networking) | `5s` |
+| `APP_DNS_VERIFY_PROVIDER_ON_SAVE` | [`dns.verify_provider_on_save`](/runtime-settings#networking) | `true` |
 | `APP_DOMAINS_BATCH_MAX_ITEMS` | [`domains.batch_max_items`](/runtime-settings#networking) | `50` |
 | `APP_DOMAINS_DNS_WAIT_BUDGET` | [`domains.dns_wait_budget`](/runtime-settings#networking) | `10m` |
+| `APP_DOMAINS_DNS_WATCH_INTERVAL_SECONDS` | [`domains.dns_watch_interval_seconds`](/runtime-settings#networking) | `15` |
+| `APP_DOMAINS_DNS_WATCH_MAX_MINUTES` | [`domains.dns_watch_max_minutes`](/runtime-settings#networking) | `120` |
+| `APP_ACME_MAX_ATTEMPTS_PER_HOUR` | [`domains.https_attempts_per_hour`](/runtime-settings#networking) | `5` |
 | `APP_DOMAINS_PARKED_RETENTION_DAYS` | [`domains.parked_retention_days`](/runtime-settings#networking) | `0` |
 | `APP_GAME_STATUS_CACHE` | [`games.status_cache`](/runtime-settings#networking) | `5s` |
 | `APP_GAME_STATUS_TIMEOUT` | [`games.status_timeout`](/runtime-settings#networking) | `3s` |
@@ -451,6 +455,7 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 | `APP_ADVISORY_FEED_PUBKEY` | computed | Public key that verifies signed advisory feed entries. Control plane. |
 | `APP_UPGRADE_SCHEDULER_INTERVAL` | computed | How often the upgrade scheduler checks for upgrades that are due. Control plane. |
 | `APP_UPGRADE_START_TIMEOUT` | computed | Time limit for starting a scheduled upgrade. Control plane. |
+| `APP_UPGRADE_ROLLBACK_HEALTH_FLOOR_SECONDS` | `60` | Least time a restored previous release gets to become healthy during a self-upgrade rollback, even when `--timeout` is shorter. Range 10 to 600. Control plane. |
 
 ## Plugin egress proxy
 

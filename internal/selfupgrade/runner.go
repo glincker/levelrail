@@ -197,10 +197,7 @@ func (r *runner) rollbackAndFinish(ctx context.Context, failedStep string, cause
 	if d.ClearMarker != nil {
 		d.ClearMarker()
 	}
-	timeout := r.healthTimeout
-	if timeout <= 0 {
-		timeout = DefaultHealthTimeout
-	}
+	timeout := r.rollbackHealthTimeout()
 	err := r.step(StepRollback, func() (string, error) {
 		_ = d.Stop(ctx)
 		if a.PrevBinary != "" {
@@ -236,6 +233,25 @@ func (r *runner) rollbackAndFinish(ctx context.Context, failedStep string, cause
 		return r.close(OutcomeRolledBack, failedStep, fmt.Errorf("%w: rolled back to %s, database restored, %d minutes of changes were discarded", cause, a.FromVersion, a.RolledBackMinutes))
 	}
 	return r.close(OutcomeRolledBack, failedStep, fmt.Errorf("%w: rolled back to %s, the database needed no restore so no changes were lost", cause, a.FromVersion))
+}
+
+// rollbackHealthTimeout is how long the restored release may take to answer.
+// It never drops below the floor: the old release must boot and migrate on a
+// possibly loaded host, which a short --timeout for the new one does not allow.
+func (r *runner) rollbackHealthTimeout() time.Duration {
+	base := r.healthTimeout
+	if base <= 0 {
+		base = DefaultHealthTimeout
+	}
+	floor := r.d.Limits.RollbackHealthFloor
+	if floor <= 0 {
+		floor = DefaultRollbackHealthFloor
+	}
+	if base >= floor {
+		return base
+	}
+	r.d.log().Info("rollback health wait raised to the floor", slog.String("attempt", r.a.ID), slog.Duration("requested", base), slog.Duration("floor", floor))
+	return floor
 }
 
 // schemaChanged reports whether the live database no longer matches the

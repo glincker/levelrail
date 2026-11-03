@@ -209,6 +209,10 @@ An app can serve every name under a domain: add `*.example.com` (or `*.apps.exam
 
 Per environment and [preview environment](/previews) wildcards are not part of this yet.
 
+## Credential check on save
+
+Saving a Cloudflare token, a Route53 key pair or a Google Cloud DNS key also tests it with read-only calls (list zones, then list records of the first zone). The save always succeeds; the response adds `verification` with `ok`, `missing_scopes`, `zones_visible` and `message`. Edit rights cannot be proven without a write, so they are confirmed on the first change. Turn this off with the runtime setting `dns.verify_provider_on_save`.
+
 ## Permissions and audit
 
 Reads (zones, records, delegation, checks, exports) need the `read` ability. Every write against the provider (zones, records, imports, templates, health checks) needs `root`, because it changes live infrastructure outside this server. Each write is audited with an action name (`dns_zone.create`, `dns_zone.delete`, `dns_record.create`, `dns_record.update`, `dns_record.delete`, `dns_record.import`, `dns_record.template`, `dns_health_check.create`, `dns_health_check.delete`); filter the audit log by `dns_record` or `dns_zone`.

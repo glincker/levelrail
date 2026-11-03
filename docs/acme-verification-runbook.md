@@ -130,7 +130,7 @@ Open ports 80 and 443 inbound. `levelrail-cli doctor` and the dashboard's [statu
 </Accordion>
 <Accordion title="Rate limited">
 
-Let's Encrypt production limits failed validations per account and hostname, and certificates per registered domain per week. Check their current limits, because they change. The log shows an explicit `rate limited` or `too many` error. Use staging for repeated attempts. Production enable attempts from the one-click flow are also capped by `APP_ACME_MAX_ATTEMPTS_PER_HOUR`.
+Let's Encrypt production limits failed validations per account and hostname, and certificates per registered domain per week. Check their current limits, because they change. The log shows an explicit `rate limited` or `too many` error. Use staging for repeated attempts. Production enable attempts from the one-click flow are also capped by the runtime setting `domains.https_attempts_per_hour`.
 
 </Accordion>
 <Accordion title="Missing or invalid contact email">

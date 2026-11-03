@@ -30,6 +30,8 @@ type googleCloudDNSResource struct {
 	ProjectID   string `json:"project_id,omitempty"`
 	ClientEmail string `json:"client_email,omitempty"`
 	HasKey      bool   `json:"has_key"`
+	// Verification appears only on a PUT that saved a new key.
+	Verification *dnsTokenVerification `json:"verification,omitempty"`
 }
 
 type updateGoogleCloudDNSRequest struct {
@@ -112,7 +114,13 @@ func (rt *Router) handleUpdateGoogleCloudDNSSettings(w http.ResponseWriter, r *h
 		rt.internalError(w, "api: update google cloud dns settings failed", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, rt.toGoogleCloudDNSResource(ctx, next))
+	res := rt.toGoogleCloudDNSResource(ctx, next)
+	if req.ServiceAccountJSON != "" {
+		res.Verification = rt.verifyDNSCredential(ctx, dnszones.ProviderGoogleCloud, func() (dnszones.Provider, error) {
+			return rt.newGoogleCloudProvider(req.ServiceAccountJSON)
+		})
+	}
+	writeJSON(w, http.StatusOK, res)
 }
 
 // handleDisconnectGoogleCloudDNS handles DELETE /api/v1/settings/google-cloud-dns.

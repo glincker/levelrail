@@ -91,6 +91,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerEnvProtectionRoutes(mux)
 	rt.registerStandaloneDomainRoutes(mux)
 	rt.registerParkedDomainRoutes(mux)
+	rt.registerDNSWatchRoutes(mux)
 	rt.registerLogExplorerRoutes(mux)
 	rt.registerMobileRoutes(mux)
 	mcpHTTP := rt.registerMCPHTTPRoutes(mux)

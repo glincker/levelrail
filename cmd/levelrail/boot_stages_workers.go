@@ -423,6 +423,13 @@ func (s *bootState) startSchedulers() {
 		}
 	}()
 
+	// Follows new domains until DNS and the certificate are ready; the set is persisted so a restart resumes it.
+	go func() {
+		if err := apiRouter.RunDNSWatcher(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("dns watcher stopped", slog.String("error", err.Error()))
+		}
+	}()
+
 	// Publishes the signed audit chain head off the box; does nothing unless APP_AUDIT_ANCHOR_* is set.
 	if cfg := auditanchor.ConfigFromEnv(os.LookupEnv); cfg.Enabled() {
 		go auditanchor.New(cfg, db, logger).Run(ctx)

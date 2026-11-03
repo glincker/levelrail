@@ -16,6 +16,10 @@ import (
 // healthy before the previous binary and data are put back.
 const DefaultHealthTimeout = 90 * time.Second
 
+// DefaultRollbackHealthFloor is the least time a restored previous release
+// gets to boot, migrate and answer, whatever --timeout the new release got.
+const DefaultRollbackHealthFloor = 60 * time.Second
+
 // ProbeInfo is what a downloaded binary reports about itself.
 type ProbeInfo struct {
 	Version string
