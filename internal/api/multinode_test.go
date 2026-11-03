@@ -417,3 +417,66 @@ func TestNodeTaintsFeedCandidates(t *testing.T) {
 		t.Fatalf("tolerated Spread = %+v, %v", d, err)
 	}
 }
+
+func TestPlacementRulesSteerApp(t *testing.T) {
+	rt, db, cookie := newMultiNodeRouter(t)
+	seedMNNode(t, db, "n1", nil)
+	if err := db.SetNodeTaints(context.Background(), "n1", []store.NodeTaint{{Key: "dedicated", Value: "gpu", Effect: "NoSchedule"}}); err != nil {
+		t.Fatal(err)
+	}
+	seedMNApp(t, db, "")
+	if rec := mnDo(t, rt, cookie, http.MethodGet, "/api/v1/apps/web/placement", ""); !strings.Contains(rec.Body.String(), "tainted and not tolerated") {
+		t.Fatalf("untolerated view = %s", rec.Body.String())
+	}
+	if rec := mnDo(t, rt, cookie, http.MethodPut, "/api/v1/apps/web/placement", `{"tolerations":[{"key":"dedicated","operator":"Bogus"}]}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("bad toleration = %d", rec.Code)
+	}
+	rec := mnDo(t, rt, cookie, http.MethodPut, "/api/v1/apps/web/placement", `{"tolerations":[{"key":"dedicated","value":"gpu","effect":"NoSchedule"}]}`)
+	var view placementResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &view); err != nil || rec.Code != http.StatusOK {
+		t.Fatalf("PUT = %d %s", rec.Code, rec.Body.String())
+	}
+	if !contains1(view.Eligible, "n1") || len(view.Tolerations) != 1 {
+		t.Fatalf("tolerated view = %+v", view)
+	}
+}
+
+func contains1(l []string, v string) bool {
+	for _, x := range l {
+		if x == v {
+			return true
+		}
+	}
+	return false
+}
+
+func TestWithWorkloadsFeed(t *testing.T) {
+	rt, db, _ := newMultiNodeRouter(t)
+	seedMNNode(t, db, "n1", nil)
+	ctx := context.Background()
+	for _, n := range []string{"web", "cache"} {
+		if err := db.SaveDesiredService(ctx, store.DesiredService{Name: n, Image: "img:1"}); err != nil {
+			t.Fatal(err)
+		}
+		if err := db.UpdateServiceNode(ctx, n, "n1"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := db.SetResourceLabels(ctx, store.LabelKindApp, "cache", map[string]string{"tier": "data"}); err != nil {
+		t.Fatal(err)
+	}
+	rules := placementRules{Affinity: &placement.Affinity{Apart: []placement.WorkloadTerm{{Match: []placement.LabelTerm{{Key: "tier", Op: placement.OpExists}}}}}}
+	cands, err := rt.placementCandidates(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err := rt.withWorkloads(ctx, rules, "web", cands)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range out {
+		if c.ID == "n1" && (len(c.Workloads) != 1 || c.Workloads[0]["tier"] != "data" || c.Workloads[0]["name"] != "cache") {
+			t.Fatalf("workloads = %+v", c.Workloads)
+		}
+	}
+}

@@ -433,6 +433,37 @@ levelrail-cli nodes taint <id> --clear
 - `GET` and `PUT /api/v1/nodes/{id}/taints` read and replace a node's whole taint set. Keys and values follow the label rules and at most 32 taints are allowed. Invalid input returns `400` with the reason.
 - `nodes get` lists a node's taints.
 
+### Tolerations and affinity for an app
+
+An app can tolerate a taint, and can ask to run with or away from other apps.
+
+```bash
+# let the app run on nodes tainted dedicated=gpu:NoSchedule
+levelrail-cli nodes placement app web --toleration dedicated=gpu:NoSchedule
+# tolerate any value of a key
+levelrail-cli nodes placement app web --toleration-exists dedicated
+# node and app affinity from a file, or remove all rules
+levelrail-cli nodes placement app web --affinity-file affinity.yaml
+levelrail-cli nodes placement app web --clear-placement-rules
+```
+
+```yaml
+node_required:            # the node must match every term
+  - {key: disk, op: In, values: [ssd]}
+node_preferred:           # a soft preference, weight 1 to 100
+  - weight: 50
+    term: {key: zone, op: In, values: [eu-1]}
+apart:                    # stay off nodes (or zones) running matching apps
+  - match: [{key: name, op: In, values: [db]}]
+    topology: zone
+```
+
+- The same fields go under a service in `app.yaml` as `tolerations` and `affinity`.
+- `together` attracts an app to nodes running matching apps; `apart` repels it. Weight `0` makes a term required.
+- Apps are matched by their labels and by `name=<app name>`.
+- At most 8 affinity terms are allowed per app; set `APP_PLACEMENT_AFFINITY_MAX_TERMS` to change it. Invalid rules return `400` with the reason.
+- `nodes placement app <name>` and the placement decision explain why a node was skipped.
+
 ### Failure domains: region, zone and provider
 
 Three label keys have a meaning to the scheduler: `region`, `zone` and `provider`.

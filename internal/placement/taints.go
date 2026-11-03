@@ -24,18 +24,18 @@ const (
 
 // Taint marks a node so only workloads that tolerate it are placed there.
 type Taint struct {
-	Key    string      `json:"key"`
-	Value  string      `json:"value,omitempty"`
-	Effect TaintEffect `json:"effect"`
+	Key    string      `json:"key" yaml:"key"`
+	Value  string      `json:"value,omitempty" yaml:"value,omitempty"`
+	Effect TaintEffect `json:"effect" yaml:"effect"`
 }
 
 // Toleration lets a workload ignore matching taints. An empty Effect matches
 // every effect and an empty Key with the Exists operator matches every taint.
 type Toleration struct {
-	Key      string      `json:"key,omitempty"`
-	Operator string      `json:"operator,omitempty"`
-	Value    string      `json:"value,omitempty"`
-	Effect   TaintEffect `json:"effect,omitempty"`
+	Key      string      `json:"key,omitempty" yaml:"key,omitempty"`
+	Operator string      `json:"operator,omitempty" yaml:"operator,omitempty"`
+	Value    string      `json:"value,omitempty" yaml:"value,omitempty"`
+	Effect   TaintEffect `json:"effect,omitempty" yaml:"effect,omitempty"`
 }
 
 // String renders the taint as key=value:Effect.

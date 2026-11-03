@@ -63,7 +63,11 @@ func (rt *Router) recordPinned(ctx context.Context, kind, name, nodeID, trigger 
 	if err != nil {
 		return
 	}
-	rt.recordPlacement(ctx, kind, name, trigger, placement.Pinned(cands, placement.Request{Needs: needs, Policy: rt.placementPolicy}, nodeID))
+	cands, req, err := rt.ruledRequest(ctx, kind, name, cands, placement.Request{Needs: needs, Policy: rt.placementPolicy})
+	if err != nil {
+		return
+	}
+	rt.recordPlacement(ctx, kind, name, trigger, placement.Pinned(cands, req, nodeID))
 }
 
 // resourceNeeds is what an existing app or database asks for.
@@ -127,7 +131,11 @@ func (rt *Router) placementDecisionView(ctx context.Context, kind, name string) 
 		}
 	}
 	out := placementDecisionResource{Kind: kind, Name: name, NodeID: nodeID}
-	out.Preview, _ = placement.Spread(cands, placement.Request{Selector: sel, Needs: needs, Policy: rt.placementPolicy})
+	cands, req, err := rt.ruledRequest(ctx, kind, name, cands, placement.Request{Selector: sel, Needs: needs, Policy: rt.placementPolicy})
+	if err != nil {
+		return placementDecisionResource{}, err
+	}
+	out.Preview, _ = placement.Spread(cands, req)
 	if rt.decisions == nil {
 		return out, nil
 	}

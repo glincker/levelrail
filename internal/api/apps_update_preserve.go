@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/placement"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -37,7 +38,7 @@ func decodeAppUpdate(w http.ResponseWriter, r *http.Request, req *appResource) (
 // appUpdateFields lists the keys mergeOmittedAppFields can fill from storage.
 var appUpdateFields = []string{
 	"image", "port", "host_port", "published_ports", "bind_address", "domains", "env",
-	"resources", "health", "hooks", "strategy", "replicas", "labels", "command",
+	"resources", "health", "hooks", "strategy", "replicas", "labels", "command", "tolerations", "affinity",
 }
 
 // mergeOmittedAppFields fills every settable field the body left out with
@@ -62,6 +63,8 @@ func mergeOmittedAppFields(req *appResource, existing store.DesiredService, sent
 	keep("replicas", func() { req.Replicas = existing.Replicas })
 	keep("labels", func() { req.Labels = existing.Labels })
 	keep("command", func() { req.Command = existing.Command })
+	keep("tolerations", func() { req.Tolerations, _ = placement.DecodeRules(existing.Tolerations, nil) })
+	keep("affinity", func() { _, req.Affinity = placement.DecodeRules(nil, existing.Affinity) })
 }
 
 // Carries stored fields the PUT body cannot express, since SaveDesiredService rewrites every column.

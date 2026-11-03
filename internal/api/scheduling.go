@@ -16,6 +16,7 @@ type createPlacement struct {
 	Kind     string
 	Name     string
 	Needs    placement.Resources
+	Rules    placementRules
 	decision *placement.Decision
 }
 
@@ -26,7 +27,7 @@ type createPlacement struct {
 // room, so a full cluster fails the create instead of overloading a node.
 // preferLocalIngress favors the control plane's own node when it fits,
 // since ingress has no mesh path to a worker node yet (CrossNodeIngress).
-func (rt *Router) autoPlaceNode(ctx context.Context, preferLocalIngress bool, needs placement.Resources) (string, *placement.Decision, error) {
+func (rt *Router) autoPlaceNode(ctx context.Context, preferLocalIngress bool, needs placement.Resources, rules placementRules) (string, *placement.Decision, error) {
 	if !rt.autoPlacementEnabled {
 		return "", nil, nil
 	}
@@ -41,7 +42,10 @@ func (rt *Router) autoPlaceNode(ctx context.Context, preferLocalIngress bool, ne
 	if err != nil {
 		return "", nil, err
 	}
-	req := placement.Request{Needs: needs, Policy: rt.placementPolicy}
+	req := rules.request(placement.Request{Needs: needs, Policy: rt.placementPolicy})
+	if cands, err = rt.withWorkloads(ctx, rules, "", cands); err != nil {
+		return "", nil, err
+	}
 	if preferLocalIngress {
 		req.Prefer = rt.localNodeID
 	}
@@ -89,14 +93,17 @@ func (rt *Router) resolveCreateNodePlacement(w http.ResponseWriter, r *http.Requ
 		}
 		if *nodeID != "" {
 			if cands, err := rt.placementCandidates(r.Context()); err == nil {
-				d := placement.Pinned(cands, placement.Request{Needs: cp.Needs, Policy: rt.placementPolicy}, *nodeID)
+				if withW, werr := rt.withWorkloads(r.Context(), cp.Rules, "", cands); werr == nil {
+					cands = withW
+				}
+				d := placement.Pinned(cands, cp.Rules.request(placement.Request{Needs: cp.Needs, Policy: rt.placementPolicy}), *nodeID)
 				cp.decision = &d
 			}
 		}
 		return true
 	}
 
-	placed, d, err := rt.autoPlaceNode(r.Context(), hasDomains, cp.Needs)
+	placed, d, err := rt.autoPlaceNode(r.Context(), hasDomains, cp.Needs, cp.Rules)
 	if errors.Is(err, placement.ErrNoEligibleNode) {
 		writeError(w, http.StatusConflict, strings.TrimPrefix(err.Error(), "placement: ")+". Free capacity, add a node, or pass node_id to place it on a node anyway.")
 		return false

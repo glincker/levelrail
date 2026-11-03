@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -24,6 +25,7 @@ type PlacementStore interface {
 	SetNodeTaints(ctx context.Context, nodeID string, taints []store.NodeTaint) error
 	GetPlacementSelector(ctx context.Context, kind, resource string) (map[string]string, error)
 	SetPlacementSelector(ctx context.Context, kind, resource string, selector map[string]string) error
+	UpdateServicePlacementRules(ctx context.Context, name string, tolerations, affinity json.RawMessage) error
 	EnsureDatabaseMeshPort(ctx context.Context, name string, minPort, maxPort int) (int, error)
 }
 
@@ -112,9 +114,13 @@ func (rt *Router) checkPlacement(ctx context.Context, kind, name, nodeID string)
 	if err != nil {
 		return err
 	}
+	cands, req, err := rt.ruledRequest(ctx, kind, name, cands, placement.Request{Selector: sel})
+	if err != nil {
+		return err
+	}
 	for _, c := range cands {
 		if c.ID == nodeID {
-			return placement.Check(c, placement.Request{Selector: sel})
+			return placement.Check(c, req)
 		}
 	}
 	return fmt.Errorf("%w: node %s is not registered", placement.ErrNoEligibleNode, nodeID)
@@ -144,7 +150,11 @@ func (rt *Router) spreadDecision(ctx context.Context, kind, name, exclude string
 	if err != nil {
 		return placement.Decision{}, err
 	}
-	return placement.Spread(cands, placement.Request{Selector: sel, Exclude: exclude, Needs: needs, Policy: rt.placementPolicy})
+	cands, req, err := rt.ruledRequest(ctx, kind, name, cands, placement.Request{Selector: sel, Exclude: exclude, Needs: needs, Policy: rt.placementPolicy})
+	if err != nil {
+		return placement.Decision{}, err
+	}
+	return placement.Spread(cands, req)
 }
 
 type labelsBody struct {
@@ -263,18 +273,25 @@ func toPlacementTaints(rows []store.NodeTaint) []placement.Taint {
 }
 
 type placementResource struct {
-	Kind         string                `json:"kind"`
-	Name         string                `json:"name"`
-	NodeID       string                `json:"node_id"`
-	NodeSelector map[string]string     `json:"node_selector"`
-	Eligible     []string              `json:"eligible_node_ids"`
-	Rejected     []placement.Rejection `json:"rejected"`
+	Kind         string            `json:"kind"`
+	Name         string            `json:"name"`
+	NodeID       string            `json:"node_id"`
+	NodeSelector map[string]string `json:"node_selector"`
+	// Tolerations and Affinity are an app's placement rules; databases have none.
+	Tolerations []placement.Toleration `json:"tolerations"`
+	Affinity    *placement.Affinity    `json:"affinity,omitempty"`
+	Eligible    []string               `json:"eligible_node_ids"`
+	Rejected    []placement.Rejection  `json:"rejected"`
 	// DomainWarnings lists failure domains that hold every replica of the app.
 	DomainWarnings []placement.DomainRisk `json:"domain_warnings"`
 }
 
+// placementBody sets the selector and, for apps, the rules. Omitted rules stay
+// as they are; [] clears tolerations and {} clears affinity.
 type placementBody struct {
-	NodeSelector map[string]string `json:"node_selector"`
+	NodeSelector map[string]string       `json:"node_selector"`
+	Tolerations  *[]placement.Toleration `json:"tolerations"`
+	Affinity     *placement.Affinity     `json:"affinity"`
 }
 
 func (rt *Router) currentNode(ctx context.Context, kind, name string) (string, error) {
@@ -309,12 +326,24 @@ func (rt *Router) placementView(ctx context.Context, kind, name string) (placeme
 	if out.NodeSelector == nil {
 		out.NodeSelector = map[string]string{}
 	}
+	rules, err := rt.rulesFor(ctx, kind, name)
+	if err != nil {
+		return placementResource{}, err
+	}
+	out.Tolerations, out.Affinity = rules.Tolerations, rules.Affinity
+	if out.Tolerations == nil {
+		out.Tolerations = []placement.Toleration{}
+	}
 	needs, err := rt.resourceNeeds(ctx, kind, name)
 	if err != nil {
 		return placementResource{}, err
 	}
+	cands, req, err := rt.ruledRequest(ctx, kind, name, cands, placement.Request{Selector: sel, Needs: needs, Policy: rt.placementPolicy})
+	if err != nil {
+		return placementResource{}, err
+	}
 	for _, c := range cands {
-		if e := placement.Evaluate(c, placement.Request{Selector: sel, Needs: needs, Policy: rt.placementPolicy}); !e.Eligible {
+		if e := placement.Evaluate(c, req); !e.Eligible {
 			out.Rejected = append(out.Rejected, placement.Rejection{NodeID: c.ID, Reason: e.Reason})
 		} else {
 			out.Eligible = append(out.Eligible, c.ID)
@@ -370,6 +399,21 @@ func (rt *Router) handleSetPlacement(kind string) http.HandlerFunc {
 			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}
+		rulesSent := body.Tolerations != nil || body.Affinity != nil
+		if rulesSent && kind != store.NodeMoveKindApp {
+			writeError(w, http.StatusBadRequest, "tolerations and affinity apply to apps only")
+			return
+		}
+		if rulesSent {
+			var tols []placement.Toleration
+			if body.Tolerations != nil {
+				tols = *body.Tolerations
+			}
+			if err := placement.ValidateRules(tols, body.Affinity); err != nil {
+				writeError(w, http.StatusBadRequest, err.Error())
+				return
+			}
+		}
 		if _, err := rt.currentNode(r.Context(), kind, name); isResourceNotFound(err) {
 			writeError(w, http.StatusNotFound, kind+" not found")
 			return
@@ -377,9 +421,18 @@ func (rt *Router) handleSetPlacement(kind string) http.HandlerFunc {
 			rt.internalError(w, "api: set placement: load failed", err, slog.String("name", name))
 			return
 		}
-		if err := rt.multiNode.store.SetPlacementSelector(r.Context(), kind, name, body.NodeSelector); err != nil {
-			rt.internalError(w, "api: set placement failed", err, slog.String("kind", kind), slog.String("name", name))
-			return
+		// A rules-only body leaves the selector alone.
+		if body.NodeSelector != nil || !rulesSent {
+			if err := rt.multiNode.store.SetPlacementSelector(r.Context(), kind, name, body.NodeSelector); err != nil {
+				rt.internalError(w, "api: set placement failed", err, slog.String("kind", kind), slog.String("name", name))
+				return
+			}
+		}
+		if rulesSent {
+			if err := rt.saveRules(r.Context(), name, body); err != nil {
+				rt.internalError(w, "api: set placement rules failed", err, slog.String("name", name))
+				return
+			}
 		}
 		view, err := rt.placementView(r.Context(), kind, name)
 		if err != nil {

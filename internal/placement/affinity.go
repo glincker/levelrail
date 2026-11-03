@@ -22,9 +22,9 @@ const TopologyNode = "node"
 
 // LabelTerm tests one label key.
 type LabelTerm struct {
-	Key    string   `json:"key"`
-	Op     MatchOp  `json:"op"`
-	Values []string `json:"values,omitempty"`
+	Key    string   `json:"key" yaml:"key"`
+	Op     MatchOp  `json:"op" yaml:"op"`
+	Values []string `json:"values,omitempty" yaml:"values,omitempty"`
 }
 
 // Matches reports whether labels satisfy the term.
@@ -64,25 +64,25 @@ func (t LabelTerm) String() string {
 
 // WeightedNodeTerm is a node label preference; the highest total weight wins.
 type WeightedNodeTerm struct {
-	Weight int       `json:"weight"`
-	Term   LabelTerm `json:"term"`
+	Weight int       `json:"weight" yaml:"weight"`
+	Term   LabelTerm `json:"term" yaml:"term"`
 }
 
 // WorkloadTerm selects other workloads by label and applies within a topology.
 // Weight 0 makes the term required; 1 to 100 makes it a preference.
 type WorkloadTerm struct {
-	Match    []LabelTerm `json:"match"`
-	Topology string      `json:"topology,omitempty"`
-	Weight   int         `json:"weight,omitempty"`
+	Match    []LabelTerm `json:"match" yaml:"match"`
+	Topology string      `json:"topology,omitempty" yaml:"topology,omitempty"`
+	Weight   int         `json:"weight,omitempty" yaml:"weight,omitempty"`
 }
 
 // Affinity is the optional rule set of one workload. Together attracts it to
 // nodes (or zones) running matching workloads, Apart repels it.
 type Affinity struct {
-	NodeRequired  []LabelTerm        `json:"node_required,omitempty"`
-	NodePreferred []WeightedNodeTerm `json:"node_preferred,omitempty"`
-	Together      []WorkloadTerm     `json:"together,omitempty"`
-	Apart         []WorkloadTerm     `json:"apart,omitempty"`
+	NodeRequired  []LabelTerm        `json:"node_required,omitempty" yaml:"node_required,omitempty"`
+	NodePreferred []WeightedNodeTerm `json:"node_preferred,omitempty" yaml:"node_preferred,omitempty"`
+	Together      []WorkloadTerm     `json:"together,omitempty" yaml:"together,omitempty"`
+	Apart         []WorkloadTerm     `json:"apart,omitempty" yaml:"apart,omitempty"`
 }
 
 // Empty reports whether the rule set asks for nothing.

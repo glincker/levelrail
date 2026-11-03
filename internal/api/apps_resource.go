@@ -4,6 +4,7 @@ import (
 	"sort"
 
 	"github.com/GLINCKER/levelrail/internal/envredact"
+	"github.com/GLINCKER/levelrail/internal/placement"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -75,6 +76,10 @@ type appResource struct {
 	// Egress is display-only here and excluded from toDesiredService so a plain PUT
 	// never clears a configured policy; set it via app.yaml or the egress-policy route.
 	Egress *store.ServiceEgressPolicy `json:"egress,omitempty"`
+	// Tolerations and Affinity steer where the app is placed. On update, omitted
+	// keeps the stored rules, [] clears tolerations and {} clears affinity.
+	Tolerations []placement.Toleration `json:"tolerations,omitempty"`
+	Affinity    *placement.Affinity    `json:"affinity,omitempty"`
 	// Strategy and Replicas have no omitempty: reads always carry the resolved
 	// value, and an empty value on input falls to the store defaults.
 	Strategy string `json:"strategy"`
@@ -262,6 +267,7 @@ func toAppResourceRaw(svc store.DesiredService) appResource {
 		}
 	}
 
+	tols, aff := placement.DecodeRules(svc.Tolerations, svc.Affinity)
 	return appResource{
 		ImageDigest:         appImageDigest(svc),
 		Name:                svc.Name,
@@ -278,6 +284,8 @@ func toAppResourceRaw(svc store.DesiredService) appResource {
 		Health:              svc.Health,
 		Hooks:               svc.Hooks,
 		Egress:              svc.Egress,
+		Tolerations:         tols,
+		Affinity:            aff,
 		Strategy:            svc.Strategy,
 		Replicas:            svc.Replicas,
 		Labels:              svc.Labels,
@@ -303,6 +311,7 @@ func toAppResourceRaw(svc store.DesiredService) appResource {
 }
 
 func (a appResource) toDesiredService() store.DesiredService {
+	tj, aj := placement.EncodeRules(a.Tolerations, a.Affinity)
 	return store.DesiredService{
 		Name:           a.Name,
 		Image:          a.Image,
@@ -319,7 +328,17 @@ func (a appResource) toDesiredService() store.DesiredService {
 		Labels:         a.Labels,
 		Command:        a.Command,
 		PublishedPorts: a.PublishedPorts,
+		Tolerations:    tj,
+		Affinity:       aj,
 	}
+}
+
+// normalizeAffinity stores an empty rule set as none.
+func normalizeAffinity(a *placement.Affinity) *placement.Affinity {
+	if a == nil || a.Empty() {
+		return nil
+	}
+	return a
 }
 
 // unionSecretEnvNames merges declared secret env var names with the

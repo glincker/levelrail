@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/placement"
 )
 
 // JoinCommands are ready-to-paste commands that enroll a server.
@@ -223,12 +225,14 @@ type PlacementRejection struct {
 
 // PlacementResource mirrors internal/api's placementResource.
 type PlacementResource struct {
-	Kind         string               `json:"kind"`
-	Name         string               `json:"name"`
-	NodeID       string               `json:"node_id"`
-	NodeSelector map[string]string    `json:"node_selector"`
-	Eligible     []string             `json:"eligible_node_ids"`
-	Rejected     []PlacementRejection `json:"rejected"`
+	Kind         string                 `json:"kind"`
+	Name         string                 `json:"name"`
+	NodeID       string                 `json:"node_id"`
+	NodeSelector map[string]string      `json:"node_selector"`
+	Tolerations  []placement.Toleration `json:"tolerations"`
+	Affinity     *placement.Affinity    `json:"affinity,omitempty"`
+	Eligible     []string               `json:"eligible_node_ids"`
+	Rejected     []PlacementRejection   `json:"rejected"`
 }
 
 // GetPlacement calls GET /api/v1/{apps|databases}/{name}/placement.
@@ -242,6 +246,24 @@ func (c *Client) GetPlacement(ctx context.Context, kind, name string) (Placement
 func (c *Client) SetPlacement(ctx context.Context, kind, name string, selector map[string]string) (PlacementResource, error) {
 	var out PlacementResource
 	err := c.do(ctx, http.MethodPut, movePath(kind, name)+"/placement", map[string]map[string]string{"node_selector": selector}, &out)
+	return out, err
+}
+
+// SetPlacementRules calls PUT .../placement with tolerations and affinity. A nil
+// selector, tolerations or affinity is left unchanged on the server.
+func (c *Client) SetPlacementRules(ctx context.Context, kind, name string, selector map[string]string, tols *[]placement.Toleration, aff *placement.Affinity) (PlacementResource, error) {
+	body := map[string]any{}
+	if selector != nil {
+		body["node_selector"] = selector
+	}
+	if tols != nil {
+		body["tolerations"] = *tols
+	}
+	if aff != nil {
+		body["affinity"] = aff
+	}
+	var out PlacementResource
+	err := c.do(ctx, http.MethodPut, movePath(kind, name)+"/placement", body, &out)
 	return out, err
 }
 

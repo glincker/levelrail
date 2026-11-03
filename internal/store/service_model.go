@@ -1,6 +1,7 @@
 package store
 
 import (
+	"encoding/json"
 	"fmt"
 )
 
@@ -110,6 +111,12 @@ type DesiredService struct {
 	// Egress is the outbound allowlist; nil means unrestricted. Written on every
 	// SaveDesiredService call and also by UpdateServiceEgressPolicy.
 	Egress *ServiceEgressPolicy
+
+	// Tolerations let this app land on tainted nodes and Affinity steers it by
+	// node and workload labels. Both feed the scheduler; empty means no rules.
+	// They are kept as JSON so this package stays free of placement types.
+	Tolerations json.RawMessage
+	Affinity    json.RawMessage
 
 	// Volumes are named Docker volumes this service's container mounts
 	// (migrations/0041_service_volumes.sql), previously a

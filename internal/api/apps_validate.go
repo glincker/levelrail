@@ -6,6 +6,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
 	"github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/placement"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/standalone"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -58,6 +59,9 @@ func validateAppResourceWith(a appResource, storedPortless bool) error {
 		return err
 	}
 	if err := validateServiceResources(a.Resources); err != nil {
+		return err
+	}
+	if err := placement.ValidateRules(a.Tolerations, a.Affinity); err != nil {
 		return err
 	}
 	if a.HostPort != nil && (*a.HostPort < 1 || *a.HostPort > 65535) {
