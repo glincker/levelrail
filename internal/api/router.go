@@ -348,6 +348,7 @@ type Router struct {
 	httpsPendingTimeout     time.Duration
 	acmeDefaultDirectory    string
 	certLedger              certflow.Ledger
+	reachProver             *certflow.Prover
 	certWatchdog            *certflow.Watchdog
 	certWatchdogOnce        sync.Once
 	// publicHostSource is how publicHost was found; see WithPublicHostSource.

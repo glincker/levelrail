@@ -273,6 +273,7 @@ func (rt *Router) buildGoLiveChecklist(r *http.Request, svc *store.DesiredServic
 	if status != 0 {
 		return golive.Checklist{}, status, msg
 	}
+	rep = rt.withOutsideProof(ctx, rep, domain)
 	in.Report = &rep
 	pre, status, msg := rt.certPreflightFromReport(r, domain, "", false, s, rep)
 	if status != 0 {
