@@ -1,6 +1,9 @@
 import type { AnchorHTMLAttributes, ReactNode } from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
+import i18next from 'i18next'
+import { I18nextProvider, initReactI18next } from 'react-i18next'
+import appRowsEn from '../../locales/en/appRows.json'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AppRow } from '../AppRow'
 import { withLimit } from '../../queries/fleetTraffic'
@@ -141,5 +144,48 @@ describe('withLimit', () => {
       ),
     )
     expect(order).toHaveLength(6)
+  })
+})
+
+describe('AppRow failing reason', () => {
+  function renderFailing(status: AppListEntry['status']) {
+    stubFetch([])
+    const i18n = i18next.createInstance()
+    void i18n.use(initReactI18next).init({
+      lng: 'en',
+      ns: ['appRows'],
+      defaultNS: 'appRows',
+      resources: { en: { appRows: appRowsEn } },
+    })
+    render(
+      <I18nextProvider i18n={i18n}>
+        <QueryClientProvider client={createTestQueryClient()}>
+          <AppRow app={makeApp('api', { status })} />
+        </QueryClientProvider>
+      </I18nextProvider>,
+    )
+  }
+
+  it('shows the condition message and a fix link', () => {
+    renderFailing({
+      label: 'Attention needed',
+      variant: 'destructive',
+      message: 'image pull failed',
+    })
+    expect(screen.getByText('image pull failed')).toHaveAttribute(
+      'title',
+      'image pull failed',
+    )
+    expect(screen.getByRole('link', { name: /View deploys/ })).toBeVisible()
+  })
+
+  it('falls back to plain words when no reason is given', () => {
+    renderFailing({ label: 'Attention needed', variant: 'destructive' })
+    expect(screen.getByText(/open the app to see why/)).toBeVisible()
+  })
+
+  it('shows nothing extra for a healthy app', () => {
+    renderFailing({ label: 'Healthy', variant: 'success' })
+    expect(screen.queryByRole('link', { name: /View deploys/ })).toBeNull()
   })
 })

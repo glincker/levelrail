@@ -1,0 +1,11 @@
+{
+  "failing": {
+    "fallback": "Needs attention, open the app to see why.",
+    "fix": "View deploys",
+    "fixLabel": "View deploys for {{name}}"
+  },
+  "logs": {
+    "noContainer": "No container is running for this app, so there is nothing to stream.",
+    "deploy": "Deploy it"
+  }
+}
