@@ -127,7 +127,7 @@ func runSelfUpgrade(ctx context.Context, args []string, dataDir string, stdin io
 	if notesErr != nil && !f.skipNotes {
 		return fail(target, fmt.Errorf("could not read release notes to check for breaking changes: %w. Re-run with --skip-notes-check to continue without that check", notesErr))
 	}
-	plan := selfUpgradePlan{Current: version.Version, Target: target, Breaking: breaking, Disk: hostDiskReport(dataDir, live, exe), RestoreCommand: restoreCommandFor(name, dataDir)}
+	plan := selfUpgradePlan{Current: version.Version, Target: target, Breaking: breaking, Disk: hostDiskReport(dataDir, live, exe), VerifyBackup: verifyBackupEnabled(ctx, live), RestoreCommand: restoreCommandFor(name, dataDir)}
 	if f.dryRun {
 		return printSelfUpgradePlan(stdout, plan, f.asJSON)
 	}
@@ -224,6 +224,8 @@ type selfUpgradePlan struct {
 	Target   string                 `json:"target_version"`
 	Breaking []selfupgrade.Breaking `json:"breaking"`
 	Disk     selfupgrade.DiskReport `json:"disk"`
+	// VerifyBackup says whether the backup is restored to a scratch copy before the upgrade goes on.
+	VerifyBackup bool `json:"verify_backup"`
 	// RestoreCommand puts the pre-upgrade backup back; NAME is the backup file the upgrade reports.
 	RestoreCommand string `json:"restore_command"`
 }
@@ -246,6 +248,7 @@ func printSelfUpgradePlan(out io.Writer, p selfUpgradePlan, asJSON bool) error {
 	_, _ = fmt.Fprintln(out, "steps: download, verify checksum, verify signature, snapshot, migration dry-run, stop, swap, start, health check (automatic rollback on failure)")
 	_, _ = fmt.Fprintf(out, "disk: %s\n", p.Disk.Summary())
 	_, _ = fmt.Fprintln(out, "a control plane backup is taken first; the upgrade is refused if it fails (override: --skip-backup)")
+	_, _ = fmt.Fprintf(out, "backup restore check: %s (setting upgrade.verify_backup)\n", onOff(p.VerifyBackup))
 	_, _ = fmt.Fprintf(out, "restore it with: %s\n", p.RestoreCommand)
 	return nil
 }
@@ -509,6 +512,16 @@ func selfUpgradeDeps(f selfUpgradeFlags, exe, name, dataDir, live, healthBase st
 				return selfupgrade.BackupInfo{}, err
 			}
 			return selfupgrade.BackupInfo{Name: info.Name, SnapshotPath: filepath.Join(dataDir, cpbackup.DirName, info.Name)}, nil
+		},
+		VerifyBackup: func(ctx context.Context, snapshot string) (string, error) {
+			if !verifyBackupEnabled(ctx, live) {
+				return "restore check off (upgrade.verify_backup is false)", nil
+			}
+			return selfupgrade.VerifyBackup(ctx, selfupgrade.BackupVerifyOptions{
+				Snapshot: snapshot, ScratchBase: dataDir, FreeBytes: dirFreeBytes,
+				Restore:  func(scratch, snap string) (string, error) { return rollback.SwapInBackup(scratch, snap, time.Now()) },
+				KeyFiles: []string{filepath.Join(dataDir, masterKeyFilename), selfupgrade.PinPath(dataDir)},
+			})
 		},
 		MigrateTest: func(ctx context.Context, binary, snapshot string) (int, error) {
 			return migrateCheckWith(ctx, binary, snapshot, dataDir)

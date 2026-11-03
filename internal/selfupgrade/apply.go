@@ -50,6 +50,9 @@ type Deps struct {
 	Stop        func(ctx context.Context) error
 	Start       func(ctx context.Context) error
 	WaitHealthy func(ctx context.Context, timeout time.Duration) error
+	// VerifyBackup proves the snapshot restores into a scratch copy before the
+	// upgrade goes on. Optional; nil skips the check.
+	VerifyBackup func(ctx context.Context, snapshotPath string) (string, error)
 	// RestorePoint keeps the snapshot, binary and unit file as a restore point
 	// and returns its id. Optional.
 	RestorePoint func(ctx context.Context, a Attempt, snapshotPath string) (string, error)
@@ -162,6 +165,17 @@ func Apply(ctx context.Context, d Deps, req Request) (Attempt, error) {
 		}
 		a.BackupName, a.SnapshotPath = backup.Name, backup.SnapshotPath
 		a.SnapshotAt = d.now()
+		verifyNote := ""
+		if backup.SnapshotPath != "" && d.VerifyBackup != nil {
+			note, verr := d.VerifyBackup(ctx, backup.SnapshotPath)
+			switch {
+			case verr != nil && !d.SkipBackup:
+				return "", fmt.Errorf("%w. Nothing was changed; the backup is bad: run `levelrail-cli upgrade backup-now` again and check free disk space, or re-run with --skip-backup to upgrade without a verified restore point", verr)
+			case verr != nil:
+				note = "restore check FAILED but continuing (--skip-backup): " + verr.Error()
+			}
+			verifyNote = note
+		}
 		a.PrevBinary = d.BinaryPath + ".prev"
 		if err := copyExecutable(d.BinaryPath, a.PrevBinary); err != nil {
 			return "", fmt.Errorf("keep previous binary: %w", err)
@@ -172,6 +186,9 @@ func Apply(ctx context.Context, d Deps, req Request) (Attempt, error) {
 			}
 		}
 		detail := "database snapshot " + backup.Name + ", previous binary kept"
+		if verifyNote != "" {
+			detail += ", " + verifyNote
+		}
 		if backup.SnapshotPath == "" {
 			detail = "no database snapshot (--skip-backup), previous binary kept"
 		}

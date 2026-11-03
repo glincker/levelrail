@@ -57,6 +57,7 @@ type SelfUpgradeDisk struct {
 // SelfUpgradeBackup is the pre-upgrade backup and how to restore it.
 type SelfUpgradeBackup struct {
 	WillTake       bool   `json:"will_take"`
+	VerifyRestore  bool   `json:"verify_restore"`
 	Dir            string `json:"dir,omitempty"`
 	RestoreCommand string `json:"restore_command,omitempty"`
 }

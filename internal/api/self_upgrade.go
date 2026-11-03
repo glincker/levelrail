@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/cpbackup"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/selfupgrade"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/version"
@@ -207,7 +208,9 @@ type selfUpgradePlanResource struct {
 
 // selfUpgradeBackupPlan is the pre-upgrade backup the engine takes first.
 type selfUpgradeBackupPlan struct {
-	WillTake       bool   `json:"will_take"`
+	WillTake bool `json:"will_take"`
+	// VerifyRestore is the upgrade.verify_backup setting: the backup is restored to a scratch copy and checked first.
+	VerifyRestore  bool   `json:"verify_restore"`
 	Dir            string `json:"dir,omitempty"`
 	RestoreCommand string `json:"restore_command,omitempty"`
 }
@@ -226,6 +229,7 @@ func (rt *Router) fillPlanHost(plan *selfUpgradePlanResource) {
 	}
 	plan.Restart = restartBehaviour
 	plan.Backup.WillTake = true
+	plan.Backup.VerifyRestore = rt.runtimeSettings.Bool(context.Background(), runtimesettings.KeyUpgradeVerifyBackup)
 	if rt.dataDir == "" {
 		return
 	}

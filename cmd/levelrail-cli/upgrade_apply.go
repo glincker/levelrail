@@ -206,6 +206,9 @@ func printUpgradeHostPlan(out io.Writer, p apiclient.SelfUpgradePlan) {
 		_, _ = fmt.Fprintf(out, "disk: %d MiB free, about %d MiB needed for the backup, restore point and new binary (%s)\n", p.Disk.FreeBytes>>20, p.Disk.RequiredBytes>>20, verdict)
 	}
 	_, _ = fmt.Fprintln(out, "a control plane backup is taken before the swap; the upgrade is refused if it fails (override: --skip-backup)")
+	if p.Backup.VerifyRestore {
+		_, _ = fmt.Fprintln(out, "the backup is restored to a scratch copy and checked before the swap (setting upgrade.verify_backup)")
+	}
 	if p.Restart != "" {
 		_, _ = fmt.Fprintf(out, "restart: %s (about %ds)\n", p.Restart, p.DowntimeSeconds)
 	}
