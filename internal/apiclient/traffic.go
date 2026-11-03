@@ -74,6 +74,11 @@ type DoctorFix struct {
 	Action  *DoctorAction  `json:"action,omitempty"`
 	Records []DoctorRecord `json:"records,omitempty"`
 	CLI     string         `json:"cli,omitempty"`
+	ID      string         `json:"id,omitempty"`
+	Label   string         `json:"label,omitempty"`
+	Steps   []string       `json:"steps,omitempty"`
+	Link    string         `json:"link,omitempty"`
+	CLIHint string         `json:"cli_hint,omitempty"`
 }
 
 // DoctorPropagation mirrors domaindoctor.Propagation.
@@ -86,12 +91,14 @@ type DoctorPropagation struct {
 
 // DoctorCheck mirrors domaindoctor.Check.
 type DoctorCheck struct {
-	ID     string     `json:"id"`
-	Title  string     `json:"title"`
-	State  string     `json:"state"`
-	Tier   int        `json:"tier"`
-	Detail string     `json:"detail,omitempty"`
-	Fix    *DoctorFix `json:"fix,omitempty"`
+	ID       string     `json:"id"`
+	Title    string     `json:"title"`
+	State    string     `json:"state"`
+	Tier     int        `json:"tier"`
+	Detail   string     `json:"detail,omitempty"`
+	Cause    string     `json:"cause,omitempty"`
+	Evidence []string   `json:"evidence,omitempty"`
+	Fix      *DoctorFix `json:"fix,omitempty"`
 }
 
 // DomainDoctorReport is POST .../domains/{domain}/doctor's body.

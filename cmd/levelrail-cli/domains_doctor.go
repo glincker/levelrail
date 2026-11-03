@@ -73,13 +73,14 @@ func printDoctorReport(out io.Writer, rep apiclient.DomainDoctorReport) {
 	}
 	for i, c := range fixes {
 		_, _ = fmt.Fprintf(out, "\n%d. [%s] %s\n", i+1, c.State, c.Title)
-		if c.Detail != "" {
-			_, _ = fmt.Fprintf(out, "   %s\n", c.Detail)
-		}
+		printDoctorExplanation(out, c)
 		if c.Fix == nil {
 			continue
 		}
 		_, _ = fmt.Fprintf(out, "   fix: %s\n", c.Fix.Summary)
+		for j, step := range c.Fix.Steps {
+			_, _ = fmt.Fprintf(out, "     %d. %s\n", j+1, step)
+		}
 		if a := c.Fix.Action; a != nil {
 			switch {
 			case a.Value != "":
@@ -88,9 +89,27 @@ func printDoctorReport(out io.Writer, rep apiclient.DomainDoctorReport) {
 				_, _ = fmt.Fprintf(out, "   %s: %s\n", a.Label, a.API)
 			}
 		}
+		if c.Fix.CLIHint != "" {
+			_, _ = fmt.Fprintf(out, "   from a terminal: %s\n", c.Fix.CLIHint)
+		}
 	}
 	if len(fixes) == 0 {
 		_, _ = fmt.Fprintln(out, "\nnothing to fix")
+	}
+}
+
+// printDoctorExplanation prints the plain cause and the observed facts, and
+// falls back to the raw detail line for a report from an older server.
+func printDoctorExplanation(out io.Writer, c apiclient.DoctorCheck) {
+	if c.Cause == "" {
+		if c.Detail != "" {
+			_, _ = fmt.Fprintf(out, "   %s\n", c.Detail)
+		}
+		return
+	}
+	_, _ = fmt.Fprintf(out, "   %s\n", c.Cause)
+	for _, e := range c.Evidence {
+		_, _ = fmt.Fprintf(out, "   - %s\n", e)
 	}
 }
 
