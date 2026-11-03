@@ -17,11 +17,9 @@ import (
 )
 
 const (
-	envImageKeepPerApp = "APP_IMAGE_KEEP_PER_APP"
-	envImageMinAgeHrs  = "APP_IMAGE_MIN_AGE_HOURS"
+	envImageMinAgeHrs = "APP_IMAGE_MIN_AGE_HOURS"
 
-	defaultImageKeepPerApp = 3
-	defaultImageMinAgeHrs  = 24
+	defaultImageMinAgeHrs = 24
 
 	// ImageVerifyOff skips signature checks on promotion.
 	ImageVerifyOff = "off"
@@ -76,7 +74,7 @@ type imageSignatureStatus struct {
 
 func (rt *Router) imageRetentionDefaults() imageRetention {
 	return imageRetention{
-		KeepPerApp: envIntDefault(envImageKeepPerApp, defaultImageKeepPerApp),
+		KeepPerApp: rt.imageKeepPerApp(),
 		MinAgeHrs:  envIntDefault(envImageMinAgeHrs, defaultImageMinAgeHrs),
 	}
 }
