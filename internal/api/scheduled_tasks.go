@@ -165,7 +165,7 @@ func validateScheduledTaskInput(r *scheduledTaskResource) error {
 	if strings.TrimSpace(r.Schedule) == "" {
 		return errors.New("schedule is required")
 	}
-	if _, err := cronexpr.Parse(r.Schedule); err != nil {
+	if err := checkScheduleFires(r.Schedule); err != nil {
 		return fmt.Errorf("schedule: %w", err)
 	}
 	if r.Timezone == "" {

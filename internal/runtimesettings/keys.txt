@@ -83,6 +83,7 @@ retention.revoked_token_days
 retention.status_incident_days
 retention.usage_cost_days
 retention.webhook_delivery_days
+scheduled_tasks.history_keep
 security.audit_sensitive_reads
 security.bind_allowed_roots
 security.bind_block_credential_dirs

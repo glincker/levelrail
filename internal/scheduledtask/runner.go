@@ -96,6 +96,8 @@ type Runner struct {
 	Resolver NodeRuntimeResolver
 	Logger   *slog.Logger
 	Limits   Limits
+	// HistoryKeepFn reads the live scheduled_tasks.history_keep setting.
+	HistoryKeepFn func(context.Context) int
 	// Target and HTTPConfigs serve http-mode jobs; Client overrides the
 	// HTTP client (nil uses http.DefaultClient).
 	Target      HTTPTarget
@@ -311,7 +313,7 @@ func (r *Runner) closeRun(ctx context.Context, task store.ScheduledTask, trig Tr
 			return fmt.Errorf("scheduledtask: finish run %q of %q: %w", runID, task.ID, err)
 		}
 		l := r.limits()
-		if err := r.History.PruneScheduledTaskRuns(ctx, task.ID, l.HistoryKeep, ended.Add(-l.OutputRetention)); err != nil {
+		if err := r.History.PruneScheduledTaskRuns(ctx, task.ID, r.historyKeep(ctx), ended.Add(-l.OutputRetention)); err != nil {
 			r.log().Warn("scheduledtask: prune history failed", slog.String("task_id", task.ID), slog.String("error", err.Error()))
 		}
 	}

@@ -73,11 +73,15 @@ func (s *bootState) buildRunners() error {
 
 	// Shared by the manual trigger and the cron loop; needs no master key since exec'd commands carry no credential.
 	jobLimits := scheduledtask.LimitsFromEnv(os.LookupEnv)
+	historySettings := runtimesettings.New(db, os.LookupEnv)
 	scheduledTaskRunner := &scheduledtask.Runner{
-		Apps:       db,
-		Runs:       db,
-		History:    db,
-		Limits:     jobLimits,
+		Apps:    db,
+		Runs:    db,
+		History: db,
+		Limits:  jobLimits,
+		HistoryKeepFn: func(c context.Context) int {
+			return historySettings.Int(c, runtimesettings.KeyScheduledTasksHistoryKeep)
+		},
 		NamePrefix: b.ShortName,
 		Resolver: func(nodeID string) (docker.Runtime, error) {
 			return resolveNodeTransport(client, agentRegistry, nodeID)
