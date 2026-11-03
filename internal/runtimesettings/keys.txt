@@ -9,6 +9,7 @@ auth.engine_rate_limit_per_email
 auth.engine_rate_limit_per_ip
 auth.password_min_length
 auth.password_require_classes
+auth.sso_auto_redirect
 backup.default_retention_hours
 backup.local_root
 boot.event_recheck

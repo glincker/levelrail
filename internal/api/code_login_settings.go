@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/attention"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 )
 
 type codeLoginSettingsResource struct {
@@ -30,6 +31,11 @@ type loginOptionsResponse struct {
 	// SSORoute is where "Continue with SSO" sends the typed email's domain, or
 	// null: the same answer for an unknown domain, a malformed one and none.
 	SSORoute *ssoRoute `json:"sso_route"`
+	// SSOAutoRedirect is true only when the auth.sso_auto_redirect setting is on,
+	// exactly one provider is enabled and the page was not opened with ?password=1.
+	SSOAutoRedirect bool `json:"sso_auto_redirect"`
+	// SSOProvider names that one provider when SSOAutoRedirect is true.
+	SSOProvider string `json:"sso_provider,omitempty"`
 }
 
 // handleGetCodeLoginSettings handles GET /api/v1/settings/auth/code-login,
@@ -98,6 +104,7 @@ func (rt *Router) handleLoginOptions(w http.ResponseWriter, r *http.Request) {
 	}
 	out := loginOptionsResponse{CodeLogin: s.Admins || s.Others, EmailConfigured: rt.emailReady(r.Context())}
 	out.SSORoute = rt.routeSSODomain(r)
+	out.SSOAutoRedirect, out.SSOProvider = rt.ssoAutoRedirect(r)
 	if rt.newDeviceApproval {
 		out.TrustedDeviceDays = max(1, int(rt.codeLogin.trustTTL.Hours()/24))
 	}
@@ -134,4 +141,31 @@ func signInParams(ip, ua string, count int, created, expires time.Time) map[stri
 		"ip": ip, "user_agent": ua, "count": strconv.Itoa(count),
 		"at": created.UTC().Format(time.RFC3339), "expires_at": expires.UTC().Format(time.RFC3339),
 	}
+}
+
+// ssoAutoRedirect decides the redirect hint. A settings read failure answers
+// false so the password form stays reachable.
+func (rt *Router) ssoAutoRedirect(r *http.Request) (bool, string) {
+	if rt.runtimeSettings == nil || rt.oauthSettings == nil || r.URL.Query().Get("password") == "1" {
+		return false, ""
+	}
+	if !rt.runtimeSettings.Bool(r.Context(), runtimesettings.KeyAuthSSOAutoRedirect) {
+		return false, ""
+	}
+	settings, err := rt.oauthSettings.ListOAuthProviderSettings(r.Context())
+	if err != nil {
+		return false, ""
+	}
+	var only string
+	enabled := 0
+	for _, s := range settings {
+		if s.Enabled {
+			enabled++
+			only = s.Provider
+		}
+	}
+	if enabled != 1 {
+		return false, ""
+	}
+	return true, only
 }
