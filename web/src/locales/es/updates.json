@@ -545,7 +545,30 @@
     "releasedUnknown": "Fecha no publicada",
     "notesToggle": "Notas de la versión",
     "notesEmpty": "Las notas de la versión aún no están disponibles.",
-    "safetyTitle": "Qué ocurre"
+    "safetyTitle": "Qué ocurre",
+    "migrations": {
+      "title": "Migraciones de base de datos",
+      "none": "Sin migraciones de base de datos",
+      "count_one": "Se ejecutará {{count}} migración de base de datos",
+      "count_other": "Se ejecutarán {{count}} migraciones de base de datos",
+      "item": "Migración {{version}}: {{name}}",
+      "showAll": "Mostrar las {{count}}",
+      "showLess": "Mostrar menos",
+      "test": "Probar migraciones en una copia",
+      "testing": "Probando en una copia...",
+      "retry": "Probar de nuevo",
+      "successTitle": "Migraciones aplicadas sin problemas",
+      "success": "Las {{count}} migraciones se aplicaron sin problemas a una copia. Nada cambió en este servidor.",
+      "successTime": "Tardó {{seconds}} s.",
+      "failTitle": "Una migración falló en la copia",
+      "failed": "La migración {{version}} ({{name}}) falló: {{error}}",
+      "failedUnknown": "Una migración falló: {{error}}",
+      "failHint": "Actualizar ahora está bloqueado o es arriesgado. Tus datos en este servidor no se tocaron.",
+      "viewFailing": "Ver la migración que falló",
+      "busy": "Ya hay otra prueba en curso. Inténtalo de nuevo en un momento.",
+      "noSpace": "No hay espacio libre en disco para probar en una copia.",
+      "error": "No se pudo ejecutar la prueba: {{error}}"
+    }
   },
   "settings": {
     "channelDescription": "Qué flujo de versiones sigue este servidor.",

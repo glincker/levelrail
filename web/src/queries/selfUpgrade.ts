@@ -30,6 +30,20 @@ export interface SelfUpgradeBackup {
   restore_command?: string
 }
 
+export interface PendingMigration {
+  version: number
+  name: string
+}
+
+export interface MigrationDryRunResult {
+  ok: boolean
+  applied: PendingMigration[]
+  duration_ms: number
+  error?: string
+  from_schema: number
+  to_schema: number
+}
+
 export interface SelfUpgradePlan {
   current_version: string
   target_version: string
@@ -42,6 +56,7 @@ export interface SelfUpgradePlan {
   db_schema_version?: number
   target_schema_version?: number
   pending_migrations?: number
+  pending_migration_list?: PendingMigration[]
   disk?: SelfUpgradeDisk
   downtime_seconds?: number
   restart_behaviour?: string
@@ -282,5 +297,19 @@ export function useStartSelfUpgrade() {
       queryClient.invalidateQueries({ queryKey: selfUpgradeKeys.all }),
     onError: () =>
       queryClient.invalidateQueries({ queryKey: selfUpgradeKeys.all }),
+  })
+}
+
+// Applies pending migrations to a copy of the database; the real one is
+// never written. 403, 404 and 501 mean the server cannot do it.
+export function useMigrationDryRun() {
+  return useMutation({
+    mutationFn: async (): Promise<MigrationDryRunResult> => {
+      const res = await fetch('/api/v1/updates/migration-dry-run', {
+        method: 'POST',
+      })
+      if (!res.ok) throw await failure(res, 'migration dry run')
+      return (await res.json()) as MigrationDryRunResult
+    },
   })
 }

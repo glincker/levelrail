@@ -545,7 +545,30 @@
     "releasedUnknown": "Date not published",
     "notesToggle": "Release notes",
     "notesEmpty": "Release notes are not available yet.",
-    "safetyTitle": "What happens"
+    "safetyTitle": "What happens",
+    "migrations": {
+      "title": "Database migrations",
+      "none": "No database migrations",
+      "count_one": "{{count}} database migration will run",
+      "count_other": "{{count}} database migrations will run",
+      "item": "Migration {{version}}: {{name}}",
+      "showAll": "Show all {{count}}",
+      "showLess": "Show fewer",
+      "test": "Test migrations on a copy",
+      "testing": "Testing on a copy...",
+      "retry": "Test again",
+      "successTitle": "Migrations applied cleanly",
+      "success": "All {{count}} migrations applied cleanly to a copy. Nothing changed on this server.",
+      "successTime": "Took {{seconds}} s.",
+      "failTitle": "A migration failed on the copy",
+      "failed": "Migration {{version}} ({{name}}) failed: {{error}}",
+      "failedUnknown": "A migration failed: {{error}}",
+      "failHint": "Updating now is blocked or risky. Your data on this server was not touched.",
+      "viewFailing": "View the failing migration",
+      "busy": "Another test is already running. Try again in a moment.",
+      "noSpace": "Not enough free disk space to test on a copy.",
+      "error": "The test could not run: {{error}}"
+    }
   },
   "settings": {
     "channelDescription": "Which release stream this server follows.",
