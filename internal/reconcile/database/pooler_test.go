@@ -145,3 +145,12 @@ func TestPoolerConfigRevision_IgnoresStatsUsers(t *testing.T) {
 		t.Errorf("revision changed when STATS_USERS was removed: %s vs %s", got, with)
 	}
 }
+
+func TestPoolerImage_RuntimeSettingWinsOverEnv(t *testing.T) {
+	t.Setenv(EnvPoolerImage, "example/env:1.0.0")
+	SetPoolerImageSource(func() string { return "example/setting:2.0.0" })
+	t.Cleanup(func() { SetPoolerImageSource(func() string { return "" }) })
+	if got := PoolerImage(); got != "example/setting:2.0.0" {
+		t.Errorf("PoolerImage() = %q, want the runtime setting", got)
+	}
+}

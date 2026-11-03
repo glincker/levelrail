@@ -27,6 +27,7 @@ cutover.verify_min_interval
 cutover.verify_slow_ttfb
 cutover.verify_timeout
 databases.pooler_default
+databases.pooler_image
 deploy.drain_timeout
 deploy.max_concurrent
 deploy.previous_release_hold

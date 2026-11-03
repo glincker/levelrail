@@ -25,6 +25,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/models"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
+	databasereconcile "github.com/GLINCKER/levelrail/internal/reconcile/database"
 	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/scheduledtask"
@@ -370,6 +371,12 @@ func (s *bootState) startReconciler() {
 	telemetryDB := s.telemetryDB
 	engine.SetStore(db)
 	gate := newDeployGate(logger, db, client, b.ShortName, meshLocalNodeID(meshCfg))
+	databasereconcile.SetPoolerImageSource(func() string {
+		if svc := s.apiRouter.RuntimeSettings(); svc != nil {
+			return svc.String(context.Background(), runtimesettings.KeyDatabasesPoolerImage)
+		}
+		return ""
+	})
 	sourceDeps := dynamicSourceDeps{
 		deployGate:                   gate,
 		orphanReaper:                 orphanReaper,
