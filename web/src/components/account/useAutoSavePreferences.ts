@@ -1,0 +1,31 @@
+import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { toast } from '@/components/ui/toast'
+import { useTheme } from '../ThemeProvider'
+import { useSavePreferences, type Preferences } from '../../queries/accountSelf'
+
+/** useAutoSavePreferences saves every change at once and rolls the draft back if the server refuses it. */
+export function useAutoSavePreferences(saved: Preferences) {
+  const { t } = useTranslation('account')
+  const save = useSavePreferences()
+  const { setTheme } = useTheme()
+  const [draft, setDraft] = useState<Preferences>(saved)
+
+  // The theme is applied before the round trip so the page does not lag the click.
+  const apply = (next: Preferences) => {
+    setDraft(next)
+    if (next.theme !== draft.theme && next.theme !== '') setTheme(next.theme)
+    save.mutate(next, {
+      onError: (e) => {
+        setDraft(saved)
+        toast.add({
+          title: t('preferences.saveFailed'),
+          description: e.message,
+          type: 'error',
+        })
+      },
+    })
+  }
+  const patch = (next: Partial<Preferences>) => apply({ ...draft, ...next })
+  return { draft, apply, patch, save }
+}

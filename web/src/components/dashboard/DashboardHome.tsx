@@ -21,6 +21,7 @@ import { DashboardPending } from './DashboardPending'
 import { cn } from '@/lib/utils'
 import { DashboardHero } from './DashboardHero'
 import { FleetTiles } from './FleetTiles'
+import { OnboardingCard } from '../onboarding/OnboardingCard'
 import { NextSteps } from './NextSteps'
 import { RecentActivity } from './RecentActivity'
 import { AppsPanel } from './AppsPanel'
@@ -107,6 +108,7 @@ function StartView({
 
   return (
     <div className="flex flex-col gap-(--glinr-page-gap)">
+      <OnboardingCard />
       <StatusStrip
         apps={summary.total}
         trailing={
@@ -197,6 +199,7 @@ export function DashboardHome({
   if (!hasApps || (deployStarted && !firstRunDone)) {
     const firstRun = (
       <div className="space-y-8">
+        <OnboardingCard />
         <Suspense fallback={null}>
           <FirstDeploy
             onStarted={() => {

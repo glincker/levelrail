@@ -54,6 +54,7 @@ export const ITEM_KEYWORDS: Readonly<Record<string, string>> = {
   'nav-proxy': 'proxy reverse upstream route ingress certificate',
   'nav-inbox': 'inbox notification attention todo triage',
   'nav-get-started': 'setup checklist onboarding guide first steps',
+  'nav-welcome': 'welcome onboarding first run setup profile preferences tour',
   'nav-migrate': 'migrate migration import move platform coolify heroku',
   'settings-stacks': 'stack gitops iac revision rollback drift plan prune',
   'settings-stack-templates': 'stack template bundle starter iac gitops',

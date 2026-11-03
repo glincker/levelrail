@@ -138,6 +138,6 @@ describe('nav registry', () => {
     const extra = NAV_REGISTRY.filter((e) => !listed.has(e.path)).map(
       (e) => e.id,
     )
-    expect(extra.sort()).toEqual(['get-started', 'migrate'])
+    expect(extra.sort()).toEqual(['get-started', 'migrate', 'welcome'])
   })
 })

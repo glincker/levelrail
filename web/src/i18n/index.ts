@@ -91,6 +91,7 @@ export const NAMESPACES = [
   'runtimeSettings',
   'newApp',
   'getStarted',
+  'onboarding',
   'usage',
   'costs',
   'resources',

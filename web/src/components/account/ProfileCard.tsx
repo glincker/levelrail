@@ -22,9 +22,8 @@ import { toast } from '@/components/ui/toast'
 import { useSession } from '../../queries/security'
 import { useUpdateDisplayName } from '../../queries/myAccess'
 import { preferencesQueryOptions } from '../../queries/accountSelf'
+import { MAX_DISPLAY_NAME } from './profileLimits'
 import { UserAvatar } from './UserAvatar'
-
-const MAX_NAME = 80
 
 export function ProfileCard() {
   const { t } = useTranslation('settings')
@@ -117,7 +116,7 @@ export function ProfileCard() {
                     <Input
                       id={inputId}
                       value={draft}
-                      maxLength={MAX_NAME}
+                      maxLength={MAX_DISPLAY_NAME}
                       autoFocus
                       aria-invalid={update.isError}
                       onChange={(e) => setDraft(e.target.value)}
@@ -142,7 +141,7 @@ export function ProfileCard() {
                   >
                     {t('accountPage.profile.counter', {
                       used: draft.length,
-                      max: MAX_NAME,
+                      max: MAX_DISPLAY_NAME,
                     })}
                   </p>
                   {update.isError ? (

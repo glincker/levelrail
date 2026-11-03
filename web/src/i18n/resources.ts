@@ -110,6 +110,7 @@ import type betaFeatures from '../locales/en/betaFeatures.json'
 import type runtimeSettings from '../locales/en/runtimeSettings.json'
 import type newApp from '../locales/en/newApp.json'
 import type getStarted from '../locales/en/getStarted.json'
+import type onboarding from '../locales/en/onboarding.json'
 import type usage from '../locales/en/usage.json'
 import type costs from '../locales/en/costs.json'
 import type resources from '../locales/en/resources.json'
@@ -234,6 +235,7 @@ declare module 'i18next' {
       runtimeSettings: typeof runtimeSettings
       newApp: typeof newApp
       getStarted: typeof getStarted
+      onboarding: typeof onboarding
       usage: typeof usage
       costs: typeof costs
       resources: typeof resources

@@ -1,0 +1,84 @@
+{
+  "page": {
+    "title": "Configura tu panel",
+    "description": "Unas pocas elecciones rápidas. Omite lo que quieras y vuelve después."
+  },
+  "rail": {
+    "label": "Pasos de configuración",
+    "progress": "Paso {{current}} de {{total}}: {{name}}",
+    "done": "hecho"
+  },
+  "steps": {
+    "welcome": {
+      "label": "Bienvenida",
+      "title": "Te damos la bienvenida a Levelrail",
+      "description": "Ejecutas apps en este servidor. Levelrail se ocupa de ellas."
+    },
+    "profile": {
+      "label": "Perfil",
+      "title": "Tu perfil",
+      "description": "Cómo se ven tu nombre y tu foto para tu equipo."
+    },
+    "preferences": {
+      "label": "Preferencias",
+      "title": "Cómo ves Levelrail",
+      "description": "Los cambios se aplican al hacerlos. Puedes editar todo esto después en Ajustes."
+    },
+    "finish": {
+      "label": "Final",
+      "title": "Todo listo",
+      "description": "Tus elecciones están guardadas. Dos buenos sitios para seguir."
+    }
+  },
+  "footer": {
+    "back": "Atrás",
+    "skip": "Omitir por ahora",
+    "continue": "Continuar",
+    "start": "Empezar",
+    "finish": "Terminar"
+  },
+  "welcome": {
+    "deploy": "Despliega apps desde un repositorio, una imagen o una plantilla.",
+    "protect": "Levelrail configura HTTPS, hace copias de seguridad y avisa cuando algo falla.",
+    "time": "La configuración tarda unos 5 minutos. Puedes omitir cualquier paso.",
+    "dismiss": "No volver a mostrar"
+  },
+  "profile": {
+    "section": "Perfil",
+    "name": "Nombre visible",
+    "nameHint": "Hasta {{max}} caracteres.",
+    "avatar": "Avatar",
+    "avatarHint": "Iniciales sobre un color elegido a partir de tu cuenta. Los colores personalizados llegarán pronto.",
+    "gravatar": "Usar Gravatar",
+    "gravatarHint": "Carga tu foto desde gravatar.com, así que tu navegador los contacta. Desactivado por defecto."
+  },
+  "preferences": {
+    "section": "Preferencias"
+  },
+  "finish": {
+    "deploy": "Despliega tu primera app",
+    "guide": "Sigue la guía de configuración para HTTPS, copias y alertas",
+    "open": "Abrir"
+  },
+  "card": {
+    "title": "Configura tu panel",
+    "body": "Elige tu nombre, aspecto e idioma. Lleva unos 5 minutos.",
+    "start": "Empezar",
+    "resumeTitle": "Termina la configuración",
+    "resumeBody": "Te quedaste en el paso {{current}} de {{total}}.",
+    "resume": "Continuar",
+    "dismiss": "No volver a mostrar"
+  },
+  "closed": {
+    "body": "La configuración ha terminado. Puedes repetirla cuando quieras.",
+    "restart": "Repetir la configuración",
+    "dashboard": "Ir al panel"
+  },
+  "unavailable": {
+    "body": "La configuración guiada no está disponible en este servidor."
+  },
+  "errors": {
+    "save": "No se pudo guardar tu progreso. Inténtalo de nuevo.",
+    "transition": "Ese cambio no está permitido ahora. Recarga la página e inténtalo de nuevo."
+  }
+}

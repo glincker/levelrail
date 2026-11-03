@@ -1237,6 +1237,17 @@ export const NAV_REGISTRY: readonly NavRegistryEntry[] = [
     sidebar: false,
   },
   {
+    id: 'welcome',
+    path: '/welcome',
+    area: 'home',
+    titleKey: 'shell.nav.welcome',
+    icon: 'Rocket',
+    helpPath: null,
+    gated: null,
+    palette: true,
+    sidebar: false,
+  },
+  {
     id: 'migrate',
     path: '/migrate',
     area: 'data',
