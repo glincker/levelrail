@@ -137,7 +137,7 @@ export function RuntimeSettingRow({
 
   const badges = (
     <>
-      {setting.risk === 'weakens_security' ? (
+      {setting.risk !== 'normal' ? (
         setting.weaker_than_default ? (
           <Badge variant="destructive">{t('badges.weakens')}</Badge>
         ) : (
