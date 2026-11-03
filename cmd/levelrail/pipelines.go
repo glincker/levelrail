@@ -31,6 +31,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/release"
 	"github.com/GLINCKER/levelrail/internal/rollbackref"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -85,7 +86,7 @@ func startPipelines(ctx context.Context, logger *slog.Logger, b *brand.Brand, db
 	oidcRequestAddr := ""
 	if secretsManager != nil {
 		cfg.Secrets = secretsManager
-		oidcRequestAddr = wireOIDC(ctx, &cfg, apiRouter, secretsManager, client, logger)
+		oidcRequestAddr = wireOIDC(ctx, &cfg, apiRouter, secretsManager, client, runtimesettings.New(db, nil), logger)
 	}
 	artifacts := newPipelineArtifactStore(logger)
 	cfg.Artifacts = artifacts
@@ -430,7 +431,7 @@ func (a *pipelineActions) Rollback(ctx context.Context, service string, log func
 
 // Leaves OIDC unconfigured without a reachable issuer: a token minted with none would mislead operators.
 // The runtime token endpoint is likewise unavailable then, so jobs fail clearly instead of getting a dead URL.
-func wireOIDC(ctx context.Context, cfg *pipeline.Config, apiRouter *api.Router, secretsManager *secrets.Manager, client *docker.Client, logger *slog.Logger) string {
+func wireOIDC(ctx context.Context, cfg *pipeline.Config, apiRouter *api.Router, secretsManager *secrets.Manager, client *docker.Client, settings *runtimesettings.Service, logger *slog.Logger) string {
 	issuerURL := oidcIssuerURL()
 	if issuerURL == "" {
 		return ""
@@ -461,20 +462,23 @@ func wireOIDC(ctx context.Context, cfg *pipeline.Config, apiRouter *api.Router, 
 			slog.String("error", err.Error()))
 		return ""
 	}
-	addr := net.JoinHostPort(gateway, strconv.Itoa(oidcTokenRequestPort()))
+	addr := net.JoinHostPort(gateway, strconv.Itoa(oidcTokenRequestPort(ctx, settings)))
 	cfg.OIDCRequestURL = "http://" + addr + "/oidc/token" // NOSONAR: addr is the Docker bridge gateway IP, reachable only from job containers on that internal network, never a real network HTTPS gap
 	return addr
 }
 
 // Listens on the Docker bridge gateway only, so job containers can reach it and nothing else.
-// Overridable via APP_OIDC_TOKEN_REQUEST_PORT.
 const defaultOIDCTokenRequestPort = 9095
 
-func oidcTokenRequestPort() int {
-	if v, err := strconv.Atoi(os.Getenv("APP_OIDC_TOKEN_REQUEST_PORT")); err == nil && v > 0 {
-		return v
+// The port is the pipelines.oidc_listen_port setting; the older APP_OIDC_TOKEN_REQUEST_PORT still seeds it.
+func oidcTokenRequestPort(ctx context.Context, settings *runtimesettings.Service) int {
+	port := settings.Int(ctx, runtimesettings.KeyPipelinesOIDCListenPort)
+	if port == defaultOIDCTokenRequestPort {
+		if v, err := strconv.Atoi(os.Getenv("APP_OIDC_TOKEN_REQUEST_PORT")); err == nil && v > 0 && v <= 65535 {
+			return v
+		}
 	}
-	return defaultOIDCTokenRequestPort
+	return port
 }
 
 // The job's bearer token scopes its audiences; the gateway address only keeps the endpoint off external interfaces.
@@ -485,7 +489,7 @@ func serveOIDCTokenRequests(ctx context.Context, addr string, engine *pipeline.E
 	ln, err := listenWhenAssigned(ctx, addr, envDurationOrDefault(logger, envOIDCListenRetry, defaultOIDCListenRetry), localInterfacePrefixes, logger)
 	if errors.Is(err, syscall.EADDRINUSE) {
 		// A second control plane on the same host shares the bridge gateway; this one runs without job OIDC token requests.
-		logger.Info("pipeline: oidc token request address already in use, job OIDC token requests are off for this instance", slog.String("addr", addr))
+		logger.Warn("pipeline: oidc listener port already in use, job OIDC token requests are off for this instance; set another port with the pipelines.oidc_listen_port setting", slog.String("addr", addr), slog.String("setting", runtimesettings.KeyPipelinesOIDCListenPort))
 		return
 	}
 	if err != nil {

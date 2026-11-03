@@ -491,3 +491,16 @@ func TestRepoBaseName(t *testing.T) {
 		}
 	}
 }
+
+func TestUp_PlainDirectoryFallsBackToUpload(t *testing.T) {
+	dir := t.TempDir()
+	writeTree(t, dir, map[string]string{"Dockerfile": "FROM scratch\nEXPOSE 8080\n"})
+	var out, errb bytes.Buffer
+	code := run("levelrail-cli-test", []string{"up", dir, "--dry-run", "--yes", "--api-url", "http://127.0.0.1:1", "--token", "t"}, &out, &errb, envMap())
+	if code != 0 {
+		t.Fatalf("exit = %d, want 0; stderr: %s", code, errb.String())
+	}
+	if !strings.Contains(errb.String(), "not connected to git") {
+		t.Fatalf("want one line of guidance about the upload, got %q", errb.String())
+	}
+}

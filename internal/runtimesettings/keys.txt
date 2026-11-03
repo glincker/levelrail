@@ -73,6 +73,7 @@ nextjs.generate_actions_key
 nextjs.memory_floor_mb
 onboarding.enabled
 onboarding.restore_reminder_days
+pipelines.oidc_listen_port
 retention.ai_history_days
 retention.alert_history_days
 retention.app_history_days

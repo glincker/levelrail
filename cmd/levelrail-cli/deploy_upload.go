@@ -332,7 +332,15 @@ func packAndUpload(ctx context.Context, client *Client, app string, plan sourceu
 			_, _ = fmt.Fprintf(stderr, "  uploading %d%% (%s of %s)\n", step*25, humanBytes(sent), humanBytes(size))
 		}
 	}
-	up, err := client.UploadSource(ctx, app, tmp, size, progress)
+	touch, stopTick := func() {}, func() {}
+	if !quiet {
+		touch, stopTick = startDeployProgress(stderr, "uploading", deployProgressInterval(rawLookupEnv))
+	}
+	defer stopTick()
+	up, err := client.UploadSource(ctx, app, tmp, size, func(sent int64) {
+		touch()
+		progress(sent)
+	})
 	if err != nil {
 		return "", fmt.Errorf("upload to app %q: %w", app, err)
 	}

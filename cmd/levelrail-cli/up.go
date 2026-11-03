@@ -93,7 +93,7 @@ func runUp(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(
 
 	gitSrc := detectGitAt(dir)
 	if f.repo == "" && gitSrc.RepoURL == "" && upUploadCompatible(f, noWait) {
-		_, _ = fmt.Fprintf(stderr, "no git remote \"origin\" in %s, uploading the folder instead (same as \"%s deploy %s\")\n", dir, prog, dir)
+		_, _ = fmt.Fprintf(stderr, "%s is not connected to git, so its files are uploaded as they are (same as \"%s deploy %s\")\n", dir, prog, dir)
 		return runDeployUpload(prog, upAsDeployArgs(f, dir, dryRun, yes, timeoutStr, tokenFlag, apiURLFlag, profileFlag, jsonOut, of), stdout, stderr, lookupEnv, stdin)
 	}
 
