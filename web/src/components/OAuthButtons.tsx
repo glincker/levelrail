@@ -6,33 +6,10 @@ import { publicOAuthProvidersQueryOptions } from '../queries/oauth'
 import { devModeQueryOptions } from '../queries/devMode'
 import { usePublicSAMLProviders } from '../queries/sso'
 import { isFeatureVisible } from '../lib/experimental'
-import { brandKeyFor } from '../lib/oauthProviders'
+import { PROVIDER_NAMES, brandKeyFor } from '../lib/oauthProviders'
 import { BrandTile } from './BrandLogoBadge'
 import { Button } from './ui/button'
 import { SSOEmailRoute } from './SSOEmailRoute'
-
-const PROVIDER_NAMES: Record<string, string> = {
-  google: 'Google',
-  github: 'GitHub',
-  microsoft: 'Microsoft',
-  gitlab: 'GitLab',
-  bitbucket: 'Bitbucket',
-  discord: 'Discord',
-  slack: 'Slack',
-  linkedin: 'LinkedIn',
-  twitch: 'Twitch',
-  facebook: 'Facebook',
-  linear: 'Linear',
-  vercel: 'Vercel',
-  huggingface: 'Hugging Face',
-  figma: 'Figma',
-  salesforce: 'Salesforce',
-  codeberg: 'Codeberg',
-  cognito: 'Amazon Cognito',
-  dropbox: 'Dropbox',
-  kakao: 'Kakao',
-  patreon: 'Patreon',
-}
 
 // Real top-level navigation (<a href>, not a fetch): the browser must
 // leave the SPA to reach the provider's own consent screen.

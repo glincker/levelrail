@@ -83,6 +83,12 @@
     "invalid": "Este enlace de inicio de sesión no es válido o ha caducado. Solicita uno nuevo.",
     "backToSignIn": "Volver a iniciar sesión"
   },
+  "ssoAutoRedirect": {
+    "redirecting": "Redirigiendo a {{provider}}...",
+    "cancel": "Cancelar",
+    "cancelled": "Redirección automática cancelada.",
+    "passwordInstead": "Iniciar sesión con contraseña"
+  },
   "sessionEnded": {
     "notice": "Se cerró tu sesión porque terminó, por ejemplo tras una actualización o un reinicio. Inicia sesión de nuevo para continuar. Los tokens de API no se ven afectados."
   },

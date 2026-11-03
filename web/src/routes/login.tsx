@@ -11,6 +11,7 @@ interface LoginSearch {
   session_link?: string
   approval?: string
   signed_out?: 'session'
+  password?: '1'
 }
 
 // Plain function rather than zod so validateSearch stays out of the eagerly loaded bundle.
@@ -24,6 +25,12 @@ function validateLoginSearch(search: Record<string, unknown>): LoginSearch {
       : {}),
     ...(typeof approval === 'string' && /^la_[\w-]{1,64}$/.test(approval)
       ? { approval }
+      : {}),
+    ...(search.password === '1' ||
+    search.password === 1 ||
+    search.password === true ||
+    search.password === 'true'
+      ? { password: '1' as const }
       : {}),
     ...(search.signed_out === 'session'
       ? { signed_out: 'session' as const }
@@ -63,6 +70,7 @@ function LoginPage() {
     session_link: sessionLink,
     approval,
     signed_out: signedOut,
+    password,
   } = Route.useSearch()
   return (
     <LoginScreen
@@ -70,6 +78,7 @@ function LoginPage() {
       sessionLink={sessionLink}
       resumeApprovalId={approval}
       sessionEnded={signedOut === 'session'}
+      passwordMode={password === '1'}
     />
   )
 }

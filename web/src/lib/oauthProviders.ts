@@ -29,3 +29,26 @@ const BRAND_KEYS: Record<string, string> = {
 export function brandKeyFor(provider: string): string {
   return BRAND_KEYS[provider] ?? provider
 }
+
+export const PROVIDER_NAMES: Record<string, string> = {
+  google: 'Google',
+  github: 'GitHub',
+  microsoft: 'Microsoft',
+  gitlab: 'GitLab',
+  bitbucket: 'Bitbucket',
+  discord: 'Discord',
+  slack: 'Slack',
+  linkedin: 'LinkedIn',
+  twitch: 'Twitch',
+  facebook: 'Facebook',
+  linear: 'Linear',
+  vercel: 'Vercel',
+  huggingface: 'Hugging Face',
+  figma: 'Figma',
+  salesforce: 'Salesforce',
+  codeberg: 'Codeberg',
+  cognito: 'Amazon Cognito',
+  dropbox: 'Dropbox',
+  kakao: 'Kakao',
+  patreon: 'Patreon',
+}
