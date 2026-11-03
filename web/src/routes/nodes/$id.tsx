@@ -21,6 +21,7 @@ import { NodeGpuCard } from '../../components/NodeGpuCard'
 import { NodeDrainsCard } from '../../components/NodeDrainsCard'
 import { NodeFailureCard } from '../../components/NodeFailureCard'
 import { NodeLabelsCard } from '../../components/NodeLabelsCard'
+import { NodeTaintsCard } from '../../components/NodeTaintsCard'
 import { NodeRegionCard } from '../../components/nodes/NodeRegionCard'
 import { NodeAllocationCard } from '../../components/nodes/NodeAllocationCard'
 import { NodeMeshCard } from '../../components/NodeMeshCard'
@@ -215,6 +216,7 @@ function NodeDetailPage() {
 
       <NodeAllocationCard nodeId={id} />
       <NodeLabelsCard nodeId={id} />
+      <NodeTaintsCard nodeId={id} />
       <NodeDrainsCard nodeId={id} />
       <NodeFailureCard nodeId={id} />
 

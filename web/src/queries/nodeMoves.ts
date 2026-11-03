@@ -14,7 +14,9 @@ import type {
   NodeLabels,
   NodeMove,
   NodeMoveKind,
+  NodeTaint,
   Placement,
+  PlacementToleration,
 } from '../types/nodeMoves'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { appKeys } from './apps'
@@ -33,6 +35,7 @@ export const nodeMoveKeys = {
   drain: (id: string) => ['node-drains', id] as const,
   drains: (nodeId: string) => [...nodeKeys.detail(nodeId), 'drains'] as const,
   labels: (nodeId: string) => [...nodeKeys.detail(nodeId), 'labels'] as const,
+  taints: (nodeId: string) => [...nodeKeys.detail(nodeId), 'taints'] as const,
   placement: (kind: NodeMoveKind, name: string) =>
     ['placement', kind, name] as const,
   connectivity: () => ['mesh', 'connectivity'] as const,
@@ -246,6 +249,81 @@ export function useSetNodeLabels(nodeId: string) {
     mutationFn: (labels: NodeLabels) => putNodeLabels(nodeId, labels),
     onSuccess: (labels) => {
       queryClient.setQueryData(nodeMoveKeys.labels(nodeId), labels)
+      void queryClient.invalidateQueries({ queryKey: ['placement'] })
+    },
+  })
+}
+
+export async function fetchNodeTaints(nodeId: string): Promise<NodeTaint[]> {
+  const res = await fetch(`/api/v1/nodes/${encodeURIComponent(nodeId)}/taints`)
+  if (!res.ok) {
+    throw await failure(res, 'fetch node taints')
+  }
+  const body = (await res.json()) as { taints?: NodeTaint[] | null }
+  return body.taints ?? []
+}
+
+export async function putNodeTaints(
+  nodeId: string,
+  taints: NodeTaint[],
+): Promise<NodeTaint[]> {
+  const res = await fetch(
+    `/api/v1/nodes/${encodeURIComponent(nodeId)}/taints`,
+    {
+      method: 'PUT',
+      headers: JSON_HEADERS,
+      body: JSON.stringify({ taints }),
+    },
+  )
+  if (!res.ok) {
+    throw await failure(res, 'save node taints')
+  }
+  const body = (await res.json()) as { taints?: NodeTaint[] | null }
+  return body.taints ?? []
+}
+
+export function useNodeTaints(nodeId: string) {
+  return useQuery({
+    queryKey: nodeMoveKeys.taints(nodeId),
+    queryFn: () => fetchNodeTaints(nodeId),
+    retry: false,
+  })
+}
+
+export function useSetNodeTaints(nodeId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    meta: { errorToast: false },
+    mutationFn: (taints: NodeTaint[]) => putNodeTaints(nodeId, taints),
+    onSuccess: (taints) => {
+      queryClient.setQueryData(nodeMoveKeys.taints(nodeId), taints)
+      void queryClient.invalidateQueries({ queryKey: ['placement'] })
+    },
+  })
+}
+
+export async function putTolerations(
+  name: string,
+  tolerations: PlacementToleration[],
+): Promise<Placement> {
+  const res = await fetch(`${resourcePath('app', name)}/placement`, {
+    method: 'PUT',
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ tolerations }),
+  })
+  if (!res.ok) {
+    throw await failure(res, 'save tolerations')
+  }
+  return (await res.json()) as Placement
+}
+
+export function useSetTolerations(name: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    meta: { errorToast: false },
+    mutationFn: (tolerations: PlacementToleration[]) =>
+      putTolerations(name, tolerations),
+    onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['placement'] })
     },
   })

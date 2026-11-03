@@ -825,5 +825,42 @@
     "titleUnknown": "Node {{node}} is offline",
     "body": "Containers keep running on it, but mesh ingress is down and this app can't be changed until the node returns.",
     "view": "View node"
+  },
+  "taints": {
+    "title": "Taints",
+    "description": "Reserve this node. Apps and databases are not placed here unless they tolerate the taint. Saving replaces the whole set.",
+    "empty": "No taints. Any app can be placed here.",
+    "keyPlaceholder": "dedicated",
+    "valuePlaceholder": "gpu",
+    "operator": "Operator",
+    "operatorEqual": "equals",
+    "operatorExists": "exists",
+    "effect": "Effect",
+    "add": "Add taint",
+    "remove": "Remove taint {{key}}",
+    "effectHint": "NoSchedule and NoExecute keep new placements off the node. PreferNoSchedule only ranks it lower. Moving what already runs here is a drain.",
+    "save": "Save taints",
+    "saving": "Saving...",
+    "saved": "Taints saved.",
+    "reset": "Reset",
+    "loadFailed": "Could not load the taints.",
+    "retry": "Try again",
+    "duplicate": "Each key and effect pair can be used once.",
+    "incomplete": "Enter a key, or remove the empty row."
+  },
+  "tolerations": {
+    "title": "Tolerations",
+    "empty": "No tolerations: this app avoids tainted nodes.",
+    "hint": "The app may run on nodes with a matching taint.",
+    "add": "Add toleration",
+    "save": "Save tolerations",
+    "saved": "Tolerations saved.",
+    "affinityTitle": "Affinity",
+    "affinityEmpty": "No affinity rules.",
+    "affinityHint": "Affinity is edited in app.yaml or with nodes placement --affinity-file.",
+    "nodeRequired": "node required",
+    "nodePreferred": "node preferred",
+    "together": "together with",
+    "apart": "apart from"
   }
 }
