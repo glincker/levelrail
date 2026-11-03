@@ -11,6 +11,7 @@
 # v0.9.0: the gen-runtime-settings-docs tool imports internal/api for its init-time settings registry, adding one dependent to internal/changes.
 # v0.9.1: kit/ticker.Safe guards every schedule loop against a zero or negative interval, so the schedule packages depend on it (27 dependents).
 # v0.9.2: internal/spec imports internal/placement for the tolerations and affinity fields, so every dependent of spec depends on it.
+# v0.9.1: internal/runtimesettings is the shared live settings registry that every feature registers keys in, so 42 packages read it by design.
 internal/autoscale 162
 internal/bindaddr 162
 internal/bindmount 164
@@ -44,6 +45,7 @@ internal/quota 155
 internal/reconcile 156
 internal/reconcile/database 41
 internal/rolloutpolicy 162
+internal/runtimesettings 45
 internal/secretmask 160
 internal/spec 161
 internal/spendcap 164
