@@ -1,6 +1,6 @@
 // Package placement is the multi-node scheduler: label selectors, a fit
 // check against node CPU, memory and disk headroom, then a spread that
-// prefers the most headroom. No bin-packing and no affinity rules, by design.
+// prefers the most headroom. Taints and bin-packing are opt in; the default spreads.
 package placement
 
 import (
@@ -27,6 +27,8 @@ type Candidate struct {
 	// already placed on it asked for.
 	Capacity  Capacity
 	Requested Resources
+	// Taints repel workloads that do not tolerate them.
+	Taints []Taint
 }
 
 // Selector is a set of key=value pairs a node's labels must all carry.
@@ -104,6 +106,8 @@ type Request struct {
 	Prefer string
 	// Peers are node IDs already running this workload's other replicas.
 	Peers []string
+	// Tolerations let the workload land on tainted nodes.
+	Tolerations []Toleration
 }
 
 // Rejection says why one candidate was filtered out.
@@ -144,6 +148,9 @@ func Filter(c Candidate, req Request) string {
 		return "offline"
 	case !req.Selector.Matches(c.Labels):
 		return "labels do not match " + req.Selector.String()
+	}
+	if hard, _ := untolerated(c.Taints, req.Tolerations); len(hard) > 0 {
+		return taintReason(hard)
 	}
 	return ""
 }

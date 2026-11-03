@@ -20,6 +20,9 @@ type Evaluation struct {
 	Headroom   *int        `json:"headroom_permille,omitempty"`
 	Load       int         `json:"load"`
 	Dimensions []Dimension `json:"dimensions"`
+	// SoftTaints counts untolerated PreferNoSchedule taints; fewer ranks first.
+	SoftTaints int `json:"untolerated_soft_taints,omitempty"`
+	binpack    bool
 }
 
 // Evaluate checks c against req: the structural filter first, then each
@@ -27,7 +30,8 @@ type Evaluation struct {
 // the node Unverified (or fails it when the policy rejects unknowns).
 func Evaluate(c Candidate, req Request) Evaluation {
 	pol := req.Policy.withDefaults()
-	e := Evaluation{NodeID: c.ID, Name: c.Name, Load: c.Load}
+	e := Evaluation{NodeID: c.ID, Name: c.Name, Load: c.Load, binpack: pol.ScoreMode == ScoreBinpack}
+	_, e.SoftTaints = untolerated(c.Taints, req.Tolerations)
 	e.Dimensions = []Dimension{
 		dimension(DimCPU, c.Capacity.CPUMilli, pol.CPUOvercommitPercent, c.Requested.CPUMilli, req.Needs.CPUMilli),
 		dimension(DimMemory, c.Capacity.MemoryBytes, pol.MemoryOvercommitPercent, c.Requested.MemoryBytes, req.Needs.MemoryBytes),
@@ -80,8 +84,14 @@ func betterThan(a, b Evaluation) bool {
 	if a.Unverified != b.Unverified {
 		return !a.Unverified
 	}
+	if a.SoftTaints != b.SoftTaints {
+		return a.SoftTaints < b.SoftTaints
+	}
 	switch {
 	case a.Headroom != nil && b.Headroom != nil && *a.Headroom != *b.Headroom:
+		if a.binpack {
+			return *a.Headroom < *b.Headroom
+		}
 		return *a.Headroom > *b.Headroom
 	case (a.Headroom == nil) != (b.Headroom == nil):
 		// Unknown capacity must not lose to a busy node: an empty one wins.
@@ -118,6 +128,8 @@ func explainWinner(ranked []Evaluation, prefer, zoned bool) string {
 		return "spread across failure domains: zone " + w.Zone + " carries the fewest replicas"
 	case w.Unverified:
 		return "no node could be verified, so the least loaded one was chosen"
+	case w.Headroom != nil && w.binpack:
+		return fmt.Sprintf("bin-packed: the fullest node that fits, %d%% of its tightest resource stays free", *w.Headroom/10)
 	case w.Headroom != nil:
 		return fmt.Sprintf("most headroom: %d%% of its tightest resource stays free", *w.Headroom/10)
 	}
