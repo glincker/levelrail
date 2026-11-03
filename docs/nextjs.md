@@ -23,8 +23,8 @@ The detector shows its reasons in the create-app form. Check the start command i
 
 There are two ways to build, and you pick one per app.
 
-- **Railpack (the preset).** No files to add. It works for a plain `next start` app.
-- **Your own Dockerfile.** Use this for `output: 'standalone'`. The standalone folder needs the `public` and `.next/static` folders copied next to it, and the Railpack route does not guarantee that copy today.
+- **Railpack (the preset).** No files to add. A plain app starts with `npm run start`. With `output: 'standalone'` (and no `outputFileTracingRoot`) the build copies `.next/static` and `public` into `.next/standalone`, starts `node .next/standalone/server.js` and sets `HOSTNAME=0.0.0.0`; `PORT` comes from the app port.
+- **Your own Dockerfile.** Use this for a monorepo with a custom `outputFileTracingRoot`, or when you want the smallest image and a non-root user.
 
 To print the Dockerfile the preset uses:
 

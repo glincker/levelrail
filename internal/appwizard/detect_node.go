@@ -263,7 +263,7 @@ func nextDetails(f *files, g *found) {
 					g.why("config", cfgName+" sets output: 'export', so the site is static and lives in out/")
 				case "standalone":
 					g.start = "node .next/standalone/server.js"
-					g.why("config", cfgName+" sets output: 'standalone', so the server starts from .next/standalone")
+					g.why("config", cfgName+" sets output: 'standalone', so the server starts from .next/standalone; the build copies .next/static and public next to it and binds HOSTNAME 0.0.0.0")
 				}
 			}
 		}

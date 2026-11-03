@@ -114,3 +114,20 @@ func TestNextProfileExample(t *testing.T) {
 		t.Fatalf("example should be clean: %+v", d.Warnings)
 	}
 }
+
+func TestNextStandaloneStartProposal(t *testing.T) {
+	cases := []struct {
+		name, cfg, want string
+	}{
+		{"standalone", "module.exports = { output: 'standalone' }", "node .next/standalone/server.js"},
+		{"default output", "module.exports = {}", "next start"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			d := Detect(tree(map[string]string{"package.json": pkg(`"next":"15"`, ""), "next.config.js": c.cfg, "package-lock.json": ""}))
+			if d.StartCommand != c.want {
+				t.Fatalf("start = %q, want %q", d.StartCommand, c.want)
+			}
+		})
+	}
+}
