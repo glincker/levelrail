@@ -42,6 +42,8 @@ func runDomains(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runDomainsCheck(prog, args[1:], stdout, stderr, lookupEnv)
 	case "doctor":
 		return runDomainsDoctor(prog, args[1:], stdout, stderr, lookupEnv)
+	case "www-plan":
+		return runDomainsWWWPlan(prog, args[1:], stdout, stderr, lookupEnv)
 	case "cutover":
 		return runDomainsCutover(prog, args[1:], stdout, stderr, lookupEnv)
 	case "diagnose":
@@ -124,6 +126,7 @@ func domainsUsage(prog string) string {
   %[1]s domains wait <domain> [--timeout 10m]   wait until a new domain is live (DNS and certificate)
   %[1]s domains watch list [flags]              list the domains being followed in the background
   %[1]s domains doctor <app> <domain> [flags]   run every domain check and print a prioritised fix list
+  %[1]s domains www-plan <app> <domain> [--mode both|apex_only|www_only] [--canonical apex|www]   preview apex and www DNS records
   %[1]s domains diagnose <domain> [flags]       why isn't my domain working: every check with the exact fix, optionally applied with --fix
   %[1]s domains cutover <domain> [flags]        test before you switch: app, certificate, DNS and downtime risk
   %[1]s domains add <app> <domain>... [flags]   add domains and print the exact DNS records to create

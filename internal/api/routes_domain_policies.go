@@ -50,6 +50,8 @@ func (rt *Router) registerDomainPolicyRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/apps/{name}/domains/{domain}/policies/preview", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handlePreviewDomainPolicies))
 	// Force HTTPS, trailing slash, lower case host, www and apex, aliases.
 	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/redirects", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDomainRedirects))
+	// Read only preview of the apex and www DNS records; nothing is written.
+	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/dns/plan", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDomainWWWPlan))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/redirects", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetDomainRedirectSettings))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/redirects", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleDeleteDomainRedirectSettings))
 	mux.HandleFunc("POST /api/v1/apps/{name}/domains/{domain}/redirects/canonical", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetDomainCanonical))

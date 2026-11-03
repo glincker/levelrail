@@ -195,6 +195,7 @@ var Tree = map[string]*Node{
 		"check":                nil,
 		"doctor":               nil,
 		"diagnose":             nil,
+		"www-plan":             nil,
 		"cutover":              nil,
 		"add":                  nil,
 		"summary":              nil,

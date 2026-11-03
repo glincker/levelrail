@@ -1143,6 +1143,7 @@ Endpoints for:
 | GET | /api/v1/settings/ingress/cloudflare | AbilityRoot | handleGetIngressCloudflare |
 | PUT | /api/v1/settings/ingress/cloudflare | AbilityRoot | handlePutIngressCloudflare |
 | GET | /api/v1/certificates/budget | AbilityRead | handleGetCertBudget |
+| GET | /api/v1/apps/{name}/domains/{domain}/dns/plan | AbilityRead | handleGetDomainWWWPlan |
 
 </Accordion>
 

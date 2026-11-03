@@ -300,3 +300,7 @@ How the Route53 feature set maps onto this page:
 | Domain registration and transfer | Not planned | Stays with your registrar. |
 
 Also later: ownership TXT markers (as Kubernetes external-dns does) so imports can tell records this platform created from foreign ones, and Cloudflare load balancing pools.
+
+## Apex and www plan
+
+`levelrail domains www-plan <app> <domain> [--mode both|apex_only|www_only] [--canonical apex|www]` previews the records a bare domain needs and the 308 redirect between the two hosts (`GET /api/v1/apps/{name}/domains/{domain}/dns/plan`). Mode and canonical default to the live settings `domains.www_mode` and `domains.canonical`. It is read only: nothing is written to your DNS provider.
