@@ -12,6 +12,7 @@ import (
 	"golang.org/x/term"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
+	"github.com/GLINCKER/levelrail/internal/hostprovider"
 )
 
 // doctorOutput is the --fix result: the report after fixing plus what was applied or left alone.
@@ -33,6 +34,8 @@ func runDoctor(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		switch args[0] {
 		case "paths":
 			return runDoctorPaths(prog, args[1:], stdout, stderr, lookupEnv)
+		case "cloud", "--cloud":
+			return runDoctorCloud(prog, args[1:], stdout, stderr, hostprovider.SystemDeps())
 		case "reachability":
 			return runDoctorReachability(prog, args[1:], stdout, stderr, lookupEnv)
 		case "explain":
@@ -184,6 +187,7 @@ func doctorUsage(prog string) string {
   %[1]s doctor disk [flags]
   %[1]s doctor paths [flags]
   %[1]s doctor reachability [flags]
+  %[1]s doctor cloud [--json]
   %[1]s doctor explain <check-id> [flags]
 
 Runs the control plane's health checks: Docker, disk and inodes, ports,
@@ -197,6 +201,8 @@ With no control plane configured, only local checks run (Docker, disk, ports).
 data dir and Docker root, Docker image, build cache, volume and container
 sizes, the top consumers) and a suggested cleanup command it never runs.
 The warning level comes from APP_DOCTOR_DISK_WARN_FREE_PCT (percent free).
+
+"doctor cloud" (also doctor --cloud) prints the provider firewall rules for this host, offline.
 
 "doctor reachability" lists the listening ports and, if the dial-back setting is on, which the internet cannot reach.
 

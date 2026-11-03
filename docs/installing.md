@@ -93,6 +93,8 @@ If something already holds port 80 or 443 (a reverse proxy, another PaaS), the i
 
 Pass `--profile minimal|standard|suite` to choose how much starts (default `standard`); see [Server profiles](/profiles).
 
+Pass `--domain HOST --email ADDRESS` to turn on HTTPS once the install is healthy. The installer checks that `HOST` resolves to this server and that ports 80 and 443 answer from outside, then enables HTTPS with a Let's Encrypt staging certificate and prints the command that switches to the trusted one. If any check fails it prints what failed and the exact command to run later; the install itself still succeeds, and nothing is retried. When ports 80 and 443 are blocked, it also prints the firewall rules for your cloud provider (the same as `levelrail-cli doctor cloud`).
+
 Pass `--runtime auto|docker|podman|existing` (or set `LEVELRAIL_RUNTIME`) to choose the container runtime (default `auto`); see [Container runtimes](/container-runtimes).
 
 <Accordion title="If the install fails">
@@ -225,7 +227,8 @@ curl -fsSL https://levelrail.com/install.sh \
 | `LEVELRAIL_COEXIST` | unset | `1` (or `--coexist`) runs behind an existing proxy: ingress on 8088/8443, dashboard on loopback. `0` is `--no-coexist` |
 | `LEVELRAIL_COEXIST_HTTP_PORT` / `LEVELRAIL_COEXIST_HTTPS_PORT` | `8088` / `8443` | Ingress ports coexist mode uses |
 | `APP_PUBLIC_HOST` | unset | Written to the systemd drop-in so the control plane knows its public address |
-| `LEVELRAIL_DOMAIN` | unset | Same as `--domain`: only used to print the exact `levelrail-cli proxy` command |
+| `LEVELRAIL_DOMAIN` | unset | Same as `--domain`: prints the exact `levelrail-cli proxy` command, and with an email enables HTTPS |
+| `LEVELRAIL_EMAIL` | unset | Same as `--email`: the Let's Encrypt contact for the HTTPS step |
 | `APP_INSTALL_VERIFY` | `auto` | `auto`, `require` or `off`. See [Verifying release binaries](#verifying-release-binaries) |
 | `LEVELRAIL_NO_COSIGN` | unset | `1` is the same as `--no-cosign` |
 

@@ -36,6 +36,10 @@
 #              are then verified by SHA-256 checksum only.
 #   --http-port / --https-port  ingress ports (override the LEVELRAIL_* env).
 #   --domain   your domain, only used to print the exact proxy command.
+#   --email    with --domain: once the control plane is healthy, DNS points at
+#              this server and ports 80/443 answer, turn on HTTPS for the
+#              domain (staging certificate first). Any failed check prints the
+#              reason and the exact next command; the install still succeeds.
 #   --profile  server profile (same as LEVELRAIL_PROFILE): minimal keeps the
 #              install as light as possible (single node, mesh, plugins and
 #              experimental features off, short retention), standard is the
@@ -147,6 +151,8 @@ SETTINGS_CHANGED=0
 COEXIST_HTTP_PORT="${LEVELRAIL_COEXIST_HTTP_PORT:-8088}"
 COEXIST_HTTPS_PORT="${LEVELRAIL_COEXIST_HTTPS_PORT:-8443}"
 DOMAIN_HINT="${LEVELRAIL_DOMAIN:-}"
+EMAIL_HINT="${LEVELRAIL_EMAIL:-}"
+REACH_STATE="skipped"
 PUBLIC_HOST="${APP_PUBLIC_HOST:-}"
 PUBLIC_HOST_PINNED=0
 [ -z "$PUBLIC_HOST" ] || PUBLIC_HOST_PINNED=1
@@ -194,8 +200,8 @@ usage() {
 	cat <<'EOF'
 Usage: install.sh [install|check|upgrade|retain|install-cosign|uninstall] [--force] [--purge]
                   [--coexist|--no-coexist] [--yes] [--no-cosign] [--http-port N]
-                  [--https-port N] [--domain HOST] [--profile minimal|standard|suite]
-                  [--runtime auto|docker|podman|existing]
+                  [--https-port N] [--domain HOST] [--email ADDRESS]
+                  [--profile minimal|standard|suite] [--runtime auto|docker|podman|existing]
   install    (default) preflight checks, then install or repair
   check      (also --check) read-only readiness report and recommended mode
   upgrade    replace the binary with a newer release and restart
@@ -209,6 +215,8 @@ Usage: install.sh [install|check|upgrade|retain|install-cosign|uninstall] [--for
   --no-coexist  fail preflight instead of switching to coexist mode
   --yes      accepted for scripts, the installer never prompts
   --no-cosign  do not install cosign (checksum-only verification)
+  --email    with --domain: enable HTTPS (staging first) once healthy, DNS and
+             ports 80/443 pass; otherwise print what failed and the next command
   --profile  minimal, standard (default) or suite: which optional subsystems start
   --runtime  auto (default): use a working Docker, else an existing Podman, else
              install Docker. docker: Docker, installed if missing. podman: an
@@ -230,7 +238,7 @@ while [ "$#" -gt 0 ]; do
 	arg="$1"
 	shift
 	case "$arg" in
-	--http-port | --https-port | --domain | --profile | --runtime)
+	--http-port | --https-port | --domain | --email | --profile | --runtime)
 		[ "$#" -gt 0 ] || fatal "$arg needs a value"
 		arg="$arg=$1"
 		shift
@@ -257,6 +265,7 @@ while [ "$#" -gt 0 ]; do
 		HTTPS_PORT_PINNED=1
 		;;
 	--domain=*) DOMAIN_HINT="${arg#*=}" ;;
+	--email=*) EMAIL_HINT="${arg#*=}" ;;
 	--runtime=*)
 		RUNTIME_CHOICE="${arg#*=}"
 		RUNTIME_PINNED=1
@@ -318,6 +327,7 @@ safe_port LEVELRAIL_COEXIST_HTTP_PORT "$COEXIST_HTTP_PORT"
 safe_port LEVELRAIL_COEXIST_HTTPS_PORT "$COEXIST_HTTPS_PORT"
 safe_host APP_PUBLIC_HOST "$PUBLIC_HOST"
 safe_host --domain "$DOMAIN_HINT"
+case "$EMAIL_HINT" in *[!A-Za-z0-9._%+@-]*) fatal "--email has characters an address cannot contain" ;; esac
 case "$SERVER_PROFILE" in
 '' | minimal | standard | suite) ;;
 *) fatal "--profile must be minimal, standard or suite, got: $SERVER_PROFILE" ;;
@@ -1445,7 +1455,11 @@ reachability_test() {
 		*) log "  port $port: reachable" ;;
 		esac
 	done
-	[ -n "$blocked" ] || return 0
+	if [ -z "$blocked" ]; then
+		REACH_STATE="ok"
+		return 0
+	fi
+	REACH_STATE="blocked"
 	warn "port(s)${blocked} did not answer on ${PUBLIC_IP}. Apps and TLS certificates need 80 and 443 open."
 	cat <<EOF
   If this server runs a host firewall, open the ports:
@@ -1455,6 +1469,59 @@ reachability_test() {
   Some providers never route a server's own public IP back to itself, so
   this check can fail even when the ports are open to the internet.
 EOF
+}
+
+# print_cloud_rules shows the provider firewall rules to open. The CLI knows
+# the provider; without it only the generic ports line can be given.
+print_cloud_rules() {
+	[ "$REACH_STATE" = "blocked" ] || { [ -n "$DOMAIN_HINT" ] && [ -n "$EMAIL_HINT" ]; } || return 0
+	[ "$HTTP_PORT" = "80" ] && [ "$HTTPS_PORT" = "443" ] || return 0
+	if command -v levelrail-cli >/dev/null 2>&1 && levelrail-cli doctor cloud 2>/dev/null; then
+		return 0
+	fi
+	log "Cloud firewall: allow inbound TCP 80 and 443 (keep 22 for SSH) in your provider's firewall or security group."
+}
+
+# enable_https_after_healthy turns HTTPS on for --domain only when every
+# check passes. A failed check prints why and the command to run by hand; it
+# never retries and never fails the install.
+enable_https_after_healthy() {
+	[ -n "$DOMAIN_HINT" ] && [ -n "$EMAIL_HINT" ] || return 0
+	base="sudo APP_DATA_DIR=${DATA_DIR} ${BIN_PATH} enable-https --domain ${DOMAIN_HINT} --email ${EMAIL_HINT}"
+	problems=""
+	resolved="$(getent ahostsv4 "$DOMAIN_HINT" 2>/dev/null | awk '{ print $1 }' | sort -u | tr '\n' ' ' | sed 's/ $//')"
+	if [ -z "$PUBLIC_IP" ]; then
+		problems="${problems}  - this server's public IP could not be determined, so DNS was not compared\n"
+	elif [ -z "$resolved" ]; then
+		problems="${problems}  - ${DOMAIN_HINT} does not resolve: create an A record pointing at ${PUBLIC_IP}\n"
+	else
+		case " $resolved " in
+		*" $PUBLIC_IP "*) ;;
+		*) problems="${problems}  - ${DOMAIN_HINT} resolves to ${resolved}, not ${PUBLIC_IP}: fix the A record\n" ;;
+		esac
+	fi
+	case "$REACH_STATE" in
+	ok) ;;
+	blocked) problems="${problems}  - port 80 or 443 did not answer from outside: open both in the provider firewall (rules above)\n" ;;
+	*) problems="${problems}  - ports 80 and 443 were not verified from outside (check skipped)\n" ;;
+	esac
+	if [ -n "$problems" ]; then
+		log "HTTPS for ${DOMAIN_HINT} was not enabled:"
+		printf '%b' "$problems"
+		log "Once fixed, enable it with a staging certificate first:"
+		log "  ${base} --staging"
+		return 0
+	fi
+	log "DNS and ports 80/443 check out. Enabling HTTPS for ${DOMAIN_HINT} with a staging certificate first..."
+	rc=0
+	APP_DATA_DIR="$DATA_DIR" "$BIN_PATH" enable-https --domain "$DOMAIN_HINT" --email "$EMAIL_HINT" --staging || rc=$?
+	if [ "$rc" -ne 0 ]; then
+		log "HTTPS for ${DOMAIN_HINT} was not enabled (exit ${rc}). Retry with:"
+		log "  ${base} --staging"
+		return 0
+	fi
+	log "When the staging certificate shows issued (levelrail-cli settings ingress https status), switch to the trusted one:"
+	log "  ${base}"
 }
 
 # local_ips lists this host's global addresses, skipping container bridges
@@ -1817,6 +1884,8 @@ do_install() {
 	discover_public_ip
 	reachability_test
 	install_cli
+	print_cloud_rules
+	enable_https_after_healthy
 	print_summary
 }
 
