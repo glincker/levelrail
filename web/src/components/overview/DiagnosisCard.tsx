@@ -15,6 +15,7 @@ import { useStuck, type StuckAction } from '../../queries/stuck'
 import type { DeployAttempt } from '../../types/deployAttempt'
 import { ActionButton, CauseCard } from '../StuckPanel'
 import { ContainerExitBanner } from '../ContainerExitBanner'
+import { DiagnosisFixes } from '../DiagnosisFixes'
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   const [open, setOpen] = useState(false)
@@ -135,6 +136,11 @@ export function DiagnosisCard({
                 </li>
               ))}
             </ul>
+          ) : null}
+          {crash ? (
+            <div className="mt-2">
+              <DiagnosisFixes appName={appName} deployId={deployId} fixesOnly />
+            </div>
           ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-2">

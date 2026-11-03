@@ -5,6 +5,7 @@ import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import fixitEn from '../../locales/en/fixit.json'
 import type { FailureContext } from '../../types/investigate'
+import type { Diagnosis } from '../../types/diagnosis'
 import type { StuckReport } from '../../queries/stuck'
 import { DiagnosisCard } from './DiagnosisCard'
 
@@ -35,6 +36,13 @@ vi.mock('../../queries/investigate', () => ({
 }))
 vi.mock('../../queries/stuck', () => ({
   useStuck: () => ({ data: stuck, refetch: vi.fn(), isFetching: false }),
+}))
+
+const mutate = vi.fn()
+let diagnosis: Diagnosis | undefined
+vi.mock('../../queries/diagnosis', () => ({
+  useDiagnosis: () => ({ data: diagnosis }),
+  useApplyDiagnosisFix: () => ({ isPending: false, mutate }),
 }))
 
 const i18n = i18next.createInstance()
@@ -144,5 +152,52 @@ describe('DiagnosisCard', () => {
     expect(screen.getByText('The latest deploy failed')).toBeInTheDocument()
     expect(screen.getByText('Retry deploy')).toBeInTheDocument()
     expect(screen.getByText('View the build log')).toBeInTheDocument()
+  })
+
+  it('shows the terms link and applies the EULA fix once on click', () => {
+    stuck = undefined
+    failure = {
+      state: 'crashlooping',
+      restarts_in_window: 5,
+      window_seconds: 900,
+      lines: [],
+      total_lines: 0,
+    }
+    diagnosis = {
+      explanation: 'x',
+      suggestion: 'y',
+      confidence: 'high',
+      matched_signals: [],
+      causes: [
+        {
+          code: 'EULA',
+          title: 'EULA not accepted',
+          explanation: 'e',
+          confidence: 'high',
+          evidence: [],
+          fixes: [
+            {
+              n: 1,
+              label: 'Set EULA to TRUE',
+              kind: 'patch',
+              redeploy: true,
+              hint: 'Accepting means you agree to https://aka.ms/MinecraftEULA',
+              changes: [{ field: 'env.EULA', from: '', to: 'TRUE' }],
+            },
+          ],
+        },
+      ],
+    }
+    mutate.mockClear()
+    view()
+    expect(screen.getByText('Set EULA to TRUE')).toBeInTheDocument()
+    const link = screen.getByRole('link', {
+      name: 'https://aka.ms/MinecraftEULA',
+    })
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link).toHaveAttribute('rel', 'noreferrer')
+    fireEvent.click(screen.getByRole('button', { name: /Preview fix/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Apply fix' }))
+    expect(mutate).toHaveBeenCalledTimes(1)
   })
 })
