@@ -174,6 +174,15 @@ export function ScheduledDeployCard({ appName }: { appName: string }) {
     })
   } else nextRun = t('nextRun', { when: t('nextRunUnsaved') })
 
+  // Stored and enabled but the API reports no upcoming fire time.
+  const neverRuns = Boolean(
+    current &&
+    current.enabled &&
+    !completed &&
+    !current.run_at &&
+    !current.next_run_at,
+  )
+
   const errorId = 'schedule-run-at-error'
   const chips: Array<[string, () => string]> = [
     [t('chipHour'), () => toLocalInput(new Date(Date.now() + HOUR_MS))],
@@ -329,6 +338,11 @@ export function ScheduledDeployCard({ appName }: { appName: string }) {
         ) : null}
 
         <p className="text-sm text-muted-foreground">{nextRun}</p>
+        {neverRuns ? (
+          <p role="status" className="text-sm text-warning">
+            {t('neverRuns')}
+          </p>
+        ) : null}
 
         <div className="flex flex-wrap gap-2">
           <Button size="sm" onClick={onSave} disabled={save.isPending}>

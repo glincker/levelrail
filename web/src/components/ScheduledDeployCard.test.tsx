@@ -117,6 +117,34 @@ describe('ScheduledDeployCard', () => {
     expect(await screen.findByText('Fired')).toBeInTheDocument()
   })
 
+  it('warns when a stored enabled schedule has no upcoming run', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+        const url = urlOf(input)
+        if (
+          url === '/api/v1/apps/web/schedule' &&
+          (init?.method ?? 'GET') === 'GET'
+        ) {
+          return Promise.resolve(
+            jsonResponse({
+              service_name: 'web',
+              cron: '0 0 30 2 *',
+              branch: 'main',
+              timezone: 'UTC',
+              enabled: true,
+            }),
+          )
+        }
+        return Promise.resolve(jsonResponse([]))
+      }),
+    )
+
+    renderWithClient(<ScheduledDeployCard appName="web" />)
+
+    expect(await screen.findByText(/will never run/)).toBeInTheDocument()
+  })
+
   it('saves the schedule', async () => {
     puts = []
     vi.stubGlobal(
