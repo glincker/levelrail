@@ -9,6 +9,7 @@
 # v0.8.13: the scan-catalog-platforms and gen-template-platforms tools import internal/catalog, adding two dependents to every package the catalog reaches.
 # v0.8.14: the gen-arm-compat tool imports internal/catalog, adding two dependents to every package the catalog reaches.
 # v0.9.0: the gen-runtime-settings-docs tool imports internal/api for its init-time settings registry, adding one dependent to internal/changes.
+# v0.9.1: kit/ticker.Safe guards every schedule loop against a zero or negative interval, so the schedule packages depend on it (27 dependents).
 internal/autoscale 162
 internal/bindaddr 162
 internal/bindmount 164
@@ -54,5 +55,6 @@ kit/ids 76
 kit/netguard 178
 kit/probe 162
 kit/semver 30
+kit/ticker 32
 kit/timeutil 156
 kit/upgrade 25

@@ -84,6 +84,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/repolayout"
 	"github.com/GLINCKER/levelrail/internal/repolist"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/GLINCKER/levelrail/internal/schedulescan"
 	"github.com/GLINCKER/levelrail/internal/search"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/sourcecache"
@@ -649,6 +650,7 @@ type Router struct {
 	canaries                     CanaryStore                                           // always set, in-flight canary releases
 	splitStore                   SplitTestStore                                        // nil disables split testing routes
 	anchorStatus                 func(context.Context) auditanchor.Status              // nil is valid: GET anchor-status then reports the export as off
+	scheduleScan                 schedulescan.Source                                   // nil is valid: the schedule never runs doctor check then reports unknown
 	canaryProgress               CanaryProgress                                        // nil is valid: GET canary then omits the live stage comparison
 	dbQueries                    DatabaseQueryStore                                    // always set, console history and saved queries
 	githubActions                AppGitHubActionsStore                                 // always set, per-app GitHub Actions report settings

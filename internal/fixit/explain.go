@@ -166,6 +166,8 @@ func buildExplainTable() map[string]Explanation {
 			"Open Backups, find the late item and press Run now. Check its schedule if it keeps going late.", "", KindGuided),
 		ex("backup_drill", "The latest restore test of a backup failed.", "A backup that cannot be restored is not a backup.",
 			"Press Fix on this check for the guided step. Open Backups to see which restore test failed.", "backup.drill.failing", KindGuided),
+		ex("schedule_never_runs", "A saved schedule has no date it can ever run on, so it never fires.", "Backups, deploys or tasks on that schedule silently never happen. Nothing was turned off for you.",
+			"Open the app, database or task named in the check details and edit or delete the schedule.", "", KindManual),
 		ex("backups_configured", "Backups are turned off.", "Nothing protects your data from loss.",
 			"Press Fix on this check for the guided step to turn on backups.", "settings.backups.enabled", KindGuided),
 

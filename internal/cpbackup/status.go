@@ -83,6 +83,9 @@ func nextAfter(expr string, last, now time.Time) *time.Time {
 		from = now
 	}
 	n := sched.Next(from)
+	if n.IsZero() {
+		return nil
+	}
 	return &n
 }
 
@@ -94,7 +97,11 @@ func overdue(expr string, last, now time.Time, grace time.Duration) bool {
 	if err != nil {
 		return false
 	}
-	return now.After(sched.Next(last).Add(grace))
+	next := sched.Next(last)
+	if next.IsZero() {
+		return false
+	}
+	return now.After(next.Add(grace))
 }
 
 // Status assembles the current disaster recovery state.

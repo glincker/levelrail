@@ -13,6 +13,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/kit/cronexpr"
+	"github.com/GLINCKER/levelrail/kit/ticker"
 )
 
 // ScheduleStore is the narrow store surface Scheduler needs: which
@@ -613,6 +614,7 @@ func (s *Scheduler) deletePrunedObjects(ctx context.Context, databaseName string
 // telemetry.Collector.Run, and cmd/levelrail/main.go's own retention
 // sweeps all follow this identical select-on-ticker-or-ctx-Done shape).
 func (s *Scheduler) Run(ctx context.Context, interval time.Duration) error {
+	interval = ticker.Safe(interval, ticker.DefaultInterval)
 	loop := footprint.Track("backup scheduler", interval)
 	defer loop.Active()()
 	ticker := time.NewTicker(interval)

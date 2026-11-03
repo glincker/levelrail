@@ -14,6 +14,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/kit/cronexpr"
+	"github.com/GLINCKER/levelrail/kit/ticker"
 )
 
 // ScheduleStore is the narrow store surface Scheduler needs, re-derived
@@ -245,6 +246,7 @@ func (s *Scheduler) recordHistory(ctx context.Context, serviceName string, due, 
 // every other periodic loop in this codebase (backup.Scheduler.Run,
 // scheduledtask.Scheduler.Run, alerting.Engine.Run).
 func (s *Scheduler) Run(ctx context.Context, interval time.Duration) error {
+	interval = ticker.Safe(interval, ticker.DefaultInterval)
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 

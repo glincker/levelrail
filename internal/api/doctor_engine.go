@@ -118,6 +118,7 @@ func (rt *Router) doctorDefs() []doctorCheckDef {
 		one("control_plane_dr", doctorGroupBackups, rt.doctorCheckControlPlaneDR),
 		one("backup_freshness", doctorGroupBackups, rt.doctorCheckBackupFreshness),
 		one("backup_drill", doctorGroupBackups, rt.doctorCheckBackupDrill),
+		one("schedule_never_runs", doctorGroupBackups, rt.doctorCheckScheduleNeverRuns),
 
 		many("nodes", doctorGroupNodes, rt.doctorCheckNodes),
 		many("mesh", doctorGroupNodes, rt.doctorCheckMesh),

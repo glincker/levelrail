@@ -8,6 +8,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/ticker"
 )
 
 const maxPrunePerRun = 500
@@ -18,9 +19,10 @@ func (a *Archiver) Run(ctx context.Context) {
 	if err := a.Store.FailStaleLogArchiveRuns(ctx, a.stamp(a.Now())); err != nil {
 		a.Logger.Error("log archive: reset interrupted runs failed", slog.String("error", err.Error()))
 	}
-	loop := footprint.Track("log archive", a.Opts.Tick)
+	tick := ticker.Safe(a.Opts.Tick, ticker.DefaultInterval)
+	loop := footprint.Track("log archive", tick)
 	defer loop.Active()()
-	t := time.NewTicker(a.Opts.Tick)
+	t := time.NewTicker(tick)
 	defer t.Stop()
 	for {
 		select {

@@ -27,6 +27,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/scheduledeploy"
 	"github.com/GLINCKER/levelrail/internal/scheduledtask"
+	"github.com/GLINCKER/levelrail/internal/schedulescan"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 	"github.com/GLINCKER/levelrail/internal/tlsowner"
 	"github.com/GLINCKER/levelrail/internal/updatecheck"
@@ -291,6 +292,9 @@ func (s *bootState) startSchedulers() {
 			logger.Error("function queue stopped", slog.String("error", err.Error()))
 		}
 	}()
+	// One cheap pass over stored schedules saved before save time validation.
+	schedulescan.LogWarnings(ctx, db, logger, time.Now())
+	apiRouter.SetScheduleScan(db)
 	scheduledTaskScheduler := scheduledtask.NewScheduler(db, scheduledTaskRunner, logger)
 	scheduledTaskScheduler.Lookback = scheduledTaskRunner.Limits.CatchUpLookback
 	go func() {

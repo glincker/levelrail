@@ -49,13 +49,16 @@ func (svc *Service) validateJobs(name string) error {
 				return fmt.Errorf("%s (%s): command must not contain empty arguments", where, j.Name)
 			}
 		}
-		if _, err := cronexpr.Parse(j.Schedule); err != nil {
-			return fmt.Errorf("%s (%s): schedule: %w", where, j.Name, err)
-		}
+		loc := time.UTC
 		if j.Timezone != "" {
-			if _, err := time.LoadLocation(j.Timezone); err != nil {
+			l, err := time.LoadLocation(j.Timezone)
+			if err != nil {
 				return fmt.Errorf("%s (%s): timezone %q is not a known IANA time zone", where, j.Name, j.Timezone)
 			}
+			loc = l
+		}
+		if err := cronexpr.Validate(j.Schedule, loc, time.Now()); err != nil {
+			return fmt.Errorf("%s (%s): schedule: %w", where, j.Name, err)
 		}
 		for field, v := range map[string]string{"timeout": j.Timeout, "retryBackoff": j.RetryBackoff, "catchUpLookback": j.CatchUpLookback, "warnAfter": j.WarnAfter} {
 			if v == "" {
