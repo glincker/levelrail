@@ -1007,6 +1007,8 @@ Endpoints for:
 | POST | /api/v1/nodes/{id}/failure/resolve | AbilityRoot | handleResolveNodeFailure |
 | GET | /api/v1/nodes/domains | AbilityRoot | handleNodeDomains |
 | GET | /api/v1/nodes/{id}/onboarding | AbilityRoot | handleGetNodeOnboarding |
+| GET | /api/v1/nodes/{id}/taints | AbilityRoot | handleGetNodeTaints |
+| PUT | /api/v1/nodes/{id}/taints | AbilityRoot | handleSetNodeTaints |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 

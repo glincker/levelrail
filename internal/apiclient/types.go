@@ -3262,6 +3262,7 @@ type NodeResource struct {
 	PlacedApps      []string          `json:"placed_apps,omitempty"`
 	PlacedDatabases []string          `json:"placed_databases,omitempty"`
 	Labels          map[string]string `json:"labels,omitempty"`
+	Taints          []NodeTaint       `json:"taints,omitempty"`
 }
 
 // NodeAlertStatusResource mirrors internal/api's nodeAlertStatusResource

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1954 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1956 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -950,6 +950,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/nodes/{id}/revoke-cert", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleRevokeNodeCert", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/security", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleGetNodeTrust", Description: "Trust panel (node_trust.go): what was verified and when."},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/security/events", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleListNodeSecurityEvents", Description: ""},
+	{Method: "GET", Path: "/api/v1/nodes/{id}/taints", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleGetNodeTaints", Description: ""},
+	{Method: "PUT", Path: "/api/v1/nodes/{id}/taints", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleSetNodeTaints", Description: ""},
 	{Method: "POST", Path: "/api/v1/nodes/{id}/uncordon", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleUncordonNode", Description: ""},
 	{Method: "PUT", Path: "/api/v1/nodes/{id}/workloads", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleSetNodeWorkloads", Description: ""},
 	{Method: "GET", Path: "/.well-known/jwks.json", Ability: "Public", Group: "Other", Handler: "handleOIDCJWKS", Description: ""},

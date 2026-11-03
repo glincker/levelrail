@@ -19,6 +19,9 @@ type PlacementStore interface {
 	ListNodeLabels(ctx context.Context) (map[string]map[string]string, error)
 	GetNodeLabels(ctx context.Context, nodeID string) (map[string]string, error)
 	SetNodeLabels(ctx context.Context, nodeID string, labels map[string]string) error
+	ListNodeTaints(ctx context.Context) (map[string][]store.NodeTaint, error)
+	GetNodeTaints(ctx context.Context, nodeID string) ([]store.NodeTaint, error)
+	SetNodeTaints(ctx context.Context, nodeID string, taints []store.NodeTaint) error
 	GetPlacementSelector(ctx context.Context, kind, resource string) (map[string]string, error)
 	SetPlacementSelector(ctx context.Context, kind, resource string, selector map[string]string) error
 	EnsureDatabaseMeshPort(ctx context.Context, name string, minPort, maxPort int) (int, error)
@@ -195,6 +198,68 @@ func (rt *Router) handleSetNodeLabels(w http.ResponseWriter, r *http.Request) {
 		body.Labels = map[string]string{}
 	}
 	writeJSON(w, http.StatusOK, body)
+}
+
+type taintsBody struct {
+	Taints []placement.Taint `json:"taints"`
+}
+
+// handleGetNodeTaints handles GET /api/v1/nodes/{id}/taints.
+func (rt *Router) handleGetNodeTaints(w http.ResponseWriter, r *http.Request) {
+	if !rt.requireMultiNode(w) {
+		return
+	}
+	id := r.PathValue("id")
+	if _, err := rt.nodes.GetNode(r.Context(), id); errors.Is(err, store.ErrNodeNotFound) {
+		writeError(w, http.StatusNotFound, "node not found")
+		return
+	} else if err != nil {
+		rt.internalError(w, "api: get node taints: look up node failed", err, slog.String("node_id", id))
+		return
+	}
+	taints, err := rt.multiNode.store.GetNodeTaints(r.Context(), id)
+	if err != nil {
+		rt.internalError(w, "api: get node taints failed", err, slog.String("node_id", id))
+		return
+	}
+	writeJSON(w, http.StatusOK, taintsBody{Taints: toPlacementTaints(taints)})
+}
+
+// handleSetNodeTaints handles PUT /api/v1/nodes/{id}/taints, replacing the set.
+func (rt *Router) handleSetNodeTaints(w http.ResponseWriter, r *http.Request) {
+	if !rt.requireMultiNode(w) {
+		return
+	}
+	id := r.PathValue("id")
+	var body taintsBody
+	if err := decodeJSONBody(r, &body); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if err := placement.ValidateTaints(body.Taints); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	rows := make([]store.NodeTaint, len(body.Taints))
+	for i, t := range body.Taints {
+		rows[i] = store.NodeTaint{Key: t.Key, Value: t.Value, Effect: string(t.Effect)}
+	}
+	if err := rt.multiNode.store.SetNodeTaints(r.Context(), id, rows); errors.Is(err, store.ErrNodeNotFound) {
+		writeError(w, http.StatusNotFound, "node not found")
+		return
+	} else if err != nil {
+		rt.internalError(w, "api: set node taints failed", err, slog.String("node_id", id))
+		return
+	}
+	writeJSON(w, http.StatusOK, taintsBody{Taints: toPlacementTaints(rows)})
+}
+
+func toPlacementTaints(rows []store.NodeTaint) []placement.Taint {
+	out := make([]placement.Taint, len(rows))
+	for i, t := range rows {
+		out[i] = placement.Taint{Key: t.Key, Value: t.Value, Effect: placement.TaintEffect(t.Effect)}
+	}
+	return out
 }
 
 type placementResource struct {

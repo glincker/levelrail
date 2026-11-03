@@ -420,6 +420,19 @@ levelrail-cli nodes placement database main disk=ssd
 - `GET` and `PUT /api/v1/apps/{name}/placement` (and the same for `databases`) read and set a `node_selector`. The response lists `eligible_node_ids` and the `rejected` nodes with a reason each. Setting a selector never moves anything by itself.
 - The dashboard has a **Labels** card on the node page and a **Placement** card on the app and database pages.
 
+### Taints: keep workloads off a node
+
+A taint reserves a node. Apps and databases are not placed on a tainted node unless they tolerate the taint.
+
+```bash
+levelrail-cli nodes taint <id> dedicated=gpu:NoSchedule
+levelrail-cli nodes taint <id> --clear
+```
+
+- A taint is `key`, an optional `value` and an `effect`. `NoSchedule` and `NoExecute` keep new placements off the node. `PreferNoSchedule` only ranks the node lower. Moving workloads that already run on a `NoExecute` node is done with a drain.
+- `GET` and `PUT /api/v1/nodes/{id}/taints` read and replace a node's whole taint set. Keys and values follow the label rules and at most 32 taints are allowed. Invalid input returns `400` with the reason.
+- `nodes get` lists a node's taints.
+
 ### Failure domains: region, zone and provider
 
 Three label keys have a meaning to the scheduler: `region`, `zone` and `provider`.
@@ -1012,6 +1025,8 @@ Node routes require the `root` ability, not `read` or `write`, because node mana
 | `GET` | `/api/v1/nodes/zones` | `root` |
 | `GET` | `/api/v1/nodes/{id}/labels` | `root` |
 | `PUT` | `/api/v1/nodes/{id}/labels` | `root` |
+| `GET` | `/api/v1/nodes/{id}/taints` | `root` |
+| `PUT` | `/api/v1/nodes/{id}/taints` | `root` |
 | `GET` | `/api/v1/apps/{name}/placement` | `root` |
 | `PUT` | `/api/v1/apps/{name}/placement` | `root` |
 | `GET` | `/api/v1/databases/{name}/placement` | `root` |
@@ -1042,6 +1057,7 @@ levelrail-cli nodes drains <id> [flags]
 levelrail-cli nodes add [--name NAME] [--mesh] [flags]
 levelrail-cli nodes move app|database <name> [--to <node-id>] [--wait] [flags]
 levelrail-cli nodes labels <id> [key=value ...] [flags]
+levelrail-cli nodes taint <id> [key[=value]:Effect ...] [flags]
 levelrail-cli nodes zones [flags]
 levelrail-cli nodes simulate [--cpu MILLI] [--memory MIB] [--count N] [--selector k=v] [flags]
 levelrail-cli nodes failure --zone Z | --node ID [flags]

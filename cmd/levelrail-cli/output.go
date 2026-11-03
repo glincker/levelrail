@@ -896,6 +896,13 @@ func printNodeHuman(out io.Writer, n nodeResource) {
 		sort.Strings(keys)
 		_, _ = fmt.Fprintf(out, "labels:                  %s\n", strings.Join(keys, ", "))
 	}
+	if len(n.Taints) > 0 {
+		parts := make([]string, len(n.Taints))
+		for i, t := range n.Taints {
+			parts[i] = formatTaint(t)
+		}
+		_, _ = fmt.Fprintf(out, "taints:                  %s\n", strings.Join(parts, ", "))
+	}
 	_, _ = fmt.Fprintf(out, "apps:                    %s\n", listOrNone(n.PlacedApps))
 	_, _ = fmt.Fprintf(out, "databases:               %s\n", listOrNone(n.PlacedDatabases))
 	if n.AlertStatus != nil {

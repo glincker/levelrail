@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/nodemove"
+	"github.com/GLINCKER/levelrail/internal/placement"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -357,5 +359,61 @@ func TestToNodeResource_FallsBackToMeshAddressAndEnrollTime(t *testing.T) {
 	pending := toNodeResource(store.Node{ID: "y", Status: store.NodeStatusPending, CreatedAt: created})
 	if pending.JoinedAt != nil {
 		t.Fatal("a pending node has not joined yet")
+	}
+}
+
+func TestNodeTaints(t *testing.T) {
+	rt, db, cookie := newMultiNodeRouter(t)
+	seedMNNode(t, db, "n1", nil)
+	tests := []struct {
+		body string
+		want int
+	}{
+		{`{"taints":[{"key":"dedicated","value":"gpu","effect":"NoSchedule"}]}`, http.StatusOK},
+		{`{"taints":[{"key":"Dedicated","effect":"NoSchedule"}]}`, http.StatusBadRequest},
+		{`{"taints":[{"key":"a","effect":"Sometimes"}]}`, http.StatusBadRequest},
+	}
+	for _, tt := range tests {
+		if rec := mnDo(t, rt, cookie, http.MethodPut, "/api/v1/nodes/n1/taints", tt.body); rec.Code != tt.want {
+			t.Fatalf("PUT %s = %d, want %d: %s", tt.body, rec.Code, tt.want, rec.Body.String())
+		}
+	}
+	rec := mnDo(t, rt, cookie, http.MethodGet, "/api/v1/nodes/n1/taints", "")
+	if !strings.Contains(rec.Body.String(), `"key":"dedicated"`) {
+		t.Fatalf("GET taints = %s", rec.Body.String())
+	}
+	if rec := mnDo(t, rt, cookie, http.MethodGet, "/api/v1/nodes/n1", ""); !strings.Contains(rec.Body.String(), `"taints"`) {
+		t.Fatalf("node detail lacks taints: %s", rec.Body.String())
+	}
+	if rec := mnDo(t, rt, cookie, http.MethodPut, "/api/v1/nodes/ghost/taints", `{"taints":[]}`); rec.Code != http.StatusNotFound {
+		t.Fatalf("unknown node = %d, want 404", rec.Code)
+	}
+}
+
+func TestNodeTaintsFeedCandidates(t *testing.T) {
+	rt, db, _ := newMultiNodeRouter(t)
+	seedMNNode(t, db, "n1", nil)
+	if err := db.SetNodeTaints(context.Background(), "n1", []store.NodeTaint{{Key: "dedicated", Value: "gpu", Effect: "NoSchedule"}}); err != nil {
+		t.Fatal(err)
+	}
+	cands, err := rt.placementCandidates(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	var tainted []placement.Candidate
+	for _, c := range cands {
+		if c.ID == "n1" {
+			tainted = append(tainted, c)
+		}
+	}
+	if len(tainted) != 1 || len(tainted[0].Taints) != 1 {
+		t.Fatalf("candidates = %+v", cands)
+	}
+	if _, err := placement.Spread(tainted, placement.Request{}); !errors.Is(err, placement.ErrNoEligibleNode) {
+		t.Fatalf("untolerated Spread error = %v, want ErrNoEligibleNode", err)
+	}
+	tol := []placement.Toleration{{Key: "dedicated", Value: "gpu", Effect: placement.EffectNoSchedule}}
+	if d, err := placement.Spread(tainted, placement.Request{Tolerations: tol}); err != nil || d.NodeID != "n1" {
+		t.Fatalf("tolerated Spread = %+v, %v", d, err)
 	}
 }

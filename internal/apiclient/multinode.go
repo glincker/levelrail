@@ -186,6 +186,35 @@ func (c *Client) SetNodeLabels(ctx context.Context, id string, labels map[string
 	return out, err
 }
 
+// NodeTaint is one taint on a node; Effect is NoSchedule, PreferNoSchedule or NoExecute.
+type NodeTaint struct {
+	Key    string `json:"key"`
+	Value  string `json:"value,omitempty"`
+	Effect string `json:"effect"`
+}
+
+// NodeTaints is the body of the node taints routes.
+type NodeTaints struct {
+	Taints []NodeTaint `json:"taints"`
+}
+
+// GetNodeTaints calls GET /api/v1/nodes/{id}/taints.
+func (c *Client) GetNodeTaints(ctx context.Context, id string) (NodeTaints, error) {
+	var out NodeTaints
+	err := c.do(ctx, http.MethodGet, nodePath(id)+"/taints", nil, &out)
+	return out, err
+}
+
+// SetNodeTaints calls PUT /api/v1/nodes/{id}/taints, replacing the set.
+func (c *Client) SetNodeTaints(ctx context.Context, id string, taints []NodeTaint) (NodeTaints, error) {
+	if taints == nil {
+		taints = []NodeTaint{}
+	}
+	var out NodeTaints
+	err := c.do(ctx, http.MethodPut, nodePath(id)+"/taints", NodeTaints{Taints: taints}, &out)
+	return out, err
+}
+
 // PlacementRejection says why a node is not eligible.
 type PlacementRejection struct {
 	NodeID string `json:"node_id"`
