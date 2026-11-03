@@ -224,7 +224,7 @@ func runNodesPlacement(prog string, args []string, stdout, stderr io.Writer, loo
 	fs.StringVar(&affinityFile, "affinity-file", "", "YAML or JSON file with node and workload affinity rules")
 	fs.BoolVar(&clearRules, "clear-placement-rules", false, "remove the app's tolerations and affinity")
 	fs.Usage = func() {
-		_, _ = fmt.Fprint(stderr, nodesSimpleUsage(prog, "placement <app|database> <name> [key=value ...] [--clear] [--toleration key[=value]:Effect] [--affinity-file path] [--clear-placement-rules]",
+		_, _ = fmt.Fprint(stderr, nodesSimpleUsage(prog, "placement <app|database> <name> [key=value ...] [--clear] [--toleration key[=value]:Effect] [--toleration-exists key] [--affinity-file path] [--clear-placement-rules]",
 			"Shows which nodes an app or database may run on, or sets the node labels it requires.\nApps can also tolerate tainted nodes and carry affinity rules.\nSetting a selector never moves anything; the next move or drain honors it."))
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
