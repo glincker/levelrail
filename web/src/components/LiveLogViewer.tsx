@@ -26,6 +26,7 @@ export function LiveLogViewer({
   conditions?: ReconcileCondition[]
 }) {
   const { t } = useTranslation('observability')
+  const { t: tRows } = useTranslation('appRows')
   const url = buildLiveLogStreamUrl(appName)
   const { lines, connectionState, isPaused, pause, resume, runStatus } =
     useLogStream(url)
@@ -93,6 +94,19 @@ export function LiveLogViewer({
             </Link>
           </div>
         </div>
+      ) : null}
+
+      {lines.length === 0 && stopped && !problem ? (
+        <p className="text-sm text-muted-foreground">
+          {tRows('logs.noContainer')}{' '}
+          <Link
+            to="/apps/$name/deploys"
+            params={{ name: appName }}
+            className="text-primary underline underline-offset-2"
+          >
+            {tRows('logs.deploy')}
+          </Link>
+        </p>
       ) : null}
 
       <LogTerminal
