@@ -135,6 +135,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_RETENTION_STATUS_INCIDENT_DAYS` | [`retention.status_incident_days`](/runtime-settings#data-retention) | `365` |
 | `APP_RETENTION_USAGE_COST_DAYS` | [`retention.usage_cost_days`](/runtime-settings#data-retention) | `90` |
 | `APP_WEBHOOK_DELIVERY_RETENTION_DAYS` | [`retention.webhook_delivery_days`](/runtime-settings#data-retention) | `30` |
+| `APP_ONBOARDING_ENABLED` | [`onboarding.enabled`](/runtime-settings#experimental) | `true` |
 <!-- runtime-settings:end -->
 
 ## Sessions and cookies
