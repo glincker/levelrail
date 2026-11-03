@@ -146,6 +146,7 @@
   },
   "chip": {
     "label": "Setup {{percent}}% ready",
+    "firstApp": "First app: {{done}} of {{total}}",
     "cta": "Continue setup",
     "open": "Open the setup guide"
   },

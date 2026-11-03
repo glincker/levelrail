@@ -1,21 +1,23 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { ArrowRightGlassIcon, XGlassIcon } from '@thesvg/ui-react'
-import { showGuideEntryPoints } from '../../lib/setupGuide'
+import { firstAppProgress, showGuideEntryPoints } from '../../lib/setupGuide'
 import { useSetGuideHidden, useSetupGuide } from '../../queries/setupGuide'
 
 export function SetupChipView({
   percent,
+  progress,
   onHide,
 }: {
   percent: number
+  progress?: { done: number; total: number } | null
   onHide: () => void
 }) {
   const { t } = useTranslation('getStarted')
   return (
     <span className="inline-flex items-center gap-1 rounded-full border border-border bg-card py-0.5 pr-1 pl-2.5 text-xs">
       <span className="tabular-nums text-muted-foreground">
-        {t('chip.label', { percent })}
+        {progress ? t('chip.firstApp', progress) : t('chip.label', { percent })}
       </span>
       <Link
         to="/get-started"
@@ -43,6 +45,7 @@ export function SetupChip() {
   return (
     <SetupChipView
       percent={guide.ready_percent}
+      progress={firstAppProgress(guide)}
       onHide={() => {
         hide.mutate(true)
       }}

@@ -9,7 +9,7 @@ import { ListSkeleton } from '@/components/ui/list-skeleton'
 import { Progress } from '@/components/ui/progress'
 import { toast } from '@/components/ui/toast'
 import { useIsRoot } from '../../hooks/useIsRoot'
-import { essentialSplit, isOpen } from '../../lib/setupGuide'
+import { essentialSplit, firstAppProgress, isOpen } from '../../lib/setupGuide'
 import type {
   SetupGuide,
   SetupGuideOverride,
@@ -68,6 +68,7 @@ export function GuideBody({ guide }: { guide: SetupGuide }) {
   const [confirmReset, setConfirmReset] = useState(false)
   const busy = setStep.isPending || setHidden.isPending || reset.isPending
   const { essential, more } = essentialSplit(guide)
+  const firstApp = firstAppProgress(guide)
   const moreOrdered = [
     ...more.filter(isOpen),
     ...more.filter((s) => !isOpen(s)),
@@ -126,7 +127,9 @@ export function GuideBody({ guide }: { guide: SetupGuide }) {
       >
         <div className="min-w-0">
           <p className="text-base font-semibold text-foreground">
-            {t('summary.ready', { percent: guide.ready_percent })}
+            {firstApp
+              ? t('chip.firstApp', firstApp)
+              : t('summary.ready', { percent: guide.ready_percent })}
           </p>
           <p className="text-xs text-muted-foreground tabular-nums">
             {t('summary.steps', { done: guide.done, total: guide.total })}
