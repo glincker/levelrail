@@ -17,6 +17,10 @@ func TestApplyNextStandalone(t *testing.T) {
 		{"standalone", "module.exports = { output: 'standalone' }", true},
 		{"mjs double quotes", `export default { output: "standalone" }`, true},
 		{"default output", "module.exports = {}", false},
+		{"distDir set", "module.exports = { output: 'standalone', distDir: 'build' }", false},
+		{"line comment", "// output: 'standalone'\nmodule.exports = {}", false},
+		{"block comment", "/* output: 'standalone' */ module.exports = {}", false},
+		{"comment then real", "// old\nmodule.exports = { output: 'standalone' }", true},
 		{"custom tracing root", "module.exports = { output: 'standalone', outputFileTracingRoot: '..' }", false},
 	}
 	for _, c := range cases {

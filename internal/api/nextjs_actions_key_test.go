@@ -12,6 +12,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/spec"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 type memNextSecrets struct {
@@ -102,4 +103,49 @@ func TestNextjsActionsKey(t *testing.T) {
 			t.Fatal("generated while the setting is off")
 		}
 	})
+}
+
+func TestNextjsActionsKeyEdges(t *testing.T) {
+	ctx := context.Background()
+	t.Run("deleted app gets no orphan secret", func(t *testing.T) {
+		db := openTestDB(t)
+		m := &memNextSecrets{vals: map[string]string{}}
+		rt := NewRouter(nil, testBrand(), db, WithSecretSetter(m))
+		rt.ensureNextActionsKey(ctx, &deploy.Request{SourceDir: nextSource(t, "next")}, "gone", "Next.js")
+		if len(m.vals) != 0 {
+			t.Fatal("secret written for an app that no longer exists")
+		}
+	})
+	t.Run("existing app gets a key", func(t *testing.T) {
+		db := openTestDB(t)
+		m := &memNextSecrets{vals: map[string]string{}}
+		rt := NewRouter(nil, testBrand(), db, WithSecretSetter(m))
+		if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "x:1", Port: 3000}); err != nil {
+			t.Fatal(err)
+		}
+		rt.ensureNextActionsKey(ctx, &deploy.Request{SourceDir: nextSource(t, "next")}, "web", "Next.js")
+		if len(m.vals) != 1 {
+			t.Fatalf("secrets = %d", len(m.vals))
+		}
+	})
+	t.Run("shared tier key wins", func(t *testing.T) {
+		m := &memNextSecrets{vals: map[string]string{}}
+		rt := &Router{secrets: m, logger: slog.Default(), environments: fakeEnvTier{vars: map[string]string{nextActionsKeyEnv: "shared"}}}
+		if !rt.sharedEnvHasKey(ctx, store.DesiredService{EnvironmentID: "e1"}, nextActionsKeyEnv) {
+			t.Fatal("shared environment key not seen")
+		}
+	})
+}
+
+type fakeEnvTier struct {
+	EnvironmentStore
+	vars map[string]string
+}
+
+func (f fakeEnvTier) ListEnvironmentEnvVars(context.Context, string) (map[string]string, error) {
+	return f.vars, nil
+}
+
+func (f fakeEnvTier) ListEnvironmentSecretEnvKeys(context.Context, string) ([]string, error) {
+	return nil, nil
 }

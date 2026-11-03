@@ -11,6 +11,9 @@ import (
 var (
 	nextStandaloneRe  = regexp.MustCompile(`output\s*:\s*['"]standalone['"]`)
 	nextTracingRootRe = regexp.MustCompile(`outputFileTracingRoot`)
+	nextDistDirRe     = regexp.MustCompile(`\bdistDir\s*:`)
+	jsBlockCommentRe  = regexp.MustCompile(`(?s)/\*.*?\*/`)
+	jsLineCommentRe   = regexp.MustCompile(`(?m)(^|\s)//.*$`)
 )
 
 // nextStandaloneStart is the entry Next.js writes for output: 'standalone'.
@@ -24,14 +27,15 @@ const nextStandaloneCopy = "if [ -d .next/standalone ]; then " +
 
 // nextStandaloneConfig reports whether the app's next.config selects the
 // standalone output. A custom tracing root moves server.js into a nested
-// folder, so those apps keep the provider defaults.
+// folder and a custom distDir moves .next, so those apps keep the provider defaults.
 func nextStandaloneConfig(sourceDir string) bool {
 	for _, name := range []string{"next.config.js", "next.config.mjs", "next.config.ts", "next.config.cjs"} {
 		b, err := os.ReadFile(filepath.Join(sourceDir, name)) //nolint:gosec // fixed config names under the build source dir
 		if err != nil {
 			continue
 		}
-		return nextStandaloneRe.Match(b) && !nextTracingRootRe.Match(b)
+		code := jsLineCommentRe.ReplaceAll(jsBlockCommentRe.ReplaceAll(b, nil), nil)
+		return nextStandaloneRe.Match(code) && !nextTracingRootRe.Match(code) && !nextDistDirRe.Match(code)
 	}
 	return false
 }
