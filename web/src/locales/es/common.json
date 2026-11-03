@@ -1263,6 +1263,11 @@
     "tagName": "Nombre de la etiqueta",
     "tagAdd": "Añadir etiqueta",
     "tagAdding": "Añadiendo...",
-    "removeTag": "Quitar la etiqueta {{name}}"
+    "removeTag": "Quitar la etiqueta {{name}}",
+    "retryDeploy": "Reintentar despliegue",
+    "deploy": "Desplegar",
+    "restart": "Reiniciar",
+    "openApp": "Abrir app",
+    "stickyLabel": "Cabecera de la app"
   }
 }

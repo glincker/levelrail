@@ -149,7 +149,7 @@ function AppDetailLayout() {
         }}
       />
       <AppPaletteActions app={app} action={action} onDeploy={setDeployTab} />
-      <StuckPanel kind="app" name={app.name} />
+      {isOverview ? null : <StuckPanel kind="app" name={app.name} />}
       <AppTabStrip name={app.name} />
       <Suspense fallback={<DelayedFallback />}>
         <Outlet />

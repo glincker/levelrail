@@ -83,5 +83,24 @@
       "best-effort": "Mejor esfuerzo",
       "unverified": "Sin verificar"
     }
+  },
+  "diagnosis": {
+    "title": "Por qué no funciona",
+    "crashloop": "Esta app se cae una y otra vez",
+    "deployFailed": "Falló el último despliegue",
+    "noCause": "Aún no coincide ninguna causa conocida. Revisa las líneas del registro y vuelve a comprobar.",
+    "openLogs": "Abrir registros",
+    "openDeployLogs": "Ver el registro de la compilación",
+    "copy": "Copiar líneas",
+    "copied": "Copiado",
+    "lastLine": "Última línea:",
+    "sectionLog": "Registro del fallo",
+    "sectionTimeline": "Cronología de condiciones",
+    "sectionOthers": "Otras causas posibles ({{count}})",
+    "showing": "Mostrando las últimas {{shown}} de {{total}} líneas.",
+    "linesLabel": "Últimas líneas de registro del contenedor que falla",
+    "noLines": "No se capturaron líneas de registro para este fallo.",
+    "openFullLogs": "Abrir registros completos",
+    "crashSummary": "{{count}} reinicios en los últimos {{minutes}} minutos."
   }
 }

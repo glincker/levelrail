@@ -1,15 +1,13 @@
 import type { ReactElement, ReactNode } from 'react'
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import observabilityEn from '../locales/en/observability.json'
 import type { DeployAttempt } from '../types/deployAttempt'
-import type { FailureContext } from '../types/investigate'
 import { ChartMarkerDot } from './ChartMarkerDot'
 import { DeployMarkerDetails } from './DeployMarkerDetails'
 import { WhatChangedTimeline } from './WhatChangedTimeline'
-import { FailureContextCard } from './FailureContextCard'
 import { bucketRestarts, deployMarkers } from '../lib/chartMarkers'
 import type { ChartMarker } from '../lib/metricChart'
 
@@ -17,17 +15,6 @@ vi.mock('@tanstack/react-router', () => ({
   Link: ({ children, to }: { children: ReactNode; to: string }) => (
     <a href={to}>{children}</a>
   ),
-}))
-
-let failure: FailureContext = {
-  state: 'healthy',
-  restarts_in_window: 0,
-  window_seconds: 900,
-  lines: [],
-  total_lines: 0,
-}
-vi.mock('../queries/investigate', () => ({
-  useFailureContext: () => ({ data: failure }),
 }))
 
 const testI18n = i18next.createInstance()
@@ -166,47 +153,6 @@ describe('WhatChangedTimeline', () => {
     renderObs(<WhatChangedTimeline events={[]} />)
     expect(
       screen.getByText('Nothing changed around this time.'),
-    ).toBeInTheDocument()
-  })
-})
-
-describe('FailureContextCard', () => {
-  it('renders nothing for a healthy app', () => {
-    failure = { ...failure, state: 'healthy' }
-    const { container } = renderObs(<FailureContextCard appName="web" />)
-    expect(container).toBeEmptyDOMElement()
-  })
-
-  it('shows the last lines of a crashlooping container', () => {
-    failure = {
-      state: 'crashlooping',
-      restarts_in_window: 7,
-      window_seconds: 900,
-      lines: [
-        {
-          timestamp: '2026-10-10T03:00:00Z',
-          stream: 'stderr',
-          message: 'panic: boom',
-        },
-      ],
-      total_lines: 200,
-    }
-    renderObs(<FailureContextCard appName="web" />)
-    expect(
-      screen.queryByLabelText('Last log lines of the failing container'),
-    ).toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: 'Show details' }))
-    expect(screen.getByText('This app is crashlooping')).toBeInTheDocument()
-    const lines = screen.getByLabelText(
-      'Last log lines of the failing container',
-    )
-    expect(within(lines).getByText('panic: boom')).toBeInTheDocument()
-    // The same line also leads the card as the likeliest cause.
-    expect(screen.getByText('Last line:').parentElement).toHaveTextContent(
-      'panic: boom',
-    )
-    expect(
-      screen.getByText(/7 restarts in the last 15 minutes/),
     ).toBeInTheDocument()
   })
 })

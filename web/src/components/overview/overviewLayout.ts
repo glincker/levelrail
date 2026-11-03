@@ -1,6 +1,6 @@
 export type OverviewSection =
   | 'attention'
-  | 'failure'
+  | 'diagnosis'
   | 'access'
   | 'kpis'
   | 'health'
@@ -11,6 +11,8 @@ export type OverviewSection =
 export interface OverviewLayoutInput {
   /** Failing signals: failed deploy, crashloop, unhealthy, high errors, cert errors, OOM. */
   attentionCount: number
+  /** The single Diagnosis card is showing (failed deploy, crashloop or not ready). */
+  diagnosisShown: boolean
   hasTraffic: boolean
   trafficKnown: boolean
   suspended: boolean
@@ -38,17 +40,15 @@ export function computeOverviewLayout(i: OverviewLayoutInput): OverviewLayout {
       : 'hint'
   const setupVisible = !i.setupDismissed && i.setupRemaining > 0
 
-  const sections: OverviewSection[] = failing
-    ? [
-        'attention',
-        'kpis',
-        'failure',
-        'activity',
-        'access',
-        'health',
-        'details',
-      ]
-    : ['kpis', 'failure', 'activity', 'access', 'health', 'details']
+  const sections: OverviewSection[] = [
+    'kpis',
+    'activity',
+    'access',
+    'health',
+    'details',
+  ]
+  if (failing) sections.unshift('attention')
+  if (i.diagnosisShown) sections.unshift('diagnosis')
   if (setupVisible) sections.splice(sections.indexOf('details'), 0, 'setup')
 
   return {

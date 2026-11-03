@@ -1263,6 +1263,11 @@
     "tagName": "Tag name",
     "tagAdd": "Add tag",
     "tagAdding": "Adding...",
-    "removeTag": "Remove tag {{name}}"
+    "removeTag": "Remove tag {{name}}",
+    "retryDeploy": "Retry deploy",
+    "deploy": "Deploy",
+    "restart": "Restart",
+    "openApp": "Open app",
+    "stickyLabel": "App header"
   }
 }

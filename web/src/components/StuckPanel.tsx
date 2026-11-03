@@ -119,7 +119,7 @@ function DatabaseCrashOutput({ name }: { name: string }) {
   return <ContainerOutput failure={data.failure} />
 }
 
-function CauseCard({
+export function CauseCard({
   cause,
   appName,
   onRecheck,
@@ -175,7 +175,7 @@ function CauseCard({
   )
 }
 
-function ActionButton({
+export function ActionButton({
   action,
   appName,
   onRecheck,

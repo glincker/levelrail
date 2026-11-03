@@ -1,5 +1,6 @@
 import { Display } from '@/components/ui/typography'
 import { Link } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import { StatusPill } from '@/components/kit'
 import type { AppDetail } from '../../types/appDetail'
 import type { ReconcileCondition } from '../../types/deploy'
@@ -7,6 +8,7 @@ import type { DeployAttempt } from '../../types/deployAttempt'
 import { computeDeployStages } from '../../lib/deployStages'
 import { deriveHeroStatus, phaseWords } from './heroStatus'
 import { HeroActions } from './HeroActions'
+import { pickHeroPrimary } from './heroPrimary'
 import { ReleaseLine } from './ReleaseLine'
 import { TagChips } from './TagChips'
 import { AutoUrlInfo } from './AutoUrlInfo'
@@ -34,6 +36,7 @@ export function OverviewHero({
   serverOutcome?: { outcome?: string; reason?: string }
   onDeploy: (tab: DeployTab) => void
 }) {
+  const { t } = useTranslation('common')
   const runningStage = latestAttempt
     ? computeDeployStages(latestAttempt, conditions, true).find(
         (s) => s.status === 'running',
@@ -54,13 +57,18 @@ export function OverviewHero({
       (a) => a.status === 'succeeded' && a.rollout_state === 'serving',
     ) ?? attempts.find((a) => a.status === 'succeeded')
 
+  const primary = pickHeroPrimary({
+    suspended: app.suspended,
+    latestStatus: latestAttempt?.status,
+  })
+
   return (
-    <section
-      aria-label="App summary"
-      className="flex flex-col gap-2 rounded-[var(--glinui-radius-lg)] border border-border bg-card px-4 py-3 lg:flex-row lg:items-center lg:justify-between lg:gap-4"
-    >
-      <div className="min-w-0 space-y-1.5">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+    <>
+      <section
+        aria-label={t('overviewHero.stickyLabel')}
+        className="sticky top-0 z-20 flex items-center justify-between gap-2 rounded-[var(--glinui-radius-lg)] border border-border bg-card px-3 py-2 shadow-sm"
+      >
+        <div className="flex min-w-0 items-center gap-x-3">
           <Display as="h1" size="page" className="truncate">
             {app.name}
           </Display>
@@ -70,30 +78,38 @@ export function OverviewHero({
             live={status.live}
             title={status.title}
           />
-          <AppLiveBadge app={app.name} />
+          <span className="max-sm:hidden">
+            <AppLiveBadge app={app.name} />
+          </span>
           {runningStage && latestAttempt ? (
             <Link
               to="/apps/$name/deploys/$deployId/logs"
               params={{ name: app.name, deployId: latestAttempt.id }}
-              className="text-xs text-primary underline underline-offset-2"
+              className="text-xs whitespace-nowrap text-primary underline underline-offset-2 max-sm:hidden"
             >
               Watch live
             </Link>
           ) : null}
         </div>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-          <div className="flex min-w-0 items-center gap-0.5">
-            <UrlLine appName={app.name} url={url} />
-            <AutoUrlInfo appName={app.name} />
-          </div>
-          <ReleaseLine app={app} latest={released ?? latestAttempt} />
+        <HeroActions
+          app={app}
+          url={url}
+          onDeploy={onDeploy}
+          primary={primary}
+        />
+      </section>
+      <section
+        aria-label="App summary"
+        className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1"
+      >
+        <div className="flex min-w-0 items-center gap-0.5">
+          <UrlLine appName={app.name} url={url} />
+          <AutoUrlInfo appName={app.name} />
         </div>
+        <ReleaseLine app={app} latest={released ?? latestAttempt} />
         <TagChips appName={app.name} tags={app.tags} />
-      </div>
-      <div className="flex shrink-0 flex-wrap items-center gap-2 lg:justify-end">
         <AppHeaderBadges app={app} attentionCount={attentionCount} />
-        <HeroActions app={app} url={url} onDeploy={onDeploy} />
-      </div>
-    </section>
+      </section>
+    </>
   )
 }

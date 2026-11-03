@@ -83,5 +83,24 @@
       "best-effort": "Best effort",
       "unverified": "Unverified"
     }
+  },
+  "diagnosis": {
+    "title": "Why this is not working",
+    "crashloop": "This app keeps crashing",
+    "deployFailed": "The latest deploy failed",
+    "noCause": "No known cause matches yet. Check the log lines, then Re-check.",
+    "openLogs": "Open logs",
+    "openDeployLogs": "View the build log",
+    "copy": "Copy lines",
+    "copied": "Copied",
+    "lastLine": "Last line:",
+    "sectionLog": "Failure log",
+    "sectionTimeline": "Condition timeline",
+    "sectionOthers": "Other possible causes ({{count}})",
+    "showing": "Showing the last {{shown}} of {{total}} lines.",
+    "linesLabel": "Last log lines of the failing container",
+    "noLines": "No log lines were captured for this failure.",
+    "openFullLogs": "Open full logs",
+    "crashSummary": "{{count}} restarts in the last {{minutes}} minutes."
   }
 }

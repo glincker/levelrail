@@ -13,9 +13,9 @@ import { registerPageActions } from '../../lib/pageActions'
 import type { AppDetail } from '../../types/appDetail'
 import type { ReconcileCondition } from '../../types/deploy'
 import type { DeployAttempt } from '../../types/deployAttempt'
-import { FailureContextCard } from '../FailureContextCard'
+import { DiagnosisCard } from './DiagnosisCard'
+import { useDiagnosisShown } from './useDiagnosisShown'
 import { RecommendedNextCard } from './RecommendedNextCard'
-import { useFailureContext } from '../../queries/investigate'
 import { AppHealthScorePanel } from '../AppHealthScorePanel'
 import { ActivityTimeline } from './ActivityTimeline'
 import { DeploySheet, type DeployTab } from './DeploySheet'
@@ -70,10 +70,9 @@ export function OverviewPage({
     latest,
     conditions,
   )
-  const failureCtx = useFailureContext(app.name).data
-  const failureShown = Boolean(failureCtx && failureCtx.state !== 'healthy')
-  // The failure card already states the failure, so its twin suggestion is dropped.
-  const suggestions = failureShown
+  const diagnosisShown = useDiagnosisShown(app.name)
+  // The Diagnosis card already states the failure, so its twin suggestions are dropped.
+  const suggestions = diagnosisShown
     ? {
         ...rawSuggestions,
         attention: rawSuggestions.attention.filter(
@@ -90,6 +89,7 @@ export function OverviewPage({
   })
   const layout = computeOverviewLayout({
     attentionCount: suggestions.attention.length,
+    diagnosisShown,
     hasTraffic: Boolean(traffic?.hasTraffic),
     trafficKnown: traffic !== undefined,
     suspended: app.suspended,
@@ -178,7 +178,7 @@ export function OverviewPage({
         ) : null}
       </div>
     ),
-    failure: <FailureContextCard appName={app.name} />,
+    diagnosis: <DiagnosisCard appName={app.name} latest={latest} />,
     health: <AppHealthScorePanel appName={app.name} />,
     activity: (
       <div className="space-y-6">
@@ -230,7 +230,11 @@ export function OverviewPage({
         }
         onDeploy={setDeployTab}
       />
-      <RecommendedNextCard app={app} latest={latest} omit={['add_domain']} />
+      <RecommendedNextCard
+        app={app}
+        latest={latest}
+        omit={diagnosisShown ? ['add_domain', 'failed_deploy'] : ['add_domain']}
+      />
       {layout.sections.map((id) => (
         <Fragment key={id}>{sections[id]}</Fragment>
       ))}
