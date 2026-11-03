@@ -25,7 +25,7 @@ const UserOnboardingFlowVersion = 1
 
 // userOnboardingNext lists the forward moves; dismissing is allowed from every state.
 var userOnboardingNext = map[UserOnboardingState][]UserOnboardingState{
-	UserOnboardingNotStarted: {UserOnboardingInProgress, UserOnboardingDismissed},
+	UserOnboardingNotStarted: {UserOnboardingInProgress, UserOnboardingSnoozed, UserOnboardingDismissed},
 	UserOnboardingInProgress: {UserOnboardingSnoozed, UserOnboardingCompleted, UserOnboardingDismissed},
 	UserOnboardingSnoozed:    {UserOnboardingInProgress, UserOnboardingDismissed},
 	UserOnboardingCompleted:  {UserOnboardingDismissed},

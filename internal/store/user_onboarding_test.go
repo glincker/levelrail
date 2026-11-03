@@ -27,6 +27,7 @@ func TestUserOnboardingTransitions(t *testing.T) {
 	}
 	legal := map[[2]UserOnboardingState]bool{
 		{UserOnboardingNotStarted, UserOnboardingInProgress}: true,
+		{UserOnboardingNotStarted, UserOnboardingSnoozed}:    true,
 		{UserOnboardingNotStarted, UserOnboardingDismissed}:  true,
 		{UserOnboardingInProgress, UserOnboardingSnoozed}:    true,
 		{UserOnboardingInProgress, UserOnboardingCompleted}:  true,
