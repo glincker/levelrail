@@ -1,0 +1,7 @@
+{
+  "urlTitle": "Public repository URL",
+  "connect": {
+    "title": "Need private repositories or deploy on push?",
+    "reason": "A Git provider lets you pick from your repositories and redeploy on every push. Everything above works without one."
+  }
+}
