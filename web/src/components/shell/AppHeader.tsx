@@ -46,9 +46,9 @@ export function AppHeader({ onSearch }: { onSearch: () => void }) {
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 shadow-header transition-opacity duration-150 not-group-data-[scrolled=true]/bar:opacity-0 motion-reduce:transition-none"
         />
-        <div className="relative flex min-h-14 flex-wrap items-center gap-x-1 gap-y-2 px-3 py-2 @xl:gap-x-2 @xl:px-4 @5xl:flex-nowrap @5xl:py-0 @4xl:transition-transform @4xl:duration-150 motion-reduce:transition-none group-data-[scrolled=true]/bar:@4xl:-translate-y-1">
+        <div className="relative flex min-h-14 flex-wrap items-center gap-x-1 gap-y-2 px-3 py-2 @max-md:flex-nowrap @xl:gap-x-2 @xl:px-4 @5xl:flex-nowrap @5xl:py-0 @4xl:transition-transform @4xl:duration-150 motion-reduce:transition-none group-data-[scrolled=true]/bar:@4xl:-translate-y-1">
           <SidebarTrigger
-            className="-ml-1"
+            className="-ml-1 @max-md:size-10"
             aria-label={t('shell.toggleSidebar')}
           />
           <Separator
@@ -59,7 +59,7 @@ export function AppHeader({ onSearch }: { onSearch: () => void }) {
             type="button"
             variant="outline"
             size="sm"
-            className="banner-edge relative h-9 rounded-full border-transparent bg-card/60 text-muted-foreground backdrop-blur-xl @max-xl:w-9 @max-xl:justify-center @max-xl:px-0 @xl:w-52 @xl:justify-start @xl:px-4 @3xl:w-64 @6xl:w-80"
+            className="banner-edge relative h-9 rounded-full border-transparent bg-card/60 text-muted-foreground backdrop-blur-xl @max-xl:w-9 @max-md:size-10 @max-xl:justify-center @max-xl:px-0 @xl:w-52 @xl:justify-start @xl:px-4 @3xl:w-64 @6xl:w-80"
             aria-label={t('shell.search.label')}
             aria-keyshortcuts="Control+K Meta+K"
             onClick={onSearch}
@@ -83,7 +83,7 @@ export function AppHeader({ onSearch }: { onSearch: () => void }) {
               {pageTitle}
             </span>
           ) : null}
-          <div className="ml-auto flex items-center gap-1 @xl:gap-2">
+          <div className="ml-auto flex min-w-0 items-center gap-1 @xl:gap-2">
             <div className="flex items-center gap-1 @max-md:hidden @xl:gap-2">
               <TeamSwitcher />
               <CliStatusBadge />

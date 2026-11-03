@@ -28,7 +28,7 @@ export function HeaderOverflow() {
             variant="ghost"
             size="icon"
             aria-label={t('shell.headerMore')}
-            className="@md:hidden"
+            className="@max-md:size-10 @md:hidden"
           />
         }
       >

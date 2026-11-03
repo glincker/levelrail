@@ -15,7 +15,7 @@ export function InboxBadge() {
     <Button
       variant="outline"
       size="icon-sm"
-      className="relative"
+      className="relative @max-md:size-10"
       aria-label={label}
       title={label}
       render={<Link to="/inbox" />}

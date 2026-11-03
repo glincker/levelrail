@@ -151,7 +151,7 @@ export function AccountMenu() {
           <Link
             to="/settings/account"
             aria-label={t('shell.accountMenu.account')}
-            className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="inline-flex size-10 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
           >
             <SettingsGlassIcon className="size-5" />
           </Link>
