@@ -351,7 +351,7 @@ When you create an app or database without specifying a node, the server decides
 - Create responses carry `auto_placed: true` with the `node_id` picked, and the dashboard shows a toast, so it is never a silent decision.
 
 <Note>
-This is a fit check plus a spread, not bin-packing, and there are no affinity rules. Capacity, the overcommit policy, unknown-capacity handling and the "why here" explanation are in [Resource-aware placement](/resource-aware-placement).
+By default this is a fit check plus a spread. Set the **Placement score mode** runtime setting (`placement.score_mode`, seeded by `APP_PLACEMENT_SCORE_MODE`) to `binpack` to fill the fullest node that still fits instead; it applies to the next placement without a restart. Capacity, the overcommit policy, unknown-capacity handling and the "why here" explanation are in [Resource-aware placement](/resource-aware-placement).
 </Note>
 
 GPU apps: a new app with `resources.gpu` is only auto-placed on a node with a working nvidia runtime and enough free GPUs (least loaded among those), falling back to the local host if it fits. If none fits, the create is refused with `409` and the reason per node; pass `node_id` to override. See [GPU scheduling](/ai-models#gpu-scheduling).

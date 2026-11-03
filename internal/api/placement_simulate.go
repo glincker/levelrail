@@ -52,7 +52,7 @@ func (rt *Router) handlePlacementSimulation(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	req := placement.Request{
-		Selector: sel, Policy: rt.placementPolicy,
+		Selector: sel, Policy: rt.currentPlacementPolicy(r.Context()),
 		Needs: placement.Resources{CPUMilli: int64(cpu), MemoryBytes: int64(mem) * simulationMiBToBy},
 	}
 	writeJSON(w, http.StatusOK, placementSimulationResponse{

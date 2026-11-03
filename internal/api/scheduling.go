@@ -42,7 +42,7 @@ func (rt *Router) autoPlaceNode(ctx context.Context, preferLocalIngress bool, ne
 	if err != nil {
 		return "", nil, err
 	}
-	req := rules.request(placement.Request{Needs: needs, Policy: rt.placementPolicy})
+	req := rules.request(placement.Request{Needs: needs, Policy: rt.currentPlacementPolicy(ctx)})
 	if cands, err = rt.withWorkloads(ctx, rules, "", cands); err != nil {
 		return "", nil, err
 	}
@@ -96,7 +96,7 @@ func (rt *Router) resolveCreateNodePlacement(w http.ResponseWriter, r *http.Requ
 				if withW, werr := rt.withWorkloads(r.Context(), cp.Rules, "", cands); werr == nil {
 					cands = withW
 				}
-				d := placement.Pinned(cands, cp.Rules.request(placement.Request{Needs: cp.Needs, Policy: rt.placementPolicy}), *nodeID)
+				d := placement.Pinned(cands, cp.Rules.request(placement.Request{Needs: cp.Needs, Policy: rt.currentPlacementPolicy(r.Context())}), *nodeID)
 				cp.decision = &d
 			}
 		}

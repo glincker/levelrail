@@ -88,7 +88,7 @@ func (p *drainPlacer) next(ctx context.Context, claim *gpu.Claim, ref drainRef) 
 	if err := p.load(ctx); err != nil {
 		return "", err
 	}
-	cands, req, err := p.rt.ruledRequest(ctx, ref.kind, ref.name, p.cands, placement.Request{Exclude: p.fromID, Needs: ref.needs, Policy: p.rt.placementPolicy})
+	cands, req, err := p.rt.ruledRequest(ctx, ref.kind, ref.name, p.cands, placement.Request{Exclude: p.fromID, Needs: ref.needs, Policy: p.rt.currentPlacementPolicy(ctx)})
 	if err != nil {
 		return "", err
 	}

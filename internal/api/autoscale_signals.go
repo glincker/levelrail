@@ -155,7 +155,7 @@ func (g autoscaleSignals) Headroom(ctx context.Context, app string, extra int) (
 	if home == "" {
 		home = rt.localNodeID
 	}
-	cands, req, err := rt.ruledRequest(ctx, store.NodeMoveKindApp, app, cands, placement.Request{Policy: rt.placementPolicy})
+	cands, req, err := rt.ruledRequest(ctx, store.NodeMoveKindApp, app, cands, placement.Request{Policy: rt.currentPlacementPolicy(ctx)})
 	if err != nil {
 		return -1, err
 	}

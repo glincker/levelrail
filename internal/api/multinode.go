@@ -150,7 +150,7 @@ func (rt *Router) spreadDecision(ctx context.Context, kind, name, exclude string
 	if err != nil {
 		return placement.Decision{}, err
 	}
-	cands, req, err := rt.ruledRequest(ctx, kind, name, cands, placement.Request{Selector: sel, Exclude: exclude, Needs: needs, Policy: rt.placementPolicy})
+	cands, req, err := rt.ruledRequest(ctx, kind, name, cands, placement.Request{Selector: sel, Exclude: exclude, Needs: needs, Policy: rt.currentPlacementPolicy(ctx)})
 	if err != nil {
 		return placement.Decision{}, err
 	}
@@ -338,7 +338,7 @@ func (rt *Router) placementView(ctx context.Context, kind, name string) (placeme
 	if err != nil {
 		return placementResource{}, err
 	}
-	cands, req, err := rt.ruledRequest(ctx, kind, name, cands, placement.Request{Selector: sel, Needs: needs, Policy: rt.placementPolicy})
+	cands, req, err := rt.ruledRequest(ctx, kind, name, cands, placement.Request{Selector: sel, Needs: needs, Policy: rt.currentPlacementPolicy(ctx)})
 	if err != nil {
 		return placementResource{}, err
 	}
