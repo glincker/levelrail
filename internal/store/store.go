@@ -11,6 +11,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 
 	_ "modernc.org/sqlite" // registers the "sqlite" database/sql driver
@@ -26,6 +27,8 @@ type DB struct {
 	ro *sql.DB
 	// attemptObs is the optional shadow release hook; see SetAttemptObserver.
 	attemptObs atomic.Pointer[AttemptObserver]
+	// resourceBoot makes the resource version jump happen once per open handle.
+	resourceBoot sync.Once
 }
 
 // Open opens (creating if needed) the SQLite database at path, applies
