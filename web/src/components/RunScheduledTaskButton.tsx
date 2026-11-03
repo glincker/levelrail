@@ -21,7 +21,7 @@ export function RunScheduledTaskButton({
     <Button
       variant="outline"
       size="sm"
-      disabled={runNow.isPending}
+      disabled={runNow.isPending || Boolean(task.running_since)}
       onClick={() => {
         runNow.mutate(task.id, {
           onSuccess: (started) => {
@@ -39,7 +39,11 @@ export function RunScheduledTaskButton({
       }}
     >
       <PlayGlassIcon className="size-5" aria-hidden="true" />
-      {runNow.isPending ? t('run.starting') : t('run.now')}
+      {runNow.isPending
+        ? t('run.starting')
+        : task.running_since
+          ? t('run.running')
+          : t('run.now')}
     </Button>
   )
 }

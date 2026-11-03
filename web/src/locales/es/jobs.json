@@ -63,7 +63,8 @@
     "now": "Ejecutar ahora",
     "starting": "Iniciando...",
     "started": "Tarea iniciada.",
-    "startedWithId": "Tarea iniciada (ejecución {{id}})."
+    "startedWithId": "Tarea iniciada (ejecución {{id}}).",
+    "running": "En ejecución..."
   },
   "toggle": {
     "label": "Activar {{name}}"
@@ -162,5 +163,13 @@
     "logsLoading": "Cargando salida...",
     "logsRedacted": "Los secretos se ocultan en esta salida.",
     "alertsHint": "Recibe un aviso cuando una tarea falle, pierda ejecuciones o se ejecute demasiado tiempo con Alertas, usando los tipos de fallo de tarea, ejecución perdida o ejecución demasiado larga."
-  }
+  },
+  "historyKept": {
+    "label": "Historial conservado (ejecuciones por tarea)",
+    "save": "Guardar",
+    "note": "Las ejecuciones antiguas se eliminan automáticamente.",
+    "invalid": "Introduce un número entero de {{min}} a {{max}}."
+  },
+  "nextRunNever": "Nunca",
+  "nextRunNeverHint": "Esta programación no tiene próxima ejecución"
 }
