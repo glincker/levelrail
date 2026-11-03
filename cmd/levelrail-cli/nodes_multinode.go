@@ -328,7 +328,7 @@ func nodesAddUsage(prog string) string {
 
 func nodesMoveUsage(prog string) string {
 	return nodesSimpleUsage(prog, "move <app|database> <name> [--to NODE-ID] [--wait]",
-		"Moves an app or database to another node. A stateless app starts on the target, is\nverified ready, then stops on the source. An app with volumes, or a database, stops,\nhas its volumes copied, then starts on the target. A target that never becomes ready\nrolls the move back. --wait exits non-zero when the move fails or rolls back.")
+		"Moves an app or database to another node. A stateless app starts on the target, is\nverified ready, then stops on the source. An app with volumes, or a database, stops,\nhas its volumes copied, then starts on the target. A target that never becomes ready\nrolls the move back. --wait exits non-zero when the move fails or rolls back.\n--timeout DURATION bounds how long --wait waits (default 15m); --poll-interval DURATION sets how often it polls (default 2s).")
 }
 
 func nodesSimpleUsage(prog, synopsis, about string) string {

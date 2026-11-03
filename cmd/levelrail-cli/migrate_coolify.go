@@ -147,6 +147,7 @@ Flags:
   --allow-private                 allow a private-network Coolify address
   --include-secret-values     fetch real env var values from Coolify (requires a Coolify token with the read:sensitive ability)
   --target-token string        Levelrail API token, --apply only (default: %[2]s env var, then the credentials file)
+  --target-profile string      named credentials profile for the target Levelrail instance, --apply only
   --target-api-url string    Levelrail control plane base URL, --apply only (default: %[3]s env var, then %[4]s)
   --json                             print the migration report as JSON to stdout, nothing else
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)

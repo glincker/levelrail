@@ -276,5 +276,10 @@ does the same, then switches traffic (a DNS record through a connected
 provider with the previous value stored, the managed proxy route, or a
 record you set by hand), verifies the public name and rolls back on its own
 if verification fails. The source platform is never written to.
+
+Flags:
+  --wait DURATION   how long run waits for the run to settle (default 20m)
+  --api-url URL     control plane API base URL
+  --profile NAME    named credentials profile for the control plane
 `, prog)
 }

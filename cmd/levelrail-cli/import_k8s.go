@@ -28,6 +28,7 @@ Flags:
   --project NAME           project for the environment documents (default kubernetes)
   --force                  apply even when the report holds blockers
   -o, --output FORMAT      table (default) or json
+  --json                   shorthand for --output json
   --api-url, --profile     control plane to use
 `, prog)
 }
