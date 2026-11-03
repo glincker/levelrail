@@ -1,3 +1,4 @@
+import { Component, type ReactNode } from 'react'
 import { Link, useRouter, useRouterState } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { ArrowRightGlassIcon } from '@thesvg/ui-react'
@@ -41,5 +42,23 @@ export function RelatedLinks({ className }: { className?: string }) {
   // Pages rendered outside a router (tests, previews) simply have no links.
   const router = useRouter({ warn: false })
   if (!router) return null
-  return <RelatedLinksInner className={className} />
+  return (
+    <QuietBoundary>
+      <RelatedLinksInner className={className} />
+    </QuietBoundary>
+  )
+}
+
+// Links are a convenience: a partial router (for example a mocked one) must not break the page.
+class QuietBoundary extends Component<
+  { children: ReactNode },
+  { failed: boolean }
+> {
+  state = { failed: false }
+  static getDerivedStateFromError() {
+    return { failed: true }
+  }
+  render() {
+    return this.state.failed ? null : this.props.children
+  }
 }
