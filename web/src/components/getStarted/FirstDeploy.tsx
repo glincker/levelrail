@@ -19,6 +19,7 @@ import { healthCheckFrom } from '../../lib/healthCheckDefaults'
 import { useIsRoot } from '../../hooks/useIsRoot'
 import { useCreateApp } from '../../queries/apps'
 import { httpsStatusQueryOptions } from '../../queries/httpsStatus'
+import { FirstRunMore } from '../dashboard/FirstRunMore'
 import { FirstAppStatus } from './FirstAppStatus'
 import { useFirstAppPolling } from './useFirstAppPolling'
 
@@ -57,11 +58,14 @@ function PathCard({
 export function FirstDeploy({
   onStarted,
   onDone,
+  secondary = false,
 }: {
   onStarted: () => void
   onDone: () => void
+  /** True when another card (setup) owns the primary action; deploy paths then fold away. */
+  secondary?: boolean
 }) {
-  const { t } = useTranslation('getStarted')
+  const { t } = useTranslation(['getStarted', 'firstRun'])
   const isRoot = useIsRoot()
   const createApp = useCreateApp()
   const [mountedAt] = useState(() => Date.now())
@@ -108,6 +112,63 @@ export function FirstDeploy({
     ? `${https.state === 'issued' ? 'https' : 'http'}://${SAMPLE_APP.name}.${https.suggested_domain}`
     : ''
 
+  const paths = (
+    <div className="grid gap-2 sm:grid-cols-3 sm:gap-3">
+      <PathCard
+        icon={<RocketGlassIcon className="size-6 text-primary" />}
+        title={t('first.sample.title')}
+        description={t('first.sample.description', {
+          image: SAMPLE_APP.image,
+          path: SAMPLE_APP.readinessPath,
+        })}
+        action={
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={deploySample}
+            disabled={createApp.isPending}
+          >
+            {createApp.isPending
+              ? t('first.sample.creating')
+              : createError
+                ? t('first.sample.retry')
+                : t('first.sample.cta')}
+          </Button>
+        }
+      />
+      <PathCard
+        icon={<LayoutGridGlassIcon className="size-6 text-muted-foreground" />}
+        title={t('first.template.title')}
+        description={t('first.template.description')}
+        action={
+          <CreateResourceWizard
+            initialSelected="browse-templates"
+            trigger={
+              <Button size="sm" variant="outline">
+                {t('first.template.cta')}
+              </Button>
+            }
+          />
+        }
+      />
+      <PathCard
+        icon={<GitBranchGlassIcon className="size-6 text-muted-foreground" />}
+        title={t('first.repo.title')}
+        description={t('first.repo.description')}
+        action={
+          <CreateResourceWizard
+            initialSelected="dockerfile-git"
+            trigger={
+              <Button size="sm" variant="outline">
+                {t('first.repo.cta')}
+              </Button>
+            }
+          />
+        }
+      />
+    </div>
+  )
+
   return (
     <div className="space-y-6">
       <header className="space-y-1">
@@ -119,7 +180,7 @@ export function FirstDeploy({
             />
             {live ? t('first.titleLive') : t('first.title')}
           </h1>
-          {app ? null : (
+          {app || secondary ? null : (
             <Link to="/apps/new" className={buttonVariants({ size: 'sm' })}>
               {t('first.primary')}
             </Link>
@@ -136,64 +197,16 @@ export function FirstDeploy({
         <FirstAppStatus app={app} phase={phase} onDone={onDone} />
       ) : (
         <>
-          <div className="grid gap-2 sm:grid-cols-3 sm:gap-3">
-            <PathCard
-              icon={<RocketGlassIcon className="size-6 text-primary" />}
-              title={t('first.sample.title')}
-              description={t('first.sample.description', {
-                image: SAMPLE_APP.image,
-                path: SAMPLE_APP.readinessPath,
-              })}
-              action={
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={deploySample}
-                  disabled={createApp.isPending}
-                >
-                  {createApp.isPending
-                    ? t('first.sample.creating')
-                    : createError
-                      ? t('first.sample.retry')
-                      : t('first.sample.cta')}
-                </Button>
-              }
-            />
-            <PathCard
-              icon={
-                <LayoutGridGlassIcon className="size-6 text-muted-foreground" />
-              }
-              title={t('first.template.title')}
-              description={t('first.template.description')}
-              action={
-                <CreateResourceWizard
-                  initialSelected="browse-templates"
-                  trigger={
-                    <Button size="sm" variant="outline">
-                      {t('first.template.cta')}
-                    </Button>
-                  }
-                />
-              }
-            />
-            <PathCard
-              icon={
-                <GitBranchGlassIcon className="size-6 text-muted-foreground" />
-              }
-              title={t('first.repo.title')}
-              description={t('first.repo.description')}
-              action={
-                <CreateResourceWizard
-                  initialSelected="dockerfile-git"
-                  trigger={
-                    <Button size="sm" variant="outline">
-                      {t('first.repo.cta')}
-                    </Button>
-                  }
-                />
-              }
-            />
-          </div>
+          {secondary ? (
+            <FirstRunMore
+              label={t('firstRun:paths.show')}
+              closeLabel={t('firstRun:paths.hide')}
+            >
+              {paths}
+            </FirstRunMore>
+          ) : (
+            paths
+          )}
           <p className="flex flex-wrap items-center gap-x-4 text-xs text-muted-foreground sm:gap-y-1">
             <Link
               to="/settings/import-platform"

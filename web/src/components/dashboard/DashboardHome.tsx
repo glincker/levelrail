@@ -22,6 +22,8 @@ import { cn } from '@/lib/utils'
 import { DashboardHero } from './DashboardHero'
 import { FleetTiles } from './FleetTiles'
 import { OnboardingCard } from '../onboarding/OnboardingCard'
+import { useOnboardingCardShown } from '../../queries/meOnboarding'
+import { FirstRunMore } from './FirstRunMore'
 import { NextSteps } from './NextSteps'
 import { RecentActivity } from './RecentActivity'
 import { AppsPanel } from './AppsPanel'
@@ -191,6 +193,7 @@ export function DashboardHome({
   const [deployStarted, setDeployStarted] = useState(false)
   const [firstRunDone, setFirstRunDone] = useState(false)
   const hasApps = summary.total > 0 || anyApps.data === true
+  const setupFirst = useOnboardingCardShown()
 
   if (summary.total === 0 && anyApps.isPending) {
     return <DashboardPending />
@@ -208,13 +211,14 @@ export function DashboardHome({
             onDone={() => {
               setFirstRunDone(true)
             }}
+            secondary={setupFirst}
           />
         </Suspense>
         {hasApps ? null : (
-          <>
+          <FirstRunMore>
             <RecommendationsLine showSetup={isRoot} />
             <PlatformCapabilities />
-          </>
+          </FirstRunMore>
         )}
       </div>
     )

@@ -36,6 +36,8 @@ import type gitSource from '../locales/en/gitSource.json'
 import type certBudget from '../locales/en/certBudget.json'
 import type appRows from '../locales/en/appRows.json'
 import type tokensNotices from '../locales/en/tokensNotices.json'
+import type firstRun from '../locales/en/firstRun.json'
+import type newAppNoGit from '../locales/en/newAppNoGit.json'
 import type exposure from '../locales/en/exposure.json'
 import type appExposure from '../locales/en/appExposure.json'
 import type appAccess from '../locales/en/appAccess.json'
@@ -167,6 +169,8 @@ declare module 'i18next' {
       certBudget: typeof certBudget
       appRows: typeof appRows
       tokensNotices: typeof tokensNotices
+      firstRun: typeof firstRun
+      newAppNoGit: typeof newAppNoGit
       exposure: typeof exposure
       appExposure: typeof appExposure
       appAccess: typeof appAccess

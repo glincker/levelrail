@@ -81,6 +81,15 @@ export function onboardingActive(
   return data != null && data.enabled
 }
 
+/** useOnboardingCardShown tells the dashboard whether the setup card is the page's primary action. */
+export function useOnboardingCardShown(): boolean {
+  const { data } = useMeOnboarding()
+  return (
+    onboardingActive(data) &&
+    (data.state === 'not_started' || data.state === 'in_progress')
+  )
+}
+
 export function useSetOnboarding() {
   const qc = useQueryClient()
   return useMutation<MeOnboarding, ApiError, OnboardingUpdate>({
