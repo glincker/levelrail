@@ -1474,5 +1474,17 @@
       "http": "HTTP",
       "https": "HTTPS"
     }
+  },
+  "watch": {
+    "state": {
+      "waiting_dns": "Waiting for DNS",
+      "propagating": "DNS propagating",
+      "waiting_certificate": "Waiting for the certificate",
+      "stalled": "Stalled, needs a look"
+    },
+    "nextInSeconds_one": "checking again in {{count}}s",
+    "nextInSeconds_other": "checking again in {{count}}s",
+    "nextInMinutes_one": "checking again in {{count}} min",
+    "nextInMinutes_other": "checking again in {{count}} min"
   }
 }

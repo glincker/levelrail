@@ -20,6 +20,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/components/ui/toast'
 import { Switch } from '@/components/ui/switch'
 import { SettingsFormAlerts } from './SettingsCard'
+import { DnsVerificationCallout } from './dns/DnsVerificationCallout'
 
 // Instance-level Google Cloud DNS connection. Cloudflare and Route53 win
 // when several providers are enabled. The key is write-only: only the
@@ -159,6 +160,7 @@ export function GoogleCloudDnsCard() {
                 : null,
             ]}
           />
+          <DnsVerificationCallout verification={update.data?.verification} />
 
           {test.data?.ok ? (
             <p className="text-sm text-foreground" role="status">

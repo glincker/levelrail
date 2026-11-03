@@ -19,6 +19,7 @@ import {
   SettingsFormAlerts,
   useTokenToggleForm,
 } from './SettingsCard'
+import { DnsVerificationCallout } from './dns/DnsVerificationCallout'
 
 // Instance-level Cloudflare DNS-01 credential: GET/PUT/DELETE
 // /api/v1/settings/cloudflare-dns. Lives next to IngressSettingsCard
@@ -113,6 +114,9 @@ export function CloudflareDnsCard({
                 ? { key: 'update', message: updateSettings.error.message }
                 : null,
             ]}
+          />
+          <DnsVerificationCallout
+            verification={updateSettings.data?.verification}
           />
 
           <SettingsFormActions

@@ -27,6 +27,7 @@ import {
 } from '../queries/dnsRecords'
 import { useDomainCheck } from '../queries/domainCheck'
 import { DnsConnectPopover } from './dns/DnsConnectPopover'
+import { ProviderRecordGuide } from './dns/ProviderRecordGuide'
 import { RecordFields, RecordRow } from './DnsRecordRow'
 import {
   EMPTY_DRAFT,
@@ -133,6 +134,7 @@ export function DomainDnsRecordsControl({
             </AlertDescription>
           </Alert>
           <ConnectNsProvider provider={check?.nameserver_provider} />
+          <ProviderRecordGuide check={check} domain={domain} />
         </>
       ) : isError ? (
         <Alert variant="destructive">

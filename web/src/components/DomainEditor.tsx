@@ -16,6 +16,7 @@ import { useIsStaticSite } from '../queries/staticSites'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { AutomaticDomainRow } from './AutomaticDomainRow'
 import { DomainDnsCheck } from './DomainDnsCheck'
+import { DomainWatchChip } from './domains/DomainWatchChip'
 import { ProxyDomainStatus, ProxyHandledTlsBadge } from './ProxyDomainStatus'
 import { certRenewalBadge } from '../lib/certStatus'
 import { certTruth } from '../lib/certTruth'
@@ -193,6 +194,7 @@ export function DomainEditor({ app }: { app: AppDetail }) {
 
                       {isValidDomain ? (
                         <div className="space-y-1.5 pl-1">
+                          {isSaved ? <DomainWatchChip domain={domain} /> : null}
                           <DomainDnsCheck appName={app.name} domain={domain} />
                           {isSaved ? (
                             <>

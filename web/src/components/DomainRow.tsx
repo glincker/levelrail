@@ -74,6 +74,7 @@ import type { TrafficControl } from '../lib/domainEnforcement'
 import { DomainDnsRecordDialog } from './DomainDnsRecordDialog'
 import { DomainIssueFix } from './DomainIssueFix'
 import { DomainDnsStatusBadge } from './DomainDnsStatusBadge'
+import { DomainWatchChip } from './domains/DomainWatchChip'
 import { DomainDiagnoseDialog } from './domains/DomainDiagnoseDialog'
 import {
   StandaloneRowActions,
@@ -527,7 +528,12 @@ export function DomainTargetCell({ domain }: { domain: Domain }) {
 
 export function DomainDnsCell({ domain }: { domain: Domain }) {
   const dns = useDomainDns(domain)
-  return <DomainDnsStatusBadge status={dns.data?.status} />
+  return (
+    <div className="flex flex-wrap items-center gap-1">
+      <DomainDnsStatusBadge status={dns.data?.status} />
+      <DomainWatchChip domain={domain.domain} />
+    </div>
+  )
 }
 
 export function DomainCertCell({

@@ -27,6 +27,7 @@ import {
 } from '../lib/domainsBatch'
 import type { CertificateStatus } from '../queries/certificates'
 import type { Domain } from '../queries/domains'
+import { useDomainsWatchRefresh } from '../queries/domainsWatch'
 import { DomainsBatchDialog } from './domains/DomainsBatchDialog'
 import {
   DomainsBulkBar,
@@ -60,6 +61,7 @@ export function DomainsTable({
   onAdd: () => void
 }) {
   const { t } = useTranslation('domains')
+  useDomainsWatchRefresh()
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set())
   const [batchAction, setBatchAction] = useState<BatchAction | null>(null)

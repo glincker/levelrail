@@ -56,6 +56,22 @@ export interface AcmeFailure {
   action: AcmeAction
 }
 
+// Who runs the zone's name servers, as detected by the control plane.
+export type NameserverProvider =
+  | 'cloudflare'
+  | 'route53'
+  | 'digitalocean'
+  | 'hetzner'
+  | 'namecheap'
+  | 'godaddy'
+  | 'porkbun'
+  | 'google'
+  | 'azure'
+  | 'ns1'
+  | 'desec'
+  | 'other'
+  | 'unknown'
+
 export type DnsProvider = 'cloudflare' | 'route53' | 'googleclouddns' | 'none'
 
 // Who terminates TLS for a hostname (internal/tlsowner).
@@ -97,7 +113,7 @@ export interface DomainCheckResult {
   flush_command?: string
   hints?: DnsHint[]
   zone?: string
-  nameserver_provider?: 'cloudflare' | 'route53' | 'other' | 'unknown'
+  nameserver_provider?: NameserverProvider
 }
 
 export const domainCheckKeys = {
