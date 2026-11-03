@@ -546,7 +546,7 @@ Each pull request also carries a single comment, found by a hidden marker and ed
 
 ### Preview environment variables
 
-A preview inherits its parent app's env vars wholesale (`Env`, `SecretEnv`, and `VaultEnv` copy unchanged). Every preview container also gets `PREVIEW_URL` (when a domain was assigned), `PREVIEW_PR_NUMBER`, and `PREVIEW_BRANCH`. Pipeline runs triggered by a pull request get the same three variables for the live preview built from their branch.
+A preview inherits its parent app's env vars wholesale (`Env`, `SecretEnv`, and `VaultEnv` copy unchanged). Every preview container also gets `PREVIEW_URL` (when a domain was assigned), `PREVIEW_PR_NUMBER`, `PR_NUMBER` (same value, kept if the app already defines it), and `PREVIEW_BRANCH`. Pipeline runs triggered by a pull request get the same three variables for the live preview built from their branch.
 
 To give previews a different value for one key, declare an override on the parent app:
 

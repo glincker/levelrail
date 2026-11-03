@@ -189,6 +189,10 @@ Five templates ship in this format today: Uptime Kuma, Wiki.js, Redmine, One-Tim
 
 `go run ./scripts/validate-templates` checks every manifest. Add `-compose-dir <dir>` to also check a directory of plain compose files against the same rules a real deploy uses. Use this to triage a large catalog before converting entries to manifests. It prints one line per file with the first reason it was rejected. Add `-json` for machine-readable output and `-strict` to fail on any rejected file.
 
+## Pull request previews
+
+When a compose app has pull request previews on, every service in the preview gets `PR_NUMBER` and `PREVIEW_PR_NUMBER` (the pull request number), `PREVIEW_BRANCH`, and `PREVIEW_URL` (only on the service that carries the preview domain, and only when a domain was assigned). Use them in your own env or entrypoint, for example to name a preview database. A `PR_NUMBER` your app already defines is kept.
+
 ## Troubleshooting
 
 ### Compose file was rejected as invalid
