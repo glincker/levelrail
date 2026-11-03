@@ -95,6 +95,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerMobileRoutes(mux)
 	mcpHTTP := rt.registerMCPHTTPRoutes(mux)
 	rt.registerAccountSelfRoutes(mux)
+	rt.registerMeOnboardingRoutes(mux)
 
 	h := rt.stackLockMiddleware(mux)
 	h = rt.bodyLimitMiddleware(h)

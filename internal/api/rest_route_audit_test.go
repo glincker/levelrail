@@ -229,6 +229,8 @@ var restExemptions = restExemptionSet(map[string][]string{
 		"POST /api/v1/auth/email-change/confirm",
 		"POST /api/v1/auth/export",
 		"PUT /api/v1/auth/preferences",
+		"PUT /api/v1/me/onboarding",
+		"POST /api/v1/me/onboarding/reset",
 		"DELETE /api/v1/teams/{id}/members/me",
 	},
 	"audited inside the handler by its own lifecycle row (device login, CI exchange)": {
@@ -335,6 +337,8 @@ var restHandlerAuditedAccountRoutes = map[string]string{
 	"POST /api/v1/auth/export":                  "recordAccountAction in account_export.go",
 	"PUT /api/v1/auth/preferences":              "recordAccountAction in account_preferences.go",
 	"DELETE /api/v1/teams/{id}/members/me":      "recordAuthAudit in team_members.go",
+	"PUT /api/v1/me/onboarding":                 "recordAccountAction in me_onboarding.go",
+	"POST /api/v1/me/onboarding/reset":          "recordAccountAction in me_onboarding.go",
 }
 
 // assertAccountEventGroupCovered makes a deleted accountEventRoutes entry fail instead of silently losing its audit row.

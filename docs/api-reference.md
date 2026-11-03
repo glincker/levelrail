@@ -2171,6 +2171,9 @@ Routes that do not fit an existing group.
 | GET | /api/v1/tokens/unused | Session | handleUnusedTokens |
 | GET | /api/v1/doctor/reachability | AbilityRead | handleDoctorReachability |
 | GET | /api/v1/doctor/explain | AbilityRead | handleDoctorExplain |
+| GET | /api/v1/me/onboarding | Public | handleGetMeOnboarding |
+| PUT | /api/v1/me/onboarding | Public | handlePutMeOnboarding |
+| POST | /api/v1/me/onboarding/reset | Public | handleResetMeOnboarding |
 | POST | /mcp | Public |  |
 
 ## See also
