@@ -19,6 +19,8 @@ const (
 	rateLimitedPause        = time.Hour
 	// ledgerKeep bounds memory: older entries cannot affect either window.
 	ledgerKeep = duplicateWindow
+	// LedgerKeep is how long stored attempts matter.
+	LedgerKeep = ledgerKeep
 )
 
 // Limits are the CA limits that matter for one hostname.
@@ -43,13 +45,61 @@ func envPositive(key string, def int) int {
 }
 
 // Ledger remembers recent production attempts per hostname so the next safe
-// time can be shown before another try burns a limit. It lives in memory: a
-// restart forgets it, and the CA's own answer still wins.
+// time can be shown before another try burns a limit. Attach a Backing to keep
+// it across restarts; without one it lives in memory and the CA's answer wins.
 type Ledger struct {
 	mu     sync.Mutex
+	back   Backing
 	failed map[string][]time.Time
 	issued map[string][]time.Time
 	start  map[string]time.Time
+}
+
+// Entry kinds written to a Backing.
+const (
+	KindFailed  = "failed"
+	KindIssued  = "issued"
+	KindStarted = "started"
+)
+
+// Backing persists ledger entries. Save is best effort: a failed write must not block issuance.
+type Backing interface {
+	Save(kind, domain string, at time.Time)
+}
+
+// Restore replays stored entries into the ledger without writing them back, then
+// sends later changes to b.
+func (l *Ledger) Restore(b Backing, entries []Entry, now time.Time) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	for _, e := range entries {
+		switch e.Kind {
+		case KindFailed:
+			l.add(&l.failed, e.Domain, e.At, now)
+		case KindIssued:
+			l.add(&l.issued, e.Domain, e.At, now)
+		case KindStarted:
+			if l.start == nil {
+				l.start = map[string]time.Time{}
+			}
+			if e.At.After(l.start[e.Domain]) {
+				l.start[e.Domain] = e.At
+			}
+		}
+	}
+	l.back = b
+}
+
+// Entry is one stored attempt.
+type Entry struct {
+	Kind, Domain string
+	At           time.Time
+}
+
+func (l *Ledger) save(kind, domain string, at time.Time) {
+	if l.back != nil {
+		l.back.Save(kind, domain, at)
+	}
 }
 
 // MarkStarted notes when a guided issuance began for domain.
@@ -60,6 +110,7 @@ func (l *Ledger) MarkStarted(domain string, at time.Time) {
 		l.start = map[string]time.Time{}
 	}
 	l.start[domain] = at
+	l.save(KindStarted, domain, at)
 }
 
 // StartedAt is when the last guided issuance for domain began, or the zero time.
@@ -92,6 +143,7 @@ func (l *Ledger) RecordFailure(domain string, at, now time.Time) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.add(&l.failed, domain, at, now)
+	l.save(KindFailed, domain, at)
 }
 
 // RecordIssued notes a production certificate issued for domain.
@@ -99,6 +151,7 @@ func (l *Ledger) RecordIssued(domain string, at, now time.Time) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.add(&l.issued, domain, at, now)
+	l.save(KindIssued, domain, at)
 }
 
 // Snapshot is the recent history of one hostname.

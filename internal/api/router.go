@@ -1151,6 +1151,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		rt.idempotency = is
 	}
 	rt.attachMail(s)
+	rt.attachCertLedger(s)
 	if cs, ok := s.(ContextConfigStore); ok {
 		rt.contextConfigs = cs
 	}
