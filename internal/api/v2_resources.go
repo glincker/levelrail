@@ -38,7 +38,22 @@ func newV2Server(rt *Router) *v2Server {
 	cfg := v2WatchConfigFromEnv()
 	s := &v2Server{rt: rt, cfg: cfg, streams: make(chan struct{}, cfg.MaxStreams)}
 	s.changes, _ = rt.apps.(v2ChangeStore)
+	s.advanceBoot()
 	return s
+}
+
+// advanceBoot runs once per process, before any route serves, so every watch
+// that predates this process gets 410 instead of resuming on a reissued version.
+func (s *v2Server) advanceBoot() {
+	b, ok := s.changes.(interface {
+		AdvanceResourceBootOnce(ctx context.Context, gap int64) error
+	})
+	if !ok {
+		return
+	}
+	if err := b.AdvanceResourceBootOnce(context.Background(), store.ResourceBootGapFromEnv()); err != nil {
+		s.rt.logger.Error("api: v2 resource boot gap failed", slog.String("error", err.Error()))
+	}
 }
 
 func (s *v2Server) apiVersion() string {

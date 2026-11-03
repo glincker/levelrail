@@ -23,10 +23,12 @@ const (
 	EnvResourceChangesRetain       = "APP_RESOURCE_CHANGES_RETAIN"
 	EnvResourceChangesMaxAge       = "APP_RESOURCE_CHANGES_MAX_AGE"
 	EnvResourceChangesCompactEvery = "APP_RESOURCE_CHANGES_COMPACT_EVERY"
+	EnvResourceBootGap             = "APP_RESOURCE_BOOT_GAP"
 
 	defaultResourceChangesRetain       = 10000
 	defaultResourceChangesMaxAge       = 7 * 24 * time.Hour
 	defaultResourceChangesCompactEvery = 100
+	defaultResourceBootGap             = 1_000_000
 )
 
 const resourceTimeLayout = "2006-01-02T15:04:05.000Z"
