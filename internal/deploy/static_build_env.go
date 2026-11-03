@@ -52,3 +52,8 @@ func staticBuildArgs(env map[string]spec.EnvVar, args map[string]string, prefixe
 	}
 	return out
 }
+
+// StaticBuildArgsForTest exposes the build-arg filter so other packages can prove secrets never reach a build.
+func StaticBuildArgsForTest(env map[string]spec.EnvVar) map[string]string {
+	return staticBuildArgs(env, nil, StaticBuildEnvPrefixes())
+}

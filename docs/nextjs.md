@@ -128,3 +128,7 @@ If you do not need several replicas, run one. A single instance has none of thes
 - [Environment variables and secrets](/environment-and-secrets)
 - [Build performance](/build-performance)
 - [Self-host Next.js](/self-host-nextjs)
+
+## Server Actions key
+
+For Next.js 14 or newer apps created by the wizard, Levelrail generates a `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` once, stores it as an app secret and gives it to every replica at runtime, so Server Actions work across replicas and redeploys. A redeploy never rotates it; delete the secret to rotate. Turn it off with the runtime setting `nextjs.generate_actions_key`. Secrets never reach builds, so if you rely on the key at build time, set the same key in the build env yourself.

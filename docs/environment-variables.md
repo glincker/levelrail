@@ -98,6 +98,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_DEPLOY_PREVIOUS_RELEASE_HOLD` | [`deploy.previous_release_hold`](/runtime-settings#deploys) | `3m` |
 | `APP_DEPLOY_STABLE_WINDOW` | [`deploy.stable_window`](/runtime-settings#deploys) | `10s` |
 | `APP_DEPLOY_WATCH_WINDOW` | [`deploy.watch_window`](/runtime-settings#deploys) | `5m` |
+| `APP_NEXTJS_GENERATE_ACTIONS_KEY` | [`nextjs.generate_actions_key`](/runtime-settings#deploys) | `true` |
 | `APP_VOLUMES_IMPORT_OVERWRITE` | [`volumes.import_overwrite`](/runtime-settings#deploys) | `false` |
 | `APP_VOLUMES_TRANSFER_MAX_BYTES` | [`volumes.transfer_max_bytes`](/runtime-settings#deploys) | `10737418240` |
 | `APP_VOLUMES_TRANSFER_MAX_CONCURRENT` | [`volumes.transfer_max_concurrent`](/runtime-settings#deploys) | `1` |
