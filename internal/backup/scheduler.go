@@ -284,17 +284,17 @@ func (s *Scheduler) Tick(ctx context.Context) error {
 		}
 
 		next, known := s.nextRun[d.Name]
-		if !known {
+		if !known || next.IsZero() {
 			// First tick this database has been observed as scheduled:
 			// arm its next fire time without running immediately. See
 			// this struct's own doc comment for why a freshly-armed
 			// schedule never fires on sight, whether that is because the
 			// schedule was just created or because the control plane
 			// just started up.
-			s.nextRun[d.Name] = sched.Next(now)
+			s.arm(s.nextRun, d.Name, d.Name, sched, now, !known)
 			continue
 		}
-		if now.Before(next) {
+		if !cronexpr.Due(next, now) {
 			continue
 		}
 
@@ -303,7 +303,7 @@ func (s *Scheduler) Tick(ctx context.Context) error {
 		// forward to the schedule's next real occurrence instead of
 		// retrying immediately in a tight loop against, most likely, the
 		// same failure.
-		s.nextRun[d.Name] = sched.Next(now)
+		s.arm(s.nextRun, d.Name, d.Name, sched, now, true)
 
 		if rerr := s.runScheduled(ctx, d); rerr != nil {
 			errs = append(errs, fmt.Errorf("database %q: %w", d.Name, rerr))
@@ -360,14 +360,14 @@ func (s *Scheduler) tickBaseBackups(ctx context.Context, now time.Time) error {
 			continue
 		}
 		next, known := s.baseNextRun[d.Name]
-		if !known {
-			s.baseNextRun[d.Name] = sched.Next(now)
+		if !known || next.IsZero() {
+			s.arm(s.baseNextRun, d.Name, d.Name, sched, now, !known)
 			continue
 		}
-		if now.Before(next) {
+		if !cronexpr.Due(next, now) {
 			continue
 		}
-		s.baseNextRun[d.Name] = sched.Next(now)
+		s.arm(s.baseNextRun, d.Name, d.Name, sched, now, true)
 
 		targetID := d.BaseBackupTargetID
 		if targetID == "" {
@@ -410,15 +410,15 @@ func (s *Scheduler) tickServiceVolumes(ctx context.Context, now time.Time) error
 		}
 
 		next, known := s.volumeNextRun[key]
-		if !known {
-			s.volumeNextRun[key] = sched.Next(now)
+		if !known || next.IsZero() {
+			s.arm(s.volumeNextRun, key, key, sched, now, !known)
 			continue
 		}
-		if now.Before(next) {
+		if !cronexpr.Due(next, now) {
 			continue
 		}
 
-		s.volumeNextRun[key] = sched.Next(now)
+		s.arm(s.volumeNextRun, key, key, sched, now, true)
 
 		if rerr := s.runScheduledVolume(ctx, v); rerr != nil {
 			errs = append(errs, fmt.Errorf("service %q volume %q: %w", v.ServiceName, v.VolumeName, rerr))
@@ -672,4 +672,14 @@ func randomScheduledBackupVerificationID() (string, error) {
 		return "", fmt.Errorf("backup: generate scheduled backup verification id: %w", err)
 	}
 	return "bkv_" + base64.RawURLEncoding.EncodeToString(buf), nil
+}
+
+// arm stores the schedule's next run; an unknown next run is stored as zero
+// (never due) and logged once, so an impossible schedule cannot loop.
+func (s *Scheduler) arm(m map[string]time.Time, key, id string, sched *cronexpr.Schedule, now time.Time, warn bool) {
+	next := sched.Next(now)
+	m[key] = next
+	if next.IsZero() && warn {
+		s.log().Warn("backup: scheduler: schedule never runs, skipping", slog.String("schedule_id", id))
+	}
 }

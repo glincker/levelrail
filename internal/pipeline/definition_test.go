@@ -80,6 +80,7 @@ func TestValidateRejects(t *testing.T) {
 		{"cycle", "version: 1\njobs:\n  a:\n    image: x\n    needs: [b]\n    steps:\n      - run: x\n  b:\n    image: x\n    needs: [a]\n    steps:\n      - run: x\n", "cycle"},
 		{"missing image", "version: 1\njobs:\n  a:\n    steps:\n      - run: x\n", "image is required"},
 		{"bad cron", "version: 1\non:\n  schedule: ['nope']\njobs:\n  a:\n    image: x\n    steps:\n      - run: x\n", "on.schedule"},
+		{"never runs", "version: 1\non:\n  schedule: ['0 0 30 2 *']\njobs:\n  a:\n    image: x\n    steps:\n      - run: x\n", "never runs"},
 		{"bad if", "version: 1\njobs:\n  a:\n    image: x\n    if: '(a &&'\n    steps:\n      - run: x\n", "condition"},
 		{"unknown kind", "version: 1\njobs:\n  a:\n    steps:\n      - uses: teleport\n", "unknown step kind"},
 		{"approval after run", "version: 1\njobs:\n  a:\n    image: x\n    steps:\n      - run: x\n      - uses: approval\n", "approval steps must come before"},

@@ -23,7 +23,7 @@ func nodeHeartbeatInterval() time.Duration {
 		return defaultNodeHeartbeatInterval
 	}
 	d, err := time.ParseDuration(raw)
-	if err != nil {
+	if err != nil || d <= 0 {
 		return defaultNodeHeartbeatInterval
 	}
 	return d
@@ -81,7 +81,7 @@ func osPatchCheckInterval() time.Duration {
 		return defaultOSPatchCheckInterval
 	}
 	d, err := time.ParseDuration(raw)
-	if err != nil {
+	if err != nil || d <= 0 {
 		return defaultOSPatchCheckInterval
 	}
 	return d
@@ -94,8 +94,8 @@ func backupSchedulerInterval(logger *slog.Logger) time.Duration {
 		return defaultBackupSchedulerInterval
 	}
 	d, err := time.ParseDuration(raw)
-	if err != nil {
-		logger.Warn("invalid APP_BACKUP_SCHEDULER_INTERVAL, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+	if err != nil || d <= 0 {
+		logger.Warn("invalid APP_BACKUP_SCHEDULER_INTERVAL, using the default", slog.String("value", raw))
 		return defaultBackupSchedulerInterval
 	}
 	return d
@@ -107,8 +107,8 @@ func scheduledTaskSchedulerInterval(logger *slog.Logger) time.Duration {
 		return defaultScheduledTaskSchedulerInterval
 	}
 	d, err := time.ParseDuration(raw)
-	if err != nil {
-		logger.Warn("invalid APP_SCHEDULED_TASK_SCHEDULER_INTERVAL, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+	if err != nil || d <= 0 {
+		logger.Warn("invalid APP_SCHEDULED_TASK_SCHEDULER_INTERVAL, using the default", slog.String("value", raw))
 		return defaultScheduledTaskSchedulerInterval
 	}
 	return d
@@ -160,8 +160,8 @@ func appScheduleSchedulerInterval(logger *slog.Logger) time.Duration {
 		return defaultAppScheduleSchedulerInterval
 	}
 	d, err := time.ParseDuration(raw)
-	if err != nil {
-		logger.Warn("invalid APP_SCHEDULE_DEPLOY_SCHEDULER_INTERVAL, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+	if err != nil || d <= 0 {
+		logger.Warn("invalid APP_SCHEDULE_DEPLOY_SCHEDULER_INTERVAL, using the default", slog.String("value", raw))
 		return defaultAppScheduleSchedulerInterval
 	}
 	return d
@@ -454,8 +454,8 @@ func updateCheckInterval(logger *slog.Logger) time.Duration {
 		return defaultUpdateCheckInterval
 	}
 	d, err := time.ParseDuration(raw)
-	if err != nil {
-		logger.Warn("invalid APP_UPDATE_CHECK_INTERVAL, using the default", slog.String("value", raw), slog.String("error", err.Error()))
+	if err != nil || d <= 0 {
+		logger.Warn("invalid APP_UPDATE_CHECK_INTERVAL, using the default", slog.String("value", raw))
 		return defaultUpdateCheckInterval
 	}
 	return d

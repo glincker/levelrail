@@ -143,8 +143,8 @@ func (rt *Router) handleSetAppSchedule(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, fmt.Sprintf("invalid timezone: %s", err.Error()))
 		return
 	}
-	if sched != nil && !validNextFire(cronexpr.NextInLocation(sched, time.Now(), loc), time.Now()) {
-		writeError(w, http.StatusBadRequest, "invalid cron expression: it never matches a real date within four years")
+	if verr := validateCronIfSet(req.Cron, loc); verr != nil {
+		writeError(w, http.StatusBadRequest, "invalid cron expression: "+verr.Error())
 		return
 	}
 	enabled := true
@@ -236,4 +236,11 @@ func (rt *Router) handleListAppScheduleHistory(w http.ResponseWriter, r *http.Re
 		out = append(out, appScheduleHistoryResource{ID: e.ID, ScheduledFor: e.ScheduledFor, FiredAt: e.FiredAt, Status: e.Status, Reason: e.Reason})
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+func validateCronIfSet(expr string, loc *time.Location) error {
+	if expr == "" {
+		return nil
+	}
+	return cronexpr.Validate(expr, loc, time.Now())
 }

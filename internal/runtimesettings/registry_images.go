@@ -24,13 +24,8 @@ func pruneScheduleCheck(canonical string) error {
 	if v == ImagesPruneOff {
 		return nil
 	}
-	sched, err := cronexpr.Parse(v)
-	if err != nil {
-		return fmt.Errorf("must be %q or a cron expression such as 0 3 * * 0: %w", ImagesPruneOff, err)
-	}
-	// A date that never exists, such as 30 February, parses but never fires.
-	if sched.Next(time.Now()).IsZero() {
-		return fmt.Errorf("this schedule never matches a real date; use %q or a schedule such as 0 3 * * 0", ImagesPruneOff)
+	if err := cronexpr.Validate(v, time.UTC, time.Now()); err != nil {
+		return fmt.Errorf("must be %q or a valid cron expression such as 0 3 * * 0: %w", ImagesPruneOff, err)
 	}
 	return nil
 }

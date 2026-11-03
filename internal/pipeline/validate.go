@@ -84,7 +84,7 @@ func semanticIssues(def *Definition, root *yaml.Node) []Issue {
 		}
 	}
 	for i, s := range def.On.Schedule {
-		if _, err := cronexpr.Parse(s); err != nil {
+		if err := cronexpr.Validate(s, time.UTC, time.Now()); err != nil {
 			add(fmt.Sprintf("on.schedule.%d", i), err.Error())
 		}
 	}

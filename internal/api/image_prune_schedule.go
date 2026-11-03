@@ -62,7 +62,7 @@ func (rt *Router) imagePruneDue(ctx context.Context, last, now time.Time) bool {
 		return false
 	}
 	next := sched.Next(last)
-	return !next.IsZero() && !now.Before(next)
+	return cronexpr.Due(next, now)
 }
 
 func (rt *Router) pruneImagesOnce(ctx context.Context) {

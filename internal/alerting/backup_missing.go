@@ -86,7 +86,11 @@ func BackupOverdue(history []store.BackupHistory, schedule string, grace time.Du
 		}
 	}
 	t1 := sched.Next(anchor)
-	interval := sched.Next(t1).Sub(t1)
+	t2 := sched.Next(t1)
+	if t1.IsZero() || t2.IsZero() {
+		return false, anchor, anchorIsSuccess, fmt.Errorf("backup schedule %q never runs", schedule)
+	}
+	interval := t2.Sub(t1)
 	return now.After(anchor.Add(interval).Add(grace)), anchor, anchorIsSuccess, nil
 }
 

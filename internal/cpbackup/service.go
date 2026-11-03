@@ -82,8 +82,7 @@ func OptionsFromEnv(lookup func(string) (string, bool)) Options {
 }
 
 func validCron(expr string) bool {
-	_, err := cronexpr.Parse(expr)
-	return err == nil
+	return cronexpr.Validate(expr, time.UTC, time.Now()) == nil
 }
 
 // Bucket is the object store surface off-box backups use; *objectstore.Client satisfies it.

@@ -122,7 +122,7 @@ func nextJobRun(t store.ScheduledTask, after time.Time) *time.Time {
 		return nil
 	}
 	next := cronexpr.NextInLocation(sched, after, loc)
-	if !validNextFire(next, after) {
+	if next.IsZero() || !next.After(after) {
 		return nil
 	}
 	next = next.UTC()

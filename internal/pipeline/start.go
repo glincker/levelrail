@@ -157,11 +157,11 @@ func (s *Scheduler) Tick(ctx context.Context) error {
 				continue
 			}
 			next, known := s.next[key]
-			if !known {
+			if !known || next.IsZero() {
 				s.next[key] = sched.Next(now)
 				continue
 			}
-			if now.Before(next) {
+			if !cronexpr.Due(next, now) {
 				continue
 			}
 			s.next[key] = sched.Next(now)

@@ -35,7 +35,7 @@ func (s *Service) UpdateConfig(ctx context.Context, u ConfigUpdate) error {
 		if expr == "" {
 			continue
 		}
-		if _, err := cronexpr.Parse(expr); err != nil {
+		if err := cronexpr.Validate(expr, time.UTC, time.Now()); err != nil {
 			return fmt.Errorf("%w: cron expression %q: %w", ErrInvalid, expr, err)
 		}
 	}
@@ -139,7 +139,7 @@ func (s *Service) backupDue(cfg store.CPDRSettings, eff Effective, now time.Time
 		return false, time.Time{}
 	}
 	next := sched.Next(cfg.LastBackupAt)
-	return !now.Before(next), next
+	return cronexpr.Due(next, now), next
 }
 
 func (s *Service) drillDue(cfg store.CPDRSettings, eff Effective, now time.Time) bool {
@@ -156,5 +156,5 @@ func (s *Service) drillDue(cfg store.CPDRSettings, eff Effective, now time.Time)
 	if err != nil {
 		return false
 	}
-	return !now.Before(sched.Next(cfg.LastDrillAt))
+	return cronexpr.Due(sched.Next(cfg.LastDrillAt), now)
 }
