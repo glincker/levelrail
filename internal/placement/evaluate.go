@@ -22,7 +22,9 @@ type Evaluation struct {
 	Dimensions []Dimension `json:"dimensions"`
 	// SoftTaints counts untolerated PreferNoSchedule taints; fewer ranks first.
 	SoftTaints int `json:"untolerated_soft_taints,omitempty"`
-	binpack    bool
+	// AffinityScore sums the weights of the preferences the node satisfies.
+	AffinityScore int `json:"affinity_score,omitempty"`
+	binpack       bool
 }
 
 // Evaluate checks c against req: the structural filter first, then each
@@ -41,6 +43,12 @@ func Evaluate(c Candidate, req Request) Evaluation {
 		e.Reason = reason
 		return e
 	}
+	reason, score := checkAffinity(c, req.Affinity, req.aff)
+	if reason != "" {
+		e.Reason = reason
+		return e
+	}
+	e.AffinityScore = score
 	var short, unknown []string
 	for _, d := range e.Dimensions {
 		switch {
@@ -86,6 +94,9 @@ func betterThan(a, b Evaluation) bool {
 	}
 	if a.SoftTaints != b.SoftTaints {
 		return a.SoftTaints < b.SoftTaints
+	}
+	if a.AffinityScore != b.AffinityScore {
+		return a.AffinityScore > b.AffinityScore
 	}
 	switch {
 	case a.Headroom != nil && b.Headroom != nil && *a.Headroom != *b.Headroom:

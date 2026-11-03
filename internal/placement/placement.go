@@ -29,6 +29,9 @@ type Candidate struct {
 	Requested Resources
 	// Taints repel workloads that do not tolerate them.
 	Taints []Taint
+	// Workloads are the labels of each workload already on the node, used by
+	// affinity rules. The caller leaves out the workload being placed.
+	Workloads []map[string]string
 }
 
 // Selector is a set of key=value pairs a node's labels must all carry.
@@ -108,6 +111,9 @@ type Request struct {
 	Peers []string
 	// Tolerations let the workload land on tainted nodes.
 	Tolerations []Toleration
+	// Affinity is the workload's optional placement rules.
+	Affinity Affinity
+	aff      *affinityState
 }
 
 // Rejection says why one candidate was filtered out.
@@ -151,6 +157,11 @@ func Filter(c Candidate, req Request) string {
 	}
 	if hard, _ := untolerated(c.Taints, req.Tolerations); len(hard) > 0 {
 		return taintReason(hard)
+	}
+	for _, t := range req.Affinity.NodeRequired {
+		if !t.Matches(c.Labels) {
+			return "node affinity not met: needs label " + t.String()
+		}
 	}
 	return ""
 }
@@ -197,6 +208,7 @@ func Pinned(cands []Candidate, req Request, nodeID string) Decision {
 }
 
 func newDecision(cands []Candidate, req Request) Decision {
+	req.aff = buildAffinityState(cands, req.Affinity)
 	d := Decision{Needs: req.Needs, Policy: req.Policy.withDefaults(), Considered: make([]Evaluation, 0, len(cands))}
 	for _, c := range cands {
 		e := Evaluate(c, req)
