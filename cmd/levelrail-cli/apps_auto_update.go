@@ -39,6 +39,9 @@ func appsAutoUpdateUsage(prog string) string {
 Point your registry's push webhook (Docker Hub, Harbor, any POST) at the
 webhook URL to update on push instead of waiting for the interval.
 
+Use --window-cron and --window-minutes with enable to apply updates only inside
+a window (UTC); one found earlier waits for it. --clear-window removes it.
+
 Off by default. Enabled apps are checked on the control plane's interval
 (APP_IMAGE_UPDATE_INTERVAL, default 1h). Apps built from source, stopped,
 frozen, or in a protected environment are skipped, never forced.
@@ -47,6 +50,14 @@ frozen, or in a protected environment are skipped, never forced.
 
 func runAppsAutoUpdateVerb(prog, verb string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps auto-update "+verb, "print the result as JSON to stdout and nothing else", stderr)
+	var windowCron string
+	var windowMinutes int
+	var clearWindow bool
+	if verb == "enable" {
+		fs.StringVar(&windowCron, "window-cron", "", "cron expression (UTC) when updates may apply, e.g. '0 3 * * *'")
+		fs.IntVar(&windowMinutes, "window-minutes", 0, "how many minutes the window stays open")
+		fs.BoolVar(&clearWindow, "clear-window", false, "remove the apply window so updates apply at once")
+	}
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps auto-update %s <app-name> [flags]\n\nFlags:\n", prog, verb)
 		fs.PrintDefaults()
@@ -77,7 +88,11 @@ func runAppsAutoUpdateVerb(prog, verb string, args []string, stdout, stderr io.W
 	)
 	switch verb {
 	case "enable":
-		result, err = client.SetImageAutoUpdate(ctx, appName, true)
+		if windowCron != "" || clearWindow {
+			result, err = client.SetImageAutoUpdateWindow(ctx, appName, true, windowCron, windowMinutes)
+		} else {
+			result, err = client.SetImageAutoUpdate(ctx, appName, true)
+		}
 	case "disable":
 		result, err = client.SetImageAutoUpdate(ctx, appName, false)
 	case "check":
@@ -96,6 +111,9 @@ func printImageAutoUpdate(out io.Writer, r imageAutoUpdateResource) {
 	_, _ = fmt.Fprintf(out, "webhook:     %t\n", r.HasWebhook)
 	if r.LastCheckedAt != nil {
 		_, _ = fmt.Fprintf(out, "last check:  %s\n", r.LastCheckedAt.Format(time.RFC3339))
+	}
+	if r.WindowCron != "" {
+		_, _ = fmt.Fprintf(out, "window:      %s for %d min (UTC)\n", r.WindowCron, r.WindowMinutes)
 	}
 	if r.LastResult != "" {
 		_, _ = fmt.Fprintf(out, "result:      %s\n", r.LastResult)

@@ -20,6 +20,7 @@ type ImageAutoUpdateStore interface {
 	SetImageAutoUpdate(ctx context.Context, serviceName string, enabled bool) error
 	GetImageAutoUpdate(ctx context.Context, serviceName string) (store.ImageAutoUpdate, error)
 	RecordImageAutoUpdateCheck(ctx context.Context, serviceName, result string, at time.Time) error
+	SetImageAutoUpdateWindow(ctx context.Context, serviceName, cron string, minutes int) error
 	SetImageAutoUpdateWebhookHash(ctx context.Context, serviceName, hash string) error
 	DeleteImageAutoUpdatesForApp(ctx context.Context, serviceName string) error
 }
@@ -28,6 +29,7 @@ type ImageAutoUpdateStore interface {
 const (
 	imageUpdateUpToDate   = "up to date"
 	imageUpdateRedeployed = "redeployed with a newer image"
+	imageUpdateWaiting    = "newer image found, waiting for the update window"
 )
 
 type imageAutoUpdateResource struct {
@@ -35,14 +37,20 @@ type imageAutoUpdateResource struct {
 	LastCheckedAt *time.Time `json:"last_checked_at,omitempty"`
 	LastResult    string     `json:"last_result,omitempty"`
 	HasWebhook    bool       `json:"has_webhook"`
+	// WindowCron and WindowMinutes: updates found outside the window wait for it.
+	WindowCron    string `json:"window_cron,omitempty"`
+	WindowMinutes int    `json:"window_minutes,omitempty"`
 }
 
 type setImageAutoUpdateRequest struct {
 	Enabled bool `json:"enabled"`
+	// Window fields are left untouched when omitted; an empty cron clears the window.
+	WindowCron    *string `json:"window_cron,omitempty"`
+	WindowMinutes *int    `json:"window_minutes,omitempty"`
 }
 
 func toImageAutoUpdateResource(u store.ImageAutoUpdate) imageAutoUpdateResource {
-	return imageAutoUpdateResource{Enabled: u.Enabled, LastCheckedAt: u.LastCheckedAt, LastResult: u.LastResult, HasWebhook: u.WebhookHash != ""}
+	return imageAutoUpdateResource{Enabled: u.Enabled, LastCheckedAt: u.LastCheckedAt, LastResult: u.LastResult, HasWebhook: u.WebhookHash != "", WindowCron: u.WindowCron, WindowMinutes: u.WindowMinutes}
 }
 
 func (rt *Router) handleGetImageAutoUpdate(w http.ResponseWriter, r *http.Request) {
@@ -76,6 +84,17 @@ func (rt *Router) handleSetImageAutoUpdate(w http.ResponseWriter, r *http.Reques
 		rt.internalError(w, "api: set image auto-update: load app", err, slog.String("name", name))
 		return
 	}
+	cron, minutes, werr := resolveUpdateWindow(req)
+	if werr != nil {
+		writeError(w, http.StatusBadRequest, werr.Error())
+		return
+	}
+	if req.WindowCron != nil {
+		if err := rt.imageAutoUpdates.SetImageAutoUpdateWindow(r.Context(), name, cron, minutes); err != nil {
+			rt.internalError(w, "api: set image auto-update window", err, slog.String("name", name))
+			return
+		}
+	}
 	if err := rt.imageAutoUpdates.SetImageAutoUpdate(r.Context(), name, req.Enabled); err != nil {
 		rt.internalError(w, "api: set image auto-update", err, slog.String("name", name))
 		return
@@ -91,7 +110,7 @@ func (rt *Router) handleSetImageAutoUpdate(w http.ResponseWriter, r *http.Reques
 // handleCheckImageAutoUpdate runs one update check now, regardless of the opt-in.
 func (rt *Router) handleCheckImageAutoUpdate(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
-	result, err := rt.CheckImageUpdate(r.Context(), name)
+	result, err := rt.checkImageUpdateRecorded(r.Context(), name, true)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
@@ -116,7 +135,12 @@ func (rt *Router) handleCheckImageAutoUpdate(w http.ResponseWriter, r *http.Requ
 // built from source, stopped, frozen, or in a protected environment: an
 // unattended pull must never bypass the gates a manual deploy goes through.
 func (rt *Router) CheckImageUpdate(ctx context.Context, serviceName string) (string, error) {
-	result, err := rt.checkImageUpdate(ctx, serviceName)
+	return rt.checkImageUpdateRecorded(ctx, serviceName, false)
+}
+
+// checkImageUpdateRecorded is CheckImageUpdate; manual checks ignore the apply window.
+func (rt *Router) checkImageUpdateRecorded(ctx context.Context, serviceName string, manual bool) (string, error) {
+	result, err := rt.checkImageUpdate(ctx, serviceName, manual)
 	if err != nil {
 		if errors.Is(err, store.ErrServiceNotFound) {
 			return "", err
@@ -129,7 +153,7 @@ func (rt *Router) CheckImageUpdate(ctx context.Context, serviceName string) (str
 	return result, err
 }
 
-func (rt *Router) checkImageUpdate(ctx context.Context, serviceName string) (string, error) {
+func (rt *Router) checkImageUpdate(ctx context.Context, serviceName string, manual bool) (string, error) {
 	svc, err := rt.apps.GetDesiredService(ctx, serviceName)
 	if err != nil {
 		return "", err
@@ -148,6 +172,11 @@ func (rt *Router) checkImageUpdate(ctx context.Context, serviceName string) (str
 	}
 	if remote.Digest == "" || remote.Digest == docker.ImageDigestOf(svc.Image) {
 		return imageUpdateUpToDate, nil
+	}
+	if !manual {
+		if u, uerr := rt.imageAutoUpdates.GetImageAutoUpdate(ctx, serviceName); uerr == nil && !inUpdateWindow(u.WindowCron, u.WindowMinutes, time.Now()) {
+			return imageUpdateWaiting, nil
+		}
 	}
 	trigger.Source = store.DeployAttemptSourceImage
 	trigger.Locks = rt.deployPublishLocks()
