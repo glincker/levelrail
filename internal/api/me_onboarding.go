@@ -35,6 +35,7 @@ type meOnboardingResource struct {
 	DismissedAt   *time.Time `json:"dismissed_at"`
 	Milestone     string     `json:"milestone"`
 	NextMilestone string     `json:"next_milestone"`
+	RestoreDue    bool       `json:"restore_due"`
 }
 
 type meOnboardingRequest struct {
@@ -79,7 +80,20 @@ func (rt *Router) meOnboardingBody(r *http.Request, o store.UserOnboarding) meOn
 	}
 	g := setupguide.Derive(in)
 	out.Milestone, out.NextMilestone = string(g.Milestone), string(g.NextMilestone)
+	out.RestoreDue = rt.restoreReminderDue(r, o, in)
 	return out
+}
+
+// restoreReminderDue is true once the user is past the reminder window with a backup but no verified restore.
+func (rt *Router) restoreReminderDue(r *http.Request, o store.UserOnboarding, in setupguide.Input) bool {
+	if rt.runtimeSettings == nil || o.StartedAt == nil {
+		return false
+	}
+	days := rt.runtimeSettings.Limit(r.Context(), runtimesettings.KeyOnboardingRestoreReminderDays)
+	if days <= 0 || in.ControlPlaneBackups == 0 || in.VerifiedBackups > 0 {
+		return false
+	}
+	return time.Since(*o.StartedAt) >= time.Duration(days)*24*time.Hour
 }
 
 func (rt *Router) onboardingStoreOr501(w http.ResponseWriter) (userOnboardingStore, bool) {

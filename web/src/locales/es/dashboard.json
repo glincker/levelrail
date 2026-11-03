@@ -333,5 +333,11 @@
     "whatsNew": "Novedades",
     "update": "Actualizar",
     "dismiss": "Ocultar {{version}} hasta la próxima versión"
+  },
+  "restoreDue": {
+    "title": "Prueba una restauración",
+    "body": "Tienes una copia de seguridad, pero aún no has probado ninguna restauración. Una copia que nunca restauraste es una suposición.",
+    "action": "Probar una restauración",
+    "dismiss": "Descartar"
   }
 }

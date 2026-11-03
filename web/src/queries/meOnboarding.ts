@@ -22,6 +22,7 @@ export interface MeOnboarding {
   dismissed_at?: string | null
   milestone?: string
   next_milestone?: string
+  restore_due?: boolean
 }
 
 export interface OnboardingUpdate {

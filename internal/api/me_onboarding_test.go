@@ -3,11 +3,13 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/GLINCKER/levelrail/internal/setupguide"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -138,5 +140,38 @@ func TestMeOnboarding_AuditsWritesAndCarriesMilestone(t *testing.T) {
 		if _, ok := raw[k]; !ok {
 			t.Errorf("response lacks %q: %s", k, rec.Body.String())
 		}
+	}
+}
+
+func TestMeOnboarding_RestoreReminderDue(t *testing.T) {
+	h := newCodeHarness(t, false)
+	h.rt.runtimeSettings = runtimesettings.New(h.db, func(string) (string, bool) { return "", false })
+	r := httptest.NewRequest(http.MethodGet, "/api/v1/me/onboarding", nil)
+	old := time.Now().Add(-8 * 24 * time.Hour)
+	fresh := time.Now().Add(-2 * 24 * time.Hour)
+	withBackup := setupguide.Input{ControlPlaneBackups: 1}
+	cases := []struct {
+		name    string
+		started *time.Time
+		in      setupguide.Input
+		want    bool
+	}{
+		{"past window with unverified backup", &old, withBackup, true},
+		{"inside window", &fresh, withBackup, false},
+		{"restore verified", &old, setupguide.Input{ControlPlaneBackups: 1, VerifiedBackups: 1}, false},
+		{"no backup", &old, setupguide.Input{}, false},
+		{"never started", nil, withBackup, false},
+	}
+	for _, c := range cases {
+		if got := h.rt.restoreReminderDue(r, store.UserOnboarding{StartedAt: c.started}, c.in); got != c.want {
+			t.Errorf("%s: due = %v, want %v", c.name, got, c.want)
+		}
+	}
+	if err := h.db.SetRuntimeSetting(t.Context(), runtimesettings.KeyOnboardingRestoreReminderDays, "0", "test", time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	h.rt.runtimeSettings = runtimesettings.New(h.db, func(string) (string, bool) { return "", false })
+	if h.rt.restoreReminderDue(r, store.UserOnboarding{StartedAt: &old}, withBackup) {
+		t.Error("days=0 must turn the reminder off")
 	}
 }

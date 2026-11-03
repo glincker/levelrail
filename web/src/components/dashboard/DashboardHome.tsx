@@ -23,6 +23,7 @@ import { DashboardHero } from './DashboardHero'
 import { FleetTiles } from './FleetTiles'
 import { OnboardingCard } from '../onboarding/OnboardingCard'
 import { useOnboardingCardShown } from '../../queries/meOnboarding'
+import { RestoreDueCard } from './RestoreDueCard'
 import { FirstRunMore } from './FirstRunMore'
 import { NextSteps } from './NextSteps'
 import { RecentActivity } from './RecentActivity'
@@ -111,6 +112,7 @@ function StartView({
   return (
     <div className="flex flex-col gap-(--glinr-page-gap)">
       <OnboardingCard />
+      <RestoreDueCard />
       <StatusStrip
         apps={summary.total}
         trailing={

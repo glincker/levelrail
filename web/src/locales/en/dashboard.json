@@ -333,5 +333,11 @@
     "whatsNew": "What's new",
     "update": "Update",
     "dismiss": "Hide {{version}} until the next release"
+  },
+  "restoreDue": {
+    "title": "Test a restore",
+    "body": "You have a backup, but no restore has been tested yet. A backup you never restored is a guess.",
+    "action": "Test a restore",
+    "dismiss": "Dismiss"
   }
 }
