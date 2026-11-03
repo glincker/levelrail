@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1952 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1953 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1825,6 +1825,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/domains/batch", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDomainsBatch", Description: ""},
 	{Method: "GET", Path: "/api/v1/domains/dns-provider", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDomainDNSProvider", Description: "Not under /mail/, so the mail flag does not gate it: the Domains page uses it too."},
 	{Method: "GET", Path: "/api/v1/domains/dns-status", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDomainDNSStatus", Description: ""},
+	{Method: "GET", Path: "/api/v1/domains/export", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDomainsExport", Description: ""},
 	{Method: "POST", Path: "/api/v1/domains/move", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleMoveDomain", Description: ""},
 	{Method: "POST", Path: "/api/v1/domains/park", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleParkDomain", Description: ""},
 	{Method: "GET", Path: "/api/v1/domains/parked", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleListParkedDomains", Description: ""},

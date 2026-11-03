@@ -116,6 +116,7 @@ func (rt *Router) registerSettingsRoutes(mux *http.ServeMux) {
 	// no new ability tier: this is the same data DomainEditor already
 	// exposes per-app, aggregated across every app in one read-only call.
 	mux.HandleFunc("GET /api/v1/domains", rt.requireAbility(AbilityRead, rt.handleListDomains))
+	mux.HandleFunc("GET /api/v1/domains/export", rt.requireAbility(AbilityRead, rt.handleDomainsExport))
 
 	// Static sites (build.type: static): read-only
 	// dashboard visibility for sites served directly by embedded Caddy

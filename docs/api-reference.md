@@ -1208,6 +1208,7 @@ Endpoints for:
 | GET | /api/v1/domains/parked/retention | AbilityRead | handleParkedRetention |
 | GET | /api/v1/domains/watch | AbilityRead | handleDomainsWatch |
 | GET | /api/v1/domains/{domain}/watch | AbilityRead | handleDomainWatchSnapshot |
+| GET | /api/v1/domains/export | AbilityRead | handleDomainsExport |
 
 ## Built-in Container Registry
 

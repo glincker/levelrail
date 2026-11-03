@@ -92,6 +92,8 @@ func runDomains(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runDomainsMove(prog, args[1:], stdout, stderr, lookupEnv)
 	case "batch":
 		return runDomainsBatch(prog, args[1:], stdout, stderr, lookupEnv)
+	case "export":
+		return runDomainsExport(prog, args[1:], stdout, stderr, lookupEnv)
 	case "parked":
 		return runDomainsParked(prog, args[1:], stdout, stderr, lookupEnv)
 	case "standalone":
@@ -142,6 +144,7 @@ func domainsUsage(prog string) string {
   %[1]s domains park <app> <domain> [flags]     take a domain off an app but keep it registered
   %[1]s domains move <domain> --from A --to B   hand a domain to another app (collision check, --confirm)
   %[1]s domains parked <verb> [flags]           list, attach or delete parked domains
+  %[1]s domains export [--out FILE]             export every domain and parked domain as CSV
   %[1]s domains batch <verb> [flags] <domain>... park, move, attach or delete-parked several domains at once
   %[1]s domains standalone <verb> [flags]       proxy a domain to a port, address or URL without an app
   %[1]s domains provider <verb> [flags]       choose the free wildcard-DNS provider for automatic hostnames
