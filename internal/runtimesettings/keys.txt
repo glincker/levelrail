@@ -40,11 +40,13 @@ dns.verify_provider_on_save
 doctor.reachability_dialback_allow_private
 doctor.reachability_dialback_url
 domains.batch_max_items
+domains.canonical
 domains.dns_wait_budget
 domains.dns_watch_interval_seconds
 domains.dns_watch_max_minutes
 domains.https_attempts_per_hour
 domains.parked_retention_days
+domains.www_mode
 firewall.confirm_window
 games.status_cache
 games.status_timeout

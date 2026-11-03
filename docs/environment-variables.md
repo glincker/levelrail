@@ -71,11 +71,13 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CUTOVER_VERIFY_REQUEST_TIMEOUT` | [`cutover.verify_timeout`](/runtime-settings#networking) | `5s` |
 | `APP_DNS_VERIFY_PROVIDER_ON_SAVE` | [`dns.verify_provider_on_save`](/runtime-settings#networking) | `true` |
 | `APP_DOMAINS_BATCH_MAX_ITEMS` | [`domains.batch_max_items`](/runtime-settings#networking) | `50` |
+| `APP_DOMAINS_CANONICAL` | [`domains.canonical`](/runtime-settings#networking) | `apex` |
 | `APP_DOMAINS_DNS_WAIT_BUDGET` | [`domains.dns_wait_budget`](/runtime-settings#networking) | `10m` |
 | `APP_DOMAINS_DNS_WATCH_INTERVAL_SECONDS` | [`domains.dns_watch_interval_seconds`](/runtime-settings#networking) | `15` |
 | `APP_DOMAINS_DNS_WATCH_MAX_MINUTES` | [`domains.dns_watch_max_minutes`](/runtime-settings#networking) | `120` |
 | `APP_ACME_MAX_ATTEMPTS_PER_HOUR` | [`domains.https_attempts_per_hour`](/runtime-settings#networking) | `5` |
 | `APP_DOMAINS_PARKED_RETENTION_DAYS` | [`domains.parked_retention_days`](/runtime-settings#networking) | `0` |
+| `APP_DOMAINS_WWW_MODE` | [`domains.www_mode`](/runtime-settings#networking) | `both` |
 | `APP_GAME_STATUS_CACHE` | [`games.status_cache`](/runtime-settings#networking) | `5s` |
 | `APP_GAME_STATUS_TIMEOUT` | [`games.status_timeout`](/runtime-settings#networking) | `3s` |
 | `APP_INGRESS_CA_RETRY_BACKOFF` | [`ingress.ca_switch_retry_base`](/runtime-settings#networking) | `1m` |
