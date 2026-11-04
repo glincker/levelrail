@@ -10,4 +10,8 @@ export interface OrganizationResource {
   id: string
   name: string
   created_at: string
+  slug?: string
+  description?: string
+  avatar_url?: string
+  updated_at?: string
 }

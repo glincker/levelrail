@@ -2269,6 +2269,59 @@
     "title": "Organizations",
     "description": "Group related projects under an organization. File a project into one from the project's own detail page."
   },
+  "organizationHome": {
+    "loadFailed": "Could not load this tile.",
+    "copySlug": "Copy slug",
+    "copied": "Copied",
+    "noSlug": "No slug set",
+    "members": "Members",
+    "viewMembers": "View members",
+    "projects": "Projects",
+    "viewProjects": "View projects",
+    "environments": "Environments",
+    "pendingInvites": "Pending invites",
+    "viewInvites": "Manage invites",
+    "workloads": "Apps and databases",
+    "apps": "apps",
+    "databases": "databases",
+    "failing_one": "{{count}} failing app",
+    "failing_other": "{{count}} failing apps",
+    "activity": "Recent activity",
+    "showMore": "Show more",
+    "actions": {
+      "org_updated": "Profile updated",
+      "org_avatar_updated": "Avatar changed",
+      "org_avatar_removed": "Avatar removed",
+      "org_slug_changed": "Slug changed"
+    },
+    "profile": {
+      "title": "Profile",
+      "readOnly": "Only organization admins can edit the profile.",
+      "name": "Name",
+      "slug": "Slug",
+      "slugPlaceholder": "my-organization",
+      "slugHint": "3 to 40 lowercase letters, digits and single hyphens.",
+      "slugDefault": "The default organization cannot have a slug.",
+      "slugLength": "Use {{min}} to {{max}} characters.",
+      "slugChars": "Use lowercase letters, digits and single hyphens, not at the ends.",
+      "slugTaken": "That slug is already in use.",
+      "description": "Description",
+      "save": "Save changes",
+      "saving": "Saving...",
+      "saved": "Saved"
+    },
+    "avatar": {
+      "input": "Organization avatar file",
+      "upload": "Upload avatar",
+      "remove": "Remove avatar",
+      "hint": "PNG or JPEG, up to {{max}} KB.",
+      "badType": "Only PNG or JPEG images are accepted.",
+      "tooLarge": "The image is larger than {{max}} KB.",
+      "uploading": "Uploading avatar",
+      "removeTitle": "Remove the avatar?",
+      "removeBody": "The organization goes back to its initials."
+    }
+  },
   "agentsPage": {
     "title": "Agents",
     "description": "Connect an AI agent to this instance through MCP, and manage the tokens it uses."

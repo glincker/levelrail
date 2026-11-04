@@ -8,6 +8,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
+import { OrgAvatar } from './organizations/OrgAvatar'
 import { DeleteOrganizationDialog } from './DeleteOrganizationDialog'
 import type { OrganizationResource } from '../types/organization'
 
@@ -46,7 +47,15 @@ export function OrganizationTable({
       primary: true,
       header: 'Name',
       cell: (org) => (
-        <span className="font-medium text-foreground">{org.name}</span>
+        <span className="flex items-center gap-2 font-medium text-foreground">
+          <OrgAvatar
+            id={org.id}
+            name={org.name}
+            avatarUrl={org.avatar_url}
+            size="sm"
+          />
+          {org.name}
+        </span>
       ),
     },
     {
