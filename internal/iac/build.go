@@ -173,6 +173,8 @@ func buildOne(d *Document, opts Options, s *issueSink) *Resource {
 			s.at("metadata.name", "tag names are at most 64 characters")
 		}
 		r.Fields = map[string]any{}
+	case KindNode:
+		r.Fields = buildNode(d, s)
 	case KindDatabase:
 		var sp struct {
 			Engine  string `yaml:"engine"`

@@ -31,6 +31,8 @@ type State struct {
 	envsByID     map[string]wireEnvironment
 	tags         map[string]wireTag
 	databases    map[string]wireDatabase
+	nodes        map[string]*liveNode
+	nodeDupes    map[string]bool
 	apps         map[string]*liveApp
 	lbs          map[string]wireLB
 	pipelines    map[string]map[string]wirePipeline
@@ -66,7 +68,7 @@ func envKey(project, name string) string { return project + "/" + name }
 func newState() *State {
 	return &State{
 		projects: map[string]wireProject{}, projectsByID: map[string]wireProject{}, envs: map[string]wireEnvironment{}, envsByID: map[string]wireEnvironment{},
-		tags: map[string]wireTag{}, databases: map[string]wireDatabase{}, apps: map[string]*liveApp{}, lbs: map[string]wireLB{},
+		tags: map[string]wireTag{}, databases: map[string]wireDatabase{}, nodes: map[string]*liveNode{}, nodeDupes: map[string]bool{}, apps: map[string]*liveApp{}, lbs: map[string]wireLB{},
 		pipelines: map[string]map[string]wirePipeline{}, alerts: map[string]map[string]wireAlert{}, channels: map[string]string{},
 		projectEnv: map[string]map[string]string{}, envEnv: map[string]map[string]string{}, managed: map[string]bool{}, denied: map[string]error{}, envsLoaded: map[string]bool{},
 	}
@@ -189,6 +191,9 @@ func (l loader) base(ctx context.Context, res []*Resource) error {
 	}
 	for _, db := range dbs {
 		l.st.databases[db.Name] = db
+	}
+	if err := l.nodes(ctx, res); err != nil {
+		return err
 	}
 	for _, r := range res {
 		if r.Kind == KindAlertRule {

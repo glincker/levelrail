@@ -130,7 +130,24 @@ Prune is also guarded against mass deletes. An apply that would delete more than
 
 ## Placement rules
 
-An `App` may declare `spec.service.tolerations` and `spec.service.affinity`, with the same shape as `app.yaml`. A plan compares them with the stored rules of the app, and an apply saves them through the app update. A member the document leaves out is not managed and keeps its stored value. An empty `tolerations: []` or `affinity: {}` clears the stored rules. `export` writes both members, so an exported file plans clean against the app it came from. Node taints and labels are not part of a stack yet.
+An `App` may declare `spec.service.tolerations` and `spec.service.affinity`, with the same shape as `app.yaml`. A plan compares them with the stored rules of the app, and an apply saves them through the app update. A member the document leaves out is not managed and keeps its stored value. An empty `tolerations: []` or `affinity: {}` clears the stored rules. `export` writes both members, so an exported file plans clean against the app it came from.
+
+## Node labels and taints
+
+A `Node` document sets the labels and taints of a node that already joined, found by its display name:
+
+```yaml
+version: 1
+kind: Node
+metadata:
+  name: worker-1
+spec:
+  labels: { zone: a }
+  taints:
+    - { key: gpu, value: "true", effect: NoSchedule }
+```
+
+The plan compares them with the stored ones and apply saves them through the node routes, which need a root token. A member the document leaves out is not managed; `taints: []` or `labels: {}` clears the stored set. A Node whose name matches no node, or more than one, is a plan error. Apply never creates, deletes or prunes a node, and removing the document leaves the node as it is. Nodes join through an enrollment token, and `export` does not write them yet. Database placement is not part of a stack, because the database API stores only a node selector.
 
 ## Revisions
 

@@ -66,6 +66,11 @@ type wireTag struct {
 	Name string `json:"name"`
 }
 
+type wireNode struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
 type wireDatabase struct {
 	Name      string `json:"name"`
 	Engine    string `json:"engine"`

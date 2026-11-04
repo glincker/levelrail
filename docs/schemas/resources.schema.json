@@ -1096,6 +1096,51 @@
       ],
       "type": "object"
     },
+    "nodeSpec": {
+      "additionalProperties": false,
+      "description": "Labels and taints of a node that already joined. Apply never creates, removes or prunes a node. A member left out is not managed; an empty one clears the stored set.",
+      "properties": {
+        "labels": {
+          "additionalProperties": {
+            "maxLength": 63,
+            "type": "string"
+          },
+          "maxProperties": 32,
+          "type": "object"
+        },
+        "taints": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "effect": {
+                "enum": [
+                  "NoSchedule",
+                  "PreferNoSchedule",
+                  "NoExecute"
+                ]
+              },
+              "key": {
+                "maxLength": 63,
+                "minLength": 1,
+                "type": "string"
+              },
+              "value": {
+                "maxLength": 63,
+                "type": "string"
+              }
+            },
+            "required": [
+              "key",
+              "effect"
+            ],
+            "type": "object"
+          },
+          "maxItems": 32,
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
     "pipelineSpec": {
       "additionalProperties": false,
       "properties": {
@@ -1838,6 +1883,25 @@
       "if": {
         "properties": {
           "kind": {
+            "const": "Node"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "spec": {
+            "$ref": "#/$defs/nodeSpec"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
             "const": "Database"
           }
         },
@@ -1974,6 +2038,7 @@
         "Project",
         "Environment",
         "Tag",
+        "Node",
         "Database",
         "App",
         "Domain",

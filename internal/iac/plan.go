@@ -172,6 +172,8 @@ func (p *planner) planResource(r *Resource) {
 		p.planEnvironment(r)
 	case KindTag:
 		p.planTag(r)
+	case KindNode:
+		p.planNode(r)
 	case KindDatabase:
 		p.planDatabase(r)
 	case KindApp:

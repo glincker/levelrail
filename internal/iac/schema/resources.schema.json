@@ -7,7 +7,7 @@
   "required": ["version", "kind", "metadata"],
   "properties": {
     "version": { "const": 1 },
-    "kind": { "enum": ["Project", "Environment", "Tag", "Database", "App", "Domain", "LoadBalancer", "Pipeline", "AlertRule"] },
+    "kind": { "enum": ["Project", "Environment", "Tag", "Node", "Database", "App", "Domain", "LoadBalancer", "Pipeline", "AlertRule"] },
     "metadata": { "$ref": "#/$defs/metadata" },
     "spec": { "type": "object" }
   },
@@ -16,6 +16,7 @@
     { "if": { "properties": { "kind": { "const": "Project" } }, "required": ["kind"] }, "then": { "properties": { "spec": { "$ref": "#/$defs/projectSpec" } } } },
     { "if": { "properties": { "kind": { "const": "Environment" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/environmentSpec" } } } },
     { "if": { "properties": { "kind": { "const": "Tag" } }, "required": ["kind"] }, "then": { "properties": { "spec": { "type": "object", "additionalProperties": false } } } },
+    { "if": { "properties": { "kind": { "const": "Node" } }, "required": ["kind"] }, "then": { "properties": { "spec": { "$ref": "#/$defs/nodeSpec" } } } },
     { "if": { "properties": { "kind": { "const": "Database" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/databaseSpec" } } } },
     { "if": { "properties": { "kind": { "const": "App" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/appSpec" } } } },
     { "if": { "properties": { "kind": { "const": "Domain" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/domainSpec" } } } },
@@ -81,6 +82,28 @@
         "environment": { "description": "Name of the environment the app deploys to.", "type": "string", "minLength": 1 },
         "tags": { "description": "Tags attached to the app.", "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 64 } },
         "service": { "description": "The service definition, same fields as an app.yaml service.", "$ref": "#/$defs/service" }
+      }
+    },
+    "nodeSpec": {
+      "description": "Labels and taints of a node that already joined. Apply never creates, removes or prunes a node. A member left out is not managed; an empty one clears the stored set.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "labels": { "type": "object", "maxProperties": 32, "additionalProperties": { "type": "string", "maxLength": 63 } },
+        "taints": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "type": "object",
+            "required": ["key", "effect"],
+            "additionalProperties": false,
+            "properties": {
+              "key": { "type": "string", "minLength": 1, "maxLength": 63 },
+              "value": { "type": "string", "maxLength": 63 },
+              "effect": { "enum": ["NoSchedule", "PreferNoSchedule", "NoExecute"] }
+            }
+          }
+        }
       }
     },
     "domainSpec": {
