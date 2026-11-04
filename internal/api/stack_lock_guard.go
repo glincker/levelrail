@@ -20,7 +20,20 @@ const (
 	auditStackLockOverride  = "stack.lock_override"
 	headerOverrideStackLock = "X-Levelrail-Override-Stack-Lock"
 	stackDriftLock          = "lock"
+
+	errCodeStackLockUnavailable = "stack_lock_unavailable"
 )
+
+// failsClosed reports whether a ledger read error must refuse the request.
+// Apps keep failing open so a broken read never freezes every deploy.
+func failsClosed(ts []lockTarget) bool {
+	for _, t := range ts {
+		if t.kind == iac.KindSetting {
+			return true
+		}
+	}
+	return false
+}
 
 // lockSafeVerbs are the last path segments of POST routes that run or inspect
 // without changing declared configuration. Everything else on a locked
@@ -41,7 +54,7 @@ type lockTarget struct {
 	kind iac.Kind
 	// id is a project or environment id that must be resolved to a ledger name.
 	id string
-	// name is the ledger name for apps, databases and domains.
+	// name is the ledger name for apps, databases, domains and settings.
 	name string
 }
 
@@ -108,6 +121,11 @@ func lockTargetsOf(method, path string) ([]lockTarget, bool) {
 		// failure routes stay operational.
 		if len(segs) == 3 && (segs[2] == "labels" || segs[2] == "taints") {
 			return []lockTarget{{kind: iac.KindNode, id: segs[1]}}, true
+		}
+	case "settings":
+		// Only writes to one runtime key; apply and onboarding stay open.
+		if len(segs) == 3 && segs[1] == "runtime" && (method == http.MethodPut || method == http.MethodDelete) {
+			return []lockTarget{{kind: iac.KindSetting, name: segs[2]}}, true
 		}
 	}
 	return nil, false
@@ -209,6 +227,13 @@ func (rt *Router) stackLockMiddleware(next http.Handler) http.Handler {
 			return
 		}
 		stack, key, locked, err := lockedBy(r.Context(), db, ts)
+		if err != nil && failsClosed(ts) {
+			// Settings hold security knobs, so a broken ledger read refuses the write.
+			rt.logger.Warn("api: stack lock lookup failed, refusing setting write", slog.String("error", err.Error()), slog.String("route", r.Method+" "+r.URL.Path))
+			writeCodedError(w, http.StatusServiceUnavailable, errCodeStackLockUnavailable,
+				"could not check whether a stack owns this setting; retry shortly")
+			return
+		}
 		if err != nil {
 			// Fail open: a broken ledger read must not freeze every edit.
 			rt.logger.Warn("api: stack lock lookup failed, allowing request", slog.String("error", err.Error()), slog.String("route", r.Method+" "+r.URL.Path))
