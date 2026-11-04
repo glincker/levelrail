@@ -156,6 +156,7 @@ func TestStackDrift_ReadGrantIsNarrow(t *testing.T) {
 	}{
 		{"listed get", req(http.MethodGet, "GET /api/v1/nodes/{id}/taints", "tok-1"), "tok-1", true},
 		{"listed put", req(http.MethodPut, "PUT /api/v1/nodes/{id}/taints", "tok-1"), "tok-1", false},
+		{"stack verb get outside drift allowlist", req(http.MethodGet, "GET /api/v1/nodes/placement-simulation", "tok-1"), "tok-1", false},
 		{"unlisted get", req(http.MethodGet, "GET /api/v1/auth/tokens", "tok-1"), "tok-1", false},
 		{"no marker", req(http.MethodGet, "GET /api/v1/nodes", ""), "tok-1", false},
 		{"other token", req(http.MethodGet, "GET /api/v1/nodes", "tok-1"), "tok-2", false},

@@ -152,6 +152,16 @@ func (d driftDoer) Do(ctx context.Context, method, path string, body, out any) e
 	return d.inner.Do(context.WithValue(ctx, driftReadKey{}, d.tokenID), method, path, body, out)
 }
 
+// driftReadPatterns is the exact GET set the drift token may read. It is kept
+// apart from stackVerbPatterns so a new sensitive GET there never widens it.
+var driftReadPatterns = map[string]bool{
+	"GET /api/v1/nodes":                  true,
+	"GET /api/v1/nodes/{id}/labels":      true,
+	"GET /api/v1/nodes/{id}/taints":      true,
+	"GET /api/v1/settings/runtime":       true,
+	"GET /api/v1/settings/runtime/{key}": true,
+}
+
 // driftReadGranted lets the in-process drift token read the root-only node and
 // setting routes an install stack may own, so a hand edit there shows as drift.
 // GETs only; a context value never arrives over the wire.
@@ -160,7 +170,7 @@ func (rt *Router) driftReadGranted(r *http.Request, tokenID string) bool {
 	if id == "" || id != tokenID || r.Method != http.MethodGet || !strings.HasPrefix(r.Pattern, http.MethodGet+" ") {
 		return false
 	}
-	if _, listed := stackVerbPatterns[r.Pattern]; !listed {
+	if !driftReadPatterns[r.Pattern] {
 		return false
 	}
 	rt.stackDrift.mu.Lock()
