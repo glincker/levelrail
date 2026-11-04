@@ -107,6 +107,12 @@ type Service struct {
 	Tolerations []placement.Toleration `yaml:"tolerations,omitempty"`
 	Affinity    *placement.Affinity    `yaml:"affinity,omitempty"`
 
+	// Workload, PerNode and Ordered are reserved, not yet scheduled: they
+	// validate but the reconciler does not read them yet.
+	Workload string   `yaml:"workload,omitempty"`
+	PerNode  *PerNode `yaml:"perNode,omitempty"`
+	Ordered  *Ordered `yaml:"ordered,omitempty"`
+
 	// LoadBalancer configures balancing across this service's replicas
 	// (internal/loadbalancer). Nil keeps the plain single-upstream route.
 	LoadBalancer *loadbalancer.Config `yaml:"loadbalancer,omitempty"`

@@ -1566,6 +1566,46 @@
           "$ref": "#/$defs/loadbalancer",
           "description": "Load balancing, health and timeout settings across replicas."
         },
+        "ordered": {
+          "additionalProperties": false,
+          "description": "Reserved, not yet scheduled. Settings for workload: ordered.",
+          "properties": {
+            "partition": {
+              "description": "Ordinals below this keep the old release on update.",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "replicas": {
+              "description": "Number of ordinals.",
+              "minimum": 1,
+              "type": "integer"
+            },
+            "start": {
+              "default": "sequential",
+              "description": "Start ordinals one at a time or all together.",
+              "enum": [
+                "sequential",
+                "parallel"
+              ]
+            }
+          },
+          "type": "object"
+        },
+        "perNode": {
+          "additionalProperties": false,
+          "description": "Reserved, not yet scheduled. Settings for workload: per-node.",
+          "properties": {
+            "onDrain": {
+              "default": "keep",
+              "description": "What a node drain does to the instance: keep or evict.",
+              "enum": [
+                "keep",
+                "evict"
+              ]
+            }
+          },
+          "type": "object"
+        },
         "port": {
           "description": "Container port the service listens on.",
           "maximum": 65535,
@@ -1658,6 +1698,15 @@
             "$ref": "#/$defs/volume"
           },
           "type": "array"
+        },
+        "workload": {
+          "default": "replicated",
+          "description": "Reserved, not yet scheduled. Workload kind: replicated, per-node or ordered.",
+          "enum": [
+            "replicated",
+            "per-node",
+            "ordered"
+          ]
         }
       },
       "type": "object"

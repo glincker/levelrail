@@ -62,6 +62,25 @@
         "strategy": { "description": "Deploy strategy. Canary promotes through blue-green once the canary passes.", "default": "blue-green", "enum": ["rolling", "recreate", "blue-green", "canary"] },
         "canary": { "description": "Canary stages and abort thresholds, used when strategy is canary.", "$ref": "#/$defs/canary" },
         "rollout": { "description": "Surge and availability limits for a rolling deploy.", "$ref": "#/$defs/rollout" },
+        "workload": { "description": "Reserved, not yet scheduled. Workload kind: replicated, per-node or ordered.", "default": "replicated", "enum": ["replicated", "per-node", "ordered"] },
+        "perNode": {
+          "description": "Reserved, not yet scheduled. Settings for workload: per-node.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "onDrain": { "description": "What a node drain does to the instance: keep or evict.", "default": "keep", "enum": ["keep", "evict"] }
+          }
+        },
+        "ordered": {
+          "description": "Reserved, not yet scheduled. Settings for workload: ordered.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "replicas": { "description": "Number of ordinals.", "type": "integer", "minimum": 1 },
+            "start": { "description": "Start ordinals one at a time or all together.", "default": "sequential", "enum": ["sequential", "parallel"] },
+            "partition": { "description": "Ordinals below this keep the old release on update.", "type": "integer", "minimum": 0 }
+          }
+        },
         "contexts": {
           "description": "Per-context overrides for deploy previews and branch deploys.",
           "type": "object",
