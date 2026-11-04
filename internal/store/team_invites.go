@@ -177,12 +177,47 @@ func (db *DB) GetAPITokenScope(ctx context.Context, tokenID string) (*APITokenSc
 	return &s, nil
 }
 
-// Stack token verbs. Destroy, unlock and settings are deliberately absent:
-// those stay with a human admin.
+// Stack token verbs. Destroy, unlock and stack settings are deliberately
+// absent: those stay with a human admin. Node, setting and placement each
+// imply apply and are bounded further by the stack's scope.
 const (
-	StackVerbPlan  = "plan"
-	StackVerbApply = "apply"
+	StackVerbPlan      = "plan"
+	StackVerbApply     = "apply"
+	StackVerbNode      = "node"
+	StackVerbSetting   = "setting"
+	StackVerbPlacement = "placement"
 )
+
+// StackVerbScope names the stack scope a verb is limited to, or "" when it
+// fits both project and install stacks.
+func StackVerbScope(verb string) string {
+	switch verb {
+	case StackVerbNode, StackVerbSetting:
+		return StackScopeInstall
+	case StackVerbPlacement:
+		return StackScopeProject
+	}
+	return ""
+}
+
+// StackVerbImpliesApply reports whether holding verb lets a token apply.
+func StackVerbImpliesApply(verb string) bool {
+	return verb == StackVerbApply || verb == StackVerbNode || verb == StackVerbSetting || verb == StackVerbPlacement
+}
+
+// StackVerbsFitScope reports whether every verb may be granted on a stack of
+// this scope; an empty scope reads as project.
+func StackVerbsFitScope(verbs []string, scope string) bool {
+	if scope == "" {
+		scope = StackScopeProject
+	}
+	for _, v := range verbs {
+		if want := StackVerbScope(v); want != "" && want != scope {
+			return false
+		}
+	}
+	return true
+}
 
 // ErrInvalidStackScope rejects a stack scope without a stack or with an unknown verb.
 var ErrInvalidStackScope = errors.New("store: invalid token stack scope")
@@ -204,13 +239,23 @@ func (s APITokenStackScope) Has(verb string) bool {
 	return false
 }
 
-// ValidStackVerbs reports whether verbs is a non-empty set of plan and apply.
+// CanApply reports whether the scope holds apply or a verb that implies it.
+func (s APITokenStackScope) CanApply() bool {
+	for _, v := range s.Verbs {
+		if StackVerbImpliesApply(v) {
+			return true
+		}
+	}
+	return false
+}
+
+// ValidStackVerbs reports whether verbs is a non-empty set of known verbs.
 func ValidStackVerbs(verbs []string) bool {
 	if len(verbs) == 0 {
 		return false
 	}
 	for _, v := range verbs {
-		if v != StackVerbPlan && v != StackVerbApply {
+		if v != StackVerbPlan && !StackVerbImpliesApply(v) {
 			return false
 		}
 	}

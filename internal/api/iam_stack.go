@@ -57,8 +57,35 @@ func (rt *Router) stackGateDB() stackGateStore {
 // stackVerbAbilities is the most a stack token may hold per verb; write is
 // what apply and rollback need, and nothing sensitive is ever granted.
 var stackVerbAbilities = map[string][]string{
-	store.StackVerbPlan:  {AbilityRead},
-	store.StackVerbApply: {AbilityRead, AbilityWrite},
+	store.StackVerbPlan:      {AbilityRead},
+	store.StackVerbApply:     {AbilityRead, AbilityWrite},
+	store.StackVerbNode:      {AbilityRead, AbilityWrite},
+	store.StackVerbSetting:   {AbilityRead, AbilityWrite},
+	store.StackVerbPlacement: {AbilityRead, AbilityWrite},
+}
+
+const msgStackVerbsAllowed = "stack_verbs may only hold plan, apply, node, setting and placement"
+
+// stackVerbsNeed is the ability the minter must hold on the stack: the narrow
+// verbs reach root-only routes, so only a root principal may grant them.
+func stackVerbsNeed(verbs []string) string {
+	need := AbilityRead
+	for _, v := range verbs {
+		switch {
+		case v == store.StackVerbApply && need == AbilityRead:
+			need = AbilityWrite
+		case v != store.StackVerbPlan && v != store.StackVerbApply:
+			return AbilityRoot
+		}
+	}
+	return need
+}
+
+func stackVerbsScopeMessage(scope string) string {
+	if scope == store.StackScopeInstall {
+		return "an install stack takes plan, apply, node and setting; placement is for project stacks"
+	}
+	return "node and setting are for install stacks only"
 }
 
 const msgStackTokenDenied = "this token is scoped to one stack and cannot call this endpoint"
@@ -78,17 +105,14 @@ func (rt *Router) resolveTokenStackScope(w http.ResponseWriter, r *http.Request,
 		verbs = []string{store.StackVerbPlan}
 	}
 	if !store.ValidStackVerbs(verbs) {
-		writeError(w, http.StatusBadRequest, "stack_verbs may only hold plan and apply")
+		writeError(w, http.StatusBadRequest, msgStackVerbsAllowed)
 		return nil, false
 	}
 	allowed := map[string]bool{}
-	need := AbilityRead
+	need := stackVerbsNeed(verbs)
 	for _, v := range verbs {
 		for _, a := range stackVerbAbilities[v] {
 			allowed[a] = true
-		}
-		if v == store.StackVerbApply {
-			need = AbilityWrite
 		}
 	}
 	for _, a := range req.Abilities {
@@ -110,6 +134,10 @@ func (rt *Router) resolveTokenStackScope(w http.ResponseWriter, r *http.Request,
 	}
 	if err != nil {
 		rt.internalError(w, "api: create token: stack scope", err)
+		return nil, false
+	}
+	if !store.StackVerbsFitScope(verbs, stack.Scope) {
+		writeError(w, http.StatusBadRequest, stackVerbsScopeMessage(stack.Scope))
 		return nil, false
 	}
 	if ok, err := rt.userMayOnStack(r, ownerID, need, stack.Name); err != nil {
@@ -278,7 +306,7 @@ func stackRouteAllowed(r *http.Request, sc store.APITokenStackScope, stack store
 	if !listed || r.PathValue("name") != stack.Name {
 		return false, r, nil
 	}
-	if verb != "" && !sc.Has(verb) {
+	if verb == store.StackVerbApply && !sc.CanApply() || verb == store.StackVerbPlan && !sc.Has(verb) {
 		return false, r, nil
 	}
 	if verb != store.StackVerbApply {
@@ -356,6 +384,13 @@ var stackWritePatterns = map[string]string{
 // stackSubRequestAllowed decides a loopback sub-request. Reads are allowed in
 // plan and apply; writes only while the stack handler has set its apply scope.
 func (rt *Router) stackSubRequestAllowed(r *http.Request, db stackGateStore, stack store.StackRecord, call *stackTokenCall) (bool, *http.Request, error) {
+	if verb, listed := stackVerbPatterns[r.Pattern]; listed {
+		ok, r2, err := rt.stackVerbSubRequestAllowed(r, db, stack, call, verb)
+		if ok && err == nil {
+			r2 = r2.WithContext(context.WithValue(r2.Context(), stackVerbGrantKey{}, r.Pattern))
+		}
+		return ok, r2, err
+	}
 	method, path, _ := strings.Cut(r.Pattern, " ")
 	if method == http.MethodGet {
 		target, listed := stackReadPatterns[path]
@@ -390,6 +425,9 @@ func (rt *Router) stackSubRequestAllowed(r *http.Request, db stackGateStore, sta
 			return false, r, nil
 		}
 		ok, err := notForeign(r.Context(), db, stack, string(iac.KindApp), name)
+		if ok && err == nil {
+			call.markCreated(ledgerKeyOf(iac.KindApp, name))
+		}
 		return ok, r, err
 	case "database-create":
 		name := bodyString(body, "name")

@@ -72,6 +72,7 @@ ingress.trusted_proxy_preset
 monitors.raw_retention
 nextjs.generate_actions_key
 nextjs.memory_floor_mb
+nodes.protected_taint_keys
 onboarding.enabled
 onboarding.restore_reminder_days
 pipelines.oidc_listen_port

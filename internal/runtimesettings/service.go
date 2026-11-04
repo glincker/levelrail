@@ -434,6 +434,9 @@ func weaker(d Definition, base, next string) bool {
 		}
 		return shorterDays(base, next)
 	case KindStringList:
+		if d.RemovalIsWeaker {
+			return listDropsItem(listOf(base), listOf(next))
+		}
 		old := listOf(base)
 		if len(old) == 0 {
 			return false

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -443,7 +444,12 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 		if r, stackOK = rt.gateStackToken(w, r, rec.ID); !stackOK {
 			return
 		}
-		allowed, err := decide(r.Context(), store.PrincipalTypeToken, rec.ID, rec.Abilities)
+		abilities := rec.Abilities
+		if stackVerbGranted(r) {
+			// The stack gate already bounded this one root route to the token's own stack.
+			abilities = append(slices.Clone(abilities), AbilityRoot)
+		}
+		allowed, err := decide(r.Context(), store.PrincipalTypeToken, rec.ID, abilities)
 		if err != nil {
 			rt.internalError(w, "api: token ability decision failed", err)
 			return

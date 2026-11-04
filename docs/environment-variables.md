@@ -55,6 +55,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_DESKTOP_SESSION_TTL` | [`desktop.session_ttl`](/runtime-settings#security) | `12h` |
 | `APP_FIREWALL_CONFIRM_WINDOW` | [`firewall.confirm_window`](/runtime-settings#security) | `60s` |
 | `APP_MCP_DEFAULT_TOKEN_SCOPE` | [`mcp.default_token_scope`](/runtime-settings#security) | `read_only` |
+| `APP_NODES_PROTECTED_TAINT_KEYS` | [`nodes.protected_taint_keys`](/runtime-settings#security) | empty |
 | `APP_AUDIT_SENSITIVE_READS` | [`security.audit_sensitive_reads`](/runtime-settings#security) | `true` |
 | `APP_BIND_ALLOWED_ROOTS` | [`security.bind_allowed_roots`](/runtime-settings#security) | empty |
 | `APP_BIND_BLOCK_CREDENTIAL_DIRS` | [`security.bind_block_credential_dirs`](/runtime-settings#security) | `true` |

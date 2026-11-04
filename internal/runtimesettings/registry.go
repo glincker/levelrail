@@ -121,6 +121,8 @@ type Definition struct {
 	HigherIsWeaker bool
 	// StrengthOrder lists a string setting's allowed values from weakest to strongest, so WeakensTo can tell a downgrade.
 	StrengthOrder []string
+	// RemovalIsWeaker marks a string_list of protections, where dropping an entry weakens and adding one does not.
+	RemovalIsWeaker bool
 }
 
 var (

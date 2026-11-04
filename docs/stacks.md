@@ -228,6 +228,18 @@ A stack-scoped token can reach only that stack's endpoints. During an apply it c
 
 Store each token as a CI secret, and give the apply token only to the protected branch and environment that deploys.
 
+### Narrow verbs
+
+Three more verbs each imply `apply` and must be granted by a root user:
+
+| Verb | Stack scope | What it adds |
+| --- | --- | --- |
+| `node` | install only | Read nodes, and set labels and taints on nodes this stack already owns. |
+| `setting` | install only | Read runtime settings, and set keys no other stack owns. |
+| `placement` | project only | Read and set placement of apps and databases this stack owns. |
+
+Granting a verb on the wrong scope is refused with 400, for tokens and for OIDC trusts alike. A trust mints these verbs only when it lists them, and it is held to the same rules as an apply trust. A stack token can never weaken anything: no `confirm_weakening`, no reset, no sensitive key, no adopting a node. Taint keys listed in the runtime setting `nodes.protected_taint_keys` (seeded by `APP_NODES_PROTECTED_TAINT_KEYS`, empty by default) are protected: a token cannot remove one, change its value or loosen its effect. Shortening that list is itself weakening.
+
 ## Values per environment
 
 `levelrail-cli apply --values values/prod.yaml` (also `stack plan` and `stack apply`) reads a flat YAML map (`IMAGE_TAG: v1.4.2`) and fills the matching <span v-pre>`${{ env.NAME }}`</span> placeholders. Repeat the flag and the later file wins. Precedence is `--var`, then `--values`, then `--var-file`, then names allowed with `--allow-env`. Only scalar values are accepted, and only placeholders the manifests use are read. Keys that look like credentials (`*TOKEN*`, `*SECRET*`, `*_KEY*`) are refused, so use `--secret` for those; values are never printed. A missing value fails before anything is sent and names the placeholder.
