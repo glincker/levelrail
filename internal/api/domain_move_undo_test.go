@@ -108,4 +108,9 @@ func TestMoveRollbackRefusedWhenTargetChanged(t *testing.T) {
 	if slices.Contains(domainsOf(t, db, "web"), "a.example.com") {
 		t.Fatal("rollback moved the domain although the target no longer served it")
 	}
+	var after []domainChange
+	changesCall(t, rt, cookie, http.MethodGet, base, &after)
+	if after[0].AlreadyUndone || !after[0].CanRollback {
+		t.Fatalf("refused move rollback consumed the change: %+v", after[0])
+	}
 }

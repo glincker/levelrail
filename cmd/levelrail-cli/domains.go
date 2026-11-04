@@ -151,7 +151,7 @@ func domainsUsage(prog string) string {
   %[1]s domains go-live <app> <domain> [flags]  create the DNS record and watch the domain go live
   %[1]s domains go-live runs|undo [flags]       automation history and one-step undo
   %[1]s domains changes <domain> [--json]       recent changes and whether each can be rolled back
-  %[1]s domains rollback <domain> <run-id> [--yes] [--json]  undo one change inside the window
+  %[1]s domains rollback <domain> <run-id> [--yes] [--json]  undo one DNS change or domain move inside the window
   %[1]s domains backfill-base-domain [flags]    give existing apps without a domain <app>.<base domain>
   %[1]s domains park <app> <domain> [flags]     take a domain off an app but keep it registered
   %[1]s domains move <domain> --from A --to B   hand a domain to another app (collision check, --confirm)

@@ -202,6 +202,7 @@ func (rt *Router) handleRollbackDomainChange(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	resp := rollbackResponse{RunID: run.ID, Domain: domain, Outcomes: []rollbackOutcome{}}
+	moveRefused := false
 	for i := len(undo) - 1; i >= 0; i-- {
 		if undo[i].Kind == undoKindDNSRecord {
 			if msg, changed := rt.recordChangedSince(r, undo[i]); changed {
@@ -213,11 +214,18 @@ func (rt *Router) handleRollbackDomainChange(w http.ResponseWriter, r *http.Requ
 		if err != nil {
 			rt.logger.Warn("api: rollback action failed", slog.String("error", err.Error()), slog.String("domain", undo[i].Domain), slog.String("kind", undo[i].Kind))
 			resp.Outcomes = append(resp.Outcomes, rollbackOutcome{Status: rollbackSkipped, Label: label, Message: "could not be reverted"})
+			moveRefused = moveRefused || undo[i].Kind == undoKindMoveDomain
 			continue
 		}
 		resp.Outcomes = append(resp.Outcomes, rollbackOutcome{Status: rollbackReverted, Label: label})
 	}
 	resp.UndoneAt = time.Now()
+	if moveRefused {
+		// Nothing moved, so the change stays rollbackable once the conflict is cleared.
+		rt.nudgeReconciler()
+		writeJSON(w, http.StatusOK, resp)
+		return
+	}
 	if err := st.MarkDomainAutomationRunUndone(r.Context(), run.ID, resp.UndoneAt); err != nil {
 		rt.logger.Warn("api: mark change rolled back failed", slog.String("error", err.Error()), slog.String("run", run.ID))
 	}
