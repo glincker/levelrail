@@ -1,0 +1,5 @@
+version: 1
+kind: Setting
+metadata: {name: api.rate_limit_read_rpm}
+spec:
+  value: 400

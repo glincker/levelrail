@@ -47,5 +47,20 @@ lab_api() {
 
 # lab_cli ARGS: the real CLI against the lab control plane.
 lab_cli() {
-	LEVELRAIL_API_URL="$LAB_URL" LEVELRAIL_TOKEN="$(lab_token)" "$LAB_DIR/bin/levelrail-cli" "$@"
+	HOME="$LAB_DIR/home" LEVELRAIL_API_URL="$LAB_URL" LEVELRAIL_TOKEN="$(lab_token)" "$LAB_DIR/bin/levelrail-cli" "$@"
+}
+
+# lab_login: signs in as the dev-mode admin (a human root session) into a cookie jar.
+lab_login() {
+	LAB_JAR="$LAB_DIR/session.jar"
+	rm -f "$LAB_JAR"
+	curl -fsS -o /dev/null -c "$LAB_JAR" -X POST -H "Content-Type: application/json" \
+		--data '{"username":"dev","password":"dev"}' "$LAB_URL/api/v1/auth/login"
+}
+
+# lab_sess METHOD PATH [JSON] [HEADER]: like lab_api but as the human session.
+lab_sess() {
+	local method="$1" path="$2" body="${3:-}" hdr="${4:-X-Lab: 1}"
+	curl -sS -X "$method" -b "$LAB_JAR" -H "$hdr" -H "Content-Type: application/json" -H "Origin: $LAB_URL" \
+		-w '\n%{http_code}' ${body:+--data "$body"} "$LAB_URL$path"
 }

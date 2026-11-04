@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 # Scheduler checks against the running lab (tier 1, store-seeded nodes, no agents).
 # Everything goes through the real CLI and REST API. Exits non-zero and names each failed check.
-#   test/lab/up.sh && test/lab/check.sh
+#   test/lab/up.sh && test/lab/check.sh [--tier 1]
+# --tier 1 adds the install stack group (needs the dev-mode admin and a fast drift checker, see up.sh).
 set -uo pipefail
+tier=0
+[ "${1:-}" = "--tier" ] && tier="${2:-0}"
 # shellcheck source=lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 export APP_EXPERIMENTAL=iac
@@ -90,6 +93,13 @@ if [ "$status" = 410 ]; then
 	record watch-410-after-restart PASS "rv $rv -> 410"
 else
 	record watch-410-after-restart FAIL "rv $rv -> $status"
+fi
+
+# 6. Install stack checks (opt in with --tier 1).
+if [ "$tier" = 1 ]; then
+	# shellcheck source=install.sh
+	. "$(dirname "${BASH_SOURCE[0]}")/install.sh"
+	install_checks
 fi
 
 echo

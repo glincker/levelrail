@@ -13,7 +13,7 @@ if [ -n "$(lab_listening "$LAB_PORT")" ]; then
 	exit 1
 fi
 
-mkdir -p "$LAB_DIR/bin" "$LAB_DIR/data"
+mkdir -p "$LAB_DIR/bin" "$LAB_DIR/data" "$LAB_DIR/home"
 touch "$LAB_DIR/.lab"
 cd "$lab_root"
 go build -buildvcs=false -o "$LAB_DIR/bin/levelrail" ./cmd/levelrail
@@ -35,6 +35,7 @@ fi
 		APP_DATA_DIR="$LAB_DIR/data" APP_HTTP_ADDR="127.0.0.1:$LAB_PORT" APP_AGENT_ADDR="127.0.0.1:0" \
 		APP_INGRESS_HTTP_ADDR="127.0.0.1:0" APP_INGRESS_HTTPS_ADDR="127.0.0.1:0" \
 		APP_NODE_HEARTBEAT_TIMEOUT="${LAB_HEARTBEAT_TIMEOUT:-8760h}" \
+		APP_AUTH_NEW_DEVICE_APPROVAL=false APP_STACK_DRIFT_INTERVAL="${LAB_DRIFT_INTERVAL:-3s}" \
 		APP_WATCH_POLL_INTERVAL="${LAB_WATCH_POLL_INTERVAL:-200ms}" \
 		nohup "$LAB_DIR/bin/levelrail" >"$LAB_DIR/server.log" 2>&1 &
 	echo $! >"$LAB_DIR/pid"

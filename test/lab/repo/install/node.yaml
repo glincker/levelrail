@@ -1,0 +1,6 @@
+version: 1
+kind: Node
+metadata: {name: lab-node-3}
+spec:
+  taints:
+    - {key: lab-install, value: "1", effect: NoSchedule}
