@@ -558,7 +558,7 @@ spec:
 
 An install stack owns only Node and Setting documents and has no project. A project stack that holds either kind gets a warning.
 
-- **Creating it needs a human root session.** The API refuses a token for install scope. `levelrail-cli stack create` takes `--project` and creates project stacks only.
+- **Creating it needs a human root session.** The API refuses a token for install scope. Create it with `levelrail-cli stack create NAME --scope install`, run as a human root user. The install scope has no `--project`.
 - **Approval is on by default.** Applies wait as pending revisions until another administrator approves them. Change it with `levelrail-cli stack settings NAME --require-approval=false` (root only).
 - **Drift policy is `lock` by default**, the same mode described under [Drift](/stacks#drift). Set `--drift warn` to relax it (root only).
 
