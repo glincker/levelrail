@@ -19,6 +19,7 @@ type StackRequest struct {
 	Prune            bool              `json:"prune,omitempty"`
 	NoDeploy         bool              `json:"no_deploy,omitempty"`
 	ContinueOnError  bool              `json:"continue_on_error,omitempty"`
+	AllowWeaken      bool              `json:"allow_weaken,omitempty"`
 	ExpectedPlanHash string            `json:"expected_plan_hash,omitempty"`
 	GitRepo          string            `json:"git_repo,omitempty"`
 	GitRef           string            `json:"git_ref,omitempty"`

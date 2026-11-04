@@ -166,7 +166,7 @@ spec:
 
 The plan reads the setting through the runtime settings API and checks the value with the same validator as the API, so a value the dashboard would refuse is a plan error. Declaring a setting makes the saved value authoritative: a value that matches but only comes from the environment or the default plans an update that saves it, so a later env change does not move it. Apply saves through the same API. A restart-kind setting carries a warning that it takes effect after a restart; apply never restarts the control plane, and "not effective until restart" is a warning, not drift.
 
-A setting that holds a credential is refused in files; set it from the dashboard or the CLI. A change that would weaken a security protection (a protection turned off, a duration shortened, a limit raised) is a plan error that names `allow_weaken`; file applies do not accept it yet. `reset: true` removes the saved value, and is refused the same way when the default is weaker. Removing the document keeps the saved value and only releases it from the stack. Settings belong in an install stack.
+A setting that holds a credential is refused in files; set it from the dashboard or the CLI. A change that would weaken a security protection (a protection turned off, a duration shortened, a limit raised) is a plan error that names `allow_weaken`; pass `--allow-weaken` to `stack plan` and `stack apply` (human root session only, a token gets a 403). `reset: true` removes the saved value, and is refused the same way when the default is weaker. Removing the document keeps the saved value and only releases it from the stack. Settings belong in an install stack.
 
 ## Revisions
 

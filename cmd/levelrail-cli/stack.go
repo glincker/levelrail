@@ -433,6 +433,7 @@ type stackManifestFlags struct {
 	project  *string
 	prune    *bool
 	pruneSet bool
+	weaken   *bool
 	vars     stringMapFlag
 	varFiles stringListFlag
 	values   stringListFlag
@@ -441,8 +442,9 @@ type stackManifestFlags struct {
 }
 
 func bindStackManifestFlags(fs *flag.FlagSet, withFiles bool) *stackManifestFlags {
-	f := &stackManifestFlags{vars: stringMapFlag{}, secrets: stringMapFlag{}}
+	f := &stackManifestFlags{vars: stringMapFlag{}, secrets: stringMapFlag{}, weaken: new(bool)}
 	if withFiles {
+		fs.BoolVar(f.weaken, "allow-weaken", false, "accept Setting documents that weaken a security protection (human root session only)")
 		fs.Var(&f.files, "f", "resource file, directory or - for stdin (repeatable)")
 		f.project = fs.String("project", "", "project of the stack (default: the Stack document)")
 		f.prune = new(bool)
@@ -537,7 +539,7 @@ func buildStackRequest(name string, f *stackManifestFlags, lookupEnv func(string
 	if len(files) == 0 {
 		return apiclient.StackRequest{}, newValidationError("the files hold only a Stack document, add the resources to apply")
 	}
-	req := apiclient.StackRequest{Files: files, Project: *f.project, Prune: *f.prune}
+	req := apiclient.StackRequest{Files: files, Project: *f.project, Prune: *f.prune, AllowWeaken: *f.weaken}
 	if doc != nil {
 		if doc.Metadata.Name != "" && doc.Metadata.Name != name {
 			return apiclient.StackRequest{}, newValidationError("the Stack document is named %q but the command names %q", doc.Metadata.Name, name)
@@ -613,6 +615,7 @@ Flags:
   -f PATH              resource file, directory or "-" for stdin (repeatable)
   --project P          project of the stack (needed when the stack does not exist yet)
   --prune              plan deletions of resources the files no longer declare
+  --allow-weaken       accept Setting documents that weaken a security protection (human root session only)
   --var NAME=VALUE     value for a ${{ env.NAME }} placeholder (repeatable)
   --values FILE.yaml   flat YAML map of placeholder values (repeatable, later wins; beats --var-file)
   --var-file PATH      KEY=VALUE lines for placeholders (repeatable)
@@ -703,7 +706,7 @@ are filled from GITHUB_* variables or the local checkout. Exit codes: 0 applied,
 1 error, 409/422 or a revision that ended partial or failed.
 
 Flags:
-  -f PATH, --project P, --prune, --var, --values, --var-file, --allow-env   as for plan`+stackRunFlagsHelp), args, stdout, stderr, lookupEnv, func(fs *flag.FlagSet) { rf = bindStackRunFlags(fs, true) })
+  -f PATH, --project P, --prune, --allow-weaken, --var, --values, --var-file, --allow-env   as for plan`+stackRunFlagsHelp), args, stdout, stderr, lookupEnv, func(fs *flag.FlagSet) { rf = bindStackRunFlags(fs, true) })
 	if !ok {
 		return code
 	}
