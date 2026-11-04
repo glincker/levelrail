@@ -398,7 +398,8 @@
       "compact": "Ancho compacto",
       "comfortable": "Ancho cómodo",
       "wide": "Ancho",
-      "full": "Ancho completo"
+      "full": "Ancho completo",
+      "custom": "Ancho exacto"
     },
     "banner": {
       "dismiss": "Descartar",

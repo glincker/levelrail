@@ -25,7 +25,7 @@
     }
   }
   --font-sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: ui-monospace, Consolas, monospace;
+  --font-mono: var(--font-code, ui-monospace, Consolas, monospace);
   --font-display: 'Inter Variable', system-ui, 'Segoe UI', Roboto, sans-serif;
 }
 
@@ -600,6 +600,11 @@ body {
   --glinr-content-max: none;
   --glinr-content-max-wide: none;
 }
+/* Custom width: pixels come from appearance.ts; the wide variant keeps the same 1.27 ratio of the presets. */
+:root[data-width='custom'] {
+  --glinr-content-max: var(--glinr-custom-width, 1440px);
+  --glinr-content-max-wide: calc(var(--glinr-custom-width, 1440px) * 1.27);
+}
 
 /* Brand glow: the login panel's lavender/teal/yellow wash, plus the same wash masked by fractal noise so it reads as grain. */
 .brand-glow,
@@ -1019,4 +1024,70 @@ body {
 }
 :root[data-gutter='roomy'] {
   --glinr-page-pad-x: 2.5rem;
+}
+
+/* Corner roundness: remaps the radius tokens every rounded-* utility resolves to. Normal sets no attribute. */
+:root[data-radius='sharp'] {
+  --glinr-radius-sm: 0.125rem;
+  --glinr-radius-md: 0.1875rem;
+  --glinr-radius: 0.25rem;
+  --glinr-radius-xl: 0.375rem;
+}
+:root[data-radius='soft'] {
+  --glinr-radius-sm: 0.5rem;
+  --glinr-radius-md: 0.75rem;
+  --glinr-radius: 1rem;
+  --glinr-radius-xl: 1.25rem;
+}
+
+/* Code font: local monospace stacks only, nothing is downloaded. Tailwind font-mono reads --font-code. */
+:root[data-code-font='jetbrains'] {
+  --font-code:
+    'JetBrains Mono', 'JetBrainsMono Nerd Font', ui-monospace, Consolas,
+    monospace;
+}
+:root[data-code-font='fira'] {
+  --font-code: 'Fira Code', 'Fira Mono', ui-monospace, Consolas, monospace;
+}
+:root[data-code-font='menlo'] {
+  --font-code:
+    Menlo, Monaco, 'SF Mono', 'Cascadia Mono', Consolas, ui-monospace, monospace;
+}
+:root[data-code-size] pre,
+:root[data-code-size] code,
+:root[data-code-size] samp,
+:root[data-code-size] .font-mono {
+  font-size: var(--code-size);
+}
+
+/* High contrast: stronger border, muted text and focus ring. Declared last so it beats the base blocks. 'on' forces it, the default follows the OS. */
+:root:not(.dark)[data-contrast='on'] {
+  --muted-foreground: oklch(0.36 0 0);
+  --border: oklch(0.55 0 0);
+  --input: oklch(0.5 0 0);
+  --sidebar-border: oklch(0.55 0 0);
+  --ring: oklch(0.3 0 0);
+}
+:root.dark[data-contrast='on'] {
+  --muted-foreground: oklch(0.84 0 0);
+  --border: oklch(0.62 0 0);
+  --input: oklch(0.66 0 0);
+  --sidebar-border: oklch(0.62 0 0);
+  --ring: oklch(0.92 0 0);
+}
+@media (prefers-contrast: more) {
+  :root:not(.dark):not([data-contrast='off']):not([data-contrast='on']) {
+    --muted-foreground: oklch(0.36 0 0);
+    --border: oklch(0.55 0 0);
+    --input: oklch(0.5 0 0);
+    --sidebar-border: oklch(0.55 0 0);
+    --ring: oklch(0.3 0 0);
+  }
+  :root.dark:not([data-contrast='off']):not([data-contrast='on']) {
+    --muted-foreground: oklch(0.84 0 0);
+    --border: oklch(0.62 0 0);
+    --input: oklch(0.66 0 0);
+    --sidebar-border: oklch(0.62 0 0);
+    --ring: oklch(0.92 0 0);
+  }
 }

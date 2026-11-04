@@ -34,6 +34,13 @@ import {
   APPEARANCE_RECOMMENDED as REC,
   APPEARANCE_DEFAULTS as DEF,
   ACCENT_CHOICES,
+  CODE_FONTS,
+  CODE_SIZE_MAX,
+  CODE_SIZE_MIN,
+  CONTRASTS,
+  RADII,
+  clampCodeSize,
+  clampContentWidth,
   DARK_BASES,
   FONTS,
   GUTTERS,
@@ -56,7 +63,14 @@ import {
 } from '@/lib/appearance'
 import { normalizeHex } from '@/lib/accentContrast'
 import { setDensity, useDensity, type Density } from '@/lib/density'
-import { PAGE_WIDTHS, setPageWidth, usePageWidth } from '@/lib/pageWidth'
+import {
+  CONTENT_WIDTH_MAX,
+  CONTENT_WIDTH_MIN,
+  CONTENT_WIDTH_STEP,
+  PAGE_WIDTH_CHOICES,
+  setPageWidth,
+  usePageWidth,
+} from '@/lib/pageWidth'
 import { cn } from '@/lib/utils'
 import { ChoiceGroup, type Choice } from './ChoiceGroup'
 import { AppearanceSyncRow } from './AppearanceSyncRow'
@@ -124,6 +138,39 @@ function FontSample({ id }: { id: string }) {
     >
       Aa
     </span>
+  )
+}
+
+const CODE_FONT_SAMPLE: Record<string, string> = {
+  'system-mono': 'font-mono',
+  jetbrains: "font-[family-name:'JetBrains_Mono',ui-monospace,monospace]",
+  fira: "font-[family-name:'Fira_Code',ui-monospace,monospace]",
+  menlo: 'font-[family-name:Menlo,Monaco,ui-monospace,monospace]',
+}
+
+function CodeFontSample({ id }: { id: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`text-sm leading-none text-foreground ${CODE_FONT_SAMPLE[id] ?? ''}`}
+    >
+      {'{ 0O 1l }'}
+    </span>
+  )
+}
+
+const RADIUS_SAMPLE: Record<string, string> = {
+  sharp: 'rounded-tl-none',
+  normal: 'rounded-tl-lg',
+  soft: 'rounded-tl-3xl',
+}
+
+function RadiusSample({ id }: { id: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`block size-8 border-t-2 border-l-2 border-state-accent ${RADIUS_SAMPLE[id] ?? ''}`}
+    />
   )
 }
 
@@ -239,6 +286,54 @@ function TextSizeControl({
           {sample}
         </span>
       </div>
+    </div>
+  )
+}
+
+function SliderControl({
+  value,
+  label,
+  min,
+  max,
+  step,
+  unit,
+  resetLabel,
+  isDefault,
+  onChange,
+  onReset,
+}: {
+  value: number
+  label: string
+  min: number
+  max: number
+  step: number
+  unit: string
+  resetLabel: string
+  isDefault: boolean
+  onChange: (next: string) => void
+  onReset: () => void
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <input
+        type="range"
+        aria-label={label}
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-6 min-w-0 flex-1 cursor-pointer accent-state-accent"
+      />
+      <output className="w-16 text-right text-sm font-medium tabular-nums">
+        {value}
+        {unit}
+      </output>
+      {isDefault ? null : (
+        <Button type="button" size="sm" variant="ghost" onClick={onReset}>
+          {resetLabel}
+        </Button>
+      )}
     </div>
   )
 }
@@ -382,15 +477,14 @@ export function AppearanceSettings() {
     isDefault: v === DEF.font,
     isRecommended: v === REC.font,
   }))
-  const widthOptions: Choice<(typeof PAGE_WIDTHS)[number]>[] = PAGE_WIDTHS.map(
-    (v) => ({
+  const widthOptions: Choice<(typeof PAGE_WIDTH_CHOICES)[number]>[] =
+    PAGE_WIDTH_CHOICES.map((v) => ({
       value: v,
       label: t(`generalPage.width.${v}`),
       hint: t(`generalPage.width.${v}Hint`),
       isDefault: v === 'comfortable',
       isRecommended: v === REC.width,
-    }),
-  )
+    }))
   const gutterOptions: Choice<(typeof GUTTERS)[number]>[] = GUTTERS.map(
     (v) => ({
       value: v,
@@ -408,6 +502,30 @@ export function AppearanceSettings() {
       isDefault: v === DEF.accent,
       isRecommended: v === REC.accent,
     }))
+  const radiusOptions: Choice<(typeof RADII)[number]>[] = RADII.map((v) => ({
+    value: v,
+    label: t(`appearancePage.radius.${v}`),
+    hint: t(`appearancePage.radius.${v}Hint`),
+    sample: <RadiusSample id={v} />,
+    isDefault: v === DEF.radius,
+  }))
+  const contrastOptions: Choice<(typeof CONTRASTS)[number]>[] = CONTRASTS.map(
+    (v) => ({
+      value: v,
+      label: t(`appearancePage.contrast.${v}`),
+      hint: t(`appearancePage.contrast.${v}Hint`),
+      isDefault: v === DEF.contrast,
+    }),
+  )
+  const codeFontOptions: Choice<(typeof CODE_FONTS)[number]>[] = CODE_FONTS.map(
+    (v) => ({
+      value: v,
+      label: t(`appearancePage.codeFont.${v}`),
+      hint: t(`appearancePage.codeFont.${v}Hint`),
+      sample: <CodeFontSample id={v} />,
+      isDefault: v === DEF.codeFont,
+    }),
+  )
   const motionOptions: Choice<(typeof MOTIONS)[number]>[] = MOTIONS.map(
     (v) => ({
       value: v,
@@ -585,6 +703,23 @@ export function AppearanceSettings() {
               <CustomAccentEditor appearance={appearance} />
             ) : null}
           </SettingRow>
+          <SettingRow
+            className={ROW}
+            title={t('appearancePage.contrast.title')}
+            description={t('appearancePage.contrast.description')}
+          >
+            <ChoiceGroup
+              label={t('appearancePage.contrast.title')}
+              value={appearance.contrast}
+              options={contrastOptions}
+              onChange={(contrast) => setAppearance({ contrast })}
+              className="sm:grid-cols-3"
+              {...common}
+            />
+            <p className="mt-2 rounded-md border border-border px-3 py-2 text-sm text-muted-foreground">
+              {t('appearancePage.contrast.sample')}
+            </p>
+          </SettingRow>
         </SectionCard>
       </SettingsSection>
 
@@ -630,6 +765,46 @@ export function AppearanceSettings() {
               resetLabel={t('appearancePage.textSize.reset')}
             />
           </SettingRow>
+          <SettingRow
+            className={ROW}
+            title={t('appearancePage.codeFont.title')}
+            description={t('appearancePage.codeFont.description')}
+          >
+            <ChoiceGroup
+              label={t('appearancePage.codeFont.title')}
+              value={appearance.codeFont}
+              options={codeFontOptions}
+              onChange={(codeFont) => setAppearance({ codeFont })}
+              className="sm:grid-cols-4"
+              {...common}
+            />
+          </SettingRow>
+          <SettingRow
+            className={ROW}
+            title={t('appearancePage.codeSize.title')}
+            description={t('appearancePage.codeSize.description')}
+          >
+            <div className="space-y-2">
+              <SliderControl
+                value={appearance.codeSize}
+                label={t('appearancePage.codeSize.slider')}
+                min={CODE_SIZE_MIN}
+                max={CODE_SIZE_MAX}
+                step={1}
+                unit="px"
+                resetLabel={t('appearancePage.codeSize.reset')}
+                isDefault={appearance.codeSize === DEF.codeSize}
+                onChange={(v) => setAppearance({ codeSize: clampCodeSize(v) })}
+                onReset={() => setAppearance({ codeSize: DEF.codeSize })}
+              />
+              <pre
+                aria-label={t('appearancePage.codeSize.sampleLabel')}
+                className="overflow-x-auto rounded-md border border-border bg-muted px-3 py-2 font-mono"
+              >
+                {t('appearancePage.codeSize.sample')}
+              </pre>
+            </div>
+          </SettingRow>
         </SectionCard>
       </SettingsSection>
 
@@ -658,6 +833,41 @@ export function AppearanceSettings() {
               value={width}
               options={widthOptions}
               onChange={setPageWidth}
+              className="sm:grid-cols-5"
+              {...common}
+            />
+            {width === 'custom' ? (
+              <div className="mt-2">
+                <SliderControl
+                  value={appearance.contentWidth}
+                  label={t('appearancePage.width.slider')}
+                  min={CONTENT_WIDTH_MIN}
+                  max={CONTENT_WIDTH_MAX}
+                  step={CONTENT_WIDTH_STEP}
+                  unit="px"
+                  resetLabel={t('appearancePage.width.reset')}
+                  isDefault={appearance.contentWidth === DEF.contentWidth}
+                  onChange={(v) =>
+                    setAppearance({ contentWidth: clampContentWidth(v) })
+                  }
+                  onReset={() =>
+                    setAppearance({ contentWidth: DEF.contentWidth })
+                  }
+                />
+              </div>
+            ) : null}
+          </SettingRow>
+          <SettingRow
+            className={ROW}
+            title={t('appearancePage.radius.title')}
+            description={t('appearancePage.radius.description')}
+          >
+            <ChoiceGroup
+              label={t('appearancePage.radius.title')}
+              value={appearance.radius}
+              options={radiusOptions}
+              onChange={(radius) => setAppearance({ radius })}
+              className="sm:grid-cols-3"
               {...common}
             />
           </SettingRow>

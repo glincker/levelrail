@@ -1233,7 +1233,9 @@
       "full": "Full width",
       "fullHint": "Edge to edge",
       "compact": "Compact",
-      "compactHint": "Narrow column for reading"
+      "compactHint": "Narrow column for reading",
+      "custom": "Exact width",
+      "customHint": "Pick a width in pixels"
     },
     "appearanceLink": {
       "title": "Appearance",
@@ -3678,7 +3680,9 @@
     },
     "width": {
       "title": "Page width",
-      "description": "How wide page content gets on large screens. Screens under 1024px are not affected."
+      "description": "How wide page content gets on large screens. Screens under 1024px are not affected.",
+      "slider": "Content width",
+      "reset": "Reset width"
     },
     "gutter": {
       "title": "Side padding",
@@ -3725,6 +3729,47 @@
       "importLabel": "Import appearance from a JSON file",
       "importBad": "That file is not a valid appearance export.",
       "imported": "Imported."
+    },
+    "radius": {
+      "title": "Corner roundness",
+      "description": "How round buttons, cards and inputs are.",
+      "sharp": "Sharp",
+      "sharpHint": "Square, technical",
+      "normal": "Normal",
+      "normalHint": "The stock look",
+      "soft": "Soft",
+      "softHint": "Rounder, friendlier"
+    },
+    "contrast": {
+      "title": "High contrast",
+      "description": "Stronger borders, muted text and focus ring.",
+      "system": "Follow system",
+      "systemHint": "Use your device setting",
+      "on": "On",
+      "onHint": "Always high contrast",
+      "off": "Off",
+      "offHint": "Ignore the device setting",
+      "sample": "Muted text sample"
+    },
+    "codeFont": {
+      "title": "Code font",
+      "description": "Used for code, logs, terminals and diffs. Local fonts only, nothing is downloaded.",
+      "system-mono": "System mono",
+      "system-monoHint": "Your device default",
+      "jetbrains": "JetBrains Mono",
+      "jetbrainsHint": "If installed",
+      "fira": "Fira Code",
+      "firaHint": "If installed",
+      "menlo": "Menlo",
+      "menloHint": "Mac and similar"
+    },
+    "codeSize": {
+      "title": "Code size",
+      "description": "Text size for code, logs and terminals.",
+      "slider": "Code size",
+      "reset": "Reset size",
+      "sample": "$ deploy --app web\n12:00:01 INFO build ok",
+      "sampleLabel": "Code sample"
     }
   }
 }

@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
 
-export type PageWidth = 'compact' | 'comfortable' | 'wide' | 'full'
+export type PageWidth = 'compact' | 'comfortable' | 'wide' | 'full' | 'custom'
 
 export const PAGE_WIDTHS: PageWidth[] = [
   'compact',
@@ -8,12 +8,20 @@ export const PAGE_WIDTHS: PageWidth[] = [
   'wide',
   'full',
 ]
+/** Every selectable width; custom reads its pixels from the appearance contentWidth. */
+export const PAGE_WIDTH_CHOICES: PageWidth[] = [...PAGE_WIDTHS, 'custom']
+
+// One source for the custom content width slider and its clamp.
+export const CONTENT_WIDTH_MIN = 720
+export const CONTENT_WIDTH_MAX = 1920
+export const CONTENT_WIDTH_STEP = 40
+export const CONTENT_WIDTH_DEFAULT = 1440
 
 const STORAGE_KEY = 'ui-page-width'
 const listeners = new Set<() => void>()
 
 function isPageWidth(v: string | null): v is PageWidth {
-  return v === 'compact' || v === 'comfortable' || v === 'wide' || v === 'full'
+  return PAGE_WIDTH_CHOICES.some((w) => w === v)
 }
 
 function read(): PageWidth {

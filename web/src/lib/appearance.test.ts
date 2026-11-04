@@ -92,4 +92,67 @@ describe('appearance', () => {
     applyAppearance(APPEARANCE_DEFAULTS)
     expect(root.hasAttribute('data-gutter')).toBe(false)
   })
+
+  it('parses legacy objects without the personalization fields to defaults', () => {
+    const parsed = parseAppearance(JSON.stringify({ darkBase: 'black' }))
+    expect(parsed.radius).toBe('normal')
+    expect(parsed.contrast).toBe('system')
+    expect(parsed.codeFont).toBe('system-mono')
+    expect(parsed.codeSize).toBe(13)
+    expect(parsed.contentWidth).toBe(1440)
+  })
+
+  it('clamps and snaps the new fields', () => {
+    const parsed = parseAppearance(
+      JSON.stringify({
+        radius: 'round',
+        contrast: 'maybe',
+        codeFont: 'comic',
+        codeSize: 99,
+        contentWidth: 5000,
+      }),
+    )
+    expect(parsed).toMatchObject({
+      radius: 'normal',
+      contrast: 'system',
+      codeFont: 'system-mono',
+      codeSize: 16,
+      contentWidth: 1920,
+    })
+    expect(parseAppearance(JSON.stringify({ codeSize: 2 })).codeSize).toBe(11)
+    expect(
+      parseAppearance(JSON.stringify({ contentWidth: '745' })).contentWidth,
+    ).toBe(760)
+    expect(
+      parseAppearance(JSON.stringify({ contentWidth: 10 })).contentWidth,
+    ).toBe(720)
+  })
+
+  it('applies the new data attributes and CSS variables, and clears them at default', () => {
+    setAppearance({
+      radius: 'soft',
+      contrast: 'on',
+      codeFont: 'fira',
+      codeSize: 15,
+      contentWidth: 1200,
+    })
+    expect(root.getAttribute('data-radius')).toBe('soft')
+    expect(root.getAttribute('data-contrast')).toBe('on')
+    expect(root.getAttribute('data-code-font')).toBe('fira')
+    expect(root.getAttribute('data-code-size')).toBe('15')
+    expect(root.style.getPropertyValue('--code-size')).toBe('15px')
+    expect(root.style.getPropertyValue('--glinr-custom-width')).toBe('1200px')
+    resetAppearance()
+    expect(root.hasAttribute('data-radius')).toBe(false)
+    expect(root.hasAttribute('data-contrast')).toBe(false)
+    expect(root.hasAttribute('data-code-font')).toBe(false)
+    expect(root.style.getPropertyValue('--code-size')).toBe('')
+    expect(root.style.getPropertyValue('--glinr-custom-width')).toBe('')
+  })
+
+  it('presets keep the new defaults and reset restores them', () => {
+    setAppearance({ radius: 'sharp', codeSize: 12 })
+    applyPreset('default')
+    expect(getAppearance()).toEqual(APPEARANCE_DEFAULTS)
+  })
 })

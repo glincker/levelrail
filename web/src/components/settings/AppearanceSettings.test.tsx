@@ -102,3 +102,46 @@ describe('AppearanceSettings personalization', () => {
     expect(document.documentElement.getAttribute('data-motion')).toBe('on')
   })
 })
+
+describe('AppearanceSettings personalization', () => {
+  it('changes corner roundness and shows Custom, then Reset clears it', () => {
+    setup()
+    fireEvent.click(screen.getByRole('radio', { name: /^Sharp/ }))
+    expect(getAppearance().radius).toBe('sharp')
+    expect(document.documentElement.getAttribute('data-radius')).toBe('sharp')
+    expect(screen.getByText('Custom')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Reset to defaults' }))
+    expect(getAppearance().radius).toBe('normal')
+    expect(screen.queryByText('Custom')).toBeNull()
+  })
+
+  it('sets high contrast and shows the sample line', () => {
+    setup()
+    expect(screen.getByText('Muted text sample')).toBeTruthy()
+    fireEvent.click(screen.getByRole('radio', { name: /^On/ }))
+    expect(getAppearance().contrast).toBe('on')
+  })
+
+  it('picks a code font and moves the code size slider', () => {
+    setup()
+    fireEvent.click(screen.getByRole('radio', { name: /^Menlo/ }))
+    expect(getAppearance().codeFont).toBe('menlo')
+    fireEvent.change(screen.getByRole('slider', { name: 'Code size' }), {
+      target: { value: '15' },
+    })
+    expect(getAppearance().codeSize).toBe(15)
+    fireEvent.click(screen.getByRole('button', { name: 'Reset size' }))
+    expect(getAppearance().codeSize).toBe(13)
+  })
+
+  it('shows the content width slider only for the custom width', () => {
+    setup()
+    expect(screen.queryByRole('slider', { name: 'Content width' })).toBeNull()
+    fireEvent.click(screen.getByRole('radio', { name: /^Exact width/ }))
+    fireEvent.change(screen.getByRole('slider', { name: 'Content width' }), {
+      target: { value: '1000' },
+    })
+    expect(getAppearance().contentWidth).toBe(1000)
+    expect(document.documentElement.getAttribute('data-width')).toBe('custom')
+  })
+})

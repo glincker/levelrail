@@ -14,7 +14,7 @@ import {
 } from './density'
 import {
   getPageWidth,
-  PAGE_WIDTHS,
+  PAGE_WIDTH_CHOICES,
   setPageWidth,
   subscribePageWidth,
   type PageWidth,
@@ -54,7 +54,7 @@ export function parseSynced(raw: unknown): SyncedAppearance | null {
   for (const [k, v] of Object.entries(raw)) {
     if (!KNOWN_KEYS.has(k)) extras[k] = v
   }
-  const width = PAGE_WIDTHS.find((w) => w === raw.width) ?? 'comfortable'
+  const width = PAGE_WIDTH_CHOICES.find((w) => w === raw.width) ?? 'comfortable'
   const density: Density =
     raw.density === 'comfortable' ? 'comfortable' : 'compact'
   return {

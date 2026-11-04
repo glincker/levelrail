@@ -1,6 +1,13 @@
 import { useSyncExternalStore } from 'react'
 import { setDensity, type Density } from './density'
-import { setPageWidth, type PageWidth } from './pageWidth'
+import {
+  CONTENT_WIDTH_DEFAULT,
+  CONTENT_WIDTH_MAX,
+  CONTENT_WIDTH_MIN,
+  CONTENT_WIDTH_STEP,
+  setPageWidth,
+  type PageWidth,
+} from './pageWidth'
 import { BASE_BACKGROUND, deriveAccent, normalizeHex } from './accentContrast'
 
 // Local store behind one hook; it applies instantly at startup. Account sync
@@ -24,6 +31,12 @@ export const ACCENTS = [
 ] as const
 export const ACCENT_CHOICES = [...ACCENTS, 'custom'] as const
 export const GUTTERS = ['tight', 'normal', 'roomy'] as const
+export const RADII = ['sharp', 'normal', 'soft'] as const
+export const CONTRASTS = ['system', 'on', 'off'] as const
+export const CODE_FONTS = ['system-mono', 'jetbrains', 'fira', 'menlo'] as const
+export const CODE_SIZE_MIN = 11
+export const CODE_SIZE_MAX = 16
+export const CODE_SIZE_DEFAULT = 13
 
 export type DarkBase = (typeof DARK_BASES)[number]
 export type LightBase = (typeof LIGHT_BASES)[number]
@@ -32,6 +45,9 @@ export type TextSize = number
 export type Accent = (typeof ACCENT_CHOICES)[number]
 export type Motion = (typeof MOTIONS)[number]
 export type Gutter = (typeof GUTTERS)[number]
+export type Radius = (typeof RADII)[number]
+export type Contrast = (typeof CONTRASTS)[number]
+export type CodeFont = (typeof CODE_FONTS)[number]
 
 export interface Appearance {
   darkBase: DarkBase
@@ -43,6 +59,13 @@ export interface Appearance {
   /** Hex used when accent is custom; kept so switching away does not lose it. */
   accentCustom: string
   motion: Motion
+  radius: Radius
+  contrast: Contrast
+  codeFont: CodeFont
+  /** Code, log and terminal text size in px. */
+  codeSize: number
+  /** Content column max width in px, used when the page width is custom. */
+  contentWidth: number
 }
 
 export const APPEARANCE_DEFAULTS: Appearance = {
@@ -54,6 +77,11 @@ export const APPEARANCE_DEFAULTS: Appearance = {
   accent: 'teal',
   accentCustom: '#0e7490',
   motion: 'system',
+  radius: 'normal',
+  contrast: 'system',
+  codeFont: 'system-mono',
+  codeSize: CODE_SIZE_DEFAULT,
+  contentWidth: CONTENT_WIDTH_DEFAULT,
 }
 
 // Where the choice differs from the default, these mark the recommended pick.
@@ -79,6 +107,11 @@ const ATTRS: Record<keyof Appearance, string> = {
   accent: 'data-accent',
   accentCustom: '',
   motion: 'data-motion',
+  radius: 'data-radius',
+  contrast: 'data-contrast',
+  codeFont: 'data-code-font',
+  codeSize: 'data-code-size',
+  contentWidth: '',
 }
 
 function pick<T extends string>(
@@ -97,6 +130,35 @@ export function clampTextSize(value: unknown): number {
   }
   const snapped = Math.round(n / TEXT_SIZE_STEP) * TEXT_SIZE_STEP
   return Math.min(TEXT_SIZE_MAX, Math.max(TEXT_SIZE_MIN, snapped))
+}
+
+/** clampStepped snaps a number or numeric string to the step grid inside [min, max]. */
+function clampStepped(
+  value: unknown,
+  min: number,
+  max: number,
+  step: number,
+  fallback: number,
+): number {
+  const n =
+    typeof value === 'string' && value.trim() !== '' ? Number(value) : value
+  if (typeof n !== 'number' || !Number.isFinite(n)) return fallback
+  const snapped = min + Math.round((n - min) / step) * step
+  return Math.min(max, Math.max(min, snapped))
+}
+
+export function clampCodeSize(value: unknown): number {
+  return clampStepped(value, CODE_SIZE_MIN, CODE_SIZE_MAX, 1, CODE_SIZE_DEFAULT)
+}
+
+export function clampContentWidth(value: unknown): number {
+  return clampStepped(
+    value,
+    CONTENT_WIDTH_MIN,
+    CONTENT_WIDTH_MAX,
+    CONTENT_WIDTH_STEP,
+    CONTENT_WIDTH_DEFAULT,
+  )
 }
 
 /** parseAppearance falls back per field, so one bad stored value never drops the rest. */
@@ -124,6 +186,11 @@ export function parseAppearance(raw: string | null): Appearance {
         ? (normalizeHex(data.accentCustom) ?? d.accentCustom)
         : d.accentCustom,
     motion: pick(MOTIONS, data.motion, d.motion),
+    radius: pick(RADII, data.radius, d.radius),
+    contrast: pick(CONTRASTS, data.contrast, d.contrast),
+    codeFont: pick(CODE_FONTS, data.codeFont, d.codeFont),
+    codeSize: clampCodeSize(data.codeSize),
+    contentWidth: clampContentWidth(data.contentWidth),
   }
 }
 
@@ -151,6 +218,16 @@ export function applyAppearance(value: Appearance) {
     style.removeProperty('--glinr-text-scale')
   } else {
     style.setProperty('--glinr-text-scale', String(value.textSize))
+  }
+  if (value.codeSize === APPEARANCE_DEFAULTS.codeSize) {
+    style.removeProperty('--code-size')
+  } else {
+    style.setProperty('--code-size', `${value.codeSize}px`)
+  }
+  if (value.contentWidth === APPEARANCE_DEFAULTS.contentWidth) {
+    style.removeProperty('--glinr-custom-width')
+  } else {
+    style.setProperty('--glinr-custom-width', `${value.contentWidth}px`)
   }
   if (value.accent === 'custom') {
     const derived = customAccent(value)

@@ -150,6 +150,31 @@ describe('export and import', () => {
     expect(buildPayload().v).toBe(1)
   })
 
+  it('carries the personalization fields through the payload and import', () => {
+    setAppearance({
+      radius: 'sharp',
+      contrast: 'on',
+      codeFont: 'menlo',
+      codeSize: 12,
+      contentWidth: 1000,
+    })
+    setPageWidth('custom')
+    const payload = buildPayload()
+    expect(payload).toMatchObject({
+      radius: 'sharp',
+      contrast: 'on',
+      codeFont: 'menlo',
+      codeSize: 12,
+      contentWidth: 1000,
+      width: 'custom',
+    })
+    resetAppearance()
+    const parsed = parseImport(JSON.stringify(payload))
+    expect(parsed?.width).toBe('custom')
+    expect(parsed?.appearance.contentWidth).toBe(1000)
+    expect(parsed?.extras).toEqual({})
+  })
+
   it('rejects garbage', () => {
     expect(parseImport('not json')).toBeNull()
     expect(parseImport('[1,2]')).toBeNull()

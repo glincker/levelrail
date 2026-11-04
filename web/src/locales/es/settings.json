@@ -582,7 +582,9 @@
       "wide": "Amplio",
       "wideHint": "Mayor aprovechamiento de las pantallas grandes",
       "compact": "Compacta",
-      "compactHint": "Columna estrecha para leer"
+      "compactHint": "Columna estrecha para leer",
+      "custom": "Ancho exacto",
+      "customHint": "Elige un ancho en píxeles"
     },
     "appearanceLink": {
       "title": "Apariencia",
@@ -3646,7 +3648,9 @@
     },
     "width": {
       "title": "Ancho de página",
-      "description": "Qué tan ancho es el contenido en pantallas grandes. No afecta a pantallas menores de 1024px."
+      "description": "Qué tan ancho es el contenido en pantallas grandes. No afecta a pantallas menores de 1024px.",
+      "slider": "Ancho del contenido",
+      "reset": "Restablecer ancho"
     },
     "gutter": {
       "title": "Relleno lateral",
@@ -3693,6 +3697,47 @@
       "importLabel": "Importar la apariencia desde un archivo JSON",
       "importBad": "Ese archivo no es una exportación de apariencia válida.",
       "imported": "Importado."
+    },
+    "radius": {
+      "title": "Redondez de esquinas",
+      "description": "Qué tan redondos son botones, tarjetas y campos.",
+      "sharp": "Recta",
+      "sharpHint": "Cuadrada, técnica",
+      "normal": "Normal",
+      "normalHint": "El aspecto original",
+      "soft": "Suave",
+      "softHint": "Más redonda y amable"
+    },
+    "contrast": {
+      "title": "Alto contraste",
+      "description": "Bordes, texto atenuado y anillo de foco más marcados.",
+      "system": "Seguir el sistema",
+      "systemHint": "Usa el ajuste del dispositivo",
+      "on": "Activado",
+      "onHint": "Siempre alto contraste",
+      "off": "Desactivado",
+      "offHint": "Ignora el ajuste del dispositivo",
+      "sample": "Ejemplo de texto atenuado"
+    },
+    "codeFont": {
+      "title": "Fuente de código",
+      "description": "Para código, registros, terminales y diffs. Solo fuentes locales, no se descarga nada.",
+      "system-mono": "Mono del sistema",
+      "system-monoHint": "El valor del dispositivo",
+      "jetbrains": "JetBrains Mono",
+      "jetbrainsHint": "Si está instalada",
+      "fira": "Fira Code",
+      "firaHint": "Si está instalada",
+      "menlo": "Menlo",
+      "menloHint": "Mac y similares"
+    },
+    "codeSize": {
+      "title": "Tamaño del código",
+      "description": "Tamaño del texto de código, registros y terminales.",
+      "slider": "Tamaño del código",
+      "reset": "Restablecer tamaño",
+      "sample": "$ deploy --app web\n12:00:01 INFO build ok",
+      "sampleLabel": "Ejemplo de código"
     }
   }
 }

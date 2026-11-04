@@ -470,7 +470,8 @@
       "compact": "Compact width",
       "comfortable": "Comfortable width",
       "wide": "Wide",
-      "full": "Full width"
+      "full": "Full width",
+      "custom": "Exact width"
     },
     "logoStatus": {
       "healthy": "Everything is healthy",
