@@ -103,6 +103,8 @@ func (rt *Router) writeSettingError(w http.ResponseWriter, what string, err erro
 	switch {
 	case errors.Is(err, runtimesettings.ErrUnknownKey):
 		writeError(w, http.StatusNotFound, "unknown setting")
+	case errors.Is(err, runtimesettings.ErrSensitiveKey):
+		writeError(w, http.StatusForbidden, "this caller cannot write a sensitive setting")
 	case errors.As(err, &verr):
 		writeJSON(w, http.StatusBadRequest, runtimeSettingError{Error: verr.Message, Code: errCodeInvalidValue, Field: "value"})
 	default:
@@ -157,11 +159,17 @@ func (rt *Router) handleSetRuntimeSetting(w http.ResponseWriter, r *http.Request
 		rt.writeSettingError(w, "api: set runtime setting", err)
 		return
 	}
-	if rt.runtimeSettings.WeakensTo(r.Context(), key, req.Value) && !req.ConfirmWeakening {
-		writeJSON(w, http.StatusBadRequest, runtimeSettingError{
-			Error: "this change weakens a security protection (a protection turned off or shortened, or a limit raised); send confirm_weakening: true to proceed",
-			Code:  errCodeConfirmRequired, Field: "confirm_weakening",
-		})
+	// Operators may write sensitive settings here; stack-driven writers set RefuseSensitive.
+	opts := runtimesettings.WriteOptions{ConfirmWeakening: req.ConfirmWeakening}
+	if _, err := rt.runtimeSettings.ValidateForWrite(r.Context(), key, req.Value, opts); err != nil {
+		if errors.Is(err, runtimesettings.ErrWeakeningNotConfirmed) {
+			writeJSON(w, http.StatusBadRequest, runtimeSettingError{
+				Error: "this change weakens a security protection (a protection turned off or shortened, or a limit raised); send confirm_weakening: true to proceed",
+				Code:  errCodeConfirmRequired, Field: "confirm_weakening",
+			})
+			return
+		}
+		rt.writeSettingError(w, "api: set runtime setting", err)
 		return
 	}
 	after, err := rt.runtimeSettings.Set(r.Context(), key, req.Value, rt.eventActor(r))
