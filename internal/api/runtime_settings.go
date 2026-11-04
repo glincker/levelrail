@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/GLINCKER/levelrail/internal/iac"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -88,6 +89,10 @@ type runtimeSettingChange struct {
 	Key string          `json:"key"`
 	Old json.RawMessage `json:"old"`
 	New json.RawMessage `json:"new"`
+	// Stack fields are set only when the change came from a stack apply.
+	Stack    string `json:"stack,omitempty"`
+	Revision int    `json:"revision,omitempty"`
+	TokenID  string `json:"token_id,omitempty"`
 }
 
 func (rt *Router) runtimeSettingsOr501(w http.ResponseWriter) bool {
@@ -260,6 +265,9 @@ func (rt *Router) handleAckRuntimeOnboarding(w http.ResponseWriter, r *http.Requ
 	rt.writeRuntimeOnboarding(w, r)
 }
 
+// maskAuditValue keeps a sensitive value out of the audit log even if the caller passed it raw.
+func maskAuditValue() json.RawMessage { return json.RawMessage(`"***"`) }
+
 // recordSettingChange writes the settings_change audit row; best effort like recordAudit.
 func (rt *Router) recordSettingChange(r *http.Request, before, after runtimesettings.Setting) {
 	id, err := store.NewAuditEntryID()
@@ -267,8 +275,18 @@ func (rt *Router) recordSettingChange(r *http.Request, before, after runtimesett
 		rt.logger.Warn("api: settings change audit id failed", slog.String("key", after.Key))
 		return
 	}
-	detail, _ := json.Marshal(runtimeSettingChange{Key: after.Key, Old: before.Value, New: after.Value})
+	change := runtimeSettingChange{Key: after.Key, Old: before.Value, New: after.Value}
+	if after.Sensitive {
+		change.Old, change.New = maskAuditValue(), maskAuditValue()
+	}
 	actorType, actorID, actorName, _ := rt.currentActor(r)
+	if sc, ok := iac.StackScopeFrom(r.Context()); ok {
+		change.Stack, change.Revision = sc.StackName, sc.Revision
+		if actorType == store.PrincipalTypeToken {
+			change.TokenID = actorID
+		}
+	}
+	detail, _ := json.Marshal(change)
 	kind := "session"
 	if actorType == store.PrincipalTypeToken {
 		kind = "token"
