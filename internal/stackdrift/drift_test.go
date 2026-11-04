@@ -73,6 +73,8 @@ type fakeLive struct {
 	env     map[string]string
 	failAll bool
 	app     map[string]any
+	// settings maps a runtime setting key to its live JSON body.
+	settings map[string]map[string]any
 }
 
 func (l *fakeLive) Do(_ context.Context, method, path string, _, out any) error {
@@ -84,6 +86,14 @@ func (l *fakeLive) Do(_ context.Context, method, path string, _, out any) error 
 		return &iac.StatusError{Status: 500, Message: "live read failed"}
 	}
 	var v any
+	if key, ok := strings.CutPrefix(path, "/api/v1/settings/runtime/"); ok {
+		body, found := l.settings[key]
+		if !found {
+			return &iac.StatusError{Status: 404, Message: "not found"}
+		}
+		raw, _ := json.Marshal(body)
+		return json.Unmarshal(raw, out)
+	}
 	switch path {
 	case "/api/v1/projects":
 		v = []any{}
@@ -264,6 +274,63 @@ func TestCheckAll_DigestPinnedLiveImageIsNotDrift(t *testing.T) {
 	app := map[string]any{"name": "web", "image": "nginx:1.26-alpine@sha256:abc", "port": 80, "replicas": 1, "strategy": "blue-green", "bind_address": "private", "project_id": "p1", "tags": []string{"managed-by:web"}}
 	checker(t, fs, &fakeLive{t: t, project: true, app: app}).CheckAll(t.Context())
 	if d := fs.recorded["id-web"]; d.Status != store.StackDriftNone {
+		t.Fatalf("drift = %+v", d)
+	}
+}
+
+func installSettingStore(t *testing.T, value string) *fakeStore {
+	t.Helper()
+	doc := "version: 1\nkind: Setting\nmetadata: {name: " + "security.trust_loopback_forwarded_headers" + "}\nspec:\n  value: " + value + "\n"
+	fs := newStore("base")
+	raw, _ := json.Marshal([]renderedFile{{Name: "stack.yaml", Content: doc}})
+	fs.stacks[0].ProjectID = ""
+	fs.stacks[0].Scope = store.StackScopeInstall
+	fs.revs["id-base"][1].RenderedDocs = raw
+	fs.ledger = []store.StackLedgerEntry{{StackID: "id-base", Kind: "Setting", Key: "Setting/security.trust_loopback_forwarded_headers", LiveID: "security.trust_loopback_forwarded_headers", SinceRevision: 1}}
+	return fs
+}
+
+func liveSettingBody(saved bool, pending bool) map[string]any {
+	src := "saved"
+	if !saved {
+		src = "default"
+	}
+	return map[string]any{"key": "security.trust_loopback_forwarded_headers", "kind": "bool", "default": false, "value": false, "source": src, "apply": "restart", "pending_restart": pending}
+}
+
+func driftOf(t *testing.T, fs *fakeStore, body map[string]any) store.StackDrift {
+	t.Helper()
+	live := &fakeLive{t: t, settings: map[string]map[string]any{"security.trust_loopback_forwarded_headers": body}}
+	c := checker(t, fs, live)
+	c.ProjectName = func(context.Context, string) string { return "" }
+	c.CheckAll(t.Context())
+	return fs.recorded["id-base"]
+}
+
+func TestDriftSettingRestartNotDrift(t *testing.T) {
+	fs := installSettingStore(t, "false")
+	if d := driftOf(t, fs, liveSettingBody(true, true)); d.Status != store.StackDriftNone || len(d.Summary) != 0 {
+		t.Fatalf("pending restart reported as drift: %+v", d)
+	}
+}
+
+func TestDriftSettingChangedByHand(t *testing.T) {
+	fs := installSettingStore(t, "true")
+	d := driftOf(t, fs, liveSettingBody(true, false))
+	if d.Status != store.StackDriftDrifted || len(d.Summary) != 1 || d.Summary[0].Kind != "Setting" || d.Summary[0].Action != ActionChanged {
+		t.Fatalf("drift = %+v", d)
+	}
+	for _, f := range d.Summary[0].Fields {
+		if strings.Contains(f, "true") || strings.Contains(f, "false") {
+			t.Fatalf("summary leaks a value: %q", f)
+		}
+	}
+}
+
+func TestDriftSettingResetIsDrift(t *testing.T) {
+	fs := installSettingStore(t, "false")
+	d := driftOf(t, fs, liveSettingBody(false, false))
+	if d.Status != store.StackDriftDrifted || d.Summary[0].Fields[0] != "source" {
 		t.Fatalf("drift = %+v", d)
 	}
 }
