@@ -300,7 +300,7 @@ const (
 // vocabulary" reasoning DefaultDeployStrategy's own doc comment gives.
 const PullPolicyAlways = "always"
 
-// Workload instance states (migrations/3194_workload_instances.sql). Fenced keeps the
+// Workload instance states (migrations/3195_workload_instances.sql). Fenced keeps the
 // row so the ordinal and its volume are not reused until a human decides.
 const (
 	WorkloadInstancePending  = "pending"
