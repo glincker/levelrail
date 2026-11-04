@@ -103,6 +103,12 @@ func lockTargetsOf(method, path string) ([]lockTarget, bool) {
 		return []lockTarget{{kind: iac.KindProject, id: segs[1]}}, true
 	case "environments":
 		return []lockTarget{{kind: iac.KindEnvironment, id: segs[1]}}, true
+	case "nodes":
+		// Only the declared fields (labels, taints) are locked; drains and
+		// failure routes stay operational.
+		if len(segs) == 3 && (segs[2] == "labels" || segs[2] == "taints") {
+			return []lockTarget{{kind: iac.KindNode, id: segs[1]}}, true
+		}
 	}
 	return nil, false
 }
@@ -136,6 +142,21 @@ func lockKey(ctx context.Context, db stackLockStore, t lockTarget) (string, bool
 			return "", false, err
 		}
 		return ledgerKeyOf(iac.KindEnvironment, p.Name+"/"+e.Name), true, nil
+	case iac.KindNode:
+		g, ok := db.(interface {
+			GetNode(ctx context.Context, id string) (*store.Node, error)
+		})
+		if !ok {
+			return "", false, nil
+		}
+		n, err := g.GetNode(ctx, t.id)
+		if errors.Is(err, store.ErrNodeNotFound) {
+			return "", false, nil
+		}
+		if err != nil {
+			return "", false, err
+		}
+		return ledgerKeyOf(iac.KindNode, n.Name), true, nil
 	}
 	return ledgerKeyOf(t.kind, t.name), true, nil
 }
