@@ -19,6 +19,7 @@ import { DomainSearchVisibilityControl } from '../DomainSearchVisibilityControl'
 import { DomainTLSCertControl } from '../DomainTLSCertControl'
 import { DomainWafControl } from '../DomainWafControl'
 import { ProxyDomainStatus } from '../ProxyDomainStatus'
+import { DomainRollbackStrip } from './DomainRollbackStrip'
 
 function Group({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -64,6 +65,7 @@ export function DomainDetailSheet({
         </SheetHeader>
         <div className="space-y-5 px-4 pb-6">
           <Group title={t('detail.routing')}>
+            <DomainRollbackStrip domain={domain} />
             <DomainDnsCheck appName={appName} domain={domain} />
             <ProxyDomainStatus appName={appName} domain={domain} />
             <DomainDnsRecordsControl appName={appName} domain={domain} />

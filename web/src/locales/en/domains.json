@@ -1491,5 +1491,22 @@
     "nextInSeconds_other": "checking again in {{count}}s",
     "nextInMinutes_one": "checking again in {{count}} min",
     "nextInMinutes_other": "checking again in {{count}} min"
+  },
+  "rollback": {
+    "button": "Roll back this change",
+    "confirmTitle": "Roll back this DNS change?",
+    "confirm": "Roll back",
+    "pending": "Rolling back...",
+    "minutesLeft_one": "Can be rolled back for {{count}} more minute",
+    "minutesLeft_other": "Can be rolled back for {{count}} more minutes",
+    "hoursLeft_one": "Can be rolled back for {{count}} more hour",
+    "hoursLeft_other": "Can be rolled back for {{count}} more hours",
+    "closed": "Rollback window closed",
+    "undone": "Already rolled back",
+    "consequenceRemove": "Records this change added are removed.",
+    "consequenceRestore": "Records this change replaced get their old value back.",
+    "consequenceSkip": "Records edited since are left alone.",
+    "outcomes": "Rollback results",
+    "skipped": "Changed since, left alone"
   }
 }

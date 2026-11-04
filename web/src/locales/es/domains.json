@@ -1491,5 +1491,22 @@
     "nextInSeconds_other": "nueva comprobación en {{count}} s",
     "nextInMinutes_one": "nueva comprobación en {{count}} min",
     "nextInMinutes_other": "nueva comprobación en {{count}} min"
+  },
+  "rollback": {
+    "button": "Deshacer este cambio",
+    "confirmTitle": "¿Deshacer este cambio de DNS?",
+    "confirm": "Deshacer",
+    "pending": "Deshaciendo...",
+    "minutesLeft_one": "Se puede deshacer durante {{count}} minuto más",
+    "minutesLeft_other": "Se puede deshacer durante {{count}} minutos más",
+    "hoursLeft_one": "Se puede deshacer durante {{count}} hora más",
+    "hoursLeft_other": "Se puede deshacer durante {{count}} horas más",
+    "closed": "Plazo para deshacer cerrado",
+    "undone": "Ya se deshizo",
+    "consequenceRemove": "Se eliminan los registros que añadió este cambio.",
+    "consequenceRestore": "Los registros que reemplazó recuperan su valor anterior.",
+    "consequenceSkip": "Los registros editados después se dejan como están.",
+    "outcomes": "Resultados del deshacer",
+    "skipped": "Cambiado después, se deja como está"
   }
 }
