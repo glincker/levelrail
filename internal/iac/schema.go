@@ -26,7 +26,10 @@ var secretRefEnv = map[string]any{
 	"type":                 "object",
 	"required":             []any{"secretRef"},
 	"additionalProperties": false,
-	"properties":           map[string]any{"secretRef": map[string]any{"type": "string", "minLength": 1}},
+	"properties": map[string]any{
+		"secretRef": map[string]any{"type": "string", "minLength": 1},
+		"existing":  map[string]any{"type": "boolean", "description": "The secret is already in the store; apply checks it exists and never writes or deletes it."},
+	},
 }
 
 // fromRefEnv is { from: { database, field } }: the value is resolved by the

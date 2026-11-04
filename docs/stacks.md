@@ -213,6 +213,8 @@ Store each token as a CI secret, and give the apply token only to the protected 
 
 `levelrail-cli apply --values values/prod.yaml` reads a flat YAML map (`IMAGE_TAG: v1.4.2`) and fills the matching <span v-pre>`${{ env.NAME }}`</span> placeholders. Repeat the flag and the later file wins. Precedence is `--var`, then `--values`, then `--var-file`, then names allowed with `--allow-env`. Only scalar values are accepted, and only placeholders the manifests use are read. Keys that look like credentials (`*TOKEN*`, `*SECRET*`, `*_KEY*`) are refused, so use `--secret` for those; values are never printed. A missing value fails before anything is sent and names the placeholder.
 
+Placeholders also work in `replicas`, `resources.*`, `domains[]`, `tolerations[].value` and `labels.*`. The file is checked against the schema after the values are filled in, so <span v-pre>`replicas: "${{ env.REPLICAS }}"`</span> must render to a whole number. A wrong value fails with the field path and the variable name, never the value itself.
+
 ## Secrets
 
 Manifests name secrets, they never contain values. Refer to a secret by name, for example `{ secretRef: DB_PASSWORD }`, and pass its value at apply time from the CI secret store:
@@ -222,6 +224,8 @@ levelrail-cli stack apply shop-prod -f infra/stacks/shop-prod --yes --secret DB_
 ```
 
 The value travels in the request over TLS. It is not written to a revision, a plan or a log. Non-secret settings can be passed with `--var` or allowed from the environment with `--allow-env`, as described in [platform as code](/platform-as-code#providing-values-safely).
+
+To point at a secret that is already in the store, add `existing: true`: `{ secretRef: DB_PASSWORD, existing: true }`. The plan fails if the app has no secret with that name. Apply never writes, overwrites or deletes it, even when a value is passed with `--secret`.
 
 ## GitHub Action
 

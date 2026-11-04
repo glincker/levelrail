@@ -621,6 +621,10 @@
         {
           "additionalProperties": false,
           "properties": {
+            "existing": {
+              "description": "The secret is already in the store; apply checks it exists and never writes or deletes it.",
+              "type": "boolean"
+            },
             "secretRef": {
               "minLength": 1,
               "type": "string"

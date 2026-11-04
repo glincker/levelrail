@@ -3,6 +3,7 @@ package iac
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
@@ -74,6 +75,13 @@ func (p *planner) planApp(r *Resource) {
 	}
 	var setSecrets []string
 	for _, n := range r.SecretRefs {
+		if slices.Contains(r.ExistingSecrets, n) {
+			if !exists || !live.secrets[n] {
+				p.fail(r, "secretRef %s is marked existing, but app %s has no secret named %s in the store", n, r.Name, n)
+				return
+			}
+			continue
+		}
 		_, supplied := p.secretValue(r.Name, n)
 		switch {
 		case supplied:
