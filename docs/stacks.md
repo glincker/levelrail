@@ -151,6 +151,8 @@ The plan compares them with the stored ones and apply saves them through the nod
 
 ## Runtime settings
 
+`GET /api/v1/export?settings=true` (root only) writes one `Setting` document for each saved, non-sensitive setting, and skips credential keys with a warning. The file replans clean.
+
 A `Setting` document declares one runtime setting, named by its registry key:
 
 ```yaml

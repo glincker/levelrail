@@ -3,6 +3,7 @@ package iac
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sort"
@@ -13,6 +14,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
 	"github.com/GLINCKER/levelrail/internal/loadbalancer"
 	"github.com/GLINCKER/levelrail/internal/placement"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
@@ -23,6 +25,8 @@ type ExportOptions struct {
 	// Database and Node each export that one resource alone.
 	Database string
 	Node     string
+	// Settings exports only the saved, non-sensitive runtime settings.
+	Settings bool
 	// IncludeEnvValues writes literal env values; when false every value
 	// becomes a ${{ env.NAME }} placeholder.
 	IncludeEnvValues bool
@@ -115,6 +119,12 @@ func Export(ctx context.Context, d Doer, opts ExportOptions) (ExportResult, erro
 		if _, ok := e.st.projects[opts.Project]; !ok {
 			return ExportResult{}, fmt.Errorf("project %q was not found", opts.Project)
 		}
+	}
+	if opts.Settings {
+		if err := e.settings(ctx, l); err != nil {
+			return ExportResult{}, err
+		}
+		return e.render()
 	}
 	if opts.Node != "" {
 		if err := e.node(ctx, l); err != nil {
@@ -444,6 +454,52 @@ func (e *exporter) node(ctx context.Context, l loader) error {
 	e.docs = append(e.docs, outDoc{Version: SchemaVersion, Kind: KindNode, Metadata: outMeta{Name: e.opts.Node},
 		Spec: map[string]any{"labels": labels, "taints": taints}})
 	return nil
+}
+
+// settings writes one Setting document per saved row. Values still coming
+// from env or the default are left out so the file only pins what an operator chose.
+func (e *exporter) settings(ctx context.Context, l loader) error {
+	var list struct {
+		Settings []liveSetting `json:"settings"`
+	}
+	if err := l.fetch(ctx, "settings", "list runtime settings", "/api/v1/settings/runtime", &list); err != nil {
+		return err
+	}
+	sort.Slice(list.Settings, func(i, j int) bool { return list.Settings[i].Key < list.Settings[j].Key })
+	for _, s := range list.Settings {
+		if s.Source != runtimesettings.SourceSaved {
+			continue
+		}
+		if def, ok := settingDefinition(s.Key); !ok || def.Sensitive || s.Sensitive {
+			e.warns = append(e.warns, fmt.Sprintf("setting %s holds a credential or is unknown and was skipped", s.Key))
+			continue
+		}
+		v, err := settingExportValue(s.Value)
+		if err != nil {
+			e.warns = append(e.warns, fmt.Sprintf("setting %s has a value that cannot be exported and was skipped", s.Key))
+			continue
+		}
+		e.docs = append(e.docs, outDoc{Version: SchemaVersion, Kind: KindSetting, Metadata: outMeta{Name: s.Key}, Spec: map[string]any{"value": v}})
+	}
+	return nil
+}
+
+// settingExportValue keeps integers as integers, since a float64 would render
+// large numbers in exponent form and fail the next validation.
+func settingExportValue(raw json.RawMessage) (any, error) {
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.UseNumber()
+	var v any
+	if err := dec.Decode(&v); err != nil {
+		return nil, err
+	}
+	if n, ok := v.(json.Number); ok {
+		if i, err := n.Int64(); err == nil {
+			return i, nil
+		}
+		return n.Float64()
+	}
+	return v, nil
 }
 
 func (e *exporter) render() (ExportResult, error) {
