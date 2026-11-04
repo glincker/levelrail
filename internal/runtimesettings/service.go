@@ -422,6 +422,9 @@ func (s *Service) WeakensTo(ctx context.Context, key string, raw json.RawMessage
 func weaker(d Definition, base, next string) bool {
 	switch d.Kind {
 	case KindBool:
+		if d.TrueIsWeaker {
+			return next == "true"
+		}
 		return next == "false"
 	case KindDuration:
 		return durationOf(next) < durationOf(base)

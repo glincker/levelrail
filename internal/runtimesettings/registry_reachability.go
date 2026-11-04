@@ -32,7 +32,7 @@ func init() {
 	})
 	Register(Definition{
 		Key: KeyDoctorReachabilityDialbackAllowPrivate, Category: CategoryNetworking, Kind: KindBool, Default: "false",
-		Apply: ApplyLive, Risk: RiskWeakensSecurity,
+		Apply: ApplyLive, Risk: RiskWeakensSecurity, TrueIsWeaker: true,
 		Title:       "Allow private dial-back address",
 		Description: "Lets the reachability dial-back URL resolve to a private or loopback address. Off by default so the check cannot be pointed at internal services. Only turn it on for a dial-back service you run on your own network.",
 	})

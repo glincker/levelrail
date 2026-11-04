@@ -123,6 +123,8 @@ type Definition struct {
 	StrengthOrder []string
 	// RemovalIsWeaker marks a string_list of protections, where dropping an entry weakens and adding one does not.
 	RemovalIsWeaker bool
+	// TrueIsWeaker marks a bool that opens something up when on, so turning it on asks for confirmation.
+	TrueIsWeaker bool
 }
 
 var (

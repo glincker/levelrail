@@ -227,7 +227,7 @@ func (rt *Router) stackLockMiddleware(next http.Handler) http.Handler {
 			return
 		}
 		stack, key, locked, err := lockedBy(r.Context(), db, ts)
-		if err != nil && failsClosed(ts) {
+		if err != nil && failsClosed(ts) && rt.lockHasPrincipal(r) {
 			// Settings hold security knobs, so a broken ledger read refuses the write.
 			rt.logger.Warn("api: stack lock lookup failed, refusing setting write", slog.String("error", err.Error()), slog.String("route", r.Method+" "+r.URL.Path))
 			writeCodedError(w, http.StatusServiceUnavailable, errCodeStackLockUnavailable,

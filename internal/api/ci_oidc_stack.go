@@ -330,6 +330,10 @@ func (rt *Router) handleCreateStackTrust(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusBadRequest, stackVerbsScopeMessage(stack.Scope))
 		return
 	}
+	if !rt.mayGrantStackVerbs(r, req.Verbs) {
+		writeError(w, http.StatusForbidden, msgStackVerbsNeedGlobalRoot)
+		return
+	}
 	id, err := store.NewCIStackTrustID()
 	if err != nil {
 		rt.internalError(w, "stack oidc trust: id", err)

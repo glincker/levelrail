@@ -81,6 +81,18 @@ func stackVerbsNeed(verbs []string) string {
 	return need
 }
 
+const msgStackVerbsNeedGlobalRoot = "node, setting and placement can only be granted by a root user"
+
+// mayGrantStackVerbs holds the narrow verbs to global root: they pass root-only
+// routes, so root scoped to the stack alone must not hand them out.
+func (rt *Router) mayGrantStackVerbs(r *http.Request, verbs []string) bool {
+	if stackVerbsNeed(verbs) != AbilityRoot {
+		return true
+	}
+	abilities, err := rt.callerAbilities(r)
+	return err == nil && hasAbilityExactRoot(abilities)
+}
+
 func stackVerbsScopeMessage(scope string) string {
 	if scope == store.StackScopeInstall {
 		return "an install stack takes plan, apply, node and setting; placement is for project stacks"
@@ -145,6 +157,10 @@ func (rt *Router) resolveTokenStackScope(w http.ResponseWriter, r *http.Request,
 		return nil, false
 	} else if !ok {
 		writeError(w, http.StatusForbidden, "you cannot grant "+need+" on that stack")
+		return nil, false
+	}
+	if !rt.mayGrantStackVerbs(r, verbs) {
+		writeError(w, http.StatusForbidden, msgStackVerbsNeedGlobalRoot)
 		return nil, false
 	}
 	return &store.APITokenStackScope{StackID: stack.ID, Verbs: dedupe(verbs)}, true

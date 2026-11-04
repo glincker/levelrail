@@ -99,7 +99,10 @@ func (rt *Router) stackVerbSubRequestAllowed(r *http.Request, db stackGateStore,
 		if err != nil {
 			return false, r, err
 		}
-		return (found && e.StackID == stack.ID) || call.wasCreated(key), r, nil
+		if owned := (found && e.StackID == stack.ID) || call.wasCreated(key); !owned || read {
+			return owned, r, nil
+		}
+		return rt.stackTolerationsKeepProtected(r)
 	}
 	return false, r, nil
 }
@@ -166,6 +169,37 @@ func (rt *Router) stackTaintsKeepProtected(r *http.Request, nodeID string) (bool
 	return taintsKeepProtected(protected, cur, next), r, nil
 }
 
+// stackTolerationsKeepProtected refuses a placement write that tolerates a
+// protected taint key, or every key at once; only a human may place there.
+func (rt *Router) stackTolerationsKeepProtected(r *http.Request) (bool, *http.Request, error) {
+	raw, r, err := peekBody(r)
+	if err != nil {
+		return false, r, err
+	}
+	body, err := foldedBody(raw)
+	if err != nil || body == nil {
+		return false, r, err
+	}
+	t, has := body["tolerations"]
+	if !has {
+		return true, r, nil
+	}
+	var tols []placement.Toleration
+	if err := json.Unmarshal(t, &tols); err != nil {
+		return false, r, nil
+	}
+	protected := map[string]bool{}
+	for _, k := range rt.runtimeSettings.List(r.Context(), runtimesettings.KeyNodesProtectedTaintKeys) {
+		protected[strings.ToLower(k)] = true
+	}
+	for _, tol := range tols {
+		if protected[strings.ToLower(tol.Key)] || (tol.Key == "" && tol.Operator == placement.TolerationExists) {
+			return false, r, nil
+		}
+	}
+	return true, r, nil
+}
+
 func taintsKeepProtected(protected []string, cur []store.NodeTaint, next []placement.Taint) bool {
 	isProtected := map[string]bool{}
 	for _, k := range protected {
@@ -190,17 +224,22 @@ func taintsKeepProtected(protected []string, cur []store.NodeTaint, next []place
 }
 
 // stackSettingAllowed bounds a setting route: never a sensitive or unknown
-// key, never confirm_weakening, and a write only to a key no other stack owns.
+// key, never confirm_weakening, and a write only to a weakens_security key
+// (so the server refuses any weaker value) that no other stack owns.
 func stackSettingAllowed(r *http.Request, db stackGateStore, stack store.StackRecord, read bool) (bool, *http.Request, error) {
 	key := r.PathValue("key")
 	if key == "" {
 		return read, r, nil
 	}
-	if d, known := settingDefinitionOf(key); !known || d.Sensitive {
+	d, known := settingDefinitionOf(key)
+	if !known || d.Sensitive {
 		return false, r, nil
 	}
 	if read {
 		return true, r, nil
+	}
+	if d.Risk != runtimesettings.RiskWeakensSecurity {
+		return false, r, nil
 	}
 	raw, r, err := peekBody(r)
 	if err != nil {
