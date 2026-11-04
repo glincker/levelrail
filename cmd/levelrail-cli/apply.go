@@ -36,6 +36,7 @@ type applyFlags struct {
 	secrets         stringMapFlag
 	vars            stringMapFlag
 	varFiles        stringListFlag
+	values          stringListFlag
 	allowEnv        stringListFlag
 	serverSide      serverSideFlags
 }
@@ -61,6 +62,9 @@ Flags:
   --yes                do not ask for confirmation
   --secret K=env:VAR   store a secret value read from an env var (or K=file:PATH); K or app/K
   --var NAME=VALUE     value for a ${{ env.NAME }} placeholder (repeatable, wins over the others)
+  --values FILE.yaml   flat YAML map of placeholder values per environment (repeatable, later
+                       wins); beats --var-file and the environment, loses to --var.
+                       Credential looking keys are refused.
   --var-file PATH      KEY=VALUE lines (dotenv format) for placeholders (repeatable)
   --allow-env NAMES    comma separated names (or PREFIX*) that placeholders may read from
                        your environment; nothing else is read from it. Credential
@@ -91,6 +95,7 @@ func bindApplyFlags(fs *flag.FlagSet, diff bool) *applyFlags {
 	fs.Var(f.secrets, "secret", "K=env:VAR or K=file:PATH, store a secret value at apply time")
 	fs.Var(f.vars, "var", "NAME=VALUE for a ${{ env.NAME }} placeholder")
 	fs.Var(&f.varFiles, "var-file", "file of KEY=VALUE lines for placeholders (repeatable)")
+	fs.Var(&f.values, "values", "flat YAML file of placeholder values (repeatable, later wins)")
 	fs.Var(&f.allowEnv, "allow-env", "NAME[,NAME] or PREFIX* that placeholders may read from the environment")
 	return f
 }
@@ -185,7 +190,7 @@ func buildIaCRequest(af *applyFlags, lookupEnv func(string) (string, bool)) (api
 	if err != nil {
 		return apiclient.IaCRequest{}, err
 	}
-	vars, err := resolveVars(files, varSources{vars: af.vars, varFiles: af.varFiles, allowEnv: af.allowEnv}, lookupEnv)
+	vars, err := resolveVars(files, varSources{vars: af.vars, varFiles: af.varFiles, values: af.values, allowEnv: af.allowEnv}, lookupEnv)
 	if err != nil {
 		return apiclient.IaCRequest{}, err
 	}

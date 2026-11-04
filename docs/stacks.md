@@ -209,6 +209,10 @@ A stack-scoped token can reach only that stack's endpoints. During an apply it c
 
 Store each token as a CI secret, and give the apply token only to the protected branch and environment that deploys.
 
+## Values per environment
+
+`levelrail-cli apply --values values/prod.yaml` reads a flat YAML map (`IMAGE_TAG: v1.4.2`) and fills the matching <span v-pre>`${{ env.NAME }}`</span> placeholders. Repeat the flag and the later file wins. Precedence is `--var`, then `--values`, then `--var-file`, then names allowed with `--allow-env`. Only scalar values are accepted, and only placeholders the manifests use are read. Keys that look like credentials (`*TOKEN*`, `*SECRET*`, `*_KEY*`) are refused, so use `--secret` for those; values are never printed. A missing value fails before anything is sent and names the placeholder.
+
 ## Secrets
 
 Manifests name secrets, they never contain values. Refer to a secret by name, for example `{ secretRef: DB_PASSWORD }`, and pass its value at apply time from the CI secret store:
