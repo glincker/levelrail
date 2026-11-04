@@ -68,6 +68,7 @@ func teamsUsage(prog string) string {
   %[1]s teams roles                                 the four team roles and what each grants
   %[1]s teams transfer <team> <user-id>             hand ownership to another member; you become admin
   %[1]s teams events <team> [--limit N]             the team's membership audit trail (admins)
+  %[1]s teams set-slug|set-description|avatar ...   same as "orgs" (profile fields and avatar)
   %[1]s teams members <verb> ...                    list, set-role, remove, leave
   %[1]s teams invites <verb> ...                    list, create, revoke, accept
 
@@ -99,6 +100,8 @@ func runTeams(prog string, args []string, stdout, stderr io.Writer, lookupEnv lo
 		return runTeamsTransfer(prog, rest, stdout, stderr, lookupEnv)
 	case "events":
 		return runTeamsEvents(prog, rest, stdout, stderr, lookupEnv)
+	case "set-slug", "set-description", "avatar":
+		return runOrgs(prog, args, stdout, stderr, lookupEnv)
 	case "members":
 		return runMembers(prog, rest, stdout, stderr, lookupEnv)
 	case "invites":

@@ -45,6 +45,13 @@ func (rt *Router) registerProjectRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/organizations", rt.requireAbility(AbilityWrite, rt.handleCreateOrganization))
 	mux.HandleFunc("GET /api/v1/organizations/{id}", rt.requireAbility(AbilityRead, rt.handleGetOrganization))
 	mux.HandleFunc("DELETE /api/v1/organizations/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteOrganization))
+	// Profile and home (organization_profile.go): the team gate answers 404 to non-members.
+	mux.HandleFunc("PATCH /api/v1/organizations/{id}", rt.requireAbility(AbilityWrite, rt.handlePatchOrganization))
+	mux.HandleFunc("GET /api/v1/organizations/{id}/avatar", rt.requireAbility(AbilityRead, rt.handleGetOrganizationAvatar))
+	mux.HandleFunc("PUT /api/v1/organizations/{id}/avatar", rt.requireAbility(AbilityWrite, rt.handlePutOrganizationAvatar))
+	mux.HandleFunc("DELETE /api/v1/organizations/{id}/avatar", rt.requireAbility(AbilityWrite, rt.handleDeleteOrganizationAvatar))
+	mux.HandleFunc("GET /api/v1/organizations/{id}/summary", rt.requireAbility(AbilityRead, rt.handleGetOrganizationSummary))
+	mux.HandleFunc("GET /api/v1/organizations/{id}/activity", rt.requireAbility(AbilityRead, rt.handleListOrganizationActivity))
 	mux.HandleFunc("PUT /api/v1/projects/{id}/organization", rt.requireAbility(AbilityWrite, rt.handleSetProjectOrganization))
 
 	// Shared env vars every project filed under this organization

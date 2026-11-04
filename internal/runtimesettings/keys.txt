@@ -78,6 +78,8 @@ nodes.protected_taint_keys
 onboarding.enabled
 onboarding.restore_reminder_days
 orgs.admins_can_create
+orgs.avatar_max_bytes
+orgs.avatar_max_dimension
 orgs.provisioned_default_membership
 orgs.strict_isolation
 pipelines.oidc_listen_port

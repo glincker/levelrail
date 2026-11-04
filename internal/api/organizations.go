@@ -17,13 +17,17 @@ import (
 
 // organizationResource is the wire shape for an organization.
 type organizationResource struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	CreatedAt string `json:"created_at"`
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	CreatedAt   string `json:"created_at"`
+	Slug        string `json:"slug,omitempty"`
+	Description string `json:"description,omitempty"`
+	AvatarURL   string `json:"avatar_url,omitempty"`
+	UpdatedAt   string `json:"updated_at,omitempty"`
 }
 
 func toOrganizationResource(o store.Organization) organizationResource {
-	return organizationResource{ID: o.ID, Name: o.Name, CreatedAt: o.CreatedAt}
+	return organizationResource{ID: o.ID, Name: o.Name, CreatedAt: o.CreatedAt, Slug: o.Slug, Description: o.Description, AvatarURL: orgAvatarURL(o), UpdatedAt: o.UpdatedAt}
 }
 
 type createOrganizationRequest struct {

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1963 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1969 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1689,7 +1689,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/teams/roles", Ability: "AbilityRead", Group: "Other", Handler: "handleListTeamRoles", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/teams/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteTeam", Description: ""},
 	{Method: "GET", Path: "/api/v1/teams/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetTeam", Description: ""},
-	{Method: "PATCH", Path: "/api/v1/teams/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleRenameTeam", Description: ""},
+	{Method: "PATCH", Path: "/api/v1/teams/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handlePatchOrganization", Description: ""},
 	{Method: "GET", Path: "/api/v1/teams/{id}/events", Ability: "AbilityRead", Group: "Other", Handler: "handleListTeamEvents", Description: ""},
 	{Method: "GET", Path: "/api/v1/teams/{id}/invites", Ability: "AbilityRead", Group: "Other", Handler: "handleListTeamInvites", Description: ""},
 	{Method: "POST", Path: "/api/v1/teams/{id}/invites", Ability: "AbilityWrite", Group: "Other", Handler: "handleCreateTeamInvite", Description: ""},
@@ -1754,12 +1754,18 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/organizations", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleCreateOrganization", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/organizations/{id}", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleDeleteOrganization", Description: ""},
 	{Method: "GET", Path: "/api/v1/organizations/{id}", Ability: "AbilityRead", Group: "Projects / Organizations / Environments", Handler: "handleGetOrganization", Description: ""},
+	{Method: "PATCH", Path: "/api/v1/organizations/{id}", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handlePatchOrganization", Description: "Profile and home (organization_profile.go): the team gate answers 404 to non-members."},
+	{Method: "GET", Path: "/api/v1/organizations/{id}/activity", Ability: "AbilityRead", Group: "Projects / Organizations / Environments", Handler: "handleListOrganizationActivity", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/organizations/{id}/avatar", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleDeleteOrganizationAvatar", Description: ""},
+	{Method: "GET", Path: "/api/v1/organizations/{id}/avatar", Ability: "AbilityRead", Group: "Projects / Organizations / Environments", Handler: "handleGetOrganizationAvatar", Description: ""},
+	{Method: "PUT", Path: "/api/v1/organizations/{id}/avatar", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handlePutOrganizationAvatar", Description: ""},
 	{Method: "GET", Path: "/api/v1/organizations/{id}/env", Ability: "AbilityRead", Group: "Projects / Organizations / Environments", Handler: "handleGetOrganizationEnv", Description: "Shared env vars every project filed under this organization inherits (organization_env.go), the base layer beneath projects/{id}/env below."},
 	{Method: "PUT", Path: "/api/v1/organizations/{id}/env", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleSetOrganizationEnv", Description: ""},
 	{Method: "GET", Path: "/api/v1/organizations/{id}/env/all", Ability: "AbilityRead", Group: "Projects / Organizations / Environments", Handler: "handleListOrganizationEnvAll", Description: "Secret-backed shared env vars at the organization tier (shared_env_secrets.go/organization_env.go): the encrypted counterpart to the plain-value GET/PUT above, reusing internal/secrets.Manager (Router.secrets) for the actual encryption."},
 	{Method: "GET", Path: "/api/v1/organizations/{id}/env/secrets", Ability: "AbilityRead", Group: "Projects / Organizations / Environments", Handler: "handleListOrganizationEnvSecretKeys", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/organizations/{id}/env/secrets/{key}", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleDeleteOrganizationEnvSecret", Description: ""},
 	{Method: "PUT", Path: "/api/v1/organizations/{id}/env/secrets/{key}", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleSetOrganizationEnvSecret", Description: ""},
+	{Method: "GET", Path: "/api/v1/organizations/{id}/summary", Ability: "AbilityRead", Group: "Projects / Organizations / Environments", Handler: "handleGetOrganizationSummary", Description: ""},
 	{Method: "GET", Path: "/api/v1/projects", Ability: "AbilityRead", Group: "Projects / Organizations / Environments", Handler: "handleListProjects", Description: "Projects (projects.go): a lightweight, non-auth organizational grouping, explicitly not the deferred Phase 4 teams/RBAC work (see that file's own package doc comment). AbilityRead/AbilityWrite, the same ordinary boundary apps/databases CRUD already uses, not AbilityRoot: unlike a node (real infrastructure), creating or deleting a project has no fleet-level consequence."},
 	{Method: "POST", Path: "/api/v1/projects", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleCreateProject", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/projects/{id}", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleDeleteProject", Description: ""},

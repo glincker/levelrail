@@ -13,7 +13,7 @@ func (rt *Router) registerTeamRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/teams", rt.requireAbility(AbilityRoot, rt.handleCreateTeam))
 	mux.HandleFunc("GET /api/v1/teams/roles", rt.requireAbility(AbilityRead, rt.handleListTeamRoles))
 	mux.HandleFunc("GET /api/v1/teams/{id}", rt.requireAbility(AbilityRead, rt.handleGetTeam))
-	mux.HandleFunc("PATCH /api/v1/teams/{id}", rt.requireAbility(AbilityWrite, rt.handleRenameTeam))
+	mux.HandleFunc("PATCH /api/v1/teams/{id}", rt.requireAbility(AbilityWrite, rt.handlePatchOrganization))
 	mux.HandleFunc("DELETE /api/v1/teams/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteTeam))
 	mux.HandleFunc("GET /api/v1/teams/{id}/members", rt.requireAbility(AbilityRead, rt.handleListTeamMembers))
 	mux.HandleFunc("PUT /api/v1/teams/{id}/members/{user}", rt.requireAbility(AbilityWrite, rt.handleSetTeamMemberRole))

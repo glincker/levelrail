@@ -358,6 +358,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runSessionPolicy(prog, args[1:], stdout, stderr, lookupEnv)
 	case "teams":
 		return runTeams(prog, args[1:], stdout, stderr, lookupEnv)
+	case "orgs":
+		return runOrgs(prog, args[1:], stdout, stderr, lookupEnv)
 	case "quota":
 		return runQuota(prog, args[1:], stdout, stderr, lookupEnv)
 	case "members":
@@ -568,6 +570,7 @@ Usage:
   %[1]s invites create|list|revoke [flags]                     invite a teammate by email, list or revoke pending invites
   %[1]s teams list|create|show|rename|delete|use|roles|transfer|events|members|invites   teams, their members, roles and invitations
   %[1]s quota show|set|clear <team|project> <id> [flags]       per-team and per-project limits on apps, databases, memory, CPU and previews
+  %[1]s orgs show|rename|set-slug|set-description|avatar <org> ...   organization profile (name, slug, description, avatar) and home summary
   %[1]s members list|set-role|remove|leave <team> ...          shortcut for "teams members"
   %[1]s --team ID [--project ID] <command> ...                 narrow any command to one team or project (also APP_TEAM, APP_PROJECT, "teams use")
   %[1]s iam policies create|list|get|update|delete|attach|detach|attachments [flags]   resource-scoped Allow/Deny policies, additive on top of --abilities

@@ -51,6 +51,9 @@ type teamResource struct {
 	Role        string `json:"role"`
 	MemberCount int    `json:"member_count"`
 	CreatedAt   string `json:"created_at"`
+	Slug        string `json:"slug,omitempty"`
+	Description string `json:"description,omitempty"`
+	AvatarURL   string `json:"avatar_url,omitempty"`
 }
 
 type teamMemberResource struct {
@@ -171,7 +174,7 @@ func (rt *Router) handleListTeams(w http.ResponseWriter, r *http.Request) {
 		if scope != nil {
 			role = scope.roleOfTeam(o.ID)
 		}
-		out = append(out, teamResource{ID: o.ID, Name: o.Name, Default: o.ID == store.DefaultTeamID, Role: role, MemberCount: len(members), CreatedAt: o.CreatedAt})
+		out = append(out, teamResource{ID: o.ID, Name: o.Name, Default: o.ID == store.DefaultTeamID, Role: role, MemberCount: len(members), CreatedAt: o.CreatedAt, Slug: o.Slug, Description: o.Description, AvatarURL: orgAvatarURL(o)})
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -238,32 +241,7 @@ func (rt *Router) handleGetTeam(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: get team: members", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, teamResource{ID: org.ID, Name: org.Name, Default: org.ID == store.DefaultTeamID, Role: caller.role, MemberCount: len(members), CreatedAt: org.CreatedAt})
-}
-
-// handleRenameTeam handles PATCH /api/v1/teams/{id}; owners only.
-func (rt *Router) handleRenameTeam(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
-	var req createTeamRequest
-	if err := decodeJSONBody(r, &req); err != nil || strings.TrimSpace(req.Name) == "" {
-		writeError(w, http.StatusBadRequest, "name is required")
-		return
-	}
-	caller, err := rt.resolveTeamCaller(r, id)
-	if err != nil {
-		rt.internalError(w, "api: rename team: caller", err)
-		return
-	}
-	if (!caller.root && caller.role != store.TeamRoleOwner) || (id == store.DefaultTeamID && !caller.root) {
-		writeError(w, http.StatusForbidden, "only a team owner can rename the team")
-		return
-	}
-	if err := rt.teamAdmin().RenameOrganization(r.Context(), id, strings.TrimSpace(req.Name)); err != nil {
-		rt.internalError(w, "api: rename team", err)
-		return
-	}
-	rt.recordTeamEvent(r, id, caller.userID, "team.renamed", strings.TrimSpace(req.Name), "")
-	rt.handleGetTeam(w, r)
+	writeJSON(w, http.StatusOK, teamResource{ID: org.ID, Name: org.Name, Default: org.ID == store.DefaultTeamID, Role: caller.role, MemberCount: len(members), CreatedAt: org.CreatedAt, Slug: org.Slug, Description: org.Description, AvatarURL: orgAvatarURL(org)})
 }
 
 // handleDeleteTeam handles DELETE /api/v1/teams/{id}. The default team and a

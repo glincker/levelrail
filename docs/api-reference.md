@@ -948,6 +948,12 @@ Endpoints for:
 | PUT | /api/v1/projects/{id}/quota | AbilityWrite | handleSetQuota |
 | DELETE | /api/v1/projects/{id}/quota | AbilityWrite | handleDeleteQuota |
 | GET | /api/v1/projects/{id}/export | AbilityReadSensitive | handleExportProject |
+| PATCH | /api/v1/organizations/{id} | AbilityWrite | handlePatchOrganization |
+| GET | /api/v1/organizations/{id}/avatar | AbilityRead | handleGetOrganizationAvatar |
+| PUT | /api/v1/organizations/{id}/avatar | AbilityWrite | handlePutOrganizationAvatar |
+| DELETE | /api/v1/organizations/{id}/avatar | AbilityWrite | handleDeleteOrganizationAvatar |
+| GET | /api/v1/organizations/{id}/summary | AbilityRead | handleGetOrganizationSummary |
+| GET | /api/v1/organizations/{id}/activity | AbilityRead | handleListOrganizationActivity |
 
 ## Nodes
 
@@ -1613,7 +1619,7 @@ Routes that do not fit an existing group.
 | POST | /api/v1/teams | AbilityRoot | handleCreateTeam |
 | GET | /api/v1/teams/roles | AbilityRead | handleListTeamRoles |
 | GET | /api/v1/teams/{id} | AbilityRead | handleGetTeam |
-| PATCH | /api/v1/teams/{id} | AbilityWrite | handleRenameTeam |
+| PATCH | /api/v1/teams/{id} | AbilityWrite | handlePatchOrganization |
 | DELETE | /api/v1/teams/{id} | AbilityWrite | handleDeleteTeam |
 | GET | /api/v1/teams/{id}/members | AbilityRead | handleListTeamMembers |
 | PUT | /api/v1/teams/{id}/members/{user} | AbilityWrite | handleSetTeamMemberRole |
