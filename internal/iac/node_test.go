@@ -1,6 +1,8 @@
 package iac
 
 import (
+	"context"
+	"errors"
 	"net/http"
 	"strings"
 	"testing"
@@ -119,5 +121,46 @@ func TestNodeInvalidTaintIsABuildIssue(t *testing.T) {
 	}
 	if len(issues) == 0 {
 		t.Fatal("an invalid effect must be rejected")
+	}
+}
+
+func TestExportDatabaseFilter(t *testing.T) {
+	f := newFake()
+	doc := "version: 1\nkind: Database\nmetadata: {name: orders}\nspec: {engine: postgres}\n---\nversion: 1\nkind: Database\nmetadata: {name: other}\nspec: {engine: postgres}\n"
+	applyAll(t, f, doc, Options{})
+	out, err := Export(context.Background(), f, ExportOptions{Database: "orders"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out.Files) != 1 || !strings.Contains(out.Join(), "name: orders") {
+		t.Fatalf("want only orders:\n%s", out.Join())
+	}
+	_, err = Export(context.Background(), f, ExportOptions{Database: "nope"})
+	var se *StatusError
+	if !errors.As(err, &se) || se.Status != http.StatusNotFound {
+		t.Fatalf("want 404, got %v", err)
+	}
+}
+
+func TestExportNodeFilter(t *testing.T) {
+	f := newFake()
+	addNodes(f, "worker-1", "worker-2")
+	opts := Options{Source: "git"}
+	applyAll(t, f, nodeDoc, opts)
+	out, err := Export(context.Background(), f, ExportOptions{Node: "worker-1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	j := out.Join()
+	if len(out.Files) != 1 || !strings.Contains(j, "kind: Node") || !strings.Contains(j, "zone: a") || !strings.Contains(j, "key: gpu") {
+		t.Fatalf("node export:\n%s", j)
+	}
+	if p := planFor(t, f, j, opts); quiet(p) != 0 {
+		t.Fatalf("export does not replan clean: %+v", p.Changes)
+	}
+	_, err = Export(context.Background(), f, ExportOptions{Node: "ghost"})
+	var se *StatusError
+	if !errors.As(err, &se) || se.Status != http.StatusNotFound {
+		t.Fatalf("want 404, got %v", err)
 	}
 }

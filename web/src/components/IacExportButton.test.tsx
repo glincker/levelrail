@@ -39,4 +39,22 @@ describe('IacExportButton', () => {
     expect(String(fetchMock.mock.calls[0]?.[0])).toContain('app=web')
     vi.unstubAllGlobals()
   })
+
+  it('sends the node filter for a node export', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify({ files: [] }), { status: 200 }),
+      )
+    vi.stubGlobal('fetch', fetchMock)
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <IacExportButton kind="node" name="worker-1" />
+      </QueryClientProvider>,
+    )
+    await userEvent.click(screen.getByRole('button'))
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled())
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain('node=worker-1')
+    vi.unstubAllGlobals()
+  })
 })

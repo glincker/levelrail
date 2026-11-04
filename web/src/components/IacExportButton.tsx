@@ -13,7 +13,7 @@ import { useExportIac } from '../queries/iac'
 import { IacExportView } from './IacExportView'
 
 interface IacExportButtonProps {
-  kind: 'app' | 'database'
+  kind: 'app' | 'database' | 'node'
   name: string
 }
 

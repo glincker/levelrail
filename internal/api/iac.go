@@ -237,7 +237,7 @@ func (rt *Router) refuseStackOwned(w http.ResponseWriter, r *http.Request, ss St
 
 func (rt *Router) handleIaCExport(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
-	opts := iac.ExportOptions{Project: q.Get("project"), App: q.Get("app"), IncludeEnvValues: q.Get("include_env_values") != "false" && rt.callerHasAbility(r, AbilityReadSensitive)}
+	opts := iac.ExportOptions{Project: q.Get("project"), App: q.Get("app"), Database: q.Get("database"), Node: q.Get("node"), IncludeEnvValues: q.Get("include_env_values") != "false" && rt.callerHasAbility(r, AbilityReadSensitive)}
 	out, err := iac.Export(r.Context(), rt.iacDoer(r), opts)
 	if err != nil {
 		var se *iac.StatusError

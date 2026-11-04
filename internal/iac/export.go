@@ -20,6 +20,9 @@ import (
 type ExportOptions struct {
 	Project string
 	App     string
+	// Database and Node each export that one resource alone.
+	Database string
+	Node     string
 	// IncludeEnvValues writes literal env values; when false every value
 	// becomes a ${{ env.NAME }} placeholder.
 	IncludeEnvValues bool
@@ -112,6 +115,19 @@ func Export(ctx context.Context, d Doer, opts ExportOptions) (ExportResult, erro
 		if _, ok := e.st.projects[opts.Project]; !ok {
 			return ExportResult{}, fmt.Errorf("project %q was not found", opts.Project)
 		}
+	}
+	if opts.Node != "" {
+		if err := e.node(ctx, l); err != nil {
+			return ExportResult{}, err
+		}
+		return e.render()
+	}
+	if opts.Database != "" {
+		if _, ok := e.st.databases[opts.Database]; !ok {
+			return ExportResult{}, &StatusError{Status: http.StatusNotFound, Message: fmt.Sprintf("database %q was not found", opts.Database)}
+		}
+		e.databases()
+		return e.render()
 	}
 	if err := e.projects(ctx, l); err != nil {
 		return ExportResult{}, err
@@ -356,6 +372,9 @@ func (e *exporter) databases() {
 		return
 	}
 	for _, name := range sortedKeys(e.st.databases) {
+		if e.opts.Database != "" && name != e.opts.Database {
+			continue
+		}
 		db := e.st.databases[name]
 		project := e.st.projectsByID[db.ProjectID].Name
 		if e.opts.Project != "" && project != e.opts.Project {
@@ -376,6 +395,55 @@ func (e *exporter) databases() {
 		}
 		e.docs = append(e.docs, outDoc{Version: SchemaVersion, Kind: KindDatabase, Metadata: outMeta{Name: name}, Spec: s})
 	}
+}
+
+// node writes the one Node document, or 404 when no node has that name.
+func (e *exporter) node(ctx context.Context, l loader) error {
+	var all []wireNode
+	if err := l.fetch(ctx, "nodes", "list nodes", "/api/v1/nodes", &all); err != nil {
+		return err
+	}
+	var ids []string
+	for _, n := range all {
+		if n.Name == e.opts.Node {
+			ids = append(ids, n.ID)
+		}
+	}
+	switch len(ids) {
+	case 0:
+		return &StatusError{Status: http.StatusNotFound, Message: fmt.Sprintf("node %q was not found", e.opts.Node)}
+	case 1:
+	default:
+		return &StatusError{Status: http.StatusConflict, Message: fmt.Sprintf("more than one node is named %q", e.opts.Node)}
+	}
+	base := "/api/v1/nodes/" + esc(ids[0])
+	var lb struct {
+		Labels map[string]string `json:"labels"`
+	}
+	if err := l.fetch(ctx, "node", "read labels of node "+e.opts.Node, base+"/labels", &lb); err != nil {
+		return err
+	}
+	var tb struct {
+		Taints []placement.Taint `json:"taints"`
+	}
+	if err := l.fetch(ctx, "node", "read taints of node "+e.opts.Node, base+"/taints", &tb); err != nil {
+		return err
+	}
+	taints := make([]map[string]string, 0, len(tb.Taints))
+	for _, t := range tb.Taints {
+		m := map[string]string{"key": t.Key, "effect": string(t.Effect)}
+		if t.Value != "" {
+			m["value"] = t.Value
+		}
+		taints = append(taints, m)
+	}
+	labels := lb.Labels
+	if labels == nil {
+		labels = map[string]string{}
+	}
+	e.docs = append(e.docs, outDoc{Version: SchemaVersion, Kind: KindNode, Metadata: outMeta{Name: e.opts.Node},
+		Spec: map[string]any{"labels": labels, "taints": taints}})
+	return nil
 }
 
 func (e *exporter) render() (ExportResult, error) {

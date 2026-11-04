@@ -88,7 +88,18 @@ func (c *Client) ApplyIaC(ctx context.Context, req IaCRequest) (iac.ApplyResult,
 
 // ExportIaC calls GET /api/v1/export.
 func (c *Client) ExportIaC(ctx context.Context, project, app string, includeEnvValues bool) (iac.ExportResult, error) {
+	return c.ExportIaCOne(ctx, project, app, "", "", includeEnvValues)
+}
+
+// ExportIaCOne is ExportIaC with the single-database and single-node filters.
+func (c *Client) ExportIaCOne(ctx context.Context, project, app, database, node string, includeEnvValues bool) (iac.ExportResult, error) {
 	q := url.Values{}
+	if database != "" {
+		q.Set("database", database)
+	}
+	if node != "" {
+		q.Set("node", node)
+	}
 	if project != "" {
 		q.Set("project", project)
 	}
