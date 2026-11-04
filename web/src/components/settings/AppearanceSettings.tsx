@@ -1,4 +1,4 @@
-import { useId } from 'react'
+import { useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   BookOpenGlassIcon,
@@ -13,6 +13,7 @@ import {
 import type { ComponentType, ReactNode } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
   SelectedMark,
   selectableCardClass,
@@ -31,21 +32,28 @@ import { useTheme } from '@/components/ThemeProvider'
 import {
   APPEARANCE_RECOMMENDED as REC,
   APPEARANCE_DEFAULTS as DEF,
-  ACCENTS,
+  ACCENT_CHOICES,
   DARK_BASES,
   FONTS,
   GUTTERS,
   LIGHT_BASES,
   PRESETS,
   PRESET_VALUES,
-  TEXT_SIZES,
+  MOTIONS,
+  TEXT_SIZE_MAX,
+  TEXT_SIZE_MIN,
+  TEXT_SIZE_QUICK,
+  TEXT_SIZE_STEP,
   applyPreset,
+  clampTextSize,
+  customAccent,
   resetAppearance,
   setAppearance,
   useAppearance,
   type Appearance,
   type PresetId,
 } from '@/lib/appearance'
+import { normalizeHex } from '@/lib/accentContrast'
 import { setDensity, useDensity, type Density } from '@/lib/density'
 import { PAGE_WIDTHS, setPageWidth, usePageWidth } from '@/lib/pageWidth'
 import { cn } from '@/lib/utils'
@@ -73,6 +81,8 @@ const ACCENT_SAMPLE: Record<string, string> = {
   green: 'bg-[oklch(0.52_0.13_155)] dark:bg-[oklch(0.76_0.13_155)]',
   amber: 'bg-[oklch(0.52_0.14_70)] dark:bg-[oklch(0.76_0.14_70)]',
   rose: 'bg-[oklch(0.52_0.17_10)] dark:bg-[oklch(0.76_0.17_10)]',
+  custom:
+    'bg-[conic-gradient(from_0deg,oklch(0.7_0.15_30),oklch(0.8_0.15_100),oklch(0.7_0.15_160),oklch(0.7_0.15_240),oklch(0.7_0.15_320),oklch(0.7_0.15_30))]',
 }
 
 function AccentSample({ id }: { id: string }) {
@@ -137,7 +147,10 @@ function activePreset(
       if (p.width !== width || p.density !== density) return false
       if (p.theme && p.theme !== theme) return false
       return (Object.keys(p.appearance) as (keyof Appearance)[]).every(
-        (k) => p.appearance[k] === appearance[k],
+        (k) =>
+          // The stored custom hex only matters while the custom accent is on.
+          (k === 'accentCustom' && appearance.accent !== 'custom') ||
+          p.appearance[k] === appearance[k],
       )
     }) ?? null
   )
@@ -154,6 +167,136 @@ function PresetSwatch({ id }: { id: PresetId }) {
       </span>
       <AccentSample id={p.appearance.accent} />
     </span>
+  )
+}
+
+function TextSizeControl({
+  value,
+  label,
+  quickLabel,
+  sample,
+  resetLabel,
+}: {
+  value: number
+  label: string
+  quickLabel: string
+  sample: string
+  resetLabel: string
+}) {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-3">
+        <input
+          type="range"
+          aria-label={label}
+          min={TEXT_SIZE_MIN}
+          max={TEXT_SIZE_MAX}
+          step={TEXT_SIZE_STEP}
+          value={value}
+          onChange={(e) =>
+            setAppearance({ textSize: clampTextSize(e.target.value) })
+          }
+          className="h-6 min-w-0 flex-1 cursor-pointer accent-state-accent"
+        />
+        <output className="w-12 text-right text-sm font-medium tabular-nums">
+          {value}%
+        </output>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <div
+          role="group"
+          aria-label={quickLabel}
+          className="flex items-center gap-1.5"
+        >
+          {TEXT_SIZE_QUICK.map((n) => (
+            <Button
+              key={n}
+              type="button"
+              size="sm"
+              variant="outline"
+              aria-pressed={value === n}
+              className={cn(value === n && 'border-state-accent')}
+              onClick={() => setAppearance({ textSize: n })}
+            >
+              {n}%
+            </Button>
+          ))}
+        </div>
+        {value !== DEF.textSize ? (
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={() => setAppearance({ textSize: DEF.textSize })}
+          >
+            {resetLabel}
+          </Button>
+        ) : null}
+        <span className="ml-auto text-foreground" aria-hidden="true">
+          {sample}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+function CustomAccentEditor({ appearance }: { appearance: Appearance }) {
+  const { t } = useTranslation('settings')
+  const [draft, setDraft] = useState<string | null>(null)
+  const hexId = useId()
+  const shown = draft ?? appearance.accentCustom
+  const invalid = draft !== null && normalizeHex(draft) === null
+  const adjusted = customAccent(appearance).adjusted
+
+  const commit = (hex: string) => {
+    setAppearance({ accent: 'custom', accentCustom: hex })
+  }
+
+  return (
+    <div className="mt-2 space-y-1.5">
+      <div className="flex items-center gap-2">
+        <input
+          type="color"
+          aria-label={t('appearancePage.accent.customColor')}
+          value={appearance.accentCustom}
+          onChange={(e) => {
+            setDraft(null)
+            commit(e.target.value)
+          }}
+          className="size-8 shrink-0 cursor-pointer rounded-md border border-input bg-transparent p-0.5"
+        />
+        <Input
+          id={hexId}
+          aria-label={t('appearancePage.accent.customHex')}
+          aria-invalid={invalid}
+          spellCheck={false}
+          maxLength={7}
+          value={shown}
+          onChange={(e) => {
+            const next = e.target.value
+            const hex = normalizeHex(next)
+            if (hex) {
+              setDraft(null)
+              commit(hex)
+            } else {
+              setDraft(next)
+            }
+          }}
+          onBlur={() => setDraft(null)}
+          className="w-28 font-mono"
+        />
+      </div>
+      {invalid ? (
+        <p role="alert" className="text-xs text-destructive">
+          {t('appearancePage.accent.customInvalid')}
+        </p>
+      ) : null}
+      {adjusted ? (
+        <p role="status" className="text-xs text-muted-foreground">
+          {t('appearancePage.accent.adjusted')}
+        </p>
+      ) : null}
+    </div>
   )
 }
 
@@ -231,14 +374,6 @@ export function AppearanceSettings() {
     isDefault: v === DEF.font,
     isRecommended: v === REC.font,
   }))
-  const sizeOptions: Choice<(typeof TEXT_SIZES)[number]>[] = TEXT_SIZES.map(
-    (v) => ({
-      value: v,
-      label: `${v}%`,
-      isDefault: v === DEF.textSize,
-      isRecommended: v === REC.textSize,
-    }),
-  )
   const widthOptions: Choice<(typeof PAGE_WIDTHS)[number]>[] = PAGE_WIDTHS.map(
     (v) => ({
       value: v,
@@ -257,13 +392,20 @@ export function AppearanceSettings() {
       isRecommended: v === REC.gutter,
     }),
   )
-  const accentOptions: Choice<(typeof ACCENTS)[number]>[] = ACCENTS.map(
-    (v) => ({
+  const accentOptions: Choice<(typeof ACCENT_CHOICES)[number]>[] =
+    ACCENT_CHOICES.map((v) => ({
       value: v,
       label: t(`appearancePage.accent.${v}`),
       sample: <AccentSample id={v} />,
       isDefault: v === DEF.accent,
       isRecommended: v === REC.accent,
+    }))
+  const motionOptions: Choice<(typeof MOTIONS)[number]>[] = MOTIONS.map(
+    (v) => ({
+      value: v,
+      label: t(`appearancePage.motion.${v}`),
+      hint: t(`appearancePage.motion.${v}Hint`),
+      isDefault: v === DEF.motion,
     }),
   )
   const densityOptions: Choice<Density>[] = (
@@ -411,6 +553,9 @@ export function AppearanceSettings() {
               className="sm:grid-cols-3"
               {...common}
             />
+            {appearance.accent === 'custom' ? (
+              <CustomAccentEditor appearance={appearance} />
+            ) : null}
           </SettingRow>
         </SectionCard>
 
@@ -443,13 +588,12 @@ export function AppearanceSettings() {
               title={t('appearancePage.textSize.title')}
               description={t('appearancePage.textSize.description')}
             >
-              <ChoiceGroup
-                label={t('appearancePage.textSize.title')}
+              <TextSizeControl
                 value={appearance.textSize}
-                options={sizeOptions}
-                onChange={(textSize) => setAppearance({ textSize })}
-                className="sm:grid-cols-3"
-                {...common}
+                label={t('appearancePage.textSize.slider')}
+                quickLabel={t('appearancePage.textSize.quick')}
+                sample={t('appearancePage.textSize.sample')}
+                resetLabel={t('appearancePage.textSize.reset')}
               />
             </SettingRow>
           </SectionCard>
@@ -501,6 +645,20 @@ export function AppearanceSettings() {
                 options={densityOptions}
                 onChange={setDensity}
                 className="sm:grid-cols-2"
+                {...common}
+              />
+            </SettingRow>
+            <SettingRow
+              className={ROW}
+              title={t('appearancePage.motion.title')}
+              description={t('appearancePage.motion.description')}
+            >
+              <ChoiceGroup
+                label={t('appearancePage.motion.title')}
+                value={appearance.motion}
+                options={motionOptions}
+                onChange={(motion) => setAppearance({ motion })}
+                className="sm:grid-cols-3"
                 {...common}
               />
             </SettingRow>

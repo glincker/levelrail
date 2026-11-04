@@ -1,16 +1,9 @@
 import { useEffect, useState } from 'react'
+import { prefersReducedMotion } from '@/lib/reducedMotion'
 
 const QUERY = '(prefers-reduced-motion: reduce)'
 
-export function prefersReducedMotion(): boolean {
-  if (
-    typeof window === 'undefined' ||
-    typeof window.matchMedia !== 'function'
-  ) {
-    return false
-  }
-  return window.matchMedia(QUERY).matches
-}
+export { prefersReducedMotion }
 
 export function useReducedMotion(): boolean {
   const [reduced, setReduced] = useState(prefersReducedMotion)

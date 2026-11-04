@@ -497,17 +497,34 @@ body {
   animation: cleanup-flash 1.6s var(--motion-ease) both;
 }
 
+/* data-motion: 'on' forces reduced motion, 'off' opts out of the system preference. */
 @media (prefers-reduced-motion: reduce) {
-  .cleanup-grow,
-  .cleanup-sheen,
-  .cleanup-flash,
-  .kit-shimmer,
-  .kit-pulse-ring,
-  .kit-enter,
-  .kit-exit,
-  .setup-hero::before {
+  :root:not([data-motion='off'])
+    :is(
+      .cleanup-grow,
+      .cleanup-sheen,
+      .cleanup-flash,
+      .kit-shimmer,
+      .kit-pulse-ring,
+      .kit-enter,
+      .kit-exit
+    ),
+  :root:not([data-motion='off']) .setup-hero::before {
     animation: none !important;
   }
+}
+:root[data-motion='on']
+  :is(
+    .cleanup-grow,
+    .cleanup-sheen,
+    .cleanup-flash,
+    .kit-shimmer,
+    .kit-pulse-ring,
+    .kit-enter,
+    .kit-exit
+  ),
+:root[data-motion='on'] .setup-hero::before {
+  animation: none !important;
 }
 
 @layer base {
@@ -523,14 +540,22 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  :root:not([data-motion='off']) *,
+  :root:not([data-motion='off']) *::before,
+  :root:not([data-motion='off']) *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+:root[data-motion='on'] *,
+:root[data-motion='on'] *::before,
+:root[data-motion='on'] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
 }
 
 /* Density: compact is the :root default in glinr-tokens.css; comfortable swaps in the paired tokens. */
@@ -925,6 +950,14 @@ body {
 :root.dark[data-accent='rose'] {
   --state-accent: oklch(0.76 0.17 10);
 }
+:root[data-accent='custom'] {
+  --state-accent: var(--glinr-accent-light);
+  --brand-link: var(--state-accent);
+  --sidebar-ring: var(--state-accent);
+}
+:root.dark[data-accent='custom'] {
+  --state-accent: var(--glinr-accent-dark);
+}
 :root.dark[data-accent] {
   --sidebar-primary: var(--state-accent);
 }
@@ -960,12 +993,9 @@ body {
   letter-spacing: 0.01em;
 }
 
-/* Text size scales rem, so every Tailwind size follows. */
-:root[data-text-size='90'] {
-  font-size: 90%;
-}
-:root[data-text-size='110'] {
-  font-size: 110%;
+/* Text size scales rem, so every Tailwind size follows. The scale is a percent set by appearance.ts. */
+:root[data-text-size] {
+  font-size: calc(var(--glinr-text-scale, 100) * 1%);
 }
 
 /* Side padding of the page content area, read by the app shell main element. */

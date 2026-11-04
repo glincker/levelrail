@@ -3594,7 +3594,12 @@
       "violet": "Violet",
       "green": "Green",
       "amber": "Amber",
-      "rose": "Rose"
+      "rose": "Rose",
+      "custom": "Custom color",
+      "customColor": "Pick a custom accent color",
+      "customHex": "Hex color",
+      "customInvalid": "Use six hex digits, like #0e7490.",
+      "adjusted": "Adjusted for readability"
     },
     "font": {
       "title": "Font",
@@ -3612,7 +3617,11 @@
     },
     "textSize": {
       "title": "Text size",
-      "description": "Scales all text and spacing."
+      "description": "Scales all text and spacing.",
+      "slider": "Text size",
+      "quick": "Quick picks",
+      "sample": "Aa The quick brown fox",
+      "reset": "Reset size"
     },
     "width": {
       "title": "Page width",
@@ -3637,6 +3646,16 @@
       "color": "Color",
       "type": "Type",
       "layout": "Layout"
+    },
+    "motion": {
+      "title": "Motion",
+      "description": "Animations and transitions across the dashboard.",
+      "system": "Follow system",
+      "systemHint": "Use your device setting",
+      "on": "Reduce",
+      "onHint": "Minimal animation",
+      "off": "Allow all",
+      "offHint": "Ignore the device setting"
     }
   }
 }

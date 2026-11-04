@@ -41,7 +41,26 @@ describe('appearance', () => {
     )
     expect(parsed.darkBase).toBe('soft')
     expect(parsed.font).toBe('mono')
-    expect(parsed.textSize).toBe('100')
+    expect(parsed.textSize).toBe(80)
+  })
+
+  it('accepts legacy string sizes and clamps the rest into range', () => {
+    const size = (v: unknown) =>
+      parseAppearance(JSON.stringify({ textSize: v })).textSize
+    expect(size('90')).toBe(90)
+    expect(size('110')).toBe(110)
+    expect(size(133)).toBe(135)
+    expect(size(500)).toBe(140)
+    expect(size('abc')).toBe(100)
+  })
+
+  it('stamps motion and text scale, and clears them at defaults', () => {
+    setAppearance({ motion: 'on', textSize: 125 })
+    expect(root.getAttribute('data-motion')).toBe('on')
+    expect(root.style.getPropertyValue('--glinr-text-scale')).toBe('125')
+    setAppearance({ motion: 'system', textSize: 100 })
+    expect(root.hasAttribute('data-motion')).toBe(false)
+    expect(root.style.getPropertyValue('--glinr-text-scale')).toBe('')
   })
 
   it('falls back to defaults on malformed or missing storage', () => {

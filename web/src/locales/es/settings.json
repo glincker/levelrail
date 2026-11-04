@@ -3562,7 +3562,12 @@
       "violet": "Violeta",
       "green": "Verde",
       "amber": "Ámbar",
-      "rose": "Rosa"
+      "rose": "Rosa",
+      "custom": "Color propio",
+      "customColor": "Elegir un color de acento personalizado",
+      "customHex": "Color hexadecimal",
+      "customInvalid": "Usa seis dígitos hexadecimales, como #0e7490.",
+      "adjusted": "Ajustado para mejorar la legibilidad"
     },
     "font": {
       "title": "Fuente",
@@ -3580,7 +3585,11 @@
     },
     "textSize": {
       "title": "Tamaño de texto",
-      "description": "Escala todo el texto y el espaciado."
+      "description": "Escala todo el texto y el espaciado.",
+      "slider": "Tamaño de texto",
+      "quick": "Accesos rápidos",
+      "sample": "Aa El veloz zorro marrón",
+      "reset": "Restablecer tamaño"
     },
     "width": {
       "title": "Ancho de página",
@@ -3605,6 +3614,16 @@
       "color": "Color",
       "type": "Tipografía",
       "layout": "Diseño"
+    },
+    "motion": {
+      "title": "Movimiento",
+      "description": "Animaciones y transiciones en todo el panel.",
+      "system": "Seguir el sistema",
+      "systemHint": "Usa el ajuste de tu dispositivo",
+      "on": "Reducir",
+      "onHint": "Animación mínima",
+      "off": "Permitir todo",
+      "offHint": "Ignora el ajuste del dispositivo"
     }
   }
 }

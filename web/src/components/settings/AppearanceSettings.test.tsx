@@ -58,3 +58,47 @@ describe('AppearanceSettings presets', () => {
     expect(screen.queryByText('Custom')).toBeNull()
   })
 })
+
+describe('AppearanceSettings personalization', () => {
+  it('moves text size with the slider and the quick picks', () => {
+    setup()
+    fireEvent.change(screen.getByRole('slider', { name: 'Text size' }), {
+      target: { value: '125' },
+    })
+    expect(getAppearance().textSize).toBe(125)
+    for (const n of [90, 100, 110]) {
+      fireEvent.click(screen.getByRole('button', { name: `${n}%` }))
+      expect(getAppearance().textSize).toBe(n)
+    }
+  })
+
+  it('rejects an invalid custom hex and keeps the stored color', () => {
+    setup()
+    fireEvent.click(screen.getByRole('radio', { name: /^Custom/ }))
+    const before = getAppearance().accentCustom
+    const hex = screen.getByRole('textbox', { name: 'Hex color' })
+    fireEvent.change(hex, { target: { value: '#12zz' } })
+    expect(hex.getAttribute('aria-invalid')).toBe('true')
+    expect(screen.getByRole('alert')).toBeTruthy()
+    expect(getAppearance().accentCustom).toBe(before)
+  })
+
+  it('adjusts a low contrast custom accent and says so', () => {
+    setup()
+    fireEvent.click(screen.getByRole('radio', { name: /^Custom/ }))
+    fireEvent.change(screen.getByRole('textbox', { name: 'Hex color' }), {
+      target: { value: '#ffff66' },
+    })
+    expect(getAppearance().accentCustom).toBe('#ffff66')
+    expect(screen.getByText('Adjusted for readability')).toBeTruthy()
+    expect(
+      document.documentElement.style.getPropertyValue('--glinr-accent-light'),
+    ).toMatch(/^oklch\(0\.[0-5]/)
+  })
+
+  it('writes the reduce motion attribute', () => {
+    setup()
+    fireEvent.click(screen.getByRole('radio', { name: /^Reduce/ }))
+    expect(document.documentElement.getAttribute('data-motion')).toBe('on')
+  })
+})
