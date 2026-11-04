@@ -56,6 +56,8 @@ func describeUndo(u undoAction) domainChangeEffect {
 		return domainChangeEffect{Action: "replaced", Description: fmt.Sprintf("%s record %s (was %s)", u.RecordType, u.Name, u.Value)}
 	case undoKindAppDomain:
 		return domainChangeEffect{Action: "attached", Description: "domain " + u.Domain + " attached to app " + u.App}
+	case undoKindMoveDomain:
+		return domainChangeEffect{Action: "moved", Description: "domain " + u.Domain + " moved from app " + u.App + " to app " + u.To}
 	case undoKindRedirect:
 		return domainChangeEffect{Action: "created", Description: "redirect for " + u.Domain}
 	}
@@ -70,6 +72,9 @@ func (rt *Router) toDomainChange(run store.DomainAutomationRun, window time.Dura
 	kind := "dns_apply"
 	if len(steps) > 0 {
 		kind = "go_live"
+	}
+	if len(undo) > 0 && undo[0].Kind == undoKindMoveDomain {
+		kind = "domain_move"
 	}
 	until := run.CreatedAt.Add(window)
 	c := domainChange{

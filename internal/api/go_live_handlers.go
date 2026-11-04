@@ -381,6 +381,8 @@ func (rt *Router) undoOne(ctx context.Context, r *http.Request, runApp string, u
 			return "detach " + u.Domain, err
 		}
 		return "detached " + u.Domain, nil
+	case undoKindMoveDomain:
+		return rt.undoMoveDomain(ctx, u)
 	case undoKindRedirect:
 		if err := rt.domainRedirect.DeleteDomainRedirect(ctx, u.Domain); err != nil {
 			return "redirect " + u.Domain, err

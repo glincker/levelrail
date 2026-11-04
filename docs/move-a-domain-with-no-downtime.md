@@ -12,6 +12,36 @@ Open the domain's page and look for the **Cutover** card, or run:
 levelrail-cli domains cutover shop.example.com
 ```
 
+## Move a domain between two apps on this server
+
+When the domain already works on one Levelrail app and you want another app to serve it, nothing in DNS changes and the certificate stays. The move is one database transaction: the host leaves app A and joins app B together, so the ingress is rebuilt once with the host pointing at B and there is no moment where it has no route. The stored certificate and the certificate ledger are keyed by host name, so they are not touched and nothing is requested from the CA again. Per-domain settings (WAF, rate limit, basic auth and so on) travel with the domain between two apps.
+
+```bash
+# 1. Collision check only: shows what would move, changes nothing
+levelrail-cli domains move shop.example.com --from shop-old --to shop-new
+
+# 2. Apply it
+levelrail-cli domains move shop.example.com --from shop-old --to shop-new --confirm
+
+# 3. Verify from this server (reads only, exit code 1 on a FAIL)
+levelrail-cli domains check --cutover shop.example.com
+```
+
+The target app needs an HTTP port, and the host must not already be on it. `--from-env` and `--to-env` move between environment domain sets instead of the default lists.
+
+### Undo it
+
+A move between two apps (default domain lists) is recorded as a change you can roll back for the rollback window (`domains.rollback_window_minutes`, 60 minutes by default):
+
+```bash
+levelrail-cli domains changes shop.example.com
+levelrail-cli domains rollback shop.example.com <run-id> --yes
+```
+
+`domains changes` lists the move as kind `domain_move` with the time left to roll back. Rollback hands the host back to the first app. It is skipped, and the domain stays where it is, when the second app no longer serves the host (it was moved or detached since) or the first app already has it. Moves that touch a static site or an environment set are not recorded and cannot be rolled back this way, run the move the other way instead.
+
+This section covers apps on the same server. Moving a name from another server follows the checklist below.
+
 ## The six steps
 
 | Step | What it checks | Needs DNS to move? |

@@ -296,6 +296,7 @@ func (rt *Router) moveDomain(w http.ResponseWriter, r *http.Request, st parkedDo
 	}
 	detail, _ := json.Marshal(map[string]string{"from": req.From, "to": req.To, "from_kind": fromKind, "to_kind": toKind, "from_environment": from.envName, "to_environment": to.envName})
 	rt.afterDomainLifecycle(r, auditActionDomainMoved, req.Domain, string(detail), to, from)
+	rt.recordDomainMoveRun(r.Context(), req.Domain, from, to)
 	writeJSON(w, http.StatusOK, domainLifecycleResponse{Domain: req.Domain, From: req.From, To: req.To, FromKind: fromKind, ToKind: toKind, FromEnvironment: from.envName, ToEnvironment: to.envName, Applied: true})
 }
 

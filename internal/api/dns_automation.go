@@ -75,6 +75,8 @@ type undoAction struct {
 	RecordType string `json:"record_type,omitempty"`
 	Value      string `json:"value,omitempty"`
 	TTLSeconds int    `json:"ttl_seconds,omitempty"`
+	// To is the app a moved domain went to; App is where it returns.
+	To string `json:"to,omitempty"`
 }
 
 // Undo action kinds.
@@ -83,6 +85,7 @@ const (
 	undoKindDNSRestore = "dns_restore"
 	undoKindAppDomain  = "app_domain"
 	undoKindRedirect   = "redirect"
+	undoKindMoveDomain = "move_domain"
 )
 
 // dnsOpts controls one applyDomainDNS call.
