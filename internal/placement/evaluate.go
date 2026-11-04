@@ -72,6 +72,33 @@ func Evaluate(c Candidate, req Request) Evaluation {
 	return e
 }
 
+// Eligible returns the evaluation of every candidate that may take req, in
+// node id order, without picking a winner. A per-node workload runs on all
+// of them.
+func Eligible(cands []Candidate, req Request) []Evaluation {
+	fit, _ := EligibleSplit(cands, req)
+	return fit
+}
+
+// EligibleSplit also returns the nodes that pass every structural filter
+// but lack room, so a per-node instance can wait there with the fit reason
+// instead of moving elsewhere. Both lists are sorted by node id.
+func EligibleSplit(cands []Candidate, req Request) (fit, short []Evaluation) {
+	req.aff = buildAffinityState(cands, req.Affinity)
+	for _, c := range cands {
+		e := Evaluate(c, req)
+		switch {
+		case e.Eligible:
+			fit = append(fit, e)
+		case e.Capacity:
+			short = append(short, e)
+		}
+	}
+	sort.Slice(fit, func(i, j int) bool { return fit[i].NodeID < fit[j].NodeID })
+	sort.Slice(short, func(i, j int) bool { return short[i].NodeID < short[j].NodeID })
+	return fit, short
+}
+
 // headroom is the share of its tightest known resource a node keeps free
 // after the placement, in permille, so integer math decides ties.
 func headroom(dims []Dimension) *int {

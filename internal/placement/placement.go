@@ -193,6 +193,23 @@ func Spread(cands []Candidate, req Request) (Decision, error) {
 	return d, nil
 }
 
+// OrdinalPeers builds Request.Peers for an ordered workload: the nodes of
+// every other placed ordinal, listed by ordinal so the result is stable.
+func OrdinalPeers(placed map[int]string, self int) []string {
+	ords := make([]int, 0, len(placed))
+	for o, n := range placed {
+		if o != self && n != "" {
+			ords = append(ords, o)
+		}
+	}
+	sort.Ints(ords)
+	peers := make([]string, 0, len(ords))
+	for _, o := range ords {
+		peers = append(peers, placed[o])
+	}
+	return peers
+}
+
 // Pinned records an operator's explicit choice. It is honored even when the
 // node lacks room, and the shortfall is carried as a warning.
 func Pinned(cands []Candidate, req Request, nodeID string) Decision {
