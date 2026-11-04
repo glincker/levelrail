@@ -75,12 +75,9 @@ func NewInstallLedger(stackID, stackName string, owned []LedgerEntry) *Ledger {
 	return l
 }
 
-// kindSetting is the install-wide runtime setting document kind.
-const kindSetting Kind = "Setting"
-
 // installOnly lists the kinds an install stack may own, and which a project
 // stack should hand over to one.
-func installOnly(k Kind) bool { return k == KindNode || k == kindSetting }
+func installOnly(k Kind) bool { return k == KindNode || k == KindSetting }
 
 // scopeGate refuses a document an install stack may not own. It reports
 // whether it did.
@@ -425,6 +422,11 @@ func (p *planner) planLedgerPrune() {
 		if kind == KindNode {
 			it := p.add(r, ActionDelete, nil, nil, nil)
 			it.Reason = fmt.Sprintf("absent from the files; a node is never pruned, its labels and taints stay as they are; released from stack %s", l.StackName)
+			continue
+		}
+		if kind == KindSetting {
+			it := p.add(r, ActionDelete, nil, nil, nil)
+			it.Reason = fmt.Sprintf("absent from the files; the saved value stays as it is, use reset: true to clear it; released from stack %s", l.StackName)
 			continue
 		}
 		if kind == KindDomain {

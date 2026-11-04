@@ -184,6 +184,8 @@ func buildOne(d *Document, opts Options, s *issueSink) *Resource {
 		r.Fields = map[string]any{}
 	case KindNode:
 		r.Fields = buildNode(d, s)
+	case KindSetting:
+		r.Fields = buildSetting(d, s)
 	case KindDatabase:
 		var sp struct {
 			Engine  string `yaml:"engine"`

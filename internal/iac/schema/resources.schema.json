@@ -7,7 +7,7 @@
   "required": ["version", "kind", "metadata"],
   "properties": {
     "version": { "const": 1 },
-    "kind": { "enum": ["Project", "Environment", "Tag", "Node", "Database", "App", "Domain", "LoadBalancer", "Pipeline", "AlertRule"] },
+    "kind": { "enum": ["Project", "Environment", "Tag", "Node", "Setting", "Database", "App", "Domain", "LoadBalancer", "Pipeline", "AlertRule"] },
     "metadata": { "$ref": "#/$defs/metadata" },
     "spec": { "type": "object" }
   },
@@ -17,6 +17,7 @@
     { "if": { "properties": { "kind": { "const": "Environment" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/environmentSpec" } } } },
     { "if": { "properties": { "kind": { "const": "Tag" } }, "required": ["kind"] }, "then": { "properties": { "spec": { "type": "object", "additionalProperties": false } } } },
     { "if": { "properties": { "kind": { "const": "Node" } }, "required": ["kind"] }, "then": { "properties": { "spec": { "$ref": "#/$defs/nodeSpec" } } } },
+    { "if": { "properties": { "kind": { "const": "Setting" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/settingSpec" } } } },
     { "if": { "properties": { "kind": { "const": "Database" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/databaseSpec" } } } },
     { "if": { "properties": { "kind": { "const": "App" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/appSpec" } } } },
     { "if": { "properties": { "kind": { "const": "Domain" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/domainSpec" } } } },
@@ -105,6 +106,16 @@
           }
         }
       }
+    },
+    "settingSpec": {
+      "description": "One runtime setting, named by its registry key in metadata.name. Apply saves the value so later env changes do not move it. A setting that holds a credential is refused, and a change that weakens a security protection is a plan error.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "value": { "description": "The value, typed by the setting: a boolean, an integer, a string, a duration such as 10m, or a list of strings.", "type": ["boolean", "integer", "string", "array"], "items": { "type": "string" } },
+        "reset": { "description": "Remove the saved value so the environment seed or the default applies again.", "const": true }
+      },
+      "oneOf": [{ "required": ["value"] }, { "required": ["reset"] }]
     },
     "domainSpec": {
       "type": "object",

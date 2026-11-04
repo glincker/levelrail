@@ -180,6 +180,8 @@ func (p *planner) planResource(r *Resource) {
 		p.planTag(r)
 	case KindNode:
 		p.planNode(r)
+	case KindSetting:
+		p.planSetting(r)
 	case KindDatabase:
 		p.planDatabase(r)
 	case KindApp:

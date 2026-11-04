@@ -149,6 +149,23 @@ spec:
 
 The plan compares them with the stored ones and apply saves them through the node routes, which need a root token. A member the document leaves out is not managed; `taints: []` or `labels: {}` clears the stored set. A Node whose name matches no node, or more than one, is a plan error. Apply never creates, deletes or prunes a node, and removing the document leaves the node as it is. Nodes join through an enrollment token, and `export` does not write them yet. Database placement is not part of a stack, because the database API stores only a node selector.
 
+## Runtime settings
+
+A `Setting` document declares one runtime setting, named by its registry key:
+
+```yaml
+version: 1
+kind: Setting
+metadata:
+  name: heartbeat.job_max_attempts
+spec:
+  value: 5
+```
+
+The plan reads the setting through the runtime settings API and checks the value with the same validator as the API, so a value the dashboard would refuse is a plan error. Declaring a setting makes the saved value authoritative: a value that matches but only comes from the environment or the default plans an update that saves it, so a later env change does not move it. Apply saves through the same API. A restart-kind setting carries a warning that it takes effect after a restart; apply never restarts the control plane, and "not effective until restart" is a warning, not drift.
+
+A setting that holds a credential is refused in files; set it from the dashboard or the CLI. A change that would weaken a security protection (a protection turned off, a duration shortened, a limit raised) is a plan error that names `allow_weaken`; file applies do not accept it yet. `reset: true` removes the saved value, and is refused the same way when the default is weaker. Removing the document keeps the saved value and only releases it from the stack. Settings belong in an install stack.
+
 ## Revisions
 
 A revision stores the plan, the rendered documents (after `${{ env.NAME }}` values are filled in), the actor, the token used, the git repository, ref and commit, the CI run URL, the time, and the result of each item. Revision numbers start at 1 and increase by one for each apply to that stack.
