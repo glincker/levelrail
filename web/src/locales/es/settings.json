@@ -3174,6 +3174,27 @@
     "turnOn": "Activar firewall",
     "unmanagedHelp": "Levelrail solo gestiona ufw, así que no cambiará este firewall. Los puertos de abajo son los que sus reglas necesitan permitir."
   },
+  "iacExport": {
+    "app": "App",
+    "appPlaceholder": "web",
+    "button": "Exportar como código",
+    "copied": "Copiado",
+    "copy": "Copiar",
+    "description": "Escribe el estado actual como archivos de recursos. Deje ambos campos vacíos para exportar todo lo que puede leer.",
+    "dialogDescription": "El archivo de recursos de este recurso. Los valores secretos nunca se incluyen.",
+    "dialogTitle": "Exportar {{name}} como código",
+    "download": "Descargar",
+    "empty": "No hay nada que exportar.",
+    "includeValues": "Incluir valores de entorno en texto plano",
+    "loading": "Exportando...",
+    "project": "Proyecto",
+    "projectPlaceholder": "shop",
+    "run": "Exportar",
+    "running": "Exportando...",
+    "textLabel": "Archivos de recursos exportados",
+    "title": "Exportar",
+    "warning": "aviso: {{message}}"
+  },
   "iacHelp": {
     "default": "Por defecto: {{value}}.",
     "hint": "Haga clic en una clave para ver lo que hace."

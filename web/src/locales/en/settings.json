@@ -3453,6 +3453,27 @@
       "engine_keeps_no_data": "Keeps no data on disk"
     }
   },
+  "iacExport": {
+    "title": "Export",
+    "description": "Write live state as resource files. Leave both fields empty for everything you can read.",
+    "project": "Project",
+    "projectPlaceholder": "shop",
+    "app": "App",
+    "appPlaceholder": "web",
+    "includeValues": "Include plain env values",
+    "run": "Export",
+    "running": "Exporting...",
+    "download": "Download",
+    "copy": "Copy",
+    "copied": "Copied",
+    "warning": "warning: {{message}}",
+    "textLabel": "Exported resource files",
+    "button": "Export as code",
+    "dialogTitle": "Export {{name}} as code",
+    "dialogDescription": "The resource file for this one resource. Secret values are never included.",
+    "loading": "Exporting...",
+    "empty": "Nothing to export."
+  },
   "iacHelp": {
     "hint": "Click a key to see what it does.",
     "default": "Default: {{value}}."

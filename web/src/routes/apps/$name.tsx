@@ -11,6 +11,7 @@ import {
 import { summarizeAppStatus } from '../../lib/appStatus'
 import { useAppAsleep } from '../../queries/appSleep'
 import { Breadcrumbs } from '../../components/Breadcrumbs'
+import { IacExportButton } from '../../components/IacExportButton'
 import { AppActionBar } from '../../components/apps/AppActionBar'
 import { AppTabStrip } from '../../components/apps/AppTabStrip'
 import { AppPaletteActions } from '../../components/apps/AppPaletteActions'
@@ -181,6 +182,7 @@ function AppDetailLayout() {
           />
           <div className="flex items-center gap-2">
             <PublishLockToggle appName={app.name} />
+            <IacExportButton kind="app" name={app.name} />
             <AppActionBar app={app} onDeploy={setDeployTab} />
           </div>
         </>
