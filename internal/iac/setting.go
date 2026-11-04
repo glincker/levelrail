@@ -14,7 +14,33 @@ import (
 )
 
 // liveSetting is one runtime setting as the control plane resolves it.
-type liveSetting = runtimesettings.Setting
+// allowWeaken is copied from the load context because the planner has none.
+type liveSetting struct {
+	runtimesettings.Setting
+	allowWeaken bool
+}
+
+type allowWeakenKey struct{}
+
+// WithAllowWeaken lets the Setting plan confirm a weakening change. Only the
+// API sets it, after it has checked the caller is a human root session.
+func WithAllowWeaken(ctx context.Context) context.Context {
+	return context.WithValue(ctx, allowWeakenKey{}, true)
+}
+
+func allowWeakenFrom(ctx context.Context) bool {
+	ok, _ := ctx.Value(allowWeakenKey{}).(bool)
+	return ok
+}
+
+// SettingWeakenReason starts the reason of every Setting change that weakens
+// a protection under allow_weaken, so reviewers and the audit can find it.
+const SettingWeakenReason = "weakens a security protection; allowed by allow_weaken"
+
+// IsSettingWeaken reports whether c is a Setting change that weakens a protection.
+func IsSettingWeaken(c Change) bool {
+	return c.Kind == KindSetting && c.Action == ActionUpdate && strings.HasPrefix(c.Reason, SettingWeakenReason)
+}
 
 func settingDefinition(key string) (runtimesettings.Definition, bool) {
 	for _, d := range runtimesettings.Definitions() {
@@ -56,9 +82,10 @@ func (l loader) settings(ctx context.Context, res []*Resource) error {
 			continue
 		}
 		var s liveSetting
-		err := l.get(ctx, "/api/v1/settings/runtime/"+esc(r.Name), &s)
+		err := l.get(ctx, "/api/v1/settings/runtime/"+esc(r.Name), &s.Setting)
 		switch {
 		case err == nil:
+			s.allowWeaken = allowWeakenFrom(ctx)
 			l.st.settings[r.Name] = &s
 		case IsNotFound(err):
 			l.st.settings[r.Name] = nil
@@ -100,10 +127,11 @@ func settingMirror(d runtimesettings.Definition, live *liveSetting) (*runtimeset
 	return runtimesettings.NewWithDefinitions(mirrorStore{rows: rows}, noEnv, []runtimesettings.Definition{d}), canon
 }
 
-const settingWeakenMsg = "setting %s: %s weakens a security protection; weakening needs allow_weaken from a human root operator, which file applies do not accept yet, so change it from the dashboard or the CLI"
+const settingWeakenMsg = "setting %s: %s weakens a security protection; apply with allow_weaken from a human root session, or change it from the dashboard or the CLI"
 
 // planSetting saves a declared value through the runtime settings PUT, with
-// the same validator as the handler. It never confirms a weakening change.
+// the same validator as the handler. It confirms a weakening change only
+// when the API granted allow_weaken.
 func (p *planner) planSetting(r *Resource) {
 	if p.deniedItem(r, r.Key()) {
 		return
@@ -135,7 +163,8 @@ func (p *planner) planSetting(r *Resource) {
 		p.fail(r, "setting %s: value cannot be encoded: %v", r.Name, err)
 		return
 	}
-	next, err := svc.ValidateForWrite(context.Background(), r.Name, raw, runtimesettings.WriteOptions{RefuseSensitive: true})
+	weak := live.allowWeaken && svc.WeakensTo(context.Background(), r.Name, raw)
+	next, err := svc.ValidateForWrite(context.Background(), r.Name, raw, runtimesettings.WriteOptions{RefuseSensitive: true, ConfirmWeakening: live.allowWeaken})
 	if err != nil {
 		p.failSettingWrite(r, err, "the new value")
 		return
@@ -145,21 +174,25 @@ func (p *planner) planSetting(r *Resource) {
 			p.add(r, ActionNoop, nil, nil, nil)
 			return
 		}
-		it := p.add(r, ActionUpdate, []FieldChange{{Path: "source", Op: OpChange, Old: live.Source, New: runtimesettings.SourceSaved}}, nil, settingPut(r.Name, raw))
+		it := p.add(r, ActionUpdate, []FieldChange{{Path: "source", Op: OpChange, Old: live.Source, New: runtimesettings.SourceSaved}}, nil, settingPut(r.Name, raw, false))
 		it.Reason = fmt.Sprintf("the value comes from the %s; save the current value so later env changes do not move it", live.Source)
 		return
 	}
-	p.add(r, ActionUpdate, []FieldChange{{Path: "value", Op: OpChange, Old: cur, New: next}}, nil, settingPut(r.Name, raw))
+	it := p.add(r, ActionUpdate, []FieldChange{{Path: "value", Op: OpChange, Old: cur, New: next}}, nil, settingPut(r.Name, raw, weak))
+	if weak {
+		it.Reason = SettingWeakenReason
+	}
 }
 
 // planSettingReset deletes the saved row. Returning to a weaker default is
-// refused here even though the API allows it, because a file cannot confirm.
+// refused unless the API granted allow_weaken.
 func (p *planner) planSettingReset(r *Resource, svc *runtimesettings.Service, def runtimesettings.Definition, live *liveSetting, cur string) {
 	if live.Source != runtimesettings.SourceSaved {
 		p.add(r, ActionNoop, nil, nil, nil).Reason = "no saved value; the environment seed or the default already applies"
 		return
 	}
-	if svc.WeakensTo(context.Background(), r.Name, live.Default) {
+	weak := svc.WeakensTo(context.Background(), r.Name, live.Default)
+	if weak && !live.allowWeaken {
 		p.fail(r, settingWeakenMsg, r.Name, "the reset")
 		return
 	}
@@ -167,10 +200,17 @@ func (p *planner) planSettingReset(r *Resource, svc *runtimesettings.Service, de
 	if err != nil {
 		dflt = strings.TrimSpace(string(live.Default))
 	}
+	path := "/api/v1/settings/runtime/" + esc(r.Name)
+	if weak {
+		path += "?confirm_weakening=true"
+	}
 	it := p.add(r, ActionUpdate, []FieldChange{{Path: "value", Op: OpChange, Old: cur, New: dflt}}, nil, func(ctx context.Context, x *executor) error {
-		return x.do(ctx, http.MethodDelete, "/api/v1/settings/runtime/"+esc(r.Name), nil, nil)
+		return x.do(ctx, http.MethodDelete, path, nil, nil)
 	})
 	it.Reason = "reset: the saved value is removed, so the environment seed or the default applies"
+	if weak {
+		it.Reason = SettingWeakenReason + "; " + it.Reason
+	}
 }
 
 // settingSettled reports whether the plan for r is a noop, judged before the
@@ -204,9 +244,14 @@ func (p *planner) failSettingWrite(r *Resource, err error, what string) {
 	}
 }
 
-// settingPut never sends confirm_weakening, so the server repeats the check.
-func settingPut(key string, raw json.RawMessage) func(ctx context.Context, x *executor) error {
+// settingPut sends confirm_weakening only for a granted weakening, so the
+// server repeats the check for everything else.
+func settingPut(key string, raw json.RawMessage, confirm bool) func(ctx context.Context, x *executor) error {
+	body := map[string]any{"value": raw}
+	if confirm {
+		body["confirm_weakening"] = true
+	}
 	return func(ctx context.Context, x *executor) error {
-		return x.do(ctx, http.MethodPut, "/api/v1/settings/runtime/"+esc(key), map[string]any{"value": raw}, nil)
+		return x.do(ctx, http.MethodPut, "/api/v1/settings/runtime/"+esc(key), body, nil)
 	}
 }

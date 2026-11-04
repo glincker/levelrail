@@ -548,3 +548,38 @@ func peekBody(r *http.Request) ([]byte, *http.Request, error) {
 	r2.Body = io.NopCloser(bytes.NewReader(raw))
 	return raw, r2, nil
 }
+
+const auditStackSettingWeaken = "stack.setting_weaken"
+
+// weakenAllowed is the allow_weaken gate: a human root session only. Any
+// token, a pinned session, a CI caller or a failed lookup refuses.
+func (rt *Router) weakenAllowed(r *http.Request) bool {
+	return rt.stackCaller(r).kind == store.PrincipalTypeUser && rt.lockOverrideAllowed(r)
+}
+
+// refuseWeaken writes a 403 when req asks for allow_weaken and the caller
+// does not pass the gate, and reports whether it did.
+func (rt *Router) refuseWeaken(w http.ResponseWriter, r *http.Request, req stackRequest) bool {
+	if !req.AllowWeaken || rt.weakenAllowed(r) {
+		return false
+	}
+	writeError(w, http.StatusForbidden, "allow_weaken needs a human root session; a token can never weaken a setting")
+	return true
+}
+
+// auditSettingWeakens writes one stack.setting_weaken row per weakened key
+// that applied. Sensitive keys never get here: the plan refuses them.
+func (rt *Router) auditSettingWeakens(r *http.Request, stack string, rev int, out iac.ApplyResult) {
+	for _, res := range out.Results {
+		if res.Status != iac.StatusApplied || !iac.IsSettingWeaken(res.Change) {
+			continue
+		}
+		detail := map[string]any{"stack": stack, "revision": rev, "key": res.Name}
+		for _, f := range res.Fields {
+			if f.Path == "value" {
+				detail["old"], detail["new"] = f.Old, f.New
+			}
+		}
+		rt.auditStack(r, auditStackSettingWeaken, detail)
+	}
+}

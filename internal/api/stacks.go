@@ -163,6 +163,8 @@ type stackRequest struct {
 	GitSHA           string            `json:"git_sha,omitempty"`
 	CIRunURL         string            `json:"ci_run_url,omitempty"`
 	IdempotencyKey   string            `json:"idempotency_key,omitempty"`
+	// AllowWeaken lets Setting documents weaken a protection; human root sessions only.
+	AllowWeaken bool `json:"allow_weaken,omitempty"`
 }
 
 type stackLockResource struct {
@@ -652,7 +654,7 @@ func (rt *Router) handleStackPlan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req, ok := decodeStackRequest(w, r, false)
-	if !ok {
+	if !ok || rt.refuseWeaken(w, r, req) {
 		return
 	}
 	name := r.PathValue("name")
@@ -733,7 +735,7 @@ func (rt *Router) handleStackApply(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req, ok := decodeStackRequest(w, r, false)
-	if !ok {
+	if !ok || rt.refuseWeaken(w, r, req) {
 		return
 	}
 	stack, err := ss.GetStackByName(r.Context(), r.PathValue("name"))
@@ -797,6 +799,10 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 	ctx := r.Context()
 	stack, req := run.stack, run.req
 	caller := rt.stackCaller(r)
+	// Checked again here so an approver or a rollback caller must pass it too.
+	if rt.refuseWeaken(w, r, req) {
+		return
+	}
 	if err := stackOf(stack).CheckPin(run.rollbackOf); err != nil {
 		rt.writeStackError(w, run.action, err)
 		return
@@ -928,6 +934,7 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 	warnings := run.warnings
 	if aerr == nil {
 		warnings = append(warnings, rt.recordStackLedger(fin, ss, stack.ID, rev.Number, res, out)...)
+		rt.auditSettingWeakens(r, stack.Name, rev.Number, out)
 	}
 	rt.auditStack(r, run.action, map[string]any{
 		"stack": stack.Name, "revision": rev.Number, "plan_hash": plan.Hash, "git_sha": req.GitSHA, "status": status, "rollback_of": run.rollbackOf,
@@ -1020,7 +1027,11 @@ func (rt *Router) stackLedgerContext(ctx context.Context, ss StackStore, stackID
 			}
 		}
 	}
-	return iac.WithLedger(ctx, l), nil
+	ctx = iac.WithLedger(ctx, l)
+	if req.AllowWeaken {
+		ctx = iac.WithAllowWeaken(ctx)
+	}
+	return ctx, nil
 }
 
 // recordStackLedger claims every declared resource this apply created or
