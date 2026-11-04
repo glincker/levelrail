@@ -484,6 +484,102 @@ levelrail-cli apply -f infra/ --dry-run --exit-code     # exits 0: the files mat
 
 From there, change files and let CI apply them. To let prune clean up later, run one apply with `--source infra-repo` so the apps are tagged as managed by it.
 
+## Driving an install from a repo
+
+This section covers the install-wide parts: values per environment, Node and Setting documents, and install stacks. The sections above cover apps, projects and the other resource kinds.
+
+### Values per environment
+
+```bash
+levelrail-cli apply -f infra/ --values values/prod.yaml
+levelrail-cli stack plan shop-prod -f infra/stacks/shop-prod --values values/prod.yaml
+```
+
+`--values` reads a flat YAML map (`IMAGE_TAG: v1.4.2`) that fills `${{ env.NAME }}` placeholders. It is repeatable, and a later file wins. A placeholder is filled from the first source that has its name, in this order:
+
+1. `--var NAME=VALUE`
+2. `--values FILE`
+3. `--var-file PATH`
+4. `--allow-env NAME[,NAME...]`, read from the environment
+
+Only scalar values are accepted. A key that looks like a credential (a name containing `TOKEN`, `SECRET`, `PASSW`, `CREDENTIAL`, `PRIVATE`, `API_KEY` or `_KEY`) is refused. The error names the key and the file, never the value. Pass such a value with `--secret` instead.
+
+### Existing secrets
+
+```yaml
+version: 1
+kind: App
+metadata: { name: web }
+spec:
+  service:
+    build: { type: image, image: "ghcr.io/acme/web:1.2.3" }
+    port: 3000
+    env:
+      DB_PASSWORD: { secretRef: DB_PASSWORD, existing: true }
+```
+
+`existing: true` points at a secret that is already stored for the app. Apply never writes, overwrites or deletes it, even when `--secret` is passed for the same name. The plan fails if the app has no secret with that name. Use it for values a person set in the dashboard. A stack token cannot pass `--secret`, so this is how a CI apply refers to a secret.
+
+### Node documents
+
+```yaml
+version: 1
+kind: Node
+metadata: { name: worker-1 }
+spec:
+  labels: { zone: a }
+  taints:
+    - { key: gpu, value: "true", effect: NoSchedule }
+```
+
+- The document matches an existing node by its display name. A name that matches no node, or more than one, is a plan error.
+- Labels and taints that the document leaves out are not managed. `labels: {}` or `taints: []` clears that set.
+- Apply saves them through the node routes, which need a root token. It never creates, deletes or prunes a node. Removing the document leaves the node as it is.
+- Nodes join with an enrollment token, not with a document.
+
+### Setting documents
+
+```yaml
+version: 1
+kind: Setting
+metadata: { name: heartbeat.job_max_attempts }
+spec:
+  value: 5
+```
+
+- The name is the runtime setting's registry key. The value goes through the same validator as the API, so a value the dashboard refuses is a plan error.
+- A declared setting is authoritative. A value that only comes from the environment or the default is saved, so a later env change does not move it.
+- A restart setting warns that it takes effect after a restart. Apply never restarts the control plane.
+- A setting that holds a credential is refused in files. Set it from the dashboard or the CLI.
+- Removing the document keeps the saved value and only releases it from the stack.
+- A change that weakens a security protection (turns one off, shortens a duration or raises a limit) is a plan error that names `allow_weaken`. File applies do not accept `allow_weaken` yet, so a human root operator makes that change in the dashboard or the CLI.
+
+### Install-scoped stacks
+
+An install stack owns only Node and Setting documents and has no project. A project stack that holds either kind gets a warning.
+
+- **Creating it needs a human root session.** The API refuses a token for install scope. `levelrail-cli stack create` takes `--project` and creates project stacks only.
+- **Approval is on by default.** Applies wait as pending revisions until another administrator approves them. Change it with `levelrail-cli stack settings NAME --require-approval=false` (root only).
+- **Drift policy is `lock` by default**, the same mode described under [Drift](/stacks#drift). Set `--drift warn` to relax it (root only).
+
+### Export as code and the Import YAML preview
+
+```bash
+levelrail-cli export --project shop -o infra/
+levelrail-cli export --app web -o -
+```
+
+Export writes projects and apps as documents. The dashboard has an Export button per project and per app, under Settings, Infrastructure as code.
+
+The app, database and node pages have an **Import YAML** button. It opens a preview of a pasted or uploaded file: the plan and its changes, with nothing applied. Apply stays in the CLI or on the Infrastructure as code page, where the plan is confirmed first.
+
+### Not supported yet
+
+- `levelrail-cli export` has no node option, so Node documents are not written out. The control plane's export API takes one, but the CLI does not expose it yet.
+- Database placement is not part of a stack. The database API stores only a node selector, and no stack manages it.
+- A file cannot set `allow_weaken`, and a stack token cannot pass `--secret`.
+- Plain `apply` takes a token from `APP_API_TOKEN`. The OIDC exchange (`POST /api/v1/ci/stack-oidc-exchange`) returns a stack token for `stack plan` and `stack apply` only.
+
 ## Not in scope
 
 Git sync is a recipe, not an engine. Backup schedules, egress policies, node placement, registry credentials and vault env references are not expressible yet and are left as they are.
