@@ -815,7 +815,14 @@
     "editSettings": "Edit settings",
     "discard": "Discard",
     "confirmDiscard": "This deletes the saved settings of this database. Nothing was created. Continue?",
-    "discardYes": "Discard database"
+    "discardYes": "Discard database",
+    "progress": "{{done}} of {{total}} steps",
+    "working": "{{step}}...",
+    "doneGroup": "{{done}} of {{total}} done",
+    "hideDone": "Hide completed steps",
+    "copyDetails": "Copy details",
+    "copied": "Copied",
+    "readyCaption": "All steps finished"
   },
   "backupSetup": {
     "title": "Set up backups for {{name}}",

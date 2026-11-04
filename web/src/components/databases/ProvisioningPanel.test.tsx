@@ -116,4 +116,70 @@ describe('ProvisioningView', () => {
     expect(screen.getByText('provision.open')).toBeTruthy()
     expect(screen.getByText('provision.connectApp')).toBeTruthy()
   })
+
+  it('counts done steps and names the current one', () => {
+    render(
+      <ProvisioningView
+        name="main"
+        attempt={attempt('in_progress', {
+          accepted: { status: 'done' },
+          docker_check: { status: 'done' },
+          pull_image: { status: 'started' },
+        })}
+        onFix={vi.fn()}
+      />,
+    )
+    const bar = screen.getByTestId('provision-progress')
+    expect(bar.getAttribute('data-done')).toBe('2')
+    expect(bar.getAttribute('data-total')).toBe('10')
+    expect(
+      screen.getByText(/provision.working/).getAttribute('aria-live'),
+    ).toBe('polite')
+    expect(
+      screen
+        .getByText('provision.steps.pull_image')
+        .closest('li')
+        ?.getAttribute('aria-current'),
+    ).toBe('step')
+  })
+
+  it('collapses completed steps and expands them on click', async () => {
+    render(
+      <ProvisioningView
+        name="main"
+        attempt={attempt('in_progress', {
+          accepted: { status: 'done' },
+          docker_check: { status: 'done' },
+          pull_image: { status: 'done' },
+          create_volume: { status: 'done' },
+          credentials_and_tls: { status: 'started' },
+        })}
+        onFix={vi.fn()}
+      />,
+    )
+    expect(screen.getAllByRole('listitem')).toHaveLength(6)
+    await userEvent.click(
+      screen.getByRole('button', { name: 'provision.doneGroup' }),
+    )
+    expect(screen.getAllByRole('listitem')).toHaveLength(10)
+  })
+
+  it('offers retry on a failure without fixes', async () => {
+    const onFix = vi.fn()
+    render(
+      <ProvisioningView
+        name="main"
+        attempt={attempt(
+          'failed',
+          { create_container: { status: 'failed' } },
+          { step: 'create_container', reason: 'boom' },
+        )}
+        onFix={onFix}
+      />,
+    )
+    await userEvent.click(
+      screen.getByRole('button', { name: 'provision.retry' }),
+    )
+    expect(onFix).toHaveBeenCalledWith('retry', false)
+  })
 })

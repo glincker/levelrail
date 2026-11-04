@@ -815,7 +815,14 @@
     "editSettings": "Editar ajustes",
     "discard": "Descartar",
     "confirmDiscard": "Esto elimina los ajustes guardados de esta base de datos. No se creó nada. ¿Continuar?",
-    "discardYes": "Descartar base de datos"
+    "discardYes": "Descartar base de datos",
+    "progress": "{{done}} de {{total}} pasos",
+    "working": "{{step}}...",
+    "doneGroup": "{{done}} de {{total}} listos",
+    "hideDone": "Ocultar pasos completados",
+    "copyDetails": "Copiar detalles",
+    "copied": "Copiado",
+    "readyCaption": "Todos los pasos terminaron"
   },
   "backupSetup": {
     "title": "Configurar copias de seguridad de {{name}}",
