@@ -3195,6 +3195,21 @@
     "title": "Exportar",
     "warning": "aviso: {{message}}"
   },
+  "iacPlan": {
+    "denied": "denegado",
+    "keptNote": "conservado, no está en los archivos",
+    "matches": "El estado actual ya coincide con los archivos.",
+    "status": {
+      "applied": "aplicado",
+      "denied": "denegado",
+      "failed": "fallido",
+      "noop": "sin cambios",
+      "skipped": "omitido"
+    },
+    "summary": "{{create}} por crear, {{update}} por actualizar, {{delete}} por eliminar, {{noop}} sin cambios",
+    "summaryErrors": "{{create}} por crear, {{update}} por actualizar, {{delete}} por eliminar, {{noop}} sin cambios, {{error}} con errores",
+    "warning": "aviso: {{message}}"
+  },
   "iacImport": {
     "button": "Importar YAML",
     "cliNote": "Para aplicar, ejecute:",

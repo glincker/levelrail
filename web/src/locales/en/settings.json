@@ -3474,6 +3474,21 @@
     "loading": "Exporting...",
     "empty": "Nothing to export."
   },
+  "iacPlan": {
+    "summary": "{{create}} to create, {{update}} to update, {{delete}} to delete, {{noop}} unchanged",
+    "summaryErrors": "{{create}} to create, {{update}} to update, {{delete}} to delete, {{noop}} unchanged, {{error}} with errors",
+    "keptNote": "kept, not in the files",
+    "denied": "denied",
+    "warning": "warning: {{message}}",
+    "matches": "Live state already matches the files.",
+    "status": {
+      "applied": "applied",
+      "failed": "failed",
+      "denied": "denied",
+      "skipped": "skipped",
+      "noop": "unchanged"
+    }
+  },
   "iacImport": {
     "button": "Import YAML",
     "dialogTitle": "Import YAML for {{name}}",
