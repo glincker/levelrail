@@ -360,6 +360,7 @@ var Tree = map[string]*Node{
 	"go-live":                  nil,
 	"fixes":                    {Subs: map[string]*Node{"list": nil, "preview": nil, "apply": nil}},
 	"setup":                    {Subs: map[string]*Node{"status": nil, "next": nil, "skip": nil, "undo": nil, "reset": nil}},
+	"me":                       {Subs: map[string]*Node{"appearance": {Subs: map[string]*Node{"get": nil, "set": nil, "reset": nil}}}},
 	"onboarding":               {Subs: map[string]*Node{"status": nil, "skip": nil, "reset": nil}},
 	"proxy":                    {Subs: map[string]*Node{"setup": nil, "status": nil, "apply": nil, "verify": nil, "disable": nil}},
 	"auth-engine":              {Subs: map[string]*Node{"status": nil}},

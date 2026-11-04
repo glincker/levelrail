@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1959 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1962 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1366,6 +1366,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/me/onboarding", Ability: "Public", Group: "Other", Handler: "handleGetMeOnboarding", Description: ""},
 	{Method: "PUT", Path: "/api/v1/me/onboarding", Ability: "Public", Group: "Other", Handler: "handlePutMeOnboarding", Description: ""},
 	{Method: "POST", Path: "/api/v1/me/onboarding/reset", Ability: "Public", Group: "Other", Handler: "handleResetMeOnboarding", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/me/preferences/appearance", Ability: "Public", Group: "Other", Handler: "handleDeleteMePreferenceAppearance", Description: ""},
+	{Method: "GET", Path: "/api/v1/me/preferences/appearance", Ability: "Public", Group: "Other", Handler: "handleGetMePreferenceAppearance", Description: ""},
+	{Method: "PUT", Path: "/api/v1/me/preferences/appearance", Ability: "Public", Group: "Other", Handler: "handlePutMePreferenceAppearance", Description: ""},
 	{Method: "GET", Path: "/api/v1/mesh", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetMeshStatus", Description: "Mesh status and key rotation, same AbilityRoot boundary: WireGuard peer/handshake data and a node's own key material are fleet infrastructure, not app-scoped, matching every other node route above."},
 	{Method: "GET", Path: "/api/v1/mesh/connectivity", Ability: "AbilityRoot", Group: "Other", Handler: "handleMeshConnectivity", Description: ""},
 	{Method: "GET", Path: "/api/v1/mesh/settings", Ability: "AbilityRead", Group: "Other", Handler: "handleGetMeshSettings", Description: ""},

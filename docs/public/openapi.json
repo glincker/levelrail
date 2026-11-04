@@ -95688,6 +95688,136 @@
         ]
       }
     },
+    "/api/v1/me/preferences/appearance": {
+      "delete": {
+        "description": "No authentication required.",
+        "operationId": "handleDeleteMePreferenceAppearance",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [],
+        "summary": "Delete Me Preference Appearance",
+        "tags": [
+          "Other"
+        ]
+      },
+      "get": {
+        "description": "No authentication required.",
+        "operationId": "handleGetMePreferenceAppearance",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [],
+        "summary": "Get Me Preference Appearance",
+        "tags": [
+          "Other"
+        ]
+      },
+      "put": {
+        "description": "No authentication required.",
+        "operationId": "handlePutMePreferenceAppearance",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [],
+        "summary": "Put Me Preference Appearance",
+        "tags": [
+          "Other"
+        ]
+      }
+    },
     "/api/v1/mesh": {
       "get": {
         "description": "Mesh status and key rotation, same AbilityRoot boundary: WireGuard peer/handshake data and a node's own key material are fleet infrastructure, not app-scoped, matching every other node route above.\n\nRequires the `root` ability.",

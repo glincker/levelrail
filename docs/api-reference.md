@@ -2183,6 +2183,9 @@ Routes that do not fit an existing group.
 | GET | /api/v1/me/onboarding | Public | handleGetMeOnboarding |
 | PUT | /api/v1/me/onboarding | Public | handlePutMeOnboarding |
 | POST | /api/v1/me/onboarding/reset | Public | handleResetMeOnboarding |
+| GET | /api/v1/me/preferences/appearance | Public | handleGetMePreferenceAppearance |
+| PUT | /api/v1/me/preferences/appearance | Public | handlePutMePreferenceAppearance |
+| DELETE | /api/v1/me/preferences/appearance | Public | handleDeleteMePreferenceAppearance |
 | POST | /mcp | Public |  |
 
 ## See also
