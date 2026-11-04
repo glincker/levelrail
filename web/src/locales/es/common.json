@@ -1307,5 +1307,10 @@
       "upstream": "Enlace del proyecto",
       "ports": "Puertos"
     }
+  },
+  "kit": {
+    "jumpTo": "Ir a",
+    "onThisPage": "En esta página",
+    "retry": "Reintentar"
   }
 }

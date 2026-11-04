@@ -32,3 +32,19 @@ export {
 } from './WizardStepFooter'
 export { UrlDialog, type UrlDialogProps } from './UrlDialog'
 export { useUrlDialog, useDialogParam } from './useUrlDialog'
+export {
+  TileGrid,
+  Tile,
+  type TileGridProps,
+  type TileProps,
+  type TileSize,
+} from './TileGrid'
+export {
+  SectionNav,
+  SettingsLayout,
+  SettingsSection,
+  type SectionNavProps,
+  type SectionNavItem,
+  type SettingsLayoutProps,
+  type SettingsSectionProps,
+} from './SettingsLayout'

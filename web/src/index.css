@@ -457,6 +457,19 @@ body {
 .kit-exit {
   animation: kit-exit var(--motion-base) var(--motion-ease) both;
 }
+@keyframes kit-tile-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.kit-tile-enter {
+  animation: kit-tile-enter var(--motion-base) var(--motion-ease) both;
+}
 
 @keyframes cleanup-grow {
   from {
@@ -507,6 +520,7 @@ body {
       .kit-shimmer,
       .kit-pulse-ring,
       .kit-enter,
+      .kit-tile-enter,
       .kit-exit
     ),
   :root:not([data-motion='off']) .setup-hero::before {
@@ -521,6 +535,7 @@ body {
     .kit-shimmer,
     .kit-pulse-ring,
     .kit-enter,
+    .kit-tile-enter,
     .kit-exit
   ),
 :root[data-motion='on'] .setup-hero::before {

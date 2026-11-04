@@ -3645,7 +3645,8 @@
     "sections": {
       "color": "Color",
       "type": "Type",
-      "layout": "Layout"
+      "layout": "Layout",
+      "sync": "Sync"
     },
     "motion": {
       "title": "Motion",

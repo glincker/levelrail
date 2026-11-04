@@ -3613,7 +3613,8 @@
     "sections": {
       "color": "Color",
       "type": "Tipografía",
-      "layout": "Diseño"
+      "layout": "Diseño",
+      "sync": "Sincronización"
     },
     "motion": {
       "title": "Movimiento",

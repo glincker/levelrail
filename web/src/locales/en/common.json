@@ -1307,5 +1307,10 @@
       "upstream": "Upstream link",
       "ports": "Ports"
     }
+  },
+  "kit": {
+    "jumpTo": "Jump to",
+    "onThisPage": "On this page",
+    "retry": "Retry"
   }
 }
