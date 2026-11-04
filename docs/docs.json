@@ -115,6 +115,7 @@
               "multi-node-quickstart",
               "tutorials/self-host-vaultwarden",
               "troubleshooting",
+              "troubleshooting-by-symptom",
               "doctor",
               "fix-it"
             ],

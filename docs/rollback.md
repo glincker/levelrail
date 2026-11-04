@@ -54,19 +54,19 @@ host command, since it loses data.
 
 ```sh
 levelrail-cli upgrade --list --channel all
-levelrail-cli upgrade --rollback-plan v0.2.0-beta.14 --json    # preview, changes nothing
-levelrail-cli upgrade --rollback v0.2.0-beta.14 --yes          # apply, binary only
+levelrail-cli upgrade --rollback-plan vX.Y.Z --json    # preview, changes nothing
+levelrail-cli upgrade --rollback vX.Y.Z --yes          # apply, binary only
 ```
 
-`--rollback` works only for a release the host kept and only when the plan allows it. Without `--yes` it prints the expected downtime and stops. The main `levelrail-cli --help` page lists `--rollback-plan` and `upgrade rollback <attempt>` but not `--rollback`. Run `levelrail-cli upgrade -h` for every flag.
+`--rollback` works only for a release the host kept and only when the plan allows it. Without `--yes` it prints the expected downtime and stops. Run `levelrail-cli upgrade -h` for every flag. These run with `levelrail-cli`. The commands under "Applying on the server" run with `levelrail`, and the retain step runs the installer script.
 
 ## Applying on the server
 
 Releases your host kept (the last three it ran) roll back immediately, with no network needed:
 
 ```sh
-sudo levelrail rollback --to v0.2.0-beta.14 --dry-run   # print the plan only
-sudo levelrail rollback --to v0.2.0-beta.14             # asks you to type the version
+sudo levelrail rollback --to vX.Y.Z --dry-run   # print the plan only
+sudo levelrail rollback --to vX.Y.Z             # asks you to type the version
 ```
 
 A release the host does not have is staged first, with checksum and signature
@@ -74,7 +74,7 @@ verification:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh \
-  | sudo LEVELRAIL_VERSION=v0.2.0-beta.14 sh -s retain
+  | sudo LEVELRAIL_VERSION=vX.Y.Z sh -s retain
 ```
 
 The rollback takes a fresh backup, stops the service, swaps the binary, starts
@@ -85,7 +85,7 @@ the command tells you so. Every attempt is written to the audit log.
 ### When a restore is required
 
 ```sh
-sudo levelrail rollback --to v0.1.0 \
+sudo levelrail rollback --to vX.Y.Z \
   --restore-backup levelrail-20261009T020000Z.db \
   --confirm-data-loss levelrail-20261009T020000Z.db
 ```

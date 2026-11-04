@@ -113,6 +113,9 @@ jobs:
       - name: Em and en dash sweep
         run: scripts/check-dashes.sh
 
+      - name: Doc version examples
+        run: scripts/check-doc-versions.sh
+
   # Planning is its own job so the test lanes start as soon as the plan is
   # known instead of waiting behind go build and go vet.
   plan:
