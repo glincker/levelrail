@@ -59,6 +59,9 @@ func runDomainsWWWApply(prog string, args []string, stdout, stderr io.Writer, lo
 		for _, u := range res.Undo {
 			_, _ = fmt.Fprintf(stdout, "undo: %s %s %s %s\n", u.Kind, u.Name, u.RecordType, u.Value)
 		}
+		if res.RunID != "" {
+			_, _ = fmt.Fprintf(stdout, "run: %s (undo it with POST /api/v1/domains/automation/runs/%s/undo)\n", res.RunID, res.RunID)
+		}
 		if res.Message != "" {
 			_, _ = fmt.Fprintf(stdout, "note: %s\n", res.Message)
 		}

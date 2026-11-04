@@ -6,11 +6,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/dnsrecords"
+	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/trafficpolicy"
 )
 
@@ -45,6 +47,7 @@ type wwwApplyResponse struct {
 	RedirectApplied bool             `json:"redirect_applied"`
 	RedirectMessage string           `json:"redirect_message,omitempty"`
 	Undo            []undoAction     `json:"undo"`
+	RunID           string           `json:"run_id,omitempty"`
 	Message         string           `json:"message,omitempty"`
 }
 
@@ -84,23 +87,39 @@ func (rt *Router) handleApplyDomainWWW(w http.ResponseWriter, r *http.Request) {
 	out := wwwApplyResponse{Domain: domain, Provider: st.res.Provider, Zone: st.res.Zone, Mode: st.res.Mode,
 		Canonical: st.res.Canonical, Records: []wwwApplyRecord{}, Redirect: st.res.Redirect, Undo: []undoAction{}}
 	failed, conflicts := false, false
+	wwwHost := "www." + domain
+	foreignWWW := rt.domainOwner(ctx, wwwHost)
+	if foreignWWW == app {
+		foreignWWW = ""
+	}
 	for i, it := range st.items {
 		rec := wwwApplyRecord{wwwPlanRecord: st.res.Records[i], Result: it.Plan.Outcome}
+		// The www record is tracked under its own host so it never shares a key with the apex row.
+		trackDomain := domain
+		isWWW := it.Desired.Name == "www"
+		if isWWW {
+			trackDomain = wwwHost
+		}
 		switch {
 		case failed:
 			rec.Result = wwwResultNotAttempted
+		case isWWW && foreignWWW != "" && it.Plan.Outcome != dnsrecords.OutcomeUnchanged:
+			conflicts = true
+			rec.Result = dnsrecords.OutcomeConflict
+			rec.Message = wwwHost + " belongs to app " + foreignWWW + "; it was left alone"
 		case it.Plan.Outcome == dnsrecords.OutcomeConflict:
 			conflicts = true
 			rec.Message = "a different record exists; pass replace to overwrite it"
 		case it.Plan.Outcome == dnsrecords.OutcomeUnchanged:
 			rec.Message = "already in place"
 		default:
-			d, undo := rt.writeDomainDNS(ctx, r, app, domain, st.target, it.Desired, it.Plan, domainDNSResult{Domain: domain})
-			out.Undo = append(out.Undo, undo...)
+			d, undo := rt.writeDomainDNS(ctx, r, app, trackDomain, st.target, it.Desired, it.Plan, domainDNSResult{Domain: trackDomain})
 			rec.Message = d.Message
 			if d.DNS == dnsResultError {
 				failed, rec.Result = true, wwwResultFailed
+				undo, rec.Message = rt.restoreAfterFailedAppend(ctx, r, app, trackDomain, st.target, it.Plan, undo, rec.Message)
 			}
+			out.Undo = append(out.Undo, undo...)
 		}
 		out.Records = append(out.Records, rec)
 	}
@@ -111,12 +130,46 @@ func (rt *Router) handleApplyDomainWWW(w http.ResponseWriter, r *http.Request) {
 	case conflicts:
 		out.Message = "conflicting records were left alone; pass replace to overwrite them"
 	}
-	if failed {
+	switch {
+	case failed:
 		out.RedirectMessage = "not applied because a DNS record failed"
-	} else {
+	case conflicts:
+		out.RedirectMessage = "not applied because a record was left as a conflict; resolve it and apply again"
+	default:
 		out.RedirectApplied, out.RedirectMessage = rt.applyWWWRedirect(ctx, r, app, domain, out.Redirect, st.res.Canonical, req.Replace)
 	}
+	if len(out.Undo) > 0 {
+		state := "applied"
+		if !out.Applied {
+			state = "partial"
+		}
+		run := goLiveResult{App: app, Domain: domain, State: state, Steps: []goLiveStep{}, undo: out.Undo}
+		rt.recordGoLiveRun(ctx, &run)
+		out.RunID = run.RunID
+	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+// restoreAfterFailedAppend puts back records a replace deleted when the new
+// record was then rejected, so a failed apply does not leave the name empty.
+func (rt *Router) restoreAfterFailedAppend(ctx context.Context, r *http.Request, app, domain string, t *dnsTarget, plan dnsrecords.Plan, undo []undoAction, msg string) ([]undoAction, string) {
+	if len(plan.Replace) == 0 || len(undo) == 0 {
+		return undo, msg
+	}
+	for _, u := range undo {
+		if u.Kind != undoKindDNSRestore {
+			// The new record may be live, so restoring could duplicate it.
+			return undo, msg
+		}
+	}
+	if _, err := t.Manager.AppendRecords(ctx, t.Zone, recordsOf(plan.Replace)); err != nil {
+		rt.logger.Error("api: www apply: restore after failed append failed", slog.String("error", err.Error()), slog.String("domain", domain))
+		return undo, msg + "; the old records could not be put back, undo the run to restore them"
+	}
+	for _, old := range plan.Replace {
+		rt.recordDNSAudit(ctx, r, store.AuditActionDNSRecordCreated, app, domain, old)
+	}
+	return nil, msg + "; the records it replaced were restored"
 }
 
 // wwwPreviewSummary lists what a confirmed apply would do, for the 400 reply.

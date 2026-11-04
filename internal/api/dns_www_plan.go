@@ -130,6 +130,15 @@ func (rt *Router) buildWWWPlan(w http.ResponseWriter, r *http.Request, domain, m
 		writeError(w, http.StatusBadRequest, err.Error())
 		return wwwPlanState{}, false
 	}
+	if target != nil {
+		// Checked before any write so a rejected record never follows a delete.
+		for _, it := range items {
+			if err := dnsrecords.ValidateTarget(it.Desired, target.Provider); err != nil {
+				writeError(w, http.StatusConflict, err.Error())
+				return wwwPlanState{}, false
+			}
+		}
+	}
 	for _, it := range items {
 		rec := wwwPlanRecord{Name: it.Desired.Name, Type: it.Desired.Type, Value: it.Desired.Value,
 			TTLSeconds: int(it.Desired.TTL.Seconds()), Outcome: it.Plan.Outcome, Replaces: []dnsRecordResource{}}

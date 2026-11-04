@@ -86,6 +86,7 @@ type WWWApply struct {
 	RedirectApplied bool           `json:"redirect_applied"`
 	RedirectMessage string         `json:"redirect_message"`
 	Undo            []WWWApplyUndo `json:"undo"`
+	RunID           string         `json:"run_id"`
 	Message         string         `json:"message"`
 }
 
