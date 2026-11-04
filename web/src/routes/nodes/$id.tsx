@@ -29,6 +29,7 @@ import { NodeWorkloadsCard } from '../../components/nodes/NodeWorkloadsCard'
 import { NodeMetricsDashboard } from '../../components/NodeMetricsDashboard'
 import { NodePatchStatusCard } from '../../components/NodePatchStatusCard'
 import { IacExportButton } from '../../components/IacExportButton'
+import { IacImportPreview } from '../../components/IacImportPreview'
 import { NodeEventsCard } from '../../components/NodeEventsCard'
 import { routeErrorMessage } from '../../lib/apiError'
 import { Button } from '@/components/ui/button'
@@ -79,7 +80,10 @@ function NodeDetailPage() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-2">
           <CardTitle>{t('detail.overview.title')}</CardTitle>
-          <IacExportButton kind="node" name={node.name} />
+          <div className="flex items-center gap-2">
+            <IacExportButton kind="node" name={node.name} />
+            <IacImportPreview name={node.name} />
+          </div>
         </CardHeader>
         <CardContent>
           <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">

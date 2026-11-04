@@ -3474,6 +3474,18 @@
     "loading": "Exporting...",
     "empty": "Nothing to export."
   },
+  "iacImport": {
+    "button": "Import YAML",
+    "dialogTitle": "Import YAML for {{name}}",
+    "dialogDescription": "Paste or upload resource YAML to preview what would change. Nothing is applied here.",
+    "textLabel": "YAML to preview",
+    "placeholder": "kind: App",
+    "preview": "Preview",
+    "previewing": "Planning...",
+    "upload": "Upload file",
+    "uploadLabel": "Upload a YAML file",
+    "cliNote": "To apply, run:"
+  },
   "iacHelp": {
     "hint": "Click a key to see what it does.",
     "default": "Default: {{value}}."

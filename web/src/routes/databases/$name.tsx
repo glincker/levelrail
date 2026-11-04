@@ -11,6 +11,7 @@ import { StuckPanel } from '../../components/StuckPanel'
 import { ManagedByStackBanner } from '../../components/stacks/ManagedByStackNotice'
 import { DatabaseActionBar } from '../../components/databases/DatabaseActionBar'
 import { IacExportButton } from '../../components/IacExportButton'
+import { IacImportPreview } from '../../components/IacImportPreview'
 import { DatabasePaletteActions } from '../../components/databases/DatabasePaletteActions'
 import {
   parseDatabaseAction,
@@ -62,6 +63,7 @@ function DatabaseDetailLayout() {
         ) : (
           <>
             <IacExportButton kind="database" name={database.name} />
+            <IacImportPreview name={database.name} />
             <DatabaseActionBar database={database} />
           </>
         )
