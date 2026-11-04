@@ -85,6 +85,7 @@ func (l loader) nodes(ctx context.Context, res []*Resource) error {
 		return err
 	}
 	for _, n := range all {
+		l.st.nodeNames[n.ID] = n.Name
 		if !want[n.Name] {
 			continue
 		}
@@ -124,6 +125,9 @@ func (p *planner) planNode(r *Resource) {
 		p.fail(r, "more than one node is named %q; rename one so the file can name a single node", r.Name)
 		return
 	}
+	if p.nodeRenamed(r) {
+		return
+	}
 	live, ok := p.st.nodes[r.Name]
 	if !ok {
 		p.fail(r, "node %q does not exist; nodes join through an enrollment token and apply never creates one", r.Name)
@@ -138,7 +142,7 @@ func (p *planner) planNode(r *Resource) {
 	}
 	changes, _ := diffFields(r.Fields, liveMap, nil, false)
 	if len(changes) == 0 {
-		p.add(r, ActionNoop, nil, nil, nil)
+		p.add(r, ActionNoop, nil, nil, nil).LiveID = live.id
 		return
 	}
 	var setLabels, setTaints bool
@@ -150,7 +154,7 @@ func (p *planner) planNode(r *Resource) {
 			setTaints = true
 		}
 	}
-	p.add(r, ActionUpdate, changes, nil, func(ctx context.Context, x *executor) error {
+	it := p.add(r, ActionUpdate, changes, nil, func(ctx context.Context, x *executor) error {
 		base := "/api/v1/nodes/" + esc(live.id)
 		if setLabels {
 			labels := map[string]string{}
@@ -166,6 +170,7 @@ func (p *planner) planNode(r *Resource) {
 		}
 		return nil
 	})
+	it.LiveID = live.id
 }
 
 func taintsFromMap(m map[string]any) []placement.Taint {

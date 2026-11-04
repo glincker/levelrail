@@ -357,3 +357,28 @@ func TestStackLock_Lease(t *testing.T) {
 		t.Fatalf("ghost lock err = %v", err)
 	}
 }
+
+func TestStacks_InstallScope(t *testing.T) {
+	db := openTestDB(t)
+	ctx := t.Context()
+	s, err := db.CreateStack(ctx, StackRecord{Name: "nodes-eu", Scope: StackScopeInstall}, time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := db.GetStack(ctx, s.ID)
+	if err != nil || got.Scope != StackScopeInstall || !got.RequireApproval || got.DriftPolicy != "lock" {
+		t.Fatalf("install stack = %+v, %v", got, err)
+	}
+	if p := newTestStack(t, db, "shop"); p.Scope != StackScopeProject {
+		t.Fatalf("default scope = %q", p.Scope)
+	}
+	for _, bad := range []StackRecord{
+		{Name: "a", Scope: StackScopeInstall, ProjectID: "shop"},
+		{Name: "b", Scope: StackScopeProject},
+		{Name: "c", Scope: "cluster", ProjectID: "shop"},
+	} {
+		if _, err := db.CreateStack(ctx, bad, time.Now()); err == nil {
+			t.Fatalf("accepted %+v", bad)
+		}
+	}
+}
