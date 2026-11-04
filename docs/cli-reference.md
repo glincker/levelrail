@@ -1376,6 +1376,8 @@ levelrail-cli apply -f file|dir|- [--dry-run] [--exit-code] [--prune --source NA
 ```
 Validates resource files, prints the plan, and applies it through the API with your own permissions. Exit 0 no changes or applied, 1 error, 2 changes pending (with `--dry-run --exit-code`). <span v-pre>`${{ env.NAME }}`</span> placeholders are filled only from `--var`, `--var-file` or the names listed with `--allow-env` (a trailing `*` allows a prefix, but never covers credential looking names such as `AWS_*`, `GITHUB_TOKEN` or anything containing `TOKEN`, `SECRET`, `PASSW` or `_KEY`, which must be named exactly). An unresolved placeholder fails before anything is sent.
 
+`stack create <name> --scope install` creates a stack that belongs to the install and has no project (`--project` is refused with it; the default `--scope project` still needs `--project`). `stack list` shows a SCOPE column and `stack show` a Scope line. `stack apply --allow-weaken` is not available yet: the API request has no such field.
+
 `apply`, `stack plan` and `stack apply` take `--values FILE.yaml` (repeatable, later wins): a flat YAML map that fills the <span v-pre>`${{ env.NAME }}`</span> placeholders, below `--var` and above `--var-file`. See [values per environment](/stacks#values-per-environment). Plans print `~ path: before -> after` for changed fields. Env vars, anything under `secrets` and keys that look like credentials show `(hidden)`, and other values are cut at `APP_IAC_PLAN_VALUE_MAX` characters (default 120).
 
 ```

@@ -39,7 +39,7 @@ Commands:
   init <template> [--dir D] [--set k=v] copy a starter stack into a directory
   list                                  list stacks
   show <name>                           one stack with its owned resources
-  create <name> --project P             create an empty stack
+  create <name> --project P|--scope install  create an empty stack
   plan <name> -f PATH [flags]           show what an apply would change
   apply <name> -f PATH [flags]          apply the files as a new revision
   history <name> [--limit N]            revisions, newest first
@@ -170,29 +170,40 @@ func stackSettingsFlags(fs *flag.FlagSet) (allowPrune *bool, drift *string, appr
 }
 
 func stackCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	var project, drift *string
+	var project, scope, drift *string
 	var allowPrune, approval *bool
-	c, code, ok := parseCLICall(prog, "stack create", stackCmdUsage(prog, "create", "<name> --project P [flags]", `
+	c, code, ok := parseCLICall(prog, "stack create", stackCmdUsage(prog, "create", "<name> --project P | --scope install [flags]", `
 Flags:
-  --project P          project the stack belongs to (required)
+  --scope S            project (default) or install; an install stack has no project
+  --project P          project the stack belongs to (required unless --scope install)
   --allow-prune        let this stack delete resources it created (root only)
   --drift warn|lock    drift policy (root only)
   --require-approval   hold applies for approval (root only)
 `), args, stdout, stderr, lookupEnv, func(fs *flag.FlagSet) {
+		scope = fs.String("scope", "project", "stack scope: project or install")
 		project = fs.String("project", "", "project the stack belongs to")
 		allowPrune, drift, approval = stackSettingsFlags(fs)
 	})
 	if !ok {
 		return code
 	}
-	pos, code, ok := stackPositionals(c, prog, "create", "<name> --project P", 1)
+	pos, code, ok := stackPositionals(c, prog, "create", "<name> --project P | --scope install", 1)
 	if !ok {
 		return code
 	}
-	if *project == "" {
-		return c.invalid("--project is required")
+	switch *scope {
+	case "install":
+		if *project != "" {
+			return c.invalid("--project cannot be used with --scope install")
+		}
+	case "project":
+		if *project == "" {
+			return c.invalid("--project is required")
+		}
+	default:
+		return c.invalid("--scope must be project or install")
 	}
-	req := apiclient.StackCreateRequest{Name: pos[0], Project: *project, DriftPolicy: *drift}
+	req := apiclient.StackCreateRequest{Name: pos[0], Scope: *scope, Project: *project, DriftPolicy: *drift}
 	if flagWasSet(c.fs, "allow-prune") {
 		req.AllowPrune = allowPrune
 	}
@@ -203,7 +214,13 @@ Flags:
 	if err != nil {
 		return iacFail(c, err)
 	}
-	return c.render(raw, func() { _, _ = fmt.Fprintf(c.stdout, "created stack %s in project %s\n", s.Name, s.Project) })
+	return c.render(raw, func() {
+		if *scope == "install" {
+			_, _ = fmt.Fprintf(c.stdout, "created install stack %s\n", s.Name)
+			return
+		}
+		_, _ = fmt.Fprintf(c.stdout, "created stack %s in project %s\n", s.Name, s.Project)
+	})
 }
 
 func stackSettings(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {

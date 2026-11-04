@@ -42,7 +42,7 @@ func printStackList(w io.Writer, list []apiclient.StackInfo) {
 		return
 	}
 	tw := newStackTable(w)
-	_, _ = fmt.Fprintln(tw, "NAME\tPROJECT\tREVISION\tSTATUS\tDRIFT\tPINNED\tLOCKED")
+	_, _ = fmt.Fprintln(tw, "NAME\tSCOPE\tPROJECT\tREVISION\tSTATUS\tDRIFT\tPINNED\tLOCKED")
 	for _, s := range list {
 		pin, lock := "-", "-"
 		if s.PinnedRevision > 0 {
@@ -51,9 +51,17 @@ func printStackList(w io.Writer, list []apiclient.StackInfo) {
 		if s.Lock != nil {
 			lock = "yes"
 		}
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%d\t%s\t%s\t%s\t%s\n", s.Name, stackDash(s.Project), s.LatestRevision, stackStatusText(s), stackDriftText(s.Drift), pin, lock)
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%d\t%s\t%s\t%s\t%s\n", s.Name, stackScopeText(s.Scope), stackDash(s.Project), s.LatestRevision, stackStatusText(s), stackDriftText(s.Drift), pin, lock)
 	}
 	_ = tw.Flush()
+}
+
+// stackScopeText reads project for rows from servers that predate scopes.
+func stackScopeText(scope string) string {
+	if scope == "" {
+		return "project"
+	}
+	return scope
 }
 
 // stackStatusText is the latest revision status, spelled out when it waits for a reviewer.
@@ -80,7 +88,7 @@ func printStackSettings(w io.Writer, s apiclient.StackInfo) {
 }
 
 func printStack(w io.Writer, s apiclient.StackInfo) {
-	_, _ = fmt.Fprintf(w, "Stack     %s\nProject   %s\nCreated   %s by %s\n", s.Name, stackDash(s.Project), stackTime(s.CreatedAt), stackDash(s.CreatedBy))
+	_, _ = fmt.Fprintf(w, "Stack     %s\nScope     %s\nProject   %s\nCreated   %s by %s\n", s.Name, stackScopeText(s.Scope), stackDash(s.Project), stackTime(s.CreatedAt), stackDash(s.CreatedBy))
 	status := ""
 	if s.LatestStatus != "" {
 		status = " (" + stackStatusText(s) + ")"
