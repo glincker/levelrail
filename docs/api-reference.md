@@ -1213,6 +1213,8 @@ Endpoints for:
 | GET | /api/v1/domains/watch | AbilityRead | handleDomainsWatch |
 | GET | /api/v1/domains/{domain}/watch | AbilityRead | handleDomainWatchSnapshot |
 | GET | /api/v1/domains/export | AbilityRead | handleDomainsExport |
+| GET | /api/v1/domains/{domain}/changes | AbilityRead | handleListDomainChanges |
+| POST | /api/v1/domains/{domain}/changes/{id}/rollback | AbilityRoot | handleRollbackDomainChange |
 
 ## Built-in Container Registry
 

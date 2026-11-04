@@ -213,6 +213,18 @@ Per environment and [preview environment](/previews) wildcards are not part of t
 
 Saving a Cloudflare token, a Route53 key pair or a Google Cloud DNS key also tests it with read-only calls (list zones, then list records of the first zone). The save always succeeds; the response adds `verification` with `ok`, `missing_scopes`, `zones_visible` and `message`. Edit rights cannot be proven without a write, so they are confirmed on the first change. Turn this off with the runtime setting `dns.verify_provider_on_save`.
 
+## Roll back a domain change
+
+Every go-live and apex and www apply is recorded with what it created or replaced. For a limited time you can undo one change, and only the records Levelrail itself wrote are ever touched.
+
+```bash
+levelrail-cli domains changes example.com
+levelrail-cli domains rollback example.com gl_0123456789abcdef          # shows what would change
+levelrail-cli domains rollback example.com gl_0123456789abcdef --yes    # rolls back
+```
+
+`GET /api/v1/domains/{domain}/changes` lists the changes with `rollback_until`, `can_rollback` and `already_undone`. `POST /api/v1/domains/{domain}/changes/{id}/rollback` needs the root ability and answers 409 once the window has closed. A record that was edited after the change is skipped and reported, never deleted. The window is the runtime setting `domains.rollback_window_minutes` (default 60, 1 to 10080, env `APP_DOMAINS_ROLLBACK_WINDOW_MINUTES` seeds it).
+
 ## Permissions and audit
 
 Reads (zones, records, delegation, checks, exports) need the `read` ability. Every write against the provider (zones, records, imports, templates, health checks) needs `root`, because it changes live infrastructure outside this server. Each write is audited with an action name (`dns_zone.create`, `dns_zone.delete`, `dns_record.create`, `dns_record.update`, `dns_record.delete`, `dns_record.import`, `dns_record.template`, `dns_health_check.create`, `dns_health_check.delete`); filter the audit log by `dns_record` or `dns_zone`.

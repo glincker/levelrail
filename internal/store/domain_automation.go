@@ -126,3 +126,21 @@ func (db *DB) MarkDomainAutomationRunUndone(ctx context.Context, id string, at t
 	}
 	return nil
 }
+
+// ListDomainAutomationRunsForDomain returns one domain's runs, newest first.
+func (db *DB) ListDomainAutomationRunsForDomain(ctx context.Context, domain string, limit int) ([]DomainAutomationRun, error) {
+	rows, err := db.QueryContext(ctx, `SELECT `+automationRunColumns+` FROM domain_automation_runs WHERE domain = ? ORDER BY created_at DESC LIMIT ?`, domain, limit)
+	if err != nil {
+		return nil, fmt.Errorf("store: list domain automation runs for domain: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	var out []DomainAutomationRun
+	for rows.Next() {
+		r, err := scanAutomationRun(rows)
+		if err != nil {
+			return nil, fmt.Errorf("store: scan domain automation run: %w", err)
+		}
+		out = append(out, r)
+	}
+	return out, rows.Err()
+}

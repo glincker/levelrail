@@ -209,6 +209,8 @@ var Tree = map[string]*Node{
 		"search-visibility":    nil,
 		"dns":                  {Subs: map[string]*Node{"list": nil, "add": nil, "remove": nil, "zones": nil, "zone": nil, "records": nil}},
 		"go-live":              {Subs: map[string]*Node{"runs": nil, "undo": nil}},
+		"changes":              nil,
+		"rollback":             nil,
 		"backfill-base-domain": nil,
 		"headers":              {Subs: map[string]*Node{"show": nil, "set": nil, "add": nil, "preset": nil, "clear": nil}},
 		"forwarders":           {Subs: map[string]*Node{"show": nil, "set": nil, "add": nil, "remove": nil, "clear": nil}},

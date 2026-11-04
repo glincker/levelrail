@@ -76,6 +76,10 @@ func runDomains(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runDomainDNSStatus(prog, args[1:], stdout, stderr, lookupEnv)
 	case "go-live":
 		return runDomainsGoLive(prog, args[1:], stdout, stderr, lookupEnv)
+	case "changes":
+		return runDomainsChanges(prog, args[1:], stdout, stderr, lookupEnv)
+	case "rollback":
+		return runDomainsRollback(prog, args[1:], stdout, stderr, lookupEnv)
 	case "backfill-base-domain":
 		return runDomainsBackfillBaseDomain(prog, args[1:], stdout, stderr, lookupEnv)
 	case "headers":
@@ -146,6 +150,8 @@ func domainsUsage(prog string) string {
   %[1]s domains dns-status <domain> [--app NAME]  each required record: live, waiting, different, conflict or unknown
   %[1]s domains go-live <app> <domain> [flags]  create the DNS record and watch the domain go live
   %[1]s domains go-live runs|undo [flags]       automation history and one-step undo
+  %[1]s domains changes <domain> [--json]       recent changes and whether each can be rolled back
+  %[1]s domains rollback <domain> <run-id> [--yes] [--json]  undo one change inside the window
   %[1]s domains backfill-base-domain [flags]    give existing apps without a domain <app>.<base domain>
   %[1]s domains park <app> <domain> [flags]     take a domain off an app but keep it registered
   %[1]s domains move <domain> --from A --to B   hand a domain to another app (collision check, --confirm)

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1957 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1959 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1847,6 +1847,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/domains/{domain}/cert", Ability: "AbilityRoot", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleGetCert", Description: ""},
 	{Method: "GET", Path: "/api/v1/domains/{domain}/cert/preflight", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleCertPreflight", Description: "Guided public certificate: preflight, request, progress. Request is root tier."},
 	{Method: "GET", Path: "/api/v1/domains/{domain}/cert/status", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleCertStatus", Description: ""},
+	{Method: "GET", Path: "/api/v1/domains/{domain}/changes", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleListDomainChanges", Description: ""},
+	{Method: "POST", Path: "/api/v1/domains/{domain}/changes/{id}/rollback", Ability: "AbilityRoot", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleRollbackDomainChange", Description: ""},
 	{Method: "GET", Path: "/api/v1/domains/{domain}/cutover", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDomainCutover", Description: "Test before you switch: the move-a-domain checklist, and the DNS-01 certificate request that runs before DNS points here. The probe dials only this server."},
 	{Method: "DELETE", Path: "/api/v1/domains/{domain}/cutover/certificate", Ability: "AbilityRoot", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleCutoverCertificateRevert", Description: ""},
 	{Method: "POST", Path: "/api/v1/domains/{domain}/cutover/certificate", Ability: "AbilityRoot", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleCutoverCertificate", Description: ""},

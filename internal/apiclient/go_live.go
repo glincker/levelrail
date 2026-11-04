@@ -219,3 +219,51 @@ func (c *Client) BackfillBaseDomain(ctx context.Context, confirm bool) (BaseDoma
 	err := c.do(ctx, http.MethodPost, "/api/v1/settings/ingress/apps-base-domain/backfill", map[string]bool{"confirm": confirm}, &out)
 	return out, err
 }
+
+// DomainChangeEffect is one thing a domain change created or replaced.
+type DomainChangeEffect struct {
+	Action      string `json:"action"`
+	Description string `json:"description"`
+}
+
+// DomainChange mirrors GET /api/v1/domains/{domain}/changes items.
+type DomainChange struct {
+	RunID         string               `json:"run_id"`
+	Kind          string               `json:"kind"`
+	App           string               `json:"app,omitempty"`
+	Result        string               `json:"result"`
+	CreatedAt     time.Time            `json:"created_at"`
+	Summary       []DomainChangeEffect `json:"summary"`
+	RollbackUntil time.Time            `json:"rollback_until"`
+	CanRollback   bool                 `json:"can_rollback"`
+	AlreadyUndone bool                 `json:"already_undone"`
+}
+
+// RollbackOutcome is the result for one record of a rollback.
+type RollbackOutcome struct {
+	Status  string `json:"status"`
+	Label   string `json:"label"`
+	Message string `json:"message,omitempty"`
+}
+
+// RollbackResult is the response of a domain change rollback.
+type RollbackResult struct {
+	RunID    string            `json:"run_id"`
+	Domain   string            `json:"domain"`
+	UndoneAt time.Time         `json:"undone_at"`
+	Outcomes []RollbackOutcome `json:"outcomes"`
+}
+
+// DomainChanges calls GET /api/v1/domains/{domain}/changes.
+func (c *Client) DomainChanges(ctx context.Context, domain string) ([]DomainChange, error) {
+	var out []DomainChange
+	err := c.do(ctx, http.MethodGet, "/api/v1/domains/"+PathEscape(domain)+"/changes", nil, &out)
+	return out, err
+}
+
+// RollbackDomainChange calls POST /api/v1/domains/{domain}/changes/{id}/rollback.
+func (c *Client) RollbackDomainChange(ctx context.Context, domain, id string) (RollbackResult, error) {
+	var out RollbackResult
+	err := c.do(ctx, http.MethodPost, "/api/v1/domains/"+PathEscape(domain)+"/changes/"+PathEscape(id)+"/rollback", nil, &out)
+	return out, err
+}

@@ -30,6 +30,7 @@ const (
 type automationRunStore interface {
 	GetDomainAutomationRun(ctx context.Context, id string) (store.DomainAutomationRun, error)
 	ListDomainAutomationRuns(ctx context.Context, limit int) ([]store.DomainAutomationRun, error)
+	ListDomainAutomationRunsForDomain(ctx context.Context, domain string, limit int) ([]store.DomainAutomationRun, error)
 	MarkDomainAutomationRunUndone(ctx context.Context, id string, at time.Time) error
 }
 
