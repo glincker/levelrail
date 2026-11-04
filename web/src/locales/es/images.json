@@ -9,14 +9,19 @@
     "count": "Imágenes",
     "size": "Disco usado",
     "reclaimable": "Se puede liberar",
-    "protected": "Conservadas"
+    "protected": "Conservadas",
+    "review": "Revisar y limpiar",
+    "countSplit": "{{platform}} de la plataforma, {{other}} otras",
+    "freeableSplit": "Imágenes de la plataforma {{platform}}, otras imágenes {{other}}",
+    "keptSplit": "{{used}} en uso por contenedores"
   },
   "columns": {
     "image": "Imagen",
     "size": "Tamaño",
     "apps": "Usada por",
     "status": "Estado",
-    "created": "Compilada"
+    "created": "Compilada",
+    "actions": "Acciones"
   },
   "untagged": "sin etiqueta",
   "status": {
@@ -156,5 +161,60 @@
       "layers": "Capas",
       "node": "Nodo"
     }
+  },
+  "rootOnly": "Solo la cuenta root puede eliminar imágenes. Aún puedes explorarlas y filtrarlas.",
+  "badge": {
+    "other": "Otra",
+    "inUse": "En uso"
+  },
+  "filters": {
+    "label": "Filtrar imágenes",
+    "all": "Todas",
+    "platform": "Plataforma",
+    "other": "Otras",
+    "unused": "Sin uso",
+    "in_use": "En uso",
+    "search": "Buscar por nombre o id",
+    "sort": "Orden",
+    "sortSize": "Más grandes primero",
+    "sortAge": "Más recientes primero",
+    "empty": "Ninguna imagen coincide con esta vista.",
+    "reset": "Mostrar todas las imágenes"
+  },
+  "row": {
+    "notRemovable": "Esta imagen no se puede eliminar",
+    "select": "Seleccionar {{name}}",
+    "selectAll": "Seleccionar todas las imágenes eliminables",
+    "remove": "Eliminar",
+    "removeNamed": "Eliminar {{name}}"
+  },
+  "bar": {
+    "label": "Imágenes seleccionadas",
+    "summary_one": "{{count}} seleccionada, {{size}} liberados",
+    "summary_other": "{{count}} seleccionadas, {{size}} liberados",
+    "clear": "Limpiar",
+    "remove": "Eliminar seleccionadas"
+  },
+  "remove": {
+    "title": "Eliminar imágenes",
+    "description": "Revisa lo que se eliminará. No se borra nada hasta que confirmes.",
+    "includeUnmanaged": "Eliminar también otras imágenes que ningún contenedor usa",
+    "previewing": "Comprobando qué se puede eliminar...",
+    "nothing": "No hay nada que eliminar aquí.",
+    "listLabel": "Imágenes a eliminar",
+    "total_one": "{{count}} imagen, se liberarán {{size}}",
+    "total_other": "{{count}} imágenes, se liberarán {{size}}",
+    "warning": "Las imágenes eliminadas se descargan o reconstruyen de nuevo cuando una app las necesita.",
+    "confirm_one": "Eliminar {{count}} imagen",
+    "confirm_other": "Eliminar {{count}} imágenes",
+    "removing": "Eliminando...",
+    "cancel": "Cancelar",
+    "done": "Listo",
+    "resultRemoved_one": "Se eliminó {{count}} imagen, se liberaron {{size}}.",
+    "resultRemoved_other": "Se eliminaron {{count}} imágenes, se liberaron {{size}}.",
+    "resultFailed_one": "No se pudo eliminar {{count}} imagen:",
+    "resultFailed_other": "No se pudieron eliminar {{count}} imágenes:",
+    "announce_one": "Se eliminó {{count}} imagen.",
+    "announce_other": "Se eliminaron {{count}} imágenes."
   }
 }

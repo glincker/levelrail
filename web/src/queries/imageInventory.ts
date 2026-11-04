@@ -30,6 +30,11 @@ export interface ImageEntry {
   apps: ImageAppUse[]
   protected: boolean
   protect_reason?: string
+  unmanaged: boolean
+  in_use: boolean
+  removable: boolean
+  removable_reason?: string
+  blocked_reason?: string
 }
 
 export interface ImageInventory {
@@ -40,6 +45,10 @@ export interface ImageInventory {
     size_bytes: number
     reclaimable_bytes: number
     protected_count: number
+    unmanaged_unused_count: number
+    unmanaged_unused_bytes: number
+    app_images: number
+    other_images: number
   }
   retention: { keep_per_app: number; min_age_hours: number }
   signatures: { mode: 'off' | 'enforce'; configured: boolean }
@@ -55,6 +64,12 @@ export interface ImageLayer {
 export interface ImageLayers {
   layers: ImageLayer[]
   size_bytes: number
+}
+
+export interface ImageRemoveRequest {
+  ids: string[]
+  dryRun: boolean
+  includeUnmanagedUnused: boolean
 }
 
 export interface ImageGCResult {
@@ -134,6 +149,30 @@ export function useImageGC(node: string) {
           body: JSON.stringify({ node, dry_run: dryRun }),
         }),
         'image cleanup',
+      ),
+    onSuccess: (res) => {
+      if (!res.dry_run) void qc.invalidateQueries({ queryKey: imageKeys.all })
+    },
+  })
+}
+
+export function useImageRemove(node: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    meta: { errorToast: false },
+    mutationFn: async (req: ImageRemoveRequest): Promise<ImageGCResult> =>
+      json<ImageGCResult>(
+        await fetch('/api/v1/images/remove', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            node,
+            ids: req.ids,
+            dry_run: req.dryRun,
+            include_unmanaged_unused: req.includeUnmanagedUnused,
+          }),
+        }),
+        'image removal',
       ),
     onSuccess: (res) => {
       if (!res.dry_run) void qc.invalidateQueries({ queryKey: imageKeys.all })
