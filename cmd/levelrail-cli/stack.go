@@ -418,6 +418,7 @@ type stackManifestFlags struct {
 	pruneSet bool
 	vars     stringMapFlag
 	varFiles stringListFlag
+	values   stringListFlag
 	allowEnv stringListFlag
 	secrets  stringMapFlag
 }
@@ -431,6 +432,7 @@ func bindStackManifestFlags(fs *flag.FlagSet, withFiles bool) *stackManifestFlag
 		fs.Var(&trackedBool{val: f.prune, set: &f.pruneSet}, "prune", "delete resources the files no longer declare (default: the Stack document)")
 		fs.Var(f.vars, "var", "NAME=VALUE for a ${{ env.NAME }} placeholder")
 		fs.Var(&f.varFiles, "var-file", "file of KEY=VALUE lines for placeholders (repeatable)")
+		fs.Var(&f.values, "values", "flat YAML file of placeholder values (repeatable, later wins)")
 		fs.Var(&f.allowEnv, "allow-env", "NAME[,NAME] or PREFIX* that placeholders may read from the environment")
 	}
 	fs.Var(f.secrets, "secret", "NAME=ENVVAR, read the secret value from a local environment variable (also env:VAR or file:PATH)")
@@ -531,7 +533,7 @@ func buildStackRequest(name string, f *stackManifestFlags, lookupEnv func(string
 			req.Prune = doc.Spec.Prune
 		}
 	}
-	if req.Vars, err = resolveVars(files, varSources{vars: f.vars, varFiles: f.varFiles, allowEnv: f.allowEnv}, lookupEnv); err != nil {
+	if req.Vars, err = resolveVars(files, varSources{vars: f.vars, varFiles: f.varFiles, values: f.values, allowEnv: f.allowEnv}, lookupEnv); err != nil {
 		return apiclient.StackRequest{}, err
 	}
 	return req, nil
@@ -595,6 +597,7 @@ Flags:
   --project P          project of the stack (needed when the stack does not exist yet)
   --prune              plan deletions of resources the files no longer declare
   --var NAME=VALUE     value for a ${{ env.NAME }} placeholder (repeatable)
+  --values FILE.yaml   flat YAML map of placeholder values (repeatable, later wins; beats --var-file)
   --var-file PATH      KEY=VALUE lines for placeholders (repeatable)
   --allow-env NAMES    names (or PREFIX*) placeholders may read from your environment
   --secret NAME=ENVVAR secret value read from a local environment variable; never printed
@@ -683,7 +686,7 @@ are filled from GITHUB_* variables or the local checkout. Exit codes: 0 applied,
 1 error, 409/422 or a revision that ended partial or failed.
 
 Flags:
-  -f PATH, --project P, --prune, --var, --var-file, --allow-env   as for plan`+stackRunFlagsHelp), args, stdout, stderr, lookupEnv, func(fs *flag.FlagSet) { rf = bindStackRunFlags(fs, true) })
+  -f PATH, --project P, --prune, --var, --values, --var-file, --allow-env   as for plan`+stackRunFlagsHelp), args, stdout, stderr, lookupEnv, func(fs *flag.FlagSet) { rf = bindStackRunFlags(fs, true) })
 	if !ok {
 		return code
 	}

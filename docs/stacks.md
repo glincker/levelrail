@@ -49,7 +49,7 @@ Promote a change to production with a pull request that edits `infra/stacks/shop
 
 ## The loop
 
-1. **Pull request**: CI runs `stack plan` for each changed stack. The plan is posted as a comment with counts and field paths. Environment values are never shown.
+1. **Pull request**: CI runs `stack plan` for each changed stack. The plan is posted as a comment with counts and field paths. Environment values are never shown (see [plan values](#plan-values)).
 2. **Merge**: CI runs `stack apply` for the stack. The apply creates the next revision and records the git commit and the CI run URL on it.
 3. **History**: each apply is a numbered revision. You can list them, look at the documents and result of one, and compare two.
 4. **Rollback**: go back to an earlier revision if the new one is wrong.
@@ -211,7 +211,11 @@ Store each token as a CI secret, and give the apply token only to the protected 
 
 ## Values per environment
 
-`levelrail-cli apply --values values/prod.yaml` reads a flat YAML map (`IMAGE_TAG: v1.4.2`) and fills the matching <span v-pre>`${{ env.NAME }}`</span> placeholders. Repeat the flag and the later file wins. Precedence is `--var`, then `--values`, then `--var-file`, then names allowed with `--allow-env`. Only scalar values are accepted, and only placeholders the manifests use are read. Keys that look like credentials (`*TOKEN*`, `*SECRET*`, `*_KEY*`) are refused, so use `--secret` for those; values are never printed. A missing value fails before anything is sent and names the placeholder.
+`levelrail-cli apply --values values/prod.yaml` (also `stack plan` and `stack apply`) reads a flat YAML map (`IMAGE_TAG: v1.4.2`) and fills the matching <span v-pre>`${{ env.NAME }}`</span> placeholders. Repeat the flag and the later file wins. Precedence is `--var`, then `--values`, then `--var-file`, then names allowed with `--allow-env`. Only scalar values are accepted, and only placeholders the manifests use are read. Keys that look like credentials (`*TOKEN*`, `*SECRET*`, `*_KEY*`) are refused, so use `--secret` for those; values are never printed. A missing value fails before anything is sent and names the placeholder.
+
+## Plan values
+
+A human plan prints `~ path: before -> after` for each changed field. Env vars, anything under `secrets` and keys that look like credentials (`*TOKEN*`, `*SECRET*`, `*PASSW*`, `*_KEY*`) show `(hidden)` instead of the value. Other values are cut at `APP_IAC_PLAN_VALUE_MAX` characters (default 120) and end in `...`. `stack plan -o json` carries the same trimmed values.
 
 Placeholders also work in `replicas`, `resources.*`, `domains[]`, `tolerations[].value` and `labels.*`. The file is checked against the schema after the values are filled in, so <span v-pre>`replicas: "${{ env.REPLICAS }}"`</span> must render to a whole number. A wrong value fails with the field path and the variable name, never the value itself.
 

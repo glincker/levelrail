@@ -1372,9 +1372,11 @@ A boolean, plus an optional gradual rollout percentage, that the app's own code 
 Experimental: requires `APP_EXPERIMENTAL=iac`. See [Platform as code](/platform-as-code) for the document format, secrets handling, prune rules and CI use.
 
 ```
-levelrail-cli apply -f file|dir|- [--dry-run] [--exit-code] [--prune --source NAME] [--project P] [--yes] [--secret K=env:VAR] [--var NAME=VALUE] [--var-file PATH] [--allow-env NAME[,NAME...]] [--no-deploy] [--continue-on-error] [flags]
+levelrail-cli apply -f file|dir|- [--dry-run] [--exit-code] [--prune --source NAME] [--project P] [--yes] [--secret K=env:VAR] [--var NAME=VALUE] [--values FILE.yaml] [--var-file PATH] [--allow-env NAME[,NAME...]] [--no-deploy] [--continue-on-error] [flags]
 ```
 Validates resource files, prints the plan, and applies it through the API with your own permissions. Exit 0 no changes or applied, 1 error, 2 changes pending (with `--dry-run --exit-code`). <span v-pre>`${{ env.NAME }}`</span> placeholders are filled only from `--var`, `--var-file` or the names listed with `--allow-env` (a trailing `*` allows a prefix, but never covers credential looking names such as `AWS_*`, `GITHUB_TOKEN` or anything containing `TOKEN`, `SECRET`, `PASSW` or `_KEY`, which must be named exactly). An unresolved placeholder fails before anything is sent.
+
+`apply`, `stack plan` and `stack apply` take `--values FILE.yaml` (repeatable, later wins): a flat YAML map that fills the <span v-pre>`${{ env.NAME }}`</span> placeholders, below `--var` and above `--var-file`. See [values per environment](/stacks#values-per-environment). Plans print `~ path: before -> after` for changed fields. Env vars, anything under `secrets` and keys that look like credentials show `(hidden)`, and other values are cut at `APP_IAC_PLAN_VALUE_MAX` characters (default 120).
 
 ```
 levelrail-cli validate [FILE|DIR|-] [--var NAME=VALUE] [--var-file PATH] [--json]
