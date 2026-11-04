@@ -2186,6 +2186,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/me/preferences/appearance | Public | handleGetMePreferenceAppearance |
 | PUT | /api/v1/me/preferences/appearance | Public | handlePutMePreferenceAppearance |
 | DELETE | /api/v1/me/preferences/appearance | Public | handleDeleteMePreferenceAppearance |
+| POST | /api/v1/images/remove | AbilityRoot | handleImageRemove |
 | POST | /mcp | Public |  |
 
 ## See also

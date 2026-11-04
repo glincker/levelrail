@@ -92,3 +92,66 @@ func TestImageRoutes_NotConfigured(t *testing.T) {
 		t.Errorf("status = %d, want 501", rec.Code)
 	}
 }
+
+func TestImageRemove(t *testing.T) {
+	db := openTestDB(t)
+	old := time.Now().Add(-72 * time.Hour)
+	inv := &fakeImageInventory{records: []docker.ImageRecord{
+		{ID: "sha256:live", Tags: []string{"img:v1"}, SizeBytes: 100, CreatedAt: old},
+		{ID: "sha256:foreign", Tags: []string{"nginx:1", "nginx:latest"}, SizeBytes: 60, SharedBytes: 10, CreatedAt: old},
+		{ID: "sha256:stopped", Tags: []string{"redis:7"}, SizeBytes: 40, Containers: 1, CreatedAt: old},
+		{ID: "sha256:other", SizeBytes: 30, CreatedAt: old},
+	}}
+	logger := slog.New(slog.NewTextHandler(discardWriter{}, nil))
+	rt := NewRouter(logger, testBrand(), db, WithImageInventory(func(string) (docker.ImageInventory, error) { return inv, nil }))
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	do := func(body string) (imageRemoveResponse, int) {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/images/remove", body))
+		var out imageRemoveResponse
+		_ = json.Unmarshal(rec.Body.Bytes(), &out)
+		return out, rec.Code
+	}
+
+	out, code := do(`{"ids":["sha256:foreign"],"dry_run":true}`)
+	if code != http.StatusOK || len(out.Candidates) != 1 || len(inv.removed) != 0 {
+		t.Fatalf("dry run: code=%d out=%+v removed=%v", code, out, inv.removed)
+	}
+
+	out, _ = do(`{"ids":["sha256:foreign","sha256:live","sha256:stopped","sha256:nope"]}`)
+	if len(out.Removed) != 1 || len(out.Failed) != 3 || out.ReclaimedBytes != 50 {
+		t.Fatalf("explicit: %+v", out)
+	}
+	if got := inv.removed; len(got) != 2 || got[0] != "nginx:1" || got[1] != "nginx:latest" {
+		t.Errorf("multi-tag image must remove every tag, removed = %v", got)
+	}
+
+	inv.removed = nil
+	out, _ = do(`{"include_unmanaged_unused":true}`)
+	if len(out.Removed) != 2 || len(inv.removed) != 3 {
+		t.Errorf("unmanaged unused: %+v removed=%v", out, inv.removed)
+	}
+	for _, id := range inv.removed {
+		if id == "redis:7" || id == "img:v1" {
+			t.Errorf("removed protected image %s", id)
+		}
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/images", ""))
+	var list imageListResponse
+	_ = json.Unmarshal(rec.Body.Bytes(), &list)
+	if list.Totals.UnmanagedUnusedCount != 2 || list.Totals.UnmanagedUnusedBytes != 80 {
+		t.Errorf("totals = %+v", list.Totals)
+	}
+
+	if _, code := do(`{}`); code != http.StatusBadRequest {
+		t.Errorf("empty request code = %d", code)
+	}
+	ids := make([]string, 201)
+	body, _ := json.Marshal(map[string]any{"ids": ids})
+	if _, code := do(string(body)); code != http.StatusBadRequest {
+		t.Errorf("cap exceeded code = %d, want 400", code)
+	}
+}

@@ -15,6 +15,8 @@ func imagesUsage(prog string) string {
   %[1]s images list [--node N] [--keep N]
   %[1]s images layers <image-id> [--node N]
   %[1]s images gc [--node N] [--keep N] [--min-age-hours H] [--apply]
+  %[1]s images rm <image-id...> [--node N] [--dry-run] [--yes]
+  %[1]s images prune --unmanaged [--node N] [--dry-run] [--yes]
   %[1]s images verify (<image-id> | --ref repo@sha256:...) [--node N]
   %[1]s images policy [--ref repo@sha256:...]
   %[1]s images lint <Dockerfile> [--fix]
@@ -25,6 +27,10 @@ Every image on a node with its size, which apps use it and why it is kept.
 gc previews by default and only removes images with --apply. Live images,
 rollback targets, the newest successful deploys of each app and images used
 by a container are never removed.
+rm removes the images you name and prune --unmanaged removes every image no
+app owns and no container uses. Both print the plan and stop unless you pass
+--yes; --dry-run never removes. Images a container, a live app or a rollback
+needs are refused one by one.
 `, prog)
 }
 
@@ -44,6 +50,10 @@ func runImages(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		return runImagesLayers(prog, args[1:], stdout, stderr, lookupEnv)
 	case "gc":
 		return runImagesGC(prog, args[1:], stdout, stderr, lookupEnv)
+	case "rm":
+		return runImagesRemove(prog, args[1:], stdout, stderr, lookupEnv, false)
+	case "prune":
+		return runImagesRemove(prog, args[1:], stdout, stderr, lookupEnv, true)
 	case "verify":
 		return runImagesVerify(prog, args[1:], stdout, stderr, lookupEnv)
 	case "policy":
@@ -232,4 +242,56 @@ func runImagesVerify(prog string, args []string, stdout, stderr io.Writer, looku
 		return rc
 	}
 	return exit
+}
+
+func runImagesRemove(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), prune bool) int {
+	var yes, dry, unmanaged bool
+	label := "images rm"
+	if prune {
+		label = "images prune"
+	}
+	c, code, ok := parseImagesCall(prog, label, args, stderr, lookupEnv, func(fs *flag.FlagSet) {
+		fs.BoolVar(&yes, "yes", false, "remove the images; without it only the plan is shown")
+		fs.BoolVar(&dry, "dry-run", false, "show what would be removed and remove nothing")
+		if prune {
+			fs.BoolVar(&unmanaged, "unmanaged", false, "select every image no app owns and no container uses")
+		}
+	})
+	if !ok {
+		return code
+	}
+	req := apiclient.ImageRemoveRequest{Node: c.node, IDs: c.rest, IncludeUnmanagedUnused: prune}
+	switch {
+	case prune && (!unmanaged || len(c.rest) > 0):
+		return usageError(stderr, prog, "images prune needs --unmanaged and takes no image IDs")
+	case !prune && len(c.rest) == 0:
+		return usageError(stderr, prog, "images rm takes one or more image IDs")
+	}
+	req.DryRun = dry || !yes
+	res, err := c.client.RemoveImages(bg(), req)
+	if err != nil {
+		return reportError(stdout, stderr, c.jsonO, fmt.Errorf("remove images: %w", err))
+	}
+	return writeScheduledTaskResult(stdout, stderr, c.of, res, func() {
+		if res.DryRun {
+			var total int64
+			for _, e := range res.Candidates {
+				total += e.SizeBytes - e.SharedBytes
+				_, _ = fmt.Fprintf(stdout, "would remove %s %s (%s)\n", shortImageID(e.ID), strings.Join(e.Tags, ","), humanBytes(e.SizeBytes))
+			}
+			for _, f := range res.Failed {
+				_, _ = fmt.Fprintf(stdout, "cannot remove %s: %s\n", shortImageID(f.ID), f.Error)
+			}
+			_, _ = fmt.Fprintf(stdout, "%d images, %s would be freed.", len(res.Candidates), humanBytes(total))
+			if !dry {
+				_, _ = fmt.Fprint(stdout, " Run again with --yes to remove them.")
+			}
+			_, _ = fmt.Fprintln(stdout)
+			return
+		}
+		_, _ = fmt.Fprintf(stdout, "removed %d images, freed %s\n", len(res.Removed), humanBytes(res.ReclaimedBytes))
+		for _, f := range res.Failed {
+			_, _ = fmt.Fprintf(stdout, "could not remove %s: %s\n", shortImageID(f.ID), f.Error)
+		}
+	})
 }

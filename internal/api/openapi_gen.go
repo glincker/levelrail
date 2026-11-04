@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1962 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1963 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1240,6 +1240,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/images", Ability: "AbilityRead", Group: "Other", Handler: "handleListImageInventory", Description: ""},
 	{Method: "POST", Path: "/api/v1/images/gc", Ability: "AbilityRoot", Group: "Other", Handler: "handleImageGC", Description: ""},
 	{Method: "GET", Path: "/api/v1/images/layers", Ability: "AbilityRead", Group: "Other", Handler: "handleImageLayerBreakdown", Description: ""},
+	{Method: "POST", Path: "/api/v1/images/remove", Ability: "AbilityRoot", Group: "Other", Handler: "handleImageRemove", Description: ""},
 	{Method: "POST", Path: "/api/v1/images/signature-policy/validate", Ability: "AbilityWrite", Group: "Other", Handler: "handleValidateImageSignaturePolicy", Description: ""},
 	{Method: "POST", Path: "/api/v1/images/verify", Ability: "AbilityWrite", Group: "Other", Handler: "handleImageVerify", Description: ""},
 	{Method: "POST", Path: "/api/v1/import/k8s", Ability: "AbilityWrite", Group: "Other", Handler: "handleImportK8s", Description: ""},

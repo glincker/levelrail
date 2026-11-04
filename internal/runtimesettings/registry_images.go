@@ -44,3 +44,15 @@ func init() {
 		Description: "A cron expression (for example 0 3 * * 0 for Sundays at 03:00) for removing old images on this node, or off. The cleanup uses the same safety rules as the manual one and the images-kept setting. Off by default.",
 	})
 }
+
+// KeyImagesRemoveMaxPerRequest caps how many images one explicit removal request may name.
+const KeyImagesRemoveMaxPerRequest = "images.remove_max_per_request"
+
+func init() {
+	Register(Definition{
+		Key: KeyImagesRemoveMaxPerRequest, Category: CategoryRetention, Kind: KindInt, Default: "200",
+		Env: "APP_IMAGES_REMOVE_MAX_PER_REQUEST", Apply: ApplyLive, CheckValue: intRangeCheck(1, 2000),
+		Title:       "Images: most removed per request",
+		Description: "Most images one remove request may name or select, from 1 to 2000. Guards against a mistaken select-all. The next request uses a changed value.",
+	})
+}

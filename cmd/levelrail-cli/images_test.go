@@ -50,3 +50,25 @@ func TestRun_ImagesList(t *testing.T) {
 		t.Errorf("stdout = %q", stdout)
 	}
 }
+
+func TestRun_ImagesRm_PlanWithoutYes(t *testing.T) {
+	var gotBody apiclient.ImageRemoveRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(apiclient.ImageRemoveResource{
+			DryRun:     gotBody.DryRun,
+			Candidates: []apiclient.ImageEntry{{ID: "sha256:abcdef1234567890", Tags: []string{"nginx:1"}, SizeBytes: 2048}},
+		})
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"images", "prune", "--unmanaged", "--api-url", srv.URL})
+	if !gotBody.DryRun || !gotBody.IncludeUnmanagedUnused || !strings.Contains(stdout, "--yes") {
+		t.Errorf("prune without --yes: body=%+v stdout=%q", gotBody, stdout)
+	}
+	runCLIExpectOK(t, []string{"images", "rm", "abcdef123456", "--yes", "--api-url", srv.URL})
+	if gotBody.DryRun || len(gotBody.IDs) != 1 {
+		t.Errorf("rm --yes body = %+v", gotBody)
+	}
+}
