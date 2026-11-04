@@ -14,6 +14,9 @@ func (rt *Router) registerProjectRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/projects", rt.requireAbility(AbilityWrite, rt.handleCreateProject))
 	mux.HandleFunc("GET /api/v1/projects/{id}", rt.requireAbility(AbilityRead, rt.handleGetProject))
 	mux.HandleFunc("DELETE /api/v1/projects/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteProject))
+	// Default environment per project (project_default_env.go): a create naming a project but no environment joins it.
+	mux.HandleFunc("PUT /api/v1/projects/{id}/default-environment", rt.requireAbility(AbilityWrite, rt.handleSetProjectDefaultEnvironment))
+	mux.HandleFunc("POST /api/v1/projects/default-environments/backfill", rt.requireAbility(AbilityWrite, rt.handleBackfillDefaultEnvironments))
 	// Bulk restart every app filed under this project (project_restart.go):
 	// AbilityDeploy, the same ability POST /api/v1/apps/{name}/restart
 	// itself uses, not AbilityWrite, since this triggers a real container

@@ -46,6 +46,8 @@ type projectResource struct {
 	Name      string `json:"name"`
 	CreatedAt string `json:"created_at"`
 	OrgID     string `json:"org_id,omitempty"`
+	// DefaultEnvironmentID is the environment a create in this project joins when it names none.
+	DefaultEnvironmentID string `json:"default_environment_id,omitempty"`
 }
 
 func toProjectResource(p store.Project) projectResource {
@@ -76,6 +78,13 @@ func (rt *Router) handleListProjects(w http.ResponseWriter, r *http.Request) {
 	for _, p := range projects {
 		out = append(out, toProjectResource(p))
 	}
+	if s, ok := rt.defaultEnvStore(); ok {
+		if defaults, derr := s.DefaultEnvironmentIDs(r.Context()); derr == nil {
+			for i := range out {
+				out[i].DefaultEnvironmentID = defaults[out[i].ID]
+			}
+		}
+	}
 	writeJSON(w, http.StatusOK, out)
 }
 
@@ -99,7 +108,7 @@ func (rt *Router) handleGetProject(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: get project failed", err, slog.String("id", id))
 		return
 	}
-	writeJSON(w, http.StatusOK, toProjectResource(p))
+	writeJSON(w, http.StatusOK, rt.projectResourceWithDefault(r.Context(), p))
 }
 
 // handleCreateProject handles POST /api/v1/projects. No conflict check
@@ -143,7 +152,15 @@ func (rt *Router) handleCreateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	p.OrgID = team
-	writeJSON(w, http.StatusCreated, toProjectResource(p))
+	if err := rt.createProjectDefaultEnvironment(r, id); err != nil {
+		// Compensate so a failed default environment does not leave a half-made project.
+		if derr := rt.projects.DeleteProject(r.Context(), id); derr != nil {
+			rt.logger.Warn("api: create project: rollback failed", slog.String("project_id", id), slog.String("error", derr.Error()))
+		}
+		rt.internalError(w, "api: create project: default environment", err, slog.String("project_id", id))
+		return
+	}
+	writeJSON(w, http.StatusCreated, rt.projectResourceWithDefault(r.Context(), p))
 }
 
 // handleDeleteProject handles DELETE /api/v1/projects/{id}. By default every

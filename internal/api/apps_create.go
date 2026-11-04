@@ -64,6 +64,11 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	defaultEnvID, envOK := rt.defaultEnvironmentFor(w, r, req.ProjectID)
+	if !envOK {
+		return
+	}
+
 	// node_id present in the body (even "") is an explicit placement
 	// override, validated the same way handleSetAppNode validates one.
 	// Omitted entirely lets simple spread scheduling (autoPlaceNode) pick
@@ -158,6 +163,13 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	if req.ProjectID != "" {
 		if err := rt.apps.UpdateServiceProject(r.Context(), req.Name, req.ProjectID); err != nil {
 			rt.internalError(w, "api: create app: assign project failed", err, slog.String("name", req.Name), slog.String("project_id", req.ProjectID))
+			return
+		}
+	}
+
+	if defaultEnvID != "" {
+		if err := rt.environments.SetServiceEnvironment(r.Context(), req.Name, defaultEnvID); err != nil {
+			rt.internalError(w, "api: create app: assign default environment failed", err, slog.String("name", req.Name), slog.String("environment_id", defaultEnvID))
 			return
 		}
 	}

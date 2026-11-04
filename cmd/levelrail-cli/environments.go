@@ -29,6 +29,8 @@ func runEnvironments(prog string, args []string, stdout, stderr io.Writer, looku
 		return runEnvironmentsUpdate(prog, args[1:], stdout, stderr, lookupEnv)
 	case "delete":
 		return runEnvironmentsDelete(prog, args[1:], stdout, stderr, lookupEnv)
+	case "set-default":
+		return runEnvironmentsSetDefault(prog, "environments", args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown environments subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, environmentsUsage(prog))
@@ -42,6 +44,7 @@ func environmentsUsage(prog string) string {
   %[1]s environments create --name NAME [--kind KIND] [--protected] [--sort-order N] [flags]
   %[1]s environments update <id> [--name NAME] [--kind KIND] [--sort-order N] [--protected=true|false] [flags]
   %[1]s environments delete <id> [--move-to ID] [flags]
+  %[1]s environments set-default <project-id> <env-id|name> [flags]   make an environment its project's default
 
 KIND is one of dev, test, uat, production, custom. The built-in
 environments (env_dev, env_test, env_uat, env_production) cannot be

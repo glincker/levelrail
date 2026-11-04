@@ -155,6 +155,9 @@ func (rt *Router) handleDeleteEnvironment(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusForbidden, "this environment is built in and cannot be deleted")
 		return
 	}
+	if rt.refuseDefaultEnvironmentDelete(w, r, id) {
+		return
+	}
 	moveTo := r.URL.Query().Get("move_to")
 	if moveTo != "" && !rt.moveMembersBeforeDelete(w, r, id, moveTo) {
 		return

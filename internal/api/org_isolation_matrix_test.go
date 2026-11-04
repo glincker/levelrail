@@ -197,7 +197,7 @@ instance integrations invites loadbalancers local-mode log-archive logs mail mai
 mobile model-cache model-catalog model-endpoints models monitors network network-shares node-drains node-moves
 node-providers node-provisions nodes notification-channels onboarding openapi.json organizations package-registries
 pipeline-runs pipelines plugin-keys plugin-marketplace plugin-panels plugins preflight previews private-networks
-project-templates prometheus registry registry-credentials registry-vendors resilience roles scheduled-maintenance scim
+project-templates projects prometheus registry registry-credentials registry-vendors resilience roles scheduled-maintenance scim
 search secret-rotation security service-templates settings setup silences ssh-node-provisions sso stack-templates stacks
 static-sites status-page storage storage-env-keys system tags teams templates updates usage users`)
 

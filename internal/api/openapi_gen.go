@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1969 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1971 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1768,8 +1768,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/organizations/{id}/summary", Ability: "AbilityRead", Group: "Projects / Organizations / Environments", Handler: "handleGetOrganizationSummary", Description: ""},
 	{Method: "GET", Path: "/api/v1/projects", Ability: "AbilityRead", Group: "Projects / Organizations / Environments", Handler: "handleListProjects", Description: "Projects (projects.go): a lightweight, non-auth organizational grouping, explicitly not the deferred Phase 4 teams/RBAC work (see that file's own package doc comment). AbilityRead/AbilityWrite, the same ordinary boundary apps/databases CRUD already uses, not AbilityRoot: unlike a node (real infrastructure), creating or deleting a project has no fleet-level consequence."},
 	{Method: "POST", Path: "/api/v1/projects", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleCreateProject", Description: ""},
+	{Method: "POST", Path: "/api/v1/projects/default-environments/backfill", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleBackfillDefaultEnvironments", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/projects/{id}", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleDeleteProject", Description: ""},
 	{Method: "GET", Path: "/api/v1/projects/{id}", Ability: "AbilityRead", Group: "Projects / Organizations / Environments", Handler: "handleGetProject", Description: ""},
+	{Method: "PUT", Path: "/api/v1/projects/{id}/default-environment", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleSetProjectDefaultEnvironment", Description: "Default environment per project (project_default_env.go): a create naming a project but no environment joins it."},
 	{Method: "GET", Path: "/api/v1/projects/{id}/env", Ability: "AbilityRead", Group: "Projects / Organizations / Environments", Handler: "handleGetProjectEnv", Description: "Shared env vars every app filed under this project inherits (project_env.go): same AbilityRead/AbilityWrite boundary as the project CRUD routes just above."},
 	{Method: "PUT", Path: "/api/v1/projects/{id}/env", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleSetProjectEnv", Description: ""},
 	{Method: "GET", Path: "/api/v1/projects/{id}/env/all", Ability: "AbilityRead", Group: "Projects / Organizations / Environments", Handler: "handleListProjectEnvAll", Description: "Secret-backed shared env vars at the project tier, mirroring the organization/environment tiers' own four routes above."},

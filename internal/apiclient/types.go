@@ -2806,6 +2806,23 @@ type ProjectResource struct {
 	Name      string `json:"name"`
 	CreatedAt string `json:"created_at"`
 	OrgID     string `json:"org_id,omitempty"`
+	// DefaultEnvironmentID is the environment a create in this project joins when it names none.
+	DefaultEnvironmentID string `json:"default_environment_id,omitempty"`
+}
+
+// BackfillDefaultEnvironmentsResult mirrors internal/api's backfillDefaultEnvResponse.
+type BackfillDefaultEnvironmentsResult struct {
+	DryRun   bool                              `json:"dry_run"`
+	Name     string                            `json:"environment_name"`
+	Projects []BackfillDefaultEnvironmentEntry `json:"projects"`
+	Applied  int                               `json:"applied"`
+}
+
+// BackfillDefaultEnvironmentEntry is one project a backfill creates or promotes a default for.
+type BackfillDefaultEnvironmentEntry struct {
+	ProjectID string `json:"project_id"`
+	Name      string `json:"name"`
+	Action    string `json:"action"`
 }
 
 // SetProjectOrganizationRequest mirrors internal/api's

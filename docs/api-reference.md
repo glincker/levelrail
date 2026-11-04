@@ -954,6 +954,8 @@ Endpoints for:
 | DELETE | /api/v1/organizations/{id}/avatar | AbilityWrite | handleDeleteOrganizationAvatar |
 | GET | /api/v1/organizations/{id}/summary | AbilityRead | handleGetOrganizationSummary |
 | GET | /api/v1/organizations/{id}/activity | AbilityRead | handleListOrganizationActivity |
+| PUT | /api/v1/projects/{id}/default-environment | AbilityWrite | handleSetProjectDefaultEnvironment |
+| POST | /api/v1/projects/default-environments/backfill | AbilityWrite | handleBackfillDefaultEnvironments |
 
 ## Nodes
 
