@@ -1146,6 +1146,7 @@ Endpoints for:
 | PUT | /api/v1/settings/ingress/cloudflare | AbilityRoot | handlePutIngressCloudflare |
 | GET | /api/v1/certificates/budget | AbilityRead | handleGetCertBudget |
 | GET | /api/v1/apps/{name}/domains/{domain}/dns/plan | AbilityRead | handleGetDomainWWWPlan |
+| POST | /api/v1/apps/{name}/domains/{domain}/dns/apply | AbilityDeploy | handleApplyDomainWWW |
 
 </Accordion>
 

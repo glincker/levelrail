@@ -53,3 +53,48 @@ func (c *Client) DomainWWWPlan(ctx context.Context, app, domain, mode, canonical
 	err := c.do(ctx, http.MethodGet, path, nil, &out)
 	return out, err
 }
+
+// WWWApplyRecord is one record's outcome of an apex and www apply.
+type WWWApplyRecord struct {
+	WWWPlanRecord
+	Result  string `json:"result"`
+	Message string `json:"message,omitempty"`
+}
+
+// WWWApplyUndo is one reversible effect of an apply.
+type WWWApplyUndo struct {
+	Kind       string `json:"kind"`
+	Domain     string `json:"domain"`
+	Name       string `json:"name,omitempty"`
+	RecordType string `json:"record_type,omitempty"`
+	Value      string `json:"value,omitempty"`
+}
+
+// WWWApply is POST .../domains/{domain}/dns/apply's body.
+type WWWApply struct {
+	Domain    string           `json:"domain"`
+	Provider  string           `json:"provider"`
+	Zone      string           `json:"zone"`
+	Mode      string           `json:"mode"`
+	Canonical string           `json:"canonical"`
+	Applied   bool             `json:"applied"`
+	Records   []WWWApplyRecord `json:"records"`
+	Redirect  *struct {
+		From string `json:"from"`
+		To   string `json:"to"`
+	} `json:"redirect"`
+	RedirectApplied bool           `json:"redirect_applied"`
+	RedirectMessage string         `json:"redirect_message"`
+	Undo            []WWWApplyUndo `json:"undo"`
+	Message         string         `json:"message"`
+}
+
+// DomainWWWApply writes the apex and www records. The server refuses unless
+// confirm is true.
+func (c *Client) DomainWWWApply(ctx context.Context, app, domain, mode, canonical string, replace, confirm bool) (WWWApply, error) {
+	body := map[string]any{"mode": mode, "canonical": canonical, "replace": replace, "confirm": confirm}
+	path := "/api/v1/apps/" + PathEscape(app) + "/domains/" + PathEscape(domain) + "/dns/apply"
+	var out WWWApply
+	err := c.do(ctx, http.MethodPost, path, body, &out)
+	return out, err
+}

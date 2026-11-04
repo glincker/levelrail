@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1956 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1957 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -809,6 +809,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/domains/{domain}/dns-records", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleListDNSRecords", Description: "DNS records (dns_records.go): list/add/edit/delete the actual A/AAAA/CNAME/TXT/MX/SRV/CAA records in one app-owned domain's best-effort zone, via whichever ACME DNS-01 provider (Cloudflare or Route53) is configured. GET is AbilityRead: a live provider API read plus a DNS lookup, no write. POST/PUT/DELETE are AbilityRoot, the same \"real infrastructure, high blast radius\" tier PUT/DELETE .../tls-cert and .../auth already reserve: this writes directly to a live, externally visible DNS zone."},
 	{Method: "POST", Path: "/api/v1/apps/{name}/domains/{domain}/dns-records", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleCreateDNSRecord", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/domains/{domain}/dns-records", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleUpdateDNSRecord", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/domains/{domain}/dns/apply", Ability: "AbilityDeploy", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleApplyDomainWWW", Description: "Writes the apex and www DNS records the plan lists; needs confirm and the root ability."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/domains/{domain}/dns/plan", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetDomainWWWPlan", Description: "Read only preview of the apex and www DNS records; nothing is written."},
 	{Method: "POST", Path: "/api/v1/apps/{name}/domains/{domain}/doctor", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleDomainDoctor", Description: "Domain doctor: ordered DNS, CAA, port, TLS, HTTP, redirect and HSTS checks with one fix each. Read tier: it only reads and probes, and it connects only when the domain resolves to this server."},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/domains/{domain}/error-pages", Ability: "AbilityDeploy", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleClearDomainErrorPages", Description: ""},

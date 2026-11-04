@@ -52,6 +52,8 @@ func (rt *Router) registerDomainPolicyRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/redirects", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDomainRedirects))
 	// Read only preview of the apex and www DNS records; nothing is written.
 	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/dns/plan", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDomainWWWPlan))
+	// Writes the apex and www DNS records the plan lists; needs confirm and the root ability.
+	mux.HandleFunc("POST /api/v1/apps/{name}/domains/{domain}/dns/apply", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleApplyDomainWWW))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/redirects", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetDomainRedirectSettings))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/redirects", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleDeleteDomainRedirectSettings))
 	mux.HandleFunc("POST /api/v1/apps/{name}/domains/{domain}/redirects/canonical", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetDomainCanonical))
