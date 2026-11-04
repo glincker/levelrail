@@ -396,7 +396,8 @@
       "troubleshooting": "Troubleshooting",
       "systemStatus": "Doctor",
       "report": "Report an issue",
-      "community": "Ask the community"
+      "community": "Ask the community",
+      "suggest": "Suggest a feature"
     },
     "account": {
       "controlPlane": "Control plane",
@@ -1275,5 +1276,36 @@
     "restart": "Restart",
     "openApp": "Open app",
     "stickyLabel": "App header"
+  },
+  "reportIssue": {
+    "title": "Review before you report",
+    "description": "This opens a prefilled \"{{template}}\" form on GitHub. Nothing is sent until you submit it there.",
+    "issueTitle": "Title",
+    "include": "Include {{field}}",
+    "privacy": "Only the details listed here are sent. No tokens, cookies, env values, emails or query strings.",
+    "count": "{{used}} characters, limit {{max}}",
+    "cancel": "Cancel",
+    "open": "Open on GitHub",
+    "templates": {
+      "bug_report": "Bug report",
+      "docs_problem": "Docs problem",
+      "migration_problem": "Migration problem",
+      "feature_request": "Feature request",
+      "template_request": "Template request"
+    },
+    "fields": {
+      "version": "Dashboard version",
+      "component": "Component",
+      "actual": "What happened",
+      "context": "Environment",
+      "page": "Docs page",
+      "problem": "What is wrong or missing",
+      "failed": "What failed",
+      "config": "Source config",
+      "solution": "Proposed behavior",
+      "service": "Service name",
+      "upstream": "Upstream link",
+      "ports": "Ports"
+    }
   }
 }

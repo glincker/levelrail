@@ -17,9 +17,10 @@ import { isConnectivityError } from '@/lib/connectionState'
 import { BrandContext } from '@/lib/brandContext'
 import { appListQueryOptions } from '@/queries/apps'
 import { databaseListQueryOptions } from '@/queries/databases'
+import { ReportIssueDialog } from './ReportIssueDialog'
 import { ForbiddenState } from './teams/ForbiddenState'
 import { NotFoundState, type NotFoundResource } from './NotFoundState'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 // Plain text for a bug report: no tokens or headers, only what the user sees.
@@ -65,20 +66,33 @@ function CopyDetailsButton({ error }: { error: unknown }) {
   )
 }
 
-function ReportLink() {
+function ReportLink({ error }: { error: unknown }) {
   const { t } = useTranslation('common')
   const brand = useContext(BrandContext)
+  const [open, setOpen] = useState(false)
   if (!brand?.SupportURL) return null
   return (
-    <a
-      href={brand.SupportURL}
-      target="_blank"
-      rel="noreferrer"
-      className={buttonVariants({ variant: 'ghost', size: 'sm' })}
-    >
-      <SocialGithubGlassIcon size="1.4em" aria-hidden="true" />
-      {t('routeError.report')}
-    </a>
+    <>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={() => {
+          setOpen(true)
+        }}
+      >
+        <SocialGithubGlassIcon size="1.4em" aria-hidden="true" />
+        {t('routeError.report')}
+      </Button>
+      <ReportIssueDialog
+        open={open}
+        onOpenChange={setOpen}
+        source="error"
+        supportUrl={brand.SupportURL}
+        errorMessage={routeErrorMessage(error)}
+        requestId={error instanceof ApiError ? error.requestId : undefined}
+      />
+    </>
   )
 }
 
@@ -258,7 +272,7 @@ export function RouteErrorFallback({
           </Button>
         </Link>
         <CopyDetailsButton error={error} />
-        <ReportLink />
+        <ReportLink error={error} />
       </div>
     </ErrorCard>
   )
