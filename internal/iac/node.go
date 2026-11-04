@@ -2,10 +2,13 @@ package iac
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/placement"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 )
 
 // liveNode is a joined node with the labels and taints a plan compares.
@@ -72,13 +75,21 @@ func buildNode(d *Document, s *issueSink) map[string]any {
 // recorded so the plan can refuse them.
 func (l loader) nodes(ctx context.Context, res []*Resource) error {
 	want := map[string]bool{}
+	taints := false
 	for _, r := range res {
 		if r.Kind == KindNode {
 			want[r.Name] = true
+			_, has := r.Fields["taints"]
+			taints = taints || has
 		}
 	}
 	if len(want) == 0 {
 		return nil
+	}
+	if taints {
+		if err := l.protectedTaintKeys(ctx); err != nil {
+			return err
+		}
 	}
 	var all []wireNode
 	if err := l.fetch(ctx, "nodes", "list nodes", "/api/v1/nodes", &all); err != nil {
@@ -146,6 +157,13 @@ func (p *planner) planNode(r *Resource) {
 		return
 	}
 	var setLabels, setTaints bool
+	weak := ""
+	if _, want := r.Fields["taints"]; want {
+		var ok bool
+		if weak, ok = p.nodeTaintsGuard(r, live); !ok {
+			return
+		}
+	}
 	for _, c := range changes {
 		switch topKey(c.Path) {
 		case "labels":
@@ -171,6 +189,109 @@ func (p *planner) planNode(r *Resource) {
 		return nil
 	})
 	it.LiveID = live.id
+	if weak != "" {
+		it.Reason = NodeTaintWeakenReason + ": " + weak
+	}
+}
+
+// NodeTaintWeakenReason starts the reason of a Node change that drops or
+// loosens a protected taint under allow_weaken, so reviewers can find it.
+const NodeTaintWeakenReason = "weakens a protected taint; allowed by allow_weaken"
+
+// protectedTaintKeys reads nodes.protected_taint_keys through the same GET as
+// the Setting planner. A 404 (older control plane) means nothing is protected.
+func (l loader) protectedTaintKeys(ctx context.Context) error {
+	key := runtimesettings.KeyNodesProtectedTaintKeys
+	if _, seen := l.st.settings[key]; seen {
+		return nil
+	}
+	var s liveSetting
+	err := l.get(ctx, "/api/v1/settings/runtime/"+esc(key), &s.Setting)
+	switch {
+	case err == nil:
+		s.allowWeaken = allowWeakenFrom(ctx)
+		l.st.settings[key] = &s
+	case IsNotFound(err):
+		l.st.settings[key] = nil
+	default:
+		return l.st.note(resourceKey(KindSetting, "", key), fmt.Errorf("read setting %s: %w", key, err))
+	}
+	return nil
+}
+
+// nodeTaintsGuard fails r when its taints drop, revalue or loosen a protected
+// one without allow_weaken. It returns the weakened keys when allowed. An
+// unreadable protected list fails closed, but only for a change that touches a live taint.
+func (p *planner) nodeTaintsGuard(r *Resource, live *liveNode) (string, bool) {
+	next := taintsFromMap(r.Fields["taints"].(map[string]any))
+	key := runtimesettings.KeyNodesProtectedTaintKeys
+	if _, denied := p.st.denied[resourceKey(KindSetting, "", key)]; denied {
+		if len(weakenedTaints(true, nil, live.taints, next)) > 0 {
+			p.fail(r, "node %s: the protected taint keys (%s) cannot be read, and this change drops or loosens a taint; grant settings read or apply from a human root session", r.Name, key)
+			return "", false
+		}
+		return "", true
+	}
+	ls := p.st.settings[key]
+	if ls == nil {
+		return "", true
+	}
+	def, ok := settingDefinition(key)
+	if !ok {
+		return "", true
+	}
+	svc, _ := settingMirror(def, ls)
+	weak := weakenedTaints(false, svc.List(context.Background(), key), live.taints, next)
+	if len(weak) == 0 {
+		return "", true
+	}
+	list := strings.Join(weak, ", ")
+	if !ls.allowWeaken {
+		p.fail(r, "node %s: the taint change drops, revalues or loosens protected taint key %s; apply with allow_weaken from a human root session, or change it from the dashboard or the CLI", r.Name, list)
+		return "", false
+	}
+	return list, true
+}
+
+// taintStrength mirrors the token-side check in internal/api/iam_stack_verbs.go
+// (taintsKeepProtected); keep both in step. Unknown effects rank 0.
+var taintStrength = map[placement.TaintEffect]int{
+	placement.EffectPreferNoSchedule: 1,
+	placement.EffectNoSchedule:       2,
+	placement.EffectNoExecute:        3,
+}
+
+// weakenedTaints lists the live taints with a protected key (case folded) that
+// next does not keep with the same value and an effect at least as strong.
+// all treats every key as protected. Unknown effects only match exactly.
+func weakenedTaints(all bool, protected []string, cur, next []placement.Taint) []string {
+	isProtected := map[string]bool{}
+	for _, k := range protected {
+		isProtected[strings.ToLower(k)] = true
+	}
+	seen := map[string]bool{}
+	var out []string
+	for _, c := range cur {
+		ck := strings.ToLower(c.Key)
+		if !all && !isProtected[ck] {
+			continue
+		}
+		cs := taintStrength[c.Effect]
+		kept := false
+		for _, n := range next {
+			ns := taintStrength[n.Effect]
+			if strings.ToLower(n.Key) == ck && n.Value == c.Value && (n.Effect == c.Effect || (cs > 0 && ns >= cs)) {
+				kept = true
+				break
+			}
+		}
+		if !kept && !seen[c.Key] {
+			seen[c.Key] = true
+			out = append(out, c.Key)
+		}
+	}
+	sort.Strings(out)
+	return out
 }
 
 func taintsFromMap(m map[string]any) []placement.Taint {

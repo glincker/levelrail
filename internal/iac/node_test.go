@@ -2,10 +2,14 @@ package iac
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/placement"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 )
 
 const nodeDoc = `version: 1
@@ -162,5 +166,99 @@ func TestExportNodeFilter(t *testing.T) {
 	var se *StatusError
 	if !errors.As(err, &se) || se.Status != http.StatusNotFound {
 		t.Fatalf("want 404, got %v", err)
+	}
+}
+
+// protectTaints serves the settings routes with nodes.protected_taint_keys set.
+func protectTaints(f *fakeCP, keys ...string) {
+	live := addSettings(f)
+	raw, _ := json.Marshal(keys)
+	s := live[runtimesettings.KeyNodesProtectedTaintKeys]
+	s.Value, s.Source = raw, runtimesettings.SourceSaved
+}
+
+func nodeTaintsDoc(taints string) string {
+	return "version: 1\nkind: Node\nmetadata:\n  name: worker-1\nspec:\n  taints:\n" + taints
+}
+
+// protectedNode applies nodeDoc (taint gpu=true:NoSchedule) and then protects keys.
+func protectedNode(t *testing.T, keys ...string) *fakeCP {
+	f := newFake()
+	addNodes(f, "worker-1")
+	applyAll(t, f, nodeDoc, Options{Source: "git"})
+	protectTaints(f, keys...)
+	return f
+}
+
+func TestNodeProtectedTaintWeakeningIsAPlanError(t *testing.T) {
+	cases := map[string]string{
+		"removed":  "    []\n",
+		"revalued": "    - {key: gpu, value: \"false\", effect: NoSchedule}\n",
+		"loosened": "    - {key: gpu, value: \"true\", effect: PreferNoSchedule}\n",
+		"recased":  "    - {key: gpu, value: \"true\", effect: PreferNoSchedule}\n    - {key: ssd, value: \"y\", effect: NoSchedule}\n",
+	}
+	for name, taints := range cases {
+		t.Run(name, func(t *testing.T) {
+			f := protectedNode(t, "GPU")
+			p := planFor(t, f, nodeTaintsDoc(taints), Options{Source: "git"})
+			if p.Summary.Error != 1 || !strings.Contains(p.Changes[0].Reason, "allow_weaken") || !strings.Contains(p.Changes[0].Reason, "gpu") {
+				t.Fatalf("%s: %+v", name, p.Changes)
+			}
+			if out := applyAll(t, f, nodeTaintsDoc(taints), Options{Source: "git"}); out.Applied != 0 {
+				t.Fatalf("%s: a weakening apply must change nothing: %+v", name, out)
+			}
+		})
+	}
+}
+
+func TestNodeProtectedTaintKeptOrStrongerOrUnprotectedPlans(t *testing.T) {
+	f := protectedNode(t, "gpu")
+	stronger := nodeTaintsDoc("    - {key: gpu, value: \"true\", effect: NoExecute}\n    - {key: ssd, value: \"y\", effect: NoSchedule}\n")
+	if p := planFor(t, f, stronger, Options{Source: "git"}); p.Summary.Error != 0 || p.Summary.Update != 1 {
+		t.Fatalf("a stronger effect must plan: %+v", p.Changes)
+	}
+	g := protectedNode(t, "other")
+	if p := planFor(t, g, nodeTaintsDoc("    []\n"), Options{Source: "git"}); p.Summary.Error != 0 || p.Summary.Update != 1 {
+		t.Fatalf("an unprotected key may be removed: %+v", p.Changes)
+	}
+}
+
+func TestNodeProtectedTaintAllowWeaken(t *testing.T) {
+	f := protectedNode(t, "gpu")
+	opts := Options{Source: "git"}
+	res := mustBuild(t, nodeTaintsDoc("    []\n"), opts)
+	st, err := Load(WithAllowWeaken(context.Background()), f, res, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := PlanFor(st, res, opts)
+	if p.Summary.Error != 0 || p.Summary.Update != 1 || !strings.HasPrefix(p.Changes[0].Reason, NodeTaintWeakenReason) {
+		t.Fatalf("allow_weaken must let the removal plan: %+v", p.Changes)
+	}
+}
+
+func TestNodeProtectedTaintUnreadableFailsClosed(t *testing.T) {
+	f := protectedNode(t, "gpu")
+	f.deny = func(_, path string) bool { return strings.HasPrefix(path, "/api/v1/settings/") }
+	if p := planFor(t, f, nodeTaintsDoc("    []\n"), Options{Source: "git"}); p.Summary.Error != 1 {
+		t.Fatalf("an unreadable list must fail a removal: %+v", p.Changes)
+	}
+	add := nodeTaintsDoc("    - {key: gpu, value: \"true\", effect: NoSchedule}\n    - {key: ssd, value: \"y\", effect: NoSchedule}\n")
+	if p := planFor(t, f, add, Options{Source: "git"}); p.Summary.Error != 0 || p.Summary.Update != 1 {
+		t.Fatalf("an addition needs no list: %+v", p.Changes)
+	}
+}
+
+func TestNodeProtectedTaintUnknownEffectFailsClosed(t *testing.T) {
+	cur := []placement.Taint{{Key: "GPU", Value: "true", Effect: "Custom"}}
+	if w := weakenedTaints(false, []string{"gpu"}, cur, []placement.Taint{{Key: "gpu", Value: "true", Effect: placement.EffectNoExecute}}); len(w) != 1 {
+		t.Fatalf("an unknown live effect is kept only by the same effect: %v", w)
+	}
+	if w := weakenedTaints(false, []string{"gpu"}, cur, []placement.Taint{{Key: "gpu", Value: "true", Effect: "Custom"}}); len(w) != 0 {
+		t.Fatalf("the same effect keeps the taint: %v", w)
+	}
+	strong := []placement.Taint{{Key: "gpu", Value: "true", Effect: placement.EffectNoSchedule}}
+	if w := weakenedTaints(false, []string{"GPU"}, strong, []placement.Taint{{Key: "gpu", Value: "true", Effect: "Bogus"}}); len(w) != 1 {
+		t.Fatalf("an unknown next effect never keeps a taint: %v", w)
 	}
 }

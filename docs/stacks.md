@@ -149,6 +149,8 @@ spec:
 
 The plan compares them with the stored ones and apply saves them through the node routes, which need a root token. A member the document leaves out is not managed; `taints: []` or `labels: {}` clears the stored set. A Node whose name matches no node, or more than one, is a plan error. Apply never creates, deletes or prunes a node, and removing the document leaves the node as it is. Nodes join through an enrollment token, and `export` does not write them yet. Database placement is not part of a stack, because the database API stores only a node selector.
 
+A Node document that removes, revalues or loosens a taint whose key is listed in `nodes.protected_taint_keys` (case folded) is a plan error that names `allow_weaken`; pass `--allow-weaken` from a human root session to confirm it. Adding taints or making an effect stronger needs no confirmation, and a change that drops a taint fails closed when the list cannot be read.
+
 ## Runtime settings
 
 `GET /api/v1/export?settings=true` (root only) writes one `Setting` document for each saved, non-sensitive setting, and skips credential keys with a warning. The file replans clean.
