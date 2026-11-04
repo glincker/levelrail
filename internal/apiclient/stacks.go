@@ -45,6 +45,7 @@ type StackResource struct {
 // StackInfo is a stack as the API returns it.
 type StackInfo struct {
 	Name            string          `json:"name"`
+	Scope           string          `json:"scope,omitempty"`
 	ProjectID       string          `json:"project_id"`
 	Project         string          `json:"project"`
 	EnvironmentID   string          `json:"environment_id,omitempty"`
@@ -186,8 +187,10 @@ type StackDeleteResult struct {
 
 // StackCreateRequest is the body of POST /api/v1/stacks.
 type StackCreateRequest struct {
-	Name            string `json:"name"`
-	Project         string `json:"project"`
+	Name string `json:"name"`
+	// Scope is project (default) or install; an install stack has no project.
+	Scope           string `json:"scope,omitempty"`
+	Project         string `json:"project,omitempty"`
 	AllowPrune      *bool  `json:"allow_prune,omitempty"`
 	DriftPolicy     string `json:"drift_policy,omitempty"`
 	RequireApproval *bool  `json:"require_approval,omitempty"`

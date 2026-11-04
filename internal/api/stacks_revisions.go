@@ -222,7 +222,7 @@ func (rt *Router) handleStackDiff(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusUnprocessableEntity, iacPlanResponse{Issues: issues})
 			return
 		}
-		lctx, err := rt.stackLedgerContext(r.Context(), ss, s.ID, s.Name, project, res, stackRequest{})
+		lctx, err := rt.stackLedgerContext(r.Context(), ss, s.ID, s.Name, project, s.Scope, res, stackRequest{})
 		if err != nil {
 			rt.writeStackError(w, "diff", err)
 			return

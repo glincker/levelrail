@@ -115,7 +115,7 @@ func (rt *Router) requestStackApproval(w http.ResponseWriter, r *http.Request, s
 	}
 	stack, req := run.stack, run.req
 	project := rt.projectName(ctx, stack.ProjectID)
-	lctx, err := rt.stackLedgerContext(ctx, ss, stack.ID, stack.Name, project, res, req)
+	lctx, err := rt.stackLedgerContext(ctx, ss, stack.ID, stack.Name, project, stack.Scope, res, req)
 	if err != nil {
 		rt.writeStackError(w, run.action, err)
 		return

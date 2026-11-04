@@ -180,6 +180,7 @@ type stackLedgerResource struct {
 
 type stackResource struct {
 	Name            string                `json:"name"`
+	Scope           string                `json:"scope"`
 	ProjectID       string                `json:"project_id"`
 	Project         string                `json:"project,omitempty"`
 	EnvironmentID   string                `json:"environment_id,omitempty"`
@@ -241,8 +242,10 @@ type stackApplyResponse struct {
 }
 
 type stackCreateRequest struct {
-	Name            string `json:"name"`
-	Project         string `json:"project"`
+	Name string `json:"name"`
+	// Scope is project (default) or install; an install stack has no project.
+	Scope           string `json:"scope,omitempty"`
+	Project         string `json:"project,omitempty"`
 	AllowPrune      bool   `json:"allow_prune,omitempty"`
 	DriftPolicy     string `json:"drift_policy,omitempty"`
 	RequireApproval bool   `json:"require_approval,omitempty"`
@@ -345,6 +348,14 @@ func (rt *Router) projectByName(ctx context.Context, name string) (store.Project
 	return store.Project{}, false
 }
 
+// stackScopeOf reports the scope of a record, treating an empty one as project.
+func stackScopeOf(s store.StackRecord) string {
+	if s.Scope == "" {
+		return store.StackScopeProject
+	}
+	return s.Scope
+}
+
 func stackOf(s store.StackRecord) *iac.Stack {
 	v := toIaCStack(s)
 	return &v
@@ -352,7 +363,7 @@ func stackOf(s store.StackRecord) *iac.Stack {
 
 func toIaCStack(s store.StackRecord) iac.Stack {
 	return iac.Stack{
-		ID: s.ID, Name: s.Name, ProjectID: s.ProjectID, EnvironmentID: s.EnvironmentID, AllowPrune: s.AllowPrune,
+		ID: s.ID, Name: s.Name, ProjectID: s.ProjectID, EnvironmentID: s.EnvironmentID, Scope: iac.StackLevel(s.Scope), AllowPrune: s.AllowPrune,
 		DriftPolicy: iac.DriftPolicy(s.DriftPolicy), PinnedRevision: s.PinnedRevision, RequireApproval: s.RequireApproval,
 		CreatedAt: s.CreatedAt, CreatedBy: s.CreatedBy,
 	}
@@ -466,7 +477,7 @@ func (rt *Router) loadStack(w http.ResponseWriter, r *http.Request, ss StackStor
 
 func (rt *Router) stackResource(ctx context.Context, ss StackStore, s store.StackRecord, withLedger bool) stackResource {
 	out := stackResource{
-		Name: s.Name, ProjectID: s.ProjectID, Project: rt.projectName(ctx, s.ProjectID), EnvironmentID: s.EnvironmentID,
+		Name: s.Name, Scope: stackScopeOf(s), ProjectID: s.ProjectID, Project: rt.projectName(ctx, s.ProjectID), EnvironmentID: s.EnvironmentID,
 		AllowPrune: s.AllowPrune, DriftPolicy: s.DriftPolicy, PinnedRevision: s.PinnedRevision, RequireApproval: s.RequireApproval,
 		CreatedAt: fmtStackTime(s.CreatedAt), CreatedBy: s.CreatedBy,
 	}
@@ -522,8 +533,15 @@ func (rt *Router) createStack(r *http.Request, ss StackStore, in stackCreateRequ
 	if err != nil {
 		return store.StackRecord{}, err
 	}
+	scope, err := iac.ParseStackLevel(in.Scope)
+	if err != nil {
+		return store.StackRecord{}, err
+	}
+	if scope == iac.LevelInstall && in.DriftPolicy == "" {
+		policy = iac.DriftLock
+	}
 	rec := store.StackRecord{
-		Name: in.Name, ProjectID: projectID, AllowPrune: in.AllowPrune, DriftPolicy: string(policy),
+		Name: in.Name, Scope: string(scope), ProjectID: projectID, AllowPrune: in.AllowPrune, DriftPolicy: string(policy),
 		RequireApproval: in.RequireApproval, CreatedBy: rt.stackCaller(r).name,
 	}
 	probe := toIaCStack(rec)
@@ -548,10 +566,28 @@ func (rt *Router) handleCreateStack(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err.Error())
 		return
 	}
-	proj, found := rt.projectByName(r.Context(), in.Project)
-	if !found {
-		writeError(w, http.StatusUnprocessableEntity, fmt.Sprintf("project %q was not found", in.Project))
+	scope, err := iac.ParseStackLevel(in.Scope)
+	if err != nil {
+		writeError(w, http.StatusUnprocessableEntity, err.Error())
 		return
+	}
+	var proj store.Project
+	if scope == iac.LevelInstall {
+		// Only a human root session may create install-wide state, never a token.
+		if !rt.lockOverrideAllowed(r) {
+			writeError(w, http.StatusForbidden, "only a human root session may create an install stack")
+			return
+		}
+		if in.Project != "" {
+			writeError(w, http.StatusUnprocessableEntity, "an install stack has no project")
+			return
+		}
+	} else {
+		var found bool
+		if proj, found = rt.projectByName(r.Context(), in.Project); !found {
+			writeError(w, http.StatusUnprocessableEntity, fmt.Sprintf("project %q was not found", in.Project))
+			return
+		}
 	}
 	if (in.AllowPrune || in.RequireApproval || in.DriftPolicy != "") && !rt.callerIsAdmin(r) {
 		writeError(w, http.StatusForbidden, "only an administrator may set allow_prune, drift_policy or require_approval")
@@ -566,7 +602,7 @@ func (rt *Router) handleCreateStack(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, err.Error())
 		return
 	}
-	rt.auditStack(r, auditStackCreate, map[string]any{"stack": rec.Name, "project": proj.Name})
+	rt.auditStack(r, auditStackCreate, map[string]any{"stack": rec.Name, "project": proj.Name, "scope": stackScopeOf(rec)})
 	writeJSON(w, http.StatusCreated, rt.stackResource(r.Context(), ss, rec, false))
 }
 
@@ -659,7 +695,7 @@ func (rt *Router) handleStackPlan(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, emptyStackReason(req, project))
 		return
 	}
-	lctx, err := rt.stackLedgerContext(r.Context(), ss, stack.ID, name, project, res, req)
+	lctx, err := rt.stackLedgerContext(r.Context(), ss, stack.ID, name, project, stack.Scope, res, req)
 	if err != nil {
 		rt.writeStackError(w, "plan", err)
 		return
@@ -829,7 +865,7 @@ func (rt *Router) runStack(w http.ResponseWriter, r *http.Request, ss StackStore
 	}
 
 	// The ledger is read under the lease so ownership cannot move mid-apply.
-	lctx, err := rt.stackLedgerContext(ctx, ss, stack.ID, stack.Name, project, res, req)
+	lctx, err := rt.stackLedgerContext(ctx, ss, stack.ID, stack.Name, project, stack.Scope, res, req)
 	if err != nil {
 		rt.writeStackError(w, run.action, err)
 		return
@@ -927,7 +963,7 @@ func (rt *Router) findStackRevisionByKey(ctx context.Context, ss StackStore, sta
 
 // stackLedgerContext attaches the stack's ownership view: its own ledger rows
 // plus the owner of every declared key another stack holds. Lookups fail closed.
-func (rt *Router) stackLedgerContext(ctx context.Context, ss StackStore, stackID, stackName, project string, res []*iac.Resource, req stackRequest) (context.Context, error) {
+func (rt *Router) stackLedgerContext(ctx context.Context, ss StackStore, stackID, stackName, project, scope string, res []*iac.Resource, req stackRequest) (context.Context, error) {
 	var owned []iac.LedgerEntry
 	if stackID != "" {
 		rows, err := ss.ListStackLedger(ctx, stackID)
@@ -938,7 +974,12 @@ func (rt *Router) stackLedgerContext(ctx context.Context, ss StackStore, stackID
 			owned = append(owned, iac.LedgerEntry{StackID: e.StackID, Kind: iac.Kind(e.Kind), Key: e.Key, LiveID: e.LiveID, SinceRevision: e.SinceRevision})
 		}
 	}
-	l := iac.NewLedger(stackID, stackName, project, owned)
+	var l *iac.Ledger
+	if scope == store.StackScopeInstall {
+		l = iac.NewInstallLedger(stackID, stackName, owned)
+	} else {
+		l = iac.NewLedger(stackID, stackName, project, owned)
+	}
 	l.Adopt, l.AllowMassPrune = req.Adopt, req.AllowMassPrune
 	for _, ref := range iac.LedgerRefs(res) {
 		owner, found, err := ss.GetStackResourceOwner(ctx, string(ref.Kind), ref.Key)
@@ -1178,7 +1219,7 @@ func (rt *Router) stackNoop(ctx context.Context, ss StackStore, run stackRun, re
 	if err != nil || !bytes.Equal(rendered, latest.RenderedDocs) {
 		return store.StackRevisionRecord{}, false
 	}
-	lctx, err := rt.stackLedgerContext(ctx, ss, stack.ID, stack.Name, project, res, req)
+	lctx, err := rt.stackLedgerContext(ctx, ss, stack.ID, stack.Name, project, stack.Scope, res, req)
 	if err != nil {
 		return store.StackRevisionRecord{}, false
 	}
