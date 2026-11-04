@@ -1,6 +1,8 @@
 package store
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 )
@@ -297,6 +299,39 @@ const (
 // same "define locally, don't import a higher-level package's
 // vocabulary" reasoning DefaultDeployStrategy's own doc comment gives.
 const PullPolicyAlways = "always"
+
+// Workload instance states (migrations/3194_workload_instances.sql). Fenced keeps the
+// row so the ordinal and its volume are not reused until a human decides.
+const (
+	WorkloadInstancePending  = "pending"
+	WorkloadInstanceActive   = "active"
+	WorkloadInstanceUpdating = "updating"
+	WorkloadInstanceFenced   = "fenced"
+	WorkloadInstanceRetired  = "retired"
+)
+
+// ServiceSetMembership links a child service to the parent that owns it. Kept apart
+// from DesiredService so SaveDesiredService and the existing scans stay unchanged.
+type ServiceSetMembership struct {
+	ParentService string
+	InstanceKey   string
+}
+
+// IsChild reports whether the service is an instance managed by a parent.
+func (m ServiceSetMembership) IsChild() bool { return m.ParentService != "" }
+
+// OrderedChildName is the stable child name for an ordinal, so its volume and mesh
+// DNS name survive moves.
+func OrderedChildName(parent string, ordinal int) string {
+	return fmt.Sprintf("%s-%d", parent, ordinal)
+}
+
+// PerNodeChildName keys a per-node child on the node id, not its name, so a rename
+// does not rename the instance.
+func PerNodeChildName(parent, nodeID string) string {
+	sum := sha256.Sum256([]byte(nodeID))
+	return parent + "-n" + hex.EncodeToString(sum[:])[:6]
+}
 
 // ErrDomainTaken is returned by SaveDesiredService when a domain is already
 // claimed by another service. Two services on one host would yield two
