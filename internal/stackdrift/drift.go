@@ -197,6 +197,12 @@ func (c *Checker) checkStack(ctx context.Context, live iac.Doer, s store.StackRe
 		return fmt.Errorf("read live state: %w", err)
 	}
 	plan := iac.PlanFor(st, res, opts)
+	// A denied read hides drift, so say so rather than record a silent clean pass.
+	for _, ch := range plan.Changes {
+		if ch.Denied {
+			c.logger().Warn("stack drift: live read denied, resource not checked", slog.String("stack", s.Name), slog.String("resource", ch.Key()))
+		}
+	}
 	items := Summarize(plan, summaryMaxFromEnv())
 	status := store.StackDriftNone
 	if len(items) > 0 {

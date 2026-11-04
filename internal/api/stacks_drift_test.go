@@ -1,10 +1,12 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"log/slog"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -79,6 +81,89 @@ func TestStackDrift_ReusesOneSystemTokenAcrossPasses(t *testing.T) {
 	}
 	if rows != 1 {
 		t.Fatalf("stack-drift token rows = %d, want 1", rows)
+	}
+}
+
+func TestStackDrift_InstallStackNodeTaintEditIsDrift(t *testing.T) {
+	rt, db, cookie := newMultiNodeRouter(t)
+	ctx := t.Context()
+	createInstallStack(t, rt, cookie, "base")
+	if err := db.SaveNode(ctx, store.Node{ID: "n1", Name: "worker-1", Status: store.NodeStatusOnline, Schedulable: true}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SetNodeTaints(ctx, "n1", []store.NodeTaint{{Key: "gpu", Value: "a", Effect: "NoSchedule"}}); err != nil {
+		t.Fatal(err)
+	}
+	// Seeded as applied: an install stack apply waits on a second approver.
+	s, _ := db.GetStackByName(ctx, "base")
+	doc := "version: 1\nkind: Node\nmetadata:\n  name: worker-1\nspec:\n  taints:\n    - {key: gpu, value: \"a\", effect: NoSchedule}\n"
+	docs, _ := json.Marshal([]map[string]string{{"name": "stack.yaml", "content": doc}})
+	rev, err := db.AppendStackRevision(ctx, store.NewStackRevision{StackID: s.ID, Status: store.StackRevApplying, PlanHash: "h", PlanJSON: []byte(`{}`), RenderedDocs: docs, Actor: "admin"}, time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SetStackRevisionStatus(ctx, s.ID, rev.Number, store.StackRevApplied, []byte(`{}`), time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.UpsertStackResource(ctx, store.StackLedgerEntry{StackID: s.ID, Kind: "Node", Key: "Node/worker-1", LiveID: "n1", SinceRevision: 1}); err != nil {
+		t.Fatal(err)
+	}
+	c := &stackdrift.Checker{Store: db, Live: rt.StackDriftLive, ProjectName: rt.StackProjectName, Logger: slog.New(slog.NewTextHandler(io.Discard, nil))}
+	driftOf := func() store.StackDrift {
+		c.CheckAll(ctx)
+		d, _, _ := db.GetStackDrift(ctx, s.ID)
+		return d
+	}
+	if d := driftOf(); d.Status != store.StackDriftNone || d.Revision != 1 {
+		t.Fatalf("clean check = %+v", d)
+	}
+	if err := db.SetNodeTaints(ctx, "n1", []store.NodeTaint{{Key: "gpu", Value: "a", Effect: "NoSchedule"}, {Key: "lab-hand", Value: "hand-value", Effect: "NoSchedule"}}); err != nil {
+		t.Fatal(err)
+	}
+	d := driftOf()
+	raw, _ := json.Marshal(d.Summary)
+	if d.Status != store.StackDriftDrifted || len(d.Summary) != 1 || d.Summary[0].Kind != "Node" || strings.Contains(string(raw), "hand-value") {
+		t.Fatalf("hand taint check = %+v %s", d, raw)
+	}
+
+	// The grant is the drift token's own: a plain read token still cannot list nodes.
+	exp := time.Now().Add(time.Hour)
+	tok, _, err := MintAgentAPIToken(ctx, db, "reader", []string{AbilityRead}, &exp, agentIdentity{}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if code := callWithToken(t, rt, tok, http.MethodGet, "/api/v1/nodes", ""); code != http.StatusForbidden {
+		t.Fatalf("read token list nodes = %d, want 403", code)
+	}
+}
+
+func TestStackDrift_ReadGrantIsNarrow(t *testing.T) {
+	rt, _ := newTestRouter(t)
+	rt.stackDrift.id = "tok-1"
+	req := func(method, pattern, marker string) *http.Request {
+		r := httptest.NewRequest(method, "/x", nil)
+		r.Pattern = pattern
+		if marker != "" {
+			r = r.WithContext(context.WithValue(r.Context(), driftReadKey{}, marker))
+		}
+		return r
+	}
+	for _, c := range []struct {
+		name string
+		r    *http.Request
+		tok  string
+		want bool
+	}{
+		{"listed get", req(http.MethodGet, "GET /api/v1/nodes/{id}/taints", "tok-1"), "tok-1", true},
+		{"listed put", req(http.MethodPut, "PUT /api/v1/nodes/{id}/taints", "tok-1"), "tok-1", false},
+		{"unlisted get", req(http.MethodGet, "GET /api/v1/auth/tokens", "tok-1"), "tok-1", false},
+		{"no marker", req(http.MethodGet, "GET /api/v1/nodes", ""), "tok-1", false},
+		{"other token", req(http.MethodGet, "GET /api/v1/nodes", "tok-1"), "tok-2", false},
+		{"marker not current token", req(http.MethodGet, "GET /api/v1/nodes", "tok-2"), "tok-2", false},
+	} {
+		if got := rt.driftReadGranted(c.r, c.tok); got != c.want {
+			t.Errorf("%s = %v, want %v", c.name, got, c.want)
+		}
 	}
 }
 

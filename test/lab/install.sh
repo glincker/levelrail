@@ -96,10 +96,12 @@ install_checks() {
 	fi
 
 	# 5. A hand change made with the override shows as drift.
+	# The weaken revision declares only the setting, so the node needs the full set applied again.
+	lab_sess POST "/api/v1/stacks/$install_stack/apply" "$(files_json "$install_dir")" >/dev/null
 	lab_sess PUT "/api/v1/nodes/$install_node/taints" '{"taints":[{"key":"lab-hand","value":"1","effect":"NoSchedule"}]}' "$install_override" >/dev/null
 	local status=none i
 	# The checker waits a fixed minute after start before its first pass.
-	for i in $(seq 1 "${LAB_DRIFT_WAIT:-30}"); do
+	for i in $(seq 1 "${LAB_DRIFT_WAIT:-90}"); do
 		status="$(lab_api GET "/api/v1/stacks/$install_stack" | body | jq -r .drift.status)"
 		[ "$status" = drifted ] && break
 		sleep 1
@@ -107,12 +109,7 @@ install_checks() {
 	if [ "$status" = drifted ]; then
 		record install-override-drift PASS "checker reports drifted"
 	else
-		lab_cli stack plan "$install_stack" -f "$install_dir" --exit-code >/dev/null 2>&1
-		if [ $? = 2 ]; then
-			record install-override-drift SKIP "checker status stays $status for a node taint edit; plan shows the update"
-		else
-			record install-override-drift FAIL "drift status $status, plan clean"
-		fi
+		record install-override-drift FAIL "drift status stays $status for a node taint edit"
 	fi
 
 	install_cleanup

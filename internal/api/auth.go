@@ -445,8 +445,8 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 			return
 		}
 		abilities := rec.Abilities
-		if stackVerbGranted(r) {
-			// The stack gate already bounded this one root route to the token's own stack.
+		if stackVerbGranted(r) || rt.driftReadGranted(r, rec.ID) {
+			// The stack gate (or the drift read grant) already bounded this one root route.
 			abilities = append(slices.Clone(abilities), AbilityRoot)
 		}
 		allowed, err := decide(r.Context(), store.PrincipalTypeToken, rec.ID, abilities)

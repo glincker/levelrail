@@ -75,6 +75,27 @@ type fakeLive struct {
 	app     map[string]any
 	// settings maps a runtime setting key to its live JSON body.
 	settings map[string]map[string]any
+	// taints maps a node name to its live taints; ids are "id-" plus the name.
+	taints map[string][]map[string]string
+}
+
+func (l *fakeLive) nodeRead(path string) (any, bool) {
+	if path == "/api/v1/nodes" {
+		list := []any{}
+		for name := range l.taints {
+			list = append(list, map[string]string{"id": "id-" + name, "name": name})
+		}
+		return list, true
+	}
+	rest, ok := strings.CutPrefix(path, "/api/v1/nodes/id-")
+	if !ok {
+		return nil, false
+	}
+	name, sub, _ := strings.Cut(rest, "/")
+	if sub == "labels" {
+		return map[string]any{"labels": map[string]string{}}, true
+	}
+	return map[string]any{"taints": l.taints[name]}, true
 }
 
 func (l *fakeLive) Do(_ context.Context, method, path string, _, out any) error {
@@ -86,6 +107,10 @@ func (l *fakeLive) Do(_ context.Context, method, path string, _, out any) error 
 		return &iac.StatusError{Status: 500, Message: "live read failed"}
 	}
 	var v any
+	if nv, ok := l.nodeRead(path); ok && l.taints != nil {
+		raw, _ := json.Marshal(nv)
+		return json.Unmarshal(raw, out)
+	}
 	if key, ok := strings.CutPrefix(path, "/api/v1/settings/runtime/"); ok {
 		body, found := l.settings[key]
 		if !found {
@@ -332,5 +357,34 @@ func TestDriftSettingResetIsDrift(t *testing.T) {
 	d := driftOf(t, fs, liveSettingBody(false, false))
 	if d.Status != store.StackDriftDrifted || d.Summary[0].Fields[0] != "source" {
 		t.Fatalf("drift = %+v", d)
+	}
+}
+
+func installNodeDrift(t *testing.T, live []map[string]string) store.StackDrift {
+	t.Helper()
+	doc := "version: 1\nkind: Node\nmetadata:\n  name: worker-1\nspec:\n  taints:\n    - {key: gpu, value: \"a\", effect: NoSchedule}\n"
+	fs := newStore("base")
+	raw, _ := json.Marshal([]renderedFile{{Name: "stack.yaml", Content: doc}})
+	fs.stacks[0].ProjectID, fs.stacks[0].Scope = "", store.StackScopeInstall
+	fs.revs["id-base"][1].RenderedDocs = raw
+	fs.ledger = []store.StackLedgerEntry{{StackID: "id-base", Kind: "Node", Key: "Node/worker-1", LiveID: "id-worker-1", SinceRevision: 1}}
+	c := checker(t, fs, &fakeLive{t: t, taints: map[string][]map[string]string{"worker-1": live}})
+	c.ProjectName = func(context.Context, string) string { return "" }
+	c.CheckAll(t.Context())
+	return fs.recorded["id-base"]
+}
+
+func TestDriftNodeTaintChangedByHand(t *testing.T) {
+	declared := map[string]string{"key": "gpu", "value": "a", "effect": "NoSchedule"}
+	if d := installNodeDrift(t, []map[string]string{declared}); d.Status != store.StackDriftNone || d.CheckedAt.IsZero() {
+		t.Fatalf("matching taints = %+v", d)
+	}
+	d := installNodeDrift(t, []map[string]string{declared, {"key": "lab-hand", "value": "secret-ish", "effect": "NoSchedule"}})
+	if d.Status != store.StackDriftDrifted || len(d.Summary) != 1 || d.Summary[0].Kind != "Node" || d.Summary[0].Action != ActionChanged || len(d.Summary[0].Fields) == 0 {
+		t.Fatalf("hand taint = %+v", d)
+	}
+	raw, _ := json.Marshal(d.Summary)
+	if strings.Contains(string(raw), "secret-ish") {
+		t.Fatalf("summary leaks a value: %s", raw)
 	}
 }
