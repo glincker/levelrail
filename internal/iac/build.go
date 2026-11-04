@@ -426,6 +426,7 @@ func buildApp(d *Document, opts Options, s *issueSink) *Resource {
 		s.at("spec.environment", "an environment needs a project")
 	}
 	f.Rollout = rolloutFromSpec(svc.Rollout)
+	f.Placement = placementFromSpec(svc.Tolerations, svc.Affinity)
 	if len(svc.Files) > 0 {
 		f.Files = filesFromSpec(svc.Files)
 	}
@@ -473,9 +474,6 @@ func checkSupportedService(svc *spec.Service, s *issueSink) {
 	}
 	if svc.Egress != nil {
 		s.at(p+"egress", "egress policies are not supported by apply yet")
-	}
-	if len(svc.Tolerations) > 0 || svc.Affinity != nil {
-		s.at(p+"tolerations", "placement rules are not supported by apply yet; set them with the CLI placement flags")
 	}
 	if svc.LoadBalancer != nil {
 		s.at(p+"loadbalancer", "declare a LoadBalancer document instead")

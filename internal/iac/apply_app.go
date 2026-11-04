@@ -49,6 +49,15 @@ func appBody(f appFields) map[string]any {
 		hooks = &store.ServiceHooks{PreDeploy: f.Hooks.PreDeploy, PostDeploy: f.Hooks.PostDeploy}
 	}
 	setOrClear(body, "hooks", hooks, hooks != nil)
+	if f.Placement != nil {
+		// [] and {} clear; an undeclared member keeps the stored rules.
+		if f.Placement.Tolerations != nil {
+			body["tolerations"] = *f.Placement.Tolerations
+		}
+		if f.Placement.Affinity != nil {
+			body["affinity"] = *f.Placement.Affinity
+		}
+	}
 	return body
 }
 

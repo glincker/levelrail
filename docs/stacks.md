@@ -128,6 +128,10 @@ Databases and projects are never pruned, because they hold data or other stacks'
 
 Prune is also guarded against mass deletes. An apply that would delete more than `APP_STACK_PRUNE_MAX_COUNT` resources (default 10), or more than `APP_STACK_PRUNE_MAX_PERCENT` percent of the stack's resources (default 50), is refused. Review the plan, then send `allow_mass_prune` with the apply request to go ahead.
 
+## Placement rules
+
+An `App` may declare `spec.service.tolerations` and `spec.service.affinity`, with the same shape as `app.yaml`. A plan compares them with the stored rules of the app, and an apply saves them through the app update. A member the document leaves out is not managed and keeps its stored value. An empty `tolerations: []` or `affinity: {}` clears the stored rules. `export` writes both members, so an exported file plans clean against the app it came from. Node taints and labels are not part of a stack yet.
+
 ## Revisions
 
 A revision stores the plan, the rendered documents (after `${{ env.NAME }}` values are filled in), the actor, the token used, the git repository, ref and commit, the CI run URL, the time, and the result of each item. Revision numbers start at 1 and increase by one for each apply to that stack.

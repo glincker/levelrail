@@ -12,6 +12,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
 	"github.com/GLINCKER/levelrail/internal/loadbalancer"
+	"github.com/GLINCKER/levelrail/internal/placement"
 	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
@@ -55,25 +56,27 @@ type outBuild struct {
 }
 
 type outService struct {
-	Build          outBuild             `yaml:"build"`
-	Domains        []string             `yaml:"domains,omitempty"`
-	Port           int                  `yaml:"port,omitempty"`
-	HostPort       int                  `yaml:"host_port,omitempty"`
-	PublishedPorts []spec.PublishedPort `yaml:"published_ports,omitempty"`
-	Restart        string               `yaml:"restart,omitempty"`
-	BindAddress    string               `yaml:"bind_address,omitempty"`
-	Health         *healthFields        `yaml:"health,omitempty"`
-	Resources      *resourceFields      `yaml:"resources,omitempty"`
-	Security       *securityFields      `yaml:"security,omitempty"`
-	Env            map[string]any       `yaml:"env,omitempty"`
-	Replicas       int                  `yaml:"replicas,omitempty"`
-	Strategy       string               `yaml:"strategy,omitempty"`
-	Labels         map[string]string    `yaml:"labels,omitempty"`
-	Hooks          *hookFields          `yaml:"hooks,omitempty"`
-	Rollout        *rolloutFields       `yaml:"rollout,omitempty"`
-	Files          []fileFields         `yaml:"files,omitempty"`
-	Command        []string             `yaml:"command,omitempty"`
-	Volumes        []outVolume          `yaml:"volumes,omitempty"`
+	Build          outBuild               `yaml:"build"`
+	Domains        []string               `yaml:"domains,omitempty"`
+	Port           int                    `yaml:"port,omitempty"`
+	HostPort       int                    `yaml:"host_port,omitempty"`
+	PublishedPorts []spec.PublishedPort   `yaml:"published_ports,omitempty"`
+	Restart        string                 `yaml:"restart,omitempty"`
+	BindAddress    string                 `yaml:"bind_address,omitempty"`
+	Health         *healthFields          `yaml:"health,omitempty"`
+	Resources      *resourceFields        `yaml:"resources,omitempty"`
+	Security       *securityFields        `yaml:"security,omitempty"`
+	Env            map[string]any         `yaml:"env,omitempty"`
+	Replicas       int                    `yaml:"replicas,omitempty"`
+	Strategy       string                 `yaml:"strategy,omitempty"`
+	Labels         map[string]string      `yaml:"labels,omitempty"`
+	Hooks          *hookFields            `yaml:"hooks,omitempty"`
+	Rollout        *rolloutFields         `yaml:"rollout,omitempty"`
+	Files          []fileFields           `yaml:"files,omitempty"`
+	Command        []string               `yaml:"command,omitempty"`
+	Tolerations    []placement.Toleration `yaml:"tolerations,omitempty"`
+	Affinity       *placement.Affinity    `yaml:"affinity,omitempty"`
+	Volumes        []outVolume            `yaml:"volumes,omitempty"`
 }
 
 type outVolume struct {
@@ -242,6 +245,12 @@ func (e *exporter) app(ctx context.Context, l loader, a wireApp) error {
 		return fmt.Errorf("read files of %s: %w", a.Name, err)
 	}
 	svc.Files = files
+	if f.Placement != nil {
+		if f.Placement.Tolerations != nil {
+			svc.Tolerations = *f.Placement.Tolerations
+		}
+		svc.Affinity = f.Placement.Affinity
+	}
 	if f.BindAddress != bindaddr.Default {
 		svc.BindAddress = f.BindAddress
 	}

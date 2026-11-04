@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/placement"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -101,6 +102,8 @@ type wireApp struct {
 	Egress         map[string]any            `json:"egress,omitempty"`
 	EnvDirty       bool                      `json:"env_dirty"`
 	DatabaseEnv    map[string]wireDBRef      `json:"database_env,omitempty"`
+	Tolerations    []placement.Toleration    `json:"tolerations,omitempty"`
+	Affinity       *placement.Affinity       `json:"affinity,omitempty"`
 }
 
 type wireDBRef struct {
