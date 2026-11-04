@@ -3522,7 +3522,9 @@
       "oled": "OLED",
       "oledHint": "Negro puro, páginas anchas, densidad compacta",
       "paper": "Papel",
-      "paperHint": "Claro cálido, fuente legible, páginas estrechas"
+      "paperHint": "Claro cálido, fuente legible, páginas estrechas",
+      "customDescription": "Tus ajustes no coinciden con ningún ajuste preestablecido.",
+      "custom": "Personalizado"
     },
     "theme": {
       "title": "Modo de color",
@@ -3599,15 +3601,10 @@
       "compactHint": "Cabe más en pantalla",
       "comfortableHint": "Más aire"
     },
-    "preview": {
-      "title": "Vista previa",
-      "description": "Una muestra de tus opciones.",
-      "navActive": "Resumen",
-      "navOther": "Despliegues",
-      "cardTitle": "Aplicación web",
-      "cardBody": "En ejecución en 2 nodos",
-      "primary": "Desplegar",
-      "secondary": "Registros"
+    "sections": {
+      "color": "Color",
+      "type": "Tipografía",
+      "layout": "Diseño"
     }
   }
 }

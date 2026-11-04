@@ -1,7 +1,22 @@
 import { useId } from 'react'
 import { useTranslation } from 'react-i18next'
-import { RotateCcwGlassIcon } from '@thesvg/ui-react'
+import {
+  BookOpenGlassIcon,
+  ContrastGlassIcon,
+  LayoutDashboardGlassIcon,
+  MoonGlassIcon,
+  PaletteGlassIcon,
+  RotateCcwGlassIcon,
+  SparklesGlassIcon,
+  TypeGlassIcon,
+} from '@thesvg/ui-react'
+import type { ComponentType, ReactNode } from 'react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  SelectedMark,
+  selectableCardClass,
+} from '@/components/ui/selectable-card'
 import {
   Card,
   CardAction,
@@ -22,17 +37,19 @@ import {
   GUTTERS,
   LIGHT_BASES,
   PRESETS,
+  PRESET_VALUES,
   TEXT_SIZES,
   applyPreset,
   resetAppearance,
   setAppearance,
   useAppearance,
+  type Appearance,
   type PresetId,
 } from '@/lib/appearance'
 import { setDensity, useDensity, type Density } from '@/lib/density'
 import { PAGE_WIDTHS, setPageWidth, usePageWidth } from '@/lib/pageWidth'
+import { cn } from '@/lib/utils'
 import { ChoiceGroup, type Choice } from './ChoiceGroup'
-import { AppearancePreview } from './AppearancePreview'
 
 // Static sample colors mirror the index.css base blocks: background, card, border.
 const BASE_SAMPLE: Record<string, string> = {
@@ -96,6 +113,76 @@ function FontSample({ id }: { id: string }) {
     </span>
   )
 }
+
+const PRESET_ICON: Record<
+  PresetId,
+  ComponentType<{ className?: string; 'aria-hidden'?: boolean | 'true' }>
+> = {
+  default: SparklesGlassIcon,
+  focusDark: MoonGlassIcon,
+  oled: ContrastGlassIcon,
+  paper: BookOpenGlassIcon,
+}
+
+/** activePreset returns the preset matching every current value, or null for a custom mix. */
+function activePreset(
+  appearance: Appearance,
+  width: string,
+  density: string,
+  theme: string,
+): PresetId | null {
+  return (
+    PRESETS.find((id) => {
+      const p = PRESET_VALUES[id]
+      if (p.width !== width || p.density !== density) return false
+      if (p.theme && p.theme !== theme) return false
+      return (Object.keys(p.appearance) as (keyof Appearance)[]).every(
+        (k) => p.appearance[k] === appearance[k],
+      )
+    }) ?? null
+  )
+}
+
+function PresetSwatch({ id }: { id: PresetId }) {
+  const p = PRESET_VALUES[id]
+  const base =
+    p.theme === 'light' ? p.appearance.lightBase : p.appearance.darkBase
+  return (
+    <span className="flex items-center gap-2" aria-hidden="true">
+      <span className="min-w-0 flex-1">
+        <BaseSample id={base} />
+      </span>
+      <AccentSample id={p.appearance.accent} />
+    </span>
+  )
+}
+
+function SectionCard({
+  icon,
+  title,
+  children,
+}: {
+  icon: ReactNode
+  title: string
+  children: ReactNode
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          {icon}
+          {title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <SettingRows>{children}</SettingRows>
+      </CardContent>
+    </Card>
+  )
+}
+
+// Stack title over control: the section cards are only half width from xl.
+const ROW = 'md:grid-cols-1 lg:grid-cols-1'
 
 /** AppearanceSettings is the one place for theme base, font, size, width, spacing and density. */
 export function AppearanceSettings() {
@@ -189,177 +276,240 @@ export function AppearanceSettings() {
     isRecommended: v === REC.density,
   }))
 
+  const current = activePreset(appearance, width, density, theme)
+
   return (
-    <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_24rem]">
-      <div className="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('appearancePage.presets.title')}</CardTitle>
-            <CardDescription>
-              {t('appearancePage.presets.description')}
-            </CardDescription>
-            <CardAction>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={resetAppearance}
-              >
-                <RotateCcwGlassIcon size="1.4em" aria-hidden="true" />
-                {t('appearancePage.reset')}
-              </Button>
-            </CardAction>
-          </CardHeader>
-          <CardContent>
-            <div
-              role="group"
-              aria-label={t('appearancePage.presets.title')}
-              className="flex flex-wrap gap-2"
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('appearancePage.presets.title')}</CardTitle>
+          <CardDescription>
+            {current
+              ? t('appearancePage.presets.description')
+              : t('appearancePage.presets.customDescription')}
+          </CardDescription>
+          <CardAction className="flex items-center gap-2">
+            {current ? null : (
+              <Badge variant="accent">
+                {t('appearancePage.presets.custom')}
+              </Badge>
+            )}
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={resetAppearance}
             >
-              {PRESETS.map((id) => (
-                <Button
+              <RotateCcwGlassIcon size="1.4em" aria-hidden="true" />
+              {t('appearancePage.reset')}
+            </Button>
+          </CardAction>
+        </CardHeader>
+        <CardContent>
+          <div
+            role="group"
+            aria-label={t('appearancePage.presets.title')}
+            className="grid grid-cols-2 gap-2 lg:grid-cols-4"
+          >
+            {PRESETS.map((id) => {
+              const Icon = PRESET_ICON[id]
+              const active = current === id
+              return (
+                <button
                   key={id}
                   type="button"
-                  size="sm"
-                  variant="outline"
-                  title={t(`appearancePage.presets.${id}Hint`)}
+                  aria-pressed={active}
                   onClick={() => onPreset(id)}
+                  className={cn(
+                    selectableCardClass(
+                      active,
+                      'flex min-w-0 flex-col items-start gap-2 rounded-lg p-3 text-left',
+                    ),
+                    active && 'ring-1 ring-state-accent',
+                  )}
                 >
-                  {t(`appearancePage.presets.${id}`)}
-                </Button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent>
-            <SettingRows>
-              <SettingRow
-                title={
-                  <span id={themeLabelId}>
-                    {t('appearancePage.theme.title')}
+                  <SelectedMark selected={active} />
+                  <span className="flex items-center gap-2 text-sm font-medium">
+                    <Icon
+                      aria-hidden="true"
+                      className="size-4 text-state-accent"
+                    />
+                    {t(`appearancePage.presets.${id}`)}
                   </span>
-                }
-                description={t('appearancePage.theme.description')}
-              >
-                <ThemeChoice
-                  value={theme}
-                  onChange={setTheme}
-                  labelledBy={themeLabelId}
-                />
-              </SettingRow>
-              <SettingRow
-                title={t('appearancePage.darkBase.title')}
-                description={t('appearancePage.darkBase.description')}
-              >
-                <ChoiceGroup
-                  label={t('appearancePage.darkBase.title')}
-                  value={appearance.darkBase}
-                  options={darkOptions}
-                  onChange={(darkBase) => setAppearance({ darkBase })}
-                  {...common}
-                />
-              </SettingRow>
-              <SettingRow
-                title={t('appearancePage.lightBase.title')}
-                description={t('appearancePage.lightBase.description')}
-              >
-                <ChoiceGroup
-                  label={t('appearancePage.lightBase.title')}
-                  value={appearance.lightBase}
-                  options={lightOptions}
-                  onChange={(lightBase) => setAppearance({ lightBase })}
-                  {...common}
-                />
-              </SettingRow>
-              <SettingRow
-                title={t('appearancePage.accent.title')}
-                description={t('appearancePage.accent.description')}
-              >
-                <ChoiceGroup
-                  label={t('appearancePage.accent.title')}
-                  value={appearance.accent}
-                  options={accentOptions}
-                  onChange={(accent) => setAppearance({ accent })}
-                  className="sm:grid-cols-3"
-                  {...common}
-                />
-              </SettingRow>
-              <SettingRow
-                title={t('appearancePage.font.title')}
-                description={t('appearancePage.font.description')}
-              >
-                <ChoiceGroup
-                  label={t('appearancePage.font.title')}
-                  value={appearance.font}
-                  options={fontOptions}
-                  onChange={(font) => setAppearance({ font })}
-                  className="sm:grid-cols-3"
-                  {...common}
-                />
-              </SettingRow>
-              <SettingRow
-                title={t('appearancePage.textSize.title')}
-                description={t('appearancePage.textSize.description')}
-              >
-                <ChoiceGroup
-                  label={t('appearancePage.textSize.title')}
-                  value={appearance.textSize}
-                  options={sizeOptions}
-                  onChange={(textSize) => setAppearance({ textSize })}
-                  className="sm:grid-cols-3"
-                  {...common}
-                />
-              </SettingRow>
-              <SettingRow
-                title={t('appearancePage.width.title')}
-                description={t('appearancePage.width.description')}
-              >
-                <ChoiceGroup
-                  label={t('appearancePage.width.title')}
-                  value={width}
-                  options={widthOptions}
-                  onChange={setPageWidth}
-                  {...common}
-                />
-              </SettingRow>
-              <SettingRow
-                title={t('appearancePage.gutter.title')}
-                description={t('appearancePage.gutter.description')}
-              >
-                <ChoiceGroup
-                  label={t('appearancePage.gutter.title')}
-                  value={appearance.gutter}
-                  options={gutterOptions}
-                  onChange={(gutter) => setAppearance({ gutter })}
-                  className="sm:grid-cols-3"
-                  {...common}
-                />
-              </SettingRow>
-              <SettingRow
-                title={t('generalPage.density.title')}
-                description={t('appearancePage.density.description')}
-              >
-                <ChoiceGroup
-                  label={t('generalPage.density.title')}
-                  value={density}
-                  options={densityOptions}
-                  onChange={setDensity}
-                  className="sm:grid-cols-2"
-                  {...common}
-                />
-              </SettingRow>
-            </SettingRows>
-          </CardContent>
-        </Card>
-        <p className="text-xs text-muted-foreground">
-          {t('appearancePage.savedHere')}
-        </p>
+                  <span className="text-xs text-muted-foreground">
+                    {t(`appearancePage.presets.${id}Hint`)}
+                  </span>
+                  <span className="w-full">
+                    <PresetSwatch id={id} />
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid items-start gap-4 xl:grid-cols-2">
+        <SectionCard
+          icon={
+            <PaletteGlassIcon
+              className="size-4 text-state-accent"
+              aria-hidden="true"
+            />
+          }
+          title={t('appearancePage.sections.color')}
+        >
+          <SettingRow
+            className={ROW}
+            title={
+              <span id={themeLabelId}>{t('appearancePage.theme.title')}</span>
+            }
+            description={t('appearancePage.theme.description')}
+          >
+            <ThemeChoice
+              value={theme}
+              onChange={setTheme}
+              labelledBy={themeLabelId}
+            />
+          </SettingRow>
+          <SettingRow
+            className={ROW}
+            title={t('appearancePage.darkBase.title')}
+            description={t('appearancePage.darkBase.description')}
+          >
+            <ChoiceGroup
+              label={t('appearancePage.darkBase.title')}
+              value={appearance.darkBase}
+              options={darkOptions}
+              onChange={(darkBase) => setAppearance({ darkBase })}
+              {...common}
+            />
+          </SettingRow>
+          <SettingRow
+            className={ROW}
+            title={t('appearancePage.lightBase.title')}
+            description={t('appearancePage.lightBase.description')}
+          >
+            <ChoiceGroup
+              label={t('appearancePage.lightBase.title')}
+              value={appearance.lightBase}
+              options={lightOptions}
+              onChange={(lightBase) => setAppearance({ lightBase })}
+              {...common}
+            />
+          </SettingRow>
+          <SettingRow
+            className={ROW}
+            title={t('appearancePage.accent.title')}
+            description={t('appearancePage.accent.description')}
+          >
+            <ChoiceGroup
+              label={t('appearancePage.accent.title')}
+              value={appearance.accent}
+              options={accentOptions}
+              onChange={(accent) => setAppearance({ accent })}
+              className="sm:grid-cols-3"
+              {...common}
+            />
+          </SettingRow>
+        </SectionCard>
+
+        <div className="space-y-4">
+          <SectionCard
+            icon={
+              <TypeGlassIcon
+                className="size-4 text-state-accent"
+                aria-hidden="true"
+              />
+            }
+            title={t('appearancePage.sections.type')}
+          >
+            <SettingRow
+              className={ROW}
+              title={t('appearancePage.font.title')}
+              description={t('appearancePage.font.description')}
+            >
+              <ChoiceGroup
+                label={t('appearancePage.font.title')}
+                value={appearance.font}
+                options={fontOptions}
+                onChange={(font) => setAppearance({ font })}
+                className="sm:grid-cols-3"
+                {...common}
+              />
+            </SettingRow>
+            <SettingRow
+              className={ROW}
+              title={t('appearancePage.textSize.title')}
+              description={t('appearancePage.textSize.description')}
+            >
+              <ChoiceGroup
+                label={t('appearancePage.textSize.title')}
+                value={appearance.textSize}
+                options={sizeOptions}
+                onChange={(textSize) => setAppearance({ textSize })}
+                className="sm:grid-cols-3"
+                {...common}
+              />
+            </SettingRow>
+          </SectionCard>
+
+          <SectionCard
+            icon={
+              <LayoutDashboardGlassIcon
+                className="size-4 text-state-accent"
+                aria-hidden="true"
+              />
+            }
+            title={t('appearancePage.sections.layout')}
+          >
+            <SettingRow
+              className={ROW}
+              title={t('appearancePage.width.title')}
+              description={t('appearancePage.width.description')}
+            >
+              <ChoiceGroup
+                label={t('appearancePage.width.title')}
+                value={width}
+                options={widthOptions}
+                onChange={setPageWidth}
+                {...common}
+              />
+            </SettingRow>
+            <SettingRow
+              className={ROW}
+              title={t('appearancePage.gutter.title')}
+              description={t('appearancePage.gutter.description')}
+            >
+              <ChoiceGroup
+                label={t('appearancePage.gutter.title')}
+                value={appearance.gutter}
+                options={gutterOptions}
+                onChange={(gutter) => setAppearance({ gutter })}
+                className="sm:grid-cols-3"
+                {...common}
+              />
+            </SettingRow>
+            <SettingRow
+              className={ROW}
+              title={t('generalPage.density.title')}
+              description={t('appearancePage.density.description')}
+            >
+              <ChoiceGroup
+                label={t('generalPage.density.title')}
+                value={density}
+                options={densityOptions}
+                onChange={setDensity}
+                className="sm:grid-cols-2"
+                {...common}
+              />
+            </SettingRow>
+          </SectionCard>
+        </div>
       </div>
-      <div className="xl:sticky xl:top-4">
-        <AppearancePreview />
-      </div>
+      <p className="text-xs text-muted-foreground">
+        {t('appearancePage.savedHere')}
+      </p>
     </div>
   )
 }

@@ -3554,7 +3554,9 @@
       "oled": "OLED",
       "oledHint": "True black, wide pages, compact density",
       "paper": "Paper",
-      "paperHint": "Warm light, readable font, narrow pages"
+      "paperHint": "Warm light, readable font, narrow pages",
+      "customDescription": "Your settings do not match a preset.",
+      "custom": "Custom"
     },
     "theme": {
       "title": "Color mode",
@@ -3631,15 +3633,10 @@
       "compactHint": "Fits more on screen",
       "comfortableHint": "More breathing room"
     },
-    "preview": {
-      "title": "Live preview",
-      "description": "A sample of your choices.",
-      "navActive": "Overview",
-      "navOther": "Deploys",
-      "cardTitle": "Web app",
-      "cardBody": "Running on 2 nodes",
-      "primary": "Deploy",
-      "secondary": "Logs"
+    "sections": {
+      "color": "Color",
+      "type": "Type",
+      "layout": "Layout"
     }
   }
 }
