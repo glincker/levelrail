@@ -7,6 +7,7 @@
   },
   "loadFailed": "No se pudieron cargar los stacks.",
   "columns": {
+    "scope": "Ámbito",
     "name": "Stack",
     "project": "Proyecto",
     "revision": "Última",
@@ -23,6 +24,12 @@
     "superseded": "Reemplazada",
     "rejected": "Rechazada",
     "none": "Sin revisiones"
+  },
+  "scope": {
+    "project": "Proyecto",
+    "install": "Instalación",
+    "projectTip": "Pertenece a un proyecto",
+    "installTip": "Abarca toda la instalación"
   },
   "flags": {
     "locked": "Bloqueado",

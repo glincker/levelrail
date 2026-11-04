@@ -7,6 +7,7 @@
   },
   "loadFailed": "Could not load stacks.",
   "columns": {
+    "scope": "Scope",
     "name": "Stack",
     "project": "Project",
     "revision": "Latest",
@@ -23,6 +24,12 @@
     "superseded": "Superseded",
     "rejected": "Rejected",
     "none": "No revisions"
+  },
+  "scope": {
+    "project": "Project",
+    "install": "Install",
+    "projectTip": "Belongs to one project",
+    "installTip": "Spans the whole install"
   },
   "flags": {
     "locked": "Locked",

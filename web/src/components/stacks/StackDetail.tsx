@@ -24,7 +24,11 @@ import { ApproveDialog, RejectDialog } from './ApprovalDialogs'
 import { RevisionHistory } from './RevisionHistory'
 import { RevisionView } from './RevisionView'
 import { DeleteStackDialog, RollbackDialog } from './StackDialogs'
-import { RevisionStatusBadge, StackFlags } from './StackIndicators'
+import {
+  RevisionStatusBadge,
+  StackFlags,
+  StackScopeBadge,
+} from './StackIndicators'
 import { DriftSummary } from './StackDrift'
 import { StackSettingsCard } from './StackSettingsCard'
 
@@ -96,6 +100,7 @@ export function StackDetail({
           {t('detail.back')}
         </Button>
         <h2 className="text-base font-semibold">{stack.name}</h2>
+        <StackScopeBadge stack={stack} />
         <RevisionStatusBadge status={stack.latest_status} />
         <StackFlags stack={stack} />
         <span className="ml-auto flex items-center gap-1">

@@ -44,8 +44,12 @@ export interface StackDrift {
   summary: StackDriftItem[]
 }
 
+export type StackScope = 'project' | 'install'
+
 export interface Stack {
   name: string
+  // Absent on older servers; treated as project.
+  scope?: StackScope
   project_id: string
   project: string
   environment_id?: string

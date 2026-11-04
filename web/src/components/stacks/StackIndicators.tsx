@@ -6,9 +6,11 @@ import {
   CircleXGlassIcon,
   ClockGlassIcon,
   CountdownGlassIcon,
+  FolderGlassIcon,
   LockGlassIcon,
   PinGlassIcon,
   ScissorsGlassIcon,
+  ServerGlassIcon,
   ShieldCheckGlassIcon,
   TriangleAlertGlassIcon,
   type UiIcon,
@@ -75,6 +77,22 @@ export function RevisionStatus({
         </span>
       ) : null}
     </span>
+  )
+}
+
+// Install stacks span the whole install; project stacks belong to one project.
+export function StackScopeBadge({ stack }: Readonly<{ stack: Stack }>) {
+  const { t } = useTranslation('stacks')
+  const install = stack.scope === 'install'
+  const Icon = install ? ServerGlassIcon : FolderGlassIcon
+  return (
+    <Badge
+      variant={install ? 'info' : 'outline'}
+      title={t(install ? 'scope.installTip' : 'scope.projectTip')}
+    >
+      <Icon size="1.4em" aria-hidden="true" />
+      {t(install ? 'scope.install' : 'scope.project')}
+    </Badge>
   )
 }
 

@@ -41,3 +41,19 @@ describe('StacksList', () => {
     expect(onOpen).toHaveBeenCalledWith('shop')
   })
 })
+
+describe('StacksList scope', () => {
+  it('shows a Project or Install badge per stack', () => {
+    renderWithProviders(
+      <StacksList
+        stacks={[
+          stack({ name: 'shop' }),
+          stack({ name: 'platform', scope: 'install', project: '' }),
+        ]}
+        onOpen={vi.fn()}
+      />,
+    )
+    expect(screen.getAllByText('Project').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Install').length).toBeGreaterThan(0)
+  })
+})
