@@ -113,6 +113,12 @@ func (rt *Router) driftToken(ctx context.Context) (string, error) {
 	}
 	expires := time.Now().Add(ttl)
 	raw, rec, err := MintAgentAPIToken(ctx, rt.tokens, stackDriftTokenName, []string{AbilityRead}, &expires, agentIdentity{}, "")
+	if err == nil {
+		err = rt.markSystemToken(ctx, rec.ID)
+		if err != nil {
+			_ = rt.tokens.RevokeAPIToken(context.WithoutCancel(ctx), rec.ID)
+		}
+	}
 	if err != nil {
 		return "", fmt.Errorf("api: stack drift: mint read token: %w", err)
 	}

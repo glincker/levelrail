@@ -48,7 +48,7 @@ func (rt *Router) hostedTarget(w http.ResponseWriter, r *http.Request, name stri
 		req hostedImportRequest
 		cfg datamigrate.HostedConfig
 	)
-	db, ok := rt.loadDatabaseForRunner(w, r, name, "api: hosted import: load database failed")
+	db, ok := rt.loadImportDatabase(w, r, name, AbilityWriteSensitive, "api: hosted import: load database failed")
 	if !ok {
 		return nil, req, cfg, nil, false
 	}

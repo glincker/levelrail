@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -101,6 +102,10 @@ func (rt *Router) handleListSilences(w http.ResponseWriter, r *http.Request) {
 	all, err := s.ListSilences(r.Context())
 	if err != nil {
 		rt.internalError(w, "api: list silences", err)
+		return
+	}
+	if all, err = rt.filterSilences(r, all); err != nil {
+		rt.internalError(w, "api: list silences: filter", err)
 		return
 	}
 	now := time.Now()
@@ -199,7 +204,20 @@ func (rt *Router) handleDeleteSilence(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotImplemented, "silences storage is not configured")
 		return
 	}
-	err := s.DeleteSilence(r.Context(), r.PathValue("id"))
+	id := r.PathValue("id")
+	all, err := s.ListSilences(r.Context())
+	if err == nil {
+		all, err = rt.filterSilences(r, all)
+	}
+	if err != nil {
+		rt.internalError(w, "api: delete silence: scope", err)
+		return
+	}
+	if !slices.ContainsFunc(all, func(x store.Silence) bool { return x.ID == id }) {
+		writeError(w, http.StatusNotFound, "no such silence")
+		return
+	}
+	err = s.DeleteSilence(r.Context(), id)
 	if errors.Is(err, store.ErrSilenceNotFound) {
 		writeError(w, http.StatusNotFound, "no such silence")
 		return

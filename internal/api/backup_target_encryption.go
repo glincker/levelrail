@@ -59,6 +59,13 @@ func (rt *Router) targetEncryptionResource(r *http.Request, t store.BackupTarget
 // handleGetBackupTargetEncryption handles GET /api/v1/backup-targets/{id}/encryption.
 func (rt *Router) handleGetBackupTargetEncryption(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
+	if hidden, err := rt.backupTargetsHidden(r); err != nil {
+		rt.internalError(w, "api: get backup target encryption: resolve caller", err)
+		return
+	} else if hidden {
+		writeError(w, http.StatusNotFound, "backup target not found")
+		return
+	}
 	t, err := rt.backupTargets.GetBackupTarget(r.Context(), id)
 	if errors.Is(err, store.ErrBackupTargetNotFound) {
 		writeError(w, http.StatusNotFound, "backup target not found")

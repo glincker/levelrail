@@ -221,7 +221,40 @@ func (rt *Router) handleIAMResources(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: iam resources failed", err)
 		return
 	}
+	if inv, err = rt.restrictIAMInventory(r, inv); err != nil {
+		rt.internalError(w, "api: iam resources: restrict", err)
+		return
+	}
 	writeJSON(w, http.StatusOK, inv.resourcesResponse())
+}
+
+// restrictIAMInventory narrows the picker to what the caller may see under
+// strict isolation.
+func (rt *Router) restrictIAMInventory(r *http.Request, inv *iamInventory) (*iamInventory, error) {
+	v, err := rt.strictViewFor(r)
+	if err != nil || v == nil {
+		return inv, err
+	}
+	keep := func(names []string, can func(string) bool) []string {
+		out := names[:0:0]
+		for _, n := range names {
+			if can(n) {
+				out = append(out, n)
+			}
+		}
+		return out
+	}
+	out := *inv
+	out.apps = keep(inv.apps, v.canApp)
+	out.databases = keep(inv.databases, v.canDB)
+	out.staticSites = keep(inv.staticSites, v.canApp)
+	if out.envs, err = rt.filterEnvironments(r, inv.envs); err != nil {
+		return nil, err
+	}
+	if out.projects, err = rt.filterProjects(r, inv.projects); err != nil {
+		return nil, err
+	}
+	return &out, nil
 }
 
 type matchRequest struct {
@@ -239,6 +272,10 @@ func (rt *Router) handleIAMMatch(w http.ResponseWriter, r *http.Request) {
 	inv, err := rt.loadIAMInventory(r.Context())
 	if err != nil {
 		rt.internalError(w, "api: iam match failed", err)
+		return
+	}
+	if inv, err = rt.restrictIAMInventory(r, inv); err != nil {
+		rt.internalError(w, "api: iam match: restrict", err)
 		return
 	}
 	out := make([]resourceMatch, 0, len(req.Resources))

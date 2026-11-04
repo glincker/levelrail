@@ -16,11 +16,22 @@ func (rt *Router) doctorCheckTokenHygiene(ctx context.Context) doctorCheckResour
 	}
 	now := time.Now()
 	unused := len(unusedTokens(recs, rt.tokenUnusedAlertDays(ctx), now))
-	noExpiry := 0
+	noExpiry, ownerless := 0, 0
+	strict := rt.strictOrgIsolation(ctx)
 	for _, t := range recs {
+		if strict && tokenLive(t, now) && t.OwnerUserID == "" && !hasAbility(t.Abilities, AbilityRoot) && !rt.tokenHasTeamScope(ctx, t.ID) {
+			ownerless++
+		}
 		// Ownerless tokens are platform-internal and not the operator's to rotate.
 		if tokenLive(t, now) && t.ExpiresAt == nil && t.OwnerUserID != "" && holdsSensitiveAbility(t.Abilities) {
 			noExpiry++
+		}
+	}
+	if ownerless > 0 {
+		return doctorCheckResource{
+			Code: code, Name: name, Status: doctorStatusWarn,
+			Message: fmt.Sprintf("%d tokens have no owner and no organization limit, so strict organization isolation limits them to the default organization. %d unused tokens, %d tokens without expiry that can change or reveal data", ownerless, unused, noExpiry),
+			Fix:     rt.cliName() + " tokens list, then revoke or re-mint them as a user's token, or with an organization limit when they belong to another organization",
 		}
 	}
 	if unused == 0 && noExpiry == 0 {
@@ -31,4 +42,15 @@ func (rt *Router) doctorCheckTokenHygiene(ctx context.Context) doctorCheckResour
 		Message: fmt.Sprintf("%d unused tokens, %d tokens without expiry that can change or reveal data. Nothing is revoked automatically", unused, noExpiry),
 		Fix:     rt.cliName() + " tokens unused, then " + rt.cliName() + " tokens revoke <id>",
 	}
+}
+
+// tokenHasTeamScope is true when a token carries a stored org limit or the
+// system marker; a failed lookup counts as scoped so the warning stays quiet.
+func (rt *Router) tokenHasTeamScope(ctx context.Context, tokenID string) bool {
+	db := rt.teamDB()
+	if db == nil {
+		return false
+	}
+	s, err := db.GetAPITokenScope(ctx, tokenID)
+	return err != nil || s != nil
 }

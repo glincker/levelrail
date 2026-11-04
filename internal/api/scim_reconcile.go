@@ -352,7 +352,7 @@ func (rt *Router) scimProvision(ctx context.Context, du authengine.DirectoryUser
 	if name == "" {
 		name = du.Email
 	}
-	if err := rt.sso.CreateProvisionedUser(ctx, store.User{ID: id, Email: du.Email, DisplayName: name, CreatedAt: time.Now()}, role); err != nil {
+	if err := rt.sso.CreateProvisionedUser(rt.provisionCtx(ctx), store.User{ID: id, Email: du.Email, DisplayName: name, CreatedAt: time.Now()}, role); err != nil {
 		return "", fmt.Errorf("provision directory user: %w", err)
 	}
 	if err := rt.libSessions.LinkUser(ctx, id, du.EngineID); err != nil {

@@ -97,7 +97,7 @@ func (rt *Router) samlProvision(ctx context.Context, c store.SSOConnection, iden
 		name = ident.Email
 	}
 	u := store.User{ID: id, Email: ident.Email, DisplayName: name, CreatedAt: time.Now()}
-	if err := rt.sso.CreateProvisionedUser(ctx, u, roleID); err != nil {
+	if err := rt.sso.CreateProvisionedUser(rt.provisionCtx(ctx), u, roleID); err != nil {
 		return samlPlan{}, samlErrInternal, fmt.Errorf("provision saml user: %w", err)
 	}
 	plan := samlPlan{legacyID: id, desiredRole: roleID, created: true}

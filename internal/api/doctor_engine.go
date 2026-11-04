@@ -284,8 +284,14 @@ func (rt *Router) handleRunDoctorCheck(w http.ResponseWriter, r *http.Request) {
 		if d.ID != id {
 			continue
 		}
+		filter, err := rt.doctorFilterFor(r)
+		if err != nil {
+			rt.internalError(w, "api: doctor check: filter", err)
+			return
+		}
 		res := runDoctorDef(r.Context(), d, rt.logger)
 		rt.attachDoctorFixes(r.Context(), res)
+		res = filter.keep(res)
 		writeJSON(w, http.StatusOK, map[string]any{"id": d.ID, "checks": res})
 		return
 	}
@@ -318,10 +324,23 @@ func (rt *Router) handleStreamDoctor(w http.ResponseWriter, r *http.Request) {
 		send(doctorStreamEvent{Type: "done", OK: &demo.OK})
 		return
 	}
+	filter, ferr := rt.doctorFilterFor(r)
+	if ferr != nil {
+		rt.logger.Error("api: doctor stream: filter", slog.String("error", ferr.Error()))
+		okAll := false
+		send(doctorStreamEvent{Type: "done", OK: &okAll})
+		return
+	}
 	defs := rt.doctorDefs()
+	// Total counts registered checks, which name nothing; hidden results are
+	// dropped from each event below.
 	send(doctorStreamEvent{Type: "start", Total: len(defs)})
 	var all []doctorCheckResource
+	// The overall flag names nothing, so it covers hidden checks too, as in GET.
+	okAll := true
 	rt.runDoctorDefs(r.Context(), defs, func(d doctorCheckDef, res []doctorCheckResource) {
+		okAll = okAll && doctorAllOK(res)
+		res = filter.keep(res)
 		all = append(all, res...)
 		send(doctorStreamEvent{Type: "check", ID: d.ID, Checks: res})
 	})
@@ -333,7 +352,6 @@ func (rt *Router) handleStreamDoctor(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	send(doctorStreamEvent{Type: "fixes", Checks: fixed})
-	okAll := doctorAllOK(all)
 	send(doctorStreamEvent{Type: "done", OK: &okAll})
 }
 

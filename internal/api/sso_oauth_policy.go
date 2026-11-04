@@ -128,7 +128,7 @@ func (rt *Router) settleOAuthUser(w http.ResponseWriter, r *http.Request, provid
 	if grantErr != nil {
 		newUserRole = ""
 	}
-	userID, created, err = rt.authLibOAuth.ResolveOAuthUser(ctx, out.Provider, out.ProviderUserID, newUserRole)
+	userID, created, err = rt.authLibOAuth.ResolveOAuthUser(rt.provisionCtx(ctx), out.Provider, out.ProviderUserID, newUserRole)
 	if err != nil {
 		if grantErr != nil {
 			refuse(samlErrNoRole, grantErr)

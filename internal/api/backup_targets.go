@@ -198,8 +198,27 @@ func validateUpdateBackupTargetRequest(req updateBackupTargetRequest) error {
 	return nil
 }
 
+// backupTargetsHidden is true when strict isolation hides the ownerless backup
+// targets from the caller; only instance wide callers (root) see them.
+func (rt *Router) backupTargetsHidden(r *http.Request) (bool, error) {
+	v, err := rt.strictViewFor(r)
+	if err != nil {
+		return false, err
+	}
+	return v != nil && !v.instanceWide, nil
+}
+
 // handleListBackupTargets handles GET /api/v1/backup-targets.
 func (rt *Router) handleListBackupTargets(w http.ResponseWriter, r *http.Request) {
+	hidden, err := rt.backupTargetsHidden(r)
+	if err != nil {
+		rt.internalError(w, "api: list backup targets: resolve caller", err)
+		return
+	}
+	if hidden {
+		writeJSON(w, http.StatusOK, []backupTargetResource{})
+		return
+	}
 	targets, err := rt.backupTargets.ListBackupTargets(r.Context())
 	if err != nil {
 		rt.internalError(w, "api: list backup targets failed", err)
@@ -215,6 +234,13 @@ func (rt *Router) handleListBackupTargets(w http.ResponseWriter, r *http.Request
 // handleGetBackupTarget handles GET /api/v1/backup-targets/{id}.
 func (rt *Router) handleGetBackupTarget(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
+	if hidden, err := rt.backupTargetsHidden(r); err != nil {
+		rt.internalError(w, "api: get backup target: resolve caller", err)
+		return
+	} else if hidden {
+		writeError(w, http.StatusNotFound, "backup target not found")
+		return
+	}
 
 	t, err := rt.backupTargets.GetBackupTarget(r.Context(), id)
 	if errors.Is(err, store.ErrBackupTargetNotFound) {

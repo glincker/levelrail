@@ -206,20 +206,12 @@ func (rt *Router) handleCreateTeam(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "a team needs a user as its first owner; create it from a user session or a user's token")
 		return
 	}
-	id, err := randomOrganizationID()
+	org, err := rt.createOrganizationWithOwner(r.Context(), req.Name, caller.userID)
 	if err != nil {
-		rt.internalError(w, "api: create team: id", err)
-		return
-	}
-	org := store.Organization{ID: id, Name: strings.TrimSpace(req.Name), CreatedAt: time.Now().UTC().Format(time.RFC3339)}
-	if err := rt.organizations.SaveOrganization(r.Context(), org); err != nil {
 		rt.internalError(w, "api: create team", err)
 		return
 	}
-	if err := rt.teamAdmin().AddTeamMember(r.Context(), id, caller.userID, store.TeamRoleOwner); err != nil {
-		rt.internalError(w, "api: create team: owner", err)
-		return
-	}
+	id := org.ID
 	rt.recordTeamEvent(r, id, caller.userID, "team.created", org.Name, "")
 	writeJSON(w, http.StatusCreated, teamResource{ID: id, Name: org.Name, Role: store.TeamRoleOwner, MemberCount: 1, CreatedAt: org.CreatedAt})
 }

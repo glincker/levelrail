@@ -77,6 +77,9 @@ nextjs.memory_floor_mb
 nodes.protected_taint_keys
 onboarding.enabled
 onboarding.restore_reminder_days
+orgs.admins_can_create
+orgs.provisioned_default_membership
+orgs.strict_isolation
 pipelines.oidc_listen_port
 retention.ai_history_days
 retention.alert_history_days

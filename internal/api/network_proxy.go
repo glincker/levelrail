@@ -61,6 +61,19 @@ func (rt *Router) handleGetNetworkProxy(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	if v, verr := rt.strictViewFor(r); verr != nil {
+		rt.internalError(w, "api: get network proxy: resolve caller", verr)
+		return
+	} else if v != nil {
+		kept := services[:0:0]
+		for _, svc := range services {
+			if v.canApp(svc.Name) {
+				kept = append(kept, svc)
+			}
+		}
+		services = kept
+	}
+
 	nodeNames := rt.doctorNodeNames(ctx)
 
 	certByDomain, err := rt.proxyCertsByDomain(ctx)

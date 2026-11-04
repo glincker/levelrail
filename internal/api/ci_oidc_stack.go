@@ -537,6 +537,9 @@ func (rt *Router) mintStackOIDCToken(w http.ResponseWriter, r *http.Request, sta
 		return
 	}
 	err = rt.tokenStackScopes().SetAPITokenStackScope(r.Context(), store.APITokenStackScope{TokenID: rec.ID, StackID: stack.ID, Verbs: trust.Verbs})
+	if err == nil {
+		err = rt.markSystemToken(r.Context(), rec.ID)
+	}
 	if err != nil {
 		// A token without its stack scope would be unconfined, so it never leaves this function.
 		_ = rt.tokens.RevokeAPIToken(r.Context(), rec.ID)
