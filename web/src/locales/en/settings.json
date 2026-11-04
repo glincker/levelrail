@@ -3540,7 +3540,7 @@
   "appearancePage": {
     "title": "Appearance",
     "description": "Theme base, accent, font, text size, page width, side padding and density. Changes apply as you pick them.",
-    "savedHere": "Saved on this browser only. Other browsers and devices keep their own choices.",
+    "savedHere": "Saved on this browser. With sync on, they also follow your account.",
     "reset": "Reset to defaults",
     "defaultBadge": "Default",
     "recommendedBadge": "Recommended",
@@ -3656,6 +3656,21 @@
       "onHint": "Minimal animation",
       "off": "Allow all",
       "offHint": "Ignore the device setting"
+    },
+    "sync": {
+      "label": "Sync to my account",
+      "hint": "Keep these choices on every browser you sign in from.",
+      "syncing": "Syncing...",
+      "synced": "Synced {{when}}",
+      "justNow": "just now",
+      "notSynced": "Not synced",
+      "tooLarge": "Too large to sync. Your choices stay on this browser.",
+      "off": "Sync is off. Choices stay on this browser.",
+      "export": "Export",
+      "import": "Import",
+      "importLabel": "Import appearance from a JSON file",
+      "importBad": "That file is not a valid appearance export.",
+      "imported": "Imported."
     }
   }
 }

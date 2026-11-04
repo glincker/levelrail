@@ -3,8 +3,8 @@ import { setDensity, type Density } from './density'
 import { setPageWidth, type PageWidth } from './pageWidth'
 import { BASE_BACKGROUND, deriveAccent, normalizeHex } from './accentContrast'
 
-// Browser-only store behind one hook. Swap this module for an account
-// preferences query when server-side storage lands; callers do not change.
+// Local store behind one hook; it applies instantly at startup. Account sync
+// (lib/appearanceSync) layers on top through subscribeAppearance.
 
 export const DARK_BASES = ['soft', 'black', 'graphite', 'midnight'] as const
 export const LIGHT_BASES = ['white', 'grey', 'paper', 'cool'] as const
@@ -244,6 +244,8 @@ function subscribe(listener: () => void) {
     listeners.delete(listener)
   }
 }
+
+export { subscribe as subscribeAppearance }
 
 export function useAppearance(): Appearance {
   return useSyncExternalStore(subscribe, getAppearance, getAppearance)

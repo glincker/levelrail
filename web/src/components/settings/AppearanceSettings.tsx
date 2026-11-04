@@ -58,6 +58,8 @@ import { setDensity, useDensity, type Density } from '@/lib/density'
 import { PAGE_WIDTHS, setPageWidth, usePageWidth } from '@/lib/pageWidth'
 import { cn } from '@/lib/utils'
 import { ChoiceGroup, type Choice } from './ChoiceGroup'
+import { AppearanceSyncRow } from './AppearanceSyncRow'
+import { appearanceSync } from '@/queries/appearanceSync'
 
 // Static sample colors mirror the index.css base blocks: background, card, border.
 const BASE_SAMPLE: Record<string, string> = {
@@ -346,6 +348,11 @@ export function AppearanceSettings() {
     if (preset.theme) setTheme(preset.theme)
   }
 
+  const onReset = () => {
+    resetAppearance()
+    void appearanceSync.clearAccount()
+  }
+
   const darkOptions: Choice<(typeof DARK_BASES)[number]>[] = DARK_BASES.map(
     (v) => ({
       value: v,
@@ -436,12 +443,7 @@ export function AppearanceSettings() {
                 {t('appearancePage.presets.custom')}
               </Badge>
             )}
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={resetAppearance}
-            >
+            <Button type="button" size="sm" variant="outline" onClick={onReset}>
               <RotateCcwGlassIcon size="1.4em" aria-hidden="true" />
               {t('appearancePage.reset')}
             </Button>
@@ -665,6 +667,7 @@ export function AppearanceSettings() {
           </SectionCard>
         </div>
       </div>
+      <AppearanceSyncRow />
       <p className="text-xs text-muted-foreground">
         {t('appearancePage.savedHere')}
       </p>

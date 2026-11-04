@@ -57,6 +57,8 @@ function subscribe(listener: () => void) {
   }
 }
 
+export { subscribe as subscribePageWidth }
+
 export function usePageWidth(): PageWidth {
   return useSyncExternalStore(subscribe, getPageWidth, getPageWidth)
 }

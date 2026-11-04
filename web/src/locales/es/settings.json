@@ -3508,7 +3508,7 @@
   "appearancePage": {
     "title": "Apariencia",
     "description": "Base del tema, acento, fuente, tamaño de texto, ancho de página, relleno lateral y densidad. Los cambios se aplican al elegirlos.",
-    "savedHere": "Se guarda solo en este navegador. Otros navegadores y dispositivos conservan sus propias opciones.",
+    "savedHere": "Se guarda en este navegador. Con la sincronización activa, también te sigue en tu cuenta.",
     "reset": "Restablecer valores",
     "defaultBadge": "Predeterminado",
     "recommendedBadge": "Recomendado",
@@ -3624,6 +3624,21 @@
       "onHint": "Animación mínima",
       "off": "Permitir todo",
       "offHint": "Ignora el ajuste del dispositivo"
+    },
+    "sync": {
+      "label": "Sincronizar con mi cuenta",
+      "hint": "Mantén estas opciones en cada navegador donde inicies sesión.",
+      "syncing": "Sincronizando...",
+      "synced": "Sincronizado {{when}}",
+      "justNow": "ahora mismo",
+      "notSynced": "Sin sincronizar",
+      "tooLarge": "Demasiado grande para sincronizar. Tus opciones quedan en este navegador.",
+      "off": "La sincronización está desactivada. Las opciones quedan en este navegador.",
+      "export": "Exportar",
+      "import": "Importar",
+      "importLabel": "Importar la apariencia desde un archivo JSON",
+      "importBad": "Ese archivo no es una exportación de apariencia válida.",
+      "imported": "Importado."
     }
   }
 }
