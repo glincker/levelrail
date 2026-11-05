@@ -2,6 +2,7 @@ import { Button as ButtonPrimitive } from '@base-ui/react/button'
 import { cva, type VariantProps } from 'class-variance-authority'
 
 import { cn } from '@/lib/utils'
+import { nativeButtonFromRender } from '@/lib/nativeButton'
 import { useIsDemo } from '@/hooks/useDemo'
 import { DemoBlockedTip } from '@/components/ui/demo-blocked-tip'
 
@@ -73,6 +74,7 @@ function Button({
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
+      nativeButton={nativeButtonFromRender(props.render, props.nativeButton)}
       disabled={blocked ? true : props.disabled}
     />
   )

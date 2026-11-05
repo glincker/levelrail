@@ -5,6 +5,7 @@ import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
 import { cva, type VariantProps } from 'class-variance-authority'
 
 import { cn } from '@/lib/utils'
+import { nativeButtonFromRender } from '@/lib/nativeButton'
 import { Button } from '@/components/ui/button'
 import { XGlassIcon } from '@thesvg/ui-react'
 function Dialog({ ...props }: DialogPrimitive.Root.Props) {
@@ -12,7 +13,13 @@ function Dialog({ ...props }: DialogPrimitive.Root.Props) {
 }
 
 function DialogTrigger({ ...props }: DialogPrimitive.Trigger.Props) {
-  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />
+  return (
+    <DialogPrimitive.Trigger
+      data-slot="dialog-trigger"
+      {...props}
+      nativeButton={nativeButtonFromRender(props.render, props.nativeButton)}
+    />
+  )
 }
 
 function DialogPortal({ ...props }: DialogPrimitive.Portal.Props) {
@@ -20,7 +27,13 @@ function DialogPortal({ ...props }: DialogPrimitive.Portal.Props) {
 }
 
 function DialogClose({ ...props }: DialogPrimitive.Close.Props) {
-  return <DialogPrimitive.Close data-slot="dialog-close" {...props} />
+  return (
+    <DialogPrimitive.Close
+      data-slot="dialog-close"
+      {...props}
+      nativeButton={nativeButtonFromRender(props.render, props.nativeButton)}
+    />
+  )
 }
 
 function DialogOverlay({

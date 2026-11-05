@@ -2,6 +2,7 @@ import * as React from 'react'
 import { Dialog as SheetPrimitive } from '@base-ui/react/dialog'
 
 import { cn } from '@/lib/utils'
+import { nativeButtonFromRender } from '@/lib/nativeButton'
 import { Button } from '@/components/ui/button'
 import { XGlassIcon } from '@thesvg/ui-react'
 function Sheet({ ...props }: SheetPrimitive.Root.Props) {
@@ -9,11 +10,23 @@ function Sheet({ ...props }: SheetPrimitive.Root.Props) {
 }
 
 function SheetTrigger({ ...props }: SheetPrimitive.Trigger.Props) {
-  return <SheetPrimitive.Trigger data-slot="sheet-trigger" {...props} />
+  return (
+    <SheetPrimitive.Trigger
+      data-slot="sheet-trigger"
+      {...props}
+      nativeButton={nativeButtonFromRender(props.render, props.nativeButton)}
+    />
+  )
 }
 
 function SheetClose({ ...props }: SheetPrimitive.Close.Props) {
-  return <SheetPrimitive.Close data-slot="sheet-close" {...props} />
+  return (
+    <SheetPrimitive.Close
+      data-slot="sheet-close"
+      {...props}
+      nativeButton={nativeButtonFromRender(props.render, props.nativeButton)}
+    />
+  )
 }
 
 function SheetPortal({ ...props }: SheetPrimitive.Portal.Props) {
