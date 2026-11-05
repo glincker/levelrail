@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
   type ChangeEvent,
   type MouseEvent,
@@ -13,7 +14,12 @@ import { cn } from '@/lib/utils'
 export interface SectionNavItem {
   id: string
   label: string
+  /** Decorative glyph shown before the label. */
+  icon?: ReactNode
 }
+
+// Scrolls we start ourselves ignore the observer until they settle.
+const PIN_FALLBACK_MS = 900
 
 function scrollToSection(id: string) {
   const el = document.getElementById(id)
@@ -24,9 +30,11 @@ function scrollToSection(id: string) {
   })
 }
 
-/** Tracks which section id is nearest the top of the viewport. */
+/** Tracks which section id is being read; the page scrolls in the window. */
 function useActiveSection(ids: string[]): [string, (id: string) => void] {
   const [active, setActive] = useState(ids[0] ?? '')
+  const pinned = useRef(false)
+  const pinTimer = useRef<number | undefined>(undefined)
   const key = ids.join('|')
   useEffect(() => {
     if (typeof IntersectionObserver === 'undefined') return
@@ -38,18 +46,40 @@ function useActiveSection(ids: string[]): [string, (id: string) => void] {
           if (e.isIntersecting) visible.add(e.target.id)
           else visible.delete(e.target.id)
         }
+        if (pinned.current) return
         const first = order.find((id) => visible.has(id))
         if (first) setActive(first)
       },
-      { rootMargin: '-10% 0px -70% 0px' },
+      { rootMargin: '-10% 0px -60% 0px' },
     )
     for (const id of order) {
       const el = document.getElementById(id)
       if (el) observer.observe(el)
     }
-    return () => observer.disconnect()
+    // The band cannot reach the first and last sections at the scroll ends.
+    const onScroll = () => {
+      if (pinned.current) return
+      const root = document.documentElement
+      if (window.scrollY <= 0) setActive(order[0] ?? '')
+      else if (window.innerHeight + window.scrollY >= root.scrollHeight - 2)
+        setActive(order[order.length - 1] ?? '')
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('scroll', onScroll)
+    }
   }, [key])
-  return [active, setActive]
+  const choose = useCallback((id: string) => {
+    setActive(id)
+    pinned.current = true
+    window.clearTimeout(pinTimer.current)
+    pinTimer.current = window.setTimeout(() => {
+      pinned.current = false
+    }, PIN_FALLBACK_MS)
+  }, [])
+  useEffect(() => () => window.clearTimeout(pinTimer.current), [])
+  return [active, choose]
 }
 
 export interface SectionNavProps {
@@ -95,11 +125,14 @@ export function SectionNav({
           </select>
         </label>
       </div>
-      <nav aria-label={jump} className="hidden xl:block">
-        <p className="mb-2 px-2 text-xs font-medium text-muted-foreground">
+      <nav
+        aria-label={jump}
+        className="hidden max-h-[calc(100svh-7rem)] overflow-y-auto xl:block"
+      >
+        <p className="mb-1.5 px-3 text-xs font-medium text-muted-foreground">
           {t('kit.onThisPage')}
         </p>
-        <ul className="flex flex-col gap-0.5">
+        <ul className="flex flex-col border-l border-border">
           {items.map((it) => {
             const current = it.id === active
             return (
@@ -109,11 +142,23 @@ export function SectionNav({
                   aria-current={current ? 'true' : undefined}
                   onClick={(e) => onLink(e, it.id)}
                   className={cn(
-                    'block rounded-md px-2 py-1.5 text-sm text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-colors hover:text-foreground',
-                    current && 'bg-muted font-medium text-foreground',
+                    '-ml-px flex items-center gap-2 border-l-2 border-transparent py-1.5 pr-2 pl-3 text-sm text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-colors hover:text-foreground',
+                    current &&
+                      'border-state-accent bg-muted/60 font-medium text-foreground',
                   )}
                 >
-                  {it.label}
+                  {it.icon ? (
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        'flex shrink-0 items-center',
+                        current && 'text-state-accent',
+                      )}
+                    >
+                      {it.icon}
+                    </span>
+                  ) : null}
+                  <span className="truncate">{it.label}</span>
                 </a>
               </li>
             )
@@ -158,7 +203,7 @@ export function SettingsLayout({
         active={active}
         onNavigate={navigate}
         label={navLabel}
-        className="xl:sticky xl:top-4"
+        className="xl:sticky xl:top-20"
       />
       <div className="min-w-0 space-y-8">{children}</div>
     </div>
@@ -189,7 +234,7 @@ export function SettingsSection({
 }: SettingsSectionProps) {
   const headingId = `${id}-heading`
   return (
-    <section id={id} aria-labelledby={headingId} className="scroll-mt-4">
+    <section id={id} aria-labelledby={headingId} className="scroll-mt-20">
       <div className={cn('mb-3', hideHeading && 'sr-only')}>
         <h2
           id={headingId}

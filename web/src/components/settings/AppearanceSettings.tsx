@@ -6,6 +6,7 @@ import {
   LayoutDashboardGlassIcon,
   MoonGlassIcon,
   PaletteGlassIcon,
+  RefreshCwGlassIcon,
   RotateCcwGlassIcon,
   SparklesGlassIcon,
   TypeGlassIcon,
@@ -547,11 +548,31 @@ export function AppearanceSettings() {
   const current = activePreset(appearance, width, density, theme)
 
   const sections = [
-    { id: 'presets', label: t('appearancePage.presets.title') },
-    { id: 'color', label: t('appearancePage.sections.color') },
-    { id: 'type', label: t('appearancePage.sections.type') },
-    { id: 'layout', label: t('appearancePage.sections.layout') },
-    { id: 'sync', label: t('appearancePage.sections.sync') },
+    {
+      id: 'presets',
+      label: t('appearancePage.presets.title'),
+      icon: <SparklesGlassIcon size="1.1em" />,
+    },
+    {
+      id: 'color',
+      label: t('appearancePage.sections.color'),
+      icon: <PaletteGlassIcon size="1.1em" />,
+    },
+    {
+      id: 'type',
+      label: t('appearancePage.sections.type'),
+      icon: <TypeGlassIcon size="1.1em" />,
+    },
+    {
+      id: 'layout',
+      label: t('appearancePage.sections.layout'),
+      icon: <LayoutDashboardGlassIcon size="1.1em" />,
+    },
+    {
+      id: 'sync',
+      label: t('appearancePage.sections.sync'),
+      icon: <RefreshCwGlassIcon size="1.1em" />,
+    },
   ]
 
   return (

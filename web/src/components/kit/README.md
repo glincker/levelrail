@@ -57,13 +57,15 @@ Tones: `neutral | success | warning | danger | info | accent`. Tokens live in `i
   <Tile title="Activity" size="L" rows={2} footer={<Link to="/audit">All activity</Link>}>...</Tile>
 </TileGrid>
 
-<SettingsLayout sections={[{ id: 'color', label: 'Color' }, { id: 'type', label: 'Type' }]}>
+<SettingsLayout sections={[{ id: 'color', label: 'Color', icon: <PaletteGlassIcon size="1.1em" /> }, { id: 'type', label: 'Type' }]}>
   <SettingsSection id="color" title="Color" description="Theme and accent." icon={<PaletteGlassIcon />}>
     <Card>...</Card>
     <Card>...</Card>
   </SettingsSection>
 </SettingsLayout>
 ```
+
+`SectionNavItem.icon` is optional and decorative (aria-hidden). The rail is sticky below the header and follows the window scroll.
 
 `TileGrid` is a dense 12-column grid (1 column below sm, 6 from md, 12 from xl). `Tile` sizes: `S` is 3 of 12, `M` 6, `L` 12 (6 on md). `hideWhenEmpty` plus `empty` drops the tile and the grid reflows. Tiles fade in with a 30ms stagger, capped, and skip it under reduced motion.
 
