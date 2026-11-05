@@ -1042,6 +1042,16 @@
   "to",
   "totals"
  ],
+ "get_monitor_results": [
+  "checks",
+  "failed",
+  "last_at",
+  "last_code",
+  "last_latency_ms",
+  "last_ok",
+  "last_reason",
+  "monitor_id"
+ ],
  "get_my_access": [
   "abilities",
   "capabilities",
@@ -1550,6 +1560,11 @@
   "notify_url",
   "resource_id"
  ],
+ "list_deploy_policies": [
+  "rules",
+  "scope",
+  "scope_id"
+ ],
  "list_deployments": [
   "items",
   "next_cursor"
@@ -1782,6 +1797,14 @@
   "status",
   "swap_group",
   "updated_at"
+ ],
+ "list_monitors": [
+  "enabled",
+  "id",
+  "interval_seconds",
+  "kind",
+  "name",
+  "target"
  ],
  "list_my_activity": [
   "entries",

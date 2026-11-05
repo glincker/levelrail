@@ -13,7 +13,7 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | Toolset | Tools | Est. tokens |
 | --- | ---: | ---: |
 | account | 5 | 343 |
-| alerts | 10 | 1103 |
+| alerts | 12 | 1212 |
 | apps | 17 | 1855 |
 | audit | 2 | 250 |
 | backups | 14 | 1066 |
@@ -21,7 +21,7 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | canary | 4 | 479 |
 | dashboards | 2 | 133 |
 | databases | 11 | 768 |
-| deploys | 24 | 3039 |
+| deploys | 25 | 3070 |
 | diagnostics | 5 | 496 |
 | domains | 12 | 905 |
 | environments | 3 | 386 |
@@ -56,7 +56,7 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | teams | 2 | 88 |
 | templates | 2 | 126 |
 | webhooks | 1 | 128 |
-| **total** | **256** | **24371** |
+| **total** | **259** | **24511** |
 
 ## Default session (progressive disclosure)
 
