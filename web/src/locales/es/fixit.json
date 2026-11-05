@@ -1,4 +1,11 @@
 {
+  "explain": {
+    "toggle": "Explicar",
+    "loading": "Cargando la explicación...",
+    "why": "Por qué importa",
+    "next": "Siguiente paso",
+    "fix": "Corrección tipada"
+  },
   "risk": {
     "safe": "Seguro",
     "restarts": "Reinicia un servicio",

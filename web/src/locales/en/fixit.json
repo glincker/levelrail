@@ -1,4 +1,11 @@
 {
+  "explain": {
+    "toggle": "Explain",
+    "loading": "Loading the explanation...",
+    "why": "Why it matters",
+    "next": "Next step",
+    "fix": "Typed fix"
+  },
   "risk": {
     "safe": "Safe",
     "restarts": "Restarts a service",
