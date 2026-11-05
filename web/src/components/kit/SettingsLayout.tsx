@@ -30,6 +30,15 @@ function scrollToSection(id: string) {
   })
 }
 
+function edgeSection(order: string[]): string | undefined {
+  const root = document.documentElement
+  if (root.scrollHeight <= window.innerHeight) return undefined
+  if (window.scrollY <= 0) return order[0]
+  if (window.innerHeight + window.scrollY >= root.scrollHeight - 2)
+    return order[order.length - 1]
+  return undefined
+}
+
 /** Tracks which section id is being read; the page scrolls in the window. */
 function useActiveSection(ids: string[]): [string, (id: string) => void] {
   const [active, setActive] = useState(ids[0] ?? '')
@@ -47,7 +56,8 @@ function useActiveSection(ids: string[]): [string, (id: string) => void] {
           else visible.delete(e.target.id)
         }
         if (pinned.current) return
-        const first = order.find((id) => visible.has(id))
+        const edge = edgeSection(order)
+        const first = edge ?? order.find((id) => visible.has(id))
         if (first) setActive(first)
       },
       { rootMargin: '-10% 0px -60% 0px' },
@@ -59,10 +69,8 @@ function useActiveSection(ids: string[]): [string, (id: string) => void] {
     // The band cannot reach the first and last sections at the scroll ends.
     const onScroll = () => {
       if (pinned.current) return
-      const root = document.documentElement
-      if (window.scrollY <= 0) setActive(order[0] ?? '')
-      else if (window.innerHeight + window.scrollY >= root.scrollHeight - 2)
-        setActive(order[order.length - 1] ?? '')
+      const edge = edgeSection(order)
+      if (edge) setActive(edge)
     }
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => {
