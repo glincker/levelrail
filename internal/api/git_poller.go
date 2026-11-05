@@ -290,16 +290,36 @@ func (rt *Router) handlePolledHead(ctx context.Context, name string, gs store.Gi
 		return nil
 	}
 
+	if ciGateApplies(gs, head) {
+		if err := rt.gitRel.NoteGitSourceHead(ctx, name, head, time.Now(), false); err != nil {
+			return fmt.Errorf("remember head: %w", err)
+		}
+		before := rel.LastSeenHead
+		rt.startGatedJob(ctx, ciGateJob{
+			name: name, gs: gs, gateSHA: head, tag: "", sha: head, before: before, label: webhookShortSHA(head),
+			run: func(c context.Context) {
+				if err := rt.enqueuePolledHead(c, name, gs, head, before); err != nil {
+					rt.logger.Warn("api: git poller: gated head not queued", slog.String("name", name), slog.String("error", err.Error()))
+				}
+			},
+		})
+		return nil
+	}
+	return rt.enqueuePolledHead(ctx, name, gs, head, rel.LastSeenHead)
+}
+
+// enqueuePolledHead dedupes, holds and queues a polled head, after the CI gate when one applies.
+func (rt *Router) enqueuePolledHead(ctx context.Context, name string, gs store.GitSource, head, before string) error {
 	rt.gitEnqueueMu.Lock()
 	defer rt.gitEnqueueMu.Unlock()
 	if state := rt.commitDeployState(ctx, name, head); state != "" {
 		return rt.gitRel.NoteGitSourceHead(ctx, name, head, time.Now(), false)
 	}
-	if reason := rt.staleGitDelivery(ctx, name, head, rel.LastSeenHead, time.Time{}); reason != "" {
+	if reason := rt.staleGitDelivery(ctx, name, head, before, time.Time{}); reason != "" {
 		rt.logger.Info("api: git poller: head is older than what is deployed or queued", slog.String("name", name), slog.String("reason", reason))
 		return rt.gitRel.NoteGitSourceHead(ctx, name, head, time.Now(), false)
 	}
-	hr := deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: head, CommitLabel: head, CommitSHA: head, Before: rel.LastSeenHead, Branch: gs.Branch}
+	hr := deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: head, CommitLabel: head, CommitSHA: head, Before: before, Branch: gs.Branch}
 	if held, _ := rt.holdIfFrozen(ctx, name, hr, name+":"+head); held {
 		return rt.gitRel.NoteGitSourceHead(ctx, name, head, time.Now(), false)
 	}
