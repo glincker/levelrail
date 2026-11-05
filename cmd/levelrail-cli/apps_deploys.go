@@ -41,6 +41,8 @@ func runAppsDeploys(prog string, args []string, stdout, stderr io.Writer, lookup
 		return runAppsDeploysLogs(prog, args[1:], stdout, stderr, lookupEnv)
 	case "failed":
 		return runAppsDeploysFailed(prog, args[1:], stdout, stderr, lookupEnv)
+	case "receipt":
+		return runAppsDeploysReceipt(prog, args[1:], stdout, stderr, lookupEnv)
 	case "timeline":
 		return runAppsDeploysTimeline(prog, args[1:], stdout, stderr, lookupEnv)
 	case "steps":
@@ -67,6 +69,7 @@ func appsDeploysUsage(prog string) string {
   %[1]s apps deploys show <name> [deploy-id] [flags]              one deploy attempt with its structured failure (newest by default)
   %[1]s apps deploys compare <name> --from ID [--to ID] [flags]   diff two deploy attempts, or one against the current live state
   %[1]s apps deploys release-notes <name> --from ID [--to ID]   markdown release notes from the commits between two deploys
+  %[1]s apps deploys receipt <name> <deploy-id> [--out file]       downloadable deploy receipt: commit, digest, approver, gate timeline
   %[1]s apps deploys url <name> <deploy-id> [flags]               the deploy's own URL, to open a past deploy without rolling back
   %[1]s apps deploys logs <name> <deploy-id> [flags]              one deploy attempt's full build/log output
   %[1]s apps deploys failed [--since 24h] [flags]                 every app's latest failed deploy in the window, fleet-wide

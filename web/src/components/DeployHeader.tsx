@@ -28,6 +28,7 @@ import { imageTagOf } from './overview/imageTag'
 import { useRollbackToDeploy } from '../queries/deployControl'
 import { RelativeTime, StatusPill, type Tone } from './kit'
 import { CancelDeployDialog } from './CancelDeployDialog'
+import { DeployReceiptButton } from './deploy/DeployReceiptButton'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 
@@ -231,6 +232,7 @@ export function DeployHeader({
             <GitCompareGlassIcon className="size-5" data-icon="inline-start" />
             Compare
           </Button>
+          <DeployReceiptButton appName={appName} deployId={attempt.id} />
           <Button variant="outline" size="sm" onClick={copyId}>
             {copied ? (
               <CheckGlassIcon className="size-5" data-icon="inline-start" />
