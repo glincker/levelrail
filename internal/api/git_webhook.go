@@ -193,12 +193,16 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 		return http.StatusOK, msg
 	}
 
+	if gs.WaitForCI && (ev.Deleted || ev.After == zeroGitSHA) {
+		return http.StatusOK, "ignored: the ref was deleted, nothing to gate or deploy\n"
+	}
 	rt.noteGitHead(ctx, name, ev.After)
 	if status, msg, handled := rt.admitGitPush(ctx, name, ev); handled {
 		return status, msg
 	}
-	if msg := rt.gateOnCI(ctx, name, gs, ev.After); msg != "" {
-		return http.StatusOK, msg
+	gateSHA := gateCommitSHA(body, ev)
+	if ciGateApplies(gs, gateSHA) {
+		return rt.startGatedPush(ctx, name, gs, ev, gateSHA)
 	}
 	queued, msg, release := rt.queueIfBusy(ctx, name, gs, deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: ev.After, CommitLabel: ev.After, CommitSHA: ev.After, Before: ev.Before, CommitAt: ev.HeadCommitAt, Branch: strings.TrimPrefix(ev.Ref, "refs/heads/")}, name+":"+ev.After)
 	defer release()

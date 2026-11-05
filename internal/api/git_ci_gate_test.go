@@ -2,15 +2,20 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
+	"github.com/GLINCKER/levelrail/internal/cigate"
 	"github.com/GLINCKER/levelrail/internal/gitlabapp"
+	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/webhook"
 )
 
 const gateSHA = "0123456789abcdef0123456789abcdef01234567"
@@ -42,6 +47,8 @@ type fakeGitLabStatuses struct {
 	paths []string
 	raw   []string
 	body  string
+	// block, when set, holds every status read until it closes or the caller hangs up.
+	block chan struct{}
 }
 
 func (f *fakeGitLabStatuses) set(body string) {
@@ -70,8 +77,15 @@ func setUpGitLabCIGate(t *testing.T) (*Router, *store.DB, *fakeGitLabStatuses) {
 		fake.mu.Lock()
 		fake.paths = append(fake.paths, r.URL.EscapedPath())
 		fake.raw = append(fake.raw, r.URL.RawQuery)
-		body := fake.body
+		body, block := fake.body, fake.block
 		fake.mu.Unlock()
+		if block != nil {
+			select {
+			case <-block:
+			case <-r.Context().Done():
+				return
+			}
+		}
 		_, _ = w.Write([]byte(body))
 	}))
 	t.Cleanup(srv.Close)
@@ -98,7 +112,7 @@ func gitlabGateSource(repoPath string, checks ...string) store.GitSource {
 func TestCIGateGitLab_RequiredChecksPassDeploys(t *testing.T) {
 	rt, _, fake := setUpGitLabCIGate(t)
 	fake.set(`[{"name":"test","status":"success"},{"name":"lint","status":"success"}]`)
-	if msg := rt.gateOnCI(t.Context(), "web", gitlabGateSource("org/web", "test"), gateSHA); msg != "" {
+	if msg := rt.gateOnCI(t.Context(), "web", gitlabGateSource("org/web", "test"), gateSHA, ""); msg != "" {
 		t.Fatalf("gate skipped a passing commit: %q", msg)
 	}
 }
@@ -106,7 +120,7 @@ func TestCIGateGitLab_RequiredChecksPassDeploys(t *testing.T) {
 func TestCIGateGitLab_FailedCheckBlocksAndRecordsSkip(t *testing.T) {
 	rt, db, fake := setUpGitLabCIGate(t)
 	fake.set(`[{"name":"test","status":"failed"}]`)
-	msg := rt.gateOnCI(t.Context(), "web", gitlabGateSource("org/web", "test"), gateSHA)
+	msg := rt.gateOnCI(t.Context(), "web", gitlabGateSource("org/web", "test"), gateSHA, "")
 	if !strings.HasPrefix(msg, "not deployed: ") || !strings.Contains(msg, "test") {
 		t.Fatalf("message = %q", msg)
 	}
@@ -122,7 +136,7 @@ func TestCIGateGitLab_FailedCheckBlocksAndRecordsSkip(t *testing.T) {
 func TestCIGateGitLab_PendingTimesOut(t *testing.T) {
 	rt, _, fake := setUpGitLabCIGate(t)
 	fake.set(`[{"name":"test","status":"running"}]`)
-	msg := rt.gateOnCI(t.Context(), "web", gitlabGateSource("org/web", "test"), gateSHA)
+	msg := rt.gateOnCI(t.Context(), "web", gitlabGateSource("org/web", "test"), gateSHA, "")
 	if !strings.HasPrefix(msg, "not deployed: ") {
 		t.Fatalf("pending check let the deploy through: %q", msg)
 	}
@@ -134,7 +148,7 @@ func TestCIGateGitLab_PendingTimesOut(t *testing.T) {
 func TestCIGateGitLab_SubgroupPathIsEncodedFromStoredURL(t *testing.T) {
 	rt, _, fake := setUpGitLabCIGate(t)
 	fake.set(`[{"name":"test","status":"success"}]`)
-	if msg := rt.gateOnCI(t.Context(), "web", gitlabGateSource("grp/sub/web"), gateSHA); msg != "" {
+	if msg := rt.gateOnCI(t.Context(), "web", gitlabGateSource("grp/sub/web"), gateSHA, ""); msg != "" {
 		t.Fatalf("message = %q", msg)
 	}
 	want := "/api/v4/projects/grp%2Fsub%2Fweb/repository/commits/" + gateSHA + "/statuses"
@@ -149,7 +163,7 @@ func TestCIGateGitLab_SubgroupPathIsEncodedFromStoredURL(t *testing.T) {
 func TestCIGateGitLab_PushBodyClaimIgnored(t *testing.T) {
 	rt, _, fake := setUpGitLabCIGate(t)
 	fake.set(`[{"name":"test","status":"failed"}]`)
-	if msg := rt.gateOnCI(t.Context(), "web", gitlabGateSource("org/web", "test"), gateSHA); msg == "" {
+	if msg := rt.gateOnCI(t.Context(), "web", gitlabGateSource("org/web", "test"), gateSHA, ""); msg == "" {
 		t.Fatal("gate trusted something other than the GitLab API")
 	}
 	for _, p := range fake.seen() {
@@ -162,7 +176,7 @@ func TestCIGateGitLab_PushBodyClaimIgnored(t *testing.T) {
 func TestCIGateGitLab_SkippedRequiredJobBlocks(t *testing.T) {
 	rt, _, fake := setUpGitLabCIGate(t)
 	fake.set(`[{"name":"lint","status":"failed"},{"name":"test","status":"skipped"}]`)
-	if msg := rt.gateOnCI(t.Context(), "web", gitlabGateSource("org/web", "test"), gateSHA); msg == "" {
+	if msg := rt.gateOnCI(t.Context(), "web", gitlabGateSource("org/web", "test"), gateSHA, ""); msg == "" {
 		t.Fatal("skipped required job let the deploy through")
 	}
 }
@@ -170,7 +184,7 @@ func TestCIGateGitLab_SkippedRequiredJobBlocks(t *testing.T) {
 func TestCIGateGitLab_UnreadableProviderDoesNotDeploy(t *testing.T) {
 	rt, db, _ := setUpGitLabCIGate(t)
 	gs := store.GitSource{RepoURL: "ssh://host.example/org/web.git", WaitForCI: true}
-	msg := rt.gateOnCI(t.Context(), "web", gs, gateSHA)
+	msg := rt.gateOnCI(t.Context(), "web", gs, gateSHA, "")
 	if !strings.Contains(msg, "cannot read provider status") {
 		t.Fatalf("message = %q", msg)
 	}
@@ -179,14 +193,14 @@ func TestCIGateGitLab_UnreadableProviderDoesNotDeploy(t *testing.T) {
 		t.Fatalf("attempts = %v, err = %v", attempts, err)
 	}
 	gs.WaitForCI = false
-	if msg := rt.gateOnCI(t.Context(), "web", gs, gateSHA); msg != "" {
+	if msg := rt.gateOnCI(t.Context(), "web", gs, gateSHA, ""); msg != "" {
 		t.Errorf("gate off must not block: %q", msg)
 	}
 }
 
 func TestCIGateGitLab_BadSHASkips(t *testing.T) {
 	rt, _, _ := setUpGitLabCIGate(t)
-	if msg := rt.gateOnCI(t.Context(), "web", gitlabGateSource("org/web"), "abc123"); !strings.HasPrefix(msg, "not deployed: ") {
+	if msg := rt.gateOnCI(t.Context(), "web", gitlabGateSource("org/web"), "abc123", ""); !strings.HasPrefix(msg, "not deployed: ") {
 		t.Fatalf("message = %q", msg)
 	}
 }
@@ -196,7 +210,7 @@ func TestCIGateGitLab_ReadIsScopedToBranchAndForgedSuccessLoses(t *testing.T) {
 	fake.set(`[{"name":"test","status":"success"},{"name":"test","status":"running"}]`)
 	gs := gitlabGateSource("org/web", "test")
 	gs.Branch = "release/1"
-	if msg := rt.gateOnCI(t.Context(), "web", gs, gateSHA); msg == "" {
+	if msg := rt.gateOnCI(t.Context(), "web", gs, gateSHA, ""); msg == "" {
 		t.Fatal("forged success beat the pending job")
 	}
 	if q := fake.queries(); len(q) == 0 || !strings.Contains(q[0], "ref=release%2F1") {
@@ -207,7 +221,7 @@ func TestCIGateGitLab_ReadIsScopedToBranchAndForgedSuccessLoses(t *testing.T) {
 func TestCIGateGitLab_TooManyStatusesFailsNow(t *testing.T) {
 	rt, _, fake := setUpGitLabCIGate(t)
 	fake.set("[" + strings.Repeat(`{"name":"j","status":"success"},`, 99) + `{"name":"j","status":"success"}]`)
-	if msg := rt.gateOnCI(t.Context(), "web", gitlabGateSource("org/web"), gateSHA); !strings.Contains(msg, "too many") {
+	if msg := rt.gateOnCI(t.Context(), "web", gitlabGateSource("org/web"), gateSHA, ""); !strings.Contains(msg, "too many") {
 		t.Fatalf("message = %q", msg)
 	}
 	// One read walks 10 pages; a retry loop would multiply that.
@@ -229,5 +243,277 @@ func TestGitlabProjectPathFromURL_RelativeRootInstance(t *testing.T) {
 func TestCIGateTrimCIChecks(t *testing.T) {
 	if got := trimCIChecks([]string{" test ", "build"}); got[0] != "test" || got[1] != "build" {
 		t.Errorf("got %v", got)
+	}
+}
+
+const gateSHA2 = "fedcba9876543210fedcba9876543210fedcba98"
+
+type gateFetchLog struct {
+	mu   sync.Mutex
+	shas []string
+}
+
+func (l *gateFetchLog) seen() []string {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return append([]string(nil), l.shas...)
+}
+
+// gateWebhookRig records every checkout the deploy attempts; the fetch fails
+// on purpose, since the test only needs to know whether a deploy started.
+func gateWebhookRig(t *testing.T) (*Router, *store.DB, *fakeGitLabStatuses, *gateFetchLog) {
+	t.Helper()
+	rt, db, fake := setUpGitLabCIGate(t)
+	t.Setenv("APP_CI_GATE_TIMEOUT", "10s")
+	log := &gateFetchLog{}
+	rt.builder = &fakeBuilder{tag: "web:x"}
+	rt.gitSourceFetch = func(_ context.Context, _, sha, _ string) (string, func(), error) {
+		log.mu.Lock()
+		log.shas = append(log.shas, sha)
+		log.mu.Unlock()
+		return "", nil, fmt.Errorf("fetch stubbed")
+	}
+	return rt, db, fake, log
+}
+
+func gatedPushSource() store.GitSource {
+	gs := gitlabGateSource("org/web", "test")
+	gs.ServiceName, gs.Branch = "web", "main"
+	return gs
+}
+
+func gitLabPushBody(ref, after, checkout string) []byte {
+	return []byte(fmt.Sprintf(`{"ref":%q,"after":%q,"before":%q,"checkout_sha":%q}`, ref, after, zeroGitSHA, checkout))
+}
+
+func waitGateBackground(t *testing.T, rt *Router) {
+	t.Helper()
+	done := make(chan struct{})
+	go func() { rt.previewDeploys.Wait(); close(done) }()
+	select {
+	case <-done:
+	case <-time.After(10 * time.Second):
+		t.Fatal("background gate did not finish")
+	}
+}
+
+func TestGitWebhookCIGate_AcknowledgesWhileGateWaits(t *testing.T) {
+	rt, _, fake, log := gateWebhookRig(t)
+	fake.mu.Lock()
+	fake.block = make(chan struct{})
+	block := fake.block
+	fake.mu.Unlock()
+	fake.set(`[{"name":"test","status":"success"}]`)
+
+	start := time.Now()
+	status, msg := rt.processGitPushWebhookPayload(t.Context(), "web", gatedPushSource(), gitLabPushBody("refs/heads/main", gateSHA, ""), http.Header{})
+	if status != http.StatusAccepted || !strings.Contains(msg, "waiting for CI") {
+		t.Fatalf("status = %d, msg = %q", status, msg)
+	}
+	if time.Since(start) > 2*time.Second {
+		t.Fatal("webhook was held up by the gate")
+	}
+	if got := log.seen(); len(got) != 0 {
+		t.Fatalf("deployed before CI passed: %v", got)
+	}
+	close(block)
+	waitGateBackground(t, rt)
+	if got := log.seen(); len(got) != 1 || got[0] != gateSHA {
+		t.Fatalf("checkouts = %v, want [%s]", got, gateSHA)
+	}
+	rt.ciGates().mu.Lock()
+	left := len(rt.ciGates().slots)
+	rt.ciGates().mu.Unlock()
+	if left != 0 {
+		t.Errorf("gate slots left behind: %d", left)
+	}
+}
+
+func TestGitWebhookCIGate_NewerPushSupersedesOlderWait(t *testing.T) {
+	rt, db, fake, log := gateWebhookRig(t)
+	fake.mu.Lock()
+	fake.block = make(chan struct{})
+	block := fake.block
+	fake.mu.Unlock()
+	fake.set(`[{"name":"test","status":"success"}]`)
+	gs := gatedPushSource()
+
+	for _, sha := range []string{gateSHA, gateSHA2} {
+		if status, _ := rt.processGitPushWebhookPayload(t.Context(), "web", gs, gitLabPushBody("refs/heads/main", sha, ""), http.Header{}); status != http.StatusAccepted {
+			t.Fatalf("status = %d", status)
+		}
+	}
+	// The older wait ends on its own, before anything unblocks the status read.
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		attempts, err := db.ListDeployAttempts(t.Context(), "web")
+		if err == nil && len(attempts) == 1 {
+			if !strings.Contains(attempts[0].Error, "superseded") {
+				t.Fatalf("attempt = %+v", attempts[0])
+			}
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("superseded wait never recorded: %v %v", attempts, err)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	close(block)
+	waitGateBackground(t, rt)
+	if got := log.seen(); len(got) != 1 || got[0] != gateSHA2 {
+		t.Fatalf("checkouts = %v, want only the newer %s", got, gateSHA2)
+	}
+}
+
+func TestGitWebhookCIGate_FailedGateDoesNotDeploy(t *testing.T) {
+	rt, db, fake, log := gateWebhookRig(t)
+	fake.set(`[{"name":"test","status":"failed"}]`)
+	if status, _ := rt.processGitPushWebhookPayload(t.Context(), "web", gatedPushSource(), gitLabPushBody("refs/heads/main", gateSHA, ""), http.Header{}); status != http.StatusAccepted {
+		t.Fatalf("status = %d", status)
+	}
+	waitGateBackground(t, rt)
+	if got := log.seen(); len(got) != 0 {
+		t.Fatalf("failed gate deployed: %v", got)
+	}
+	attempts, err := db.ListDeployAttempts(t.Context(), "web")
+	if err != nil || len(attempts) != 1 || !strings.Contains(attempts[0].Error, "skipped by CI gate") {
+		t.Fatalf("attempts = %+v, err = %v", attempts, err)
+	}
+}
+
+func TestGitWebhookCIGate_TagReadsCommitStatusesScopedToTag(t *testing.T) {
+	rt, _, fake, log := gateWebhookRig(t)
+	fake.set(`[{"name":"test","status":"success"}]`)
+	gs := gatedPushSource()
+	gs.TriggerMode = spec.TriggerModeRelease
+	const tagObject = "1111111111111111111111111111111111111111"
+	if status, _ := rt.processGitPushWebhookPayload(t.Context(), "web", gs, gitLabPushBody("refs/tags/v1.2.0", tagObject, gateSHA), http.Header{}); status != http.StatusAccepted {
+		t.Fatalf("status = %d", status)
+	}
+	waitGateBackground(t, rt)
+	seen, queries := fake.seen(), fake.queries()
+	if len(seen) == 0 || !strings.Contains(seen[0], gateSHA) || strings.Contains(seen[0], tagObject) {
+		t.Fatalf("paths = %v, want the commit %s", seen, gateSHA)
+	}
+	if len(queries) == 0 || !strings.Contains(queries[0], "ref=v1.2.0") {
+		t.Fatalf("queries = %v, want ref=v1.2.0", queries)
+	}
+	if got := log.seen(); len(got) != 1 {
+		t.Fatalf("checkouts = %v", got)
+	}
+}
+
+func TestGitWebhookCIGate_CancelledRequestStillDeploysAfterPass(t *testing.T) {
+	rt, _, fake, log := gateWebhookRig(t)
+	fake.mu.Lock()
+	fake.block = make(chan struct{})
+	block := fake.block
+	fake.mu.Unlock()
+	fake.set(`[{"name":"test","status":"success"}]`)
+	ctx, cancel := context.WithCancel(t.Context())
+	if status, _ := rt.processGitPushWebhookPayload(ctx, "web", gatedPushSource(), gitLabPushBody("refs/heads/main", gateSHA, ""), http.Header{}); status != http.StatusAccepted {
+		t.Fatalf("status = %d", status)
+	}
+	cancel()
+	close(block)
+	waitGateBackground(t, rt)
+	if got := log.seen(); len(got) != 1 || got[0] != gateSHA {
+		t.Fatalf("checkouts = %v, want the deploy to run after the request hung up", got)
+	}
+}
+
+func TestGitWebhookCIGate_CancelledRequestStillRecordsFailedGate(t *testing.T) {
+	rt, db, fake, log := gateWebhookRig(t)
+	fake.mu.Lock()
+	fake.block = make(chan struct{})
+	block := fake.block
+	fake.mu.Unlock()
+	fake.set(`[{"name":"test","status":"failed"}]`)
+	ctx, cancel := context.WithCancel(t.Context())
+	if status, _ := rt.processGitPushWebhookPayload(ctx, "web", gatedPushSource(), gitLabPushBody("refs/heads/main", gateSHA, ""), http.Header{}); status != http.StatusAccepted {
+		t.Fatalf("status = %d", status)
+	}
+	cancel()
+	close(block)
+	waitGateBackground(t, rt)
+	attempts, err := db.ListDeployAttempts(t.Context(), "web")
+	if err != nil || len(attempts) != 1 || !strings.Contains(attempts[0].Error, "skipped by CI gate") {
+		t.Fatalf("attempts = %+v, err = %v", attempts, err)
+	}
+	if got := log.seen(); len(got) != 0 {
+		t.Fatalf("failed gate deployed: %v", got)
+	}
+}
+
+func TestGitWebhookCIGate_BranchDeletionIsNotGatedOrDeployed(t *testing.T) {
+	rt, _, _, log := gateWebhookRig(t)
+	status, msg := rt.processGitPushWebhookPayload(t.Context(), "web", gatedPushSource(), gitLabPushBody("refs/heads/main", zeroGitSHA, ""), http.Header{})
+	if status != http.StatusOK || !strings.Contains(msg, "deleted") {
+		t.Fatalf("status = %d, msg = %q", status, msg)
+	}
+	waitGateBackground(t, rt)
+	if got := log.seen(); len(got) != 0 {
+		t.Fatalf("deletion deployed: %v", got)
+	}
+}
+
+func TestCIGateRef(t *testing.T) {
+	release := store.GitSource{Branch: "main", TriggerMode: spec.TriggerModeRelease}
+	push := store.GitSource{Branch: "main"}
+	meta := withPushCommitMeta(t.Context(), webhook.PushEvent{Ref: "refs/heads/feat"})
+	cases := []struct {
+		name string
+		ctx  context.Context
+		gs   store.GitSource
+		tag  string
+		want string
+	}{
+		{"tag wins", t.Context(), release, "v1", "v1"},
+		{"tag beats metadata branch", meta, push, "v2", "v2"},
+		{"push metadata branch", meta, push, "", "feat"},
+		{"release without tag reads every ref", t.Context(), release, "", ""},
+		{"configured branch fallback", t.Context(), push, "", "main"},
+	}
+	for _, c := range cases {
+		if got := ciGateRef(c.ctx, c.gs, c.tag); got != c.want {
+			t.Errorf("%s: ref = %q, want %q", c.name, got, c.want)
+		}
+	}
+}
+
+func TestLazyCIReaderRetriesBuildFailures(t *testing.T) {
+	_, _, fake := setUpGitLabCIGate(t)
+	fake.set(`[{"name":"test","status":"success"}]`)
+	builds := 0
+	l := &lazyCIReader{build: func(context.Context) (cigate.Provider, error) {
+		if builds++; builds < 3 {
+			return nil, fmt.Errorf("token mint failed")
+		}
+		return &cigate.GitLab{Client: newGitLabCIClient(), InstanceURL: "https://gitlab.example.com", ProjectPath: "org/web"}, nil
+	}}
+	res, err := cigate.Wait(t.Context(), l, gateSHA, cigate.Policy{Required: []string{"test"}}, cigate.Config{Timeout: 5 * time.Second, PollInterval: 5 * time.Millisecond, NoChecksWait: time.Millisecond})
+	if err != nil || res.Outcome != cigate.OutcomePass || builds != 3 {
+		t.Fatalf("res = %+v, err = %v, builds = %d", res, err, builds)
+	}
+}
+
+func TestSaveCIGateRefusesSourcesWithoutAReader(t *testing.T) {
+	rt, db, _ := setUpGitLabCIGate(t)
+	ctx := t.Context()
+	for repo, want := range map[string]bool{
+		"https://gitlab.example.com/org/web.git": true,
+		"ssh://host.example/org/web.git":         false,
+	} {
+		if err := db.SaveGitSource(ctx, store.GitSource{ServiceName: "web", RepoURL: repo, Branch: "main", BuildType: "dockerfile"}); err != nil {
+			t.Fatal(err)
+		}
+		rec := httptest.NewRecorder()
+		ok := rt.saveCIGate(rec, httptest.NewRequest(http.MethodPatch, "/", nil).WithContext(ctx), "web", gitDeploySettings{WaitForCI: true})
+		if ok != want {
+			t.Errorf("%s: saveCIGate = %v (status %d), want %v", repo, ok, rec.Code, want)
+		}
+		if !want && rec.Code != http.StatusUnprocessableEntity {
+			t.Errorf("%s: status = %d", repo, rec.Code)
+		}
 	}
 }
