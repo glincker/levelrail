@@ -236,6 +236,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runPolicy(prog, args[1:], stdout, stderr, lookupEnv)
 	case "app-types":
 		return runAppTypes(prog, args[1:], stdout, stderr, lookupEnv)
+	case "status-reasons":
+		return runStatusReasons(prog, args[1:], stdout, stderr, lookupEnv)
 	case "nodes":
 		return runNodes(prog, args[1:], stdout, stderr, lookupEnv)
 	case "status":
