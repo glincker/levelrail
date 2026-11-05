@@ -8,7 +8,8 @@ import (
 
 func runDoctorExplain(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	label := "doctor explain"
-	usage := fmt.Sprintf("Usage:\n  %s %s <check-id> [flags]\n\nExplains one doctor check in plain words: what is wrong, why it matters and the\nnext step. The check id is the check_id field of the doctor report. The text is a\nfixed table, no network lookup is involved.\n\nFlags:\n%s", prog, label, commonFlagsHelp)
+	cat := doctorStrings()
+	usage := cat.render("explain_usage", "prog", prog, "label", label, "flags", commonFlagsHelp)
 	c, code, ok := parseCLICall(prog, label, usage, args, stdout, stderr, lookupEnv, nil)
 	if !ok {
 		return code
@@ -22,9 +23,9 @@ func runDoctorExplain(prog string, args []string, stdout, stderr io.Writer, look
 		return c.fail(fmt.Errorf("explain: %w", err))
 	}
 	return c.render(e, func() {
-		_, _ = fmt.Fprintf(stdout, "%s\n\nWhy it matters: %s\nNext step: %s\n", e.Plain, e.Why, e.Next)
+		_, _ = fmt.Fprintf(stdout, "%s\n\n%s %s\n%s %s\n", e.Plain, cat.render("explain_why"), e.Why, cat.render("explain_next"), e.Next)
 		if e.FixID != "" {
-			_, _ = fmt.Fprintf(stdout, "Fix: %s (%s)\n", e.FixID, e.Kind)
+			_, _ = fmt.Fprintf(stdout, "%s %s (%s)\n", cat.render("explain_fix"), e.FixID, e.Kind)
 		}
 	})
 }

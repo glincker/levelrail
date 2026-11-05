@@ -1695,6 +1695,10 @@ levelrail-cli doctor [flags]
 
 Runs a local preflight health check: Docker daemon reachability, disk space and write latency, write access on the data directory, port 80 and 443 availability for the embedded ingress, control plane database reachability, RAM and CPU against the recommended minimums, firewall status, outbound network reachability (public IP, external port reachability, ACME, clock skew, the agent advertise host, image registries), and GPU attach checks. Exit code is 0 if every check is ok or warn, 1 if any check fails.
 
+### Doctor text overrides
+
+The labels, usage text and table headers of the `doctor` subcommands (`cloud`, `paths`, `explain`, `reachability`) and `domains doctor`, `domains summary` and `domains activity` come from an embedded catalog. Set `LEVELRAIL_DOCTOR_STRINGS_FILE` to a JSON file of flat `key: string` pairs to replace any entry, for translation or wording changes. Templates use `{name}` placeholders. Keys are grouped by prefix: `explain_*`, `reach_*`, `paths_*`, `domains_doctor_*`, `domains_summary_*`, `domains_activity_*`, plus the cloud keys such as `usage` and `console_url.<provider>`. Unknown keys are ignored and an unreadable file leaves the defaults in place.
+
 ## Resilience
 
 ```

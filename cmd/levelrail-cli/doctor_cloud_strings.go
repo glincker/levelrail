@@ -55,6 +55,16 @@ func (c stringCatalog) render(key string, kv ...string) string {
 	return strings.NewReplacer(pairs...).Replace(c[key])
 }
 
+// doctorStrings is the catalog for commands with no stderr to report a
+// bad override on; defaults stay in effect when the file is unusable.
+func doctorStrings() stringCatalog {
+	cat, _ := loadDoctorCloudStrings()
+	if cat == nil {
+		return stringCatalog{}
+	}
+	return cat
+}
+
 // brandBinaryName keeps rule names on the brand layer; the fallback only
 // applies if the embedded brand fails to parse.
 func brandBinaryName() string {
