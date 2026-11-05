@@ -34,6 +34,9 @@ deploy.max_concurrent
 deploy.previous_release_hold
 deploy.stable_window
 deploy.watch_window
+deploys.registry_push_debounce
+deploys.registry_push_max_body_bytes
+deploys.registry_push_timeout
 desktop.session_ttl
 disk.critical_free_mb
 disk.low_free_mb
