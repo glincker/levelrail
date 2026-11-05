@@ -1,6 +1,7 @@
 import { Collapsible as CollapsiblePrimitive } from '@base-ui/react/collapsible'
 
 import { cn } from '@/lib/utils'
+import { nativeButtonFromRender } from '@/lib/nativeButton'
 
 function Collapsible({ ...props }: CollapsiblePrimitive.Root.Props) {
   return <CollapsiblePrimitive.Root data-slot="collapsible" {...props} />
@@ -15,6 +16,7 @@ function CollapsibleTrigger({
       data-slot="collapsible-trigger"
       className={cn('w-full text-left', className)}
       {...props}
+      nativeButton={nativeButtonFromRender(props.render, props.nativeButton)}
     />
   )
 }
