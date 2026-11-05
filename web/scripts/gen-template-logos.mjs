@@ -9,6 +9,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const catalogDir = path.resolve(root, '../internal/catalog')
 const distDir = path.join(root, 'node_modules/@thesvg/react/dist')
 const slugsFile = path.join(root, 'src/lib/templateLogoSlugs.json')
+const brandFile = path.join(root, 'src/lib/brandLogoSlugs.json')
 const outFile = path.join(root, 'src/lib/templateLogos.generated.ts')
 
 function catalogIds() {
@@ -33,10 +34,17 @@ function catalogIds() {
 // Without node_modules or the catalog (Docker web stage) the committed file wins.
 if (!existsSync(distDir) || !existsSync(catalogDir)) process.exit(0)
 
-const overrides = JSON.parse(readFileSync(slugsFile, 'utf8'))
+const brandSlugs = JSON.parse(readFileSync(brandFile, 'utf8'))
+const overrides = {
+  ...JSON.parse(readFileSync(slugsFile, 'utf8')),
+  ...brandSlugs,
+}
 const mapped = []
 const missing = []
-for (const id of catalogIds()) {
+// Brand ids (frameworks, images, backup targets) are not catalog templates.
+for (const id of [
+  ...new Set([...catalogIds(), ...Object.keys(brandSlugs)]),
+].sort()) {
   const slug = overrides[id] ?? id
   if (existsSync(path.join(distDir, `${slug}.js`))) mapped.push([id, slug])
   else missing.push(id)
