@@ -1,11 +1,11 @@
 import type * as React from 'react'
 import {
   ActivityGlassIcon,
+  ArchiveGlassIcon,
   BellGlassIcon,
   BinaryTreeGlassIcon,
   BookOpenGlassIcon,
   BotGlassIcon,
-  BoxGlassIcon,
   BracesGlassIcon,
   BugGlassIcon,
   ChartLineGlassIcon,
@@ -65,6 +65,7 @@ export type GlobalTo =
   | '/functions'
   | '/deploy-timeline'
   | '/images'
+  | '/storage'
   | '/builds'
   | '/projects'
   | '/templates'
@@ -215,10 +216,10 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         icon: <ZapGlassIcon size="1.4em" />,
       },
       {
-        id: 'images',
-        label: 'Images',
-        to: '/images',
-        icon: <BoxGlassIcon size="1.4em" />,
+        id: 'storage',
+        label: 'Storage',
+        to: '/storage',
+        icon: <ArchiveGlassIcon size="1.4em" />,
       },
       {
         id: 'registry',

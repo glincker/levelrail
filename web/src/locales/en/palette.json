@@ -142,7 +142,7 @@
       "nav-approvals": "Deploys waiting for sign-off.",
       "nav-help": "Docs, shortcuts and support.",
       "nav-templates": "Catalog of ready-made services you can deploy in a few clicks.",
-      "nav-images": "Container images on your nodes: sizes, tags and cleanup.",
+      "nav-storage": "Disk use on your nodes: images, containers, volumes and build cache, with cleanup.",
       "nav-resources": "Every resource across your instance in one list.",
       "nav-resource-advisor": "Right-sizing suggestions for CPU and memory.",
       "nav-network": "Topology of nodes, apps and the links between them.",

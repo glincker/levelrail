@@ -1,26 +1,14 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import type { ReactNode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { NewSurfacesProviders } from '../../test/NewSurfacesProviders'
 import { jsonResponse } from '../../test/newSurfacesI18n'
-import { ImagesPage } from './ImagesPage'
+import { ImagesSection } from './ImagesPage'
 
 const root = vi.hoisted(() => ({ value: true }))
 
 vi.mock('../../hooks/useIsRoot', () => ({ useIsRoot: () => root.value }))
-vi.mock('../../queries/nodes', () => ({
-  useNodeListOptional: () => ({ data: undefined }),
-}))
-vi.mock('../shell/PageTemplate', () => ({
-  PageTemplate: ({ children }: { children: ReactNode }) => (
-    <div>{children}</div>
-  ),
-}))
-vi.mock('./DockerHealthCard', () => ({ DockerHealthCard: () => null }))
 vi.mock('./DockerfileLintCard', () => ({ DockerfileLintCard: () => null }))
-vi.mock('./SignaturePolicyCard', () => ({ SignaturePolicyCard: () => null }))
-vi.mock('./ImagesBanner', () => ({ ImagesBanner: () => null }))
 vi.mock('@/components/ui/toast', () => ({ toast: { add: vi.fn() } }))
 
 const base = {
@@ -81,7 +69,7 @@ function stub() {
 function renderPage() {
   render(
     <NewSurfacesProviders>
-      <ImagesPage />
+      <ImagesSection node="" gcOpen={false} onGcOpenChange={() => undefined} />
     </NewSurfacesProviders>,
   )
 }
@@ -91,7 +79,7 @@ afterEach(() => {
   root.value = true
 })
 
-describe('ImagesPage', () => {
+describe('ImagesSection', () => {
   it('disables blocked rows with the reason and shows the action bar on selection', async () => {
     stub()
     renderPage()

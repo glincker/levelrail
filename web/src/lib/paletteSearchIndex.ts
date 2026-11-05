@@ -46,7 +46,8 @@ export const ITEM_KEYWORDS: Readonly<Record<string, string>> = {
   'nav-console': 'terminal shell cli ssh exec',
   'nav-help': 'docs documentation support guide',
   'nav-templates': 'template catalog one click marketplace store apps deploy',
-  'nav-images': 'image docker container registry layers prune',
+  'nav-storage':
+    'storage disk space images docker container registry layers prune cache volumes',
   'nav-resources': 'resource cpu memory disk inventory all',
   'nav-resource-advisor': 'advisor rightsize cpu memory recommendation sizing',
   'nav-network': 'topology map graph nodes links',
