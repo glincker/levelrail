@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -79,6 +80,11 @@ func newOrgFixture(t *testing.T) *orgFixture {
 	t.Helper()
 	f := &orgFixture{teamFixture: newTeamFixture(t)}
 	ctx := context.Background()
+	// Doctor checks must not touch the real network or resolver, or a slow CI host times the run out.
+	withOfflineDoctorNetwork(f.rt)
+	f.rt.doctorLookupHost = func(context.Context, string) ([]string, error) {
+		return nil, errors.New("lookup disabled in tests")
+	}
 	// Probes run with strict isolation on, the mode the leaks are closed for.
 	if _, err := f.rt.runtimeSettings.Set(ctx, runtimesettings.KeyOrgsStrictIsolation, json.RawMessage("true"), "test"); err != nil {
 		t.Fatal(err)
