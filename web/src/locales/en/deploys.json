@@ -512,35 +512,6 @@
       "bothZero": "Max surge and max unavailable can't both be 0, or the rollout could never progress."
     }
   },
-  "appOverview": {
-    "title": "Overview",
-    "image": "Image",
-    "port": "Port",
-    "memoryLimit": "Memory limit",
-    "cpuLimit": "CPU limit",
-    "swapLimit": "Swap limit",
-    "cpuPinning": "CPU pinning",
-    "notSet": "not set",
-    "deployStrategy": "Deploy strategy",
-    "replicas": "Replicas",
-    "node": "Node",
-    "project": "Project",
-    "environment": "Environment",
-    "noProject": "no project",
-    "noEnvironment": "no environment",
-    "readinessProbe": "Readiness probe",
-    "livenessProbe": "Liveness probe",
-    "path": "Path:",
-    "interval": "Interval:",
-    "timeout": "Timeout:",
-    "failureThreshold": "Failure threshold:",
-    "notConfigured": "not configured",
-    "strategy": {
-      "recreate": "Recreate",
-      "blueGreen": "Blue-green",
-      "rolling": "Rolling"
-    }
-  },
   "page": {
     "title": "Deployments",
     "live": "Live",
@@ -554,6 +525,11 @@
     "clearFilters": "Clear filters",
     "emptyTitle": "No deployments yet",
     "emptyDescription": "Deploys appear here as soon as an app is built and released.",
+    "drawerFallbackTitle": "Deployment",
+    "drawerDescription": "{{app}} deployment {{id}}",
+    "drawerSearching": "Looking for this deployment",
+    "drawerNotFoundTitle": "Deployment not found",
+    "drawerNotFound": "Deployment not found. It may have been pruned by retention.",
     "emptyAction": "Deploy an app"
   },
   "summary": {
