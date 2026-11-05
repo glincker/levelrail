@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -10,6 +11,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -191,6 +193,12 @@ func helpFlagGaps(t *testing.T) []string {
 			}
 			return true
 		})
+		// Usage text that lives in the doctor string catalog is reached through its key literal.
+		for _, lit := range usageText {
+			if v, ok := helpCatalog(t)[lit]; ok {
+				usageText = append(usageText, v)
+			}
+		}
 		text := strings.Join(usageText, "\n")
 		for name := range flags {
 			if len(name) == 1 {
@@ -238,4 +246,24 @@ func TestHelpTextCoversEveryFlag(t *testing.T) {
 			t.Errorf("stale entry in %s, the flag is now documented: %s", helpGapsFile, k)
 		}
 	}
+}
+
+// helpCatalog is the embedded doctor string catalog, read once for the usage lookup above.
+var helpCatalogOnce struct {
+	sync.Once
+	m map[string]string
+}
+
+func helpCatalog(t *testing.T) map[string]string {
+	t.Helper()
+	helpCatalogOnce.Do(func() {
+		raw, err := os.ReadFile("doctor_cloud_strings.json")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := json.Unmarshal(raw, &helpCatalogOnce.m); err != nil {
+			t.Fatal(err)
+		}
+	})
+	return helpCatalogOnce.m
 }
