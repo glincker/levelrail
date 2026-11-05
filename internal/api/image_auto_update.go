@@ -266,7 +266,7 @@ func (rt *Router) handleRotateImageUpdateWebhook(w http.ResponseWriter, r *http.
 	// delivery or rotation.
 	var secret string
 	if rt.gitSourceSecrets != nil {
-		prev := rt.currentPushRotator(r.Context(), name)
+		prev := pushRotationState{rotator: rt.currentPushRotator(r.Context(), name), staged: rt.currentStagedSecret(r.Context(), name)}
 		var serr error
 		if secret, serr = randomToken(); serr == nil {
 			serr = rt.gitSourceSecrets.SetValue(r.Context(), imageUpdateSecretNS+name, imageUpdateSecretPendingKey, secret)
@@ -284,7 +284,8 @@ func (rt *Router) handleRotateImageUpdateWebhook(w http.ResponseWriter, r *http.
 			rt.internalError(w, "api: rotate image update webhook", err, slog.String("name", name))
 			return
 		}
-		rt.promotePushSecret(r.Context(), name, secret)
+		// The hash is saved: finish promotion even if the client has gone away.
+		rt.promotePushSecret(context.WithoutCancel(r.Context()), name, secret)
 		res.SigningSecret = secret
 		writeJSON(w, http.StatusOK, res)
 		return
@@ -309,14 +310,31 @@ func (rt *Router) currentPushRotator(ctx context.Context, name string) string {
 	return human
 }
 
-// rollbackStagedRotation empties the staged secret and restores the previous rotator after a failed rotation. A restore
-// that itself fails leaves the rotator as the none sentinel when possible, so approvals fail closed.
-func (rt *Router) rollbackStagedRotation(ctx context.Context, name, prevRotator string) {
+// pushRotationState is what a rotation overwrites while it is in flight, kept so a failure can put it back.
+type pushRotationState struct{ rotator, staged string }
+
+// currentStagedSecret is the staged signing secret, or the empty-slot sentinel. A previous rotation whose promotion
+// failed leaves the secret its caller already configured here, and it must survive a later failed rotation.
+func (rt *Router) currentStagedSecret(ctx context.Context, name string) string {
+	has, err := rt.gitSourceSecrets.Exists(ctx, imageUpdateSecretNS+name, imageUpdateSecretPendingKey)
+	if err != nil || !has {
+		return pushPendingNone
+	}
+	staged, err := rt.gitSourceSecrets.Resolve(ctx, imageUpdateSecretNS+name, imageUpdateSecretPendingKey)
+	if err != nil || staged == "" {
+		return pushPendingNone
+	}
+	return staged
+}
+
+// rollbackStagedRotation restores the staged secret and the rotator a failed rotation replaced. A restore of the
+// rotator that itself fails leaves the none sentinel when possible, so approvals fail closed.
+func (rt *Router) rollbackStagedRotation(ctx context.Context, name string, prev pushRotationState) {
 	ctx = context.WithoutCancel(ctx)
-	if err := rt.gitSourceSecrets.SetValue(ctx, imageUpdateSecretNS+name, imageUpdateSecretPendingKey, pushPendingNone); err != nil {
+	if err := rt.gitSourceSecrets.SetValue(ctx, imageUpdateSecretNS+name, imageUpdateSecretPendingKey, prev.staged); err != nil {
 		rt.logger.Warn("api: rollback staged signing secret failed", slog.String("name", name), slog.String("error", err.Error()))
 	}
-	if err := rt.gitSourceSecrets.SetValue(ctx, imageUpdateSecretNS+name, imageUpdateRotatorKey, prevRotator); err != nil {
+	if err := rt.gitSourceSecrets.SetValue(ctx, imageUpdateSecretNS+name, imageUpdateRotatorKey, prev.rotator); err != nil {
 		rt.logger.Warn("api: restore webhook rotator failed", slog.String("name", name), slog.String("error", err.Error()))
 		_ = rt.gitSourceSecrets.SetValue(ctx, imageUpdateSecretNS+name, imageUpdateRotatorKey, pushRotatorNone)
 	}

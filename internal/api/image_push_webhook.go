@@ -279,7 +279,8 @@ func (rt *Router) verifyPushSignature(w http.ResponseWriter, r *http.Request, na
 			rt.internalError(w, "api: image update webhook: resolve signing secret", err, slog.String("name", name))
 			return false, false
 		}
-		if key == imageUpdateSecretPendingKey && secret == pushPendingNone {
+		// An empty secret would make every body verify under an empty HMAC key; the sentinel is an empty slot.
+		if secret == "" || (key == imageUpdateSecretPendingKey && secret == pushPendingNone) {
 			continue
 		}
 		secrets = append(secrets, secret)

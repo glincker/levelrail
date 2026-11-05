@@ -849,8 +849,8 @@ func TestConcurrentRotationsRecordTheLiveRotator(t *testing.T) {
 
 func (h *pushHarness) bobRotates(t *testing.T) *http.Request {
 	t.Helper()
-	bob := storeUserWithAbilitiesForTest(t, h.db, "bob2@example.com", []string{AbilityRead, AbilityWriteSensitive})
-	if err := h.db.SaveAPIToken(context.Background(), store.APIToken{ID: "tok_bob2", Name: "bob2", TokenHash: hashToken("bob2-secret"), Abilities: []string{AbilityRead, AbilityWriteSensitive}, CreatedAt: time.Now(), OwnerUserID: bob.ID}); err != nil {
+	bob := storeUserWithAbilitiesForTest(t, h.db, "bob2@example.com", []string{AbilityRead, AbilityWrite, AbilityWriteSensitive, AbilityDeploy})
+	if err := h.db.SaveAPIToken(context.Background(), store.APIToken{ID: "tok_bob2", Name: "bob2", TokenHash: hashToken("bob2-secret"), Abilities: []string{AbilityRead, AbilityWrite, AbilityWriteSensitive, AbilityDeploy}, CreatedAt: time.Now(), OwnerUserID: bob.ID}); err != nil {
 		t.Fatal(err)
 	}
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/apps/web/auto-update/webhook", nil)
@@ -872,6 +872,59 @@ func TestFailedHashSaveRestoresTheRotatorAndTheSecretSlot(t *testing.T) {
 	after, err := h.rt.pushRotator(context.Background(), "web")
 	if err != nil || after != before {
 		t.Fatalf("rotator after a failed rotation = %q, %v; want the live hook's %q", after, err, before)
+	}
+	ctx := context.Background()
+	if got, _ := h.secret.Resolve(ctx, imageUpdateSecretNS+"web", imageUpdateSecretKey); got != h.hook.SigningSecret {
+		t.Errorf("live signing secret changed to %q", got)
+	}
+	if got, _ := h.secret.Resolve(ctx, imageUpdateSecretNS+"web", imageUpdateSecretPendingKey); got != pushPendingNone {
+		t.Errorf("staged slot = %q after a failed rotation, want it empty", got)
+	}
+}
+
+func TestFailedRotationKeepsASecretThatIsStillStaged(t *testing.T) {
+	h := newPushHarness(t, "ghcr.io/acme/web:other@"+oldDigest)
+	// Rotation N: the URL is saved but promotion fails, so the secret the user configured is only staged.
+	h.rt.gitSourceSecrets = failingMainSecret{h.secret}
+	h.rotate(t, h.cookie, "")
+	staged := h.hook.SigningSecret
+	// Rotation N+1 fails at its hash save: the staged secret of rotation N must survive the rollback.
+	h.rt.imageAutoUpdates = failingHashSave{h.rt.imageAutoUpdates}
+	if rec := serve(h.rt, authedRequest(t, h.cookie, http.MethodPost, "/api/v1/apps/web/auto-update/webhook", "")); rec.Code != http.StatusInternalServerError {
+		t.Fatalf("second rotate = %d, want 500", rec.Code)
+	}
+	body := ghcrBody("published", "acme", "web", "latest", newDigest)
+	mac := hmac.New(sha256.New, []byte(staged))
+	mac.Write([]byte(body))
+	req := httptest.NewRequest(http.MethodPost, h.path, bytes.NewReader([]byte(body)))
+	req.Header.Set(headerGitHubEvent, "package")
+	req.Header.Set(headerGitHubSig256, "sha256="+hex.EncodeToString(mac.Sum(nil)))
+	if got := serve(h.rt, req); got.Code != http.StatusAccepted {
+		t.Fatalf("delivery signed with the still-staged secret = %d, want 202", got.Code)
+	}
+}
+
+func TestApprovalKeepsItsFilingRequesterAcrossARotation(t *testing.T) {
+	h := newPushHarness(t, "ghcr.io/acme/web:latest@"+oldDigest)
+	h.protect(t)
+	body := ghcrBody("published", "acme", "web", "latest", newDigest)
+	if rec := h.post(body, h.signed(body)); rec.Code != http.StatusAccepted {
+		t.Fatalf("status = %d", rec.Code)
+	}
+	h.waitIdle(t)
+	h.waitPendingImages(t)
+	pending, _ := h.db.ListDeployApprovals(context.Background(), store.DeployApprovalStatusPending, "web")
+	if len(pending) != 1 || !pending[0].RequesterRecorded || pending[0].RequesterUserID == "" {
+		t.Fatalf("the requester must be stored on the approval at filing time: %+v", pending)
+	}
+	// Someone else rotates the hook; the approval still names the person who set the hook up when it was filed.
+	bobReq := h.bobRotates(t)
+	if rec := serve(h.rt, bobReq); rec.Code != http.StatusOK {
+		t.Fatalf("bob rotate = %d", rec.Code)
+	}
+	rec := serve(h.rt, authedRequest(t, h.cookie, http.MethodPost, "/api/v1/deploy-approvals/"+pending[0].ID+"/approve", ""))
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("the person who rotated before filing approved it after another rotation = %d, want 403", rec.Code)
 	}
 }
 
@@ -923,8 +976,10 @@ func TestDebounceWaitIsBoundedWhenTheLastCheckIsInTheFuture(t *testing.T) {
 	if err := h.db.RecordImageAutoUpdateCheck(ctx, "web", "x", time.Now().Add(time.Hour)); err != nil {
 		t.Fatal(err)
 	}
+	deadline, cancel := context.WithTimeout(ctx, 4*time.Second)
+	defer cancel()
 	start := time.Now()
-	h.rt.waitOutPushDebounce(ctx, "web", registryPush{})
+	h.rt.waitOutPushDebounce(deadline, "web", registryPush{})
 	if elapsed := time.Since(start); elapsed > 3*time.Second {
 		t.Fatalf("waited %s for a last check an hour in the future", elapsed)
 	}
