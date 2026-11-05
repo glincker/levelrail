@@ -142,3 +142,34 @@ func TestCITemplatesFailInsteadOfFallingBackToAnInstallWideToken(t *testing.T) {
 		t.Fatalf("status = %d body = %s, want a 500 with no templates to build an unscoped token from", rec.Code, rec.Body)
 	}
 }
+
+// missingProject answers the project to team lookup as a deleted project would.
+type missingProject struct{ *store.DB }
+
+func (missingProject) TeamOfProject(context.Context, string) (string, error) {
+	return "", store.ErrProjectNotFound
+}
+
+func TestCITemplatesReportADanglingProjectSeparately(t *testing.T) {
+	t.Parallel()
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	ctx := context.Background()
+	if err := db.SaveProject(ctx, store.Project{ID: "proj_1", Name: "p", CreatedAt: "2026-08-20T00:00:00Z"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.UpdateServiceProject(ctx, "web", "proj_1"); err != nil {
+		t.Fatal(err)
+	}
+	rt.policies = missingProject{db}
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/ci/templates", ""))
+	var res ciTemplatesResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &res); err != nil {
+		t.Fatal(err)
+	}
+	if res.DeployerScope != nil || !res.DeployerScopeProjectMissing || res.DeployerScopeUnavailable {
+		t.Fatalf("resource = %+v", res)
+	}
+}

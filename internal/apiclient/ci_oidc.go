@@ -103,6 +103,8 @@ type CITemplates struct {
 	DeployerScope *CIDeployerScope `json:"deployer_scope,omitempty"`
 	// DeployerScopeUnavailable is true when the app is in a project but the server cannot scope a token to it.
 	DeployerScopeUnavailable bool `json:"deployer_scope_unavailable,omitempty"`
+	// DeployerScopeProjectMissing is true when the app names a project that no longer exists.
+	DeployerScopeProjectMissing bool `json:"deployer_scope_project_missing,omitempty"`
 }
 
 // GetCITemplates calls GET /api/v1/apps/{name}/ci/templates.

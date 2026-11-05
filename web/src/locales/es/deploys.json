@@ -640,7 +640,9 @@
       "errorTitle": "No se pudo crear el token.",
       "helpScoped": "Este archivo lee un token guardado. El token está limitado al proyecto de esta app y puede leer y desplegar todas las apps de ese proyecto, nada fuera de él. Solo puede: {{abilities}}. Guárdalo como secreto en tu CI.",
       "helpInstallWide": "Este archivo lee un token guardado. Esta app no está en ningún proyecto, así que el token puede desplegar cualquier app de este servidor y solo puede: {{abilities}}. Prefiere un pipeline OIDC o mueve primero la app a un proyecto.",
-      "helpUnavailable": "Este archivo lee un token guardado. Este servidor no puede limitar un token al proyecto de la app, así que el token puede desplegar cualquier app de este servidor y solo puede: {{abilities}}. Prefiere un pipeline OIDC."
+      "helpUnavailable": "Este archivo lee un token guardado. Este servidor no puede limitar un token al proyecto de la app, así que el token puede desplegar cualquier app de este servidor y solo puede: {{abilities}}. Prefiere un pipeline OIDC.",
+      "createInstallWide": "Crear token para todo el servidor",
+      "helpProjectMissing": "Este archivo lee un token guardado. La app apunta a un proyecto que ya no existe, así que el token no se puede limitar a un proyecto y puede desplegar cualquier app de este servidor. Solo puede: {{abilities}}. Corrige primero el proyecto de la app o prefiere un pipeline OIDC."
     },
     "apiUrl": "Define LEVELRAIL_API_URL como {{url}} en tu CI."
   }

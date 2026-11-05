@@ -60,6 +60,8 @@ func TestRun_AppsCITemplate_TokenNoteFollowsTheScope(t *testing.T) {
 			[]string{"--name ci-web", "--scope-team team_1 --scope-project proj_1 --scope-role developer", "every app in project proj_1"}, "--name ci-deployer"},
 		{"unavailable", `,"deployer_scope_unavailable":true`,
 			[]string{"--name ci-deployer", "cannot scope tokens to the app's project"}, "--scope-team"},
+		{"project missing", `,"deployer_scope_project_missing":true`,
+			[]string{"--name ci-deployer", "names a project that no longer exists"}, "--scope-team"},
 		{"no project", ``,
 			[]string{"--name ci-deployer", "in no project, so this token can deploy any app"}, "--scope-team"},
 	} {

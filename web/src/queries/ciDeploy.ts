@@ -141,6 +141,8 @@ export interface CITemplates {
   deployer_scope?: { team_id: string; project_id: string; team_role: string }
   /** True when the app is in a project but this server cannot scope a token to it. */
   deployer_scope_unavailable?: boolean
+  /** True when the app names a project that no longer exists. */
+  deployer_scope_project_missing?: boolean
 }
 
 export function useCITemplates(appName: string) {

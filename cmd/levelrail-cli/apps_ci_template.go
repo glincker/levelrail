@@ -70,6 +70,9 @@ func deployerTokenCommand(prog, app string, res apiclient.CITemplates) string {
 		return fmt.Sprintf("%s tokens create --name ci-%s --abilities %s --scope-team %s --scope-project %s --scope-role %s\n      (the token can read and deploy every app in project %s, not only %s)", prog, app, strings.Join(res.DeployerAbilities, ","), sc.TeamID, sc.ProjectID, sc.TeamRole, sc.ProjectID, app)
 	}
 	cmd := fmt.Sprintf("%s tokens create --name ci-deployer --abilities %s", prog, strings.Join(res.DeployerAbilities, ","))
+	if res.DeployerScopeProjectMissing {
+		return cmd + "\n      (the app names a project that no longer exists, so this token can deploy any app on this server; fix the app's project first)"
+	}
 	if res.DeployerScopeUnavailable {
 		return cmd + "\n      (this server cannot scope tokens to the app's project, so the token can deploy any app on this server)"
 	}

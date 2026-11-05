@@ -131,7 +131,7 @@ describe('CITemplatesCard', () => {
       screen.getByText(/in no project, so the token can deploy any app/),
     ).toBeVisible()
     await user.click(
-      screen.getByRole('button', { name: 'Create deployer token' }),
+      screen.getByRole('button', { name: 'Create install-wide token' }),
     )
     await waitFor(() =>
       expect(screen.getByLabelText('Deployer token')).toBeVisible(),
@@ -143,4 +143,40 @@ describe('CITemplatesCard', () => {
       abilities: ['read', 'deploy'],
     })
   })
+
+  it.each([
+    [
+      'teams cannot scope tokens',
+      { deployer_scope_unavailable: true },
+      /cannot limit a token to the app's project/,
+    ],
+    [
+      'the app names a deleted project',
+      { deployer_scope_project_missing: true },
+      /names a project that no longer exists/,
+    ],
+  ])(
+    'labels the install-wide token and explains why when %s',
+    async (_label, flags, copy) => {
+      payload = { ...templates, deployer_scope: undefined, ...flags }
+      const user = userEvent.setup()
+      render(
+        <I18nextProvider i18n={testI18n}>
+          <QueryClientProvider client={createTestQueryClient()}>
+            <Suspense fallback={null}>
+              <CITemplatesCard appName="web" />
+            </Suspense>
+          </QueryClientProvider>
+        </I18nextProvider>,
+      )
+      await user.click(await screen.findByRole('button', { name: 'Jenkins' }))
+      expect(screen.getByText(copy)).toBeVisible()
+      expect(
+        screen.getByRole('button', { name: 'Create install-wide token' }),
+      ).toBeVisible()
+      expect(
+        screen.queryByRole('button', { name: 'Create deployer token' }),
+      ).toBeNull()
+    },
+  )
 })

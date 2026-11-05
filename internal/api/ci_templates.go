@@ -37,6 +37,8 @@ type ciTemplatesResource struct {
 	DeployerScope *ciDeployerScope `json:"deployer_scope,omitempty"`
 	// DeployerScopeUnavailable is true when the app is in a project but this server cannot scope a token to it.
 	DeployerScopeUnavailable bool `json:"deployer_scope_unavailable,omitempty"`
+	// DeployerScopeProjectMissing is true when the app names a project that no longer exists.
+	DeployerScopeProjectMissing bool `json:"deployer_scope_project_missing,omitempty"`
 	// DeployerAbilities are the abilities to grant the stored deployer token for the "token" templates.
 	DeployerAbilities []string `json:"deployer_abilities"`
 }
@@ -63,12 +65,12 @@ func (rt *Router) handleGetCITemplates(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "ci templates: manifest", err)
 		return
 	}
-	scope, unavailable, err := rt.ciDeployerScopeFor(r.Context(), svc.ProjectID)
+	scope, unavailable, missing, err := rt.ciDeployerScopeFor(r.Context(), svc.ProjectID)
 	if err != nil {
 		rt.internalError(w, "ci templates: project team", err)
 		return
 	}
-	out := ciTemplatesResource{DeployerScope: scope, DeployerScopeUnavailable: unavailable, Templates: make([]ciTemplateResource, 0, len(list)), APIURL: apiURL, NeedsDomain: apiURL == "", DeployerAbilities: ciDeployerAbilities}
+	out := ciTemplatesResource{DeployerScope: scope, DeployerScopeUnavailable: unavailable, DeployerScopeProjectMissing: missing, Templates: make([]ciTemplateResource, 0, len(list)), APIURL: apiURL, NeedsDomain: apiURL == "", DeployerAbilities: ciDeployerAbilities}
 	for _, t := range list {
 		content, err := ciexamples.Content(t, name)
 		if err != nil {
@@ -81,21 +83,22 @@ func (rt *Router) handleGetCITemplates(w http.ResponseWriter, r *http.Request) {
 }
 
 // ciDeployerScopeFor limits a deployer token to the app's project. No project means no scope. A project on a server
-// that cannot scope tokens reports unavailable, and a lookup failure is an error, never a silent install-wide token.
-func (rt *Router) ciDeployerScopeFor(ctx context.Context, projectID string) (scope *ciDeployerScope, unavailable bool, err error) {
+// that cannot scope tokens reports unavailable, an app that names a deleted project reports missing, and a lookup
+// failure is an error, never a silent install-wide token.
+func (rt *Router) ciDeployerScopeFor(ctx context.Context, projectID string) (scope *ciDeployerScope, unavailable, missing bool, err error) {
 	if projectID == "" {
-		return nil, false, nil
+		return nil, false, false, nil
 	}
 	db := rt.teamDB()
 	if db == nil {
-		return nil, true, nil
+		return nil, true, false, nil
 	}
 	team, err := db.TeamOfProject(ctx, projectID)
 	if errors.Is(err, store.ErrProjectNotFound) {
-		return nil, false, nil
+		return nil, false, true, nil
 	}
 	if err != nil || team == "" {
-		return nil, false, fmt.Errorf("team of project %q: %w", projectID, err)
+		return nil, false, false, fmt.Errorf("team of project %q: %w", projectID, err)
 	}
-	return &ciDeployerScope{TeamID: team, ProjectID: projectID, TeamRole: store.TeamRoleDeveloper}, false, nil
+	return &ciDeployerScope{TeamID: team, ProjectID: projectID, TeamRole: store.TeamRoleDeveloper}, false, false, nil
 }

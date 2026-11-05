@@ -112,9 +112,11 @@ export function CITemplatesCard({ appName }: { appName: string }) {
               {t(
                 templates.data.deployer_scope
                   ? 'ciTemplates.token.helpScoped'
-                  : templates.data.deployer_scope_unavailable
-                    ? 'ciTemplates.token.helpUnavailable'
-                    : 'ciTemplates.token.helpInstallWide',
+                  : templates.data.deployer_scope_project_missing
+                    ? 'ciTemplates.token.helpProjectMissing'
+                    : templates.data.deployer_scope_unavailable
+                      ? 'ciTemplates.token.helpUnavailable'
+                      : 'ciTemplates.token.helpInstallWide',
                 {
                   abilities: templates.data.deployer_abilities.join(', '),
                 },
@@ -127,7 +129,11 @@ export function CITemplatesCard({ appName }: { appName: string }) {
               onClick={makeToken}
               disabled={createToken.isPending || revealed !== ''}
             >
-              {t('ciTemplates.token.create')}
+              {t(
+                templates.data.deployer_scope
+                  ? 'ciTemplates.token.create'
+                  : 'ciTemplates.token.createInstallWide',
+              )}
             </Button>
             {revealed ? (
               <div className="space-y-1">

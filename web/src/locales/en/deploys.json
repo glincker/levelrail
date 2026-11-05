@@ -640,7 +640,9 @@
       "errorTitle": "Could not create the token.",
       "helpScoped": "This file reads a stored token. The token is limited to this app's project and can read and deploy every app in that project, nothing outside it. It can only: {{abilities}}. Store it as a secret in your CI.",
       "helpInstallWide": "This file reads a stored token. This app is in no project, so the token can deploy any app on this server and can only: {{abilities}}. Prefer an OIDC pipeline, or move the app into a project first.",
-      "helpUnavailable": "This file reads a stored token. This server cannot limit a token to the app's project, so the token can deploy any app on this server and can only: {{abilities}}. Prefer an OIDC pipeline."
+      "helpUnavailable": "This file reads a stored token. This server cannot limit a token to the app's project, so the token can deploy any app on this server and can only: {{abilities}}. Prefer an OIDC pipeline.",
+      "createInstallWide": "Create install-wide token",
+      "helpProjectMissing": "This file reads a stored token. The app names a project that no longer exists, so the token cannot be limited to a project and can deploy any app on this server. It can only: {{abilities}}. Fix the app's project first, or prefer an OIDC pipeline."
     },
     "apiUrl": "Set LEVELRAIL_API_URL to {{url}} in your CI."
   }
