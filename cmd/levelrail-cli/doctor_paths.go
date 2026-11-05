@@ -58,9 +58,10 @@ func buildDoctorPaths(lookupEnv func(string) (string, bool), exists func(string)
 }
 
 func runDoctorPaths(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenP, apiURLP, profileP, jsonP, outputP, queryP := apiFlagSet(prog, "doctor paths", "print the paths as JSON to stdout and nothing else", stderr)
+	cat := doctorStrings()
+	fs, tokenP, apiURLP, profileP, jsonP, outputP, queryP := apiFlagSet(prog, "doctor paths", cat.render("paths_flag_json"), stderr)
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s doctor paths [flags]\n\nPrints where the binary, releases dir, data dir and systemd unit live on this host.\nIt never contacts a control plane.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprint(stderr, cat.render("paths_usage", "prog", prog))
 		fs.PrintDefaults()
 	}
 	_, _, _, jsonOut, of, code, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenP, apiURLP, profileP, jsonP, outputP, queryP}, prog, stderr)
@@ -70,7 +71,7 @@ func runDoctorPaths(prog string, args []string, stdout, stderr io.Writer, lookup
 	res := buildDoctorPaths(lookupEnv, func(p string) bool { _, err := os.Stat(p); return err == nil })
 	if err := renderResult(stdout, of.Format, of.Query, res, func() {
 		tw := tabwriter.NewWriter(stdout, 0, 4, 2, ' ', 0)
-		_, _ = fmt.Fprintln(tw, "WHAT\tPATH\tFOUND")
+		_, _ = fmt.Fprintln(tw, cat.render("paths_header"))
 		for _, p := range res.Paths {
 			found := "no"
 			if p.Exists {
@@ -80,7 +81,7 @@ func runDoctorPaths(prog string, args []string, stdout, stderr io.Writer, lookup
 		}
 		_ = tw.Flush()
 		if res.HTTPAddr != "" {
-			_, _ = fmt.Fprintf(stdout, "API address (%s): %s\n", envHTTPAddr, res.HTTPAddr)
+			_, _ = fmt.Fprintf(stdout, "%s %s\n", cat.render("paths_api_address", "env", envHTTPAddr), res.HTTPAddr)
 		}
 	}); err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
