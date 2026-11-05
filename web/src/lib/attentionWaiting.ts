@@ -318,10 +318,54 @@ function feedItems(feed: AttentionFeedItem[], t: AttentionT): AttentionItem[] {
           title: t('items.dbUpgradeFailedTitle', { name }),
           detail: t('items.dbUpgradeFailedDetail', { reason: p.reason ?? '' }),
         }
+      case 'docker_guard':
+        return { ...base, ...dockerGuardCopy(p, t) }
       default:
         return { ...base, title: f.title || f.subject, detail: f.detail }
     }
   })
+}
+
+// The guard item has four shapes: a host-level audit finding, a plain audit
+// finding, the all-clear offer and an enforce-mode denial.
+function dockerGuardCopy(
+  p: Record<string, string>,
+  t: AttentionT,
+): { title: string; detail: string } {
+  const count = Number.parseInt(p.would_deny ?? '0', 10) || 0
+  const window = p.window ?? ''
+  if (p.mode === 'enforce') {
+    return {
+      title: t('items.dockerGuardDeniedTitle', {
+        count: Number.parseInt(p.denied ?? '0', 10) || 0,
+      }),
+      detail: t('items.dockerGuardDeniedDetail', { rule: p.top_rule ?? '' }),
+    }
+  }
+  if (count === 0) {
+    return {
+      title: t('items.dockerGuardReadyTitle'),
+      detail: t('items.dockerGuardReadyDetail', { window }),
+    }
+  }
+  if (p.risk === 'high') {
+    return {
+      title: t('items.dockerGuardHighTitle'),
+      detail: t('items.dockerGuardHighDetail', {
+        rule: p.top_rule ?? '',
+        date: shortDate(p.last_seen),
+        window,
+      }),
+    }
+  }
+  return {
+    title: t('items.dockerGuardWouldDenyTitle', { count }),
+    detail: t('items.dockerGuardWouldDenyDetail', {
+      rule: p.top_rule ?? '',
+      date: shortDate(p.last_seen),
+      window,
+    }),
+  }
 }
 
 const WAITING_ID_PREFIXES = [

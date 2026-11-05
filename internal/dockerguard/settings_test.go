@@ -130,3 +130,22 @@ func TestBootModes(t *testing.T) {
 		})
 	}
 }
+
+func TestAuditSinceResetsOnEntryIntoAudit(t *testing.T) {
+	path := filepath.Join(t.TempDir(), SettingsFile)
+	c := NewController(path, envMap(nil), nil, "", nil)
+	t0 := time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)
+	if st, err := c.SetMode(ModeAudit, "admin", t0); err != nil || !st.AuditSince.Equal(t0) {
+		t.Fatalf("first audit: %+v %v", st, err)
+	}
+	if st, _ := c.SetMode(ModeAudit, "admin", t0.Add(time.Hour)); !st.AuditSince.Equal(t0) {
+		t.Fatalf("audit to audit must keep the window: %+v", st)
+	}
+	if _, err := c.SetMode(ModeOff, "admin", t0.Add(24*time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+	t1 := t0.Add(30 * 24 * time.Hour)
+	if st, _ := c.SetMode(ModeAudit, "admin", t1); !st.AuditSince.Equal(t1) {
+		t.Fatalf("off to audit must restart the window, got %v want %v", st.AuditSince, t1)
+	}
+}

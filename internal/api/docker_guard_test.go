@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -122,15 +123,24 @@ func TestDoctorCheckDockerGuard(t *testing.T) {
 		name       string
 		status     *dockerguard.Status
 		decisions  []bool
+		rule       string
+		sec        *docker.DaemonSecurity
+		listErr    bool
 		wantStatus string
 		wantSubstr string
+		wantNot    string
 		wantFix    string
 	}{
 		{name: "default enforce could not start", status: &dockerguard.Status{Mode: dockerguard.ModeEnforce, Source: dockerguard.SourceDefault, Effective: dockerguard.ModeOff, StartError: "not a unix socket"}, wantStatus: doctorStatusWarn, wantSubstr: "could not start", wantFix: "APP_DOCKER_GUARD"},
 		{name: "not configured", wantStatus: doctorStatusUnknown, wantSubstr: "no docker guard"},
-		{name: "enforce", status: &dockerguard.Status{Mode: dockerguard.ModeEnforce, Effective: dockerguard.ModeEnforce, Running: true}, decisions: []bool{true}, wantStatus: doctorStatusOK, wantSubstr: "1 request(s) denied", wantFix: "APP_DOCKER_GUARD=audit"},
-		{name: "audit with would deny", status: &dockerguard.Status{Mode: dockerguard.ModeAudit, Effective: dockerguard.ModeAudit, Running: true}, decisions: []bool{false, false}, wantStatus: doctorStatusWarn, wantSubstr: "2 request(s) would have been denied"},
-		{name: "audit clean", status: &dockerguard.Status{Mode: dockerguard.ModeAudit, Effective: dockerguard.ModeAudit, Running: true}, wantStatus: doctorStatusWarn, wantSubstr: "enforce is likely safe"},
+		{name: "enforce", status: &dockerguard.Status{Mode: dockerguard.ModeEnforce, Effective: dockerguard.ModeEnforce, Running: true}, decisions: []bool{true}, wantStatus: doctorStatusOK, wantSubstr: "1 decision(s) denied", wantFix: "APP_DOCKER_GUARD=audit"},
+		{name: "audit with low risk would deny", status: &dockerguard.Status{Mode: dockerguard.ModeAudit, Effective: dockerguard.ModeAudit, Running: true}, decisions: []bool{false, false}, rule: dockerguard.RuleBindUndeclared, wantStatus: doctorStatusOK, wantSubstr: "2 decision(s) would have been denied"},
+		{name: "audit with high risk would deny warns", status: &dockerguard.Status{Mode: dockerguard.ModeAudit, Effective: dockerguard.ModeAudit, Running: true}, decisions: []bool{false}, rule: dockerguard.RulePrivileged, wantStatus: doctorStatusWarn, wantSubstr: "host-level"},
+		{name: "audit clean after a full window", status: &dockerguard.Status{Mode: dockerguard.ModeAudit, Effective: dockerguard.ModeAudit, Running: true, AuditSince: now.Add(-8 * 24 * time.Hour)}, wantStatus: doctorStatusOK, wantSubstr: "jobs that run less often were not seen"},
+		{name: "audit clean without a window never says likely safe", status: &dockerguard.Status{Mode: dockerguard.ModeAudit, Effective: dockerguard.ModeAudit, Running: true}, wantStatus: doctorStatusOK, wantSubstr: "still watching", wantNot: "likely safe"},
+		{name: "audit log read error is not clean", status: &dockerguard.Status{Mode: dockerguard.ModeAudit, Effective: dockerguard.ModeAudit, Running: true, AuditSince: now.Add(-8 * 24 * time.Hour)}, listErr: true, wantStatus: doctorStatusWarn, wantSubstr: "could not read", wantNot: "jobs that run less often"},
+		{name: "off rootful userns remap still warns", status: &dockerguard.Status{Mode: dockerguard.ModeOff, Effective: dockerguard.ModeOff}, sec: &docker.DaemonSecurity{UsernsRemap: true}, wantStatus: doctorStatusWarn, wantSubstr: "privileged containers"},
+		{name: "off rootless warns softly and names what is reachable", status: &dockerguard.Status{Mode: dockerguard.ModeOff, Effective: dockerguard.ModeOff}, sec: &docker.DaemonSecurity{Rootless: true}, wantStatus: doctorStatusWarn, wantSubstr: "bind_sensitive_path", wantNot: "every Levelrail process"},
 		{name: "off", status: &dockerguard.Status{Mode: dockerguard.ModeOff, Effective: dockerguard.ModeOff}, wantStatus: doctorStatusWarn, wantSubstr: "privileged containers"},
 		{name: "restart pending", status: &dockerguard.Status{Mode: dockerguard.ModeEnforce, Effective: dockerguard.ModeOff, RestartRequired: true}, wantStatus: doctorStatusWarn, wantSubstr: "restart"},
 		{name: "config error", status: &dockerguard.Status{Mode: dockerguard.ModeEnforce, Effective: dockerguard.ModeEnforce, Running: true, ConfigError: "bad"}, wantStatus: doctorStatusWarn, wantSubstr: "failing closed"},
@@ -141,10 +151,23 @@ func TestDoctorCheckDockerGuard(t *testing.T) {
 			if tt.status != nil {
 				rt.SetDockerGuard(&fakeDockerGuard{status: *tt.status})
 			}
+			if tt.sec != nil {
+				rt.dockerPinger = fakeSecurityPinger{sec: *tt.sec}
+			}
+			rule := tt.rule
+			if rule == "" {
+				rule = dockerguard.RulePrivileged
+			}
 			for _, denied := range tt.decisions {
-				saveGuardDecision(t, db, dockerguard.RulePrivileged, denied, now.Add(-time.Minute))
+				saveGuardDecision(t, db, rule, denied, now.Add(-time.Minute))
+			}
+			if tt.listErr {
+				rt.auditLog = failingAuditList{AuditStore: rt.auditLog}
 			}
 			got := rt.doctorCheckDockerGuard(context.Background())
+			if tt.wantNot != "" && strings.Contains(got.Message, tt.wantNot) {
+				t.Fatalf("message %q must not contain %q", got.Message, tt.wantNot)
+			}
 			if got.Code != "docker_guard" || got.Status != tt.wantStatus || !strings.Contains(got.Message, tt.wantSubstr) {
 				t.Fatalf("check = %+v", got)
 			}
@@ -153,6 +176,12 @@ func TestDoctorCheckDockerGuard(t *testing.T) {
 			}
 		})
 	}
+}
+
+type failingAuditList struct{ AuditStore }
+
+func (failingAuditList) ListAuditEntries(context.Context, int, *time.Time, store.AuditEntryFilter) ([]store.AuditEntry, error) {
+	return nil, errors.New("disk i/o error")
 }
 
 type fakeSecurityPinger struct {
@@ -174,9 +203,12 @@ func TestDoctorCheckDockerPrivilege(t *testing.T) {
 		wantSubstr string
 	}{
 		{name: "rootless daemon", sec: docker.DaemonSecurity{Rootless: true}, mode: dockerguard.ModeAudit, wantStatus: doctorStatusOK, wantSubstr: "daemon rootless=true"},
-		{name: "userns remap", sec: docker.DaemonSecurity{UsernsRemap: true}, mode: dockerguard.ModeAudit, wantStatus: doctorStatusOK, wantSubstr: "userns-remap=true"},
+		{name: "userns remap is not isolation", sec: docker.DaemonSecurity{UsernsRemap: true}, mode: dockerguard.ModeAudit, wantStatus: doctorStatusWarn, wantSubstr: "userns-remap=true"},
+		{name: "userns remap guard off warns", sec: docker.DaemonSecurity{UsernsRemap: true}, mode: dockerguard.ModeOff, wantStatus: doctorStatusWarn, wantSubstr: "root equivalent"},
+		{name: "rootless guard off is ok", sec: docker.DaemonSecurity{Rootless: true}, mode: dockerguard.ModeOff, wantStatus: doctorStatusOK, wantSubstr: "rootless=true"},
 		{name: "rootful enforced", mode: dockerguard.ModeEnforce, wantStatus: doctorStatusOK, wantSubstr: "rootless=false"},
-		{name: "rootful audit warns", mode: dockerguard.ModeAudit, wantStatus: doctorStatusWarn, wantSubstr: "root equivalent"},
+		{name: "rootful audit warns and says audit does not block", mode: dockerguard.ModeAudit, wantStatus: doctorStatusWarn, wantSubstr: "audit logs but does not block, this process stays root equivalent until enforce"},
+		{name: "rootful guard off warns", mode: dockerguard.ModeOff, wantStatus: doctorStatusWarn, wantSubstr: "root equivalent"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -186,6 +218,61 @@ func TestDoctorCheckDockerPrivilege(t *testing.T) {
 				t.Fatalf("check = %+v", got)
 			}
 		})
+	}
+}
+
+func TestDockerGuardAuditLowRiskIsOneRow(t *testing.T) {
+	t.Parallel()
+	rt, db := newTestRouter(t)
+	rt.dockerPinger = fakeSecurityPinger{}
+	rt.SetDockerGuard(&fakeDockerGuard{status: dockerguard.Status{Mode: dockerguard.ModeOff, Effective: dockerguard.ModeOff}})
+	if g, p := rt.doctorCheckDockerGuard(context.Background()), rt.doctorCheckDockerPrivilege(context.Background()); g.Status != doctorStatusWarn || p.Status != doctorStatusWarn {
+		t.Fatalf("guard off on rootful daemon must warn on both: %+v %+v", g, p)
+	}
+	rt.SetDockerGuard(&fakeDockerGuard{status: dockerguard.Status{Mode: dockerguard.ModeAudit, Effective: dockerguard.ModeAudit, Running: true}})
+	saveGuardDecision(t, db, dockerguard.RuleBindUndeclared, false, time.Now().Add(-time.Minute))
+	if g := rt.doctorCheckDockerGuard(context.Background()); g.Status != doctorStatusOK {
+		t.Fatalf("low risk audit must not warn on docker_guard: %+v", g)
+	}
+	if p := rt.doctorCheckDockerPrivilege(context.Background()); p.Status != doctorStatusWarn {
+		t.Fatalf("rootful audit keeps the single doctor warning: %+v", p)
+	}
+	items := rt.dockerGuardAttentionItems(httptest.NewRequest(http.MethodGet, "/", nil), []string{AbilityRoot}, time.Now())
+	if len(items) != 1 || items[0].Severity != attention.Warning || items[0].Class != attention.ClassRecommendation {
+		t.Fatalf("items = %+v, want one recommendation", items)
+	}
+}
+
+func TestDockerGuardHighRiskIsAnIncidentWithItsOwnID(t *testing.T) {
+	t.Parallel()
+	now := time.Now()
+	feed := func(rule string) attention.Item {
+		rt, db := newTestRouter(t)
+		rt.SetDockerGuard(&fakeDockerGuard{status: dockerguard.Status{Mode: dockerguard.ModeAudit, Effective: dockerguard.ModeAudit, Running: true}})
+		saveGuardDecision(t, db, rule, false, now.Add(-time.Minute))
+		items := rt.dockerGuardAttentionItems(httptest.NewRequest(http.MethodGet, "/", nil), []string{AbilityRoot}, now)
+		if len(items) != 1 {
+			t.Fatalf("rule %s: items = %+v", rule, items)
+		}
+		return items[0]
+	}
+	high, low := feed(dockerguard.RulePrivileged), feed(dockerguard.RuleBindUndeclared)
+	if high.Class != attention.ClassIncident || low.Class != attention.ClassRecommendation {
+		t.Fatalf("classes high=%q low=%q", high.Class, low.Class)
+	}
+	if high.ID == low.ID || high.Params["last_seen"] == "" {
+		t.Fatalf("ids must differ by risk and carry last_seen: %q %q %v", high.ID, low.ID, high.Params)
+	}
+}
+
+func TestDockerGuardAuditReadErrorShowsNoReadyItem(t *testing.T) {
+	t.Parallel()
+	now := time.Now()
+	rt, _ := newTestRouter(t)
+	rt.SetDockerGuard(&fakeDockerGuard{status: dockerguard.Status{Mode: dockerguard.ModeAudit, Effective: dockerguard.ModeAudit, Running: true, AuditSince: now.Add(-8 * 24 * time.Hour)}})
+	rt.auditLog = failingAuditList{AuditStore: rt.auditLog}
+	if items := rt.dockerGuardAttentionItems(httptest.NewRequest(http.MethodGet, "/", nil), []string{AbilityRoot}, now); len(items) != 0 {
+		t.Fatalf("a failed audit read must not offer enforce: %+v", items)
 	}
 }
 
@@ -200,7 +287,7 @@ func TestDockerGuardAttentionItems(t *testing.T) {
 		wantSev   string
 		wantSubj  string
 	}{
-		{name: "audit would deny", status: dockerguard.Status{Effective: dockerguard.ModeAudit, Running: true}, decisions: []bool{false}, abilities: []string{AbilityRoot}, wantSev: attention.Warning, wantSubj: "would-deny"},
+		{name: "audit would deny", status: dockerguard.Status{Effective: dockerguard.ModeAudit, Running: true}, decisions: []bool{false}, abilities: []string{AbilityRoot}, wantSev: attention.Warning, wantSubj: "would-deny:low"},
 		{name: "clean week offers enforce", status: dockerguard.Status{Effective: dockerguard.ModeAudit, Running: true, AuditSince: now.Add(-8 * 24 * time.Hour)}, abilities: []string{AbilityRoot}, wantSev: attention.Info, wantSubj: "ready"},
 		{name: "clean but too new", status: dockerguard.Status{Effective: dockerguard.ModeAudit, Running: true, AuditSince: now.Add(-time.Hour)}, abilities: []string{AbilityRoot}},
 		{name: "enforce denied", status: dockerguard.Status{Effective: dockerguard.ModeEnforce, Running: true}, decisions: []bool{true}, abilities: []string{AbilityRoot}, wantSev: attention.Warning, wantSubj: "denied"},

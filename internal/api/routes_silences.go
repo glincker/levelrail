@@ -43,6 +43,19 @@ var silenceProtectedKinds = map[string]bool{
 	attention.KindFirewallAttackSuggested: true,
 }
 
+// silenceRootOnlyDoctorKeys are doctor checks about the Docker socket's
+// exposure: muting them hides a host-level risk, so they follow the protected rule.
+var silenceRootOnlyDoctorKeys = map[string]bool{
+	"doctor:Docker API guard": true,
+	"doctor:Docker privilege": true,
+}
+
+// silenceNeedsRoot is true for a protected kind or a Docker exposure doctor check.
+func silenceNeedsRoot(issueKey string) bool {
+	kind, _, _ := strings.Cut(issueKey, ":")
+	return silenceProtectedKinds[kind] || silenceRootOnlyDoctorKeys[issueKey]
+}
+
 type silenceStore interface {
 	CreateSilence(ctx context.Context, s store.Silence) error
 	ListSilences(ctx context.Context) ([]store.Silence, error)
@@ -131,8 +144,7 @@ var errSilenceConfirm = errors.New("silencing this issue needs confirmation")
 // a protected or critical issue needs confirm to be silenced forever, and a
 // protected issue needs it for any duration.
 func silenceUntil(req createIssueSilenceRequest, now time.Time) (*time.Time, error) {
-	kind, _, _ := strings.Cut(req.IssueKey, ":")
-	protected := silenceProtectedKinds[kind]
+	protected := silenceNeedsRoot(req.IssueKey)
 	if protected && !req.Confirm {
 		return nil, errSilenceConfirm
 	}
@@ -167,6 +179,12 @@ func (rt *Router) handleCreateSilence(w http.ResponseWriter, r *http.Request) {
 	if req.IssueKey == "" || len(req.IssueKey) > silenceMaxKeyLen || len(req.Reason) > silenceMaxReasonLen {
 		writeError(w, http.StatusBadRequest, "issue_key is required and reason must be under 500 characters")
 		return
+	}
+	if silenceNeedsRoot(req.IssueKey) {
+		if abs, aerr := rt.callerAbilities(r); aerr != nil || !hasAbility(abs, AbilityRoot) {
+			writeError(w, http.StatusForbidden, "silencing this issue needs the root ability")
+			return
+		}
 	}
 	now := time.Now()
 	until, err := silenceUntil(req, now)

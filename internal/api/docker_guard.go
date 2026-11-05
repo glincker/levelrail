@@ -51,6 +51,42 @@ type dockerGuardResource struct {
 	// ReadyToEnforce: audit mode has watched a full window with no
 	// would-be denials, so switching is unlikely to break anything.
 	ReadyToEnforce bool `json:"ready_to_enforce"`
+	// WindowError is set when the audit log could not be read, so an empty
+	// window is unknown rather than clean. Not serialized.
+	WindowError string `json:"-"`
+}
+
+// dockerGuardHighRiskRules are rules whose would-be denial means something
+// running today already holds host-level power.
+var dockerGuardHighRiskRules = map[string]bool{
+	dockerguard.RuleCapAdd:         true,
+	dockerguard.RulePrivileged:     true,
+	dockerguard.RuleHostPID:        true,
+	dockerguard.RuleHostIPC:        true,
+	dockerguard.RuleHostUTS:        true,
+	dockerguard.RuleHostUserns:     true,
+	dockerguard.RuleHostCgroupns:   true,
+	dockerguard.RuleBindSensitive:  true,
+	dockerguard.RuleExecPrivileged: true,
+}
+
+// topWouldDeny picks the summary an admin should look at first: a
+// high-risk rule when the window holds one, else the most frequent.
+func (res dockerGuardResource) topWouldDeny() (dockerGuardRuleSummary, bool) {
+	var first dockerGuardRuleSummary
+	found := false
+	for _, s := range res.Window {
+		if s.WouldDeny == 0 {
+			continue
+		}
+		if dockerGuardHighRiskRules[s.Rule] {
+			return s, true
+		}
+		if !found {
+			first, found = s, true
+		}
+	}
+	return first, false
 }
 
 type updateDockerGuardRequest struct {
@@ -97,28 +133,32 @@ func (rt *Router) dockerGuardResource(ctx context.Context, now time.Time) docker
 	}
 	res.Configured = true
 	res.Status = rt.dockerGuard.Status()
-	res.Window = rt.dockerGuardWindow(ctx, now.Add(-tun.SummaryWindow))
+	var werr error
+	res.Window, werr = rt.dockerGuardWindow(ctx, now.Add(-tun.SummaryWindow))
+	if werr != nil {
+		res.WindowError = "audit log read failed"
+	}
 	for _, s := range res.Window {
 		res.WouldDeny += s.WouldDeny
 		res.Denied += s.Denied
 	}
 	observedFor := now.Sub(res.AuditSince)
-	res.ReadyToEnforce = res.Effective == dockerguard.ModeAudit && res.Running && res.WouldDeny == 0 &&
+	res.ReadyToEnforce = res.Effective == dockerguard.ModeAudit && res.Running && res.WouldDeny == 0 && res.WindowError == "" &&
 		!res.AuditSince.IsZero() && observedFor >= tun.SummaryWindow
 	return res
 }
 
 // dockerGuardWindow folds the guard's audit rows since cutoff into one
 // summary per rule, most frequent first.
-func (rt *Router) dockerGuardWindow(ctx context.Context, cutoff time.Time) []dockerGuardRuleSummary {
+func (rt *Router) dockerGuardWindow(ctx context.Context, cutoff time.Time) ([]dockerGuardRuleSummary, error) {
 	out := []dockerGuardRuleSummary{}
 	if rt.auditLog == nil {
-		return out
+		return out, nil
 	}
 	entries, err := rt.auditLog.ListAuditEntries(ctx, dockerGuardAuditScan, nil, store.AuditEntryFilter{Action: dockerguard.ActionFamily})
 	if err != nil {
 		rt.logger.Warn("api: docker guard summary: list audit entries failed", slog.String("error", err.Error()))
-		return out
+		return out, err
 	}
 	byRule := map[string]*dockerGuardRuleSummary{}
 	floor := store.FormatAuditTime(cutoff)
@@ -146,7 +186,7 @@ func (rt *Router) dockerGuardWindow(ctx context.Context, cutoff time.Time) []doc
 		}
 		return out[i].Rule < out[j].Rule
 	})
-	return out
+	return out, nil
 }
 
 // DockerGuardAuditEntry turns a guard decision into an audit_log row. The

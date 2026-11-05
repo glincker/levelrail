@@ -182,9 +182,11 @@ func (c *Controller) SetMode(mode Mode, actor string, now time.Time) (Status, er
 		return Status{}, ErrPinnedByEnv
 	}
 	c.mu.Lock()
+	prev, _, _ := Resolve(c.lookup, c.settings)
 	next := c.settings
 	next.Mode, next.UpdatedAt, next.UpdatedBy = mode, now.UTC(), actor
-	if mode == ModeAudit && next.AuditSince.IsZero() {
+	// A new audit period restarts the window: an old one must not count as observation.
+	if mode == ModeAudit && (prev != ModeAudit || next.AuditSince.IsZero()) {
 		next.AuditSince = now.UTC()
 	}
 	if err := SaveSettings(c.path, next); err != nil {
