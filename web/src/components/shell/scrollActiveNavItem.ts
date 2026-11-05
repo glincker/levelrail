@@ -34,3 +34,27 @@ export function scheduleScrollActiveNavItem(root: ParentNode = document) {
     })
   }
 }
+
+/** Resets the sidebar scroller to the top, then reveals the active row only if it is hidden; for when the mobile sheet opens. */
+export function resetSidebarScroll(root: ParentNode = document): void {
+  const scroller = root.querySelector<HTMLElement>(
+    '[data-slot="sidebar-content"]',
+  )
+  if (!scroller) return
+  scroller.scrollTop = 0
+  scrollActiveNavItemIntoView(root)
+}
+
+/** Runs resetSidebarScroll across the sheet's mount and focus moves; returns a cancel function. */
+export function scheduleResetSidebarScroll(root: ParentNode = document) {
+  const timers = RETRY_DELAYS_MS.map((ms) =>
+    window.setTimeout(() => {
+      resetSidebarScroll(root)
+    }, ms),
+  )
+  return () => {
+    timers.forEach((t) => {
+      window.clearTimeout(t)
+    })
+  }
+}

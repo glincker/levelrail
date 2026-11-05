@@ -123,6 +123,7 @@ function LockedNavLinkItem({
           />
         }
         tooltip={label}
+        title={label}
         className="text-muted-foreground"
         data-locked="true"
       >
@@ -178,6 +179,7 @@ function NavLinkItem({
           />
         }
         isActive={isGlobalItemActive(pathname, item)}
+        title={label}
         tooltip={{
           children: (
             <span className="flex items-center gap-2">

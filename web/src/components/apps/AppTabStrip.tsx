@@ -1,4 +1,11 @@
-import type { ComponentType, SVGProps } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ComponentType,
+  type SVGProps,
+} from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
@@ -36,6 +43,32 @@ const FOCUS =
   'outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-0'
 const HIDE_SCROLLBAR = '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
 
+// Edge fades appear only on the side that has more tabs to scroll to.
+function useScrollEdges() {
+  const ref = useRef<HTMLElement>(null)
+  const [edges, setEdges] = useState({ start: false, end: false })
+  const measure = useCallback(() => {
+    const el = ref.current
+    if (!el) return
+    const start = el.scrollLeft > 1
+    const end = Math.ceil(el.scrollLeft + el.clientWidth) < el.scrollWidth - 1
+    setEdges((prev) =>
+      prev.start === start && prev.end === end ? prev : { start, end },
+    )
+  }, [])
+  useEffect(() => {
+    measure()
+    const el = ref.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => {
+      ro.disconnect()
+    }
+  }, [measure])
+  return { ref, edges, measure }
+}
+
 /** One row: a section menu, then the pages of that section as tabs. */
 export function AppTabStrip({ name }: { name: string }) {
   const { t } = useTranslation('common')
@@ -43,6 +76,7 @@ export function AppTabStrip({ name }: { name: string }) {
   const current = tabs.groups.find((g) => g.id === tabs.activeGroup)
   const label = (id: AppTabGroupId) => t(`appTabs.groups.${id}`)
   const CurrentIcon = current ? GROUP_ICONS[current.id] : null
+  const { ref: navRef, edges, measure } = useScrollEdges()
 
   return (
     <div className="min-w-0" data-slot="app-tab-strip">
@@ -96,35 +130,55 @@ export function AppTabStrip({ name }: { name: string }) {
           </DropdownMenuContent>
         </DropdownMenu>
         {current ? (
-          <nav
-            aria-label={t('appTabs.pages', { section: label(current.id) })}
-            className={cn(
-              'flex min-w-0 gap-1 overflow-x-auto overflow-y-hidden overscroll-x-contain pb-px',
-              HIDE_SCROLLBAR,
-            )}
-          >
-            {current.items.map((item) => {
-              const active = item.slug === tabs.activeSlug
-              return (
-                <Link
-                  key={item.id}
-                  to={item.to}
-                  params={{ name }}
-                  aria-current={active ? 'page' : undefined}
-                  className={cn(
-                    '-mb-px flex shrink-0 items-center gap-1 border-b-2 px-3 py-2 text-sm font-medium transition-colors',
-                    FOCUS,
-                    active
-                      ? 'border-primary text-foreground'
-                      : 'border-transparent text-muted-foreground hover:text-foreground',
-                  )}
-                >
-                  {item.label}
-                  {item.beta ? <BetaBadge /> : null}
-                </Link>
-              )
-            })}
-          </nav>
+          <div data-slot="app-tab-scroller" className="relative min-w-0 flex-1">
+            <nav
+              ref={navRef}
+              onScroll={measure}
+              aria-label={t('appTabs.pages', { section: label(current.id) })}
+              className={cn(
+                'flex min-w-0 gap-1 overflow-x-auto overflow-y-hidden overscroll-x-contain pb-px',
+                HIDE_SCROLLBAR,
+              )}
+            >
+              {current.items.map((item) => {
+                const active = item.slug === tabs.activeSlug
+                return (
+                  <Link
+                    key={item.id}
+                    to={item.to}
+                    params={{ name }}
+                    aria-current={active ? 'page' : undefined}
+                    className={cn(
+                      '-mb-px flex shrink-0 items-center gap-1 border-b-2 px-3 py-2 text-sm font-medium transition-colors',
+                      FOCUS,
+                      active
+                        ? 'border-primary text-foreground'
+                        : 'border-transparent text-muted-foreground hover:text-foreground',
+                    )}
+                  >
+                    {item.label}
+                    {item.beta ? <BetaBadge /> : null}
+                  </Link>
+                )
+              })}
+            </nav>
+            <span
+              aria-hidden="true"
+              data-edge="start"
+              className={cn(
+                'pointer-events-none absolute inset-y-0 left-0 w-8 bg-linear-to-r from-background to-transparent transition-opacity duration-150 motion-reduce:transition-none',
+                edges.start ? 'opacity-100' : 'opacity-0',
+              )}
+            />
+            <span
+              aria-hidden="true"
+              data-edge="end"
+              className={cn(
+                'pointer-events-none absolute inset-y-0 right-0 w-8 bg-linear-to-l from-background to-transparent transition-opacity duration-150 motion-reduce:transition-none',
+                edges.end ? 'opacity-100' : 'opacity-0',
+              )}
+            />
+          </div>
         ) : null}
       </div>
     </div>
