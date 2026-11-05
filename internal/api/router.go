@@ -104,6 +104,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/dnszones"
 	"github.com/GLINCKER/levelrail/internal/janitor"
 	"github.com/GLINCKER/levelrail/internal/meshpath"
+	meshnet "github.com/GLINCKER/levelrail/internal/network"
 	"github.com/GLINCKER/levelrail/internal/orphans"
 	"github.com/GLINCKER/levelrail/internal/standalone"
 	"github.com/GLINCKER/levelrail/internal/statuspage"
@@ -839,6 +840,8 @@ type Router struct {
 	// meshPaths reports whether a remote node is reachable over the mesh,
 	// set via SetMeshPaths. nil reads as "mesh networking is off".
 	meshPaths meshpath.Resolver
+	// meshHubResolver turns a hostname advertise host into the mesh endpoint IP; nil keeps the IP-only rule.
+	meshHubResolver *meshnet.HubHostResolver
 	// multiNode holds node moves, drains, labels and selectors; nil means 501.
 	multiNode *multiNodeState
 	// nodeFailure is nil unless WithNodeFailure was applied.

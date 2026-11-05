@@ -20,10 +20,12 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/agent"
 	"github.com/GLINCKER/levelrail/internal/brand"
+	"github.com/GLINCKER/levelrail/internal/dnsstatus"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/network"
 	"github.com/GLINCKER/levelrail/internal/profile"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -229,6 +231,7 @@ type meshSetup struct {
 	localNodeID string
 	coordinator *network.Coordinator
 	resolver    *network.Resolver
+	hubHost     *network.HubHostResolver
 	// Never nil when meshSetup is non-nil: NewDevice always returns a usable Mesh.
 	device network.Mesh
 	// Use the actually bound address, which can differ from the configured one.
@@ -274,17 +277,22 @@ func setupMesh(ctx context.Context, db *store.DB, b *brand.Brand, dataDir string
 	sink := network.NewMultiSink(localNodeID, localSink, agent.NewGRPCSink(agentRegistry))
 	coordinator := network.NewCoordinator(sink, network.PlanOptions{MeshCIDR: meshCIDR(logger)},
 		network.WithCoordinatorLogger(logger))
-	if host := advertiseHostFromStore(ctx, db); meshHubHostNeedsIP(host) {
-		logger.Warn("APP_AGENT_ADVERTISE_HOST is a hostname, but WireGuard needs an IP address: agents will fail to set the mesh endpoint and never handshake. Set it to this server's public IP",
-			slog.String("host", host))
-	}
-	if hub := meshHubEndpoint(advertiseHostFromStore(ctx, db), network.DefaultListenPort); hub != "" {
-		if err := coordinator.SetObservedEndpoint(localNodeID, hub); err != nil {
-			logger.Warn("mesh hub endpoint not recorded", slog.String("endpoint", hub), slog.String("error", err.Error()))
-		}
-	} else {
-		logger.Warn("mesh hub endpoint unknown: set APP_AGENT_ADVERTISE_HOST to this server's public host so agents can reach it on UDP " + strconv.Itoa(network.DefaultListenPort))
-	}
+	hubSettings := runtimesettings.New(db, os.LookupEnv)
+	hubHost := network.NewHubHostResolver(network.HubHostConfig{
+		TTL: func() time.Duration {
+			return hubSettings.Duration(context.Background(), runtimesettings.KeyMeshHubResolveTTL)
+		},
+		StaleMax: func() time.Duration {
+			return hubSettings.Duration(context.Background(), runtimesettings.KeyMeshHubStaleMax)
+		},
+		Timeout: func() time.Duration { return dnsstatus.OptionsFromEnv().Timeout },
+	})
+	hubSync := &meshHubSyncer{resolver: hubHost, rec: coordinator, nodeID: localNodeID, logger: logger}
+	hubRefresh := func(c context.Context) { hubSync.Sync(c, advertiseHostFromStore(c, db)) }
+	// Bounded and non-fatal: a slow resolver must not stall boot.
+	firstCtx, cancelFirst := context.WithTimeout(ctx, dnsstatus.OptionsFromEnv().Timeout)
+	guardedHubRefresh(firstCtx, logger, hubRefresh)
+	cancelFirst()
 
 	// Lowercased because Resolver.Authoritative compares lowercased query names verbatim.
 	zone := strings.ToLower(b.ShortName)
@@ -301,6 +309,8 @@ func setupMesh(ctx context.Context, db *store.DB, b *brand.Brand, dataDir string
 
 	heartbeatCtx, cancelHeartbeat := context.WithCancel(ctx)
 	go localNodeHeartbeat(heartbeatCtx, db, localNodeID, nodeHeartbeatInterval(), logger)
+	hubCtx, cancelHub := context.WithCancel(ctx)
+	go runMeshHubRefresh(hubCtx, logger, hubHost.TTL, hubRefresh)
 
 	logger.Info("mesh networking enabled",
 		slog.String("local_node_id", localNodeID),
@@ -310,10 +320,12 @@ func setupMesh(ctx context.Context, db *store.DB, b *brand.Brand, dataDir string
 		localNodeID: localNodeID,
 		coordinator: coordinator,
 		resolver:    resolver,
+		hubHost:     hubHost,
 		device:      device,
 		dnsAddr:     dnsServer.Addr(),
 		close: func() {
 			cancelHeartbeat()
+			cancelHub()
 			if err := dnsServer.Close(); err != nil {
 				logger.Error("closing mesh dns server", slog.String("error", err.Error()))
 			}
