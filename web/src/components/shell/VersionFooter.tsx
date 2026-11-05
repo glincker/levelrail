@@ -46,7 +46,7 @@ export function VersionFooterView({
       to="/settings/updates"
       aria-label={label}
       title={label}
-      className="flex items-center gap-2 truncate rounded-md px-2 py-1 text-[11px] text-sidebar-foreground/60 hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none group-data-[collapsible=icon]:justify-center"
+      className="flex items-center gap-2 truncate rounded-md px-2 py-1 text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none group-data-[collapsible=icon]:justify-center"
     >
       <span
         data-testid="health-dot"
