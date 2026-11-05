@@ -32,6 +32,7 @@ func healthyPosture() postureInput {
 		CodeLoginAdmins:   &no,
 		Exposure:          &postureExposure{},
 		OffBoxBackups:     &yes,
+		OffsiteKnown:      true,
 		AuditAnchor:       &yes,
 		MasterKey:         true,
 		MasterKeyKnown:    true,
