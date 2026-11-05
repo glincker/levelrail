@@ -5,13 +5,17 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
+	"strings"
 	"text/tabwriter"
+	"time"
 )
 
 func runAuditLog(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "audit-log", "print audit log entries as a JSON array to stdout and nothing else", stderr)
 	var limitFlag int
 	var failedFlag bool
+	var sinceFlag, untilFlag, actorFlag, statusFlag, exportFlag string
 	var searchFlag, beforeFlag, pathFlag, methodFlag, clientKindFlag, formatFlag, outputFileFlag, agentFlag, resourceFlag, actionsFlag string
 	fs.StringVar(&resourceFlag, "resource", "", `only show entries for one resource: "domain:<name>", "zone:<name>" or "app:<name>"`)
 	fs.StringVar(&actionsFlag, "actions", "", `comma separated action prefixes, e.g. "dns_record.,proxy_route.,domain."`)
@@ -25,6 +29,11 @@ func runAuditLog(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	fs.BoolVar(&failedFlag, "failed", false, "only show failed requests (status code 400 or higher)")
 	fs.StringVar(&formatFlag, "format", "", `output format: "csv" exports entries as CSV instead of the default table/--json/--output output`)
 	fs.StringVar(&outputFileFlag, "output-file", "", "write the csv export to this file instead of stdout (only meaningful with --format csv; not to be confused with --output, which picks json/table/text rendering)")
+	fs.StringVar(&sinceFlag, "since", "", `only entries newer than this: a duration like "24h" or "7d", or an RFC3339 timestamp`)
+	fs.StringVar(&untilFlag, "until", "", "only entries older than this: a duration ago or an RFC3339 timestamp")
+	fs.StringVar(&actorFlag, "actor", "", "only entries by this exact actor name")
+	fs.StringVar(&statusFlag, "status", "", `"failed" keeps only failed requests (same as --failed)`)
+	fs.StringVar(&exportFlag, "export", "", `shorthand for --format: "csv" exports the filtered entries`)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, auditLogUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -32,6 +41,28 @@ func runAuditLog(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return exitCode
 	}
 
+	if exportFlag != "" {
+		formatFlag = exportFlag
+	}
+	if statusFlag != "" && statusFlag != "failed" {
+		_, _ = fmt.Fprintf(stderr, "%s: unsupported --status %q, only \"failed\" is supported\n\n", prog, statusFlag)
+		fs.Usage()
+		return exitUsage
+	}
+	failedFlag = failedFlag || statusFlag == "failed"
+	now := time.Now()
+	sinceTS, err := resolveAuditTime(sinceFlag, now)
+	if err == nil {
+		var untilTS string
+		if untilTS, err = resolveAuditTime(untilFlag, now); err == nil {
+			untilFlag = untilTS
+		}
+	}
+	if err != nil {
+		_, _ = fmt.Fprintf(stderr, "%s: %v\n\n", prog, err)
+		fs.Usage()
+		return exitUsage
+	}
 	if formatFlag != "" && formatFlag != "csv" {
 		_, _ = fmt.Fprintf(stderr, "%s: unsupported --format %q, only \"csv\" is supported\n\n", prog, formatFlag)
 		fs.Usage()
@@ -44,7 +75,7 @@ func runAuditLog(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-	opts := listAuditLogOptions{Limit: limitFlag, Before: beforeFlag, Path: pathFlag, Method: methodFlag, ClientKind: clientKindFlag, Search: searchFlag, FailedOnly: failedFlag, Agent: agentFlag, Resource: resourceFlag, Actions: actionsFlag}
+	opts := listAuditLogOptions{Limit: limitFlag, Before: beforeFlag, Path: pathFlag, Method: methodFlag, ClientKind: clientKindFlag, Search: searchFlag, FailedOnly: failedFlag, Agent: agentFlag, Resource: resourceFlag, Actions: actionsFlag, Since: sinceTS, Until: untilFlag, Actor: actorFlag}
 
 	if formatFlag == "csv" {
 		return runAuditLogExportCSV(context.Background(), client, opts, outputFileFlag, stdout, stderr, of)
@@ -133,6 +164,11 @@ Flags:
   --agent string           only show entries made with a token labeled with this agent name
   --resource string        only show entries for "domain:<name>", "zone:<name>" or "app:<name>"
   --actions string         comma separated action prefixes, e.g. "dns_record.,proxy_route.,domain."
+  --since string           only entries newer than a duration ("24h", "7d") or an RFC3339 timestamp
+  --until string           only entries older than a duration ago or an RFC3339 timestamp
+  --actor string           only entries by this exact actor name
+  --status string          "failed" keeps only failed requests
+  --export string          "csv" exports the filtered entries (same as --format csv)
   --failed                  only show failed requests (status code 400 or higher)
   --format string          "csv" exports entries as CSV instead of the default table/--json/--output output
   --output-file string     write the csv export to this file instead of stdout (requires --format csv)
@@ -140,4 +176,26 @@ Flags:
   --query string           JMESPath expression to filter the result before printing
   -h, --help              show this help
 `, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
+}
+
+// resolveAuditTime turns "24h", "7d" or an RFC3339 value into an RFC3339 timestamp.
+func resolveAuditTime(raw string, now time.Time) (string, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return "", nil
+	}
+	if _, err := time.Parse(time.RFC3339, raw); err == nil {
+		return raw, nil
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil && strings.HasSuffix(raw, "d") {
+		var days int
+		if days, err = strconv.Atoi(strings.TrimSuffix(raw, "d")); err == nil {
+			d = time.Duration(days) * 24 * time.Hour
+		}
+	}
+	if err != nil || d < 0 {
+		return "", fmt.Errorf("invalid time %q: use a duration like 24h or 7d, or an RFC3339 timestamp", raw)
+	}
+	return now.Add(-d).UTC().Format(time.RFC3339), nil
 }

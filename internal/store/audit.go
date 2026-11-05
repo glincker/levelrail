@@ -172,6 +172,10 @@ type AuditEntryFilter struct {
 	OwnerUserID string
 	// ActorType keeps rows by "session", "token" or "system".
 	ActorType string
+	// Since keeps rows created at or after it, Until rows strictly before it.
+	Since, Until time.Time
+	// Actor matches actor_name exactly.
+	Actor string
 }
 
 // AuditLikeLiteral escapes s for use inside an AuditEntryFilter.PathLike pattern.
@@ -220,6 +224,18 @@ func (db *DB) ListAuditEntries(ctx context.Context, limit int, before *time.Time
 	}
 	if filter.FailedOnly {
 		conditions = append(conditions, "status_code >= 400")
+	}
+	if !filter.Since.IsZero() {
+		conditions = append(conditions, "created_at >= ?")
+		args = append(args, FormatAuditTime(filter.Since))
+	}
+	if !filter.Until.IsZero() {
+		conditions = append(conditions, "created_at < ?")
+		args = append(args, FormatAuditTime(filter.Until))
+	}
+	if filter.Actor != "" {
+		conditions = append(conditions, "actor_name = ?")
+		args = append(args, filter.Actor)
 	}
 	if filter.AgentName != "" {
 		conditions = append(conditions, "agent_name = ?")

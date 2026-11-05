@@ -21,6 +21,9 @@ func registerAuditTools(server *mcp.Server, client *apiclient.Client) {
 			Search:     in.Query,
 			FailedOnly: in.Status == "failed",
 			Agent:      in.Agent,
+			Since:      in.Since,
+			Until:      in.Until,
+			Actor:      in.Actor,
 		})
 		if err != nil {
 			return nil, nil, fmt.Errorf("list audit log: %w", err)
@@ -31,11 +34,19 @@ func registerAuditTools(server *mcp.Server, client *apiclient.Client) {
 
 type auditLogInput struct {
 	Limit  int    `json:"limit,omitempty" jsonschema:"max entries; server default"`
-	Before string `json:"before,omitempty" jsonschema:"entries before this RFC3339 time"`
+	Before string `json:"before,omitempty"`
 	Path   string `json:"path,omitempty" jsonschema:"only this request path"`
 	Method string `json:"method,omitempty" jsonschema:"only this HTTP method, e.g. POST"`
 	Query  string `json:"q,omitempty" jsonschema:"case-insensitive substring of actor, ability, method, path or address"`
 	Status string `json:"status,omitempty" jsonschema:"failed: only status 400 and up"`
 	Agent  string `json:"agent,omitempty" jsonschema:"only tokens labeled with this agent name"`
+	Since  string `json:"since,omitempty"`
+	Until  string `json:"until,omitempty"`
+	Actor  string `json:"actor,omitempty"`
 	Fields string `json:"fields,omitempty" jsonschema:"keys to keep per item"`
+}
+
+type auditVerifyInput struct {
+	From int64 `json:"from,omitempty"`
+	To   int64 `json:"to,omitempty"`
 }

@@ -4063,6 +4063,11 @@ func auditLogQuery(opts ListAuditLogOptions) url.Values {
 	if opts.Actions != "" {
 		q.Set("actions", opts.Actions)
 	}
+	for k, v := range map[string]string{"since": opts.Since, "until": opts.Until, "actor": opts.Actor} {
+		if v != "" {
+			q.Set(k, v)
+		}
+	}
 	return q
 }
 
@@ -4128,8 +4133,24 @@ func (c *Client) PurgeAuditLog(ctx context.Context) (PurgeAuditLogResult, error)
 
 // VerifyAuditLog calls GET /api/v1/audit-log/verify: walks the audit hash chain.
 func (c *Client) VerifyAuditLog(ctx context.Context) (AuditChainReport, error) {
+	return c.VerifyAuditLogRange(ctx, 0, 0)
+}
+
+// VerifyAuditLogRange verifies the chain and reports only the [from, to] sequence range (0 is open).
+func (c *Client) VerifyAuditLogRange(ctx context.Context, from, to int64) (AuditChainReport, error) {
 	var out AuditChainReport
-	err := c.do(ctx, http.MethodGet, "/api/v1/audit-log/verify", nil, &out)
+	path := "/api/v1/audit-log/verify"
+	q := url.Values{}
+	if from > 0 {
+		q.Set("from", strconv.FormatInt(from, 10))
+	}
+	if to > 0 {
+		q.Set("to", strconv.FormatInt(to, 10))
+	}
+	if enc := q.Encode(); enc != "" {
+		path += "?" + enc
+	}
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
 	return out, err
 }
 

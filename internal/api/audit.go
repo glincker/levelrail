@@ -286,6 +286,22 @@ func parseAuditLogQuery(w http.ResponseWriter, r *http.Request) (limit int, befo
 		AgentName:  strings.TrimSpace(r.URL.Query().Get("agent")),
 		Action:     strings.TrimSpace(r.URL.Query().Get("action")),
 	}
+	filter.Actor = strings.TrimSpace(r.URL.Query().Get("actor"))
+	for _, p := range []struct {
+		name string
+		dst  *time.Time
+	}{{"since", &filter.Since}, {"until", &filter.Until}} {
+		raw := r.URL.Query().Get(p.name)
+		if raw == "" {
+			continue
+		}
+		t, err := time.Parse(time.RFC3339, raw)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, p.name+" must be an RFC3339 timestamp")
+			return 0, nil, store.AuditEntryFilter{}, false
+		}
+		*p.dst = t
+	}
 	switch status := r.URL.Query().Get("status"); status {
 	case "":
 	case "failed":
@@ -310,7 +326,8 @@ func parseAuditLogQuery(w http.ResponseWriter, r *http.Request) (limit int, befo
 // maxAuditLogLimit. ?path and ?method narrow to one resource's own
 // trail (e.g. an app's config-change history), both exact match.
 // ?client_kind narrows to one caller surface (cli/dashboard/mcp/api), also
-// exact match. ?q is a case-insensitive substring search across actor
+// exact match. ?since (inclusive) and ?until (exclusive) bound created_at as
+// RFC3339 timestamps; ?actor matches the actor name exactly. ?q is a case-insensitive substring search across actor
 // name, ability, method, path and remote address; ?status=failed keeps only
 // status_code >= 400. ?format=csv returns the same rows as a CSV download instead of JSON,
 // for compliance/record-keeping export; the row shape is identical to

@@ -249,3 +249,26 @@ func TestAuditEntry_SecretValuesAreMaskedBeforeStorage(t *testing.T) {
 		t.Fatalf("secret stored in audit row: %q %q", path, detail)
 	}
 }
+
+func TestAuditChain_RangeNamesBreakAndHead(t *testing.T) {
+	useChainKey(t, "test-key-one")
+	db := openTestDB(t)
+	seedChain(t, db, 6, nil)
+	if _, err := db.Exec(`UPDATE audit_log SET actor_name = 'x' WHERE id = 'aud_004'`); err != nil {
+		t.Fatal(err)
+	}
+	rep, err := db.VerifyAuditChainRange(context.Background(), 1, 3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !rep.OK || rep.Checked != 3 || rep.Head != 3 || rep.HeadHash == "" {
+		t.Fatalf("range 1-3 = %+v, want ok, 3 checked, head 3", rep)
+	}
+	rep, err = db.VerifyAuditChainRange(context.Background(), 0, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rep.OK || rep.FirstBreak == nil || rep.FirstBreak.Seq != 4 {
+		t.Fatalf("full run = %+v, want first break at seq 4", rep)
+	}
+}

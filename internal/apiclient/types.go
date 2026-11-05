@@ -3996,6 +3996,9 @@ type ListAuditLogOptions struct {
 	Agent      string // only entries made with a token labeled with this agent name
 	Resource   string // "domain:<name>", "zone:<name>" or "app:<name>"
 	Actions    string // comma separated action prefixes, e.g. "dns_record.,domain."
+	Since      string // RFC3339, inclusive lower bound on created_at
+	Until      string // RFC3339, exclusive upper bound on created_at
+	Actor      string // exact actor name
 }
 
 // PurgeAuditLogResult is POST /api/v1/audit-log/purge's response shape
@@ -4019,6 +4022,8 @@ type AuditChainReport struct {
 	Unverified  int                 `json:"unverified"`
 	Unchained   int                 `json:"unchained"`
 	Problems    []AuditChainProblem `json:"problems"`
+	HeadHash    string              `json:"head_hash,omitempty"`
+	FirstBreak  *AuditChainProblem  `json:"first_break,omitempty"`
 }
 
 // AuditAnchor mirrors store.AuditAnchor: one signed chain head, no row content.

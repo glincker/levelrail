@@ -49,6 +49,33 @@ export interface AuditLogQueryOptions {
   agent?: string
   // Event name or family, for example device_login.
   action?: string
+  // RFC3339 bounds on created_at: since inclusive, until exclusive.
+  since?: string
+  until?: string
+  actor?: string
+}
+
+export const AUDIT_RANGES = ['1h', '24h', '7d', '30d'] as const
+export type AuditRange = (typeof AUDIT_RANGES)[number]
+
+const RANGE_MS: Record<AuditRange, number> = {
+  '1h': 3_600_000,
+  '24h': 86_400_000,
+  '7d': 604_800_000,
+  '30d': 2_592_000_000,
+}
+
+export function isAuditRange(value: unknown): value is AuditRange {
+  return AUDIT_RANGES.some((r) => r === value)
+}
+
+// Resolved at fetch time so "last 24h" stays relative to when the user applies it.
+export function sinceForRange(
+  range: AuditRange | undefined,
+): string | undefined {
+  return range
+    ? new Date(Date.now() - RANGE_MS[range]).toISOString()
+    : undefined
 }
 
 // buildAuditLogParams is the one place that turns AuditLogQueryOptions
@@ -69,6 +96,10 @@ export function buildAuditLogParams(
   if (opts.failedOnly) params.set('status', 'failed')
   if (opts.agent) params.set('agent', opts.agent)
   if (opts.action) params.set('action', opts.action)
+  if (opts.since) params.set('since', opts.since)
+  if (opts.until) params.set('until', opts.until)
+  const actor = opts.actor?.trim()
+  if (actor) params.set('actor', actor)
   return params
 }
 
@@ -184,10 +215,18 @@ export interface AuditChainReport {
   unverified: number
   unchained: number
   problems: AuditChainProblem[]
+  head_hash?: string
+  first_break?: AuditChainProblem
 }
 
-export async function fetchAuditChainReport(): Promise<AuditChainReport> {
-  const res = await fetch('/api/v1/audit-log/verify')
+export async function fetchAuditChainReport(
+  range: { from?: number; to?: number } = {},
+): Promise<AuditChainReport> {
+  const params = new URLSearchParams()
+  if (range.from) params.set('from', String(range.from))
+  if (range.to) params.set('to', String(range.to))
+  const qs = params.toString()
+  const res = await fetch(`/api/v1/audit-log/verify${qs ? `?${qs}` : ''}`)
   if (!res.ok) {
     throw new ApiError(
       res.status,
@@ -200,7 +239,7 @@ export async function fetchAuditChainReport(): Promise<AuditChainReport> {
 export const auditChainQueryOptions = () =>
   queryOptions({
     queryKey: [...auditLogKeys.all, 'verify'] as const,
-    queryFn: fetchAuditChainReport,
+    queryFn: () => fetchAuditChainReport(),
     retry: false,
     staleTime: 60_000,
   })

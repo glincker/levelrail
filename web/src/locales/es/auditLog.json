@@ -47,7 +47,20 @@
     "searchLabel": "Buscar entradas del registro de auditoría",
     "failedOnly": "Solo fallidas",
     "loading": "Cargando...",
-    "loadOlder": "Cargar entradas anteriores"
+    "loadOlder": "Cargar entradas anteriores",
+    "rangeLabel": "Filtrar por intervalo de tiempo",
+    "anyTime": "Cualquier fecha",
+    "range": {
+      "1h": "Última hora",
+      "24h": "Últimas 24 horas",
+      "7d": "Últimos 7 días",
+      "30d": "Últimos 30 días"
+    },
+    "methodLabel": "Filtrar por método",
+    "anyMethod": "Cualquier método",
+    "actorLabel": "Filtrar por actor",
+    "actorPlaceholder": "Nombre del actor",
+    "exportCsv": "Exportar CSV"
   },
   "anchor": {
     "title": "Ancla de auditoría",
@@ -64,5 +77,21 @@
     "queued": "En cola",
     "lastError": "Último error",
     "lastErrorAt": "a las {{time}}"
+  },
+  "verify": {
+    "button": "Verificar cadena",
+    "title": "Verificar la cadena de auditoría",
+    "description": "Recalcula cada enlace de hash. Deja el rango vacío para revisar todo el registro.",
+    "from": "Desde la entrada",
+    "to": "Hasta la entrada",
+    "run": "Verificar",
+    "running": "Verificando",
+    "failedToRun": "No se pudo ejecutar la verificación.",
+    "okSummary_one": "{{count}} fila verificada, sin roturas.",
+    "okSummary_other": "{{count}} filas verificadas, sin roturas.",
+    "head": "Cabecera de la cadena: entrada {{seq}}",
+    "firstBreak": "Primera rotura en la entrada {{seq}}",
+    "failed": "Falló la verificación de la cadena",
+    "problem": "Entrada {{seq}}: {{reason}}"
   }
 }

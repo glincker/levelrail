@@ -122,6 +122,12 @@ type AuditChainReport struct {
 	Unverified  int                 `json:"unverified"`
 	Unchained   int                 `json:"unchained"`
 	Problems    []AuditChainProblem `json:"problems"`
+	// HeadHash is the chain hash at Head. FirstBreak is the lowest-sequence
+	// problem, nil when none. From and To echo a range-limited run.
+	HeadHash   string             `json:"head_hash,omitempty"`
+	FirstBreak *AuditChainProblem `json:"first_break,omitempty"`
+	From       int64              `json:"from,omitempty"`
+	To         int64              `json:"to,omitempty"`
 }
 
 type chainNode struct {
@@ -364,4 +370,49 @@ func mergeAuditLinks(ctx context.Context, tx *sql.Tx) error {
 		}
 	}
 	return nil
+}
+
+// VerifyAuditChainRange verifies the whole chain (a hash link needs its
+// predecessor) and then reports only problems and rows inside [from, to].
+// A zero bound is open. Checked counts the chained rows in range.
+func (db *DB) VerifyAuditChainRange(ctx context.Context, from, to int64) (AuditChainReport, error) {
+	rep, err := db.VerifyAuditChain(ctx)
+	if err != nil {
+		return rep, err
+	}
+	inRange := func(seq int64) bool { return seq >= from && (to == 0 || seq <= to) }
+	if from > 0 || to > 0 {
+		kept := []AuditChainProblem{}
+		for _, p := range rep.Problems {
+			if inRange(p.Seq) {
+				kept = append(kept, p)
+			}
+		}
+		rep.Problems = kept
+		rep.OK = len(kept) == 0
+		upper := to
+		if upper == 0 || upper > rep.Head {
+			upper = rep.Head
+		}
+		rep.From, rep.To, rep.Head = from, to, upper
+		if err := db.QueryRowContext(ctx, `SELECT COUNT(*) FROM audit_log WHERE chain_seq >= ? AND chain_seq <= ?`, from, upper).Scan(&rep.Checked); err != nil {
+			return rep, fmt.Errorf("store: count audit rows in range: %w", err)
+		}
+	}
+	if len(rep.Problems) > 0 {
+		first := rep.Problems[0]
+		for _, p := range rep.Problems {
+			if p.Seq < first.Seq {
+				first = p
+			}
+		}
+		rep.FirstBreak = &first
+	}
+	var hash string
+	err = db.QueryRowContext(ctx, `SELECT chain_hash FROM audit_log WHERE chain_seq = ?`, rep.Head).Scan(&hash)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return rep, fmt.Errorf("store: read audit head hash: %w", err)
+	}
+	rep.HeadHash = hash
+	return rep, nil
 }
