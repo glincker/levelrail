@@ -403,11 +403,11 @@ func hintIfNotLevelrail(baseURL string, rt http.RoundTripper, stderr io.Writer) 
 	hc := &http.Client{Transport: rt, Timeout: 700 * time.Millisecond}
 	ctx, cancel := context.WithTimeout(context.Background(), 700*time.Millisecond)
 	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.TrimRight(baseURL, "/")+"/healthz", nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.TrimRight(baseURL, "/")+"/healthz", nil) //nolint:gosec // G704: baseURL is the operator-configured API URL the CLI exists to call
 	if err != nil {
 		return
 	}
-	resp, err := hc.Do(req)
+	resp, err := hc.Do(req) //nolint:gosec // G704: request targets the operator-configured API URL
 	if err != nil {
 		return
 	}
