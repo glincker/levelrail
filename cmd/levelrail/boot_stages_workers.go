@@ -506,6 +506,8 @@ func (s *bootState) serve() error {
 	engine.SetDrainTimeout(envDurationOr(logger, shutdownDrainEnv, defaultShutdownDrain))
 	go func() {
 		<-ctx.Done()
+		// Gates stop first: a pass during the drain would start new deploys, and a webhook now gets a 503 (the poller gates that commit after restart).
+		s.apiRouter.CancelCIGates()
 		if n := s.apiRouter.BeginShutdown(); n > 0 {
 			logger.Info("closed live streams for shutdown", slog.Int("streams", n))
 		}
@@ -522,6 +524,10 @@ func (s *bootState) serve() error {
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), httpShutdownTimeout)
 	defer cancel()
+	// Gates record their skip rows through the database, which closes after run returns.
+	if !s.apiRouter.ShutdownCIGates(shutdownCtx) {
+		logger.Warn("shutdown limit reached with CI gates still ending")
+	}
 	if err := httpServer.Shutdown(shutdownCtx); err != nil {
 		logger.Error("http server shutdown failed", slog.String("error", err.Error()))
 	}

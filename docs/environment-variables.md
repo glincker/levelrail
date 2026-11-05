@@ -106,6 +106,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CONTAINERS_RESTART_POLICY` | [`containers.restart_policy`](/runtime-settings#deploys) | `unless-stopped` |
 | `APP_DATABASES_POOLER_DEFAULT` | [`databases.pooler_default`](/runtime-settings#deploys) | `off` |
 | `APP_PG_POOLER_IMAGE` | [`databases.pooler_image`](/runtime-settings#deploys) | `edoburu/pgbouncer:v1.26.1-p0` |
+| `APP_CI_GATE_MAX_WAITS_PER_APP` | [`deploy.ci_gate_max_waits_per_app`](/runtime-settings#deploys) | `4` |
 | `APP_DEPLOY_DRAIN_TIMEOUT` | [`deploy.drain_timeout`](/runtime-settings#deploys) | `15s` |
 | `APP_DEPLOY_MAX_CONCURRENT` | [`deploy.max_concurrent`](/runtime-settings#deploys) | `0` |
 | `APP_DEPLOY_PREVIOUS_RELEASE_HOLD` | [`deploy.previous_release_hold`](/runtime-settings#deploys) | `3m` |
