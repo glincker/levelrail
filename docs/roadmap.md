@@ -12,7 +12,7 @@ The build did not follow the original phase plan in order. Parts of multi-node s
 
 ## Now, next, later
 
-Last updated 2026-10-29. There is no stable release yet. Every release so far is a beta. Everything below is planned, not promised: quarters are targets, items can move or drop, and nothing here is a commitment to a date. Items marked planned have no shipped code unless the line says so.
+Last updated 2026-11-05. There is no stable release yet. Every release so far is a beta. Everything below is planned, not promised: quarters are targets, items can move or drop, and nothing here is a commitment to a date. Items marked planned have no shipped code unless the line says so.
 
 ### Now (Q4 2026)
 
@@ -22,16 +22,14 @@ Goal: make the beta claim publishable. Reliability and evidence first.
 - Public ACME: renewal close to expiry, DNS-01 wildcards and a deliberate failure against the production CA. Status: open, one live run is recorded in the [runbook](/acme-verification-runbook).
 - Upgrade and downgrade testing across more releases with real data. Status: started, see [Upgrade safely](/upgrade-safely).
 - Stacks hardening: stacks are experimental behind `APP_EXPERIMENTAL=iac`, with drift, approvals and rollback built. Status: shipping in the 0.8 line, see the [changelog](/changelog) and [ADR 042](https://github.com/glincker/levelrail/blob/main/adr/042-stacks-and-revisions.md).
-- Public live demo and Codespaces: a read-only demo you can try without installing, and a Codespaces config for a one-click dev setup. Status: planned. See [demo](/demo) for what exists today.
+- Public live demo: a hosted read-only instance you can try without installing. Status: the demo mode and the hosting runbook are shipped (see [Run a read-only demo](/run-a-read-only-demo) and [Host a public read-only demo](/hosted-demo)). A running public instance is not claimed here.
 - Community and governance files: a code of conduct, contributing guide and security policy exist in `.github`. Still planned: a governance document and a maintainer and review policy.
 
 ### Next (Q1 2027)
 
 Goal: fewer steps between a first deploy and a repeatable setup.
 
-- Release snapshots and environment bindings: pin a set of app versions and settings as a snapshot, and bind it to an environment so promotion moves a known set. Status: planned, builds on environment promotion and cloning.
 - Schema-driven config scaffold: generate starter `app.yaml` and stack files from the embedded JSON Schema, so field names and types come from one source. Status: planned, builds on `stack init` and the [app spec reference](/app-spec-reference).
-- MCP audit coverage: every MCP tool call, including read-only ones, shows up in the audit log with the token and the tool name, and a test fails when a new tool skips it. Status: planned. See [MCP tool surface](/mcp-tool-surface).
 - Template coverage: deploy more of the templates in e2e tests. Status: open.
 - Load and failover numbers: publish the first results from `levelrail-cli bench run`. Status: harness exists, no published results, see [benchmarks](/benchmarks).
 
@@ -73,6 +71,8 @@ Phase 5 (chaos testing, upgrade and downgrade testing across versions, security 
 - [Preview environments](/previews) per pull request (opt-in), with optional ephemeral databases and PR status comments. See [deploy previews](/deploy-previews).
 - Embedded Caddy ingress: automatic TLS (internal issuer by default, public ACME toggleable), zero-config `sslip.io` hostnames, per-domain bring-your-own certificates. See [domains and ingress](/domains-and-ingress).
 - Envelope-encrypted secrets with master-key rotation. See [security](/security).
+- Codespaces: a dev container config in `.devcontainer` for a one-click dev setup.
+- Read-only demo mode: `levelrail demo serve` over seeded fictional data, with a hosting runbook. See [Run a read-only demo](/run-a-read-only-demo).
 - Container exec and an interactive terminal (dashboard or `apps exec --interactive`), gated to root-level tokens.
 - [Service template](/templates-and-registry) catalog: all entries are listed in the [template catalog](/template-catalog), reversing the original non-goal in [ADR 015](https://github.com/glincker/levelrail/blob/main/adr/015-service-template-catalog-reversal.md).
 - Ingress abuse defense with per-app rate limits and address and User-Agent deny lists, starting in log only mode with a replay before enforcing. See [ingress abuse defense](/abuse-defense).
@@ -116,7 +116,7 @@ The join flow is verified across two real Docker daemons, but not across a real 
 
 - Dashboard, `levelrail-cli` (profiles, `--output` and `--query`, shell completion, device login, `doctor`, `apps create --interactive`) and `install.sh`.
 - Migration CLI: `levelrail-cli migrate coolify`, `dokploy` and `caprover`. See [Migrate to Levelrail](/migrate-to-levelrail).
-- MCP server (`cmd/levelrail-mcp`): over 240 tools, grouped into toolsets that an agent enables on demand. See [MCP tool surface](/mcp-tool-surface) for the exact, generated numbers, and the [AI assistant](/ai-assistant) page. Tokens are checked against the same abilities as the REST API.
+- MCP server (`cmd/levelrail-mcp`): over 240 tools, grouped into toolsets that an agent enables on demand. See [MCP tool surface](/mcp-tool-surface) for the exact, generated numbers, and the [AI assistant](/ai-assistant) page. Tokens are checked against the same abilities as the REST API. Every tool call is recorded with its tool name, argument names and outcome, API calls from the server carry the `mcp` client in the audit log, and a test fails when a tool registers around the audited path.
 - `migrate verify`, a parity report that compares the source with this server before DNS moves, shown on the Cutover tab of the Migrate page. See [migration reference](/migration-reference).
 - Cross-release schema migration tests that upgrade real v0.8.2 data across real migrations, with downgrade refusal and automatic restore. See [upgrade safely](/upgrade-safely).
 - The dashboard Start tab follows the project and environment picker. See [projects, organizations and environments](/projects-and-organizations).
@@ -126,6 +126,7 @@ The join flow is verified across two real Docker daemons, but not across a real 
 These exist and are tested, but are gated or carry a beta label. See [feature status](/feature-status) and [experimental features](/experimental-features).
 
 - In-app AI chat, AI models on GPU nodes, [load balancer](/load-balancing), [platform as code](/platform-as-code), Cloudflare Tunnel (all behind `APP_EXPERIMENTAL`).
+- Release snapshots and environment bindings behind `APP_RELEASE_BINDINGS` (`off` by default, `shadow` records, `on` lets promote and rollback use a release). See [promotions and releases](/promotions-and-releases#release-bindings-app_release_bindings).
 - Pipelines, feature flags, deploy freeze, supply chain scanning, [log archive](/log-archive), [scheduled deploys](/scheduled-deploys), deploy cost estimate.
 
 ## Open work
