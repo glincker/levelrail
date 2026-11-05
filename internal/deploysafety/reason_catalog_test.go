@@ -10,22 +10,36 @@ import (
 	"testing"
 )
 
-// reasonConstants reads reasons.go so a new Reason* constant is caught
-// without anyone remembering to list it in a test.
+// reasonSources lists every file that declares status reason constants and
+// the name prefix they share, so a new one cannot skip the catalog.
+var reasonSources = []struct{ file, prefix string }{
+	{"reasons.go", "Reason"},
+	{"../store/deploy_attempt_safety.go", "DeployReason"},
+	{"../store/deploy_attempt_queue.go", "DeployReason"},
+}
+
 func reasonConstants(t *testing.T) map[string]string {
 	t.Helper()
-	f, err := parser.ParseFile(token.NewFileSet(), "reasons.go", nil, 0)
-	if err != nil {
-		t.Fatalf("parse reasons.go: %v", err)
-	}
 	out := map[string]string{}
+	for _, src := range reasonSources {
+		collectReasons(t, src.file, src.prefix, out)
+	}
+	return out
+}
+
+func collectReasons(t *testing.T, file, prefix string, out map[string]string) {
+	t.Helper()
+	f, err := parser.ParseFile(token.NewFileSet(), file, nil, 0)
+	if err != nil {
+		t.Fatalf("parse %s: %v", file, err)
+	}
 	ast.Inspect(f, func(n ast.Node) bool {
 		vs, ok := n.(*ast.ValueSpec)
 		if !ok {
 			return true
 		}
 		for i, name := range vs.Names {
-			if !strings.HasPrefix(name.Name, "Reason") || i >= len(vs.Values) {
+			if !strings.HasPrefix(name.Name, prefix) || i >= len(vs.Values) {
 				continue
 			}
 			lit, ok := vs.Values[i].(*ast.BasicLit)
@@ -40,7 +54,6 @@ func reasonConstants(t *testing.T) map[string]string {
 		}
 		return true
 	})
-	return out
 }
 
 func TestReasonCatalogCoversEveryReasonConstant(t *testing.T) {

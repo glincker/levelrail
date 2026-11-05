@@ -1,4 +1,8 @@
 {
+  "deployNote": {
+    "queueLabel": "About the queue",
+    "queueBody": "Deploys of one app run one at a time. This one starts on its own when the deploy ahead of it finishes or is canceled."
+  },
   "statusReasons": {
     "about": "What this reason means",
     "next": "Next step:"
