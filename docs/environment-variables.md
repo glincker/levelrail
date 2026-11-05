@@ -65,6 +65,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_BUILD_NETWORK` | [`security.build_network`](/runtime-settings#security) | `open` |
 | `APP_WEBHOOK_REPLAY_PROTECTION` | [`security.webhook_replay_protection`](/runtime-settings#security) | `true` |
 | `APP_WEBHOOK_REPLAY_WINDOW` | [`security.webhook_replay_window`](/runtime-settings#security) | `10m` |
+| `APP_ATTENTION_TOKEN_WINDOW` | [`tokens.expiry_warning_days`](/runtime-settings#security) | `7` |
 | `APP_API_MAX_BODY_BYTES` | [`api.max_body_bytes`](/runtime-settings#networking) | `16777216` |
 | `APP_ASSETS_UPLOAD_MAX_BYTES` | [`assets.upload_max_bytes`](/runtime-settings#networking) | `1073741824` |
 | `APP_CUTOVER_VERIFY_CERT_FAIL_DAYS` | [`cutover.verify_cert_fail_days`](/runtime-settings#networking) | `7` |

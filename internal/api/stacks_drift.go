@@ -16,16 +16,47 @@ import (
 )
 
 // The shared drift token lives APP_STACK_DRIFT_TOKEN_TTL (default 2h) and
-// rotates in its last quarter; the TTL bounds a token orphaned by a crash.
+// rotates inside the runtime-settable lead; the TTL bounds a token orphaned by a crash.
 const (
 	envStackDriftTTL          = "APP_STACK_DRIFT_TOKEN_TTL"
 	defaultStackDriftTokenTTL = 2 * time.Hour
 	stackDriftTokenName       = "stack-drift"
+
+	auditActionTokenRotated = "tokens.rotated"
 )
 
-func stackDriftTokenLife() (ttl, renew time.Duration) {
+func (rt *Router) stackDriftTokenLife(ctx context.Context) (ttl, renew time.Duration) {
 	ttl = envDuration(envStackDriftTTL, defaultStackDriftTokenTTL)
-	return ttl, ttl / 4
+	renew = ttl / 4
+	if rt.runtimeSettings != nil {
+		renew = rt.runtimeSettings.SystemTokenRotationLead(ctx)
+	}
+	return ttl, effectiveRotationLead(renew, ttl)
+}
+
+// effectiveRotationLead keeps the lead at least an eighth of the lifetime, so a
+// drift pass that starts on a fresh token finishes before it expires, and below
+// half so a call never mints a new token every time.
+func effectiveRotationLead(setting, ttl time.Duration) time.Duration {
+	return min(max(setting, ttl/8), ttl/2)
+}
+
+// recordSystemTokenRotation writes one audit row per platform rotation: ids only, never a token value.
+func (rt *Router) recordSystemTokenRotation(ctx context.Context, name, oldID, newID string, oldRevoked bool) {
+	id, err := store.NewAuditEntryID()
+	if err != nil {
+		rt.logger.Warn("api: system token rotation audit id failed", slog.String("error", err.Error()))
+		return
+	}
+	entry := store.AuditEntry{
+		ID: id, ActorType: auditActorSystem, ActorID: "token-rotation", ActorName: "token rotation",
+		Ability: AbilityRoot, Method: http.MethodPost, Path: "/api/v1/auth/tokens", StatusCode: http.StatusOK,
+		CreatedAt: store.FormatAuditTime(time.Now()), ClientKind: "system", Action: auditActionTokenRotated,
+		Detail: fmt.Sprintf(`{"name":%q,"old_id":%q,"new_id":%q,"old_revoked":%t}`, name, oldID, newID, oldRevoked),
+	}
+	if err := rt.auditLog.SaveAuditEntry(ctx, entry); err != nil {
+		rt.logger.Warn("api: save system token rotation audit failed", slog.String("error", err.Error()))
+	}
 }
 
 // RevokeStaleStackDriftTokens revokes system-minted drift tokens left by an
@@ -96,17 +127,20 @@ type stackDriftToken struct {
 }
 
 // driftToken returns a live token, rotating it (and revoking the old one) when less
-// than the renew window of its life is left.
+// than the renew window of its life is left. StackDriftLive must stay single
+// caller: rotation revokes the old token, so a second caller would get 401s mid pass.
 func (rt *Router) driftToken(ctx context.Context) (string, error) {
 	d := &rt.stackDrift
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	ttl, renew := stackDriftTokenLife()
+	ttl, renew := rt.stackDriftTokenLife(ctx)
 	if d.raw != "" && time.Until(d.expires) > renew {
 		return d.raw, nil
 	}
+	oldID, oldRevoked := d.id, true
 	if d.id != "" {
 		if err := rt.tokens.RevokeAPIToken(context.WithoutCancel(ctx), d.id); err != nil {
+			oldRevoked = false
 			rt.logger.Warn("api: stack drift: revoke read token failed", slog.String("error", err.Error()))
 		}
 		d.raw, d.id = "", ""
@@ -123,6 +157,9 @@ func (rt *Router) driftToken(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("api: stack drift: mint read token: %w", err)
 	}
 	d.raw, d.id, d.expires = raw, rec.ID, expires
+	if oldID != "" {
+		rt.recordSystemTokenRotation(context.WithoutCancel(ctx), stackDriftTokenName, oldID, rec.ID, oldRevoked)
+	}
 	return raw, nil
 }
 
