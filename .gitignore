@@ -66,3 +66,6 @@ test/sso-lab/certs/
 
 # Local planning output from agent skills, never published
 /docs/superpowers/
+
+# Screenshot regression output (scripts/visual)
+web/visual-out/

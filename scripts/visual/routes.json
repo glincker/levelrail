@@ -1,0 +1,25 @@
+{
+  "widths": [1280, 768, 390],
+  "fixtureApps": [
+    {"name": "vr-web", "image": "nginx:alpine", "port": 80, "domains": ["vr-web.example.com"]},
+    {"name": "vr-api", "image": "httpd:alpine", "port": 80, "domains": ["vr-api.example.com"]}
+  ],
+  "routes": [
+    {"id": "dashboard", "path": "/"},
+    {"id": "apps", "path": "/apps"},
+    {"id": "app-overview", "path": "/apps/vr-web"},
+    {"id": "app-deploys", "path": "/apps/vr-web/deploys"},
+    {"id": "app-environment", "path": "/apps/vr-web/environment"},
+    {"id": "app-logs", "path": "/apps/vr-web/logs"},
+    {"id": "deployments", "path": "/deployments"},
+    {"id": "databases", "path": "/databases"},
+    {"id": "domains", "path": "/domains"},
+    {"id": "templates", "path": "/templates"},
+    {"id": "settings", "path": "/settings"},
+    {"id": "get-started", "path": "/get-started"},
+    {"id": "status", "path": "/status", "advisory": true},
+    {"id": "palette", "path": "/", "action": "palette"},
+    {"id": "sidebar", "path": "/", "action": "sidebar"},
+    {"id": "login", "path": "/login", "anonymous": true}
+  ]
+}
