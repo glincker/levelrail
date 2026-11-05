@@ -122,7 +122,7 @@ export function DeployPreviewThumb({
           />
         ) : null}
         {sourceLabel ? (
-          <span className="absolute bottom-1 left-1 rounded bg-background/80 px-1.5 py-0.5 text-[10px] font-medium text-foreground">
+          <span className="absolute bottom-1 left-1 rounded bg-background/80 px-1.5 py-0.5 text-xs font-medium text-foreground">
             {sourceLabel}
           </span>
         ) : null}
@@ -138,7 +138,7 @@ export function DeployPreviewThumb({
       {!canShow && !isCard && !loading && !capturing && record ? (
         <div className="flex flex-col items-start gap-1">
           <StatusPill tone="neutral" size="sm" label="No preview" />
-          <p className="line-clamp-3 text-[11px] leading-snug text-muted-foreground">
+          <p className="line-clamp-3 text-xs leading-snug text-muted-foreground">
             {previewReasonText(record.reason)}
           </p>
         </div>

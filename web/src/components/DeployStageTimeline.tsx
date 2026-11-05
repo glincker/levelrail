@@ -21,7 +21,7 @@ export function DeployStageTimeline({ stages }: { stages: DeployStage[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-sm text-muted-foreground uppercase tracking-wide">
+        <CardTitle className="text-sm font-semibold text-foreground">
           Deploy stages
         </CardTitle>
       </CardHeader>

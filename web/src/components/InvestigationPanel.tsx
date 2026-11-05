@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import { SectionTitle } from '@/components/ui/typography'
 import { useTranslation } from 'react-i18next'
 import { SearchGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import { useInvestigation } from '../queries/investigate'
@@ -13,9 +14,9 @@ import { Skeleton } from './ui/skeleton'
 
 function Heading({ children }: { children: string }) {
   return (
-    <h4 className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+    <SectionTitle as="h4" className="mb-2">
       {children}
-    </h4>
+    </SectionTitle>
   )
 }
 
