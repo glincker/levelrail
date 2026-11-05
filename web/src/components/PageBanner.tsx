@@ -33,14 +33,16 @@ export function PageBanner({
     descriptionText ?? t(descriptionKey, { defaultValue: descriptionKey })
   useRegisterPageTitle(title)
   const compact = size === 'compact'
+  // Art is reserved for the hero size; compact is a plain title row.
+  const art = !compact && Boolean(icon)
 
   // The icon keeps its true shape: depth comes from a rim light, contact and cast shadows and a floor shadow, never a perspective warp.
-  const iconArt = icon ? (
+  const iconArt = art ? (
     <div
       aria-hidden="true"
       className={cn(
         'pointer-events-none absolute z-[5] hidden -translate-y-1/2 sm:block motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-90 motion-safe:duration-500',
-        compact ? 'top-1/2 left-4 size-14' : 'top-1/2 left-6 size-24',
+        'top-1/2 left-6 size-24',
       )}
     >
       <div className="absolute inset-x-2 -bottom-3 h-3 rounded-full bg-black/45 blur-md" />
@@ -59,16 +61,19 @@ export function PageBanner({
     <header
       data-testid={compact ? 'page-banner-compact' : 'page-banner-full'}
       className={cn(
-        'banner-edge relative isolate flex flex-col items-stretch overflow-hidden sm:flex-row rounded-3xl bg-[linear-gradient(180deg,color-mix(in_oklab,var(--card),var(--foreground)_4%),var(--card))] [&_[data-slot=help-link]]:absolute [&_[data-slot=help-link]]:right-3 [&_[data-slot=help-link]]:bottom-3 [&_[data-slot=help-link]]:z-20',
+        'relative isolate flex flex-col items-stretch overflow-hidden sm:flex-row [&_[data-slot=help-link]]:absolute [&_[data-slot=help-link]]:right-3 [&_[data-slot=help-link]]:bottom-3 [&_[data-slot=help-link]]:z-20',
+        compact
+          ? 'rounded-xl border border-border bg-card'
+          : 'banner-edge rounded-3xl bg-[linear-gradient(180deg,color-mix(in_oklab,var(--card),var(--foreground)_4%),var(--card))]',
         className,
       )}
     >
-      {icon ? (
+      {art ? (
         <div
           aria-hidden="true"
           className={cn(
             'grain-orb pointer-events-none absolute -z-10 hidden sm:block motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-700',
-            compact ? '-top-6 -left-8 size-40' : '-top-10 -left-10 size-60',
+            '-top-10 -left-10 size-60',
           )}
         />
       ) : null}
@@ -79,7 +84,7 @@ export function PageBanner({
           compact
             ? 'min-h-[4.5rem] flex-wrap items-center px-4 py-3'
             : 'min-h-28 flex-col justify-center gap-y-2 px-6 py-5 md:max-w-xl md:flex-none',
-          icon && (compact ? 'sm:pl-24' : 'sm:pl-40'),
+          art && 'sm:pl-40',
         )}
       >
         <div
