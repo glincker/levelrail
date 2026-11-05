@@ -35,6 +35,7 @@ vi.mock('@/queries/silences', async (importOriginal) => ({
   useSilences: () => ({ data: silenceRows() as unknown }),
   useCreateSilence: () => ({ mutate: vi.fn(), isPending: false }),
   useDeleteSilence: () => ({ mutate: vi.fn(), isPending: false }),
+  useSilencePolicy: () => ({ data: undefined }),
 }))
 
 // Both sections fetch their own data and have their own tests.

@@ -165,7 +165,7 @@ func buildExplainTable() map[string]Explanation {
 		ex("control_plane_backup", "The control plane has no recent backup.", "Losing the host would lose your settings and secrets.",
 			nextFixButton+"It takes a backup now. "+nextCLIFix, "backup.control_plane.snapshot", KindAuto),
 		ex("control_plane_dr", "The disaster recovery copy of the control plane is missing or old.", "A rebuilt host could not be restored.",
-			"Open Settings, then Backups, and set an off-host destination.", "", KindGuided),
+			nextFixButton+"It switches the schedule on when a destination and a recipient are saved. Otherwise open Settings, then Backups, and set an off-host destination.", "control_plane.dr.enable", KindAuto),
 		ex("backup_freshness", "A database or volume backup is late.", "Recent data would be lost in a failure.",
 			"Open Backups, find the late item and press Run now. Check its schedule if it keeps going late.", "", KindGuided),
 		ex("backup_drill", "The latest restore test of a backup failed.", "A backup that cannot be restored is not a backup.",

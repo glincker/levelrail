@@ -216,7 +216,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Pipelines: OIDC federation](/pipelines-oidc): Mint short-lived OIDC tokens for pipeline jobs, and wire AWS, GCP, or Vault to trust them without a long-lived credential.
 - [Git integrations](/git-integrations): Connect GitHub, GitLab, Bitbucket or Gitea for automatic git-triggered deploys, per-pull-request preview environments, and webhook history with replay.
 - [Git reliability](/git-reliability): What the control plane caches and polls, what connection and webhook statuses mean, the variables behind them, and how to recover a push that did not deploy.
-- [Wait for CI before deploying](/ci-gate): Hold a deploy until the commit's CI checks conclude. Without the gate, a push deploys as soon as the webhook arrives, even if tests are still running or failed.
+- [Wait for CI before deploying](/ci-gate): Hold an automatic git deploy until the commit's CI checks conclude. Works with GitHub and GitLab, and the push is answered at once while the wait runs in the background.
 - [Deploy with git push](/git-push-deploy): Push a branch to a git remote on your own server and it builds and deploys that exact commit. A beta feature, off by default, with a per-app token.
 - [Import a repository](/import-a-repo): Go from a git repository to a running app in a few steps, with detection that tells you what it found and why.
 - [Monorepos](/monorepos): Detect workspaces, run one service per package from a single repository, and redeploy only the services a push actually changed.

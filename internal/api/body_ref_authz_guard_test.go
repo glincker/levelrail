@@ -33,6 +33,7 @@ var bodyRefAuthzAllowlist = map[string]string{ //nolint:gosec // reasons, not cr
 	"handleStepUpPasskeyFinish": "a step-up grant confers no access; the protected route still authorizes the app",
 	"handleCIOIDCExchange":      "unauthenticated by design; the app name only selects trusts, and a token is minted only after the CI provider JWT verifies against a trust of that app",
 	"parseDeploymentQuery":      "pure parser; handleListDeployments intersects the filter with visibleAppNames",
+	"pushOutcome":               "signature-verified webhook outcome: the app comes from the matched git source, the body names no resource the caller could reach",
 }
 
 func TestBodyResourceRefsAreAuthorized(t *testing.T) {

@@ -110,8 +110,8 @@ describe('docker guard feed item', () => {
       'items.dockerGuardReadyTitle',
       'items.dockerGuardDeniedTitle',
     ])
-    expect(out[0].detail).toContain('items.dockerGuardMore')
-    expect(out[2].severity).toBe('info')
+    expect(out[0]?.detail).toContain('items.dockerGuardMore')
+    expect(out[2]?.severity).toBe('info')
   })
 })
 
