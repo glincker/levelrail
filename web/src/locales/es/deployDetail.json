@@ -1,4 +1,8 @@
 {
+  "receipt": {
+    "button": "Recibo (JSON)",
+    "hint": "Descarga el recibo de despliegue sin firmar: commit, digest de la imagen, solicitante, aprobador y cronología de comprobaciones"
+  },
   "tabs": {
     "build": "Compilación",
     "image": "Imagen",

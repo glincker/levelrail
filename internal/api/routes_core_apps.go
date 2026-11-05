@@ -227,12 +227,13 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/deployments/summary", rt.requireAbility(AbilityRead, rt.handleDeploymentsSummary))
 	mux.HandleFunc("GET /api/v1/deployments/timeline", rt.requireAbility(AbilityRead, rt.handleDeploymentsTimeline))
 	mux.HandleFunc("GET /api/v1/deployments/stream", rt.requireAbility(AbilityRead, rt.withStreamReauth(deploymentsStreamResource, rt.handleDeploymentsStream)))
+	// Deploy receipt (deploy_receipt.go): one unsigned JSON or markdown record of a deploy with its commit, image digest, requester, approver and gate timeline. AbilityRead on the app.
+	mux.HandleFunc("GET /api/v1/apps/{name}/deployments/{id}/receipt", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDeployReceipt))
 	// Per-deploy event timeline (deploy_timeline.go): the whole story of one
 	// deploy as ordered events, a live SSE view that ends when the deploy
 	// settles, and a two-deploy comparison. Settled timelines are frozen for
 	// replay until APP_DEPLOY_TIMELINE_RETENTION. AbilityRead, filtered to
 	// the apps the caller can read.
-	mux.HandleFunc("GET /api/v1/apps/{name}/deployments/{id}/receipt", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDeployReceipt))
 	mux.HandleFunc("GET /api/v1/deployments/{id}/timeline", rt.requireAbility(AbilityRead, rt.handleGetDeployTimeline))
 	mux.HandleFunc("GET /api/v1/deployments/{id}/timeline/stream", rt.requireAbility(AbilityRead, rt.withStreamReauth(timelineStreamResource, rt.handleDeployTimelineStream)))
 	mux.HandleFunc("GET /api/v1/deployments/{id}/timeline/compare", rt.requireAbility(AbilityRead, rt.handleCompareDeployTimelines))

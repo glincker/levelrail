@@ -12310,7 +12310,7 @@
     },
     "/api/v1/apps/{name}/deployments/{id}/receipt": {
       "get": {
-        "description": "Per-deploy event timeline (deploy_timeline.go): the whole story of one deploy as ordered events, a live SSE view that ends when the deploy settles, and a two-deploy comparison. Settled timelines are frozen for replay until APP_DEPLOY_TIMELINE_RETENTION. AbilityRead, filtered to the apps the caller can read.\n\nRequires the `read` ability.",
+        "description": "Deploy receipt (deploy_receipt.go): one unsigned JSON or markdown record of a deploy with its commit, image digest, requester, approver and gate timeline. AbilityRead on the app.\n\nRequires the `read` ability.",
         "operationId": "handleGetDeployReceipt",
         "parameters": [
           {
@@ -12387,7 +12387,7 @@
             ]
           }
         ],
-        "summary": "Per-deploy event timeline (deploy_timeline.go): the whole story of one deploy as ordered events, a live SSE view that ends when the deploy settles, and a two-deploy comparison.",
+        "summary": "Deploy receipt (deploy_receipt.go): one unsigned JSON or markdown record of a deploy with its commit, image digest, requester, approver and gate timeline.",
         "tags": [
           "Apps CRUD / Lifecycle / Deploy"
         ],
@@ -67662,7 +67662,7 @@
     },
     "/api/v1/deployments/{id}/timeline": {
       "get": {
-        "description": "Requires the `read` ability.",
+        "description": "Per-deploy event timeline (deploy_timeline.go): the whole story of one deploy as ordered events, a live SSE view that ends when the deploy settles, and a two-deploy comparison. Settled timelines are frozen for replay until APP_DEPLOY_TIMELINE_RETENTION. AbilityRead, filtered to the apps the caller can read.\n\nRequires the `read` ability.",
         "operationId": "handleGetDeployTimeline",
         "parameters": [
           {
@@ -67731,7 +67731,7 @@
             ]
           }
         ],
-        "summary": "Get Deploy Timeline",
+        "summary": "Per-deploy event timeline (deploy_timeline.go): the whole story of one deploy as ordered events, a live SSE view that ends when the deploy settles, and a two-deploy comparison.",
         "tags": [
           "Other"
         ],

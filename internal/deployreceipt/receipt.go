@@ -6,9 +6,16 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/supplychain"
+)
+
+// Approval match kinds.
+const (
+	MatchedHeldAttempt  = "held_attempt"
+	MatchedImageAndTime = "image_and_time"
 )
 
 // SchemaVersion is bumped when a field changes meaning or is removed.
@@ -70,6 +77,8 @@ type Approval struct {
 	Requester      Person  `json:"requester"`
 	Approver       *Person `json:"approver,omitempty"`
 	FreezeOverride string  `json:"freeze_override,omitempty"`
+	// MatchedBy is "held_attempt" for an exact link or "image_and_time" for a heuristic match.
+	MatchedBy string `json:"matched_by"`
 }
 
 // Receipt is the document served at the receipt endpoint.
@@ -91,6 +100,9 @@ type Receipt struct {
 	SBOM          SBOM       `json:"sbom"`
 	Gate          []GateStep `json:"gate_timeline"`
 	RerunOf       string     `json:"rerun_of,omitempty"`
+	// Incomplete is true when a lookup failed, so absent sections mean unknown.
+	Incomplete   bool     `json:"incomplete,omitempty"`
+	LookupErrors []string `json:"lookup_errors,omitempty"`
 }
 
 // Inputs are the already-loaded records a receipt is derived from.
@@ -101,7 +113,10 @@ type Inputs struct {
 	Approval  *store.DeployApproval
 	SBOM      *supplychain.Record
 	Gate      []store.DeployGateEvent
-	Now       time.Time
+	// ApprovalMatchedBy says how Approval was linked to the attempt.
+	ApprovalMatchedBy string
+	LookupErrors      []string
+	Now               time.Time
 }
 
 func ts(t time.Time) string { return t.UTC().Format(time.RFC3339) }
@@ -137,12 +152,12 @@ func Assemble(in Inputs) Receipt {
 	}
 	if in.Approval != nil {
 		r.Approval = approvalOf(*in.Approval)
-		if r.Requester == nil {
-			p := r.Approval.Requester
-			r.Requester = &p
-		}
+		r.Approval.MatchedBy = in.ApprovalMatchedBy
 	}
 	r.SBOM = sbomOf(in.SBOM)
+	if len(in.LookupErrors) > 0 {
+		r.Incomplete, r.LookupErrors = true, in.LookupErrors
+	}
 	for _, e := range in.Gate {
 		r.Gate = append(r.Gate, GateStep{At: ts(e.At), Phase: e.Phase, Status: e.Status, Reason: e.Reason, Message: e.Message})
 	}
@@ -177,6 +192,7 @@ func sbomOf(rec *supplychain.Record) SBOM {
 
 // Markdown renders the receipt for reading or printing.
 func Markdown(r Receipt) string {
+	r = sanitized(r)
 	var b strings.Builder
 	fmt.Fprintf(&b, "# Deploy receipt %s\n\nUnsigned record derived from control plane data. Not an attestation.\n\n", r.DeployID)
 	fmt.Fprintf(&b, "- App: %s\n- Source: %s\n- Status: %s\n- Started: %s\n", r.App, r.Source, r.Status, r.StartedAt)
@@ -198,12 +214,17 @@ func Markdown(r Receipt) string {
 		fmt.Fprintf(&b, "- Requested by: %s\n", NotRecorded)
 	}
 	if r.Approval != nil && r.Approval.Approver != nil {
-		fmt.Fprintf(&b, "- Approved by: %s (approval %s)\n", personLine(*r.Approval.Approver), r.Approval.ID)
+		fmt.Fprintf(&b, "- Approved by: %s (approval %s, matched by %s)\n", personLine(*r.Approval.Approver), r.Approval.ID, r.Approval.MatchedBy)
+	} else if r.Incomplete && hasErr(r.LookupErrors, "approval") {
+		b.WriteString("- Approved by: approval lookup failed, unknown\n")
 	} else {
 		b.WriteString("- Approved by: no approval on record\n")
 	}
 	if r.Approval != nil && r.Approval.FreezeOverride != "" {
 		fmt.Fprintf(&b, "- Freeze override reason: %s\n", r.Approval.FreezeOverride)
+	}
+	if r.Incomplete {
+		fmt.Fprintf(&b, "- Incomplete: %s (unknown, not absent)\n", strings.Join(r.LookupErrors, ", "))
 	}
 	b.WriteString("\n## SBOM\n\n")
 	if r.SBOM.Recorded {
@@ -212,7 +233,9 @@ func Markdown(r Receipt) string {
 		fmt.Fprintf(&b, "- %s\n", NotRecorded)
 	}
 	b.WriteString("\n## Gate timeline\n\n")
-	if len(r.Gate) == 0 {
+	if len(r.Gate) == 0 && r.Incomplete && hasErr(r.LookupErrors, "gate") {
+		b.WriteString("- gate events lookup failed, unknown\n")
+	} else if len(r.Gate) == 0 {
 		b.WriteString("- no gate events recorded\n")
 	}
 	for _, g := range r.Gate {
@@ -237,4 +260,68 @@ func orNone(s string) string {
 		return "none"
 	}
 	return s
+}
+
+// maxFieldLen caps any free-text field in the markdown view.
+const maxFieldLen = 300
+
+var mdEscaper = strings.NewReplacer("\\", "\\\\", "`", "\\`", "*", "\\*", "_", "\\_", "[", "\\[", "]", "\\]", "<", "\\<", ">", "\\>", "#", "\\#", "|", "\\|")
+
+// clean turns control characters into spaces, caps the length and escapes markdown.
+func clean(s string) string {
+	s = strings.Map(func(r rune) rune {
+		if unicode.IsControl(r) || r == '\u2028' || r == '\u2029' {
+			return ' '
+		}
+		return r
+	}, s)
+	if rs := []rune(s); len(rs) > maxFieldLen {
+		s = string(rs[:maxFieldLen])
+	}
+	return mdEscaper.Replace(strings.TrimSpace(s))
+}
+
+func sanitized(r Receipt) Receipt {
+	r.Commit = Commit{SHA: clean(r.Commit.SHA), Branch: clean(r.Commit.Branch), Author: clean(r.Commit.Author), Message: clean(r.Commit.Message)}
+	r.Image = Image{Tag: clean(r.Image.Tag), Digest: clean(r.Image.Digest), DigestSource: clean(r.Image.DigestSource)}
+	r.DeployID, r.App, r.Source, r.Status, r.Verdict, r.RerunOf = clean(r.DeployID), clean(r.App), clean(r.Source), clean(r.Status), clean(r.Verdict), clean(r.RerunOf)
+	r.SBOM.Format, r.SBOM.ScanStatus = clean(r.SBOM.Format), clean(r.SBOM.ScanStatus)
+	if r.Requester != nil {
+		p := cleanPerson(*r.Requester)
+		r.Requester = &p
+	}
+	if r.Approval != nil {
+		a := *r.Approval
+		a.ID, a.MatchedBy, a.FreezeOverride = clean(a.ID), clean(a.MatchedBy), clean(a.FreezeOverride)
+		a.Requester = cleanPerson(a.Requester)
+		if a.Approver != nil {
+			p := cleanPerson(*a.Approver)
+			a.Approver = &p
+		}
+		r.Approval = &a
+	}
+	gate := make([]GateStep, len(r.Gate))
+	for i, g := range r.Gate {
+		gate[i] = GateStep{At: clean(g.At), Phase: clean(g.Phase), Status: clean(g.Status), Reason: clean(g.Reason), Message: clean(g.Message)}
+	}
+	r.Gate = gate
+	errs := make([]string, len(r.LookupErrors))
+	for i, e := range r.LookupErrors {
+		errs[i] = clean(e)
+	}
+	r.LookupErrors = errs
+	return r
+}
+
+func cleanPerson(p Person) Person {
+	return Person{Kind: clean(p.Kind), ID: clean(p.ID), Name: clean(p.Name), At: clean(p.At)}
+}
+
+func hasErr(errs []string, prefix string) bool {
+	for _, e := range errs {
+		if strings.HasPrefix(e, prefix) {
+			return true
+		}
+	}
+	return false
 }

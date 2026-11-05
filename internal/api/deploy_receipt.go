@@ -3,13 +3,14 @@ package api
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/deployreceipt"
-	"github.com/GLINCKER/levelrail/internal/deploytimeline"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/supplychain"
 )
@@ -32,20 +33,25 @@ func (rt *Router) handleGetDeployReceipt(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	ctx := r.Context()
-	cfg := deploytimeline.ConfigFromEnv()
 	tl := rt.buildTimeline(ctx, a)
 	in := deployreceipt.Inputs{
 		Attempt:   a,
 		Verdict:   string(tl.Verdict),
 		Requester: deployreceipt.Person{Kind: tl.Trigger.ActorKind, Name: tl.Trigger.Actor},
-		Approval:  rt.receiptApproval(ctx, a, cfg.ActorWindow),
 		SBOM:      rt.receiptSBOM(ctx, a),
 		Now:       time.Now(),
 	}
+	ap, matchedBy, err := rt.receiptApproval(ctx, a)
+	if err != nil {
+		rt.logger.Warn("api: deploy receipt: list approvals failed", slog.String("deploy_id", a.ID), slog.String("error", err.Error()))
+		in.LookupErrors = append(in.LookupErrors, "approval lookup failed")
+	}
+	in.Approval, in.ApprovalMatchedBy = ap, matchedBy
 	if rt.deployGate != nil {
 		events, err := rt.deployGate.ListGateEvents(ctx, a.ID)
 		if err != nil {
 			rt.logger.Warn("api: deploy receipt: list gate events failed", slog.String("deploy_id", a.ID), slog.String("error", err.Error()))
+			in.LookupErrors = append(in.LookupErrors, "gate events lookup failed")
 		}
 		in.Gate = events
 	}
@@ -62,39 +68,52 @@ func (rt *Router) handleGetDeployReceipt(w http.ResponseWriter, r *http.Request)
 	writeJSON(w, http.StatusOK, rec)
 }
 
-// receiptApproval finds the approved request that released the attempt: the
-// replay that held it, else the newest approved request for the same image
-// made before the attempt started.
-func (rt *Router) receiptApproval(ctx context.Context, a store.DeployAttempt, window time.Duration) *store.DeployApproval {
+// envReceiptApprovalWindow bounds the image-and-time fallback match.
+const envReceiptApprovalWindow = "APP_DEPLOY_RECEIPT_APPROVAL_WINDOW"
+
+func receiptApprovalWindow() time.Duration {
+	if d, err := time.ParseDuration(strings.TrimSpace(os.Getenv(envReceiptApprovalWindow))); err == nil && d > 0 {
+		return d
+	}
+	return 15 * time.Minute
+}
+
+// receiptApproval finds the approval that released the attempt: an exact
+// held-attempt link, else an approved deploy, promote or replay decided
+// shortly before the attempt started for the same image.
+func (rt *Router) receiptApproval(ctx context.Context, a store.DeployAttempt) (*store.DeployApproval, string, error) {
 	if rt.deployApprovals == nil {
-		return nil
+		return nil, "", nil
 	}
 	list, err := rt.deployApprovals.ListDeployApprovals(ctx, store.DeployApprovalStatusApproved, a.ServiceName)
 	if err != nil {
-		if !errors.Is(err, context.Canceled) {
-			rt.logger.Warn("api: deploy receipt: list approvals failed", slog.String("deploy_id", a.ID), slog.String("error", err.Error()))
-		}
-		return nil
+		return nil, "", fmt.Errorf("list approvals for %s: %w", a.ServiceName, err)
 	}
 	var best *store.DeployApproval
 	var bestAt time.Time
+	earliest := a.StartedAt.Add(-receiptApprovalWindow())
 	for i := range list {
 		ap := list[i]
 		if ap.HeldAttemptID == a.ID {
-			return &ap
+			return &ap, deployreceipt.MatchedHeldAttempt, nil
 		}
-		if ap.Image != a.Image {
+		switch ap.Action {
+		case store.DeployApprovalActionDeploy, store.DeployApprovalActionPromote, store.DeployApprovalActionReplay:
+		default:
 			continue
 		}
 		decided, perr := time.Parse(time.RFC3339Nano, ap.DecidedAt)
-		if perr != nil || decided.After(a.StartedAt.Add(window)) {
+		if ap.Image != a.Image || perr != nil || decided.After(a.StartedAt) || decided.Before(earliest) {
 			continue
 		}
 		if best == nil || decided.After(bestAt) {
 			best, bestAt = &ap, decided
 		}
 	}
-	return best
+	if best == nil {
+		return nil, "", nil
+	}
+	return best, deployreceipt.MatchedImageAndTime, nil
 }
 
 func (rt *Router) receiptSBOM(ctx context.Context, a store.DeployAttempt) *supplychain.Record {

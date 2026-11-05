@@ -39,7 +39,7 @@ func TestDeployReceipt_NamesRequesterAndApprover(t *testing.T) {
 	if got.SchemaVersion != 1 || got.Signed || got.Commit.SHA != "abcdef1234567" {
 		t.Fatalf("receipt = %+v", got)
 	}
-	if got.Approval == nil || got.Approval.Approver == nil || got.Approval.Approver.Name != "Bo" || got.Requester == nil || got.Requester.Name != "Ana" {
+	if got.Approval == nil || got.Approval.Approver == nil || got.Approval.Approver.Name != "Bo" || got.Approval.Requester.Name != "Ana" || got.Approval.MatchedBy != deployreceipt.MatchedImageAndTime {
 		t.Fatalf("people not named: %+v", got)
 	}
 	if got.SBOM.Recorded || got.SBOM.Note != deployreceipt.NotRecorded {

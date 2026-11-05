@@ -29,7 +29,8 @@
       "name": "Bo",
       "at": "2026-11-05T10:00:30Z"
     },
-    "freeze_override": "incident fix"
+    "freeze_override": "incident fix",
+    "matched_by": ""
   },
   "commit": {
     "sha": "abc",
