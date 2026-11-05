@@ -203,11 +203,11 @@ func Wait(ctx context.Context, p Provider, sha string, pol Policy, cfg Config) (
 func evaluate(all []Check, pol Policy, noChecksGraceOver bool) (Result, bool) {
 	seen := map[string]Check{}
 	for _, c := range all {
-		if ignored(c.Name, pol.IgnorePrefixes) {
+		name := strings.TrimSpace(c.Name)
+		if name == "" || ignored(name, pol.IgnorePrefixes) {
 			continue
 		}
 		// A rerun reports the same name again; keep the worst so a failure is never hidden.
-		name := strings.TrimSpace(c.Name)
 		c.Name = name
 		if prev, ok := seen[name]; ok && severity(prev) >= severity(c) {
 			continue
