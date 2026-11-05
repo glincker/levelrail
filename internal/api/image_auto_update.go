@@ -12,6 +12,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -37,6 +38,8 @@ type imageAutoUpdateResource struct {
 	LastCheckedAt *time.Time `json:"last_checked_at,omitempty"`
 	LastResult    string     `json:"last_result,omitempty"`
 	HasWebhook    bool       `json:"has_webhook"`
+	// HasSigningSecret reports whether GitHub package deliveries must carry a valid X-Hub-Signature-256.
+	HasSigningSecret bool `json:"has_signing_secret"`
 	// WindowCron and WindowMinutes: updates found outside the window wait for it.
 	WindowCron    string `json:"window_cron,omitempty"`
 	WindowMinutes int    `json:"window_minutes,omitempty"`
@@ -67,7 +70,9 @@ func (rt *Router) handleGetImageAutoUpdate(w http.ResponseWriter, r *http.Reques
 		rt.internalError(w, "api: get image auto-update", err, slog.String("name", name))
 		return
 	}
-	writeJSON(w, http.StatusOK, toImageAutoUpdateResource(u))
+	res := toImageAutoUpdateResource(u)
+	res.HasSigningSecret = rt.hasPushSigningSecret(r.Context(), name)
+	writeJSON(w, http.StatusOK, res)
 }
 
 func (rt *Router) handleSetImageAutoUpdate(w http.ResponseWriter, r *http.Request) {
@@ -204,21 +209,33 @@ func (rt *Router) imageUpdateSkipReason(ctx context.Context, svc store.DesiredSe
 		return "deploy freeze active: " + reason
 	}
 	if svc.EnvironmentID != "" {
-		if env, err := rt.environments.GetEnvironment(ctx, svc.EnvironmentID); err == nil && env.Protected {
+		env, err := rt.environments.GetEnvironment(ctx, svc.EnvironmentID)
+		switch {
+		case errors.Is(err, store.ErrEnvironmentNotFound):
+		case err != nil:
+			return "could not check whether the environment is protected"
+		case env.Protected:
 			return "protected environment, deploy it manually"
 		}
 	}
 	return ""
 }
 
-// Registry webhooks redeliver on retries; this keeps them from hammering the registry.
-const imageUpdateWebhookDebounce = 30 * time.Second
-
 const imageUpdateWebhookTimeout = 2 * time.Minute
 
 type imageUpdateWebhookResource struct {
 	Path  string `json:"path"`
 	Token string `json:"token"`
+	// SigningSecret is the GitHub package webhook secret, shown once alongside the token; empty when secrets are not configured.
+	SigningSecret string `json:"signing_secret,omitempty"`
+}
+
+func (rt *Router) hasPushSigningSecret(ctx context.Context, name string) bool {
+	if rt.gitSourceSecrets == nil {
+		return false
+	}
+	has, err := rt.gitSourceSecrets.Exists(ctx, imageUpdateSecretNS+name, imageUpdateSecretKey)
+	return err == nil && has
 }
 
 // handleRotateImageUpdateWebhook mints a fresh webhook token, shown once.
@@ -236,11 +253,36 @@ func (rt *Router) handleRotateImageUpdateWebhook(w http.ResponseWriter, r *http.
 		rt.internalError(w, "api: rotate image update webhook: mint token", err)
 		return
 	}
+	res := imageUpdateWebhookResource{Path: imageUpdateHookPrefix + name + "/" + token, Token: token}
+	// The new secret is staged and accepted beside the old one until the new URL is saved, so a failed
+	// save leaves the working hook and its signing secret untouched.
+	var secret string
+	if rt.gitSourceSecrets != nil {
+		var serr error
+		if secret, serr = randomToken(); serr == nil {
+			serr = rt.gitSourceSecrets.SetValue(r.Context(), imageUpdateSecretNS+name, imageUpdateSecretPendingKey, secret)
+		}
+		if serr != nil {
+			rt.internalError(w, "api: rotate image update webhook: stage signing secret", serr, slog.String("name", name))
+			return
+		}
+	}
 	if err := rt.imageAutoUpdates.SetImageAutoUpdateWebhookHash(r.Context(), name, hashToken(token)); err != nil {
 		rt.internalError(w, "api: rotate image update webhook", err, slog.String("name", name))
 		return
 	}
-	writeJSON(w, http.StatusOK, imageUpdateWebhookResource{Path: "/api/v1/hooks/image-update/" + name + "/" + token, Token: token})
+	if secret != "" {
+		serr := rt.gitSourceSecrets.SetValue(r.Context(), imageUpdateSecretNS+name, imageUpdateSecretKey, secret)
+		if serr == nil {
+			serr = rt.recordPushRotator(r, name)
+		}
+		if serr != nil {
+			rt.internalError(w, "api: rotate image update webhook: promote signing secret", serr, slog.String("name", name))
+			return
+		}
+		res.SigningSecret = secret
+	}
+	writeJSON(w, http.StatusOK, res)
 }
 
 // handleImageUpdateWebhook is the public registry push hook. Unknown app,
@@ -260,7 +302,10 @@ func (rt *Router) handleImageUpdateWebhook(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusNotFound, "not found")
 		return
 	}
-	if u.LastCheckedAt != nil && time.Since(*u.LastCheckedAt) < imageUpdateWebhookDebounce {
+	if rt.handleRegistryPushDelivery(w, r, name) {
+		return
+	}
+	if u.LastCheckedAt != nil && time.Since(*u.LastCheckedAt) < rt.runtimeSettings.Duration(r.Context(), runtimesettings.KeyDeploysRegistryPushDebounce) {
 		writeJSON(w, http.StatusAccepted, map[string]string{"status": "checked recently"})
 		return
 	}

@@ -12,8 +12,10 @@ type ImageAutoUpdateResource struct {
 	LastCheckedAt *time.Time `json:"last_checked_at,omitempty"`
 	LastResult    string     `json:"last_result,omitempty"`
 	HasWebhook    bool       `json:"has_webhook"`
-	WindowCron    string     `json:"window_cron,omitempty"`
-	WindowMinutes int        `json:"window_minutes,omitempty"`
+	// HasSigningSecret is true when GitHub package deliveries must be signed.
+	HasSigningSecret bool   `json:"has_signing_secret"`
+	WindowCron       string `json:"window_cron,omitempty"`
+	WindowMinutes    int    `json:"window_minutes,omitempty"`
 }
 
 // GetImageAutoUpdate calls GET /api/v1/apps/{name}/auto-update.
@@ -51,6 +53,8 @@ func (c *Client) CheckImageAutoUpdate(ctx context.Context, appName string) (Imag
 type ImageUpdateWebhookResource struct {
 	Path  string `json:"path"`
 	Token string `json:"token"`
+	// SigningSecret is the GitHub webhook secret, shown once; empty when the control plane has no secrets store.
+	SigningSecret string `json:"signing_secret,omitempty"`
 }
 
 // RotateImageUpdateWebhook calls POST /api/v1/apps/{name}/auto-update/webhook.
