@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import type { AppListEntry } from '../types/appDetail'
 import type { NodeResource } from '../types/nodeDetail'
-import { buildAttentionItems } from './attention'
+import {
+  buildAttentionItems,
+  doctorSilenceKeys,
+  silencedWithLegacy,
+} from './attention'
+import { summarizeAttention } from './attentionSummary'
 
 const app = (name: string, variant: 'success' | 'destructive' | 'muted') =>
   ({ name, status: { label: 'x', variant } }) as unknown as AppListEntry
@@ -158,5 +163,38 @@ describe('buildAttentionItems', () => {
       },
     })
     expect(items[0]?.detail).toContain(c.wantDetail)
+  })
+})
+
+describe('doctor silence keys', () => {
+  const item = { id: 'doctor:Alpha', legacyIds: ['doctor:a_code'] }
+
+  it('returns the name key first, then the legacy code key', () => {
+    expect(doctorSilenceKeys({ name: 'Alpha', code: 'a_code' })).toEqual([
+      'doctor:Alpha',
+      'doctor:a_code',
+    ])
+  })
+
+  it('treats a legacy-only silence as silenced, and the header count agrees', () => {
+    const only = (key: string) => (id: string) => id === key
+    const legacy = summarizeAttention(
+      [
+        {
+          ...item,
+          severity: 'warning',
+          title: 'A',
+          detail: '',
+          target: { kind: 'system' },
+        },
+      ],
+      silencedWithLegacy([item], only('doctor:a_code')),
+    )
+    expect(legacy.count).toBe(0)
+    const current = silencedWithLegacy([item], only('doctor:Alpha'))
+    expect(current('doctor:Alpha')).toBe(true)
+    expect(
+      silencedWithLegacy([item], only('doctor:other'))('doctor:Alpha'),
+    ).toBe(false)
   })
 })

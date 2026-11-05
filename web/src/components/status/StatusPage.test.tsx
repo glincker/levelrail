@@ -24,6 +24,7 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
   }
 })
 
+const silenceRows = vi.fn(() => [] as unknown[])
 const useAttentionItems = vi.fn()
 vi.mock('@/queries/attention', () => ({
   useAttentionItems: () => useAttentionItems() as unknown,
@@ -31,7 +32,7 @@ vi.mock('@/queries/attention', () => ({
 
 vi.mock('@/queries/silences', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/queries/silences')>()),
-  useSilences: () => ({ data: [] }),
+  useSilences: () => ({ data: silenceRows() as unknown }),
   useCreateSilence: () => ({ mutate: vi.fn(), isPending: false }),
   useDeleteSilence: () => ({ mutate: vi.fn(), isPending: false }),
 }))
@@ -70,6 +71,8 @@ describe('StatusPage', () => {
   afterEach(() => {
     cleanup()
     useAttentionItems.mockReset()
+    silenceRows.mockReset()
+    silenceRows.mockReturnValue([])
     mutate.mockReset()
   })
 
@@ -161,4 +164,35 @@ describe('StatusPage', () => {
       .click(screen.getByRole('button', { name: 'Restart web' }))
     expect(mutate).toHaveBeenCalledWith('web', expect.any(Object))
   })
+
+  it.each(['doctor:code_a', 'doctor:Alpha'])(
+    'hides a doctor row silenced under %s',
+    (key) => {
+      silenceRows.mockReturnValue([
+        {
+          id: 's1',
+          issue_key: key,
+          created_by: 'me',
+          created_at: '2026-01-01T00:00:00Z',
+          expired: false,
+        },
+      ])
+      useAttentionItems.mockReturnValue({
+        items: [
+          {
+            id: 'doctor:Alpha',
+            legacyIds: ['doctor:code_a'],
+            severity: 'warning',
+            title: 'Alpha check',
+            detail: 'd',
+            target: { kind: 'system' },
+          },
+        ],
+        isLoading: false,
+      })
+      render(<StatusPage />)
+      expect(screen.queryByRole('link', { name: /Alpha/ })).toBeNull()
+      expect(screen.getByText('silence.sectionTitle')).toBeInTheDocument()
+    },
+  )
 })

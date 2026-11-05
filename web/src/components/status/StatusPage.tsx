@@ -16,7 +16,11 @@ import { toast } from '@/components/ui/toast'
 import { useAttentionItems } from '@/queries/attention'
 import { useRestartApp } from '@/queries/apps'
 import { useTriggerDeploy } from '@/queries/deploys'
-import { attentionClassOf } from '@/lib/attention'
+import {
+  attentionClassOf,
+  canonicalSilences,
+  silencedWithLegacy,
+} from '@/lib/attention'
 import type { AttentionItem } from '@/lib/attention'
 import { StatusAdvisory } from '@/components/status/StatusAdvisory'
 import { ResolvedLoginControls } from '@/components/attention/ResolvedLoginControls'
@@ -289,7 +293,8 @@ function StatusRow({ item }: { item: AttentionItem }) {
 export function StatusPage() {
   const { items: all, isLoading } = useAttentionItems()
   const { t } = useTranslation('attention')
-  const { isSnoozed, silences, now } = useSnoozed()
+  const { isSnoozed: baseSnoozed, silences, now } = useSnoozed()
+  const isSnoozed = silencedWithLegacy(all, baseSnoozed)
   const visible = all.filter((i) => !isSnoozed(i.id))
   const items = visible.filter((i) => attentionClassOf(i) !== 'recommendation')
   const advisory = visible.filter(
@@ -343,7 +348,7 @@ export function StatusPage() {
       <IncidentsSection />
       <SilencedSection
         items={all}
-        silences={silences}
+        silences={canonicalSilences(all, silences)}
         now={now}
         isSnoozed={isSnoozed}
       />

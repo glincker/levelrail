@@ -5,6 +5,7 @@ import {
   summarizeAttention,
   type AttentionSummary,
 } from '../../lib/attentionSummary'
+import { silencedWithLegacy } from '../../lib/attention'
 import { useAttentionItems } from '../../queries/attention'
 import { useSnoozed } from './snoozeStore'
 
@@ -24,5 +25,8 @@ export function useAttentionSummary(): AttentionSummary & {
         ),
       ]
     : items
-  return { ...summarizeAttention(all, isSnoozed), isLoading }
+  return {
+    ...summarizeAttention(all, silencedWithLegacy(all, isSnoozed)),
+    isLoading,
+  }
 }

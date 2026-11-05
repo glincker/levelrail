@@ -1,13 +1,48 @@
 import type { AppListEntry } from '../types/appDetail'
 import type { NodeResource } from '../types/nodeDetail'
 import type { CertificateStatus } from '../queries/certificates'
-import type { DoctorReport } from '../queries/systemDoctor'
+import type { DoctorCheck, DoctorReport } from '../queries/systemDoctor'
+import type { IssueSilence } from '../queries/silences'
 import type { DiskPressure } from './diskPressure'
 import type { FailedDeploy } from '../queries/failedDeploys'
 import type { UpdateStatus } from '../queries/updates'
 import { certExpiryLabel } from './certStatus'
 import { formatAge, formatBytes } from './format'
 import { nodeAgentAttentionItems } from './nodeAgentAttention'
+
+// [current key, legacy key]. The Status page once saved silences under the
+// check code, so both stay honoured while new ones use the name.
+export function doctorSilenceKeys(
+  check: Pick<DoctorCheck, 'name' | 'code'>,
+): [string, string] {
+  return [`doctor:${check.name}`, `doctor:${check.code}`]
+}
+
+// Same predicate shape, but an id also counts as silenced when one of its
+// item's legacy ids is. Every list and count must go through this.
+export function silencedWithLegacy(
+  items: { id: string; legacyIds?: string[] }[],
+  isSnoozed: (id: string) => boolean,
+): (id: string) => boolean {
+  const legacy = new Map(items.map((i) => [i.id, i.legacyIds ?? []]))
+  return (id) =>
+    isSnoozed(id) || (legacy.get(id) ?? []).some((l) => isSnoozed(l))
+}
+
+// Rewrites a legacy-keyed silence to its item's current id so lists that
+// match by issue_key show it once.
+export function canonicalSilences(
+  items: { id: string; legacyIds?: string[] }[],
+  silences: IssueSilence[],
+): IssueSilence[] {
+  const toCurrent = new Map<string, string>()
+  for (const i of items)
+    for (const l of i.legacyIds ?? []) toCurrent.set(l, i.id)
+  return silences.map((s) => {
+    const key = toCurrent.get(s.issue_key)
+    return key ? { ...s, issue_key: key } : s
+  })
+}
 
 export type AttentionSeverity = 'critical' | 'warning' | 'info'
 
@@ -47,6 +82,8 @@ export interface AttentionItem {
   action?: string
   // Missing means incident, the safe default for a new source.
   class?: AttentionClass
+  // Older silence ids that still count for this item (saved before a key change).
+  legacyIds?: string[]
   copy?: AttentionCopyMeta
 }
 
@@ -162,7 +199,8 @@ export function buildAttentionItems({
     if (check.status === 'fail' || check.status === 'warn') {
       items.push({
         // Same id the Doctor page and the server silence count use.
-        id: `doctor:${check.name}`,
+        id: doctorSilenceKeys(check)[0],
+        legacyIds: doctorSilenceKeys(check).slice(1),
         severity: check.status === 'fail' ? 'critical' : 'warning',
         title: check.name,
         detail: check.message,
