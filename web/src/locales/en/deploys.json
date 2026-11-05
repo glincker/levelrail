@@ -617,5 +617,28 @@
       "rollback": "Roll back to it (asks first)",
       "cancel": "Cancel a running deploy (asks first)"
     }
+  },
+  "ciTemplates": {
+    "title": "Pipeline file for your CI",
+    "infoTipLabel": "About CI pipeline files",
+    "description": "Pick your CI to get a ready pipeline file for this app. GitHub, GitLab and CircleCI use a short-lived identity token, so nothing long-lived is stored. Jenkins and Buildkite use a deployer token that can only read and deploy.",
+    "providerLabel": "CI provider",
+    "providers": {
+      "github": "GitHub Actions",
+      "gitlab": "GitLab CI",
+      "circleci": "CircleCI",
+      "jenkins": "Jenkins",
+      "buildkite": "Buildkite"
+    },
+    "saveAs": "Save this as {{target}} in your repository.",
+    "needsDomain": "No dashboard URL is set yet. Set one in Settings so your CI can reach this control plane.",
+    "oidcNote": "Add a trusted pipeline in Deploy from CI first, then no token is stored in your CI.",
+    "token": {
+      "help": "This file reads a stored token. Create one that can only do: {{abilities}}. Store it as a secret in your CI.",
+      "create": "Create deployer token",
+      "label": "Deployer token",
+      "shownOnce": "Copy this now. It is not shown again.",
+      "errorTitle": "Could not create the token."
+    }
   }
 }

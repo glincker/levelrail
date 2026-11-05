@@ -1,0 +1,7 @@
+[
+  {"id": "github", "file": "github-actions-oidc.yml", "target": ".github/workflows/deploy.yml", "auth": "oidc"},
+  {"id": "gitlab", "file": "gitlab-ci.yml", "target": ".gitlab-ci.yml", "auth": "oidc"},
+  {"id": "circleci", "file": "circleci.yml", "target": ".circleci/config.yml", "auth": "oidc"},
+  {"id": "jenkins", "file": "token/jenkins.groovy", "target": "Jenkinsfile", "auth": "token"},
+  {"id": "buildkite", "file": "token/buildkite.yml", "target": ".buildkite/pipeline.yml", "auth": "token"}
+]

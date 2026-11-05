@@ -1,0 +1,22 @@
+# .buildkite/pipeline.yml
+# Build, push and deploy with a stored Levelrail token. Create it once with
+#   levelrail-cli tokens create --name ci-my-app --preset deployer --expires-in-days 90
+# and keep LEVELRAIL_API_URL and LEVELRAIL_TOKEN in the agent environment hook,
+# a secrets manager plugin or Pipeline Settings, never in this file.
+steps:
+  - label: "Build and push"
+    command: |
+      docker build -t "registry.example.com/team/my-app:$BUILDKITE_COMMIT" .
+      docker push "registry.example.com/team/my-app:$BUILDKITE_COMMIT"
+  - wait
+  - label: "Deploy to Levelrail"
+    branches: "main"
+    env:
+      LEVELRAIL_CLI_INSTALL_DIR: "$BUILDKITE_BUILD_CHECKOUT_PATH/.bin"
+    command: |
+      curl -fsSL https://levelrail.com/install-cli.sh | sh
+      export PATH="$$LEVELRAIL_CLI_INSTALL_DIR:$$PATH"
+      levelrail-cli apps deploy my-app \
+        --image "registry.example.com/team/my-app:$BUILDKITE_COMMIT" \
+        --idempotency-key "buildkite-$BUILDKITE_BUILD_ID"
+      levelrail-cli apps wait my-app --timeout 5m
