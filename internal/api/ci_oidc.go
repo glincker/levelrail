@@ -143,6 +143,9 @@ func validateCITrust(req *ciTrustRequest) string {
 
 // validateCIProvider fixes the issuer at configuration time: exchanges only ever fetch keys from an issuer set here.
 func validateCIProvider(req *ciTrustRequest) string {
+	if strings.EqualFold(strings.TrimSpace(req.Repository), "OWNER/REPO") {
+		return "repository is still the OWNER/REPO placeholder from the example, use your real repository"
+	}
 	switch req.Provider {
 	case ciProviderGitHub:
 		if req.Issuer != "" || req.OrgID != "" || req.protectedRefOnly() {

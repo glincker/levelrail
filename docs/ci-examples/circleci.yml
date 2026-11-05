@@ -1,4 +1,5 @@
 # .circleci/config.yml
+# Pin the CLI with LEVELRAIL_VERSION=vX.Y.Z on the installer step for reproducible builds.
 # Build, push and deploy by digest with no stored Levelrail token: the job's
 # CircleCI OIDC token is swapped for a deploy token that expires after 15 minutes.
 # One-time setup on the control plane (IDs are under Organization Settings,
@@ -15,7 +16,7 @@ jobs:
       - image: cimg/base:stable
     environment:
       APP: my-app
-      IMAGE: ghcr.io/example/my-app
+      IMAGE: ghcr.io/OWNER/REPO
       LEVELRAIL_CLI_INSTALL_DIR: /home/circleci/bin
     steps:
       - checkout
