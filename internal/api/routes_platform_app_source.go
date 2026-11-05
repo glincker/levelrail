@@ -72,6 +72,7 @@ func (rt *Router) registerAppSourceRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/github-actions", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppGitHubActions))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/github-actions", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetAppGitHubActions))
 	mux.HandleFunc("GET /api/v1/apps/{name}/ci/workflow", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetCIWorkflow))
+	mux.HandleFunc("GET /api/v1/apps/{name}/ci/templates", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetCITemplates))
 	mux.HandleFunc("GET /api/v1/apps/{name}/ci/trusts", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListCITrusts))
 	mux.HandleFunc("POST /api/v1/apps/{name}/ci/trusts", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleCreateCITrust))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/ci/trusts/{id}", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteCITrust))

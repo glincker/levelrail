@@ -77,3 +77,26 @@ func (c *Client) ExchangeCIToken(ctx context.Context, app, idToken string) (CITo
 	err := c.do(ctx, http.MethodPost, "/api/v1/ci/oidc-exchange", map[string]string{"app": app, "id_token": idToken}, &out)
 	return out, err
 }
+
+// CITemplate is one provider's example pipeline for an app.
+type CITemplate struct {
+	ID      string `json:"id"`
+	Target  string `json:"target"`
+	Auth    string `json:"auth"`
+	Content string `json:"content"`
+}
+
+// CITemplates mirrors internal/api's ciTemplatesResource.
+type CITemplates struct {
+	Templates         []CITemplate `json:"templates"`
+	APIURL            string       `json:"api_url"`
+	NeedsDomain       bool         `json:"needs_domain"`
+	DeployerAbilities []string     `json:"deployer_abilities"`
+}
+
+// GetCITemplates calls GET /api/v1/apps/{name}/ci/templates.
+func (c *Client) GetCITemplates(ctx context.Context, name string) (CITemplates, error) {
+	var out CITemplates
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/ci/templates", nil, &out)
+	return out, err
+}
