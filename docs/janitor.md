@@ -26,7 +26,7 @@ Pipeline artifacts already expire on their own retention (see [pipelines](/pipel
 ## Preview and quarantine
 
 - Preview (`janitor run --dry-run`, or the Preview button) lists every candidate and changes nothing.
-- An orphaned volume is first quarantined: the pass records when it was first seen. It is deleted only when the quarantine (default 14 days) has ended, "Delete volumes after quarantine" is on, and it is still unused. At most 5 volumes are deleted per pass. A volume that becomes referenced again leaves quarantine.
+- An orphaned volume is first quarantined: the pass records when it was first seen. It is deleted only when the quarantine (default 14 days) has ended, "Delete volumes after quarantine" is on, and it is still unused. At most 5 volumes are deleted per pass. A volume that becomes referenced again leaves quarantine. Disk pressure never changes this: with "Delete volumes after quarantine" off, unused anonymous volumes are kept and the run says they were skipped.
 
 ## Run now and the disk alert
 
