@@ -24,6 +24,9 @@ func ciExampleCommands(t *testing.T, path string) [][]string {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if !strings.HasSuffix(path, ".yml") {
+		return textInvocations(string(raw))
+	}
 	var doc yaml.Node
 	if err := yaml.Unmarshal(raw, &doc); err != nil {
 		t.Fatalf("%s is not valid YAML: %v", path, err)
@@ -42,6 +45,17 @@ func ciExampleCommands(t *testing.T, path string) [][]string {
 		}
 	}
 	walk(&doc)
+	return out
+}
+
+// textInvocations reads invocations out of a non-YAML example such as a Jenkinsfile, comment lines included.
+func textInvocations(text string) [][]string {
+	var out [][]string
+	for _, line := range strings.Split(strings.ReplaceAll(text, "\\\n", " "), "\n") {
+		for _, m := range cliInvocation.FindAllStringSubmatch(line, -1) {
+			out = append(out, strings.Fields(strings.TrimRight(m[1], `)'"`)))
+		}
+	}
 	return out
 }
 
@@ -65,16 +79,17 @@ func commandPath(args []string) ([]string, []string, bool) {
 
 func TestCIExamples_CommandsAndFlagsExist(t *testing.T) {
 	files, err := filepath.Glob(filepath.Join(ciExamplesDir, "*.yml"))
-	if err != nil || len(files) < 3 {
+	tokenFiles, terr := filepath.Glob(filepath.Join(ciExamplesDir, "token", "*"))
+	if err != nil || terr != nil || len(files) < 3 || len(tokenFiles) < 2 {
 		t.Fatalf("want at least 3 CI examples in %s, got %d (%v)", ciExamplesDir, len(files), err)
 	}
 	guide, err := os.ReadFile("../../docs/use-any-ci.md")
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, f := range files {
+	for _, f := range append(append([]string{}, files...), tokenFiles...) {
 		name := filepath.Base(f)
-		if !strings.Contains(string(guide), "ci-examples/"+name) {
+		if filepath.Base(filepath.Dir(f)) != "token" && !strings.Contains(string(guide), "ci-examples/"+name) {
 			t.Errorf("docs/use-any-ci.md does not link %s", name)
 		}
 		var sawDeploy, sawWait bool

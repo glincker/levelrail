@@ -691,6 +691,7 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/auto-host | AbilityWriteSensitive | handleSetAppAutoHost |
 | GET | /api/v1/apps/{name}/visitors/export | AbilityRead | handleAppVisitorsExport |
 | POST | /api/v1/apps/repo-plan | AbilityWrite | handleRepoPlan |
+| GET | /api/v1/apps/{name}/ci/templates | AbilityRead | handleGetCITemplates |
 
 </Accordion>
 

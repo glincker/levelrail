@@ -617,5 +617,31 @@
       "rollback": "Revertir a este (pregunta antes)",
       "cancel": "Cancelar un despliegue en curso (pregunta antes)"
     }
+  },
+  "ciTemplates": {
+    "title": "Archivo de pipeline para tu CI",
+    "infoTipLabel": "Acerca de los archivos de pipeline",
+    "description": "Elige tu CI para obtener un archivo de pipeline listo para esta app. GitHub, GitLab y CircleCI usan un token de identidad de corta vida, así que no se guarda nada de larga duración. Jenkins y Buildkite usan un token de despliegue que solo puede leer y desplegar.",
+    "providerLabel": "Proveedor de CI",
+    "providers": {
+      "github": "GitHub Actions",
+      "gitlab": "GitLab CI",
+      "circleci": "CircleCI",
+      "jenkins": "Jenkins",
+      "buildkite": "Buildkite"
+    },
+    "saveAs": "Guárdalo como {{target}} en tu repositorio.",
+    "needsDomain": "Aún no hay una URL del panel. Defínela en Ajustes para que tu CI llegue a este plano de control.",
+    "oidcNote": "Primero añade un pipeline de confianza en Desplegar desde CI y así no se guarda ningún token en tu CI.",
+    "token": {
+      "create": "Crear token de despliegue",
+      "label": "Token de despliegue",
+      "shownOnce": "Cópialo ahora. No se vuelve a mostrar.",
+      "errorTitle": "No se pudo crear el token.",
+      "helpScoped": "Este archivo lee un token guardado. El token está limitado al proyecto de esta app y puede leer y desplegar todas las apps de ese proyecto, nada fuera de él. Solo puede: {{abilities}}. Guárdalo como secreto en tu CI.",
+      "helpInstallWide": "Este archivo lee un token guardado. Esta app no está en ningún proyecto, así que el token puede desplegar cualquier app de este servidor y solo puede: {{abilities}}. Prefiere un pipeline OIDC o mueve primero la app a un proyecto.",
+      "helpUnavailable": "Este archivo lee un token guardado. Este servidor no puede limitar un token al proyecto de la app, así que el token puede desplegar cualquier app de este servidor y solo puede: {{abilities}}. Prefiere un pipeline OIDC."
+    },
+    "apiUrl": "Define LEVELRAIL_API_URL como {{url}} en tu CI."
   }
 }

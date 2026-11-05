@@ -1,9 +1,10 @@
 # .gitlab-ci.yml
+# Pin the CLI with LEVELRAIL_VERSION=vX.Y.Z on the installer step for reproducible builds.
 # Build, push and deploy by digest with no stored Levelrail token: the job's
 # GitLab ID token is swapped for a deploy token that expires after 15 minutes.
 # One-time setup on the control plane:
 #   levelrail-cli apps ci trust add my-app --provider gitlab \
-#     --repo example/my-app --ref refs/heads/main --protected-ref
+#     --repo OWNER/REPO --ref refs/heads/main --protected-ref
 # On a self-managed GitLab add --issuer https://gitlab.example.com.
 # LEVELRAIL_API_URL is a plain CI/CD variable holding the dashboard URL set in
 # Settings; it is also the audience of the ID token.
