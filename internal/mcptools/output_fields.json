@@ -1130,9 +1130,14 @@
   "totals"
  ],
  "get_monitor_results": [
-  "monitor_id",
-  "raw",
-  "rollup"
+  "checks",
+  "failed",
+  "last_at",
+  "last_code",
+  "last_latency_ms",
+  "last_ok",
+  "last_reason",
+  "monitor_id"
  ],
  "get_my_access": [
   "abilities",
@@ -1694,9 +1699,7 @@
  "list_deploy_policies": [
   "rules",
   "scope",
-  "scope_id",
-  "updated_at",
-  "updated_by"
+  "scope_id"
  ],
  "list_deployments": [
   "items",
@@ -1933,29 +1936,12 @@
   "updated_at"
  ],
  "list_monitors": [
-  "contains",
-  "created_at",
-  "crit_days",
   "enabled",
-  "expect",
-  "follow_redirects",
-  "grace_seconds",
-  "header_names",
-  "headers",
-  "host",
   "id",
   "interval_seconds",
   "kind",
-  "link_confirm_failures",
-  "link_recovery_seconds",
-  "method",
   "name",
-  "ping_path",
-  "port",
-  "status_link",
-  "timeout_ms",
-  "url",
-  "warn_days"
+  "target"
  ],
  "list_my_activity": [
   "entries",
