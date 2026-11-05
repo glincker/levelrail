@@ -1,0 +1,29 @@
+{
+  "title": "Overview",
+  "image": "Image",
+  "port": "Port",
+  "memoryLimit": "Memory limit",
+  "cpuLimit": "CPU limit",
+  "swapLimit": "Swap limit",
+  "cpuPinning": "CPU pinning",
+  "notSet": "not set",
+  "deployStrategy": "Deploy strategy",
+  "replicas": "Replicas",
+  "node": "Node",
+  "project": "Project",
+  "environment": "Environment",
+  "noProject": "no project",
+  "noEnvironment": "no environment",
+  "readinessProbe": "Readiness probe",
+  "livenessProbe": "Liveness probe",
+  "path": "Path:",
+  "interval": "Interval:",
+  "timeout": "Timeout:",
+  "failureThreshold": "Failure threshold:",
+  "notConfigured": "not configured",
+  "strategy": {
+    "recreate": "Recreate",
+    "blueGreen": "Blue-green",
+    "rolling": "Rolling"
+  }
+}

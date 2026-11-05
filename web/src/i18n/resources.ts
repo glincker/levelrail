@@ -38,6 +38,7 @@ import type appRows from '../locales/en/appRows.json'
 import type tokensNotices from '../locales/en/tokensNotices.json'
 import type firstRun from '../locales/en/firstRun.json'
 import type newAppNoGit from '../locales/en/newAppNoGit.json'
+import type appOverview from '../locales/en/appOverview.json'
 import type exposure from '../locales/en/exposure.json'
 import type appExposure from '../locales/en/appExposure.json'
 import type appAccess from '../locales/en/appAccess.json'
@@ -171,6 +172,7 @@ declare module 'i18next' {
       tokensNotices: typeof tokensNotices
       firstRun: typeof firstRun
       newAppNoGit: typeof newAppNoGit
+      appOverview: typeof appOverview
       exposure: typeof exposure
       appExposure: typeof appExposure
       appAccess: typeof appAccess

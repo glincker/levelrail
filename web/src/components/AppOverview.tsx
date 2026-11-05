@@ -8,6 +8,7 @@ import type {
 } from '../types/appDetail'
 import { formatBytes, formatDurationNs, formatNanoCpus } from '../lib/format'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { FieldLabel } from '@/components/ui/typography'
 import { MoveToProjectDialog } from './MoveToProjectDialog'
 import { MoveToEnvironmentDialog } from './MoveToEnvironmentDialog'
 import { MoveEnvironmentDialog } from './environments/MoveEnvironmentDialog'
@@ -22,34 +23,23 @@ import { digestOfImage, unpinnedImage } from '../lib/imageDigest'
 import { GameStatusCard } from './apps/GameStatusCard'
 import { TunnelHint } from './apps/TunnelHint'
 
-// i18n keys for internal/spec's three strategy constants.
+// Maps the three backend strategy constants to i18n keys.
 const STRATEGY_KEYS = {
-  recreate: 'appOverview.strategy.recreate',
-  'blue-green': 'appOverview.strategy.blueGreen',
-  rolling: 'appOverview.strategy.rolling',
+  recreate: 'strategy.recreate',
+  'blue-green': 'strategy.blueGreen',
+  rolling: 'strategy.rolling',
 } as const satisfies Record<DeployStrategy, string>
 
-// Read-only display of an app's current desired state: image, port,
-// resource limits, health probe config, and (as of this pass) deploy
-// strategy and replica count, straight from GET /api/v1/apps/{name}.
-// Domains and env are editable elsewhere (DomainEditor, EnvEditor); port
-// and strategy/replicas are editable via PortEditor/DeployStrategyEditor,
-// rendered as sibling cards by the overview route rather than inline
-// here, matching how ResourceLimitsEditor/HealthCheckEditor already sit
-// next to this read-only card rather than inside it.
+// Read-only summary of an app's desired state from GET /api/v1/apps/{name}.
+// Port and strategy editors render as sibling cards on the overview route.
 export function AppOverview({ app }: { app: AppDetail }) {
-  const { t } = useTranslation('deploys')
-  // Optional convenience only, see useProjectListOptional's own doc
-  // comment: resolving project_id to a human-readable name is a display
-  // nicety, a failed/slow fetch just means the raw id is shown instead.
+  const { t } = useTranslation('appOverview')
+  // Name lookup is a display nicety: on a failed fetch the raw id is shown.
   const projectList = useProjectListOptional()
   const projectName = projectList.data?.find(
     (p) => p.id === app.project_id,
   )?.name
-  // Environments are scoped to a project (internal/api/environments.go),
-  // so this list is only meaningful once app.project_id is set; an
-  // empty projectId disables the underlying query, same reasoning
-  // MoveToEnvironmentDialog's own doc comment gives.
+  // Environments are project-scoped; an empty projectId disables the query.
   const environmentList = useEnvironmentListOptional(app.project_id ?? '')
   const globalEnvironments = isFeatureVisible(
     'global-environments',
@@ -65,39 +55,37 @@ export function AppOverview({ app }: { app: AppDetail }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <LayoutGridGlassIcon className="size-5" />
-          {t('appOverview.title')}
+          {t('title')}
         </CardTitle>
         <OptimiseHint kind="app" name={app.name} />
       </CardHeader>
       <CardContent>
         <dl className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
           <Field
-            label={t('appOverview.image')}
+            label={t('image')}
             value={unpinnedImage(app.image)}
             mono
             digest={app.image_digest || digestOfImage(app.image)}
           />
-          <Field label={t('appOverview.port')} value={String(app.port)} />
+          <Field label={t('port')} value={String(app.port)} />
           <Field
-            label={t('appOverview.memoryLimit')}
+            label={t('memoryLimit')}
             value={formatBytes(app.resources?.memory_bytes)}
           />
           <Field
-            label={t('appOverview.cpuLimit')}
+            label={t('cpuLimit')}
             value={formatNanoCpus(app.resources?.nano_cpus)}
           />
           <Field
-            label={t('appOverview.swapLimit')}
+            label={t('swapLimit')}
             value={formatBytes(app.resources?.swap_memory_bytes)}
           />
           <Field
-            label={t('appOverview.cpuPinning')}
-            value={app.resources?.cpuset_cpus || t('appOverview.notSet')}
+            label={t('cpuPinning')}
+            value={app.resources?.cpuset_cpus || t('notSet')}
           />
           <div>
-            <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-              {t('appOverview.deployStrategy')}
-            </dt>
+            <FieldLabel as="dt">{t('deployStrategy')}</FieldLabel>
             <dd className="mt-0.5 text-sm text-foreground">
               {STRATEGY_KEYS[app.strategy]
                 ? t(STRATEGY_KEYS[app.strategy])
@@ -105,9 +93,7 @@ export function AppOverview({ app }: { app: AppDetail }) {
             </dd>
           </div>
           <div>
-            <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-              {t('appOverview.replicas')}
-            </dt>
+            <FieldLabel as="dt">{t('replicas')}</FieldLabel>
             <dd className="mt-0.5 text-sm text-foreground">
               {app.replicas}
               {app.replicas > 1 ? (
@@ -121,9 +107,7 @@ export function AppOverview({ app }: { app: AppDetail }) {
             </dd>
           </div>
           <div>
-            <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-              {t('appOverview.node')}
-            </dt>
+            <FieldLabel as="dt">{t('node')}</FieldLabel>
             <dd className="mt-0.5 flex flex-wrap items-center gap-2 text-sm text-foreground">
               <PlacementLabel
                 nodeId={app.node_id}
@@ -139,20 +123,14 @@ export function AppOverview({ app }: { app: AppDetail }) {
               />
             </dd>
           </div>
-          {/* Project membership is metadata, the same "shown, not a
-              filter" role node placement above already has: an app with
-              no project stays a real, permanent, equally-valid state,
-              never hidden or forced. */}
           <div>
-            <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-              {t('appOverview.project')}
-            </dt>
+            <FieldLabel as="dt">{t('project')}</FieldLabel>
             <dd className="mt-0.5 flex items-center gap-2 text-sm text-foreground">
               {app.project_id ? (
                 (projectName ?? app.project_id)
               ) : (
                 <span className="text-muted-foreground italic">
-                  {t('appOverview.noProject')}
+                  {t('noProject')}
                 </span>
               )}
               <MoveToProjectDialog
@@ -162,19 +140,14 @@ export function AppOverview({ app }: { app: AppDetail }) {
               />
             </dd>
           </div>
-          {/* Same "shown, not a filter" metadata role Project has above:
-              an app with no environment stays a real, permanent, equally
-              valid state. */}
           <div>
-            <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-              {t('appOverview.environment')}
-            </dt>
+            <FieldLabel as="dt">{t('environment')}</FieldLabel>
             <dd className="mt-0.5 flex items-center gap-2 text-sm text-foreground">
               {app.environment_id ? (
                 (environmentName ?? app.environment_id)
               ) : (
                 <span className="text-muted-foreground italic">
-                  {t('appOverview.noEnvironment')}
+                  {t('noEnvironment')}
                 </span>
               )}
               {globalEnvironments ? (
@@ -195,11 +168,11 @@ export function AppOverview({ app }: { app: AppDetail }) {
         </dl>
         <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <ProbeSummary
-            label={t('appOverview.readinessProbe')}
+            label={t('readinessProbe')}
             probe={app.health?.readiness}
           />
           <ProbeSummary
-            label={t('appOverview.livenessProbe')}
+            label={t('livenessProbe')}
             probe={app.health?.liveness}
           />
         </div>
@@ -227,9 +200,7 @@ function Field({
 }) {
   return (
     <div>
-      <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-        {label}
-      </dt>
+      <FieldLabel as="dt">{label}</FieldLabel>
       <dd
         className={`mt-0.5 text-sm text-foreground ${mono ? 'font-mono' : ''}`}
       >
@@ -247,32 +218,28 @@ function ProbeSummary({
   label: string
   probe?: ServiceProbe | null
 }) {
-  const { t } = useTranslation('deploys')
+  const { t } = useTranslation('appOverview')
   return (
     <div className="rounded-md bg-muted p-3">
-      <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-        {label}
-      </p>
+      <FieldLabel>{label}</FieldLabel>
       {probe ? (
         <ul className="mt-1.5 space-y-0.5 text-sm text-foreground/90">
           <li>
-            {t('appOverview.path')}{' '}
-            <span className="font-mono">{probe.path}</span>
+            {t('path')} <span className="font-mono">{probe.path}</span>
           </li>
           <li>
-            {t('appOverview.interval')} {formatDurationNs(probe.interval)}
+            {t('interval')} {formatDurationNs(probe.interval)}
           </li>
           <li>
-            {t('appOverview.timeout')} {formatDurationNs(probe.timeout)}
+            {t('timeout')} {formatDurationNs(probe.timeout)}
           </li>
           <li>
-            {t('appOverview.failureThreshold')}{' '}
-            {probe.failures ?? t('appOverview.notSet')}
+            {t('failureThreshold')} {probe.failures ?? t('notSet')}
           </li>
         </ul>
       ) : (
         <p className="mt-1.5 text-sm text-muted-foreground">
-          {t('appOverview.notConfigured')}
+          {t('notConfigured')}
         </p>
       )}
     </div>
