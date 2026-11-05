@@ -29,6 +29,37 @@ On GitHub Actions, GitLab CI and CircleCI you can skip the stored token and use 
 levelrail-cli tokens create --name ci --preset deployer --expires-in-days 90
 ```
 
+## Least-privilege token
+
+When you cannot use OIDC, give the CI the smallest token that can deploy. The `deployer` preset grants `read` and `deploy` only, so the token cannot read secrets or change settings. Add a short expiry and, if you use teams, limit it to one project:
+
+```bash
+levelrail-cli tokens create --name ci-my-app --preset deployer --expires-in-days 30 \
+  --scope-team <TEAM_ID> --scope-project <PROJECT_ID> --scope-role developer
+```
+
+The token is shown once. Store it in your CI's secret store as `LEVELRAIL_TOKEN` and rotate it before it expires. See [Teams and roles](/teams-and-roles) for what a scope allows.
+
+## Roll back on failure
+
+`apps wait` exits 5 when the deploy converged as a failure and 6 on timeout. To go back to the previous successful deploy, run this in a step that only runs when the deploy step failed:
+
+```bash
+levelrail-cli apps rollback my-app
+levelrail-cli apps status my-app
+```
+
+Without `--image`, `apps rollback` picks the newest earlier successful deploy. It returns as soon as the request is accepted, so check `apps status` to see that it landed. In a shell script:
+
+```bash
+if ! levelrail-cli apps wait my-app --timeout 5m; then
+  levelrail-cli apps rollback my-app
+  exit 1
+fi
+```
+
+On GitHub Actions use `if: failure()` on a step after the deploy step. On GitLab CI use `after_script` or a job with `when: on_failure`. On CircleCI use `when: on_fail`. On Jenkins use `post { failure { ... } }`. On Buildkite run the script above in the same step. Rolling back needs the same `deploy` ability as deploying.
+
 ## Exit codes
 
 Branch on these in scripts.
@@ -284,7 +315,7 @@ steps:
 | Symptom | Likely cause and fix |
 | --- | --- |
 | Exit 4, `401` from `apps ci token` | The identity token was refused: its issuer is not on a trust of this app, its audience is not the dashboard URL, it expired, or the key fetch failed. |
-| Exit 4, `403` from `apps ci token` | No trust matches the project, ref or environment (or the GitLab ref is not protected while the trust requires it). Check `apps github-actions trust list`. |
+| Exit 4, `403` from `apps ci token` | No trust matches the project, ref or environment (or the GitLab ref is not protected while the trust requires it). Check `apps ci trust list`. |
 | Exit 4, `401` | The token is missing, wrong, revoked or expired. Check `LEVELRAIL_TOKEN` reaches the step (masked or protected variables are not exposed to unprotected branches). |
 | Exit 4, `403` | The token lacks the `deploy` ability for this app, or an IAM policy denies it. Create it with `--preset deployer`. |
 | Exit 4, `409` on deploy | The app is in a protected environment. Add `--confirm` to `apps deploy`. |
