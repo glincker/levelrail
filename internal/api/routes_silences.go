@@ -7,10 +7,12 @@ import (
 	"log/slog"
 	"net/http"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/attention"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -41,6 +43,23 @@ var silenceProtectedKinds = map[string]bool{
 	attention.KindBackupOverdue:           true,
 	attention.KindDataCopy:                true,
 	attention.KindFirewallAttackSuggested: true,
+}
+
+// silenceRootOnlyDoctorKeys are the Docker socket exposure checks by display name
+// (either engine) and by code: the dashboard silences by code, an exact match.
+var silenceRootOnlyDoctorKeys = map[string]bool{
+	"doctor:Docker API guard": true,
+	"doctor:Docker privilege": true,
+	"doctor:Podman API guard": true,
+	"doctor:Podman privilege": true,
+	"doctor:docker_guard":     true,
+	"doctor:docker_privilege": true,
+}
+
+// silenceNeedsRoot is true for a protected kind or a Docker exposure doctor check.
+func silenceNeedsRoot(issueKey string) bool {
+	kind, _, _ := strings.Cut(issueKey, ":")
+	return silenceProtectedKinds[kind] || silenceRootOnlyDoctorKeys[issueKey]
 }
 
 type silenceStore interface {
@@ -127,14 +146,17 @@ type createIssueSilenceRequest struct {
 
 var errSilenceConfirm = errors.New("silencing this issue needs confirmation")
 
-// silenceUntil resolves a duration to an expiry, enforcing the safety rules:
-// a protected or critical issue needs confirm to be silenced forever, and a
-// protected issue needs it for any duration.
-func silenceUntil(req createIssueSilenceRequest, now time.Time) (*time.Time, error) {
-	kind, _, _ := strings.Cut(req.IssueKey, ":")
-	protected := silenceProtectedKinds[kind]
+var errSilenceTooLong = errors.New("silence is longer than allowed for a security issue")
+
+// silenceUntil resolves a duration to an expiry. A protected issue needs
+// confirm and lasts at most protectedMax (0 means no cap); forever on a critical one needs confirm too.
+func silenceUntil(req createIssueSilenceRequest, now time.Time, protectedMax time.Duration) (*time.Time, error) {
+	protected := silenceNeedsRoot(req.IssueKey)
 	if protected && !req.Confirm {
 		return nil, errSilenceConfirm
+	}
+	if protected && protectedMax > 0 && (req.Duration == silenceForever || silenceDurations[req.Duration] > protectedMax) {
+		return nil, errSilenceTooLong
 	}
 	if req.Duration == silenceForever {
 		if (protected || req.Severity == attention.Critical) && !req.Confirm {
@@ -168,8 +190,19 @@ func (rt *Router) handleCreateSilence(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "issue_key is required and reason must be under 500 characters")
 		return
 	}
+	if silenceNeedsRoot(req.IssueKey) {
+		if abs, aerr := rt.callerAbilities(r); aerr != nil || !hasAbility(abs, AbilityRoot) {
+			writeError(w, http.StatusForbidden, "silencing this issue needs the root ability")
+			return
+		}
+	}
 	now := time.Now()
-	until, err := silenceUntil(req, now)
+	protectedMax := time.Duration(rt.runtimeSettings.Int(r.Context(), runtimesettings.KeySecurityProtectedSilenceMaxDays)) * 24 * time.Hour
+	until, err := silenceUntil(req, now, protectedMax)
+	if errors.Is(err, errSilenceTooLong) {
+		writeError(w, http.StatusBadRequest, "a security issue can be silenced for at most "+strconv.Itoa(int(protectedMax/(24*time.Hour)))+" days, see the setting "+runtimesettings.KeySecurityProtectedSilenceMaxDays)
+		return
+	}
 	if errors.Is(err, errSilenceConfirm) {
 		writeError(w, http.StatusConflict, err.Error()+": resend with confirm set")
 		return
