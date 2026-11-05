@@ -102,6 +102,20 @@ describe('SectionNav', () => {
   })
 })
 
+describe('SectionNav icons', () => {
+  it('renders a decorative icon before the label', () => {
+    wrap(
+      <SectionNav
+        items={[{ id: 'one', label: 'One', icon: <svg data-testid="ic" /> }]}
+        active="one"
+        onNavigate={vi.fn()}
+      />,
+    )
+    const ic = screen.getByTestId('ic')
+    expect(ic.parentElement?.getAttribute('aria-hidden')).toBe('true')
+  })
+})
+
 describe('SettingsLayout', () => {
   it('follows the intersecting section', () => {
     wrap(
