@@ -55,6 +55,10 @@ func (rt *Router) resolveTokenTeamScope(w http.ResponseWriter, r *http.Request, 
 		}
 		return nil, true
 	}
+	if req.TeamID == systemTokenTeamID {
+		writeError(w, http.StatusBadRequest, "unknown team_id")
+		return nil, false
+	}
 	ownerID, _ := rt.currentSessionUserID(r)
 	db := rt.teamDB()
 	if db == nil || ownerID == "" {

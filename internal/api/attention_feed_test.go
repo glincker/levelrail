@@ -40,11 +40,12 @@ func mintExpiringToken(t *testing.T, rt *Router, cookie *http.Cookie, name strin
 	}
 }
 
+// subjectsOfKind returns the token names inside the grouped row of a kind.
 func subjectsOfKind(items []attention.Item, kind string) []string {
 	var out []string
 	for _, it := range items {
-		if it.Kind == kind {
-			out = append(out, it.Subject)
+		if it.Kind == kind && it.Params["names"] != "" {
+			out = append(out, strings.Split(it.Params["names"], ",")...)
 		}
 	}
 	return out

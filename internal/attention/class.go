@@ -13,6 +13,7 @@ const (
 var recommendationKinds = map[string]bool{
 	KindInvites:           true,
 	KindTokenUnused:       true,
+	KindTokenExpired:      true,
 	KindDBSecurityUpdates: true,
 	KindDBEOL:             true,
 	KindDockerGuard:       true,

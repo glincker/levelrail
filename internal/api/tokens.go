@@ -42,6 +42,8 @@ type tokenResource struct {
 	// DevFixture is true for a token seeded from the dev fixtures file in
 	// this dev-mode process. It is never set (omitted) in a release build.
 	DevFixture bool `json:"dev_fixture,omitempty"`
+	// OwnerUserID is internal: it tells platform-minted tokens (no owner) from human ones.
+	OwnerUserID string `json:"-"`
 }
 
 func toTokenResource(t store.APIToken) tokenResource {
@@ -50,16 +52,17 @@ func toTokenResource(t store.APIToken) tokenResource {
 		agent = &agentIdentity{Name: t.AgentName, Description: t.AgentDescription}
 	}
 	return tokenResource{
-		Agent:      agent,
-		ID:         t.ID,
-		Name:       t.Name,
-		Abilities:  t.Abilities,
-		Access:     tokenAccess(t.Abilities),
-		CreatedAt:  t.CreatedAt,
-		LastUsedAt: t.LastUsedAt,
-		ExpiresAt:  t.ExpiresAt,
-		RevokedAt:  t.RevokedAt,
-		DevFixture: isDevFixtureToken(t),
+		Agent:       agent,
+		ID:          t.ID,
+		Name:        t.Name,
+		Abilities:   t.Abilities,
+		Access:      tokenAccess(t.Abilities),
+		CreatedAt:   t.CreatedAt,
+		LastUsedAt:  t.LastUsedAt,
+		ExpiresAt:   t.ExpiresAt,
+		RevokedAt:   t.RevokedAt,
+		DevFixture:  isDevFixtureToken(t),
+		OwnerUserID: t.OwnerUserID,
 	}
 }
 

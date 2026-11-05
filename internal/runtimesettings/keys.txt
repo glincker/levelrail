@@ -116,6 +116,8 @@ telemetry.metrics_retention
 telemetry.visitor_history_retention
 telemetry.visitor_salt_rotation
 tokens.default_ttl_days
+tokens.expiry_warning_days
+tokens.system_rotation_lead_minutes
 tokens.unused_alert_days
 upgrade.verify_backup
 volumes.import_overwrite

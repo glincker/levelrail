@@ -81,8 +81,9 @@ const (
 	KindDeviceLogin             = "device_login"
 	KindDeviceLoginResolved     = "device_login_resolved"
 	KindApproval                = "approval"
-	KindTokenExpiring           = "token_expiring" //nolint:gosec // item kind name, not a credential
-	KindTokenExpired            = "token_expired"  //nolint:gosec // item kind name, not a credential
+	KindTokenExpiring           = "token_expiring"       //nolint:gosec // item kind name, not a credential
+	KindTokenExpired            = "token_expired"        //nolint:gosec // item kind name, not a credential
+	KindTokenExpiredInUse       = "token_expired_in_use" //nolint:gosec // item kind name, not a credential
 	KindDataCopy                = "data_copy"
 	KindBackupOverdue           = "backup_overdue"
 	KindInvites                 = "invites"
