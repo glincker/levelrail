@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/exposure"
+	"github.com/GLINCKER/levelrail/internal/network"
 	"github.com/GLINCKER/levelrail/internal/orphans"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -283,7 +285,7 @@ func (rt *Router) exposureReport(ctx context.Context, only string, probe bool) (
 
 // exposureDrift compares the local node's declared exposure with the host. Read-only.
 func (rt *Router) exposureDrift(ctx context.Context, n exposureNodeResource, chain exposure.Chain) []exposure.DriftFinding {
-	in := exposure.DriftInput{Chain: chain, Prefix: rt.exposure.Prefix(), Known: rt.exposure.Protected(), Listeners: rt.exposure.ReadListeners(ctx)}
+	in := exposure.DriftInput{Chain: chain, Prefix: rt.exposure.Prefix(), Known: rt.exposure.Protected(), Listeners: rt.exposure.ReadListeners(ctx), Own: rt.ownListeners(ctx)}
 	for _, f := range n.Findings {
 		in.Findings = append(in.Findings, f.Finding)
 	}
@@ -293,6 +295,22 @@ func (rt *Router) exposureDrift(ctx context.Context, n exposureNodeResource, cha
 	out := exposure.CheckDrift(in)
 	if out == nil {
 		return []exposure.DriftFinding{}
+	}
+	return out
+}
+
+// ownListeners names the mesh ports this process opens, read from the live mesh and the DNS setting so custom ports stay correct.
+func (rt *Router) ownListeners(ctx context.Context) []exposure.OwnListener {
+	if rt.mesh == nil {
+		return nil
+	}
+	wg := network.DefaultListenPort
+	if st, err := rt.mesh.Status(ctx); err == nil && st.ListenPort > 0 {
+		wg = st.ListenPort
+	}
+	out := []exposure.OwnListener{{Port: wg, Protocol: "udp"}}
+	if p := network.DNSPort(network.ResolveDNSAddr(os.LookupEnv)); p > 0 {
+		out = append(out, exposure.OwnListener{Port: p})
 	}
 	return out
 }

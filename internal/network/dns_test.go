@@ -6,6 +6,20 @@ import (
 	"testing"
 )
 
+func TestResolveDNSAddrAndPort(t *testing.T) {
+	none := func(string) (string, bool) { return "", false }
+	if a := ResolveDNSAddr(none); a != DefaultDNSAddr || DNSPort(a) != 5390 {
+		t.Fatalf("default: %q", a)
+	}
+	custom := func(string) (string, bool) { return "10.0.0.1:5999", true }
+	if p := DNSPort(ResolveDNSAddr(custom)); p != 5999 {
+		t.Fatalf("custom port = %d", p)
+	}
+	if DNSPort("bad") != 0 {
+		t.Fatal("unparseable address must give 0")
+	}
+}
+
 func TestZone(t *testing.T) {
 	tests := []struct {
 		name      string
