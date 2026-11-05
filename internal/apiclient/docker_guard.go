@@ -43,6 +43,7 @@ type DockerGuardResource struct {
 	WouldDenyTotal  int                      `json:"would_deny_total"`
 	DeniedTotal     int                      `json:"denied_total"`
 	ReadyToEnforce  bool                     `json:"ready_to_enforce"`
+	WindowError     string                   `json:"window_error,omitempty"`
 }
 
 // UpdateDockerGuardRequest is the PUT /api/v1/system/docker-guard body.

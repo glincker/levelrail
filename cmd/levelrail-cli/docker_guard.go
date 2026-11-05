@@ -97,12 +97,16 @@ func printDockerGuard(out io.Writer, s apiclient.DockerGuardResource) {
 		_, _ = fmt.Fprintf(out, "config:      %s\n", s.ConfigError)
 	}
 	days := s.WindowSeconds / 86400
+	if s.WindowError != "" {
+		_, _ = fmt.Fprintf(out, "last %dd:     unknown, the audit log could not be read (%s)\n", days, s.WindowError)
+		return
+	}
 	_, _ = fmt.Fprintf(out, "last %dd:     %d would deny, %d denied\n", days, s.WouldDenyTotal, s.DeniedTotal)
 	for _, r := range s.Window {
 		_, _ = fmt.Fprintf(out, "  %-24s would deny %d, denied %d, last %s %s\n", r.Rule, r.WouldDeny, r.Denied, r.LastSeen, r.LastPath)
 	}
 	if s.ReadyToEnforce {
-		_, _ = fmt.Fprintln(out, "ready:       no would-be denials over the full window, enforce is likely safe")
+		_, _ = fmt.Fprintln(out, "ready:       no would-be denials over the full window; jobs that run less often were not seen, enforce is likely safe")
 	}
 }
 

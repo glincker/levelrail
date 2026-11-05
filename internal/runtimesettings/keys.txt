@@ -104,6 +104,8 @@ scheduled_tasks.history_keep
 security.audit_sensitive_reads
 security.bind_allowed_roots
 security.bind_block_credential_dirs
+security.docker_guard_max_items
+security.protected_silence_max_days
 security.trust_loopback_forwarded_headers
 security.webhook_replay_protection
 security.webhook_replay_window

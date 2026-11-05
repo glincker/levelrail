@@ -126,7 +126,11 @@ function DockerGuardForm({ status }: { status: DockerGuardStatus }) {
           <p className="font-medium">
             {t('dockerGuard.windowTitle', { days })}
           </p>
-          {status.window.length === 0 ? (
+          {status.window_error ? (
+            <p className="text-tone-warning">
+              {t('dockerGuard.windowUnknown')}
+            </p>
+          ) : status.window.length === 0 ? (
             <p className="text-muted-foreground">
               {t('dockerGuard.windowEmpty')}
             </p>
