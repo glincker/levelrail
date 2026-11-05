@@ -54,7 +54,9 @@ describe('PointInTimeRestoreSection for MySQL and MariaDB', () => {
 
     renderSection('mariadb')
 
-    expect(await screen.findByText(/binary log archiving/i)).toBeInTheDocument()
+    expect(
+      await screen.findByText(/archive the binary log continuously/i),
+    ).toBeInTheDocument()
     expect(screen.queryByText(/WAL archiving/i)).not.toBeInTheDocument()
   })
 
