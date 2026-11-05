@@ -66,7 +66,7 @@ describe('GitPushRemoteCard', () => {
   it('points at Beta features while the feature is off', () => {
     features.list = []
     renderCard()
-    expect(screen.getByText(/switched off/i)).toBeTruthy()
+    expect(screen.getByText(/Git push deploy is off/i)).toBeTruthy()
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
