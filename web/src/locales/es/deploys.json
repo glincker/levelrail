@@ -169,7 +169,13 @@
     "webhookCreate": "Crear URL de webhook",
     "webhookRotate": "Reemplazar URL de webhook",
     "webhookUrlLabel": "URL del webhook del registro",
-    "webhookShownOnce": "Cópiala ahora, no se vuelve a mostrar. Pégala como webhook (POST) en tu registro; la propia URL es el secreto."
+    "webhookShownOnce": "Cópiala ahora, no se vuelve a mostrar. Pégala como webhook (POST) en tu registro; la propia URL es el secreto.",
+    "signingSecretLabel": "Secreto del webhook de GitHub (se muestra una vez)",
+    "providerHint": {
+      "dockerhub": "Docker Hub: Webhooks del repositorio, añade la URL. Docker Hub no envía el digest, así que primero se resuelve la etiqueta.",
+      "ghcr": "GitHub (ghcr.io): Settings, Webhooks, tipo application/json, evento Packages y el secreto de arriba. Se rechazan las entregas sin firma.",
+      "protected": "Un push despliega el digest publicado de la imagen y etiqueta de esta app. En un entorno protegido crea una aprobación en su lugar."
+    }
   },
   "canary": {
     "title": "Release canary",

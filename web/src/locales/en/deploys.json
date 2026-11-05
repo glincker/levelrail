@@ -130,7 +130,7 @@
   "imageAutoUpdate": {
     "title": "Update when the image changes",
     "infoTipLabel": "About image auto-update",
-    "description": "Checks this app's image tag against its registry on a schedule and redeploys when the tag points at a new digest. Apps built from source, stopped apps, apps in a deploy freeze and apps in a protected environment are skipped.",
+    "description": "Checks this app's image tag against its registry on a schedule and redeploys when the tag points at a new digest. Apps built from source, stopped apps and apps in a deploy freeze are skipped. A registry push to a protected environment files a deploy approval instead.",
     "enabledLabel": "Redeploy automatically when the tag moves",
     "switchAriaLabel": "Image auto-update enabled",
     "checkNow": "Check now",
@@ -169,7 +169,13 @@
     "webhookCreate": "Create webhook URL",
     "webhookRotate": "Replace webhook URL",
     "webhookUrlLabel": "Registry webhook URL",
-    "webhookShownOnce": "Copy this now. It is not shown again. Paste it as a webhook (POST) in your registry. The URL itself is the secret."
+    "webhookShownOnce": "Copy this now. It is not shown again. Paste it as a webhook (POST) in your registry. The URL itself is the secret.",
+    "signingSecretLabel": "GitHub webhook secret (shown once)",
+    "providerHint": {
+      "dockerhub": "Docker Hub: repository Webhooks, add the URL. Docker Hub sends no digest, so the tag is resolved first.",
+      "ghcr": "GitHub (ghcr.io): Settings, Webhooks, content type application/json, event Packages, and the secret above. Unsigned deliveries are refused.",
+      "protected": "A push deploys the pushed digest for this app's own image and tag. In a protected environment it files an approval instead."
+    }
   },
   "canary": {
     "title": "Canary release",

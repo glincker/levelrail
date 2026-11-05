@@ -48,12 +48,69 @@ Instead of waiting for the interval, point your registry's push webhook at a
 URL the control plane mints for the app. Dashboard: **Create webhook URL** on
 the same card. CLI: `levelrail-cli apps auto-update webhook web`. The URL is
 shown once and a new one replaces the old; the URL itself is the secret, so
-treat it like a password. It must be reachable by your registry (Docker Hub,
-Harbor and most others just POST to it).
+treat it like a password. It must be reachable by your registry. Rotating
+also mints a GitHub signing secret (shown once) when the control plane has a
+secrets store, and records who rotated, which matters for approvals below.
+A rotation stages the new secret (accepted beside the old one, if there is
+one) and records the rotator before the new URL is saved. If anything fails up
+to the save, both are put back, so the live hook keeps its secret, its rotator
+and, for a hook that had no signing secret, its unsigned deliveries. After the
+save you always get the new URL and secret; if promoting the secret then fails,
+the staged one stays accepted until the next signed delivery or rotation
+finishes it.
 
 A webhook for an app that has not opted in, or with a wrong token, answers
-`404`. Repeat deliveries within 30 seconds of a check are acknowledged and
-skipped. The check runs in the background and follows the same skip rules.
+`404`. A plain POST with no recognized push body just runs the interval
+check now (same skip rules, repeat deliveries within the debounce are
+acknowledged and skipped) and is not gated by the signing secret.
 
-A tag pinned by digest (`image@sha256:...`) never moves, so there is nothing
-to update.
+### Docker Hub and GitHub (ghcr.io) pushes
+
+A recognized push body is handled as a push event and deploys a digest, not
+the tag. For both providers the control plane resolves the pushed tag from
+the registry with the app's registry credentials and deploys what the
+registry serves. A GHCR payload digest is only a claim: if it differs from
+the registry's current digest, nothing deploys and the audit row records both.
+
+- **Docker Hub:** add the URL under the repository's Webhooks. Only
+  `docker.io` repositories match. Docker Hub sends no digest and no
+  signature, so the URL is the only secret.
+- **GitHub Packages (ghcr.io):** add the URL under Settings, Webhooks, with
+  content type `application/json`, event Packages, and the secret printed
+  with the URL. A delivery without a valid `X-Hub-Signature-256` answers
+  `404` when a secret exists.
+
+The pushed repository must be the app's own image repository (otherwise
+`404`) and the pushed tag must be the tag the app follows (otherwise the
+delivery is acknowledged and ignored). Built-from-source and stopped apps
+ignore pushes.
+
+What a push does not skip, unlike the interval check:
+
+- **Protected environments** file a deploy approval for the digest instead of
+  being skipped. The person who last rotated the webhook cannot approve it.
+  A webhook rotated before this feature has no recorded person, so it files
+  no approval until you rotate it once (the card shows "rotate the registry
+  webhook once"). A pending approval for the same digest suppresses a second
+  one, and a newer push supersedes older pending approvals the hook filed.
+- **The update window** still applies outside protected environments: a push
+  outside it is recorded as waiting.
+- **Deploy freezes and policy** apply as for a manual deploy.
+
+One push per app is processed at a time. A delivery that arrives during one
+is queued and runs right after it, so the latest push is not lost; the queue
+keeps only the newest delivery and lives in memory, so a restart drops it, and
+a deploy that outlives `deploys.registry_push_timeout` keeps the slot busy so
+later pushes only queue. A queued run re-checks the app first: if the tag it
+follows, its running state or its update window changed, auto-update was turned
+off, or the webhook was rotated since the delivery, the push is not deployed. Unsigned deliveries run at least `deploys.registry_push_debounce`
+apart (each costs a registry lookup) instead of being dropped, and a signed
+repeat of the digest just handled is skipped.
+
+The outcome shows as the card's last result and as a `registry_push.deploy`
+audit row with provider, repository, tag and digest. Runtime settings:
+`deploys.registry_push_max_body_bytes`, `deploys.registry_push_timeout` and
+`deploys.registry_push_debounce`. See ADR 073.
+
+A tag pinned by digest (`image@sha256:...`) is followed by tag: both the
+interval check and a push resolve the tag and deploy its newest digest.

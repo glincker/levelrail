@@ -36,8 +36,10 @@ func appsAutoUpdateUsage(prog string) string {
   %[1]s apps auto-update check <app-name> [flags]     check the registry now, redeploying if it moved
   %[1]s apps auto-update webhook <app-name> [flags]   mint a registry push webhook URL (shown once)
 
-Point your registry's push webhook (Docker Hub, Harbor, any POST) at the
-webhook URL to update on push instead of waiting for the interval.
+Point your registry's push webhook (Docker Hub, GitHub Packages for ghcr.io,
+or any POST) at the webhook URL to update on push instead of waiting for the
+interval. Docker Hub and GitHub pushes deploy the pushed digest; GitHub
+deliveries are verified with the signing secret printed with the URL.
 
 Use --window-cron and --window-minutes with enable to apply updates only inside
 a window (UTC); one found earlier waits for it. --clear-window removes it.
@@ -79,7 +81,7 @@ func runAppsAutoUpdateVerb(prog, verb string, args []string, stdout, stderr io.W
 			return reportError(stdout, stderr, jsonOut, fmt.Errorf("auto-update webhook for app %q: %w", appName, err))
 		}
 		return writeScheduledTaskResult(stdout, stderr, of, hook, func() {
-			_, _ = fmt.Fprintf(stdout, "webhook URL (shown once, replaces any earlier one):\n  POST %s%s\n", strings.TrimRight(resolveAPIURL(apiURLFlag, lookupEnv, prog, resolveProfile(profileFlag, lookupEnv)), "/"), hook.Path)
+			printImageUpdateWebhook(stdout, strings.TrimRight(resolveAPIURL(apiURLFlag, lookupEnv, prog, resolveProfile(profileFlag, lookupEnv)), "/")+hook.Path, hook.SigningSecret)
 		})
 	}
 	var (
@@ -106,9 +108,21 @@ func runAppsAutoUpdateVerb(prog, verb string, args []string, stdout, stderr io.W
 	return writeScheduledTaskResult(stdout, stderr, of, result, func() { printImageAutoUpdate(stdout, result) })
 }
 
+// printImageUpdateWebhook prints the one-time URL and the one-line setup for each registry that can push to it.
+func printImageUpdateWebhook(out io.Writer, url, secret string) {
+	_, _ = fmt.Fprintf(out, "webhook URL (shown once, replaces any earlier one):\n  POST %s\n", url)
+	_, _ = fmt.Fprintf(out, "\nDocker Hub: repository > Webhooks > add the URL above (no secret field; the URL is the secret).\n")
+	_, _ = fmt.Fprintf(out, "GitHub (ghcr.io): repository or organization Settings > Webhooks > Payload URL = the URL above, content type application/json, event Packages.\n")
+	if secret != "" {
+		_, _ = fmt.Fprintf(out, "  Secret (shown once, deliveries without a valid signature are refused): %s\n", secret)
+	}
+	_, _ = fmt.Fprintf(out, "\nA push deploys the pushed digest, but only for the app's own image and tag. Protected environments file an approval instead.\n")
+}
+
 func printImageAutoUpdate(out io.Writer, r imageAutoUpdateResource) {
 	_, _ = fmt.Fprintf(out, "auto-update: %t\n", r.Enabled)
 	_, _ = fmt.Fprintf(out, "webhook:     %t\n", r.HasWebhook)
+	_, _ = fmt.Fprintf(out, "signed:      %t\n", r.HasSigningSecret)
 	if r.LastCheckedAt != nil {
 		_, _ = fmt.Fprintf(out, "last check:  %s\n", r.LastCheckedAt.Format(time.RFC3339))
 	}
