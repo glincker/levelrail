@@ -4,6 +4,7 @@ import type { DeviceAuthRequest } from '../queries/deviceAuth'
 import type { NodeResource } from '../types/nodeDetail'
 import type { AttentionItem } from './attention'
 import { buildWaitingItems, rankAttentionItems } from './attentionWaiting'
+import type { AttentionFeedItem } from '../queries/attentionFeed'
 import { formatCountdown, liveDeviceRequests } from './deviceLogin'
 import { buildNotifications } from '../components/shell/notifications'
 
@@ -63,6 +64,54 @@ describe('buildWaitingItems', () => {
       'cert-renewal:a.example',
       'node-enroll:n1',
     ])
+  })
+})
+
+function guardFeed(
+  subject: string,
+  severity: string,
+  params: Record<string, string>,
+): AttentionFeedItem {
+  return {
+    id: `docker_guard:${subject}`,
+    severity,
+    kind: 'docker_guard',
+    subject,
+    detail: 'server english',
+    title: 'server title',
+    action: '',
+    link: '/settings/security',
+    params,
+  } as AttentionFeedItem
+}
+
+describe('docker guard feed item', () => {
+  it('renders each shape from params, not the server string', () => {
+    const titles = [
+      guardFeed('would-deny:high', 'warning', {
+        more: '2',
+        mode: 'audit',
+        would_deny: '3',
+        risk: 'high',
+        top_rule: 'privileged',
+      }),
+      guardFeed('would-deny:low', 'warning', {
+        mode: 'audit',
+        would_deny: '2',
+        top_rule: 'bind_undeclared',
+      }),
+      guardFeed('ready', 'info', { mode: 'audit', would_deny: '0' }),
+      guardFeed('denied', 'warning', { mode: 'enforce', denied: '4' }),
+    ]
+    const out = buildWaitingItems({ now: NOW, t, feed: titles })
+    expect(out.map((i) => i.title)).toEqual([
+      'items.dockerGuardHighTitle',
+      'items.dockerGuardWouldDenyTitle',
+      'items.dockerGuardReadyTitle',
+      'items.dockerGuardDeniedTitle',
+    ])
+    expect(out[0].detail).toContain('items.dockerGuardMore')
+    expect(out[2].severity).toBe('info')
   })
 })
 

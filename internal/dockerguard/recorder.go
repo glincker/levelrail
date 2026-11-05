@@ -116,9 +116,10 @@ func (r *recorder) record(ctx context.Context, d Decision) {
 }
 
 func (r *recorder) duplicate(d Decision) bool {
-	key := d.Rule() + " " + d.Method + " " + d.Pattern + " " + d.Path
+	rule := d.RiskRule()
+	key := rule + " " + d.Method + " " + d.Pattern + " " + d.Path
 	if d.Pattern != "" {
-		key = d.Rule() + " " + d.Method + " " + d.Pattern
+		key = rule + " " + d.Method + " " + d.Pattern
 	}
 	r.mu.Lock()
 	defer r.mu.Unlock()

@@ -175,7 +175,7 @@ func runDoctorDef(ctx context.Context, def doctorCheckDef, log *slog.Logger) []d
 		if res[i].Group == "" {
 			res[i].Group = def.Group
 		}
-		if res[i].Status == doctorStatusFail || res[i].Status == doctorStatusWarn {
+		if (res[i].Status == doctorStatusFail || res[i].Status == doctorStatusWarn) && (res[i].Class == "" || res[i].Status == doctorStatusFail) {
 			res[i].Class = attention.DoctorClass(res[i].Code, res[i].Status)
 		}
 	}

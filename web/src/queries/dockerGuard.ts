@@ -35,6 +35,7 @@ export interface DockerGuardStatus {
   would_deny_total: number
   denied_total: number
   ready_to_enforce: boolean
+  window_error?: string
 }
 
 export const dockerGuardKeys = {

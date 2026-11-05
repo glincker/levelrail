@@ -71,6 +71,7 @@ func Boot(ctx context.Context, cfg BootConfig) (Booted, error) {
 	out := Booted{Grants: grants}
 	if mode == ModeOff {
 		out.Controller = NewController(settingsPath, lookup, nil, runtime.Host, nil)
+		noteBoot(out.Controller, logger)
 		logger.Warn("dockerguard: off, Docker clients use the daemon socket directly", slog.String("source", source))
 		return out, nil
 	}
@@ -83,19 +84,24 @@ func Boot(ctx context.Context, cfg BootConfig) (Booted, error) {
 		logger.Warn("dockerguard: default enforce could not start, Docker clients use the daemon socket directly; set "+EnvMode+"=audit to silence this",
 			slog.String("error", err.Error()))
 		out.Controller = NewController(settingsPath, lookup, nil, runtime.Host, err)
+		noteBoot(out.Controller, logger)
 		return out, nil
 	}
 	out.Controller = NewController(settingsPath, lookup, server, runtime.Host, err)
+	noteBoot(out.Controller, logger)
 	if err != nil {
 		logger.Warn("dockerguard: audit mode could not start, Docker clients use the daemon socket directly", slog.String("error", err.Error()))
 		return out, nil
 	}
 	out.Server, out.Host = server, server.Host()
-	if err := out.Controller.NoteAuditStart(time.Now()); err != nil {
-		logger.Warn("dockerguard: could not record audit start", slog.String("error", err.Error()))
-	}
 	logger.Info("dockerguard: listening", slog.String("mode", string(mode)), slog.String("source", source), slog.String("socket", server.Socket), slog.String("upstream", runtime.Host))
 	return out, nil
+}
+
+func noteBoot(c *Controller, logger *slog.Logger) {
+	if err := c.NoteBoot(time.Now()); err != nil {
+		logger.Warn("dockerguard: could not record the boot mode", slog.String("error", err.Error()))
+	}
 }
 
 func start(ctx context.Context, cfg BootConfig, lookup func(string) (string, bool), logger *slog.Logger, mode Mode, runtime docker.RuntimeInfo, grants *Grants) (*Server, error) {
