@@ -50,6 +50,8 @@ export interface SetupGuide {
   complete: boolean
   hidden: boolean
   server_address?: string
+  milestone?: string
+  next_milestone?: string
 }
 
 export type SetupGuideOverride = 'skipped' | 'done' | 'todo'
@@ -111,4 +113,21 @@ export function essentialSplit(guide: SetupGuide): {
     .filter((s) => !ESSENTIAL_STEPS.includes(s.id))
     .sort((a, b) => rank(a) - rank(b))
   return { essential, more }
+}
+
+// Milestones that make up "first app", in order; later ones (backups) are not part of it.
+const FIRST_APP_MILESTONES = [
+  'install_done',
+  'https_on',
+  'first_domain',
+  'first_app_deployed',
+] as const
+
+/** firstAppProgress is the "2 of 4" count toward the first running app, or null when the server sends none or the app is already live. */
+export function firstAppProgress(
+  guide: SetupGuide | undefined,
+): { done: number; total: number } | null {
+  const at = FIRST_APP_MILESTONES.findIndex((m) => m === guide?.milestone)
+  if (at === -1 || at === FIRST_APP_MILESTONES.length - 1) return null
+  return { done: at + 1, total: FIRST_APP_MILESTONES.length }
 }

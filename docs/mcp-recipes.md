@@ -75,3 +75,11 @@ Comes back: `status: failed` and a short `diagnosis` with the failure `class`, `
 ## Attach a resource instead of calling a tool
 
 In a client that supports resources, attach `levelrail://apps/web/logs?tail=100` and ask "what is the most common error here". The log lines arrive in an untrusted data block, the same as a tool result. Attach `levelrail://docs/rollback` before asking "walk me through rolling back" to ground the answer in the runbook.
+
+## Related
+
+- [AI assistant integration](/ai-assistant): run the server and scope a token
+- [Connect an AI assistant safely](/mcp-safe-setup)
+- [MCP tools, token budget and write mode](/mcp)
+- [MCP recipes](/mcp-recipes)
+- [MCP tool surface](/mcp-tool-surface)

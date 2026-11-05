@@ -28,7 +28,10 @@ import { UpgradeHistory } from '../../components/settings/UpgradeHistory'
 import { PostUpgradeVerify } from '../../components/settings/PostUpgradeVerify'
 import { UpdateStatusHeader } from '../../components/settings/updates/UpdateStatusHeader'
 import { UpdateSettingsForm } from '../../components/settings/updates/UpdateSettingsForm'
-import { ROLLBACK_SECTION_ID } from '../../lib/updatesAnchors'
+import {
+  ATTEMPTS_SECTION_ID,
+  ROLLBACK_SECTION_ID,
+} from '../../lib/updatesAnchors'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import {
   SettingsCardSkeleton,
@@ -145,6 +148,7 @@ function UpdatesSettingsPage() {
         </SectionCard>
       </div>
       <SectionCard
+        id={ATTEMPTS_SECTION_ID}
         title={t('selfUpgrade.attemptsTitle')}
         description={t('selfUpgrade.description')}
       >

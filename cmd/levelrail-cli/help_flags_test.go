@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -10,6 +11,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -60,6 +62,7 @@ func helpFlagGaps(t *testing.T) []string {
 		fn   *ast.FuncDecl
 	}
 	var units []unit
+	usageFuncsByFile := map[string][]*ast.FuncDecl{}
 	for _, f := range files {
 		if strings.HasSuffix(f, "_test.go") {
 			continue
@@ -79,6 +82,9 @@ func helpFlagGaps(t *testing.T) []string {
 			if fd, ok := d.(*ast.FuncDecl); ok && fd.Body != nil && fd.Recv == nil {
 				decls[fd.Name.Name] = fd
 				units = append(units, unit{f, fd})
+				if strings.Contains(strings.ToLower(fd.Name.Name), "usage") {
+					usageFuncsByFile[f] = append(usageFuncsByFile[f], fd)
+				}
 			}
 		}
 	}
@@ -104,6 +110,7 @@ func helpFlagGaps(t *testing.T) []string {
 		flags := map[string]bool{}
 		var usageText []string
 		hasUsage := false
+		printsDefaults := false
 		ast.Inspect(u.fn.Body, func(n ast.Node) bool {
 			switch x := n.(type) {
 			case *ast.CallExpr:
@@ -135,6 +142,14 @@ func helpFlagGaps(t *testing.T) []string {
 					return true
 				}
 				hasUsage = true
+				ast.Inspect(x.Rhs[0], func(m ast.Node) bool {
+					if c, ok := m.(*ast.CallExpr); ok {
+						if se, ok := c.Fun.(*ast.SelectorExpr); ok && se.Sel.Name == "PrintDefaults" {
+							printsDefaults = true
+						}
+					}
+					return true
+				})
 				usageText = append(usageText, stringLits(x.Rhs[0])...)
 				ast.Inspect(x.Rhs[0], func(m ast.Node) bool {
 					if id, ok := m.(*ast.Ident); ok {
@@ -152,8 +167,37 @@ func helpFlagGaps(t *testing.T) []string {
 			}
 			return true
 		})
-		if !hasUsage || len(flags) == 0 {
+		// PrintDefaults lists every defined flag at runtime, so such a closure covers them all.
+		if !hasUsage || printsDefaults || len(flags) == 0 {
 			continue
+		}
+		// A usage func passed in through a config struct or variable is reached by name from the verb body.
+		ast.Inspect(u.fn.Body, func(n ast.Node) bool {
+			if id, ok := n.(*ast.Ident); ok && strings.HasSuffix(id.Name, "Usage") {
+				if d := decls[id.Name]; d != nil {
+					usageText = append(usageText, stringLits(d.Body)...)
+				}
+			}
+			// cfg.usage(prog) is bound elsewhere, so take the usage funcs that live beside the verb.
+			isUsageRef := false
+			if se, ok := n.(*ast.SelectorExpr); ok && se.Sel.Name == "usage" {
+				isUsageRef = true
+			}
+			if id, ok := n.(*ast.Ident); ok && id.Name == "usage" {
+				isUsageRef = true
+			}
+			if isUsageRef {
+				for _, d := range usageFuncsByFile[u.file] {
+					usageText = append(usageText, stringLits(d.Body)...)
+				}
+			}
+			return true
+		})
+		// Usage text that lives in the doctor string catalog is reached through its key literal.
+		for _, lit := range usageText {
+			if v, ok := helpCatalog(t)[lit]; ok {
+				usageText = append(usageText, v)
+			}
 		}
 		text := strings.Join(usageText, "\n")
 		for name := range flags {
@@ -202,4 +246,24 @@ func TestHelpTextCoversEveryFlag(t *testing.T) {
 			t.Errorf("stale entry in %s, the flag is now documented: %s", helpGapsFile, k)
 		}
 	}
+}
+
+// helpCatalog is the embedded doctor string catalog, read once for the usage lookup above.
+var helpCatalogOnce struct {
+	sync.Once
+	m map[string]string
+}
+
+func helpCatalog(t *testing.T) map[string]string {
+	t.Helper()
+	helpCatalogOnce.Do(func() {
+		raw, err := os.ReadFile("doctor_cloud_strings.json")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := json.Unmarshal(raw, &helpCatalogOnce.m); err != nil {
+			t.Fatal(err)
+		}
+	})
+	return helpCatalogOnce.m
 }

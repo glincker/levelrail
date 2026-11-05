@@ -16,6 +16,7 @@ import { AppSidebar } from '../components/AppSidebar'
 import { useShortcuts } from '../hooks/useShortcuts'
 import { ThemeProvider } from '../components/ThemeProvider'
 import { PreferencesApplier } from '../components/account/PreferencesApplier'
+import { AppearanceSyncApplier } from '../components/account/AppearanceSyncApplier'
 import { AppHeader } from '../components/shell/AppHeader'
 import { ShellBanner } from '../components/shell/ShellBanner'
 import { MAIN_CONTENT_ID, SkipLink } from '../components/shell/SkipLink'
@@ -165,6 +166,7 @@ function AppShell() {
   return (
     <SidebarProvider>
       <PreferencesApplier />
+      <AppearanceSyncApplier />
       <SkipLink />
       <AppSidebar />
       {paletteMounted && (

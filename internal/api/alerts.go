@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
@@ -21,7 +23,7 @@ type AlertRules interface {
 }
 
 // ruleResource is the wire shape for an alert rule, with durations as strings such as 2m.
-// ID and ResourceID are server-assigned; ResourceID always comes from the app name in the URL, never the body.
+// ID and ResourceID are server-assigned; ResourceID is server-checked against the app in the URL.
 type ruleResource struct {
 	ID         string `json:"id,omitempty"`
 	Name       string `json:"name"`
@@ -144,7 +146,8 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 	switch kind {
 	case alerting.KindThreshold, alerting.KindBudgetThreshold, alerting.KindCrashloop, alerting.KindCertExpiry, alerting.KindPatchStatus, alerting.KindScheduledTaskFailure, alerting.KindScheduledTaskMissed, alerting.KindScheduledTaskRunningLong, alerting.KindNodeDiskSpace, alerting.KindNodeHostGuardrail, alerting.KindNodeResourceUsage, alerting.KindDomainHealth, alerting.KindBackupMissing, alerting.KindDatabaseConnections, alerting.KindDatabaseDisk, alerting.KindDatabaseBackupFailing, alerting.KindDatabaseDown, alerting.KindDatabaseBackupStale, alerting.KindPoolerSaturated, alerting.KindNodeOffline, alerting.KindNodeCertExpiring, alerting.KindControlPlaneBackupStale, alerting.KindLogArchiveStale, alerting.KindExportBehind, alerting.KindBackupCopyBehind, alerting.KindRegistryRefreshFailing, alerting.KindRestoreDrillFailed, alerting.KindSLOBurn, alerting.KindVersionSkew, alerting.KindEmailDeliveryFailing, alerting.KindBackupFailed, alerting.KindDeployFailed, alerting.KindMonitorDown,
 		alerting.KindLogPattern, alerting.KindLogLevelRate,
-		alerting.KindCertExpiring, alerting.KindCertRenewalStalled, alerting.KindDomainNotResolving:
+		alerting.KindCertExpiring, alerting.KindCertRenewalStalled, alerting.KindDomainNotResolving,
+		alerting.KindDomainTrafficDrop, alerting.KindParkedDomainCertExpiry:
 	default:
 		return alerting.Rule{}, fmt.Errorf("kind %q is not a supported rule kind", a.Kind)
 	}
@@ -230,6 +233,20 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 	case alerting.KindCertExpiring:
 		if r.Threshold < 0 {
 			return alerting.Rule{}, errors.New("threshold (days) must not be negative for a cert_expiring rule")
+		}
+	case alerting.KindDomainTrafficDrop:
+		if r.Threshold < 0 || r.Threshold > 100 {
+			return alerting.Rule{}, errors.New("threshold is a percentage between 0 and 100 for a domain_traffic_drop rule")
+		}
+		if r.ForDuration < 0 || r.ForDuration > 24*time.Hour {
+			return alerting.Rule{}, errors.New("for_duration is the comparison window, up to 24h, for a domain_traffic_drop rule")
+		}
+		if r.RestartCountThreshold < 0 {
+			return alerting.Rule{}, errors.New("restart_count_threshold is the minimum baseline request count and must not be negative")
+		}
+	case alerting.KindParkedDomainCertExpiry:
+		if r.Threshold < 0 {
+			return alerting.Rule{}, errors.New("threshold (days) must not be negative for a parked_domain_cert_expiry rule")
 		}
 	case alerting.KindSLOBurn:
 		if r.SLO == nil {
@@ -366,7 +383,7 @@ func (rt *Router) validateAlertRuleReferences(w http.ResponseWriter, r *http.Req
 	return true
 }
 
-// handleCreateAlertRule handles POST /api/v1/apps/{name}/alerts. resource_id is always resourceIDForApp(name), never taken from the body.
+// handleCreateAlertRule handles POST /api/v1/apps/{name}/alerts. resource_id is the app resource unless a domain_traffic_drop body names a domain:<host> the app owns.
 func (rt *Router) handleCreateAlertRule(w http.ResponseWriter, r *http.Request) {
 	if rt.alertRules == nil {
 		writeError(w, http.StatusNotImplemented, "alerting is not configured on this control plane")
@@ -375,7 +392,8 @@ func (rt *Router) handleCreateAlertRule(w http.ResponseWriter, r *http.Request) 
 
 	name := r.PathValue("name")
 
-	if _, err := rt.apps.GetDesiredService(r.Context(), name); errors.Is(err, store.ErrServiceNotFound) {
+	svc, err := rt.apps.GetDesiredService(r.Context(), name)
+	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
@@ -387,7 +405,11 @@ func (rt *Router) handleCreateAlertRule(w http.ResponseWriter, r *http.Request) 
 	if !decodeReq(w, r, &req) {
 		return
 	}
-	req.ResourceID = resourceIDForApp(name) // caller-supplied value, if any, is discarded
+	scope, ok := rt.alertScopeFor(w, r, name, svc, req)
+	if !ok {
+		return
+	}
+	req.ResourceID = scope
 
 	id, err := alerting.NewRuleID()
 	if err != nil {
@@ -445,6 +467,15 @@ func (rt *Router) handleUpdateAlertRule(w http.ResponseWriter, r *http.Request) 
 	name := r.PathValue("name")
 	id := r.PathValue("id")
 
+	svc, err := rt.apps.GetDesiredService(r.Context(), name)
+	if errors.Is(err, store.ErrServiceNotFound) {
+		writeError(w, http.StatusNotFound, "app not found")
+		return
+	} else if err != nil {
+		rt.internalError(w, "api: update alert rule: load app failed", err, slog.String("name", name))
+		return
+	}
+
 	existing, err := rt.alertRules.GetRule(r.Context(), id)
 	if errors.Is(err, alerting.ErrRuleNotFound) {
 		writeError(w, http.StatusNotFound, "alert rule not found")
@@ -454,7 +485,7 @@ func (rt *Router) handleUpdateAlertRule(w http.ResponseWriter, r *http.Request) 
 		rt.internalError(w, "api: update alert rule: load rule failed", err, slog.String("rule_id", id))
 		return
 	}
-	if existing.ResourceID != resourceIDForApp(name) {
+	if !rt.alertRuleOwnedByApp(r.Context(), name, svc, existing) {
 		writeError(w, http.StatusNotFound, "alert rule not found")
 		return
 	}
@@ -463,7 +494,11 @@ func (rt *Router) handleUpdateAlertRule(w http.ResponseWriter, r *http.Request) 
 	if !decodeReq(w, r, &req) {
 		return
 	}
-	req.ResourceID = resourceIDForApp(name) // caller-supplied value, if any, is discarded
+	scope, ok := rt.alertScopeFor(w, r, name, svc, req)
+	if !ok {
+		return
+	}
+	req.ResourceID = scope
 
 	rule, err := req.toRule(id)
 	if err != nil {
@@ -498,7 +533,8 @@ func (rt *Router) handleListAlertRules(w http.ResponseWriter, r *http.Request) {
 
 	name := r.PathValue("name")
 
-	if _, err := rt.apps.GetDesiredService(r.Context(), name); errors.Is(err, store.ErrServiceNotFound) {
+	svc, err := rt.apps.GetDesiredService(r.Context(), name)
+	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
@@ -511,6 +547,7 @@ func (rt *Router) handleListAlertRules(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: list alert rules failed", err, slog.String("name", name))
 		return
 	}
+	rules = append(rules, rt.domainScopedAlertRules(r.Context(), svc)...)
 
 	out := make([]ruleResource, 0, len(rules))
 	for _, rl := range rules {
@@ -532,6 +569,15 @@ func (rt *Router) handleDeleteAlertRule(w http.ResponseWriter, r *http.Request) 
 	name := r.PathValue("name")
 	id := r.PathValue("id")
 
+	svc, err := rt.apps.GetDesiredService(r.Context(), name)
+	if errors.Is(err, store.ErrServiceNotFound) {
+		writeError(w, http.StatusNotFound, "alert rule not found")
+		return
+	} else if err != nil {
+		rt.internalError(w, "api: delete alert rule: load app failed", err, slog.String("name", name))
+		return
+	}
+
 	rule, err := rt.alertRules.GetRule(r.Context(), id)
 	if errors.Is(err, alerting.ErrRuleNotFound) {
 		writeError(w, http.StatusNotFound, "alert rule not found")
@@ -541,7 +587,7 @@ func (rt *Router) handleDeleteAlertRule(w http.ResponseWriter, r *http.Request) 
 		rt.internalError(w, "api: delete alert rule: load rule failed", err, slog.String("rule_id", id))
 		return
 	}
-	if rule.ResourceID != resourceIDForApp(name) {
+	if !rt.alertRuleOwnedByApp(r.Context(), name, svc, rule) {
 		writeError(w, http.StatusNotFound, "alert rule not found")
 		return
 	}
@@ -552,4 +598,72 @@ func (rt *Router) handleDeleteAlertRule(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+const domainScopePrefix = "domain:"
+
+// alertScopeFor picks the stored resource_id. Only domain_traffic_drop may narrow to a domain,
+// and only one the URL app owns, so the body can never reach another app's resources.
+func (rt *Router) alertScopeFor(w http.ResponseWriter, r *http.Request, name string, svc *store.DesiredService, req ruleResource) (string, bool) {
+	app := resourceIDForApp(name)
+	if req.Kind != string(alerting.KindDomainTrafficDrop) || strings.TrimSpace(req.ResourceID) == "" {
+		return app, true
+	}
+	if req.ResourceID == app {
+		return app, true
+	}
+	host, ok := strings.CutPrefix(req.ResourceID, domainScopePrefix)
+	if !ok || host != strings.ToLower(host) || validateHostname(host) != nil {
+		writeError(w, http.StatusBadRequest, "resource_id must be empty or domain:<host> with a lowercase hostname")
+		return "", false
+	}
+	if !rt.domainBelongsTo(r.Context(), svc, host, nil) {
+		writeError(w, http.StatusBadRequest, "resource_id domain is not a domain of this app")
+		return "", false
+	}
+	return domainScopePrefix + host, true
+}
+
+// alertRuleOwnedByApp accepts the app-wide resource, or a domain_traffic_drop rule scoped to a host the app still owns.
+func (rt *Router) alertRuleOwnedByApp(ctx context.Context, name string, svc *store.DesiredService, rule *alerting.Rule) bool {
+	if rule.ResourceID == resourceIDForApp(name) {
+		return true
+	}
+	host, ok := strings.CutPrefix(rule.ResourceID, domainScopePrefix)
+	return ok && rule.Kind == alerting.KindDomainTrafficDrop && host != "" && rt.domainBelongsTo(ctx, svc, host, nil)
+}
+
+// domainScopedAlertRules returns domain_traffic_drop rules scoped to each host of the app.
+func (rt *Router) domainScopedAlertRules(ctx context.Context, svc *store.DesiredService) []alerting.Rule {
+	hosts := map[string]bool{}
+	for _, d := range svc.Domains {
+		hosts[strings.ToLower(d)] = true
+	}
+	if lister, ok := rt.apps.(serviceEnvironmentDomainStore); ok {
+		if sets, err := lister.ListServiceEnvironmentDomains(ctx, svc.Name); err == nil {
+			for _, set := range sets {
+				for _, d := range set {
+					hosts[strings.ToLower(d)] = true
+				}
+			}
+		}
+	}
+	sorted := make([]string, 0, len(hosts))
+	for h := range hosts {
+		sorted = append(sorted, h)
+	}
+	sort.Strings(sorted)
+	var out []alerting.Rule
+	for _, h := range sorted {
+		rules, err := rt.alertRules.ListRulesForResource(ctx, domainScopePrefix+h)
+		if err != nil {
+			continue
+		}
+		for _, rl := range rules {
+			if rl.Kind == alerting.KindDomainTrafficDrop {
+				out = append(out, rl)
+			}
+		}
+	}
+	return out
 }

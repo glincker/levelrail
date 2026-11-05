@@ -20,6 +20,7 @@
   "enabledSwitch": "Schedule enabled",
   "nextRun": "Next run: {{when}}",
   "nextRunNone": "not yet scheduled",
+  "neverRuns": "This schedule is saved but will never run: its expression has no upcoming time. Edit it and save again.",
   "nextRunUnsaved": "save a schedule to see its next run",
   "nextRunDone": "Next run: none, the one-time deploy already ran",
   "runsOnce": "Runs once at {{when}} ({{relative}})",

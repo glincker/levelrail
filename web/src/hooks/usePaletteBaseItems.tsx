@@ -6,7 +6,8 @@ import { usePageActions } from '@/lib/pageActions'
 import { openCliModal } from '@/lib/cliModalStore'
 import { useTheme, type Theme } from '../components/ThemeProvider'
 import {
-  ROUTE_ENTRIES,
+  mergeSettingsEntries,
+  navModelEntries,
   routeEntryItem,
   THEME_ACTION,
   type PaletteItem,
@@ -18,6 +19,7 @@ import {
 import { useMailPaletteItems } from '../components/mailPaletteItems'
 import { useResourcePaletteItems } from '../components/resourcePaletteItems'
 import { useAppTabPaletteItems } from '../components/apps/useAppTabPaletteItems'
+import { useSettingsPaletteEntries } from '../lib/settingsPaletteEntries'
 import { useExperimentalFeatures } from './useExperimental'
 
 const NEXT_THEME: Record<Theme, Theme> = {
@@ -49,6 +51,7 @@ export function usePaletteBaseItems(
   const resourceItems = useResourcePaletteItems()
   const appTabItems = useAppTabPaletteItems()
   const mailItems = useMailPaletteItems()
+  const settingsEntries = useSettingsPaletteEntries()
 
   return React.useMemo<PaletteItem[]>(() => {
     const go =
@@ -62,7 +65,11 @@ export function usePaletteBaseItems(
         void navigate(
           search ? { to, params, search, hash } : { to, params, hash },
         )
-    const items: PaletteItem[] = ROUTE_ENTRIES.map((e) =>
+    const merged = mergeSettingsEntries(settingsEntries)
+    const navEntries = navModelEntries(merged, (id, fallback) =>
+      tCommon(`shell.nav.${id}`, { defaultValue: fallback }),
+    )
+    const items: PaletteItem[] = [...merged, ...navEntries].map((e) =>
       routeEntryItem(
         e,
         experimental,
@@ -102,6 +109,7 @@ export function usePaletteBaseItems(
     mailItems,
     onShowShortcuts,
     pageActions,
+    settingsEntries,
     experimental,
     t,
     tCommon,

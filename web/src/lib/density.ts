@@ -47,6 +47,8 @@ function subscribe(listener: () => void) {
   }
 }
 
+export { subscribe as subscribeDensity }
+
 export function useDensity(): Density {
   return useSyncExternalStore(subscribe, getDensity, getDensity)
 }

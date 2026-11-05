@@ -48,11 +48,14 @@ type hostFirewallResource struct {
 	Backend hostfw.Backend `json:"backend"`
 	Managed bool           `json:"managed"`
 	// Detail explains, read only, what the detected backend is doing.
-	Detail          string                      `json:"detail,omitempty"`
-	DefaultIncoming string                      `json:"default_incoming,omitempty"`
-	Required        []hostFirewallPort          `json:"required"`
-	Commands        []string                    `json:"commands"`
-	PublishedPorts  []hostFirewallPublishedPort `json:"published_ports"`
+	Detail          string             `json:"detail,omitempty"`
+	DefaultIncoming string             `json:"default_incoming,omitempty"`
+	Required        []hostFirewallPort `json:"required"`
+	Commands        []string           `json:"commands"`
+	// OpenCommands is text to run by hand to open each required TCP port for
+	// the detected backend; nothing here is executed.
+	OpenCommands   []hostfw.OpenCommand        `json:"open_commands"`
+	PublishedPorts []hostFirewallPublishedPort `json:"published_ports"`
 }
 
 type hostFirewallActionRequest struct {
@@ -263,9 +266,21 @@ func hostFirewallCommands(b hostfw.Backend, filtering bool, required []hostFirew
 	return out
 }
 
+// blockedTCPPorts lists required TCP ports still closed, so guidance shows
+// only when a port is really blocked. Only ufw is read per port.
+func blockedTCPPorts(req []hostFirewallPort, ufwText string, perPort bool) []int {
+	var out []int
+	for _, p := range req {
+		if p.Protocol == "tcp" && (!perPort || !ufwAllowed(ufwText, p.Port, p.Protocol)) {
+			out = append(out, p.Port)
+		}
+	}
+	return out
+}
+
 func (rt *Router) hostFirewallStatus(ctx context.Context) hostFirewallResource {
 	rows := rt.publishedHostPortRows(ctx)
-	res := hostFirewallResource{Required: rt.hostFirewallRequiredFor(ctx, rows), Commands: []string{}, PublishedPorts: rows}
+	res := hostFirewallResource{Required: rt.hostFirewallRequiredFor(ctx, rows), Commands: []string{}, OpenCommands: []hostfw.OpenCommand{}, PublishedPorts: rows}
 	text := ""
 	if _, err := rt.hostFirewallLookPath("ufw"); err == nil {
 		res.Installed = true
@@ -295,6 +310,9 @@ func (rt *Router) hostFirewallStatus(ctx context.Context) hostFirewallResource {
 			}
 		}
 		filtered = res.Active
+	}
+	if filtered {
+		res.OpenCommands = hostfw.OpenCommands(det.Backend, blockedTCPPorts(res.Required, text, res.Managed))
 	}
 	res.Commands = hostFirewallCommands(det.Backend, res.Active, res.Required)
 	for i, row := range res.PublishedPorts {

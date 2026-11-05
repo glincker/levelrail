@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/cpbackup"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/selfupgrade"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/version"
@@ -92,6 +93,8 @@ var hostEnvPassthrough = []string{
 	"APP_DATA_DIR", "APP_BRAND_FILE", "APP_HTTP_ADDR", "APP_INSTALL_VERIFY",
 	"APP_UPGRADE_RESTORE_POINTS", "APP_UPGRADE_RESTORE_POINTS_MAX_MB", "APP_UPGRADE_VERIFY_WINDOW",
 	"LEVELRAIL_RELEASE_BASE_URL", "LEVELRAIL_INSECURE_MIRROR",
+	selfupgrade.EnvDownloadStall, selfupgrade.EnvDownloadDeadline, selfupgrade.EnvHeartbeat, selfupgrade.EnvOrphanAfter,
+	selfupgrade.EnvRollbackFloor,
 }
 
 // systemdRunArgs builds the systemd-run argv. A transient unit starts with an
@@ -191,8 +194,12 @@ type selfUpgradePlanResource struct {
 	DBSchemaVersion     *int `json:"db_schema_version,omitempty"`
 	TargetSchemaVersion *int `json:"target_schema_version,omitempty"`
 	// PendingMigrations is how many migrations the upgrade will run, when known.
-	PendingMigrations *int     `json:"pending_migrations,omitempty"`
-	RollbackCommands  []string `json:"rollback_commands,omitempty"`
+	PendingMigrations *int `json:"pending_migrations,omitempty"`
+	// PendingMigrationList names them in order; the source says whose list it is.
+	PendingMigrationList   []store.PendingMigration `json:"pending_migration_list,omitempty"`
+	PendingMigrationSource string                   `json:"pending_migration_source,omitempty"`
+	PendingMigrationNote   string                   `json:"pending_migration_note,omitempty"`
+	RollbackCommands       []string                 `json:"rollback_commands,omitempty"`
 	// Disk, downtime and backup describe what the upgrade touches, so a dry run is a full report.
 	Disk            selfupgrade.DiskReport `json:"disk"`
 	DowntimeSeconds int                    `json:"downtime_seconds"`
@@ -202,7 +209,9 @@ type selfUpgradePlanResource struct {
 
 // selfUpgradeBackupPlan is the pre-upgrade backup the engine takes first.
 type selfUpgradeBackupPlan struct {
-	WillTake       bool   `json:"will_take"`
+	WillTake bool `json:"will_take"`
+	// VerifyRestore is the upgrade.verify_backup setting: the backup is restored to a scratch copy and checked first.
+	VerifyRestore  bool   `json:"verify_restore"`
 	Dir            string `json:"dir,omitempty"`
 	RestoreCommand string `json:"restore_command,omitempty"`
 }
@@ -221,6 +230,7 @@ func (rt *Router) fillPlanHost(plan *selfUpgradePlanResource) {
 	}
 	plan.Restart = restartBehaviour
 	plan.Backup.WillTake = true
+	plan.Backup.VerifyRestore = rt.runtimeSettings.Bool(context.Background(), runtimesettings.KeyUpgradeVerifyBackup)
 	if rt.dataDir == "" {
 		return
 	}
@@ -261,6 +271,9 @@ func (rt *Router) fillPlanSchema(ctx context.Context, plan *selfUpgradePlanResou
 	if db >= 0 && target >= 0 {
 		if n, err := store.MigrationsBetween(db, target); err == nil {
 			plan.PendingMigrations = &n
+		}
+		if mp, err := selfupgrade.PlanMigrations(db, target); err == nil && len(mp.Pending) > 0 {
+			plan.PendingMigrationList, plan.PendingMigrationSource, plan.PendingMigrationNote = mp.Pending, mp.Source, mp.Note
 		}
 	}
 	plan.RollbackCommands = []string{
@@ -399,6 +412,7 @@ func (rt *Router) handleSelfUpgradeStart(w http.ResponseWriter, r *http.Request)
 		writeJSON(w, http.StatusConflict, map[string]any{"error": "breaking changes need acknowledgement", "missing_ack": ids})
 		return
 	}
+	rt.reapUpgrades(r.Context())
 	if id := rt.runningSelfUpgradeID(); id != "" {
 		writeJSON(w, http.StatusConflict, map[string]any{"error": "an upgrade is already running", "running_attempt_id": id})
 		return
@@ -493,9 +507,7 @@ func (rt *Router) handleSelfUpgradeAttempts(w http.ResponseWriter, r *http.Reque
 	live := map[string]selfupgrade.Attempt{}
 	if rt.dataDir != "" {
 		j := selfupgrade.NewJournal(rt.dataDir)
-		if _, err := selfupgrade.ImportJournal(r.Context(), j, rt.selfUpgrade.store); err != nil {
-			rt.logger.Warn("api: import self-upgrade journal failed", slog.String("error", err.Error()))
-		}
+		rt.reapUpgrades(r.Context())
 		if list, err := j.List(); err == nil {
 			for _, a := range list {
 				live[a.ID] = a

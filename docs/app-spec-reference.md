@@ -119,6 +119,11 @@ A prebuilt image needs no build block: `image: ghcr.io/your-org/web:1.0` on the 
 | `budget` | `Budget` | no | none | Monthly egress and cost cap with alerts and an optional throttle or pause. See [`Budget`](#budget). |
 | `autoscale` | `Autoscale` | no | none | Scales replicas on CPU, memory or request load between a minimum and maximum. Cannot be combined with `replicas`. See [`Autoscale`](#autoscale). |
 | `dependsOn` | list of string | no | none | Sibling `services:` keys this service waits on: the reconciler does not create this service's container until every named dependency has at least one running container. Start order only, real Docker Compose's own default `depends_on:` semantic (`service_started`), not a wait for the dependency's own readiness or health check. Each entry must name a real sibling service with a single running container (not `static` or `compose`), and a cycle between services fails validation. |
+| `tolerations` | list of `Toleration` | no | none | Lets the service land on nodes carrying matching taints. Each entry has `key`, `operator` (`Equal` or `Exists`), `value` and `effect` (`NoSchedule`, `PreferNoSchedule`, `NoExecute`). Without a matching entry a tainted node is skipped. |
+| `affinity` | `Affinity` | no | none | Steers placement by node labels and by the workloads on each node: `node_required` and `node_preferred` match node labels, `together` pulls the service next to named workloads, `apart` keeps it away from them. Omitted keeps plain resource-aware placement. |
+| `workload` | string | no | `replicated` | Reserved, not yet scheduled. `replicated`, `per-node` or `ordered`. Validation accepts it, but the reconciler does not read it yet, so every service still runs as `replicated`. See [`Workload`](#workload). |
+| `perNode` | `PerNode` | no | none | Reserved, not yet scheduled. Only with `workload: per-node`. |
+| `ordered` | `Ordered` | no | none | Reserved, not yet scheduled. Required with `workload: ordered`. |
 | `restart` | string | no | none | `"no"` or `on-failure` (also `on-failure:N`, N a non-negative integer that is accepted and ignored) runs the service to completion, the same as a compose `restart:`: exit code 0 marks it `Completed` and it is not restarted; a nonzero exit is restarted with crash backoff. `always` and `unless-stopped` keep the default. Any other value fails validation. A redeploy from app.yaml replaces the stored value, so keep `restart` in the file. Not supported by `apply` yet. |
 
 ### `Build`
@@ -262,6 +267,26 @@ All fields are optional, but at least one of `egress` and `cost` is required. Se
 | `action` | string | What happens at 100 percent: `none` (default, alert only), `throttle` or `pause`. |
 | `thresholds` | list of integer | Alert levels in percent, 1 to 100, at most eight. Default `[50, 80, 100]`. |
 | `throttle_rps` | integer | Requests per second per client while throttled. Default 5. |
+
+### `Workload`
+
+Reserved, not yet scheduled. These fields validate, but nothing reads them yet: an app that sets them deploys exactly as before.
+
+`perNode` fields (with `workload: per-node`):
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `onDrain` | string | `keep` | `keep` or `evict`. |
+
+`ordered` fields (with `workload: ordered`):
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `replicas` | integer | none | Number of ordinals, at least 1. Required. |
+| `start` | string | `sequential` | `sequential` or `parallel`. |
+| `partition` | integer | `0` | Ordinals below this keep the old release on update. At most `replicas`. |
+
+Refused for both kinds: `domains`, a `rollout.max_surge` above 0, `static` and `compose` builds, and a service name longer than 55 characters. A `per-node` service also refuses `replicas` and `strategy`.
 
 ### `Autoscale`
 

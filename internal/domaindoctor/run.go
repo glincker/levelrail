@@ -69,6 +69,7 @@ func RunStream(ctx context.Context, facts Facts, probes Probes, opts Options, em
 		if c.ID == "" {
 			return
 		}
+		rn.explain(&c)
 		rn.finishFix(&c)
 		mu.Lock()
 		results[slot], done[slot] = c, true
@@ -112,6 +113,8 @@ func RunStream(ctx context.Context, facts Facts, probes Probes, opts Options, em
 	if timedOut.Load() {
 		c := Check{ID: IDTimeout, Title: "Doctor finished every check", State: StateUnavailable, Tier: TierHygiene,
 			Detail: "the doctor ran out of time before every check finished; run it again"}
+		rn.explain(&c)
+		rn.finishFix(&c)
 		rep.Checks = append(rep.Checks, c)
 		if emit != nil {
 			emit(c)
@@ -190,6 +193,7 @@ func (rn *run) finishFix(c *Check) {
 	if f == nil {
 		return
 	}
+	defer func() { f.CLIHint = f.CLI }()
 	switch {
 	case f.Action != nil && f.Action.Kind == ActionRequest && isWriteRequest(f.Action.API):
 		f.Kind = fixit.KindAuto

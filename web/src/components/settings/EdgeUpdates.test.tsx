@@ -190,9 +190,7 @@ describe('UpdateStatusRow', () => {
   it('explains instead of promising an edge build on a host binary', async () => {
     renderRow(edgeStatus, preflight(binary))
     expect(
-      await screen.findByText(
-        /runs as a host binary, so it cannot follow edge/,
-      ),
+      await screen.findByText(/runs as a host binary, so it can't follow edge/),
     ).toBeInTheDocument()
     expect(screen.queryByText(/newer edge build/)).not.toBeInTheDocument()
   })

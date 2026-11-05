@@ -1,0 +1,84 @@
+{
+  "page": {
+    "title": "Set up your dashboard",
+    "description": "A few quick choices. Skip anything and come back later."
+  },
+  "rail": {
+    "label": "Setup steps",
+    "progress": "Step {{current}} of {{total}}: {{name}}",
+    "done": "done"
+  },
+  "steps": {
+    "welcome": {
+      "label": "Welcome",
+      "title": "Welcome to Levelrail",
+      "description": "You run apps on this server. Levelrail looks after them."
+    },
+    "profile": {
+      "label": "Profile",
+      "title": "Your profile",
+      "description": "How your name and picture show up for your team."
+    },
+    "preferences": {
+      "label": "Preferences",
+      "title": "How Levelrail looks for you",
+      "description": "Changes apply as you make them. You can edit all of this later in Settings."
+    },
+    "finish": {
+      "label": "Finish",
+      "title": "You are set up",
+      "description": "Your choices are saved. Two good places to go next."
+    }
+  },
+  "footer": {
+    "back": "Back",
+    "skip": "Skip for now",
+    "continue": "Continue",
+    "start": "Start",
+    "finish": "Finish"
+  },
+  "welcome": {
+    "deploy": "Deploy apps from a repo, an image or a template.",
+    "protect": "Levelrail sets up HTTPS, takes backups and tells you when something breaks.",
+    "time": "Setup takes about 5 minutes. Every step can be skipped.",
+    "dismiss": "Do not show this again"
+  },
+  "profile": {
+    "section": "Profile",
+    "name": "Display name",
+    "nameHint": "Up to {{max}} characters.",
+    "avatar": "Avatar",
+    "avatarHint": "Initials on a color picked from your account. Custom colors are coming.",
+    "gravatar": "Use Gravatar",
+    "gravatarHint": "Loads your picture from gravatar.com, so your browser contacts them. Off by default."
+  },
+  "preferences": {
+    "section": "Preferences"
+  },
+  "finish": {
+    "deploy": "Deploy your first app",
+    "guide": "Follow the setup guide for HTTPS, backups and alerts",
+    "open": "Open"
+  },
+  "card": {
+    "title": "Set up your dashboard",
+    "body": "Pick your name, look and language. It takes about 5 minutes.",
+    "start": "Start",
+    "resumeTitle": "Finish setting up",
+    "resumeBody": "You stopped at step {{current}} of {{total}}.",
+    "resume": "Continue",
+    "dismiss": "Do not show again"
+  },
+  "closed": {
+    "body": "Setup is finished. You can run it again whenever you like.",
+    "restart": "Run setup again",
+    "dashboard": "Go to the dashboard"
+  },
+  "unavailable": {
+    "body": "Guided setup is not available on this server."
+  },
+  "errors": {
+    "save": "Could not save your progress. Try again.",
+    "transition": "That move is not allowed right now. Reload the page and try again."
+  }
+}

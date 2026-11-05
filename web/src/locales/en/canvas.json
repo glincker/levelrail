@@ -8,7 +8,7 @@
   "iacOff": {
     "title": "Platform as code is switched off",
     "description": "Canvas turns your draft into a plan with the platform-as-code API, so that feature has to be on before you can review or apply.",
-    "action": "Open Beta features"
+    "action": "Open beta features"
   },
   "empty": {
     "title": "Nothing in this project yet",

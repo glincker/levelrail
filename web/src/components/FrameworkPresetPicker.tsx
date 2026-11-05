@@ -1,3 +1,4 @@
+import { selectableCardClass } from './ui/selectable-card'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -76,8 +77,8 @@ export function FrameworkPresetPicker({
               onApply(p)
             }}
             className={cn(
-              'flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-left text-sm transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50',
-              p.id === activeId && 'border-primary bg-muted',
+              'flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm disabled:opacity-50',
+              selectableCardClass(p.id === activeId),
             )}
           >
             <BrandIcon name={p.icon} className="size-4 shrink-0" />

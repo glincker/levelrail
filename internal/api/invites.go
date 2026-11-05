@@ -327,8 +327,8 @@ func (rt *Router) handleAcceptInvite(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "token is required")
 		return
 	}
-	if len(req.Password) < minPasswordLength {
-		writeError(w, http.StatusBadRequest, fmt.Sprintf("password must be at least %d characters", minPasswordLength))
+	if msg := rt.passwordProblem(r.Context(), "password", req.Password); msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
 		return
 	}
 

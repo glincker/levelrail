@@ -5,6 +5,8 @@ import {
   groupByCategory,
   listFromText,
   needsConfirm,
+  parseCategory,
+  splitMatches,
   settingItemId,
 } from './runtimeSettings'
 
@@ -73,5 +75,37 @@ describe('runtimeSettings helpers', () => {
       filterSettings(rows, { ...all, changedOnly: true }, text),
     ).toHaveLength(1)
     expect(filterSettings(rows, { ...all, query: 'zzz' }, text)).toHaveLength(0)
+  })
+})
+
+describe('category and highlight helpers', () => {
+  const text = (s: RuntimeSetting) => ({ title: s.title, description: '' })
+
+  it('filters by category together with the query', () => {
+    const list = [
+      setting({ key: 'security.a', title: 'Alpha' }),
+      setting({ key: 'networking.a', category: 'networking', title: 'Alpha' }),
+    ]
+    const out = filterSettings(
+      list,
+      { query: 'alpha', changedOnly: false, category: 'networking' },
+      text,
+    )
+    expect(out.map((s) => s.key)).toEqual(['networking.a'])
+  })
+
+  it('parses only known categories', () => {
+    expect(parseCategory('deploys')).toBe('deploys')
+    expect(parseCategory('nope')).toBeUndefined()
+    expect(parseCategory(undefined)).toBeUndefined()
+  })
+
+  it('splits text around every case-insensitive match', () => {
+    expect(splitMatches('Trust proxy TRUST', 'trust')).toEqual([
+      { text: 'Trust', match: true },
+      { text: ' proxy ', match: false },
+      { text: 'TRUST', match: true },
+    ])
+    expect(splitMatches('abc', '  ')).toEqual([{ text: 'abc', match: false }])
   })
 })

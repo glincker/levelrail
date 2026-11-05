@@ -66,14 +66,16 @@ export async function readErrorMessage(
     fix?: ApiErrorFix
     request_id?: string
   } | null
-  if (body?.code && body.message) {
+  // Plain writeError bodies carry error plus code, typed ones message plus code.
+  const text = body?.message ?? body?.error
+  if (body?.code && text && !body.error?.startsWith('demo_')) {
     if (typedDetails.size >= MAX_TYPED_DETAILS) typedDetails.clear()
-    typedDetails.set(body.message, {
+    typedDetails.set(text, {
       code: body.code,
       fix: body.fix,
       requestId: body.request_id,
     })
-    return body.message
+    return text
   }
   // Demo gate bodies carry a machine code in `error` and the human text in `message`.
   if (body?.error?.startsWith('demo_') && body.message) {

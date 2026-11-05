@@ -682,7 +682,7 @@
       },
       "certificates": {
         "title": "TLS certificates",
-        "description": "Every domain’s certificate in one place: expiry, issuer, renew now, and custom certificate upload."
+        "description": "Every domain’s certificate in one place: expiry, issuer, renew now, custom certificate upload and the issuance budget."
       },
       "infrastructure": {
         "title": "Infrastructure as code",
@@ -711,10 +711,24 @@
       "benchmarks": {
         "title": "Benchmarks",
         "description": "Stored benchmark runs with host, build, limits and a compare view."
+      },
+      "appearance": {
+        "title": "Appearance",
+        "description": "Theme, accent, font, width and density."
       }
     },
     "search": "Search settings",
     "back": "Back",
+    "pins": {
+      "group": "Pinned",
+      "pin": "Pin {{label}}",
+      "unpin": "Unpin {{label}}",
+      "limit": "Pin limit reached ({{max}}). Unpin one first."
+    },
+    "expandAll": "Expand all groups",
+    "collapseAll": "Collapse all groups",
+    "oneAtATime": "Open one group at a time",
+    "groupCount": "{{count}} pages",
     "noMatchTitle": "No settings match \"{{query}}\"",
     "noMatchDescription": "Try a different word, or clear the search to see every area.",
     "title": "Settings",
@@ -1217,7 +1231,16 @@
       "wide": "Wide",
       "wideHint": "Fuller use of big screens",
       "full": "Full width",
-      "fullHint": "Edge to edge"
+      "fullHint": "Edge to edge",
+      "compact": "Compact",
+      "compactHint": "Narrow column for reading",
+      "custom": "Exact width",
+      "customHint": "Pick a width in pixels"
+    },
+    "appearanceLink": {
+      "title": "Appearance",
+      "description": "Theme, font, page width and density now live in one place.",
+      "open": "Open appearance"
     }
   },
   "emailPage": {
@@ -2247,6 +2270,59 @@
   "organizationsPage": {
     "title": "Organizations",
     "description": "Group related projects under an organization. File a project into one from the project's own detail page."
+  },
+  "organizationHome": {
+    "loadFailed": "Could not load this tile.",
+    "copySlug": "Copy slug",
+    "copied": "Copied",
+    "noSlug": "No slug set",
+    "members": "Members",
+    "viewMembers": "View members",
+    "projects": "Projects",
+    "viewProjects": "View projects",
+    "environments": "Environments",
+    "pendingInvites": "Pending invites",
+    "viewInvites": "Manage invites",
+    "workloads": "Apps and databases",
+    "apps": "apps",
+    "databases": "databases",
+    "failing_one": "{{count}} failing app",
+    "failing_other": "{{count}} failing apps",
+    "activity": "Recent activity",
+    "showMore": "Show more",
+    "actions": {
+      "org_updated": "Profile updated",
+      "org_avatar_updated": "Avatar changed",
+      "org_avatar_removed": "Avatar removed",
+      "org_slug_changed": "Slug changed"
+    },
+    "profile": {
+      "title": "Profile",
+      "readOnly": "Only organization admins can edit the profile.",
+      "name": "Name",
+      "slug": "Slug",
+      "slugPlaceholder": "my-organization",
+      "slugHint": "3 to 40 lowercase letters, digits and single hyphens.",
+      "slugDefault": "The default organization cannot have a slug.",
+      "slugLength": "Use {{min}} to {{max}} characters.",
+      "slugChars": "Use lowercase letters, digits and single hyphens, not at the ends.",
+      "slugTaken": "That slug is already in use.",
+      "description": "Description",
+      "save": "Save changes",
+      "saving": "Saving...",
+      "saved": "Saved"
+    },
+    "avatar": {
+      "input": "Organization avatar file",
+      "upload": "Upload avatar",
+      "remove": "Remove avatar",
+      "hint": "PNG or JPEG, up to {{max}} KB.",
+      "badType": "Only PNG or JPEG images are accepted.",
+      "tooLarge": "The image is larger than {{max}} KB.",
+      "uploading": "Uploading avatar",
+      "removeTitle": "Remove the avatar?",
+      "removeBody": "The organization goes back to its initials."
+    }
   },
   "agentsPage": {
     "title": "Agents",
@@ -3432,6 +3508,54 @@
       "engine_keeps_no_data": "Keeps no data on disk"
     }
   },
+  "iacExport": {
+    "title": "Export",
+    "description": "Write live state as resource files. Leave both fields empty for everything you can read.",
+    "project": "Project",
+    "projectPlaceholder": "shop",
+    "app": "App",
+    "appPlaceholder": "web",
+    "includeValues": "Include plain env values",
+    "run": "Export",
+    "running": "Exporting...",
+    "download": "Download",
+    "copy": "Copy",
+    "copied": "Copied",
+    "warning": "warning: {{message}}",
+    "textLabel": "Exported resource files",
+    "button": "Export as code",
+    "dialogTitle": "Export {{name}} as code",
+    "dialogDescription": "The resource file for this one resource. Secret values are never included.",
+    "loading": "Exporting...",
+    "empty": "Nothing to export."
+  },
+  "iacPlan": {
+    "summary": "{{create}} to create, {{update}} to update, {{delete}} to delete, {{noop}} unchanged",
+    "summaryErrors": "{{create}} to create, {{update}} to update, {{delete}} to delete, {{noop}} unchanged, {{error}} with errors",
+    "keptNote": "kept, not in the files",
+    "denied": "denied",
+    "warning": "warning: {{message}}",
+    "matches": "Live state already matches the files.",
+    "status": {
+      "applied": "applied",
+      "failed": "failed",
+      "denied": "denied",
+      "skipped": "skipped",
+      "noop": "unchanged"
+    }
+  },
+  "iacImport": {
+    "button": "Import YAML",
+    "dialogTitle": "Import YAML for {{name}}",
+    "dialogDescription": "Paste or upload resource YAML to preview what would change. Nothing is applied here.",
+    "textLabel": "YAML to preview",
+    "placeholder": "kind: App",
+    "preview": "Preview",
+    "previewing": "Planning...",
+    "upload": "Upload file",
+    "uploadLabel": "Upload a YAML file",
+    "cliNote": "To apply, run:"
+  },
   "iacHelp": {
     "hint": "Click a key to see what it does.",
     "default": "Default: {{value}}."
@@ -3466,6 +3590,186 @@
       "title": "Make deploy copies public?",
       "description": "Every retained copy gets its own public hostname and certificate. Anyone with the address can reach old versions of your apps.",
       "confirm": "Make public"
+    }
+  },
+  "appearancePage": {
+    "title": "Appearance",
+    "description": "Theme base, accent, font, text size, page width, side padding and density. Changes apply as you pick them.",
+    "savedHere": "Saved on this browser. With sync on, they also follow your account.",
+    "reset": "Reset to defaults",
+    "defaultBadge": "Default",
+    "recommendedBadge": "Recommended",
+    "presets": {
+      "title": "Presets",
+      "description": "One click sets several options at once.",
+      "default": "Default",
+      "defaultHint": "The stock look",
+      "focusDark": "Focus dark",
+      "focusDarkHint": "Graphite, roomy padding, comfortable density",
+      "oled": "OLED",
+      "oledHint": "True black, wide pages, compact density",
+      "paper": "Paper",
+      "paperHint": "Warm light, readable font, narrow pages",
+      "customDescription": "Your settings do not match a preset.",
+      "custom": "Custom"
+    },
+    "theme": {
+      "title": "Color mode",
+      "description": "Light, dark or follow the browser."
+    },
+    "darkBase": {
+      "title": "Dark base",
+      "description": "The surface color used in dark mode.",
+      "soft": "Soft dark",
+      "softHint": "Calm near-black",
+      "black": "True black",
+      "blackHint": "OLED, saves power",
+      "graphite": "Graphite",
+      "graphiteHint": "Neutral, easy on the eyes",
+      "midnight": "Midnight",
+      "midnightHint": "Blue tint"
+    },
+    "lightBase": {
+      "title": "Light base",
+      "description": "The surface color used in light mode.",
+      "white": "White",
+      "whiteHint": "Classic, highest brightness",
+      "grey": "Soft grey",
+      "greyHint": "Less glare, white cards",
+      "paper": "Paper",
+      "paperHint": "Warm tint",
+      "cool": "Cool grey",
+      "coolHint": "Slight blue tint"
+    },
+    "accent": {
+      "title": "Accent",
+      "description": "Used for the active page, selected cards, links and focus.",
+      "teal": "Teal blue",
+      "indigo": "Indigo",
+      "violet": "Violet",
+      "green": "Green",
+      "amber": "Amber",
+      "rose": "Rose",
+      "custom": "Custom color",
+      "customColor": "Pick a custom accent color",
+      "customHex": "Hex color",
+      "customInvalid": "Use six hex digits, like #0e7490.",
+      "adjusted": "Adjusted for readability"
+    },
+    "font": {
+      "title": "Font",
+      "description": "Local fonts only, nothing is downloaded.",
+      "system": "System",
+      "systemHint": "Your device font",
+      "rounded": "Rounded",
+      "roundedHint": "Soft letter shapes",
+      "serif": "Serif",
+      "serifHint": "Classic, text-like",
+      "mono": "Mono",
+      "monoHint": "Fixed width",
+      "readable": "Readable",
+      "readableHint": "Wide letters, more line spacing"
+    },
+    "textSize": {
+      "title": "Text size",
+      "description": "Scales all text and spacing.",
+      "slider": "Text size",
+      "quick": "Quick picks",
+      "sample": "Aa The quick brown fox",
+      "reset": "Reset size"
+    },
+    "width": {
+      "title": "Page width",
+      "description": "How wide page content gets on large screens. Screens under 1024px are not affected.",
+      "slider": "Content width",
+      "reset": "Reset width"
+    },
+    "gutter": {
+      "title": "Side padding",
+      "description": "Space left and right of the page content from tablet size up.",
+      "tight": "Tight",
+      "tightHint": "More room for content",
+      "normal": "Normal",
+      "normalHint": "Balanced",
+      "roomy": "Roomy",
+      "roomyHint": "Calmer, more margin"
+    },
+    "density": {
+      "description": "How much spacing cards, lists and forms use.",
+      "compactHint": "Fits more on screen",
+      "comfortableHint": "More breathing room"
+    },
+    "sections": {
+      "color": "Color",
+      "type": "Type",
+      "layout": "Layout",
+      "sync": "Sync"
+    },
+    "motion": {
+      "title": "Motion",
+      "description": "Animations and transitions across the dashboard.",
+      "system": "Follow system",
+      "systemHint": "Use your device setting",
+      "on": "Reduce",
+      "onHint": "Minimal animation",
+      "off": "Allow all",
+      "offHint": "Ignore the device setting"
+    },
+    "sync": {
+      "label": "Sync to my account",
+      "hint": "Keep these choices on every browser you sign in from.",
+      "syncing": "Syncing...",
+      "synced": "Synced {{when}}",
+      "justNow": "just now",
+      "notSynced": "Not synced",
+      "tooLarge": "Too large to sync. Your choices stay on this browser.",
+      "off": "Sync is off. Choices stay on this browser.",
+      "export": "Export",
+      "import": "Import",
+      "importLabel": "Import appearance from a JSON file",
+      "importBad": "That file is not a valid appearance export.",
+      "imported": "Imported."
+    },
+    "radius": {
+      "title": "Corner roundness",
+      "description": "How round buttons, cards and inputs are.",
+      "sharp": "Sharp",
+      "sharpHint": "Square, technical",
+      "normal": "Normal",
+      "normalHint": "The stock look",
+      "soft": "Soft",
+      "softHint": "Rounder, friendlier"
+    },
+    "contrast": {
+      "title": "High contrast",
+      "description": "Stronger borders, muted text and focus ring.",
+      "system": "Follow system",
+      "systemHint": "Use your device setting",
+      "on": "On",
+      "onHint": "Always high contrast",
+      "off": "Off",
+      "offHint": "Ignore the device setting",
+      "sample": "Muted text sample"
+    },
+    "codeFont": {
+      "title": "Code font",
+      "description": "Used for code, logs, terminals and diffs. Local fonts only, nothing is downloaded.",
+      "system-mono": "System mono",
+      "system-monoHint": "Your device default",
+      "jetbrains": "JetBrains Mono",
+      "jetbrainsHint": "If installed",
+      "fira": "Fira Code",
+      "firaHint": "If installed",
+      "menlo": "Menlo",
+      "menloHint": "Mac and similar"
+    },
+    "codeSize": {
+      "title": "Code size",
+      "description": "Text size for code, logs and terminals.",
+      "slider": "Code size",
+      "reset": "Reset size",
+      "sample": "$ deploy --app web\n12:00:01 INFO build ok",
+      "sampleLabel": "Code sample"
     }
   }
 }

@@ -211,7 +211,7 @@ func (rt *Router) applyBaseBackupSchedule(w http.ResponseWriter, r *http.Request
 	schedule := *req.BaseBackupSchedule
 	targetID := req.BaseBackupTargetID
 	if schedule != "" {
-		if _, err := cronexpr.Parse(schedule); err != nil {
+		if err := cronexpr.Validate(schedule, time.UTC, time.Now()); err != nil {
 			writeError(w, http.StatusBadRequest, fmt.Sprintf("invalid base_backup_schedule: %s", err.Error()))
 			return false
 		}

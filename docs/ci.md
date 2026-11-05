@@ -726,6 +726,7 @@ Typical times on a warm laptop (no `--web`) are in the last column.
 | `scripts/check-migration-versions.sh` plus `--against-remotes` | always; fetches origin and reads every `origin/*` branch | about 1 min |
 | `scripts/check-fanin.sh` | always | 3s |
 | `scripts/check-dashes.sh` | always | 1s |
+| `scripts/check-doc-versions.sh` | always | 1s |
 | i18n parity (`localeParity.test.ts`) | `web/src/locales/` changed | 10s |
 | API guards (`./internal/api`) | `internal/api`, route or openapi files changed | 30s to 2 min |
 | CLI guards (`TestCommandTree`, `TestHelpTextCoversEveryFlag`) | same as above | 20s |

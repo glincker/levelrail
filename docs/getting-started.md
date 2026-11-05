@@ -22,7 +22,9 @@ flowchart LR
 
 - A Linux server, `amd64` or `arm64`, with systemd and root access. 1 vCPU and 1 GB of RAM boots the platform. 2 vCPU and 2 GB is more comfortable once you build images on it.
 - Ports 80 and 443 reachable from the internet. Let's Encrypt uses port 80 to issue certificates.
-- Optional: a domain you can point at the server. You can skip this and use a free `sslip.io` address.
+- Port 8080 stays closed to the internet. The dashboard answers there over plain HTTP, so reach it through an SSH tunnel or open it to your own IP only. See [Dashboard port 8080](/installing#dashboard-port-8080).
+- Ports 80 and 443 free on the server. If another proxy holds them, the installer moves Levelrail to ports 8088 and 8443 (coexist mode) and one-click HTTPS does not work. See [Server already runs a proxy](/installing#server-already-runs-a-proxy).
+- Optional: a domain you can point at the server. Without one you can use a free `sslip.io` test address.
 
 The full requirements, with what the installer checks, is in [Installing](/installing#requirements). No server yet? [Try it on your laptop](/local-development) first.
 
@@ -43,12 +45,12 @@ Open the dashboard:
 IMPORTANT: back up /var/lib/levelrail-data/master.key somewhere safe.
 ```
 
-Use the address from your own output. If port 8080 was taken, the installer picked the next free port and printed it.
+Use the address from your own output. If port 8080 was taken, the installer picked the next free port and printed it. If the address times out, port 8080 is closed to you: run `ssh -L 8080:127.0.0.1:8080 <user>@<server-ip>` and open the same link with `localhost` as the host.
 
 Back up `master.key` now. Every stored secret is encrypted with it, and nothing can recover it if it is lost.
 
 <Tip>
-To pin a release, set `LEVELRAIL_VERSION=v0.2.0-beta.14` before the command. You can also run Levelrail as a container. See [Installing](/installing).
+To pin a release, set `LEVELRAIL_VERSION=v0.9.0` before the command. You can also run Levelrail as a container. See [Installing](/installing).
 </Tip>
 
 <Accordion title="If the install fails">
@@ -67,7 +69,7 @@ To pin a release, set `LEVELRAIL_VERSION=v0.2.0-beta.14` before the command. You
 Open the printed setup link, choose a password, and you are the admin. The setup token travels in the link's `#` fragment, so it never reaches the server logs or a referrer header. It is never written to the service log either; `sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token` prints it again. The first sign-in opens one screen, not an empty app list:
 
 1. **Your app's address** is shown before you deploy: with no domain set, an app gets `https://<app>.<dashed-ip>.sslip.io`.
-2. **Enable HTTPS** is one button that needs no DNS. Your admin email is prefilled as the certificate contact, and the dashboard gets a free `<dashed-ip>.sslip.io` address with a real certificate. After HTTPS is on, signing in over plain HTTP stops working, so use the https address from then on. A banner on the dashboard keeps offering it until it is on.
+2. **Enable HTTPS** is one button that needs no DNS. Your admin email is prefilled as the certificate contact, and the dashboard gets a `<dashed-ip>.sslip.io` address with a Let's Encrypt certificate. This is a test address: it works only while your DNS resolver answers for sslip.io, so use your own domain for production. Production enable attempts are capped at 5 per hour. After HTTPS is on, signing in over plain HTTP stops working, so use the https address from then on. A banner on the dashboard keeps offering it until it is on.
 3. **Deploy** a sample app, a template, or your own repository. The screen waits until the app is healthy and ends on its live link. A failure shows the automatic diagnosis and a link to the logs.
 
 Everything else (email, git provider, backups, teammates, alerts) is on the **Get started** checklist in the sidebar, which reads your real server state and ticks steps off by itself. `levelrail-cli setup status` shows the same list.
@@ -290,7 +292,7 @@ levelrail-cli setup next
 levelrail-cli setup skip teammate
 ```
 
-Set up backups before anything else. Your control plane database and `master.key` are the two things you cannot recreate.
+Set up backups before anything else. Your control plane database and `master.key` are the two things you cannot recreate. The shortest path is [First backup in 5 minutes](/backups-and-storage#first-backup-in-5-minutes).
 
 ## Where to go next
 
@@ -308,6 +310,16 @@ Run Postgres, Redis, or another database next to your app.
 <Card title="Templates" href="/templates-and-registry">
 
 Deploy a pre-made service such as Plausible or Uptime Kuma.
+
+</Card>
+<Card title="First backup in 5 minutes" href="/backups-and-storage#first-backup-in-5-minutes">
+
+Take a first backup with a local target, then move to an off-server one.
+
+</Card>
+<Card title="Go live on your domain" href="/go-live">
+
+Point a domain at an app and get a real certificate.
 
 </Card>
 <Card title="Domains and ingress" href="/domains-and-ingress">
@@ -335,3 +347,8 @@ Get alerted when something breaks.
 Not sure what is stable? See [Feature status](/feature-status). Hit a problem? See [Troubleshooting](/troubleshooting).
 
 Every command, output format (`--output`, `--query`), and shell completion option is in the [CLI reference](/cli-reference). To build from source or run a development instance, see [Installing](/installing#option-3-build-from-source).
+
+## Next step
+
+1. [First backup in 5 minutes](/backups-and-storage#first-backup-in-5-minutes).
+2. [Go live on your domain](/go-live).

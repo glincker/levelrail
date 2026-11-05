@@ -98,7 +98,7 @@ describe('CleanupOverviewTab', () => {
       screen.getByText('1 data type is in preview mode'),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('link', { name: /Open Disk and Docker/ }),
+      screen.getByRole('link', { name: /Open disk and Docker/ }),
     ).toBeInTheDocument()
   })
 

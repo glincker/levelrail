@@ -1,0 +1,28 @@
+{
+  "label": "Related pages",
+  "heading": "Related",
+  "links": {
+    "account": "Account",
+    "alertRules": "Alert rules",
+    "backups": "Backups",
+    "certificates": "Certificates",
+    "cliAccess": "CLI access",
+    "dataExport": "Data export",
+    "dns": "DNS",
+    "domains": "Domains",
+    "drReport": "Recovery report",
+    "environments": "Environments",
+    "eventWebhooks": "Event webhooks",
+    "firewall": "Firewall",
+    "mobileDevices": "Mobile devices",
+    "network": "Network",
+    "notificationChannels": "Notification channels",
+    "platformHttps": "Platform HTTPS",
+    "privateNetworks": "Private networks",
+    "security": "Security",
+    "sessionPolicy": "Session policy",
+    "tokens": "API tokens",
+    "traffic": "Traffic",
+    "vault": "Vault"
+  }
+}

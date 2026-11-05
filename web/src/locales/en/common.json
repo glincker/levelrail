@@ -101,6 +101,12 @@
     "invalid": "This sign-in link is invalid or has expired. Request a new one.",
     "backToSignIn": "Back to sign in"
   },
+  "ssoAutoRedirect": {
+    "redirecting": "Redirecting you to {{provider}}...",
+    "cancel": "Cancel",
+    "cancelled": "Automatic redirect cancelled.",
+    "passwordInstead": "Sign in with a password instead"
+  },
   "sessionEnded": {
     "notice": "You were signed out because your session ended, for example after an upgrade or restart. Sign in again to continue. API tokens are not affected."
   },
@@ -270,7 +276,7 @@
   },
   "cascadeDelete": {
     "label": "Also delete everything inside",
-    "hint": "Removes every app and database in it and their containers. Volumes are kept. If something cannot be removed, nothing else is lost and you can run this again."
+    "hint": "Removes every app and database in it, and their containers. Volumes are kept. If something cannot be removed, nothing else is lost and you can run this again."
   },
   "loginHelp": {
     "lockedOut": "Locked out? On the server, run",
@@ -292,6 +298,8 @@
   "recommended": {
     "title": "Recommended next",
     "dismiss": "Dismiss: {{title}}",
+    "more": "+{{count}} more",
+    "less": "Show fewer",
     "failed_deploy": {
       "title": "The last deploy failed",
       "button": "View the build log"
@@ -383,11 +391,13 @@
     "help": {
       "label": "Help",
       "forPage": "Help for this page",
+      "getStarted": "Get started",
       "docs": "Documentation",
       "troubleshooting": "Troubleshooting",
       "systemStatus": "Doctor",
       "report": "Report an issue",
-      "community": "Ask the community"
+      "community": "Ask the community",
+      "suggest": "Suggest a feature"
     },
     "account": {
       "controlPlane": "Control plane",
@@ -400,13 +410,13 @@
     },
     "navGroup": {
       "home": "Home",
-      "apps": "Apps",
+      "primary": "Home",
+      "build": "Build and run",
       "data": "Data",
-      "traffic": "Networking",
-      "infrastructure": "Fleet",
+      "traffic": "Network",
+      "infrastructure": "Fleet and cost",
       "access": "Security",
-      "ai": "AI",
-      "automation": "Automation"
+      "ai": "AI"
     },
     "nav": {
       "dashboard": "Dashboard",
@@ -414,6 +424,10 @@
       "apps": "Apps",
       "deployments": "Deployments",
       "projects": "Projects",
+      "templates": "Templates",
+      "get-started": "Get started",
+      "welcome": "First-run setup",
+      "migrate": "Migrate",
       "databases": "Databases",
       "backups": "Backups",
       "domains": "Domains",
@@ -453,9 +467,11 @@
     },
     "newApp": "New app",
     "pageWidth": {
+      "compact": "Compact width",
       "comfortable": "Comfortable width",
       "wide": "Wide",
-      "full": "Full width"
+      "full": "Full width",
+      "custom": "Exact width"
     },
     "logoStatus": {
       "healthy": "Everything is healthy",
@@ -513,7 +529,7 @@
     "reconnectHint": "Press Enter to try again",
     "stepUpCancelled": "Confirmation cancelled.",
     "exitCode": "exit code {{code}}",
-    "genericError": "Something went wrong.",
+    "genericError": "Something went wrong. Try again.",
     "unknownCommand": "Unknown command: {{name}}",
     "helpIntro": "Available commands (Tab completes, help <command> lists subcommands):",
     "helpLocal": "Also: help, clear. Ctrl+C cancels a running command, Ctrl+L clears the screen.",
@@ -632,7 +648,7 @@
       "notConfiguredDescription": "Add a BYOK API key in Settings to start chatting.",
       "configure": "Configure AI Assistant",
       "experimentalOffTitle": "AI chat is turned off",
-      "experimentalOffDescription": "AI chat is a beta feature and is off by default. An administrator can turn it on in Settings, Beta features, no server access needed.",
+      "experimentalOffDescription": "AI chat is a beta feature and is off by default. An administrator can turn it on in Settings, Beta features. No server access needed.",
       "enableInSettings": "Turn on in Settings"
     }
   },
@@ -975,47 +991,112 @@
     "requestId": "Request ID: {{id}}",
     "copyRequestId": "Copy request ID",
     "copied": "Copied",
-    "generic": "Something went wrong on the server.",
+    "generic": "The server hit an error. Try again.",
     "toastTitle": "That did not work",
     "friendly": {
       "generic": {
-        "action": "Try again, and quote the request ID if it keeps failing."
+        "action": "Try again, and quote the request ID if it keeps failing.",
+        "title": "Something went wrong"
       },
       "docker": {
         "message": "Docker is not reachable on this host.",
-        "action": "Start Docker, then re-check."
+        "action": "Start Docker, then re-check.",
+        "title": "Docker is not running"
       },
       "unauthorized": {
         "message": "Your session has ended.",
-        "action": "Sign in again to continue."
+        "action": "Sign in again to continue.",
+        "title": "You are signed out"
       },
       "forbidden": {
         "message": "Your account is not allowed to do this.",
-        "action": "Ask an owner or admin to grant access."
+        "action": "Ask an owner or admin to grant access.",
+        "title": "Not allowed"
       },
       "conflict": {
         "message": "This conflicts with something that already exists.",
-        "action": "Rename it or remove the existing one, then retry."
+        "action": "Rename it or remove the existing one, then retry.",
+        "title": "Already exists"
       },
       "validation": {
         "message": "Some of the values are not valid.",
-        "action": "Check the fields and try again."
+        "action": "Check the fields and try again.",
+        "title": "Check the details"
       },
       "rateLimited": {
         "message": "Too many requests in a short time.",
-        "action": "Wait a moment and try again."
+        "action": "Wait a moment and try again.",
+        "title": "Too many requests"
       },
       "diskFull": {
         "message": "The server is out of disk space.",
-        "action": "Free space in Settings, Cleanup, then retry."
+        "action": "Free space in Settings, Cleanup, then retry.",
+        "title": "Out of disk space"
       },
       "unreachable": {
         "message": "The control plane is not responding.",
-        "action": "Wait a few seconds and retry."
+        "action": "Wait a few seconds and retry.",
+        "title": "Server not responding"
       },
       "network": {
         "message": "Cannot reach the server.",
-        "action": "Check your connection and retry."
+        "action": "Check your connection and retry.",
+        "title": "Cannot reach the server"
+      },
+      "missingAbility": {
+        "title": "Missing permission",
+        "message": "This needs the {{ability}} ability.",
+        "action": "Use a token or role that has it, or ask an admin."
+      },
+      "timeout": {
+        "title": "The request timed out",
+        "message": "The server took too long to answer.",
+        "action": "Wait a moment and retry."
+      },
+      "notFound": {
+        "title": "Not found",
+        "message": "That item no longer exists.",
+        "action": "Refresh the page. It may have been renamed or deleted."
+      },
+      "tooLarge": {
+        "title": "Too large",
+        "message": "The upload is bigger than the server accepts.",
+        "action": "Use a smaller file and retry."
+      },
+      "serverError": {
+        "title": "Server error",
+        "message": "The server hit an error. Try again.",
+        "action": "Try again in a moment, and quote the request ID if it keeps failing."
+      },
+      "needsConfirmation": {
+        "title": "Confirmation needed",
+        "message": "This change needs your confirmation first.",
+        "action": "Review the warning, confirm, then retry."
+      },
+      "domainTaken": {
+        "title": "Domain already in use",
+        "message": "Another app already uses this domain.",
+        "action": "Pick a different domain or remove it from the other app."
+      },
+      "emailTaken": {
+        "title": "Email already in use",
+        "message": "That email belongs to another account.",
+        "action": "Use a different email address."
+      },
+      "stepUp": {
+        "title": "Confirm it is you",
+        "message": "This action needs a fresh identity check.",
+        "action": "Enter your code or passkey when asked, then retry."
+      },
+      "portConflict": {
+        "title": "Port already published",
+        "message": "Another service already publishes this port.",
+        "action": "Choose a free port, then retry."
+      },
+      "emailNotConfigured": {
+        "title": "Email is not set up",
+        "message": "No email provider is configured yet.",
+        "action": "Add one in Settings, Email, then retry."
       }
     }
   },
@@ -1143,5 +1224,94 @@
     "tip": "Approval deploys exactly this image even if the tag moves.",
     "copy": "Copy full image digest",
     "copied": "Image digest copied"
+  },
+  "visitors": {
+    "title": "Visitors",
+    "windowLabel": "Time window",
+    "window": {
+      "1h": "1h",
+      "24h": "24h",
+      "7d": "7d",
+      "30d": "30d"
+    },
+    "requests": "Requests",
+    "visitorsLabel": "Unique visitors",
+    "visitorsHint": "Unique visitors, counted again after each {{period}} privacy reset. Not lifetime uniques.",
+    "trend": "Requests over the selected window",
+    "statusLabel": "Responses by class",
+    "details": "Top pages and referrers",
+    "topPaths": "Top pages",
+    "topReferrers": "Top referrers",
+    "none": "None recorded",
+    "byDomain": "By domain",
+    "domainRow": "{{requests}} requests, {{visitors}} visitors",
+    "partial": "Data starts {{when}}, later than this window, so the numbers may be partial.",
+    "empty": "No requests in this window yet.",
+    "loadError": "Visitor numbers are unavailable right now.",
+    "retry": "Retry",
+    "viewTraffic": "Traffic details",
+    "section": "Visitors",
+    "domainLabel": "Domain",
+    "allDomains": "All domains",
+    "statusSplit": "Status split",
+    "pathHeader": "Page",
+    "referrerHeader": "Referrer",
+    "countHeader": "Requests",
+    "topPathsCaption": "Top 10 pages in this window",
+    "topReferrersCaption": "Top 10 referrers in this window",
+    "unavailable": "Visitor numbers need the edge access log, which is not enabled on this install.",
+    "chartHeading": "Requests over time",
+    "exportCsv": "Download CSV",
+    "exportEmpty": "Nothing to export in this window."
+  },
+  "overviewHero": {
+    "addressInfo": "About this address",
+    "addTag": "Add tag...",
+    "addTagTitle": "Add a tag",
+    "tagName": "Tag name",
+    "tagAdd": "Add tag",
+    "tagAdding": "Adding...",
+    "removeTag": "Remove tag {{name}}",
+    "retryDeploy": "Retry deploy",
+    "deploy": "Deploy",
+    "restart": "Restart",
+    "openApp": "Open app",
+    "stickyLabel": "App header"
+  },
+  "reportIssue": {
+    "title": "Review before you report",
+    "description": "This opens a prefilled \"{{template}}\" form on GitHub. Nothing is sent until you submit it there.",
+    "issueTitle": "Title",
+    "include": "Include {{field}}",
+    "privacy": "Only the details listed here are sent. No tokens, cookies, env values, emails or query strings.",
+    "count": "{{used}} characters, limit {{max}}",
+    "cancel": "Cancel",
+    "open": "Open on GitHub",
+    "templates": {
+      "bug_report": "Bug report",
+      "docs_problem": "Docs problem",
+      "migration_problem": "Migration problem",
+      "feature_request": "Feature request",
+      "template_request": "Template request"
+    },
+    "fields": {
+      "version": "Dashboard version",
+      "component": "Component",
+      "actual": "What happened",
+      "context": "Environment",
+      "page": "Docs page",
+      "problem": "What is wrong or missing",
+      "failed": "What failed",
+      "config": "Source config",
+      "solution": "Proposed behavior",
+      "service": "Service name",
+      "upstream": "Upstream link",
+      "ports": "Ports"
+    }
+  },
+  "kit": {
+    "jumpTo": "Jump to",
+    "onThisPage": "On this page",
+    "retry": "Retry"
   }
 }

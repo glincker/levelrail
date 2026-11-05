@@ -4,6 +4,8 @@ description: "Put a Deploy with button in your README. A visitor enters their ow
 "og:url": "https://docs.levelrail.com/deploy-link"
 ---
 
+This page covers the link format, the CLI command and the badge. For the button's parameters and limits, see [Deploy to Levelrail button](/deploy-button).
+
 A deploy link lets a project author add a button to a README. A visitor who clicks it picks their own server (remembered in their browser) and lands on that server's create-app form with the details filled in. Nothing is created until the visitor reviews the form and presses Deploy.
 
 ## URL scheme

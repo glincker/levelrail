@@ -51,7 +51,7 @@
     "creating": "Creating...",
     "copyAll": "Copy all",
     "copied": "Copied",
-    "registrarHint": "At your registrar, open the domain's name server settings, choose custom name servers and paste these. Keep the old ones out: a mix answers inconsistently.",
+    "registrarHint": "At your registrar, open the domain's name server settings, choose custom name servers and paste these. Remove the old ones: a mix answers inconsistently.",
     "skipImport": "Skip import",
     "next": "Next",
     "propagationHint": "Registries usually publish the change within an hour; resolvers can hold the old answer for up to two days.",
@@ -321,10 +321,9 @@
     "titleNoProvider": "DNS records: no provider",
     "count_one": "{{count}} DNS record",
     "count_other": "{{count}} DNS records",
-    "manage": "Manage DNS records",
     "titleForZone": "DNS records for {{zone}}",
-    "hide": "Hide",
-    "noProvider": "No DNS provider is configured for records management. Enable Cloudflare DNS, Route53 DNS or Google Cloud DNS above to list and edit this zone's records here.",
+    "closeAdd": "Close",
+    "noProvider": "No DNS provider is configured for records. Enable Cloudflare DNS, Route53 DNS or Google Cloud DNS above to list and edit this zone's records here.",
     "noRecords": "No records found.",
     "colType": "Type",
     "colName": "Name",
@@ -341,5 +340,31 @@
       "records": "Records",
       "server": "Server"
     }
+  },
+  "providerGuide": {
+    "title": "Add the record at {{provider}}",
+    "where": {
+      "cloudflare": "Open the Cloudflare dashboard, pick the domain, then DNS, Records, Add record.",
+      "route53": "Open Route 53, Hosted zones, pick the zone, then Create record.",
+      "digitalocean": "Open Networking, Domains, pick the domain, then add an A record.",
+      "hetzner": "Open the Hetzner DNS Console, pick the zone, then add a record.",
+      "namecheap": "Open Domain List, Manage, Advanced DNS, then Add New Record.",
+      "godaddy": "Open My Products, DNS next to the domain, then Add New Record.",
+      "porkbun": "Open Domain Management, DNS for the domain, then add a record.",
+      "google": "Open Cloud DNS in Google Cloud, pick the zone, then Add standard.",
+      "azure": "Open the DNS zone in the Azure portal, then Record sets, Add.",
+      "ns1": "Open the NS1 dashboard, pick the zone, then Add Record.",
+      "desec": "Open the deSEC dashboard, pick the domain, then add a record set."
+    },
+    "record": "Add an A record with host {{host}} and value {{value}}. A TTL of 300 seconds is fine.",
+    "proxyOff": "Turn the orange cloud (proxy) off for this record until the certificate is issued.",
+    "docs": "{{provider}} DNS docs"
+  },
+  "verification": {
+    "ok_one": "Token accepted. {{count}} zone is visible.",
+    "ok_other": "Token accepted. {{count}} zones are visible.",
+    "failedTitle": "The saved token cannot manage DNS yet",
+    "missing": "Missing permissions:",
+    "fix": "Fix the token: edit it in your provider dashboard, add the permissions above, then paste it here and save again."
   }
 }

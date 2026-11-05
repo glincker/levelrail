@@ -304,6 +304,14 @@ function DdnsForm({
               />
               {t('advanced.toggle')}
             </CollapsibleTrigger>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {t('advanced.summary', {
+                interval: numbers[0],
+                timeout: numbers[1],
+                quorum: numbers[5],
+                failAlertAfter: numbers[4],
+              })}
+            </p>
             <CollapsiblePanel>
               <div className="space-y-3 pt-3">
                 <div className="grid gap-3 sm:grid-cols-3">

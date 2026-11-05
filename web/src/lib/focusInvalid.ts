@@ -1,3 +1,5 @@
+import { prefersReducedMotion } from './reducedMotion'
+
 // Focuses the first control marked aria-invalid inside a form and scrolls
 // it into view, without animation when the user prefers reduced motion.
 export function focusFirstInvalid(root: ParentNode | null): HTMLElement | null {
@@ -9,9 +11,7 @@ export function focusFirstInvalid(root: ParentNode | null): HTMLElement | null {
 
 export function focusAndReveal(el: HTMLElement): void {
   el.focus({ preventScroll: true })
-  const reduce =
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const reduce = prefersReducedMotion()
   if (typeof el.scrollIntoView === 'function') {
     el.scrollIntoView({
       block: 'center',

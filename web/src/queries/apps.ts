@@ -6,6 +6,7 @@
 import { inlineErrorMeta, type InlineErrorOptions } from '@/lib/inlineError'
 import {
   queryOptions,
+  type QueryClient,
   useMutation,
   useQuery,
   useQueryClient,
@@ -30,6 +31,15 @@ export const appKeys = {
       ? ([...appKeys.all, 'list'] as const)
       : ([...appKeys.all, 'list', { environment, project }] as const),
   detail: (appId: string) => [...appKeys.all, 'detail', appId] as const,
+}
+
+// Narrow invalidation helpers so mutations share one key shape.
+function invalidateAppList(queryClient: QueryClient) {
+  void queryClient.invalidateQueries({ queryKey: appKeys.list() })
+}
+
+function invalidateAppDetail(queryClient: QueryClient, name: string) {
+  void queryClient.invalidateQueries({ queryKey: appKeys.detail(name) })
 }
 
 // Fetches every app from the control plane API. GET /api/v1/apps
@@ -152,7 +162,7 @@ export function useUpdateApp(name: string, opts?: InlineErrorOptions) {
       queryClient.setQueryData(appKeys.detail(name), updated)
       // The list route renders each app's domains too (AppRow), so an
       // edit here must not leave a stale copy sitting in that cache.
-      void queryClient.invalidateQueries({ queryKey: appKeys.list() })
+      invalidateAppList(queryClient)
     },
   })
 }
@@ -242,7 +252,7 @@ export function useCreateApp() {
     mutationFn: createApp,
     onSuccess: (created) => {
       queryClient.setQueryData(appKeys.detail(created.name), created)
-      void queryClient.invalidateQueries({ queryKey: appKeys.list() })
+      invalidateAppList(queryClient)
     },
   })
 }
@@ -278,7 +288,7 @@ export function useSetAppNode() {
       setAppNode(name, nodeId),
     onSuccess: (updated) => {
       queryClient.setQueryData(appKeys.detail(updated.name), updated)
-      void queryClient.invalidateQueries({ queryKey: appKeys.list() })
+      invalidateAppList(queryClient)
     },
   })
 }
@@ -313,7 +323,7 @@ export function useSetAppProject() {
       setAppProject(name, projectId),
     onSuccess: (updated) => {
       queryClient.setQueryData(appKeys.detail(updated.name), updated)
-      void queryClient.invalidateQueries({ queryKey: appKeys.list() })
+      invalidateAppList(queryClient)
     },
   })
 }
@@ -356,7 +366,7 @@ export function useSetAppEnvironment() {
     }) => setAppEnvironment(name, environmentId),
     onSuccess: (updated) => {
       queryClient.setQueryData(appKeys.detail(updated.name), updated)
-      void queryClient.invalidateQueries({ queryKey: appKeys.list() })
+      invalidateAppList(queryClient)
     },
   })
 }
@@ -446,7 +456,7 @@ export function useClearAppStorage() {
         (existing: AppDetail | undefined) =>
           existing && { ...existing, storage_target_id: undefined },
       )
-      void queryClient.invalidateQueries({ queryKey: appKeys.detail(name) })
+      invalidateAppDetail(queryClient, name)
     },
   })
 }
@@ -540,7 +550,7 @@ export function useClearLogDrain() {
         (existing: AppDetail | undefined) =>
           existing && { ...existing, log_drain: undefined },
       )
-      void queryClient.invalidateQueries({ queryKey: appKeys.detail(name) })
+      invalidateAppDetail(queryClient, name)
     },
   })
 }
@@ -640,7 +650,7 @@ export function useClearAppDatabase() {
         (existing: AppDetail | undefined) =>
           existing && { ...existing, database_attachment: undefined },
       )
-      void queryClient.invalidateQueries({ queryKey: appKeys.detail(name) })
+      invalidateAppDetail(queryClient, name)
     },
   })
 }
@@ -712,7 +722,7 @@ export function useStopApp() {
     mutationFn: stopApp,
     onSuccess: (updated) => {
       queryClient.setQueryData(appKeys.detail(updated.name), updated)
-      void queryClient.invalidateQueries({ queryKey: appKeys.list() })
+      invalidateAppList(queryClient)
     },
   })
 }
@@ -723,7 +733,7 @@ export function useStartApp() {
     mutationFn: startApp,
     onSuccess: (updated) => {
       queryClient.setQueryData(appKeys.detail(updated.name), updated)
-      void queryClient.invalidateQueries({ queryKey: appKeys.list() })
+      invalidateAppList(queryClient)
     },
   })
 }
@@ -815,7 +825,7 @@ export function useCloneApp() {
     }) => cloneApp(name, newName, options),
     onSuccess: (cloned) => {
       queryClient.setQueryData(appKeys.detail(cloned.name), cloned)
-      void queryClient.invalidateQueries({ queryKey: appKeys.list() })
+      invalidateAppList(queryClient)
     },
   })
 }
@@ -873,7 +883,7 @@ export function useDeleteApp() {
     onSuccess: (_data, input) => {
       const name = typeof input === 'string' ? input : input.name
       queryClient.removeQueries({ queryKey: appKeys.detail(name) })
-      void queryClient.invalidateQueries({ queryKey: appKeys.list() })
+      invalidateAppList(queryClient)
     },
   })
 }

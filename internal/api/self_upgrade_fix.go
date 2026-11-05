@@ -75,6 +75,7 @@ func (rt *Router) failedAttempt(w http.ResponseWriter, r *http.Request) (selfUpg
 		writeError(w, http.StatusNotImplemented, "self-upgrade is not configured")
 		return selfUpgradeAttemptItem{}, false
 	}
+	rt.reapUpgrades(r.Context())
 	item, ok := rt.findSelfUpgradeAttempt(r.Context(), r.PathValue("id"))
 	if !ok {
 		writeError(w, http.StatusNotFound, "upgrade attempt not found")

@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/GLINCKER/levelrail/internal/dnszones"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -36,6 +37,8 @@ type route53DNSResource struct {
 	HostedZoneID       string `json:"hosted_zone_id,omitempty"`
 	HasAccessKeyID     bool   `json:"has_access_key_id"`
 	HasSecretAccessKey bool   `json:"has_secret_access_key"`
+	// Verification appears only on a PUT that saved a new key pair.
+	Verification *dnsTokenVerification `json:"verification,omitempty"`
 }
 
 func (rt *Router) toRoute53DNSResource(ctx context.Context, s store.Route53DNSSettings) route53DNSResource {
@@ -132,7 +135,13 @@ func (rt *Router) handleUpdateRoute53DNSSettings(w http.ResponseWriter, r *http.
 		rt.internalError(w, "api: update route53 dns settings failed", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, rt.toRoute53DNSResource(r.Context(), settings))
+	res := rt.toRoute53DNSResource(r.Context(), settings)
+	if req.AccessKeyID != "" {
+		res.Verification = rt.verifyDNSCredential(r.Context(), dnszones.ProviderRoute53, func() (dnszones.Provider, error) {
+			return dnszones.NewRoute53(req.AccessKeyID, req.SecretAccessKey, req.Region, req.HostedZoneID), nil
+		})
+	}
+	writeJSON(w, http.StatusOK, res)
 }
 
 // handleDisconnectRoute53DNS handles DELETE /api/v1/settings/route53-dns:

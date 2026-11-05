@@ -8,15 +8,21 @@ description: "Which one-click templates list a linux/arm64 image, for Raspberry 
 
 Registry scan date: 2026-11-02T03:14:45Z. This page is generated, so it only says what the scan and the recorded smoke runs say.
 
+## What the columns mean
+
 - **listed**: every image the template uses lists `linux/arm64` in its registry manifest. That is a manifest fact, not proof the app runs well on Arm.
 - **amd64 only**: at least one image lists no `linux/arm64`, so the template has no native Arm image.
 - **unknown**: the scan could not read a manifest, or the image tag is chosen at install time. This is not a claim either way.
 
 The smoke column is the result recorded on the Arm test host in [Template status](/templates-status). `not tested` means no recorded run, not a failure.
 
-**Verified on Arm:** `openclaw` (`ghcr.io/openclaw/openclaw:2026.10.5`), tested 2026-11-02 in the managed desktop VM (4096 MiB, 2 CPUs) on an Apple silicon Mac. The image runs natively on arm64, the container used about 0.9 to 1.27 GiB and the guest 1.6 GiB of 3.9 GiB. A 2048 MiB VM is too tight. See [Desktop runtime](/desktop-runtime#openclaw).
+## Verified on Arm
 
-**393 listed, 15 amd64 only, 34 unknown** of 442 templates.
+`openclaw` (`ghcr.io/openclaw/openclaw:2026.10.5`), tested 2026-11-02 in the managed desktop VM (4096 MiB, 2 CPUs) on an Apple silicon Mac. The image runs natively on arm64, the container used about 0.9 to 1.27 GiB and the guest 1.6 GiB of 3.9 GiB. A 2048 MiB VM is too tight. See [Desktop runtime](/desktop-runtime#openclaw).
+
+## Results by template
+
+393 listed, 15 amd64 only, 34 unknown, of 442 templates.
 
 | Template | arm64 in manifest | Smoke run on Arm host |
 | --- | --- | --- |

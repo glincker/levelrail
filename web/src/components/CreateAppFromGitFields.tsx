@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
-import { z } from 'zod'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { DialogFooter } from '@/components/ui/dialog'
@@ -9,27 +8,27 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
   Field,
-  FieldDescription,
   FieldError,
-  FieldHint,
   FieldLabel,
   FieldSectionLabel,
 } from '@/components/ui/field'
-import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import { useCreateApp } from '../queries/apps'
 import { triggerBuild, type TriggerBuildInput } from '../queries/builds'
 import { deployKeys } from '../queries/deploys'
 import { deployAttemptKeys } from '../queries/deployAttempts'
-import { gitSourceKeys, setGitSource } from '../queries/gitSources'
-import { connectGitHubRepoAsSource } from '../queries/githubApp'
-import { connectRepoAsSource } from '../queries/gitConnections'
-import type { GitSourceBuildType, GitSourceResource } from '../types/gitSource'
-import { useFormDraft } from '../hooks/useFormDraft'
+import { gitSourceKeys } from '../queries/gitSources'
 import {
-  HEALTH_CHECK_DEFAULT_PATH,
-  healthCheckFrom,
-} from '../lib/healthCheckDefaults'
+  DEFAULT_VALUES,
+  buildInputFrom,
+  connectGitSourceFor,
+  createAppFromGitSchema,
+  repoSlugFrom,
+  type FormInput,
+  type FormOutput,
+} from '../lib/createAppFromGit'
+import { useFormDraft } from '../hooks/useFormDraft'
+import { healthCheckFrom } from '../lib/healthCheckDefaults'
 import { DraftRestoredNotice } from './DraftRestoredNotice'
 import type { FrameworkPreset } from '../queries/frameworks'
 import { FrameworkPresetPicker } from './FrameworkPresetPicker'
@@ -39,317 +38,8 @@ import {
   GitRepoSourcePicker,
   type GitRepoSourceValue,
 } from './GitRepoSourcePicker'
+import { CreateAppFromGitNetworkFields } from './CreateAppFromGitNetworkFields'
 import { GitSourceWebhookBanner } from './GitSourceWebhookBanner'
-
-// Build packs this form offers, matching GitBuildSourceFields' own tab
-// picker for what POST /api/v1/apps/{name}/builds actually supports:
-// dockerfile, railpack, static, image. See that component's doc comment
-// for why Nixpacks and compose are never offered.
-const BUILD_TYPES = ['dockerfile', 'railpack', 'static', 'image'] as const
-
-// Same pattern DomainEditor.tsx validates a domain row against; kept as
-// a local copy rather than exported/imported from there since this form
-// only ever needs one domain, not that component's add/remove list.
-const DOMAIN_PATTERN =
-  /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$/i
-
-// Matches validateAppResource (internal/api/apps.go) for the fields
-// this form actually collects on the create-app side, plus the git
-// source fields POST /api/v1/apps/{name}/builds
-// (internal/api/builds.go's handleTriggerBuild) requires. Mirrors
-// DeployTriggerForm.tsx's own buildSchema for repoUrl/ref/imageRepo/
-// dockerfilePath, since this is the same request shape, just fired
-// once right after creating the app record instead of against an
-// app that already exists. buildType is new: this form used to fire
-// every build as an implicit build.type: dockerfile, matching what
-// handleTriggerBuild used to reject everything else as.
-//
-// repoUrl/ref/image are only conditionally required (see the
-// superRefine below): build.type: image needs image but not repoUrl/ref
-// (handleTriggerBuild clones nothing for it), every other build type is
-// the reverse.
-const createAppFromGitSchema = z
-  .object({
-    name: z.string().trim().min(1, 'Name is required'),
-    port: z.coerce
-      .number({ error: 'Port is required' })
-      .int('Port must be a whole number')
-      .positive('Port must be a positive integer'),
-    repoUrl: z.string().trim(),
-    ref: z.string().trim(),
-    imageRepo: z.string().trim(),
-    buildType: z.enum(BUILD_TYPES),
-    dockerfilePath: z.string().trim(),
-    baseDirectory: z.string().trim(),
-    // Dockerfile build-time ARGs, buildType: 'dockerfile' only. A blank
-    // key is dropped in buildInputFrom below, not rejected here.
-    buildArgs: z.array(z.object({ key: z.string(), value: z.string() })),
-    image: z.string().trim(),
-    domain: z
-      .string()
-      .trim()
-      .refine(
-        (v) => v === '' || DOMAIN_PATTERN.test(v),
-        'Enter a valid domain, e.g. app.example.com',
-      ),
-    healthCheckEnabled: z.boolean(),
-    healthCheckPath: z.string().trim(),
-  })
-  .superRefine((values, ctx) => {
-    if (values.buildType === 'image') {
-      if (!values.image.trim()) {
-        ctx.addIssue({
-          code: 'custom',
-          message: 'Image reference is required',
-          path: ['image'],
-        })
-      }
-      return
-    }
-    if (!values.repoUrl.trim()) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'Repository URL is required',
-        path: ['repoUrl'],
-      })
-    }
-    if (!values.ref.trim()) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'Branch, tag, or commit is required',
-        path: ['ref'],
-      })
-    }
-    if (values.buildType === 'dockerfile') {
-      const seen = new Set<string>()
-      values.buildArgs.forEach((arg, index) => {
-        const key = arg.key.trim()
-        if (!key) return
-        if (seen.has(key)) {
-          ctx.addIssue({
-            code: 'custom',
-            message: 'Duplicate key',
-            path: ['buildArgs', index, 'key'],
-          })
-        }
-        seen.add(key)
-      })
-    }
-  })
-  .superRefine((values, ctx) => {
-    if (!values.healthCheckEnabled) return
-    if (!values.healthCheckPath) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'Health check path is required',
-        path: ['healthCheckPath'],
-      })
-    } else if (!values.healthCheckPath.startsWith('/')) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'Path must start with /',
-        path: ['healthCheckPath'],
-      })
-    }
-  })
-
-export type FormInput = z.input<typeof createAppFromGitSchema>
-export type FormOutput = z.output<typeof createAppFromGitSchema>
-
-const DEFAULT_VALUES: FormInput = {
-  name: '',
-  port: '',
-  repoUrl: '',
-  ref: '',
-  imageRepo: '',
-  buildType: 'railpack',
-  dockerfilePath: '',
-  baseDirectory: '',
-  buildArgs: [],
-  image: '',
-  domain: '',
-  // Mirrors the CLI's interactive wizard default
-  // (apps_create_interactive.go): on by default at the documented
-  // /healthz convention.
-  healthCheckEnabled: true,
-  healthCheckPath: HEALTH_CHECK_DEFAULT_PATH,
-}
-
-// build.path is only ever sent for build.type: dockerfile: railpack has
-// no path concept at all (handleTriggerBuild rejects one being set, see
-// internal/api/builds.go's triggerBuildBuildInput.Path doc comment), and
-// static's own build.path (the output subdirectory to serve) isn't
-// exposed by this form yet, see GitBuildSourceFields' own doc comment
-// for why. image_repo is only meaningful for a container-backed build
-// (deployStatic never reads req.ImageRepo), so it's omitted for static
-// too, matching GitBuildSourceFields not even rendering that field in
-// that case. build.type: image sends only image: repoUrl/ref/imageRepo
-// are all meaningless when nothing gets cloned or built. baseDirectory
-// is sent for every non-image build type: the backend accepts it for
-// dockerfile, railpack, and static alike. build.args is dockerfile-only,
-// same restriction handleTriggerBuild enforces server-side.
-function buildInputFrom(
-  values: FormOutput,
-  detectedFramework: string | undefined,
-): TriggerBuildInput {
-  if (values.buildType === 'image') {
-    return {
-      repoUrl: '',
-      ref: '',
-      buildType: 'image',
-      image: values.image.trim(),
-    }
-  }
-  return {
-    repoUrl: values.repoUrl.trim(),
-    ref: values.ref.trim(),
-    imageRepo:
-      values.buildType === 'static'
-        ? undefined
-        : values.imageRepo.trim() || undefined,
-    buildType: values.buildType,
-    buildPath:
-      values.buildType === 'dockerfile'
-        ? values.dockerfilePath.trim() || undefined
-        : undefined,
-    baseDirectory: values.baseDirectory.trim() || undefined,
-    buildArgs:
-      values.buildType === 'dockerfile'
-        ? buildArgsRecord(values.buildArgs)
-        : undefined,
-    detectedFramework,
-  }
-}
-
-// buildArgsRecord drops any row with a blank key, the same leniency
-// this form's superRefine above already applies when checking for
-// duplicates: a trailing blank row left over from "Add build arg" isn't
-// a validation error, it's just not sent.
-function buildArgsRecord(
-  args: FormOutput['buildArgs'],
-): Record<string, string> | undefined {
-  const out: Record<string, string> = {}
-  for (const { key, value } of args) {
-    const trimmedKey = key.trim()
-    if (trimmedKey) out[trimmedKey] = value
-  }
-  return Object.keys(out).length > 0 ? out : undefined
-}
-
-// repoSlugFrom turns a clone URL into a reasonable app-name suggestion,
-// e.g. "https://github.com/acme/marketing-site.git" -> "marketing-site".
-// Only ever used to prefill the Name field when it's still blank (see
-// GitRepoSourcePicker's onSelect handler below), never to overwrite
-// something the operator already typed.
-function repoSlugFrom(repoUrl: string): string {
-  const cleaned = repoUrl
-    .trim()
-    .replace(/\.git$/i, '')
-    .replace(/\/+$/, '')
-  const segments = cleaned.split(/[/:]/).filter(Boolean)
-  const last = segments[segments.length - 1] ?? ''
-  return last
-    .toLowerCase()
-    .replace(/[^a-z0-9-]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-}
-
-// gitSourceBuildFields mirrors this form's own build-pack choice into the
-// git_source row's build_type/build_path, so a future webhook-triggered
-// build (once the connect call below succeeds) uses the same build
-// config as the very first one, not the git_source defaults. Only called
-// once buildType !== 'image' is already known true.
-function gitSourceBuildFields(values: FormOutput): {
-  buildType: GitSourceBuildType
-  buildPath?: string
-} {
-  const buildType = values.buildType as GitSourceBuildType
-  return {
-    buildType,
-    buildPath:
-      buildType === 'dockerfile'
-        ? values.dockerfilePath.trim() || undefined
-        : undefined,
-  }
-}
-
-// connectGitSourceFor fixes both bugs: every provider, including GitHub,
-// now gets an actual git_source row connected between app creation and
-// the first build, not just GitLab/Bitbucket.
-//
-// `source` is trusted only when its repoUrl/branch still match what's
-// actually in the form: GitBuildSourceFields' own Repository URL/Branch
-// inputs stay directly editable after a provider pick prefills them, so
-// a hand-edit after picking must not silently connect the wrong project.
-// A mismatch (or no pick at all, e.g. the operator typed straight into
-// GitBuildSourceFields) falls back to the generic endpoint, exactly the
-// path GitSourceCard.tsx's own manual connect form already uses.
-//
-// Every provider has a real "use as source" endpoint that registers a push
-// webhook (queries/githubApp.ts, queries/gitConnections.ts). GitHub's own version can still come back with
-// autoRegistered: false plus a webhookError: an installation that
-// predates the App requesting repository_hooks:write can't register a
-// webhook at all (see GitHubAppUseRepoAsSourceResponse's own doc
-// comment), so that specific, structural failure degrades to connecting
-// the source and surfacing the webhook URL/secret for manual setup,
-// exactly the same banner shape the plain manual/generic path below
-// already renders.
-async function connectGitSourceFor(
-  name: string,
-  values: FormOutput,
-  source: GitRepoSourceValue | null,
-): Promise<{
-  resource: GitSourceResource
-  autoRegistered: boolean
-  webhookError?: string
-}> {
-  const repoUrl = values.repoUrl.trim()
-  const branch = values.ref.trim()
-  const { buildType, buildPath } = gitSourceBuildFields(values)
-  const effective =
-    source && source.repoUrl === repoUrl && source.branch === branch
-      ? source
-      : null
-
-  if (effective?.providerRef?.kind === 'github') {
-    const {
-      webhook_registered: webhookRegistered,
-      webhook_error: webhookError,
-      ...resource
-    } = await connectGitHubRepoAsSource(
-      effective.providerRef.owner,
-      effective.providerRef.repo,
-      {
-        app_name: name,
-        branch,
-        build_type: buildType,
-        build_path: buildPath,
-      },
-    )
-    return { resource, autoRegistered: webhookRegistered, webhookError }
-  }
-  if (effective?.providerRef) {
-    const resource = await connectRepoAsSource(
-      effective.providerRef.connectionId,
-      {
-        app_name: name,
-        repo: effective.providerRef.repo,
-        branch,
-        build_type: buildType,
-        build_path: buildPath,
-      },
-    )
-    return { resource, autoRegistered: true }
-  }
-  const resource = await setGitSource(name, {
-    repo_url: repoUrl,
-    branch,
-    build_type: buildType,
-    build_path: buildPath,
-    token: effective?.provider === 'manual' ? effective.token : undefined,
-  })
-  return { resource, autoRegistered: false }
-}
 
 // Placeholder image tag POST /api/v1/apps is sent on step 1 of this
 // form's two-request sequence (create the app record, then trigger a
@@ -734,79 +424,13 @@ export function CreateAppFromGitFields({
         />
       </div>
 
-      <div className="space-y-4">
-        <FieldSectionLabel>Networking</FieldSectionLabel>
-        <Field>
-          <FieldLabel htmlFor="git-app-port">Port</FieldLabel>
-          <Input
-            id="git-app-port"
-            type="number"
-            step="1"
-            min="1"
-            placeholder="e.g. 3000"
-            disabled={locked}
-            {...register('port')}
-          />
-          <FieldHint>
-            The port your app listens on inside its container, e.g. 3000 for a
-            typical Next.js app.
-          </FieldHint>
-          <FieldError errors={[formState.errors.port]} />
-        </Field>
-
-        <Field>
-          <FieldLabel htmlFor="git-app-domain">Domain (optional)</FieldLabel>
-          <Input
-            id="git-app-domain"
-            className="font-mono"
-            placeholder="app.example.com"
-            autoComplete="off"
-            spellCheck={false}
-            disabled={locked}
-            {...register('domain')}
-          />
-          <FieldError errors={[formState.errors.domain]} />
-          <FieldDescription>
-            Routed once its DNS record points here. A TLS certificate is issued
-            automatically, or add this later from the app&apos;s Domains tab.
-          </FieldDescription>
-        </Field>
-      </div>
-
-      <div className="space-y-4">
-        <FieldSectionLabel>Health check</FieldSectionLabel>
-        <Field orientation="horizontal">
-          <Switch
-            id="git-app-health-enabled"
-            checked={healthCheckEnabled}
-            onCheckedChange={(checked) => {
-              setValue('healthCheckEnabled', checked, { shouldValidate: true })
-            }}
-            disabled={locked}
-          />
-          <FieldLabel htmlFor="git-app-health-enabled">
-            Enable a health check
-          </FieldLabel>
-        </Field>
-        {healthCheckEnabled ? (
-          <Field>
-            <FieldLabel htmlFor="git-app-health-path">Path</FieldLabel>
-            <Input
-              id="git-app-health-path"
-              className="font-mono"
-              placeholder={HEALTH_CHECK_DEFAULT_PATH}
-              disabled={locked}
-              {...register('healthCheckPath')}
-            />
-            <FieldHint>
-              Checked before cutting traffic to a new container, and to detect a
-              crashed one afterward. Railpack-detected apps that don&rsquo;t
-              serve this path should turn it off.
-            </FieldHint>
-            <FieldError errors={[formState.errors.healthCheckPath]} />
-          </Field>
-        ) : null}
-      </div>
+      <CreateAppFromGitNetworkFields
+        register={register}
+        formState={formState}
+        setValue={setValue}
+        healthCheckEnabled={healthCheckEnabled}
+        locked={locked}
+      />
 
       <GitDeployStatusAlerts
         connectingSource={connectSourceMutation.isPending}

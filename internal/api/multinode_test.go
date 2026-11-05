@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/nodemove"
+	"github.com/GLINCKER/levelrail/internal/placement"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -357,5 +359,124 @@ func TestToNodeResource_FallsBackToMeshAddressAndEnrollTime(t *testing.T) {
 	pending := toNodeResource(store.Node{ID: "y", Status: store.NodeStatusPending, CreatedAt: created})
 	if pending.JoinedAt != nil {
 		t.Fatal("a pending node has not joined yet")
+	}
+}
+
+func TestNodeTaints(t *testing.T) {
+	rt, db, cookie := newMultiNodeRouter(t)
+	seedMNNode(t, db, "n1", nil)
+	tests := []struct {
+		body string
+		want int
+	}{
+		{`{"taints":[{"key":"dedicated","value":"gpu","effect":"NoSchedule"}]}`, http.StatusOK},
+		{`{"taints":[{"key":"Dedicated","effect":"NoSchedule"}]}`, http.StatusBadRequest},
+		{`{"taints":[{"key":"a","effect":"Sometimes"}]}`, http.StatusBadRequest},
+	}
+	for _, tt := range tests {
+		if rec := mnDo(t, rt, cookie, http.MethodPut, "/api/v1/nodes/n1/taints", tt.body); rec.Code != tt.want {
+			t.Fatalf("PUT %s = %d, want %d: %s", tt.body, rec.Code, tt.want, rec.Body.String())
+		}
+	}
+	rec := mnDo(t, rt, cookie, http.MethodGet, "/api/v1/nodes/n1/taints", "")
+	if !strings.Contains(rec.Body.String(), `"key":"dedicated"`) {
+		t.Fatalf("GET taints = %s", rec.Body.String())
+	}
+	if rec := mnDo(t, rt, cookie, http.MethodGet, "/api/v1/nodes/n1", ""); !strings.Contains(rec.Body.String(), `"taints"`) {
+		t.Fatalf("node detail lacks taints: %s", rec.Body.String())
+	}
+	if rec := mnDo(t, rt, cookie, http.MethodPut, "/api/v1/nodes/ghost/taints", `{"taints":[]}`); rec.Code != http.StatusNotFound {
+		t.Fatalf("unknown node = %d, want 404", rec.Code)
+	}
+}
+
+func TestNodeTaintsFeedCandidates(t *testing.T) {
+	rt, db, _ := newMultiNodeRouter(t)
+	seedMNNode(t, db, "n1", nil)
+	if err := db.SetNodeTaints(context.Background(), "n1", []store.NodeTaint{{Key: "dedicated", Value: "gpu", Effect: "NoSchedule"}}); err != nil {
+		t.Fatal(err)
+	}
+	cands, err := rt.placementCandidates(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	var tainted []placement.Candidate
+	for _, c := range cands {
+		if c.ID == "n1" {
+			tainted = append(tainted, c)
+		}
+	}
+	if len(tainted) != 1 || len(tainted[0].Taints) != 1 {
+		t.Fatalf("candidates = %+v", cands)
+	}
+	if _, err := placement.Spread(tainted, placement.Request{}); !errors.Is(err, placement.ErrNoEligibleNode) {
+		t.Fatalf("untolerated Spread error = %v, want ErrNoEligibleNode", err)
+	}
+	tol := []placement.Toleration{{Key: "dedicated", Value: "gpu", Effect: placement.EffectNoSchedule}}
+	if d, err := placement.Spread(tainted, placement.Request{Tolerations: tol}); err != nil || d.NodeID != "n1" {
+		t.Fatalf("tolerated Spread = %+v, %v", d, err)
+	}
+}
+
+func TestPlacementRulesSteerApp(t *testing.T) {
+	rt, db, cookie := newMultiNodeRouter(t)
+	seedMNNode(t, db, "n1", nil)
+	if err := db.SetNodeTaints(context.Background(), "n1", []store.NodeTaint{{Key: "dedicated", Value: "gpu", Effect: "NoSchedule"}}); err != nil {
+		t.Fatal(err)
+	}
+	seedMNApp(t, db, "")
+	if rec := mnDo(t, rt, cookie, http.MethodGet, "/api/v1/apps/web/placement", ""); !strings.Contains(rec.Body.String(), "tainted and not tolerated") {
+		t.Fatalf("untolerated view = %s", rec.Body.String())
+	}
+	if rec := mnDo(t, rt, cookie, http.MethodPut, "/api/v1/apps/web/placement", `{"tolerations":[{"key":"dedicated","operator":"Bogus"}]}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("bad toleration = %d", rec.Code)
+	}
+	rec := mnDo(t, rt, cookie, http.MethodPut, "/api/v1/apps/web/placement", `{"tolerations":[{"key":"dedicated","value":"gpu","effect":"NoSchedule"}]}`)
+	var view placementResource
+	if err := json.Unmarshal(rec.Body.Bytes(), &view); err != nil || rec.Code != http.StatusOK {
+		t.Fatalf("PUT = %d %s", rec.Code, rec.Body.String())
+	}
+	if !contains1(view.Eligible, "n1") || len(view.Tolerations) != 1 {
+		t.Fatalf("tolerated view = %+v", view)
+	}
+}
+
+func contains1(l []string, v string) bool {
+	for _, x := range l {
+		if x == v {
+			return true
+		}
+	}
+	return false
+}
+
+func TestWithWorkloadsFeed(t *testing.T) {
+	rt, db, _ := newMultiNodeRouter(t)
+	seedMNNode(t, db, "n1", nil)
+	ctx := context.Background()
+	for _, n := range []string{"web", "cache"} {
+		if err := db.SaveDesiredService(ctx, store.DesiredService{Name: n, Image: "img:1"}); err != nil {
+			t.Fatal(err)
+		}
+		if err := db.UpdateServiceNode(ctx, n, "n1"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := db.SetResourceLabels(ctx, store.LabelKindApp, "cache", map[string]string{"tier": "data"}); err != nil {
+		t.Fatal(err)
+	}
+	rules := placementRules{Affinity: &placement.Affinity{Apart: []placement.WorkloadTerm{{Match: []placement.LabelTerm{{Key: "tier", Op: placement.OpExists}}}}}}
+	cands, err := rt.placementCandidates(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err := rt.withWorkloads(ctx, rules, "web", cands)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range out {
+		if c.ID == "n1" && (len(c.Workloads) != 1 || c.Workloads[0]["tier"] != "data" || c.Workloads[0]["name"] != "cache") {
+			t.Fatalf("workloads = %+v", c.Workloads)
+		}
 	}
 }

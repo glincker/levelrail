@@ -187,6 +187,9 @@ func generateRailpackPlan(req RailpackRequest) (*core.BuildResult, error) {
 	if !supportedRailpackProviders[provider] {
 		return nil, &UnsupportedProviderError{Provider: provider}
 	}
+	if provider == "node" {
+		applyNextStandalone(result.Plan, req.SourceDir)
+	}
 
 	return result, nil
 }

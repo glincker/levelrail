@@ -1,0 +1,50 @@
+{
+  "repo_url": "https://github.com/acme/go",
+  "ref": "main",
+  "monorepo": false,
+  "stack": {
+    "runtime": "go",
+    "framework": "Go (net/http)",
+    "language": "go",
+    "confidence": "medium",
+    "evidence": [
+      {
+        "signal": "stack",
+        "detail": "go.mod found, built with Railpack"
+      },
+      {
+        "signal": "file",
+        "detail": "go.mod is present"
+      }
+    ]
+  },
+  "build": {
+    "type": "railpack",
+    "build_command": "go build -o app .",
+    "start_command": "./app",
+    "evidence": "no Dockerfile found, the framework is auto-detected"
+  },
+  "port": {
+    "value": 8080,
+    "evidence": "Go default port"
+  },
+  "health": {
+    "path": "/",
+    "evidence": "Go default health path"
+  },
+  "env": [],
+  "spec": {
+    "name": "go",
+    "yaml": "version: 1\nservices:\n    go:\n        build:\n            type: railpack\n        port: 8080\n        health:\n            readiness:\n                path: /\n"
+  },
+  "warnings": [
+    {
+      "code": "no_dockerfile",
+      "message": "no Dockerfile is used, so the build is auto-detected; add a Dockerfile for full control"
+    }
+  ],
+  "next": {
+    "method": "POST",
+    "path": "/api/v1/imports/repo/apply"
+  }
+}

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/webhook"
 )
@@ -360,5 +361,17 @@ func TestForkPreview_StaleApprovalDoesNotDeploy(t *testing.T) {
 	status, msg := rt.deployPreviewEnvironment(context.Background(), "web", *gs, ev, true)
 	if status != http.StatusOK || !strings.Contains(msg, "no longer current") || len(builder.calls) != 0 {
 		t.Fatalf("status = %d, msg = %q, builds = %d, want the stale approval ignored", status, msg, len(builder.calls))
+	}
+}
+
+func TestInjectPreviewEnv_PRNumberAndURL(t *testing.T) {
+	in := map[string]spec.EnvVar{"KEEP": {Value: "1"}}
+	env := injectPreviewEnv(in, previewEnvVars{PRNumber: 9, Branch: "b"}, "https://pr-9.example.com")
+	if env["PR_NUMBER"].Value != "9" || env["PREVIEW_URL"].Value != "https://pr-9.example.com" || env["KEEP"].Value != "1" {
+		t.Errorf("env = %+v", env)
+	}
+	own := injectPreviewEnv(map[string]spec.EnvVar{"PR_NUMBER": {Value: "mine"}}, previewEnvVars{PRNumber: 9}, "")
+	if own["PR_NUMBER"].Value != "mine" {
+		t.Errorf("app-defined PR_NUMBER was overwritten: %+v", own["PR_NUMBER"])
 	}
 }

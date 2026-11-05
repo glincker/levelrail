@@ -1,14 +1,19 @@
 package build
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"log/slog"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/docker/docker/api/types/image"
 	dockerclient "github.com/docker/docker/client"
+
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 // collectProgress is a hand-written fake progress sink, recording every
@@ -217,5 +222,18 @@ func TestClient_Build_Live_CacheRegistryUnreachable(t *testing.T) {
 	_, err := bk.Build(ctx, Request{ContextDir: "testdata", Tag: "levelrail-buildkit-spike:cache-unreachable"}, nil)
 	if err == nil {
 		t.Fatal("Build() with an unreachable cache registry: error = nil, want a non-nil error")
+	}
+}
+
+func TestSlogProgressMasksRegisteredSecret(t *testing.T) {
+	const canary = "slog-canary-secret-4410" //nolint:gosec // synthetic test value
+	secretmask.Add(canary)
+	var buf bytes.Buffer
+	log := slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	fn := SlogProgress(log)
+	fn(ProgressEvent{Step: "build", Log: "TOKEN=" + canary})
+	fn(ProgressEvent{Step: "build", Error: "failed with " + canary})
+	if strings.Contains(buf.String(), canary) {
+		t.Errorf("slog output carries the secret: %q", buf.String())
 	}
 }

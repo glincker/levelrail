@@ -69,11 +69,49 @@ export interface PlacementRejection {
   reason: string
 }
 
+export type TaintEffect = 'NoSchedule' | 'PreferNoSchedule' | 'NoExecute'
+
+export type TolerationOperator = 'Equal' | 'Exists'
+
+export interface NodeTaint {
+  key: string
+  value?: string
+  effect: TaintEffect
+}
+
+export interface PlacementToleration {
+  key?: string
+  operator?: TolerationOperator
+  value?: string
+  effect?: TaintEffect
+}
+
+export interface AffinityLabelTerm {
+  key: string
+  op: string
+  values?: string[]
+}
+
+export interface AffinityWorkloadTerm {
+  match: AffinityLabelTerm[]
+  topology?: string
+  weight?: number
+}
+
+export interface PlacementAffinity {
+  node_required?: AffinityLabelTerm[]
+  node_preferred?: { weight: number; term: AffinityLabelTerm }[]
+  together?: AffinityWorkloadTerm[]
+  apart?: AffinityWorkloadTerm[]
+}
+
 export interface Placement {
   kind: NodeMoveKind
   name: string
   node_id: string
   node_selector: NodeLabels
+  tolerations?: PlacementToleration[] | null
+  affinity?: PlacementAffinity | null
   eligible_node_ids: string[]
   rejected: PlacementRejection[]
   domain_warnings?: DomainRisk[]

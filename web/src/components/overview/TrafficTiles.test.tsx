@@ -47,6 +47,16 @@ describe('TrafficTiles', () => {
     ).toBeInTheDocument()
   })
 
+  it('hides the empty strip when the visitors card carries it', () => {
+    state = {
+      isPending: false,
+      isError: false,
+      data: { ...stats(), hasTraffic: false },
+    }
+    render(<TrafficTiles appName="web" url="https://a.io" hideEmpty />)
+    expect(screen.queryByText('No traffic yet')).toBeNull()
+  })
+
   it('omits the copy action when the app has no URL', () => {
     state = {
       isPending: false,

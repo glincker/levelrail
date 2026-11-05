@@ -321,9 +321,8 @@
     "titleNoProvider": "Registros DNS: sin proveedor",
     "count_one": "{{count}} registro DNS",
     "count_other": "{{count}} registros DNS",
-    "manage": "Administrar registros DNS",
     "titleForZone": "Registros DNS de {{zone}}",
-    "hide": "Ocultar",
+    "closeAdd": "Cerrar",
     "noProvider": "No hay ningún proveedor de DNS configurado para administrar registros. Activa Cloudflare DNS, Route53 DNS o Google Cloud DNS arriba para listar y editar aquí los registros de esta zona.",
     "noRecords": "No se encontraron registros.",
     "colType": "Tipo",
@@ -341,5 +340,31 @@
       "records": "Registros",
       "server": "Servidor"
     }
+  },
+  "providerGuide": {
+    "title": "Añade el registro en {{provider}}",
+    "where": {
+      "cloudflare": "Abre el panel de Cloudflare, elige el dominio y ve a DNS, Registros, Añadir registro.",
+      "route53": "Abre Route 53, Zonas alojadas, elige la zona y pulsa Crear registro.",
+      "digitalocean": "Abre Redes, Dominios, elige el dominio y añade un registro A.",
+      "hetzner": "Abre la consola DNS de Hetzner, elige la zona y añade un registro.",
+      "namecheap": "Abre Lista de dominios, Administrar, DNS avanzado y Añadir nuevo registro.",
+      "godaddy": "Abre Mis productos, DNS junto al dominio y Añadir nuevo registro.",
+      "porkbun": "Abre Gestión de dominios, DNS del dominio y añade un registro.",
+      "google": "Abre Cloud DNS en Google Cloud, elige la zona y pulsa Añadir estándar.",
+      "azure": "Abre la zona DNS en el portal de Azure y ve a Conjuntos de registros, Añadir.",
+      "ns1": "Abre el panel de NS1, elige la zona y pulsa Añadir registro.",
+      "desec": "Abre el panel de deSEC, elige el dominio y añade un conjunto de registros."
+    },
+    "record": "Añade un registro A con host {{host}} y valor {{value}}. Un TTL de 300 segundos está bien.",
+    "proxyOff": "Desactiva la nube naranja (proxy) de este registro hasta que se emita el certificado.",
+    "docs": "Documentación de DNS de {{provider}}"
+  },
+  "verification": {
+    "ok_one": "Token aceptado. Se ve {{count}} zona.",
+    "ok_other": "Token aceptado. Se ven {{count}} zonas.",
+    "failedTitle": "El token guardado aún no puede gestionar DNS",
+    "missing": "Permisos que faltan:",
+    "fix": "Corrige el token: edítalo en el panel de tu proveedor, añade los permisos indicados, pégalo aquí y guarda de nuevo."
   }
 }

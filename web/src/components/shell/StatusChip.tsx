@@ -88,7 +88,7 @@ export function StatusChip() {
           <button
             type="button"
             aria-label={t('shell.status.triggerLabel', { label })}
-            className="rounded-full outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+            className="inline-flex items-center rounded-full outline-hidden focus-visible:ring-2 focus-visible:ring-ring @max-md:min-h-10"
           />
         }
       >

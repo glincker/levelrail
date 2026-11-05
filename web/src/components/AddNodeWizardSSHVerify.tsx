@@ -1,3 +1,7 @@
+import {
+  SelectedMark,
+  selectableCardClass,
+} from '@/components/ui/selectable-card'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -50,12 +54,12 @@ export function SSHHostKeyVerify({
         {keys.map((k) => (
           <label
             key={k.fingerprint}
-            className={`flex items-center gap-3 rounded-lg border p-3 ${
-              selected === k.fingerprint
-                ? 'border-primary bg-primary/5'
-                : 'border-border'
-            }`}
+            className={selectableCardClass(
+              selected === k.fingerprint,
+              'flex items-center gap-3 rounded-lg p-3 pr-7 has-focus-visible:ring-2 has-focus-visible:ring-state-accent',
+            )}
           >
+            <SelectedMark selected={selected === k.fingerprint} />
             <input
               type="radio"
               name="ssh-host-key"

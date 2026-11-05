@@ -71,10 +71,10 @@ func streamArtifactToFile(ctx context.Context, client *Client, app, runID string
 	if a.SHA256 != "" && sum != a.SHA256 {
 		return n, fmt.Errorf("sha256 mismatch: listed %s, downloaded %s", a.SHA256, sum)
 	}
-	if err := os.Chmod(tmp.Name(), 0o600); err != nil {
+	if err := os.Chmod(tmp.Name(), 0o600); err != nil { //nolint:gosec // G703: tmp is a file this function just created via CreateTemp
 		return n, err
 	}
-	if err := os.Rename(tmp.Name(), out); err != nil {
+	if err := os.Rename(tmp.Name(), out); err != nil { //nolint:gosec // G703: out is the operator-chosen download path from the CLI flag
 		return n, fmt.Errorf("write %s: %w", out, err)
 	}
 	return n, nil

@@ -487,3 +487,22 @@ func TestCatalogDeclaresConditionSupport(t *testing.T) {
 		t.Errorf("supported conditions = %v", cat.Conditions.Supported)
 	}
 }
+
+func TestIAMInventoryListsStaticSites(t *testing.T) {
+	e := newBuilderEnv(t)
+	if err := e.db.SaveStaticSite(context.Background(), store.StaticSite{Name: "blog", RootDir: "/srv/blog"}); err != nil {
+		t.Fatal(err)
+	}
+	res := decode[iamResourcesResponse](t, e.call(t, http.MethodGet, "/api/v1/iam/resources", ""))
+	if len(res.StaticSites) != 1 || res.StaticSites[0].Name != "blog" {
+		t.Errorf("static sites = %+v", res.StaticSites)
+	}
+	got := decode[[]resourceMatch](t, e.call(t, http.MethodPost, "/api/v1/iam/resources/match", `{"resources":["static_site:blog","static_site:nope"]}`))
+	if got[0].StaticSites != 1 || got[1].StaticSites != 0 {
+		t.Errorf("match = %+v", got)
+	}
+	cat := decode[iamCatalogResponse](t, e.call(t, http.MethodGet, "/api/v1/iam/catalog", ""))
+	if !slices.ContainsFunc(cat.Resources, func(k resourceKindInfo) bool { return k.Kind == "static_site" }) {
+		t.Errorf("catalog lacks static_site: %+v", cat.Resources)
+	}
+}

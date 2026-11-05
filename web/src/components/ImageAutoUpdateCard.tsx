@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { RefreshCwGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
@@ -14,6 +15,15 @@ import {
   useSetImageAutoUpdate,
 } from '../queries/imageAutoUpdate'
 
+// Prefill for the window length; deployments can tune it at build time.
+const DEFAULT_WINDOW_MINUTES =
+  Number(import.meta.env.VITE_IMAGE_UPDATE_WINDOW_MINUTES) || 120
+
+const WINDOW_PRESETS = [
+  { id: 'nightly', cron: '0 3 * * *' },
+  { id: 'weekends', cron: '0 3 * * 6,0' },
+] as const
+
 /** ImageAutoUpdateCard opts an app into redeploying when its image tag moves, and checks the registry on demand. */
 export function ImageAutoUpdateCard({ appName }: { appName: string }) {
   const { t } = useTranslation('deploys')
@@ -23,22 +33,70 @@ export function ImageAutoUpdateCard({ appName }: { appName: string }) {
   const rotate = useRotateImageUpdateWebhook(appName)
   const imageStatus = useImageStatus(appName)
 
+  const { last_result: lastResult, last_checked_at: lastChecked } = setting.data
+  const [windowOn, setWindowOn] = useState(Boolean(setting.data.window_cron))
+  const [cron, setCron] = useState(setting.data.window_cron ?? '')
+  const [minutes, setMinutes] = useState(
+    String(setting.data.window_minutes || DEFAULT_WINDOW_MINUTES),
+  )
+  const [windowError, setWindowError] = useState('')
+
+  function saveWindow(on: boolean) {
+    setWindowError('')
+    const trimmed = cron.trim()
+    const mins = Number(minutes)
+    if (on && (!trimmed || !Number.isInteger(mins) || mins < 1)) {
+      setWindowError(t('imageAutoUpdate.window.invalid'))
+      return
+    }
+    setEnabled.mutate(
+      on
+        ? {
+            enabled: setting.data.enabled,
+            window_cron: trimmed,
+            window_minutes: mins,
+          }
+        : { enabled: setting.data.enabled, window_cron: '' },
+      {
+        onSuccess: () =>
+          toast.add({
+            title: t('imageAutoUpdate.window.saved'),
+            type: 'success',
+          }),
+        onError: (error) => setWindowError(error.message),
+      },
+    )
+  }
+
+  function toggleWindow(next: boolean) {
+    setWindowOn(next)
+    if (!next) {
+      if (setting.data.window_cron) saveWindow(false)
+      else setWindowError('')
+    }
+  }
+
+  const waiting = Boolean(lastResult?.includes('waiting for the update window'))
+
   function toggle(next: boolean) {
-    setEnabled.mutate(next, {
-      onSuccess: () =>
-        toast.add({
-          title: next
-            ? t('imageAutoUpdate.toast.enabled')
-            : t('imageAutoUpdate.toast.disabled'),
-          type: 'success',
-        }),
-      onError: (error) =>
-        toast.add({
-          title: t('imageAutoUpdate.toast.errorTitle'),
-          description: error.message,
-          type: 'error',
-        }),
-    })
+    setEnabled.mutate(
+      { enabled: next },
+      {
+        onSuccess: () =>
+          toast.add({
+            title: next
+              ? t('imageAutoUpdate.toast.enabled')
+              : t('imageAutoUpdate.toast.disabled'),
+            type: 'success',
+          }),
+        onError: (error) =>
+          toast.add({
+            title: t('imageAutoUpdate.toast.errorTitle'),
+            description: error.message,
+            type: 'error',
+          }),
+      },
+    )
   }
 
   function checkNow() {
@@ -58,8 +116,6 @@ export function ImageAutoUpdateCard({ appName }: { appName: string }) {
   const webhookUrl = rotate.data
     ? `${window.location.origin}${rotate.data.path}`
     : ''
-  const { last_result: lastResult, last_checked_at: lastChecked } = setting.data
-
   return (
     <Card>
       <CardHeader>
@@ -132,6 +188,95 @@ export function ImageAutoUpdateCard({ appName }: { appName: string }) {
               ? t('imageAutoUpdate.checking')
               : t('imageAutoUpdate.checkNow')}
           </Button>
+        </div>
+        <div className="space-y-2 border-t border-border pt-3">
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-sm font-medium text-foreground">
+              {t('imageAutoUpdate.window.label')}
+            </p>
+            <Switch
+              checked={windowOn}
+              onCheckedChange={toggleWindow}
+              disabled={setEnabled.isPending}
+              aria-label={t('imageAutoUpdate.window.switchAriaLabel')}
+            />
+          </div>
+          {windowOn ? (
+            <div className="space-y-2">
+              <div
+                className="flex flex-wrap items-center gap-1.5"
+                role="group"
+                aria-label={t('imageAutoUpdate.window.presetsLabel')}
+              >
+                {WINDOW_PRESETS.map((preset) => (
+                  <Button
+                    key={preset.id}
+                    type="button"
+                    size="sm"
+                    variant={
+                      cron.trim() === preset.cron ? 'secondary' : 'outline'
+                    }
+                    aria-pressed={cron.trim() === preset.cron}
+                    onClick={() => setCron(preset.cron)}
+                  >
+                    {t(`imageAutoUpdate.window.presets.${preset.id}`)}
+                  </Button>
+                ))}
+              </div>
+              <div className="flex flex-wrap items-end gap-2">
+                <div className="min-w-0 flex-1 basis-40 space-y-1">
+                  <label
+                    htmlFor="image-update-window-cron"
+                    className="text-xs text-muted-foreground"
+                  >
+                    {t('imageAutoUpdate.window.cronLabel')}
+                  </label>
+                  <Input
+                    id="image-update-window-cron"
+                    value={cron}
+                    placeholder="0 3 * * *"
+                    className="font-mono"
+                    aria-invalid={windowError ? true : undefined}
+                    onChange={(e) => setCron(e.target.value)}
+                  />
+                </div>
+                <div className="w-24 space-y-1">
+                  <label
+                    htmlFor="image-update-window-minutes"
+                    className="text-xs text-muted-foreground"
+                  >
+                    {t('imageAutoUpdate.window.minutesLabel')}
+                  </label>
+                  <Input
+                    id="image-update-window-minutes"
+                    type="number"
+                    min={1}
+                    inputMode="numeric"
+                    value={minutes}
+                    onChange={(e) => setMinutes(e.target.value)}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => saveWindow(true)}
+                  disabled={setEnabled.isPending}
+                >
+                  {t('imageAutoUpdate.window.save')}
+                </Button>
+              </div>
+              {windowError ? (
+                <p className="text-xs text-destructive" role="alert">
+                  {windowError}
+                </p>
+              ) : null}
+              {waiting ? (
+                <p className="text-xs text-tone-warning" role="status">
+                  {t('imageAutoUpdate.window.waiting')}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
         </div>
         <div className="space-y-1.5 border-t border-border pt-3">
           <div className="flex items-center justify-between gap-4">

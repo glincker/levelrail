@@ -2,14 +2,15 @@ import type { ReactNode } from 'react'
 import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import newAppEn from '../locales/en/newApp.json'
+import newAppNoGitEn from '../locales/en/newAppNoGit.json'
 
 const testI18n = i18next.createInstance()
 void testI18n.use(initReactI18next).init({
   lng: 'en',
   fallbackLng: 'en',
-  ns: ['newApp'],
+  ns: ['newApp', 'newAppNoGit'],
   defaultNS: 'newApp',
-  resources: { en: { newApp: newAppEn } },
+  resources: { en: { newApp: newAppEn, newAppNoGit: newAppNoGitEn } },
   interpolation: { escapeValue: false },
 })
 

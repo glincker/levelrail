@@ -3,6 +3,7 @@ package iac
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sort"
@@ -12,6 +13,8 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
 	"github.com/GLINCKER/levelrail/internal/loadbalancer"
+	"github.com/GLINCKER/levelrail/internal/placement"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
@@ -19,6 +22,11 @@ import (
 type ExportOptions struct {
 	Project string
 	App     string
+	// Database and Node each export that one resource alone.
+	Database string
+	Node     string
+	// Settings exports only the saved, non-sensitive runtime settings.
+	Settings bool
 	// IncludeEnvValues writes literal env values; when false every value
 	// becomes a ${{ env.NAME }} placeholder.
 	IncludeEnvValues bool
@@ -55,25 +63,27 @@ type outBuild struct {
 }
 
 type outService struct {
-	Build          outBuild             `yaml:"build"`
-	Domains        []string             `yaml:"domains,omitempty"`
-	Port           int                  `yaml:"port,omitempty"`
-	HostPort       int                  `yaml:"host_port,omitempty"`
-	PublishedPorts []spec.PublishedPort `yaml:"published_ports,omitempty"`
-	Restart        string               `yaml:"restart,omitempty"`
-	BindAddress    string               `yaml:"bind_address,omitempty"`
-	Health         *healthFields        `yaml:"health,omitempty"`
-	Resources      *resourceFields      `yaml:"resources,omitempty"`
-	Security       *securityFields      `yaml:"security,omitempty"`
-	Env            map[string]any       `yaml:"env,omitempty"`
-	Replicas       int                  `yaml:"replicas,omitempty"`
-	Strategy       string               `yaml:"strategy,omitempty"`
-	Labels         map[string]string    `yaml:"labels,omitempty"`
-	Hooks          *hookFields          `yaml:"hooks,omitempty"`
-	Rollout        *rolloutFields       `yaml:"rollout,omitempty"`
-	Files          []fileFields         `yaml:"files,omitempty"`
-	Command        []string             `yaml:"command,omitempty"`
-	Volumes        []outVolume          `yaml:"volumes,omitempty"`
+	Build          outBuild               `yaml:"build"`
+	Domains        []string               `yaml:"domains,omitempty"`
+	Port           int                    `yaml:"port,omitempty"`
+	HostPort       int                    `yaml:"host_port,omitempty"`
+	PublishedPorts []spec.PublishedPort   `yaml:"published_ports,omitempty"`
+	Restart        string                 `yaml:"restart,omitempty"`
+	BindAddress    string                 `yaml:"bind_address,omitempty"`
+	Health         *healthFields          `yaml:"health,omitempty"`
+	Resources      *resourceFields        `yaml:"resources,omitempty"`
+	Security       *securityFields        `yaml:"security,omitempty"`
+	Env            map[string]any         `yaml:"env,omitempty"`
+	Replicas       int                    `yaml:"replicas,omitempty"`
+	Strategy       string                 `yaml:"strategy,omitempty"`
+	Labels         map[string]string      `yaml:"labels,omitempty"`
+	Hooks          *hookFields            `yaml:"hooks,omitempty"`
+	Rollout        *rolloutFields         `yaml:"rollout,omitempty"`
+	Files          []fileFields           `yaml:"files,omitempty"`
+	Command        []string               `yaml:"command,omitempty"`
+	Tolerations    []placement.Toleration `yaml:"tolerations,omitempty"`
+	Affinity       *placement.Affinity    `yaml:"affinity,omitempty"`
+	Volumes        []outVolume            `yaml:"volumes,omitempty"`
 }
 
 type outVolume struct {
@@ -109,6 +119,25 @@ func Export(ctx context.Context, d Doer, opts ExportOptions) (ExportResult, erro
 		if _, ok := e.st.projects[opts.Project]; !ok {
 			return ExportResult{}, fmt.Errorf("project %q was not found", opts.Project)
 		}
+	}
+	if opts.Settings {
+		if err := e.settings(ctx, l); err != nil {
+			return ExportResult{}, err
+		}
+		return e.render()
+	}
+	if opts.Node != "" {
+		if err := e.node(ctx, l); err != nil {
+			return ExportResult{}, err
+		}
+		return e.render()
+	}
+	if opts.Database != "" {
+		if _, ok := e.st.databases[opts.Database]; !ok {
+			return ExportResult{}, &StatusError{Status: http.StatusNotFound, Message: fmt.Sprintf("database %q was not found", opts.Database)}
+		}
+		e.databases()
+		return e.render()
 	}
 	if err := e.projects(ctx, l); err != nil {
 		return ExportResult{}, err
@@ -242,6 +271,12 @@ func (e *exporter) app(ctx context.Context, l loader, a wireApp) error {
 		return fmt.Errorf("read files of %s: %w", a.Name, err)
 	}
 	svc.Files = files
+	if f.Placement != nil {
+		if f.Placement.Tolerations != nil {
+			svc.Tolerations = *f.Placement.Tolerations
+		}
+		svc.Affinity = f.Placement.Affinity
+	}
 	if f.BindAddress != bindaddr.Default {
 		svc.BindAddress = f.BindAddress
 	}
@@ -347,6 +382,9 @@ func (e *exporter) databases() {
 		return
 	}
 	for _, name := range sortedKeys(e.st.databases) {
+		if e.opts.Database != "" && name != e.opts.Database {
+			continue
+		}
 		db := e.st.databases[name]
 		project := e.st.projectsByID[db.ProjectID].Name
 		if e.opts.Project != "" && project != e.opts.Project {
@@ -367,6 +405,101 @@ func (e *exporter) databases() {
 		}
 		e.docs = append(e.docs, outDoc{Version: SchemaVersion, Kind: KindDatabase, Metadata: outMeta{Name: name}, Spec: s})
 	}
+}
+
+// node writes the one Node document, or 404 when no node has that name.
+func (e *exporter) node(ctx context.Context, l loader) error {
+	var all []wireNode
+	if err := l.fetch(ctx, "nodes", "list nodes", "/api/v1/nodes", &all); err != nil {
+		return err
+	}
+	var ids []string
+	for _, n := range all {
+		if n.Name == e.opts.Node {
+			ids = append(ids, n.ID)
+		}
+	}
+	switch len(ids) {
+	case 0:
+		return &StatusError{Status: http.StatusNotFound, Message: fmt.Sprintf("node %q was not found", e.opts.Node)}
+	case 1:
+	default:
+		return &StatusError{Status: http.StatusConflict, Message: fmt.Sprintf("more than one node is named %q", e.opts.Node)}
+	}
+	base := "/api/v1/nodes/" + esc(ids[0])
+	var lb struct {
+		Labels map[string]string `json:"labels"`
+	}
+	if err := l.fetch(ctx, "node", "read labels of node "+e.opts.Node, base+"/labels", &lb); err != nil {
+		return err
+	}
+	var tb struct {
+		Taints []placement.Taint `json:"taints"`
+	}
+	if err := l.fetch(ctx, "node", "read taints of node "+e.opts.Node, base+"/taints", &tb); err != nil {
+		return err
+	}
+	taints := make([]map[string]string, 0, len(tb.Taints))
+	for _, t := range tb.Taints {
+		m := map[string]string{"key": t.Key, "effect": string(t.Effect)}
+		if t.Value != "" {
+			m["value"] = t.Value
+		}
+		taints = append(taints, m)
+	}
+	labels := lb.Labels
+	if labels == nil {
+		labels = map[string]string{}
+	}
+	e.docs = append(e.docs, outDoc{Version: SchemaVersion, Kind: KindNode, Metadata: outMeta{Name: e.opts.Node},
+		Spec: map[string]any{"labels": labels, "taints": taints}})
+	return nil
+}
+
+// settings writes one Setting document per saved row. Values still coming
+// from env or the default are left out so the file only pins what an operator chose.
+func (e *exporter) settings(ctx context.Context, l loader) error {
+	var list struct {
+		Settings []liveSetting `json:"settings"`
+	}
+	if err := l.fetch(ctx, "settings", "list runtime settings", "/api/v1/settings/runtime", &list); err != nil {
+		return err
+	}
+	sort.Slice(list.Settings, func(i, j int) bool { return list.Settings[i].Key < list.Settings[j].Key })
+	for _, s := range list.Settings {
+		if s.Source != runtimesettings.SourceSaved {
+			continue
+		}
+		if def, ok := settingDefinition(s.Key); !ok || def.Sensitive || s.Sensitive {
+			e.warns = append(e.warns, fmt.Sprintf("setting %s holds a credential or is unknown and was skipped", s.Key))
+			continue
+		}
+		v, err := settingExportValue(s.Value)
+		if err != nil {
+			e.warns = append(e.warns, fmt.Sprintf("setting %s has a value that cannot be exported and was skipped", s.Key))
+			continue
+		}
+		e.docs = append(e.docs, outDoc{Version: SchemaVersion, Kind: KindSetting, Metadata: outMeta{Name: s.Key}, Spec: map[string]any{"value": v}})
+	}
+	return nil
+}
+
+// settingExportValue keeps integers as integers, since a float64 would render
+// large numbers in exponent form and fail the next validation.
+func settingExportValue(raw json.RawMessage) (any, error) {
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.UseNumber()
+	var v any
+	if err := dec.Decode(&v); err != nil {
+		return nil, err
+	}
+	if n, ok := v.(json.Number); ok {
+		if i, err := n.Int64(); err == nil {
+			return i, nil
+		}
+		return n.Float64()
+	}
+	return v, nil
 }
 
 func (e *exporter) render() (ExportResult, error) {

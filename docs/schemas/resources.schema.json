@@ -1,5 +1,39 @@
 {
   "$defs": {
+    "affinity": {
+      "additionalProperties": false,
+      "properties": {
+        "apart": {
+          "description": "Stay away from workloads that match.",
+          "items": {
+            "$ref": "#/$defs/workloadTerm"
+          },
+          "type": "array"
+        },
+        "node_preferred": {
+          "description": "Weighted node label preferences.",
+          "items": {
+            "$ref": "#/$defs/weightedNodeTerm"
+          },
+          "type": "array"
+        },
+        "node_required": {
+          "description": "Label tests every candidate node must pass.",
+          "items": {
+            "$ref": "#/$defs/labelTerm"
+          },
+          "type": "array"
+        },
+        "together": {
+          "description": "Run near workloads that match.",
+          "items": {
+            "$ref": "#/$defs/workloadTerm"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
     "alertRuleSpec": {
       "additionalProperties": false,
       "properties": {
@@ -63,6 +97,7 @@
             "deploy_failed",
             "domain_health",
             "domain_not_resolving",
+            "domain_traffic_drop",
             "email_delivery_failing",
             "export_behind",
             "log_archive_stale",
@@ -74,6 +109,7 @@
             "node_host_guardrail",
             "node_offline",
             "node_resource_usage",
+            "parked_domain_cert_expiry",
             "patch_status",
             "pooler_saturated",
             "registry_refresh_failing",
@@ -585,6 +621,10 @@
         {
           "additionalProperties": false,
           "properties": {
+            "existing": {
+              "description": "The secret is already in the store; apply checks it exists and never writes or deletes it.",
+              "type": "boolean"
+            },
             "secretRef": {
               "minLength": 1,
               "type": "string"
@@ -847,6 +887,37 @@
       ],
       "type": "object"
     },
+    "labelTerm": {
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "description": "Label key to test.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "op": {
+          "description": "How the label is compared.",
+          "enum": [
+            "In",
+            "NotIn",
+            "Exists",
+            "DoesNotExist"
+          ]
+        },
+        "values": {
+          "description": "Values for In and NotIn.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "key",
+        "op"
+      ],
+      "type": "object"
+    },
     "literalEnv": {
       "additionalProperties": {
         "type": "string"
@@ -1027,6 +1098,51 @@
       "required": [
         "name"
       ],
+      "type": "object"
+    },
+    "nodeSpec": {
+      "additionalProperties": false,
+      "description": "Labels and taints of a node that already joined. Apply never creates, removes or prunes a node. A member left out is not managed; an empty one clears the stored set.",
+      "properties": {
+        "labels": {
+          "additionalProperties": {
+            "maxLength": 63,
+            "type": "string"
+          },
+          "maxProperties": 32,
+          "type": "object"
+        },
+        "taints": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "effect": {
+                "enum": [
+                  "NoSchedule",
+                  "PreferNoSchedule",
+                  "NoExecute"
+                ]
+              },
+              "key": {
+                "maxLength": 63,
+                "minLength": 1,
+                "type": "string"
+              },
+              "value": {
+                "maxLength": 63,
+                "type": "string"
+              }
+            },
+            "required": [
+              "key",
+              "effect"
+            ],
+            "type": "object"
+          },
+          "maxItems": 32,
+          "type": "array"
+        }
+      },
       "type": "object"
     },
     "pipelineSpec": {
@@ -1327,6 +1443,10 @@
         }
       ],
       "properties": {
+        "affinity": {
+          "$ref": "#/$defs/affinity",
+          "description": "Rules that attract or repel this service by node and workload labels."
+        },
         "autoscale": {
           "$ref": "#/$defs/autoscale",
           "description": "Autoscaling of replicas on a metric target."
@@ -1446,6 +1566,46 @@
           "$ref": "#/$defs/loadbalancer",
           "description": "Load balancing, health and timeout settings across replicas."
         },
+        "ordered": {
+          "additionalProperties": false,
+          "description": "Reserved, not yet scheduled. Settings for workload: ordered.",
+          "properties": {
+            "partition": {
+              "description": "Ordinals below this keep the old release on update.",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "replicas": {
+              "description": "Number of ordinals.",
+              "minimum": 1,
+              "type": "integer"
+            },
+            "start": {
+              "default": "sequential",
+              "description": "Start ordinals one at a time or all together.",
+              "enum": [
+                "sequential",
+                "parallel"
+              ]
+            }
+          },
+          "type": "object"
+        },
+        "perNode": {
+          "additionalProperties": false,
+          "description": "Reserved, not yet scheduled. Settings for workload: per-node.",
+          "properties": {
+            "onDrain": {
+              "default": "keep",
+              "description": "What a node drain does to the instance: keep or evict.",
+              "enum": [
+                "keep",
+                "evict"
+              ]
+            }
+          },
+          "type": "object"
+        },
         "port": {
           "description": "Container port the service listens on.",
           "maximum": 65535,
@@ -1525,12 +1685,63 @@
             "canary"
           ]
         },
+        "tolerations": {
+          "description": "Node taints this service may be placed despite.",
+          "items": {
+            "$ref": "#/$defs/toleration"
+          },
+          "type": "array"
+        },
         "volumes": {
           "description": "Named volumes or host bind mounts to mount into the container.",
           "items": {
             "$ref": "#/$defs/volume"
           },
           "type": "array"
+        },
+        "workload": {
+          "default": "replicated",
+          "description": "Reserved, not yet scheduled. Workload kind: replicated, per-node or ordered.",
+          "enum": [
+            "replicated",
+            "per-node",
+            "ordered"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "settingSpec": {
+      "additionalProperties": false,
+      "description": "One runtime setting, named by its registry key in metadata.name. Apply saves the value so later env changes do not move it. A setting that holds a credential is refused, and a change that weakens a security protection is a plan error.",
+      "oneOf": [
+        {
+          "required": [
+            "value"
+          ]
+        },
+        {
+          "required": [
+            "reset"
+          ]
+        }
+      ],
+      "properties": {
+        "reset": {
+          "const": true,
+          "description": "Remove the saved value so the environment seed or the default applies again."
+        },
+        "value": {
+          "description": "The value, typed by the setting: a boolean, an integer, a string, a duration such as 10m, or a list of strings.",
+          "items": {
+            "type": "string"
+          },
+          "type": [
+            "boolean",
+            "integer",
+            "string",
+            "array"
+          ]
         }
       },
       "type": "object"
@@ -1575,6 +1786,35 @@
       "pattern": "^[1-5][0-9]{2}(-[1-5][0-9]{2})?$",
       "type": "string"
     },
+    "toleration": {
+      "additionalProperties": false,
+      "properties": {
+        "effect": {
+          "description": "Taint effect to tolerate; empty tolerates all.",
+          "enum": [
+            "NoSchedule",
+            "PreferNoSchedule",
+            "NoExecute"
+          ]
+        },
+        "key": {
+          "description": "Taint key to tolerate; empty with operator Exists tolerates every taint.",
+          "type": "string"
+        },
+        "operator": {
+          "description": "Equal matches key and value; Exists matches the key alone.",
+          "enum": [
+            "Equal",
+            "Exists"
+          ]
+        },
+        "value": {
+          "description": "Taint value for operator Equal.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "volume": {
       "additionalProperties": false,
       "oneOf": [
@@ -1612,6 +1852,52 @@
       },
       "required": [
         "path"
+      ],
+      "type": "object"
+    },
+    "weightedNodeTerm": {
+      "additionalProperties": false,
+      "properties": {
+        "term": {
+          "$ref": "#/$defs/labelTerm"
+        },
+        "weight": {
+          "description": "Preference strength, 1 to 100.",
+          "maximum": 100,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "weight",
+        "term"
+      ],
+      "type": "object"
+    },
+    "workloadTerm": {
+      "additionalProperties": false,
+      "properties": {
+        "match": {
+          "description": "Label tests that pick the other workloads.",
+          "items": {
+            "$ref": "#/$defs/labelTerm"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "topology": {
+          "description": "node, or a node label key such as zone.",
+          "type": "string"
+        },
+        "weight": {
+          "description": "0 makes the term required; 1 to 100 makes it a preference.",
+          "maximum": 100,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "match"
       ],
       "type": "object"
     }
@@ -1679,6 +1965,47 @@
             "type": "object"
           }
         }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "Node"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "spec": {
+            "$ref": "#/$defs/nodeSpec"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "Setting"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "spec": {
+            "$ref": "#/$defs/settingSpec"
+          }
+        },
+        "required": [
+          "spec"
+        ]
       }
     },
     {
@@ -1821,6 +2148,8 @@
         "Project",
         "Environment",
         "Tag",
+        "Node",
+        "Setting",
         "Database",
         "App",
         "Domain",

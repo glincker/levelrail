@@ -3051,6 +3051,21 @@ func (c *Client) SetProjectOrganization(ctx context.Context, projectID, orgID st
 	return out, err
 }
 
+// SetProjectDefaultEnvironment calls PUT /api/v1/projects/{id}/default-environment.
+func (c *Client) SetProjectDefaultEnvironment(ctx context.Context, projectID, environmentID string) (ProjectResource, error) {
+	var out ProjectResource
+	body := map[string]string{"environment_id": environmentID}
+	err := c.do(ctx, http.MethodPut, projectPath(projectID)+"/default-environment", body, &out)
+	return out, err
+}
+
+// BackfillDefaultEnvironments calls POST /api/v1/projects/default-environments/backfill.
+func (c *Client) BackfillDefaultEnvironments(ctx context.Context, dryRun bool) (BackfillDefaultEnvironmentsResult, error) {
+	var out BackfillDefaultEnvironmentsResult
+	err := c.do(ctx, http.MethodPost, projectsCollectionPath()+"/default-environments/backfill", map[string]bool{"dry_run": dryRun}, &out)
+	return out, err
+}
+
 // GetOrganizationEnv calls GET /api/v1/organizations/{id}/env.
 func (c *Client) GetOrganizationEnv(ctx context.Context, id string) (map[string]string, error) {
 	var out map[string]string
@@ -4122,6 +4137,13 @@ func (c *Client) VerifyAuditLog(ctx context.Context) (AuditChainReport, error) {
 func (c *Client) CheckAuditAnchors(ctx context.Context, anchors []AuditAnchor) (AuditAnchorReport, error) {
 	var out AuditAnchorReport
 	err := c.do(ctx, http.MethodPost, "/api/v1/audit-log/anchor-check", map[string]any{"anchors": anchors}, &out)
+	return out, err
+}
+
+// AuditAnchorStatus calls GET /api/v1/audit-log/anchor-status.
+func (c *Client) AuditAnchorStatus(ctx context.Context) (AuditAnchorStatus, error) {
+	var out AuditAnchorStatus
+	err := c.do(ctx, http.MethodGet, "/api/v1/audit-log/anchor-status", nil, &out)
 	return out, err
 }
 

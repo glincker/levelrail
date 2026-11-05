@@ -122,7 +122,7 @@ func nextJobRun(t store.ScheduledTask, after time.Time) *time.Time {
 		return nil
 	}
 	next := cronexpr.NextInLocation(sched, after, loc)
-	if next.IsZero() {
+	if next.IsZero() || !next.After(after) {
 		return nil
 	}
 	next = next.UTC()
@@ -165,7 +165,7 @@ func validateScheduledTaskInput(r *scheduledTaskResource) error {
 	if strings.TrimSpace(r.Schedule) == "" {
 		return errors.New("schedule is required")
 	}
-	if _, err := cronexpr.Parse(r.Schedule); err != nil {
+	if err := checkScheduleFires(r.Schedule); err != nil {
 		return fmt.Errorf("schedule: %w", err)
 	}
 	if r.Timezone == "" {

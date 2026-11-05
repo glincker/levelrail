@@ -77,6 +77,14 @@ type Fix struct {
 	Records []Record   `json:"records,omitempty"`
 	// CLI is the secondary, collapsed way to do the same from a terminal.
 	CLI string `json:"cli,omitempty"`
+	// ID names an existing fixit fix for the same problem, empty when none.
+	ID    string `json:"id,omitempty"`
+	Label string `json:"label,omitempty"`
+	// Steps are plain instructions that need no terminal.
+	Steps []string `json:"steps,omitempty"`
+	Link  string   `json:"link,omitempty"`
+	// CLIHint is an optional terminal shortcut, never the only content of a fix.
+	CLIHint string `json:"cli_hint,omitempty"`
 }
 
 // Check is one ordered result.
@@ -86,7 +94,11 @@ type Check struct {
 	State  State  `json:"state"`
 	Tier   int    `json:"tier"`
 	Detail string `json:"detail,omitempty"`
-	Fix    *Fix   `json:"fix,omitempty"`
+	// Cause is one plain sentence on what is wrong; Evidence lists the facts
+	// that were observed.
+	Cause    string   `json:"cause,omitempty"`
+	Evidence []string `json:"evidence,omitempty"`
+	Fix      *Fix     `json:"fix,omitempty"`
 }
 
 // Report is the doctor's full answer for one domain.

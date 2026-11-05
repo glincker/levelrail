@@ -104,6 +104,8 @@ export function loginOptionsQueryOptions() {
         code_login: boolean
         trusted_device_days: number
         email_configured: boolean
+        sso_auto_redirect?: boolean
+        sso_provider?: string
       }>('GET', '/api/v1/auth/login-options'),
     staleTime: 60_000,
   })

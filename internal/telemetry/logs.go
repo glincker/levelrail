@@ -400,6 +400,16 @@ func NewLogCollector(source LogSource, store *DB, broadcaster *LogBroadcaster, l
 // SetNodeSource lets targets with a NodeID stream from a remote node.
 func (lc *LogCollector) SetNodeSource(n NodeLogSource) { lc.nodes = n }
 
+// maskEntry hides known secrets before fan-out: live viewers and log drains
+// read the published copy, not the stored row.
+func maskEntry(e LogEntry) LogEntry {
+	e.Message = secretmask.Mask(e.Message)
+	if e.FieldsJSON != "" {
+		e.FieldsJSON = secretmask.Mask(e.FieldsJSON)
+	}
+	return e
+}
+
 // StreamOne follows target's log stream (Follow: true, from the current
 // point forward) until ctx is cancelled or the stream ends on its own
 // (the container stopped), batching lines per logBatchMaxLines/
@@ -454,6 +464,7 @@ func (lc *LogCollector) StreamOne(ctx context.Context, target LogTarget) error {
 				entry.Structured, entry.FieldsJSON = true, string(raw)
 			}
 		}
+		entry = maskEntry(entry)
 		if lc.broadcaster != nil {
 			lc.broadcaster.Publish(entry)
 		}

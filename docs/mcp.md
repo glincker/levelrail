@@ -289,3 +289,11 @@ The main risk is prompt injection: log lines, deploy output, commit messages, br
 - Write tools are off by default, so an assistant that only investigates cannot be talked into mutating anything.
 - Write tools need an argument the assistant must copy from the user's request, and the audit log names the MCP client.
 - Wrapping reduces risk; it is not a guarantee. Use a token scoped to the abilities you want the assistant to have, and keep `--allow-write` for sessions where a human is watching.
+
+## Related
+
+- [AI assistant integration](/ai-assistant): run the server and scope a token
+- [Connect an AI assistant safely](/mcp-safe-setup)
+- [MCP tools, token budget and write mode](/mcp)
+- [MCP recipes](/mcp-recipes)
+- [MCP tool surface](/mcp-tool-surface)

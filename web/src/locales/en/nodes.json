@@ -14,17 +14,17 @@
     "back": "Back",
     "nameLabel": "Node name (optional)",
     "namePlaceholder": "worker-2",
-    "nameHint": "Lowercase letters, digits and dashes, starting with a letter. Leave empty to let the agent report its hostname.",
+    "nameHint": "Lowercase letters, digits and dashes, starting with a letter. Leave empty and the agent reports its hostname.",
     "nameInvalid": "Use lowercase letters, digits and dashes, starting with a letter.",
     "addrLabel": "Control plane address",
-    "addrHint": "Host and port the new machine can reach this control plane on, port 9443 by default. Pre-filled with the advertise address the agent certificate covers (APP_AGENT_ADVERTISE_HOST). A different name fails the TLS check.",
+    "addrHint": "Host and port the new machine can reach this control plane on, port 9443 by default. Prefilled with the advertise address the agent certificate covers (APP_AGENT_ADVERTISE_HOST). A different name fails the TLS check.",
     "meshLabel": "Join the mesh",
     "meshHint": "Connect the node to the WireGuard mesh so apps and databases can reach each other across machines. Needs mesh networking enabled on the control plane.",
     "generate": "Generate join token",
     "generating": "Generating...",
     "createdTitle": "Join token created",
-    "createdDescription": "Run the command below on the new machine to enroll it. The token is a one-time bootstrap credential, not something to save long-term.",
-    "singleUse": "Single use. This token will not be shown again and expires at {{time}}.",
+    "createdDescription": "Run the command below on the new machine to enroll it. The token is a one-time bootstrap credential. Don't save it long-term.",
+    "singleUse": "Single use. This token is not shown again and expires at {{time}}.",
     "dockerLabel": "Run with Docker",
     "dockerHint": "Recommended. Runs the agent as a container on the new machine.",
     "runtime": {
@@ -36,7 +36,7 @@
     "podmanHint": "Rootful Podman. The agent mounts /run/podman/podman.sock, so the socket must be enabled first (command below).",
     "podmanSocketLabel": "Podman prerequisite (run once on the new machine)",
     "binaryLabel": "Or run the agent binary",
-    "binaryHint": "For a machine without Docker run access for the agent container, or when you manage the service yourself.",
+    "binaryHint": "For a machine where the agent container can't run Docker, or when you manage the service yourself.",
     "tokenLabel": "Join token",
     "fallbackLabel": "Enrollment command",
     "fallbackHint": "This control plane did not return ready-made commands, so this one is built from the address above.",
@@ -64,7 +64,7 @@
   "move": {
     "trigger": "Move",
     "title": "Move \"{{name}}\" to another node",
-    "descriptionApp": "The move is verified at each step and rolled back automatically if the target cannot run the app. Traffic is held while the target comes up.",
+    "descriptionApp": "The move is verified at each step and rolled back automatically if the target can't run the app. Traffic is held while the target comes up.",
     "descriptionDatabase": "The database and its data volume are copied to the target and verified before the old copy is stopped. Apps that use it are restarted afterwards.",
     "targetLabel": "Move to",
     "automatic": "Automatic (least loaded eligible node)",
@@ -125,7 +125,7 @@
       "failed": "Drain failed"
     },
     "emptyDone": "Nothing was placed on this node, so there was nothing to move.",
-    "runningHint": "This updates every couple of seconds. You can close this dialog, the drain keeps running.",
+    "runningHint": "This updates every couple of seconds. You can close this dialog. The drain keeps running.",
     "movesTitle": "Moves",
     "blockedTitle": "Blocked, left on this node",
     "errorTitle": "Drain stopped",
@@ -168,7 +168,7 @@
   },
   "zones": {
     "title": "Failure domains",
-    "description": "How workloads spread across zones. With zone labels set, new placements and drains prefer the zone carrying the fewest workloads.",
+    "description": "How workloads spread across zones. With zone labels set, new placements and drains prefer the zone with the fewest workloads.",
     "unlabeledZone": "No zone",
     "nodes": "{{online}} of {{total}} nodes online",
     "workloads_one": "{{count}} workload",
@@ -216,7 +216,7 @@
     "saving": "Saving...",
     "saved": "Placement saved.",
     "eligibleTitle": "Eligible nodes",
-    "eligibleEmpty": "No node matches. Relax the selector, label a node, or uncordon one.",
+    "eligibleEmpty": "No node matches. Relax the selector, label a node or uncordon one.",
     "rejectedTitle": "Not eligible",
     "loadFailed": "Could not load the placement.",
     "retry": "Try again",
@@ -248,9 +248,9 @@
   "decision": {
     "recordedTitle": "Why it was placed here",
     "previewTitle": "If it were placed now",
-    "noneRecorded": "No placement decision was recorded for this one. It was placed before decisions were kept, or it runs on the local server by default.",
+    "noneRecorded": "No placement decision was recorded. It was placed before decisions were kept, or it runs on the local server by default.",
     "winner": "Chosen: {{node}}.",
-    "nothingFits": "No node has room for it right now. Free capacity, add a node, or pick a node yourself.",
+    "nothingFits": "No node has room for it right now. Free capacity, add a node or pick a node yourself.",
     "loadFailed": "Could not load the placement decision.",
     "dimensionFree": "{{name}} {{free}} free",
     "dimensionUnknown": "{{name}} unknown",
@@ -271,7 +271,7 @@
     "refresh": "Refresh",
     "checkedAt": "Checked {{time}}",
     "off": "Mesh networking is off",
-    "offDescription": "Nodes cannot reach each other over WireGuard, so apps cannot use a database on another node. Set APP_MESH_ENABLED=1 on the control plane and restart it to turn it on.",
+    "offDescription": "Nodes can't reach each other over WireGuard, so apps can't use a database on another node. Set APP_MESH_ENABLED=1 on the control plane and restart it to turn it on.",
     "empty": "Fewer than two nodes",
     "emptyDescription": "Pair diagnostics appear once a second node has joined the mesh.",
     "loadFailed": "Could not check connectivity.",
@@ -346,7 +346,7 @@
   "delete": {
     "trigger": "Delete",
     "title": "Delete \"{{name}}\"?",
-    "description": "This removes the node from the registry only. It does not drain the node or stop its agent: if the agent is still running it stays connected and its workloads keep running.",
+    "description": "This removes the node from the registry only. It does not drain the node or stop its agent. If the agent is still running, it stays connected and its workloads keep running.",
     "confirm": "Delete node",
     "deleting": "Deleting...",
     "deleted": "Node \"{{name}}\" deleted."
@@ -369,7 +369,7 @@
   "agent": {
     "title": "Agent",
     "localTitle": "This server",
-    "localBody": "This node runs inside the control plane itself, with no network link to secure, so no agent certificate is used. It is not an agent that can go offline: it is as available as this dashboard.",
+    "localBody": "This node runs inside the control plane itself, with no network link to secure, so no agent certificate is used. It is not an agent that can go offline. It is as available as this dashboard.",
     "version": "Version",
     "platform": "Platform",
     "notReported": "Not reported",
@@ -397,8 +397,8 @@
     "status": {
       "verified": "Connection verified: mutual TLS, certificate matches this node",
       "rejected": "Recent connections were rejected ({{reason}}). Check the events below.",
-      "revoked": "Certificate revoked: every connection is refused until the node is re-enrolled",
-      "expired": "Certificate expired: re-enroll the node",
+      "revoked": "Certificate revoked. Every connection is refused until the node is re-enrolled",
+      "expired": "Certificate expired. Re-enroll the node",
       "idle": "Not connected right now. Its last connection was verified.",
       "no_activity": "No connection from this node has been recorded yet",
       "local": "Runs inside the control plane"
@@ -406,9 +406,9 @@
     "caFingerprint": "Control plane CA fingerprint (SHA-256)",
     "caCompare": "Compare with APP_CA_FINGERPRINT in the agent's environment, or the fingerprint its enrollment command printed.",
     "pin": {
-      "pinned": "Pinned at enrollment: the agent checked this fingerprint before it sent its join token.",
+      "pinned": "Pinned at enrollment. The agent checked this fingerprint before it sent its join token.",
       "trusted_ca": "Re-enrolled against the CA already on the node.",
-      "unpinned": "Not pinned: the agent trusted the control plane on first use. Re-enroll with APP_CA_FINGERPRINT set to pin it.",
+      "unpinned": "Not pinned. The agent trusted the control plane on first use. Re-enroll with APP_CA_FINGERPRINT set to pin it.",
       "unknown": "Pin status not reported."
     },
     "certFingerprint": "Agent certificate fingerprint (SHA-256)",
@@ -428,8 +428,8 @@
     "nextRetry": "next retry {{at}}",
     "privateKey": "Private key",
     "key": {
-      "agent": "Generated on the node. The private key never left it: the control plane only signed a request.",
-      "reenroll_required": "Generated by the control plane (an early beta). Re-enroll required: this node will not renew until you re-enroll it."
+      "agent": "Generated on the node. The private key never left it. The control plane only signed a request.",
+      "reenroll_required": "Generated by the control plane (an early beta). Re-enroll required. This node will not renew until you re-enroll it."
     },
     "validation": "Checks in the last {{hours}}h",
     "validationCounts": "{{accepted}} accepted, {{rejected}} rejected",
@@ -514,13 +514,13 @@
     "trigger": "Re-enroll node",
     "title": "Re-enroll \"{{name}}\"",
     "description": "Issues this node a new agent certificate while keeping its identity, placements and history. Use it when the node was offline past its certificate's expiry, or after revoking its certificate. The old certificate stops working as soon as the node re-enrolls.",
-    "shownOnce": "This token will not be shown again. It works once and expires at {{time}}.",
+    "shownOnce": "This token is not shown again. It works once and expires at {{time}}.",
     "addrLabel": "Control plane address",
     "addrHint": "Host and port the node reaches this control plane on, port 9443 by default.",
     "runOnNode": "Run on the node",
     "copy": "Copy",
     "copied": "Copied",
-    "afterHint": "A running agent picks up the new certificate at its next reconnect; otherwise start the agent after this command.",
+    "afterHint": "A running agent picks up the new certificate at its next reconnect. Otherwise, start the agent after this command.",
     "done": "Done",
     "generating": "Generating...",
     "generate": "Generate re-enroll token"
@@ -528,7 +528,7 @@
   "joinTokens": {
     "title_one": "{{count}} unused join token",
     "title_other": "{{count}} unused join tokens",
-    "description": "Anyone holding an unused join token can enroll a node. Revoke the ones you no longer need, a revoked token stops working at once.",
+    "description": "Anyone holding an unused join token can enroll a node. Revoke the ones you no longer need. A revoked token stops working immediately.",
     "expires": "expires {{when}}",
     "revoke": "Revoke",
     "revokeAll": "Revoke all",
@@ -552,8 +552,8 @@
       "warn": "Low",
       "critical": "Critical"
     },
-    "blocked": "New builds and deploys on this node are blocked: {{reason}}. The running version keeps serving. Free space to unblock.",
-    "cleanupUnsupported": "Cleanup runs on the control plane node only for now. Free space on this node directly.",
+    "blocked": "New builds and deploys on this node are blocked: {{reason}}. The running version keeps serving. Free up space to unblock.",
+    "cleanupUnsupported": "Cleanup runs on the control plane node only for now. Free up space on this node directly.",
     "dialogTitle": "Free space",
     "dialogBody": "Review what would be removed. Rollback images and volumes are never deleted.",
     "scanning": "Scanning the node...",
@@ -599,7 +599,7 @@
       "swapCrit": "Swap critical (used %)"
     },
     "autoClean": "Auto-clean",
-    "autoCleanHint": "When this node is low, remove dangling images, idle build cache and stopped containers on its own. Off by default.",
+    "autoCleanHint": "When this node is low on space, remove dangling images, idle build cache and stopped containers automatically. Off by default.",
     "save": "Save",
     "saving": "Saving...",
     "saved": "Capacity settings saved",
@@ -755,7 +755,7 @@
       "buildsOn": "Build workloads enabled.",
       "buildsOff": "Build workloads disabled.",
       "buildsTipLabel": "What accepts build workloads does",
-      "buildsTip": "Sets whether new builds prefer this node. It does not move apps or databases already running here, and it does not guarantee builds never run here: if no node that accepts builds is currently healthy, a build still runs on the primary node rather than failing."
+      "buildsTip": "Sets whether new builds prefer this node. It does not move apps or databases already running here, and it does not guarantee builds never run here. If no node that accepts builds is healthy, a build still runs on the primary node instead of failing."
     }
   },
   "onboarding": {
@@ -823,7 +823,44 @@
   "offlineApp": {
     "title": "Node {{node}} is offline, unseen for {{since}}",
     "titleUnknown": "Node {{node}} is offline",
-    "body": "Containers keep running on it, but ingress through the mesh is down and this app cannot be changed until the node returns.",
+    "body": "Containers keep running on it, but mesh ingress is down and this app can't be changed until the node returns.",
     "view": "View node"
+  },
+  "taints": {
+    "title": "Taints",
+    "description": "Reserve this node. Apps and databases are not placed here unless they tolerate the taint. Saving replaces the whole set.",
+    "empty": "No taints. Any app can be placed here.",
+    "keyPlaceholder": "dedicated",
+    "valuePlaceholder": "gpu",
+    "operator": "Operator",
+    "operatorEqual": "equals",
+    "operatorExists": "exists",
+    "effect": "Effect",
+    "add": "Add taint",
+    "remove": "Remove taint {{key}}",
+    "effectHint": "NoSchedule and NoExecute keep new placements off the node. PreferNoSchedule only ranks it lower. Moving what already runs here is a drain.",
+    "save": "Save taints",
+    "saving": "Saving...",
+    "saved": "Taints saved.",
+    "reset": "Reset",
+    "loadFailed": "Could not load the taints.",
+    "retry": "Try again",
+    "duplicate": "Each key and effect pair can be used once.",
+    "incomplete": "Enter a key, or remove the empty row."
+  },
+  "tolerations": {
+    "title": "Tolerations",
+    "empty": "No tolerations: this app avoids tainted nodes.",
+    "hint": "The app may run on nodes with a matching taint.",
+    "add": "Add toleration",
+    "save": "Save tolerations",
+    "saved": "Tolerations saved.",
+    "affinityTitle": "Affinity",
+    "affinityEmpty": "No affinity rules.",
+    "affinityHint": "Affinity is edited in app.yaml or with nodes placement --affinity-file.",
+    "nodeRequired": "node required",
+    "nodePreferred": "node preferred",
+    "together": "together with",
+    "apart": "apart from"
   }
 }

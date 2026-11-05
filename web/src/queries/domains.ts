@@ -59,6 +59,10 @@ export interface Domain {
   enforcement?: DomainEnforcement
   // issues are the problems the last ingress pass found (dropped or downgraded).
   issues?: DomainIssue[]
+  environment?: string
+  environment_id?: string
+  // Negative once expired; absent when the domain has no certificate.
+  tls_days_left?: number
 }
 
 export interface DomainIssue {

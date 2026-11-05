@@ -207,7 +207,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		api.WithPublicHost(publicHost()),
 		api.WithPublicHostSource(publicHostSource()),
 		api.WithStandaloneSafety(standaloneSafety()),
-		api.WithHTTPSEnableLimits(apiRateLimitRPM(logger, "APP_ACME_MAX_ATTEMPTS_PER_HOUR", 0), acmePendingTimeout(logger)),
+		api.WithHTTPSEnableLimits(0, acmePendingTimeout(logger)),
 		api.WithACMEDefaultDirectory(acmeDefaultDirectory()),
 		api.WithDeployLogQuerier(telemetryDB),
 		api.WithDeployRecorder(deployRecorder),
@@ -406,6 +406,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		opts = append(opts, api.WithGitHubAppManifestConfig(manifestCfg))
 	}
 	opts = append(opts, api.WithChangelog(loadChangelog(logger)), api.WithUpgradeHistory(db), api.WithSelfUpgrade(db, nil))
+	reapAbandonedUpgrades(dataDir, db, logger)
 
 	modelSvc, modelGateway, _ := modelWiring(db, secretsManager)
 	wireModelPreflight(modelSvc, client, b.ShortName, logger)

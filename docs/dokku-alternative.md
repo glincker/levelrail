@@ -66,7 +66,7 @@ Dokku has almost no idle footprint and is hard to beat for simplicity on one ser
     Not Heroku buildpacks. Levelrail builds a Dockerfile with BuildKit, and when there is none it detects the stack from files such as `package.json` or `go.mod` and builds it with Railpack. See [Importing apps](/importing-apps) for the detection order.
   </Accordion>
   <Accordion title="Do I need more than one server?">
-    No. Single node is the best tested path, and multi-server is there when you need it.
+    No. Single node is the path with the most testing, and multi-server is there when you need it.
   </Accordion>
   <Accordion title="Is it free?">
     Yes. Apache 2.0, one edition.

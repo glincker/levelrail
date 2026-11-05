@@ -183,27 +183,43 @@ func parseFieldTerm(term, base string, fieldMin, fieldMax, step int, dowAlias7 b
 	}
 }
 
-// searchHorizon bounds how far into the future Next searches before
-// giving up. Four years covers every real calendar quirk (leap years,
-// "31st" in months that don't have one) without risking an unbounded
-// loop for a schedule that can genuinely never match (e.g. day-of-month
-// 31 combined with a month field that excludes every 31-day month, were
-// day-of-month ever the sole restriction, which it never actually is
-// alone thanks to the day-matching OR rule, but the bound stays here as
-// a hard backstop regardless of which combination a caller writes).
-const searchHorizon = 4 * 365 * 24 * time.Hour
+// searchYears bounds how far Next looks ahead. Eight years plus a day
+// spans the longest gap between two Feb 29 dates (2096 to 2104, across the
+// non-leap 2100).
+const searchYears = 8
+
+// maxDaysInMonth is the longest each month can be (Feb counts its leap day).
+var maxDaysInMonth = [13]int{0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}
+
+// impossible reports a schedule whose only day restriction is a day-of-month
+// that no selected month ever has, so Next can answer without scanning.
+func (s *Schedule) impossible() bool {
+	if !s.domRestricted || s.dowRestricted {
+		return false
+	}
+	for m := monthMin; m <= monthMax; m++ {
+		if !s.month.has(m) {
+			continue
+		}
+		for d := domMin; d <= maxDaysInMonth[m]; d++ {
+			if s.dom.has(d) {
+				return false
+			}
+		}
+	}
+	return true
+}
 
 // Next returns the earliest minute-aligned UTC time strictly after t
 // that this Schedule matches, or the zero time.Time if no match exists
-// within searchHorizon. Cron fields have no timezone concept of their
-// own; every caller in this codebase (internal/backup.Scheduler) works
-// in UTC exclusively, the same "everything server-side is UTC, a client
-// converts for display" convention store.BackupHistory's own
-// RFC3339-in-UTC timestamps already establish, so t is converted to UTC
-// here rather than accepting an implicit local-time assumption.
+// within the search horizon. Cron fields have no timezone of their own, so
+// t is converted to UTC here; NextInLocation handles other zones.
 func (s *Schedule) Next(t time.Time) time.Time {
+	if s.impossible() {
+		return time.Time{}
+	}
 	t = t.UTC().Truncate(time.Minute).Add(time.Minute)
-	limit := t.Add(searchHorizon)
+	limit := t.AddDate(searchYears, 0, 1)
 
 	for t.Before(limit) {
 		if !s.month.has(int(t.Month())) {
@@ -228,25 +244,121 @@ func (s *Schedule) Next(t time.Time) time.Time {
 }
 
 // NextInLocation returns the next time schedule matches strictly after
-// after, evaluated on loc's wall clock. Schedule.Next works in UTC only
-// (see its own doc comment); this shifts after's wall-clock fields in loc
-// into UTC fields, asks Next for the next match against those, then
-// reinterprets the result's fields back as loc's wall clock, the same
-// trick internal/deploy.WindowActive already uses for a freeze window's
-// own timezone. Every caller that needs a cron schedule's next
-// occurrence in a specific timezone (not just UTC) should use this
-// instead of duplicating the shift.
+// after, evaluated on loc's wall clock, or the zero time when there is none.
+// In a repeated DST hour it picks the first instant after "after"; a wall time
+// inside a spring-forward gap runs once, shifted past the gap.
 func NextInLocation(schedule *Schedule, after time.Time, loc *time.Location) time.Time {
 	local := after.In(loc)
 	wall := time.Date(local.Year(), local.Month(), local.Day(), local.Hour(), local.Minute(), local.Second(), local.Nanosecond(), time.UTC)
-	nextWall := schedule.Next(wall)
-	next := time.Date(nextWall.Year(), nextWall.Month(), nextWall.Day(), nextWall.Hour(), nextWall.Minute(), nextWall.Second(), 0, loc)
-	// A wall time skipped by a DST jump normalizes backwards in Go, which would
-	// repeat an earlier instant; run it once at the shifted time after the gap.
-	if w := next.In(loc); w.Hour() != nextWall.Hour() || w.Minute() != nextWall.Minute() {
-		next = next.Add(time.Hour)
+	for range 8 {
+		nextWall := schedule.Next(wall)
+		if nextWall.IsZero() {
+			return time.Time{}
+		}
+		if inst, ok := resolveWall(nextWall, loc, after); ok {
+			return inst.In(loc)
+		}
+		wall = nextWall
 	}
-	return next
+	return time.Time{}
+}
+
+// resolveWall maps a wall clock (carried in UTC fields) to the earliest real
+// instant in loc strictly after "after".
+func resolveWall(wall time.Time, loc *time.Location, after time.Time) (time.Time, bool) {
+	offsets := map[int]struct{}{}
+	for _, probe := range []time.Duration{-24 * time.Hour, 0, 24 * time.Hour} {
+		_, off := wall.Add(probe).In(loc).Zone()
+		offsets[off] = struct{}{}
+	}
+	var best time.Time
+	for off := range offsets {
+		inst := wall.Add(-time.Duration(off) * time.Second)
+		w := inst.In(loc)
+		if w.Hour() != wall.Hour() || w.Minute() != wall.Minute() || w.Day() != wall.Day() {
+			continue
+		}
+		if inst.After(after) && (best.IsZero() || inst.Before(best)) {
+			best = inst
+		}
+	}
+	if !best.IsZero() {
+		return best, true
+	}
+	// Spring-forward gap: no offset yields this wall time, so apply the
+	// pre-gap offset once, which lands the same minute after the gap.
+	_, before := wall.Add(-24 * time.Hour).In(loc).Zone()
+	inst := wall.Add(-time.Duration(before) * time.Second)
+	if inst.After(after) && gapWall(wall, loc) {
+		return inst, true
+	}
+	return time.Time{}, false
+}
+
+// gapWall reports that no instant in loc displays wall.
+func gapWall(wall time.Time, loc *time.Location) bool {
+	for _, d := range []time.Duration{-24 * time.Hour, 0, 24 * time.Hour} {
+		_, off := wall.Add(d).In(loc).Zone()
+		w := wall.Add(-time.Duration(off) * time.Second).In(loc)
+		if w.Hour() == wall.Hour() && w.Minute() == wall.Minute() && w.Day() == wall.Day() {
+			return false
+		}
+	}
+	return true
+}
+
+// Due reports whether a schedule's next run has arrived; an unknown (zero)
+// next run is never due, so a schedule that cannot fire cannot hot loop.
+func Due(next, now time.Time) bool {
+	return !next.IsZero() && !next.After(now)
+}
+
+// Validate parses expr and fails when it has no occurrence from now within
+// the search horizon, so an impossible date is rejected at save time.
+func Validate(expr string, loc *time.Location, now time.Time) error {
+	sched, err := Parse(expr)
+	if err != nil {
+		return err
+	}
+	if loc == nil {
+		loc = time.UTC
+	}
+	if NextInLocation(sched, now, loc).IsZero() {
+		return fmt.Errorf("cronexpr: schedule never runs: %s", sched.neverReason())
+	}
+	return nil
+}
+
+// neverReason names the missing date for the common impossible shapes.
+func (s *Schedule) neverReason() string {
+	if s.domRestricted && !s.dowRestricted {
+		for d := domMin; d <= domMax; d++ {
+			if !s.dom.has(d) {
+				continue
+			}
+			for m := monthMin; m <= monthMax; m++ {
+				if s.month.has(m) {
+					return fmt.Sprintf("no %d%s of %s", d, ordinalSuffix(d), time.Month(m))
+				}
+			}
+		}
+	}
+	return "no matching date within 8 years"
+}
+
+func ordinalSuffix(n int) string {
+	if n%100 >= 11 && n%100 <= 13 {
+		return "th"
+	}
+	switch n % 10 {
+	case 1:
+		return "st"
+	case 2:
+		return "nd"
+	case 3:
+		return "rd"
+	}
+	return "th"
 }
 
 // dayMatches applies the standard cron day-of-month/day-of-week

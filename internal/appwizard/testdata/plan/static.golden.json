@@ -1,0 +1,49 @@
+{
+  "repo_url": "https://github.com/acme/static",
+  "ref": "main",
+  "monorepo": false,
+  "stack": {
+    "runtime": "static",
+    "framework": "Static site",
+    "language": "html",
+    "confidence": "high",
+    "evidence": [
+      {
+        "signal": "stack",
+        "detail": "index.html at the repository root, served as a static site"
+      },
+      {
+        "signal": "file",
+        "detail": "index.html is present and no application manifest was found"
+      }
+    ]
+  },
+  "build": {
+    "type": "static",
+    "output_dir": ".",
+    "evidence": "index.html at the repository root, served as a static site"
+  },
+  "port": {
+    "value": 80,
+    "evidence": "static sites are served by the built-in static server"
+  },
+  "health": {
+    "path": "/",
+    "evidence": "Static site default health path"
+  },
+  "env": [],
+  "spec": {
+    "name": "static",
+    "yaml": "version: 1\nservices:\n    static:\n        build:\n            type: static\n"
+  },
+  "warnings": [
+    {
+      "code": "no_dockerfile",
+      "message": "no Dockerfile is used, so the build is auto-detected; add a Dockerfile for full control"
+    }
+  ],
+  "next": {
+    "method": "POST",
+    "path": "/api/v1/imports/repo/apply"
+  }
+}

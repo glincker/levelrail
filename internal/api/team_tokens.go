@@ -15,8 +15,8 @@ type tokenScopeRequest struct {
 	TeamID    string `json:"team_id,omitempty"`
 	ProjectID string `json:"project_id,omitempty"`
 	TeamRole  string `json:"team_role,omitempty"`
-	// Stack binds the token to one stack by name; StackVerbs are plan and/or
-	// apply and default to plan.
+	// Stack binds the token to one stack by name; StackVerbs default to plan.
+	// Node and setting fit install stacks only, placement project stacks only.
 	Stack      string   `json:"stack,omitempty"`
 	StackVerbs []string `json:"stack_verbs,omitempty"`
 }

@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/placement"
 )
 
 // JoinCommands are ready-to-paste commands that enroll a server.
@@ -186,6 +188,35 @@ func (c *Client) SetNodeLabels(ctx context.Context, id string, labels map[string
 	return out, err
 }
 
+// NodeTaint is one taint on a node; Effect is NoSchedule, PreferNoSchedule or NoExecute.
+type NodeTaint struct {
+	Key    string `json:"key"`
+	Value  string `json:"value,omitempty"`
+	Effect string `json:"effect"`
+}
+
+// NodeTaints is the body of the node taints routes.
+type NodeTaints struct {
+	Taints []NodeTaint `json:"taints"`
+}
+
+// GetNodeTaints calls GET /api/v1/nodes/{id}/taints.
+func (c *Client) GetNodeTaints(ctx context.Context, id string) (NodeTaints, error) {
+	var out NodeTaints
+	err := c.do(ctx, http.MethodGet, nodePath(id)+"/taints", nil, &out)
+	return out, err
+}
+
+// SetNodeTaints calls PUT /api/v1/nodes/{id}/taints, replacing the set.
+func (c *Client) SetNodeTaints(ctx context.Context, id string, taints []NodeTaint) (NodeTaints, error) {
+	if taints == nil {
+		taints = []NodeTaint{}
+	}
+	var out NodeTaints
+	err := c.do(ctx, http.MethodPut, nodePath(id)+"/taints", NodeTaints{Taints: taints}, &out)
+	return out, err
+}
+
 // PlacementRejection says why a node is not eligible.
 type PlacementRejection struct {
 	NodeID string `json:"node_id"`
@@ -194,12 +225,14 @@ type PlacementRejection struct {
 
 // PlacementResource mirrors internal/api's placementResource.
 type PlacementResource struct {
-	Kind         string               `json:"kind"`
-	Name         string               `json:"name"`
-	NodeID       string               `json:"node_id"`
-	NodeSelector map[string]string    `json:"node_selector"`
-	Eligible     []string             `json:"eligible_node_ids"`
-	Rejected     []PlacementRejection `json:"rejected"`
+	Kind         string                 `json:"kind"`
+	Name         string                 `json:"name"`
+	NodeID       string                 `json:"node_id"`
+	NodeSelector map[string]string      `json:"node_selector"`
+	Tolerations  []placement.Toleration `json:"tolerations"`
+	Affinity     *placement.Affinity    `json:"affinity,omitempty"`
+	Eligible     []string               `json:"eligible_node_ids"`
+	Rejected     []PlacementRejection   `json:"rejected"`
 }
 
 // GetPlacement calls GET /api/v1/{apps|databases}/{name}/placement.
@@ -213,6 +246,24 @@ func (c *Client) GetPlacement(ctx context.Context, kind, name string) (Placement
 func (c *Client) SetPlacement(ctx context.Context, kind, name string, selector map[string]string) (PlacementResource, error) {
 	var out PlacementResource
 	err := c.do(ctx, http.MethodPut, movePath(kind, name)+"/placement", map[string]map[string]string{"node_selector": selector}, &out)
+	return out, err
+}
+
+// SetPlacementRules calls PUT .../placement with tolerations and affinity. A nil
+// selector, tolerations or affinity is left unchanged on the server.
+func (c *Client) SetPlacementRules(ctx context.Context, kind, name string, selector map[string]string, tols *[]placement.Toleration, aff *placement.Affinity) (PlacementResource, error) {
+	body := map[string]any{}
+	if selector != nil {
+		body["node_selector"] = selector
+	}
+	if tols != nil {
+		body["tolerations"] = *tols
+	}
+	if aff != nil {
+		body["affinity"] = aff
+	}
+	var out PlacementResource
+	err := c.do(ctx, http.MethodPut, movePath(kind, name)+"/placement", body, &out)
 	return out, err
 }
 

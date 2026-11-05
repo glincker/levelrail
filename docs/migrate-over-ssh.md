@@ -6,7 +6,7 @@ description: "Import apps, env, images and volumes from an old Coolify, Dokploy,
 
 Use this when you have an SSH login on the old server but no platform API token, or you do not want to install anything there. The control plane opens an SSH connection, uses it only to reach the old host's Docker socket, and reads containers, volumes and images through the Docker Engine API. It never runs a command on the old host.
 
-For the token based importer, see [Migrating from Coolify, Dokploy, or CapRover](/migrating-from-coolify-dokploy-and-caprover).
+For the importer that reads another platform over its API, see [Migrate to Levelrail](/migrate-to-levelrail).
 
 ## How it works
 

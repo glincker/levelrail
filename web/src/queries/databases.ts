@@ -5,6 +5,7 @@
 
 import {
   queryOptions,
+  type QueryClient,
   useMutation,
   useQuery,
   useQueryClient,
@@ -33,6 +34,11 @@ export const databaseKeys = {
       : ([...databaseKeys.all, 'list', { environment, project }] as const),
   detail: (name: string) => [...databaseKeys.all, 'detail', name] as const,
   status: (name: string) => [...databaseKeys.detail(name), 'status'] as const,
+}
+
+// Narrow invalidation helpers so mutations share one key shape.
+function invalidateDatabaseList(queryClient: QueryClient) {
+  void queryClient.invalidateQueries({ queryKey: databaseKeys.list() })
 }
 
 // Fetches every database from the control plane API. GET
@@ -225,7 +231,7 @@ export function useCreateDatabase() {
     mutationFn: createDatabase,
     onSuccess: (created) => {
       queryClient.setQueryData(databaseKeys.detail(created.name), created)
-      void queryClient.invalidateQueries({ queryKey: databaseKeys.list() })
+      invalidateDatabaseList(queryClient)
     },
   })
 }
@@ -270,7 +276,7 @@ export function useDeleteDatabase() {
     mutationFn: deleteDatabase,
     onSuccess: (_data, { name }) => {
       queryClient.removeQueries({ queryKey: databaseKeys.detail(name) })
-      void queryClient.invalidateQueries({ queryKey: databaseKeys.list() })
+      invalidateDatabaseList(queryClient)
     },
   })
 }
@@ -319,7 +325,7 @@ export function useStopDatabase() {
     mutationFn: stopDatabase,
     onSuccess: (updated) => {
       queryClient.setQueryData(databaseKeys.detail(updated.name), updated)
-      void queryClient.invalidateQueries({ queryKey: databaseKeys.list() })
+      invalidateDatabaseList(queryClient)
     },
   })
 }
@@ -330,7 +336,7 @@ export function useStartDatabase() {
     mutationFn: startDatabase,
     onSuccess: (updated) => {
       queryClient.setQueryData(databaseKeys.detail(updated.name), updated)
-      void queryClient.invalidateQueries({ queryKey: databaseKeys.list() })
+      invalidateDatabaseList(queryClient)
     },
   })
 }
@@ -367,7 +373,7 @@ export function useSetDatabaseNode() {
       setDatabaseNode(name, nodeId),
     onSuccess: (updated) => {
       queryClient.setQueryData(databaseKeys.detail(updated.name), updated)
-      void queryClient.invalidateQueries({ queryKey: databaseKeys.list() })
+      invalidateDatabaseList(queryClient)
     },
   })
 }
@@ -404,7 +410,7 @@ export function useSetDatabaseProject() {
       setDatabaseProject(name, projectId),
     onSuccess: (updated) => {
       queryClient.setQueryData(databaseKeys.detail(updated.name), updated)
-      void queryClient.invalidateQueries({ queryKey: databaseKeys.list() })
+      invalidateDatabaseList(queryClient)
     },
   })
 }
@@ -580,7 +586,7 @@ export function useSetDatabaseResources() {
     }) => setDatabaseResources(name, resources),
     onSuccess: (updated) => {
       queryClient.setQueryData(databaseKeys.detail(updated.name), updated)
-      void queryClient.invalidateQueries({ queryKey: databaseKeys.list() })
+      invalidateDatabaseList(queryClient)
     },
   })
 }
@@ -616,7 +622,7 @@ export function useSetDatabaseVersion() {
       setDatabaseVersion(name, version),
     onSuccess: (updated) => {
       queryClient.setQueryData(databaseKeys.detail(updated.name), updated)
-      void queryClient.invalidateQueries({ queryKey: databaseKeys.list() })
+      invalidateDatabaseList(queryClient)
     },
   })
 }

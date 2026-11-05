@@ -98,6 +98,9 @@ func TestV2WatchResumeFiltersPerObject(t *testing.T) {
 	t.Setenv(envWatchPollInterval, "20ms")
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
+	// The process boots before any app exists; seeding first would model a
+	// restart with history, where a watch from 0 correctly gets 410.
+	_ = rt.Handler()
 	seedV2Apps(t, db)
 	tok := mintTokenAs(t, rt, cookie, "viewer")
 	doc := `{"Statement":[{"Effect":"Deny","Action":["read"],"Resource":["app:secret"]}]}`

@@ -154,6 +154,7 @@ func (rt *Router) collectPosture(ctx context.Context, now time.Time) postureInpu
 	rt.collectPostureTLS(ctx, &in, now)
 	rt.collectPostureShield(ctx, &in)
 	rt.collectPostureSAML(ctx, &in)
+	rt.collectPostureOffsite(ctx, &in)
 	rt.collectPostureMicrosoft(ctx, &in)
 	if nodes, err := rt.nodes.ListNodes(ctx); err == nil {
 		in.AgentsKnown = true

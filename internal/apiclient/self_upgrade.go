@@ -25,14 +25,24 @@ type SelfUpgradePlan struct {
 	Command        string                `json:"command"`
 	Steps          []string              `json:"steps"`
 	// Schema fields are absent when the database or the target manifest is unreadable.
-	DBSchemaVersion     *int              `json:"db_schema_version,omitempty"`
-	TargetSchemaVersion *int              `json:"target_schema_version,omitempty"`
-	PendingMigrations   *int              `json:"pending_migrations,omitempty"`
-	RollbackCommands    []string          `json:"rollback_commands,omitempty"`
-	Disk                SelfUpgradeDisk   `json:"disk"`
-	DowntimeSeconds     int               `json:"downtime_seconds"`
-	Restart             string            `json:"restart_behaviour"`
-	Backup              SelfUpgradeBackup `json:"backup"`
+	DBSchemaVersion     *int `json:"db_schema_version,omitempty"`
+	TargetSchemaVersion *int `json:"target_schema_version,omitempty"`
+	PendingMigrations   *int `json:"pending_migrations,omitempty"`
+	// PendingMigrationList names the migrations in order; the source says whose list it is.
+	PendingMigrationList   []PendingMigration `json:"pending_migration_list,omitempty"`
+	PendingMigrationSource string             `json:"pending_migration_source,omitempty"`
+	PendingMigrationNote   string             `json:"pending_migration_note,omitempty"`
+	RollbackCommands       []string           `json:"rollback_commands,omitempty"`
+	Disk                   SelfUpgradeDisk    `json:"disk"`
+	DowntimeSeconds        int                `json:"downtime_seconds"`
+	Restart                string             `json:"restart_behaviour"`
+	Backup                 SelfUpgradeBackup  `json:"backup"`
+}
+
+// PendingMigration is one database migration an upgrade will run.
+type PendingMigration struct {
+	Version int    `json:"version"`
+	Name    string `json:"name"`
 }
 
 // SelfUpgradeDisk is whether the data dir has room for the upgrade.
@@ -47,6 +57,7 @@ type SelfUpgradeDisk struct {
 // SelfUpgradeBackup is the pre-upgrade backup and how to restore it.
 type SelfUpgradeBackup struct {
 	WillTake       bool   `json:"will_take"`
+	VerifyRestore  bool   `json:"verify_restore"`
 	Dir            string `json:"dir,omitempty"`
 	RestoreCommand string `json:"restore_command,omitempty"`
 }
@@ -200,15 +211,62 @@ func (c *Client) ListSelfUpgradeAttempts(ctx context.Context) (SelfUpgradeAttemp
 
 // SelfUpgradeStatus is GET /api/v1/updates/self-upgrade/status' response.
 type SelfUpgradeStatus struct {
-	CurrentVersion string              `json:"current_version"`
-	Running        *SelfUpgradeAttempt `json:"running"`
-	LastFinished   *SelfUpgradeAttempt `json:"last_finished"`
-	Verified       bool                `json:"verified"`
+	CurrentVersion string               `json:"current_version"`
+	Running        *SelfUpgradeAttempt  `json:"running"`
+	LastFinished   *SelfUpgradeAttempt  `json:"last_finished"`
+	Verified       bool                 `json:"verified"`
+	Progress       *SelfUpgradeProgress `json:"progress"`
+}
+
+// SelfUpgradeProgress is the live progress and valid buttons of the newest attempt.
+type SelfUpgradeProgress struct {
+	AttemptID       string `json:"attempt_id"`
+	Step            string `json:"step"`
+	BytesDownloaded int64  `json:"bytes_downloaded"`
+	TotalBytes      *int64 `json:"total_bytes"`
+	LastProgressAt  string `json:"last_progress_at"`
+	StartedAt       string `json:"started_at"`
+	Stalled         bool   `json:"stalled"`
+	StallSeconds    int    `json:"stall_seconds"`
+	CanCancel       bool   `json:"can_cancel"`
+	CanRetry        bool   `json:"can_retry"`
+	CancelRequested bool   `json:"cancel_requested"`
+	Message         string `json:"message,omitempty"`
+}
+
+// SelfUpgradeCancelled is the reply of the cancel route.
+type SelfUpgradeCancelled struct {
+	Status    string `json:"status"`
+	AttemptID string `json:"attempt_id"`
+}
+
+// CancelSelfUpgradeAttempt calls POST .../self-upgrade/attempts/{id}/cancel.
+func (c *Client) CancelSelfUpgradeAttempt(ctx context.Context, id string) (SelfUpgradeCancelled, error) {
+	var out SelfUpgradeCancelled
+	err := c.do(ctx, http.MethodPost, "/api/v1/updates/self-upgrade/attempts/"+url.PathEscape(id)+"/cancel", nil, &out)
+	return out, err
 }
 
 // GetSelfUpgradeStatus calls GET /api/v1/updates/self-upgrade/status.
 func (c *Client) GetSelfUpgradeStatus(ctx context.Context) (SelfUpgradeStatus, error) {
 	var out SelfUpgradeStatus
 	err := c.do(ctx, http.MethodGet, "/api/v1/updates/self-upgrade/status", nil, &out)
+	return out, err
+}
+
+// MigrationDryRun is POST /api/v1/updates/migration-dry-run's response.
+type MigrationDryRun struct {
+	OK         bool               `json:"ok"`
+	Applied    []PendingMigration `json:"applied"`
+	DurationMS int64              `json:"duration_ms"`
+	Error      string             `json:"error,omitempty"`
+	FromSchema int                `json:"from_schema"`
+	ToSchema   int                `json:"to_schema"`
+}
+
+// RunMigrationDryRun applies the running binary's pending migrations to a scratch copy of the database.
+func (c *Client) RunMigrationDryRun(ctx context.Context) (MigrationDryRun, error) {
+	var out MigrationDryRun
+	err := c.do(ctx, http.MethodPost, "/api/v1/updates/migration-dry-run", nil, &out)
 	return out, err
 }

@@ -10,6 +10,7 @@ export type ResourceSelection =
   | { kind: 'all' }
   | { kind: 'app'; name: string }
   | { kind: 'database'; name: string }
+  | { kind: 'static_site'; name: string }
   | { kind: 'environment'; id: string }
   | { kind: 'environment_kind'; value: string }
   | { kind: 'project'; id: string; environmentIds: string[] }
@@ -31,6 +32,7 @@ export const ALL_ACTIONS = '*'
 
 const APP = 'app:'
 const DATABASE = 'database:'
+const STATIC_SITE = 'static_site:'
 const ENVIRONMENT = 'environment:'
 const ENVIRONMENT_KIND = 'environment-kind:'
 
@@ -50,6 +52,8 @@ export function selectionToResources(sel: ResourceSelection): string[] {
       return [APP + sel.name]
     case 'database':
       return [DATABASE + sel.name]
+    case 'static_site':
+      return [STATIC_SITE + sel.name]
     case 'environment':
       return [ENVIRONMENT + sel.id]
     case 'environment_kind':
@@ -78,6 +82,9 @@ export function resourceToSelection(r: string): ResourceSelection {
   }
   if (!wildcard && r.startsWith(DATABASE)) {
     return { kind: 'database', name: r.slice(DATABASE.length) }
+  }
+  if (!wildcard && r.startsWith(STATIC_SITE)) {
+    return { kind: 'static_site', name: r.slice(STATIC_SITE.length) }
   }
   return { kind: 'pattern', value: r }
 }

@@ -248,6 +248,7 @@ type Syncer struct {
 
 	existing map[string]bool
 	byName   map[string]store.DesiredService
+	optOut   map[string]bool
 	mode     string
 }
 
@@ -307,6 +308,7 @@ func (s *Syncer) Sync(ctx context.Context) error {
 		s.byName[svc.Name] = svc
 	}
 	s.mode = s.effectiveMode(ctx)
+	s.optOut = s.loadOptOuts(ctx)
 	s.pruneOrphanSleep(ctx, sleeps, existing)
 	changed := false
 	for _, svc := range services {
@@ -383,7 +385,7 @@ func (s *Syncer) syncApp(ctx context.Context, app store.DesiredService, have map
 			s.Logger.InfoContext(ctx, "deploy urls: copy skipped, host memory is tight", slog.String("app", app.Name))
 			continue
 		}
-		host := s.hostFor(ctx, w.ServiceName)
+		host := s.hostFor(ctx, app.Name, w.ServiceName)
 		if s.mode == ModePublic && host == "" {
 			continue
 		}
@@ -407,8 +409,25 @@ func (s *Syncer) syncApp(ctx context.Context, app store.DesiredService, have map
 	return changed, nil
 }
 
-func (s *Syncer) hostFor(ctx context.Context, serviceName string) string {
-	if s.mode != ModePublic || s.HostFor == nil {
+// loadOptOuts reads the apps that opted out of automatic hostnames; a store
+// without the table or a failed read means nobody opted out.
+func (s *Syncer) loadOptOuts(ctx context.Context) map[string]bool {
+	src, ok := s.Store.(interface {
+		ListAppAutoHostOptOuts(ctx context.Context) (map[string]bool, error)
+	})
+	if !ok {
+		return nil
+	}
+	m, err := src.ListAppAutoHostOptOuts(ctx)
+	if err != nil {
+		return nil
+	}
+	return m
+}
+
+// hostFor is empty for an opted-out app: its copies must not order a certificate either.
+func (s *Syncer) hostFor(ctx context.Context, app, serviceName string) string {
+	if s.mode != ModePublic || s.HostFor == nil || s.optOut[app] {
 		return ""
 	}
 	return s.HostFor(ctx, serviceName)
@@ -421,8 +440,9 @@ func (s *Syncer) realign(ctx context.Context, row store.DeployURL) bool {
 	if !ok {
 		return false
 	}
-	host := s.hostFor(ctx, row.ServiceName)
-	if s.mode == ModePublic && host == "" {
+	host := s.hostFor(ctx, row.AppName, row.ServiceName)
+	// An opted-out app's copy drops its host; otherwise an empty host is a transient miss.
+	if s.mode == ModePublic && host == "" && !s.optOut[row.AppName] {
 		return false
 	}
 	if row.Host == host {

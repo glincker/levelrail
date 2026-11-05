@@ -17,6 +17,7 @@ interface Props {
   attempt: SelfUpgradeAttempt | undefined
   startedAt: number | null
   reconnecting: boolean
+  stalled?: boolean
   showReload?: boolean
 }
 
@@ -40,6 +41,7 @@ export function UpgradePipeline({
   attempt,
   startedAt,
   reconnecting,
+  stalled = false,
   showReload = true,
 }: Props) {
   const { t } = useTranslation('updates')
@@ -102,6 +104,7 @@ export function UpgradePipeline({
                 index={i}
                 selected={open?.id === p.id}
                 motion={motion}
+                stalled={stalled}
                 panelId={panelId}
                 onSelect={() => setPicked(p.id)}
               />

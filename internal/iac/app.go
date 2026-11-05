@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/placement"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -64,6 +65,68 @@ func rolloutFromSpec(r *spec.Rollout) *rolloutFields {
 	}
 	out := rolloutFields{MaxSurge: r.MaxSurge, MaxUnavailable: r.MaxUnavailable, MinAvailable: r.MinAvailable}
 	if out == (rolloutFields{}) {
+		return nil
+	}
+	return &out
+}
+
+// placementFields are the scheduling rules of an app. A nil member is left
+// alone; an empty list or empty affinity clears the stored rules.
+type placementFields struct {
+	Tolerations *[]placement.Toleration `json:"tolerations,omitempty"`
+	Affinity    *placement.Affinity     `json:"affinity,omitempty"`
+}
+
+// normTolerations spells out the default operator and sorts, so live and
+// declared lists compare equal.
+func normTolerations(in []placement.Toleration) []placement.Toleration {
+	out := make([]placement.Toleration, 0, len(in))
+	for _, t := range in {
+		if t.Operator == "" {
+			t.Operator = placement.TolerationEqual
+		}
+		out = append(out, t)
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		a, b := out[i], out[j]
+		if a.Key != b.Key {
+			return a.Key < b.Key
+		}
+		if a.Value != b.Value {
+			return a.Value < b.Value
+		}
+		return a.Effect < b.Effect
+	})
+	return out
+}
+
+func placementFromSpec(tols []placement.Toleration, aff *placement.Affinity) *placementFields {
+	if tols == nil && aff == nil {
+		return nil
+	}
+	out := &placementFields{}
+	if tols != nil {
+		n := normTolerations(tols)
+		out.Tolerations = &n
+	}
+	if aff != nil {
+		a := *aff
+		out.Affinity = &a
+	}
+	return out
+}
+
+func placementFromWire(a wireApp) *placementFields {
+	var out placementFields
+	if len(a.Tolerations) > 0 {
+		n := normTolerations(a.Tolerations)
+		out.Tolerations = &n
+	}
+	if a.Affinity != nil && !a.Affinity.Empty() {
+		v := *a.Affinity
+		out.Affinity = &v
+	}
+	if out.Tolerations == nil && out.Affinity == nil {
 		return nil
 	}
 	return &out
@@ -133,6 +196,8 @@ type appFields struct {
 	// PublishedPorts is nil when undeclared, so live ports stay unmanaged; an empty list clears them.
 	PublishedPorts *[]spec.PublishedPort `json:"publishedPorts,omitempty"`
 	Restart        string                `json:"restart,omitempty"`
+	// Placement is nil when undeclared, so live rules stay unmanaged.
+	Placement *placementFields `json:"placement,omitempty"`
 }
 
 // normPorts spells out the protocol and sorts, so live and declared lists compare equal.
@@ -314,6 +379,7 @@ func appFromWire(a wireApp, names idNames) appFields {
 	if a.Health != nil {
 		f.Restart = a.Health.Restart
 	}
+	f.Placement = placementFromWire(a)
 	for _, v := range a.Volumes {
 		n, _ := v["name"].(string)
 		path, _ := v["container_path"].(string)

@@ -2,75 +2,70 @@ import { useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ApiError } from './apiError'
 import { translateShared } from './activeLocale'
+import {
+  CODE_KIND,
+  KEEP_SERVER_TEXT,
+  RETRYABLE,
+  STATUS_KIND,
+  abilityFromMessage,
+  isSafeServerText,
+  isTimeoutError,
+  type ErrorKind,
+} from './errorCatalog'
 
 export interface ErrorText {
+  title?: string
   message: string
   action?: string
 }
 
 type Translate = (key: string, defaultValue: string) => string
 
-// Server codes and statuses that map to a fixed, actionable sentence.
-const CODE_KIND: Record<string, string> = {
-  docker_unavailable: 'docker',
-  unauthorized: 'unauthorized',
-  forbidden: 'forbidden',
-  conflict: 'conflict',
-  validation: 'validation',
-  invalid: 'validation',
-  rate_limited: 'rateLimited',
-  too_many_requests: 'rateLimited',
-  disk_full: 'diskFull',
-  insufficient_storage: 'diskFull',
-}
-
-const STATUS_KIND: Record<number, string> = {
-  401: 'unauthorized',
-  403: 'forbidden',
-  409: 'conflict',
-  422: 'validation',
-  429: 'rateLimited',
-  507: 'diskFull',
-  502: 'unreachable',
-  503: 'unreachable',
-  504: 'unreachable',
-}
-
-const GENERIC_MESSAGES = new Set(['internal error', ''])
-
-function kindOf(err: unknown): string | undefined {
+function kindOf(err: unknown, raw: string): ErrorKind | undefined {
   if (err instanceof ApiError) {
-    return (err.code && CODE_KIND[err.code]) || STATUS_KIND[err.status]
+    if (err.status === 403 && abilityFromMessage(raw)) return 'missingAbility'
+    const byCode = err.code ? CODE_KIND[err.code] : undefined
+    // A generic status code must not hide a more specific status mapping.
+    return (
+      byCode ??
+      STATUS_KIND[err.status] ??
+      (err.status >= 500 ? 'serverError' : undefined)
+    )
   }
+  if (isTimeoutError(err)) return 'timeout'
   return err instanceof TypeError ? 'network' : undefined
 }
 
 function build(err: unknown, tr: Translate): ErrorText {
-  const kind = kindOf(err)
   const raw = err instanceof Error ? err.message.trim() : ''
+  const kind = kindOf(err, raw)
+  const safe = isSafeServerText(raw)
+  const generic = tr('apiError.generic', 'The server hit an error. Try again.')
+  const retry = tr(
+    'apiError.friendly.generic.action',
+    'Try again, and quote the request ID if it keeps failing.',
+  )
   if (!kind) {
-    const generic = GENERIC_MESSAGES.has(raw.toLowerCase())
     return {
-      message: generic
-        ? tr('apiError.generic', 'Something went wrong on the server.')
-        : raw,
-      action: generic
-        ? tr(
-            'apiError.friendly.generic.action',
-            'Try again, and quote the request ID if it keeps failing.',
-          )
-        : undefined,
+      message: safe ? raw : generic,
+      action: safe ? undefined : retry,
     }
   }
   const base = `apiError.friendly.${kind}`
-  // Validation and conflict messages from the server name the exact field, so they win.
-  const keepServer =
-    (kind === 'validation' || kind === 'conflict') &&
-    raw !== '' &&
-    !GENERIC_MESSAGES.has(raw.toLowerCase())
+  const ability =
+    kind === 'missingAbility' ? abilityFromMessage(raw) : undefined
+  const fill = (text: string) =>
+    ability ? text.replace('{{ability}}', ability) : text
+  const keepServer = KEEP_SERVER_TEXT.has(kind) && safe
+  const title = tr(`${base}.title`, '') || undefined
   return {
-    message: keepServer ? raw : tr(`${base}.message`, raw),
-    action: tr(`${base}.action`, '') || undefined,
+    title,
+    message: keepServer
+      ? raw
+      : fill(tr(`${base}.message`, safe ? raw : generic)),
+    action:
+      fill(tr(`${base}.action`, '')) ||
+      (RETRYABLE.has(kind) ? retry : undefined),
   }
 }
 

@@ -1,14 +1,12 @@
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useVirtualizer } from '@tanstack/react-virtual'
-import {
-  BroomGlassIcon,
-  LayersGlassIcon,
-  ServerGlassIcon,
-} from '@thesvg/ui-react'
+import { SearchGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { MetricTile, RelativeTime, SkeletonList } from '@/components/kit'
+import { SkeletonList } from '@/components/kit'
+import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
+import { prefersReducedMotion } from '@/lib/reducedMotion'
 import { PageTemplate } from '../shell/PageTemplate'
 import { ImagesBanner } from './ImagesBanner'
 import { useIsRoot } from '../../hooks/useIsRoot'
@@ -21,169 +19,144 @@ import { DockerHealthCard } from './DockerHealthCard'
 import { DockerfileLintCard } from './DockerfileLintCard'
 import { ImageCleanupDialog } from './ImageCleanupDialog'
 import { ImageDetailSheet } from './ImageDetailSheet'
+import { ImageList } from './ImageList'
+import { ImageRemoveDialog } from './ImageRemoveDialog'
+import { ImageTiles } from './ImageTiles'
+import {
+  IMAGE_FILTERS,
+  filterImages,
+  freedBytes,
+  type ImageFilter,
+  type ImageSort,
+} from './imageFilters'
 import { SignaturePolicyCard } from './SignaturePolicyCard'
-import { imageTitle, shortId, sizeLabel, uniqueApps } from './imageFormat'
+import { sizeLabel } from './imageFormat'
 
-const VIRTUALIZE_ABOVE = 50
-const ROW_HEIGHT_PX = 56
-const GRID =
-  'grid grid-cols-[minmax(0,2fr)_6rem_minmax(0,1.2fr)_minmax(0,1.6fr)_7rem] items-center gap-3 px-4'
-
-function ImageRow({
-  image,
-  onOpen,
-}: {
-  image: ImageEntry
-  onOpen: (image: ImageEntry) => void
-}) {
-  const { t } = useTranslation('images')
-  const apps = uniqueApps(image)
-  return (
-    <button
-      type="button"
-      onClick={() => {
-        onOpen(image)
-      }}
-      className={`${GRID} h-14 w-full border-b border-border text-left text-sm hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none`}
-    >
-      <span className="min-w-0">
-        <span className="block truncate font-medium">
-          {imageTitle(image) ?? t('untagged')}
-        </span>
-        <span className="block truncate font-mono text-xs text-muted-foreground">
-          {shortId(image.id)}
-        </span>
-      </span>
-      <span className="tabular-nums">{sizeLabel(image.size_bytes)}</span>
-      <span className="truncate text-muted-foreground">
-        {apps.length > 0 ? apps.join(', ') : '-'}
-      </span>
-      <span
-        className={
-          image.protected
-            ? 'truncate text-muted-foreground'
-            : 'truncate font-medium text-tone-warning'
-        }
-      >
-        {image.protected
-          ? t('status.kept', { reason: image.protect_reason })
-          : t('status.removable')}
-      </span>
-      <span className="text-muted-foreground">
-        <RelativeTime at={image.created_at} />
-      </span>
-    </button>
-  )
+interface PageProps {
+  filter?: ImageFilter
+  onFilterChange?: (next: ImageFilter) => void
 }
 
-function ImageTable({
-  images,
-  onOpen,
-}: {
-  images: ImageEntry[]
-  onOpen: (image: ImageEntry) => void
-}) {
-  const { t } = useTranslation('images')
-  const parentRef = useRef<HTMLDivElement>(null)
-  const virtualize = images.length > VIRTUALIZE_ABOVE
-  const virtualizer = useVirtualizer({
-    count: images.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => ROW_HEIGHT_PX,
-    overscan: 8,
-  })
+const LEAVE_MS = 320
 
-  return (
-    <div
-      ref={parentRef}
-      className={`overflow-auto rounded-lg border border-border bg-card ${virtualize ? 'h-[60vh]' : ''}`}
-    >
-      <div
-        className={`${GRID} sticky top-0 z-10 border-b border-border bg-card py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase`}
-      >
-        <span>{t('columns.image')}</span>
-        <span>{t('columns.size')}</span>
-        <span>{t('columns.apps')}</span>
-        <span>{t('columns.status')}</span>
-        <span>{t('columns.created')}</span>
-      </div>
-      {virtualize ? (
-        <div
-          className="relative"
-          style={{ height: virtualizer.getTotalSize() }}
-        >
-          {virtualizer.getVirtualItems().map((v) => {
-            const image = images[v.index]
-            if (!image) return null
-            return (
-              <div
-                key={image.id}
-                className="absolute top-0 left-0 w-full"
-                style={{ transform: `translateY(${v.start}px)` }}
-              >
-                <ImageRow image={image} onOpen={onOpen} />
-              </div>
-            )
-          })}
-        </div>
-      ) : (
-        images.map((image) => (
-          <ImageRow key={image.id} image={image} onOpen={onOpen} />
-        ))
-      )}
-    </div>
-  )
-}
-
-export function ImagesPage() {
+export function ImagesPage({ filter, onFilterChange }: PageProps = {}) {
   const { t } = useTranslation('images')
   const [node, setNode] = useState('')
-  const [selected, setSelected] = useState<ImageEntry | null>(null)
-  const [cleanupOpen, setCleanupOpen] = useState(false)
+  const [detail, setDetail] = useState<ImageEntry | null>(null)
+  const [gcOpen, setGcOpen] = useState(false)
+  const [localFilter, setLocalFilter] = useState<ImageFilter>('all')
+  const [query, setQuery] = useState('')
+  const [sort, setSort] = useState<ImageSort>('size')
+  const [selected, setSelected] = useState<ReadonlySet<string>>(new Set())
+  const [leaving, setLeaving] = useState<ReadonlySet<string>>(new Set())
+  const [removeOpen, setRemoveOpen] = useState(false)
+  const [removeIds, setRemoveIds] = useState<string[]>([])
+  const [removeCleanup, setRemoveCleanup] = useState(false)
+  const [announce, setAnnounce] = useState('')
+  const anchor = useRef<number | null>(null)
+  const [snapshot, setSnapshot] = useState<ImageEntry[]>([])
   const isRoot = useIsRoot()
   const nodes = useNodeListOptional().data
   const inventory = useImageInventory(node)
   const data = inventory.data
-  const removable = data?.images.filter((i) => !i.protected) ?? []
+  const activeFilter = filter ?? localFilter
 
-  const actions = (
-    <div className="flex flex-wrap items-center gap-2">
-      {nodes && nodes.length > 0 ? (
-        <label className="flex items-center gap-2 text-sm text-muted-foreground">
-          {t('node.label')}
-          <select
-            className="h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-            value={node}
-            onChange={(e) => {
-              setNode(e.target.value)
-            }}
-          >
-            <option value="">{t('node.local')}</option>
-            {nodes.map((n) => (
-              <option key={n.id} value={n.id}>
-                {n.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      ) : null}
-      {isRoot && data ? (
-        <Button
-          disabled={removable.length === 0}
-          onClick={() => {
-            setCleanupOpen(true)
+  const current = useMemo(() => data?.images ?? [], [data])
+  // Removed rows stay mounted until their exit animation ends.
+  const source = useMemo(() => {
+    if (leaving.size === 0) return current
+    const have = new Set(current.map((i) => i.id))
+    return snapshot.filter((i) => have.has(i.id) || leaving.has(i.id))
+  }, [current, leaving, snapshot])
+
+  const visible = useMemo(
+    () => filterImages(source, activeFilter, query, sort),
+    [source, activeFilter, query, sort],
+  )
+  const selectable = visible.filter((i) => i.removable && !leaving.has(i.id))
+  const chosen = current.filter((i) => selected.has(i.id))
+  const allSelected =
+    selectable.length > 0 && selectable.every((i) => selected.has(i.id))
+  const inUseCount = current.filter((i) => i.in_use).length
+
+  const setFilter = (next: ImageFilter) => {
+    setLocalFilter(next)
+    onFilterChange?.(next)
+    anchor.current = null
+  }
+
+  const toggle = (image: ImageEntry, checked: boolean, range: boolean) => {
+    const idx = visible.findIndex((i) => i.id === image.id)
+    const from = anchor.current
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (range && from !== null && idx >= 0) {
+        const [lo, hi] = from < idx ? [from, idx] : [idx, from]
+        for (const i of visible.slice(lo, hi + 1)) {
+          if (!i.removable) continue
+          if (checked) next.add(i.id)
+          else next.delete(i.id)
+        }
+      } else if (checked) next.add(image.id)
+      else next.delete(image.id)
+      return next
+    })
+    anchor.current = idx
+  }
+
+  const toggleAll = (checked: boolean) => {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      for (const i of selectable) {
+        if (checked) next.add(i.id)
+        else next.delete(i.id)
+      }
+      return next
+    })
+  }
+
+  const openRemove = (ids: string[], cleanup: boolean) => {
+    setRemoveIds(ids)
+    setRemoveCleanup(cleanup)
+    setRemoveOpen(true)
+  }
+
+  const onRemoved = (ids: string[]) => {
+    setAnnounce(t('remove.announce', { count: ids.length }))
+    setSelected(new Set())
+    setSnapshot(current)
+    setLeaving(new Set(ids))
+    window.setTimeout(
+      () => {
+        setLeaving(new Set())
+      },
+      prefersReducedMotion() ? 0 : LEAVE_MS,
+    )
+  }
+
+  const managedRemovable = current.filter((i) => i.removable && !i.unmanaged)
+
+  const actions =
+    nodes && nodes.length > 0 ? (
+      <label className="flex items-center gap-2 text-sm text-muted-foreground">
+        {t('node.label')}
+        <select
+          className="h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+          value={node}
+          onChange={(e) => {
+            setNode(e.target.value)
+            setSelected(new Set())
           }}
         >
-          <BroomGlassIcon size="1.4em" aria-hidden="true" />
-          {removable.length === 0
-            ? t('cleanup.nothing')
-            : t('cleanup.button', {
-                size: sizeLabel(data.totals.reclaimable_bytes),
-              })}
-        </Button>
-      ) : null}
-    </div>
-  )
+          <option value="">{t('node.local')}</option>
+          {nodes.map((n) => (
+            <option key={n.id} value={n.id}>
+              {n.name}
+            </option>
+          ))}
+        </select>
+      </label>
+    ) : null
 
   return (
     <PageTemplate
@@ -201,7 +174,7 @@ export function ImagesPage() {
         <DockerHealthCard
           canFix={isRoot}
           onFreeSpace={() => {
-            setCleanupOpen(true)
+            setGcOpen(true)
           }}
         />
         {inventory.isPending ? <SkeletonList rows={6} /> : null}
@@ -226,51 +199,177 @@ export function ImagesPage() {
 
         {data ? (
           <>
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              <MetricTile
-                label={t('tiles.count')}
-                value={data.totals.count}
-                icon={<LayersGlassIcon size="1.4em" />}
-              />
-              <MetricTile
-                label={t('tiles.size')}
-                value={sizeLabel(data.totals.size_bytes)}
-                icon={<ServerGlassIcon size="1.4em" />}
-              />
-              <MetricTile
-                label={t('tiles.reclaimable')}
-                value={sizeLabel(data.totals.reclaimable_bytes)}
-                tone={data.totals.reclaimable_bytes > 0 ? 'warning' : 'neutral'}
-              />
-              <MetricTile
-                label={t('tiles.protected')}
-                value={data.totals.protected_count}
-                tone="success"
-              />
-            </div>
+            <ImageTiles
+              totals={data.totals}
+              inUseCount={inUseCount}
+              canRemove={isRoot}
+              onReview={() => {
+                openRemove(
+                  managedRemovable.map((i) => i.id),
+                  true,
+                )
+              }}
+            />
+            {!isRoot ? (
+              <p className="text-sm text-muted-foreground">{t('rootOnly')}</p>
+            ) : null}
             <SignaturePolicyCard mode={data.signatures.mode} />
             {data.images.length === 0 ? null : (
-              <ImageTable images={data.images} onOpen={setSelected} />
+              <>
+                <div className="flex flex-wrap items-center gap-2">
+                  <div
+                    role="group"
+                    aria-label={t('filters.label')}
+                    className="flex flex-wrap gap-1.5"
+                  >
+                    {IMAGE_FILTERS.map((f) => (
+                      <Button
+                        key={f}
+                        size="sm"
+                        variant={activeFilter === f ? 'default' : 'outline'}
+                        aria-pressed={activeFilter === f}
+                        onClick={() => {
+                          setFilter(f)
+                        }}
+                      >
+                        {t(`filters.${f}`)}
+                      </Button>
+                    ))}
+                  </div>
+                  <div className="relative min-w-40 flex-1 sm:max-w-xs">
+                    <SearchGlassIcon
+                      size="1.2em"
+                      aria-hidden="true"
+                      className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-muted-foreground"
+                    />
+                    <Input
+                      type="search"
+                      value={query}
+                      aria-label={t('filters.search')}
+                      placeholder={t('filters.search')}
+                      className="h-8 pl-8"
+                      onChange={(e) => {
+                        setQuery(e.target.value)
+                      }}
+                    />
+                  </div>
+                  <label className="ml-auto flex items-center gap-2 text-sm text-muted-foreground">
+                    {t('filters.sort')}
+                    <select
+                      className="h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                      value={sort}
+                      onChange={(e) => {
+                        setSort(e.target.value === 'age' ? 'age' : 'size')
+                      }}
+                    >
+                      <option value="size">{t('filters.sortSize')}</option>
+                      <option value="age">{t('filters.sortAge')}</option>
+                    </select>
+                  </label>
+                </div>
+                {visible.length === 0 ? (
+                  <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+                    {t('filters.empty')}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setFilter('all')
+                        setQuery('')
+                      }}
+                    >
+                      {t('filters.reset')}
+                    </Button>
+                  </div>
+                ) : (
+                  <ImageList
+                    images={visible}
+                    selected={selected}
+                    leaving={leaving}
+                    canRemove={isRoot}
+                    allSelected={allSelected}
+                    someSelected={selected.size > 0}
+                    onToggleAll={toggleAll}
+                    onToggle={toggle}
+                    onOpen={setDetail}
+                    onRemove={(image) => {
+                      openRemove([image.id], false)
+                    }}
+                  />
+                )}
+              </>
             )}
+            {isRoot && chosen.length > 0 ? (
+              <div
+                role="region"
+                aria-label={t('bar.label')}
+                className={cn(
+                  'sticky bottom-4 z-20 flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card p-3 shadow-raised',
+                  'motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4',
+                )}
+              >
+                <span className="text-sm font-medium">
+                  {t('bar.summary', {
+                    count: chosen.length,
+                    size: sizeLabel(freedBytes(chosen)),
+                  })}
+                </span>
+                <div className="ml-auto flex w-full gap-2 sm:w-auto">
+                  <Button
+                    variant="outline"
+                    className="flex-1 sm:flex-none"
+                    onClick={() => {
+                      setSelected(new Set())
+                    }}
+                  >
+                    <XGlassIcon size="1.4em" aria-hidden="true" />
+                    {t('bar.clear')}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="flex-1 sm:flex-none"
+                    onClick={() => {
+                      openRemove(
+                        chosen.map((i) => i.id),
+                        false,
+                      )
+                    }}
+                  >
+                    {t('bar.remove')}
+                  </Button>
+                </div>
+              </div>
+            ) : null}
             <ImageCleanupDialog
               node={node}
-              open={cleanupOpen}
-              onOpenChange={setCleanupOpen}
-              candidates={removable}
+              open={gcOpen}
+              onOpenChange={setGcOpen}
+              candidates={managedRemovable}
               keepPerApp={data.retention.keep_per_app}
               reclaimBytes={data.totals.reclaimable_bytes}
             />
+            <ImageRemoveDialog
+              node={node}
+              open={removeOpen}
+              onOpenChange={setRemoveOpen}
+              ids={removeIds}
+              allowUnmanaged={removeCleanup}
+              onRemoved={onRemoved}
+            />
           </>
         ) : null}
+        <p role="status" aria-live="polite" className="sr-only">
+          {announce}
+        </p>
       </div>
       <div className="mt-4">
         <DockerfileLintCard />
       </div>
       <ImageDetailSheet
         node={node}
-        image={selected}
+        image={detail}
         onClose={() => {
-          setSelected(null)
+          setDetail(null)
         }}
       />
     </PageTemplate>

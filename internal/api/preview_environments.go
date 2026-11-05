@@ -271,7 +271,7 @@ type previewEnvVars struct {
 	Policy store.PreviewAppSettings
 }
 
-// injectPreviewEnv sets PREVIEW_PR_NUMBER and PREVIEW_BRANCH, plus
+// injectPreviewEnv sets PREVIEW_PR_NUMBER, PR_NUMBER and PREVIEW_BRANCH, plus
 // PREVIEW_URL when domain is known, on a copy of env.
 func injectPreviewEnv(env map[string]spec.EnvVar, vars previewEnvVars, previewURL string) map[string]spec.EnvVar {
 	out := make(map[string]spec.EnvVar, len(env)+3)
@@ -280,6 +280,10 @@ func injectPreviewEnv(env map[string]spec.EnvVar, vars previewEnvVars, previewUR
 	}
 	if vars.PRNumber > 0 {
 		out["PREVIEW_PR_NUMBER"] = spec.EnvVar{Value: strconv.Itoa(vars.PRNumber)}
+		// Short alias for compose apps; an app that already defines PR_NUMBER keeps its own.
+		if _, taken := out["PR_NUMBER"]; !taken {
+			out["PR_NUMBER"] = spec.EnvVar{Value: strconv.Itoa(vars.PRNumber)}
+		}
 	}
 	out["PREVIEW_BRANCH"] = spec.EnvVar{Value: vars.Branch}
 	if previewURL != "" {

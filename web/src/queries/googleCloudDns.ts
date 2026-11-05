@@ -8,6 +8,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import type { DnsTokenVerification } from './dnsVerification'
 
 const PATH = '/api/v1/settings/google-cloud-dns'
 
@@ -20,6 +21,7 @@ export interface GoogleCloudDnsSettings {
   project_id?: string
   client_email?: string
   has_key: boolean
+  verification?: DnsTokenVerification
 }
 
 export interface UpdateGoogleCloudDnsRequest {

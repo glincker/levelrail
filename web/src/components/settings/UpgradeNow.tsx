@@ -66,7 +66,22 @@ function findFinished(
 // fixes while the preflight fails, then Upgrade now and Schedule upgrade,
 // then live progress that reloads the page once the new release answers.
 // An edge target is a container image, so it shows pull guidance instead.
-export function UpgradeNow() {
+export interface UpgradeNowProps {
+  // The page action bar owns Update and its confirm dialog when set.
+  externalActions?: boolean
+  skipBackup?: boolean
+  onSkipBackupChange?: (v: boolean) => void
+  onRequestUpgrade?: () => void
+  stalled?: boolean
+}
+
+export function UpgradeNow({
+  externalActions = false,
+  skipBackup: skipBackupProp,
+  onSkipBackupChange,
+  onRequestUpgrade,
+  stalled = false,
+}: UpgradeNowProps = {}) {
   const { t } = useTranslation('updates')
   const preflight = useQuery(preflightQueryOptions())
   const plan = useQuery(selfUpgradePlanQueryOptions(''))
@@ -77,7 +92,9 @@ export function UpgradeNow() {
   const [startedAt, setStartedAt] = useState<number | null>(null)
   const [dismissed, setDismissed] = useState('')
   const [rechecking, setRechecking] = useState(false)
-  const [skipBackup, setSkipBackup] = useState(false)
+  const [localSkip, setLocalSkip] = useState(false)
+  const skipBackup = skipBackupProp ?? localSkip
+  const setSkipBackup = onSkipBackupChange ?? setLocalSkip
   const queryClient = useQueryClient()
 
   const attempts = useQuery({
@@ -192,6 +209,7 @@ export function UpgradeNow() {
         attempt={running}
         startedAt={startedAt}
         reconnecting={reconnecting}
+        stalled={stalled}
         releaseUrl={pre.release_url}
       />
     )
@@ -246,7 +264,8 @@ export function UpgradeNow() {
             markSeen('panel', recent.id)
             setDismissed(recent.id)
             setStartedAt(null)
-            setConfirmOpen(true)
+            if (externalActions) onRequestUpgrade?.()
+            else setConfirmOpen(true)
           }}
         />
       ) : null}
@@ -327,14 +346,16 @@ export function UpgradeNow() {
         </div>
       ) : null}
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-        <Button
-          type="button"
-          className="w-full sm:w-auto"
-          disabled={pre.blocked || !canApply || start.isPending}
-          onClick={() => setConfirmOpen(true)}
-        >
-          {t('upgradeNow.button', { version: target })}
-        </Button>
+        {externalActions ? null : (
+          <Button
+            type="button"
+            className="w-full sm:w-auto"
+            disabled={pre.blocked || !canApply || start.isPending}
+            onClick={() => setConfirmOpen(true)}
+          >
+            {t('upgradeNow.button', { version: target })}
+          </Button>
+        )}
         <Button
           type="button"
           variant="outline"
@@ -353,39 +374,41 @@ export function UpgradeNow() {
       </div>
       {planData ? (
         <>
-          <UpgradeConfirmDialog
-            open={confirmOpen}
-            onOpenChange={setConfirmOpen}
-            plan={planData}
-            pending={start.isPending}
-            error={start.isError ? start.error.message : undefined}
-            onConfirm={(ack) =>
-              start.mutate(
-                {
-                  target: planData.target_version,
-                  ack,
-                  ...(skipBackup ? { skip_backup: true } : {}),
-                },
-                {
-                  onSuccess: () => {
-                    setConfirmOpen(false)
-                    setStartedAt(Date.now())
+          {externalActions ? null : (
+            <UpgradeConfirmDialog
+              open={confirmOpen}
+              onOpenChange={setConfirmOpen}
+              plan={planData}
+              pending={start.isPending}
+              error={start.isError ? start.error.message : undefined}
+              onConfirm={(ack) =>
+                start.mutate(
+                  {
+                    target: planData.target_version,
+                    ack,
+                    ...(skipBackup ? { skip_backup: true } : {}),
                   },
-                  onError: (err) => {
-                    if (!(err instanceof UpgradeRunningError)) return
-                    setConfirmOpen(false)
-                    toast.add({
-                      title: t('result.running', {
-                        to: target,
-                        id: err.attemptId,
-                      }),
-                      type: 'info',
-                    })
+                  {
+                    onSuccess: () => {
+                      setConfirmOpen(false)
+                      setStartedAt(Date.now())
+                    },
+                    onError: (err) => {
+                      if (!(err instanceof UpgradeRunningError)) return
+                      setConfirmOpen(false)
+                      toast.add({
+                        title: t('result.running', {
+                          to: target,
+                          id: err.attemptId,
+                        }),
+                        type: 'info',
+                      })
+                    },
                   },
-                },
-              )
-            }
-          />
+                )
+              }
+            />
+          )}
           <ScheduleUpgradeDialog
             open={scheduleOpen}
             onOpenChange={setScheduleOpen}

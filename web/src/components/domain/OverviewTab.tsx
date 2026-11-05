@@ -12,6 +12,7 @@ import type { DomainPolicies } from '../../queries/domainPolicyTypes'
 import type { DomainFix } from './domainSearch'
 import { FixTarget } from './FixTarget'
 import { DomainCutoverCard } from '../domains/DomainCutoverCard'
+import { DomainRollbackStrip } from '../domains/DomainRollbackStrip'
 import { PreviewPanel, Section } from './PolicyShared'
 
 const SECTIONS = ['redirects', 'geo', 'headers', 'cache', 'forwarders'] as const
@@ -85,6 +86,7 @@ export function OverviewTab({
         <FixTarget active={fix === 'dns'}>
           <DomainDnsCheck appName={app} domain={domain} />
         </FixTarget>
+        <DomainRollbackStrip domain={domain} />
       </Section>
       <Section title={t('cutover.title', { ns: 'domains' })}>
         <DomainCutoverCard domain={domain} />

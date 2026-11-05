@@ -101,20 +101,25 @@ func (rt *Router) doctorDefs() []doctorCheckDef {
 		many("exposure", doctorGroupNetwork, rt.doctorCheckExposure),
 		many("cloud", doctorGroupNetwork, rt.doctorCheckCloud),
 		one("certificates", doctorGroupNetwork, rt.doctorCheckCertExpiry),
+		one("certificate_budget", doctorGroupNetwork, rt.doctorCheckCertBudget),
+		one("reachability", doctorGroupNetwork, rt.doctorCheckReachability),
 
 		one("master_key_rotation", doctorGroupSecurity, rt.doctorCheckMasterKeyRotation),
 		one("secret_binding", doctorGroupSecurity, rt.doctorCheckSecretBinding),
 		one("stale_secrets", doctorGroupSecurity, rt.doctorCheckStaleSecrets),
 		one("notification_channel_secrets", doctorGroupSecurity, rt.doctorCheckNotificationChannelSecrets),
+		one("notify_reachable", doctorGroupSecurity, rt.doctorCheckNotifyReachable),
 		one("secret_reveal_policy", doctorGroupSecurity, func(context.Context) doctorCheckResource { return doctorCheckSecretReveal() }),
 		one("legacy_tokens", doctorGroupSecurity, rt.doctorCheckLegacyTokens),
 		one("git_connections", doctorGroupSecurity, rt.doctorCheckGitConnections),
+		one("token_hygiene", doctorGroupSecurity, rt.doctorCheckTokenHygiene),
 		one("signature_pin", doctorGroupSecurity, func(context.Context) doctorCheckResource { return rt.doctorCheckReleaseSignature() }),
 
 		one("control_plane_backup", doctorGroupBackups, func(context.Context) doctorCheckResource { return rt.doctorCheckControlPlaneBackup() }),
 		one("control_plane_dr", doctorGroupBackups, rt.doctorCheckControlPlaneDR),
 		one("backup_freshness", doctorGroupBackups, rt.doctorCheckBackupFreshness),
 		one("backup_drill", doctorGroupBackups, rt.doctorCheckBackupDrill),
+		one("schedule_never_runs", doctorGroupBackups, rt.doctorCheckScheduleNeverRuns),
 
 		many("nodes", doctorGroupNodes, rt.doctorCheckNodes),
 		many("mesh", doctorGroupNodes, rt.doctorCheckMesh),
@@ -280,8 +285,14 @@ func (rt *Router) handleRunDoctorCheck(w http.ResponseWriter, r *http.Request) {
 		if d.ID != id {
 			continue
 		}
+		filter, err := rt.doctorFilterFor(r)
+		if err != nil {
+			rt.internalError(w, "api: doctor check: filter", err)
+			return
+		}
 		res := runDoctorDef(r.Context(), d, rt.logger)
 		rt.attachDoctorFixes(r.Context(), res)
+		res = filter.keep(res)
 		writeJSON(w, http.StatusOK, map[string]any{"id": d.ID, "checks": res})
 		return
 	}
@@ -314,10 +325,23 @@ func (rt *Router) handleStreamDoctor(w http.ResponseWriter, r *http.Request) {
 		send(doctorStreamEvent{Type: "done", OK: &demo.OK})
 		return
 	}
+	filter, ferr := rt.doctorFilterFor(r)
+	if ferr != nil {
+		rt.logger.Error("api: doctor stream: filter", slog.String("error", ferr.Error()))
+		okAll := false
+		send(doctorStreamEvent{Type: "done", OK: &okAll})
+		return
+	}
 	defs := rt.doctorDefs()
+	// Total counts registered checks, which name nothing; hidden results are
+	// dropped from each event below.
 	send(doctorStreamEvent{Type: "start", Total: len(defs)})
 	var all []doctorCheckResource
+	// The overall flag names nothing, so it covers hidden checks too, as in GET.
+	okAll := true
 	rt.runDoctorDefs(r.Context(), defs, func(d doctorCheckDef, res []doctorCheckResource) {
+		okAll = okAll && doctorAllOK(res)
+		res = filter.keep(res)
 		all = append(all, res...)
 		send(doctorStreamEvent{Type: "check", ID: d.ID, Checks: res})
 	})
@@ -329,7 +353,6 @@ func (rt *Router) handleStreamDoctor(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	send(doctorStreamEvent{Type: "fixes", Checks: fixed})
-	okAll := doctorAllOK(all)
 	send(doctorStreamEvent{Type: "done", OK: &okAll})
 }
 

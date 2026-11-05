@@ -17,6 +17,9 @@ type ImageAutoUpdate struct {
 	LastResult    string
 	// WebhookHash is the hash of the registry webhook token, empty when none is set.
 	WebhookHash string
+	// WindowCron and WindowMinutes bound when a found update may apply; empty cron means any time.
+	WindowCron    string
+	WindowMinutes int
 }
 
 // SetImageAutoUpdate enables or disables auto-update for serviceName.
@@ -37,8 +40,8 @@ func (db *DB) GetImageAutoUpdate(ctx context.Context, serviceName string) (Image
 	var enabled int
 	var checked sql.NullString
 	err := db.QueryRowContext(ctx, `
-		SELECT enabled, last_checked_at, last_result, webhook_hash FROM image_auto_updates WHERE service_name = ?
-	`, serviceName).Scan(&enabled, &checked, &u.LastResult, &u.WebhookHash)
+		SELECT enabled, last_checked_at, last_result, webhook_hash, window_cron, window_minutes FROM image_auto_updates WHERE service_name = ?
+	`, serviceName).Scan(&enabled, &checked, &u.LastResult, &u.WebhookHash, &u.WindowCron, &u.WindowMinutes)
 	if errors.Is(err, sql.ErrNoRows) {
 		return u, nil
 	}
@@ -101,6 +104,18 @@ func (db *DB) SetImageAutoUpdateWebhookHash(ctx context.Context, serviceName, ha
 func (db *DB) DeleteImageAutoUpdatesForApp(ctx context.Context, serviceName string) error {
 	if _, err := db.ExecContext(ctx, `DELETE FROM image_auto_updates WHERE service_name = ?`, serviceName); err != nil {
 		return fmt.Errorf("store: delete image auto update for app: %w", err)
+	}
+	return nil
+}
+
+// SetImageAutoUpdateWindow stores serviceName's apply window; an empty cron clears it.
+func (db *DB) SetImageAutoUpdateWindow(ctx context.Context, serviceName, cron string, minutes int) error {
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO image_auto_updates (service_name, enabled, window_cron, window_minutes, updated_at) VALUES (?, 0, ?, ?, ?)
+		ON CONFLICT(service_name) DO UPDATE SET window_cron = excluded.window_cron, window_minutes = excluded.window_minutes, updated_at = excluded.updated_at
+	`, serviceName, cron, minutes, time.Now().UTC().Format(time.RFC3339))
+	if err != nil {
+		return fmt.Errorf("store: set image auto-update window for %q: %w", serviceName, err)
 	}
 	return nil
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/kit/cronexpr"
+	"github.com/GLINCKER/levelrail/kit/ticker"
 )
 
 // ConfigUpdate is the operator-editable configuration.
@@ -35,7 +36,7 @@ func (s *Service) UpdateConfig(ctx context.Context, u ConfigUpdate) error {
 		if expr == "" {
 			continue
 		}
-		if _, err := cronexpr.Parse(expr); err != nil {
+		if err := cronexpr.Validate(expr, time.UTC, time.Now()); err != nil {
 			return fmt.Errorf("%w: cron expression %q: %w", ErrInvalid, expr, err)
 		}
 	}
@@ -79,9 +80,10 @@ func (s *Service) UpdateConfig(ctx context.Context, u ConfigUpdate) error {
 // Run checks for due backups and drills every Opts.Tick until ctx is done.
 func (s *Service) Run(ctx context.Context) {
 	s.CleanTemp()
-	loop := footprint.Track("control plane backup", s.Opts.Tick)
+	tick := ticker.Safe(s.Opts.Tick, ticker.DefaultInterval)
+	loop := footprint.Track("control plane backup", tick)
 	defer loop.Active()()
-	t := time.NewTicker(s.Opts.Tick)
+	t := time.NewTicker(tick)
 	defer t.Stop()
 	for {
 		select {
@@ -139,7 +141,7 @@ func (s *Service) backupDue(cfg store.CPDRSettings, eff Effective, now time.Time
 		return false, time.Time{}
 	}
 	next := sched.Next(cfg.LastBackupAt)
-	return !now.Before(next), next
+	return cronexpr.Due(next, now), next
 }
 
 func (s *Service) drillDue(cfg store.CPDRSettings, eff Effective, now time.Time) bool {
@@ -156,5 +158,5 @@ func (s *Service) drillDue(cfg store.CPDRSettings, eff Effective, now time.Time)
 	if err != nil {
 		return false
 	}
-	return !now.Before(sched.Next(cfg.LastDrillAt))
+	return cronexpr.Due(sched.Next(cfg.LastDrillAt), now)
 }

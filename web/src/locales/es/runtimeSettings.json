@@ -38,6 +38,10 @@
       "title": "Red de build",
       "description": "Red para los pasos RUN de un build: open, none o block-private (reservado: los builds fallan hasta poder aplicarlo). Se lee en cada build."
     },
+    "placementScoreMode": {
+      "title": "Modo de puntuación de ubicación",
+      "description": "Cómo eligen nodo las nuevas cargas: spread deja libre el mayor margen en cada nodo, binpack llena el nodo más lleno que aún cabe. Se lee en cada ubicación."
+    },
     "mcpDefaultTokenScope": {
       "title": "Alcance de token por defecto",
       "description": "Alcance de un token nuevo creado sin habilidades explícitas: read_only o read_write. Los tokens existentes conservan su alcance."
@@ -315,6 +319,7 @@
     "count": "{{shown}} de {{total}}",
     "jumpLabel": "Ir a una categoría",
     "noMatchTitle": "Ningún ajuste coincide",
-    "noMatchBody": "Prueba con una búsqueda más corta o quita los filtros para ver todos los ajustes."
+    "noMatchBody": "Prueba con una búsqueda más corta o quita los filtros para ver todos los ajustes.",
+    "allCategories": "Todas las categorías"
   }
 }

@@ -145,8 +145,16 @@ func (db *DB) SCIMTokenMetas(ctx context.Context) (map[string]SCIMTokenMeta, err
 	return out, rows.Err()
 }
 
+type skipDefaultTeamKey struct{}
+
+// WithoutDefaultTeam marks a provisioning context so the new user is not put
+// in the default team; the signature of CreateProvisionedUser stays stable.
+func WithoutDefaultTeam(ctx context.Context) context.Context {
+	return context.WithValue(ctx, skipDefaultTeamKey{}, true)
+}
+
 // CreateProvisionedUser creates a passwordless user with roleID and puts it
-// in the default team, all in one transaction.
+// in the default team (unless the context says otherwise), in one transaction.
 func (db *DB) CreateProvisionedUser(ctx context.Context, u User, roleID string) error {
 	role, err := db.GetRole(ctx, roleID)
 	if err != nil {
@@ -169,9 +177,11 @@ func (db *DB) CreateProvisionedUser(ctx context.Context, u User, roleID string) 
 	if err != nil {
 		return fmt.Errorf("store: provision user %q: %w", u.ID, err)
 	}
-	if _, err := tx.ExecContext(ctx, `INSERT INTO team_members (team_id, user_id, role, created_at) VALUES (?, ?, ?, ?)`,
-		DefaultTeamID, u.ID, DefaultTeamRole(role.Abilities), formatTime(u.CreatedAt)); err != nil {
-		return fmt.Errorf("store: provision user %q: join team: %w", u.ID, err)
+	if skip, _ := ctx.Value(skipDefaultTeamKey{}).(bool); !skip {
+		if _, err := tx.ExecContext(ctx, `INSERT INTO team_members (team_id, user_id, role, created_at) VALUES (?, ?, ?, ?)`,
+			DefaultTeamID, u.ID, DefaultTeamRole(role.Abilities), formatTime(u.CreatedAt)); err != nil {
+			return fmt.Errorf("store: provision user %q: join team: %w", u.ID, err)
+		}
 	}
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("store: provision user %q: %w", u.ID, err)

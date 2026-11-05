@@ -61,6 +61,7 @@ func iamCatalog() iamCatalogResponse {
 			{"all", "*"},
 			{resourceKindApp, resourcePrefixApp + "NAME"},
 			{resourceKindDatabase, resourcePrefixDatabase + "NAME"},
+			{"static_site", resourcePrefixStaticSite + "NAME"},
 			{"environment", resourcePrefixEnvironment + "ID"},
 			{"environment_kind", resourcePrefixEnvironmentKind + "KIND"},
 		},

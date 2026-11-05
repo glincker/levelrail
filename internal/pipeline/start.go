@@ -12,6 +12,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/kit/cronexpr"
+	"github.com/GLINCKER/levelrail/kit/ticker"
 )
 
 // StartOptions describes one run to start.
@@ -157,11 +158,11 @@ func (s *Scheduler) Tick(ctx context.Context) error {
 				continue
 			}
 			next, known := s.next[key]
-			if !known {
+			if !known || next.IsZero() {
 				s.next[key] = sched.Next(now)
 				continue
 			}
-			if now.Before(next) {
+			if !cronexpr.Due(next, now) {
 				continue
 			}
 			s.next[key] = sched.Next(now)
@@ -180,6 +181,7 @@ func (s *Scheduler) Tick(ctx context.Context) error {
 
 // Run ticks every interval until ctx is done.
 func (s *Scheduler) Run(ctx context.Context, interval time.Duration) error {
+	interval = ticker.Safe(interval, ticker.DefaultInterval)
 	t := time.NewTicker(interval)
 	defer t.Stop()
 	for {

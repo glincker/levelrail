@@ -10,9 +10,11 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync/atomic"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -26,7 +28,7 @@ const (
 
 // DefaultPoolerImage is used when EnvPoolerImage is unset. It is pinned to an
 // exact version and speaks the env contract poolerEnv writes.
-const DefaultPoolerImage = "edoburu/pgbouncer:v1.26.1-p0"
+const DefaultPoolerImage = runtimesettings.DefaultPoolerImage
 
 // PoolerPort is where the pooler listens. It shares the database's network
 // namespace, so it must not collide with Postgres' own 5432.
@@ -45,8 +47,19 @@ const (
 // PoolerContainerName is the pooler child container for dbName.
 func PoolerContainerName(dbName string) string { return containerName(dbName) + "-pooler" }
 
-// PoolerImage is the env override, else the pinned default.
+var poolerImageSource atomic.Pointer[func() string]
+
+// SetPoolerImageSource wires the live runtime setting so a saved image applies
+// without a restart. Env and the pinned default remain the fallback.
+func SetPoolerImageSource(f func() string) { poolerImageSource.Store(&f) }
+
+// PoolerImage is the runtime setting, else the env override, else the pinned default.
 func PoolerImage() string {
+	if f := poolerImageSource.Load(); f != nil {
+		if v := strings.TrimSpace((*f)()); v != "" {
+			return v
+		}
+	}
 	if v := strings.TrimSpace(os.Getenv(EnvPoolerImage)); v != "" {
 		return v
 	}
@@ -141,7 +154,7 @@ func (c *Controller) withPooler(ctx context.Context, desired *store.DesiredDatab
 func (c *Controller) reconcilePooler(ctx context.Context, desired *store.DesiredDatabase) reconcile.Condition {
 	image := PoolerImage()
 	if image == "" {
-		return poolerCondition(reconcile.ConditionFalse, "PoolerImageNotConfigured", "set "+EnvPoolerImage+" to a pinned pooler image tag or digest")
+		return poolerCondition(reconcile.ConditionFalse, "PoolerImageNotConfigured", "set the databases.pooler_image setting to a pinned tag or digest")
 	}
 	if c.postgresCreds == nil {
 		return poolerCondition(reconcile.ConditionFalse, "CredentialsNotConfigured", "the database has no credentials yet")

@@ -107,6 +107,7 @@ var tenantSessionOnly = map[string]string{
 	"GET /api/v1/settings/push-subscriptions":                  "lists only the caller's own subscriptions",
 	"GET /api/v1/settings/push-subscriptions/vapid-public-key": "public key, no data",
 	"DELETE /api/v1/settings/push-subscriptions/{id}":          "deletes only the caller's own subscription",
+	"GET /api/v1/tokens/unused":                                "lists idle tokens owned by the caller only, metadata without secrets",
 	"POST /api/v1/attention/dismiss":                           "stores the caller's own dismissal of an item it can already see",
 }
 

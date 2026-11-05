@@ -34,6 +34,9 @@ func experimentalFeatureFor(args []string) (experimental.Feature, bool) {
 	if args[0] == "export" && len(args) > 1 && (args[1] == "destinations" || args[1] == "audit") {
 		return "", false
 	}
+	if args[0] == "environments" && len(args) > 1 && args[1] == "set-default" {
+		return "", false
+	}
 	if f, ok := experimentalCommands[args[0]]; ok {
 		return f, true
 	}

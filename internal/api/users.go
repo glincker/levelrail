@@ -146,8 +146,8 @@ func (rt *Router) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "email and password are required")
 		return
 	}
-	if len(req.Password) < minPasswordLength {
-		writeError(w, http.StatusBadRequest, "password must be at least 8 characters")
+	if msg := rt.passwordProblem(r.Context(), "password", req.Password); msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
 		return
 	}
 	if req.RoleID != "" && !requireAccessRolesFeature(w) {

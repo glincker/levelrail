@@ -47,16 +47,18 @@ func (e *FrozenError) Is(target error) bool { return target == ErrFrozen }
 
 // ValidateFreezeWindow checks a window before it is stored.
 func ValidateFreezeWindow(w store.DeployFreezeWindow) error {
-	if _, err := cronexpr.Parse(w.Cron); err != nil {
+	loc := time.UTC
+	if w.Timezone != "" {
+		var err error
+		if loc, err = time.LoadLocation(w.Timezone); err != nil {
+			return fmt.Errorf("timezone: %w", err)
+		}
+	}
+	if err := cronexpr.Validate(w.Cron, loc, time.Now()); err != nil {
 		return fmt.Errorf("cron: %w", err)
 	}
 	if w.Duration < time.Minute || w.Duration > MaxFreezeDuration {
 		return fmt.Errorf("duration must be between 1m and %s", MaxFreezeDuration)
-	}
-	if w.Timezone != "" {
-		if _, err := time.LoadLocation(w.Timezone); err != nil {
-			return fmt.Errorf("timezone: %w", err)
-		}
 	}
 	return nil
 }

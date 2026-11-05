@@ -32,6 +32,7 @@ func (rt *Router) registerPublicRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/system/doctor/checks", rt.requireAbility(AbilityRead, rt.handleListDoctorChecks))
 	mux.HandleFunc("GET /api/v1/system/doctor/stream", rt.requireAbility(AbilityRead, rt.withStreamReauth(doctorStreamResource, rt.handleStreamDoctor)))
 	mux.HandleFunc("POST /api/v1/system/doctor/checks/{id}/run", rt.requireAbility(AbilityRead, rt.handleRunDoctorCheck))
+	mux.HandleFunc("GET /api/v1/doctor/explain", rt.requireAbility(AbilityRead, rt.handleDoctorExplain))
 	mux.HandleFunc("GET /api/v1/system/reverse-proxy", rt.requireAbility(AbilityRead, rt.handleReverseProxyGuide))
 	// Every container on this node, Levelrail-managed or not (containers.go's
 	// own doc comment on why a Managed one stays read-only here),
@@ -117,6 +118,7 @@ func (rt *Router) registerPublicRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/updates/restore-points/{id}/restore", rt.requireAbility(AbilityRoot, rt.handleRestorePointRestore))
 	mux.HandleFunc("POST /api/v1/updates/self-upgrade/attempts/{id}/fix", rt.requireAbility(AbilityWrite, rt.handleSelfUpgradeAttemptFix))
 	mux.HandleFunc("POST /api/v1/updates/self-upgrade/attempts/{id}/retry", rt.requireAbility(AbilityWrite, rt.handleSelfUpgradeAttemptRetry))
+	mux.HandleFunc("POST /api/v1/updates/self-upgrade/attempts/{id}/cancel", rt.requireAbility(AbilityWrite, rt.handleSelfUpgradeAttemptCancel))
 	mux.HandleFunc("POST /api/v1/updates/self-upgrade/attempts/{id}/rollback", rt.requireAbility(AbilityWrite, rt.handleSelfUpgradeAttemptRollback))
 	mux.HandleFunc("POST /api/v1/updates/rollback", rt.requireAbility(AbilityRoot, rt.handleRollbackStart))
 	mux.HandleFunc("GET /api/v1/updates/schedule", rt.requireAbility(AbilityRead, rt.handleGetUpgradeSchedule))
@@ -124,6 +126,7 @@ func (rt *Router) registerPublicRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/updates/schedule", rt.requireAbility(AbilityRoot, rt.handleCancelUpgradeSchedule))
 	mux.HandleFunc("GET /api/v1/updates/auto", rt.requireAbility(AbilityRoot, rt.handleGetUpgradePolicy))
 	mux.HandleFunc("PUT /api/v1/updates/auto", rt.requireAbility(AbilityRoot, rt.handleUpdateUpgradePolicy))
+	mux.HandleFunc("POST /api/v1/updates/migration-dry-run", rt.requireAbility(AbilityWrite, rt.handleMigrationDryRun))
 	mux.HandleFunc("POST /api/v1/updates/backup-now", rt.requireAbility(AbilityRoot, rt.handleUpgradeBackupNow))
 	// Channel/auto-update settings are AbilityRoot on both verbs: see
 	// handleGetUpdateSettings' own doc comment (updates_settings.go).

@@ -179,7 +179,7 @@ describe('SignInRequestsBanner', () => {
     renderBanner()
     fireEvent.click(await screen.findByRole('button', { name: 'Approve' }))
     fireEvent.click(screen.getByText('No code? Approve with your password'))
-    expect(screen.getByText(/A code is recommended/)).toBeInTheDocument()
+    expect(screen.getByText(/A code is better/)).toBeInTheDocument()
     const approve = screen.getByRole('button', { name: 'Approve' })
     expect(approve).toBeDisabled()
     fireEvent.change(screen.getByLabelText('Your account password'), {

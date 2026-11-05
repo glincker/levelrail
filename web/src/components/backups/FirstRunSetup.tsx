@@ -1,3 +1,7 @@
+import {
+  SelectedMark,
+  selectableCardClass,
+} from '@/components/ui/selectable-card'
 import { useTranslation } from 'react-i18next'
 import { UploadGlassIcon } from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
@@ -34,10 +38,11 @@ export function FirstRunSetup({ unprotected }: { unprotected: number }) {
             key={step}
             aria-current={i === 0 ? 'step' : undefined}
             className={cn(
-              'rounded-md border px-3 py-2 text-sm',
-              i === 0 ? 'border-primary bg-primary/5' : 'border-border',
+              'rounded-md px-3 py-2 text-sm',
+              selectableCardClass(i === 0),
             )}
           >
+            <SelectedMark selected={i === 0} />
             <span className="block font-medium">
               {i + 1}. {t(`firstRun.step.${step}.title`)}
             </span>

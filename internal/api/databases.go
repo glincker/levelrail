@@ -288,6 +288,10 @@ func (rt *Router) createDesiredDatabase(w http.ResponseWriter, r *http.Request, 
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return false
 	}
+	defaultEnvID, envOK := rt.defaultEnvironmentFor(w, r, req.ProjectID)
+	if !envOK {
+		return false
+	}
 
 	_, err := rt.databases.GetDesiredDatabase(r.Context(), req.Name)
 	if err == nil {
@@ -333,6 +337,13 @@ func (rt *Router) createDesiredDatabase(w http.ResponseWriter, r *http.Request, 
 		if err := rt.databases.UpdateDatabaseProject(r.Context(), req.Name, req.ProjectID); err != nil {
 			rt.logger.Error("api: create database: assign project failed", slog.String("error", err.Error()), slog.String("name", req.Name), slog.String("project_id", req.ProjectID))
 			writeError(w, http.StatusInternalServerError, "internal error")
+			return false
+		}
+	}
+
+	if defaultEnvID != "" {
+		if err := rt.setDatabaseEnvironment(r.Context(), req.Name, defaultEnvID); err != nil {
+			rt.internalError(w, "create database: assign default environment", err, slog.String("name", req.Name), slog.String("environment_id", defaultEnvID))
 			return false
 		}
 	}

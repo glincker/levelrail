@@ -7,6 +7,7 @@
   },
   "loadFailed": "Could not load stacks.",
   "columns": {
+    "scope": "Scope",
     "name": "Stack",
     "project": "Project",
     "revision": "Latest",
@@ -24,6 +25,12 @@
     "rejected": "Rejected",
     "none": "No revisions"
   },
+  "scope": {
+    "project": "Project",
+    "install": "Install",
+    "projectTip": "Belongs to one project",
+    "installTip": "Spans the whole install"
+  },
   "flags": {
     "locked": "Locked",
     "lockedTip": "Held by {{holder}} on revision {{revision}}",
@@ -39,7 +46,7 @@
     "inProject": "Project {{project}}",
     "createdBy": "Created by {{name}}",
     "lockedBanner": "Locked by {{holder}} for revision {{revision}} until {{until}}.",
-    "pinnedBanner": "Pinned to revision {{revision}}. New applies are refused until it is unpinned.",
+    "pinnedBanner": "Pinned to revision {{revision}}. New applies are refused until you unpin it.",
     "resources": "{{count}} managed resources",
     "loadFailed": "Could not load this stack."
   },
@@ -125,7 +132,7 @@
     "done": "Rolled back to revision {{number}}",
     "doneStatus": "New revision {{number}} finished as {{status}}",
     "failed": "Roll back failed",
-    "pendingApproval": "Revision {{number}} is awaiting approval. Nothing was rolled back yet."
+    "pendingApproval": "Revision {{number}} is awaiting approval. Nothing has been rolled back yet."
   },
   "delete": {
     "title": "Delete stack {{name}}?",
@@ -161,7 +168,7 @@
     "title": "Managed by stack",
     "revision": "Revision {{number}}",
     "lock": "Lock mode",
-    "hint": "Edit this in git; changes made here may be overwritten or blocked.",
+    "hint": "Edit this in git. Changes made here may be overwritten or blocked.",
     "docs": "Stacks docs"
   },
   "managedNotice": {
@@ -185,7 +192,7 @@
     "approveTitle": "Approve revision {{number}}?",
     "approveDescription": "This applies the stored plan to {{name}}. Another admin requested it.",
     "approveDescriptionOwn": "You requested this revision, so another admin has to approve it for {{name}}.",
-    "secretsNote": "Secrets are never stored. Supply any the manifest needs now; they are sent once and not kept.",
+    "secretsNote": "Secrets are never stored. Supply any the manifest needs now. They are sent once and not kept.",
     "secretName": "Secret name",
     "secretValue": "Secret value",
     "addSecret": "Add secret",
@@ -194,7 +201,7 @@
     "approving": "Approving",
     "approved": "Revision {{number}} approved",
     "approvedStatus": "Finished as {{status}}",
-    "stale": "The plan changed since it was reviewed. Request approval again.",
+    "stale": "The plan changed after it was reviewed. Request approval again.",
     "expired": "This approval request expired. Request approval again.",
     "rejectTitle": "Reject revision {{number}}?",
     "rejectDescription": "Nothing is applied to {{name}} and the request is closed.",
@@ -209,7 +216,7 @@
     "loadFailed": "Could not load stack templates.",
     "empty": {
       "title": "No stack templates",
-      "description": "This build ships without starter bundles."
+      "description": "This build has no starter bundles."
     },
     "open": "Open template {{name}}",
     "secretCount_one": "{{count}} secret",

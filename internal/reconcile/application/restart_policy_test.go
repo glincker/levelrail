@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"sync"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -77,5 +78,60 @@ func TestRestartPolicy_JobSpecStaysNo(t *testing.T) {
 	}
 	if spec.RestartPolicy != "" {
 		t.Fatalf("toContainerSpec policy = %q, want empty", spec.RestartPolicy)
+	}
+}
+
+// policyRuntime plays a Docker host whose containers predate the default:
+// every container reports policy "no" until the update API changes it.
+type policyRuntime struct {
+	*fakeRuntime
+	mu       sync.Mutex
+	policies map[string]string
+	updates  int
+}
+
+func (p *policyRuntime) SyncRestartPolicy(_ context.Context, id, want string) (bool, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	cur, ok := p.policies[id]
+	if !ok {
+		cur = "no"
+	}
+	if cur == want {
+		return false, nil
+	}
+	p.policies[id] = want
+	p.updates++
+	return true, nil
+}
+
+func TestRestartPolicy_SweepUpdatesOldContainerInPlaceOnce(t *testing.T) {
+	rt := &policyRuntime{fakeRuntime: newFakeRuntime(0), policies: map[string]string{}}
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80}
+	c := New("web", &fakeStore{svc: desired}, rt, WithRestartPolicy(func(context.Context) string { return "unless-stopped" }))
+	for i := 0; i < 4; i++ {
+		if _, err := c.Reconcile(context.Background()); err != nil {
+			t.Fatalf("Reconcile() %d error = %v", i, err)
+		}
+	}
+	if rt.updates != 1 {
+		t.Fatalf("policy update calls = %d, want 1", rt.updates)
+	}
+	if rt.createCalls != 1 {
+		t.Fatalf("create calls = %d, want 1 (no recreate)", rt.createCalls)
+	}
+}
+
+func TestRestartPolicy_SweepOffWhenSettingIsNo(t *testing.T) {
+	rt := &policyRuntime{fakeRuntime: newFakeRuntime(0), policies: map[string]string{}}
+	desired := &store.DesiredService{Name: "web", Image: "img:v1", Port: 80}
+	c := New("web", &fakeStore{svc: desired}, rt, WithRestartPolicy(func(context.Context) string { return "no" }))
+	for i := 0; i < 3; i++ {
+		if _, err := c.Reconcile(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if rt.updates != 0 {
+		t.Fatalf("policy update calls = %d, want 0", rt.updates)
 	}
 }

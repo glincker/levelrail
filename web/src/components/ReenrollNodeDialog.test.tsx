@@ -53,6 +53,6 @@ describe('ReenrollNodeDialog', () => {
     const command = screen.getByText(/APP_REENROLL_TOKEN=tok-123/)
     expect(command).toHaveTextContent('APP_CA_FINGERPRINT=abcd')
     expect(command).toHaveTextContent('./brand-agent reenroll')
-    expect(screen.getByText(/will not be shown again/)).toBeVisible()
+    expect(screen.getByText(/is not shown again/)).toBeVisible()
   })
 })

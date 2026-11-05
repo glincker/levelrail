@@ -63,7 +63,8 @@
     "now": "Run now",
     "starting": "Starting...",
     "started": "Job started.",
-    "startedWithId": "Job started (run {{id}})."
+    "startedWithId": "Job started (run {{id}}).",
+    "running": "Running..."
   },
   "toggle": {
     "label": "Enable {{name}}"
@@ -162,5 +163,13 @@
     "logsLoading": "Loading output...",
     "logsRedacted": "Secrets are redacted from this output.",
     "alertsHint": "Get notified when a job fails, misses runs or runs too long with Alerts, using the job failure, missed run or running too long kinds."
-  }
+  },
+  "historyKept": {
+    "label": "History kept (runs per job)",
+    "save": "Save",
+    "note": "Older runs are removed automatically.",
+    "invalid": "Enter a whole number from {{min}} to {{max}}."
+  },
+  "nextRunNever": "Never",
+  "nextRunNeverHint": "This schedule has no future run"
 }

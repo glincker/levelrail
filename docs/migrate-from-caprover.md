@@ -14,7 +14,7 @@ CapRover apps import over its HTTP API, read-only. The main difference from the 
 - The CapRover URL reachable from the Levelrail control plane. For a private address, set `APP_IMPORT_ALLOW_PRIVATE_NETWORKS=true` and pass `--allow-private`.
 - Each app's git repository, or a registry you can push its image to.
 
-## What imports automatically
+## What moves
 
 | Item | Result |
 | --- | --- |
@@ -32,7 +32,7 @@ CapRover apps import over its HTTP API, read-only. The main difference from the 
 - **Raw host port mappings** are not imported. Publish a port in the app settings if it must be reachable.
 - **Health checks.** CapRover has none to import. Add a readiness path here.
 
-## What cannot be migrated
+## What does not move
 
 - Images built on CapRover: there is no recoverable image through its API. Rebuild from source.
 - Databases as a feature. CapRover runs databases as ordinary apps or one-click apps, so nothing maps to a managed database. Create a [managed database](/managing-databases) here and copy the data.
@@ -102,6 +102,12 @@ CapRover runs nginx on ports 80 and 443. Point DNS at a new server, or install L
 | An app has no image | Expected. Connect a repo or registry image and deploy |
 | Domain not imported | The app was not exposed in CapRover. Add the domain by hand on the app |
 | Database copy cannot connect | The source database port is not reachable from the Levelrail node |
+
+## Verify and roll back
+
+Run `levelrail-cli migrate cutover --verify` after you switch DNS. It checks the certificate, the health path and DNS.
+
+The copy only reads the old server, so nothing there is changed. To roll back, restart the old app if you paused it and point DNS back at the old server.
 
 ## Choose to stay if
 

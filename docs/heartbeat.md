@@ -28,7 +28,7 @@ levelrail-cli settings heartbeat show
 levelrail-cli settings heartbeat clear
 ```
 
-Env (takes precedence over the dashboard, the dashboard then becomes read-only):
+Env. The heartbeat is not a runtime setting, so the usual rule that a stored value wins does not apply here. If `APP_HEARTBEAT_URL` is set, the environment owns the heartbeat: the dashboard and CLI show it as set from env and refuse to change the URL, the fail URL or the body option. Unset the variable and restart to manage them from the dashboard or CLI. The interval, timeout and method are read from env at boot in either case.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |

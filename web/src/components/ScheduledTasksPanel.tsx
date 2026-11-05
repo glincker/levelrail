@@ -10,6 +10,13 @@ import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import { EmptyState } from '@/components/ui/empty-state'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import { nextRunDisplay } from '../lib/nextRun'
+import { HistoryKeptCard } from './HistoryKeptCard'
 import { JobDialog } from './JobDialog'
 import { JobRunsPanel } from './JobRunsPanel'
 import { JobStatusBadge } from './JobStatusBadge'
@@ -57,6 +64,32 @@ function LastRunCell({ task }: { task: ScheduledTask }) {
         </span>
       ) : null}
     </div>
+  )
+}
+
+function NextRunCell({ task }: { task: ScheduledTask }) {
+  const { t } = useTranslation('jobs')
+  if (!task.enabled || !task.next_run_at) {
+    return <span className="text-xs text-muted-foreground">-</span>
+  }
+  const shown = nextRunDisplay(task.next_run_at)
+  if (shown) {
+    return <span className="text-xs text-muted-foreground">{shown}</span>
+  }
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <span
+            tabIndex={0}
+            className="cursor-help text-xs text-muted-foreground underline decoration-dotted underline-offset-4"
+          >
+            {t('nextRunNever')}
+          </span>
+        }
+      />
+      <TooltipContent>{t('nextRunNeverHint')}</TooltipContent>
+    </Tooltip>
   )
 }
 
@@ -153,13 +186,7 @@ export function ScheduledTasksPanel({ appName }: { appName: string }) {
         id: 'nextRun',
         header: t('columns.nextRun'),
         priority: 2,
-        cell: (task) => (
-          <span className="text-xs text-muted-foreground">
-            {task.enabled && task.next_run_at
-              ? new Date(task.next_run_at).toLocaleString()
-              : '-'}
-          </span>
-        ),
+        cell: (task) => <NextRunCell task={task} />,
       },
       {
         id: 'mode',
@@ -223,6 +250,8 @@ export function ScheduledTasksPanel({ appName }: { appName: string }) {
           )}
         </div>
       </section>
+
+      <HistoryKeptCard />
 
       {tasks.length > 0 ? <JobRunsPanel appName={appName} /> : null}
     </div>

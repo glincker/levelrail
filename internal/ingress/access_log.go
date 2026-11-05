@@ -52,6 +52,8 @@ type AccessRecord struct {
 	// run. They are never serialized, so no read API can return them.
 	Client    netip.Addr `json:"-"`
 	UserAgent string     `json:"-"`
+	// Referrer is the Referer host only, kept in memory for the visitor summary and never serialized.
+	Referrer string `json:"-"`
 }
 
 // maxRecordedAgent bounds the User-Agent kept per record.
@@ -103,6 +105,12 @@ type AccessLog struct {
 	retention    time.Duration
 	retentionSrc atomic.Pointer[func() time.Duration]
 	rings        map[string]*accessRing
+
+	rotationSrc atomic.Pointer[func() time.Duration]
+	secretOnce  sync.Once
+	secret      []byte
+
+	hist visitorHistory
 
 	subs    atomic.Pointer[[]accessSub]
 	capture atomic.Bool
@@ -227,6 +235,9 @@ func accessCapacityFromEnv() int {
 func (l *AccessLog) Record(key string, rec AccessRecord) {
 	if l == nil {
 		return
+	}
+	if l.hist.on.Load() {
+		l.trackRollup(key, rec)
 	}
 	if l.cap <= 0 {
 		l.notify(key, rec)

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"slices"
+	"strconv"
 	"text/tabwriter"
 	"time"
 
@@ -20,7 +21,7 @@ const (
 
 // runDomainsDoctor implements "domains doctor <app> <domain>".
 func runDomainsDoctor(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "domains doctor", "print the doctor report as JSON to stdout and nothing else", stderr)
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "domains doctor", doctorStrings().render("domains_doctor_flag_json"), stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, domainsDoctorUsage(prog)) }
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
@@ -66,20 +67,22 @@ func printDoctorReport(out io.Writer, rep apiclient.DomainDoctorReport) {
 		}
 	}
 	fixes := prioritizedChecks(rep.Checks)
-	_, _ = fmt.Fprintf(out, "Doctor: %s (%s)\n", rep.Domain, rep.Status)
-	_, _ = fmt.Fprintf(out, "checked %s, %d to fix, %d passed\n", rep.CheckedAt.Local().Format(time.DateTime), len(fixes), passed)
+	cat := doctorStrings()
+	_, _ = fmt.Fprintf(out, "%s %s (%s)\n", cat.render("domains_doctor_title"), rep.Domain, rep.Status)
+	_, _ = fmt.Fprintln(out, cat.render("domains_doctor_checked", "at", rep.CheckedAt.Local().Format(time.DateTime), "fixes", strconv.Itoa(len(fixes)), "passed", strconv.Itoa(passed)))
 	if rep.ProbeNote != "" {
-		_, _ = fmt.Fprintf(out, "note: %s\n", rep.ProbeNote)
+		_, _ = fmt.Fprintf(out, "%s %s\n", cat.render("domains_doctor_note"), rep.ProbeNote)
 	}
 	for i, c := range fixes {
 		_, _ = fmt.Fprintf(out, "\n%d. [%s] %s\n", i+1, c.State, c.Title)
-		if c.Detail != "" {
-			_, _ = fmt.Fprintf(out, "   %s\n", c.Detail)
-		}
+		printDoctorExplanation(out, c)
 		if c.Fix == nil {
 			continue
 		}
-		_, _ = fmt.Fprintf(out, "   fix: %s\n", c.Fix.Summary)
+		_, _ = fmt.Fprintf(out, "   %s %s\n", cat.render("domains_doctor_fix"), c.Fix.Summary)
+		for j, step := range c.Fix.Steps {
+			_, _ = fmt.Fprintf(out, "     %d. %s\n", j+1, step)
+		}
 		if a := c.Fix.Action; a != nil {
 			switch {
 			case a.Value != "":
@@ -88,38 +91,40 @@ func printDoctorReport(out io.Writer, rep apiclient.DomainDoctorReport) {
 				_, _ = fmt.Fprintf(out, "   %s: %s\n", a.Label, a.API)
 			}
 		}
+		if c.Fix.CLIHint != "" {
+			_, _ = fmt.Fprintf(out, "   %s %s\n", cat.render("domains_doctor_terminal"), c.Fix.CLIHint)
+		}
 	}
 	if len(fixes) == 0 {
-		_, _ = fmt.Fprintln(out, "\nnothing to fix")
+		_, _ = fmt.Fprintln(out, "\n"+cat.render("domains_doctor_nothing"))
+	}
+}
+
+// printDoctorExplanation prints the plain cause and the observed facts, and
+// falls back to the raw detail line for a report from an older server.
+func printDoctorExplanation(out io.Writer, c apiclient.DoctorCheck) {
+	if c.Cause == "" {
+		if c.Detail != "" {
+			_, _ = fmt.Fprintf(out, "   %s\n", c.Detail)
+		}
+		return
+	}
+	_, _ = fmt.Fprintf(out, "   %s\n", c.Cause)
+	for _, e := range c.Evidence {
+		_, _ = fmt.Fprintf(out, "   - %s\n", e)
 	}
 }
 
 func domainsDoctorUsage(prog string) string {
-	return fmt.Sprintf(`Usage:
-  %[1]s domains doctor <app> <domain> [flags]
-
-Runs every domain check (DNS per resolver, CAA, ports 80 and 443, TLS
-certificate, HTTP status, redirects, HSTS, proxy ownership, app state,
-certificate renewal) and prints a prioritised fix list. It only connects to
-<domain> when the domain resolves to this server; otherwise it runs the DNS
-checks and says why.
-
-Flags:
-  --token string          API token (default: %[2]s env var, then the credentials file)
-  --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
-  --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")
-  --json                    print the report as JSON to stdout, nothing else
-  --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
-  --query string           JMESPath expression to filter the result before printing
-  -h, --help               show this help
-`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
+	return doctorStrings().render("domains_doctor_usage", "prog", prog, "token_env", apiTokenEnvHelp, "api_env", apiURLEnvHelp, "api_url", defaultAPIURL)
 }
 
 // runDomainsSummary implements "domains summary".
 func runDomainsSummary(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "domains summary", "print the summary as JSON to stdout and nothing else", stderr)
+	cat := doctorStrings()
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "domains summary", cat.render("domains_summary_flag_json"), stderr)
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s domains summary [--json]\n\nCounts domains by status, certificates expiring or failing, and the total needing attention.\n", prog)
+		_, _ = fmt.Fprint(stderr, cat.render("domains_summary_usage", "prog", prog))
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
@@ -133,24 +138,27 @@ func runDomainsSummary(prog string, args []string, stdout, stderr io.Writer, loo
 	return writeScheduledTaskResult(stdout, stderr, of, sum, func() {
 		d, c := sum.Domains, sum.Certificates
 		tw := tabwriter.NewWriter(stdout, 0, 2, 2, ' ', 0)
-		_, _ = fmt.Fprintf(tw, "needs attention\t%d\n", sum.Attention)
-		_, _ = fmt.Fprintf(tw, "domains\t%d (live %d, propagating %d, waiting for DNS %d, not set up %d, paused %d, unknown %d)\n",
-			d.Total, d.Live, d.Propagating, d.Waiting, d.NotSetUp, d.Paused, d.Unknown)
-		_, _ = fmt.Fprintf(tw, "certificates\t%d expiring within %d days, %d expired, %d failing to renew\n", c.Expiring, c.WindowDays, c.Expired, c.RenewalFailing)
+		_, _ = fmt.Fprintf(tw, "%s\t%d\n", cat.render("domains_summary_attention"), sum.Attention)
+		_, _ = fmt.Fprintf(tw, "%s\t%s\n", cat.render("domains_summary_domains"), cat.render("domains_summary_domains_line",
+			"total", strconv.Itoa(d.Total), "live", strconv.Itoa(d.Live), "propagating", strconv.Itoa(d.Propagating),
+			"waiting", strconv.Itoa(d.Waiting), "not_set_up", strconv.Itoa(d.NotSetUp), "paused", strconv.Itoa(d.Paused), "unknown", strconv.Itoa(d.Unknown)))
+		_, _ = fmt.Fprintf(tw, "%s\t%s\n", cat.render("domains_summary_certs"), cat.render("domains_summary_certs_line",
+			"expiring", strconv.Itoa(c.Expiring), "days", strconv.Itoa(c.WindowDays), "expired", strconv.Itoa(c.Expired), "failing", strconv.Itoa(c.RenewalFailing)))
 		_ = tw.Flush()
 	})
 }
 
 // runDomainsActivity implements "domains activity <domain>".
 func runDomainsActivity(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "domains activity", "print the activity page as JSON to stdout and nothing else", stderr)
+	cat := doctorStrings()
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "domains activity", cat.render("domains_activity_flag_json"), stderr)
 	var limit int
 	var before, actions string
 	fs.IntVar(&limit, "limit", 0, "events per page (default: server default)")
 	fs.StringVar(&before, "before", "", "cursor from a previous page's next_cursor")
 	fs.StringVar(&actions, "actions", "", `comma separated action prefixes, e.g. "dns_record.,proxy_route."`)
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s domains activity <domain> [--limit N] [--before CURSOR] [--actions PREFIXES] [--json]\n\nLists a domain's recent changes and certificate events, newest first.\n", prog)
+		_, _ = fmt.Fprint(stderr, cat.render("domains_activity_usage", "prog", prog))
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
@@ -167,11 +175,11 @@ func runDomainsActivity(prog string, args []string, stdout, stderr io.Writer, lo
 	}
 	return writeScheduledTaskResult(stdout, stderr, of, page, func() {
 		if len(page.Events) == 0 {
-			_, _ = fmt.Fprintln(stdout, "no activity")
+			_, _ = fmt.Fprintln(stdout, cat.render("domains_activity_none"))
 			return
 		}
 		tw := tabwriter.NewWriter(stdout, 0, 2, 2, ' ', 0)
-		_, _ = fmt.Fprintln(tw, "TIME\tKIND\tEVENT\tBY")
+		_, _ = fmt.Fprintln(tw, cat.render("domains_activity_header"))
 		for _, e := range page.Events {
 			title := e.Title
 			if e.Detail != "" {
@@ -181,7 +189,7 @@ func runDomainsActivity(prog string, args []string, stdout, stderr io.Writer, lo
 		}
 		_ = tw.Flush()
 		if page.NextCursor != "" {
-			_, _ = fmt.Fprintf(stdout, "\nmore: --before %s\n", page.NextCursor)
+			_, _ = fmt.Fprintf(stdout, "\n%s\n", cat.render("domains_activity_more", "cursor", page.NextCursor))
 		}
 	})
 }
@@ -203,6 +211,24 @@ func trafficAlertCondition(r alertRuleResource) string {
 			window = "30m"
 		}
 		return "a domain not resolving for " + window
+	case "domain_traffic_drop":
+		window, pct, minReq := r.ForDuration, int(r.Threshold), r.RestartCountThreshold
+		if window == "" {
+			window = "1h"
+		}
+		if pct <= 0 {
+			pct = 50
+		}
+		if minReq <= 0 {
+			minReq = 20
+		}
+		return fmt.Sprintf("requests in %s under %d%% of the same window yesterday (baseline of at least %d)", window, pct, minReq)
+	case "parked_domain_cert_expiry":
+		days := int(r.Threshold)
+		if days <= 0 {
+			days = 14
+		}
+		return fmt.Sprintf("a parked domain certificate with fewer than %d days left", days)
 	}
 	return "-"
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -60,6 +61,34 @@ func defaultProjectFor(r *http.Request, projectID string) string {
 		return projectID
 	}
 	return requestScopeValue(r, scopeProjectHeader, scopeProjectCookie)
+}
+
+// defaultEnvironmentFor returns the project's default environment id for a create
+// that named no environment, or "" when there is none. A protected default is skipped
+// so a create never sidesteps the approval gate. false means a response was written.
+func (rt *Router) defaultEnvironmentFor(w http.ResponseWriter, r *http.Request, projectID string) (string, bool) {
+	if projectID == "" {
+		return "", true
+	}
+	s, ok := rt.defaultEnvStore()
+	if !ok {
+		return "", true
+	}
+	id, err := s.DefaultEnvironmentID(r.Context(), projectID)
+	if err != nil {
+		rt.internalError(w, "api: resolve default environment", err, slog.String("project_id", projectID))
+		return "", false
+	}
+	if id == "" {
+		return "", true
+	}
+	if !rt.authorizeRefs(w, r, AbilityWrite, notFoundAs(http.StatusBadRequest, "unknown environment_id"), environmentRef(id)) {
+		return "", false
+	}
+	if env, err := rt.environments.GetEnvironment(r.Context(), id); err != nil || env.Protected {
+		return "", true
+	}
+	return id, true
 }
 
 // mayMoveProjectBetweenTeams requires admin in the destination team; the

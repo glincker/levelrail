@@ -12,6 +12,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/placement"
 	"github.com/GLINCKER/levelrail/internal/sourceupload"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -534,6 +535,7 @@ func specServiceFromDesired(svc store.DesiredService, buildCfg spec.Build) spec.
 	if svc.Egress != nil {
 		out.Egress = specEgressFromStore(*svc.Egress)
 	}
+	out.Tolerations, out.Affinity = placement.DecodeRules(svc.Tolerations, svc.Affinity)
 	return out
 }
 

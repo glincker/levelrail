@@ -61,7 +61,8 @@ function TemplatesPage() {
           titleKey="templates:page.title"
           descriptionKey="templates:banner.description"
           action={newFromTemplate}
-          illustration={<LazyTemplatesDiagram size="hero" />}
+          illustration={<LazyTemplatesDiagram size="compact" />}
+          size="compact"
         />
       }
     >

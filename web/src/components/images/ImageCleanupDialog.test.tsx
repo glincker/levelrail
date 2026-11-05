@@ -16,6 +16,9 @@ const candidate = {
   created_at: '2026-10-01T00:00:00Z',
   apps: [],
   protected: false,
+  unmanaged: false,
+  in_use: false,
+  removable: true,
 }
 
 afterEach(() => {

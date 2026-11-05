@@ -64,7 +64,7 @@ func (rt *Router) databasePoolerFix() fixit.Fix {
 		Enable:     rt.enablePoolerForFix,
 		Blocked: func() string {
 			if database.PoolerImage() == "" {
-				return "no pooler image is configured: set " + database.EnvPoolerImage + " on the control plane to a pinned tag or digest"
+				return "no pooler image is configured: set the databases.pooler_image setting to a pinned tag or digest"
 			}
 			return ""
 		},

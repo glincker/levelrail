@@ -48,11 +48,17 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_API_RATE_LIMIT_READ_RPM` | [`api.rate_limit_read_rpm`](/runtime-settings#security) | `600` |
 | `APP_API_RATE_LIMIT_TOKEN_REDEEM_RPM` | [`api.rate_limit_redeem_rpm`](/runtime-settings#security) | `10` |
 | `APP_API_RATE_LIMIT_WRITE_RPM` | [`api.rate_limit_write_rpm`](/runtime-settings#security) | `120` |
+| `APP_AUDIT_ANCHOR_WEBHOOK_SECRET` | [`audit.anchor_webhook_secret`](/runtime-settings#security) | empty |
+| `APP_AUDIT_ANCHOR_WEBHOOK_URL` | [`audit.anchor_webhook_url`](/runtime-settings#security) | empty |
 | `APP_AUTH_ENGINE_RATE_LIMIT_PER_EMAIL` | [`auth.engine_rate_limit_per_email`](/runtime-settings#security) | `60` |
 | `APP_AUTH_ENGINE_RATE_LIMIT_PER_IP` | [`auth.engine_rate_limit_per_ip`](/runtime-settings#security) | `60` |
 | `APP_DESKTOP_SESSION_TTL` | [`desktop.session_ttl`](/runtime-settings#security) | `12h` |
 | `APP_FIREWALL_CONFIRM_WINDOW` | [`firewall.confirm_window`](/runtime-settings#security) | `60s` |
 | `APP_MCP_DEFAULT_TOKEN_SCOPE` | [`mcp.default_token_scope`](/runtime-settings#security) | `read_only` |
+| `APP_NODES_PROTECTED_TAINT_KEYS` | [`nodes.protected_taint_keys`](/runtime-settings#security) | empty |
+| `APP_ORGS_AVATAR_MAX_BYTES` | [`orgs.avatar_max_bytes`](/runtime-settings#security) | `262144` |
+| `APP_ORGS_AVATAR_MAX_DIMENSION` | [`orgs.avatar_max_dimension`](/runtime-settings#security) | `1024` |
+| `APP_ORGS_STRICT_ISOLATION` | [`orgs.strict_isolation`](/runtime-settings#security) | `false` |
 | `APP_AUDIT_SENSITIVE_READS` | [`security.audit_sensitive_reads`](/runtime-settings#security) | `true` |
 | `APP_BIND_ALLOWED_ROOTS` | [`security.bind_allowed_roots`](/runtime-settings#security) | empty |
 | `APP_BIND_BLOCK_CREDENTIAL_DIRS` | [`security.bind_block_credential_dirs`](/runtime-settings#security) | `true` |
@@ -67,7 +73,16 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CUTOVER_VERIFY_MIN_INTERVAL` | [`cutover.verify_min_interval`](/runtime-settings#networking) | `10s` |
 | `APP_CUTOVER_VERIFY_SLOW_TTFB` | [`cutover.verify_slow_ttfb`](/runtime-settings#networking) | `1500ms` |
 | `APP_CUTOVER_VERIFY_REQUEST_TIMEOUT` | [`cutover.verify_timeout`](/runtime-settings#networking) | `5s` |
+| `APP_DNS_VERIFY_PROVIDER_ON_SAVE` | [`dns.verify_provider_on_save`](/runtime-settings#networking) | `true` |
+| `APP_DOMAINS_BATCH_MAX_ITEMS` | [`domains.batch_max_items`](/runtime-settings#networking) | `50` |
+| `APP_DOMAINS_CANONICAL` | [`domains.canonical`](/runtime-settings#networking) | `apex` |
 | `APP_DOMAINS_DNS_WAIT_BUDGET` | [`domains.dns_wait_budget`](/runtime-settings#networking) | `10m` |
+| `APP_DOMAINS_DNS_WATCH_INTERVAL_SECONDS` | [`domains.dns_watch_interval_seconds`](/runtime-settings#networking) | `15` |
+| `APP_DOMAINS_DNS_WATCH_MAX_MINUTES` | [`domains.dns_watch_max_minutes`](/runtime-settings#networking) | `120` |
+| `APP_ACME_MAX_ATTEMPTS_PER_HOUR` | [`domains.https_attempts_per_hour`](/runtime-settings#networking) | `5` |
+| `APP_DOMAINS_PARKED_RETENTION_DAYS` | [`domains.parked_retention_days`](/runtime-settings#networking) | `0` |
+| `APP_DOMAINS_ROLLBACK_WINDOW_MINUTES` | [`domains.rollback_window_minutes`](/runtime-settings#networking) | `60` |
+| `APP_DOMAINS_WWW_MODE` | [`domains.www_mode`](/runtime-settings#networking) | `both` |
 | `APP_GAME_STATUS_CACHE` | [`games.status_cache`](/runtime-settings#networking) | `5s` |
 | `APP_GAME_STATUS_TIMEOUT` | [`games.status_timeout`](/runtime-settings#networking) | `3s` |
 | `APP_INGRESS_CA_RETRY_BACKOFF` | [`ingress.ca_switch_retry_base`](/runtime-settings#networking) | `1m` |
@@ -81,6 +96,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_INGRESS_MAX_BODY_BYTES` | [`ingress.max_body_bytes`](/runtime-settings#networking) | `1073741824` |
 | `APP_PROXY_CERT_WAIT` | [`ingress.proxy_cert_wait`](/runtime-settings#networking) | `5m0s` |
 | `APP_INGRESS_TRUSTED_PROXY_PRESET` | [`ingress.trusted_proxy_preset`](/runtime-settings#networking) | `none` |
+| `APP_OIDC_LISTEN_PORT` | [`pipelines.oidc_listen_port`](/runtime-settings#networking) | `9095` |
 | `APP_TRUST_LOOPBACK_FORWARDED` | [`security.trust_loopback_forwarded_headers`](/runtime-settings#networking) | `true` |
 | `APP_BACKUP_LOCAL_ROOT` | [`backup.local_root`](/runtime-settings#deploys) | empty |
 | `APP_BOOT_EVENT_RECHECK` | [`boot.event_recheck`](/runtime-settings#deploys) | `3s` |
@@ -89,11 +105,17 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_COMPOSE_DEPENDS_ON_TIMEOUT` | [`compose.depends_on_timeout`](/runtime-settings#deploys) | `120s` |
 | `APP_CONTAINERS_RESTART_POLICY` | [`containers.restart_policy`](/runtime-settings#deploys) | `unless-stopped` |
 | `APP_DATABASES_POOLER_DEFAULT` | [`databases.pooler_default`](/runtime-settings#deploys) | `off` |
+| `APP_PG_POOLER_IMAGE` | [`databases.pooler_image`](/runtime-settings#deploys) | `edoburu/pgbouncer:v1.26.1-p0` |
 | `APP_DEPLOY_DRAIN_TIMEOUT` | [`deploy.drain_timeout`](/runtime-settings#deploys) | `15s` |
 | `APP_DEPLOY_MAX_CONCURRENT` | [`deploy.max_concurrent`](/runtime-settings#deploys) | `0` |
 | `APP_DEPLOY_PREVIOUS_RELEASE_HOLD` | [`deploy.previous_release_hold`](/runtime-settings#deploys) | `3m` |
 | `APP_DEPLOY_STABLE_WINDOW` | [`deploy.stable_window`](/runtime-settings#deploys) | `10s` |
 | `APP_DEPLOY_WATCH_WINDOW` | [`deploy.watch_window`](/runtime-settings#deploys) | `5m` |
+| `APP_IMAGE_KEEP_PER_APP` | [`images.keep_per_app`](/runtime-settings#deploys) | `3` |
+| `APP_NEXTJS_GENERATE_ACTIONS_KEY` | [`nextjs.generate_actions_key`](/runtime-settings#deploys) | `true` |
+| `APP_PLACEMENT_SCORE_MODE` | [`placement.score_mode`](/runtime-settings#deploys) | `spread` |
+| `APP_PROJECTS_DEFAULT_ENVIRONMENT` | [`projects.default_environment`](/runtime-settings#deploys) | `false` |
+| `APP_PROJECTS_DEFAULT_ENVIRONMENT_NAME` | [`projects.default_environment_name`](/runtime-settings#deploys) | `production` |
 | `APP_VOLUMES_IMPORT_OVERWRITE` | [`volumes.import_overwrite`](/runtime-settings#deploys) | `false` |
 | `APP_VOLUMES_TRANSFER_MAX_BYTES` | [`volumes.transfer_max_bytes`](/runtime-settings#deploys) | `10737418240` |
 | `APP_VOLUMES_TRANSFER_MAX_CONCURRENT` | [`volumes.transfer_max_concurrent`](/runtime-settings#deploys) | `1` |
@@ -111,9 +133,13 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_LOG_BUDGET_MB` | [`telemetry.log_budget_mb`](/runtime-settings#observability) | `0` |
 | `APP_LOGS_RETENTION` | [`telemetry.logs_retention`](/runtime-settings#observability) | `360h` |
 | `APP_METRICS_RETENTION` | [`telemetry.metrics_retention`](/runtime-settings#observability) | `360h` |
+| `APP_VISITOR_HISTORY_RETENTION` | [`telemetry.visitor_history_retention`](/runtime-settings#observability) | `168h0m0s` |
+| `APP_VISITOR_SALT_ROTATION` | [`telemetry.visitor_salt_rotation`](/runtime-settings#observability) | `24h0m0s` |
+| `APP_ACCOUNT_PREFERENCES_MAX_BYTES` | [`account.preferences_max_bytes`](/runtime-settings#data-retention) | `8192` |
 | `APP_BACKUP_DEFAULT_RETENTION_HOURS` | [`backup.default_retention_hours`](/runtime-settings#data-retention) | `168` |
 | `APP_CLEANUP_ENABLED` | [`cleanup.enabled`](/runtime-settings#data-retention) | `true` |
 | `APP_CLEANUP_INTERVAL` | [`cleanup.interval`](/runtime-settings#data-retention) | `6h` |
+| `APP_IMAGES_REMOVE_MAX_PER_REQUEST` | [`images.remove_max_per_request`](/runtime-settings#data-retention) | `200` |
 | `APP_RETENTION_AI_HISTORY_DAYS` | [`retention.ai_history_days`](/runtime-settings#data-retention) | `90` |
 | `APP_ALERT_HISTORY_RETENTION` | [`retention.alert_history_days`](/runtime-settings#data-retention) | `30` |
 | `APP_RETENTION_APP_HISTORY_DAYS` | [`retention.app_history_days`](/runtime-settings#data-retention) | `90` |
@@ -129,6 +155,9 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_RETENTION_STATUS_INCIDENT_DAYS` | [`retention.status_incident_days`](/runtime-settings#data-retention) | `365` |
 | `APP_RETENTION_USAGE_COST_DAYS` | [`retention.usage_cost_days`](/runtime-settings#data-retention) | `90` |
 | `APP_WEBHOOK_DELIVERY_RETENTION_DAYS` | [`retention.webhook_delivery_days`](/runtime-settings#data-retention) | `30` |
+| `APP_JOBS_HISTORY_KEEP` | [`scheduled_tasks.history_keep`](/runtime-settings#data-retention) | `200` |
+| `APP_ONBOARDING_ENABLED` | [`onboarding.enabled`](/runtime-settings#experimental) | `true` |
+| `APP_ONBOARDING_RESTORE_REMINDER_DAYS` | [`onboarding.restore_reminder_days`](/runtime-settings#experimental) | `7` |
 <!-- runtime-settings:end -->
 
 ## Sessions and cookies
@@ -370,6 +399,8 @@ Public address detection, shared with the updater. Source: `internal/ingress/pub
 
 Pings sent while the control plane is healthy, and per-job pings. See [Off-host heartbeat](/heartbeat) and [Scheduled jobs](/scheduled-jobs#heartbeat-pings). Control plane. Source: `internal/heartbeat/config.go`, `internal/heartbeat/jobping.go`.
 
+The control plane heartbeat variables (`APP_HEARTBEAT_URL`, `APP_HEARTBEAT_FAIL_URL`, `APP_HEARTBEAT_INTERVAL`, `APP_HEARTBEAT_METHOD`, `APP_HEARTBEAT_BODY`, `APP_HEARTBEAT_RECONCILE_WINDOWS`) are listed on the [heartbeat page](/heartbeat). They are not runtime settings. While `APP_HEARTBEAT_URL` is set, it owns the heartbeat and the dashboard and CLI cannot change it. This is the one exception to the rule that a stored value wins.
+
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `APP_HEARTBEAT_TIMEOUT` | `10s` | Timeout of one ping request. Env only: it is shared with the control plane heartbeat, which is read once at boot. |
@@ -441,6 +472,7 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 | `APP_ADVISORY_FEED_PUBKEY` | computed | Public key that verifies signed advisory feed entries. Control plane. |
 | `APP_UPGRADE_SCHEDULER_INTERVAL` | computed | How often the upgrade scheduler checks for upgrades that are due. Control plane. |
 | `APP_UPGRADE_START_TIMEOUT` | computed | Time limit for starting a scheduled upgrade. Control plane. |
+| `APP_UPGRADE_ROLLBACK_HEALTH_FLOOR_SECONDS` | `60` | Least time a restored previous release gets to become healthy during a self-upgrade rollback, even when `--timeout` is shorter. Range 10 to 600. Control plane. |
 
 ## Plugin egress proxy
 

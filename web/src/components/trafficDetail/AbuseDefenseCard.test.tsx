@@ -220,7 +220,9 @@ describe('AbuseDefenseCard', () => {
     renderCard()
     const enforce = await screen.findByRole('button', { name: 'Enforce' })
     expect((enforce as HTMLButtonElement).disabled).toBe(true)
-    expect(screen.getByText(/Enforcing unlocks once the preview/)).toBeTruthy()
+    expect(
+      screen.getByText(/Enforcing is available once the preview/),
+    ).toBeTruthy()
   })
 
   it('explains a hidden client address', async () => {

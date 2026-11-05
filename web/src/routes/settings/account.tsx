@@ -42,7 +42,7 @@ export const Route = createFileRoute('/settings/account')({
 
 function AccountSettingsSkeleton() {
   return (
-    <div className="space-y-6" aria-hidden="true">
+    <div className="space-y-4" aria-hidden="true">
       <SettingsHeaderSkeleton />
       <SettingsCardSkeleton rows={2} />
       <SettingsCardSkeleton rows={3} />
@@ -64,9 +64,11 @@ function AccountSettingsPage() {
       title={t('accountPage.title')}
       description={t('accountPage.description')}
     >
-      <div className="space-y-6">
+      <div className="grid items-start gap-4 [--glinr-card-pad:--spacing(4)] xl:grid-cols-2">
         <ProfileCard />
-        <PreferencesCard />
+        <div className="xl:col-start-2 xl:row-span-3 xl:row-start-1">
+          <PreferencesCard />
+        </div>
         <EmailChangeCard />
         <div id={ACCOUNT_PASSWORD_ANCHOR}>
           <ChangePasswordCard />
@@ -77,15 +79,23 @@ function AccountSettingsPage() {
         <div id={ACCOUNT_PASSKEYS_ANCHOR}>
           <PasskeysCard />
         </div>
-        <div id="sessions">
+        <div id="sessions" className="xl:col-span-2">
           <AccountSessionsCard />
         </div>
+        <div className="xl:col-span-2">
+          <MyTokensCard />
+        </div>
+        <div className="xl:col-span-2">
+          <MyAccessCard />
+        </div>
+        <div className="xl:col-span-2">
+          <MyActivityCard />
+        </div>
         <LinkedProvidersCard />
-        <MyTokensCard />
-        <MyAccessCard />
-        <MyActivityCard />
         <DataExportCard />
-        <DangerZoneCard />
+        <div className="xl:col-span-2">
+          <DangerZoneCard />
+        </div>
       </div>
     </PageTemplate>
   )

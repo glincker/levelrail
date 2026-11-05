@@ -33,7 +33,7 @@
       "buildDone": "Build finished"
     },
     "headline": {
-      "queued": "This deploy is queued behind another deploy.",
+      "queued": "This deploy is queued behind another one.",
       "queuedWhy": "This deploy is queued: {{reason}}.",
       "held": "This deploy is held. {{reason}}",
       "awaitingApproval": "This deploy is waiting for approval. Approve it in the dashboard to run it.",
@@ -42,24 +42,24 @@
       "failed": "The build failed, so nothing was rolled out.",
       "failedWhy": "The build failed: {{error}}",
       "building": "Building for {{elapsed}}.",
-      "rolloutFailed": "The build finished but the roll out failed.",
-      "rolloutFailedWhy": "The build finished but the roll out failed: {{reason}}",
+      "rolloutFailed": "The build finished but the rollout failed.",
+      "rolloutFailedWhy": "The build finished but the rollout failed: {{reason}}",
       "staticPublished": "Static site: published directly by the ingress, no container to health check.",
       "live": "This deploy is serving traffic.",
       "rollingOut": "Build finished. Waiting for the new container to pass its first health check, {{elapsed}} so far.",
-      "rollingOutNoImage": "Build finished. The roll out is waiting because no container image exists for this app yet, {{elapsed}} so far.",
-      "untracked": "The build finished. Roll out results are only tracked for the latest deploy.",
-      "untrackedImage": "A pre-built image was deployed. Roll out results are only tracked for the latest deploy."
+      "rollingOutNoImage": "Build finished. The rollout is waiting because no container image exists for this app yet, {{elapsed}} so far.",
+      "untracked": "The build finished. Rollout results are only tracked for the latest deploy.",
+      "untrackedImage": "A pre-built image was deployed. Rollout results are only tracked for the latest deploy."
     },
     "mismatch": {
-      "buildOkRolloutPending": "The build finished, but the roll out has not completed. The build status and the roll out status are tracked separately, so both are true at once.",
+      "buildOkRolloutPending": "The build finished, but the rollout has not completed. Build status and rollout status are tracked separately, so both are true at once.",
       "buildOkRolloutFailed": "The build succeeded, but the new container did not become healthy, so the previous version keeps serving.",
       "staticChip": "The app status says \"{{chip}}\" because it reports container readiness. A static site has no container, so that chip does not block this deploy."
     },
     "stuck": {
       "title": "This is taking longer than expected",
-      "noImage": "The roll out has run for more than {{limit}} and the app reports that no image has been built for it. The build step produced no runnable image, so there is nothing to start.",
-      "health": "The roll out has run for more than {{limit}}. The new container is probably not answering its health check, or it keeps restarting."
+      "noImage": "The rollout has run for more than {{limit}} and no image has been built for this app. The build produced nothing runnable, so there is nothing to start.",
+      "health": "The rollout has run for more than {{limit}}. The new container probably isn't answering its health check, or it keeps restarting."
     },
     "action": {
       "containerLogs": "View container logs",
@@ -77,8 +77,8 @@
     "reconnecting": "Reconnecting",
     "reconnectIn": "retry in {{seconds}}s",
     "retryNow": "Retry now",
-    "polling": "Live stream unavailable, refreshing every 3s",
-    "closed": "Deploy finished, live stream closed",
+    "polling": "Live stream unavailable. Refreshing every 3s.",
+    "closed": "Deploy finished. Live stream closed.",
     "connecting": "Connecting"
   },
   "build": {
@@ -99,9 +99,9 @@
     },
     "empty": {
       "noStepTitle": "This deploy had no build step",
-      "noStepBody": "A pre-built image was deployed as is, so there is no build output. The pipeline trace (digest, pull, start, health checks, cutover) appears here as soon as the deploy starts.",
+      "noStepBody": "A pre-built image was deployed as is, so there is no build output. The pipeline trace (digest, pull, start, health checks, cutover) appears here once the deploy starts.",
       "notCapturedTitle": "Build output was not captured",
-      "notCapturedBody": "The build did not record any log lines. The deploy itself completed, so the Roll out tab shows what happened next.",
+      "notCapturedBody": "The build did not record any log lines. The deploy itself completed, so the Rollout tab shows what happened next.",
       "waitingTitle": "Waiting for build output",
       "waitingBody": "Lines appear here as soon as the builder starts writing them."
     },

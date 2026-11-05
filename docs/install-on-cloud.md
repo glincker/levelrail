@@ -25,13 +25,15 @@ Cloud boot hooks run as root, so the script does not need `sudo`. Pass `--domain
 
 ## Firewall ports
 
-Open these inbound ports in the cloud firewall, security group or network rules before you test the dashboard.
+Open these inbound ports in the cloud firewall, security group or network rules before you test the dashboard. The installer never changes them. Copy-paste rules for each provider are in [Cloud firewall rules](/cloud-firewall-rules).
 
 | Port | Protocol | Why |
 | --- | --- | --- |
 | 80 | TCP, from anywhere | Let's Encrypt HTTP-01 and the HTTP ingress |
 | 443 | TCP, from anywhere | HTTPS ingress for your apps and the dashboard |
-| 8080 | TCP, from your admin IP only | Dashboard and API until HTTPS is set up. The installer picks the next free port if 8080 is taken and prints the real one |
+| 8080 | TCP, from your admin IP only (optional) | Dashboard over plain HTTP until HTTPS is set up. Skip this rule if you use an SSH tunnel. The installer picks the next free port if 8080 is taken and prints the real one |
+
+You can reach the dashboard without opening 8080: tunnel it over SSH with `ssh -L 8080:127.0.0.1:8080 <user>@<public-ip>` and open `http://localhost:8080`. The installer's `LEVELRAIL_CONFIGURE_UFW=1` option does not open 8080 either. The full rule is in [Dashboard port 8080](/installing#dashboard-port-8080).
 
 Keep SSH (22) open to your own address so you can read the setup token. Optionally open `443/udp` for HTTP/3. Agent-only nodes need no inbound ports at all, see [Multi-node](/multi-node).
 
@@ -235,8 +237,13 @@ Create a Hetzner Cloud Firewall with inbound TCP 80 and 443 from all addresses a
 ## After the install
 
 1. Read the dashboard URL and the setup token from the install output over SSH, or run `sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token` (`docker compose exec levelrail levelrail setup-token` for a compose install).
-2. Open `http://<public-ip>:8080/login#setup=<token>` once, create the admin, then set a domain with TLS on the dashboard as described in [Domains and ingress](/domains-and-ingress#the-dashboards-own-domain).
-3. Back up `master.key` from the data directory, then close port 8080 to the public.
+2. Open `http://<public-ip>:8080/login#setup=<token>` once (or the same link through the SSH tunnel with `localhost` as the host), create the admin, then set a domain with TLS on the dashboard as described in [Domains and ingress](/domains-and-ingress#the-dashboards-own-domain).
+3. Back up `master.key` from the data directory, then close port 8080 if you opened it. After HTTPS is on, plain HTTP sign-in is refused anyway.
 4. Run `levelrail-cli doctor` on the server to check Docker, disk and the ports.
 
 The cloud CLI and Terraform snippets on this page have not been run end to end against real accounts. See [Cloud integrations](/cloud-integrations) for what is built and what is planned.
+
+## Next step
+
+1. [Getting started](/getting-started): enable HTTPS and deploy your first app.
+2. [First backup in 5 minutes](/backups-and-storage#first-backup-in-5-minutes).

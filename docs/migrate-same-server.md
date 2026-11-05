@@ -7,7 +7,7 @@ description: "Move from Coolify, Dokploy or CapRover to Levelrail on the same ma
 This is the whole story for one server that runs your old platform today and will run Levelrail tomorrow. Levelrail is installed next to the old proxy first, your apps are staged and verified without touching live traffic, and only then does it take over ports 80 and 443. The takeover is one guided action with a recorded way back.
 
 <Note>
-This page is about a single server. To pull apps onto a different server, use [Migrating from Coolify, Dokploy or CapRover](/migrating-from-coolify-dokploy-and-caprover) and its cutover section instead.
+This page is about a single server. To pull apps onto a different server, use [Migrate to Levelrail](/migrate-to-levelrail) and its cutover section instead.
 </Note>
 
 ## The path in five stages
@@ -32,7 +32,7 @@ In coexist mode the ingress listens on `8088` and `8443`, and the managed routes
 
 ## 2. Import and stage
 
-Open **Migrate** in the dashboard and follow the wizard: connect to the old platform with a read-only token, pick what to import, preflight, stage, move images, build and verify, copy volumes. Every step is described in [Migrating from Coolify, Dokploy or CapRover](/migrating-from-coolify-dokploy-and-caprover). Nothing on the old platform is written to.
+Open **Migrate** in the dashboard and follow the wizard: connect to the old platform with a read-only token, pick what to import, preflight, stage, move images, build and verify, copy volumes. Every step is described in [Migrate to Levelrail](/migrate-to-levelrail). Nothing on the old platform is written to.
 
 ## 3. Verify the staged apps
 

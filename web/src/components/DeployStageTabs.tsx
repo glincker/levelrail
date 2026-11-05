@@ -85,7 +85,7 @@ export function DeployStageTabs({
             className={cn(
               '-mb-px flex shrink-0 items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/60',
               active
-                ? 'border-foreground text-foreground'
+                ? 'border-state-selected-border text-foreground'
                 : 'border-transparent text-muted-foreground hover:text-foreground',
             )}
           >

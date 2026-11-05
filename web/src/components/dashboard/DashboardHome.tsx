@@ -21,6 +21,9 @@ import { DashboardPending } from './DashboardPending'
 import { cn } from '@/lib/utils'
 import { DashboardHero } from './DashboardHero'
 import { FleetTiles } from './FleetTiles'
+import { OnboardingCard } from '../onboarding/OnboardingCard'
+import { useOnboardingCardShown } from '../../queries/meOnboarding'
+import { RestoreDueCard } from './RestoreDueCard'
 import { NextSteps } from './NextSteps'
 import { RecentActivity } from './RecentActivity'
 import { AppsPanel } from './AppsPanel'
@@ -30,7 +33,6 @@ import { WidgetFrame } from './WidgetFrame'
 import { ResourcesSection } from './ResourcesSection'
 import { RecommendationsLine } from './RecommendationsLine'
 import { ResourceAdvisorTile } from '../resourceAdvisor/ResourceAdvisorTile'
-import { PlatformCapabilities } from './PlatformCapabilities'
 import { DashboardViews } from './DashboardViews'
 import { ScopeIndicator } from './ScopeIndicator'
 import { useEnvironmentScope } from '../../lib/environmentScope'
@@ -107,6 +109,8 @@ function StartView({
 
   return (
     <div className="flex flex-col gap-(--glinr-page-gap)">
+      <OnboardingCard />
+      <RestoreDueCard />
       <StatusStrip
         apps={summary.total}
         trailing={
@@ -189,6 +193,7 @@ export function DashboardHome({
   const [deployStarted, setDeployStarted] = useState(false)
   const [firstRunDone, setFirstRunDone] = useState(false)
   const hasApps = summary.total > 0 || anyApps.data === true
+  const setupFirst = useOnboardingCardShown()
 
   if (summary.total === 0 && anyApps.isPending) {
     return <DashboardPending />
@@ -197,6 +202,7 @@ export function DashboardHome({
   if (!hasApps || (deployStarted && !firstRunDone)) {
     const firstRun = (
       <div className="space-y-8">
+        <OnboardingCard />
         <Suspense fallback={null}>
           <FirstDeploy
             onStarted={() => {
@@ -205,14 +211,10 @@ export function DashboardHome({
             onDone={() => {
               setFirstRunDone(true)
             }}
+            secondary={setupFirst}
           />
         </Suspense>
-        {hasApps ? null : (
-          <>
-            <RecommendationsLine showSetup={isRoot} />
-            <PlatformCapabilities />
-          </>
-        )}
+        {hasApps ? null : <RecommendationsLine showSetup={isRoot} />}
       </div>
     )
     // Keep the board tabs reachable before the first app so Metrics and saved boards are not hidden.

@@ -1,0 +1,11 @@
+{
+  "failing": {
+    "fallback": "Requiere atencion, abre la app para ver el motivo.",
+    "fix": "Ver despliegues",
+    "fixLabel": "Ver despliegues de {{name}}"
+  },
+  "logs": {
+    "noContainer": "No hay ningun contenedor en ejecucion para esta app, asi que no hay nada que mostrar.",
+    "deploy": "Desplegar"
+  }
+}

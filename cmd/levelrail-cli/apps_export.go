@@ -12,7 +12,7 @@ import (
 )
 
 // exportFileNames are the only entries written to disk, so a hostile archive cannot pick a path.
-var exportFileNames = map[string]bool{"docker-compose.yml": true, ".env.example": true, "README.md": true}
+var exportFileNames = map[string]bool{"docker-compose.yml": true, ".env.example": true, "README.md": true, "volumes.json": true, ".env": true}
 
 // runAppsExport implements "apps export <name>": the app as plain compose plus an env template.
 func runAppsExport(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -53,7 +53,7 @@ func runAppsExport(prog string, args []string, stdout, stderr io.Writer, lookupE
 	if out == "" {
 		out = name + "-export"
 	}
-	written, err := extractExport(data, out)
+	written, err := extractExport(data, out, false)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("write export: %w", err))
 	}
@@ -73,7 +73,8 @@ func runAppsExport(prog string, args []string, stdout, stderr io.Writer, lookupE
 const maxExportFileBytes = 8 << 20
 
 // extractExport writes the known files of a tar into dir and returns their paths.
-func extractExport(data []byte, dir string) ([]string, error) {
+// An existing symlink is refused, and an existing .env is kept unless force is set.
+func extractExport(data []byte, dir string, force bool) ([]string, error) {
 	if err := os.MkdirAll(dir, 0o750); err != nil {
 		return nil, err
 	}
@@ -98,9 +99,36 @@ func extractExport(data []byte, dir string) ([]string, error) {
 		if len(body) > maxExportFileBytes {
 			return nil, fmt.Errorf("entry %q exceeds %d bytes", h.Name, maxExportFileBytes)
 		}
-		if err := os.WriteFile(p, body, 0o600); err != nil {
+		if err := writeExportFile(p, h.Name, body, force); err != nil {
 			return nil, err
 		}
 		written = append(written, p)
 	}
+}
+
+// writeExportFile never follows a symlink and never replaces a .env silently,
+// since that file may hold the operator's own edited secrets.
+func writeExportFile(path, name string, body []byte, force bool) error {
+	fi, err := os.Lstat(path)
+	switch {
+	case err == nil && fi.Mode()&os.ModeSymlink != 0:
+		return fmt.Errorf("%s is a symlink, refusing to write through it", path)
+	case err == nil && name == ".env" && !force:
+		return fmt.Errorf("%s already exists, pass --force to replace it", path)
+	case err != nil && !errors.Is(err, os.ErrNotExist):
+		return err
+	}
+	flags := os.O_WRONLY | os.O_CREATE | os.O_TRUNC
+	if err != nil {
+		flags |= os.O_EXCL
+	}
+	f, err := os.OpenFile(path, flags, 0o600) //nolint:gosec // path is the export dir plus an allowlisted name
+	if err != nil {
+		return err
+	}
+	if _, err := f.Write(body); err != nil {
+		_ = f.Close()
+		return err
+	}
+	return f.Close()
 }

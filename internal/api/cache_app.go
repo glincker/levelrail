@@ -380,6 +380,18 @@ func (rt *Router) handleSystemCache(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: system cache: list apps", err)
 		return
 	}
+	if v, verr := rt.strictViewFor(r); verr != nil {
+		rt.internalError(w, "api: system cache: resolve caller", verr)
+		return
+	} else if v != nil {
+		kept := svcs[:0:0]
+		for _, svc := range svcs {
+			if v.canApp(svc.Name) {
+				kept = append(kept, svc)
+			}
+		}
+		svcs = kept
+	}
 	resp := systemCacheResponse{Limits: rt.cacheLimits(), Apps: []systemCacheApp{}}
 	var all []ingress.CacheStats
 	for _, svc := range svcs {

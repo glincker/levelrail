@@ -466,6 +466,8 @@ Each rule tracks its own pending and firing state and notifies only on transitio
 | `scheduled_task_running_long` | one app's own scheduled task | a run in flight past its warning threshold | `scheduled_task_id` |
 | `domain_health` | one app's own domains | a DNS check gone bad (not resolving, or resolving somewhere else) on any of the app's configured domains | `for_duration` (optional debounce) |
 | `domain_not_resolving` | every domain, or one app's | a domain whose DNS check has found no record for the whole window | `for_duration` (default 30m) |
+| `domain_traffic_drop` | one app's domains, or one domain (`domain:<name>`) | requests in the last window below a percentage of the same window a day earlier, only when that baseline is large enough | `for_duration` (window, default 1h), `threshold` (percent, default 50), `restart_count_threshold` (minimum baseline requests, default 20) |
+| `parked_domain_cert_expiry` | platform-wide | a parked domain whose certificate has fewer days left than the threshold | `threshold` (days, default 14) |
 | `backup_missing` | one database (platform-wide) or one app's own volume | last successful backup trailing its own cron schedule's expected interval by more than a grace period | `backup_resource_kind` (`database` or `volume`), `backup_database_name` or `backup_service_name`/`backup_volume_name`, `for_duration` (reused as the overdue grace period, default 6h) |
 | `cert_expiry` | platform-wide | every stored TLS certificate approaching or past expiry, or stuck mid-renewal | none required |
 | `cert_expiring` | platform-wide, or one hostname | any certificate whose expiry falls within the window | `threshold` (days, default 14), `resource_id` `domain:<name>` to watch one hostname |

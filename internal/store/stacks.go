@@ -60,12 +60,19 @@ func StackRevisionCanTransition(from, to string) bool {
 	return false
 }
 
+// Stack scopes; the values match internal/iac.
+const (
+	StackScopeProject = "project"
+	StackScopeInstall = "install"
+)
+
 // StackRecord is one row of stacks.
 type StackRecord struct {
 	ID              string
 	Name            string
 	ProjectID       string
 	EnvironmentID   string
+	Scope           string
 	AllowPrune      bool
 	DriftPolicy     string
 	PinnedRevision  int
@@ -142,13 +149,13 @@ func (l StackLockRecord) Expired(now time.Time) bool { return !now.Before(l.Expi
 
 func stackTime(t time.Time) string { return t.UTC().Format(time.RFC3339Nano) }
 
-const stackCols = `id, name, project_id, environment_id, allow_prune, drift_policy, pinned_revision, require_approval, created_at, created_by`
+const stackCols = `id, name, project_id, environment_id, scope, allow_prune, drift_policy, pinned_revision, require_approval, created_at, created_by`
 
 func scanStack(r rowScanner) (StackRecord, error) {
 	var s StackRecord
 	var prune, appr int
 	var created string
-	if err := r.Scan(&s.ID, &s.Name, &s.ProjectID, &s.EnvironmentID, &prune, &s.DriftPolicy, &s.PinnedRevision, &appr, &created, &s.CreatedBy); err != nil {
+	if err := r.Scan(&s.ID, &s.Name, &s.ProjectID, &s.EnvironmentID, &s.Scope, &prune, &s.DriftPolicy, &s.PinnedRevision, &appr, &created, &s.CreatedBy); err != nil {
 		return StackRecord{}, err
 	}
 	s.AllowPrune, s.RequireApproval = prune != 0, appr != 0
@@ -158,20 +165,38 @@ func scanStack(r rowScanner) (StackRecord, error) {
 
 // CreateStack inserts s, assigning its id and creation time.
 func (db *DB) CreateStack(ctx context.Context, s StackRecord, now time.Time) (StackRecord, error) {
-	if strings.TrimSpace(s.Name) == "" || s.ProjectID == "" {
-		return StackRecord{}, errors.New("store: create stack: name and project are required")
+	if strings.TrimSpace(s.Name) == "" {
+		return StackRecord{}, errors.New("store: create stack: name is required")
+	}
+	if s.Scope == "" {
+		s.Scope = StackScopeProject
+	}
+	switch {
+	case s.Scope == StackScopeProject && s.ProjectID == "":
+		return StackRecord{}, errors.New("store: create stack: a project stack needs a project")
+	case s.Scope == StackScopeInstall && (s.ProjectID != "" || s.EnvironmentID != ""):
+		return StackRecord{}, errors.New("store: create stack: an install stack has no project or environment")
+	case s.Scope != StackScopeProject && s.Scope != StackScopeInstall:
+		return StackRecord{}, fmt.Errorf("store: create stack: unknown scope %q", s.Scope)
 	}
 	suffix, err := stackIDSuffix()
 	if err != nil {
 		return StackRecord{}, fmt.Errorf("store: create stack: id: %w", err)
 	}
 	s.ID = "stk_" + suffix
+	// Install stacks start strict; relaxing them is a later explicit update.
+	if s.Scope == StackScopeInstall {
+		s.RequireApproval = true
+		if s.DriftPolicy == "" {
+			s.DriftPolicy = "lock"
+		}
+	}
 	if s.DriftPolicy == "" {
 		s.DriftPolicy = "warn"
 	}
 	s.CreatedAt = now.UTC()
-	_, err = db.ExecContext(ctx, `INSERT INTO stacks (`+stackCols+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		s.ID, s.Name, s.ProjectID, s.EnvironmentID, boolInt(s.AllowPrune), s.DriftPolicy, s.PinnedRevision,
+	_, err = db.ExecContext(ctx, `INSERT INTO stacks (`+stackCols+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		s.ID, s.Name, s.ProjectID, s.EnvironmentID, s.Scope, boolInt(s.AllowPrune), s.DriftPolicy, s.PinnedRevision,
 		boolInt(s.RequireApproval), stackTime(now), s.CreatedBy)
 	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE constraint failed") {

@@ -128,6 +128,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runMail(prog, args[1:], stdout, stderr, lookupEnv)
 	case "dns":
 		return runDNS(prog, args[1:], stdout, stderr, lookupEnv)
+	case "certs":
+		return runCerts(prog, args[1:], stdout, stderr, lookupEnv)
 	case "domains":
 		return runDomains(prog, args[1:], stdout, stderr, lookupEnv)
 	case "backups":
@@ -280,6 +282,10 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runDoctor(prog, args[1:], stdout, stderr, lookupEnv)
 	case "setup":
 		return runSetup(prog, args[1:], stdout, stderr, lookupEnv)
+	case "me":
+		return runMe(prog, args[1:], stdout, stderr, lookupEnv)
+	case "onboarding":
+		return runOnboarding(prog, args[1:], stdout, stderr, lookupEnv)
 	case "proxy":
 		return runProxy(prog, args[1:], stdout, stderr, lookupEnv)
 	case "auth-engine":
@@ -352,6 +358,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runSessionPolicy(prog, args[1:], stdout, stderr, lookupEnv)
 	case "teams":
 		return runTeams(prog, args[1:], stdout, stderr, lookupEnv)
+	case "orgs":
+		return runOrgs(prog, args[1:], stdout, stderr, lookupEnv)
 	case "quota":
 		return runQuota(prog, args[1:], stdout, stderr, lookupEnv)
 	case "members":
@@ -431,6 +439,7 @@ Usage:
   %[1]s databases get <name> [flags]   show one database
   %[1]s functions deploy|list|invoke|delete|settings|versions|rollback [flags]   image apps that sleep when idle and wake on the first request
   %[1]s models list|get|deploy|logs|delete|restart|rotate-key|gpus [flags]   AI models on GPU nodes
+  %[1]s certs budget [flags]           certificates issued in the last 7 days against the warning level
   %[1]s domains list [flags]           list every app's domains in one call
   %[1]s dns zones|records|check|health-checks ...   DNS zones, records, delegation and propagation at Cloudflare or Route53
   %[1]s preview status|enable|disable|capture|prune <app> [flags]   deploy preview screenshots (opt-in per app)
@@ -495,7 +504,8 @@ Usage:
   %[1]s upgrade [--no-backup] [flags]                          preflight checks, backup, and the command that upgrades (never upgrades itself)
   %[1]s upgrade --list [--channel stable|beta|all]             last 5 releases with a database schema compatibility verdict
   %[1]s upgrade --rollback-plan <version>                      read-only rollback preview, applied on the host
-  %[1]s upgrade retry|rollback <attempt>                       re-run a failed upgrade attempt, or restore its pre-upgrade restore point
+  %[1]s upgrade --rollback <version> --yes                     roll back to a release this host kept (binary only)
+  %[1]s upgrade retry|rollback|cancel <attempt>                re-run a failed upgrade attempt, restore its pre-upgrade restore point, or cancel a running one
   %[1]s upgrade --history [--json] | --ack <id>                recorded upgrades, rollbacks and installs, and acknowledging one
   %[1]s updates restore-points list|restore <id> [--yes]       pre-upgrade restore points and putting one back
   %[1]s version [flags]                                       running control plane version, and whether a newer release is published
@@ -526,6 +536,8 @@ Usage:
   %[1]s doctor [flags]                                        health checks (same as the dashboard Doctor page), --fix applies safe fixes
   %[1]s go-live <app> [domain] [--wait] [--timeout 5m] [flags]  the guided checklist from deploy to https, exits non-zero until live with --wait
   %[1]s setup status|next|skip|undo|reset [flags]             the Get started checklist: what is left before production
+  %[1]s me appearance [get|set <file|->|reset] [flags]       your dashboard look, synced to your account (reset needs --yes)
+  %[1]s onboarding status|skip|reset [flags]                  your first-run flow (reset needs --yes)
   %[1]s proxy [--domain D] [--verify] [flags]                 put the dashboard behind the proxy that owns ports 80 and 443
   %[1]s proxy setup|install|status|apply|verify|disable [flags] let this server manage its routes in that proxy (Traefik)
   %[1]s explain <kind[.field]>                                 document a resource kind or field from the embedded schema
@@ -558,6 +570,7 @@ Usage:
   %[1]s invites create|list|revoke [flags]                     invite a teammate by email, list or revoke pending invites
   %[1]s teams list|create|show|rename|delete|use|roles|transfer|events|members|invites   teams, their members, roles and invitations
   %[1]s quota show|set|clear <team|project> <id> [flags]       per-team and per-project limits on apps, databases, memory, CPU and previews
+  %[1]s orgs show|rename|set-slug|set-description|avatar <org> ...   organization profile (name, slug, description, avatar) and home summary
   %[1]s members list|set-role|remove|leave <team> ...          shortcut for "teams members"
   %[1]s --team ID [--project ID] <command> ...                 narrow any command to one team or project (also APP_TEAM, APP_PROJECT, "teams use")
   %[1]s iam policies create|list|get|update|delete|attach|detach|attachments [flags]   resource-scoped Allow/Deny policies, additive on top of --abilities

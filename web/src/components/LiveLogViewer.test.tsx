@@ -4,6 +4,7 @@ import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import observabilityEn from '../locales/en/observability.json'
+import appRowsEn from '../locales/en/appRows.json'
 import { parseRunStatus } from '../hooks/useLogStream'
 import type { ReconcileCondition } from '../types/deploy'
 import { LiveLogViewer } from './LiveLogViewer'
@@ -21,9 +22,9 @@ const testI18n = i18next.createInstance()
 void testI18n.use(initReactI18next).init({
   lng: 'en',
   fallbackLng: 'en',
-  ns: ['observability'],
+  ns: ['observability', 'appRows'],
   defaultNS: 'observability',
-  resources: { en: { observability: observabilityEn } },
+  resources: { en: { observability: observabilityEn, appRows: appRowsEn } },
   interpolation: { escapeValue: false },
 })
 
@@ -133,6 +134,17 @@ describe('LiveLogViewer', () => {
     expect(
       screen.queryByText('Waiting for log output...'),
     ).not.toBeInTheDocument()
+  })
+
+  it('says there is no container and offers Deploy when stopped with no output', () => {
+    renderViewer()
+    act(() => {
+      source().emit('status', JSON.stringify({ running: false }))
+    })
+    expect(
+      screen.getByText(/No container is running for this app/),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Deploy it')).toBeInTheDocument()
   })
 
   it('says No container instead of Connecting when none exists', () => {

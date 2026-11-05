@@ -1,7 +1,6 @@
 package api
 
 import (
-	"log/slog"
 	"net/http"
 
 	"github.com/GLINCKER/levelrail/internal/selfupgrade"
@@ -16,6 +15,8 @@ type selfUpgradeStatusResource struct {
 	// Verified is true when the last finished attempt succeeded and its
 	// health confirmation step passed.
 	Verified bool `json:"verified"`
+	// Progress is the live view of the newest attempt, with the valid buttons.
+	Progress *selfUpgradeProgress `json:"progress"`
 }
 
 // handleSelfUpgradeStatus handles GET /api/v1/updates/self-upgrade/status:
@@ -27,11 +28,7 @@ func (rt *Router) handleSelfUpgradeStatus(w http.ResponseWriter, r *http.Request
 		writeJSON(w, http.StatusOK, out)
 		return
 	}
-	if rt.dataDir != "" {
-		if _, err := selfupgrade.ImportJournal(r.Context(), selfupgrade.NewJournal(rt.dataDir), rt.selfUpgrade.store); err != nil {
-			rt.logger.Warn("api: import self-upgrade journal failed", slog.String("error", err.Error()))
-		}
-	}
+	rt.reapUpgrades(r.Context())
 	rows, err := rt.selfUpgrade.store.ListSelfUpgradeAttempts(r.Context(), selfUpgradeListLimit)
 	if err != nil {
 		rt.internalError(w, "api: read self-upgrade status failed", err)
@@ -41,6 +38,13 @@ func (rt *Router) handleSelfUpgradeStatus(w http.ResponseWriter, r *http.Request
 	if out.LastFinished != nil && out.LastFinished.Outcome == selfupgrade.OutcomeSucceeded {
 		out.Verified = stepPassed(out.LastFinished.Steps, selfupgrade.StepHealth)
 	}
+	if out.Running != nil {
+		out.Running.Failure = nil
+	}
+	if out.LastFinished != nil {
+		out.LastFinished.Failure = rt.attemptFailure(*out.LastFinished)
+	}
+	out.Progress = rt.buildUpgradeProgress(out.Running, out.LastFinished)
 	writeJSON(w, http.StatusOK, out)
 }
 

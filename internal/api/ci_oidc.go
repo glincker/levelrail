@@ -409,6 +409,9 @@ func (rt *Router) handleCIOIDCExchange(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		err = rt.policies.AttachPolicy(r.Context(), attachID, match.PolicyID, store.PrincipalTypeToken, rec.ID)
 	}
+	if err == nil {
+		err = rt.markSystemToken(r.Context(), rec.ID)
+	}
 	if err != nil {
 		_ = rt.tokens.RevokeAPIToken(r.Context(), rec.ID)
 		rt.internalError(w, "ci exchange: scope token", err)

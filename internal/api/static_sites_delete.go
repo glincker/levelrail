@@ -68,6 +68,10 @@ func (rt *Router) removeStaticSite(ctx context.Context, name string) error {
 // whose app still exists is refused: deleting the app removes the site with it.
 func (rt *Router) handleDeleteStaticSite(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
+	// The route gate covers app:<name>; a deny on static_site:<name> must block too.
+	if !rt.authorizeRefs(w, r, AbilityWriteSensitive, notFoundAs(http.StatusNotFound, "static site not found"), staticSiteRef(name), appRef(name)) {
+		return
+	}
 	getter, ok := rt.staticSites.(staticSiteGetter)
 	if !ok {
 		writeError(w, http.StatusNotImplemented, "static site delete is not configured on this control plane")

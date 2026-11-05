@@ -14,7 +14,7 @@ Dokploy apps and databases import over its HTTP API, read-only. Data, volumes an
 - The Dokploy URL reachable from the Levelrail control plane. For a private address, set `APP_IMPORT_ALLOW_PRIVATE_NETWORKS=true` on the control plane and pass `--allow-private`.
 - A database user per Dokploy database, and a route from the Levelrail node to its port.
 
-## What imports automatically
+## What moves
 
 | Item | Result |
 | --- | --- |
@@ -34,7 +34,7 @@ Dokploy apps and databases import over its HTTP API, read-only. Data, volumes an
 - Health checks that are shell commands, extra ports, pre and post deploy commands.
 - Dokploy scheduled jobs are not read. Recreate them as scheduled tasks.
 
-## What cannot be migrated
+## What does not move
 
 - Dokploy [compose apps](/compose-apps). They are listed as unsupported. Deploy the compose file with `levelrail-cli apps deploy-compose`.
 - Apps uploaded as an archive (`drop`) and file mounts.
@@ -118,6 +118,12 @@ Dokploy usually runs Traefik on ports 80 and 443. Either point DNS at a new serv
 | Database copy fails | Check host, port and user. Target version must be the same or newer than the source |
 | App shows as unsupported | Read the reason. Compose apps and archive uploads are not imported |
 | Domain shows `wait` | Lower the TTL and wait out the old value |
+
+## Verify and roll back
+
+Run `levelrail-cli migrate cutover --verify` after you switch DNS. It checks the certificate, the health path and DNS.
+
+The copy only reads the old server, so nothing there is changed. To roll back, restart the old app if you paused it and point DNS back at the old server.
 
 ## Choose to stay if
 

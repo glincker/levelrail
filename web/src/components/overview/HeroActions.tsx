@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   ChevronDownGlassIcon,
+  TagGlassIcon,
   CopyGlassIcon,
   EllipsisGlassIcon,
   ExternalLinkGlassIcon,
@@ -16,6 +18,7 @@ import {
 import { ActionMenu, Kbd } from '@/components/kit'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { AddTagDialog } from '../AddTagDialog'
 import { CloneAppDialog } from '../CloneAppDialog'
 import { DeleteAppDialog } from '../DeleteAppDialog'
 import { PromoteAppDialog } from '../PromoteAppDialog'
@@ -23,51 +26,77 @@ import { SaveAsTemplateDialog } from '../SaveAsTemplateDialog'
 import type { AppDetail } from '../../types/appDetail'
 import type { DeployTab } from './DeploySheet'
 import { useOverviewActions } from './useOverviewActions'
+import type { HeroPrimary } from './heroPrimary'
 
 export function HeroActions({
   app,
   url,
   onDeploy,
+  primary = 'deploy',
 }: {
   app: AppDetail
   url: string | null
   onDeploy: (tab: DeployTab) => void
+  primary?: HeroPrimary
 }) {
   const actions = useOverviewActions(app, url)
   const [promoteOpen, setPromoteOpen] = useState(false)
   const [cloneOpen, setCloneOpen] = useState(false)
   const [saveAsTemplateOpen, setSaveAsTemplateOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [tagOpen, setTagOpen] = useState(false)
+  const { t } = useTranslation('common')
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex shrink-0 items-center gap-2">
       {url ? (
         <a
           href={url}
           target="_blank"
           rel="noreferrer"
-          className={cn(buttonVariants({ size: 'lg' }), 'gap-2')}
+          className={cn(
+            buttonVariants({ variant: 'outline', size: 'lg' }),
+            'gap-2',
+          )}
         >
           <ExternalLinkGlassIcon size="1.4em" aria-hidden="true" />
-          Open app
-          <Kbd keys={['O']} />
+          <span className="max-sm:sr-only">{t('overviewHero.openApp')}</span>
+          <span className="max-lg:hidden">
+            <Kbd keys={['O']} />
+          </span>
         </a>
       ) : null}
 
       <div className="flex items-center">
         <Button
-          variant="outline"
           size="lg"
           className="rounded-r-none"
-          onClick={() => onDeploy('existing-image')}
+          disabled={
+            (primary === 'restart' && actions.restarting) ||
+            (primary === 'retry' && actions.redeploying)
+          }
+          onClick={
+            primary === 'restart'
+              ? actions.restart
+              : primary === 'retry'
+                ? actions.redeploy
+                : () => onDeploy('existing-image')
+          }
         >
-          <RocketGlassIcon size="1.4em" aria-hidden="true" />
-          Deploy
+          {primary === 'restart' ? (
+            <RotateCwGlassIcon size="1.4em" aria-hidden="true" />
+          ) : (
+            <RocketGlassIcon size="1.4em" aria-hidden="true" />
+          )}
+          {primary === 'restart'
+            ? actions.restartLabel
+            : primary === 'retry'
+              ? t('overviewHero.retryDeploy')
+              : t('overviewHero.deploy')}
         </Button>
         <ActionMenu
           trigger={
             <Button
-              variant="outline"
               size="icon-lg"
               className="-ml-px rounded-l-none"
               aria-label="More deploy options"
@@ -144,6 +173,12 @@ export function HeroActions({
             onSelect: actions.copyUrl,
           },
           {
+            id: 'add-tag',
+            label: t('overviewHero.addTag'),
+            icon: <TagGlassIcon size="1.4em" />,
+            onSelect: () => setTagOpen(true),
+          },
+          {
             id: 'promote',
             label: 'Promote...',
             icon: <RocketGlassIcon size="1.4em" />,
@@ -172,6 +207,13 @@ export function HeroActions({
       />
 
       {actions.confirmDialog}
+      {tagOpen ? (
+        <AddTagDialog
+          appName={app.name}
+          open={tagOpen}
+          onOpenChange={setTagOpen}
+        />
+      ) : null}
       <PromoteAppDialog
         appName={app.name}
         projectId={app.project_id}

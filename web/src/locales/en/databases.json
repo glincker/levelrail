@@ -104,7 +104,7 @@
     "delete": {
       "trigger": "Remove",
       "title": "Remove \"{{name}}\" from Levelrail?",
-      "description": "This only removes Levelrail's record and its stored password. The database, its container and all of its data are not touched. Apps that use it lose their connection settings.",
+      "description": "This removes only the record and stored password. The database, its container and all of its data are not touched. Apps that use it lose their connection settings.",
       "confirm": "Remove record",
       "confirmAnyway": "Remove anyway",
       "removing": "Removing...",
@@ -127,7 +127,7 @@
   "version": {
     "trigger": "Change",
     "title": "Change version of \"{{name}}\"",
-    "description": "Minor and patch updates recreate the container over the same data. A major version change needs the guarded major upgrade (Postgres) below, or a backup restored into a new database. Take a backup first.",
+    "description": "Minor and patch updates recreate the container over the same data. A major version change needs the guarded major upgrade below (Postgres), or a backup restored into a new database. Take a backup first.",
     "label": "Version",
     "placeholder": "16.4",
     "cancel": "Cancel",
@@ -151,7 +151,7 @@
     "hint": "Archived WAL is copied to the backup target so point-in-time restore survives losing this host's disk."
   },
   "pitrNew": {
-    "enableBinlog": "Enable continuous binary log archiving so this database can be restored to any exact moment, not just to when a backup happened to run.",
+    "enableBinlog": "Archive the binary log continuously so this database can be restored to any exact moment, not only to when a backup ran.",
     "restoreButton": "Restore to timestamp",
     "title": "Restore {{name}} to a point in time",
     "description": "This creates a new database from a base backup plus the archived binary log up to the chosen time. {{name}} is not changed.",
@@ -170,7 +170,7 @@
   },
   "majorUpgrade": {
     "title": "Major version upgrade",
-    "description": "Upgrades this database across a major version by dump and restore. It is offline while it runs. The old data is copied to a rollback snapshot first, and a failure after that rolls back automatically.",
+    "description": "Upgrades this database across a major version by dump and restore. It is offline while it runs. The old data is copied to a rollback snapshot first, and a failure rolls back automatically.",
     "versionLabel": "Target major version",
     "versionPlaceholder": "17",
     "confirmLabel": "Type the database name to confirm",
@@ -408,9 +408,9 @@
       },
       "openMigrationHub": "Open the migration hub",
       "copyCli": "or run: migrate db-copy <database> with the CLI.",
-      "verifiedEmpty": "The copy is marked verified but the database has no tables. A verified copy should never be empty, so treat this as an error and run the copy again.",
-      "contradiction_one": "The catalog reports {{count}} table but the listing returned none. Retry, and if this persists check the helper logs.",
-      "contradiction_other": "The catalog reports {{count}} tables but the listing returned none. Retry, and if this persists check the helper logs.",
+      "verifiedEmpty": "The copy is marked verified but the database has no tables. A verified copy should never be empty. Treat this as an error and run the copy again.",
+      "contradiction_one": "The catalog reports {{count}} table but the listing returned none. Retry. If it keeps happening, check the helper logs.",
+      "contradiction_other": "The catalog reports {{count}} tables but the listing returned none. Retry. If it keeps happening, check the helper logs.",
       "evidence": {
         "size": "Database size on disk",
         "schemas": "Schemas scanned",
@@ -540,7 +540,7 @@
     "showMore": "Show more",
     "loading": "Loading databases",
     "notCreated": "Not created yet",
-    "failedToCreate": "Failed to create",
+    "failedToCreate": "Could not create the database",
     "pendingActionHint": "Available once the database is created"
   },
   "detail": {
@@ -630,7 +630,7 @@
   "publicAccess": {
     "noPasswordWarning": "This database has no password. Enabling public access lets anyone who can reach this host read and write the whole dataset with no authentication.",
     "noPasswordOpen": "This database has no password. This port is reachable from any network that can reach this host, granting full unauthenticated access.",
-    "openPort": "This port is reachable from any network that can reach this host, not just your own machine. Make sure your firewall trusts that before relying on it in production."
+    "openPort": "This port is reachable from any network that can reach this host, not only your own machine. Check that your firewall allows that before relying on it in production."
   },
   "overview": {
     "title": "Overview",
@@ -728,7 +728,7 @@
       "meilisearch": "Search engine",
       "qdrant": "Vector search",
       "typesense": "Search engine",
-      "memcached": "Simple memory cache"
+      "memcached": "In-memory cache"
     },
     "secretsWarning": "No secrets master key is configured, so this database is created but will not start until one is.",
     "secretsLink": "Configure it in Settings.",
@@ -815,7 +815,14 @@
     "editSettings": "Edit settings",
     "discard": "Discard",
     "confirmDiscard": "This deletes the saved settings of this database. Nothing was created. Continue?",
-    "discardYes": "Discard database"
+    "discardYes": "Discard database",
+    "progress": "{{done}} of {{total}} steps",
+    "working": "{{step}}...",
+    "doneGroup": "{{done}} of {{total}} done",
+    "hideDone": "Hide completed steps",
+    "copyDetails": "Copy details",
+    "copied": "Copied",
+    "readyCaption": "All steps finished"
   },
   "backupSetup": {
     "title": "Set up backups for {{name}}",

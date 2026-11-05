@@ -49,7 +49,6 @@ describe('platform nav and palette', () => {
       'Cloudflare DNS',
       'Route 53',
       'Google Cloud DNS',
-      'Platform settings',
     ]) {
       expect(labels).toContain(l)
     }

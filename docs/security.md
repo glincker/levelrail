@@ -306,7 +306,8 @@ External MCP clients do not enforce that taint tracking, so the protection lives
 6. Back up the control plane on a schedule and test a restore. See [Control plane backup](/control-plane-backup).
 7. Update on a regular cadence, because fixes ship only in the latest release. See [Upgrade safely](/upgrade-safely).
 8. Open the [Security center](/security-center) and clear what it flags.
-9. Read the [threat model](/threat-model), [deploy safety](/deploy-safety) and [supply chain](/supply-chain) pages for what each layer covers.
+9. Know how to check a download or image before you run it: [Verify a release](/verify-a-release).
+10. Read the [threat model](/threat-model), [deploy safety](/deploy-safety) and [supply chain](/supply-chain) pages for what each layer covers.
 
 ## Reporting a vulnerability
 

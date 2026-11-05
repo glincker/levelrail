@@ -143,14 +143,7 @@
     "title": "Detalles de uso"
   },
   "hero": {
-    "greeting_morning": "Buenos días",
-    "greeting_afternoon": "Buenas tardes",
-    "greeting_evening": "Buenas noches",
-    "greeting_night": "Trabajando hasta tarde",
-    "greetingNamed_morning": "Buenos días, {{name}}",
-    "greetingNamed_afternoon": "Buenas tardes, {{name}}",
-    "greetingNamed_evening": "Buenas noches, {{name}}",
-    "greetingNamed_night": "Trabajando hasta tarde, {{name}}"
+    "title": "Panel"
   },
   "banners": {
     "httpsTitle": "Este panel usa HTTP sin cifrar",
@@ -333,5 +326,11 @@
     "whatsNew": "Novedades",
     "update": "Actualizar",
     "dismiss": "Ocultar {{version}} hasta la próxima versión"
+  },
+  "restoreDue": {
+    "title": "Prueba una restauración",
+    "body": "Tienes una copia de seguridad, pero aún no has probado ninguna restauración. Una copia que nunca restauraste es una suposición.",
+    "action": "Probar una restauración",
+    "dismiss": "Descartar"
   }
 }

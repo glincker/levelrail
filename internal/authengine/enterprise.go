@@ -78,7 +78,9 @@ func (e *Engine) SAMLCertificatePEM() string {
 // platform serves SAML through its own guarded routes and has no
 // library-managed organizations to expose.
 func publicHandler(prefix string, next http.Handler) http.Handler {
-	blocked := []string{prefix + "/orgs", prefix + "/saml/"}
+	// The password routes are blocked so only the platform handlers, which
+	// enforce the live password policy, can set a password.
+	blocked := []string{prefix + "/orgs", prefix + "/saml/", prefix + "/password/change", prefix + "/password/set", prefix + "/email-password/reset"}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		p := r.URL.Path
 		for _, b := range blocked {

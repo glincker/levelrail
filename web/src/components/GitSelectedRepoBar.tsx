@@ -26,7 +26,7 @@ export function GitSelectedRepoBar({
 }>) {
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-primary/40 bg-muted/50 p-3">
+      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-state-selected-border bg-state-selected p-3">
         <div className="flex min-w-0 flex-1 items-center gap-1.5 text-sm font-medium text-foreground">
           <span className="truncate">{option.displayPath}</span>
           {option.private ? (

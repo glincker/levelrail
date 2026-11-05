@@ -83,6 +83,12 @@
     "invalid": "Este enlace de inicio de sesión no es válido o ha caducado. Solicita uno nuevo.",
     "backToSignIn": "Volver a iniciar sesión"
   },
+  "ssoAutoRedirect": {
+    "redirecting": "Redirigiendo a {{provider}}...",
+    "cancel": "Cancelar",
+    "cancelled": "Redirección automática cancelada.",
+    "passwordInstead": "Iniciar sesión con contraseña"
+  },
   "sessionEnded": {
     "notice": "Se cerró tu sesión porque terminó, por ejemplo tras una actualización o un reinicio. Inicia sesión de nuevo para continuar. Los tokens de API no se ven afectados."
   },
@@ -313,11 +319,13 @@
     "help": {
       "label": "Ayuda",
       "forPage": "Ayuda para esta página",
+      "getStarted": "Primeros pasos",
       "docs": "Documentación",
       "troubleshooting": "Solución de problemas",
       "systemStatus": "Estado del sistema",
       "report": "Informar de un problema",
-      "community": "Preguntar a la comunidad"
+      "community": "Preguntar a la comunidad",
+      "suggest": "Sugerir una función"
     },
     "account": {
       "controlPlane": "Plano de control",
@@ -330,13 +338,13 @@
     },
     "navGroup": {
       "home": "Inicio",
-      "apps": "Aplicaciones",
+      "primary": "Inicio",
+      "build": "Compilar y ejecutar",
       "data": "Datos",
-      "traffic": "Redes",
-      "infrastructure": "Flota",
+      "traffic": "Red",
+      "infrastructure": "Flota y costes",
       "access": "Seguridad",
-      "ai": "IA",
-      "automation": "Automatización"
+      "ai": "IA"
     },
     "nav": {
       "dashboard": "Panel",
@@ -344,6 +352,10 @@
       "apps": "Aplicaciones",
       "deployments": "Despliegues",
       "projects": "Proyectos",
+      "templates": "Plantillas",
+      "get-started": "Primeros pasos",
+      "welcome": "Configuración inicial",
+      "migrate": "Migrar",
       "databases": "Bases de datos",
       "backups": "Copias de seguridad",
       "domains": "Dominios",
@@ -383,9 +395,11 @@
     },
     "newApp": "Nueva aplicación",
     "pageWidth": {
+      "compact": "Ancho compacto",
       "comfortable": "Ancho cómodo",
       "wide": "Ancho",
-      "full": "Ancho completo"
+      "full": "Ancho completo",
+      "custom": "Ancho exacto"
     },
     "banner": {
       "dismiss": "Descartar",
@@ -722,43 +736,108 @@
     "fixing": "Corrigiendo...",
     "friendly": {
       "generic": {
-        "action": "Inténtalo de nuevo y cita el ID de solicitud si sigue fallando."
+        "action": "Inténtalo de nuevo y cita el ID de solicitud si sigue fallando.",
+        "title": "Algo salió mal"
       },
       "docker": {
         "message": "Docker no responde en este host.",
-        "action": "Inicia Docker y vuelve a comprobar."
+        "action": "Inicia Docker y vuelve a comprobar.",
+        "title": "Docker no está en marcha"
       },
       "unauthorized": {
         "message": "Tu sesión ha terminado.",
-        "action": "Inicia sesión de nuevo para continuar."
+        "action": "Inicia sesión de nuevo para continuar.",
+        "title": "Sesión cerrada"
       },
       "forbidden": {
         "message": "Tu cuenta no tiene permiso para hacer esto.",
-        "action": "Pide acceso a un propietario o administrador."
+        "action": "Pide acceso a un propietario o administrador.",
+        "title": "No permitido"
       },
       "conflict": {
         "message": "Esto entra en conflicto con algo que ya existe.",
-        "action": "Cámbiale el nombre o elimina el existente y reintenta."
+        "action": "Cámbiale el nombre o elimina el existente y reintenta.",
+        "title": "Ya existe"
       },
       "validation": {
         "message": "Algunos valores no son válidos.",
-        "action": "Revisa los campos e inténtalo de nuevo."
+        "action": "Revisa los campos e inténtalo de nuevo.",
+        "title": "Revisa los datos"
       },
       "rateLimited": {
         "message": "Demasiadas solicitudes en poco tiempo.",
-        "action": "Espera un momento e inténtalo de nuevo."
+        "action": "Espera un momento e inténtalo de nuevo.",
+        "title": "Demasiadas solicitudes"
       },
       "diskFull": {
         "message": "El servidor se ha quedado sin espacio en disco.",
-        "action": "Libera espacio en Ajustes, Limpieza, y reintenta."
+        "action": "Libera espacio en Ajustes, Limpieza, y reintenta.",
+        "title": "Sin espacio en disco"
       },
       "unreachable": {
         "message": "El plano de control no responde.",
-        "action": "Espera unos segundos y reintenta."
+        "action": "Espera unos segundos y reintenta.",
+        "title": "El servidor no responde"
       },
       "network": {
         "message": "No se puede conectar con el servidor.",
-        "action": "Comprueba tu conexión y reintenta."
+        "action": "Comprueba tu conexión y reintenta.",
+        "title": "No se puede conectar"
+      },
+      "missingAbility": {
+        "title": "Falta un permiso",
+        "message": "Esto requiere la capacidad {{ability}}.",
+        "action": "Usa un token o rol que la tenga, o pídela a un administrador."
+      },
+      "timeout": {
+        "title": "La solicitud caducó",
+        "message": "El servidor tardó demasiado en responder.",
+        "action": "Espera un momento y reintenta."
+      },
+      "notFound": {
+        "title": "No encontrado",
+        "message": "Ese elemento ya no existe.",
+        "action": "Actualiza la página. Puede haberse renombrado o eliminado."
+      },
+      "tooLarge": {
+        "title": "Demasiado grande",
+        "message": "La subida supera lo que acepta el servidor.",
+        "action": "Usa un archivo más pequeño y reintenta."
+      },
+      "serverError": {
+        "title": "Error del servidor",
+        "message": "Algo salió mal en el servidor.",
+        "action": "Inténtalo de nuevo en un momento y cita el ID de solicitud si sigue fallando."
+      },
+      "needsConfirmation": {
+        "title": "Hace falta confirmación",
+        "message": "Este cambio necesita tu confirmación primero.",
+        "action": "Revisa el aviso, confirma y reintenta."
+      },
+      "domainTaken": {
+        "title": "Dominio en uso",
+        "message": "Otra app ya usa este dominio.",
+        "action": "Elige otro dominio o quítalo de la otra app."
+      },
+      "emailTaken": {
+        "title": "Correo en uso",
+        "message": "Ese correo pertenece a otra cuenta.",
+        "action": "Usa otra dirección de correo."
+      },
+      "stepUp": {
+        "title": "Confirma que eres tú",
+        "message": "Esta acción necesita una verificación de identidad reciente.",
+        "action": "Introduce tu código o passkey cuando se pida y reintenta."
+      },
+      "portConflict": {
+        "title": "Puerto ya publicado",
+        "message": "Otro servicio ya publica este puerto.",
+        "action": "Elige un puerto libre y reintenta."
+      },
+      "emailNotConfigured": {
+        "title": "El correo no está configurado",
+        "message": "Todavía no hay un proveedor de correo configurado.",
+        "action": "Añade uno en Ajustes, Correo, y reintenta."
       }
     },
     "generic": "Algo salió mal en el servidor.",
@@ -1102,6 +1181,8 @@
       "title": "Sin comprobación de salud"
     },
     "dismiss": "Descartar: {{title}}",
+    "less": "Mostrar menos",
+    "more": "+{{count}} más",
     "enable_backups": {
       "button": "Activar copias de seguridad",
       "title": "Una base de datos no tiene programación de copias de seguridad"
@@ -1143,5 +1224,94 @@
     "memoryNote": "Este límite es el doble de la memoria recomendada de la plantilla, para dejar margen. Edítalo aquí para cambiarlo.",
     "recreateDowntime": "Recrear detiene el contenedor anterior antes de iniciar el nuevo, así que cada despliegue tiene una breve interrupción. Un despliegue que no pasa su comprobación de disponibilidad vuelve a la imagen anterior.",
     "strategyReason": "Definido por la plantilla: {{reason}}"
+  },
+  "visitors": {
+    "title": "Visitantes",
+    "windowLabel": "Ventana de tiempo",
+    "window": {
+      "1h": "1 h",
+      "24h": "24 h",
+      "7d": "7 d",
+      "30d": "30 d"
+    },
+    "requests": "Solicitudes",
+    "visitorsLabel": "Visitantes únicos",
+    "visitorsHint": "Visitantes únicos, contados de nuevo tras cada reinicio de privacidad de {{period}}. No son únicos de por vida.",
+    "trend": "Solicitudes en la ventana elegida",
+    "statusLabel": "Respuestas por clase",
+    "details": "Páginas y orígenes principales",
+    "topPaths": "Páginas principales",
+    "topReferrers": "Orígenes principales",
+    "none": "Sin registros",
+    "byDomain": "Por dominio",
+    "domainRow": "{{requests}} solicitudes, {{visitors}} visitantes",
+    "partial": "Los datos empiezan {{when}}, después del inicio de esta ventana, así que las cifras pueden ser parciales.",
+    "empty": "Aún no hay solicitudes en esta ventana.",
+    "loadError": "Las cifras de visitantes no están disponibles ahora.",
+    "retry": "Reintentar",
+    "viewTraffic": "Detalle de tráfico",
+    "section": "Visitantes",
+    "domainLabel": "Dominio",
+    "allDomains": "Todos los dominios",
+    "statusSplit": "Reparto de estados",
+    "pathHeader": "Página",
+    "referrerHeader": "Origen",
+    "countHeader": "Solicitudes",
+    "topPathsCaption": "Las 10 páginas principales en esta ventana",
+    "topReferrersCaption": "Los 10 orígenes principales en esta ventana",
+    "unavailable": "Las cifras de visitantes necesitan el registro de acceso del borde, que no está activado en esta instalación.",
+    "chartHeading": "Solicitudes en el tiempo",
+    "exportCsv": "Descargar CSV",
+    "exportEmpty": "No hay nada que exportar en esta ventana."
+  },
+  "overviewHero": {
+    "addressInfo": "Sobre esta dirección",
+    "addTag": "Añadir etiqueta...",
+    "addTagTitle": "Añadir una etiqueta",
+    "tagName": "Nombre de la etiqueta",
+    "tagAdd": "Añadir etiqueta",
+    "tagAdding": "Añadiendo...",
+    "removeTag": "Quitar la etiqueta {{name}}",
+    "retryDeploy": "Reintentar despliegue",
+    "deploy": "Desplegar",
+    "restart": "Reiniciar",
+    "openApp": "Abrir app",
+    "stickyLabel": "Cabecera de la app"
+  },
+  "reportIssue": {
+    "title": "Revisa antes de reportar",
+    "description": "Se abrirá un formulario \"{{template}}\" prellenado en GitHub. No se envía nada hasta que lo envíes allí.",
+    "issueTitle": "Título",
+    "include": "Incluir {{field}}",
+    "privacy": "Solo se envían los detalles listados aquí. Sin tokens, cookies, valores de entorno, correos ni parámetros de consulta.",
+    "count": "{{used}} caracteres, límite {{max}}",
+    "cancel": "Cancelar",
+    "open": "Abrir en GitHub",
+    "templates": {
+      "bug_report": "Informe de error",
+      "docs_problem": "Problema de documentación",
+      "migration_problem": "Problema de migración",
+      "feature_request": "Solicitud de función",
+      "template_request": "Solicitud de plantilla"
+    },
+    "fields": {
+      "version": "Versión del panel",
+      "component": "Componente",
+      "actual": "Qué ocurrió",
+      "context": "Entorno",
+      "page": "Página de documentación",
+      "problem": "Qué está mal o falta",
+      "failed": "Qué falló",
+      "config": "Configuración de origen",
+      "solution": "Comportamiento propuesto",
+      "service": "Nombre del servicio",
+      "upstream": "Enlace del proyecto",
+      "ports": "Puertos"
+    }
+  },
+  "kit": {
+    "jumpTo": "Ir a",
+    "onThisPage": "En esta página",
+    "retry": "Reintentar"
   }
 }

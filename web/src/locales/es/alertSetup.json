@@ -65,5 +65,29 @@
     "ruleName": "SLO de disponibilidad del {{target}}%",
     "created": "Regla de alerta de SLO creada.",
     "createFailed": "No se pudo crear la regla de SLO."
+  },
+  "trafficKinds": {
+    "kind": {
+      "domain_traffic_drop": {
+        "label": "Caída de tráfico del dominio",
+        "help": "Se activa cuando las peticiones de la ventana caen por debajo de una parte de la misma ventana de ayer. No avisa hasta que ayer haya tráfico suficiente para comparar."
+      },
+      "parked_domain_cert_expiry": {
+        "label": "Caducidad del certificado de dominio aparcado",
+        "help": "Se activa cuando un dominio aparcado tiene menos días de certificado que el límite. Cubre todos los dominios aparcados de la plataforma."
+      }
+    },
+    "scopeLabel": "Dominio",
+    "scopeApp": "App: {{app}}",
+    "scopeAll": "Todos los dominios de esta app",
+    "scopeHelp": "Vigila todos los dominios de esta app o solo uno.",
+    "windowLabel": "Ventana",
+    "windowHelp": "Cuánto tiempo comparar con el mismo tramo de ayer. De 0 a 24h.",
+    "percentLabel": "Caída por debajo del porcentaje de ayer",
+    "percentHelp": "Se activa cuando el tráfico está por debajo de este porcentaje de ayer. 50 significa la mitad.",
+    "minRequestsLabel": "Peticiones mínimas ayer",
+    "minRequestsHelp": "Omite la comprobación si ayer hubo menos peticiones, para que los dominios tranquilos no avisen.",
+    "daysLabel": "Días restantes",
+    "daysHelp": "Se activa cuando el certificado de un dominio aparcado tiene menos días que esto."
   }
 }

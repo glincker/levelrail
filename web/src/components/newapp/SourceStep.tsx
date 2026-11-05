@@ -50,11 +50,13 @@ export function SourceStep({
     edits: NewAppEdits,
   ) => void
 }) {
-  const { t } = useTranslation('newApp')
+  const { t } = useTranslation(['newApp', 'newAppNoGit'])
   const accounts = useConnectedRepos()
   const { repos, connectedProviders, isLoading, hasError, providersReady } =
     accounts
   const hasProvider = connectedProviders.length > 0
+  // Without a provider the page leads with what works anyway; connecting is a side note.
+  const noProvider = providersReady && !hasProvider
   const refresh = useRefreshGitRepos('')
   const [otherPlan, setOtherPlan] = useState<{
     plan: ImportPlan
@@ -116,7 +118,7 @@ export function SourceStep({
         </Alert>
       ) : null}
 
-      {providersReady && !hasProvider ? (
+      {noProvider ? (
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-xl border border-border bg-card p-3 shadow-xs">
           <p className="min-w-0 flex-1 text-sm text-muted-foreground">
             {t('source.noProvider.lead')}
@@ -128,7 +130,7 @@ export function SourceStep({
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start">
         <section aria-labelledby="new-app-git" className="min-w-0 space-y-3">
           <SectionHeading id="new-app-git">
-            {t('source.git.title')}
+            {noProvider ? t('newAppNoGit:urlTitle') : t('source.git.title')}
           </SectionHeading>
           <Suspense fallback={<Skeleton className="h-40 w-full" />}>
             <RepoImportFlow
@@ -166,9 +168,7 @@ export function SourceStep({
                       refresh.mutate()
                     }}
                   />
-                ) : (
-                  <GitProviderCards />
-                )
+                ) : null
               }
             />
           </Suspense>
@@ -180,6 +180,24 @@ export function SourceStep({
       </div>
 
       <MoreWays onPlan={onPlan} />
+
+      {noProvider ? (
+        <section
+          aria-labelledby="new-app-connect"
+          className="space-y-2 rounded-xl border border-border bg-card p-3 shadow-xs"
+        >
+          <h2
+            id="new-app-connect"
+            className="text-sm font-medium text-foreground"
+          >
+            {t('newAppNoGit:connect.title')}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {t('newAppNoGit:connect.reason')}
+          </p>
+          <GitProviderCards />
+        </section>
+      ) : null}
     </div>
   )
 }

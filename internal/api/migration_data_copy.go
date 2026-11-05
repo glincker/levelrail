@@ -94,11 +94,21 @@ func toDataImportResource(db store.DesiredDatabase, row store.DatabaseDataImport
 	return res
 }
 
+// loadImportDatabase is loadDatabaseForRunner behind the caller's team and
+// policy scope: these routes carry no path resource gate, so a database the
+// caller cannot see answers the same 404 as one that does not exist.
+func (rt *Router) loadImportDatabase(w http.ResponseWriter, r *http.Request, name, ability, logContext string) (*store.DesiredDatabase, bool) {
+	if !rt.authorizeRefs(w, r, ability, notFoundAs(http.StatusNotFound, "database not found"), databaseRef(name)) {
+		return nil, false
+	}
+	return rt.loadDatabaseForRunner(w, r, name, logContext)
+}
+
 // handleCopyDatabaseData handles POST /api/v1/imports/platform/databases/{name}/copy.
 // The source password lives in the request and the helper container only.
 func (rt *Router) handleCopyDatabaseData(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
-	db, ok := rt.loadDatabaseForRunner(w, r, name, "api: copy database data: load database failed")
+	db, ok := rt.loadImportDatabase(w, r, name, AbilityWriteSensitive, "api: copy database data: load database failed")
 	if !ok {
 		return
 	}
@@ -164,7 +174,7 @@ func (rt *Router) runDataCopy(c *datamigrate.Copier, t datamigrate.Target, src d
 // handleGetDatabaseDataCopy handles GET /api/v1/imports/platform/databases/{name}.
 func (rt *Router) handleGetDatabaseDataCopy(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
-	db, ok := rt.loadDatabaseForRunner(w, r, name, "api: get database data copy: load database failed")
+	db, ok := rt.loadImportDatabase(w, r, name, AbilityRead, "api: get database data copy: load database failed")
 	if !ok {
 		return
 	}
@@ -187,6 +197,20 @@ func (rt *Router) handleListDatabaseDataCopies(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		rt.internalError(w, "api: list database data copies failed", err)
 		return
+	}
+	v, err := rt.strictViewFor(r)
+	if err != nil {
+		rt.internalError(w, "api: list database data copies: resolve caller", err)
+		return
+	}
+	if v != nil {
+		kept := dbs[:0:0]
+		for _, d := range dbs {
+			if v.canDB(d.Name) {
+				kept = append(kept, d)
+			}
+		}
+		dbs = kept
 	}
 	byName := make(map[string]store.DatabaseDataImport, len(rows))
 	for _, row := range rows {

@@ -2,7 +2,9 @@ package application
 
 import (
 	"context"
+	"log/slog"
 
+	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -27,4 +29,31 @@ func (c *Controller) restartPolicyFor(ctx context.Context, desired *store.Desire
 		return p
 	}
 	return ""
+}
+
+// sweepRestartPolicy brings a ready container created before the default to the
+// desired policy through the update API, never a recreate. It only upgrades
+// (desired non-empty), so setting containers.restart_policy to no turns it off.
+// A failure is logged once per container and never fails the pass.
+func (c *Controller) sweepRestartPolicy(ctx context.Context, state *docker.ContainerState, desired *store.DesiredService) {
+	syncer, ok := c.runtime.(docker.RestartPolicySyncer)
+	if !ok || state == nil {
+		return
+	}
+	want := c.restartPolicyFor(ctx, desired)
+	if want == "" {
+		return
+	}
+	if _, done := c.policySwept.Load(state.ID); done {
+		return
+	}
+	changed, err := syncer.SyncRestartPolicy(ctx, state.ID, want)
+	if err != nil {
+		slog.Warn("reconcile: restart policy sweep failed", slog.String("service", c.serviceName), slog.String("container", state.Name), slog.String("error", err.Error()))
+		return
+	}
+	c.policySwept.Store(state.ID, struct{}{})
+	if changed {
+		slog.Info("reconcile: restart policy updated in place", slog.String("service", c.serviceName), slog.String("container", state.Name), slog.String("policy", want))
+	}
 }

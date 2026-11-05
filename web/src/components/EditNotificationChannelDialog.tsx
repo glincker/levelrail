@@ -35,33 +35,13 @@ import {
   useUpdateNotificationChannel,
 } from '../queries/notificationChannels'
 import type { NotificationChannel } from '../types/notificationChannel'
+import { NOTIFICATION_CHANNEL_KIND_ORDER } from '../lib/notificationChannelForm'
 import { ChannelQuietHours } from './ChannelQuietHours'
-
-const KIND_ORDER = [
-  'slack',
-  'discord',
-  'telegram',
-  'teams',
-  'mattermost',
-  'lark',
-  'rocketchat',
-  'webex',
-  'googlechat',
-  'generic',
-  'email',
-  'pushover',
-  'pagerduty',
-  'opsgenie',
-  'resend',
-  'ntfy',
-  'gotify',
-  'webpush',
-] as const
 
 const editChannelSchema = z
   .object({
     name: z.string().trim().min(1, 'Name is required'),
-    kind: z.enum(KIND_ORDER),
+    kind: z.enum(NOTIFICATION_CHANNEL_KIND_ORDER),
     notifyUrl: z.string().trim(),
     enabled: z.boolean(),
     interactiveApprovals: z.boolean(),
@@ -246,7 +226,7 @@ export function EditNotificationChannelDialog({
               name="kind"
               render={({ field }) => (
                 <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-                  {KIND_ORDER.map((option) => {
+                  {NOTIFICATION_CHANNEL_KIND_ORDER.map((option) => {
                     const brandIcon = CHANNEL_KIND_BRAND_ICON[option]
                     const selected = field.value === option
                     return (

@@ -156,7 +156,7 @@ describe('DomainDiagnosePanel', () => {
     expect(screen.getByText('Waiting for DNS')).toBeInTheDocument()
     expect(screen.getByText(/Checking again in about 30s/)).toBeInTheDocument()
     expect(screen.queryByText(/diagnose shop.example.com --fix/)).toBeNull()
-    await userEvent.click(screen.getByText('Fix via CLI'))
+    await userEvent.click(screen.getByText('From a terminal'))
     expect(
       await screen.findByText(
         'levelrail-cli domains diagnose shop.example.com --fix',
@@ -223,6 +223,92 @@ describe('DomainDiagnosePanel', () => {
     expect(
       screen.getAllByRole('button', { name: 'Re-check' }).length,
     ).toBeGreaterThan(0)
+  })
+
+  it('shows cause, collapsed evidence, numbered steps, a link and a collapsed terminal shortcut', async () => {
+    const explained: DiagnoseCheck = {
+      id: 'net.port80',
+      title: 'Port 80 is closed',
+      state: 'fail',
+      tier: 2,
+      cause: 'The firewall blocks the web ports.',
+      evidence: ['tcp 80: timeout', 'tcp 443: timeout'],
+      fix: {
+        summary: 'Open the web ports.',
+        kind: 'manual',
+        label: 'Firewall',
+        steps: ['Open your cloud firewall.', 'Allow ports 80 and 443.'],
+        link: '/settings/firewall',
+        cli_hint: 'levelrail-cli host firewall open-web',
+      },
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(sse([explained], report({ checks: [explained] }))),
+    )
+    renderPanel()
+    expect(
+      await screen.findByText('The firewall blocks the web ports.'),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('tcp 80: timeout')).toBeNull()
+    await userEvent.click(screen.getByText('Evidence (2 lines)'))
+    expect(await screen.findByText('tcp 80: timeout')).toBeInTheDocument()
+    const items = screen.getAllByRole('listitem').map((li) => li.textContent)
+    expect(items).toContain('Allow ports 80 and 443.')
+    expect(screen.getByText('Open Firewall').closest('a')).toHaveAttribute(
+      'href',
+      '/settings/firewall',
+    )
+    expect(
+      screen.queryByText('levelrail-cli host firewall open-web'),
+    ).toBeNull()
+    await userEvent.click(screen.getByText('From a terminal'))
+    expect(
+      await screen.findByText('levelrail-cli host firewall open-web'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Copy the command' }),
+    ).toBeInTheDocument()
+  })
+
+  it('keeps the action button and hides steps when the check has an action', async () => {
+    const withAction: DiagnoseCheck = {
+      ...resolveFail,
+      cause: 'No DNS record points here.',
+      fix: { ...resolveFail.fix!, steps: ['Add the record by hand.'] },
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(sse([withAction], report({ checks: [withAction] }))),
+    )
+    renderPanel()
+    expect(
+      await screen.findByText('No DNS record points here.'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Create the record' }),
+    ).toBeEnabled()
+    expect(screen.queryByText('Add the record by hand.')).toBeNull()
+  })
+
+  it('renders an older backend response without the new fields as before', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          sse([guidedCaa], report({ checks: [guidedCaa], status: 'warnings' })),
+        ),
+    )
+    renderPanel()
+    expect(await screen.findByText('Add a CAA record.')).toBeInTheDocument()
+    expect(screen.queryByText(/^Evidence/)).toBeNull()
+    expect(screen.queryByText('Steps')).toBeNull()
+    expect(screen.queryByText('From a terminal')).toBeNull()
   })
 
   it('says everything is fine when nothing needs a fix', async () => {

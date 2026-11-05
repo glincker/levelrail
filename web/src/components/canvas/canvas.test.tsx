@@ -42,10 +42,11 @@ function wrap(node: React.ReactNode) {
 }
 
 describe('Canvas toggle gating', () => {
-  it('renders no link while the beta is off', () => {
+  it('shows a locked link to Beta features while the beta is off', () => {
     experimental = ['iac']
-    const { container } = render(wrap(<CanvasLink projectId="p1" />))
-    expect(container.innerHTML).toBe('')
+    render(wrap(<CanvasLink projectId="p1" />))
+    const link = screen.getByRole('link', { name: /Canvas/ })
+    expect(link.getAttribute('href')).toBe('/settings/beta-features')
   })
 
   it('renders the link when the beta is on', () => {

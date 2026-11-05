@@ -224,7 +224,7 @@ describe('NewAppWizard', () => {
 
     await user.click(screen.getByRole('button', { name: 'Deploy' }))
     expect(
-      screen.getByText('This variable is needed to start the app.'),
+      screen.getByText('The app needs this variable to start.'),
     ).toBeInTheDocument()
     expect(navigate).not.toHaveBeenCalled()
 
@@ -261,6 +261,33 @@ describe('NewAppWizard', () => {
       '/settings/gitea-app',
     ])
     expect(screen.getByLabelText('Repository')).toBeInTheDocument()
+  })
+
+  it('leads with the public URL and puts connecting second when no provider is connected', async () => {
+    mockApi({ providers: [] })
+    renderWizard()
+    expect(
+      await screen.findByRole('heading', { name: 'Public repository URL' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', {
+        name: 'Need private repositories or deploy on push?',
+      }),
+    ).toBeInTheDocument()
+    expect(screen.getAllByText('Connect a git provider')).toHaveLength(1)
+  })
+
+  it('keeps the Git heading and no connect card when a provider is connected', async () => {
+    mockApi()
+    renderWizard()
+    expect(
+      await screen.findByRole('heading', { name: 'Import from Git' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('heading', {
+        name: 'Need private repositories or deploy on push?',
+      }),
+    ).toBeNull()
   })
 
   it('filters the repository list by search', async () => {

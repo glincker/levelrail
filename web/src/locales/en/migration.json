@@ -33,7 +33,7 @@
   },
   "volumes": {
     "title": "Copy volumes",
-    "description": "Volume contents are not moved by the control plane, because that needs root on the source host. This prints the commands to run on this node.",
+    "description": "The control plane doesn't move volume contents, because that needs root on the source host. This prints the commands to run on this node.",
     "source": "Source SSH login",
     "sourcePlaceholder": "root@old-server.example.com",
     "show": "Show commands",
@@ -44,7 +44,7 @@
   },
   "cutover": {
     "title": "Cutover check",
-    "description": "For each imported domain: is the app healthy here, how long clients cache the old address, and where DNS points now. Nothing is switched for you.",
+    "description": "For each imported domain: is the app healthy here, how long do clients cache the old address, and where does DNS point now. Nothing is switched for you.",
     "targetIp": "This node's public IP",
     "targetIpHelp": "Detected when left empty.",
     "check": "Run the check",
@@ -68,7 +68,7 @@
   },
   "hub": {
     "title": "Migrate a database server",
-    "description": "Move every database of a source server in one guided run. The source is only ever read: nothing is written to it or removed from it, and you verify every database before you switch anything.",
+    "description": "Move every database of a source server in one guided run. The source is only read. Nothing is written to it or removed from it, and you verify every database before you switch anything.",
     "newMigration": "Start a new migration",
     "forget": "Forget this plan",
     "forgetHelp": "Removes the plan and the password held in memory. Databases already created here are kept.",
@@ -83,7 +83,7 @@
     },
     "safeToSkip": {
       "title": "What is safe to skip",
-      "never": "Never skip: the per-table count check after each copy. It is what proves the data arrived.",
+      "never": "Never skip the per-table count check after each copy. It proves the data arrived.",
       "volumes": "Volumes: safe to skip if none of your apps keep files on a volume.",
       "cutover": "Cutover check: safe to skip if you switch apps by hand and check them yourself.",
       "warnings": "Warnings can be continued past once you have read them. Blocks cannot."
@@ -105,7 +105,7 @@
       "advanced": "Copy a single imported database instead",
       "local": "Database container on this node",
       "localNone": "Another server (enter host and port)",
-      "localHelp": "Reads the container over its own Docker network. A host address on the same machine is not reachable from the helper because Docker isolates networks.",
+      "localHelp": "Reads the container over its own Docker network. A host address on the same machine isn't reachable from the helper because Docker isolates networks.",
       "localProblem": "{{name}} ({{problem}})"
     },
     "inventory": {
@@ -134,7 +134,7 @@
       "ok": "Ready",
       "required": "About {{required}} needed with a safety margin, {{free}} free. Estimated time {{time}}.",
       "passwordTitle": "Source password needed",
-      "passwordHelp": "The password is no longer held in memory. Enter it again, it is used for this run only.",
+      "passwordHelp": "The password is no longer held in memory. Enter it again. It is used for this run only.",
       "start": "Copy {{count}} databases",
       "starting": "Starting",
       "fixBlocked": "Fix or deselect the blocked databases to continue.",
@@ -185,11 +185,11 @@
   },
   "appImport": {
     "title": "Migration wizard",
-    "description": "Plan, stage, verify and switch each application one at a time, from Coolify, Dokploy, CapRover or an old server. Your old instance is only ever read, nothing on it is stopped, edited or deleted.",
+    "description": "Plan, stage, verify and switch each application one at a time, from Coolify, Dokploy, CapRover or an old server. Your old instance is only read. Nothing on it is stopped, edited or deleted.",
     "loadError": "Could not load the import session.",
     "newImport": "Start a new import",
     "forget": "Forget this session",
-    "forgetHelp": "Forgets the plan and progress. Apps already staged here are kept, use Roll back first to remove them.",
+    "forgetHelp": "Forgets the plan and progress. Apps already staged here are kept. Use Roll back first to remove them.",
     "resume": "Importing from {{url}}",
     "back": "Back",
     "steps": {
@@ -209,7 +209,7 @@
       "readOnly": "Only read requests are sent to the old platform. The credential is kept in memory for this session and never stored.",
       "staged": "Staged apps are created stopped and not routed, with environment variables and secrets imported encrypted.",
       "volumes": "Volume data is never copied for you. You get the exact command per volume and confirm it yourself.",
-      "dns": "DNS is never changed for you. You switch each domain when you are satisfied, and can switch back at any time."
+      "dns": "DNS is never changed for you. You switch each domain when you are satisfied, and you can switch back at any time."
     },
     "verdict": {
       "ready": "Ready",
@@ -230,10 +230,10 @@
     "connect": {
       "title": "Connect to {{name}}",
       "reconnectTitle": "Enter the token again",
-      "description": "Use a read-only API token. Add the read:sensitive ability if you want secret values imported, otherwise they come back empty and are flagged.",
+      "description": "Use a read-only API token. Add the read:sensitive ability if you want secret values imported. Otherwise they come back empty and are flagged.",
       "url": "{{name}} URL",
       "token": "API token",
-      "tokenHelp": "Held in memory for this session only, sent in the request body, never stored or logged.",
+      "tokenHelp": "Held in memory for this session only and sent in the request body. Never stored or logged.",
       "network": "Private network options",
       "loopback": "The source is on this machine (loopback)",
       "private": "The source is on a private network",
@@ -244,7 +244,7 @@
       "submit": "Read inventory",
       "submitting": "Reading...",
       "dockerTitle": "Claim containers from a Docker host",
-      "snapshotHelp": "Contains environment variables, including secrets. It is held in memory for this session only, sent in the request body, never stored or logged.",
+      "snapshotHelp": "Contains environment variables, including secrets. Held in memory for this session only and sent in the request body. Never stored or logged.",
       "snapshotFile": "Or load it from a file",
       "mode": {
         "api": "Platform API",
@@ -287,12 +287,12 @@
       "testFailure": {
         "credentials": "The source rejected the credential. Check the token or password and its permissions.",
         "blocked": "This address is not allowed. Use the private network options below if the source is on your own network.",
-        "unreachable": "The source did not answer. Check the URL, the port and whether this server can reach it."
+        "unreachable": "The source did not answer. Check the URL and port, and whether this server can reach it."
       }
     },
     "inventory": {
       "title": "Applications found",
-      "description": "Pick what to move. Each app shows what it maps to here and exactly what needs your attention.",
+      "description": "Pick what to move. Each app shows what it maps to here and what needs your attention.",
       "selectOne": "Select {{name}}",
       "selectAll": "Select all importable",
       "selectNone": "Select none",
@@ -301,7 +301,7 @@
       "showMore": "Show {{count}} more",
       "continue": "Continue with {{count}} app(s)",
       "pickOne": "Select at least one app to continue.",
-      "stale": "The token is not held any more, so these verdicts are as of the last read. Enter it again to refresh them.",
+      "stale": "The token is no longer held, so these verdicts date from the last read. Enter it again to refresh them.",
       "maps": {
         "dockerfile": "Dockerfile build",
         "railpack": "Railpack build",
@@ -331,7 +331,7 @@
     "preflight": {
       "title": "Preflight and mapping",
       "description": "Nothing is written yet. Review name and domain conflicts, map old database hostnames to their new place and read the exact changes.",
-      "needsToken": "The token is not held any more, enter it again to evaluate environment values.",
+      "needsToken": "The token is no longer held. Enter it again to evaluate environment values.",
       "mappingTitle": "Hostname mapping",
       "mappingHelp": "Environment values that mention an old internal hostname are rewritten to the new one when the app is staged. Nothing is rewritten unless it is listed here.",
       "suggested": "Suggested from databases you already moved",
@@ -368,7 +368,7 @@
       "verifyTitle": "Build and verify",
       "stageDescription": "Creates each selected app here, stopped and not routed. Running it again resumes where a failure stopped and never duplicates an app.",
       "verifyDescription": "Starts each app, builds or pulls it, waits for its own health check and stops it again until cutover. One failing app never blocks the others.",
-      "needsToken": "The token is not held any more. Go back to Preflight and enter it again to stage.",
+      "needsToken": "The token is no longer held. Go back to Preflight and enter it again to stage.",
       "importedAs": "imported as {{name}}",
       "openApp": "Open app",
       "openLogs": "Logs",
@@ -383,7 +383,7 @@
       "rollbackYes": "Remove them",
       "cancel": "Cancel",
       "stageNote": "Rolling back only removes apps this import created. Volumes are kept on disk.",
-      "verifyNote": "Verifying starts the app briefly. If it runs background jobs they work against the database it is configured with.",
+      "verifyNote": "Verifying starts the app briefly. If it runs background jobs, they work against the database it is configured with.",
       "toVerify": "Continue to verify",
       "toVolumes": "Continue to volumes",
       "retry": "Retry",
@@ -423,7 +423,7 @@
         "close": "Close",
         "title": "Cutover of {{app}}",
         "recheck": "Check again",
-        "safety": "Nothing on the source platform is touched. A switch can be rolled back, and a failed verification rolls it back by itself.",
+        "safety": "Nothing on the source platform is touched. A switch can be rolled back, and a failed verification rolls it back automatically.",
         "status": {
           "pass": "Pass",
           "warn": "Warning",
@@ -503,7 +503,7 @@
       "pending": "{{count}} image(s) not on this node yet",
       "ids": "Source {{source}}, loaded {{loaded}}",
       "sourceId": "Source image {{source}}",
-      "noSourceId": "The snapshot has no image ID, so the load cannot be verified.",
+      "noSourceId": "The snapshot has no image ID, so the load can't be verified.",
       "state": {
         "pending": "Not moved",
         "running": "Moving",
@@ -523,7 +523,7 @@
       "key": "Private key",
       "keyPlaceholder": "-----BEGIN OPENSSH PRIVATE KEY-----",
       "keyFile": "Or load the private key from a file",
-      "keyHelp": "Held in memory for this session only, sent in the request body, never stored or logged. Whoever holds this key can act as that user on the old server, so use a key you can remove afterwards.",
+      "keyHelp": "Held in memory for this session only and sent in the request body. Never stored or logged. Whoever holds this key can act as that user on the old server, so use a key you can remove afterwards.",
       "advanced": "Password, Docker socket path and network options",
       "password": "Password (instead of a key)",
       "socket": "Docker socket path on the old server",
@@ -568,7 +568,7 @@
           "body": "Read the server fingerprint and confirm it before connecting."
         },
         "socket_permission": {
-          "title": "The user cannot use the Docker socket",
+          "title": "The user can't use the Docker socket",
           "body": "Add the SSH user to the docker group on the old server, log in again, then re-check.",
           "command": "sudo usermod -aG docker USER"
         },
@@ -643,7 +643,7 @@
     },
     "retire": {
       "title": "Safe to delete the old instance?",
-      "description": "This turns green only when every check below passes with evidence from this migration. Until then keep the old instance running: it is your fallback.",
+      "description": "This turns green only when every check below passes with evidence from this migration. Until then, keep the old instance running as your fallback.",
       "run": "Run the live checks",
       "running": "Checking...",
       "targetIp": "This server public IP",
@@ -686,7 +686,7 @@
     "requestFailed": "Request failed",
     "summaryTitle": "Import summary",
     "summaryCounts": "{{created}} created, {{failed}} failed, {{already}} already imported.",
-    "retryHint": "Run the import again to retry what failed, finished items are skipped.",
+    "retryHint": "Run the import again to retry what failed. Finished items are skipped.",
     "dataNotMigrated": "Data is not migrated",
     "another": "Start another import",
     "reviewTitle": "Review what will be imported",
@@ -717,7 +717,7 @@
     "appearsShortly": "It will appear in the app list shortly.",
     "readFirst": "Read before deploying",
     "appName": "App name",
-    "nameInvalid": "Use lowercase letters, numbers, and hyphens only.",
+    "nameInvalid": "Use lowercase letters, numbers and hyphens only.",
     "containerPort": "Container port",
     "portInvalid": "Enter the port the app listens on.",
     "domainSuggestion": "Domain suggestion: {{domain}}. Add real domains from the app's Domains tab after it is created.",
@@ -789,10 +789,10 @@
     "hint": {
       "applying": "The control plane is restarting. This page reconnects by itself.",
       "verifying": "Checking every domain. If this does not succeed within {{seconds}} seconds it rolls back by itself.",
-      "done": "This server now serves ports 80 and 443. The old proxy container is stopped, not removed. Roll back any time.",
+      "done": "This server now serves ports 80 and 443. The old proxy container is stopped, not removed. You can roll back any time.",
       "rolling_back": "Restoring the previous addresses and starting the old proxy again.",
       "rolled_back": "The previous addresses are back and the old proxy is running again.",
-      "failed": "Something did not finish. Read the message above, then fix it and re-check."
+      "failed": "Something did not finish. Read the message above, fix it, then re-check."
     },
     "run": {
       "button": "Take over ports",

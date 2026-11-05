@@ -15,9 +15,12 @@ import type { DiagnosisCause, DiagnosisFix } from '../types/diagnosis'
 export function DiagnosisFixes({
   appName,
   deployId,
+  fixesOnly = false,
 }: {
   appName: string
   deployId?: string
+  // Embedded in a card that already shows the cause and evidence.
+  fixesOnly?: boolean
 }) {
   const { data } = useDiagnosis(appName, deployId, true)
   const causes = data?.causes ?? []
@@ -27,7 +30,12 @@ export function DiagnosisFixes({
   return (
     <div className="space-y-3" data-testid="diagnosis-causes">
       {causes.map((cause) => (
-        <CauseCard key={cause.code} appName={appName} cause={cause} />
+        <CauseCard
+          key={cause.code}
+          appName={appName}
+          cause={cause}
+          fixesOnly={fixesOnly}
+        />
       ))}
     </div>
   )
@@ -36,10 +44,22 @@ export function DiagnosisFixes({
 function CauseCard({
   appName,
   cause,
+  fixesOnly,
 }: {
   appName: string
   cause: DiagnosisCause
+  fixesOnly: boolean
 }) {
+  const fixes = (
+    <ul className={fixesOnly ? 'space-y-2' : 'mt-3 space-y-2'}>
+      {cause.fixes.map((fix) => (
+        <li key={fix.n}>
+          <FixRow appName={appName} fix={fix} />
+        </li>
+      ))}
+    </ul>
+  )
+  if (fixesOnly) return fixes
   return (
     <div className="rounded-lg border border-border p-3 text-sm">
       <div className="flex flex-wrap items-center gap-2">
@@ -64,14 +84,33 @@ function CauseCard({
           ))}
         </ul>
       ) : null}
-      <ul className="mt-3 space-y-2">
-        {cause.fixes.map((fix) => (
-          <li key={fix.n}>
-            <FixRow appName={appName} fix={fix} />
-          </li>
-        ))}
-      </ul>
+      {fixes}
     </div>
+  )
+}
+
+const URL_RE = /(https?:\/\/[^\s)]+)/g
+
+// Renders a fix hint with real links, so a terms URL can be read before applying.
+function Hint({ text }: { text: string }) {
+  return (
+    <p className="text-xs text-muted-foreground">
+      {text.split(URL_RE).map((part, i) =>
+        i % 2 === 1 ? (
+          <a
+            key={`${part}-${i}`}
+            href={part}
+            target="_blank"
+            rel="noreferrer"
+            className="break-all text-foreground underline"
+          >
+            {part}
+          </a>
+        ) : (
+          part
+        ),
+      )}
+    </p>
   )
 }
 
@@ -86,9 +125,7 @@ function FixRow({ appName, fix }: { appName: string; fix: DiagnosisFix }) {
     return (
       <div className="rounded bg-muted/50 px-2 py-1.5">
         <p className="text-foreground">{fix.label}</p>
-        {fix.hint ? (
-          <p className="text-xs text-muted-foreground">{fix.hint}</p>
-        ) : null}
+        {fix.hint ? <Hint text={fix.hint} /> : null}
       </div>
     )
   }
@@ -124,6 +161,7 @@ function FixRow({ appName, fix }: { appName: string; fix: DiagnosisFix }) {
           {open ? 'Hide preview' : 'Preview fix'}
         </Button>
       </div>
+      {fix.hint ? <Hint text={fix.hint} /> : null}
       {open ? (
         <div className="mt-2 space-y-2">
           {fix.changes.map((c) => (

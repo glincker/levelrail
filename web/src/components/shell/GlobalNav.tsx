@@ -246,7 +246,7 @@ export function GlobalNav() {
 
   // Decided once on mount so navigating never flips a group the user did not touch.
   const [initialOpen] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(groups.map((gr) => [gr.id, defaultGroupOpen()])),
+    Object.fromEntries(groups.map((gr) => [gr.id, defaultGroupOpen(gr)])),
   )
 
   // Reveal the current page by opening its group, and keep it open.
@@ -307,7 +307,7 @@ export function GlobalNav() {
               )}
             </SidebarMenu>
           )
-          if (rail) {
+          if (rail || group.ungrouped) {
             return (
               <SidebarGroup key={group.id} className="p-0">
                 <SidebarGroupContent>{menu}</SidebarGroupContent>

@@ -12,6 +12,7 @@ import {
   useSuspenseQuery,
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import type { DnsTokenVerification } from './dnsVerification'
 
 export const cloudflareDnsKeys = {
   all: ['cloudflare-dns'] as const,
@@ -23,6 +24,8 @@ export const cloudflareDnsKeys = {
 export interface CloudflareDnsSettings {
   enabled: boolean
   has_token: boolean
+  // Only on a PUT response, and only when verify-on-save is on.
+  verification?: DnsTokenVerification
 }
 
 export interface UpdateCloudflareDnsRequest {

@@ -62,7 +62,7 @@ export function CpuModelCards({
               key={card.id}
               className={cn(
                 'flex cursor-pointer flex-col gap-2 rounded-lg border border-border bg-card p-3 text-sm transition-colors hover:bg-muted/50 motion-reduce:transition-none',
-                'has-checked:border-primary has-checked:bg-primary/5 has-focus-visible:ring-3 has-focus-visible:ring-ring/50',
+                'has-checked:border-state-selected-border has-checked:bg-state-selected has-focus-visible:ring-2 has-focus-visible:ring-state-accent has-focus-visible:ring-offset-2 has-focus-visible:ring-offset-background',
               )}
             >
               <input

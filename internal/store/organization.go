@@ -15,9 +15,21 @@ var ErrOrganizationNotFound = errors.New("store: organization not found")
 // opaque-id, no-auth-attached shape). Deleting an organization leaves
 // its projects in place, org-less again (ON DELETE SET NULL).
 type Organization struct {
-	ID        string
-	Name      string
-	CreatedAt string
+	ID          string
+	Name        string
+	CreatedAt   string
+	Slug        string
+	Description string
+	AvatarSHA   string
+	UpdatedAt   string
+}
+
+const organizationColumns = `id, name, created_at, COALESCE(slug, ''), description, avatar_sha, updated_at`
+
+func scanOrganization(scan func(...any) error) (Organization, error) {
+	var o Organization
+	err := scan(&o.ID, &o.Name, &o.CreatedAt, &o.Slug, &o.Description, &o.AvatarSHA, &o.UpdatedAt)
+	return o, err
 }
 
 // SaveOrganization inserts a new organization row, insert-only like
@@ -36,12 +48,11 @@ func (db *DB) SaveOrganization(ctx context.Context, o Organization) error {
 // GetOrganization returns the organization with this ID, or
 // ErrOrganizationNotFound.
 func (db *DB) GetOrganization(ctx context.Context, id string) (Organization, error) {
-	var o Organization
-	err := db.QueryRowContext(ctx, `
-		SELECT id, name, created_at
+	o, err := scanOrganization(db.QueryRowContext(ctx, `
+		SELECT `+organizationColumns+`
 		FROM organizations
 		WHERE id = ?
-	`, id).Scan(&o.ID, &o.Name, &o.CreatedAt)
+	`, id).Scan)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Organization{}, ErrOrganizationNotFound
 	}
@@ -54,7 +65,7 @@ func (db *DB) GetOrganization(ctx context.Context, id string) (Organization, err
 // ListOrganizations returns every organization, oldest first.
 func (db *DB) ListOrganizations(ctx context.Context) ([]Organization, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT id, name, created_at
+		SELECT `+organizationColumns+`
 		FROM organizations
 		ORDER BY created_at
 	`)
@@ -67,8 +78,8 @@ func (db *DB) ListOrganizations(ctx context.Context) ([]Organization, error) {
 
 	var out []Organization
 	for rows.Next() {
-		var o Organization
-		if err := rows.Scan(&o.ID, &o.Name, &o.CreatedAt); err != nil {
+		o, err := scanOrganization(rows.Scan)
+		if err != nil {
 			return nil, fmt.Errorf("store: scan organization row: %w", err)
 		}
 		out = append(out, o)

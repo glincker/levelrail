@@ -92,6 +92,7 @@ type rule func(in Input, lines []line) *Cause
 var rules = []rule{
 	ruleOOMKilled,
 	ruleMissingEnv,
+	ruleImageEnvHint,
 	ruleImagePull,
 	ruleBuildOutOfDisk,
 	ruleWrongDockerfilePath,

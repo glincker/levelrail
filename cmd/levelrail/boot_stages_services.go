@@ -25,6 +25,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/models"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
+	databasereconcile "github.com/GLINCKER/levelrail/internal/reconcile/database"
 	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/scheduledtask"
@@ -73,11 +74,15 @@ func (s *bootState) buildRunners() error {
 
 	// Shared by the manual trigger and the cron loop; needs no master key since exec'd commands carry no credential.
 	jobLimits := scheduledtask.LimitsFromEnv(os.LookupEnv)
+	historySettings := runtimesettings.New(db, os.LookupEnv)
 	scheduledTaskRunner := &scheduledtask.Runner{
-		Apps:       db,
-		Runs:       db,
-		History:    db,
-		Limits:     jobLimits,
+		Apps:    db,
+		Runs:    db,
+		History: db,
+		Limits:  jobLimits,
+		HistoryKeepFn: func(c context.Context) int {
+			return historySettings.Int(c, runtimesettings.KeyScheduledTasksHistoryKeep)
+		},
 		NamePrefix: b.ShortName,
 		Resolver: func(nodeID string) (docker.Runtime, error) {
 			return resolveNodeTransport(client, agentRegistry, nodeID)
@@ -366,6 +371,12 @@ func (s *bootState) startReconciler() {
 	telemetryDB := s.telemetryDB
 	engine.SetStore(db)
 	gate := newDeployGate(logger, db, client, b.ShortName, meshLocalNodeID(meshCfg))
+	databasereconcile.SetPoolerImageSource(func() string {
+		if svc := s.apiRouter.RuntimeSettings(); svc != nil {
+			return svc.String(context.Background(), runtimesettings.KeyDatabasesPoolerImage)
+		}
+		return ""
+	})
 	sourceDeps := dynamicSourceDeps{
 		deployGate:                   gate,
 		orphanReaper:                 orphanReaper,

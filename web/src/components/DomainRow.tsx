@@ -11,8 +11,12 @@ import {
   FileSearchGlassIcon,
   LockGlassIcon,
   RefreshCwGlassIcon,
+  ArrowRightGlassIcon,
   SettingsGlassIcon,
   ShieldCheckGlassIcon,
+  StarGlassIcon,
+  TrashGlassIcon,
+  UnlinkGlassIcon,
   SignpostGlassIcon,
   StethoscopeGlassIcon,
   WrenchGlassIcon,
@@ -38,6 +42,8 @@ import {
   isInternalCert,
   isProxyManagedCert,
 } from '../lib/certStatus'
+import { cn } from '../lib/utils'
+import { TLS_TONE_CLASS, tlsDaysText, tlsTone } from '../lib/domainTls'
 import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
 import { certTruth } from '../lib/certTruth'
 import { CertTruthBadge } from './CertTruthBadge'
@@ -50,13 +56,25 @@ import {
   useDomainSearchVisibility,
   useSetDomainSearchVisibility,
 } from '../queries/domainSearchVisibility'
-import type { Domain } from '../queries/domains'
+import {
+  ingressSettingsQueryOptions,
+  useUpdateIngressSettings,
+  type Domain,
+} from '../queries/domains'
+import { canParkOrMove, isPrimaryDomain } from '../lib/domainLifecycle'
+import { DomainDetailSheet } from './domains/DomainDetailSheet'
+import {
+  DeleteDomainDialog,
+  MoveDomainDialog,
+  ParkDomainDialog,
+} from './domains/DomainLifecycleDialogs'
 import { domainScope, isStandaloneDomain } from '../lib/standaloneDomain'
 import { isEnforced } from '../lib/domainEnforcement'
 import type { TrafficControl } from '../lib/domainEnforcement'
 import { DomainDnsRecordDialog } from './DomainDnsRecordDialog'
 import { DomainIssueFix } from './DomainIssueFix'
 import { DomainDnsStatusBadge } from './DomainDnsStatusBadge'
+import { DomainWatchChip } from './domains/DomainWatchChip'
 import { DomainDiagnoseDialog } from './domains/DomainDiagnoseDialog'
 import {
   StandaloneRowActions,
@@ -208,14 +226,41 @@ function CertCell({
         <GetCertificateButton domain={domain.domain} />
       ) : null}
       {isStandaloneDomain(domain) ? null : (
-        <GoLiveBadge app={domain.service_name} domain={domain.domain} />
+        <GoLiveBadge
+          app={domain.service_name}
+          domain={domain.domain}
+          automatic={domain.automatic}
+        />
       )}
     </span>
   )
 }
 
-function ExpiryCell({ cert }: { cert?: CertificateStatus }) {
+function TlsDaysLine({ daysLeft }: { daysLeft: number }) {
   const { t } = useTranslation('domains')
+  const { key, count } = tlsDaysText(daysLeft)
+  return (
+    <span className={cn('truncate', TLS_TONE_CLASS[tlsTone(daysLeft)])}>
+      {t(key, { count })}
+    </span>
+  )
+}
+
+function ExpiryCell({
+  cert,
+  daysLeft,
+}: {
+  cert?: CertificateStatus
+  daysLeft?: number
+}) {
+  const { t } = useTranslation('domains')
+  if (!cert && daysLeft !== undefined) {
+    return (
+      <span className="flex min-w-0 flex-col text-xs">
+        <TlsDaysLine daysLeft={daysLeft} />
+      </span>
+    )
+  }
   if (!cert) return <span className="text-xs text-muted-foreground/60">-</span>
   if (isInternalCert(cert)) {
     return (
@@ -238,25 +283,37 @@ function ExpiryCell({ cert }: { cert?: CertificateStatus }) {
       <span className="truncate text-foreground">
         {certExpiryDate(cert.not_after)}
       </span>
-      <span className="truncate">{certExpiryLabel(cert.not_after)}</span>
+      {daysLeft !== undefined ? (
+        <TlsDaysLine daysLeft={daysLeft} />
+      ) : (
+        <span className="truncate">{certExpiryLabel(cert.not_after)}</span>
+      )}
       <span className="truncate text-muted-foreground/70">{renews}</span>
     </span>
   )
 }
+
+type Lifecycle = 'details' | 'park' | 'move' | 'delete'
 
 function RowActions({
   domain,
   onShowRecord,
   onRecheck,
   onDiagnose,
+  onLifecycle,
 }: {
   domain: Domain
   onShowRecord: () => void
   onRecheck: () => void
   onDiagnose: () => void
+  onLifecycle: (kind: Lifecycle) => void
 }) {
   const { t } = useTranslation('domains')
   const { copied, copy } = useCopyToClipboard()
+  const { data: ingress } = useQuery(ingressSettingsQueryOptions())
+  const setPrimary = useUpdateIngressSettings()
+  const primary = isPrimaryDomain(domain.domain, ingress?.primary_domain)
+  const manageable = canParkOrMove(domain)
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -273,6 +330,14 @@ function RowActions({
         <EllipsisGlassIcon size="1.4em" />
       </DropdownMenuTrigger>
       <DropdownMenuContent>
+        <DropdownMenuItem
+          onClick={() => {
+            onLifecycle('details')
+          }}
+        >
+          <SettingsGlassIcon size="1.4em" />
+          {t('page.row.details')}
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={onShowRecord}>
           <FileSearchGlassIcon size="1.4em" />
           {t('page.row.dnsRecord')}
@@ -308,6 +373,45 @@ function RowActions({
           <SettingsGlassIcon size="1.4em" />
           {t('page.row.manage')}
         </DropdownMenuItem>
+        {ingress && !primary ? (
+          <DropdownMenuItem
+            disabled={setPrimary.isPending}
+            onClick={() => {
+              setPrimary.mutate({ ...ingress, primary_domain: domain.domain })
+            }}
+          >
+            <StarGlassIcon size="1.4em" />
+            {t('page.row.setPrimary')}
+          </DropdownMenuItem>
+        ) : null}
+        {manageable ? (
+          <>
+            <DropdownMenuItem
+              onClick={() => {
+                onLifecycle('move')
+              }}
+            >
+              <ArrowRightGlassIcon size="1.4em" />
+              {t('page.row.move')}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => {
+                onLifecycle('park')
+              }}
+            >
+              <UnlinkGlassIcon size="1.4em" />
+              {t('page.row.park')}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => {
+                onLifecycle('delete')
+              }}
+            >
+              <TrashGlassIcon size="1.4em" />
+              {t('page.row.delete')}
+            </DropdownMenuItem>
+          </>
+        ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
   )
@@ -331,6 +435,8 @@ export function DomainNameCell({
   const cert = effectiveDomainCert(domain, storedCert)
   const { t } = useTranslation('domains')
   const dns = useDomainDns(domain)
+  const { data: ingress } = useQuery(ingressSettingsQueryOptions())
+  const isPrimary = isPrimaryDomain(domain.domain, ingress?.primary_domain)
   const warning = inlineWarning(domain, cert, dns.data, t)
   const flags = FLAGS.filter((flag) => domain[flag.key])
 
@@ -355,6 +461,9 @@ export function DomainNameCell({
         >
           <ExternalLinkGlassIcon className="size-4.5" aria-hidden="true" />
         </a>
+        {isPrimary ? (
+          <Badge variant="info">{t('page.row.primary')}</Badge>
+        ) : null}
         {domain.automatic ? (
           <Badge variant="outline">{t('page.row.automatic')}</Badge>
         ) : null}
@@ -419,7 +528,12 @@ export function DomainTargetCell({ domain }: { domain: Domain }) {
 
 export function DomainDnsCell({ domain }: { domain: Domain }) {
   const dns = useDomainDns(domain)
-  return <DomainDnsStatusBadge status={dns.data?.status} />
+  return (
+    <div className="flex flex-wrap items-center gap-1">
+      <DomainDnsStatusBadge status={dns.data?.status} />
+      <DomainWatchChip domain={domain.domain} />
+    </div>
+  )
 }
 
 export function DomainCertCell({
@@ -439,7 +553,23 @@ export function DomainExpiryCell({
   domain: Domain
   cert?: CertificateStatus
 }) {
-  return <ExpiryCell cert={effectiveDomainCert(domain, cert)} />
+  return (
+    <ExpiryCell
+      cert={effectiveDomainCert(domain, cert)}
+      daysLeft={domain.tls_days_left}
+    />
+  )
+}
+
+export function DomainEnvironmentCell({ domain }: { domain: Domain }) {
+  if (!domain.environment) {
+    return <span className="text-xs text-muted-foreground/60">-</span>
+  }
+  return (
+    <span className="block truncate text-xs" title={domain.environment}>
+      {domain.environment}
+    </span>
+  )
 }
 
 export { SearchVisibilityCell as DomainVisibilityCell }
@@ -447,7 +577,11 @@ export { SearchVisibilityCell as DomainVisibilityCell }
 export function DomainRowActions({ domain }: { domain: Domain }) {
   const [recordOpen, setRecordOpen] = useState(false)
   const [diagnoseOpen, setDiagnoseOpen] = useState(false)
+  const [lifecycle, setLifecycle] = useState<Lifecycle | null>(null)
   const dns = useDomainDns(domain)
+  const closeLifecycle = (open: boolean) => {
+    if (!open) setLifecycle(null)
+  }
   const onShowRecord = () => {
     setRecordOpen(true)
   }
@@ -473,8 +607,41 @@ export function DomainRowActions({ domain }: { domain: Domain }) {
           onShowRecord={onShowRecord}
           onRecheck={onRecheck}
           onDiagnose={onDiagnose}
+          onLifecycle={setLifecycle}
         />
       )}
+      {lifecycle === 'details' ? (
+        <DomainDetailSheet
+          appName={domainScope(domain)}
+          domain={domain.domain}
+          open
+          onOpenChange={closeLifecycle}
+        />
+      ) : null}
+      {lifecycle === 'park' ? (
+        <ParkDomainDialog
+          app={domain.service_name}
+          domain={domain.domain}
+          open
+          onOpenChange={closeLifecycle}
+        />
+      ) : null}
+      {lifecycle === 'move' ? (
+        <MoveDomainDialog
+          from={domain.service_name}
+          domain={domain.domain}
+          open
+          onOpenChange={closeLifecycle}
+        />
+      ) : null}
+      {lifecycle === 'delete' ? (
+        <DeleteDomainDialog
+          app={domain.service_name}
+          domain={domain.domain}
+          open
+          onOpenChange={closeLifecycle}
+        />
+      ) : null}
       {diagnoseOpen ? (
         <DomainDiagnoseDialog
           domain={domain.domain}

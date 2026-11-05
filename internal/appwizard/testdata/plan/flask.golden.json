@@ -1,0 +1,68 @@
+{
+  "repo_url": "https://github.com/acme/flask",
+  "ref": "main",
+  "monorepo": false,
+  "stack": {
+    "runtime": "python",
+    "framework": "Flask",
+    "language": "python",
+    "confidence": "high",
+    "evidence": [
+      {
+        "signal": "stack",
+        "detail": "Flask dependency found, built with Railpack"
+      },
+      {
+        "signal": "file",
+        "detail": "requirements.txt present"
+      },
+      {
+        "signal": "dependency",
+        "detail": "flask is listed in the Python dependencies"
+      }
+    ]
+  },
+  "build": {
+    "type": "railpack",
+    "start_command": "gunicorn app:app",
+    "evidence": "no Dockerfile found, the framework is auto-detected"
+  },
+  "port": {
+    "value": 5000,
+    "evidence": "Flask default port"
+  },
+  "health": {
+    "path": "/",
+    "evidence": "Flask default health path"
+  },
+  "env": [
+    {
+      "name": "DATABASE_URL",
+      "source": ".env.sample",
+      "required": false,
+      "looks_secret": false,
+      "has_default_hint": false
+    },
+    {
+      "name": "SECRET_KEY",
+      "source": ".env.sample",
+      "required": true,
+      "looks_secret": true,
+      "has_default_hint": false
+    }
+  ],
+  "spec": {
+    "name": "flask",
+    "yaml": "version: 1\nservices:\n    flask:\n        build:\n            type: railpack\n        port: 5000\n        health:\n            readiness:\n                path: /\n        env:\n            SECRET_KEY:\n                secret: true\n                required: true\n"
+  },
+  "warnings": [
+    {
+      "code": "no_dockerfile",
+      "message": "no Dockerfile is used, so the build is auto-detected; add a Dockerfile for full control"
+    }
+  ],
+  "next": {
+    "method": "POST",
+    "path": "/api/v1/imports/repo/apply"
+  }
+}

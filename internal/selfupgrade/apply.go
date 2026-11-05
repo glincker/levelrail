@@ -16,6 +16,10 @@ import (
 // healthy before the previous binary and data are put back.
 const DefaultHealthTimeout = 90 * time.Second
 
+// DefaultRollbackHealthFloor is the least time a restored previous release
+// gets to boot, migrate and answer, whatever --timeout the new release got.
+const DefaultRollbackHealthFloor = 60 * time.Second
+
 // ProbeInfo is what a downloaded binary reports about itself.
 type ProbeInfo struct {
 	Version string
@@ -50,6 +54,9 @@ type Deps struct {
 	Stop        func(ctx context.Context) error
 	Start       func(ctx context.Context) error
 	WaitHealthy func(ctx context.Context, timeout time.Duration) error
+	// VerifyBackup proves the snapshot restores into a scratch copy before the
+	// upgrade goes on. Optional; nil skips the check.
+	VerifyBackup func(ctx context.Context, snapshotPath string) (string, error)
 	// RestorePoint keeps the snapshot, binary and unit file as a restore point
 	// and returns its id. Optional.
 	RestorePoint func(ctx context.Context, a Attempt, snapshotPath string) (string, error)
@@ -62,7 +69,9 @@ type Deps struct {
 	RestoreUnit func(ctx context.Context, savedPath string) error
 	// RestoreDB puts the snapshot in place of the live database and returns
 	// where the replaced database was kept.
-	RestoreDB   func(ctx context.Context, snapshotPath string) (string, error)
+	RestoreDB func(ctx context.Context, snapshotPath string) (string, error)
+	// Limits bound progress and liveness; the zero value uses the defaults.
+	Limits      Limits
 	WriteMarker func(ctx context.Context, a Attempt) error
 	ClearMarker func()
 	Audit       func(ctx context.Context, detail string) error
@@ -99,8 +108,14 @@ func Apply(ctx context.Context, d Deps, req Request) (Attempt, error) {
 		Outcome: OutcomeRunning, Acked: req.Acked, FromSchema: -1, ToSchema: -1, StartedAt: d.now(), Steps: []StepRecord{},
 	}
 	r := &runner{d: d, a: &a, healthTimeout: req.HealthTimeout}
+	limits := d.Limits
+	if limits.Heartbeat <= 0 {
+		limits = DefaultLimits()
+	}
+	ctx, endRun := r.begin(ctx, limits)
+	defer endRun()
 	if err := r.step(StepGuard, func() (string, error) { return guard(req) }); err != nil {
-		return r.finishRefused(err)
+		return r.refuseOrCancel(err)
 	}
 	if schema, err := d.DBSchema(ctx); err == nil {
 		a.FromSchema = schema
@@ -117,12 +132,12 @@ func Apply(ctx context.Context, d Deps, req Request) (Attempt, error) {
 	if err := r.step(StepChecksum, func() (string, error) {
 		return "sha256 matches checksums.txt", VerifyChecksum(fetched.BinaryPath, fetched.ChecksumsPath, d.Asset)
 	}); err != nil {
-		return r.finishRefused(err)
+		return r.refuseOrCancel(err)
 	}
 	if err := r.step(StepSignature, func() (string, error) {
 		return d.VerifySig(ctx, fetched.ChecksumsPath, fetched.BundlePath)
 	}); err != nil {
-		return r.finishRefused(err)
+		return r.refuseOrCancel(err)
 	}
 	var probe ProbeInfo
 	if err := r.step(StepProbe, func() (string, error) {
@@ -140,7 +155,7 @@ func Apply(ctx context.Context, d Deps, req Request) (Attempt, error) {
 		}
 		return fmt.Sprintf("%s, schema %d", probe.Version, probe.Schema), nil
 	}); err != nil {
-		return r.finishRefused(err)
+		return r.refuseOrCancel(err)
 	}
 	var backup BackupInfo
 	if err := r.step(StepBackup, func() (string, error) {
@@ -154,6 +169,17 @@ func Apply(ctx context.Context, d Deps, req Request) (Attempt, error) {
 		}
 		a.BackupName, a.SnapshotPath = backup.Name, backup.SnapshotPath
 		a.SnapshotAt = d.now()
+		verifyNote := ""
+		if backup.SnapshotPath != "" && d.VerifyBackup != nil {
+			note, verr := d.VerifyBackup(ctx, backup.SnapshotPath)
+			switch {
+			case verr != nil && !d.SkipBackup:
+				return "", fmt.Errorf("%w. Nothing was changed; the backup is bad: run `levelrail-cli upgrade backup-now` again and check free disk space, or re-run with --skip-backup to upgrade without a verified restore point", verr)
+			case verr != nil:
+				note = "restore check FAILED but continuing (--skip-backup): " + verr.Error()
+			}
+			verifyNote = note
+		}
 		a.PrevBinary = d.BinaryPath + ".prev"
 		if err := copyExecutable(d.BinaryPath, a.PrevBinary); err != nil {
 			return "", fmt.Errorf("keep previous binary: %w", err)
@@ -164,6 +190,9 @@ func Apply(ctx context.Context, d Deps, req Request) (Attempt, error) {
 			}
 		}
 		detail := "database snapshot " + backup.Name + ", previous binary kept"
+		if verifyNote != "" {
+			detail += ", " + verifyNote
+		}
 		if backup.SnapshotPath == "" {
 			detail = "no database snapshot (--skip-backup), previous binary kept"
 		}
@@ -197,7 +226,7 @@ func Apply(ctx context.Context, d Deps, req Request) (Attempt, error) {
 
 	d.audit(ctx, "self-upgrade "+a.FromVersion+" -> "+a.ToVersion+" started, backup "+backup.Name)
 	if err := r.step(StepStop, func() (string, error) { return "", d.Stop(ctx) }); err != nil {
-		_ = d.Start(ctx)
+		_ = d.Start(context.WithoutCancel(ctx))
 		return r.cleanFail(StepStop, err)
 	}
 	if err := r.step(StepSwap, func() (string, error) {

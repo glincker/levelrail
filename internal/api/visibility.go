@@ -13,6 +13,9 @@ const (
 	resourcePrefixApp      = "app:"
 	resourcePrefixDatabase = "database:"
 	resourcePrefixNode     = "node:"
+	// Static sites share the same-named app's environment and owner but are
+	// granted by their own resource, so an app grant never reaches the site.
+	resourcePrefixStaticSite = "static_site:"
 )
 
 // accessStore is the store surface environment aware authorization needs;
@@ -63,7 +66,7 @@ func (rt *Router) principalVisibility(ctx context.Context, principalType, princi
 
 // splitResource separates "app:web" into its kind prefix and name.
 func splitResource(resource string) (prefix, name string, ok bool) {
-	for _, p := range []string{resourcePrefixApp, resourcePrefixDatabase} {
+	for _, p := range []string{resourcePrefixApp, resourcePrefixDatabase, resourcePrefixStaticSite} {
 		if strings.HasPrefix(resource, p) {
 			return p, strings.TrimPrefix(resource, p), true
 		}

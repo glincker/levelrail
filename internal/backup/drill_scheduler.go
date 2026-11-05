@@ -16,6 +16,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/ticker"
 )
 
 // DefaultDrillInterval is how often each resource is drilled when
@@ -137,6 +138,7 @@ func (s *DrillScheduler) Tick(ctx context.Context) error {
 
 // Run ticks until ctx is done.
 func (s *DrillScheduler) Run(ctx context.Context, every time.Duration) error {
+	every = ticker.Safe(every, ticker.DefaultInterval)
 	if s.Runner != nil {
 		if _, err := s.Runner.SweepOrphans(ctx); err != nil {
 			s.log().Warn("backup: drill orphan sweep failed", slog.String("error", err.Error()))

@@ -58,7 +58,7 @@
     },
     "tokens": {
       "title": "Tokens",
-      "description": "Click a token to insert it at the cursor. Unknown tokens are rejected when you save.",
+      "description": "Select a token to insert it at the cursor. Unknown tokens are rejected when you save.",
       "scope": {
         "global": "Everywhere",
         "recipient": "About the recipient",

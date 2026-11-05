@@ -24,6 +24,7 @@ import {
 import type { NodeMoveKind, Placement } from '../types/nodeMoves'
 import { MoveToNodeDialog } from './MoveToNodeDialog'
 import { LabelRowsEditor } from './nodes/LabelRowsEditor'
+import { TolerationsSection } from './nodes/TolerationsSection'
 import { PlacementDecisionPanel } from './nodes/PlacementDecisionPanel'
 import { useNodeNames } from './nodes/useNodeNames'
 import { MoveToThisServerButton, PlacementLabel } from './PlacementLabel'
@@ -202,6 +203,14 @@ function PlacementBody({
           {save.isPending ? t('placement.saving') : t('placement.save')}
         </Button>
       </div>
+
+      {kind === 'app' ? (
+        <TolerationsSection
+          key={JSON.stringify([placement.tolerations, placement.affinity])}
+          name={name}
+          placement={placement}
+        />
+      ) : null}
 
       <div className="space-y-1.5">
         <p className="text-sm font-medium text-foreground">

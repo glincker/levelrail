@@ -7,7 +7,11 @@ import {
 } from '@/components/ui/responsive-table'
 import { RelativeTime } from '@/components/kit'
 import type { Stack } from '../../types/stacks'
-import { RevisionStatusBadge, StackFlags } from './StackIndicators'
+import {
+  RevisionStatusBadge,
+  StackFlags,
+  StackScopeBadge,
+} from './StackIndicators'
 
 export function StacksList({
   stacks,
@@ -36,7 +40,18 @@ export function StacksList({
         id: 'project',
         header: t('columns.project'),
         priority: 2,
-        cell: (s) => <span className="text-muted-foreground">{s.project}</span>,
+        cell: (s) =>
+          s.scope === 'install' ? (
+            <span className="text-muted-foreground">-</span>
+          ) : (
+            <span className="text-muted-foreground">{s.project}</span>
+          ),
+      },
+      {
+        id: 'scope',
+        header: t('columns.scope'),
+        priority: 2,
+        cell: (s) => <StackScopeBadge stack={s} />,
       },
       {
         id: 'revision',

@@ -1,3 +1,7 @@
+import {
+  SelectedMark,
+  selectableCardClass,
+} from '@/components/ui/selectable-card'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -277,26 +281,28 @@ export function SSHEnrollFields({
           <button
             type="button"
             onClick={() => setAuthMethod('key')}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-lg border p-2 text-sm transition-colors ${
-              authMethod === 'key'
-                ? 'border-primary bg-primary/5'
-                : 'border-border hover:bg-muted/50'
-            }`}
+            aria-pressed={authMethod === 'key'}
+            className={selectableCardClass(
+              authMethod === 'key',
+              'flex flex-1 items-center justify-center gap-2 rounded-lg p-2 text-sm',
+            )}
           >
             <KeyGlassIcon className="size-5" />
             Private key
+            <SelectedMark selected={authMethod === 'key'} />
           </button>
           <button
             type="button"
             onClick={() => setAuthMethod('password')}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-lg border p-2 text-sm transition-colors ${
-              authMethod === 'password'
-                ? 'border-primary bg-primary/5'
-                : 'border-border hover:bg-muted/50'
-            }`}
+            aria-pressed={authMethod === 'password'}
+            className={selectableCardClass(
+              authMethod === 'password',
+              'flex flex-1 items-center justify-center gap-2 rounded-lg p-2 text-sm',
+            )}
           >
             <KeyGlassIcon className="size-5" />
             Password
+            <SelectedMark selected={authMethod === 'password'} />
           </button>
         </div>
         {authMethod === 'key' ? (

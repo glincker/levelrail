@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/GLINCKER/levelrail/internal/dnszones"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -26,6 +27,8 @@ type CloudflareDNSSecrets interface {
 type cloudflareDNSResource struct {
 	Enabled  bool `json:"enabled"`
 	HasToken bool `json:"has_token"`
+	// Verification appears only on a PUT that saved a new token.
+	Verification *dnsTokenVerification `json:"verification,omitempty"`
 }
 
 func (rt *Router) toCloudflareDNSResource(ctx context.Context, s store.CloudflareDNSSettings) cloudflareDNSResource {
@@ -104,7 +107,13 @@ func (rt *Router) handleUpdateCloudflareDNSSettings(w http.ResponseWriter, r *ht
 		rt.internalError(w, "api: update cloudflare dns settings failed", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, rt.toCloudflareDNSResource(r.Context(), settings))
+	res := rt.toCloudflareDNSResource(r.Context(), settings)
+	if req.Token != "" {
+		res.Verification = rt.verifyDNSCredential(r.Context(), dnszones.ProviderCloudflare, func() (dnszones.Provider, error) {
+			return dnszones.NewCloudflare(req.Token), nil
+		})
+	}
+	writeJSON(w, http.StatusOK, res)
 }
 
 // handleDisconnectCloudflareDNS handles DELETE

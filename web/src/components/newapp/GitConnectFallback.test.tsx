@@ -40,7 +40,7 @@ describe('GitProviderCards without a primary domain', () => {
     ).toBeInTheDocument()
     await user.click(
       screen.getByRole('button', {
-        name: 'Continue with a repository URL instead',
+        name: 'Use a repository URL instead',
       }),
     )
     expect(screen.getByLabelText('url')).toHaveFocus()

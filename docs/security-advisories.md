@@ -153,7 +153,7 @@ These shipped alongside the fixes and are listed for completeness: agents must g
 ## Disclosure policy
 
 - **Reporting.** Use a private [GitHub security advisory](https://github.com/glincker/levelrail/security/advisories/new). Please do not open a public issue.
-- **Acknowledgement.** We aim to acknowledge within three business days. There is no formal fix SLA yet; we say so rather than promise one.
+- **Acknowledgement.** We aim to acknowledge within three business days. This is a goal, not a guarantee. There is no formal fix SLA yet; we say so rather than promise one.
 - **Credit.** Reporters are credited here unless they ask not to be.
 - **CVEs.** Issues that are remotely exploitable in a default install get a GitHub advisory and a CVE request. Hardening items and issues that need an already privileged account get an `LRSA` entry only.
 - **No silent fixes.** A security fix always references its `LRSA` ID in the changelog entry.

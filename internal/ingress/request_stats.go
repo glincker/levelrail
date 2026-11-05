@@ -84,6 +84,7 @@ func (m requestStatsModule) ServeHTTP(w http.ResponseWriter, r *http.Request, ne
 		Millis: float64(elapsed) / float64(time.Millisecond), BytesIn: in, BytesOut: rec.bytes,
 		RequestID: requestID, TraceID: traceID, Upstream: upstreamErr, Cold: rec.cold,
 		Client: requestClientAddr(r), UserAgent: truncate(r.UserAgent(), maxRecordedAgent),
+		Referrer: requestReferrerHost(r),
 	}
 	if DefaultAccessLog().IdentityWanted() {
 		ip := ""

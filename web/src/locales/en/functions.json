@@ -296,7 +296,7 @@
     },
     "versions": {
       "title": "Versions",
-      "help": "Roll back to an earlier deploy, or pin it: pinning rolls back and locks publishing so new builds stay held until you unlock.",
+      "help": "Roll back to an earlier deploy, or pin it: pinning rolls back and locks publishing so new builds stay held until you unlock it.",
       "empty": "No deploys yet.",
       "live": "Live",
       "rollback": "Roll back",

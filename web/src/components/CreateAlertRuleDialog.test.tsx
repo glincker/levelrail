@@ -261,4 +261,63 @@ describe('CreateAlertRuleDialog', () => {
     fireEvent.click(popup.querySelector('#rule-kind') as HTMLElement)
     expect(screen.queryByText('Monitor down')).toBeNull()
   })
+
+  it('prefills the traffic drop fields and scopes to one domain', async () => {
+    const fetchMock = mockFetchRoutes({
+      'GET /api/v1/notification-channels': jsonRoute([]),
+      'GET /api/v1/apps/demo-app/jobs': jsonRoute([]),
+      'GET /api/v1/domains': jsonRoute([
+        { domain: 'shop.example.com', service_name: 'demo-app' },
+        { domain: 'other.example.com', service_name: 'other' },
+      ]),
+      'POST /api/v1/apps/demo-app/alerts': jsonRoute({ id: 'r1' }, 201),
+    })
+    renderDialog()
+    const popup = await openDialog()
+
+    fireEvent.change(popup.querySelector('#rule-name')!, {
+      target: { value: 'drop' },
+    })
+    await pickOption(popup, 'rule-kind', 'Domain traffic drop')
+
+    expect(
+      await within(popup).findByLabelText('Drop below percent of yesterday'),
+    ).toHaveValue(50)
+    expect(
+      within(popup).getByLabelText('Minimum requests yesterday'),
+    ).toHaveValue(20)
+    expect(within(popup).getByLabelText('Window')).toBeInTheDocument()
+
+    await pickOption(popup, 'rule-traffic-domain', 'shop.example.com')
+    expect(screen.queryByText('other.example.com')).not.toBeInTheDocument()
+    fireEvent.click(within(popup).getByRole('button', { name: 'Create rule' }))
+
+    await waitFor(() => {
+      const post = fetchMock.mock.calls.find(
+        ([, init]) => (init as RequestInit | undefined)?.method === 'POST',
+      )
+      expect(post).toBeDefined()
+      const body: unknown = JSON.parse((post![1] as RequestInit).body as string)
+      expect(body).toMatchObject({
+        kind: 'domain_traffic_drop',
+        resource_id: 'domain:shop.example.com',
+        for_duration: '1h',
+        threshold: 50,
+        restart_count_threshold: 20,
+      })
+    })
+  })
+
+  it('shows only days left for the parked certificate kind', async () => {
+    mockFetchRoutes({
+      'GET /api/v1/notification-channels': jsonRoute([]),
+      'GET /api/v1/apps/demo-app/jobs': jsonRoute([]),
+    })
+    renderDialog()
+    const popup = await openDialog()
+
+    await pickOption(popup, 'rule-kind', 'Parked domain certificate expiry')
+    expect(await within(popup).findByLabelText('Days left')).toHaveValue(14)
+    expect(within(popup).queryByLabelText('Window')).not.toBeInTheDocument()
+  })
 })

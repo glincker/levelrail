@@ -8,9 +8,22 @@ import (
 	"time"
 )
 
+// DefaultInterval is the fallback when a configured interval is not positive.
+const DefaultInterval = time.Minute
+
+// Safe returns d, or fallback when d is zero or negative, because
+// time.NewTicker panics on a non positive interval.
+func Safe(d, fallback time.Duration) time.Duration {
+	if d <= 0 {
+		return fallback
+	}
+	return d
+}
+
 // Run calls tick on interval until ctx is done. A tick error is logged
 // under label, never fatal: one failed tick must not stop the loop.
 func Run(ctx context.Context, interval time.Duration, logger *slog.Logger, label string, tick func(context.Context) error) error {
+	interval = Safe(interval, DefaultInterval)
 	t := time.NewTicker(interval)
 	defer t.Stop()
 

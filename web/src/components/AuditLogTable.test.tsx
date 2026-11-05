@@ -49,13 +49,13 @@ function renderTable(entries: AuditLogEntry[]) {
 describe('AuditLogTable', () => {
   it('renders the real translated label for a system-recorded renewal, with its domain', () => {
     renderTable([entry({})])
-    expect(screen.getByText('Renewed Certificate')).toBeInTheDocument()
+    expect(screen.getByText('Renewed certificate')).toBeInTheDocument()
     expect(screen.getByText('app.example.com')).toBeInTheDocument()
   })
 
   it('renders the real translated label for a system-recorded first issuance', () => {
     renderTable([entry({ ability: 'cert.issued' })])
-    expect(screen.getByText('Issued Certificate')).toBeInTheDocument()
+    expect(screen.getByText('Issued certificate')).toBeInTheDocument()
   })
 
   it('falls back to the raw ability string for an entry with no label mapping', () => {

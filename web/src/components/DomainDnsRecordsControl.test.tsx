@@ -38,3 +38,19 @@ describe('ConnectNsProvider', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 })
+
+describe('DomainDnsRecordsControl', () => {
+  it('shows the record count without any click', async () => {
+    const { DomainDnsRecordsControl } =
+      await import('./DomainDnsRecordsControl')
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <DomainDnsRecordsControl appName="a" domain="d.test" />
+      </QueryClientProvider>,
+    )
+    expect(screen.getByText('recordsControl.title')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'recordsControl.manage' }),
+    ).not.toBeInTheDocument()
+  })
+})

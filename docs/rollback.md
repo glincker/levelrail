@@ -4,6 +4,32 @@ description: "How to roll the control plane back to a previous release: what the
 "og:url": "https://docs.levelrail.com/rollback"
 ---
 
+"Rollback" means different things in Levelrail. This page covers rolling the control plane back to an earlier release. To put an older image back on one app, see [Roll back an app](/deploying-apps#roll-back).
+
+## Which rollback command do I use?
+
+| You want to | Command | Where it runs | Data |
+| --- | --- | --- | --- |
+| Put an older image back on one app | `levelrail-cli apps rollback <name>` (alias `levelrail-cli rollback <name>`) | Anywhere with the CLI | The control plane is untouched. |
+| Preview a control plane rollback | `levelrail-cli upgrade --rollback-plan <version>` | Anywhere with the CLI | Read only. |
+| Roll the control plane back to a release this host kept, binary only | `levelrail-cli upgrade --rollback <version> --yes`, or **Roll back now** in Settings > Updates | Anywhere with the CLI, applied on the host | Your data is untouched. |
+| Undo one failed or unwanted upgrade attempt | `levelrail-cli upgrade rollback <attempt>`, or `levelrail-cli updates restore-points restore <id> --yes` | Anywhere with the CLI, applied on the host | Restores the pre-upgrade restore point. See [Upgrade safely](/upgrade-safely#restore-points). |
+| Roll back when the dashboard or CLI cannot do it, or the release is not kept on the host | `sudo levelrail rollback --to <version>` | On the server, as root | Binary only, unless the release is older than your database. |
+| Go back to a release older than your database schema | `sudo levelrail rollback --to <version> --restore-backup <name> --confirm-data-loss <name>` | On the server, as root | Replaces the database. Everything written after the backup is lost. |
+
+`levelrail-cli` is the remote client. `levelrail` is the control plane binary on the server. They are different programs. Find attempt ids with `levelrail-cli upgrade --attempts`.
+
+Which one to pick:
+
+1. Run `levelrail-cli upgrade --list --channel all` and read the verdict for the target release (see [What the verdict means](#what-the-verdict-means)).
+2. If the verdict is "Safe: binary only", use `upgrade --rollback`. If the CLI says it cannot be applied remotely, it prints the host command to run.
+3. If the verdict is "Needs a backup restore", use the host command with `--restore-backup`. Read the data loss warning first.
+4. If the last upgrade just failed, use the attempt rollback or the restore point instead. The control plane normally restores the previous release by itself when the new one is not healthy.
+
+Upgrading is the other direction: see [Upgrade safely](/upgrade-safely#which-upgrade-command-do-i-use).
+
+## From the dashboard
+
 Settings > Updates lists the last five releases for a channel (stable, beta, or
 both), each with a compatibility verdict against your database. Pick one to see
 exactly what a rollback would do. When the verdict is "Safe: binary only", the
@@ -14,10 +40,6 @@ host unit, because it cannot replace the binary it runs from; it takes a backup,
 swaps, restarts and restores the previous release if the old one does not
 become healthy. Anything that would restore a database backup stays a typed
 host command, since it loses data.
-
-```sh
-levelrail-cli upgrade --rollback v0.2.0-beta.14 --yes
-```
 
 ## What the verdict means
 
@@ -32,16 +54,19 @@ levelrail-cli upgrade --rollback v0.2.0-beta.14 --yes
 
 ```sh
 levelrail-cli upgrade --list --channel all
-levelrail-cli upgrade --rollback-plan v0.2.0-beta.14 --json
+levelrail-cli upgrade --rollback-plan vX.Y.Z --json    # preview, changes nothing
+levelrail-cli upgrade --rollback vX.Y.Z --yes          # apply, binary only
 ```
+
+`--rollback` works only for a release the host kept and only when the plan allows it. Without `--yes` it prints the expected downtime and stops. Run `levelrail-cli upgrade -h` for every flag. These run with `levelrail-cli`. The commands under "Applying on the server" run with `levelrail`, and the retain step runs the installer script.
 
 ## Applying on the server
 
 Releases your host kept (the last three it ran) roll back immediately, with no network needed:
 
 ```sh
-sudo levelrail rollback --to v0.2.0-beta.14 --dry-run   # print the plan only
-sudo levelrail rollback --to v0.2.0-beta.14             # asks you to type the version
+sudo levelrail rollback --to vX.Y.Z --dry-run   # print the plan only
+sudo levelrail rollback --to vX.Y.Z             # asks you to type the version
 ```
 
 A release the host does not have is staged first, with checksum and signature
@@ -49,7 +74,7 @@ verification:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/glincker/levelrail/main/install.sh \
-  | sudo LEVELRAIL_VERSION=v0.2.0-beta.14 sh -s retain
+  | sudo LEVELRAIL_VERSION=vX.Y.Z sh -s retain
 ```
 
 The rollback takes a fresh backup, stops the service, swaps the binary, starts
@@ -60,7 +85,7 @@ the command tells you so. Every attempt is written to the audit log.
 ### When a restore is required
 
 ```sh
-sudo levelrail rollback --to v0.1.0 \
+sudo levelrail rollback --to vX.Y.Z \
   --restore-backup levelrail-20261009T020000Z.db \
   --confirm-data-loss levelrail-20261009T020000Z.db
 ```

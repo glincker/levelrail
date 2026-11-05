@@ -38,7 +38,8 @@ const (
 
 // IsTrafficKind reports whether k is one of the traffic kinds above.
 func IsTrafficKind(k Kind) bool {
-	return k == KindCertExpiring || k == KindCertRenewalStalled || k == KindDomainNotResolving
+	return k == KindCertExpiring || k == KindCertRenewalStalled || k == KindDomainNotResolving ||
+		k == KindDomainTrafficDrop || k == KindParkedDomainCertExpiry
 }
 
 // DomainListSource lists every configured domain. *store.DB satisfies it.
@@ -56,6 +57,8 @@ type ACMEFailureSource interface {
 type trafficKinds struct {
 	domains DomainListSource
 	acme    ACMEFailureSource
+	visits  DomainTrafficSource
+	parked  ParkedDomainSource
 
 	mu    sync.Mutex
 	since map[string]time.Time
@@ -65,6 +68,10 @@ type trafficKinds struct {
 // cert_renewal_stalled. Either may be nil.
 func (e *Engine) SetTrafficSources(domains DomainListSource, acme ACMEFailureSource) {
 	e.traffic.domains, e.traffic.acme = domains, acme
+	// The store behind domains also lists parked domains; no extra wiring needed.
+	if p, ok := domains.(ParkedDomainSource); ok {
+		e.traffic.parked = p
+	}
 }
 
 // episode returns when key first became true, recording now when it just
@@ -248,6 +255,16 @@ func (e *Engine) evaluateTrafficKind(ctx context.Context, r Rule, now time.Time)
 			return r, nil, true, nil
 		}
 		next, notices, err = e.EvaluateDomainNotResolving(ctx, r, now)
+	case KindDomainTrafficDrop:
+		if e.traffic.domains == nil || e.traffic.visits == nil {
+			return r, nil, true, nil
+		}
+		next, notices, err = e.EvaluateDomainTrafficDrop(ctx, r, now)
+	case KindParkedDomainCertExpiry:
+		if e.certs == nil || e.traffic.parked == nil {
+			return r, nil, true, nil
+		}
+		next, notices, err = e.EvaluateParkedDomainCertExpiry(ctx, r, now)
 	}
 	return next, notices, false, err
 }

@@ -108,7 +108,7 @@ func validateBackupScheduleRequest(w http.ResponseWriter, targetID, schedule str
 		writeError(w, http.StatusBadRequest, "schedule is required")
 		return false
 	}
-	if _, err := cronexpr.Parse(schedule); err != nil {
+	if err := cronexpr.Validate(schedule, time.UTC, time.Now()); err != nil {
 		writeError(w, http.StatusBadRequest, fmt.Sprintf("invalid schedule: %s", err.Error()))
 		return false
 	}

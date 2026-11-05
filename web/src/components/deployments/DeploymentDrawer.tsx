@@ -38,12 +38,13 @@ import { DeploymentNote } from './DeploymentNote'
 import { EnvPill, StatusCell } from './DeploymentRow'
 import { ImageRefChip } from './ImageRefChip'
 import { CodeBlock } from '@/components/ui/code-block'
+import { FieldLabel } from '@/components/ui/typography'
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-2">
-      <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-        {title}
+      <h3>
+        <FieldLabel as="span">{title}</FieldLabel>
       </h3>
       {children}
     </section>
@@ -289,6 +290,7 @@ export function DeploymentDrawer({
   onAction,
   onOpenDeployment,
 }: DeploymentDrawerProps) {
+  const { t } = useTranslation('deploys')
   return (
     <Sheet
       open={id !== ''}
@@ -302,14 +304,17 @@ export function DeploymentDrawer({
       >
         <SheetHeader className="pr-12">
           <SheetTitle className="break-words">
-            {deployment ? headline(deployment) : 'Deployment'}
+            {deployment ? headline(deployment) : t('page.drawerFallbackTitle')}
           </SheetTitle>
           <SheetDescription>
             {deployment
-              ? `${deployment.app} deployment ${shortId(deployment.id)}`
+              ? t('page.drawerDescription', {
+                  app: deployment.app,
+                  id: shortId(deployment.id),
+                })
               : searching
-                ? 'Looking for this deployment'
-                : 'Deployment not found'}
+                ? t('page.drawerSearching')
+                : t('page.drawerNotFoundTitle')}
           </SheetDescription>
         </SheetHeader>
         {deployment ? (
@@ -323,7 +328,7 @@ export function DeploymentDrawer({
         ) : (
           !searching && (
             <p className="px-4 text-sm text-muted-foreground">
-              Deployment not found. It may have been pruned by retention.
+              {t('page.drawerNotFound')}
             </p>
           )
         )}

@@ -736,3 +736,39 @@ func TestScheduler_Tick_TakesBaseBackupOnlyForPITRDatabases(t *testing.T) {
 		})
 	}
 }
+
+func TestScheduler_Tick_ImpossibleScheduleNeverRunsOrLoops(t *testing.T) {
+	for _, sched := range []string{"0 0 30 2 *", "0 0 31 4 *"} {
+		fakeStore := &fakeScheduleStore{dbs: []store.DesiredDatabase{scheduledDB("main", sched, 0)}}
+		runner := &fakeScheduledRunner{}
+		s := NewScheduler(fakeStore, runner, nil, nil)
+		now := time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC)
+		for range 50 {
+			s.Now = func() time.Time { return now }
+			if err := s.Tick(context.Background()); err != nil {
+				t.Fatalf("Tick() error = %v", err)
+			}
+			now = now.Add(time.Minute)
+		}
+		if len(runner.calls) != 0 {
+			t.Fatalf("%s: ran %d backups, want 0", sched, len(runner.calls))
+		}
+	}
+}
+
+func TestScheduler_Tick_LeapDayRunsOnceAndRearms(t *testing.T) {
+	fakeStore := &fakeScheduleStore{dbs: []store.DesiredDatabase{scheduledDB("main", "0 0 29 2 *", 0)}}
+	runner := &fakeScheduledRunner{}
+	s := NewScheduler(fakeStore, runner, nil, nil)
+	now := time.Date(2028, 2, 28, 23, 59, 0, 0, time.UTC)
+	for range 5 {
+		s.Now = func() time.Time { return now }
+		if err := s.Tick(context.Background()); err != nil {
+			t.Fatalf("Tick() error = %v", err)
+		}
+		now = now.Add(time.Minute)
+	}
+	if len(runner.calls) != 1 {
+		t.Fatalf("leap day ran %d backups, want 1", len(runner.calls))
+	}
+}

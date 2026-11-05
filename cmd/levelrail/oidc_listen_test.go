@@ -63,7 +63,7 @@ func TestListenWhenAssigned_NonPositiveRetryDoesNotSpin(t *testing.T) {
 	}
 }
 
-func TestServeOIDCTokenRequests_AddrInUseDegradesToInfo(t *testing.T) {
+func TestServeOIDCTokenRequests_AddrInUseWarnsOnce(t *testing.T) {
 	busy, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Skip("no loopback listener")
@@ -82,8 +82,8 @@ func TestServeOIDCTokenRequests_AddrInUseDegradesToInfo(t *testing.T) {
 		t.Fatal("serve did not return on a busy address")
 	}
 	out := buf.String()
-	if !strings.Contains(out, "level=INFO") || strings.Contains(out, "level=ERROR") || strings.Contains(out, "level=WARN") {
-		t.Fatalf("want a single info line, got %s", out)
+	if strings.Count(out, "level=WARN") != 1 || strings.Contains(out, "level=ERROR") || !strings.Contains(out, "pipelines.oidc_listen_port") {
+		t.Fatalf("want a single warn naming the setting, got %s", out)
 	}
 }
 

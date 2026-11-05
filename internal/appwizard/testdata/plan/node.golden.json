@@ -1,0 +1,68 @@
+{
+  "repo_url": "https://github.com/acme/node",
+  "ref": "main",
+  "monorepo": false,
+  "stack": {
+    "runtime": "node",
+    "framework": "Express",
+    "language": "node",
+    "confidence": "medium",
+    "evidence": [
+      {
+        "signal": "stack",
+        "detail": "Node web server dependency found, built with Railpack"
+      },
+      {
+        "signal": "lockfile",
+        "detail": "package-lock.json is present, so npm installs dependencies"
+      },
+      {
+        "signal": "package.json",
+        "detail": "package.json has express in dependencies"
+      }
+    ]
+  },
+  "build": {
+    "type": "railpack",
+    "start_command": "npm start",
+    "evidence": "no Dockerfile found, the framework is auto-detected"
+  },
+  "port": {
+    "value": 3000,
+    "evidence": "Node.js server default port"
+  },
+  "health": {
+    "path": "/",
+    "evidence": "Node.js server default health path"
+  },
+  "env": [
+    {
+      "name": "SESSION_SECRET",
+      "source": ".env.example",
+      "required": true,
+      "looks_secret": true,
+      "has_default_hint": false
+    },
+    {
+      "name": "LOG_LEVEL",
+      "source": ".env.example",
+      "required": false,
+      "looks_secret": false,
+      "has_default_hint": true
+    }
+  ],
+  "spec": {
+    "name": "node",
+    "yaml": "version: 1\nservices:\n    node:\n        build:\n            type: railpack\n        port: 3000\n        health:\n            readiness:\n                path: /\n        env:\n            SESSION_SECRET:\n                secret: true\n                required: true\n"
+  },
+  "warnings": [
+    {
+      "code": "no_dockerfile",
+      "message": "no Dockerfile is used, so the build is auto-detected; add a Dockerfile for full control"
+    }
+  ],
+  "next": {
+    "method": "POST",
+    "path": "/api/v1/imports/repo/apply"
+  }
+}

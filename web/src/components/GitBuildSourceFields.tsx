@@ -28,7 +28,7 @@ import type { DetectFrameworkResult } from '../queries/buildDetect'
 import { gitHostIconName } from '../lib/gitHost'
 import { BrandIcon } from './BrandIcon'
 import { DetectionStatus } from './DetectionStatus'
-import type { FormInput, FormOutput } from './CreateAppFromGitFields'
+import type { FormInput, FormOutput } from '../lib/createAppFromGit'
 import { RegistryImagePicker } from './RegistryImagePicker'
 import { BuildArgsFields } from './GitBuildArgsFields'
 

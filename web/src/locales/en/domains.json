@@ -101,7 +101,7 @@
       "apexPreset": "Also route {{apex}} and redirect it to {{www}}"
     },
     "dns": {
-      "propagation": "DNS changes usually show up within minutes, but can take up to a few hours depending on the record's TTL. This page re-checks on its own, so you can leave it open.",
+      "propagation": "DNS changes usually show up within minutes, but can take a few hours depending on the record's TTL. This page re-checks on its own, so you can leave it open.",
       "needDomain": "Enter a domain above to see the exact record to add."
     }
   },
@@ -129,7 +129,7 @@
     "connectivity": "Reachability from this server",
     "portOpen": "Port {{port}} answers",
     "portClosed": "Port {{port}} does not answer",
-    "connectivityNote": "This tests the address from the control plane. It cannot prove the port is open to the whole internet, but a closed port here is almost always closed there too.",
+    "connectivityNote": "This tests the address from the control plane. It cannot prove the port is open to the whole internet, but a port closed here is almost always closed there too.",
     "stagingNote": "Staging certificates are platform-wide, not per app. To test without rate limits, turn on Let's Encrypt staging in the Domains settings first."
   },
   "save": {
@@ -182,9 +182,9 @@
     "renewalTitle": "Certificate renewal failed",
     "caError": "The certificate authority said",
     "action": {
-      "open_port_80": "Next step: open ports 80 and 443 to the internet. Check your firewall, your router port forward and your cloud security group, then wait for the next attempt.",
+      "open_port_80": "Next step: open ports 80 and 443 to the internet. Check your firewall, router port forward and cloud security group, then wait for the next attempt.",
       "fix_dns": "Next step: point the domain's A or AAAA record at this server, and wait for DNS to propagate.",
-      "wait_rate_limit": "Next step: wait before retrying. The certificate authority is rate limiting this hostname, and every failed attempt counts against the limit.",
+      "wait_rate_limit": "Next step: wait before retrying. The certificate authority is rate limiting this hostname, and each failed attempt counts against the limit.",
       "fix_caa": "Next step: remove or edit the CAA record so it allows the certificate authority.",
       "other_proxy": "Another service on this server answers port 80, most likely a reverse proxy such as Traefik or nginx. Either let that proxy issue the certificate and route this domain to Levelrail (see Run behind an existing proxy), or give Levelrail ports 80 and 443.",
       "check_logs": "Next step: read the ingress logs for the full certificate authority response."
@@ -271,6 +271,7 @@
       "app": "App",
       "dns": "DNS",
       "certificate": "Certificate",
+      "environment": "Environment",
       "expires": "Expires",
       "visibility": "Search"
     },
@@ -304,7 +305,12 @@
       "failed": "Request failed",
       "renewsAuto": "Renews automatically",
       "renewsProxy": "Renews automatically via your proxy",
-      "renewsManual": "Uploaded certificate: renew it before it expires"
+      "renewsManual": "Uploaded certificate: renew it before it expires",
+      "daysLeft_one": "{{count}} day left",
+      "daysLeft_other": "{{count}} days left",
+      "expiresToday": "Expires today",
+      "expiredAgo_one": "Expired {{count}} day ago",
+      "expiredAgo_other": "Expired {{count}} days ago"
     },
     "visibility": {
       "toggle": "Allow search engines to index {{domain}}",
@@ -323,7 +329,13 @@
       "recheck": "Re-check DNS",
       "automatic": "Automatic",
       "wildcard": "Wildcard",
-      "wildcardHint": "Matches every single label under this domain. Exact domains on other apps still win."
+      "wildcardHint": "Matches every single label under this domain. Exact domains on other apps still win.",
+      "details": "Domain settings",
+      "setPrimary": "Set as primary",
+      "move": "Move to another app",
+      "park": "Disconnect (park)",
+      "delete": "Delete domain",
+      "primary": "Primary"
     },
     "flag": {
       "waf": "WAF enabled",
@@ -627,7 +639,7 @@
       "expires": "expires {{date}}",
       "certLabel": "Certificate (PEM)",
       "keyLabel": "Private key (PEM)",
-      "replaceHint": "Replaces the currently uploaded certificate entirely; there is no partial update.",
+      "replaceHint": "Replaces the uploaded certificate entirely. There is no partial update.",
       "newHint": "Used instead of automatic issuance for this domain, starting on the next reconcile pass.",
       "bothRequired": "Both a certificate and a private key are required.",
       "uploadedToast": "Certificate uploaded for {{domain}}.",
@@ -641,7 +653,11 @@
       "revertConfirm": "Revert",
       "reverting": "Reverting...",
       "revertedToast": "Reverted {{domain}} to automatic TLS.",
-      "revertFailed": "Could not revert to automatic TLS."
+      "revertFailed": "Could not revert to automatic TLS.",
+      "automatic": "Automatic TLS",
+      "add": "Add certificate",
+      "replace": "Replace",
+      "close": "Close"
     }
   },
   "ingressUpstream": {
@@ -666,7 +682,7 @@
     "checkedAt": "Checked at {{time}}",
     "noAnswer": "no answer",
     "propagatingHelp": "Public DNS already points this domain at this server. Some resolvers are still catching up; the list above shows which ones and when to try again.",
-    "notFoundHelp": "No resolver has this record yet. Check the record at your DNS provider (type, name, value) and give it a minute. A new record is usually visible within a few minutes.",
+    "notFoundHelp": "No resolver has this record yet. Check the record at your DNS provider (type, name, value), then give it a few minutes.",
     "ttl": "(ttl {{seconds}}s)",
     "groups": {
       "authoritative": "Authoritative name servers (source of truth)",
@@ -951,7 +967,7 @@
       "title": "Page title",
       "titlePlaceholder": "Down for maintenance",
       "message": "Message",
-      "messagePlaceholder": "This site is temporarily unavailable. Please check back soon.",
+      "messagePlaceholder": "This site is temporarily unavailable. Check back soon.",
       "plainText": "Plain text. Visitors see it as written, without formatting.",
       "until": "End automatically at",
       "untilHelp": "Optional. Creates a scheduled maintenance entry that also shows on the status page.",
@@ -1043,7 +1059,12 @@
     "tryAgain": "Try again",
     "applying": "Applying...",
     "applied": "{{label}}: done. Checking again.",
-    "fixViaCli": "Fix via CLI",
+    "fromTerminal": "From a terminal",
+    "copyCommand": "Copy the command",
+    "evidence_one": "Evidence ({{count}} line)",
+    "evidence_other": "Evidence ({{count}} lines)",
+    "steps": "Steps",
+    "open": "Open {{label}}",
     "copyRecord": "Copy the {{type}} record for {{name}}",
     "nothingToFix": "Nothing to fix.",
     "showPassed": "Show {{count}} other checks",
@@ -1078,7 +1099,7 @@
     "descriptionLink": "Domains",
     "descriptionAfter": ".",
     "dnsHintLink": "DNS record types explained",
-    "dnsHint": "Point an A record at this server's IP address (or a CNAME at its hostname), then a TLS certificate is issued automatically once it resolves.",
+    "dnsHint": "Point an A record at this server's IP address (or a CNAME at its hostname). A TLS certificate is issued automatically once it resolves.",
     "empty": "No domains configured.",
     "inputLabel": "Domain",
     "inputPlaceholder": "app.example.com",
@@ -1155,9 +1176,10 @@
     "httpsOn": "HTTPS enabled",
     "httpsOff": "HTTPS not enabled",
     "address": "Server",
-    "fixHttps": "Fix: enable HTTPS",
     "fixAddress": "Fix: check address",
-    "details": "Address details"
+    "details": "Address details",
+    "enableHttps": "Enable HTTPS",
+    "parked": "{{count}} parked"
   },
   "cutover": {
     "title": "Cutover checklist",
@@ -1205,5 +1227,286 @@
         "FAIL": "Failed"
       }
     }
+  },
+  "lifecycle": {
+    "pending": "Working...",
+    "park": {
+      "title": "Park {{domain}}?",
+      "body": "{{app}} stops serving this domain. It stays registered with its DNS and certificate state in the Parked group and can be attached to any app later.",
+      "keepsDnsCert": "DNS records and the automatic certificate state are kept too.",
+      "confirm": "Park domain",
+      "done": "{{domain}} is parked",
+      "savesSettings": "Parking saves this domain's own settings (WAF and rate limit, own certificate, basic auth, auth gate, maintenance, redirect, error pages, search visibility, traffic policies) with the parked domain. They are restored when it is attached.",
+      "staticNoSettings": "A static site keeps no per-domain settings, so nothing is saved with the parked domain."
+    },
+    "move": {
+      "title": "Move {{domain}}",
+      "body": "Move this domain from {{app}} to another app. A collision check runs first.",
+      "keepsSettings": "Moving keeps the domain's own settings: WAF, own certificate and basic auth go with it.",
+      "target": "Move to",
+      "check": "Check and move",
+      "confirm": "Confirm move",
+      "needsConfirm": "Traffic for this domain changes owner. Confirm to continue.",
+      "done": "{{domain}} moved to {{app}}",
+      "dropsSettings": "Moving to a static site drops this domain's own settings. DNS and certificate state are kept.",
+      "dropsWarning": "Static sites have no per-domain settings. WAF, own certificate, basic auth and other settings on this domain will be dropped."
+    },
+    "delete": {
+      "title": "Delete {{domain}}?",
+      "body": "Removes the domain from {{app}} entirely. Type the domain to confirm.",
+      "confirm": "Delete",
+      "done": "{{domain}} deleted",
+      "dropsSettings": "Deleting removes this domain's own settings: WAF and rate limit, own certificate and basic auth are dropped."
+    },
+    "attach": {
+      "title": "Attach {{domain}}",
+      "body": "Choose the app that should serve this parked domain.",
+      "confirm": "Attach",
+      "done": "{{domain}} attached to {{app}}",
+      "settingsLegend": "Saved settings",
+      "restore": "Restore saved settings (default)",
+      "startFresh": "Start fresh and discard them",
+      "restored": "Restored: {{kinds}}",
+      "kinds": {
+        "domain_waf": "WAF",
+        "gate_access_rules": "rate limit",
+        "domain_tls_cert": "certificate",
+        "domain_basic_auth": "basic auth",
+        "domain_auth_gate": "auth gate",
+        "domain_maintenance": "maintenance",
+        "domain_redirect": "redirect",
+        "domain_error_page": "error pages",
+        "domain_search_visibility": "search visibility",
+        "domain_traffic_policies": "traffic policies"
+      },
+      "dropsWarning": "Static sites have no per-domain settings. The saved settings for this domain will be dropped, not restored."
+    },
+    "deleteParked": {
+      "title": "Delete parked domain {{domain}}?",
+      "body": "Forgets the domain and its parked DNS and certificate state. Type the domain to confirm."
+    },
+    "environment": {
+      "label": "Environment",
+      "default": "Default list"
+    },
+    "target": {
+      "apps": "Apps",
+      "staticSites": "Static sites"
+    }
+  },
+  "parked": {
+    "title": "Parked",
+    "hint": "Registered but routed by no app. Attach one to an app to serve it again.",
+    "from": "Parked from {{app}}",
+    "attach": "Attach",
+    "delete": "Delete {{domain}}",
+    "settingsSaved": "Settings saved",
+    "dns": {
+      "pointing": "DNS pointing",
+      "not_pointing": "DNS not pointing",
+      "unknown": "DNS unknown"
+    },
+    "tls": {
+      "pending": "Certificate pending",
+      "none": "No certificate"
+    },
+    "fromEnvironment": "Parked from {{app}} ({{environment}})",
+    "staticSite": "Static site"
+  },
+  "detail": {
+    "description": "Settings for this domain on {{app}}.",
+    "allSettings": "All settings",
+    "routing": "Routing",
+    "security": "Security",
+    "pages": "Pages",
+    "seo": "SEO",
+    "tls": "TLS"
+  },
+  "waf": {
+    "add": "Add WAF / rate limit",
+    "edit": "Edit",
+    "close": "Close",
+    "summaryWaf": "WAF: {{mode}}",
+    "summaryWafOff": "WAF off",
+    "summaryRate": "Rate limit {{rps}}/s, burst {{burst}}",
+    "summaryRateOff": "No rate limit",
+    "badgeOn": "WAF/rate limit on",
+    "badgeOff": "Not protected",
+    "helpLabel": "WAF and rate limiting guide",
+    "wafLabel": "OWASP Coraza WAF",
+    "modeLabel": "Mode",
+    "modeDetect": "Detect (log only, recommended to start)",
+    "modeBlock": "Block (reject matching requests)",
+    "helpDetect": "Requests matching OWASP CRS rules are logged, never rejected. Switch to Block once you have reviewed logs for false positives.",
+    "helpBlock": "Requests matching OWASP CRS rules are rejected with an error.",
+    "rpsLabel": "Rate limit (requests/sec per IP)",
+    "rpsPlaceholder": "0 (disabled)",
+    "rpsHelp": "0 disables rate limiting for this domain.",
+    "burstLabel": "Burst allowance",
+    "burstPlaceholder": "0 (no extra burst)",
+    "burstHelp": "Requests allowed in a single second beyond the sustained rate above. Leave at 0 for a strict cap.",
+    "save": "Save",
+    "saving": "Saving...",
+    "turnOff": "Turn off",
+    "removing": "Removing..."
+  },
+  "bulk": {
+    "barLabel": "Bulk actions",
+    "selected_one": "{{count}} selected",
+    "selected_other": "{{count}} selected",
+    "clear": "Clear",
+    "selectAll": "Select all filtered domains",
+    "select": "Select",
+    "selectRow": "Select {{domain}}",
+    "blockedAutomatic": "Automatic hostnames cannot be parked or moved",
+    "blockedStandalone": "Standalone domains cannot be parked or moved",
+    "park": "Park",
+    "move": "Move to app",
+    "attach": "Attach",
+    "delete": "Delete",
+    "title": {
+      "park": "Park {{count}} domains",
+      "move": "Move {{count}} domains",
+      "attach": "Attach {{count}} parked domains",
+      "delete_parked": "Delete {{count}} parked domains"
+    },
+    "body": {
+      "park": "Each domain stops being served by its app and moves to the Parked group.",
+      "move": "Choose where these domains should go. A collision check runs first.",
+      "attach": "Choose the app or static site that should serve these parked domains.",
+      "delete_parked": "Forgets these domains and their parked DNS and certificate state. This cannot be undone."
+    },
+    "confirm": {
+      "park": "Park {{count}}",
+      "move": "Check and move {{count}}",
+      "attach": "Attach {{count}}",
+      "delete_parked": "Delete {{count}}"
+    },
+    "attachTo": "Attach to",
+    "parkKeeps": "Settings are saved with each parked domain, and DNS and certificate state are kept.",
+    "discard": "Start fresh and discard saved settings",
+    "previewLabel": "What will happen",
+    "preview": {
+      "park": "Park from {{app}}",
+      "move": "Move from {{from}} to {{to}}",
+      "attach": "Attach to {{app}}",
+      "delete": "Delete parked domain",
+      "noop": "Already there, skipped"
+    },
+    "resultsLabel": "Results",
+    "col": {
+      "domain": "Domain",
+      "result": "Result"
+    },
+    "status": {
+      "ok": "Done",
+      "failed": "Failed",
+      "needsConfirmation": "Needs confirmation",
+      "failedGeneric": "Failed",
+      "needsConfirmationBody": "Traffic for this domain changes owner. Confirm to continue.",
+      "okBody": "Done"
+    },
+    "summary": "{{ok}} done, {{failed}} failed, {{waiting}} need confirmation",
+    "confirmThese_one": "Confirm this {{count}}",
+    "confirmThese_other": "Confirm these {{count}}",
+    "cancel": "Cancel",
+    "done": "Close"
+  },
+  "retention": {
+    "title": "Auto cleanup",
+    "summaryOff": "Off. Parked domains are kept until you delete them.",
+    "summaryOn": "Deletes parked domains after {{days}} days. Due now: {{due}}. Next run: {{next}}",
+    "preview": "Preview",
+    "turnOn": "Turn on",
+    "turnOff": "Turn off",
+    "turnOnDays": "Turn on at {{count}} days",
+    "close": "Close",
+    "previewTitle": "Preview auto cleanup",
+    "previewBody": "See which parked domains a retention period would delete.",
+    "daysLabel": "Retention period",
+    "days_one": "{{count}} day",
+    "days_other": "{{count}} days",
+    "custom": "Custom",
+    "customLabel": "Custom number of days",
+    "estimate": "Estimate from the parked list. The exact list is shown once cleanup is on.",
+    "exact": "Exact list from the server for the saved setting.",
+    "dueNow_one": "{{count}} domain would be deleted now.",
+    "dueNow_other": "{{count}} domains would be deleted now.",
+    "age_one": "parked {{count}} day ago",
+    "age_other": "parked {{count}} days ago",
+    "batchNote": "Each hourly run deletes at most {{limit}}, oldest first. The rest follow in later runs.",
+    "confirmTitle_one": "Delete parked domains after {{count}} day?",
+    "confirmTitle_other": "Delete parked domains after {{count}} days?",
+    "confirmBody": "{{due}} due now, {{first}} deleted in the first run (batch limit {{limit}}).",
+    "consequenceDns": "Only the parked registration is deleted. DNS records and certificates are not touched.",
+    "consequenceBatch": "At most {{limit}} domains are deleted per hourly run, oldest first.",
+    "offTitle": "Turn off auto cleanup?",
+    "offBody": "Parked domains will be kept until you delete them. Nothing is deleted by turning this off.",
+    "savedOn_one": "Auto cleanup on: {{count}} day",
+    "savedOn_other": "Auto cleanup on: {{count}} days",
+    "savedOff": "Auto cleanup off",
+    "saveFailed": "Could not save the setting"
+  },
+  "reachability": {
+    "title": "Reachability",
+    "loading": "Checking ports",
+    "recheck": "Check again",
+    "copy": "Copy",
+    "copied": "Copied",
+    "forbidden": "You need read access to see the reachability check.",
+    "errorTitle": "Could not run the reachability check",
+    "errorBody": "The server did not answer. Try again in a moment.",
+    "dialbackError": "The internet check failed: {{error}}",
+    "firewall": "Local firewall: {{state}}",
+    "dialbackOn": "Internet check is on: a helper service dials this server's public IP and your open ports from outside.",
+    "dialbackOff": "Internet check is off, so only local checks ran. Turning it on sends this server's public IP and its port list to the URL you set in doctor.reachability_dialback_url.",
+    "settingLink": "Open runtime settings",
+    "pillOk": "Ports look reachable",
+    "pillWarn": "Port needs attention",
+    "openChecklist": "Open the checklist",
+    "listening": {
+      "yes": "Listening",
+      "no": "Not listening"
+    },
+    "external": {
+      "not_checked": "Not checked from outside",
+      "reachable": "Reachable from the internet",
+      "unreachable": "Blocked from the internet",
+      "unknown": "Unknown from outside"
+    },
+    "ports": {
+      "dashboard": "Dashboard",
+      "http": "HTTP",
+      "https": "HTTPS"
+    }
+  },
+  "watch": {
+    "state": {
+      "waiting_dns": "Waiting for DNS",
+      "propagating": "DNS propagating",
+      "waiting_certificate": "Waiting for the certificate",
+      "stalled": "Stalled, needs a look"
+    },
+    "nextInSeconds_one": "checking again in {{count}}s",
+    "nextInSeconds_other": "checking again in {{count}}s",
+    "nextInMinutes_one": "checking again in {{count}} min",
+    "nextInMinutes_other": "checking again in {{count}} min"
+  },
+  "rollback": {
+    "button": "Roll back this change",
+    "confirmTitle": "Roll back this DNS change?",
+    "confirm": "Roll back",
+    "pending": "Rolling back...",
+    "minutesLeft_one": "Can be rolled back for {{count}} more minute",
+    "minutesLeft_other": "Can be rolled back for {{count}} more minutes",
+    "hoursLeft_one": "Can be rolled back for {{count}} more hour",
+    "hoursLeft_other": "Can be rolled back for {{count}} more hours",
+    "closed": "Rollback window closed",
+    "undone": "Already rolled back",
+    "consequenceRemove": "Records this change added are removed.",
+    "consequenceRestore": "Records this change replaced get their old value back.",
+    "consequenceSkip": "Records edited since are left alone.",
+    "outcomes": "Rollback results",
+    "skipped": "Changed since, left alone"
   }
 }

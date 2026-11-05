@@ -67,6 +67,7 @@ export type GlobalTo =
   | '/images'
   | '/builds'
   | '/projects'
+  | '/templates'
   | '/databases'
   | '/backups'
   | '/assets'
@@ -129,6 +130,8 @@ export interface GlobalNavItem {
 export interface GlobalNavGroup {
   id: string
   label: string
+  // Primary links render flat with no header and are never collapsed.
+  ungrouped?: boolean
   items: GlobalNavItem[]
 }
 
@@ -143,8 +146,9 @@ export const COST_GROUP_PATHS = ['/usage', '/costs'] as const
 
 export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
   {
-    id: 'home',
+    id: 'primary',
     label: 'Home',
+    ungrouped: true,
     items: [
       {
         id: 'dashboard',
@@ -153,18 +157,6 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         icon: <GaugeGlassIcon size="1.4em" />,
         exact: true,
       },
-      {
-        id: 'status',
-        label: 'Status',
-        to: '/status',
-        icon: <ActivityGlassIcon size="1.4em" />,
-      },
-    ],
-  },
-  {
-    id: 'apps',
-    label: 'Apps',
-    items: [
       {
         id: 'apps',
         label: 'Apps',
@@ -180,16 +172,47 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         alsoActive: DEPLOYMENT_GROUP_PATHS,
       },
       {
-        id: 'functions',
-        label: 'Functions',
-        to: '/functions',
-        icon: <ZapGlassIcon size="1.4em" />,
+        id: 'databases',
+        label: 'Databases',
+        to: '/databases',
+        icon: <DatabaseGlassIcon size="1.4em" />,
       },
+      {
+        id: 'domains',
+        label: 'Domains',
+        to: '/domains',
+        icon: <GlobeGlassIcon size="1.4em" />,
+        badge: 'domains-attention',
+      },
+      {
+        id: 'nodes',
+        label: 'Nodes',
+        to: '/nodes',
+        icon: <ServerGlassIcon size="1.4em" />,
+      },
+      {
+        id: 'alerts',
+        label: 'Alerts',
+        to: '/alerts',
+        icon: <BellGlassIcon size="1.4em" />,
+      },
+    ],
+  },
+  {
+    id: 'build',
+    label: 'Build and run',
+    items: [
       {
         id: 'projects',
         label: 'Projects',
         to: '/projects',
         icon: <FolderGlassIcon size="1.4em" />,
+      },
+      {
+        id: 'functions',
+        label: 'Functions',
+        to: '/functions',
+        icon: <ZapGlassIcon size="1.4em" />,
       },
       {
         id: 'images',
@@ -203,6 +226,32 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         to: '/settings/registry',
         icon: <PackageGlassIcon size="1.4em" />,
       },
+      {
+        id: 'pipelines',
+        label: 'Pipelines',
+        to: '/pipelines',
+        icon: <BinaryTreeGlassIcon size="1.4em" />,
+      },
+      {
+        id: 'approvals',
+        label: 'Deploy approvals',
+        to: '/approvals',
+        icon: <GavelGlassIcon size="1.4em" />,
+        badge: 'approvals',
+      },
+      {
+        id: 'templates',
+        label: 'Templates',
+        to: '/templates',
+        icon: <LayoutGridGlassIcon size="1.4em" />,
+      },
+      {
+        id: 'inbox',
+        label: 'Inbox',
+        to: '/inbox',
+        icon: <InboxGlassIcon size="1.4em" />,
+        badge: 'inbox',
+      },
     ],
   },
   {
@@ -210,22 +259,10 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
     label: 'Data',
     items: [
       {
-        id: 'databases',
-        label: 'Databases',
-        to: '/databases',
-        icon: <DatabaseGlassIcon size="1.4em" />,
-      },
-      {
         id: 'backups',
         label: 'Backups',
         to: '/backups',
         icon: <UploadGlassIcon size="1.4em" />,
-      },
-      {
-        id: 'assets',
-        label: 'Assets',
-        to: '/assets',
-        icon: <ImagesGlassIcon size="1.4em" />,
       },
       {
         id: 'network-shares',
@@ -233,19 +270,18 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         to: '/settings/network-shares',
         icon: <FolderGlassIcon size="1.4em" />,
       },
+      {
+        id: 'assets',
+        label: 'Assets',
+        to: '/assets',
+        icon: <ImagesGlassIcon size="1.4em" />,
+      },
     ],
   },
   {
     id: 'traffic',
-    label: 'Networking',
+    label: 'Network',
     items: [
-      {
-        id: 'domains',
-        label: 'Domains',
-        to: '/domains',
-        icon: <GlobeGlassIcon size="1.4em" />,
-        badge: 'domains-attention',
-      },
       {
         id: 'dns',
         label: 'DNS',
@@ -283,30 +319,24 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         feature: 'load-balancer',
       },
       {
+        id: 'cdn',
+        label: 'CDN and caches',
+        to: '/cdn',
+        icon: <GlobeGlassIcon size="1.4em" />,
+      },
+      {
         id: 'mail',
         label: 'Mail',
         to: '/mail',
         icon: <MailGlassIcon size="1.4em" />,
         feature: 'mail',
       },
-      {
-        id: 'cdn',
-        label: 'CDN and caches',
-        to: '/cdn',
-        icon: <GlobeGlassIcon size="1.4em" />,
-      },
     ],
   },
   {
     id: 'infrastructure',
-    label: 'Fleet',
+    label: 'Fleet and cost',
     items: [
-      {
-        id: 'nodes',
-        label: 'Nodes',
-        to: '/nodes',
-        icon: <ServerGlassIcon size="1.4em" />,
-      },
       {
         id: 'network',
         label: 'Topology',
@@ -341,37 +371,11 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         to: '/resources',
         icon: <FileSearchGlassIcon size="1.4em" />,
       },
-    ],
-  },
-  {
-    id: 'automation',
-    label: 'Automation',
-    items: [
       {
-        id: 'pipelines',
-        label: 'Pipelines',
-        to: '/pipelines',
-        icon: <BinaryTreeGlassIcon size="1.4em" />,
-      },
-      {
-        id: 'approvals',
-        label: 'Deploy approvals',
-        to: '/approvals',
-        icon: <GavelGlassIcon size="1.4em" />,
-        badge: 'approvals',
-      },
-      {
-        id: 'inbox',
-        label: 'Inbox',
-        to: '/inbox',
-        icon: <InboxGlassIcon size="1.4em" />,
-        badge: 'inbox',
-      },
-      {
-        id: 'alerts',
-        label: 'Alerts',
-        to: '/alerts',
-        icon: <BellGlassIcon size="1.4em" />,
+        id: 'status',
+        label: 'Status',
+        to: '/status',
+        icon: <ActivityGlassIcon size="1.4em" />,
       },
     ],
   },
@@ -831,10 +835,10 @@ export function isSingleSection(section: AppNavSection): boolean {
   return section.items.length === 1
 }
 
-// Every group starts open: a collapsed default hides most of the product on a
-// first visit. Anything the user collapses is persisted and wins from then on.
-export function defaultGroupOpen(): boolean {
-  return true
+// Only the primary links start open; the long tail is one click away.
+// Anything the user toggles is persisted and wins from then on.
+export function defaultGroupOpen(group: GlobalNavGroup): boolean {
+  return group.ungrouped === true
 }
 
 export function resolveOpen(

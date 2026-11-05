@@ -10,6 +10,7 @@ interface Props {
   attempt: SelfUpgradeAttempt | undefined
   startedAt: number | null
   reconnecting: boolean
+  stalled?: boolean
   releaseUrl: string | null | undefined
   onDismiss?: () => void
   onRetry?: () => void
@@ -23,6 +24,7 @@ export function UpgradeProgress({
   attempt,
   startedAt,
   reconnecting,
+  stalled = false,
   releaseUrl,
   onDismiss,
   onRetry,
@@ -37,6 +39,7 @@ export function UpgradeProgress({
         attempt={attempt}
         startedAt={startedAt}
         reconnecting={reconnecting}
+        stalled={stalled}
       />
       {done && attempt?.outcome !== 'succeeded' ? (
         <div className="flex flex-wrap gap-2">

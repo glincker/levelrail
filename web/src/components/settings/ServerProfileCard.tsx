@@ -115,7 +115,7 @@ export function ServerProfileCard() {
                 key={p.id}
                 className={cn(
                   'space-y-2 rounded-md border p-3',
-                  selected && 'border-primary',
+                  selected && 'border-state-selected-border bg-state-selected',
                 )}
               >
                 <p className="text-sm font-medium">

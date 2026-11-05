@@ -97,6 +97,22 @@ describe('AppHeader', () => {
     ).toBeInTheDocument()
   })
 
+  it('keeps one row on a narrow header with 40px targets and an overflow menu', () => {
+    renderShell(<AppHeader onSearch={vi.fn()} />)
+    const search = screen.getByRole('button', {
+      name: 'Search or run a command',
+    })
+    expect(search.parentElement).toHaveClass('@max-md:flex-nowrap')
+    const overflow = screen.getByRole('button', {
+      name: 'More header controls',
+    })
+    for (const control of [search, overflow])
+      expect(control).toHaveClass('@max-md:size-10')
+    expect(screen.getByRole('button', { name: /Platform status/ })).toHaveClass(
+      '@max-md:min-h-10',
+    )
+  })
+
   it('does not print the quick navigation hint', () => {
     renderShell(<AppHeader onSearch={vi.fn()} />)
     expect(screen.queryByText(/for quick navigation/)).toBeNull()

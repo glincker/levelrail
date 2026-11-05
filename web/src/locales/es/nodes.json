@@ -825,5 +825,42 @@
     "titleUnknown": "El nodo {{node}} está sin conexión",
     "body": "Los contenedores siguen ejecutándose en él, pero el ingreso por la malla está caído y esta app no se puede modificar hasta que el nodo vuelva.",
     "view": "Ver nodo"
+  },
+  "taints": {
+    "title": "Taints",
+    "description": "Reserva este nodo. Las apps y bases de datos no se colocan aquí salvo que toleren el taint. Al guardar se reemplaza todo el conjunto.",
+    "empty": "Sin taints. Cualquier app puede colocarse aquí.",
+    "keyPlaceholder": "dedicated",
+    "valuePlaceholder": "gpu",
+    "operator": "Operador",
+    "operatorEqual": "igual a",
+    "operatorExists": "existe",
+    "effect": "Efecto",
+    "add": "Añadir taint",
+    "remove": "Quitar taint {{key}}",
+    "effectHint": "NoSchedule y NoExecute evitan nuevas ubicaciones en el nodo. PreferNoSchedule solo lo deja con menor prioridad. Mover lo que ya corre aquí es un drenaje.",
+    "save": "Guardar taints",
+    "saving": "Guardando...",
+    "saved": "Taints guardados.",
+    "reset": "Restablecer",
+    "loadFailed": "No se pudieron cargar los taints.",
+    "retry": "Reintentar",
+    "duplicate": "Cada par de clave y efecto se puede usar una vez.",
+    "incomplete": "Introduce una clave o quita la fila vacía."
+  },
+  "tolerations": {
+    "title": "Tolerancias",
+    "empty": "Sin tolerancias: esta app evita los nodos con taints.",
+    "hint": "La app puede ejecutarse en nodos con un taint que coincida.",
+    "add": "Añadir tolerancia",
+    "save": "Guardar tolerancias",
+    "saved": "Tolerancias guardadas.",
+    "affinityTitle": "Afinidad",
+    "affinityEmpty": "Sin reglas de afinidad.",
+    "affinityHint": "La afinidad se edita en app.yaml o con nodes placement --affinity-file.",
+    "nodeRequired": "nodo requerido",
+    "nodePreferred": "nodo preferido",
+    "together": "junto con",
+    "apart": "separado de"
   }
 }

@@ -22,19 +22,29 @@ func (db *DB) EditServiceDomains(ctx context.Context, name string, edit func(cur
 		_ = tx.Rollback() // no-op if Commit already succeeded
 	}()
 
+	next, changed, err := editServiceDomainsTx(ctx, tx, name, edit)
+	if err != nil || !changed {
+		return next, false, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, false, fmt.Errorf("store: edit domains for %q: commit: %w", name, err)
+	}
+	return next, true, nil
+}
+
+// editServiceDomainsTx is EditServiceDomains inside the caller's transaction.
+func editServiceDomainsTx(ctx context.Context, tx *sql.Tx, name string, edit func(current []string) ([]string, error)) ([]string, bool, error) {
 	var raw string
-	err = tx.QueryRowContext(ctx, `SELECT domains FROM desired_services WHERE name = ?`, name).Scan(&raw)
+	err := tx.QueryRowContext(ctx, `SELECT domains FROM desired_services WHERE name = ?`, name).Scan(&raw)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, false, ErrServiceNotFound
 	}
 	if err != nil {
 		return nil, false, fmt.Errorf("store: edit domains for %q: read: %w", name, err)
 	}
-	var current []string
-	if raw != "" {
-		if err := json.Unmarshal([]byte(raw), &current); err != nil {
-			return nil, false, fmt.Errorf("store: edit domains for %q: decode: %w", name, err)
-		}
+	current, err := decodeDomainList(raw)
+	if err != nil {
+		return nil, false, fmt.Errorf("store: edit domains for %q: decode: %w", name, err)
 	}
 	next, err := edit(slices.Clone(current))
 	if err != nil {
@@ -53,9 +63,6 @@ func (db *DB) EditServiceDomains(ctx context.Context, name string, edit func(cur
 	}
 	if err := claimServiceDomains(ctx, tx, name, next); err != nil {
 		return nil, false, fmt.Errorf("store: edit domains for %q: %w", name, err)
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, false, fmt.Errorf("store: edit domains for %q: commit: %w", name, err)
 	}
 	return next, true, nil
 }

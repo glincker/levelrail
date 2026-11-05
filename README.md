@@ -53,7 +53,9 @@ The server installs on Linux only. macOS and Windows are CLI-only targets.
 
 ## Quickstart (install a self-hosted Vercel alternative)
 
-You need a Linux server (`amd64` or `arm64`) with systemd and root. The installer adds Docker if it is missing.
+You need a Linux server (`amd64` or `arm64`) with systemd and root. The installer adds Docker if it is missing. Open ports 80 and 443 to the internet. Port 8080 (the dashboard, plain HTTP) stays closed to the internet: reach it through an SSH tunnel, or open it to your own IP only. See [Dashboard port 8080](docs/installing.md#dashboard-port-8080).
+
+New here? Start with [first 15 minutes](docs/first-15-minutes.md).
 
 ### 1. Install the server
 
@@ -61,7 +63,7 @@ You need a Linux server (`amd64` or `arm64`) with systemd and root. The installe
 curl -fsSL https://levelrail.com/install.sh | sudo sh
 ```
 
-> **Note:** HTTPS is self-signed until you enable Let's Encrypt. The first sign-in offers a one-click free certificate for `<dashed-ip>.sslip.io`, or add your own domain.
+> **Note:** HTTPS has no trusted certificate until you enable Let's Encrypt. The first sign-in offers a one-click certificate for `<dashed-ip>.sslip.io`, a free test address that works only while your DNS resolver answers for sslip.io. Add your own domain for production.
 
 The last lines of output include the dashboard address and a one-time setup link:
 
@@ -74,16 +76,18 @@ Open the dashboard:
 
 ### 2. Create the admin account
 
-Open the setup link and choose a password. The token sits in the `#` fragment, so it never reaches the server or its logs; lost it? `sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token` prints it again. The first sign-in opens one screen that turns on a free certificate for `<dashed-ip>.sslip.io` with one click (no DNS needed) and deploys your first app.
+Open the setup link and choose a password. If port 8080 is closed to you, tunnel it first: `ssh -L 8080:127.0.0.1:8080 <user>@<server-ip>`, then open the link with `localhost` as the host. The token sits in the `#` fragment, so it never reaches the server or its logs; lost it? `sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token` prints it again. The first sign-in opens one screen that turns on a certificate for `<dashed-ip>.sslip.io` with one click (no DNS needed) and deploys your first app.
 
 ### 3. Deploy an app
 
 On the server, the installer already put `levelrail-cli` in `/usr/local/bin`. Sign in once, then import a repository (`levelrail-cli apps create --interactive` asks for everything step by step):
 
 ```bash
-levelrail-cli login --api-url http://<server-ip>:8080 --code ABCD-EF23
+levelrail-cli login --api-url http://127.0.0.1:8080 --code ABCD-EF23
 levelrail-cli import https://github.com/your-org/your-app --deploy
 ```
+
+Once HTTPS is on, sign-in over plain HTTP is refused, so use the https address instead, for example `--api-url https://203-0-113-10.sslip.io`. The `--code` comes from the **Connect your CLI** card.
 
 Prefer containers, a pinned version or a source build? See [Installing](docs/installing.md). Want it as light as Dokku, or everything on? `install.sh --profile minimal|standard|suite`, see [Server profiles](docs/profiles.md). Coming from another platform? See [Migrate to Levelrail](docs/migrate-to-levelrail.md): Coolify, Dokploy, CapRover, Dokku and compose files each get a dry run first, and the old server keeps serving.
 
@@ -97,6 +101,12 @@ token tk_9fQ2x saved to ~/.config/levelrail-cli/credentials under profile "defau
 Signing in with your password from a new device needs approval: the CLI prints the dashboard page to approve it on and the number to type. `login --device` also still works.
 
 Without `--deploy`, `import` only prints the deployment plan. To see the app's address, run `levelrail-cli open your-app`. It prints the custom domain first, then the automatic URL.
+
+### 4. Next steps
+
+1. [Getting started](docs/getting-started.md): the first-run screen, HTTPS and your first app in more detail.
+2. [First backup in 5 minutes](docs/backups-and-storage.md#first-backup-in-5-minutes): do this before you rely on the server.
+3. [Go live on your domain](docs/go-live.md): point a domain at an app and get a real certificate.
 
 ### Or let your coding agent do it
 
@@ -208,6 +218,16 @@ Single-server deployments are production ready today. Multi-node and a handful o
 | Measured, not promised | [Benchmarks](docs/benchmarks.md): idle footprint, ingress throughput, limits, with the method next to every number |
 | Verified backups | Every backup is re-downloaded and checksummed, with scheduled restore drills |
 | Tamper-evident security | Verifiable audit chain, [security policy](.github/SECURITY.md), signed releases and SBOM scanning |
+
+## How we test
+
+- [CI workflow](.github/workflows/ci.yml) runs on every change.
+- [`test/e2e`](test/e2e) drives the real HTTP API and a real reconciler against real containers on one machine.
+- [First-hour smoke test](docs/first-hour-smoke-test.md) replays install, deploy, rollback and uninstall in a clean container.
+- [Security policy](.github/SECURITY.md) says how to report a problem.
+- Releases are signed and carry a provenance attestation, see [Verify what you install](#verify-what-you-install) and [Installing](docs/installing.md).
+- [Feature status](docs/feature-status.md) lists the evidence behind each stable or beta label.
+- [Known limits](docs/known-limits.md) lists what is not proven yet.
 
 ## Levelrail vs Coolify, Dokploy, CapRover and Dokku (Coolify alternative)
 

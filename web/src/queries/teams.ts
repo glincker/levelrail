@@ -16,6 +16,9 @@ export interface TeamResource {
   role: TeamRole | ''
   member_count: number
   created_at: string
+  slug?: string
+  description?: string
+  avatar_url?: string
 }
 
 export interface TeamMemberResource {

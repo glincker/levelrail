@@ -84,6 +84,10 @@ func (rt *Router) handleSystemDoctor(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: system doctor", err)
 		return
 	}
+	if resp, err = rt.filterDoctorChecks(r, resp); err != nil {
+		rt.internalError(w, "api: system doctor: filter", err)
+		return
+	}
 	now := time.Now()
 	resp.Silenced = silencedDoctorCount(resp.Checks, rt.activeSilences(r.Context(), now), now)
 	writeJSON(w, http.StatusOK, resp)

@@ -56,7 +56,7 @@ describe('DatabaseRow without a container', () => {
         />
       </DatabasesI18n>,
     )
-    const label = screen.getByText('Failed to create')
+    const label = screen.getByText('Could not create the database')
     expect(label.getAttribute('title')).toBe('no space left')
     expect(screen.queryByText('Healthy')).toBeNull()
   })

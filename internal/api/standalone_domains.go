@@ -337,6 +337,12 @@ type standaloneConfirmation struct {
 
 func (rt *Router) afterStandaloneChange(r *http.Request, action string, d store.StandaloneDomain) {
 	rt.nudgeReconciler()
+	switch action {
+	case auditActionStandaloneCreated:
+		rt.watchDomain(r.Context(), standalone.Scope, d.Domain)
+	case auditActionStandaloneDeleted:
+		rt.unwatchDomain(r.Context(), d.Domain)
+	}
 	actor := rt.callerDisplayName(r)
 	rt.logger.Info("api: standalone domain changed", slog.String("action", action), slog.String("domain", d.Domain),
 		slog.String("target", d.Target), slog.String("actor", actor))

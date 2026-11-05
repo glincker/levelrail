@@ -11,6 +11,8 @@ import (
 	dockerclient "github.com/docker/docker/client"
 	bkclient "github.com/moby/buildkit/client"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 // Result is what a successful build produced.
@@ -70,13 +72,15 @@ func SlogProgress(log *slog.Logger) func(ProgressEvent) {
 		log = slog.Default()
 	}
 	return func(ev ProgressEvent) {
+		// Step names carry the RUN command text, which can embed a secret.
+		ev.Step = secretmask.Mask(ev.Step)
 		switch {
 		case ev.Error != "":
-			log.Error("build: step failed", "step", ev.Step, "error", ev.Error)
+			log.Error("build: step failed", "step", ev.Step, "error", secretmask.Mask(ev.Error))
 		case ev.Completed:
 			log.Debug("build: step completed", "step", ev.Step, "cached", ev.Cached)
 		case ev.Log != "":
-			log.Debug("build: step output", "step", ev.Step, "data", ev.Log)
+			log.Debug("build: step output", "step", ev.Step, "data", secretmask.Mask(ev.Log))
 		}
 	}
 }

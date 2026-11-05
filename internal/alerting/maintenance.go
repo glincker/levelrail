@@ -53,14 +53,15 @@ func (w MaintenanceWindow) Validate() error {
 	if w.Name == "" {
 		return errors.New("name is required")
 	}
-	if _, err := cronexpr.Parse(w.Cron); err != nil {
+	loc, err := time.LoadLocation(w.tz())
+	if err != nil {
+		return fmt.Errorf("timezone %q: %w", w.Timezone, err)
+	}
+	if err := cronexpr.Validate(w.Cron, loc, time.Now()); err != nil {
 		return fmt.Errorf("cron: %w", err)
 	}
 	if w.Duration <= 0 || w.Duration > MaxMaintenanceDuration {
 		return fmt.Errorf("duration must be between 1s and %s", MaxMaintenanceDuration)
-	}
-	if _, err := time.LoadLocation(w.tz()); err != nil {
-		return fmt.Errorf("timezone %q: %w", w.Timezone, err)
 	}
 	switch w.Scope {
 	case ScopeAll:

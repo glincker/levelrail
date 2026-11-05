@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/GLINCKER/levelrail/internal/auditanchor"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -62,4 +63,17 @@ func (rt *Router) handleCheckAuditAnchors(w http.ResponseWriter, r *http.Request
 		return
 	}
 	writeJSON(w, http.StatusOK, report)
+}
+
+// SetAnchorStatus wires the webhook exporter's status snapshot.
+func (rt *Router) SetAnchorStatus(f func(context.Context) auditanchor.Status) { rt.anchorStatus = f }
+
+// handleGetAuditAnchorStatus handles GET /api/v1/audit-log/anchor-status: the
+// last exported sequence and last error of the webhook export.
+func (rt *Router) handleGetAuditAnchorStatus(w http.ResponseWriter, r *http.Request) {
+	if rt.anchorStatus == nil {
+		writeJSON(w, http.StatusOK, auditanchor.Status{})
+		return
+	}
+	writeJSON(w, http.StatusOK, rt.anchorStatus(r.Context()))
 }

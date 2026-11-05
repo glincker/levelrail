@@ -6,6 +6,10 @@ description: "Watch Levelrail from outside the server with the built-in public s
 
 Levelrail sends its alerts from inside the control plane. That cannot report a dead server, so two features reach outside it. The off-host heartbeat makes the control plane call a URL you choose while it is healthy, and an outside monitor alerts when the calls stop. The public status page gives your users and your own checks a read-only view of service health. Both ship today. Neither needs a second service on your server.
 
+## Which page do I read?
+
+This page compares the ways to see an outage from outside the server. For the setup and variables of the off-host ping, read [Off-host heartbeat](/heartbeat). For probes the control plane runs against your endpoints, read [Monitors](/monitors) (experimental).
+
 ## Which tool answers which question
 
 | Question | Use | What happens |
@@ -146,6 +150,11 @@ The steps are not yet verified on a real host. Mark each one as done in your own
 <Card title="Off-host heartbeat" href="/heartbeat">
 
 Full variable list, the health gate and the node silence URL.
+
+</Card>
+<Card title="Monitors" href="/monitors">
+
+Experimental http, tcp and tls probes run from the control plane.
 
 </Card>
 <Card title="Public status page" href="/status-page">

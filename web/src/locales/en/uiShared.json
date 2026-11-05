@@ -1,0 +1,7 @@
+{
+  "saveStatus": {
+    "saving": "Saving",
+    "saved": "Saved",
+    "error": "Could not save"
+  }
+}

@@ -40,6 +40,13 @@ if [ -n "$staged_migrations" ]; then
 	fi
 fi
 
+echo "pre-commit: UI tells ratchet"
+if [ -n "$(git diff --cached --name-only --diff-filter=ACMR -- web/src)" ]; then
+	if ! LEVELRAIL_UI_TELLS_MODE=ratchet sh scripts/check-ui-tells.sh; then
+		fail=1
+	fi
+fi
+
 echo "pre-commit: gitleaks (staged changes)"
 if command -v gitleaks >/dev/null; then
 	if ! gitleaks protect --staged --redact --no-banner -c .gitleaks.toml; then

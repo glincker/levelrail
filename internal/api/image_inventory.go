@@ -17,11 +17,9 @@ import (
 )
 
 const (
-	envImageKeepPerApp = "APP_IMAGE_KEEP_PER_APP"
-	envImageMinAgeHrs  = "APP_IMAGE_MIN_AGE_HOURS"
+	envImageMinAgeHrs = "APP_IMAGE_MIN_AGE_HOURS"
 
-	defaultImageKeepPerApp = 3
-	defaultImageMinAgeHrs  = 24
+	defaultImageMinAgeHrs = 24
 
 	// ImageVerifyOff skips signature checks on promotion.
 	ImageVerifyOff = "off"
@@ -59,6 +57,12 @@ type imageTotals struct {
 	SizeBytes      int64 `json:"size_bytes"`
 	ReclaimBytes   int64 `json:"reclaimable_bytes"`
 	ProtectedCount int   `json:"protected_count"`
+	// UnmanagedUnused* count images no app owns and no container uses, which
+	// POST /images/remove can clear on request. Bytes are net of shared layers.
+	UnmanagedUnusedCount int   `json:"unmanaged_unused_count"`
+	UnmanagedUnusedBytes int64 `json:"unmanaged_unused_bytes"`
+	AppImages            int   `json:"app_images"`
+	OtherImages          int   `json:"other_images"`
 }
 
 type imageListResponse struct {
@@ -76,7 +80,7 @@ type imageSignatureStatus struct {
 
 func (rt *Router) imageRetentionDefaults() imageRetention {
 	return imageRetention{
-		KeepPerApp: envIntDefault(envImageKeepPerApp, defaultImageKeepPerApp),
+		KeepPerApp: rt.imageKeepPerApp(),
 		MinAgeHrs:  envIntDefault(envImageMinAgeHrs, defaultImageMinAgeHrs),
 	}
 }
@@ -174,6 +178,15 @@ func (rt *Router) handleListImageInventory(w http.ResponseWriter, r *http.Reques
 	totals := imageTotals{Count: len(entries), ReclaimBytes: plan.ReclaimBytes, ProtectedCount: plan.KeptCount}
 	for _, e := range entries {
 		totals.SizeBytes += e.SizeBytes
+		if e.Unmanaged {
+			totals.OtherImages++
+		} else {
+			totals.AppImages++
+		}
+	}
+	for _, e := range imagelife.UnmanagedUnused(entries) {
+		totals.UnmanagedUnusedCount++
+		totals.UnmanagedUnusedBytes += imagelife.Reclaimable(e)
 	}
 	writeJSON(w, http.StatusOK, imageListResponse{
 		Node: nodeID, Images: entries, Totals: totals, Retention: ret,

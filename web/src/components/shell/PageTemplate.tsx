@@ -3,6 +3,7 @@ import { HelpLink } from '../HelpLink'
 import { Display, Eyebrow, Lede } from '@/components/ui/typography'
 import { cn } from '@/lib/utils'
 import { useRegisterPageTitle } from './pageTitleStore'
+import { RelatedLinks } from './RelatedLinks'
 
 const DESCRIPTION_LINE_PX = 24
 
@@ -182,6 +183,7 @@ export function PageTemplate({
       ) : (
         children
       )}
+      <RelatedLinks />
     </div>
   )
 }

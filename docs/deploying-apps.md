@@ -616,7 +616,7 @@ levelrail-cli apps scheduled-tasks run NAME ID
 
 The dashboard's **Jobs** tab does the same, and adds fresh-container runs, run history, retries and catch-up: see [Scheduled jobs](/scheduled-jobs). `update` is a full replace: resupply `command`, `schedule`, and `concurrency_policy`, not only the field you are changing.
 
-Each task tracks `last_run_at`, `last_run_status`, `last_run_output`, and a `consecutive_failures` counter (the input for `scheduled_task_failure` alert rules). That is the whole run history: there is no log of every past run.
+Each task tracks `last_run_at`, `last_run_status`, `last_run_output`, and a `consecutive_failures` counter (the input for `scheduled_task_failure` alert rules). Every run is also kept as a history row with its status, exit code, duration and output tail (see [Scheduled jobs](/scheduled-jobs)); `levelrail-cli jobs history APP` lists them.
 
 `POST .../scheduled-tasks/{id}/run` (CLI `run`) uses the exact code path of a real cron tick. It dispatches from a background goroutine and returns `202 Accepted` right away, not when the command finishes.
 
@@ -745,7 +745,7 @@ levelrail-cli deploy-approvals list | get | approve | reject
 - **No per-service history for `deploy-spec`.** It writes no deploy attempt per service, only the synchronous response. A per-service log is a known, deferred schema change.
 - **`GET /apps/{name}/deploys` is current reconcile status, not a log.** It keeps only the latest condition per controller and type. `GET .../deploy-attempts` is the append-only history.
 - **Compose and `deploy-spec` are synchronous.** Neither streams build progress the way a single-service build does, so a large multi-service spec is a slow HTTP request.
-- **Scheduled task history is last run only**, and `replace` cancellation is best effort.
+- `replace` cancellation of a scheduled task run is best effort.
 
 ## Troubleshooting
 

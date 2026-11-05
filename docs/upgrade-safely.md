@@ -12,6 +12,22 @@ This is the runbook for moving a running server to a newer release. The self-upd
 2. Check the preflight card or `levelrail-cli upgrade`: release signature published, Docker Engine not on the known-bad list, free disk (the computed need; `APP_UPGRADE_MIN_FREE_BYTES`, in bytes, raises the floor when set and has no default), a recent [control plane backup](/control-plane-backup).
 3. Make sure the master key is backed up somewhere safe. A snapshot never contains it.
 
+## Which upgrade command do I use?
+
+| You want to | Command | Where it runs |
+| --- | --- | --- |
+| See if you are behind and run the checks | `levelrail-cli upgrade` | Anywhere with the CLI. Takes a backup and prints the upgrade command. Never upgrades. |
+| See what an upgrade would change | `levelrail-cli upgrade --plan` (same as `--dry-run`) | Anywhere with the CLI. Changes nothing. |
+| Upgrade now, with automatic rollback | `levelrail-cli upgrade --apply`, or **Upgrade now** in Settings > Updates | Anywhere with the CLI, applied on the host. |
+| Upgrade at a set time | `levelrail-cli upgrade schedule --at TIME` | Anywhere with the CLI. |
+| Apply safe patch releases on their own | `levelrail-cli upgrade auto set` | Anywhere with the CLI. Off by default. |
+| Upgrade from the server shell | `sudo levelrail self-upgrade --to vX.Y.Z` | On the server, as root. |
+| Update only the CLI on your laptop | `levelrail-cli update` | Your machine. |
+| Install or reinstall with the install script | `install.sh`, see [Installing](/installing) | On the server, as root. |
+| Go back after a failed upgrade | See [Rolling back the control plane](/rollback#which-rollback-command-do-i-use) | |
+
+`levelrail-cli` is the remote client. `levelrail` is the control plane binary on the server.
+
 ## Preview an upgrade without changing anything
 
 `levelrail-cli upgrade --dry-run` (the same as `--plan`, and `sudo levelrail self-upgrade --to vX.Y.Z --dry-run` on the host) prints, then exits:
@@ -251,7 +267,7 @@ The two most recent starting versions run on every pull request. The full set ru
 The matrix above upgrades synthetic databases in process. The release harness goes further: it runs the actual binary of an earlier release, so the old code writes the data and the old `self-upgrade` command performs the upgrade.
 
 ```bash
-scripts/upgrade-harness.sh v0.8.8 v0.8.7 v0.8.6 v0.8.5
+scripts/upgrade-harness.sh v0.9.0 v0.8.8 v0.8.7 v0.8.6
 ```
 
 With no arguments it uses the last four released tags. `UPGRADE_HARNESS_FROM` (comma list) or `UPGRADE_HARNESS_VERSIONS_FILE` (one tag per line) override that, and `UPGRADE_HARNESS_COUNT` changes the default count. On linux the script first downloads the published server binary for each tag into a cache outside the repo and verifies it against `checksums.txt`; anywhere else, or when that fails, the tag is built from source.
@@ -268,6 +284,8 @@ For each tag the harness:
 6. upgrades again, then attempts a downgrade with `self-upgrade --to <old tag>`, which is refused without touching the binary. It then marks the database as written by a newer release and starts the old binary on it: the binary must exit with status 78, leave the database file byte for byte unchanged, and the current release must start again once the marker is removed.
 
 ### Last run
+
+The tags above are examples. The table is a dated record of what was actually run. The older-release matrix in [Upgrade compatibility](/upgrade-compatibility#upgrade-matrix) uses its own list of sources.
 
 Run on a developer machine (macOS arm64, loopback ports only, each tag built from source), 2026-10-30, against the current release branch. Every row passed the seeded-data, restore point, `--dry-run`, manual restore, automatic restore and refused-downgrade checks. The seeded root token authenticated after each upgrade.
 

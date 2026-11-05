@@ -216,9 +216,16 @@ func runNodesPlacement(prog string, args []string, stdout, stderr io.Writer, loo
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "nodes placement", "print placement as JSON", stderr)
 	var clearAll bool
 	fs.BoolVar(&clearAll, "clear", false, "remove the node selector")
+	var tolerations, tolerationExists repeatedFlag
+	var affinityFile string
+	var clearRules bool
+	fs.Var(&tolerations, "toleration", "tolerate a node taint, key[=value]:Effect (repeatable; no value tolerates by key)")
+	fs.Var(&tolerationExists, "toleration-exists", "tolerate every taint with this key (repeatable)")
+	fs.StringVar(&affinityFile, "affinity-file", "", "YAML or JSON file with node and workload affinity rules")
+	fs.BoolVar(&clearRules, "clear-placement-rules", false, "remove the app's tolerations and affinity")
 	fs.Usage = func() {
-		_, _ = fmt.Fprint(stderr, nodesSimpleUsage(prog, "placement <app|database> <name> [key=value ...] [--clear]",
-			"Shows which nodes an app or database may run on, or sets the node labels it requires.\nSetting a selector never moves anything; the next move or drain honors it."))
+		_, _ = fmt.Fprint(stderr, nodesSimpleUsage(prog, "placement <app|database> <name> [key=value ...] [--clear] [--toleration key[=value]:Effect] [--toleration-exists key] [--affinity-file path] [--clear-placement-rules]",
+			"Shows which nodes an app or database may run on, or sets the node labels it requires.\nApps can also tolerate tainted nodes and carry affinity rules.\nSetting a selector never moves anything; the next move or drain honors it."))
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
@@ -237,9 +244,42 @@ func runNodesPlacement(prog string, args []string, stdout, stderr io.Writer, loo
 	ctx := context.Background()
 	var res apiclient.PlacementResource
 	var err error
-	if len(pairs) == 0 && !clearAll {
+	rulesSet := len(tolerations)+len(tolerationExists) > 0 || affinityFile != "" || clearRules
+	switch {
+	case rulesSet:
+		var tols *[]placement.Toleration
+		var aff *placement.Affinity
+		if clearRules {
+			empty := []placement.Toleration{}
+			tols, aff = &empty, &placement.Affinity{}
+		}
+		if len(tolerations)+len(tolerationExists) > 0 {
+			parsed, perr := parseTolerations(tolerations, tolerationExists)
+			if perr != nil {
+				_, _ = fmt.Fprintf(stderr, "%s: %v\n", prog, perr)
+				return exitUsage
+			}
+			tols = &parsed
+		}
+		if affinityFile != "" {
+			var perr error
+			if aff, perr = readAffinityFile(affinityFile); perr != nil {
+				_, _ = fmt.Fprintf(stderr, "%s: %v\n", prog, perr)
+				return exitUsage
+			}
+		}
+		var sel map[string]string
+		if len(pairs) > 0 || clearAll {
+			var perr error
+			if sel, perr = placement.ParseLabels(pairs); perr != nil {
+				_, _ = fmt.Fprintf(stderr, "%s: %v\n", prog, perr)
+				return exitUsage
+			}
+		}
+		res, err = client.SetPlacementRules(ctx, kind, name, sel, tols, aff)
+	case len(pairs) == 0 && !clearAll:
 		res, err = client.GetPlacement(ctx, kind, name)
-	} else {
+	default:
 		sel, perr := placement.ParseLabels(pairs)
 		if perr != nil {
 			_, _ = fmt.Fprintf(stderr, "%s: %v\n", prog, perr)
@@ -254,6 +294,16 @@ func runNodesPlacement(prog string, args []string, stdout, stderr io.Writer, loo
 		_, _ = fmt.Fprintf(stdout, "%s %s runs on %s\n", res.Kind, res.Name, nodeLabel(res.NodeID))
 		_, _ = fmt.Fprintln(stdout, "node selector:")
 		printKV(stdout, res.NodeSelector, "  (none: any node)")
+		if len(res.Tolerations) > 0 {
+			parts := make([]string, len(res.Tolerations))
+			for i, t := range res.Tolerations {
+				parts[i] = formatToleration(t)
+			}
+			_, _ = fmt.Fprintf(stdout, "tolerations: %s\n", strings.Join(parts, ", "))
+		}
+		if res.Affinity != nil && !res.Affinity.Empty() {
+			_, _ = fmt.Fprintln(stdout, "affinity rules: set (see --json for the terms)")
+		}
 		_, _ = fmt.Fprintf(stdout, "eligible nodes: %s\n", strings.Join(res.Eligible, ", "))
 		for _, r := range res.Rejected {
 			_, _ = fmt.Fprintf(stdout, "  not %s: %s\n", r.NodeID, r.Reason)
@@ -328,7 +378,7 @@ func nodesAddUsage(prog string) string {
 
 func nodesMoveUsage(prog string) string {
 	return nodesSimpleUsage(prog, "move <app|database> <name> [--to NODE-ID] [--wait]",
-		"Moves an app or database to another node. A stateless app starts on the target, is\nverified ready, then stops on the source. An app with volumes, or a database, stops,\nhas its volumes copied, then starts on the target. A target that never becomes ready\nrolls the move back. --wait exits non-zero when the move fails or rolls back.")
+		"Moves an app or database to another node. A stateless app starts on the target, is\nverified ready, then stops on the source. An app with volumes, or a database, stops,\nhas its volumes copied, then starts on the target. A target that never becomes ready\nrolls the move back. --wait exits non-zero when the move fails or rolls back.\n--timeout DURATION bounds how long --wait waits (default 15m); --poll-interval DURATION sets how often it polls (default 2s).")
 }
 
 func nodesSimpleUsage(prog, synopsis, about string) string {

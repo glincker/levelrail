@@ -1,0 +1,102 @@
+{
+  "card": {
+    "title": "Git source",
+    "loading": "Loading...",
+    "pickRepoFirst": "Pick a repository or paste a URL first.",
+    "updated": "Git source updated.",
+    "saveFailed": "Could not save git source.",
+    "disconnected": "Git source disconnected.",
+    "disconnectFailed": "Could not disconnect git source.",
+    "needService": "Add at least one service, or switch back to single service.",
+    "rowsMissingName_one": "Row {{rows}} is missing a service name.",
+    "rowsMissingName_other": "Rows {{rows}} are missing a service name."
+  },
+  "triggers": {
+    "push": {
+      "label": "Every push",
+      "description": "Deploy on every push to the target branch."
+    },
+    "release": {
+      "label": "Tags & releases",
+      "description": "Deploy only on a tag push, or (GitHub only) a published release. Branch pushes never deploy."
+    }
+  },
+  "buildPacks": {
+    "railpack": "Auto-detect (Railpack)",
+    "dockerfile": "Dockerfile",
+    "static": "Static site"
+  },
+  "connected": {
+    "repository": "Repository",
+    "branch": "Branch",
+    "deployTrigger": "Deploy trigger",
+    "deployToken": "Deploy token",
+    "tokenConfigured": "Configured",
+    "tokenNotSet": "Not set (public repo)",
+    "alsoDeploys": "Also deploys",
+    "servicesFanout": "Services fan-out",
+    "webhookUrl": "Webhook URL",
+    "webhookNote": "The webhook secret was only ever shown once, at connect time. Rotate it below to mint a new one, or disconnect and reconnect to also change the repository or branch.",
+    "edit": "Edit",
+    "disconnect": "Disconnect"
+  },
+  "justConnected": {
+    "autoRegistered": "Git source connected. A push webhook was registered automatically, no manual setup needed.",
+    "secretOnce": "This webhook secret will not be shown again. Paste both values into the repository's webhook settings now.",
+    "webhookUrl": "Webhook URL",
+    "webhookSecret": "Webhook secret",
+    "secretHint": "Set this as the secret on a GitHub \"Push\" webhook pointed at the URL above, content type application/json.",
+    "done": "Done"
+  },
+  "copy": {
+    "copy": "Copy",
+    "copied": "Copied"
+  },
+  "edit": {
+    "connectedTo": "Currently connected to {{repo}} @ {{branch}}. Pick a different repository below to re-point it, or leave it as is to only update the build settings.",
+    "connectIntro": "Connect a repository so a push to its target branch auto-deploys this app.",
+    "deployTrigger": "Deploy trigger",
+    "fanoutMode": "Multi-service fan-out",
+    "fanoutAdditional": "Additional services",
+    "fanoutServices": "Services map",
+    "connect": "Connect",
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "buildPack": {
+    "label": "Build pack",
+    "autoDetect": "Auto-detect",
+    "dockerfile": "Dockerfile",
+    "static": "Static site",
+    "autoDetectDescription": "Recommended. Levelrail detects your framework from the repository and builds it automatically, no Dockerfile needed.",
+    "dockerfilePath": "Dockerfile path (optional)",
+    "staticDescription": "Served directly by the embedded Caddy ingress, no container."
+  },
+  "services": {
+    "additionalLabel": "Additional services (optional)",
+    "additionalDescription": "Also rebuild these sibling services from the same push, for a monorepo with more than one service. Each needs its own already-existing service name and build config. Saving with any row filled in always uses the direct git-source connection, even for a picked provider repo, since automatic webhook registration doesn't support monorepo fan-out yet.",
+    "mapLabel": "Services (app.yaml-style)",
+    "mapDescription": "Every push fans out into an independent build and deploy per service, the same POST .../deploy-spec fan-out a manual multi-service deploy uses, under one app named {{appName}}. Replaces the single-service build above; each service key becomes its own real service named {{appName}}-[key].",
+    "add": "Add service",
+    "removeAdditional": "Remove additional service",
+    "remove": "Remove service",
+    "duplicate": "Another row already uses this service name.",
+    "checking": "Checking against the app spec schema...",
+    "serviceName": "Service name",
+    "buildType": "Build type",
+    "buildPath": "Build path",
+    "port": "Port"
+  },
+  "network": {
+    "networking": "Networking",
+    "port": "Port",
+    "portPlaceholder": "e.g. 3000",
+    "portHint": "The port your app listens on inside its container, e.g. 3000 for a typical Next.js app.",
+    "domain": "Domain (optional)",
+    "domainDescription": "Routed once its DNS record points here. A TLS certificate is issued automatically, or add this later from the app's Domains tab.",
+    "healthCheck": "Health check",
+    "healthEnable": "Enable a health check",
+    "healthPath": "Path",
+    "healthHint": "Checked before cutting traffic to a new container, and to detect a crashed one afterward. Railpack-detected apps that don't serve this path should turn it off."
+  }
+}

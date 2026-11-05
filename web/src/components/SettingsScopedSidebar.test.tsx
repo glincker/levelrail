@@ -162,4 +162,72 @@ describe('SettingsScopedSidebar', () => {
 
     expect(screen.getByText('Vault')).toBeInTheDocument()
   })
+
+  it('pins a page into a Pinned group and unpins it', async () => {
+    const user = userEvent.setup()
+    renderSidebar()
+
+    expect(screen.queryByText('Pinned')).not.toBeInTheDocument()
+
+    await user.click(screen.getByText('People and access'))
+    const pin = screen.getByRole('button', { name: 'Pin Users' })
+    expect(pin).toHaveAttribute('aria-pressed', 'false')
+    await user.click(pin)
+
+    expect(screen.getByText('Pinned')).toBeInTheDocument()
+    expect(
+      JSON.parse(localStorage.getItem('settings-sidebar-pins:v1') ?? '[]'),
+    ).toHaveLength(1)
+    const unpin = screen.getAllByRole('button', { name: 'Unpin Users' })
+    expect(unpin[0]).toHaveAttribute('aria-pressed', 'true')
+
+    await user.click(unpin[0]!)
+    expect(screen.queryByText('Pinned')).not.toBeInTheDocument()
+  })
+
+  it('skips stored pins that no longer match a page', () => {
+    localStorage.setItem(
+      'settings-sidebar-pins:v1',
+      JSON.stringify(['/settings/gone']),
+    )
+    renderSidebar()
+
+    expect(screen.queryByText('Pinned')).not.toBeInTheDocument()
+  })
+
+  it('expands and collapses every group', async () => {
+    const user = userEvent.setup()
+    renderSidebar()
+
+    await user.click(screen.getByRole('button', { name: 'Expand all groups' }))
+    expect(screen.getByText('Users')).toBeInTheDocument()
+    expect(screen.getByText('Vault')).toBeInTheDocument()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Collapse all groups' }),
+    )
+    expect(screen.queryByText('Users')).not.toBeInTheDocument()
+    expect(screen.queryByText('Vault')).not.toBeInTheDocument()
+  })
+
+  it('keeps one group open at a time when asked, and remembers it', async () => {
+    const user = userEvent.setup()
+    renderSidebar()
+
+    const toggle = screen.getByRole('button', {
+      name: 'Open one group at a time',
+    })
+    expect(toggle).toHaveAttribute('aria-pressed', 'false')
+    await user.click(toggle)
+    expect(toggle).toHaveAttribute('aria-pressed', 'true')
+    expect(localStorage.getItem('settings-sidebar-one-at-a-time:v1')).toBe(
+      'true',
+    )
+
+    await user.click(screen.getByText('People and access'))
+    expect(screen.getByText('Users')).toBeInTheDocument()
+    await user.click(screen.getByText('Security'))
+    expect(screen.getByText('Vault')).toBeInTheDocument()
+    expect(screen.queryByText('Users')).not.toBeInTheDocument()
+  })
 })

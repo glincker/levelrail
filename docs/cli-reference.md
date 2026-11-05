@@ -1372,9 +1372,13 @@ A boolean, plus an optional gradual rollout percentage, that the app's own code 
 Experimental: requires `APP_EXPERIMENTAL=iac`. See [Platform as code](/platform-as-code) for the document format, secrets handling, prune rules and CI use.
 
 ```
-levelrail-cli apply -f file|dir|- [--dry-run] [--exit-code] [--prune --source NAME] [--project P] [--yes] [--secret K=env:VAR] [--var NAME=VALUE] [--var-file PATH] [--allow-env NAME[,NAME...]] [--no-deploy] [--continue-on-error] [flags]
+levelrail-cli apply -f file|dir|- [--dry-run] [--exit-code] [--prune --source NAME] [--project P] [--yes] [--secret K=env:VAR] [--var NAME=VALUE] [--values FILE.yaml] [--var-file PATH] [--allow-env NAME[,NAME...]] [--no-deploy] [--continue-on-error] [flags]
 ```
 Validates resource files, prints the plan, and applies it through the API with your own permissions. Exit 0 no changes or applied, 1 error, 2 changes pending (with `--dry-run --exit-code`). <span v-pre>`${{ env.NAME }}`</span> placeholders are filled only from `--var`, `--var-file` or the names listed with `--allow-env` (a trailing `*` allows a prefix, but never covers credential looking names such as `AWS_*`, `GITHUB_TOKEN` or anything containing `TOKEN`, `SECRET`, `PASSW` or `_KEY`, which must be named exactly). An unresolved placeholder fails before anything is sent.
+
+`stack create <name> --scope install` creates a stack that belongs to the install and has no project (`--project` is refused with it; the default `--scope project` still needs `--project`). `stack list` shows a SCOPE column and `stack show` a Scope line. `stack plan` and `stack apply` take `--allow-weaken` to accept a `Setting` document that weakens a security protection. The API answers 403 unless the caller is a human root session (a token, even a root one, is refused), and the CLI prints that message.
+
+`apply`, `stack plan` and `stack apply` take `--values FILE.yaml` (repeatable, later wins): a flat YAML map that fills the <span v-pre>`${{ env.NAME }}`</span> placeholders, below `--var` and above `--var-file`. See [values per environment](/stacks#values-per-environment). Plans print `~ path: before -> after` for changed fields. Env vars, anything under `secrets` and keys that look like credentials show `(hidden)`, and other values are cut at `APP_IAC_PLAN_VALUE_MAX` characters (default 120).
 
 ```
 levelrail-cli validate [FILE|DIR|-] [--var NAME=VALUE] [--var-file PATH] [--json]
@@ -1415,6 +1419,7 @@ levelrail-cli nodes lost <id> [--dry-run] [--yes] [flags]
 levelrail-cli nodes failure-resolve <id> app|database NAME --wait|--restore [--target NODE-ID] [flags]
 levelrail-cli nodes move app|database NAME [--to NODE-ID] [--wait] [flags]
 levelrail-cli nodes labels <id> [key=value ...] [flags]
+levelrail-cli nodes taint <id> [key[=value]:Effect ...] [flags]
 levelrail-cli nodes placement app|database NAME [key=value ...] [flags]
 levelrail-cli nodes connectivity [flags]
 levelrail-cli nodes workloads <id> --accepts-app=BOOL --accepts-build=BOOL [flags]
@@ -1689,6 +1694,10 @@ levelrail-cli doctor [flags]
 ```
 
 Runs a local preflight health check: Docker daemon reachability, disk space and write latency, write access on the data directory, port 80 and 443 availability for the embedded ingress, control plane database reachability, RAM and CPU against the recommended minimums, firewall status, outbound network reachability (public IP, external port reachability, ACME, clock skew, the agent advertise host, image registries), and GPU attach checks. Exit code is 0 if every check is ok or warn, 1 if any check fails.
+
+### Doctor text overrides
+
+The labels, usage text and table headers of the `doctor` subcommands (`cloud`, `paths`, `explain`, `reachability`) and `domains doctor`, `domains summary` and `domains activity` come from an embedded catalog. Set `LEVELRAIL_DOCTOR_STRINGS_FILE` to a JSON file of flat `key: string` pairs to replace any entry, for translation or wording changes. Templates use `{name}` placeholders. Keys are grouped by prefix: `explain_*`, `reach_*`, `paths_*`, `domains_doctor_*`, `domains_summary_*`, `domains_activity_*`, plus the cloud keys such as `usage` and `console_url.<provider>`. Unknown keys are ignored and an unreadable file leaves the defaults in place.
 
 ## Resilience
 
@@ -2159,3 +2168,76 @@ levelrail-cli analysis show <id> [--json]
 ```
 
 Tuning: `APP_ANALYSIS_WINDOW`, `APP_ANALYSIS_BASELINE_WINDOW`, `APP_ANALYSIS_ANOMALY_Z`, `APP_ANALYSIS_MIN_INTERVAL` (per app rate limit) and `APP_ANALYSIS_RETENTION`. Right-sizing thresholds: `APP_ANALYSIS_HEADROOM_MEMORY` and `APP_ANALYSIS_HEADROOM_CPU` (multiplier over p95, above 1), `APP_ANALYSIS_SIZING_RAISE_AT` and `APP_ANALYSIS_SIZING_LOWER_AT` (p95 as a fraction of the limit), and `APP_ANALYSIS_SIZING_MIN_COVERAGE` (history needed before a suggestion). Unset values keep the engine defaults.
+
+## Certificates
+
+```
+levelrail-cli certs budget [flags]
+```
+Shows the certificates the public CA issued for this server in the last 7 days, against the warning level in the runtime setting `certificates.weekly_issue_warn`. It exits 0 either way and only informs. See [Runtime settings](/runtime-settings).
+
+## Custom dashboards
+
+```
+levelrail-cli dashboards list [--project ID]
+levelrail-cli dashboards show <id|name>
+levelrail-cli dashboards create --name NAME [--template KEY --target NAME] [--scope user|shared] [--project ID] [--default]
+levelrail-cli dashboards export <id|name>
+levelrail-cli dashboards import <file|-> [--scope user|shared] [--project ID]
+levelrail-cli dashboards delete <id|name>
+```
+Boards of metric, log, deploy and cost widgets. `export` prints a portable JSON document you can commit to git, and `import` creates a board from one. Templates are `app-health`, `fleet-overview` and `cost`; the app templates need `--target APP`. See [Custom dashboards](/custom-dashboards).
+
+## Docker guard
+
+```
+levelrail-cli docker-guard status
+levelrail-cli docker-guard set --mode off|audit|enforce
+```
+The control plane reaches Docker through an allowlisting proxy. In `enforce` mode a request a rule denies gets a 403 and never reaches Docker. `audit` (the default) allows everything and logs and audits would-be denials. `off` removes the proxy and takes effect after a restart. `APP_DOCKER_GUARD` on the server overrides this setting. See [Docker access](/docker-access).
+
+## Port forward
+
+```
+levelrail-cli port-forward <app> [LOCAL:]REMOTE [--service S]
+levelrail-cli port-forward db/<name> [LOCAL:]REMOTE
+```
+Opens a local port, bound to loopback only, that relays to an app container port or a managed database through the control plane. A bare name means an app. For a database the remote port may be left out. `--service` picks a service of a multi-service app. It is an alias over `apps tunnel` and `databases tunnel`.
+
+```
+levelrail-cli port-forward web 8080:3000
+levelrail-cli port-forward db/main 5433
+```
+
+## Private networks
+
+```
+levelrail-cli private-networks list
+levelrail-cli private-networks map
+levelrail-cli private-networks create <name> [--members a,b] [--default-deny] [--project ID]
+levelrail-cli private-networks set <name|id> --members a,b [--default-deny]
+levelrail-cli private-networks delete <name|id>
+levelrail-cli private-networks allow <app> <app> [--note TEXT]
+levelrail-cli private-networks deny <rule-id>
+levelrail-cli private-networks apply
+```
+`map` shows who can talk to whom, with blocked paths and fixes. `apply` re-enforces the networks and allow rules on Docker now. See [Private networks](/private-networks).
+
+## Private macOS VM
+
+Experimental. Set `APP_VM_EXPERIMENTAL=on` to use it.
+
+```
+levelrail-cli vm init [--memory MiB] [--cpus N] [--disk GiB] [--dashboard-port P] [--ingress-port P] [--control-plane-bin PATH] [--no-start] [--print-password]
+levelrail-cli vm start [--control-plane-bin PATH]
+levelrail-cli vm stop
+levelrail-cli vm status [--json]
+levelrail-cli vm shell
+levelrail-cli vm set <memory|cpus|disk|dashboard-port|ingress-port> <value>
+levelrail-cli vm export [--encrypt AGE_RECIPIENT] <file>
+levelrail-cli vm upgrade --control-plane-bin PATH
+levelrail-cli vm reset --yes [--keep-credentials]
+levelrail-cli vm uninstall --yes
+levelrail-cli vm token (--check | --exchange --cookie-jar PATH) [--json]
+```
+Runs Levelrail in a private Linux VM on macOS with no host folders mounted. `vm shell` opens a guest shell where the VM user has passwordless sudo, so the VM is the boundary. Settings live in a host file, and the environment only seeds it at `init`. An export archive holds the control plane database and its secrets. Keep it private; without `--encrypt` it is clear text. See [Desktop runtime](/desktop-runtime).

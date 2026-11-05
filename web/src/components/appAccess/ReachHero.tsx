@@ -76,65 +76,68 @@ export function ReachHero({
   return (
     <section
       aria-label={t('hero.title')}
-      className="space-y-3 rounded-lg border border-primary/20 bg-primary/5 p-4"
+      className="space-y-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2"
     >
-      <div className="flex flex-wrap items-center gap-2">
-        <h3 className="text-sm font-semibold">{t('hero.title')}</h3>
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
         <StatusPill status={status} />
-      </div>
-      <code className="block break-all font-mono text-base sm:text-lg">
-        {addr.display}
-      </code>
-      <div className="flex flex-wrap items-center gap-1.5">
+        <code className="min-w-0 flex-1 break-all font-mono text-sm font-medium">
+          {addr.display}
+        </code>
         <SecurityChip security={resolveSecurity(addr, probe)} />
         <ScopeChip scope={addr.scope} />
+        <div className="flex shrink-0 items-center gap-1">
+          <a
+            href={addr.href}
+            target="_blank"
+            rel="noreferrer noopener"
+            className={buttonVariants({ size: 'sm', variant: 'default' })}
+          >
+            <ExternalLinkGlassIcon className="size-5" aria-hidden="true" />
+            {t('actions.openApp')}
+          </a>
+          <Button
+            size="icon-sm"
+            variant="ghost"
+            aria-label={copied ? t('actions.copied') : t('actions.copyUrl')}
+            onClick={() => copy(addr.value)}
+          >
+            {copied ? (
+              <CheckGlassIcon className="size-5" aria-hidden="true" />
+            ) : (
+              <CopyGlassIcon className="size-5" aria-hidden="true" />
+            )}
+          </Button>
+          {running ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={checking}
+              onClick={onRecheck}
+            >
+              {t('actions.recheck')}
+            </Button>
+          ) : null}
+        </div>
       </div>
       {probe && !checking ? <ProbeNote probe={probe} /> : null}
       {status === 'down' ? (
-        <div className="space-y-2 rounded-md border border-border bg-background/60 p-3">
-          <p className="text-sm">{t('hero.fixTitle')}</p>
-          <div className="flex flex-wrap gap-2">
-            <Button size="sm" variant="outline" onClick={onAllow}>
-              {t('actions.openOnNetwork')}
-            </Button>
-            <Link
-              to="/apps/$name/network"
-              params={{ name: appName }}
-              className={buttonVariants({ size: 'sm', variant: 'outline' })}
-            >
-              {t('actions.addDomain')}
-            </Link>
-          </div>
-          <p className="text-xs text-muted-foreground">{t('hero.fixHint')}</p>
+        <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-background/60 px-2 py-1.5">
+          <p className="text-xs">{t('hero.fixTitle')}</p>
+          <Button size="sm" variant="outline" onClick={onAllow}>
+            {t('actions.openOnNetwork')}
+          </Button>
+          <Link
+            to="/apps/$name/network"
+            params={{ name: appName }}
+            className={buttonVariants({ size: 'sm', variant: 'outline' })}
+          >
+            {t('actions.addDomain')}
+          </Link>
         </div>
       ) : null}
       {!running ? (
         <p className="text-xs text-muted-foreground">{t('hero.stopped')}</p>
       ) : null}
-      <div className="flex flex-wrap gap-2">
-        <a
-          href={addr.href}
-          target="_blank"
-          rel="noreferrer noopener"
-          className={buttonVariants({ variant: 'default' })}
-        >
-          <ExternalLinkGlassIcon className="size-5" aria-hidden="true" />
-          {t('actions.openApp')}
-        </a>
-        <Button variant="outline" onClick={() => copy(addr.value)}>
-          {copied ? (
-            <CheckGlassIcon className="size-5" aria-hidden="true" />
-          ) : (
-            <CopyGlassIcon className="size-5" aria-hidden="true" />
-          )}
-          {copied ? t('actions.copied') : t('actions.copyUrl')}
-        </Button>
-        {running ? (
-          <Button variant="ghost" disabled={checking} onClick={onRecheck}>
-            {t('actions.recheck')}
-          </Button>
-        ) : null}
-      </div>
     </section>
   )
 }

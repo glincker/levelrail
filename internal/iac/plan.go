@@ -34,8 +34,10 @@ type Change struct {
 	// DependsOn lists the resources this item reads from, applied first.
 	DependsOn []string `json:"dependsOn,omitempty"`
 	Denied    bool     `json:"denied,omitempty"`
-	File      string   `json:"file,omitempty"`
-	Line      int      `json:"line,omitempty"`
+	// LiveID is the live identifier a ledger records; it never leaves the process.
+	LiveID string `json:"-"`
+	File   string `json:"file,omitempty"`
+	Line   int    `json:"line,omitempty"`
 }
 
 // Key is the change's stable identity.
@@ -88,7 +90,11 @@ func buildPlan(st *State, res []*Resource, opts Options) (Plan, []*item) {
 		p.byKey[r.Key()] = r
 	}
 	for _, r := range res {
+		if p.scopeGate(r) {
+			continue
+		}
 		p.planResource(r)
+		p.scopeNote(r)
 	}
 	if opts.Prune {
 		p.planPrune()
@@ -172,6 +178,10 @@ func (p *planner) planResource(r *Resource) {
 		p.planEnvironment(r)
 	case KindTag:
 		p.planTag(r)
+	case KindNode:
+		p.planNode(r)
+	case KindSetting:
+		p.planSetting(r)
 	case KindDatabase:
 		p.planDatabase(r)
 	case KindApp:

@@ -1,6 +1,9 @@
+import {
+  SelectedMark,
+  selectableCardClass,
+} from '@/components/ui/selectable-card'
 import { CpuGlassIcon, ZapGlassIcon } from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
-import { cn } from '@/lib/utils'
 import type { ModelCompute } from '../../types/modelsCpu'
 
 // Radio pair: run on a GPU node (the default) or on this server's CPU.
@@ -38,11 +41,12 @@ export function DeployComputeSwitch({
         {options.map((o) => (
           <label
             key={o.id}
-            className={cn(
-              'flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-card p-3 text-sm transition-colors hover:bg-muted/50 motion-reduce:transition-none',
-              'has-checked:border-primary has-checked:bg-primary/5 has-focus-visible:ring-3 has-focus-visible:ring-ring/50',
+            className={selectableCardClass(
+              value === o.id,
+              'flex cursor-pointer items-start gap-3 rounded-lg p-3 pr-7 text-sm has-focus-visible:ring-2 has-focus-visible:ring-state-accent',
             )}
           >
+            <SelectedMark selected={value === o.id} />
             <input
               type="radio"
               name="model-compute"

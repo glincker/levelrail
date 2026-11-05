@@ -13,9 +13,9 @@ export function toastMutationError(
   if (mutation.options.onError || mutation.meta?.errorToast === false) return
   // 401 redirects to login instead.
   if (isUnauthorized(error)) return
-  const { message, action } = errorText(error)
+  const { title, message, action } = errorText(error)
   toast.add({
-    title: translateShared('apiError.toastTitle', 'That did not work'),
+    title: title ?? translateShared('apiError.toastTitle', 'That did not work'),
     description: action ? `${message} ${action}` : message,
     type: 'error',
   })

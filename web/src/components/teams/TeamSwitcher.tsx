@@ -11,6 +11,7 @@ import {
 import { setTeamScope, useTeamScope } from '../../lib/teamScope'
 import { projectListQueryOptions } from '../../queries/projects'
 import { teamListQueryOptions } from '../../queries/teams'
+import { OrgAvatar } from '../organizations/OrgAvatar'
 import { TeamRoleBadge } from './TeamRoleBadge'
 
 const ALL = '__all__'
@@ -57,6 +58,12 @@ export function TeamSwitcher() {
           <SelectItem value={ALL}>{t('switcher.allTeams')}</SelectItem>
           {teams.map((tm) => (
             <SelectItem key={tm.id} value={tm.id}>
+              <OrgAvatar
+                id={tm.id}
+                name={tm.name}
+                avatarUrl={tm.avatar_url}
+                size="xs"
+              />
               {tm.default ? t('page.defaultTeam') : tm.name}
             </SelectItem>
           ))}

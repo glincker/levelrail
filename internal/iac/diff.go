@@ -3,7 +3,9 @@ package iac
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -67,11 +69,51 @@ func topKey(path string) string {
 	return path
 }
 
+// defaultPlanValueMax is the seed for APP_IAC_PLAN_VALUE_MAX.
+const defaultPlanValueMax = 120
+
+var secretPathWords = []string{"TOKEN", "SECRET", "PASSW", "CREDENTIAL", "PRIVATE", "APIKEY", "API_KEY", "ACCESS_KEY", "_KEY"}
+
+// PlanValueMax is the longest before or after value a plan shows.
+func PlanValueMax() int {
+	if n, err := strconv.Atoi(strings.TrimSpace(os.Getenv("APP_IAC_PLAN_VALUE_MAX"))); err == nil && n > 0 {
+		return n
+	}
+	return defaultPlanValueMax
+}
+
+// hiddenPath reports env vars, anything under secrets and keys that look
+// like credentials, so a plan never carries their values.
+func hiddenPath(path string) bool {
+	if strings.HasPrefix(path, "env.") || strings.HasPrefix(path, "secrets") {
+		return true
+	}
+	// connections, secretRef and secretEnv hold names and references, never values.
+	if strings.HasPrefix(path, "connections.") || strings.Contains(path, "secretRef") || strings.HasPrefix(path, "secretEnv[") {
+		return false
+	}
+	up := strings.ToUpper(path)
+	for _, w := range secretPathWords {
+		if strings.Contains(up, w) {
+			return true
+		}
+	}
+	return false
+}
+
+func truncateValue(val string, limit int) string {
+	r := []rune(val)
+	if len(r) <= limit {
+		return val
+	}
+	return string(r[:limit]) + "..."
+}
+
 func shown(path, val string) string {
-	if strings.HasPrefix(path, "env.") {
+	if hiddenPath(path) {
 		return hiddenValue
 	}
-	return val
+	return truncateValue(val, PlanValueMax())
 }
 
 // diffFields compares desired with live. Fields under an additive key only

@@ -88,7 +88,7 @@ export function BetaFeatureCard({
       data-highlighted={highlighted ? 'true' : undefined}
       className={cn(
         'scroll-mt-24',
-        highlighted && 'ring-2 ring-primary transition-shadow',
+        highlighted && 'ring-2 ring-state-accent transition-shadow',
       )}
     >
       <CardHeader>

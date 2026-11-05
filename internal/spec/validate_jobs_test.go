@@ -38,6 +38,11 @@ func TestParse_Jobs(t *testing.T) {
 			wantErr: "schedule",
 		},
 		{
+			name:    "impossible date never runs",
+			jobs:    "    jobs:\n      - {name: a, schedule: \"0 0 30 2 *\", command: [x]}\n",
+			wantErr: "never runs",
+		},
+		{
 			name:    "bad timezone",
 			jobs:    "    jobs:\n      - {name: a, schedule: \"* * * * *\", command: [x], timezone: Mars/Base}\n",
 			wantErr: "timezone",
@@ -85,5 +90,13 @@ func TestParse_Jobs(t *testing.T) {
 				t.Errorf("Parse error = %v, want it to mention %q", err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestParse_JobsLeapDayScheduleIsValid(t *testing.T) {
+	base := "version: 1\nservices:\n  web:\n    build:\n      type: image\n      image: nginx:1\n    port: 80\n"
+	jobs := "    jobs:\n      - {name: a, schedule: \"0 0 29 2 *\", command: [x]}\n"
+	if _, err := Parse([]byte(base + jobs)); err != nil {
+		t.Fatalf("Parse: %v", err)
 	}
 }

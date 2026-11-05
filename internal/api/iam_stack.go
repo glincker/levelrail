@@ -57,8 +57,47 @@ func (rt *Router) stackGateDB() stackGateStore {
 // stackVerbAbilities is the most a stack token may hold per verb; write is
 // what apply and rollback need, and nothing sensitive is ever granted.
 var stackVerbAbilities = map[string][]string{
-	store.StackVerbPlan:  {AbilityRead},
-	store.StackVerbApply: {AbilityRead, AbilityWrite},
+	store.StackVerbPlan:      {AbilityRead},
+	store.StackVerbApply:     {AbilityRead, AbilityWrite},
+	store.StackVerbNode:      {AbilityRead, AbilityWrite},
+	store.StackVerbSetting:   {AbilityRead, AbilityWrite},
+	store.StackVerbPlacement: {AbilityRead, AbilityWrite},
+}
+
+const msgStackVerbsAllowed = "stack_verbs may only hold plan, apply, node, setting and placement"
+
+// stackVerbsNeed is the ability the minter must hold on the stack: the narrow
+// verbs reach root-only routes, so only a root principal may grant them.
+func stackVerbsNeed(verbs []string) string {
+	need := AbilityRead
+	for _, v := range verbs {
+		switch {
+		case v == store.StackVerbApply && need == AbilityRead:
+			need = AbilityWrite
+		case v != store.StackVerbPlan && v != store.StackVerbApply:
+			return AbilityRoot
+		}
+	}
+	return need
+}
+
+const msgStackVerbsNeedGlobalRoot = "node, setting and placement can only be granted by a root user"
+
+// mayGrantStackVerbs holds the narrow verbs to global root: they pass root-only
+// routes, so root scoped to the stack alone must not hand them out.
+func (rt *Router) mayGrantStackVerbs(r *http.Request, verbs []string) bool {
+	if stackVerbsNeed(verbs) != AbilityRoot {
+		return true
+	}
+	abilities, err := rt.callerAbilities(r)
+	return err == nil && hasAbilityExactRoot(abilities)
+}
+
+func stackVerbsScopeMessage(scope string) string {
+	if scope == store.StackScopeInstall {
+		return "an install stack takes plan, apply, node and setting; placement is for project stacks"
+	}
+	return "node and setting are for install stacks only"
 }
 
 const msgStackTokenDenied = "this token is scoped to one stack and cannot call this endpoint"
@@ -78,17 +117,14 @@ func (rt *Router) resolveTokenStackScope(w http.ResponseWriter, r *http.Request,
 		verbs = []string{store.StackVerbPlan}
 	}
 	if !store.ValidStackVerbs(verbs) {
-		writeError(w, http.StatusBadRequest, "stack_verbs may only hold plan and apply")
+		writeError(w, http.StatusBadRequest, msgStackVerbsAllowed)
 		return nil, false
 	}
 	allowed := map[string]bool{}
-	need := AbilityRead
+	need := stackVerbsNeed(verbs)
 	for _, v := range verbs {
 		for _, a := range stackVerbAbilities[v] {
 			allowed[a] = true
-		}
-		if v == store.StackVerbApply {
-			need = AbilityWrite
 		}
 	}
 	for _, a := range req.Abilities {
@@ -112,11 +148,19 @@ func (rt *Router) resolveTokenStackScope(w http.ResponseWriter, r *http.Request,
 		rt.internalError(w, "api: create token: stack scope", err)
 		return nil, false
 	}
+	if !store.StackVerbsFitScope(verbs, stack.Scope) {
+		writeError(w, http.StatusBadRequest, stackVerbsScopeMessage(stack.Scope))
+		return nil, false
+	}
 	if ok, err := rt.userMayOnStack(r, ownerID, need, stack.Name); err != nil {
 		rt.internalError(w, "api: create token: stack scope authz", err)
 		return nil, false
 	} else if !ok {
 		writeError(w, http.StatusForbidden, "you cannot grant "+need+" on that stack")
+		return nil, false
+	}
+	if !rt.mayGrantStackVerbs(r, verbs) {
+		writeError(w, http.StatusForbidden, msgStackVerbsNeedGlobalRoot)
 		return nil, false
 	}
 	return &store.APITokenStackScope{StackID: stack.ID, Verbs: dedupe(verbs)}, true
@@ -278,7 +322,7 @@ func stackRouteAllowed(r *http.Request, sc store.APITokenStackScope, stack store
 	if !listed || r.PathValue("name") != stack.Name {
 		return false, r, nil
 	}
-	if verb != "" && !sc.Has(verb) {
+	if verb == store.StackVerbApply && !sc.CanApply() || verb == store.StackVerbPlan && !sc.Has(verb) {
 		return false, r, nil
 	}
 	if verb != store.StackVerbApply {
@@ -356,6 +400,13 @@ var stackWritePatterns = map[string]string{
 // stackSubRequestAllowed decides a loopback sub-request. Reads are allowed in
 // plan and apply; writes only while the stack handler has set its apply scope.
 func (rt *Router) stackSubRequestAllowed(r *http.Request, db stackGateStore, stack store.StackRecord, call *stackTokenCall) (bool, *http.Request, error) {
+	if verb, listed := stackVerbPatterns[r.Pattern]; listed {
+		ok, r2, err := rt.stackVerbSubRequestAllowed(r, db, stack, call, verb)
+		if ok && err == nil {
+			r2 = r2.WithContext(context.WithValue(r2.Context(), stackVerbGrantKey{}, r.Pattern))
+		}
+		return ok, r2, err
+	}
 	method, path, _ := strings.Cut(r.Pattern, " ")
 	if method == http.MethodGet {
 		target, listed := stackReadPatterns[path]
@@ -390,6 +441,9 @@ func (rt *Router) stackSubRequestAllowed(r *http.Request, db stackGateStore, sta
 			return false, r, nil
 		}
 		ok, err := notForeign(r.Context(), db, stack, string(iac.KindApp), name)
+		if ok && err == nil {
+			call.markCreated(ledgerKeyOf(iac.KindApp, name))
+		}
 		return ok, r, err
 	case "database-create":
 		name := bodyString(body, "name")
@@ -547,4 +601,39 @@ func peekBody(r *http.Request) ([]byte, *http.Request, error) {
 	r2 := r.Clone(r.Context())
 	r2.Body = io.NopCloser(bytes.NewReader(raw))
 	return raw, r2, nil
+}
+
+const auditStackSettingWeaken = "stack.setting_weaken"
+
+// weakenAllowed is the allow_weaken gate: a human root session only. Any
+// token, a pinned session, a CI caller or a failed lookup refuses.
+func (rt *Router) weakenAllowed(r *http.Request) bool {
+	return rt.stackCaller(r).kind == store.PrincipalTypeUser && rt.lockOverrideAllowed(r)
+}
+
+// refuseWeaken writes a 403 when req asks for allow_weaken and the caller
+// does not pass the gate, and reports whether it did.
+func (rt *Router) refuseWeaken(w http.ResponseWriter, r *http.Request, req stackRequest) bool {
+	if !req.AllowWeaken || rt.weakenAllowed(r) {
+		return false
+	}
+	writeError(w, http.StatusForbidden, "allow_weaken needs a human root session; a token can never weaken a setting")
+	return true
+}
+
+// auditSettingWeakens writes one stack.setting_weaken row per weakened key
+// that applied. Sensitive keys never get here: the plan refuses them.
+func (rt *Router) auditSettingWeakens(r *http.Request, stack string, rev int, out iac.ApplyResult) {
+	for _, res := range out.Results {
+		if res.Status != iac.StatusApplied || !iac.IsSettingWeaken(res.Change) {
+			continue
+		}
+		detail := map[string]any{"stack": stack, "revision": rev, "key": res.Name}
+		for _, f := range res.Fields {
+			if f.Path == "value" {
+				detail["old"], detail["new"] = f.Old, f.New
+			}
+		}
+		rt.auditStack(r, auditStackSettingWeaken, detail)
+	}
 }

@@ -42,6 +42,21 @@ const (
 	scopeProjectHeader = "X-Scope-Project"
 )
 
+// systemTokenTeamID is the stored scope marker of tokens the platform mints for
+// itself (CI exchange, stack drift). It never names a team: it exempts the
+// token from strict org narrowing, its policies and stack scope still apply.
+const systemTokenTeamID = "system"
+
+// markSystemToken stamps an ownerless internal token so strict isolation does
+// not narrow it. Without team storage there is nothing to narrow, so it is a no-op.
+func (rt *Router) markSystemToken(ctx context.Context, tokenID string) error {
+	db := rt.teamAdmin()
+	if db == nil {
+		return nil
+	}
+	return db.SetAPITokenScope(ctx, store.APITokenScope{TokenID: tokenID, TeamID: systemTokenTeamID, Role: store.TeamRoleOwner})
+}
+
 // teamScope limits a principal to the teams it belongs to. A nil scope is
 // an instance admin (root) or system token and sees every team.
 type teamScope struct {
@@ -136,15 +151,22 @@ func (rt *Router) principalTeamScope(ctx context.Context, principalType, princip
 	if err != nil {
 		return nil, fmt.Errorf("api: team scope: load token: %w", err)
 	}
+	limit, err := db.GetAPITokenScope(ctx, principalID)
+	if err != nil {
+		return nil, fmt.Errorf("api: team scope: %w", err)
+	}
+	if limit != nil && rec.OwnerUserID == "" && limit.TeamID == systemTokenTeamID {
+		return nil, nil
+	}
 	var base *teamScope
 	if rec.OwnerUserID != "" {
 		if base, err = rt.userTeamScope(ctx, db, rec.OwnerUserID); err != nil {
 			return nil, err
 		}
-	}
-	limit, err := db.GetAPITokenScope(ctx, principalID)
-	if err != nil {
-		return nil, fmt.Errorf("api: team scope: %w", err)
+	} else if limit == nil && rt.strictOrgIsolation(ctx) && !hasAbility(rec.Abilities, AbilityRoot) {
+		// An ownerless token with no org limit and no root ability is a default
+		// org member under strict isolation; a stored limit is trusted as before.
+		base = &teamScope{roles: map[string]string{store.DefaultTeamID: store.TeamRoleDeveloper}, instance: true}
 	}
 	if limit == nil {
 		return base, nil

@@ -8,20 +8,26 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 // organizationResource is the wire shape for an organization.
 type organizationResource struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	CreatedAt string `json:"created_at"`
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	CreatedAt   string `json:"created_at"`
+	Slug        string `json:"slug,omitempty"`
+	Description string `json:"description,omitempty"`
+	AvatarURL   string `json:"avatar_url,omitempty"`
+	UpdatedAt   string `json:"updated_at,omitempty"`
 }
 
 func toOrganizationResource(o store.Organization) organizationResource {
-	return organizationResource{ID: o.ID, Name: o.Name, CreatedAt: o.CreatedAt}
+	return organizationResource{ID: o.ID, Name: o.Name, CreatedAt: o.CreatedAt, Slug: o.Slug, Description: o.Description, AvatarURL: orgAvatarURL(o), UpdatedAt: o.UpdatedAt}
 }
 
 type createOrganizationRequest struct {
@@ -66,23 +72,68 @@ func (rt *Router) handleCreateOrganization(w http.ResponseWriter, r *http.Reques
 	if !decodeReq(w, r, &req) {
 		return
 	}
+	req.Name = strings.TrimSpace(req.Name)
 	if req.Name == "" {
 		writeError(w, http.StatusBadRequest, "name is required")
 		return
 	}
 
-	id, err := randomOrganizationID()
+	caller, err := rt.resolveTeamCaller(r, "")
 	if err != nil {
-		rt.internalError(w, "api: create organization: generate id failed", err)
+		rt.internalError(w, "api: create organization: caller", err)
 		return
 	}
-
-	o := store.Organization{ID: id, Name: req.Name, CreatedAt: time.Now().UTC().Format(time.RFC3339)}
-	if err := rt.organizations.SaveOrganization(r.Context(), o); err != nil {
-		rt.internalError(w, "api: create organization failed", err, slog.String("id", id))
+	if rt.orgCreateNeedsRoot(r.Context()) && !caller.root {
+		writeError(w, http.StatusForbidden, "creating an organization needs the root ability")
+		return
+	}
+	o, err := rt.createOrganizationWithOwner(r.Context(), req.Name, caller.userID)
+	if err != nil {
+		rt.internalError(w, "api: create organization failed", err)
 		return
 	}
 	writeJSON(w, http.StatusCreated, toOrganizationResource(o))
+}
+
+// createOrganizationWithOwner is the one create path behind POST
+// /organizations and POST /teams, so both give the creator an owner row.
+// An empty ownerUserID (a token with no owner) creates the org without one.
+func (rt *Router) createOrganizationWithOwner(ctx context.Context, name, ownerUserID string) (store.Organization, error) {
+	id, err := randomOrganizationID()
+	if err != nil {
+		return store.Organization{}, fmt.Errorf("generate id: %w", err)
+	}
+	o := store.Organization{ID: id, Name: strings.TrimSpace(name), CreatedAt: time.Now().UTC().Format(time.RFC3339)}
+	if err := rt.organizations.SaveOrganization(ctx, o); err != nil {
+		return store.Organization{}, fmt.Errorf("save: %w", err)
+	}
+	if ownerUserID != "" {
+		if err := rt.teamAdmin().AddTeamMember(ctx, id, ownerUserID, store.TeamRoleOwner); err != nil {
+			// Without its owner row the org would be unreachable, so undo the save.
+			err = errors.Join(err, rt.organizations.DeleteOrganization(context.WithoutCancel(ctx), id))
+			return store.Organization{}, fmt.Errorf("add owner: %w", err)
+		}
+	}
+	return o, nil
+}
+
+// strictOrgIsolation reports the live strict isolation setting.
+func (rt *Router) strictOrgIsolation(ctx context.Context) bool {
+	return rt.runtimeSettings != nil && rt.runtimeSettings.Bool(ctx, runtimesettings.KeyOrgsStrictIsolation)
+}
+
+// provisionCtx drops the default org membership of a provisioned user when
+// strict isolation is on and orgs.provisioned_default_membership is off.
+func (rt *Router) provisionCtx(ctx context.Context) context.Context {
+	if rt.strictOrgIsolation(ctx) && !rt.runtimeSettings.Bool(ctx, runtimesettings.KeyOrgsProvisionedDefaultMembership) {
+		return store.WithoutDefaultTeam(ctx)
+	}
+	return ctx
+}
+
+// orgCreateNeedsRoot is true under strict isolation unless write admins may create orgs.
+func (rt *Router) orgCreateNeedsRoot(ctx context.Context) bool {
+	return rt.strictOrgIsolation(ctx) && !rt.runtimeSettings.Bool(ctx, runtimesettings.KeyOrgsAdminsCanCreate)
 }
 
 // handleDeleteOrganization handles DELETE /api/v1/organizations/{id}. By

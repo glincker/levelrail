@@ -145,6 +145,7 @@
     }
   },
   "chip": {
+    "firstApp": "Primera app: {{done}} de {{total}}",
     "label": "Configuración al {{percent}}%",
     "cta": "Continuar la configuración",
     "open": "Abrir la guía de configuración"

@@ -11,7 +11,7 @@ import {
   pinnedGlobalItems,
   resolveOpen,
 } from './navModel'
-import { ROUTE_ENTRIES } from '../commandPaletteData'
+import { ROUTE_ENTRIES, navModelEntries } from '../commandPaletteData'
 import { isBoolRecord, readJson, writeJson } from './persist'
 
 const EXPECTED_GLOBAL = [
@@ -21,6 +21,7 @@ const EXPECTED_GLOBAL = [
   '/deployments',
   '/functions',
   '/projects',
+  '/templates',
   '/databases',
   '/backups',
   '/assets',
@@ -111,18 +112,31 @@ describe('global nav model', () => {
     expect(GLOBAL_NAV_GROUPS.length).toBeLessThanOrEqual(8)
   })
 
-  it('groups Domains, DNS, Proxy, Private networks, Firewall, Load balancers and CDN under Networking', () => {
-    const net = GLOBAL_NAV_GROUPS.find((g) => g.id === 'traffic')
-    expect(net?.label).toBe('Networking')
-    expect(net?.items.map((i) => i.label)).toEqual([
+  it('shows seven primary links ungrouped', () => {
+    const primary = GLOBAL_NAV_GROUPS.filter((g) => g.ungrouped)
+    expect(primary).toHaveLength(1)
+    expect(primary[0]?.items.map((i) => i.label)).toEqual([
+      'Dashboard',
+      'Apps',
+      'Deployments',
+      'Databases',
       'Domains',
+      'Nodes',
+      'Alerts',
+    ])
+  })
+
+  it('groups DNS, Proxy, Private networks, Firewall, Load balancers and CDN under Network', () => {
+    const net = GLOBAL_NAV_GROUPS.find((g) => g.id === 'traffic')
+    expect(net?.label).toBe('Network')
+    expect(net?.items.map((i) => i.label)).toEqual([
       'DNS',
       'Proxy',
       'Private networks',
       'Firewall',
       'Load balancers',
-      'Mail',
       'CDN and caches',
+      'Mail',
     ])
   })
 
@@ -132,8 +146,10 @@ describe('global nav model', () => {
     }
   })
 
-  it('opens every group by default', () => {
-    expect(defaultGroupOpen()).toBe(true)
+  it('opens only the primary links by default', () => {
+    for (const g of GLOBAL_NAV_GROUPS) {
+      expect(defaultGroupOpen(g), g.id).toBe(g.ungrouped === true)
+    }
   })
 
   it('hides route-gated items until the router has the route', () => {
@@ -245,5 +261,38 @@ describe('static routing rules nav item', () => {
   it('appears only for static sites', () => {
     expect(slugs(true)).toContain('static-routes')
     expect(slugs(false)).not.toContain('static-routes')
+  })
+})
+
+describe('palette entries derived from the nav model', () => {
+  const entries = navModelEntries(ROUTE_ENTRIES, (id) => id)
+  const tos = [...ROUTE_ENTRIES, ...entries].map((e) => e.to)
+
+  it('makes templates, inbox, images and the other pages reachable', () => {
+    for (const to of [
+      '/templates',
+      '/inbox',
+      '/images',
+      '/resources',
+      '/resource-advisor',
+      '/network',
+      '/cdn',
+      '/network/proxy',
+      '/get-started',
+      '/migrate',
+    ]) {
+      expect(tos, to).toContain(to)
+    }
+  })
+
+  it('adds no duplicate destinations or keys', () => {
+    const keys = [...ROUTE_ENTRIES, ...entries].map((e) => e.key)
+    expect(new Set(keys).size).toBe(keys.length)
+    expect(new Set(entries.map((e) => e.to)).size).toBe(entries.length)
+    expect(
+      entries
+        .map((e) => e.to)
+        .filter((to) => ROUTE_ENTRIES.some((r) => r.to === to)),
+    ).toEqual([])
   })
 })

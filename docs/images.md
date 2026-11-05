@@ -42,10 +42,15 @@ levelrail-cli images verify (<image-id> | --ref repo@sha256:...) [--node N]
 GET  /api/v1/images?node=&keep_per_app=
 GET  /api/v1/images/layers?id=&node=
 POST /api/v1/images/gc       {"node": "", "keep_per_app": 3, "min_age_hours": 24, "dry_run": true}
+POST /api/v1/images/remove   {"node": "", "ids": ["sha256:..."], "include_unmanaged_unused": false, "dry_run": true}
 POST /api/v1/images/verify   {"id": "sha256:...", "node": ""}
 ```
 
-Listing and verifying need read access. Cleanup needs root.
+Listing and verifying need read access. Cleanup and removal need root.
+
+### Removing images on purpose
+
+Automatic cleanup never touches images this platform did not build or deploy. To clear them yourself, `POST /api/v1/images/remove` removes the images you name, or every unmanaged image no container uses with `include_unmanaged_unused`. The listing marks each image `removable` or gives a `blocked_reason`. Images used by a container (running or stopped), the live image of an app and pinned rollback targets are refused one by one without failing the rest. One request may name up to `images.remove_max_per_request` images (default 200). From the CLI: `images rm <id...>` and `images prune --unmanaged`, both showing the plan until you add `--yes`.
 
 </Tab>
 </Tabs>

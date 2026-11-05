@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/badge'
 import { liveBadgesQueryOptions } from '../../queries/goLiveChecklist'
 import type { LiveState } from '../../queries/goLiveChecklist'
-import { STATE_VARIANT } from './liveState'
+import { pickAppLiveEntry, showsLiveState, STATE_VARIANT } from './liveState'
 
 function goLivePath(app: string, domain: string): string {
   const q = domain ? `?domain=${encodeURIComponent(domain)}` : ''
@@ -39,17 +39,25 @@ export function LiveStateBadge({
 }
 
 /** GoLiveBadge looks the domain up in the shared status query, so a list of rows costs one request. */
-export function GoLiveBadge({ app, domain }: { app: string; domain: string }) {
+export function GoLiveBadge({
+  app,
+  domain,
+  automatic = false,
+}: {
+  app: string
+  domain: string
+  automatic?: boolean
+}) {
   const { data } = useQuery(liveBadgesQueryOptions())
   const entry = data?.find((d) => d.app === app && d.domain === domain)
-  if (!entry) return null
+  if (!entry || !showsLiveState(domain, entry.state, automatic)) return null
   return <LiveStateBadge app={app} domain={domain} state={entry.state} />
 }
 
-/** AppLiveBadge shows the state of the app's first domain, for the app overview. */
+/** AppLiveBadge shows the best state across the app's domains, for the app overview. */
 export function AppLiveBadge({ app }: { app: string }) {
   const { data } = useQuery(liveBadgesQueryOptions())
-  const entry = data?.find((d) => d.app === app)
+  const entry = pickAppLiveEntry(data, app)
   if (!entry) return null
   return <LiveStateBadge app={app} domain={entry.domain} state={entry.state} />
 }

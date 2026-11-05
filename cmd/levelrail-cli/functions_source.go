@@ -109,7 +109,7 @@ func runFunctionsInit(prog string, args []string, stdout, stderr io.Writer) int 
 		return exitAPIError
 	}
 	for _, f := range rtm.Files {
-		if err := os.WriteFile(filepath.Join(dir, f.Path), []byte(f.Content), 0o600); err != nil {
+		if err := os.WriteFile(filepath.Join(dir, f.Path), []byte(f.Content), 0o600); err != nil { //nolint:gosec // G703: dir is the positional argument the user passed on their own machine
 			_, _ = fmt.Fprintf(stderr, "%s: write %s: %v\n", prog, f.Path, err)
 			return exitAPIError
 		}

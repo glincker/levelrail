@@ -9,6 +9,9 @@
 # v0.8.13: the scan-catalog-platforms and gen-template-platforms tools import internal/catalog, adding two dependents to every package the catalog reaches.
 # v0.8.14: the gen-arm-compat tool imports internal/catalog, adding two dependents to every package the catalog reaches.
 # v0.9.0: the gen-runtime-settings-docs tool imports internal/api for its init-time settings registry, adding one dependent to internal/changes.
+# v0.9.1: kit/ticker.Safe guards every schedule loop against a zero or negative interval, so the schedule packages depend on it (27 dependents).
+# v0.9.2: internal/spec imports internal/placement for the tolerations and affinity fields, so every dependent of spec depends on it.
+# v0.9.1: internal/runtimesettings is the shared live settings registry that every feature registers keys in, so 51 packages read it by design (stack Setting kind, token verbs, node settings).
 internal/autoscale 162
 internal/bindaddr 162
 internal/bindmount 164
@@ -36,11 +39,13 @@ internal/meshpath 42
 internal/monitor 155
 internal/network 49
 internal/pkgregistry 27
+internal/placement 170
 internal/policy 157
 internal/quota 155
 internal/reconcile 156
 internal/reconcile/database 41
 internal/rolloutpolicy 162
+internal/runtimesettings 55
 internal/secretmask 160
 internal/spec 161
 internal/spendcap 164
@@ -54,5 +59,6 @@ kit/ids 76
 kit/netguard 178
 kit/probe 162
 kit/semver 30
+kit/ticker 32
 kit/timeutil 156
 kit/upgrade 25

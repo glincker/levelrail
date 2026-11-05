@@ -31,6 +31,12 @@ type ImageEntry struct {
 	Apps          []ImageAppUse `json:"apps"`
 	Protected     bool          `json:"protected"`
 	ProtectReason string        `json:"protect_reason,omitempty"`
+
+	Unmanaged       bool   `json:"unmanaged"`
+	InUse           bool   `json:"in_use"`
+	Removable       bool   `json:"removable"`
+	RemovableReason string `json:"removable_reason,omitempty"`
+	BlockedReason   string `json:"blocked_reason,omitempty"`
 }
 
 // ImageRetention is the retention policy in effect.
@@ -45,6 +51,11 @@ type ImageTotals struct {
 	SizeBytes      int64 `json:"size_bytes"`
 	ReclaimBytes   int64 `json:"reclaimable_bytes"`
 	ProtectedCount int   `json:"protected_count"`
+
+	UnmanagedUnusedCount int   `json:"unmanaged_unused_count"`
+	UnmanagedUnusedBytes int64 `json:"unmanaged_unused_bytes"`
+	AppImages            int   `json:"app_images"`
+	OtherImages          int   `json:"other_images"`
 }
 
 // ImageSignatureStatus is the signature verification setup.
@@ -178,5 +189,29 @@ func (c *Client) RunImageGC(ctx context.Context, req ImageGCRequest) (ImageGCRes
 func (c *Client) VerifyImage(ctx context.Context, req ImageVerifyRequest) (ImageVerifyResource, error) {
 	var out ImageVerifyResource
 	err := c.do(ctx, http.MethodPost, "/api/v1/images/verify", req, &out)
+	return out, err
+}
+
+// ImageRemoveRequest is the body of POST /api/v1/images/remove.
+type ImageRemoveRequest struct {
+	Node                   string   `json:"node,omitempty"`
+	IDs                    []string `json:"ids,omitempty"`
+	DryRun                 bool     `json:"dry_run"`
+	IncludeUnmanagedUnused bool     `json:"include_unmanaged_unused,omitempty"`
+}
+
+// ImageRemoveResource is the result of POST /api/v1/images/remove.
+type ImageRemoveResource struct {
+	DryRun         bool             `json:"dry_run"`
+	Candidates     []ImageEntry     `json:"candidates"`
+	Removed        []string         `json:"removed"`
+	Failed         []ImageGCFailure `json:"failed"`
+	ReclaimedBytes int64            `json:"reclaimed_bytes"`
+}
+
+// RemoveImages calls POST /api/v1/images/remove.
+func (c *Client) RemoveImages(ctx context.Context, req ImageRemoveRequest) (ImageRemoveResource, error) {
+	var out ImageRemoveResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/images/remove", req, &out)
 	return out, err
 }

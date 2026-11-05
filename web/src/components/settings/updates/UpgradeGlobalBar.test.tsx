@@ -1,4 +1,9 @@
 import { render, screen } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import {
+  selfUpgradeKeys,
+  type SelfUpgradeStatus,
+} from '../../../queries/selfUpgrade'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
@@ -50,12 +55,17 @@ function mockMatchMedia(reduce: boolean) {
   })) as unknown as typeof window.matchMedia
 }
 
-const bar = () =>
-  render(
-    <I18nextProvider i18n={i18n}>
-      <UpgradeGlobalBar />
-    </I18nextProvider>,
+const bar = (seed?: SelfUpgradeStatus) => {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  if (seed) qc.setQueryData(selfUpgradeKeys.status(), seed)
+  return render(
+    <QueryClientProvider client={qc}>
+      <I18nextProvider i18n={i18n}>
+        <UpgradeGlobalBar />
+      </I18nextProvider>
+    </QueryClientProvider>,
   )
+}
 
 afterEach(() => mockMatchMedia(false))
 
@@ -64,6 +74,30 @@ describe('UpgradeGlobalBar', () => {
     mockStatus.value = status({ state: 'idle' })
     const { container } = bar()
     expect(container).toBeEmptyDOMElement()
+  })
+
+  it('shows the stuck state instead of a spinner on a stalled run', () => {
+    mockStatus.value = status({})
+    bar({
+      current_version: 'v0.5.0',
+      running: null,
+      last_finished: null,
+      verified: false,
+      progress: { stalled: true },
+    })
+    expect(screen.getByText('Upgrade looks stuck')).toBeInTheDocument()
+  })
+
+  it('shows Cancelling when cancel was requested', () => {
+    mockStatus.value = status({})
+    bar({
+      current_version: 'v0.5.0',
+      running: null,
+      last_finished: null,
+      verified: false,
+      progress: { cancel_requested: true },
+    })
+    expect(screen.getByText('Cancelling...')).toBeInTheDocument()
   })
 
   it('shows progress and a link while running', () => {
@@ -130,7 +164,7 @@ describe('UpgradePipeline', () => {
       </I18nextProvider>,
     )
     expect(
-      screen.getByText('Rolled back to v0.5.0, your data is intact.'),
+      screen.getByText('Rolled back to v0.5.0. Your data is intact.'),
     ).toBeInTheDocument()
   })
 })

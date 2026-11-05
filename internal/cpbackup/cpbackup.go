@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/ticker"
 )
 
 // DirName is the backup directory's name under the data dir.
@@ -249,6 +250,7 @@ func (m *Manager) Prune(retain int) (int, error) {
 // Run takes a scheduled snapshot every interval and prunes to retain. It
 // returns when ctx is done.
 func (m *Manager) Run(ctx context.Context, interval time.Duration, retain int, logger *slog.Logger) {
+	interval = ticker.Safe(interval, ticker.DefaultInterval)
 	t := time.NewTicker(interval)
 	defer t.Stop()
 	for {

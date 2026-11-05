@@ -55,6 +55,9 @@ const defaultTokenLifetimeDays = 90
 
 func (rt *Router) defaultTokenLifetimeDays(ctx context.Context) int {
 	days := defaultTokenLifetimeDays
+	if d := rt.tokenDefaultTTLDays(ctx); d > 0 {
+		days = d
+	}
 	if p, _, err := rt.effectiveSecurityPolicy(ctx); err == nil && p.MaxTokenLifetimeDays > 0 && p.MaxTokenLifetimeDays < days {
 		days = p.MaxTokenLifetimeDays
 	}

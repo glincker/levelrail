@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -76,17 +77,17 @@ func TestAllowHTTPSAttempt(t *testing.T) {
 	rt := &Router{httpsMaxAttemptsPerHour: 2}
 	now := time.Now()
 	for i := 0; i < 2; i++ {
-		if !rt.allowHTTPSAttempt(now, true) {
+		if !rt.allowHTTPSAttempt(t.Context(), now, true) {
 			t.Fatalf("production attempt %d must pass", i+1)
 		}
 	}
-	if rt.allowHTTPSAttempt(now, true) {
+	if rt.allowHTTPSAttempt(t.Context(), now, true) {
 		t.Fatal("third production attempt within an hour must be refused")
 	}
-	if !rt.allowHTTPSAttempt(now, false) {
+	if !rt.allowHTTPSAttempt(t.Context(), now, false) {
 		t.Fatal("staging attempts are never limited")
 	}
-	if !rt.allowHTTPSAttempt(now.Add(61*time.Minute), true) {
+	if !rt.allowHTTPSAttempt(t.Context(), now.Add(61*time.Minute), true) {
 		t.Fatal("limit must reset after an hour")
 	}
 }
@@ -288,5 +289,32 @@ func TestEnableHTTPSUsesStoredEmail(t *testing.T) {
 	}
 	if s, err := db.GetIngressSettings(t.Context()); err != nil || s.ACMEEmail != "stored@glincker.com" {
 		t.Fatalf("acme email = %q, %v", s.ACMEEmail, err)
+	}
+}
+
+func TestHTTPSAttemptsSettingIsLive(t *testing.T) {
+	_, db := newTestRouter(t)
+	svc := runtimesettings.New(db, func(string) (string, bool) { return "", false })
+	rt := &Router{runtimeSettings: svc}
+	ctx := t.Context()
+	now := time.Now()
+	for i := 0; i < 5; i++ {
+		if !rt.allowHTTPSAttempt(ctx, now, true) {
+			t.Fatalf("default allows 5 attempts, refused %d", i+1)
+		}
+	}
+	if rt.allowHTTPSAttempt(ctx, now, true) {
+		t.Fatal("sixth attempt must be refused at the default")
+	}
+	if _, err := svc.Set(ctx, runtimesettings.KeyDomainsHTTPSAttemptsPerHour, json.RawMessage("7"), "test"); err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 2; i++ {
+		if !rt.allowHTTPSAttempt(ctx, now, true) {
+			t.Fatal("raising the setting must take effect without a restart")
+		}
+	}
+	if rt.allowHTTPSAttempt(ctx, now, true) {
+		t.Fatal("eighth attempt must be refused at 7")
 	}
 }

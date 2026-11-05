@@ -195,7 +195,7 @@ Retry limits are runtime settings, listed in [Off-host heartbeat](/heartbeat#per
 | `APP_JOBS_RETRY_BACKOFF` | 10s | Default first retry delay. |
 | `APP_JOBS_RETRY_BACKOFF_MAX` | 5m | Cap on the doubling backoff. |
 | `APP_JOBS_CATCH_UP_LOOKBACK` | 1h | Default catch-up window. |
-| `APP_JOBS_HISTORY_KEEP` | 200 | Runs kept per job. |
+| `APP_JOBS_HISTORY_KEEP` | 200 | Seeds the `scheduled_tasks.history_keep` runtime setting (runs kept per job). Change it live with `levelrail-cli settings runtime set scheduled_tasks.history_keep 50`. |
 | `APP_JOBS_OUTPUT_RETENTION` | 720h | How long a run's output is kept. |
 | `APP_JOBS_MAX_OUTPUT_BYTES` | 65536 | Output kept per run. |
 | `APP_JOBS_BACKGROUND_TIMEOUT` | 15m | How long a background [http job](/scheduled-functions) is awaited. |

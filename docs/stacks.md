@@ -49,7 +49,7 @@ Promote a change to production with a pull request that edits `infra/stacks/shop
 
 ## The loop
 
-1. **Pull request**: CI runs `stack plan` for each changed stack. The plan is posted as a comment with counts and field paths. Environment values are never shown.
+1. **Pull request**: CI runs `stack plan` for each changed stack. The plan is posted as a comment with counts and field paths. Environment values are never shown (see [plan values](#plan-values)).
 2. **Merge**: CI runs `stack apply` for the stack. The apply creates the next revision and records the git commit and the CI run URL on it.
 3. **History**: each apply is a numbered revision. You can list them, look at the documents and result of one, and compare two.
 4. **Rollback**: go back to an earlier revision if the new one is wrong.
@@ -128,6 +128,48 @@ Databases and projects are never pruned, because they hold data or other stacks'
 
 Prune is also guarded against mass deletes. An apply that would delete more than `APP_STACK_PRUNE_MAX_COUNT` resources (default 10), or more than `APP_STACK_PRUNE_MAX_PERCENT` percent of the stack's resources (default 50), is refused. Review the plan, then send `allow_mass_prune` with the apply request to go ahead.
 
+## Placement rules
+
+An `App` may declare `spec.service.tolerations` and `spec.service.affinity`, with the same shape as `app.yaml`. A plan compares them with the stored rules of the app, and an apply saves them through the app update. A member the document leaves out is not managed and keeps its stored value. An empty `tolerations: []` or `affinity: {}` clears the stored rules. `export` writes both members, so an exported file plans clean against the app it came from.
+
+## Node labels and taints
+
+A `Node` document sets the labels and taints of a node that already joined, found by its display name:
+
+```yaml
+version: 1
+kind: Node
+metadata:
+  name: worker-1
+spec:
+  labels: { zone: a }
+  taints:
+    - { key: gpu, value: "true", effect: NoSchedule }
+```
+
+The plan compares them with the stored ones and apply saves them through the node routes, which need a root token. A member the document leaves out is not managed; `taints: []` or `labels: {}` clears the stored set. A Node whose name matches no node, or more than one, is a plan error. Apply never creates, deletes or prunes a node, and removing the document leaves the node as it is. Nodes join through an enrollment token, and `export` does not write them yet. Database placement is not part of a stack, because the database API stores only a node selector.
+
+A Node document that removes, revalues or loosens a taint whose key is listed in `nodes.protected_taint_keys` (case folded) is a plan error that names `allow_weaken`; pass `--allow-weaken` from a human root session to confirm it. Adding taints or making an effect stronger needs no confirmation, and a change that drops a taint fails closed when the list cannot be read.
+
+## Runtime settings
+
+`GET /api/v1/export?settings=true` (root only) writes one `Setting` document for each saved, non-sensitive setting, and skips credential keys with a warning. The file replans clean.
+
+A `Setting` document declares one runtime setting, named by its registry key:
+
+```yaml
+version: 1
+kind: Setting
+metadata:
+  name: heartbeat.job_max_attempts
+spec:
+  value: 5
+```
+
+The plan reads the setting through the runtime settings API and checks the value with the same validator as the API, so a value the dashboard would refuse is a plan error. Declaring a setting makes the saved value authoritative: a value that matches but only comes from the environment or the default plans an update that saves it, so a later env change does not move it. Apply saves through the same API. A restart-kind setting carries a warning that it takes effect after a restart; apply never restarts the control plane, and "not effective until restart" is a warning, not drift.
+
+A setting that holds a credential is refused in files; set it from the dashboard or the CLI. A change that would weaken a security protection (a protection turned off, a duration shortened, a limit raised) is a plan error that names `allow_weaken`; pass `--allow-weaken` to `stack plan` and `stack apply` (human root session only, a token gets a 403). `reset: true` removes the saved value, and is refused the same way when the default is weaker. Removing the document keeps the saved value and only releases it from the stack. Settings belong in an install stack.
+
 ## Revisions
 
 A revision stores the plan, the rendered documents (after `${{ env.NAME }}` values are filled in), the actor, the token used, the git repository, ref and commit, the CI run URL, the time, and the result of each item. Revision numbers start at 1 and increase by one for each apply to that stack.
@@ -188,6 +230,28 @@ A stack-scoped token can reach only that stack's endpoints. During an apply it c
 
 Store each token as a CI secret, and give the apply token only to the protected branch and environment that deploys.
 
+### Narrow verbs
+
+Three more verbs each imply `apply` and must be granted by a root user:
+
+| Verb | Stack scope | What it adds |
+| --- | --- | --- |
+| `node` | install only | Read nodes, and set labels and taints on nodes this stack already owns. |
+| `setting` | install only | Read runtime settings, and set keys no other stack owns. |
+| `placement` | project only | Read and set placement of apps and databases this stack owns. |
+
+Granting a verb on the wrong scope is refused with 400, for tokens and for OIDC trusts alike. A trust mints these verbs only when it lists them, and it is held to the same rules as an apply trust. A stack token can never weaken anything: no `confirm_weakening`, no reset, no sensitive key, no adopting a node. Taint keys listed in the runtime setting `nodes.protected_taint_keys` (seeded by `APP_NODES_PROTECTED_TAINT_KEYS`, empty by default) are protected: a token cannot remove one, change its value or loosen its effect. Shortening that list is itself weakening.
+
+## Values per environment
+
+`levelrail-cli apply --values values/prod.yaml` (also `stack plan` and `stack apply`) reads a flat YAML map (`IMAGE_TAG: v1.4.2`) and fills the matching <span v-pre>`${{ env.NAME }}`</span> placeholders. Repeat the flag and the later file wins. Precedence is `--var`, then `--values`, then `--var-file`, then names allowed with `--allow-env`. Only scalar values are accepted, and only placeholders the manifests use are read. Keys that look like credentials (`*TOKEN*`, `*SECRET*`, `*_KEY*`) are refused, so use `--secret` for those; values are never printed. A missing value fails before anything is sent and names the placeholder.
+
+## Plan values
+
+A human plan prints `~ path: before -> after` for each changed field. Env vars, anything under `secrets` and keys that look like credentials (`*TOKEN*`, `*SECRET*`, `*PASSW*`, `*_KEY*`) show `(hidden)` instead of the value. Other values are cut at `APP_IAC_PLAN_VALUE_MAX` characters (default 120) and end in `...`. `stack plan -o json` carries the same trimmed values.
+
+Placeholders also work in `replicas`, `resources.*`, `domains[]`, `tolerations[].value` and `labels.*`. The file is checked against the schema after the values are filled in, so <span v-pre>`replicas: "${{ env.REPLICAS }}"`</span> must render to a whole number. A wrong value fails with the field path and the variable name, never the value itself.
+
 ## Secrets
 
 Manifests name secrets, they never contain values. Refer to a secret by name, for example `{ secretRef: DB_PASSWORD }`, and pass its value at apply time from the CI secret store:
@@ -197,6 +261,8 @@ levelrail-cli stack apply shop-prod -f infra/stacks/shop-prod --yes --secret DB_
 ```
 
 The value travels in the request over TLS. It is not written to a revision, a plan or a log. Non-secret settings can be passed with `--var` or allowed from the environment with `--allow-env`, as described in [platform as code](/platform-as-code#providing-values-safely).
+
+To point at a secret that is already in the store, add `existing: true`: `{ secretRef: DB_PASSWORD, existing: true }`. The plan fails if the app has no secret with that name. Apply never writes, overwrites or deletes it, even when a value is passed with `--secret`.
 
 ## GitHub Action
 

@@ -47,12 +47,14 @@ export interface IamResources {
   environments: IamEnvironmentRef[]
   apps: IamResourceRef[]
   databases: IamResourceRef[]
+  static_sites?: IamResourceRef[]
 }
 
 export interface ResourceMatch {
   pattern: string
   apps: number
   databases: number
+  static_sites?: number
   sample: string[]
   error?: string
 }

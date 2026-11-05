@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -443,7 +444,12 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 		if r, stackOK = rt.gateStackToken(w, r, rec.ID); !stackOK {
 			return
 		}
-		allowed, err := decide(r.Context(), store.PrincipalTypeToken, rec.ID, rec.Abilities)
+		abilities := rec.Abilities
+		if stackVerbGranted(r) || rt.driftReadGranted(r, rec.ID) {
+			// The stack gate (or the drift read grant) already bounded this one root route.
+			abilities = append(slices.Clone(abilities), AbilityRoot)
+		}
+		allowed, err := decide(r.Context(), store.PrincipalTypeToken, rec.ID, abilities)
 		if err != nil {
 			rt.internalError(w, "api: token ability decision failed", err)
 			return
@@ -722,16 +728,12 @@ func (rt *Router) handleRegister(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusForbidden, "a valid setup token is required; print it on the server with the setup-token subcommand")
 		return
 	}
-	if len(req.Password) < minPasswordLength {
-		writeError(w, http.StatusBadRequest, fmt.Sprintf("password must be at least %d characters", minPasswordLength))
+	if msg := rt.passwordProblem(r.Context(), "password", req.Password); msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
 		return
 	}
 	rt.libRegister(w, r, req)
 }
-
-// minPasswordLength is a security floor, not a deployment preference,
-// so it stays a constant rather than an env var.
-const minPasswordLength = 8
 
 // BootstrapAdmin ensures at least one user exists, creating one from
 // username/password if none does yet, with AbilityRoot: it's the only

@@ -61,6 +61,7 @@ export interface UpdateStatusViewProps {
   errorMessage?: string
   releaseUrl: string | null
   onCheck: () => void
+  hideActions?: boolean
   children?: ReactNode
 }
 
@@ -76,6 +77,7 @@ export function UpdateStatusView({
   errorMessage,
   releaseUrl,
   onCheck,
+  hideActions = false,
   children,
 }: UpdateStatusViewProps) {
   const { t } = useTranslation('updates')
@@ -143,35 +145,37 @@ export function UpdateStatusView({
               </p>
             </div>
           </div>
-          <div className="flex flex-col gap-2 sm:shrink-0 sm:flex-row sm:items-center">
-            <Button
-              type="button"
-              variant="ghost"
-              disabled={checking}
-              className="w-full sm:w-auto"
-              onClick={onCheck}
-            >
-              <RotateCwGlassIcon
-                size="1.4em"
-                className={checking ? 'animate-spin' : ''}
-              />
-              {checking ? t('status.checking') : t('status.checkNow')}
-            </Button>
-            {!edge && state === 'available' && releaseUrl ? (
-              <a
-                href={releaseUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={cn(
-                  buttonVariants({ variant: 'outline' }),
-                  'w-full sm:w-auto',
-                )}
+          {hideActions ? null : (
+            <div className="flex flex-col gap-2 sm:shrink-0 sm:flex-row sm:items-center">
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={checking}
+                className="w-full sm:w-auto"
+                onClick={onCheck}
               >
-                {t('status.viewNotes')}
-                <ExternalLinkGlassIcon size="1.4em" />
-              </a>
-            ) : null}
-          </div>
+                <RotateCwGlassIcon
+                  size="1.4em"
+                  className={checking ? 'animate-spin' : ''}
+                />
+                {checking ? t('status.checking') : t('status.checkNow')}
+              </Button>
+              {!edge && state === 'available' && releaseUrl ? (
+                <a
+                  href={releaseUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={cn(
+                    buttonVariants({ variant: 'outline' }),
+                    'w-full sm:w-auto',
+                  )}
+                >
+                  {t('status.viewNotes')}
+                  <ExternalLinkGlassIcon size="1.4em" />
+                </a>
+              ) : null}
+            </div>
+          )}
         </div>
         {children}
       </CardContent>

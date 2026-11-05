@@ -1,0 +1,11 @@
+{
+  "more": {
+    "show": "Más",
+    "hide": "Menos",
+    "label": "Más sobre cómo empezar"
+  },
+  "paths": {
+    "show": "Otras formas de desplegar",
+    "hide": "Ocultar otras formas"
+  }
+}

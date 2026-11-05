@@ -3,6 +3,7 @@ package iac
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
@@ -74,6 +75,13 @@ func (p *planner) planApp(r *Resource) {
 	}
 	var setSecrets []string
 	for _, n := range r.SecretRefs {
+		if slices.Contains(r.ExistingSecrets, n) {
+			if !exists || !live.secrets[n] {
+				p.fail(r, "secretRef %s is marked existing, but app %s has no secret named %s in the store", n, r.Name, n)
+				return
+			}
+			continue
+		}
 		_, supplied := p.secretValue(r.Name, n)
 		switch {
 		case supplied:
@@ -108,6 +116,10 @@ func (p *planner) planApp(r *Resource) {
 		if _, want := f[k]; !want {
 			delete(liveMap, k)
 		}
+	}
+	liveMap["placement"] = livePlacement(liveMap["placement"], f["placement"])
+	if liveMap["placement"] == nil {
+		delete(liveMap, "placement")
 	}
 	if _, want := f["files"]; want && len(live.files) > 0 {
 		liveMap["files"] = toMap(struct {
@@ -147,6 +159,28 @@ func (p *planner) planApp(r *Resource) {
 		}
 		return x.syncJobs(ctx, r.Name, jobOps)
 	}
+}
+
+// livePlacement keeps only the members the document declares, and spells a
+// declared-but-unset list as [] so clearing it shows up as a change.
+func livePlacement(live, want any) any {
+	w, _ := want.(map[string]any)
+	if w == nil {
+		return nil
+	}
+	l, _ := live.(map[string]any)
+	if l == nil {
+		l = map[string]any{}
+	}
+	if _, ok := w["tolerations"]; !ok {
+		delete(l, "tolerations")
+	} else if l["tolerations"] == nil {
+		l["tolerations"] = []any{}
+	}
+	if _, ok := w["affinity"]; !ok {
+		delete(l, "affinity")
+	}
+	return l
 }
 
 func (p *planner) checkAppRefs(r *Resource, f map[string]any) bool {

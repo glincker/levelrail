@@ -320,3 +320,18 @@ func TestStagingConflictMatrix(t *testing.T) {
 		})
 	}
 }
+
+func TestLedgerIssuedSinceCountsAcrossDomains(t *testing.T) {
+	var l Ledger
+	now := time.Date(2026, 10, 20, 12, 0, 0, 0, time.UTC)
+	l.RecordIssued("a.example.com", now.Add(-24*time.Hour), now)
+	l.RecordIssued("b.example.com", now.Add(-48*time.Hour), now)
+	l.RecordIssued("b.example.com", now.Add(-6*24*time.Hour), now)
+	l.RecordIssued("c.example.com", now.Add(-9*24*time.Hour), now)
+	if got := l.IssuedSince(now, BudgetWindow); got != 3 {
+		t.Fatalf("issued in window = %d, want 3", got)
+	}
+	if got := l.IssuedSince(now.Add(3*24*time.Hour), BudgetWindow); got != 2 {
+		t.Fatalf("issued after clock moves = %d, want 2", got)
+	}
+}

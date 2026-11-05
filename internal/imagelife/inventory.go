@@ -74,6 +74,14 @@ type Entry struct {
 	Apps          []AppUse  `json:"apps"`
 	Protected     bool      `json:"protected"`
 	ProtectReason string    `json:"protect_reason,omitempty"`
+	// Unmanaged is true when no app of this platform owns the image.
+	Unmanaged bool `json:"unmanaged"`
+	// InUse is true when any container, running or stopped, uses the image.
+	InUse bool `json:"in_use"`
+	// Removable says an explicit user removal is allowed right now.
+	Removable       bool   `json:"removable"`
+	RemovableReason string `json:"removable_reason,omitempty"`
+	BlockedReason   string `json:"blocked_reason,omitempty"`
 }
 
 // DigestOfRecord returns the registry digest of r, or "" for a local build.
@@ -128,6 +136,7 @@ func Build(records []docker.ImageRecord, apps []AppState, keepPerApp int, minAge
 	}
 	for i := range entries {
 		markProtection(&entries[i], minAge, now)
+		markRemovable(&entries[i])
 	}
 	sort.Slice(entries, func(i, j int) bool { return entries[i].SizeBytes > entries[j].SizeBytes })
 	return entries
@@ -187,6 +196,49 @@ func markProtection(e *Entry, minAge time.Duration, now time.Time) {
 	}
 }
 
+// RemovalBlock returns why an explicit removal of e must be refused, or ""
+// when it may go. Unlike retention it lets the user remove unmanaged and old
+// deploy images on purpose, but never one a container or a rollback needs.
+func RemovalBlock(e Entry) string {
+	switch {
+	case e.Containers > 0:
+		return "used by a container"
+	case hasRole(e.Apps, RoleLive):
+		return "live image of an app"
+	case hasRole(e.Apps, RoleRollbackTarget):
+		return "pinned rollback target"
+	}
+	return ""
+}
+
+func markRemovable(e *Entry) {
+	e.Unmanaged = len(e.Apps) == 0
+	e.InUse = e.Containers > 0
+	e.BlockedReason = RemovalBlock(*e)
+	e.Removable = e.BlockedReason == ""
+	switch {
+	case !e.Removable:
+	case e.Unmanaged:
+		e.RemovableReason = "not used by any container, safe to remove on request"
+	default:
+		e.RemovableReason = "no container or rollback needs it"
+	}
+}
+
+// Reclaimable is the space freeing e returns, net of layers other images share.
+func Reclaimable(e Entry) int64 { return e.SizeBytes - e.SharedBytes }
+
+// UnmanagedUnused lists the entries an include_unmanaged_unused request removes.
+func UnmanagedUnused(entries []Entry) []Entry {
+	out := []Entry{}
+	for _, e := range entries {
+		if e.Unmanaged && e.Removable {
+			out = append(out, e)
+		}
+	}
+	return out
+}
+
 func hasRole(uses []AppUse, role string) bool {
 	for _, u := range uses {
 		if u.Role == role {
@@ -213,7 +265,7 @@ func PlanGC(entries []Entry) Plan {
 			continue
 		}
 		p.Remove = append(p.Remove, e)
-		p.ReclaimBytes += e.SizeBytes - e.SharedBytes
+		p.ReclaimBytes += Reclaimable(e)
 	}
 	return p
 }

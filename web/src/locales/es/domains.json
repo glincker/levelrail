@@ -271,6 +271,7 @@
       "app": "Aplicación",
       "dns": "DNS",
       "certificate": "Certificado",
+      "environment": "Entorno",
       "expires": "Vence",
       "visibility": "Búsqueda"
     },
@@ -304,7 +305,12 @@
       "failed": "Falló la solicitud",
       "renewsAuto": "Se renueva automáticamente",
       "renewsProxy": "Se renueva automáticamente mediante tu proxy",
-      "renewsManual": "Certificado subido: renuévalo antes de que venza"
+      "renewsManual": "Certificado subido: renuévalo antes de que venza",
+      "daysLeft_one": "Queda {{count}} día",
+      "daysLeft_other": "Quedan {{count}} días",
+      "expiresToday": "Caduca hoy",
+      "expiredAgo_one": "Caducó hace {{count}} día",
+      "expiredAgo_other": "Caducó hace {{count}} días"
     },
     "visibility": {
       "toggle": "Permitir que los buscadores indexen {{domain}}",
@@ -323,7 +329,13 @@
       "recheck": "Volver a comprobar el DNS",
       "automatic": "Automático",
       "wildcard": "Comodín",
-      "wildcardHint": "Coincide con cada etiqueta individual bajo este dominio. Los dominios exactos de otras aplicaciones siguen teniendo prioridad."
+      "wildcardHint": "Coincide con cada etiqueta individual bajo este dominio. Los dominios exactos de otras aplicaciones siguen teniendo prioridad.",
+      "details": "Ajustes del dominio",
+      "setPrimary": "Definir como principal",
+      "move": "Mover a otra app",
+      "park": "Desconectar (aparcar)",
+      "delete": "Eliminar dominio",
+      "primary": "Principal"
     },
     "flag": {
       "waf": "WAF activado",
@@ -641,7 +653,11 @@
       "revertConfirm": "Volver",
       "reverting": "Volviendo...",
       "revertedToast": "{{domain}} volvió a TLS automático.",
-      "revertFailed": "No se pudo volver a TLS automático."
+      "revertFailed": "No se pudo volver a TLS automático.",
+      "automatic": "TLS automático",
+      "add": "Añadir certificado",
+      "replace": "Reemplazar",
+      "close": "Cerrar"
     }
   },
   "ingressUpstream": {
@@ -1043,7 +1059,12 @@
     "tryAgain": "Intentar de nuevo",
     "applying": "Aplicando...",
     "applied": "{{label}}: listo. Comprobando de nuevo.",
-    "fixViaCli": "Corregir con la CLI",
+    "fromTerminal": "Desde una terminal",
+    "copyCommand": "Copiar el comando",
+    "evidence_one": "Evidencia ({{count}} línea)",
+    "evidence_other": "Evidencia ({{count}} líneas)",
+    "steps": "Pasos",
+    "open": "Abrir {{label}}",
     "copyRecord": "Copiar el registro {{type}} de {{name}}",
     "nothingToFix": "Nada que corregir.",
     "showPassed": "Mostrar otras {{count}} comprobaciones",
@@ -1155,9 +1176,10 @@
     "httpsOn": "HTTPS activado",
     "httpsOff": "HTTPS no activado",
     "address": "Servidor",
-    "fixHttps": "Arreglar: activar HTTPS",
     "fixAddress": "Arreglar: revisar dirección",
-    "details": "Detalles de la dirección"
+    "details": "Detalles de la dirección",
+    "enableHttps": "Activar HTTPS",
+    "parked": "{{count}} aparcados"
   },
   "cutover": {
     "title": "Lista de migración",
@@ -1205,5 +1227,286 @@
         "FAIL": "Fallido"
       }
     }
+  },
+  "lifecycle": {
+    "pending": "Trabajando...",
+    "park": {
+      "title": "¿Aparcar {{domain}}?",
+      "body": "{{app}} deja de servir este dominio. Sigue registrado con su DNS y certificado en el grupo Aparcados y se puede asociar a cualquier app más tarde.",
+      "keepsDnsCert": "También se conservan los registros DNS y el estado del certificado automático.",
+      "confirm": "Aparcar dominio",
+      "done": "{{domain}} aparcado",
+      "savesSettings": "Aparcar guarda los ajustes propios del dominio (WAF y límite de peticiones, certificado propio, autenticación básica, acceso protegido, mantenimiento, redirección, páginas de error, visibilidad en buscadores, políticas de tráfico) junto al dominio aparcado. Se restauran al asociarlo.",
+      "staticNoSettings": "Un sitio estático no tiene ajustes por dominio, así que no se guarda nada con el dominio aparcado."
+    },
+    "move": {
+      "title": "Mover {{domain}}",
+      "body": "Mueve este dominio de {{app}} a otra app. Antes se comprueban colisiones.",
+      "keepsSettings": "Mover conserva los ajustes propios del dominio: WAF, certificado propio y autenticación básica se van con él.",
+      "target": "Mover a",
+      "check": "Comprobar y mover",
+      "confirm": "Confirmar movimiento",
+      "needsConfirm": "El tráfico de este dominio cambia de dueño. Confirma para continuar.",
+      "done": "{{domain}} movido a {{app}}",
+      "dropsSettings": "Mover a un sitio estático descarta los ajustes propios de este dominio. Se conservan el DNS y el estado del certificado.",
+      "dropsWarning": "Los sitios estáticos no tienen ajustes por dominio. El WAF, el certificado propio, la autenticación básica y otros ajustes de este dominio se descartarán."
+    },
+    "delete": {
+      "title": "¿Eliminar {{domain}}?",
+      "body": "Quita el dominio de {{app}} por completo. Escribe el dominio para confirmar.",
+      "confirm": "Eliminar",
+      "done": "{{domain}} eliminado",
+      "dropsSettings": "Eliminar quita los ajustes propios del dominio: WAF y límite de peticiones, certificado propio y autenticación básica se borran."
+    },
+    "attach": {
+      "title": "Asociar {{domain}}",
+      "body": "Elige la app que debe servir este dominio aparcado.",
+      "confirm": "Asociar",
+      "done": "{{domain}} asociado a {{app}}",
+      "settingsLegend": "Ajustes guardados",
+      "restore": "Restaurar los ajustes guardados (por defecto)",
+      "startFresh": "Empezar de cero y descartarlos",
+      "restored": "Restaurado: {{kinds}}",
+      "kinds": {
+        "domain_waf": "WAF",
+        "gate_access_rules": "límite de peticiones",
+        "domain_tls_cert": "certificado",
+        "domain_basic_auth": "autenticación básica",
+        "domain_auth_gate": "acceso protegido",
+        "domain_maintenance": "mantenimiento",
+        "domain_redirect": "redirección",
+        "domain_error_page": "páginas de error",
+        "domain_search_visibility": "visibilidad en buscadores",
+        "domain_traffic_policies": "políticas de tráfico"
+      },
+      "dropsWarning": "Los sitios estáticos no tienen ajustes por dominio. Los ajustes guardados de este dominio se descartarán, no se restaurarán."
+    },
+    "deleteParked": {
+      "title": "¿Eliminar el dominio aparcado {{domain}}?",
+      "body": "Olvida el dominio y su estado de DNS y certificado. Escribe el dominio para confirmar."
+    },
+    "environment": {
+      "label": "Entorno",
+      "default": "Lista por defecto"
+    },
+    "target": {
+      "apps": "Apps",
+      "staticSites": "Sitios estáticos"
+    }
+  },
+  "parked": {
+    "title": "Aparcados",
+    "hint": "Registrados pero sin app que los sirva. Asocia uno a una app para servirlo de nuevo.",
+    "from": "Aparcado desde {{app}}",
+    "attach": "Asociar",
+    "delete": "Eliminar {{domain}}",
+    "settingsSaved": "Ajustes guardados",
+    "dns": {
+      "pointing": "DNS apunta",
+      "not_pointing": "DNS no apunta",
+      "unknown": "DNS desconocido"
+    },
+    "tls": {
+      "pending": "Certificado pendiente",
+      "none": "Sin certificado"
+    },
+    "fromEnvironment": "Aparcado desde {{app}} ({{environment}})",
+    "staticSite": "Sitio estático"
+  },
+  "detail": {
+    "description": "Ajustes de este dominio en {{app}}.",
+    "allSettings": "Todos los ajustes",
+    "routing": "Enrutamiento",
+    "security": "Seguridad",
+    "pages": "Páginas",
+    "seo": "SEO",
+    "tls": "TLS"
+  },
+  "waf": {
+    "add": "Añadir WAF / límite de tasa",
+    "edit": "Editar",
+    "close": "Cerrar",
+    "summaryWaf": "WAF: {{mode}}",
+    "summaryWafOff": "WAF desactivado",
+    "summaryRate": "Límite {{rps}}/s, ráfaga {{burst}}",
+    "summaryRateOff": "Sin límite de tasa",
+    "badgeOn": "WAF/límite de tasa activo",
+    "badgeOff": "Sin protección",
+    "helpLabel": "Guía de WAF y límite de tasa",
+    "wafLabel": "WAF OWASP Coraza",
+    "modeLabel": "Modo",
+    "modeDetect": "Detectar (solo registra, recomendado para empezar)",
+    "modeBlock": "Bloquear (rechaza las solicitudes que coinciden)",
+    "helpDetect": "Las solicitudes que coinciden con las reglas OWASP CRS se registran, nunca se rechazan. Cambia a Bloquear cuando hayas revisado los registros en busca de falsos positivos.",
+    "helpBlock": "Las solicitudes que coinciden con las reglas OWASP CRS se rechazan con un error.",
+    "rpsLabel": "Límite de tasa (solicitudes/s por IP)",
+    "rpsPlaceholder": "0 (desactivado)",
+    "rpsHelp": "0 desactiva el límite de tasa para este dominio.",
+    "burstLabel": "Ráfaga permitida",
+    "burstPlaceholder": "0 (sin ráfaga extra)",
+    "burstHelp": "Solicitudes permitidas en un segundo por encima de la tasa sostenida. Déjalo en 0 para un tope estricto.",
+    "save": "Guardar",
+    "saving": "Guardando...",
+    "turnOff": "Desactivar",
+    "removing": "Quitando..."
+  },
+  "bulk": {
+    "barLabel": "Acciones en lote",
+    "selected_one": "{{count}} seleccionado",
+    "selected_other": "{{count}} seleccionados",
+    "clear": "Limpiar",
+    "selectAll": "Seleccionar todos los dominios filtrados",
+    "select": "Seleccionar",
+    "selectRow": "Seleccionar {{domain}}",
+    "blockedAutomatic": "Los nombres automáticos no se pueden aparcar ni mover",
+    "blockedStandalone": "Los dominios independientes no se pueden aparcar ni mover",
+    "park": "Aparcar",
+    "move": "Mover a app",
+    "attach": "Asociar",
+    "delete": "Eliminar",
+    "title": {
+      "park": "Aparcar {{count}} dominios",
+      "move": "Mover {{count}} dominios",
+      "attach": "Asociar {{count}} dominios aparcados",
+      "delete_parked": "Eliminar {{count}} dominios aparcados"
+    },
+    "body": {
+      "park": "Cada dominio deja de ser servido por su app y pasa al grupo Aparcados.",
+      "move": "Elige el destino de estos dominios. Primero se comprueban colisiones.",
+      "attach": "Elige la app o el sitio estático que debe servir estos dominios aparcados.",
+      "delete_parked": "Olvida estos dominios y su estado de DNS y certificado aparcado. No se puede deshacer."
+    },
+    "confirm": {
+      "park": "Aparcar {{count}}",
+      "move": "Comprobar y mover {{count}}",
+      "attach": "Asociar {{count}}",
+      "delete_parked": "Eliminar {{count}}"
+    },
+    "attachTo": "Asociar a",
+    "parkKeeps": "Los ajustes se guardan con cada dominio aparcado y se conserva el estado de DNS y certificado.",
+    "discard": "Empezar de cero y descartar los ajustes guardados",
+    "previewLabel": "Qué ocurrirá",
+    "preview": {
+      "park": "Aparcar desde {{app}}",
+      "move": "Mover de {{from}} a {{to}}",
+      "attach": "Asociar a {{app}}",
+      "delete": "Eliminar dominio aparcado",
+      "noop": "Ya está allí, se omite"
+    },
+    "resultsLabel": "Resultados",
+    "col": {
+      "domain": "Dominio",
+      "result": "Resultado"
+    },
+    "status": {
+      "ok": "Hecho",
+      "failed": "Falló",
+      "needsConfirmation": "Requiere confirmación",
+      "failedGeneric": "Falló",
+      "needsConfirmationBody": "El tráfico de este dominio cambia de propietario. Confirma para continuar.",
+      "okBody": "Hecho"
+    },
+    "summary": "{{ok}} hechos, {{failed}} fallidos, {{waiting}} requieren confirmación",
+    "confirmThese_one": "Confirmar este {{count}}",
+    "confirmThese_other": "Confirmar estos {{count}}",
+    "cancel": "Cancelar",
+    "done": "Cerrar"
+  },
+  "retention": {
+    "title": "Limpieza automática",
+    "summaryOff": "Desactivada. Los dominios aparcados se conservan hasta que los elimines.",
+    "summaryOn": "Elimina los dominios aparcados tras {{days}} días. Pendientes ahora: {{due}}. Próxima ejecución: {{next}}",
+    "preview": "Vista previa",
+    "turnOn": "Activar",
+    "turnOff": "Desactivar",
+    "turnOnDays": "Activar con {{count}} días",
+    "close": "Cerrar",
+    "previewTitle": "Vista previa de la limpieza automática",
+    "previewBody": "Consulta qué dominios aparcados eliminaría un período de retención.",
+    "daysLabel": "Período de retención",
+    "days_one": "{{count}} día",
+    "days_other": "{{count}} días",
+    "custom": "Personalizado",
+    "customLabel": "Número de días personalizado",
+    "estimate": "Estimación a partir de la lista de aparcados. La lista exacta aparece cuando la limpieza está activa.",
+    "exact": "Lista exacta del servidor para el ajuste guardado.",
+    "dueNow_one": "Se eliminaría {{count}} dominio ahora.",
+    "dueNow_other": "Se eliminarían {{count}} dominios ahora.",
+    "age_one": "aparcado hace {{count}} día",
+    "age_other": "aparcado hace {{count}} días",
+    "batchNote": "Cada ejecución horaria elimina como máximo {{limit}}, los más antiguos primero. El resto sigue en ejecuciones posteriores.",
+    "confirmTitle_one": "¿Eliminar dominios aparcados tras {{count}} día?",
+    "confirmTitle_other": "¿Eliminar dominios aparcados tras {{count}} días?",
+    "confirmBody": "{{due}} pendientes ahora, {{first}} se eliminan en la primera ejecución (límite por lote {{limit}}).",
+    "consequenceDns": "Solo se elimina el registro del dominio aparcado. Los registros DNS y los certificados no se tocan.",
+    "consequenceBatch": "Se eliminan como máximo {{limit}} dominios por ejecución horaria, los más antiguos primero.",
+    "offTitle": "¿Desactivar la limpieza automática?",
+    "offBody": "Los dominios aparcados se conservarán hasta que los elimines. Desactivarla no elimina nada.",
+    "savedOn_one": "Limpieza automática activada: {{count}} día",
+    "savedOn_other": "Limpieza automática activada: {{count}} días",
+    "savedOff": "Limpieza automática desactivada",
+    "saveFailed": "No se pudo guardar el ajuste"
+  },
+  "reachability": {
+    "title": "Alcanzabilidad",
+    "loading": "Comprobando puertos",
+    "recheck": "Comprobar de nuevo",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "forbidden": "Necesitas acceso de lectura para ver la comprobación de alcanzabilidad.",
+    "errorTitle": "No se pudo ejecutar la comprobación de alcanzabilidad",
+    "errorBody": "El servidor no respondió. Inténtalo de nuevo en un momento.",
+    "dialbackError": "Falló la comprobación desde internet: {{error}}",
+    "firewall": "Cortafuegos local: {{state}}",
+    "dialbackOn": "La comprobación desde internet está activa: un servicio auxiliar intenta conectar con la IP pública de este servidor y tus puertos abiertos desde fuera.",
+    "dialbackOff": "La comprobación desde internet está desactivada, así que solo se hicieron comprobaciones locales. Activarla envía la IP pública de este servidor y su lista de puertos a la URL que indiques en doctor.reachability_dialback_url.",
+    "settingLink": "Abrir ajustes de ejecución",
+    "pillOk": "Los puertos parecen alcanzables",
+    "pillWarn": "Un puerto necesita atención",
+    "openChecklist": "Abrir la lista de comprobación",
+    "listening": {
+      "yes": "Escuchando",
+      "no": "Sin escuchar"
+    },
+    "external": {
+      "not_checked": "Sin comprobar desde fuera",
+      "reachable": "Alcanzable desde internet",
+      "unreachable": "Bloqueado desde internet",
+      "unknown": "Desconocido desde fuera"
+    },
+    "ports": {
+      "dashboard": "Panel",
+      "http": "HTTP",
+      "https": "HTTPS"
+    }
+  },
+  "watch": {
+    "state": {
+      "waiting_dns": "Esperando al DNS",
+      "propagating": "DNS propagándose",
+      "waiting_certificate": "Esperando el certificado",
+      "stalled": "Detenido, requiere revisión"
+    },
+    "nextInSeconds_one": "nueva comprobación en {{count}} s",
+    "nextInSeconds_other": "nueva comprobación en {{count}} s",
+    "nextInMinutes_one": "nueva comprobación en {{count}} min",
+    "nextInMinutes_other": "nueva comprobación en {{count}} min"
+  },
+  "rollback": {
+    "button": "Deshacer este cambio",
+    "confirmTitle": "¿Deshacer este cambio de DNS?",
+    "confirm": "Deshacer",
+    "pending": "Deshaciendo...",
+    "minutesLeft_one": "Se puede deshacer durante {{count}} minuto más",
+    "minutesLeft_other": "Se puede deshacer durante {{count}} minutos más",
+    "hoursLeft_one": "Se puede deshacer durante {{count}} hora más",
+    "hoursLeft_other": "Se puede deshacer durante {{count}} horas más",
+    "closed": "Plazo para deshacer cerrado",
+    "undone": "Ya se deshizo",
+    "consequenceRemove": "Se eliminan los registros que añadió este cambio.",
+    "consequenceRestore": "Los registros que reemplazó recuperan su valor anterior.",
+    "consequenceSkip": "Los registros editados después se dejan como están.",
+    "outcomes": "Resultados del deshacer",
+    "skipped": "Cambiado después, se deja como está"
   }
 }

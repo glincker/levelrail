@@ -103,4 +103,9 @@ describe('RuntimeSettingRow risk badge', () => {
     renderRow({ ...buildNetwork, value: 'none', weaker_than_default: true })
     expect(screen.getByText('Weakens security')).toBeTruthy()
   })
+
+  it('shows no security badge on a normal risk setting', () => {
+    renderRow({ ...buildNetwork, risk: 'normal' })
+    expect(screen.queryByText('Security setting')).toBeNull()
+  })
 })

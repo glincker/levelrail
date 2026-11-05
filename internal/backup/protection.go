@@ -224,7 +224,9 @@ func (p *Protection) Health(ctx context.Context) ([]ResourceHealth, error) {
 	for _, r := range rows {
 		if r.Schedule != "" {
 			if sched, err := cronexpr.Parse(r.Schedule); err == nil {
-				r.NextRun = sched.Next(now).UTC().Format(time.RFC3339)
+				if n := sched.Next(now); !n.IsZero() {
+					r.NextRun = n.UTC().Format(time.RFC3339)
+				}
 			}
 		}
 		if pr, ok := protByTarget[r.TargetID]; ok && pr.ProbeError == "" {

@@ -82,7 +82,7 @@ func ConfigFromEnv(base Config) Config {
 	}
 	if v := os.Getenv(EnvPasswordMinLength); v != "" {
 		if n, err := strconv.Atoi(v); err == nil && n > 0 {
-			base.MinPasswordLen = n
+			base.MinPasswordLen = max(n, defaultMinPasswordLength)
 		}
 	}
 	if base.PathPrefix == "" {
@@ -91,7 +91,7 @@ func ConfigFromEnv(base Config) Config {
 	if base.PollInterval == 0 {
 		base.PollInterval = defaultPollInterval
 	}
-	if base.MinPasswordLen == 0 {
+	if base.MinPasswordLen < defaultMinPasswordLength {
 		base.MinPasswordLen = defaultMinPasswordLength
 	}
 	return base

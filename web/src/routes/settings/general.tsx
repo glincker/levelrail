@@ -40,8 +40,7 @@ import { CertificatesCard } from '@/components/settings/CertificatesCard'
 import { MasterKeyCard } from '@/components/settings/MasterKeyCard'
 import { SettingsHealthCard } from '@/components/settings/SettingsHealthCard'
 import { EncryptionKeysCard } from '@/components/settings/EncryptionKeysCard'
-import { DensityCard } from '@/components/settings/DensityCard'
-import { PageWidthCard } from '@/components/settings/PageWidthCard'
+import { AppearanceLinkCard } from '@/components/settings/AppearanceLinkCard'
 import { PanelHost } from '../../components/plugins/PanelHost'
 
 // Platform info comes from the already-warm /api/v1/brand cache via
@@ -231,9 +230,7 @@ function GeneralSettingsPage() {
           </CardContent>
         </Card>
 
-        <PageWidthCard />
-
-        <DensityCard />
+        <AppearanceLinkCard />
 
         <DiskUsageCard status={status} />
 

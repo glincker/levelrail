@@ -125,6 +125,9 @@ type Guide struct {
 	Complete      bool   `json:"complete"`
 	Hidden        bool   `json:"hidden"`
 	ServerAddress string `json:"server_address,omitempty"`
+	// Milestone and NextMilestone track first-app progress for the UI.
+	Milestone     Milestone `json:"milestone,omitempty"`
+	NextMilestone Milestone `json:"next_milestone,omitempty"`
 }
 
 type stepMeta struct {
@@ -330,6 +333,7 @@ func summarize(steps []Step, in Input) Guide {
 		g.ReadyPercent = 100
 	}
 	g.NextStep = nextStep(steps)
+	g.Milestone, g.NextMilestone = FirstAppMilestone(g)
 	return g
 }
 

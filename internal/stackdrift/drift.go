@@ -197,6 +197,12 @@ func (c *Checker) checkStack(ctx context.Context, live iac.Doer, s store.StackRe
 		return fmt.Errorf("read live state: %w", err)
 	}
 	plan := iac.PlanFor(st, res, opts)
+	// A denied read hides drift, so say so rather than record a silent clean pass.
+	for _, ch := range plan.Changes {
+		if ch.Denied {
+			c.logger().Warn("stack drift: live read denied, resource not checked", slog.String("stack", s.Name), slog.String("resource", ch.Key()))
+		}
+	}
 	items := Summarize(plan, summaryMaxFromEnv())
 	status := store.StackDriftNone
 	if len(items) > 0 {
@@ -241,7 +247,12 @@ func (c *Checker) ledgerContext(ctx context.Context, s store.StackRecord, projec
 	for _, e := range rows {
 		owned = append(owned, iac.LedgerEntry{StackID: e.StackID, Kind: iac.Kind(e.Kind), Key: e.Key, LiveID: e.LiveID, SinceRevision: e.SinceRevision})
 	}
-	l := iac.NewLedger(s.ID, s.Name, project, owned)
+	var l *iac.Ledger
+	if s.Scope == store.StackScopeInstall {
+		l = iac.NewInstallLedger(s.ID, s.Name, owned)
+	} else {
+		l = iac.NewLedger(s.ID, s.Name, project, owned)
+	}
 	for _, ref := range iac.LedgerRefs(res) {
 		owner, found, err := c.Store.GetStackResourceOwner(ctx, string(ref.Kind), ref.Key)
 		if err != nil {

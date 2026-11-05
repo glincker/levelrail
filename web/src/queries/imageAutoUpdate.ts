@@ -15,6 +15,15 @@ export interface ImageAutoUpdate {
   last_checked_at?: string
   last_result?: string
   has_webhook: boolean
+  window_cron?: string
+  window_minutes?: number
+}
+
+/** Omitted window fields stay unchanged on the server; an empty cron clears the window. */
+export interface ImageAutoUpdateInput {
+  enabled: boolean
+  window_cron?: string
+  window_minutes?: number
 }
 
 export interface ImageUpdateWebhook {
@@ -61,14 +70,14 @@ export function useImageAutoUpdate(appName: string) {
 
 export function useSetImageAutoUpdate(appName: string) {
   const queryClient = useQueryClient()
-  return useMutation<ImageAutoUpdate, ApiError, boolean>({
-    mutationFn: (enabled) =>
+  return useMutation<ImageAutoUpdate, ApiError, ImageAutoUpdateInput>({
+    mutationFn: (input) =>
       request(
         appName,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ enabled }),
+          body: JSON.stringify(input),
         },
         '',
         'set image auto-update failed',

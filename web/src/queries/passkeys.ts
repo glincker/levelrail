@@ -330,6 +330,8 @@ export async function finishPasskeyLogin(
 export function useBeginPasskeyLogin() {
   return useMutation<PasskeyLoginChallenge, Error, string>({
     mutationFn: beginPasskeyLogin,
+    // The sign-in screen shows this error inline; a toast would double it.
+    meta: { errorToast: false },
   })
 }
 
@@ -342,6 +344,7 @@ export function useFinishPasskeyLogin() {
     PasskeyLoginChallenge
   >({
     mutationFn: (challenge) => finishPasskeyLogin(challenge),
+    meta: { errorToast: false },
     // A new browser held for approval stays on the sign-in screen to wait.
     onSuccess: (user) => {
       if (isApprovalRequired(user)) {
@@ -363,6 +366,8 @@ export function useDiscoverablePasskeyLogin() {
   >({
     mutationFn: async (prompt) =>
       finishPasskeyLogin(await beginDiscoverablePasskeyLogin(), prompt),
+    // The autofill attempt aborts on every unmount (strict mode runs it twice); never toast it.
+    meta: { errorToast: false },
     onSuccess: (user) => {
       if (isApprovalRequired(user)) {
         return

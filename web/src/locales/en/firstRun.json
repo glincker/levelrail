@@ -1,0 +1,11 @@
+{
+  "more": {
+    "show": "More",
+    "hide": "Less",
+    "label": "More about getting started"
+  },
+  "paths": {
+    "show": "Other ways to deploy",
+    "hide": "Hide other ways"
+  }
+}

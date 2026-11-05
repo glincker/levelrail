@@ -308,6 +308,38 @@ func (s *Service) Onboarding(ctx context.Context) ([]Setting, error) {
 	return out, nil
 }
 
+// ErrWeakeningNotConfirmed is returned when a write weakens a protection and the caller did not confirm it.
+var ErrWeakeningNotConfirmed = errors.New("runtimesettings: change weakens a security protection and was not confirmed")
+
+// ErrSensitiveKey is returned when a caller that may not write credentials targets a sensitive setting.
+var ErrSensitiveKey = errors.New("runtimesettings: sensitive setting cannot be written by this caller")
+
+// WriteOptions carries what the caller is allowed to do; the zero value is the strictest.
+type WriteOptions struct {
+	ConfirmWeakening bool
+	RefuseSensitive  bool
+}
+
+// ValidateForWrite checks raw against key's type, range, enum and floor rules and the
+// caller's permissions, returning the canonical value. Every writer goes through it.
+func (s *Service) ValidateForWrite(ctx context.Context, key string, raw json.RawMessage, opts WriteOptions) (string, error) {
+	d, ok := s.definition(key)
+	if !ok {
+		return "", ErrUnknownKey
+	}
+	if opts.RefuseSensitive && d.Sensitive {
+		return "", ErrSensitiveKey
+	}
+	c, err := ParseJSON(d, raw)
+	if err != nil {
+		return "", err
+	}
+	if !opts.ConfirmWeakening && s.WeakensTo(ctx, key, raw) {
+		return "", ErrWeakeningNotConfirmed
+	}
+	return c, nil
+}
+
 // Set validates raw and saves it. The returned error is a *ValidationError for a bad value.
 func (s *Service) Set(ctx context.Context, key string, raw json.RawMessage, actor string) (Setting, error) {
 	d, ok := s.definition(key)
@@ -390,6 +422,9 @@ func (s *Service) WeakensTo(ctx context.Context, key string, raw json.RawMessage
 func weaker(d Definition, base, next string) bool {
 	switch d.Kind {
 	case KindBool:
+		if d.TrueIsWeaker {
+			return next == "true"
+		}
 		return next == "false"
 	case KindDuration:
 		return durationOf(next) < durationOf(base)
@@ -402,6 +437,9 @@ func weaker(d Definition, base, next string) bool {
 		}
 		return shorterDays(base, next)
 	case KindStringList:
+		if d.RemovalIsWeaker {
+			return listDropsItem(listOf(base), listOf(next))
+		}
 		old := listOf(base)
 		if len(old) == 0 {
 			return false

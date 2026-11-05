@@ -3,7 +3,7 @@
     "useCode": "Sign in with a code instead",
     "usePassword": "Use your password instead",
     "requestTitle": "Get a sign-in code",
-    "requestHint": "We send a code to your open dashboard sessions and, when email is set up, to your email address. It only works in this browser.",
+    "requestHint": "We send a code to your open dashboard sessions and, if email is set up, to your email address. It only works in this browser.",
     "username": "Username or email",
     "usernameRequired": "Enter your username or email",
     "send": "Send code",
@@ -11,29 +11,29 @@
     "enterTitle": "Enter the code",
     "codeLabel": "Code",
     "codePlaceholder": "XXXX-XXXX",
-    "codeRequired": "Enter the 8 character code",
+    "codeRequired": "Enter the 8-character code",
     "verify": "Sign in",
     "verifying": "Checking...",
     "resend": "Send a new code",
     "where": "Find it in the banner of any dashboard you are signed in to, with {{cli}}, or in your email.",
     "expiresIn": "Code expires in {{time}}",
-    "expiredHint": "This code has expired. Send a new code to continue.",
+    "expiredHint": "This code has expired. Send a new one to continue.",
     "wrongFormat": "Enter the full code from your dashboard or email. Spaces and hyphens are fine."
   },
   "approval": {
     "waitingTitle": "Approve this sign-in",
-    "waitingHint": "Your password was right, but this browser is new. Open a dashboard where you are already signed in, choose Approve and type this number, or run {{cli}} there.",
+    "waitingHint": "Your password was right, but this browser is new. Open a dashboard where you are already signed in, choose Approve and type this number. Or run {{cli}} there.",
     "matchLabel": "Type this number when you approve",
     "reference": "Request {{id}}",
     "denied": "The sign-in was denied from another session.",
     "expired": "Nobody approved the sign-in in time. Go back and sign in again to get a new request.",
-    "alternative": "No other device at hand? Sign in with a code sent to your email instead.",
+    "alternative": "No other device at hand? Sign in with a code sent to your email.",
     "back": "Back to sign in",
     "matchAria": "Match number {{number}}",
     "countdown": "Expires in {{time}}",
     "hostTitle": "No other signed-in device? Approve from the server",
-    "hostHint": "Run this on the machine that runs the control plane, as the user that owns its data directory. No email or other session is needed.",
-    "alternativeNoEmail": "This server has no email set up. A code is shown only in a dashboard where you are already signed in; otherwise approve from the server above."
+    "hostHint": "Run this on the machine that runs the control plane, as the user that owns its data directory. You don't need email or another session.",
+    "alternativeNoEmail": "This server has no email set up. A code only appears in a dashboard where you are already signed in. Otherwise, approve from the server above."
   },
   "twoFactor": {
     "codeLabel": "Authenticator code",
@@ -54,10 +54,10 @@
     "bannerTitle": "Someone is signing in to your account",
     "codeTitle": "Sign-in code requested",
     "context": "From {{ip}}, {{agent}}, at {{time}}.",
-    "warning": "Only continue if you started this sign-in yourself.",
+    "warning": "Only continue if you started this sign-in.",
     "show": "Show code",
     "hide": "Hide",
-    "notRevealable": "The code is no longer available here. Ask for a new one from the sign-in page.",
+    "notRevealable": "The code is no longer available here. Request a new one from the sign-in page.",
     "approve": "Approve",
     "deny": "Deny",
     "approved": "Sign-in approved",
@@ -69,7 +69,7 @@
   },
   "devices": {
     "title": "Trusted browsers",
-    "description": "Browsers that can sign in with your password without asking another session for approval. Revoke one you no longer use.",
+    "description": "These browsers can sign in with your password without asking another session for approval. Revoke any you no longer use.",
     "empty": "No trusted browsers yet.",
     "current": "This browser",
     "lastUsed": "Last used {{time}} from {{ip}}",
@@ -82,9 +82,9 @@
     "approvalStateOn": "On",
     "approvalStateOff": "Off",
     "title": "Sign in with a code",
-    "description": "Let people sign in with a one-time code instead of a password. Two-factor authentication is still required where it is on.",
+    "description": "Let people sign in with a one-time code instead of a password. Two-factor authentication still applies where it is on.",
     "admins": "Admin accounts",
-    "adminsHint": "Off by default: an admin code is worth full control of the instance.",
+    "adminsHint": "Off by default. An admin code gives full control of the instance.",
     "others": "All other accounts",
     "saved": "Setting saved",
     "saveFailed": "Could not save the setting",
@@ -102,8 +102,8 @@
   "approvalCard": {
     "title": "Approve this sign-in?",
     "pageTitle": "Approve a sign-in",
-    "pageDescription": "Approve or deny a password sign-in from a new device, for example the CLI.",
-    "empty": "Nothing is waiting for approval. If you just started a sign-in, it appears here within a few seconds.",
+    "pageDescription": "Approve or deny a password sign-in from a new device, such as the CLI.",
+    "empty": "Nothing is waiting for approval. A sign-in you just started appears here within a few seconds.",
     "regionLabel": "Sign-in approvals"
   },
   "connectCli": {
@@ -111,12 +111,12 @@
     "regenerate": "New command",
     "copy": "Copy",
     "copied": "Command copied",
-    "copyFailed": "Could not copy, select the command and copy it yourself",
+    "copyFailed": "Could not copy. Select the command and copy it yourself.",
     "commandLabel": "Command to run in your terminal",
     "expiresIn": "Single use, expires in {{time}}.",
     "expired": "This command has expired. Get a new one.",
     "failed": "Could not create a pairing code",
-    "rateLimited": "Too many tries, wait a moment and try again"
+    "rateLimited": "Too many tries. Wait a moment and try again."
   },
   "cliModal": {
     "badge": "Connect CLI",
@@ -135,7 +135,7 @@
     },
     "connect": {
       "title": "Connect",
-      "lead": "Get a one-line command that signs your terminal in to this server. No password, no approval step."
+      "lead": "Get a one-line command that signs your terminal in to this server. No password or approval step."
     },
     "manage": {
       "title": "Connected CLIs",
@@ -149,7 +149,7 @@
       "revoke": "Revoke",
       "revokeLabel": "Revoke {{name}}",
       "revokeTitle": "Revoke this CLI?",
-      "revokeBody": "{{name}} will stop working right away. You can connect it again at any time.",
+      "revokeBody": "{{name}} stops working right away. You can connect it again any time.",
       "revokeConfirm": "Revoke",
       "revoking": "Revoking...",
       "revokeCancel": "Cancel",
@@ -235,14 +235,14 @@
     },
     "expiresInMinutes_one": "Expires in about {{count}} minute",
     "expiresInMinutes_other": "Expires in about {{count}} minutes",
-    "risk": "Only approve if you started this sign-in yourself, the number must match.",
+    "risk": "Only approve if you started this sign-in. The number must match.",
     "numberPrompt": "Type the number shown on the device that is signing in",
     "notMe": "This wasn't me",
     "usePassword": "No code? Approve with your password",
     "useNumber": "Use the number instead",
     "passwordLabel": "Your account password",
     "codeLabel": "Authenticator code",
-    "passwordNote": "A code is recommended. It proves you are looking at the device that is signing in, a password only proves it is you.",
+    "passwordNote": "A code is better. It proves you are looking at the device that is signing in. A password only proves it is you.",
     "details": "Details",
     "copyId": "Copy request id",
     "copied": "Request id copied",
@@ -251,9 +251,9 @@
     "deniedTitle": "Sign-in denied",
     "reviewSecurity": "Review your security settings",
     "expiredTitle": "This request expired",
-    "expiredBody": "Start the sign-in again on the device if it was you.",
+    "expiredBody": "If it was you, start the sign-in again on the device.",
     "handledTitle": "Already handled",
-    "handledBody": "This sign-in was already approved, denied or has ended.",
+    "handledBody": "This sign-in was already approved or denied, or it has ended.",
     "failedTitle": "Could not approve this sign-in"
   }
 }

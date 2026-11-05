@@ -39,6 +39,8 @@ func runAppsEnvironments(prog string, args []string, stdout, stderr io.Writer, l
 		return runAppsEnvironmentsClone(prog, args[1:], stdout, stderr, lookupEnv)
 	case "env-diff":
 		return runAppsEnvironmentsEnvDiff(prog, args[1:], stdout, stderr, lookupEnv)
+	case "set-default":
+		return runEnvironmentsSetDefault(prog, "apps environments", args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps environments subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, appsEnvironmentsUsage(prog))
@@ -56,6 +58,7 @@ func appsEnvironmentsUsage(prog string) string {
   %[1]s apps environments env-set <id> --var KEY=VALUE [flags]                     replace an environment's shared env vars
   %[1]s apps environments clone-preview <id> --new-name NAME [flags]              preview cloning an environment's whole app set
   %[1]s apps environments clone <id> --new-name NAME [flags]                        clone an environment's whole app set into a new one
+  %[1]s apps environments set-default <project-id> <env-id|name> [flags]         make an environment the project's default
   %[1]s apps environments env-diff <project-id> <env-a> <env-b> [flags]       diff two environments' resolved effective env vars
 
 Tag an app with an environment via "%[1]s apps set-environment". An

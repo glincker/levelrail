@@ -34,10 +34,18 @@ func runDomains(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runDomainsRedirect(prog, args[1:], stdout, stderr, lookupEnv)
 	case "tls-cert":
 		return runDomainsTLSCert(prog, args[1:], stdout, stderr, lookupEnv)
+	case "wait":
+		return runDomainsWait(prog, args[1:], stdout, stderr, lookupEnv)
+	case "watch":
+		return runDomainsWatch(prog, args[1:], stdout, stderr, lookupEnv)
 	case "check":
 		return runDomainsCheck(prog, args[1:], stdout, stderr, lookupEnv)
 	case "doctor":
 		return runDomainsDoctor(prog, args[1:], stdout, stderr, lookupEnv)
+	case "www-apply":
+		return runDomainsWWWApply(prog, args[1:], stdout, stderr, lookupEnv)
+	case "www-plan":
+		return runDomainsWWWPlan(prog, args[1:], stdout, stderr, lookupEnv)
 	case "cutover":
 		return runDomainsCutover(prog, args[1:], stdout, stderr, lookupEnv)
 	case "diagnose":
@@ -68,6 +76,10 @@ func runDomains(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runDomainDNSStatus(prog, args[1:], stdout, stderr, lookupEnv)
 	case "go-live":
 		return runDomainsGoLive(prog, args[1:], stdout, stderr, lookupEnv)
+	case "changes":
+		return runDomainsChanges(prog, args[1:], stdout, stderr, lookupEnv)
+	case "rollback":
+		return runDomainsRollback(prog, args[1:], stdout, stderr, lookupEnv)
 	case "backfill-base-domain":
 		return runDomainsBackfillBaseDomain(prog, args[1:], stdout, stderr, lookupEnv)
 	case "headers":
@@ -82,6 +94,16 @@ func runDomains(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runDomainsCache(prog, args[1:], stdout, stderr, lookupEnv)
 	case "redirects":
 		return runDomainsRedirects(prog, args[1:], stdout, stderr, lookupEnv)
+	case "park":
+		return runDomainsPark(prog, args[1:], stdout, stderr, lookupEnv)
+	case "move":
+		return runDomainsMove(prog, args[1:], stdout, stderr, lookupEnv)
+	case "batch":
+		return runDomainsBatch(prog, args[1:], stdout, stderr, lookupEnv)
+	case "export":
+		return runDomainsExport(prog, args[1:], stdout, stderr, lookupEnv)
+	case "parked":
+		return runDomainsParked(prog, args[1:], stdout, stderr, lookupEnv)
 	case "standalone":
 		return runDomainsStandalone(prog, args[1:], stdout, stderr, lookupEnv)
 	case "ports":
@@ -107,7 +129,11 @@ func domainsUsage(prog string) string {
   %[1]s domains redirect <verb> [flags]         point one of an app's domains at a target URL
   %[1]s domains tls-cert <verb> [flags]         upload or clear a domain's own (BYO) TLS certificate
   %[1]s domains check <app> <domain> [flags]    run a real DNS lookup and report whether the domain reaches this control plane
+  %[1]s domains wait <domain> [--timeout 10m]   wait until a new domain is live (DNS and certificate)
+  %[1]s domains watch list [flags]              list the domains being followed in the background
+  %[1]s domains www-apply <app> <domain> [--mode both|apex_only|www_only] [--canonical apex|www] [--replace] [--yes]   write apex and www DNS records
   %[1]s domains doctor <app> <domain> [flags]   run every domain check and print a prioritised fix list
+  %[1]s domains www-plan <app> <domain> [--mode both|apex_only|www_only] [--canonical apex|www]   preview apex and www DNS records
   %[1]s domains diagnose <domain> [flags]       why isn't my domain working: every check with the exact fix, optionally applied with --fix
   %[1]s domains cutover <domain> [flags]        test before you switch: app, certificate, DNS and downtime risk
   %[1]s domains add <app> <domain>... [flags]   add domains and print the exact DNS records to create
@@ -124,7 +150,14 @@ func domainsUsage(prog string) string {
   %[1]s domains dns-status <domain> [--app NAME]  each required record: live, waiting, different, conflict or unknown
   %[1]s domains go-live <app> <domain> [flags]  create the DNS record and watch the domain go live
   %[1]s domains go-live runs|undo [flags]       automation history and one-step undo
+  %[1]s domains changes <domain> [--json]       recent changes and whether each can be rolled back
+  %[1]s domains rollback <domain> <run-id> [--yes] [--json]  undo one DNS change or domain move inside the window
   %[1]s domains backfill-base-domain [flags]    give existing apps without a domain <app>.<base domain>
+  %[1]s domains park <app> <domain> [flags]     take a domain off an app but keep it registered
+  %[1]s domains move <domain> --from A --to B   hand a domain to another app (collision check, --confirm)
+  %[1]s domains parked <verb> [flags]           list, attach or delete parked domains
+  %[1]s domains export [--out FILE]             export every domain and parked domain as CSV
+  %[1]s domains batch <verb> [flags] <domain>... park, move, attach or delete-parked several domains at once
   %[1]s domains standalone <verb> [flags]       proxy a domain to a port, address or URL without an app
   %[1]s domains provider <verb> [flags]       choose the free wildcard-DNS provider for automatic hostnames
 %[2]s

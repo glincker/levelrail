@@ -20,7 +20,7 @@ If you run a plain compose stack on a VM, there are two routes. Import the compo
 | Deploy as a compose app | You want the stack to stay one unit, as it runs today | `levelrail-cli apps deploy-compose NAME --file docker-compose.yml`, see [compose apps](/compose-apps) |
 | Snapshot the running containers | The file is out of date or the images were built locally | `docker inspect $(docker ps -aq) > inspect.json`, then `--from docker --snapshot inspect.json` |
 
-## What imports automatically (import the file)
+## What moves
 
 | Item | Result |
 | --- | --- |
@@ -37,7 +37,7 @@ If you run a plain compose stack on a VM, there are two routes. Import the compo
 - **Networks, `depends_on`, restart policy and `command` overrides** are not mapped. Set what matters on each app.
 - **Hostnames between services.** Apps reach managed databases by connection variable, not by the compose service name. Rewrite them with the mapping table in the plan.
 
-## What cannot be migrated
+## What does not move
 
 - Services without an image (build only).
 - The compose network model: services do not share one bridge network by default.

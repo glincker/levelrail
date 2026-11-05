@@ -1,4 +1,5 @@
 import { sidebarArea } from '../components/shell/sidebarArea'
+import { prefersReducedMotion } from './reducedMotion'
 import { appScopeName, databaseScopeName } from './sidebarScope'
 
 export type TransitionType = 'forward' | 'back' | 'same'
@@ -40,9 +41,7 @@ export function routeViewTransition():
   return {
     types: ({ fromLocation, toLocation, pathChanged }) => {
       if (!pathChanged || !fromLocation) return false
-      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        return false
-      }
+      if (prefersReducedMotion()) return false
       const type = transitionType(fromLocation.pathname, toLocation.pathname)
       return type ? [type] : false
     },

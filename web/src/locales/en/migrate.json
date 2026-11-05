@@ -9,7 +9,7 @@
   },
   "connect": {
     "title": "Read the source",
-    "description": "Read-only. Nothing is created until you pick items and import. The token is used for this page only and never stored.",
+    "description": "Read-only. Nothing is created until you pick items and import. The token is used for this page only and is never stored.",
     "platform": "Platform",
     "url": "Source URL",
     "urlPlaceholder": "https://coolify.example.com",
@@ -48,7 +48,7 @@
     "previewDomains": "Domains: {{domains}}",
     "previewDatabase": "{{name}}, {{engine}} {{version}}, created empty",
     "dropped": "Not carried over: {{keys}}",
-    "unselectable": "This item cannot be imported here"
+    "unselectable": "This item can't be imported here"
   },
   "fix": {
     "title": "Fix",
@@ -79,7 +79,7 @@
   },
   "empty": {
     "title": "Nothing read yet",
-    "description": "Connect to your old platform above to see every app, database and service with a verdict for each."
+    "description": "Connect to your old platform above to see every app, database and service, each with a verdict."
   },
   "cutover": {
     "empty": "No imported apps yet",
@@ -94,7 +94,7 @@
     "done": "Done",
     "pending": "Not done",
     "by": "by {{actor}}",
-    "blocked": "This step cannot be completed yet",
+    "blocked": "This step can't be completed yet",
     "stepError": "Could not update the step",
     "recheck": "Re-check DNS",
     "checkingDns": "Checking",
@@ -153,7 +153,7 @@
       "revoked": "Removed",
       "expired": "Expired"
     },
-    "waiting": "Waiting for the agent to connect. The token is single use and expires soon after it was created.",
+    "waiting": "Waiting for the agent to connect. The token is single use and expires soon after it is created.",
     "endsBy": "ends by {{at}}",
     "discover": "Refresh discovery",
     "discovering": "Reading",
@@ -167,7 +167,7 @@
     "removeConsequence2": "On the old server, run the remove command of the migrate binary to delete its service, identity and binary.",
     "removeConfirm": "Remove",
     "verifyHint": "Counts files and bytes of each volume on the old server and compares them with this server. Zero differences complete the data step for you, unless a volume is empty or you typed target numbers by hand.",
-    "ackEmpty": "Some volumes are meant to be empty: let matching empty volumes count as verified",
+    "ackEmpty": "Some volumes are meant to be empty. Count matching empty volumes as verified",
     "operatorSupplied": "typed by you, not measured",
     "detailForbidden": "Your role cannot view the discovered containers and paths for this session.",
     "noVolumes": "No imported app has volumes to compare.",

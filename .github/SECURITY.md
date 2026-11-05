@@ -30,7 +30,7 @@ Fixed issues are listed with stable IDs on the
 
 There is no dedicated security team yet and no formal SLA. Reports are
 handled best effort by the maintainers. You should expect an initial
-acknowledgment within a few days; how quickly a fix ships after that
+acknowledgment within three business days (a goal, not a guarantee); how quickly a fix ships after that
 depends on severity and complexity. If you haven't heard back in a
 reasonable amount of time, it's fine to follow up on the same advisory
 thread.

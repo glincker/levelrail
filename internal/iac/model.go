@@ -21,7 +21,9 @@ type Resource struct {
 	Fields map[string]any
 	// SecretRefs are app env names backed by the secrets store.
 	SecretRefs []string
-	Warnings   []string
+	// ExistingSecrets are SecretRefs that must already be in the store.
+	ExistingSecrets []string
+	Warnings        []string
 }
 
 // Key is the stable identity used in plans: kind plus scope plus name.

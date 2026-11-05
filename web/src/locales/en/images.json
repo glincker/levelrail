@@ -9,14 +9,19 @@
     "count": "Images",
     "size": "Disk used",
     "reclaimable": "Can be freed",
-    "protected": "Kept"
+    "protected": "Kept",
+    "review": "Review and clean up",
+    "countSplit": "{{platform}} platform, {{other}} other",
+    "freeableSplit": "Platform images {{platform}}, other images {{other}}",
+    "keptSplit": "{{used}} in use by containers"
   },
   "columns": {
     "image": "Image",
     "size": "Size",
     "apps": "Used by",
     "status": "Status",
-    "created": "Built"
+    "created": "Built",
+    "actions": "Actions"
   },
   "untagged": "untagged",
   "status": {
@@ -156,5 +161,60 @@
       "layers": "Layers",
       "node": "Node"
     }
+  },
+  "rootOnly": "Only the root account can remove images. You can still browse and filter them.",
+  "badge": {
+    "other": "Other",
+    "inUse": "In use"
+  },
+  "filters": {
+    "label": "Filter images",
+    "all": "All",
+    "platform": "Platform",
+    "other": "Other",
+    "unused": "Unused",
+    "in_use": "In use",
+    "search": "Search by name or id",
+    "sort": "Sort",
+    "sortSize": "Largest first",
+    "sortAge": "Newest first",
+    "empty": "No images match this view.",
+    "reset": "Show all images"
+  },
+  "row": {
+    "notRemovable": "This image cannot be removed",
+    "select": "Select {{name}}",
+    "selectAll": "Select all removable images",
+    "remove": "Remove",
+    "removeNamed": "Remove {{name}}"
+  },
+  "bar": {
+    "label": "Selected images",
+    "summary_one": "{{count}} selected, {{size}} freed",
+    "summary_other": "{{count}} selected, {{size}} freed",
+    "clear": "Clear",
+    "remove": "Remove selected"
+  },
+  "remove": {
+    "title": "Remove images",
+    "description": "Review what will be removed. Nothing is deleted until you confirm.",
+    "includeUnmanaged": "Also remove other images no container uses",
+    "previewing": "Checking what can be removed...",
+    "nothing": "Nothing to remove here.",
+    "listLabel": "Images to remove",
+    "total_one": "{{count}} image, {{size}} will be freed",
+    "total_other": "{{count}} images, {{size}} will be freed",
+    "warning": "Removed images are downloaded or rebuilt again when an app needs them.",
+    "confirm_one": "Remove {{count}} image",
+    "confirm_other": "Remove {{count}} images",
+    "removing": "Removing...",
+    "cancel": "Cancel",
+    "done": "Done",
+    "resultRemoved_one": "Removed {{count}} image, freed {{size}}.",
+    "resultRemoved_other": "Removed {{count}} images, freed {{size}}.",
+    "resultFailed_one": "{{count}} image could not be removed:",
+    "resultFailed_other": "{{count}} images could not be removed:",
+    "announce_one": "Removed {{count}} image.",
+    "announce_other": "Removed {{count}} images."
   }
 }

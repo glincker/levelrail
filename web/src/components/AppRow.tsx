@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import { AppRowActions } from './AppRowActions'
 import { Checkbox } from '@/components/ui/checkbox'
 import type { AppListEntry, AppStatusSummary } from '../types/appDetail'
@@ -61,7 +62,7 @@ export function AppRow({
         </Link>
         <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
           <StatusLabel status={app.status} />
-          <FailureReason status={app.status} />
+          <FailureReason status={app.status} name={app.name} />
           <AppMetaChips app={app} />
           <ManagedByStackTag stack={app.managed_by_stack} />
         </span>
@@ -132,17 +133,34 @@ export function StatusLabel({ status }: { status: AppStatusSummary }) {
   )
 }
 
-function FailureReason({ status }: { status: AppStatusSummary }) {
-  const text = failureReason(status)
-  if (!text) return null
+function FailureReason({
+  status,
+  name,
+}: {
+  status: AppStatusSummary
+  name: string
+}) {
+  const { t } = useTranslation('appRows')
+  if (status.variant !== 'destructive') return null
+  const text = failureReason(status) ?? t('failing.fallback')
   const firstLine = text.split('\n')[0]
   return (
-    <span
-      className="max-w-full min-w-0 truncate text-xs text-muted-foreground"
-      title={text}
-    >
-      {firstLine}
-    </span>
+    <>
+      <span
+        className="max-w-full min-w-0 truncate text-xs text-muted-foreground"
+        title={text}
+      >
+        {firstLine}
+      </span>
+      <Link
+        to="/apps/$name/deploys"
+        params={{ name }}
+        aria-label={t('failing.fixLabel', { name })}
+        className="relative z-10 text-xs font-medium text-primary underline underline-offset-2 hover:no-underline"
+      >
+        {t('failing.fix')}
+      </Link>
+    </>
   )
 }
 

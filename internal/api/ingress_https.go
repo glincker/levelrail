@@ -15,6 +15,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/certflow"
 	"github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -41,8 +42,7 @@ const (
 )
 
 const (
-	defaultHTTPSMaxAttemptsPerHour = 5
-	defaultHTTPSPendingTimeout     = 2 * time.Minute
+	defaultHTTPSPendingTimeout = 2 * time.Minute
 )
 
 // httpsStatusResource is GET /api/v1/settings/ingress/https's wire shape.
@@ -124,11 +124,12 @@ func WithACMEDefaultDirectory(url string) Option {
 	return func(rt *Router) { rt.acmeDefaultDirectory = url }
 }
 
-func (rt *Router) httpsMaxAttempts() int {
+// httpsMaxAttempts reads the live setting unless a fixed cap was wired in.
+func (rt *Router) httpsMaxAttempts(ctx context.Context) int {
 	if rt.httpsMaxAttemptsPerHour > 0 {
 		return rt.httpsMaxAttemptsPerHour
 	}
-	return defaultHTTPSMaxAttemptsPerHour
+	return rt.runtimeSettings.Int(ctx, runtimesettings.KeyDomainsHTTPSAttemptsPerHour)
 }
 
 func (rt *Router) httpsPendingAfter() time.Duration {
@@ -140,7 +141,7 @@ func (rt *Router) httpsPendingAfter() time.Duration {
 
 // allowHTTPSAttempt records an attempt and reports false once maxPerHour
 // attempts already happened in the last hour.
-func (rt *Router) allowHTTPSAttempt(now time.Time, production bool) bool {
+func (rt *Router) allowHTTPSAttempt(ctx context.Context, now time.Time, production bool) bool {
 	rt.httpsMu.Lock()
 	defer rt.httpsMu.Unlock()
 	cutoff := now.Add(-time.Hour)
@@ -151,7 +152,7 @@ func (rt *Router) allowHTTPSAttempt(now time.Time, production bool) bool {
 		}
 	}
 	rt.httpsAttempts = kept
-	if production && len(kept) >= rt.httpsMaxAttempts() {
+	if production && len(kept) >= rt.httpsMaxAttempts(ctx) {
 		return false
 	}
 	if production {
@@ -342,7 +343,7 @@ func (rt *Router) handleEnableHTTPS(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if !rt.allowHTTPSAttempt(time.Now(), !isStagingDirectory(directory)) {
+	if !rt.allowHTTPSAttempt(r.Context(), time.Now(), !isStagingDirectory(directory)) {
 		writeError(w, http.StatusTooManyRequests, "too many certificate attempts in the last hour; each failed attempt counts against Let's Encrypt's own limits. Fix the cause (see the status hint), try staging, or wait before retrying")
 		return
 	}

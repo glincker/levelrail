@@ -1,0 +1,66 @@
+{
+  "repo_url": "https://github.com/acme/nextjs",
+  "ref": "main",
+  "monorepo": false,
+  "stack": {
+    "runtime": "node",
+    "framework": "Next.js",
+    "language": "node",
+    "confidence": "high",
+    "evidence": [
+      {
+        "signal": "stack",
+        "detail": "next dependency found, built with Railpack"
+      },
+      {
+        "signal": "package.json",
+        "detail": "package.json has next in dependencies"
+      },
+      {
+        "signal": "config",
+        "detail": "next.config.js exists"
+      },
+      {
+        "signal": "config",
+        "detail": "next.config.js sets output: 'standalone', so the server starts from .next/standalone; the build copies .next/static and public next to it and binds HOSTNAME 0.0.0.0"
+      },
+      {
+        "signal": "directory",
+        "detail": "an app/ directory exists, so the App Router is in use"
+      }
+    ]
+  },
+  "build": {
+    "type": "railpack",
+    "build_command": "npm run build",
+    "start_command": "node .next/standalone/server.js",
+    "evidence": "no Dockerfile found, the framework is auto-detected"
+  },
+  "port": {
+    "value": 3000,
+    "evidence": "Next.js default port"
+  },
+  "health": {
+    "path": "/",
+    "evidence": "Next.js default health path"
+  },
+  "env": [],
+  "spec": {
+    "name": "nextjs",
+    "yaml": "version: 1\nservices:\n    nextjs:\n        build:\n            type: railpack\n        port: 3000\n        health:\n            readiness:\n                path: /\n"
+  },
+  "warnings": [
+    {
+      "code": "no_lockfile",
+      "message": "no lockfile was found, so installs are not reproducible; commit one"
+    },
+    {
+      "code": "no_dockerfile",
+      "message": "no Dockerfile is used, so the build is auto-detected; add a Dockerfile for full control"
+    }
+  ],
+  "next": {
+    "method": "POST",
+    "path": "/api/v1/imports/repo/apply"
+  }
+}

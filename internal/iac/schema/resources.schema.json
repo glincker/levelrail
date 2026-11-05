@@ -7,7 +7,7 @@
   "required": ["version", "kind", "metadata"],
   "properties": {
     "version": { "const": 1 },
-    "kind": { "enum": ["Project", "Environment", "Tag", "Database", "App", "Domain", "LoadBalancer", "Pipeline", "AlertRule"] },
+    "kind": { "enum": ["Project", "Environment", "Tag", "Node", "Setting", "Database", "App", "Domain", "LoadBalancer", "Pipeline", "AlertRule"] },
     "metadata": { "$ref": "#/$defs/metadata" },
     "spec": { "type": "object" }
   },
@@ -16,6 +16,8 @@
     { "if": { "properties": { "kind": { "const": "Project" } }, "required": ["kind"] }, "then": { "properties": { "spec": { "$ref": "#/$defs/projectSpec" } } } },
     { "if": { "properties": { "kind": { "const": "Environment" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/environmentSpec" } } } },
     { "if": { "properties": { "kind": { "const": "Tag" } }, "required": ["kind"] }, "then": { "properties": { "spec": { "type": "object", "additionalProperties": false } } } },
+    { "if": { "properties": { "kind": { "const": "Node" } }, "required": ["kind"] }, "then": { "properties": { "spec": { "$ref": "#/$defs/nodeSpec" } } } },
+    { "if": { "properties": { "kind": { "const": "Setting" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/settingSpec" } } } },
     { "if": { "properties": { "kind": { "const": "Database" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/databaseSpec" } } } },
     { "if": { "properties": { "kind": { "const": "App" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/appSpec" } } } },
     { "if": { "properties": { "kind": { "const": "Domain" } }, "required": ["kind"] }, "then": { "required": ["spec"], "properties": { "spec": { "$ref": "#/$defs/domainSpec" } } } },
@@ -83,6 +85,38 @@
         "service": { "description": "The service definition, same fields as an app.yaml service.", "$ref": "#/$defs/service" }
       }
     },
+    "nodeSpec": {
+      "description": "Labels and taints of a node that already joined. Apply never creates, removes or prunes a node. A member left out is not managed; an empty one clears the stored set.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "labels": { "type": "object", "maxProperties": 32, "additionalProperties": { "type": "string", "maxLength": 63 } },
+        "taints": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "type": "object",
+            "required": ["key", "effect"],
+            "additionalProperties": false,
+            "properties": {
+              "key": { "type": "string", "minLength": 1, "maxLength": 63 },
+              "value": { "type": "string", "maxLength": 63 },
+              "effect": { "enum": ["NoSchedule", "PreferNoSchedule", "NoExecute"] }
+            }
+          }
+        }
+      }
+    },
+    "settingSpec": {
+      "description": "One runtime setting, named by its registry key in metadata.name. Apply saves the value so later env changes do not move it. A setting that holds a credential is refused, and a change that weakens a security protection is a plan error.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "value": { "description": "The value, typed by the setting: a boolean, an integer, a string, a duration such as 10m, or a list of strings.", "type": ["boolean", "integer", "string", "array"], "items": { "type": "string" } },
+        "reset": { "description": "Remove the saved value so the environment seed or the default applies again.", "const": true }
+      },
+      "oneOf": [{ "required": ["value"] }, { "required": ["reset"] }]
+    },
     "domainSpec": {
       "type": "object",
       "required": ["app"],
@@ -105,7 +139,7 @@
       "additionalProperties": false,
       "properties": {
         "app": { "description": "Name of the app the rule watches.", "type": "string", "minLength": 1 },
-        "type": { "description": "Kind of alert rule. Decides which other fields apply, such as metric, comparator and threshold for a threshold rule.", "type": "string", "minLength": 1, "enum": ["backup_copy_behind", "backup_failed", "backup_missing", "budget_threshold", "cert_expiring", "cert_expiry", "cert_renewal_stalled", "control_plane_backup_stale", "crashloop", "database_backup_failing", "database_backup_stale", "database_connections_high", "database_disk_high", "database_down", "deploy_failed", "domain_health", "domain_not_resolving", "email_delivery_failing", "export_behind", "log_archive_stale", "log_level_rate", "log_pattern", "monitor_down", "node_cert_expiring", "node_disk_space", "node_host_guardrail", "node_offline", "node_resource_usage", "patch_status", "pooler_saturated", "registry_refresh_failing", "restore_drill_failed", "scheduled_task_failure", "scheduled_task_missed", "scheduled_task_running_long", "slo_burn", "threshold", "version_skew"] },
+        "type": { "description": "Kind of alert rule. Decides which other fields apply, such as metric, comparator and threshold for a threshold rule.", "type": "string", "minLength": 1, "enum": ["backup_copy_behind", "backup_failed", "backup_missing", "budget_threshold", "cert_expiring", "cert_expiry", "cert_renewal_stalled", "control_plane_backup_stale", "crashloop", "database_backup_failing", "database_backup_stale", "database_connections_high", "database_disk_high", "database_down", "deploy_failed", "domain_health", "domain_not_resolving", "domain_traffic_drop", "email_delivery_failing", "export_behind", "log_archive_stale", "log_level_rate", "log_pattern", "monitor_down", "node_cert_expiring", "node_disk_space", "node_host_guardrail", "node_offline", "node_resource_usage", "parked_domain_cert_expiry", "patch_status", "pooler_saturated", "registry_refresh_failing", "restore_drill_failed", "scheduled_task_failure", "scheduled_task_missed", "scheduled_task_running_long", "slo_burn", "threshold", "version_skew"] },
         "metric": { "description": "Metric the rule evaluates.", "type": "string" },
         "comparator": { "description": "Comparison of the metric against threshold: >, <, >= or <=. Required for threshold rules and ignored by other kinds.", "type": "string" },
         "threshold": { "description": "Value the metric is compared against.", "type": "number" },

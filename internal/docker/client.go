@@ -936,6 +936,23 @@ func (c *Client) UpdateResources(ctx context.Context, id string, resources Resou
 	return nil
 }
 
+// SyncRestartPolicy implements RestartPolicySyncer. ContainerUpdate changes
+// the policy in place, so a container created before the default stays up.
+func (c *Client) SyncRestartPolicy(ctx context.Context, id, want string) (bool, error) {
+	resp, err := c.cli.ContainerInspect(ctx, id)
+	if err != nil {
+		return false, fmt.Errorf("docker: inspect container %s for restart policy: %w", id, err)
+	}
+	if resp.HostConfig != nil && string(resp.HostConfig.RestartPolicy.Name) == want {
+		return false, nil
+	}
+	update := container.UpdateConfig{RestartPolicy: container.RestartPolicy{Name: container.RestartPolicyMode(want)}}
+	if _, err := c.cli.ContainerUpdate(ctx, id, update); err != nil {
+		return false, fmt.Errorf("docker: update restart policy for container %s: %w", id, err)
+	}
+	return true, nil
+}
+
 // updateMemorySwap resolves the MemorySwap value UpdateResources sends to
 // ContainerUpdate. ContainerCreate treats an omitted MemorySwap as
 // "default to 2x memory", but ContainerUpdate does not: it compares the

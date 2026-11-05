@@ -66,3 +66,17 @@ func TestRun_Domains_UnknownSubcommand(t *testing.T) {
 		t.Fatalf("exit = %d, want %d", got, exitUsage)
 	}
 }
+
+func TestDomainsExportWritesCSV(t *testing.T) {
+	var gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		_, _ = w.Write([]byte("domain,kind\na.test,app\n"))
+	}))
+	t.Cleanup(srv.Close)
+	var out, errBuf bytes.Buffer
+	code := runDomainsExport("levelrail-cli-test", []string{"--api-url", srv.URL}, &out, &errBuf, envMap())
+	if code != exitOK || gotPath != "/api/v1/domains/export" || !strings.HasPrefix(out.String(), "domain,kind") {
+		t.Fatalf("code=%d path=%q out=%q err=%q", code, gotPath, out.String(), errBuf.String())
+	}
+}

@@ -160,6 +160,7 @@ func printUpgradePlan(out io.Writer, p apiclient.SelfUpgradePlan) {
 		}
 		_, _ = fmt.Fprintln(out)
 	}
+	printPendingMigrations(out, p)
 	_, _ = fmt.Fprintf(out, "steps: %s (automatic rollback if the new release is not healthy)\n", strings.Join(p.Steps, ", "))
 	printUpgradeHostPlan(out, p)
 	if len(p.RollbackCommands) > 0 {
@@ -205,10 +206,30 @@ func printUpgradeHostPlan(out io.Writer, p apiclient.SelfUpgradePlan) {
 		_, _ = fmt.Fprintf(out, "disk: %d MiB free, about %d MiB needed for the backup, restore point and new binary (%s)\n", p.Disk.FreeBytes>>20, p.Disk.RequiredBytes>>20, verdict)
 	}
 	_, _ = fmt.Fprintln(out, "a control plane backup is taken before the swap; the upgrade is refused if it fails (override: --skip-backup)")
+	if p.Backup.VerifyRestore {
+		_, _ = fmt.Fprintln(out, "the backup is restored to a scratch copy and checked before the swap (setting upgrade.verify_backup)")
+	}
 	if p.Restart != "" {
 		_, _ = fmt.Fprintf(out, "restart: %s (about %ds)\n", p.Restart, p.DowntimeSeconds)
 	}
 	if p.Backup.RestoreCommand != "" {
 		_, _ = fmt.Fprintf(out, "restore the backup with (NAME is the backup file the upgrade reports):\n  %s\n", p.Backup.RestoreCommand)
+	}
+}
+
+// printPendingMigrations lists the migrations the upgrade runs, by number and name.
+func printPendingMigrations(out io.Writer, p apiclient.SelfUpgradePlan) {
+	if len(p.PendingMigrationList) == 0 {
+		return
+	}
+	_, _ = fmt.Fprintln(out, "pending migrations:")
+	for _, m := range p.PendingMigrationList {
+		_, _ = fmt.Fprintf(out, "  %04d %s\n", m.Version, m.Name)
+	}
+	if p.PendingMigrationSource == "running_binary" {
+		_, _ = fmt.Fprintln(out, "  (listed from the running binary's embedded migrations, not the release)")
+	}
+	if p.PendingMigrationNote != "" {
+		_, _ = fmt.Fprintf(out, "  note: %s\n", p.PendingMigrationNote)
 	}
 }

@@ -17,6 +17,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/GLINCKER/levelrail/internal/loadbalancer"
+	"github.com/GLINCKER/levelrail/internal/placement"
 )
 
 // Spec is a fully parsed, schema-valid app.yaml.
@@ -99,6 +100,18 @@ type Service struct {
 	// tightly-scoped agent sandboxes, and defaulting every existing app
 	// to deny-all egress on upgrade would be a breaking change.
 	Egress *Egress `yaml:"egress,omitempty"`
+
+	// Tolerations let the service land on nodes carrying matching taints.
+	// Affinity steers it by node labels and by the workloads on each node.
+	// Both are optional; omitted keeps today's placement.
+	Tolerations []placement.Toleration `yaml:"tolerations,omitempty"`
+	Affinity    *placement.Affinity    `yaml:"affinity,omitempty"`
+
+	// Workload, PerNode and Ordered are reserved, not yet scheduled: they
+	// validate but the reconciler does not read them yet.
+	Workload string   `yaml:"workload,omitempty"`
+	PerNode  *PerNode `yaml:"perNode,omitempty"`
+	Ordered  *Ordered `yaml:"ordered,omitempty"`
 
 	// LoadBalancer configures balancing across this service's replicas
 	// (internal/loadbalancer). Nil keeps the plain single-upstream route.

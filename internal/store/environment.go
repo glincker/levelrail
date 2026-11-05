@@ -181,6 +181,10 @@ func (db *DB) DeleteEnvironment(ctx context.Context, id string) error {
 	}
 	defer func() { _ = tx.Rollback() }()
 
+	var isDefault bool
+	if err := tx.QueryRowContext(ctx, `SELECT is_default FROM environments WHERE id = ?`, id).Scan(&isDefault); err == nil && isDefault {
+		return ErrDefaultEnvironment
+	}
 	owners, err := environmentDomainOwners(ctx, tx, id)
 	if err != nil {
 		return fmt.Errorf("store: delete environment %q: %w", id, err)

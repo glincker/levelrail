@@ -68,9 +68,45 @@ func ParseDriftPolicy(s string) (DriftPolicy, error) {
 	}
 }
 
+// StackLevel says whether a stack belongs to one project or to the install.
+type StackLevel string
+
+// Stack scopes; an empty scope means project.
+const (
+	LevelProject StackLevel = "project"
+	LevelInstall StackLevel = "install"
+)
+
+// ParseStackLevel maps an empty value to project and rejects unknown ones.
+func ParseStackLevel(s string) (StackLevel, error) {
+	switch sc := StackLevel(strings.TrimSpace(s)); sc {
+	case "":
+		return LevelProject, nil
+	case LevelProject, LevelInstall:
+		return sc, nil
+	default:
+		return "", fmt.Errorf("scope must be %q or %q, got %q", LevelProject, LevelInstall, s)
+	}
+}
+
+// ValidateStackLevel checks the project and environment fit the scope.
+func ValidateStackLevel(scope StackLevel, project, environment string) error {
+	if scope == LevelInstall {
+		if project != "" || environment != "" {
+			return errors.New("an install stack has no project or environment")
+		}
+		return nil
+	}
+	if strings.TrimSpace(project) == "" {
+		return errors.New("stack project is required")
+	}
+	return nil
+}
+
 // StackSpec is the spec of a kind: Stack document.
 type StackSpec struct {
-	Project     string      `json:"project" yaml:"project"`
+	Scope       StackLevel  `json:"scope,omitempty" yaml:"scope,omitempty"`
+	Project     string      `json:"project,omitempty" yaml:"project,omitempty"`
 	Environment string      `json:"environment,omitempty" yaml:"environment,omitempty"`
 	Prune       bool        `json:"prune,omitempty" yaml:"prune,omitempty"`
 	Drift       DriftPolicy `json:"drift,omitempty" yaml:"drift,omitempty"`
@@ -78,8 +114,13 @@ type StackSpec struct {
 
 // Validate checks the spec and fills the default drift policy.
 func (s *StackSpec) Validate() error {
-	if strings.TrimSpace(s.Project) == "" {
-		return errors.New("stack spec.project is required")
+	sc, err := ParseStackLevel(string(s.Scope))
+	if err != nil {
+		return fmt.Errorf("stack spec.%w", err)
+	}
+	s.Scope = sc
+	if err := ValidateStackLevel(sc, s.Project, s.Environment); err != nil {
+		return fmt.Errorf("stack spec: %w", err)
 	}
 	p, err := ParseDriftPolicy(string(s.Drift))
 	if err != nil {
@@ -96,6 +137,7 @@ type Stack struct {
 	Name            string      `json:"name"`
 	ProjectID       string      `json:"project_id"`
 	EnvironmentID   string      `json:"environment_id,omitempty"`
+	Scope           StackLevel  `json:"scope,omitempty"`
 	AllowPrune      bool        `json:"allow_prune"`
 	DriftPolicy     DriftPolicy `json:"drift_policy"`
 	PinnedRevision  int         `json:"pinned_revision,omitempty"` // 0 means not pinned
@@ -109,8 +151,12 @@ func (s *Stack) Validate() error {
 	if err := ValidateStackName(s.Name); err != nil {
 		return err
 	}
-	if s.ProjectID == "" {
-		return errors.New("stack project is required")
+	sc, err := ParseStackLevel(string(s.Scope))
+	if err != nil {
+		return err
+	}
+	if err := ValidateStackLevel(sc, s.ProjectID, s.EnvironmentID); err != nil {
+		return err
 	}
 	if _, err := ParseDriftPolicy(string(s.DriftPolicy)); err != nil {
 		return err

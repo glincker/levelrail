@@ -10,6 +10,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/ticker"
 )
 
 // OneShotStore is the store surface the one-shot runner needs.
@@ -136,6 +137,7 @@ func (o *OneShotRunner) finish(ctx context.Context, d store.ScheduledDeploy, sta
 
 // Run ticks on interval until ctx is done.
 func (o *OneShotRunner) Run(ctx context.Context, interval time.Duration) error {
+	interval = ticker.Safe(interval, ticker.DefaultInterval)
 	t := time.NewTicker(interval)
 	defer t.Stop()
 	for {

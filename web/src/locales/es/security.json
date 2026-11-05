@@ -195,6 +195,11 @@
       "pass": "Las copias de seguridad externas cifradas están activadas",
       "why": "Perder esta máquina implicaría perder todas las definiciones de apps, secretos y certificados."
     },
+    "offsite_backup_unencrypted": {
+      "title": "Destinos de copia de seguridad sin cifrado",
+      "pass": "Todos los destinos de copia de seguridad están cifrados",
+      "why": "Una copia guardada sin cifrar puede leerla cualquiera que acceda a ese almacenamiento. Activa el cifrado en los ajustes de destinos de copia de seguridad y ejecuta una copia nueva."
+    },
     "audit_anchor_off": {
       "title": "No hay un ancla externa del registro de auditoría configurada",
       "pass": "El ancla externa del registro de auditoría está activada",

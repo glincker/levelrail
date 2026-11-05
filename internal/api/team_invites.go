@@ -2,7 +2,6 @@ package api
 
 import (
 	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -274,8 +273,8 @@ func (rt *Router) precheckAccepter(r *http.Request, inv store.TeamInvite, req ac
 	if email == "" || !strings.Contains(email, "@") {
 		return http.StatusBadRequest, "email is required"
 	}
-	if len(req.Password) < minPasswordLength {
-		return http.StatusBadRequest, fmt.Sprintf("password must be at least %d characters", minPasswordLength)
+	if msg := rt.passwordProblem(r.Context(), "password", req.Password); msg != "" {
+		return http.StatusBadRequest, msg
 	}
 	if _, err := rt.auth.GetUserByEmail(r.Context(), email); err == nil {
 		return http.StatusConflict, "an account with this email exists; sign in first, then open the invite link again"
@@ -333,8 +332,8 @@ func (rt *Router) inviteAccepter(r *http.Request, inv store.TeamInvite, req acce
 	if email == "" || !strings.Contains(email, "@") {
 		return accepter{}, http.StatusBadRequest, "email is required"
 	}
-	if len(req.Password) < minPasswordLength {
-		return accepter{}, http.StatusBadRequest, fmt.Sprintf("password must be at least %d characters", minPasswordLength)
+	if msg := rt.passwordProblem(r.Context(), "password", req.Password); msg != "" {
+		return accepter{}, http.StatusBadRequest, msg
 	}
 	if _, err := rt.auth.GetUserByEmail(r.Context(), email); err == nil {
 		return accepter{}, http.StatusConflict, "an account with this email exists; sign in first, then open the invite link again"

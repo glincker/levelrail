@@ -15,6 +15,8 @@ import (
 type Ledger struct {
 	StackID   string
 	StackName string
+	// Scope is the stack scope; empty means project.
+	Scope StackLevel
 	// ScopeProject is the stack's own project; an admin bound it to the stack,
 	// so declaring it claims it without an explicit adopt.
 	ScopeProject string
@@ -63,6 +65,44 @@ func NewLedger(stackID, stackName, scopeProject string, owned []LedgerEntry) *Le
 		l.Owned[e.Key] = e
 	}
 	return l
+}
+
+// NewInstallLedger builds the view for an install stack, which may own only
+// Node and Setting documents and has no project to claim.
+func NewInstallLedger(stackID, stackName string, owned []LedgerEntry) *Ledger {
+	l := NewLedger(stackID, stackName, "", owned)
+	l.Scope = LevelInstall
+	return l
+}
+
+// installOnly lists the kinds an install stack may own, and which a project
+// stack should hand over to one.
+func installOnly(k Kind) bool { return k == KindNode || k == KindSetting }
+
+// scopeGate refuses a document an install stack may not own. It reports
+// whether it did.
+func (p *planner) scopeGate(r *Resource) bool {
+	l := p.st.ledger
+	if l == nil || l.Scope != LevelInstall || installOnly(r.Kind) {
+		return false
+	}
+	p.fail(r, "install stack %s may own only Node and Setting documents, not %s; declare it in a project stack", l.StackName, r.Kind)
+	return true
+}
+
+// scopeNote warns on the item just planned for r when a project stack holds an
+// install-wide document. The warning becomes an error in a later release.
+func (p *planner) scopeNote(r *Resource) {
+	l := p.st.ledger
+	if l == nil || l.Scope == LevelInstall || !installOnly(r.Kind) || len(p.items) == 0 {
+		return
+	}
+	it := p.items[len(p.items)-1]
+	if it.res != r {
+		return
+	}
+	msg := fmt.Sprintf("a %s belongs in an install stack; move this document to one", r.Kind)
+	it.Warnings = append(append([]string(nil), it.Warnings...), msg)
 }
 
 // LedgerRef is one (kind, key) whose owner a caller must look up.
@@ -262,6 +302,28 @@ func (p *planner) ledgerNote(r *Resource) {
 	it.Warnings = append(append([]string(nil), it.Warnings...), msg)
 }
 
+// nodeRenamed errors when the ledger's node id now carries another display
+// name, so a rename is never followed or adopted silently.
+func (p *planner) nodeRenamed(r *Resource) bool {
+	l := p.st.ledger
+	if l == nil {
+		return false
+	}
+	e, owned := l.Owned[r.Key()]
+	if !owned || e.LiveID == "" || e.LiveID == r.Name {
+		return false
+	}
+	if live, ok := p.st.nodes[r.Name]; ok && live.id == e.LiveID {
+		return false
+	}
+	now, ok := p.st.nodeNames[e.LiveID]
+	if !ok || now == r.Name {
+		return false
+	}
+	p.fail(r, "node %s was renamed to %s; update the file or release it from stack %s", r.Name, now, l.StackName)
+	return true
+}
+
 // splitLedgerKey turns a ledger key back into kind, scope and name.
 func splitLedgerKey(e LedgerEntry) (Kind, string, string, bool) {
 	k := e.Kind
@@ -355,6 +417,16 @@ func (p *planner) planLedgerPrune() {
 		}
 		if kind == KindDatabase || kind == KindProject {
 			p.add(r, ActionNoop, nil, nil, nil).Reason = fmt.Sprintf("absent from the files, but a %s is never pruned; it stays owned by stack %s until the stack forgets it", strings.ToLower(string(kind)), l.StackName)
+			continue
+		}
+		if kind == KindNode {
+			it := p.add(r, ActionDelete, nil, nil, nil)
+			it.Reason = fmt.Sprintf("absent from the files; a node is never pruned, its labels and taints stay as they are; released from stack %s", l.StackName)
+			continue
+		}
+		if kind == KindSetting {
+			it := p.add(r, ActionDelete, nil, nil, nil)
+			it.Reason = fmt.Sprintf("absent from the files; the saved value stays as it is, use reset: true to clear it; released from stack %s", l.StackName)
 			continue
 		}
 		if kind == KindDomain {
@@ -487,6 +559,10 @@ func LedgerChanges(stackID string, rev int, res []*Resource, out ApplyResult) Le
 	var u LedgerUpdate
 	for _, it := range out.Results {
 		e := LedgerEntry{StackID: stackID, Kind: it.Kind, Key: it.Key(), LiveID: it.Name, SinceRevision: rev}
+		if it.Kind == KindNode && it.LiveID != "" {
+			// The id survives a rename, the display name does not.
+			e.LiveID = it.LiveID
+		}
 		switch {
 		case it.Action == ActionDelete && (it.Status == StatusApplied || it.Status == StatusNoop):
 			u.Release = append(u.Release, e)

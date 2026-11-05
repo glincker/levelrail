@@ -11,6 +11,7 @@ import {
   useSuspenseQuery,
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import type { DnsTokenVerification } from './dnsVerification'
 
 export const route53DnsKeys = {
   all: ['route53-dns'] as const,
@@ -25,6 +26,7 @@ export interface Route53DnsSettings {
   hosted_zone_id?: string
   has_access_key_id: boolean
   has_secret_access_key: boolean
+  verification?: DnsTokenVerification
 }
 
 export interface UpdateRoute53DnsRequest {

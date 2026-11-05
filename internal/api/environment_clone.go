@@ -631,6 +631,8 @@ func cloneDesiredService(source store.DesiredService, newName string, domains []
 		Health:               health,
 		Hooks:                hooks,
 		Egress:               egress,
+		Tolerations:          append(json.RawMessage(nil), source.Tolerations...),
+		Affinity:             append(json.RawMessage(nil), source.Affinity...),
 		Volumes:              cloneServiceVolumes(source, newName),
 		BindMounts:           append([]store.ServiceBindMount(nil), source.BindMounts...),
 		Labels:               labels,

@@ -169,6 +169,8 @@ export function useApplyIac() {
 export interface IacExportParams {
   project?: string
   app?: string
+  database?: string
+  node?: string
   includeEnvValues: boolean
 }
 
@@ -178,6 +180,8 @@ export function useExportIac() {
       const q = new URLSearchParams()
       if (params.project) q.set('project', params.project)
       if (params.app) q.set('app', params.app)
+      if (params.database) q.set('database', params.database)
+      if (params.node) q.set('node', params.node)
       q.set('include_env_values', String(params.includeEnvValues))
       return iacRequest<IacExportResult>(
         `/api/v1/export?${q.toString()}`,

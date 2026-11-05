@@ -132,7 +132,7 @@ func (rt *Router) handleEnableDatabasePooler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	if database.PoolerImage() == "" {
-		writeError(w, http.StatusBadRequest, "no pooler image is configured: set "+database.EnvPoolerImage+" on the control plane to a pinned tag or digest")
+		writeError(w, http.StatusBadRequest, "no pooler image is configured: set the databases.pooler_image setting to a pinned tag or digest")
 		return
 	}
 	var req databasePoolerRequest

@@ -207,7 +207,7 @@
   },
   "egress": {
     "openTitle": "Declared hosts are not enforced",
-    "openBody": "Plugins that declare outbound hosts currently share a general network. Set APP_PLUGIN_EGRESS_MODE=proxy to restrict each plugin to the hosts it declared.",
+    "openBody": "Plugins that declare outbound hosts share a general network. Set APP_PLUGIN_EGRESS_MODE=proxy to restrict each plugin to the hosts it declared.",
     "summary": {
       "none": "No denied connections",
       "last": "last {{when}}",

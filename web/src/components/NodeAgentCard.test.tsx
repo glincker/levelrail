@@ -200,7 +200,7 @@ describe('NodeAgentCard for a remote node', () => {
     )
     renderCard(baseNode)
     expect(
-      await screen.findByText(/Re-enroll required: this node will not renew/),
+      await screen.findByText(/Re-enroll required\. This node will not renew/),
     ).toBeTruthy()
   })
 

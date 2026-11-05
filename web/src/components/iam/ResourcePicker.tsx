@@ -31,6 +31,7 @@ const KINDS: Kind[] = [
   'environment_kind',
   'app',
   'database',
+  'static_site',
   'pattern',
 ]
 const ENVIRONMENT_KINDS = [
@@ -57,6 +58,11 @@ function optionsFor(kind: Kind, res: IamResources): ComboboxOption[] {
       return res.apps.map((a) => ({ value: a.name, label: a.name }))
     case 'database':
       return res.databases.map((d) => ({ value: d.name, label: d.name }))
+    case 'static_site':
+      return (res.static_sites ?? []).map((s) => ({
+        value: s.name,
+        label: s.name,
+      }))
     default:
       return []
   }
@@ -86,6 +92,8 @@ function selectionFor(
       return value ? { kind: 'app', name: value } : null
     case 'database':
       return value ? { kind: 'database', name: value } : null
+    case 'static_site':
+      return value ? { kind: 'static_site', name: value } : null
   }
 }
 
@@ -105,6 +113,8 @@ function labelFor(sel: ResourceSelection, res: IamResources): string {
       return `app:${sel.name}`
     case 'database':
       return `database:${sel.name}`
+    case 'static_site':
+      return `static_site:${sel.name}`
     case 'pattern':
       return sel.value
   }
@@ -173,6 +183,7 @@ export function ResourcePicker({
           const rows = countsBySelection.get(selectionKey(sel)) ?? []
           const apps = rows.reduce((n, r) => n + r.apps, 0)
           const dbs = rows.reduce((n, r) => n + r.databases, 0)
+          const sites = rows.reduce((n, r) => n + (r.static_sites ?? 0), 0)
           const label = labelFor(sel, resources)
           return (
             <li
@@ -186,9 +197,9 @@ export function ResourcePicker({
                 <p className="text-xs text-muted-foreground">
                   {match.isPending && strings.length > 0
                     ? t('builder.resources.matchChecking')
-                    : apps + dbs === 0
+                    : apps + dbs + sites === 0
                       ? t('builder.resources.matchNone')
-                      : `${t('builder.resources.matchApps', { count: apps })}, ${t('builder.resources.matchDatabases', { count: dbs })}`}
+                      : `${t('builder.resources.matchApps', { count: apps })}, ${t('builder.resources.matchDatabases', { count: dbs })}${sites > 0 ? `, ${t('builder.resources.matchStaticSites', { count: sites })}` : ''}`}
                   {sel.kind === 'project'
                     ? `. ${t('builder.resources.projectNote', { count: sel.environmentIds.length })}`
                     : ''}

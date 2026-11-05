@@ -160,3 +160,36 @@ func TestDiagnosePromotesTypedCauseWhenLegacyUnmatched(t *testing.T) {
 		t.Fatalf("res = %+v", res)
 	}
 }
+
+const minecraftEULALog = `[init] [ERROR] Please accept the Minecraft EULA at
+[init] [ERROR]   https://account.mojang.com/documents/minecraft_eula
+[init] [ERROR] by adding the following immediately after 'docker run':
+[init] [ERROR]   -e EULA=TRUE`
+
+func TestAnalyzeImageEnvHint(t *testing.T) {
+	repeated := minecraftEULALog + "\n" + minecraftEULALog + "\n" + minecraftEULALog
+	causes := Analyze(Input{RecentLogLines: logs(repeated)})
+	if len(causes) != 1 || causes[0].Code != CauseMissingEnv {
+		t.Fatalf("want one MISSING_ENV cause, got %+v", causes)
+	}
+	fx := causes[0].Fixes
+	if len(fx) != 1 || fx[0].Kind != FixPatch || !fx[0].Redeploy || len(fx[0].Changes) != 1 {
+		t.Fatalf("unexpected fixes %+v", fx)
+	}
+	if c := fx[0].Changes[0]; c.Field != "env.EULA" || c.To != "TRUE" || c.NeedsInput {
+		t.Fatalf("unexpected change %+v", c)
+	}
+	if !strings.Contains(fx[0].Hint, "https://account.mojang.com/documents/minecraft_eula") || fx[0].Label != "Accept the terms and set EULA=TRUE" {
+		t.Fatalf("unexpected hint or label %q / %q", fx[0].Hint, fx[0].Label)
+	}
+
+	if got := Analyze(Input{RecentLogLines: logs(minecraftEULALog), Facts: Facts{EnvKeys: []string{"EULA"}}}); len(got) != 0 && got[0].Code == CauseMissingEnv {
+		t.Fatalf("configured EULA must not produce a cause: %+v", got)
+	}
+
+	hostile := strings.Replace(minecraftEULALog, "EULA=TRUE", "EULA=TRUE; rm -rf /", 1)
+	got := Analyze(Input{RecentLogLines: logs(hostile)})
+	if len(got) != 1 || got[0].Fixes[0].Kind != FixInput || got[0].Fixes[0].Changes[0].To != "" || !got[0].Fixes[0].Changes[0].NeedsInput {
+		t.Fatalf("hostile value must fall back to input: %+v", got)
+	}
+}

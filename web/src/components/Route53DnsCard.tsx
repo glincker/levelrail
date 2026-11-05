@@ -20,6 +20,7 @@ import {
   SettingsFormActions,
   SettingsFormAlerts,
 } from './SettingsCard'
+import { DnsVerificationCallout } from './dns/DnsVerificationCallout'
 
 // Instance-level Route53 DNS-01 credential: GET/PUT/DELETE
 // /api/v1/settings/route53-dns. A second, independent ACME DNS-01
@@ -209,6 +210,9 @@ export function Route53DnsCard({
                 ? { key: 'update', message: updateSettings.error.message }
                 : null,
             ]}
+          />
+          <DnsVerificationCallout
+            verification={updateSettings.data?.verification}
           />
 
           <SettingsFormActions

@@ -226,7 +226,7 @@
   "proxy": {
     "title": "Cloudflare proxy",
     "body": "Proxy this app's domains through Cloudflare when Levelrail writes their DNS records. Existing records change the next time the DNS fix runs.",
-    "following": "Following the server setting, currently {{state}}.",
+    "following": "Following the server setting, now {{state}}.",
     "override": "Set for this app only.",
     "reset": "Follow the server setting",
     "on": "on",

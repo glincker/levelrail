@@ -158,6 +158,19 @@ func (c *authSessionClient) ListTokens(ctx context.Context) ([]tokenResource, er
 	return out, err
 }
 
+// unusedTokensResponse mirrors internal/api's unusedTokensResponse.
+type unusedTokensResponse struct {
+	AlertDays int             `json:"alert_days"`
+	Items     []tokenResource `json:"items"`
+}
+
+// ListUnusedTokens calls GET /api/v1/tokens/unused: idle tokens, never a secret.
+func (c *authSessionClient) ListUnusedTokens(ctx context.Context) (unusedTokensResponse, error) {
+	var out unusedTokensResponse
+	err := c.do(ctx, http.MethodGet, "/api/v1/tokens/unused", nil, &out)
+	return out, err
+}
+
 // RevokeToken calls DELETE /api/v1/auth/tokens/{id}.
 func (c *authSessionClient) RevokeToken(ctx context.Context, id string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/auth/tokens/"+pathEscape(id), nil, nil)

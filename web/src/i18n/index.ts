@@ -91,6 +91,7 @@ export const NAMESPACES = [
   'runtimeSettings',
   'newApp',
   'getStarted',
+  'onboarding',
   'usage',
   'costs',
   'resources',
@@ -130,9 +131,20 @@ export const NAMESPACES = [
   'passkeys',
   'account',
   'palette',
+  'paletteSettings',
   'splitTesting',
   'scheduledDeploy',
   'assets',
+  'uiShared',
+  'relatedLinks',
+  'gitSource',
+  'projectExport',
+  'certBudget',
+  'appRows',
+  'tokensNotices',
+  'firstRun',
+  'newAppNoGit',
+  'appOverview',
 ] as const
 
 // New language: add its code here and a locales/<code>/ folder; untranslated namespaces and keys fall back to en.

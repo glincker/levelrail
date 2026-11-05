@@ -3,6 +3,17 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import type { AppDetail } from '../../types/appDetail'
 import { HeroActions } from './HeroActions'
+import commonEn from '../../locales/en/common.json'
+
+// Resolve overviewHero keys to their English copy without a provider.
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) =>
+      (commonEn.overviewHero as Record<string, string>)[
+        key.replace('overviewHero.', '')
+      ] ?? key,
+  }),
+}))
 
 const redeploy = vi.fn()
 vi.mock('./useOverviewActions', () => ({
@@ -64,6 +75,19 @@ describe('HeroActions', () => {
     )
     await userEvent.click(await screen.findByText('Redeploy current'))
     expect(redeploy).toHaveBeenCalled()
+  })
+
+  it('leads with Restart for a live app and Retry deploy after a failure', () => {
+    const { rerender } = render(
+      <HeroActions app={app} url={null} onDeploy={vi.fn()} primary="restart" />,
+    )
+    expect(screen.getByRole('button', { name: 'Restart' })).toBeInTheDocument()
+    rerender(
+      <HeroActions app={app} url={null} onDeploy={vi.fn()} primary="retry" />,
+    )
+    expect(
+      screen.getByRole('button', { name: 'Retry deploy' }),
+    ).toBeInTheDocument()
   })
 
   it('keeps Delete inside the overflow menu, not as a top-level button', async () => {

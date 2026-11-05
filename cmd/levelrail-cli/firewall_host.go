@@ -54,6 +54,12 @@ func printHostFirewall(out io.Writer, verb string, dryRun bool, res hostFirewall
 		for _, p := range res.Required {
 			_, _ = fmt.Fprintf(out, "  %d/%s\n", p.Port, p.Protocol)
 		}
+		if len(res.OpenCommands) > 0 {
+			_, _ = fmt.Fprintln(out, "to open them yourself (nothing was run):")
+			for _, c := range res.OpenCommands {
+				_, _ = fmt.Fprintf(out, "  [%s] %s\n      %s\n", c.Backend, c.Command, c.Note)
+			}
+		}
 		return
 	}
 	if dryRun {

@@ -15,7 +15,7 @@ Coolify has the most complete path. You can stage apps, move images that were bu
 - For apps built on the Coolify host: SSH access to it with a login that can run `docker` (root or the `docker` group).
 - For databases: a database user on each Coolify database, and a route from the Levelrail node to its port.
 
-## What imports automatically
+## What moves
 
 | Item | Result |
 | --- | --- |
@@ -36,7 +36,7 @@ Coolify has the most complete path. You can stage apps, move images that were bu
 - **Secrets the token could not read** are skipped and flagged.
 - **Extra ports, raw host port mappings, command-style health checks, custom build and start commands, basic auth, custom labels, webhooks and backup schedules** are called out as needs attention. Nothing is dropped without a row in the report. See the [gap report](/coolify-exit-gap-report).
 
-## What cannot be migrated
+## What does not move
 
 - Coolify one-click services are not created as apps. `migrate coolify` reads each service's compose file and env, translates its `SERVICE_` magic variables and stages the result as `compose.yaml` under `--stage-dir` (default `./migrated/compose`), with hosts under `--domain-suffix`. Nothing is deployed. Review the file, then deploy it with `levelrail-cli compose deploy`. The file and `--apply` modes stage services. The dry-run and verify reports list them as skipped. See [one-click services to Compose](/coolify-service-to-compose). Staging is pending run against a real Coolify instance.
 - Coolify Docker Compose applications (the `dockercompose` build pack, multi-service) are blocked and not translated. Stage their compose file by hand with the manual path in [one-click services to Compose](/coolify-service-to-compose), then deploy it with [compose apps](/compose-apps).

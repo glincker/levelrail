@@ -64,6 +64,7 @@ type manualBuildRun struct {
 	setCommit            func(context.Context, string)
 	allowPrivateRepoAuth bool
 	fromCache            bool
+	framework            string
 }
 
 // beginManualBuild records the attempt row and wires cancellation into the
@@ -81,7 +82,7 @@ func (rt *Router) beginManualBuild(ctx context.Context, existing store.DesiredSe
 	}
 	return manualBuildRun{
 		name: existing.Name, id: id, buildType: buildType, buildReq: buildReq,
-		progress: progress, finish: finish, setCommit: setCommit, allowPrivateRepoAuth: allowPrivate,
+		progress: progress, finish: finish, setCommit: setCommit, allowPrivateRepoAuth: allowPrivate, framework: framework,
 	}
 }
 
@@ -112,6 +113,7 @@ func (rt *Router) runManualBuild(m manualBuildRun) {
 		}
 		defer cleanup()
 		buildReq.SourceDir = sourceDir
+		rt.ensureNextActionsKey(ctx, &buildReq, name, m.framework)
 		// Tag by the resolved commit, never the ref: a reused branch name
 		// would retag onto newer content and orphan the rollback target.
 		if commit != "" {

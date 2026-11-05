@@ -62,6 +62,7 @@ func doctorCheckFirewall(ctx context.Context, lookPath func(string) (string, err
 	}
 	return doctorCheckResource{
 		Code: "firewall", Name: "Firewall", Status: doctorStatusUnknown,
+		Fix:     doctorFirewallOptionsFix(),
 		Message: "no supported firewall tool (ufw, firewalld, nftables, iptables) found; if you rely on a different firewall (cloud security groups), this is expected",
 	}
 }
@@ -145,7 +146,7 @@ func doctorCheckFirewalld(ctx context.Context, lookPath func(string) (string, er
 		return doctorCheckResource{
 			Code: "firewall", Name: name, Status: doctorStatusWarn,
 			Message:  "firewalld installed but not running",
-			Fix:      "sudo systemctl enable --now firewalld && sudo firewall-cmd --permanent --add-service=http --add-service=https && sudo firewall-cmd --reload",
+			Fix:      "sudo systemctl enable --now firewalld && " + hostfw.OpenFix(hostfw.BackendFirewalld, hostfw.WebPorts),
 			DocsPath: doctorFirewallDocsPath,
 		}, true
 	}
@@ -161,7 +162,7 @@ func doctorCheckFirewalld(ctx context.Context, lookPath func(string) (string, er
 		return doctorCheckResource{
 			Code: "firewall", Name: name, Status: doctorStatusWarn,
 			Message:  "firewalld running, but the http and/or https service isn't open",
-			Fix:      "sudo firewall-cmd --permanent --add-service=http --add-service=https && sudo firewall-cmd --reload",
+			Fix:      hostfw.OpenFix(hostfw.BackendFirewalld, hostfw.WebPorts),
 			DocsPath: doctorFirewallDocsPath,
 		}, true
 	}
@@ -184,7 +185,7 @@ func doctorCheckNftables(ctx context.Context, lookPath func(string) (string, err
 	}
 
 	text := string(out)
-	const fix = "sudo nft add rule inet filter input tcp dport { 80, 443 } accept"
+	fix := hostfw.OpenFix(hostfw.BackendNftables, hostfw.WebPorts)
 	if strings.TrimSpace(text) == "" {
 		return doctorCheckResource{
 			Code: "firewall", Name: name, Status: doctorStatusWarn,
@@ -232,12 +233,21 @@ func doctorCheckIptables(ctx context.Context, lookPath func(string) (string, err
 	}
 	return doctorCheckResource{
 		Code: "firewall", Name: name, Status: doctorStatusWarn,
-		Message: "iptables is this host's firewall tool, but no explicit rule for ports 80/443 was found",
-		Fix: "sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT && sudo iptables -A INPUT -p tcp --dport 443 -j ACCEPT " +
-			"(persist with iptables-persistent or your distribution's equivalent)",
+		Message:  "iptables is this host's firewall tool, but no explicit rule for ports 80/443 was found",
+		Fix:      hostfw.OpenFix(hostfw.BackendIptables, hostfw.WebPorts) + " (persist with iptables-persistent or your distribution's equivalent)",
 		DocsPath: doctorFirewallDocsPath,
 	}, true
 }
 
 // lookPathReal lets files outside the process-spawning allowlist resolve a binary.
 func lookPathReal(name string) (string, error) { return exec.LookPath(name) }
+
+// doctorFirewallOptionsFix lists every backend's command for the web ports, for
+// a host where none could be detected; the operator picks the one that matches.
+func doctorFirewallOptionsFix() string {
+	var parts []string
+	for _, c := range hostfw.OpenCommands(hostfw.BackendNone, hostfw.WebPorts) {
+		parts = append(parts, "("+string(c.Backend)+") "+c.Command)
+	}
+	return strings.Join(parts, "; ")
+}

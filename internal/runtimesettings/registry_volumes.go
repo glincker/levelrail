@@ -39,7 +39,7 @@ func init() {
 	})
 	Register(Definition{
 		Key: KeyVolumesImportOverwrite, Category: CategoryDeploys, Kind: KindBool, Default: "false",
-		Env: "APP_VOLUMES_IMPORT_OVERWRITE", Apply: ApplyLive, Risk: RiskWeakensSecurity,
+		Env: "APP_VOLUMES_IMPORT_OVERWRITE", Apply: ApplyLive, Risk: RiskWeakensSecurity, TrueIsWeaker: true,
 		Title:       "Allow volume import over existing files",
 		Description: "When on, an import with the overwrite flag may replace a volume that already holds files. Off by default: imports only fill an empty volume. Take a backup first when you turn it on.",
 	})

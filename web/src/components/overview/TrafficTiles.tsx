@@ -75,9 +75,12 @@ export function TrafficTilesView({ stats }: { stats: TrafficStats }) {
 export function TrafficTiles({
   appName,
   url,
+  hideEmpty = false,
 }: {
   appName: string
   url: string | null
+  /** Skip the no-traffic strip when another card already says so. */
+  hideEmpty?: boolean
 }) {
   const { data, isPending, isError, refetch } = useAppTraffic(appName)
   const { copied, copy } = useCopyToClipboard()
@@ -101,6 +104,7 @@ export function TrafficTiles({
       </div>
     )
   }
+  if (!data.hasTraffic && hideEmpty) return null
   if (!data.hasTraffic) {
     return (
       <div className="col-span-full flex items-center justify-between gap-3 rounded-xl border border-dashed border-border px-4 py-2 text-sm text-muted-foreground">

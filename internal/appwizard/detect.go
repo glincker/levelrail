@@ -74,6 +74,8 @@ type Detection struct {
 	RuntimeVersion Sourced       `json:"runtime_version"`
 	EnvVars        []EnvVarGuess `json:"env_vars"`
 	Warnings       []Warning     `json:"warnings"`
+	// Next is set only for Next.js apps.
+	Next *NextProfile `json:"next,omitempty"`
 }
 
 // Input is a repository tree, from a checkout or a provider listing. Read
@@ -156,6 +158,8 @@ type found struct {
 	start, build, output, health      string
 	version                           Sourced
 	spa                               bool
+	next                              *NextProfile
+	nextHints                         []Warning
 	reasons                           []Reason
 	noLockfile, malformed, noManifest bool
 }
@@ -182,6 +186,8 @@ func Detect(in Input) Detection {
 	d.StartCommand, d.BuildCommand, d.OutputDir = g.start, g.build, g.output
 	d.SPA = g.spa && g.buildType == buildStatic
 	d.Reasons = append(d.Reasons, g.reasons...)
+	d.Next = g.next
+	d.Warnings = append(d.Warnings, g.nextHints...)
 	d.RuntimeVersion = g.version
 	d.Port = g.port
 	d.HealthPath = g.health

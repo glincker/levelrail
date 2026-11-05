@@ -6,6 +6,8 @@ import type dashboards from '../locales/en/dashboards.json'
 import type passkeys from '../locales/en/passkeys.json'
 import type account from '../locales/en/account.json'
 import type palette from '../locales/en/palette.json'
+import type paletteSettings from '../locales/en/paletteSettings.json'
+import type projectExport from '../locales/en/projectExport.json'
 import type rules from '../locales/en/rules.json'
 import type deploys from '../locales/en/deploys.json'
 import type settings from '../locales/en/settings.json'
@@ -28,6 +30,15 @@ import type environments from '../locales/en/environments.json'
 import type stacks from '../locales/en/stacks.json'
 import type statusPage from '../locales/en/statusPage.json'
 import type assets from '../locales/en/assets.json'
+import type uiShared from '../locales/en/uiShared.json'
+import type relatedLinks from '../locales/en/relatedLinks.json'
+import type gitSource from '../locales/en/gitSource.json'
+import type certBudget from '../locales/en/certBudget.json'
+import type appRows from '../locales/en/appRows.json'
+import type tokensNotices from '../locales/en/tokensNotices.json'
+import type firstRun from '../locales/en/firstRun.json'
+import type newAppNoGit from '../locales/en/newAppNoGit.json'
+import type appOverview from '../locales/en/appOverview.json'
 import type exposure from '../locales/en/exposure.json'
 import type appExposure from '../locales/en/appExposure.json'
 import type appAccess from '../locales/en/appAccess.json'
@@ -102,6 +113,7 @@ import type betaFeatures from '../locales/en/betaFeatures.json'
 import type runtimeSettings from '../locales/en/runtimeSettings.json'
 import type newApp from '../locales/en/newApp.json'
 import type getStarted from '../locales/en/getStarted.json'
+import type onboarding from '../locales/en/onboarding.json'
 import type usage from '../locales/en/usage.json'
 import type costs from '../locales/en/costs.json'
 import type resources from '../locales/en/resources.json'
@@ -153,6 +165,14 @@ declare module 'i18next' {
       stacks: typeof stacks
       statusPage: typeof statusPage
       assets: typeof assets
+      uiShared: typeof uiShared
+      relatedLinks: typeof relatedLinks
+      certBudget: typeof certBudget
+      appRows: typeof appRows
+      tokensNotices: typeof tokensNotices
+      firstRun: typeof firstRun
+      newAppNoGit: typeof newAppNoGit
+      appOverview: typeof appOverview
       exposure: typeof exposure
       appExposure: typeof appExposure
       appAccess: typeof appAccess
@@ -221,6 +241,7 @@ declare module 'i18next' {
       runtimeSettings: typeof runtimeSettings
       newApp: typeof newApp
       getStarted: typeof getStarted
+      onboarding: typeof onboarding
       usage: typeof usage
       costs: typeof costs
       resources: typeof resources
@@ -256,6 +277,9 @@ declare module 'i18next' {
       passkeys: typeof passkeys
       account: typeof account
       palette: typeof palette
+      paletteSettings: typeof paletteSettings
+      gitSource: typeof gitSource
+      projectExport: typeof projectExport
     }
   }
 }

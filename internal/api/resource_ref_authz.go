@@ -21,6 +21,7 @@ const (
 	refKindProject     refKind = "project"
 	refKindModel       refKind = "model"
 	refKindAssetBucket refKind = "asset_bucket"
+	refKindStaticSite  refKind = "static_site"
 )
 
 // resourceRef is a resource a request names in its body or query rather
@@ -37,6 +38,7 @@ func nodeRef(id string) resourceRef             { return resourceRef{refKindNode
 func modelRef(name string) resourceRef          { return resourceRef{refKindModel, name} }
 func projectRef(id string) resourceRef          { return resourceRef{refKindProject, id} }
 func assetBucketRef(id string) resourceRef      { return resourceRef{refKindAssetBucket, id} }
+func staticSiteRef(name string) resourceRef     { return resourceRef{refKindStaticSite, name} }
 func appRefs(names []string) []resourceRef      { return mapRefs(names, appRef) }
 func databaseRefs(names []string) []resourceRef { return mapRefs(names, databaseRef) }
 
@@ -148,7 +150,7 @@ type refCaller struct {
 
 func (rt *Router) refAllowed(ctx context.Context, c *refCaller, ability string, ref resourceRef) (bool, error) {
 	switch ref.kind {
-	case refKindApp, refKindDatabase:
+	case refKindApp, refKindDatabase, refKindStaticSite:
 		allowed, hidden, err := rt.authorizeResourceInEnvironment(ctx, c.principalType, c.principalID, c.abilities, c.policies, ability, string(ref.kind)+":"+ref.id)
 		return allowed && !hidden, err
 	case refKindNode:

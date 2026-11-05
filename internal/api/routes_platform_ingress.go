@@ -129,6 +129,8 @@ func (rt *Router) registerIngressRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/settings/domain-automation", rt.requireAbility(AbilityRoot, rt.handleUpdateDomainAutomation))
 	mux.HandleFunc("GET /api/v1/domains/automation/runs", rt.requireAbility(AbilityRead, rt.handleListAutomationRuns))
 	mux.HandleFunc("POST /api/v1/domains/automation/runs/{id}/undo", rt.requireAbility(AbilityRoot, rt.handleUndoAutomationRun))
+	mux.HandleFunc("GET /api/v1/domains/{domain}/changes", rt.requireAbility(AbilityRead, rt.handleListDomainChanges))
+	mux.HandleFunc("POST /api/v1/domains/{domain}/changes/{id}/rollback", rt.requireAbility(AbilityRoot, rt.handleRollbackDomainChange))
 	mux.HandleFunc("GET /api/v1/dns/zone", rt.requireAbility(AbilityRead, rt.handleDNSZone))
 	mux.HandleFunc("POST /api/v1/settings/ingress/apps-base-domain/backfill", rt.requireAbility(AbilityRoot, rt.handleBackfillBaseDomain))
 

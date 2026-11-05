@@ -155,12 +155,17 @@ func (g autoscaleSignals) Headroom(ctx context.Context, app string, extra int) (
 	if home == "" {
 		home = rt.localNodeID
 	}
+	cands, req, err := rt.ruledRequest(ctx, store.NodeMoveKindApp, app, cands, placement.Request{Policy: rt.currentPlacementPolicy(ctx)})
+	if err != nil {
+		return -1, err
+	}
 	for _, c := range cands {
 		if c.ID != home {
 			continue
 		}
 		for k := extra; k >= 1; k-- {
-			e := placement.Evaluate(c, placement.Request{Needs: per.Times(int64(k)), Policy: rt.placementPolicy})
+			req.Needs = per.Times(int64(k))
+			e := placement.Evaluate(c, req)
 			if e.Eligible || !e.Capacity {
 				return k, nil
 			}

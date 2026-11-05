@@ -27,6 +27,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/scheduledeploy"
 	"github.com/GLINCKER/levelrail/internal/scheduledtask"
+	"github.com/GLINCKER/levelrail/internal/schedulescan"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 	"github.com/GLINCKER/levelrail/internal/tlsowner"
 	"github.com/GLINCKER/levelrail/internal/updatecheck"
@@ -153,6 +154,7 @@ func (s *bootState) startAlerting() {
 	alertingEngine.SetCertExpiryPolicy(certPolicy)
 	alertingEngine.SetVersionSkew(db, upgrade.DefaultFetchers(b.RepoSlug()))
 	alertingEngine.SetBudgets(apiRouter)
+	alertingEngine.SetDomainTraffic(apiRouter)
 	alertingEngine.SetEmailDelivery(db)
 	alertingEngine.SetDatabaseHealth(apiRouter)
 	if src := s.deployDispatcher.Outcomes(); src != nil {
@@ -290,6 +292,9 @@ func (s *bootState) startSchedulers() {
 			logger.Error("function queue stopped", slog.String("error", err.Error()))
 		}
 	}()
+	// One cheap pass over stored schedules saved before save time validation.
+	schedulescan.LogWarnings(ctx, db, logger, time.Now())
+	apiRouter.SetScheduleScan(db)
 	scheduledTaskScheduler := scheduledtask.NewScheduler(db, scheduledTaskRunner, logger)
 	scheduledTaskScheduler.Lookback = scheduledTaskRunner.Limits.CatchUpLookback
 	go func() {
@@ -422,10 +427,21 @@ func (s *bootState) startSchedulers() {
 		}
 	}()
 
+	// Follows new domains until DNS and the certificate are ready; the set is persisted so a restart resumes it.
+	go func() {
+		if err := apiRouter.RunDNSWatcher(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("dns watcher stopped", slog.String("error", err.Error()))
+		}
+	}()
+
 	// Publishes the signed audit chain head off the box; does nothing unless APP_AUDIT_ANCHOR_* is set.
 	if cfg := auditanchor.ConfigFromEnv(os.LookupEnv); cfg.Enabled() {
 		go auditanchor.New(cfg, db, logger).Run(ctx)
 	}
+	// Webhook export of each new checkpoint; the URL is a live runtime setting and empty means off.
+	anchorExp := auditanchor.NewExporter(auditanchor.ExportConfigFromEnv(os.LookupEnv), auditanchor.ConfigFromEnv(os.LookupEnv).Interval, db, apiRouter.RuntimeSettings(), logger)
+	apiRouter.SetAnchorStatus(anchorExp.Status)
+	go anchorExp.Run(ctx)
 
 	// Moves cold audit, deploy and pipeline rows into archive bundles when the policy is on.
 	go func() {
@@ -446,6 +462,13 @@ func (s *bootState) startSchedulers() {
 	go func() {
 		if err := apiRouter.RunWebhookDeliverySweeper(ctx, webhookDeliverySweepInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("webhook delivery sweeper stopped", slog.String("error", err.Error()))
+		}
+	}()
+
+	// Forgets parked domains older than domains.parked_retention_days; does nothing while that is 0.
+	go func() {
+		if err := apiRouter.RunParkedRetentionSweeper(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("parked domain retention sweeper stopped", slog.String("error", err.Error()))
 		}
 	}()
 
@@ -504,6 +527,9 @@ func (s *bootState) serve() error {
 	}
 	if serveErr := <-serveErrs; serveErr != nil {
 		logger.Error("http server error", slog.String("error", serveErr.Error()))
+	}
+	if err := ingressdriver.DefaultAccessLog().FlushVisitorHistoryFinal(); err != nil {
+		logger.Warn("final visitor history flush failed", slog.String("error", err.Error()))
 	}
 
 	if errors.Is(engineErr, context.Canceled) {

@@ -376,6 +376,14 @@ containers: the old platform's own stored config is not read. After --apply,
 
 The source token is read from %[2]s, or --token-stdin, or --token (warns).
 It is sent to this control plane in the request body only and never stored.
+
+Other flags:
+  --collision MODE     name collision handling: suffix (default) or skip
+  --insecure-tls       skip TLS verification of the source
+  --allow-loopback     allow a loopback source (the control plane also needs APP_IMPORT_ALLOW_LOOPBACK=true)
+  --wait DURATION      how long --verify and --transfer-images wait (default 15m)
+  --api-url URL        control plane API base URL
+  --profile NAME       named credentials profile for the control plane
 `, prog, envImportSourceToken, envImportSSHPassphrase, envImportSSHPassword)
 }
 

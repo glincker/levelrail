@@ -6,6 +6,7 @@ import {
 
 const healthy: OverviewLayoutInput = {
   attentionCount: 0,
+  diagnosisShown: false,
   hasTraffic: true,
   trafficKnown: true,
   suspended: false,
@@ -15,18 +16,17 @@ const healthy: OverviewLayoutInput = {
 }
 
 describe('computeOverviewLayout', () => {
-  it('healthy with traffic: access then metrics, no setup', () => {
+  it('healthy with traffic: metrics, activity, then access, no setup', () => {
     const l = computeOverviewLayout(healthy)
     expect(l.sections).toEqual([
-      'access',
       'kpis',
       'activity',
+      'access',
       'health',
       'details',
     ])
     expect(l.traffic).toBe('full')
     expect(l.setup).toBe('hidden')
-    expect(l.pairAttentionWithAccess).toBe(false)
   })
 
   it('healthy without traffic collapses the traffic block and sinks setup', () => {
@@ -42,15 +42,22 @@ describe('computeOverviewLayout', () => {
     )
   })
 
-  it('a failing deploy or crashloop leads the page', () => {
+  it('a failing signal puts attention first, then metrics', () => {
     for (const attentionCount of [1, 3]) {
       const l = computeOverviewLayout({ ...healthy, attentionCount })
-      expect(l.sections[0]).toBe('attention')
-      expect(l.sections.indexOf('health')).toBeLessThan(
-        l.sections.indexOf('activity'),
-      )
-      expect(l.pairAttentionWithAccess).toBe(true)
+      expect(l.sections.slice(0, 2)).toEqual(['attention', 'kpis'])
+      expect(l.sections).not.toContain('diagnosis')
     }
+  })
+
+  it('the single Diagnosis card leads the page when something fails', () => {
+    const l = computeOverviewLayout({
+      ...healthy,
+      diagnosisShown: true,
+      attentionCount: 1,
+    })
+    expect(l.sections.slice(0, 3)).toEqual(['diagnosis', 'attention', 'kpis'])
+    expect(l.sections.filter((s) => s === 'diagnosis')).toHaveLength(1)
   })
 
   it('static sites hide container metrics', () => {

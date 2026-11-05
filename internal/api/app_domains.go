@@ -152,8 +152,10 @@ func (rt *Router) handleEditAppDomains(w http.ResponseWriter, r *http.Request) {
 		}
 		envReport = rt.rerenderDomainEnv(r, name, before)
 		rt.nudgeReconciler()
-		added, _ := sliceDiff(before, next)
+		added, removed := sliceDiff(before, next)
 		rt.ensureWildcardRecords(r, added)
+		rt.unwatchDomain(r.Context(), removed...)
+		rt.watchDomain(r.Context(), name, added...)
 	}
 	resp := editDomainsResponse{App: name, Domains: next, Changed: changed, EnvSkipped: envReport.Skipped, EnvSkippedHidden: envReport.SkippedHidden}
 	if changed {

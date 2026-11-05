@@ -11,6 +11,8 @@ import { Badge } from '@/components/ui/badge'
 import { Banner } from '@/components/ui/banner'
 import { useTranslation } from 'react-i18next'
 import { isInternalCert } from '../../lib/certStatus'
+import { CertBudgetCard } from '../../components/certificates/CertBudgetCard'
+import { AutoHostList } from '../../components/certificates/AutoHostList'
 import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
 
 // The certificate center: every domain's TLS certificate in one place,
@@ -75,7 +77,9 @@ function CertificatesPage() {
       }
       banners={banner}
     >
+      <CertBudgetCard />
       <CertificateCenterTable rows={rows} />
+      <AutoHostList />
     </PageTemplate>
   )
 }

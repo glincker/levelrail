@@ -71,3 +71,24 @@ func TestManager_SameSecondDoesNotCollide(t *testing.T) {
 		t.Fatal("names collided")
 	}
 }
+
+func TestBackupDue_ZeroNextIsNeverDue(t *testing.T) {
+	s := &Service{}
+	last := time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC)
+	cfg := store.CPDRSettings{LastBackupAt: last, LastDrillAt: last, LastBackupKey: "k"}
+	now := last.Add(400 * 24 * time.Hour)
+	if due, _ := s.backupDue(cfg, Effective{Schedule: "0 0 30 2 *"}, now); due {
+		t.Fatal("impossible backup schedule reported due")
+	}
+	if s.drillDue(cfg, Effective{DrillSchedule: "0 0 30 2 *"}, now) {
+		t.Fatal("impossible drill schedule reported due")
+	}
+	leap := time.Date(2028, 2, 29, 0, 0, 0, 0, time.UTC)
+	cfg.LastBackupAt = leap
+	if due, _ := s.backupDue(cfg, Effective{Schedule: "0 0 29 2 *"}, leap.Add(time.Hour)); due {
+		t.Fatal("leap schedule due right after it fired")
+	}
+	if due, _ := s.backupDue(cfg, Effective{Schedule: "0 0 29 2 *"}, time.Date(2032, 2, 29, 0, 0, 0, 0, time.UTC)); !due {
+		t.Fatal("next leap day not due")
+	}
+}

@@ -365,6 +365,26 @@ func TestPrintStackRun_NoopSaysStillAtRevision(t *testing.T) {
 	}
 }
 
+func TestStackPlan_AllowWeakenFlagIsSent(t *testing.T) {
+	dir := stackTestDir(t)
+	for _, tc := range []struct {
+		args []string
+		want bool
+	}{{nil, false}, {[]string{"--allow-weaken"}, true}} {
+		f := &stackFake{t: t, plan: pendingPlan()}
+		srv := httptest.NewServer(f.handler())
+		args := append([]string{"stack", "plan", "shop", "-f", dir, "--api-url", srv.URL}, tc.args...)
+		code, out, _ := runIaC(args, nil)
+		srv.Close()
+		if code != exitOK {
+			t.Fatalf("exit = %d\n%s", code, out)
+		}
+		if got := f.requests["/api/v1/stacks/shop/plan"].AllowWeaken; got != tc.want {
+			t.Errorf("AllowWeaken = %v, want %v", got, tc.want)
+		}
+	}
+}
+
 func TestStackPlan_ExplicitPruneFlagBeatsStackDocument(t *testing.T) {
 	dir := stackTestDir(t)
 	cases := []struct {

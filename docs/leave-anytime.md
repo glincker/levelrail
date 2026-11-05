@@ -18,6 +18,24 @@ docker compose up -d
 
 For a multi-service app, the name of any member or of the app exports every service together.
 
+## Export a whole project
+
+A project exports as one archive with a compose service for every app in it, plus `.env.example`, `volumes.json` and a `README.md`. There are three ways to get it.
+
+- Dashboard: open the project and choose Export. Download saves a `.tar` file.
+- CLI: `levelrail-cli apps projects export shop -o ./shop`. Use `-o -` for standard output.
+- API: `GET /api/v1/projects/{id}/export`. The project can be given by id or name.
+
+Run it the same way: copy `.env.example` to `.env`, replace every `CHANGE_ME`, then `docker compose up -d`. Restore volume data using `volumes.json` as the list.
+
+The header of `docker-compose.yml` and the README list what did not carry over: the pinned host port, the bind address, registry logins, deploy hooks, labels, the liveness probe, GPU requests and some resource settings. The outbound network allowlist is not enforced by Compose, so add your own firewall rules.
+
+### Secrets in a project export
+
+Secret values stay out by default. To include them, switch on "Include secret values" in the dashboard, or pass `--include-secrets` or `?include_secrets=true`. That adds a `.env` file.
+
+It needs the write-sensitive ability and the same confirmation step as the environment editor, for every app in the project. If one app refuses, the whole export is refused. Each secrets export is written to the audit log before the file is sent. Do not commit the `.env`, and delete the archive when you are done.
+
 ## What you get
 
 | File | Content |
@@ -68,3 +86,8 @@ levelrail volumes import web data --in web-data.tar.gz
 - The size cap is the `volumes.transfer_max_bytes` runtime setting (10 GiB by default, 1 MiB minimum) and the time cap is `volumes.transfer_timeout` (30 minutes by default, 1 minute minimum). Both apply to the next transfer.
 - The routes are `GET /api/v1/apps/{name}/volumes/{volume}/export` and `POST /api/v1/apps/{name}/volumes/{volume}/import`. Both need the write-sensitive ability and write a `volume.export` or `volume.import` audit event with the app, volume, entry count and byte count, never file names or contents.
 - Volumes that hold the managed mail certificate or key are refused.
+
+## Related
+
+- [Migrate to Levelrail](/migrate-to-levelrail)
+- [Environment variables](/environment-variables)

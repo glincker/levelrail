@@ -1,9 +1,18 @@
 export type OverviewSection =
-  'attention' | 'access' | 'kpis' | 'health' | 'activity' | 'details' | 'setup'
+  | 'attention'
+  | 'diagnosis'
+  | 'access'
+  | 'kpis'
+  | 'health'
+  | 'activity'
+  | 'details'
+  | 'setup'
 
 export interface OverviewLayoutInput {
   /** Failing signals: failed deploy, crashloop, unhealthy, high errors, cert errors, OOM. */
   attentionCount: number
+  /** The single Diagnosis card is showing (failed deploy, crashloop or not ready). */
+  diagnosisShown: boolean
   hasTraffic: boolean
   trafficKnown: boolean
   suspended: boolean
@@ -15,8 +24,6 @@ export interface OverviewLayoutInput {
 
 export interface OverviewLayout {
   sections: OverviewSection[]
-  /** Attention and Access share one row at lg and up. */
-  pairAttentionWithAccess: boolean
   containerMetrics: boolean
   traffic: 'full' | 'hint' | 'hidden'
   setup: 'hidden' | 'collapsed'
@@ -33,14 +40,19 @@ export function computeOverviewLayout(i: OverviewLayoutInput): OverviewLayout {
       : 'hint'
   const setupVisible = !i.setupDismissed && i.setupRemaining > 0
 
-  const sections: OverviewSection[] = failing
-    ? ['attention', 'access', 'kpis', 'health', 'activity', 'details']
-    : ['access', 'kpis', 'activity', 'health', 'details']
+  const sections: OverviewSection[] = [
+    'kpis',
+    'activity',
+    'access',
+    'health',
+    'details',
+  ]
+  if (failing) sections.unshift('attention')
+  if (i.diagnosisShown) sections.unshift('diagnosis')
   if (setupVisible) sections.splice(sections.indexOf('details'), 0, 'setup')
 
   return {
     sections,
-    pairAttentionWithAccess: failing,
     containerMetrics,
     traffic,
     setup: setupVisible ? 'collapsed' : 'hidden',

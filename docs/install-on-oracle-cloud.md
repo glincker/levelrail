@@ -62,7 +62,7 @@ Traffic reaches the VM only if the VCN allows it. In the console open the instan
 | `0.0.0.0/0` | UDP | 51820 | Mesh (WireGuard), only if you add more nodes |
 | `0.0.0.0/0` | TCP | 22 | SSH (usually present by default) |
 
-Port 8080 (the dashboard) is not in this table on purpose. The safe default is to leave it closed in the VCN and reach the dashboard through an SSH tunnel, see [First access to the dashboard](#first-access-to-the-dashboard). If you open TCP 8080, restrict the source CIDR to your own IP (`203.0.113.7/32` style), and remove the rule when you are done.
+Port 8080 (the dashboard) is not in this table on purpose. Leave it closed in the VCN and reach the dashboard through an SSH tunnel, see [First access to the dashboard](#first-access-to-the-dashboard). If you open TCP 8080 instead, restrict the source CIDR to your own IP (`203.0.113.7/32` style), and remove the rule when you are done. The same rule applies on every cloud, see [Dashboard port 8080](/installing#dashboard-port-8080).
 
 Add rules for any app port you publish directly, for example TCP 25565 for a Minecraft Java server, see [Game servers](/game-servers). Add `::/0` rules only if your VCN has IPv6.
 
@@ -139,7 +139,7 @@ ssh -L 8080:localhost:8080 ubuntu@<public-ip>
 
 Leave it running and open `http://localhost:8080` in your browser, using the setup link from the installer summary (replace the host with `localhost`). Nothing extra is exposed to the internet.
 
-The alternative is to open TCP 8080 in the VCN for a short time with the source set to your own IP, then delete the rule.
+The alternative is to open TCP 8080 in the VCN for a short time with the source set to your own IP, then delete the rule. The host also needs an `INPUT` accept for 8080 in that case, see [Docker published ports and host services](#docker-published-ports-and-host-services). After HTTPS is on, sign-in over plain HTTP is refused, so use the https address and close 8080.
 
 HTTPS needs a domain whose DNS points at the VM's public IP, with TCP 80 and 443 open in both layers, so the certificate request can succeed. Set the domain in the dashboard, see [Go live](/go-live) and [Domains and ingress](/domains-and-ingress). Until then, use the tunnel.
 

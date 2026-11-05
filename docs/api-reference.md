@@ -118,6 +118,8 @@ System endpoints for:
 | POST | /api/v1/system/proxy-integration/install | AbilityRoot | handleInstallProxy |
 | GET | /api/v1/updates/self-upgrade/status | AbilityRead | handleSelfUpgradeStatus |
 | GET | /api/v1/system/footprint | AbilityRead | handleGetIdleFootprint |
+| POST | /api/v1/updates/self-upgrade/attempts/{id}/cancel | AbilityWrite | handleSelfUpgradeAttemptCancel |
+| POST | /api/v1/updates/migration-dry-run | AbilityWrite | handleMigrationDryRun |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
@@ -684,6 +686,11 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/cdn/resync | AbilityWriteSensitive | handleResyncAppCDN |
 | GET | /api/v1/apps/{name}/game-status | AbilityRead | handleGetAppGameStatus |
 | GET | /api/v1/apps/{name}/export | AbilityRead | handleExportApp |
+| GET | /api/v1/apps/{name}/visitors | AbilityRead | handleAppVisitors |
+| GET | /api/v1/apps/{name}/auto-host | AbilityRead | handleGetAppAutoHost |
+| PUT | /api/v1/apps/{name}/auto-host | AbilityWriteSensitive | handleSetAppAutoHost |
+| GET | /api/v1/apps/{name}/visitors/export | AbilityRead | handleAppVisitorsExport |
+| POST | /api/v1/apps/repo-plan | AbilityWrite | handleRepoPlan |
 
 </Accordion>
 
@@ -940,6 +947,15 @@ Endpoints for:
 | GET | /api/v1/projects/{id}/quota | AbilityRead | handleGetQuota |
 | PUT | /api/v1/projects/{id}/quota | AbilityWrite | handleSetQuota |
 | DELETE | /api/v1/projects/{id}/quota | AbilityWrite | handleDeleteQuota |
+| GET | /api/v1/projects/{id}/export | AbilityReadSensitive | handleExportProject |
+| PATCH | /api/v1/organizations/{id} | AbilityWrite | handlePatchOrganization |
+| GET | /api/v1/organizations/{id}/avatar | AbilityRead | handleGetOrganizationAvatar |
+| PUT | /api/v1/organizations/{id}/avatar | AbilityWrite | handlePutOrganizationAvatar |
+| DELETE | /api/v1/organizations/{id}/avatar | AbilityWrite | handleDeleteOrganizationAvatar |
+| GET | /api/v1/organizations/{id}/summary | AbilityRead | handleGetOrganizationSummary |
+| GET | /api/v1/organizations/{id}/activity | AbilityRead | handleListOrganizationActivity |
+| PUT | /api/v1/projects/{id}/default-environment | AbilityWrite | handleSetProjectDefaultEnvironment |
+| POST | /api/v1/projects/default-environments/backfill | AbilityWrite | handleBackfillDefaultEnvironments |
 
 ## Nodes
 
@@ -999,6 +1015,8 @@ Endpoints for:
 | POST | /api/v1/nodes/{id}/failure/resolve | AbilityRoot | handleResolveNodeFailure |
 | GET | /api/v1/nodes/domains | AbilityRoot | handleNodeDomains |
 | GET | /api/v1/nodes/{id}/onboarding | AbilityRoot | handleGetNodeOnboarding |
+| GET | /api/v1/nodes/{id}/taints | AbilityRoot | handleGetNodeTaints |
+| PUT | /api/v1/nodes/{id}/taints | AbilityRoot | handleSetNodeTaints |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
@@ -1134,6 +1152,9 @@ Endpoints for:
 | PUT | /api/v1/settings/ingress/dns01 | AbilityRoot | handlePutIngressDNS01 |
 | GET | /api/v1/settings/ingress/cloudflare | AbilityRoot | handleGetIngressCloudflare |
 | PUT | /api/v1/settings/ingress/cloudflare | AbilityRoot | handlePutIngressCloudflare |
+| GET | /api/v1/certificates/budget | AbilityRead | handleGetCertBudget |
+| GET | /api/v1/apps/{name}/domains/{domain}/dns/plan | AbilityRead | handleGetDomainWWWPlan |
+| POST | /api/v1/apps/{name}/domains/{domain}/dns/apply | AbilityDeploy | handleApplyDomainWWW |
 
 </Accordion>
 
@@ -1190,6 +1211,18 @@ Endpoints for:
 | POST | /api/v1/domains/{domain}/cutover/certificate | AbilityRoot | handleCutoverCertificate |
 | DELETE | /api/v1/domains/{domain}/cutover/certificate | AbilityRoot | handleCutoverCertificateRevert |
 | GET | /api/v1/domains/{domain}/verify | AbilityRead | handleDomainCutoverVerify |
+| GET | /api/v1/domains/parked | AbilityRead | handleListParkedDomains |
+| POST | /api/v1/domains/park | AbilityWriteSensitive | handleParkDomain |
+| POST | /api/v1/domains/move | AbilityWriteSensitive | handleMoveDomain |
+| POST | /api/v1/domains/parked/{domain}/attach | AbilityWriteSensitive | handleAttachParkedDomain |
+| DELETE | /api/v1/domains/parked/{domain} | AbilityWriteSensitive | handleDeleteParkedDomain |
+| POST | /api/v1/domains/batch | AbilityWriteSensitive | handleDomainsBatch |
+| GET | /api/v1/domains/parked/retention | AbilityRead | handleParkedRetention |
+| GET | /api/v1/domains/watch | AbilityRead | handleDomainsWatch |
+| GET | /api/v1/domains/{domain}/watch | AbilityRead | handleDomainWatchSnapshot |
+| GET | /api/v1/domains/export | AbilityRead | handleDomainsExport |
+| GET | /api/v1/domains/{domain}/changes | AbilityRead | handleListDomainChanges |
+| POST | /api/v1/domains/{domain}/changes/{id}/rollback | AbilityRoot | handleRollbackDomainChange |
 
 ## Built-in Container Registry
 
@@ -1340,6 +1373,7 @@ Endpoints for:
 | GET | /api/v1/audit-log/verify | AbilityRoot | handleVerifyAuditLog |
 | GET | /api/v1/audit-log/anchor | AbilityRoot | handleGetAuditAnchor |
 | POST | /api/v1/audit-log/anchor-check | AbilityRoot | handleCheckAuditAnchors |
+| GET | /api/v1/audit-log/anchor-status | AbilityRoot | handleGetAuditAnchorStatus |
 
 `GET /api/v1/audit-log` accepts optional query params: `limit`, `before` (RFC3339 cursor), `path`, `method`, `client_kind` (exact match), `q` (case-insensitive substring across actor name, ability, method, path and remote address), `status=failed` (only `status_code >= 400`), and `format=csv`. All filters combine with AND and the CSV export honors them.
 
@@ -1587,7 +1621,7 @@ Routes that do not fit an existing group.
 | POST | /api/v1/teams | AbilityRoot | handleCreateTeam |
 | GET | /api/v1/teams/roles | AbilityRead | handleListTeamRoles |
 | GET | /api/v1/teams/{id} | AbilityRead | handleGetTeam |
-| PATCH | /api/v1/teams/{id} | AbilityWrite | handleRenameTeam |
+| PATCH | /api/v1/teams/{id} | AbilityWrite | handlePatchOrganization |
 | DELETE | /api/v1/teams/{id} | AbilityWrite | handleDeleteTeam |
 | GET | /api/v1/teams/{id}/members | AbilityRead | handleListTeamMembers |
 | PUT | /api/v1/teams/{id}/members/{user} | AbilityWrite | handleSetTeamMemberRole |
@@ -2151,6 +2185,16 @@ Routes that do not fit an existing group.
 | GET | /api/v1/mail/dns/status | AbilityRead | handleMailDNSStatus |
 | GET | /api/v1/dns/zones/{provider}/{id} | AbilityRead | handleGetDNSZoneDetail |
 | POST | /api/v1/firewall/exposure/restrictions/{protocol}/{port}/confirm | AbilityRoot | handleExposureConfirm |
+| GET | /api/v1/tokens/unused | Session | handleUnusedTokens |
+| GET | /api/v1/doctor/reachability | AbilityRead | handleDoctorReachability |
+| GET | /api/v1/doctor/explain | AbilityRead | handleDoctorExplain |
+| GET | /api/v1/me/onboarding | Public | handleGetMeOnboarding |
+| PUT | /api/v1/me/onboarding | Public | handlePutMeOnboarding |
+| POST | /api/v1/me/onboarding/reset | Public | handleResetMeOnboarding |
+| GET | /api/v1/me/preferences/appearance | Public | handleGetMePreferenceAppearance |
+| PUT | /api/v1/me/preferences/appearance | Public | handlePutMePreferenceAppearance |
+| DELETE | /api/v1/me/preferences/appearance | Public | handleDeleteMePreferenceAppearance |
+| POST | /api/v1/images/remove | AbilityRoot | handleImageRemove |
 | POST | /mcp | Public |  |
 
 ## See also

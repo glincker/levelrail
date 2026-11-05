@@ -14,6 +14,9 @@ func (rt *Router) registerProjectRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/projects", rt.requireAbility(AbilityWrite, rt.handleCreateProject))
 	mux.HandleFunc("GET /api/v1/projects/{id}", rt.requireAbility(AbilityRead, rt.handleGetProject))
 	mux.HandleFunc("DELETE /api/v1/projects/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteProject))
+	// Default environment per project (project_default_env.go): a create naming a project but no environment joins it.
+	mux.HandleFunc("PUT /api/v1/projects/{id}/default-environment", rt.requireAbility(AbilityWrite, rt.handleSetProjectDefaultEnvironment))
+	mux.HandleFunc("POST /api/v1/projects/default-environments/backfill", rt.requireAbility(AbilityWrite, rt.handleBackfillDefaultEnvironments))
 	// Bulk restart every app filed under this project (project_restart.go):
 	// AbilityDeploy, the same ability POST /api/v1/apps/{name}/restart
 	// itself uses, not AbilityWrite, since this triggers a real container
@@ -34,6 +37,9 @@ func (rt *Router) registerProjectRoutes(mux *http.ServeMux) {
 	// this file's own package doc comment on why apps/databases stay
 	// client-filtered elsewhere): a graph's nodes and edges aren't a
 	// list page.
+	// Compose export (project_export.go): AbilityReadSensitive since env is
+	// read; include_secrets is gated again on write:sensitive in the handler.
+	mux.HandleFunc("GET /api/v1/projects/{id}/export", rt.requireAbility(AbilityReadSensitive, rt.handleExportProject))
 	mux.HandleFunc("GET /api/v1/projects/{id}/topology", rt.requireAbility(AbilityRead, rt.handleGetProjectTopology))
 
 	// Organizations (organizations.go): groups projects, same ordinary
@@ -42,6 +48,13 @@ func (rt *Router) registerProjectRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/organizations", rt.requireAbility(AbilityWrite, rt.handleCreateOrganization))
 	mux.HandleFunc("GET /api/v1/organizations/{id}", rt.requireAbility(AbilityRead, rt.handleGetOrganization))
 	mux.HandleFunc("DELETE /api/v1/organizations/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteOrganization))
+	// Profile and home (organization_profile.go): the team gate answers 404 to non-members.
+	mux.HandleFunc("PATCH /api/v1/organizations/{id}", rt.requireAbility(AbilityWrite, rt.handlePatchOrganization))
+	mux.HandleFunc("GET /api/v1/organizations/{id}/avatar", rt.requireAbility(AbilityRead, rt.handleGetOrganizationAvatar))
+	mux.HandleFunc("PUT /api/v1/organizations/{id}/avatar", rt.requireAbility(AbilityWrite, rt.handlePutOrganizationAvatar))
+	mux.HandleFunc("DELETE /api/v1/organizations/{id}/avatar", rt.requireAbility(AbilityWrite, rt.handleDeleteOrganizationAvatar))
+	mux.HandleFunc("GET /api/v1/organizations/{id}/summary", rt.requireAbility(AbilityRead, rt.handleGetOrganizationSummary))
+	mux.HandleFunc("GET /api/v1/organizations/{id}/activity", rt.requireAbility(AbilityRead, rt.handleListOrganizationActivity))
 	mux.HandleFunc("PUT /api/v1/projects/{id}/organization", rt.requireAbility(AbilityWrite, rt.handleSetProjectOrganization))
 
 	// Shared env vars every project filed under this organization

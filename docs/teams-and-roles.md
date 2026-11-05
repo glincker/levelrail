@@ -119,3 +119,18 @@ The `X-Scope-Team` and `X-Scope-Project` headers (or the dashboard's `scope_team
 
 - Template deploys, imports and other instance wide create flows stay with instance members; team members create apps and databases directly.
 - Instance notification channels and web push stay instance wide; team members cannot enroll in web push.
+
+## Organization profile and home
+
+An organization has a display name, an optional slug (3 to 40 characters: lowercase letters, digits and single hyphens; the default organization has none), a description and an avatar. Org admins change them with `PATCH /api/v1/organizations/{id}` (also `PATCH /api/v1/teams/{id}`) or the CLI:
+
+```
+levelrail-cli orgs rename <org> <name>
+levelrail-cli orgs set-slug <org> <slug>
+levelrail-cli orgs set-description <org> <text>
+levelrail-cli orgs avatar set <org> <file.png>
+levelrail-cli orgs avatar rm <org> --yes
+levelrail-cli orgs show <org> [--json]
+```
+
+Avatars are PNG or JPEG, checked from the header, decoded and stored as PNG. The size limit is the runtime setting `orgs.avatar_max_bytes` and the largest side is `orgs.avatar_max_dimension`. `GET /api/v1/organizations/{id}/summary` returns counts, failing apps and the latest activity; `GET .../activity?cursor=` pages the rest. Members only; others get 404.

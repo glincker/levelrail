@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { FolderGlassIcon } from '@thesvg/ui-react'
@@ -13,6 +14,10 @@ import {
   ProjectRow,
   RowSkeleton,
 } from '../../components/ProjectRow'
+import { OrgHome } from '../../components/organizations/OrgHome'
+import { OrgProfileCard } from '../../components/organizations/OrgProfileCard'
+import { teamListQueryOptions } from '../../queries/teams'
+import { useIsRoot } from '../../hooks/useIsRoot'
 import { Breadcrumbs } from '../../components/Breadcrumbs'
 import { DeleteOrganizationDialog } from '../../components/DeleteOrganizationDialog'
 import { OrganizationEnvEditor } from '../../components/OrganizationEnvEditor'
@@ -46,6 +51,12 @@ function OrganizationDetailPage() {
   const { data: organization } = useOrganization(id)
   const { data: projects } = useProjects()
   const orgProjects = projects.filter((p) => p.org_id === id)
+  const root = useIsRoot()
+  const { data: teams } = useQuery(teamListQueryOptions())
+  const team = teams?.find((tm) => tm.id === id)
+  const isDefault = team?.default === true
+  const canManage =
+    root || (!isDefault && (team?.role === 'owner' || team?.role === 'admin'))
   const parentRef = useRef<HTMLDivElement>(null)
 
   const virtualizer = useVirtualizer({
@@ -69,6 +80,13 @@ function OrganizationDetailPage() {
             }}
           />
         }
+      />
+
+      <OrgHome organization={organization} />
+      <OrgProfileCard
+        organization={organization}
+        canManage={canManage}
+        isDefault={isDefault}
       />
 
       <OrganizationEnvEditor organizationId={id} />

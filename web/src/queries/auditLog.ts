@@ -215,3 +215,38 @@ export function usePurgeAuditLog() {
     },
   })
 }
+
+export interface AuditAnchorStatus {
+  enabled: boolean
+  last_exported_seq: number
+  last_exported_at?: string
+  last_error?: string
+  last_error_at?: string
+  exported: number
+  failed: number
+  dropped: number
+  queued: number
+}
+
+const AUDIT_ANCHOR_REFETCH_MS = 30_000
+
+export async function fetchAuditAnchorStatus(): Promise<AuditAnchorStatus> {
+  const res = await fetch('/api/v1/audit-log/anchor-status')
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `audit anchor status failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as AuditAnchorStatus
+}
+
+// A 403 or 404 means this account or server has no anchor status, so stop retrying and polling.
+export const auditAnchorStatusQueryOptions = () =>
+  queryOptions({
+    queryKey: [...auditLogKeys.all, 'anchor-status'] as const,
+    queryFn: fetchAuditAnchorStatus,
+    retry: false,
+    refetchInterval: (query) =>
+      query.state.error ? false : AUDIT_ANCHOR_REFETCH_MS,
+  })

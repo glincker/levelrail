@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -53,16 +54,24 @@ func (s *issueSink) at(path, format string, args ...any) {
 // exists, so nothing is planned from a partly valid input.
 func Build(docs []*Document, opts Options) ([]*Resource, []Issue) {
 	var issues []Issue
-	for _, d := range docs {
+	docs = append([]*Document(nil), docs...)
+	for i, d := range docs {
 		if d.Root == nil || d.Root.Kind != yaml.MappingNode {
 			continue
+		}
+		var subst map[string][]string
+		if d.Kind == KindApp {
+			var mi []Issue
+			d, subst, mi = substituteAppFields(d, opts)
+			docs[i] = d
+			issues = append(issues, mi...)
 		}
 		si, err := schemaIssues(d)
 		if err != nil {
 			issues = append(issues, Issue{File: d.File, Line: d.Line, Message: err.Error()})
 			continue
 		}
-		issues = append(issues, si...)
+		issues = append(issues, hideSubstituted(si, subst)...)
 	}
 	if len(issues) > 0 {
 		return nil, sortIssues(issues)
@@ -173,6 +182,10 @@ func buildOne(d *Document, opts Options, s *issueSink) *Resource {
 			s.at("metadata.name", "tag names are at most 64 characters")
 		}
 		r.Fields = map[string]any{}
+	case KindNode:
+		r.Fields = buildNode(d, s)
+	case KindSetting:
+		r.Fields = buildSetting(d, s)
 	case KindDatabase:
 		var sp struct {
 			Engine  string `yaml:"engine"`
@@ -377,7 +390,7 @@ func buildApp(d *Document, opts Options, s *issueSink) *Resource {
 	}
 	decodeSpec(d, &sp, s)
 	svcNode := mapValue(d.SpecNode, "service")
-	env, secrets, conns := appEnv(svcNode, s, opts)
+	env, secrets, conns, existing := appEnv(svcNode, s, opts)
 
 	trimmed := *svcNode
 	trimmed.Content = nil
@@ -426,6 +439,7 @@ func buildApp(d *Document, opts Options, s *issueSink) *Resource {
 		s.at("spec.environment", "an environment needs a project")
 	}
 	f.Rollout = rolloutFromSpec(svc.Rollout)
+	f.Placement = placementFromSpec(svc.Tolerations, svc.Affinity)
 	if len(svc.Files) > 0 {
 		f.Files = filesFromSpec(svc.Files)
 	}
@@ -438,7 +452,7 @@ func buildApp(d *Document, opts Options, s *issueSink) *Resource {
 			f.Volumes[v.Name] = v.Path
 		}
 	}
-	return &Resource{Kind: KindApp, Name: d.Name, Doc: d, Fields: toMap(f), SecretRefs: f.SecretEnv}
+	return &Resource{Kind: KindApp, Name: d.Name, Doc: d, Fields: toMap(f), SecretRefs: f.SecretEnv, ExistingSecrets: sortedUnique(existing)}
 }
 
 // substituteImage resolves ${{ env.NAME }} in build.image like env values.
@@ -485,14 +499,14 @@ func checkSupportedService(svc *spec.Service, s *issueSink) {
 	}
 }
 
-func appEnv(svcNode *yaml.Node, s *issueSink, opts Options) (map[string]string, []string, map[string]string) {
+func appEnv(svcNode *yaml.Node, s *issueSink, opts Options) (map[string]string, []string, map[string]string, []string) {
 	envNode := mapValue(svcNode, "env")
 	if envNode == nil {
-		return nil, nil, nil
+		return nil, nil, nil, nil
 	}
 	literal := map[string]string{}
 	conns := map[string]string{}
-	var secrets []string
+	var secrets, existing []string
 	for i := 0; i+1 < len(envNode.Content); i += 2 {
 		k, vn := envNode.Content[i].Value, envNode.Content[i+1]
 		path := "spec.service.env." + k
@@ -516,10 +530,21 @@ func appEnv(svcNode *yaml.Node, s *issueSink, opts Options) (map[string]string, 
 				}
 				continue
 			}
+			before := len(secrets)
 			secrets = mappingEnv(k, vn, path, secrets, s)
+			if len(secrets) > before && isExistingRef(vn) {
+				existing = append(existing, k)
+			}
 		}
 	}
-	return literal, secrets, conns
+	return literal, secrets, conns, existing
+}
+
+// isExistingRef reports { secretRef, existing: true }, a pointer at a secret
+// already in the store whose value apply never writes.
+func isExistingRef(vn *yaml.Node) bool {
+	e := mapValue(vn, "existing")
+	return mapValue(vn, "secretRef") != nil && e != nil && e.Value == "true"
 }
 
 func mappingEnv(k string, vn *yaml.Node, path string, secrets []string, s *issueSink) []string {
@@ -541,4 +566,96 @@ func appendSecret(secrets []string, key, ref, path string, s *issueSink) []strin
 		return secrets
 	}
 	return append(secrets, key)
+}
+
+// allowedPlaceholderPath reports whether ${{ env.NAME }} may be replaced at a
+// dotted path under spec.service. Anything else keeps failing as unresolved.
+func allowedPlaceholderPath(rel []string) bool {
+	switch {
+	case len(rel) == 1 && rel[0] == "replicas":
+		return true
+	case len(rel) >= 2 && rel[0] == "resources", len(rel) == 2 && rel[0] == "domains", len(rel) == 2 && rel[0] == "labels":
+		return true
+	case len(rel) == 3 && rel[0] == "tolerations" && rel[2] == "value":
+		return true
+	}
+	return false
+}
+
+// substituteAppFields renders the placeholder allowlist on a copy of the
+// document, so the schema check that follows sees the final types.
+func substituteAppFields(d *Document, opts Options) (*Document, map[string][]string, []Issue) {
+	cp := *d
+	cp.Root = cloneNode(d.Root)
+	cp.SpecNode = mapValue(cp.Root, "spec")
+	svc := mapValue(cp.SpecNode, "service")
+	subst := map[string][]string{}
+	var issues []Issue
+	var walk func(n *yaml.Node, rel []string)
+	walk = func(n *yaml.Node, rel []string) {
+		switch n.Kind {
+		case yaml.MappingNode:
+			for i := 0; i+1 < len(n.Content); i += 2 {
+				walk(n.Content[i+1], append(rel[:len(rel):len(rel)], n.Content[i].Value))
+			}
+		case yaml.SequenceNode:
+			for i, c := range n.Content {
+				walk(c, append(rel[:len(rel):len(rel)], strconv.Itoa(i)))
+			}
+		case yaml.ScalarNode:
+			if !allowedPlaceholderPath(rel) || !envPlaceRe.MatchString(n.Value) {
+				return
+			}
+			path := "spec.service." + strings.Join(rel, ".")
+			val, missing := substituteVars(n.Value, opts.Vars)
+			if len(missing) > 0 {
+				for _, m := range missing {
+					issues = append(issues, Issue{File: d.File, Path: path, Line: lineFor(d.Root, strings.Split(path, ".")), Message: fmt.Sprintf("variable %s is not provided (pass it with a var flag)", m)})
+				}
+				return
+			}
+			for _, m := range envPlaceRe.FindAllStringSubmatch(n.Value, -1) {
+				subst[path] = append(subst[path], m[1])
+			}
+			n.Value = val
+			if rel[0] == "replicas" || rel[0] == "resources" {
+				// Let the YAML resolver pick int or float so a number renders as one.
+				n.Tag, n.Style = "", 0
+			}
+		}
+	}
+	if svc != nil {
+		for _, k := range []string{"replicas", "resources", "domains", "labels", "tolerations"} {
+			if v := mapValue(svc, k); v != nil {
+				walk(v, []string{k})
+			}
+		}
+	}
+	return &cp, subst, issues
+}
+
+// hideSubstituted keeps a substituted value out of schema messages: the field
+// path and the variable name are enough to fix it.
+func hideSubstituted(in []Issue, subst map[string][]string) []Issue {
+	if len(subst) == 0 {
+		return in
+	}
+	for i := range in {
+		if names, ok := subst[in[i].Path]; ok {
+			in[i].Message = fmt.Sprintf("the value from %s is not valid for this field", strings.Join(sortedUnique(names), ", "))
+		}
+	}
+	return in
+}
+
+func cloneNode(n *yaml.Node) *yaml.Node {
+	if n == nil {
+		return nil
+	}
+	c := *n
+	c.Content = make([]*yaml.Node, len(n.Content))
+	for i, ch := range n.Content {
+		c.Content[i] = cloneNode(ch)
+	}
+	return &c
 }

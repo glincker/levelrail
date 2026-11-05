@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { ChevronDownGlassIcon, ChevronRightGlassIcon } from '@thesvg/ui-react'
 import { preflightQueryOptions, type UpdateStatus } from '@/queries/updates'
 import { ReleaseNotes } from '../ReleaseNotes'
+import { UpdateMigrations } from './UpdateMigrations'
 
 // UpdateChanges previews an available update: the version delta, release
 // date, collapsed notes, and the existing backup/restart/rollback promises.
@@ -45,6 +46,7 @@ export function UpdateChanges({ status }: { status: UpdateStatus }) {
           <dd>{released}</dd>
         </div>
       </dl>
+      <UpdateMigrations />
       <ul className="max-w-prose list-disc space-y-1 pl-5 text-sm text-muted-foreground">
         <li>{t('upgradeNow.willBackup')}</li>
         <li>{t('upgradeNow.willRestart')}</li>

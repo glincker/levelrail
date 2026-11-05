@@ -2560,11 +2560,20 @@ type HostFirewallPort struct {
 
 // HostFirewallResource mirrors internal/api's hostFirewallResource.
 type HostFirewallResource struct {
-	Installed       bool               `json:"installed"`
-	Active          bool               `json:"active"`
-	DefaultIncoming string             `json:"default_incoming,omitempty"`
-	Required        []HostFirewallPort `json:"required"`
-	Commands        []string           `json:"commands"`
+	Installed       bool                      `json:"installed"`
+	Active          bool                      `json:"active"`
+	DefaultIncoming string                    `json:"default_incoming,omitempty"`
+	Required        []HostFirewallPort        `json:"required"`
+	Commands        []string                  `json:"commands"`
+	OpenCommands    []HostFirewallOpenCommand `json:"open_commands"`
+}
+
+// HostFirewallOpenCommand mirrors internal/hostfw's OpenCommand.
+type HostFirewallOpenCommand struct {
+	Port    int    `json:"port"`
+	Backend string `json:"backend"`
+	Command string `json:"command"`
+	Note    string `json:"note,omitempty"`
 }
 
 // HostFirewallActionRequest mirrors internal/api's hostFirewallActionRequest.
@@ -2797,6 +2806,23 @@ type ProjectResource struct {
 	Name      string `json:"name"`
 	CreatedAt string `json:"created_at"`
 	OrgID     string `json:"org_id,omitempty"`
+	// DefaultEnvironmentID is the environment a create in this project joins when it names none.
+	DefaultEnvironmentID string `json:"default_environment_id,omitempty"`
+}
+
+// BackfillDefaultEnvironmentsResult mirrors internal/api's backfillDefaultEnvResponse.
+type BackfillDefaultEnvironmentsResult struct {
+	DryRun   bool                              `json:"dry_run"`
+	Name     string                            `json:"environment_name"`
+	Projects []BackfillDefaultEnvironmentEntry `json:"projects"`
+	Applied  int                               `json:"applied"`
+}
+
+// BackfillDefaultEnvironmentEntry is one project a backfill creates or promotes a default for.
+type BackfillDefaultEnvironmentEntry struct {
+	ProjectID string `json:"project_id"`
+	Name      string `json:"name"`
+	Action    string `json:"action"`
 }
 
 // SetProjectOrganizationRequest mirrors internal/api's
@@ -3253,6 +3279,7 @@ type NodeResource struct {
 	PlacedApps      []string          `json:"placed_apps,omitempty"`
 	PlacedDatabases []string          `json:"placed_databases,omitempty"`
 	Labels          map[string]string `json:"labels,omitempty"`
+	Taints          []NodeTaint       `json:"taints,omitempty"`
 }
 
 // NodeAlertStatusResource mirrors internal/api's nodeAlertStatusResource
@@ -4001,6 +4028,19 @@ type AuditAnchor struct {
 	Hash    string `json:"hash"`
 	At      string `json:"at"`
 	Sig     string `json:"sig"`
+}
+
+// AuditAnchorStatus mirrors auditanchor.Status: the webhook export state.
+type AuditAnchorStatus struct {
+	Enabled         bool   `json:"enabled"`
+	LastExportedSeq int64  `json:"last_exported_seq"`
+	LastExportedAt  string `json:"last_exported_at,omitempty"`
+	LastError       string `json:"last_error,omitempty"`
+	LastErrorAt     string `json:"last_error_at,omitempty"`
+	Exported        int64  `json:"exported"`
+	Failed          int64  `json:"failed"`
+	Dropped         int64  `json:"dropped"`
+	Queued          int    `json:"queued"`
 }
 
 // AuditAnchorReport mirrors store.AuditAnchorReport.

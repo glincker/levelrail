@@ -16,6 +16,8 @@ import type { NextStep } from '../../lib/dashboardHome'
 import type { AppListEntry } from '../../types/appDetail'
 import commonEn from '../../locales/en/common.json'
 import dashboardEn from '../../locales/en/dashboard.json'
+import firstRunEn from '../../locales/en/firstRun.json'
+import onboardingEn from '../../locales/en/onboarding.json'
 import { createTestQueryClient } from '@/test/testQueryClient'
 
 // A dedicated instance with the real dashboard.json resources loaded
@@ -24,10 +26,17 @@ const testI18n = i18next.createInstance()
 void testI18n.use(initReactI18next).init({
   lng: 'en',
   fallbackLng: 'en',
-  ns: ['dashboard', 'common'],
+  ns: ['dashboard', 'common', 'firstRun', 'onboarding'],
   defaultNS: 'dashboard',
   fallbackNS: 'common',
-  resources: { en: { dashboard: dashboardEn, common: commonEn } },
+  resources: {
+    en: {
+      dashboard: dashboardEn,
+      common: commonEn,
+      firstRun: firstRunEn,
+      onboarding: onboardingEn,
+    },
+  },
   interpolation: { escapeValue: false },
 })
 
@@ -54,7 +63,11 @@ vi.mock('../CreateResourceWizard', () => ({
   CreateResourceWizard: ({ trigger }: { trigger: ReactNode }) => <>{trigger}</>,
 }))
 vi.mock('../getStarted/FirstDeploy', () => ({
-  FirstDeploy: () => <button type="button">Deploy sample app</button>,
+  FirstDeploy: ({ secondary }: { secondary?: boolean }) => (
+    <button type="button">
+      {secondary ? 'Deploy folded' : 'Deploy sample app'}
+    </button>
+  ),
 }))
 vi.mock('../FleetResourceChart', () => ({ FleetResourceChart: () => null }))
 vi.mock('../FleetUtilizationSummary', () => ({
@@ -194,7 +207,7 @@ describe('DashboardHome', () => {
     ).toBeInTheDocument()
   })
 
-  it('first run shows the single first-deploy path and no separate quick start list', async () => {
+  it('first run shows the first-deploy path and no feature pitch', async () => {
     routeFetch({})
     renderHome([])
     expect(
@@ -203,14 +216,30 @@ describe('DashboardHome', () => {
     expect(screen.getByRole('tab', { name: 'Metrics' })).toBeInTheDocument()
     expect(screen.queryByText('Quick start')).not.toBeInTheDocument()
     expect(screen.queryByText('Add a node')).not.toBeInTheDocument()
-    expect(screen.getByText('What Acme does')).toBeInTheDocument()
+    expect(screen.queryByText('What Acme does')).not.toBeInTheDocument()
     expect(
-      screen.getByText(/Rolling, recreate, or blue-green strategy/),
+      screen.queryByText(/Rolling, recreate, or blue-green strategy/),
+    ).not.toBeInTheDocument()
+  })
+
+  it('first run leads with setup when the onboarding card applies', async () => {
+    routeFetch({
+      '/api/v1/me/onboarding': {
+        enabled: true,
+        state: 'not_started',
+        current_step: 'welcome',
+      },
+    })
+    renderHome([])
+    expect(
+      (await screen.findAllByText('Set up your dashboard')).length,
+    ).toBeGreaterThan(0)
+    expect(
+      screen.getByRole('button', { name: 'Deploy folded' }),
     ).toBeInTheDocument()
-    fireEvent.click(
-      screen.getByRole('tab', { name: /Eight managed databases/ }),
-    )
-    expect(screen.getByText(/ClickHouse/)).toBeInTheDocument()
+    expect(
+      screen.getByRole('tab', { name: 'Start', selected: true }),
+    ).toBeInTheDocument()
   })
 
   it('populated with no attention shows a healthy pill, tiles and app quick start', async () => {

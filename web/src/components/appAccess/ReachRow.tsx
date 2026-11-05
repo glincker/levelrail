@@ -7,10 +7,17 @@ import {
   TriangleAlertGlassIcon,
 } from '@thesvg/ui-react'
 import { Button, buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import type { ProbeTarget } from '../../queries/appExposure'
 import { ProbeNote, ScopeChip, SecurityChip } from './ReachParts'
 import { useCopyAddress } from './useCopyAddress'
 import { resolveSecurity, type ReachAddress } from './reachModel'
+
+const DOT_CLASS = {
+  ok: 'bg-tone-success',
+  down: 'bg-tone-warning',
+  unknown: 'bg-muted-foreground/40',
+} as const
 
 interface ReachRowProps {
   addr: ReachAddress
@@ -33,11 +40,17 @@ export function ReachRow({
   const { t } = useTranslation('appAccess')
   const { copied, copy } = useCopyAddress()
   const what = t(`id.${addr.kind}`)
+  const dot = probe ? (probe.ok ? 'ok' : 'down') : 'unknown'
   const showChange = addr.kind === 'public'
   return (
-    <li className="flex flex-col gap-2 py-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-      <div className="min-w-0 flex-1 space-y-1.5">
+    <li className="flex flex-col gap-1 py-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+      <div className="min-w-0 flex-1 space-y-1">
         <div className="flex flex-wrap items-center gap-1.5">
+          <span
+            role="img"
+            aria-label={t(`dot.${dot}`)}
+            className={cn('size-2 shrink-0 rounded-full', DOT_CLASS[dot])}
+          />
           <span className="text-sm font-medium">{what}</span>
           <ScopeChip scope={addr.scope} />
           <SecurityChip security={resolveSecurity(addr, probe)} />

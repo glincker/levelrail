@@ -83,7 +83,7 @@
     "previewing": "Checking...",
     "cleanNow": "Clean now",
     "readThrough": "Managed in Disk and Docker",
-    "readThroughAction": "Open Disk and Docker",
+    "readThroughAction": "Open disk and Docker",
     "keepForever": "Retention is set to Never, so nothing is removed.",
     "destructive": "Deletes data permanently",
     "unknown": "-",

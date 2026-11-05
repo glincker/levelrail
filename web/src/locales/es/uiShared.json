@@ -1,0 +1,7 @@
+{
+  "saveStatus": {
+    "saving": "Guardando",
+    "saved": "Guardado",
+    "error": "No se pudo guardar"
+  }
+}

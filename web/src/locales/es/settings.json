@@ -293,7 +293,7 @@
       },
       "certificates": {
         "title": "Certificados TLS",
-        "description": "El certificado de cada dominio en un solo lugar: vencimiento, emisor, renovar ahora y carga de certificados propios."
+        "description": "El certificado de cada dominio en un solo lugar: vencimiento, emisor, renovar ahora, carga de certificados propios y presupuesto de emisión."
       },
       "infrastructure": {
         "title": "Infraestructura como código",
@@ -322,10 +322,24 @@
       "benchmarks": {
         "title": "Benchmarks",
         "description": "Ejecuciones de benchmark guardadas con host, compilación, límites y vista de comparación."
+      },
+      "appearance": {
+        "title": "Apariencia",
+        "description": "Tema, acento, fuente, ancho y densidad."
       }
     },
     "search": "Buscar en la configuración",
     "back": "Volver",
+    "pins": {
+      "group": "Fijados",
+      "pin": "Fijar {{label}}",
+      "unpin": "Quitar {{label}} de fijados",
+      "limit": "Límite de fijados alcanzado ({{max}}). Quita uno primero."
+    },
+    "expandAll": "Expandir todos los grupos",
+    "collapseAll": "Contraer todos los grupos",
+    "oneAtATime": "Abrir un solo grupo a la vez",
+    "groupCount": "{{count}} páginas",
     "noMatchTitle": "Ninguna configuración coincide con \"{{query}}\"",
     "noMatchDescription": "Prueba con otra palabra o borra la búsqueda para ver todas las áreas.",
     "title": "Configuración",
@@ -566,7 +580,16 @@
       "fullHint": "De borde a borde",
       "title": "Ancho de página",
       "wide": "Amplio",
-      "wideHint": "Mayor aprovechamiento de las pantallas grandes"
+      "wideHint": "Mayor aprovechamiento de las pantallas grandes",
+      "compact": "Compacta",
+      "compactHint": "Columna estrecha para leer",
+      "custom": "Ancho exacto",
+      "customHint": "Elige un ancho en píxeles"
+    },
+    "appearanceLink": {
+      "title": "Apariencia",
+      "description": "Tema, fuente, ancho de página y densidad ahora están en un solo lugar.",
+      "open": "Abrir apariencia"
     }
   },
   "securityPage": {
@@ -3153,6 +3176,54 @@
     "turnOn": "Activar firewall",
     "unmanagedHelp": "Levelrail solo gestiona ufw, así que no cambiará este firewall. Los puertos de abajo son los que sus reglas necesitan permitir."
   },
+  "iacExport": {
+    "app": "App",
+    "appPlaceholder": "web",
+    "button": "Exportar como código",
+    "copied": "Copiado",
+    "copy": "Copiar",
+    "description": "Escribe el estado actual como archivos de recursos. Deje ambos campos vacíos para exportar todo lo que puede leer.",
+    "dialogDescription": "El archivo de recursos de este recurso. Los valores secretos nunca se incluyen.",
+    "dialogTitle": "Exportar {{name}} como código",
+    "download": "Descargar",
+    "empty": "No hay nada que exportar.",
+    "includeValues": "Incluir valores de entorno en texto plano",
+    "loading": "Exportando...",
+    "project": "Proyecto",
+    "projectPlaceholder": "shop",
+    "run": "Exportar",
+    "running": "Exportando...",
+    "textLabel": "Archivos de recursos exportados",
+    "title": "Exportar",
+    "warning": "aviso: {{message}}"
+  },
+  "iacPlan": {
+    "denied": "denegado",
+    "keptNote": "conservado, no está en los archivos",
+    "matches": "El estado actual ya coincide con los archivos.",
+    "status": {
+      "applied": "aplicado",
+      "denied": "denegado",
+      "failed": "fallido",
+      "noop": "sin cambios",
+      "skipped": "omitido"
+    },
+    "summary": "{{create}} por crear, {{update}} por actualizar, {{delete}} por eliminar, {{noop}} sin cambios",
+    "summaryErrors": "{{create}} por crear, {{update}} por actualizar, {{delete}} por eliminar, {{noop}} sin cambios, {{error}} con errores",
+    "warning": "aviso: {{message}}"
+  },
+  "iacImport": {
+    "button": "Importar YAML",
+    "cliNote": "Para aplicar, ejecute:",
+    "dialogDescription": "Pegue o suba un YAML de recursos para ver qué cambiaría. Aquí no se aplica nada.",
+    "dialogTitle": "Importar YAML para {{name}}",
+    "placeholder": "kind: App",
+    "preview": "Vista previa",
+    "previewing": "Planificando...",
+    "textLabel": "YAML para la vista previa",
+    "upload": "Subir archivo",
+    "uploadLabel": "Subir un archivo YAML"
+  },
   "iacHelp": {
     "default": "Por defecto: {{value}}.",
     "hint": "Haga clic en una clave para ver lo que hace."
@@ -3273,6 +3344,59 @@
   "organizationsPage": {
     "description": "Agrupe proyectos relacionados en una organización. Asigne un proyecto a una desde la página de detalle del propio proyecto.",
     "title": "Organizaciones"
+  },
+  "organizationHome": {
+    "loadFailed": "No se pudo cargar este panel.",
+    "copySlug": "Copiar slug",
+    "copied": "Copiado",
+    "noSlug": "Sin slug",
+    "members": "Miembros",
+    "viewMembers": "Ver miembros",
+    "projects": "Proyectos",
+    "viewProjects": "Ver proyectos",
+    "environments": "Entornos",
+    "pendingInvites": "Invitaciones pendientes",
+    "viewInvites": "Gestionar invitaciones",
+    "workloads": "Apps y bases de datos",
+    "apps": "apps",
+    "databases": "bases de datos",
+    "failing_one": "{{count}} app con fallos",
+    "failing_other": "{{count}} apps con fallos",
+    "activity": "Actividad reciente",
+    "showMore": "Mostrar más",
+    "actions": {
+      "org_updated": "Perfil actualizado",
+      "org_avatar_updated": "Avatar cambiado",
+      "org_avatar_removed": "Avatar eliminado",
+      "org_slug_changed": "Slug cambiado"
+    },
+    "profile": {
+      "title": "Perfil",
+      "readOnly": "Solo los administradores de la organización pueden editar el perfil.",
+      "name": "Nombre",
+      "slug": "Slug",
+      "slugPlaceholder": "mi-organizacion",
+      "slugHint": "De 3 a 40 letras minúsculas, dígitos y guiones simples.",
+      "slugDefault": "La organización predeterminada no puede tener slug.",
+      "slugLength": "Usa de {{min}} a {{max}} caracteres.",
+      "slugChars": "Usa letras minúsculas, dígitos y guiones simples, no en los extremos.",
+      "slugTaken": "Ese slug ya está en uso.",
+      "description": "Descripción",
+      "save": "Guardar cambios",
+      "saving": "Guardando...",
+      "saved": "Guardado"
+    },
+    "avatar": {
+      "input": "Archivo de avatar de la organización",
+      "upload": "Subir avatar",
+      "remove": "Quitar avatar",
+      "hint": "PNG o JPEG, hasta {{max}} KB.",
+      "badType": "Solo se aceptan imágenes PNG o JPEG.",
+      "tooLarge": "La imagen supera {{max}} KB.",
+      "uploading": "Subiendo avatar",
+      "removeTitle": "¿Quitar el avatar?",
+      "removeBody": "La organización vuelve a mostrar sus iniciales."
+    }
   },
   "orphans": {
     "description": "Contenedores, volúmenes y certificados que ninguna app ni base de datos reclama. Se eliminan automáticamente cuando permanecen huérfanos más allá del periodo de gracia. Los volúmenes de datos de bases de datos nunca se eliminan.",
@@ -3435,5 +3559,185 @@
   },
   "vaultPage": {
     "description": "Resuelva en vivo el valor de una variable de entorno de app.yaml desde una instancia externa de HashiCorp Vault, como alternativa al almacenamiento de secretos cifrado por sobre de esta plataforma."
+  },
+  "appearancePage": {
+    "title": "Apariencia",
+    "description": "Base del tema, acento, fuente, tamaño de texto, ancho de página, relleno lateral y densidad. Los cambios se aplican al elegirlos.",
+    "savedHere": "Se guarda en este navegador. Con la sincronización activa, también te sigue en tu cuenta.",
+    "reset": "Restablecer valores",
+    "defaultBadge": "Predeterminado",
+    "recommendedBadge": "Recomendado",
+    "presets": {
+      "title": "Ajustes rápidos",
+      "description": "Un clic establece varias opciones a la vez.",
+      "default": "Predeterminado",
+      "defaultHint": "El aspecto original",
+      "focusDark": "Oscuro de enfoque",
+      "focusDarkHint": "Grafito, relleno amplio, densidad cómoda",
+      "oled": "OLED",
+      "oledHint": "Negro puro, páginas anchas, densidad compacta",
+      "paper": "Papel",
+      "paperHint": "Claro cálido, fuente legible, páginas estrechas",
+      "customDescription": "Tus ajustes no coinciden con ningún ajuste preestablecido.",
+      "custom": "Personalizado"
+    },
+    "theme": {
+      "title": "Modo de color",
+      "description": "Claro, oscuro o según el navegador."
+    },
+    "darkBase": {
+      "title": "Base oscura",
+      "description": "El color de superficie en modo oscuro.",
+      "soft": "Oscuro suave",
+      "softHint": "Casi negro, sereno",
+      "black": "Negro puro",
+      "blackHint": "OLED, ahorra batería",
+      "graphite": "Grafito",
+      "graphiteHint": "Neutro, cómodo para la vista",
+      "midnight": "Medianoche",
+      "midnightHint": "Tono azulado"
+    },
+    "lightBase": {
+      "title": "Base clara",
+      "description": "El color de superficie en modo claro.",
+      "white": "Blanco",
+      "whiteHint": "Clásico, máximo brillo",
+      "grey": "Gris suave",
+      "greyHint": "Menos brillo, tarjetas blancas",
+      "paper": "Papel",
+      "paperHint": "Tono cálido",
+      "cool": "Gris frío",
+      "coolHint": "Ligero tono azul"
+    },
+    "accent": {
+      "title": "Acento",
+      "description": "Se usa en la página activa, tarjetas seleccionadas, enlaces y foco.",
+      "teal": "Azul turquesa",
+      "indigo": "Índigo",
+      "violet": "Violeta",
+      "green": "Verde",
+      "amber": "Ámbar",
+      "rose": "Rosa",
+      "custom": "Color propio",
+      "customColor": "Elegir un color de acento personalizado",
+      "customHex": "Color hexadecimal",
+      "customInvalid": "Usa seis dígitos hexadecimales, como #0e7490.",
+      "adjusted": "Ajustado para mejorar la legibilidad"
+    },
+    "font": {
+      "title": "Fuente",
+      "description": "Solo fuentes locales, no se descarga nada.",
+      "system": "Sistema",
+      "systemHint": "La fuente de tu dispositivo",
+      "rounded": "Redondeada",
+      "roundedHint": "Formas suaves",
+      "serif": "Serif",
+      "serifHint": "Clásica, para texto",
+      "mono": "Monoespaciada",
+      "monoHint": "Ancho fijo",
+      "readable": "Legible",
+      "readableHint": "Letras anchas, más interlineado"
+    },
+    "textSize": {
+      "title": "Tamaño de texto",
+      "description": "Escala todo el texto y el espaciado.",
+      "slider": "Tamaño de texto",
+      "quick": "Accesos rápidos",
+      "sample": "Aa El veloz zorro marrón",
+      "reset": "Restablecer tamaño"
+    },
+    "width": {
+      "title": "Ancho de página",
+      "description": "Qué tan ancho es el contenido en pantallas grandes. No afecta a pantallas menores de 1024px.",
+      "slider": "Ancho del contenido",
+      "reset": "Restablecer ancho"
+    },
+    "gutter": {
+      "title": "Relleno lateral",
+      "description": "Espacio a izquierda y derecha del contenido desde tamaño tableta.",
+      "tight": "Ajustado",
+      "tightHint": "Más espacio para el contenido",
+      "normal": "Normal",
+      "normalHint": "Equilibrado",
+      "roomy": "Amplio",
+      "roomyHint": "Más sereno, más margen"
+    },
+    "density": {
+      "description": "Cuánto espacio usan tarjetas, listas y formularios.",
+      "compactHint": "Cabe más en pantalla",
+      "comfortableHint": "Más aire"
+    },
+    "sections": {
+      "color": "Color",
+      "type": "Tipografía",
+      "layout": "Diseño",
+      "sync": "Sincronización"
+    },
+    "motion": {
+      "title": "Movimiento",
+      "description": "Animaciones y transiciones en todo el panel.",
+      "system": "Seguir el sistema",
+      "systemHint": "Usa el ajuste de tu dispositivo",
+      "on": "Reducir",
+      "onHint": "Animación mínima",
+      "off": "Permitir todo",
+      "offHint": "Ignora el ajuste del dispositivo"
+    },
+    "sync": {
+      "label": "Sincronizar con mi cuenta",
+      "hint": "Mantén estas opciones en cada navegador donde inicies sesión.",
+      "syncing": "Sincronizando...",
+      "synced": "Sincronizado {{when}}",
+      "justNow": "ahora mismo",
+      "notSynced": "Sin sincronizar",
+      "tooLarge": "Demasiado grande para sincronizar. Tus opciones quedan en este navegador.",
+      "off": "La sincronización está desactivada. Las opciones quedan en este navegador.",
+      "export": "Exportar",
+      "import": "Importar",
+      "importLabel": "Importar la apariencia desde un archivo JSON",
+      "importBad": "Ese archivo no es una exportación de apariencia válida.",
+      "imported": "Importado."
+    },
+    "radius": {
+      "title": "Redondez de esquinas",
+      "description": "Qué tan redondos son botones, tarjetas y campos.",
+      "sharp": "Recta",
+      "sharpHint": "Cuadrada, técnica",
+      "normal": "Normal",
+      "normalHint": "El aspecto original",
+      "soft": "Suave",
+      "softHint": "Más redonda y amable"
+    },
+    "contrast": {
+      "title": "Alto contraste",
+      "description": "Bordes, texto atenuado y anillo de foco más marcados.",
+      "system": "Seguir el sistema",
+      "systemHint": "Usa el ajuste del dispositivo",
+      "on": "Activado",
+      "onHint": "Siempre alto contraste",
+      "off": "Desactivado",
+      "offHint": "Ignora el ajuste del dispositivo",
+      "sample": "Ejemplo de texto atenuado"
+    },
+    "codeFont": {
+      "title": "Fuente de código",
+      "description": "Para código, registros, terminales y diffs. Solo fuentes locales, no se descarga nada.",
+      "system-mono": "Mono del sistema",
+      "system-monoHint": "El valor del dispositivo",
+      "jetbrains": "JetBrains Mono",
+      "jetbrainsHint": "Si está instalada",
+      "fira": "Fira Code",
+      "firaHint": "Si está instalada",
+      "menlo": "Menlo",
+      "menloHint": "Mac y similares"
+    },
+    "codeSize": {
+      "title": "Tamaño del código",
+      "description": "Tamaño del texto de código, registros y terminales.",
+      "slider": "Tamaño del código",
+      "reset": "Restablecer tamaño",
+      "sample": "$ deploy --app web\n12:00:01 INFO build ok",
+      "sampleLabel": "Ejemplo de código"
+    }
   }
 }

@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -41,6 +42,27 @@ type Fetcher struct {
 	// RedirectHosts, when set, limits redirects to these hosts and their
 	// subdomains, so a release asset cannot bounce the server to an internal address.
 	RedirectHosts []string
+	// Stall fails a transfer that receives no bytes for this long. Zero uses
+	// the default limit.
+	Stall time.Duration
+	// Deadline caps the whole fetch. Zero uses the default limit.
+	Deadline time.Duration
+}
+
+// ErrStalled is returned when a download stops receiving data.
+var ErrStalled = errors.New("download stalled")
+
+// Progress is a download's byte counters; Total is 0 when the server did not say.
+type Progress struct {
+	Bytes int64
+	Total int64
+}
+
+type progressKey struct{}
+
+// WithProgress makes Fetch report the main asset's progress to fn.
+func WithProgress(ctx context.Context, fn func(Progress)) context.Context {
+	return context.WithValue(ctx, progressKey{}, fn)
 }
 
 // Fetch downloads asset, checksums.txt and the signature bundle of tag into
@@ -59,6 +81,15 @@ func (f Fetcher) Fetch(ctx context.Context, tag, asset, dir string) (Fetched, er
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return Fetched{}, fmt.Errorf("create download directory: %w", err)
 	}
+	lim := DefaultLimits()
+	if f.Deadline <= 0 {
+		f.Deadline = lim.Deadline
+	}
+	if f.Stall <= 0 {
+		f.Stall = lim.Stall
+	}
+	ctx, cancel := context.WithTimeout(ctx, f.Deadline)
+	defer cancel()
 	client := f.client()
 	limit := f.MaxBytes
 	if limit <= 0 {
@@ -69,14 +100,15 @@ func (f Fetcher) Fetch(ctx context.Context, tag, asset, dir string) (Fetched, er
 		BinaryPath:    filepath.Join(dir, asset),
 		ChecksumsPath: filepath.Join(dir, checksumsAsset),
 	}
-	if _, err := get(ctx, client, root+url.PathEscape(asset), out.BinaryPath, limit, 0o700); err != nil {
-		return Fetched{}, fmt.Errorf("download %s %s: %w", asset, tag, err)
+	report, _ := ctx.Value(progressKey{}).(func(Progress))
+	if _, err := get(ctx, client, root+url.PathEscape(asset), out.BinaryPath, limit, 0o700, f.Stall, report); err != nil {
+		return Fetched{}, fmt.Errorf("download %s %s: %w", asset, tag, deadlineNote(err, f.Deadline))
 	}
-	if _, err := get(ctx, client, root+checksumsAsset, out.ChecksumsPath, smallMaxBytes, 0o600); err != nil {
+	if _, err := get(ctx, client, root+checksumsAsset, out.ChecksumsPath, smallMaxBytes, 0o600, f.Stall, nil); err != nil {
 		return Fetched{}, fmt.Errorf("download checksums for %s: %w", tag, err)
 	}
 	bundle := filepath.Join(dir, bundleAsset)
-	status, err := get(ctx, client, root+bundleAsset, bundle, smallMaxBytes, 0o600)
+	status, err := get(ctx, client, root+bundleAsset, bundle, smallMaxBytes, 0o600, f.Stall, nil)
 	switch {
 	case err == nil:
 		out.BundlePath = bundle
@@ -90,7 +122,7 @@ func (f Fetcher) Fetch(ctx context.Context, tag, asset, dir string) (Fetched, er
 func (f Fetcher) client() *http.Client {
 	c := f.Client
 	if c == nil {
-		c = &http.Client{Timeout: 10 * time.Minute}
+		c = &http.Client{}
 	}
 	cp := *c
 	cp.CheckRedirect = func(req *http.Request, via []*http.Request) error {
@@ -118,30 +150,42 @@ func hostAllowed(host string, allowed []string) bool {
 	return false
 }
 
-func get(ctx context.Context, c *http.Client, u, dest string, limit int64, mode os.FileMode) (int, error) {
+func get(ctx context.Context, c *http.Client, u, dest string, limit int64, mode os.FileMode, stall time.Duration, report func(Progress)) (int, error) {
+	// The watchdog cancels the request when no byte arrives for stall, which
+	// covers a server that never answers as well as one that stops mid-body.
+	ctx, cancel := context.WithCancelCause(ctx)
+	defer cancel(nil)
+	var last atomic.Int64
+	last.Store(time.Now().UnixNano())
+	done := make(chan struct{})
+	defer close(done)
+	go watchStall(done, &last, stall, cancel)
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
 		return 0, fmt.Errorf("build request: %w", err)
 	}
 	resp, err := c.Do(req)
 	if err != nil {
-		return 0, err
+		return 0, causeOr(ctx, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		return resp.StatusCode, fmt.Errorf("status %d", resp.StatusCode)
 	}
+	last.Store(time.Now().UnixNano())
 	tmp := dest + ".part"
 	out, err := os.OpenFile(tmp, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode) //nolint:gosec // dest is under the upgrade's work directory
 	if err != nil {
 		return resp.StatusCode, fmt.Errorf("create %s: %w", filepath.Base(dest), err)
 	}
-	n, err := io.Copy(out, io.LimitReader(resp.Body, limit+1))
+	body := &countingReader{r: io.LimitReader(resp.Body, limit+1), last: &last, total: resp.ContentLength, report: report}
+	n, err := io.Copy(out, body)
 	closeErr := out.Close()
 	switch {
 	case err != nil:
 		_ = os.Remove(tmp)
-		return resp.StatusCode, fmt.Errorf("write %s: %w", filepath.Base(dest), err)
+		return resp.StatusCode, fmt.Errorf("write %s: %w", filepath.Base(dest), causeOr(ctx, err))
 	case n > limit:
 		_ = os.Remove(tmp)
 		return resp.StatusCode, fmt.Errorf("%s exceeds %d bytes", filepath.Base(dest), limit)
@@ -153,6 +197,58 @@ func get(ctx context.Context, c *http.Client, u, dest string, limit int64, mode 
 		return resp.StatusCode, fmt.Errorf("finalize %s: %w", filepath.Base(dest), err)
 	}
 	return resp.StatusCode, nil
+}
+
+func deadlineNote(err error, d time.Duration) error {
+	if errors.Is(err, context.DeadlineExceeded) {
+		return fmt.Errorf("exceeded the overall time limit of %s: %w", d, err)
+	}
+	return err
+}
+
+// causeOr prefers the cancellation cause (stall, operator cancel) over the
+// generic "context canceled" the transport reports.
+func causeOr(ctx context.Context, err error) error {
+	if cause := context.Cause(ctx); cause != nil && !errors.Is(cause, context.Canceled) {
+		return cause
+	}
+	return err
+}
+
+func watchStall(done <-chan struct{}, last *atomic.Int64, stall time.Duration, cancel context.CancelCauseFunc) {
+	t := time.NewTicker(max(stall/4, time.Millisecond))
+	defer t.Stop()
+	for {
+		select {
+		case <-done:
+			return
+		case <-t.C:
+			if time.Since(time.Unix(0, last.Load())) > stall {
+				cancel(fmt.Errorf("%w: no data received for %s", ErrStalled, stall.Round(time.Millisecond)))
+				return
+			}
+		}
+	}
+}
+
+type countingReader struct {
+	r      io.Reader
+	last   *atomic.Int64
+	total  int64
+	n      int64
+	report func(Progress)
+}
+
+func (c *countingReader) Read(p []byte) (int, error) {
+	n, err := c.r.Read(p)
+	if n > 0 {
+		c.n += int64(n)
+		c.last.Store(time.Now().UnixNano())
+		if c.report != nil {
+			c.report(Progress{Bytes: c.n, Total: max(c.total, 0)})
+		}
+	}
+	return n, err
 }
 
 // ValidTag accepts release tags such as v1.2.3 or v1.2.3-beta.4 and nothing

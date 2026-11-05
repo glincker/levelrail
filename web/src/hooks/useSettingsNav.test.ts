@@ -5,6 +5,7 @@ import {
 } from './useSettingsNav'
 import { settingsNavSections } from '../lib/settingsNav'
 import settingsEn from '../locales/en/settings.json'
+import paletteSettingsEn from '../locales/en/paletteSettings.json'
 
 const sections: LabelledSettingsSection[] = [
   {
@@ -70,7 +71,13 @@ describe('settings nav catalogue', () => {
     for (const area of settingsNavSections) {
       expect(settingsEn.nav.areas[area.id].title).toBeTruthy()
       for (const item of area.items) {
-        expect(settingsEn.nav.items[item.id].title).toBeTruthy()
+        const labels =
+          item.id in settingsEn.nav.items
+            ? settingsEn.nav.items[item.id as keyof typeof settingsEn.nav.items]
+            : paletteSettingsEn.items[
+                item.id as keyof typeof paletteSettingsEn.items
+              ]
+        expect(labels.title).toBeTruthy()
         expect(paths.has(item.to)).toBe(false)
         paths.add(item.to)
       }

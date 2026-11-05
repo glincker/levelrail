@@ -1,6 +1,11 @@
 import type { VariantProps } from 'class-variance-authority'
 import type { badgeVariants } from '@/components/ui/badge'
 import type { AlertRule } from '../types/alerts'
+import {
+  PARKED_CERT_DEFAULT_DAYS,
+  TRAFFIC_DROP_DEFAULTS,
+  domainFromResourceId,
+} from '@/lib/alertTrafficKinds'
 
 export const STATE_LABEL = {
   firing: 'Firing',
@@ -78,6 +83,15 @@ export function formatCondition(rule: AlertRule): string {
   if (rule.kind === 'domain_health') {
     const forPart = rule.for_duration ? ` for ${rule.for_duration}` : ''
     return `any of this app's own domains not resolving correctly or pointing elsewhere${forPart}`
+  }
+  if (rule.kind === 'domain_traffic_drop') {
+    const domain = domainFromResourceId(rule.resource_id)
+    const scope = domain ? domain : "all of this app's domains"
+    const win = rule.for_duration || TRAFFIC_DROP_DEFAULTS.window
+    return `${scope} below ${rule.threshold}% of yesterday's traffic over ${win} (needs ${rule.restart_count_threshold}+ requests yesterday)`
+  }
+  if (rule.kind === 'parked_domain_cert_expiry') {
+    return `a parked domain with fewer than ${rule.threshold || PARKED_CERT_DEFAULT_DAYS} days of certificate left (platform-wide)`
   }
   if (rule.kind === 'slo_burn') {
     const slo = rule.slo
@@ -166,6 +180,12 @@ export function formatLastValue(rule: AlertRule): string {
   }
   if (rule.kind === 'domain_health') {
     return `${rule.last_value} domain(s) unhealthy`
+  }
+  if (rule.kind === 'domain_traffic_drop') {
+    return `${rule.last_value.toFixed(0)}% of yesterday's traffic`
+  }
+  if (rule.kind === 'parked_domain_cert_expiry') {
+    return `${rule.last_value.toFixed(1)} days left (soonest parked domain)`
   }
   if (rule.kind === 'slo_burn') {
     return `${rule.last_value.toFixed(1)}x burn rate (fastest tier)`

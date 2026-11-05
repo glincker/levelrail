@@ -14,6 +14,7 @@ import {
   useSetDomainMaintenance,
 } from '../queries/domainMaintenance'
 import type { DomainMaintenance } from '../queries/domainMaintenance'
+import { SettingSummary } from './domains/SettingSummary'
 import { EnforcedBadge, EnforcementNote } from './domains/EnforcementGate'
 import { DomainMaintenanceForm } from './domains/DomainMaintenanceForm'
 import { EnableMaintenanceDialog } from './maintenance/EnableMaintenanceDialog'
@@ -90,32 +91,42 @@ export function DomainMaintenanceControl({
       : null
 
   return (
-    <div className="rounded-md border border-border bg-muted/30 p-3 text-sm">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        {enabled ? (
-          <EnforcedBadge domain={domain} control="maintenance">
-            <Badge variant="warning" className="shrink-0">
+    <>
+      <SettingSummary
+        status={
+          enabled ? (
+            <EnforcedBadge domain={domain} control="maintenance">
+              <Badge variant="warning" className="shrink-0">
+                <WrenchGlassIcon className="size-4.5" />
+                {t('maintenance.on')}
+              </Badge>
+            </EnforcedBadge>
+          ) : (
+            <Badge variant="muted" className="shrink-0">
               <WrenchGlassIcon className="size-4.5" />
-              {t('maintenance.on')}
+              {t('maintenance.off')}
             </Badge>
-          </EnforcedBadge>
-        ) : (
-          <Badge variant="muted" className="shrink-0">
-            <WrenchGlassIcon className="size-4.5" />
-            {t('maintenance.off')}
-          </Badge>
-        )}
-        <div className="flex items-center gap-1">
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            aria-expanded={open}
-            onClick={() => setOpen((o) => !o)}
-          >
-            {open ? t('maintenance.hideOptions') : t('maintenance.options')}
-          </Button>
-          {enabled ? (
+          )
+        }
+        note={
+          <>
+            {enabled && maintenance ? (
+              <MaintenanceSummary m={maintenance} />
+            ) : null}
+            {enabled && isEnforced(enforcement, 'maintenance') ? (
+              <p className="mt-2 text-xs text-muted-foreground">
+                {t('maintenance.activeHint', { domain })}
+              </p>
+            ) : null}
+            <EnforcementNote
+              domain={domain}
+              control="maintenance"
+              active={enabled}
+            />
+          </>
+        }
+        actions={
+          enabled ? (
             <Button
               type="button"
               size="sm"
@@ -143,38 +154,36 @@ export function DomainMaintenanceControl({
                 ? t('maintenance.enabling')
                 : t('maintenance.enable')}
             </Button>
-          )}
-        </div>
-      </div>
-      {enabled && maintenance ? <MaintenanceSummary m={maintenance} /> : null}
-      {enabled && isEnforced(enforcement, 'maintenance') ? (
-        <p className="mt-2 text-xs text-muted-foreground">
-          {t('maintenance.activeHint', { domain })}
-        </p>
-      ) : null}
-      <EnforcementNote domain={domain} control="maintenance" active={enabled} />
-      {open ? (
-        <DomainMaintenanceForm
-          key={maintenance?.window_id ?? String(enabled)}
-          domain={domain}
-          defaultMaxSeconds={fleet?.max_duration_seconds ?? 0}
-          current={maintenance}
-          enabled={enabled}
-          pending={pending}
-          onSubmit={(req) => {
-            if (!enabled) {
-              setConfirming(req)
-              return
-            }
-            setMaintenance.mutate(req, {
-              onSuccess: () => {
-                setOpen(false)
-                toast.add({ title: t('maintenance.saved'), type: 'success' })
-              },
-            })
-          }}
-        />
-      ) : null}
+          )
+        }
+        editLabel={t('maintenance.options')}
+        closeLabel={t('maintenance.hideOptions')}
+        editing={open}
+        onEditingChange={setOpen}
+      >
+        {open ? (
+          <DomainMaintenanceForm
+            key={maintenance?.window_id ?? String(enabled)}
+            domain={domain}
+            defaultMaxSeconds={fleet?.max_duration_seconds ?? 0}
+            current={maintenance}
+            enabled={enabled}
+            pending={pending}
+            onSubmit={(req) => {
+              if (!enabled) {
+                setConfirming(req)
+                return
+              }
+              setMaintenance.mutate(req, {
+                onSuccess: () => {
+                  setOpen(false)
+                  toast.add({ title: t('maintenance.saved'), type: 'success' })
+                },
+              })
+            }}
+          />
+        ) : null}
+      </SettingSummary>
       <EnableMaintenanceDialog
         domain={domain}
         request={confirming}
@@ -200,6 +209,6 @@ export function DomainMaintenanceControl({
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : null}
-    </div>
+    </>
   )
 }

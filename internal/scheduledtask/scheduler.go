@@ -11,6 +11,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/kit/cronexpr"
+	"github.com/GLINCKER/levelrail/kit/ticker"
 )
 
 // maxScanOccurrences bounds how many cron occurrences one evaluation walks;
@@ -302,6 +303,7 @@ func orDefaultPolicy(p string) string {
 // catches up without waiting a full interval), then ticks every interval
 // until ctx is done.
 func (s *Scheduler) Run(ctx context.Context, interval time.Duration) error {
+	interval = ticker.Safe(interval, ticker.DefaultInterval)
 	if s.Grace <= 0 {
 		s.Grace = 2 * interval
 	}

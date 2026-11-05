@@ -11,14 +11,17 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 ### Install and deploy
 
 - [Levelrail documentation](/index): Self-hosted deployment platform. Push to git, get a running app with TLS, logs, metrics and rollback. One Go binary, no Kubernetes.
+- [First 15 minutes](/first-15-minutes): A checklist for a new server: install, open the setup link, turn on HTTPS, deploy an app and take your first backup. Each step links to the full page.
 - [What you need before you start](/what-you-need): A plain-language checklist for installing Levelrail: a Linux server, a few ports, and optionally a domain. No Kubernetes, no prior DevOps experience.
 - [Installing Levelrail](/installing): Requirements, then every supported way to get the Levelrail control plane running on Linux with install.sh, Docker, or source build.
 - [Container runtimes](/container-runtimes): Which container runtimes Levelrail supports on a Linux server, how install.sh picks one, and the manual steps for Podman.
 - [Install on a cloud VM](/install-on-cloud): Copy-paste user data and startup scripts that install the control plane on a fresh AWS, Google Cloud, Azure, DigitalOcean or Hetzner VM, with the ports to open.
+- [Cloud firewall rules](/cloud-firewall-rules): Copy-paste cloud firewall rules for DigitalOcean, Hetzner, AWS, Google Cloud, Oracle Cloud and Azure: ports 80 and 443, and optionally 8080 from your own IP.
 - [Install on Oracle Cloud Always Free (Arm)](/install-on-oracle-cloud): Create an Always Free Arm VM on Oracle Cloud, open both firewall layers, install Levelrail, and what to know about capacity and idle reclamation.
 - [Run it on your laptop](/local-development): Start a private Levelrail instance on macOS or Linux with one command, deploy apps to name.localhost addresses, and reset it whenever you like.
 - [Desktop runtime (managed VM)](/desktop-runtime): Run Levelrail in a private Linux VM on your Mac. Experimental, Apple silicon first. Apps run isolated from your files, with no host Docker install.
 - [Getting started](/getting-started): Install Levelrail on a Linux server, sign in, and deploy your first app in about ten minutes, from the dashboard or the CLI.
+- [Zero to HTTPS](/zero-to-https): From the install command to a trusted HTTPS address, first on a test address and then on your own domain, with what each failure means.
 - [One command quickstart](/quickstart-one-command): Deploy a project with `levelrail-cli up`, which infers the name, port and build, then keep every advanced flag when you need it.
 - [Deploy a Docker app to your own server](/tutorials/deploy-a-docker-app): Deploy a Docker image to your own Linux server with Levelrail, attach a custom domain, ship a second version, and roll back in one command. About 10 minutes.
 - [Server profiles](/profiles): Choose minimal, standard or suite to decide which optional parts of the control plane start, and switch later without losing data.
@@ -43,6 +46,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Multi-node quickstart](/multi-node-quickstart): The short path to a second server, what has been verified on real infrastructure, and what to check before relying on the WireGuard mesh across hosts.
 - [Self-host Vaultwarden on your own server](/tutorials/self-host-vaultwarden): Self-host Vaultwarden, a Bitwarden-compatible password manager, with one Levelrail command, then add a domain and back up its data.
 - [Troubleshooting](/troubleshooting): Fixes for the most common problems when deploying, logging in, or running Levelrail.
+- [Troubleshooting by symptom](/troubleshooting-by-symptom): Start from what the dashboard shows. Each symptom lists what you see, why it happens, and the fix in the dashboard, the CLI and the API.
 - [Doctor](/doctor): One health check for the server, in the dashboard and the CLI, with a fix or a next step for every problem.
 - [Fix-it engine](/fix-it): Turn a failing readiness or doctor check into a previewable, verifiable fix.
 
@@ -119,6 +123,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Images](/images): See every container image on a node with its size, layers and deploy lineage, promote images by digest without a rebuild, and check signatures.
 - [Deploy previews](/deploy-previews): Deploy thumbnails in three tiers, from free page metadata to a real screenshot in a short-lived browser container, with costs, cleanup and settings.
 - [Framework presets](/frameworks): Deploy Next.js, Go, React/Vite, Spring Boot and eight more frameworks with the right port, health path, storage and env hints already filled in.
+- [Deploy a Next.js app](/nextjs): How to run a Next.js app on Levelrail today: the standalone output, build time variables, the cache volume, health checks, and what to know before you run more than one replica.
 - [Deploy URLs](/deploy-urls): Every recent successful deploy keeps its own address, so you can open and compare a past deployment without rolling back.
 - [Deploy links and badge](/deploy-link): Put a Deploy with button in your README. A visitor enters their own server once and lands on a create-app form with your image, port and env names prefilled.
 - [Deploy timeline](/deploy-timeline): The fleet deploy timeline shows every deploy across your apps as bars on one time axis, with live updates, filters, a hover card and a matching CLI command.
@@ -141,6 +146,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Domain setup stepper](/domains): The four-step guide on the app Domains tab that adds a domain, shows the DNS records, watches DNS resolve and reports the certificate.
 - [Dynamic DNS](/dynamic-dns): Keep a DNS name pointed at a server whose public IPv4 changes. Configure it from the dashboard or the CLI, no restart needed.
 - [DNS zones and records](/dns): Manage DNS zones and records at Cloudflare, Route53 or Google Cloud DNS, move name servers, verify delegation and propagation, and serve wildcard subdomains.
+- [DNS zones and nameserver delegation](/dns-zones): Check that your registrar points a domain at the nameservers of its DNS zone, and what each delegation state means.
 - [Mail DNS](/mail-dns): Build, review, apply and check the DNS records a domain needs for email, for your own mail server or an external provider. Add-only by default.
 - [Mail server template](/mail-template): Install the mox mail server as a one-click template, with private admin ports, your own certificate, optional relay mode and backup notes.
 - [Mailboxes, aliases and the mail queue](/mail-mailboxes): Create team owned mailboxes on the mox mail server, suspend and reset them, forward addresses with aliases, and hold or release outgoing mail.
@@ -225,6 +231,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Emergency access](/emergency-access): Get back into a control plane you cannot sign in to: reset the admin password, mint a root token from the host, or use a break-glass token made earlier.
 - [Master key rotation](/master-key-rotation): Rotate the envelope-encryption master key without losing access to stored secrets or causing downtime.
 - [Secret rotation policies](/secret-rotation): Give an app secret a rotation schedule, let the control plane generate and apply new values, and see what is due or stuck.
+- [Vault and OpenBao secret references](/vault-secret-references): Read an app's secret from an external Vault at deploy time, which backends work, and what happens when a reference does not resolve.
 - [Your account](/account): The Account page, your own profile, sign-in security, active sessions, API tokens and a plain-language view of what you can manage.
 - [Access control](/access-control): Roles for multi-user access, per-user environment grants, the guest role, IAM policies on apps, databases and environments, and ready-made policy templates.
 - [Labels and namespaces](/labels): Group and filter apps, databases, stacks and nodes with free-form labels.
@@ -296,7 +303,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Migrate from Docker Compose](/migrate-from-docker-compose): Turn a docker-compose.yml into Levelrail apps and managed databases with a plan first, then copy data and switch DNS while the old stack keeps running.
 - [Import Kubernetes manifests](/import-kubernetes): Convert existing Kubernetes YAML into Levelrail apps with levelrail-cli import k8s. The conversion is text only: no fetch, no execution, no cluster contact.
 - [Migration reference](/migration-reference): Flags, mapping tables, database copy and hub details, cutover verdicts and environment variables for the Levelrail migration importer.
-- [Migrating from Coolify, Dokploy, or CapRover](/migrating-from-coolify-dokploy-and-caprover): This page moved. Start at the Levelrail migration overview, then follow the guide for Coolify, Dokploy, CapRover, Dokku or Docker Compose.
+- [Migrating from Coolify, Dokploy, or CapRover](/migrating-from-coolify-dokploy-and-caprover): The per-platform guides moved to one page each. This page keeps the read-only migration agent, which inspects the old server itself.
 - [Migration agent threat model](/migration-agent-threat-model): What the read-only migration agent on the old server can and cannot do, how it is constrained, and the risks that remain.
 - [Migrate on the same server](/migrate-same-server): Move from Coolify, Dokploy or CapRover to Levelrail on the same machine: install in coexist mode, import, verify, then take over ports 80 and 443.
 - [Move a domain with no downtime](/move-a-domain-with-no-downtime): Test a domain on its new Levelrail server before touching DNS, get its certificate ahead of time, then switch with a checklist that shows each step.
@@ -359,6 +366,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Architecture](/architecture): How the control plane, node agent, reconciler, ingress, store and extension points fit together, with the code path of a deploy and the trust boundaries.
 - [Security overview](/security): How Levelrail handles secrets, sessions, TLS, and access control, and where to find the detailed page for each.
 - [Threat model](/threat-model): Trust boundaries, assets, attackers, the mitigations that exist today with file references, known gaps, and how to report a vulnerability.
+- [Verify a release](/verify-a-release): Check that a Levelrail binary or image came from this repository's release workflow: checksum, cosign signature, build provenance and SBOM, with exact commands.
 - [Docker access and the API guard](/docker-access): Every Docker Engine API call Levelrail makes, why it needs it, and the guard that refuses everything else, including privileged containers and host mounts.
 - [vs Coolify, Dokploy, CapRover, Dokku, and Kamal](/comparison): Honest comparison of Levelrail with Coolify, Dokploy, CapRover, Dokku and Kamal: architecture, what each is good at, and what ships without a paywall.
 - [Who Levelrail is for](/use-cases): Three audiences for Levelrail (solo developers, small agencies, teams leaving Coolify, Dokploy, Heroku or Vercel), which features fit and where it falls short.
@@ -374,7 +382,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 ### Compare and choose
 
 - [Self-hosted PaaS guide: what to look for and how Levelrail fits](/self-hosted-paas): A practical guide to choosing a self-hosted PaaS: how it manages servers, deploys, rolls back, observes, secures and costs.
-- [Coolify alternative: a self-hosted deploy platform that stays light](/coolify-alternative): Levelrail is an open source Coolify alternative: Docker Engine API instead of SSH, built-in metrics and logs, one-click rollback, read-only importer.
+- [Coolify alternative: a self-hosted deploy platform](/coolify-alternative): Levelrail is an open source Coolify alternative: Docker Engine API instead of SSH, built-in metrics and logs, one-click rollback, read-only importer.
 - [Dokploy alternative: self-hosted deploys without Docker Swarm](/dokploy-alternative): Levelrail is an open source Dokploy alternative that skips Docker Swarm: an agent on each node and a reconciler over the Docker Engine API.
 - [CapRover alternative: self-hosted deploys without Docker Swarm](/caprover-alternative): Levelrail is an open source CapRover alternative: plain Docker instead of Swarm, an agent per node, built-in metrics and logs, one-click rollback.
 - [Dokku alternative: a dashboard, deploy history and multi-server](/dokku-alternative): Levelrail is an open source Dokku alternative that adds a dashboard, deploy history with rollback, and built-in metrics and logs.
@@ -415,6 +423,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [VPS smoke test](/vps-smoke): scripts/vps-smoke.sh checks a real install end to end on a VPS you already have, without creating or deleting cloud resources.
 - [Internationalization (i18n)](/i18n): How the dashboard's i18n works for contributors: where strings live, how to add one to a component, and how TypeScript catches a mistyped key.
 - [GLINR design tokens](/design-tokens): The single source of truth for color, space, radius, elevation, type and motion in the Levelrail dashboard, and how to add or change a token.
+- [UI navigation](/ui-navigation): Rules for where a new dashboard setting or page goes, and the size caps that keep the sidebars lean.
 - [Brand kit](/brand): Logos, colors and ready-made social images for Levelrail, free to use when you write about it, share it or link to it.
 
 ### About

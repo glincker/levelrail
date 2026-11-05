@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type {
   IacChange,
   IacFieldChange,
@@ -22,14 +23,14 @@ const actionMark: Record<string, string> = {
   noop: ' ',
 }
 
-function fieldText(f: IacFieldChange): string {
+function fieldText(f: IacFieldChange, keptNote: string): string {
   switch (f.op) {
     case 'add':
       return `+ ${f.path}: ${f.new ?? ''}`
     case 'remove':
       return `- ${f.path}: ${f.old ?? ''}`
     case 'keep':
-      return `= ${f.path} (kept, not in the files)`
+      return `= ${f.path} (${keptNote})`
     default:
       return `~ ${f.path}: ${f.old ?? ''} -> ${f.new ?? ''}`
   }
@@ -40,17 +41,23 @@ function changeKey(c: IacChange): string {
 }
 
 export function IacSummaryLine({ plan }: { plan: IacPlan }) {
+  const { t } = useTranslation('settings')
   const s = plan.summary
   return (
     <p className="text-sm text-foreground">
-      {s.create} to create, {s.update} to update, {s.delete} to delete, {s.noop}{' '}
-      unchanged
-      {s.error > 0 ? `, ${s.error} with errors` : ''}
+      {t(s.error > 0 ? 'iacPlan.summaryErrors' : 'iacPlan.summary', {
+        create: s.create,
+        update: s.update,
+        delete: s.delete,
+        noop: s.noop,
+        error: s.error,
+      })}
     </p>
   )
 }
 
 function ChangeRow({ change }: { change: IacChange }) {
+  const { t } = useTranslation('settings')
   return (
     <li className="rounded-md border border-border p-3">
       <div className="flex flex-wrap items-baseline gap-2 font-mono text-sm">
@@ -64,7 +71,9 @@ function ChangeRow({ change }: { change: IacChange }) {
           </span>
         ) : null}
         {change.denied ? (
-          <span className="text-xs text-red-700 dark:text-red-400">denied</span>
+          <span className="text-xs text-red-700 dark:text-red-400">
+            {t('iacPlan.denied')}
+          </span>
         ) : null}
       </div>
       {change.reason ? (
@@ -76,7 +85,7 @@ function ChangeRow({ change }: { change: IacChange }) {
         <CodeBlock
           className="mt-2"
           code={[...(change.fields ?? []), ...(change.kept ?? [])]
-            .map(fieldText)
+            .map((f) => fieldText(f, t('iacPlan.keptNote')))
             .join('\n')}
           language="diff"
           wrap
@@ -84,7 +93,7 @@ function ChangeRow({ change }: { change: IacChange }) {
       ) : null}
       {change.warnings?.map((w) => (
         <p key={w} className="mt-1 text-xs text-amber-700 dark:text-amber-400">
-          warning: {w}
+          {t('iacPlan.warning', { message: w })}
         </p>
       ))}
     </li>
@@ -92,14 +101,13 @@ function ChangeRow({ change }: { change: IacChange }) {
 }
 
 export function IacPlanView({ plan }: { plan: IacPlan }) {
+  const { t } = useTranslation('settings')
   const shown = plan.changes.filter((c) => c.action !== 'noop')
   return (
     <div className="space-y-3">
       <IacSummaryLine plan={plan} />
       {shown.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          Live state already matches the files.
-        </p>
+        <p className="text-sm text-muted-foreground">{t('iacPlan.matches')}</p>
       ) : (
         <ul className="space-y-2">
           {shown.map((c) => (
@@ -120,12 +128,15 @@ const statusStyle: Record<string, string> = {
 }
 
 export function IacResultView({ results }: { results: IacItemResult[] }) {
+  const { t } = useTranslation('settings')
   const shown = results.filter((r) => r.status !== 'noop')
   return (
     <ul className="space-y-1.5">
       {shown.map((r) => (
         <li key={changeKey(r) + r.action} className="font-mono text-sm">
-          <span className={statusStyle[r.status]}>{r.status}</span>{' '}
+          <span className={statusStyle[r.status]}>
+            {t(`iacPlan.status.${r.status}`, { defaultValue: r.status })}
+          </span>{' '}
           <span className="text-foreground">{changeKey(r)}</span>
           {r.error ? (
             <span className="text-muted-foreground">: {r.error}</span>

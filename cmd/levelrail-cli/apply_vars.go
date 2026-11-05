@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strings"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
@@ -15,6 +17,7 @@ import (
 type varSources struct {
 	vars     map[string]string
 	varFiles []string
+	values   []string
 	allowEnv []string
 }
 
@@ -82,6 +85,35 @@ func (al envAllowlist) permits(name string) (bool, string) {
 		}
 	}
 	return false, ""
+}
+
+// readValuesFile parses a flat YAML map of scalars. Credential-looking names
+// are refused so a secret value never lands in a repo or in plan output.
+func readValuesFile(path string) (map[string]string, error) {
+	data, err := os.ReadFile(path) //nolint:gosec // the operator names the values file
+	if err != nil {
+		return nil, fmt.Errorf("--values: read %s: %w", path, err)
+	}
+	var raw map[string]any
+	if err := yaml.Unmarshal(data, &raw); err != nil {
+		return nil, newValidationError("--values %s: not a flat YAML map: %v", path, err)
+	}
+	out := make(map[string]string, len(raw))
+	for k, v := range raw {
+		if !validEnvKey(k) {
+			return nil, newValidationError("--values %s: key %q is not a valid placeholder name", path, k)
+		}
+		if looksLikeCredential(k) {
+			return nil, newValidationError("--values %s: key %s looks like a credential; pass it with --secret or --var instead", path, k)
+		}
+		switch t := v.(type) {
+		case string, bool, int, int64, uint64, float64:
+			out[k] = fmt.Sprint(t)
+		default:
+			return nil, newValidationError("--values %s: key %s must be a string, number or bool (the file is a flat map)", path, k)
+		}
+	}
+	return out, nil
 }
 
 func readVarFile(path string) (map[string]string, error) {
@@ -159,6 +191,16 @@ func resolveVars(files []apiclient.IaCFile, src varSources, lookupEnv func(strin
 			fromFiles[k] = v
 		}
 	}
+	fromValues := map[string]string{}
+	for _, p := range src.values {
+		m, err := readValuesFile(p)
+		if err != nil {
+			return nil, err
+		}
+		for k, v := range m {
+			fromValues[k] = v
+		}
+	}
 	allow, err := parseAllowEnv(src.allowEnv)
 	if err != nil {
 		return nil, err
@@ -167,6 +209,10 @@ func resolveVars(files []apiclient.IaCFile, src varSources, lookupEnv func(strin
 	var missing []string
 	for _, name := range placeholderNames(files) {
 		if v, ok := src.vars[name]; ok {
+			vars[name] = v
+			continue
+		}
+		if v, ok := fromValues[name]; ok {
 			vars[name] = v
 			continue
 		}
@@ -191,7 +237,7 @@ func resolveVars(files []apiclient.IaCFile, src varSources, lookupEnv func(strin
 }
 
 func unresolvedLine(name, why string) string {
-	line := fmt.Sprintf("  %s: pass --var %s=VALUE, put it in a --var-file, or --allow-env %s", name, name, name)
+	line := fmt.Sprintf("  %s: pass --var %s=VALUE, put it in a --values or --var-file, or --allow-env %s", name, name, name)
 	if why != "" {
 		line += " (" + name + " " + why + ")"
 	}

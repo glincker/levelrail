@@ -10,4 +10,5 @@ func (rt *Router) registerImageRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/images/verify", rt.requireAbility(AbilityWrite, rt.handleImageVerify))
 	mux.HandleFunc("POST /api/v1/images/signature-policy/validate", rt.requireAbility(AbilityWrite, rt.handleValidateImageSignaturePolicy))
 	mux.HandleFunc("POST /api/v1/images/gc", rt.requireAbility(AbilityRoot, rt.handleImageGC))
+	mux.HandleFunc("POST /api/v1/images/remove", rt.requireAbility(AbilityRoot, rt.handleImageRemove))
 }

@@ -190,6 +190,43 @@ func TestReadVarFile_RejectsDroppedLines(t *testing.T) {
 	}
 }
 
+func TestValuesFilePrecedence(t *testing.T) {
+	dir := t.TempDir()
+	write := func(name, body string) string {
+		p := filepath.Join(dir, name)
+		if err := os.WriteFile(p, []byte(body), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		return p
+	}
+	v1 := write("a.yaml", "A: one\nB: 2\nC: true\n")
+	v2 := write("b.yaml", "A: two\n")
+	vf := write("c.env", "A=envfile\nB=envfile\nC=envfile\nD=envfile\n")
+	env := func(n string) (string, bool) { return "fromenv", n == "D" || n == "E" }
+	src := varSources{vars: map[string]string{"C": "flag"}, values: []string{v1, v2}, varFiles: []string{vf}, allowEnv: []string{"D", "E"}}
+	got, err := resolveVars(placeholderFile("A", "B", "C", "D", "E"), src, env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]string{"A": "two", "B": "2", "C": "flag", "D": "envfile", "E": "fromenv"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("got %v want %v", got, want)
+	}
+
+	if _, err := resolveVars(placeholderFile("MISSING"), varSources{values: []string{v1}}, env); err == nil || !strings.Contains(err.Error(), "MISSING") {
+		t.Fatalf("missing placeholder must be named, got %v", err)
+	}
+	bad := write("bad.yaml", "DB_PASSWORD: hunter2\n")
+	_, err = resolveVars(placeholderFile("X"), varSources{values: []string{bad}}, env)
+	if err == nil || !strings.Contains(err.Error(), "DB_PASSWORD") || strings.Contains(err.Error(), "hunter2") {
+		t.Fatalf("credential key must be refused without echoing the value, got %v", err)
+	}
+	nested := write("n.yaml", "A:\n  b: 1\n")
+	if _, err := resolveVars(placeholderFile("A"), varSources{values: []string{nested}}, env); err == nil {
+		t.Fatal("nested values must be refused")
+	}
+}
+
 func TestExport_NoNoteWithoutPlaceholders(t *testing.T) {
 	f := &iacFake{export: iac.ExportResult{Files: []iac.ExportFile{{Name: "tag-x.yaml", Kind: iac.KindTag, Content: "version: 1\n"}}}}
 	srv := httptest.NewServer(f.handler(t))

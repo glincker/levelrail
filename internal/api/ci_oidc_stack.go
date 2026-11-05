@@ -264,11 +264,12 @@ func validateStackTrust(req *stackTrustRequest) string {
 		req.Verbs = []string{store.StackVerbPlan}
 	}
 	if !store.ValidStackVerbs(req.Verbs) {
-		return "verbs may only hold plan and apply"
+		return "verbs may only hold plan, apply, node, setting and placement"
 	}
 	req.Verbs = dedupe(req.Verbs)
+	// Node, setting and placement imply apply, so they meet the apply bar too.
 	for _, v := range req.Verbs {
-		if v != store.StackVerbApply {
+		if !store.StackVerbImpliesApply(v) {
 			continue
 		}
 		if parts[1] == "pull" || strings.Contains(req.RefPattern, "*") {
@@ -323,6 +324,14 @@ func (rt *Router) handleCreateStackTrust(w http.ResponseWriter, r *http.Request)
 	}
 	if msg := validateStackTrust(&req); msg != "" {
 		writeError(w, http.StatusBadRequest, msg)
+		return
+	}
+	if !store.StackVerbsFitScope(req.Verbs, stack.Scope) {
+		writeError(w, http.StatusBadRequest, stackVerbsScopeMessage(stack.Scope))
+		return
+	}
+	if !rt.mayGrantStackVerbs(r, req.Verbs) {
+		writeError(w, http.StatusForbidden, msgStackVerbsNeedGlobalRoot)
 		return
 	}
 	id, err := store.NewCIStackTrustID()
@@ -528,6 +537,9 @@ func (rt *Router) mintStackOIDCToken(w http.ResponseWriter, r *http.Request, sta
 		return
 	}
 	err = rt.tokenStackScopes().SetAPITokenStackScope(r.Context(), store.APITokenStackScope{TokenID: rec.ID, StackID: stack.ID, Verbs: trust.Verbs})
+	if err == nil {
+		err = rt.markSystemToken(r.Context(), rec.ID)
+	}
 	if err != nil {
 		// A token without its stack scope would be unconfined, so it never leaves this function.
 		_ = rt.tokens.RevokeAPIToken(r.Context(), rec.ID)

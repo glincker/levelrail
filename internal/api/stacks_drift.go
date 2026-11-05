@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -112,6 +113,12 @@ func (rt *Router) driftToken(ctx context.Context) (string, error) {
 	}
 	expires := time.Now().Add(ttl)
 	raw, rec, err := MintAgentAPIToken(ctx, rt.tokens, stackDriftTokenName, []string{AbilityRead}, &expires, agentIdentity{}, "")
+	if err == nil {
+		err = rt.markSystemToken(ctx, rec.ID)
+		if err != nil {
+			_ = rt.tokens.RevokeAPIToken(context.WithoutCancel(ctx), rec.ID)
+		}
+	}
 	if err != nil {
 		return "", fmt.Errorf("api: stack drift: mint read token: %w", err)
 	}
@@ -133,7 +140,48 @@ func (rt *Router) StackDriftLive(ctx context.Context) (iac.Doer, func(), error) 
 	}
 	orig.Header.Set("Authorization", "Bearer "+raw)
 	orig.RemoteAddr = "127.0.0.1:0"
-	return &loopbackDoer{h: rt.iac.h, orig: orig}, func() {}, nil
+	rt.stackDrift.mu.Lock()
+	id := rt.stackDrift.id
+	rt.stackDrift.mu.Unlock()
+	return driftDoer{inner: &loopbackDoer{h: rt.iac.h, orig: orig}, tokenID: id}, func() {}, nil
+}
+
+// driftReadKey marks a sub-request the drift checker sent, holding its token id.
+type driftReadKey struct{}
+
+type driftDoer struct {
+	inner   iac.Doer
+	tokenID string
+}
+
+func (d driftDoer) Do(ctx context.Context, method, path string, body, out any) error {
+	return d.inner.Do(context.WithValue(ctx, driftReadKey{}, d.tokenID), method, path, body, out)
+}
+
+// driftReadPatterns is the exact GET set the drift token may read. It is kept
+// apart from stackVerbPatterns so a new sensitive GET there never widens it.
+var driftReadPatterns = map[string]bool{
+	"GET /api/v1/nodes":                  true,
+	"GET /api/v1/nodes/{id}/labels":      true,
+	"GET /api/v1/nodes/{id}/taints":      true,
+	"GET /api/v1/settings/runtime":       true,
+	"GET /api/v1/settings/runtime/{key}": true,
+}
+
+// driftReadGranted lets the in-process drift token read the root-only node and
+// setting routes an install stack may own, so a hand edit there shows as drift.
+// GETs only; a context value never arrives over the wire.
+func (rt *Router) driftReadGranted(r *http.Request, tokenID string) bool {
+	id, _ := r.Context().Value(driftReadKey{}).(string)
+	if id == "" || id != tokenID || r.Method != http.MethodGet || !strings.HasPrefix(r.Pattern, http.MethodGet+" ") {
+		return false
+	}
+	if !driftReadPatterns[r.Pattern] {
+		return false
+	}
+	rt.stackDrift.mu.Lock()
+	defer rt.stackDrift.mu.Unlock()
+	return rt.stackDrift.id == tokenID
 }
 
 // stackDriftAttentionItems raises one item per drifted stack. The drift policy

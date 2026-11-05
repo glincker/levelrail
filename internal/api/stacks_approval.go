@@ -60,6 +60,8 @@ type stackPendingMeta struct {
 	Adopt           bool `json:"adopt,omitempty"`
 	NoDeploy        bool `json:"no_deploy,omitempty"`
 	ContinueOnError bool `json:"continue_on_error,omitempty"`
+	// AllowWeaken travels with the revision so the approver sees it and must pass the same gate.
+	AllowWeaken bool `json:"allow_weaken,omitempty"`
 }
 
 type stackApproveRequest struct {
@@ -115,7 +117,7 @@ func (rt *Router) requestStackApproval(w http.ResponseWriter, r *http.Request, s
 	}
 	stack, req := run.stack, run.req
 	project := rt.projectName(ctx, stack.ProjectID)
-	lctx, err := rt.stackLedgerContext(ctx, ss, stack.ID, stack.Name, project, res, req)
+	lctx, err := rt.stackLedgerContext(ctx, ss, stack.ID, stack.Name, project, stack.Scope, res, req)
 	if err != nil {
 		rt.writeStackError(w, run.action, err)
 		return
@@ -155,18 +157,22 @@ func (rt *Router) requestStackApproval(w http.ResponseWriter, r *http.Request, s
 		writeJSON(w, http.StatusOK, stackApplyResponse{Stack: stack.Name, Revision: &s, Replayed: true})
 		return
 	}
-	meta, _ := json.Marshal(stackPendingMeta{Prune: req.Prune, AllowMassPrune: req.AllowMassPrune, Adopt: req.Adopt, NoDeploy: req.NoDeploy, ContinueOnError: req.ContinueOnError})
+	meta, _ := json.Marshal(stackPendingMeta{Prune: req.Prune, AllowMassPrune: req.AllowMassPrune, Adopt: req.Adopt, NoDeploy: req.NoDeploy, ContinueOnError: req.ContinueOnError, AllowWeaken: req.AllowWeaken})
 	if err := aps.SetPendingStackRevisionMeta(ctx, stack.ID, rev.Number, meta); err != nil {
 		rt.writeStackError(w, run.action, err)
 		return
 	}
 	rt.auditStack(r, auditStackApprovalRequested, map[string]any{
-		"stack": stack.Name, "revision": rev.Number, "plan_hash": plan.Hash, "git_sha": req.GitSHA, "rollback_of": run.rollbackOf,
+		"stack": stack.Name, "revision": rev.Number, "plan_hash": plan.Hash, "git_sha": req.GitSHA, "rollback_of": run.rollbackOf, "allow_weaken": req.AllowWeaken,
 	})
+	warnings := append(run.warnings, "approval required: nothing was applied; an administrator other than the requester must approve this revision and supply any secrets")
+	if req.AllowWeaken {
+		warnings = append(warnings, "this revision weakens a security protection (allow_weaken); only a human root session can approve it")
+	}
 	s := summarizeRevision(rev)
 	writeJSON(w, http.StatusAccepted, stackApplyResponse{
 		Stack: stack.Name, Revision: &s, Plan: &plan, PendingApproval: true, ExpiresAt: fmtStackTime(approvalExpiry(rev)),
-		Warnings: append(run.warnings, "approval required: nothing was applied; an administrator other than the requester must approve this revision and supply any secrets"),
+		Warnings: warnings,
 	})
 }
 
@@ -295,7 +301,7 @@ func (rt *Router) handleStackApprove(w http.ResponseWriter, r *http.Request) {
 	}
 	req := stackRequest{
 		Files: files, Secrets: body.Secrets, Prune: meta.Prune, AllowMassPrune: meta.AllowMassPrune, Adopt: meta.Adopt,
-		NoDeploy: meta.NoDeploy, ContinueOnError: meta.ContinueOnError, ExpectedPlanHash: rev.PlanHash,
+		NoDeploy: meta.NoDeploy, ContinueOnError: meta.ContinueOnError, AllowWeaken: meta.AllowWeaken, ExpectedPlanHash: rev.PlanHash,
 		GitRepo: rev.GitRepo, GitRef: rev.GitRef, GitSHA: rev.GitSHA, CIRunURL: rev.CIRunURL,
 	}
 	run := stackRun{stack: s, req: req, rollbackOf: rev.RollbackOf, action: auditStackApprove, pending: &rev}

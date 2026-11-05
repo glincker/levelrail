@@ -84,6 +84,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/repolayout"
 	"github.com/GLINCKER/levelrail/internal/repolist"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/GLINCKER/levelrail/internal/schedulescan"
 	"github.com/GLINCKER/levelrail/internal/search"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/sourcecache"
@@ -95,9 +96,11 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/auditanchor"
 	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/cleanup"
 	"github.com/GLINCKER/levelrail/internal/dnsinspect"
+	"github.com/GLINCKER/levelrail/internal/dnsstatus"
 	"github.com/GLINCKER/levelrail/internal/dnszones"
 	"github.com/GLINCKER/levelrail/internal/janitor"
 	"github.com/GLINCKER/levelrail/internal/meshpath"
@@ -284,9 +287,11 @@ type Router struct {
 	imageResolver          docker.ImageResolver // nil deploys image tags unresolved, see WithDeploySafety
 	deployGate             DeployGateStore      // nil disables the gate timeline and rollback pins, see WithDeployGate
 	deployGateDefaults     deploysafety.Effective
-	reconcileNudger        ReconcileNudger             // nil is valid: a desired-state-changing handler just waits for the next resync tick instead of nudging, same "absence degrades, never errors" shape as dockerPinger above
-	certs                  CertStore                   // always set, part of the core Store interface: unlike dockerPinger/images this isn't an optional plug-in, every *store.DB already has it
-	ingressSettings        IngressSettingsStore        // always set, same "core Store interface, not an optional plug-in" shape as certs above: the settings row always exists (migrations/0023's own seeded row)
+	reconcileNudger        ReconcileNudger      // nil is valid: a desired-state-changing handler just waits for the next resync tick instead of nudging, same "absence degrades, never errors" shape as dockerPinger above
+	certs                  CertStore            // always set, part of the core Store interface: unlike dockerPinger/images this isn't an optional plug-in, every *store.DB already has it
+	ingressSettings        IngressSettingsStore // always set, same "core Store interface, not an optional plug-in" shape as certs above: the settings row always exists (migrations/0023's own seeded row)
+	dnsWatcher             *dnsstatus.Watcher   // built lazily from the store; nil when it cannot persist
+	dnsWatcherOnce         sync.Once
 	domains                DomainStore                 // always set, same shape as ingressSettings above: service_domains is always queryable, empty is a valid, non-error result
 	domainBasicAuth        DomainBasicAuthStore        // always set, same "core Store interface" shape as domains above
 	domainBasicAuthSecrets DomainBasicAuthSecrets      // nil is valid: PUT/DELETE .../domains/{domain}/auth return 501, same shape as cloudflareTunnelSecrets above
@@ -343,6 +348,7 @@ type Router struct {
 	httpsPendingTimeout     time.Duration
 	acmeDefaultDirectory    string
 	certLedger              certflow.Ledger
+	reachProver             *certflow.Prover
 	certWatchdog            *certflow.Watchdog
 	certWatchdogOnce        sync.Once
 	// publicHostSource is how publicHost was found; see WithPublicHostSource.
@@ -644,6 +650,8 @@ type Router struct {
 	wakeToken                    string                                                // empty disables the wake hook
 	canaries                     CanaryStore                                           // always set, in-flight canary releases
 	splitStore                   SplitTestStore                                        // nil disables split testing routes
+	anchorStatus                 func(context.Context) auditanchor.Status              // nil is valid: GET anchor-status then reports the export as off
+	scheduleScan                 schedulescan.Source                                   // nil is valid: the schedule never runs doctor check then reports unknown
 	canaryProgress               CanaryProgress                                        // nil is valid: GET canary then omits the live stage comparison
 	dbQueries                    DatabaseQueryStore                                    // always set, console history and saved queries
 	githubActions                AppGitHubActionsStore                                 // always set, per-app GitHub Actions report settings
@@ -705,6 +713,7 @@ type Router struct {
 	route53DNSSecrets            Route53DNSSecrets                                          // nil is valid: PUT/DELETE /api/v1/settings/route53-dns return 501, same shape as cloudflareDNSSecrets above
 	cloudflareDNSTokenResolver   CloudflareDNSTokenResolver                                 // nil is valid: dns-records routes return 501, same shape as cloudflareDNSSecrets above but resolves the plaintext token instead of just checking presence
 	route53DNSCredentialResolver Route53DNSCredentialResolver                               // nil is valid: dns-records routes return 501, same shape as cloudflareDNSTokenResolver above
+	dnsVerifyProvider            func(name string) dnszones.Provider                        // nil outside tests: a client is built from the submitted credential
 	googleCloudDNS               GoogleCloudDNSStore                                        // always set, same shape as route53DNS
 	googleCloudDNSSecrets        GoogleCloudDNSSecrets                                      // nil is valid: PUT/DELETE /api/v1/settings/google-cloud-dns return 501 and records stay unavailable
 	googleCloudDNSProvider       func(serviceAccountJSON string) (dnszones.Provider, error) // test seam, defaults to dnszones.NewGoogleCloud
@@ -771,6 +780,7 @@ type Router struct {
 	heartbeatSvc                 *heartbeat.Service       // nil serves 501 on /settings/heartbeat
 	jobPings                     *heartbeat.JobPinger     // nil rejects per-job heartbeat URLs
 	monitors                     MonitorService           // nil is valid: monitor routes return 404 (APP_MONITORS_ENABLED off)
+	parkedRetention              parkedRetentionState     // last retention run, for the dry run's next_run
 	runtimeSettings              *runtimesettings.Service // nil only in unit tests of other packages; nil serves env then default
 	webhookDeliveries            WebhookDeliveryStore     // always set, same "core Store interface" shape as deployAttempts above
 	policies                     PolicyStore              // always set, same "core Store interface" shape as certs above: iam_policies/iam_policy_attachments always exist, empty is a valid, non-error result
@@ -1142,6 +1152,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		rt.idempotency = is
 	}
 	rt.attachMail(s)
+	rt.attachCertLedger(s)
 	if cs, ok := s.(ContextConfigStore); ok {
 		rt.contextConfigs = cs
 	}

@@ -12,6 +12,8 @@ type ImageAutoUpdateResource struct {
 	LastCheckedAt *time.Time `json:"last_checked_at,omitempty"`
 	LastResult    string     `json:"last_result,omitempty"`
 	HasWebhook    bool       `json:"has_webhook"`
+	WindowCron    string     `json:"window_cron,omitempty"`
+	WindowMinutes int        `json:"window_minutes,omitempty"`
 }
 
 // GetImageAutoUpdate calls GET /api/v1/apps/{name}/auto-update.
@@ -25,6 +27,15 @@ func (c *Client) GetImageAutoUpdate(ctx context.Context, appName string) (ImageA
 func (c *Client) SetImageAutoUpdate(ctx context.Context, appName string, enabled bool) (ImageAutoUpdateResource, error) {
 	var out ImageAutoUpdateResource
 	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(appName)+"/auto-update", map[string]bool{"enabled": enabled}, &out)
+	return out, err
+}
+
+// SetImageAutoUpdateWindow calls PUT /api/v1/apps/{name}/auto-update with an
+// apply window; an empty cron clears it.
+func (c *Client) SetImageAutoUpdateWindow(ctx context.Context, appName string, enabled bool, cron string, minutes int) (ImageAutoUpdateResource, error) {
+	var out ImageAutoUpdateResource
+	body := map[string]any{"enabled": enabled, "window_cron": cron, "window_minutes": minutes}
+	err := c.do(ctx, http.MethodPut, "/api/v1/apps/"+PathEscape(appName)+"/auto-update", body, &out)
 	return out, err
 }
 

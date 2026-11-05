@@ -23,6 +23,7 @@ import { DemoLoginEntry } from './demo/DemoLoginEntry'
 import { RegisterForm } from './RegisterForm'
 import { OAuthButtons } from './OAuthButtons'
 import { OAuthErrorBanner } from './OAuthErrorBanner'
+import { SsoAutoRedirect } from './SsoAutoRedirect'
 import { SignInFlow } from './SignInFlow'
 import { InsecureConnectionBanner } from './InsecureConnectionBanner'
 import { ThemeToggle } from './ThemeToggle'
@@ -49,11 +50,13 @@ export function LoginScreen({
   sessionLink,
   resumeApprovalId,
   sessionEnded = false,
+  passwordMode = false,
 }: {
   setup?: string
   sessionLink?: string
   resumeApprovalId?: string
   sessionEnded?: boolean
+  passwordMode?: boolean
 }) {
   const brand = useBrand()
   const { t } = useTranslation('common')
@@ -163,6 +166,10 @@ export function LoginScreen({
         <main className="relative z-10 mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-4 py-6">
           <InsecureConnectionBanner />
           <OAuthErrorBanner />
+          <SsoAutoRedirect
+            passwordMode={passwordMode}
+            sessionEnded={sessionEnded}
+          />
           {sessionEnded ? (
             <Alert role="status">
               <LogOutGlassIcon size="1.4em" />

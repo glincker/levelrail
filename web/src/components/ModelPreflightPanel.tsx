@@ -1,3 +1,7 @@
+import {
+  SelectedMark,
+  selectableCardClass,
+} from '@/components/ui/selectable-card'
 import { useMemo } from 'react'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import {
@@ -226,10 +230,12 @@ function QuantPicker({
                 onClick={() => {
                   onPick(q.name)
                 }}
-                className={`flex w-full items-center gap-2 rounded-md border px-2 py-1 text-left transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:outline-none ${
-                  active ? 'border-primary bg-muted' : 'border-border'
-                }`}
+                className={selectableCardClass(
+                  active,
+                  'flex w-full items-center gap-2 rounded-md px-2 py-1 pr-7 text-left',
+                )}
               >
+                <SelectedMark selected={active} />
                 <span className="font-mono text-foreground">{q.name}</span>
                 <span className="text-muted-foreground">
                   {formatBytes(q.bytes)}

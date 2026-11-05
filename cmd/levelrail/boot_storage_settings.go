@@ -44,6 +44,14 @@ func (s *bootState) wireStorageSettings() {
 	ingressdriver.DefaultAccessLog().SetRetentionSource(func() time.Duration {
 		return rs().AccessLogRetention(context.Background())
 	})
+	ingressdriver.DefaultAccessLog().SetVisitorRotationSource(func() time.Duration {
+		return rs().VisitorSaltRotation(context.Background())
+	})
+	log := ingressdriver.DefaultAccessLog()
+	log.SetVisitorHistory(s.db, ingressdriver.DefaultRequestStats().OwnerOf, func() time.Duration {
+		return rs().VisitorHistoryRetention(context.Background())
+	}, s.logger)
+	go log.RunVisitorHistory(s.ctx)
 	backup.SetLocalRootSource(func() string {
 		return rs().String(context.Background(), runtimesettings.KeyBackupLocalRoot)
 	})

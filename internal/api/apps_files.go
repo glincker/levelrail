@@ -170,6 +170,18 @@ func (rt *Router) handleDeleteAppFile(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: delete app file failed", err, slog.String("name", name))
 		return
 	}
+	for _, f := range svc.Files {
+		if f.Path != target || !f.Secret {
+			continue
+		}
+		if d, ok := rt.secrets.(interface {
+			DeleteValue(ctx context.Context, serviceName, envKey string) error
+		}); ok {
+			if err := d.DeleteValue(r.Context(), name, store.FileSecretKey(target)); err != nil {
+				rt.logger.Warn("api: delete secret file value failed", slog.String("name", name), slog.String("error", err.Error()))
+			}
+		}
+	}
 	rt.applyFilesIfRequested(r, name)
 	w.WriteHeader(http.StatusNoContent)
 }

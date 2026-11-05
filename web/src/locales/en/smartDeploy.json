@@ -1,6 +1,6 @@
 {
   "title": "Deploy",
-  "description": "Ship a new version of this app.",
+  "description": "Deploy a new version of this app.",
   "git": {
     "headTitle": "Deploy latest commit on {{branch}}",
     "deployHead": "Deploy latest commit",
@@ -23,7 +23,7 @@
     "noMessage": "No commit message",
     "refresh": "Refresh commits",
     "noCommits": "This branch has no commits yet.",
-    "degraded": "This host does not expose a commit list, so only the head of {{branch}} is shown.",
+    "degraded": "This host doesn't expose a commit list, so only the head of {{branch}} is shown.",
     "loadFailed": "Could not load commits",
     "retry": "Try again",
     "connectedTo": "Connected repository",
@@ -86,12 +86,12 @@
     },
     "webhook_not_received": {
       "title": "Turn on deploy on push",
-      "detail": "No webhook delivery has reached this app yet, so pushes will not deploy by themselves.",
+      "detail": "No webhook delivery has reached this app yet, so pushes won't deploy on their own.",
       "action": "Set up the webhook"
     },
     "release_trigger_only": {
       "title": "Deploys happen on releases only",
-      "detail": "New commits will not deploy automatically. Deploy one from this list when you are ready.",
+      "detail": "New commits won't deploy automatically. Deploy one from this list when you are ready.",
       "action": "Open source settings"
     },
     "enable_previews": {
@@ -102,11 +102,11 @@
     },
     "add_health_check": {
       "title": "Add a health check",
-      "detail": "Without one, a container that starts but does not serve still counts as healthy.",
+      "detail": "Without one, a container that starts but doesn't serve still counts as healthy.",
       "action": "Open health settings"
     },
     "add_deploy_notifications": {
-      "title": "Get told when deploys finish",
+      "title": "Get notified when deploys finish",
       "detail": "Nobody is notified when this app deploys or fails.",
       "action": "Set up notifications"
     }
@@ -182,7 +182,7 @@
     },
     "list": {
       "title": "Scheduled deploys",
-      "description": "One-time deploys waiting to run. They respect deploy freezes, gates and approvals like any deploy.",
+      "description": "One-time deploys waiting to run. Like any deploy, they respect deploy freezes, gates and approvals.",
       "empty": "Nothing scheduled.",
       "image": "Image {{image}}",
       "ref": "Latest commit on {{ref}}",

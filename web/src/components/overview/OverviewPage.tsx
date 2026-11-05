@@ -13,9 +13,9 @@ import { registerPageActions } from '../../lib/pageActions'
 import type { AppDetail } from '../../types/appDetail'
 import type { ReconcileCondition } from '../../types/deploy'
 import type { DeployAttempt } from '../../types/deployAttempt'
-import { FailureContextCard } from '../FailureContextCard'
+import { DiagnosisCard } from './DiagnosisCard'
+import { useDiagnosisShown } from './useDiagnosisShown'
 import { RecommendedNextCard } from './RecommendedNextCard'
-import { useFailureContext } from '../../queries/investigate'
 import { AppHealthScorePanel } from '../AppHealthScorePanel'
 import { ActivityTimeline } from './ActivityTimeline'
 import { DeploySheet, type DeployTab } from './DeploySheet'
@@ -39,6 +39,7 @@ import { ResourceTiles } from './ResourceTiles'
 import { useResourceReading } from './useResourceReading'
 import { isImageDeploy } from './suggestions'
 import { TrafficTiles } from './TrafficTiles'
+import { VisitorsCard } from './VisitorsCard'
 import { useAppUrl } from './useAppUrl'
 import { useOverviewActions } from './useOverviewActions'
 import { useOverviewHotkeys } from './useOverviewHotkeys'
@@ -69,10 +70,9 @@ export function OverviewPage({
     latest,
     conditions,
   )
-  const failureCtx = useFailureContext(app.name).data
-  const failureShown = Boolean(failureCtx && failureCtx.state !== 'healthy')
-  // The failure card already states the failure, so its twin suggestion is dropped.
-  const suggestions = failureShown
+  const diagnosisShown = useDiagnosisShown(app.name)
+  // The Diagnosis card already states the failure, so its twin suggestions are dropped.
+  const suggestions = diagnosisShown
     ? {
         ...rawSuggestions,
         attention: rawSuggestions.attention.filter(
@@ -89,6 +89,7 @@ export function OverviewPage({
   })
   const layout = computeOverviewLayout({
     attentionCount: suggestions.attention.length,
+    diagnosisShown,
     hasTraffic: Boolean(traffic?.hasTraffic),
     trafficKnown: traffic !== undefined,
     suspended: app.suspended,
@@ -156,22 +157,28 @@ export function OverviewPage({
       />
     ),
     access: (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <AppAccessCard appName={app.name} />
         <AppAccessDetails app={app} />
       </div>
     ),
     kpis: (
-      <section
-        aria-label="Live traffic and resources"
-        className="grid grid-cols-[repeat(auto-fit,minmax(10.5rem,1fr))] gap-3"
-      >
-        {layout.containerMetrics ? <ResourceTiles reading={reading} /> : null}
+      <div className="space-y-4">
+        <section
+          aria-label="Live traffic and resources"
+          className="grid grid-cols-[repeat(auto-fit,minmax(10.5rem,1fr))] gap-3"
+        >
+          {layout.containerMetrics ? <ResourceTiles reading={reading} /> : null}
+          {layout.traffic !== 'hidden' ? (
+            <TrafficTiles appName={app.name} url={url} hideEmpty />
+          ) : null}
+        </section>
         {layout.traffic !== 'hidden' ? (
-          <TrafficTiles appName={app.name} url={url} />
+          <VisitorsCard appName={app.name} />
         ) : null}
-      </section>
+      </div>
     ),
+    diagnosis: <DiagnosisCard appName={app.name} latest={latest} />,
     health: <AppHealthScorePanel appName={app.name} />,
     activity: (
       <div className="space-y-6">
@@ -206,10 +213,8 @@ export function OverviewPage({
     ),
     details: <DetailsSection app={app} conditions={conditions} />,
   }
-  const pairing = layout.pairAttentionWithAccess
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {actions.confirmDialog}
       <OverviewHero
         app={app}
@@ -225,28 +230,14 @@ export function OverviewPage({
         }
         onDeploy={setDeployTab}
       />
-      <FailureContextCard appName={app.name} />
-      <RecommendedNextCard app={app} latest={latest} />
-      {pairing ? (
-        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
-          <div className="space-y-6">
-            {sections.attention}
-            {sections.kpis}
-          </div>
-          {sections.access}
-        </div>
-      ) : null}
-      {layout.sections
-        .filter(
-          (id) =>
-            !(
-              pairing &&
-              (id === 'attention' || id === 'access' || id === 'kpis')
-            ),
-        )
-        .map((id) => (
-          <Fragment key={id}>{sections[id]}</Fragment>
-        ))}
+      <RecommendedNextCard
+        app={app}
+        latest={latest}
+        omit={diagnosisShown ? ['add_domain', 'failed_deploy'] : ['add_domain']}
+      />
+      {layout.sections.map((id) => (
+        <Fragment key={id}>{sections[id]}</Fragment>
+      ))}
       <DeploySheet
         appName={app.name}
         tab={deployTab}

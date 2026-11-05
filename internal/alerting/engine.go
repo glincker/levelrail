@@ -604,7 +604,7 @@ func (e *Engine) Tick(ctx context.Context) error {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
-		case KindCertExpiring, KindCertRenewalStalled, KindDomainNotResolving:
+		case KindCertExpiring, KindCertRenewalStalled, KindDomainNotResolving, KindDomainTrafficDrop, KindParkedDomainCertExpiry:
 			var skip bool
 			var notices []string
 			next, notices, skip, err = e.evaluateTrafficKind(ctx, r, now)
@@ -615,7 +615,7 @@ func (e *Engine) Tick(ctx context.Context) error {
 				errs = append(errs, fmt.Errorf("rule %q: %w", r.ID, err))
 				continue
 			}
-			if r.Kind == KindDomainNotResolving {
+			if r.Kind == KindDomainNotResolving || r.Kind == KindDomainTrafficDrop {
 				domainHealthNotices = notices
 			} else {
 				certNotices = notices
@@ -732,7 +732,7 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	if r.Kind == KindCrashloop && !resolved {
 		ev.LogLines = e.fetchRecentLogLines(ctx, r.ResourceID)
 	}
-	if (r.Kind == KindCertExpiry || r.Kind == KindCertExpiring || r.Kind == KindCertRenewalStalled) && !resolved {
+	if (r.Kind == KindCertExpiry || r.Kind == KindCertExpiring || r.Kind == KindCertRenewalStalled || r.Kind == KindParkedDomainCertExpiry) && !resolved {
 		ev.CertNotices = certNotices
 		if r.Kind == KindCertExpiry {
 			ev.CertFacts, ev.CertBaseURL = e.takeCertFacts(r.ID), e.certPolicy.BaseURL
@@ -756,7 +756,7 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	if (r.Kind == KindScheduledTaskFailure || r.Kind == KindScheduledTaskMissed || r.Kind == KindScheduledTaskRunningLong) && !resolved {
 		ev.TaskFailureNotice = taskFailureNotice
 	}
-	if (r.Kind == KindDomainHealth || r.Kind == KindDomainNotResolving) && !resolved {
+	if (r.Kind == KindDomainHealth || r.Kind == KindDomainNotResolving || r.Kind == KindDomainTrafficDrop) && !resolved {
 		ev.DomainHealthNotices = domainHealthNotices
 	}
 	if (r.Kind == KindBackupMissing || IsDatabaseKind(r.Kind) || r.Kind == KindControlPlaneBackupStale || r.Kind == KindLogArchiveStale || r.Kind == KindExportBehind || r.Kind == KindBackupCopyBehind || r.Kind == KindRegistryRefreshFailing || r.Kind == KindRestoreDrillFailed || r.Kind == KindDeployFailed || r.Kind == KindMonitorDown) && !resolved {
