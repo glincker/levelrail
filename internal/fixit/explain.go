@@ -140,6 +140,8 @@ func buildExplainTable() map[string]Explanation {
 			"Press Fix on this check for the guided step. Open each app's Environment tab and update the old values.", "secrets.stale.rotate", KindGuided),
 		ex("notification_channel_secrets", "A notification channel is missing a secret it needs.", "Alerts for it will not be delivered.",
 			"Open Settings, then Notifications, and re-enter the channel's secret.", "", KindGuided),
+		ex("notify_reachable", "No notification channel or email provider is configured.", "You only learn about outages by looking at the dashboard.",
+			"Open Settings, then Notifications, and add a channel, or add an email provider under Settings, then Email.", "", KindGuided),
 		ex("secret_reveal_policy", "Showing secret values does not require a fresh confirmation.", "A stolen session could read secrets.",
 			"Open Settings, then Security, and set secret reveal to require step-up.", "", KindGuided),
 		ex("legacy_tokens", "Some API tokens use the old format.", "They cannot be limited or tracked like current tokens.",
