@@ -522,6 +522,10 @@ func (s *bootState) serve() error {
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), httpShutdownTimeout)
 	defer cancel()
+	// Gates record their skip rows through the database, which closes after run returns.
+	if !s.apiRouter.ShutdownCIGates(shutdownCtx) {
+		logger.Warn("shutdown limit reached with CI gates still ending")
+	}
 	if err := httpServer.Shutdown(shutdownCtx); err != nil {
 		logger.Error("http server shutdown failed", slog.String("error", err.Error()))
 	}

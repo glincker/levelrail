@@ -687,3 +687,18 @@ func TestPolledHeadIsGatedWhenWaitForCIIsOn(t *testing.T) {
 		}
 	}
 }
+
+func TestGitWebhookCIGate_ShutdownCIGatesWaitsForSkipRow(t *testing.T) {
+	rt, db, fake, _ := gateWebhookRig(t)
+	blockGate(fake)
+	rt.processGitPushWebhookPayload(t.Context(), "web", gatedPushSource(), gitLabPushBody("refs/heads/main", gateSHA, ""), http.Header{})
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	if !rt.ShutdownCIGates(ctx) {
+		t.Fatal("ShutdownCIGates hit its deadline")
+	}
+	attempts, err := db.ListDeployAttempts(t.Context(), "web")
+	if err != nil || len(attempts) != 1 || !strings.Contains(attempts[0].Error, "interrupted by shutdown") {
+		t.Fatalf("attempts = %+v, err = %v", attempts, err)
+	}
+}

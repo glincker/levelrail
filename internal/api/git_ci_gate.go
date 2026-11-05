@@ -280,6 +280,23 @@ func (rt *Router) ciGates() *ciGateTracker {
 // CancelCIGates ends every waiting CI gate; each records an "interrupted by shutdown" skip.
 func (rt *Router) CancelCIGates() { rt.ciGates().stop() }
 
+// ShutdownCIGates cancels waiting gates and waits for their skip rows, so a
+// restart never leaves a delivery stuck at 202. It reports whether all finished by ctx.
+func (rt *Router) ShutdownCIGates(ctx context.Context) bool {
+	rt.CancelCIGates()
+	done := make(chan struct{})
+	go func() {
+		rt.previewDeploys.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+		return true
+	case <-ctx.Done():
+		return false
+	}
+}
+
 // begin makes job the app's only waiting gate. It refuses, returning why, when
 // the waiting push is the same commit or provably newer, so a late or replayed
 // older delivery can never cancel a newer wait.
