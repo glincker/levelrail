@@ -69,7 +69,7 @@ levelrail-cli logs dump --target <id> --app web --from 24h --wait
 levelrail-cli logs dump --target <id> --from 2026-09-24T00:00:00Z --to 2026-09-24T06:00:00Z
 ```
 
-`--from` and `--to` take an RFC3339 timestamp or a duration back from now. The range is capped at 31 days. The dashboard has the same control on the Archive tab. Under the hood this is `POST /api/v1/log-archive/dump`, which answers `202 Accepted` with a run to poll (`GET /api/v1/log-archive/runs`) rather than blocking until the dump finishes.
+`--from` and `--to` take an RFC3339 timestamp or a duration back from now. The range is capped at 31 days. The dashboard has the same control on the Archive tab. The API call is `POST /api/v1/log-archive/dump`, which answers `202 Accepted` with a run to poll (`GET /api/v1/log-archive/runs`) rather than blocking until the dump finishes.
 
 ## Retrieving archived logs
 

@@ -571,7 +571,7 @@ levelrail-cli apps set-environment <name> <environment-id> [flags]
 levelrail-cli apps clear-environment <name> [flags]
 ```
 
-- A project groups apps and databases; an organization groups projects. Deleting either leaves its members running, simply ungrouped again.
+- A project groups apps and databases; an organization groups projects. Deleting either leaves its members running, now ungrouped.
 - Shared env vars layer in this order: organization, then project, then environment, then the app's own env, each overriding the one before. `env-set` replaces that scope's shared env vars. For per scope secrets see [Shared env](#shared-env).
 - A protected environment requires `--confirm` (or an interactive yes) on `apps deploy`, `apps rollback` and `apps promote` targeting an app tagged with it, and routes the deploy through [deploy approvals](#deploy-history-approvals-and-automation).
 - `apps environments clone-preview` shows what cloning would create without applying it; `env-diff` diffs two environments' resolved effective env vars.

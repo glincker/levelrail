@@ -21,7 +21,7 @@ Deploy creates the databases, the app and its connections, links the repository 
 
 `POST /api/v1/git-sources/preview` takes `repo_url`, optional `ref`, `account_id` and `token`, needs the same write ability as analyze, and returns the card data plus the analysis. `kind` is one of `public`, `private_needs_account`, `not_found`, `rate_limited`, `unsupported_host` or `invalid_url`. Only github.com, gitlab.com, bitbucket.org, codeberg.org and the hosts of your connected providers are contacted, through the same SSRF-guarded client as the rest of the git layer, so URLs such as `http://169.254.169.254` or `http://localhost` are answered `unsupported_host` without any request. Tokens are never returned or logged. Tune it with `APP_REPO_PREVIEW_TIMEOUT`, `APP_REPO_PREVIEW_CACHE_TTL`, `APP_REPO_PREVIEW_CACHE_MAX`, `APP_REPO_PREVIEW_MAX_BRANCHES` and `APP_REPO_PREVIEW_README_CHARS`. Bitbucket Cloud has no rich preview yet; it falls back to the classic analysis step.
 
-The flow survives a page reload: the repository and step are kept in `sessionStorage` (never tokens or env values), and the analysis is simply run again.
+The flow survives a page reload: the repository and step are kept in `sessionStorage` (never tokens or env values), and the analysis runs again.
 
 ## Explain it from the CLI
 
