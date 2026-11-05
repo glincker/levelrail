@@ -17,7 +17,7 @@ curl -fsSL https://levelrail.com/install.sh | sudo sh
 <img src="/assets/screenshots/apps-list-light.png" alt="Levelrail apps list showing every service, its status and its node" className="block dark:hidden" />
 <img src="/assets/screenshots/apps-list.png" alt="Levelrail apps list showing every service, its status and its node" className="hidden dark:block" />
 
-## What is different under the hood
+## What is different in how it works
 
 <CardGroup cols={3}>
   <Card title="A reconciler, not Swarm services">

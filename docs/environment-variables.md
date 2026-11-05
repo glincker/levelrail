@@ -542,7 +542,7 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 | `APP_BRAND_SHORT_NAME` | computed | Short brand name the CLI uses for its server credentials key, lowercased. CLI. |
 | `APP_BRAND_BINARY_NAME` | computed | CLI binary name shown in help and install output. The MCP binary name is derived from it. CLI. |
 | `APP_BRAND_DOCS_URL` | computed | Base URL the deploy command uses for its launcher link, with /deploy.html appended. CLI. |
-| `APP_CHANGELOG_FILE` | ``./CHANGELOG.md`` | Path to the changelog shown in the what's-new panel. A missing file is not an error, and the panel is simply empty. Control plane. |
+| `APP_CHANGELOG_FILE` | ``./CHANGELOG.md`` | Path to the changelog shown in the what's-new panel. A missing file is not an error, and the panel is empty. Control plane. |
 | `APP_CLI_BINARY` | computed | Path to the CLI binary the control plane console runs. Unset looks for it next to the control plane binary, never on PATH. Control plane. |
 | `APP_AUDIT_ANCHOR_DIR` | computed | Local directory where audit log anchors, which are checkpoints of the audit log, are written. Control plane. |
 

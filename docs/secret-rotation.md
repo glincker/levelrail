@@ -65,7 +65,7 @@ levelrail-cli apps secrets rotation remove web JWT_SECRET
 - Only per-app secrets are covered. Shared variables at project, organization and environment level are not rotated by policy.
 - Database role passwords keep their own [rotation path](database-access.md). A policy does not rotate them, because nothing would receive the new password.
 - Generated values are random hex strings. A secret that must follow a specific format should not be auto-rotated.
-- Apps that read `<KEY>_PREVIOUS` get a grace window. Apps that do not simply move to the new value at the restart.
+- Apps that read `<KEY>_PREVIOUS` get a grace window. Apps that do not move to the new value at the restart.
 
 ## Troubleshooting
 

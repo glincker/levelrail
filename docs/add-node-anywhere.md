@@ -63,7 +63,7 @@ Values are made valid as node labels (letters, digits, `.`, `_`, `-`, at most 63
 
 ### When there is no metadata service
 
-A home server or an unsupported provider reports nothing, and the node simply has no labels until you set them. Three ways to set them:
+A home server or an unsupported provider reports nothing, and the node has no labels until you set them. Three ways to set them:
 
 - Fill in the provider, region and zone in the dialog, or pass `--provider`, `--region` and `--zone` to `nodes add`. The join command then carries `APP_NODE_PROVIDER`, `APP_NODE_REGION` and `APP_NODE_ZONE`.
 - Set those variables on the agent yourself. They override what metadata reports, field by field.
