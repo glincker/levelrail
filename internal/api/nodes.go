@@ -751,7 +751,7 @@ func (rt *Router) handleCreateNodeJoinToken(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	if host := rt.advertiseHost(); req.Mesh && meshAdvertiseHostNeedsIP(host) {
+	if host := rt.advertiseHost(); req.Mesh && !rt.meshHubHostUsable(r.Context(), host) {
 		writeError(w, http.StatusBadRequest, fmt.Sprintf(meshAdvertiseHostMessage, host))
 		return
 	}

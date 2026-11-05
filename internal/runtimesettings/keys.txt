@@ -71,6 +71,7 @@ ingress.fallback_certs
 ingress.max_body_bytes
 ingress.proxy_cert_wait
 ingress.trusted_proxy_preset
+mesh.hub_resolve_ttl
 monitors.raw_retention
 nextjs.generate_actions_key
 nextjs.memory_floor_mb
