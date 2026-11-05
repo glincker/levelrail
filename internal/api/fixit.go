@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net"
 	"net/http"
 	"net/netip"
@@ -195,37 +194,19 @@ func (rt *Router) fixitFixes() []fixit.Fix {
 }
 
 func (rt *Router) backupDrillFinding(ctx context.Context) (fixit.Finding, error) {
-	if rt.backupProtectionStore == nil {
-		return fixit.Finding{}, nil
-	}
-	drills, err := rt.backupProtectionStore.ListBackupDrills(ctx, "", "", "", 1000)
+	failed, err := rt.latestFailedDrills(ctx)
 	if err != nil {
 		return fixit.Finding{}, err
-	}
-	seen := map[string]bool{}
-	var failed []store.BackupDrill
-	for _, d := range drills {
-		if d.Status == store.DrillStatusRunning {
-			continue
-		}
-		key := d.ResourceKind + "/" + d.DatabaseName + "/" + d.ServiceName + "/" + d.VolumeName
-		if seen[key] {
-			continue
-		}
-		seen[key] = true
-		if d.Status == store.DrillStatusFailed {
-			failed = append(failed, d)
-		}
 	}
 	if len(failed) == 0 {
 		return fixit.Finding{Detail: "the latest restore drill of every resource passed"}, nil
 	}
-	cls := backup.ClassifyDrillFailure(failed[0].Error)
-	return fixit.Finding{
-		Failing: true,
-		Detail:  fmt.Sprintf("%d resource(s) failed their latest drill; first error at %s: %s", len(failed), failed[0].Stage, failed[0].Error),
-		Reason:  cls.Guidance,
-	}, nil
+	sum := backup.SummarizeDrillFailures(failed)
+	reason := backup.ClassifyDrillFailure(failed[0].Error).Guidance
+	if len(sum.Real) > 0 {
+		reason = backup.ClassifyDrillFailure(sum.Real[0].Error).Guidance
+	}
+	return fixit.Finding{Failing: true, Detail: sum.Detail(), Reason: reason}, nil
 }
 
 func (rt *Router) fixitCreateBackup(ctx context.Context) (string, error) {

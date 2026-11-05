@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/cpbackup"
+	"github.com/GLINCKER/levelrail/internal/fixit"
 )
 
 // ControlPlaneDR is the surface the /system/control-plane-dr routes need.
@@ -202,6 +203,69 @@ func (rt *Router) handleAckControlPlaneDREscrow(w http.ResponseWriter, r *http.R
 	rt.handleGetControlPlaneDR(w, r)
 }
 
+// drDisabledMessage says what is missing, so the row is not a bare "off".
+func drDisabledMessage(st cpbackup.Status) string {
+	const tail = ", so losing this machine loses the control plane"
+	switch {
+	case st.Configured:
+		return "off-box encrypted backups are set up but switched off" + tail
+	case st.TargetID == "":
+		return "off-box encrypted backups are not enabled: no off-box destination is defined" + tail
+	default:
+		return "off-box encrypted backups are not enabled: no encryption recipient is defined" + tail
+	}
+}
+
+// controlPlaneDRFix is guided: choosing a destination is the user's decision, and enabling one that is
+// already saved starts uploads, so it needs a click rather than running on its own.
+func (rt *Router) controlPlaneDRFix() fixit.Fix {
+	return fixit.Fix{
+		ID: "control_plane.dr.enable", CheckID: "control_plane_dr", Subject: "backup", Kind: fixit.KindGuided,
+		Title: "Turn on off-box control plane backups",
+		Why:   "Without an encrypted off-box copy, losing this machine loses the control plane.",
+		Risk:  fixit.RiskSafe, Reversible: true, Needs: "admin",
+		Detect: func(ctx context.Context) (fixit.Applicability, error) {
+			if rt.cpDR == nil {
+				return fixit.Applicability{Detail: "off-box disaster recovery is not available on this instance", Changes: []fixit.Change{}}, nil
+			}
+			st, err := rt.cpDR.Status(ctx)
+			if err != nil {
+				return fixit.Applicability{}, err
+			}
+			if st.Enabled {
+				return fixit.Applicability{Detail: "off-box encrypted backups are enabled", Changes: []fixit.Change{}}, nil
+			}
+			a := fixit.Applicability{
+				Failing: true, Detail: drDisabledMessage(st), Kind: fixit.KindGuided,
+				Command: rt.cliName() + " control-plane-backups schedule set", Changes: []fixit.Change{},
+				Reason: "Choose an off-box destination and an encryption recipient in Settings, Control plane backups, or run the command, then re-check.",
+			}
+			if st.Configured {
+				a.Reason = "A destination and encryption recipient are already saved. Apply to switch the schedule on."
+				a.Changes = []fixit.Change{{Label: "Enable the saved schedule", Detail: st.Schedule}}
+			}
+			return a, nil
+		},
+		Run: func(ctx context.Context, _ fixit.Input) error {
+			if rt.cpDR == nil {
+				return fixit.ErrCannotFixHere
+			}
+			st, err := rt.cpDR.Status(ctx)
+			if err != nil {
+				return err
+			}
+			if !st.Configured {
+				return fixit.ErrCannotFixHere
+			}
+			return rt.cpDR.UpdateConfig(ctx, cpbackup.ConfigUpdate{
+				Enabled: true, TargetID: st.TargetID, Recipients: st.Recipients, Schedule: st.Schedule,
+				DrillSchedule: st.DrillSchedule, EscrowTargetID: st.EscrowTargetID,
+				Retention: cpbackup.Retention{Daily: st.RetainDaily, Weekly: st.RetainWeekly, Monthly: st.RetainMonthly},
+			})
+		},
+	}
+}
+
 func (rt *Router) doctorCheckControlPlaneDR(ctx context.Context) doctorCheckResource {
 	const code, name = "control_plane_dr", "Control plane disaster recovery"
 	if rt.cpDR == nil {
@@ -216,8 +280,8 @@ func (rt *Router) doctorCheckControlPlaneDR(ctx context.Context) doctorCheckReso
 	if !st.Enabled {
 		return doctorCheckResource{
 			Code: code, Name: name, Status: doctorStatusWarn,
-			Message: "off-box encrypted backups are not enabled, so losing this machine loses the control plane",
-			Fix:     fix, DocsPath: docs,
+			Message: drDisabledMessage(st),
+			Fix:     rt.cliName() + " control-plane-backups schedule set", DocsPath: docs,
 		}
 	}
 	if len(st.Warnings) > 0 {

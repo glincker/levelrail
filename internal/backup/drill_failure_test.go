@@ -97,3 +97,29 @@ func TestDrillDatabase_ScratchContainerRemovedWhenVerificationFails(t *testing.T
 		})
 	}
 }
+
+func TestDrillFailureDanglingTargetClassified(t *testing.T) {
+	got := ClassifyDrillFailure(`get backup target "bkt_1": store: backup target not found`)
+	if got.Kind != DrillFailureTargetMissing || got.Severity != DrillSeverityAdvisory {
+		t.Fatalf("dangling target = %+v", got)
+	}
+}
+
+func TestDrillFailureRealFailureNotDowngraded(t *testing.T) {
+	for _, e := range []string{"checksum of the stored object does not match", "AccessDenied 403", "psql: syntax error", "dial tcp: connection refused"} {
+		if got := ClassifyDrillFailure(e); got.Severity != DrillSeverityWarning {
+			t.Fatalf("%q severity = %q, want warning", e, got.Severity)
+		}
+	}
+	mixed := SummarizeDrillFailures([]store.BackupDrill{
+		{ResourceKind: store.BackupResourceKindDatabase, DatabaseName: "a", Error: "backup target not found"},
+		{ResourceKind: store.BackupResourceKindDatabase, DatabaseName: "b", Stage: "restore", Error: "restore failed"},
+	})
+	if mixed.Severity() != DrillSeverityWarning || !strings.Contains(mixed.Detail(), "no longer exists (database a)") {
+		t.Fatalf("mixed = %q %q", mixed.Severity(), mixed.Detail())
+	}
+	only := SummarizeDrillFailures([]store.BackupDrill{{ResourceKind: store.BackupResourceKindDatabase, DatabaseName: "a", Error: "backup target not found"}})
+	if only.Severity() != DrillSeverityAdvisory || strings.Contains(only.Detail(), "failed their latest drill") {
+		t.Fatalf("only dangling = %q %q", only.Severity(), only.Detail())
+	}
+}
