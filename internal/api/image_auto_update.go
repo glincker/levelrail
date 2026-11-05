@@ -250,21 +250,25 @@ func (rt *Router) handleRotateImageUpdateWebhook(w http.ResponseWriter, r *http.
 		rt.internalError(w, "api: rotate image update webhook: mint token", err)
 		return
 	}
-	if err := rt.imageAutoUpdates.SetImageAutoUpdateWebhookHash(r.Context(), name, hashToken(token)); err != nil {
-		rt.internalError(w, "api: rotate image update webhook", err, slog.String("name", name))
-		return
-	}
 	res := imageUpdateWebhookResource{Path: imageUpdateHookPrefix + name + "/" + token, Token: token}
+	// The secret goes first: a failure here must leave the old URL working and the new one unseen.
 	if rt.gitSourceSecrets != nil {
 		secret, serr := randomToken()
 		if serr == nil {
 			serr = rt.gitSourceSecrets.SetValue(r.Context(), imageUpdateSecretNS+name, imageUpdateSecretKey, secret)
+		}
+		if serr == nil {
+			serr = rt.recordPushRotator(r, name)
 		}
 		if serr != nil {
 			rt.internalError(w, "api: rotate image update webhook: signing secret", serr, slog.String("name", name))
 			return
 		}
 		res.SigningSecret = secret
+	}
+	if err := rt.imageAutoUpdates.SetImageAutoUpdateWebhookHash(r.Context(), name, hashToken(token)); err != nil {
+		rt.internalError(w, "api: rotate image update webhook", err, slog.String("name", name))
+		return
 	}
 	writeJSON(w, http.StatusOK, res)
 }

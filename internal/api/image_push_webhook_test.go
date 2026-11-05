@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -250,5 +251,121 @@ func TestRegistryPushToProtectedEnvironmentFilesApproval(t *testing.T) {
 	svc, _ := h.db.GetDesiredService(ctx, "web")
 	if docker.ImageDigestOf(svc.Image) != oldDigest {
 		t.Errorf("protected app deployed silently: %q", svc.Image)
+	}
+}
+
+func (h *pushHarness) lastAuditDetail(t *testing.T) string {
+	t.Helper()
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		rows, _ := h.db.ListAuditEntries(context.Background(), 5, nil, store.AuditEntryFilter{Action: AuditActionRegistryPushDeploy})
+		if len(rows) > 0 {
+			return rows[0].Detail
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	t.Fatal("no registry push audit row")
+	return ""
+}
+
+func TestForgedPayloadDigestIsNotDeployed(t *testing.T) {
+	h := newPushHarness(t, "ghcr.io/acme/web:latest@"+oldDigest)
+	forged := "sha256:" + strings.Repeat("3", 64)
+	body := ghcrBody("published", "acme", "web", "latest", forged)
+	if rec := h.post(body, h.signed(body)); rec.Code != http.StatusAccepted {
+		t.Fatalf("status = %d", rec.Code)
+	}
+	detail := h.lastAuditDetail(t)
+	if !strings.Contains(detail, forged) || !strings.Contains(detail, "not what the registry serves") {
+		t.Errorf("audit detail = %s", detail)
+	}
+	svc, _ := h.db.GetDesiredService(context.Background(), "web")
+	if docker.ImageDigestOf(svc.Image) != oldDigest {
+		t.Errorf("forged digest changed the image to %q", svc.Image)
+	}
+}
+
+func TestHeaderlessBodyCannotSpoofAnotherRegistry(t *testing.T) {
+	h := newPushHarness(t, "ghcr.io/acme/web:latest@"+oldDigest)
+	rec := h.post(`{"push_data":{"tag":"latest"},"repository":{"repo_name":"ghcr.io/acme/web"}}`, nil)
+	if strings.Contains(rec.Body.String(), "deploy started") {
+		t.Fatalf("headerless ghcr.io body was treated as a push: %d %s", rec.Code, rec.Body.String())
+	}
+	time.Sleep(200 * time.Millisecond)
+	rows, _ := h.db.ListAuditEntries(context.Background(), 5, nil, store.AuditEntryFilter{Action: AuditActionRegistryPushDeploy})
+	if len(rows) != 0 {
+		t.Errorf("a push audit row exists for a spoofed delivery: %+v", rows)
+	}
+}
+
+func (h *pushHarness) protect(t *testing.T) {
+	t.Helper()
+	ctx := context.Background()
+	if err := h.db.SaveProject(ctx, store.Project{ID: "proj_1", Name: "p", CreatedAt: "2026-08-20T00:00:00Z"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := h.db.SaveEnvironment(ctx, store.Environment{ID: "env_prod", ProjectID: "proj_1", Name: "production", Protected: true, CreatedAt: "2026-08-20T00:00:00Z"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := h.db.SetServiceEnvironment(ctx, "web", "env_prod"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestRotatorCannotApproveThePushApproval(t *testing.T) {
+	h := newPushHarness(t, "ghcr.io/acme/web:latest@"+oldDigest)
+	h.protect(t)
+	body := ghcrBody("published", "acme", "web", "latest", newDigest)
+	if rec := h.post(body, h.signed(body)); rec.Code != http.StatusAccepted {
+		t.Fatalf("status = %d", rec.Code)
+	}
+	var pending []store.DeployApproval
+	deadline := time.Now().Add(5 * time.Second)
+	for len(pending) == 0 && time.Now().Before(deadline) {
+		pending, _ = h.db.ListDeployApprovals(context.Background(), store.DeployApprovalStatusPending, "web")
+		time.Sleep(20 * time.Millisecond)
+	}
+	if len(pending) != 1 {
+		t.Fatalf("pending = %d", len(pending))
+	}
+	rec := serve(h.rt, authedRequest(t, h.cookie, http.MethodPost, "/api/v1/deploy-approvals/"+pending[0].ID+"/approve", ""))
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("approve by the person who rotated the hook = %d %s, want 403", rec.Code, rec.Body.String())
+	}
+}
+
+func TestConcurrentPushesFileOneApproval(t *testing.T) {
+	h := newPushHarness(t, "ghcr.io/acme/web:latest@"+oldDigest)
+	h.protect(t)
+	body := ghcrBody("published", "acme", "web", "latest", newDigest)
+	var wg sync.WaitGroup
+	for i := 0; i < 8; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			h.post(body, h.signed(body))
+		}()
+	}
+	wg.Wait()
+	time.Sleep(500 * time.Millisecond)
+	pending, err := h.db.ListDeployApprovals(context.Background(), store.DeployApprovalStatusPending, "web")
+	if err != nil || len(pending) != 1 {
+		t.Fatalf("pending approvals = %d, %v; want exactly one", len(pending), err)
+	}
+}
+
+func TestPushOutsideUpdateWindowWaits(t *testing.T) {
+	h := newPushHarness(t, "ghcr.io/acme/web:latest@"+oldDigest)
+	ctx := context.Background()
+	if err := h.db.SetImageAutoUpdateWindow(ctx, "web", "0 3 * * *", 1); err != nil {
+		t.Fatal(err)
+	}
+	body := ghcrBody("published", "acme", "web", "latest", newDigest)
+	rec := h.post(body, h.signed(body))
+	if rec.Code != http.StatusAccepted || !strings.Contains(rec.Body.String(), "update window") {
+		t.Fatalf("response = %d %s", rec.Code, rec.Body.String())
+	}
+	if u, _ := h.db.GetImageAutoUpdate(ctx, "web"); u.LastResult != imageUpdateWaiting {
+		t.Errorf("last result = %q", u.LastResult)
 	}
 }

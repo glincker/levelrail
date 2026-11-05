@@ -28,29 +28,44 @@ repository and tag but no digest.
    app's current image repository (compared normalized), otherwise 404, so
    an unsigned Docker Hub delivery cannot point an app at another image.
    A push to a different tag is acknowledged and ignored.
-4. **Pin to the digest.** The deploy image is `repo:tag@digest`. GHCR
-   supplies the digest. Docker Hub does not, so the control plane resolves
-   the tag with the app's registry credentials before deploying.
+4. **Pin to the digest the registry serves.** The deploy image is
+   `repo:tag@digest`. The control plane always resolves the tag with the
+   app's registry credentials and deploys that digest. A GHCR payload
+   digest is only a claim: when it differs from the resolved one the push
+   is recorded as ignored (audit detail keeps both) and nothing deploys, so
+   a forged or replayed delivery cannot choose the image.
 5. **Same gates as a manual deploy.** The push runs through the normal
    deploy path under a `registry_push` principal: freeze, policy, disk and
    node guards apply. In a protected environment it files a deploy
-   approval for the digest (requester has no human behind it, so any
-   approver may decide). A redelivery while that approval is pending does
-   not file a second one.
-6. **Asynchronous and audited.** The hook answers 202 at once. The outcome
+   approval for the digest. Its requester is the person who last rotated
+   the hook (recorded at rotation), so that person cannot approve it; a
+   hook rotated before this ADR has no recorded person and files no
+   approval until it is rotated once. One push per app is processed at a
+   time and a redelivery while an approval is pending files no second
+   one; a failed pending-approval lookup refuses the push.
+6. **Window and debounce.** The auto-update apply window holds a push
+   outside it (recorded as waiting), except in a protected environment,
+   where a person approves anyway. Unsigned deliveries are debounced like
+   the plain hook, since each costs a registry lookup.
+7. **Asynchronous and audited.** The hook answers 202 at once. The outcome
    is stored as the app's last auto-update result and as an audit row
    `registry_push.deploy` whose detail names provider, repository, tag and
    digest. The URL token never appears in the row.
-7. **Settings, no migration.** `deploys.registry_push_max_body_bytes` and
+8. **Settings, no migration.** `deploys.registry_push_max_body_bytes` and
    `deploys.registry_push_timeout` are runtime settings. Debounce stays for
    the digest-less path only; digest-carrying pushes dedupe on the digest
    already deployed and on pending approvals. No schema change.
 
 ## Consequences
 
-- A leaked URL can only redeploy the app's own repository and tag, and for
-  GHCR also needs the signing secret.
-- The secret has no delete path in the secrets store yet; rotating replaces
-  it, and the URL token is what is revoked by rotation.
+- A leaked URL can only deploy what the registry currently serves for the
+  app's own repository and tag, because the digest is resolved, never
+  taken from the payload. For GHCR it also needs the signing secret.
+- Docker Hub bodies are accepted only for docker.io repositories, so a
+  headerless body cannot stand in for a signed GHCR delivery.
+- The secrets store has no delete. Rotating replaces the secret and the
+  URL token; disabling auto-update stops pushes; an old secret of a
+  deleted app is replaced on the next rotation, which a recreated app
+  needs anyway because its hook is gone.
 - A push that arrives during a running deploy is recorded as not deployed
   and is not retried; the next push or the interval check catches up.

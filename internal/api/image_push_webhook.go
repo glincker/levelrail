@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/distribution/reference"
@@ -29,10 +30,11 @@ const (
 )
 
 const (
-	imageUpdateSecretNS  = "image-update-webhook/"
-	imageUpdateSecretKey = "signing_secret"
-	headerGitHubEvent    = "X-GitHub-Event"
-	headerGitHubSig256   = "X-Hub-Signature-256"
+	imageUpdateSecretNS   = "image-update-webhook/"
+	imageUpdateSecretKey  = "signing_secret"
+	imageUpdateRotatorKey = "rotated_by"
+	headerGitHubEvent     = "X-GitHub-Event"
+	headerGitHubSig256    = "X-Hub-Signature-256"
 	// ActorTypeRegistryPush labels deploys a registry push started, in audit rows and approvals.
 	actorTypeRegistryPush = "registry_push"
 	// AuditActionRegistryPushDeploy marks the outcome of one registry push delivery that passed authentication.
@@ -48,6 +50,10 @@ type registryPush struct {
 	Repo   string
 	Tag    string
 	Digest string
+	// PayloadDigest is the digest the delivery claimed when it disagreed with the registry.
+	PayloadDigest string
+	// signed is true when a valid GitHub signature vouched for this delivery.
+	signed bool
 }
 
 type registryPushActorKey struct{}
@@ -145,7 +151,7 @@ func parseDockerHubPush(body []byte) (registryPush, bool) {
 		return registryPush{}, false
 	}
 	named, err := reference.ParseNormalizedNamed(env.Repository.RepoName)
-	if err != nil {
+	if err != nil || reference.Domain(named) != "docker.io" {
 		return registryPush{}, false
 	}
 	return registryPush{Provider: registryProviderDockerHub, Repo: named.Name(), Tag: env.PushData.Tag}, true
@@ -203,9 +209,11 @@ func (rt *Router) handleRegistryPushDelivery(w http.ResponseWriter, r *http.Requ
 	var push registryPush
 	switch {
 	case githubEvent != "":
-		if !rt.verifyPushSignature(w, r, name, body) {
+		ok, signed := rt.verifyPushSignature(w, r, name, body)
+		if !ok {
 			return true
 		}
+		push.signed = signed
 		if githubEvent == "ping" {
 			writeJSON(w, http.StatusOK, map[string]string{"status": "pong"})
 			return true
@@ -215,6 +223,7 @@ func (rt *Router) handleRegistryPushDelivery(w http.ResponseWriter, r *http.Requ
 			return true
 		}
 		p, ignore, perr := parseGHCRPush(body)
+		p.signed = push.signed
 		if perr != nil {
 			writeError(w, http.StatusBadRequest, "unrecognized package payload: "+perr.Error())
 			return true
@@ -236,29 +245,29 @@ func (rt *Router) handleRegistryPushDelivery(w http.ResponseWriter, r *http.Requ
 }
 
 // verifyPushSignature enforces the optional GitHub HMAC. With no secret set the URL token is the only gate.
-func (rt *Router) verifyPushSignature(w http.ResponseWriter, r *http.Request, name string, body []byte) bool {
+func (rt *Router) verifyPushSignature(w http.ResponseWriter, r *http.Request, name string, body []byte) (ok, signed bool) {
 	if rt.gitSourceSecrets == nil {
-		return true
+		return true, false
 	}
 	has, err := rt.gitSourceSecrets.Exists(r.Context(), imageUpdateSecretNS+name, imageUpdateSecretKey)
 	if err != nil {
 		rt.internalError(w, "api: image update webhook: check signing secret", err, slog.String("name", name))
-		return false
+		return false, false
 	}
 	if !has {
-		return true
+		return true, false
 	}
 	secret, err := rt.gitSourceSecrets.Resolve(r.Context(), imageUpdateSecretNS+name, imageUpdateSecretKey)
 	if err != nil {
 		rt.internalError(w, "api: image update webhook: resolve signing secret", err, slog.String("name", name))
-		return false
+		return false, false
 	}
 	if !verifyGitHubSignature(secret, r.Header.Get(headerGitHubSig256), body) {
 		rt.logger.Warn("api: image update webhook: bad signature", slog.String("name", name), slog.String("remote_addr", clientIP(r)))
 		writeError(w, http.StatusNotFound, "not found")
-		return false
+		return false, false
 	}
-	return true
+	return true, true
 }
 
 // startRegistryPush checks the push belongs to this app, then deploys its digest in the background.
@@ -273,8 +282,17 @@ func (rt *Router) startRegistryPush(w http.ResponseWriter, r *http.Request, name
 		writeError(w, http.StatusNotFound, "not found")
 		return
 	}
-	if reason := rt.imagePushIgnoreReason(*svc, push, currentTag); reason != "" {
+	reason := rt.imagePushIgnoreReason(*svc, push, currentTag)
+	if reason == "" {
+		reason = rt.imagePushHoldReason(r.Context(), *svc, push)
+	}
+	if reason != "" {
 		writeJSON(w, http.StatusAccepted, map[string]string{"status": "ignored: " + reason})
+		return
+	}
+	mu := rt.registryPushLock(name)
+	if !mu.TryLock() {
+		writeJSON(w, http.StatusAccepted, map[string]string{"status": "ignored: another push for this app is being processed"})
 		return
 	}
 	writeJSON(w, http.StatusAccepted, map[string]string{"status": "deploy started"})
@@ -282,9 +300,42 @@ func (rt *Router) startRegistryPush(w http.ResponseWriter, r *http.Request, name
 	ctx, cancel := context.WithTimeout(withRegistryPushActor(context.WithoutCancel(r.Context()), push.Provider, name), timeout)
 	r = r.WithContext(ctx)
 	go func() {
+		defer mu.Unlock()
 		defer cancel()
 		rt.runRegistryPush(r, *svc, spelled, push)
 	}()
+}
+
+func (rt *Router) registryPushLock(name string) *sync.Mutex {
+	mu, _ := rt.registryPushLocks.LoadOrStore(name, &sync.Mutex{})
+	return mu.(*sync.Mutex)
+}
+
+// imagePushHoldReason applies the auto-update apply window and the debounce. A protected environment skips the
+// window because a person approves it anyway. An unsigned delivery triggers a registry lookup, so it is debounced.
+func (rt *Router) imagePushHoldReason(ctx context.Context, svc store.DesiredService, push registryPush) string {
+	u, err := rt.imageAutoUpdates.GetImageAutoUpdate(ctx, svc.Name)
+	if err != nil {
+		return ""
+	}
+	if !rt.environmentProtected(ctx, svc.EnvironmentID) && !inUpdateWindow(u.WindowCron, u.WindowMinutes, time.Now()) {
+		if recErr := rt.imageAutoUpdates.RecordImageAutoUpdateCheck(ctx, svc.Name, imageUpdateWaiting, time.Now()); recErr != nil {
+			rt.logger.Warn("api: record registry push wait failed", slog.String("name", svc.Name), slog.String("error", recErr.Error()))
+		}
+		return "outside the update window"
+	}
+	if !push.signed && u.LastCheckedAt != nil && time.Since(*u.LastCheckedAt) < imageUpdateWebhookDebounce {
+		return "checked recently"
+	}
+	return ""
+}
+
+func (rt *Router) environmentProtected(ctx context.Context, environmentID string) bool {
+	if environmentID == "" {
+		return false
+	}
+	env, err := rt.environments.GetEnvironment(ctx, environmentID)
+	return err == nil && env.Protected
 }
 
 func (rt *Router) imagePushIgnoreReason(svc store.DesiredService, push registryPush, currentTag string) string {
@@ -294,7 +345,7 @@ func (rt *Router) imagePushIgnoreReason(svc store.DesiredService, push registryP
 	case svc.Suspended:
 		return "app is stopped"
 	case push.Tag != currentTag:
-		return "pushed tag " + push.Tag + " is not the app's tag " + currentTag
+		return "pushed tag is not the one this app follows"
 	}
 	return ""
 }
@@ -313,19 +364,28 @@ func (rt *Router) runRegistryPush(r *http.Request, svc store.DesiredService, spe
 
 func (rt *Router) deployPushedDigest(r *http.Request, svc store.DesiredService, spelledRepo string, push *registryPush) (string, int) {
 	ctx := r.Context()
-	if push.Digest == "" {
-		digest, err := rt.resolvePushedDigest(ctx, svc, spelledRepo, push.Tag)
-		if err != nil {
-			rt.logger.Warn("api: registry push: resolve digest failed", slog.String("name", svc.Name), slog.String("error", err.Error()))
-			return "push check failed: " + err.Error(), http.StatusBadGateway
-		}
-		push.Digest = digest
+	// The registry is the truth: a payload digest is only a claim, and a replayed or forged one must not pick the image.
+	resolved, err := rt.resolvePushedDigest(ctx, svc, spelledRepo, push.Tag)
+	if err != nil {
+		rt.logger.Warn("api: registry push: resolve digest failed", slog.String("name", svc.Name), slog.String("error", err.Error()))
+		return "push check failed: " + err.Error(), http.StatusBadGateway
 	}
+	if push.Digest != "" && push.Digest != resolved {
+		push.PayloadDigest = push.Digest
+		push.Digest = resolved
+		return "push ignored: its digest is not what the registry serves for the tag now", http.StatusConflict
+	}
+	push.Digest = resolved
 	if push.Digest == docker.ImageDigestOf(svc.Image) {
 		return imageUpdateUpToDate, http.StatusOK
 	}
 	image := spelledRepo + ":" + push.Tag + "@" + push.Digest
-	if rt.pendingApprovalFor(ctx, svc.Name, image) {
+	pending, err := rt.pendingApprovalFor(ctx, svc.Name, image)
+	if err != nil {
+		rt.logger.Warn("api: registry push: list pending approvals failed", slog.String("name", svc.Name), slog.String("error", err.Error()))
+		return "push not deployed: could not check pending approvals", http.StatusServiceUnavailable
+	}
+	if pending {
 		return "push skipped: an approval for " + shortDigest(push.Digest) + " is already waiting", http.StatusAccepted
 	}
 	cw := &captureWriter{header: http.Header{}}
@@ -348,20 +408,52 @@ func (rt *Router) resolvePushedDigest(ctx context.Context, svc store.DesiredServ
 	return remote.Digest, nil
 }
 
-func (rt *Router) pendingApprovalFor(ctx context.Context, name, image string) bool {
+func (rt *Router) pendingApprovalFor(ctx context.Context, name, image string) (bool, error) {
 	if rt.deployApprovals == nil {
-		return false
+		return false, nil
 	}
 	pending, err := rt.deployApprovals.ListDeployApprovals(ctx, store.DeployApprovalStatusPending, name)
 	if err != nil {
-		return false
+		return false, err
 	}
 	for _, a := range pending {
 		if a.Image == image {
-			return true
+			return true, nil
 		}
 	}
-	return false
+	return false, nil
+}
+
+// recordPushRotator remembers who last rotated the hook, so approvals the hook files can refuse that person as approver.
+func (rt *Router) recordPushRotator(r *http.Request, name string) error {
+	actorType, actorID, _, ok := rt.currentActor(r)
+	if !ok {
+		return errors.New("rotating the registry webhook needs an authenticated caller")
+	}
+	human, err := rt.approvalHuman(r.Context(), actorType, actorID)
+	if err != nil {
+		return err
+	}
+	if human == "" {
+		return nil
+	}
+	return rt.gitSourceSecrets.SetValue(r.Context(), imageUpdateSecretNS+name, imageUpdateRotatorKey, human)
+}
+
+// pushRotator is the person behind the hook's last rotation. Unknown means no approval may be filed for it.
+func (rt *Router) pushRotator(ctx context.Context, name string) (string, error) {
+	if rt.gitSourceSecrets == nil {
+		return "", errApprovalOwnerUnknown
+	}
+	has, err := rt.gitSourceSecrets.Exists(ctx, imageUpdateSecretNS+name, imageUpdateRotatorKey)
+	if err != nil || !has {
+		return "", errApprovalOwnerUnknown
+	}
+	human, err := rt.gitSourceSecrets.Resolve(ctx, imageUpdateSecretNS+name, imageUpdateRotatorKey)
+	if err != nil || human == "" {
+		return "", errApprovalOwnerUnknown
+	}
+	return human, nil
 }
 
 // pushOutcome turns what applyDeploy wrote into the one-line result the UI and CLI show.
@@ -390,7 +482,7 @@ func (rt *Router) auditRegistryPush(r *http.Request, name string, push registryP
 		return
 	}
 	detail, _ := json.Marshal(map[string]string{
-		"provider": push.Provider, "repository": push.Repo, "tag": push.Tag, "digest": push.Digest, "outcome": outcome,
+		"provider": push.Provider, "repository": push.Repo, "tag": push.Tag, "digest": push.Digest, "payload_digest": push.PayloadDigest, "outcome": outcome,
 	})
 	entry := store.AuditEntry{
 		ID: id, ActorType: actorTypeRegistryPush, ActorID: name, ActorName: push.Provider,

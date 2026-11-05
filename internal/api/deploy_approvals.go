@@ -332,6 +332,8 @@ func (rt *Router) approvalHuman(ctx context.Context, actorType, actorID string) 
 		return actorID, nil
 	case store.PrincipalTypeToken:
 		return rt.tokenOwnerOf(ctx, actorID)
+	case actorTypeRegistryPush:
+		return rt.pushRotator(ctx, actorID)
 	default:
 		return "", nil
 	}
