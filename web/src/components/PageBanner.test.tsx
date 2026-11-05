@@ -31,4 +31,20 @@ describe('PageBanner', () => {
     expect(screen.getByRole('button', { name: 'act' })).toBeTruthy()
     expect(screen.queryByTestId('art')).toBeNull()
   })
+
+  it('draws the icon art only at hero size', () => {
+    const { container, unmount } = render(
+      <PageBanner
+        icon={<svg data-testid="icon" />}
+        titleKey="banner.title"
+        descriptionKey="banner.description"
+      />,
+    )
+    expect(screen.queryByTestId('icon')).not.toBeNull()
+    expect(container.querySelector('.grain-orb')).not.toBeNull()
+    unmount()
+    renderBanner('compact')
+    expect(screen.queryByTestId('icon')).toBeNull()
+    expect(document.querySelector('.grain-orb')).toBeNull()
+  })
 })
