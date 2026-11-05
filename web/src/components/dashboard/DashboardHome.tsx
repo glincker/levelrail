@@ -24,7 +24,6 @@ import { FleetTiles } from './FleetTiles'
 import { OnboardingCard } from '../onboarding/OnboardingCard'
 import { useOnboardingCardShown } from '../../queries/meOnboarding'
 import { RestoreDueCard } from './RestoreDueCard'
-import { FirstRunMore } from './FirstRunMore'
 import { NextSteps } from './NextSteps'
 import { RecentActivity } from './RecentActivity'
 import { AppsPanel } from './AppsPanel'
@@ -34,7 +33,6 @@ import { WidgetFrame } from './WidgetFrame'
 import { ResourcesSection } from './ResourcesSection'
 import { RecommendationsLine } from './RecommendationsLine'
 import { ResourceAdvisorTile } from '../resourceAdvisor/ResourceAdvisorTile'
-import { PlatformCapabilities } from './PlatformCapabilities'
 import { DashboardViews } from './DashboardViews'
 import { ScopeIndicator } from './ScopeIndicator'
 import { useEnvironmentScope } from '../../lib/environmentScope'
@@ -216,12 +214,7 @@ export function DashboardHome({
             secondary={setupFirst}
           />
         </Suspense>
-        {hasApps ? null : (
-          <FirstRunMore>
-            <RecommendationsLine showSetup={isRoot} />
-            <PlatformCapabilities />
-          </FirstRunMore>
-        )}
+        {hasApps ? null : <RecommendationsLine showSetup={isRoot} />}
       </div>
     )
     // Keep the board tabs reachable before the first app so Metrics and saved boards are not hidden.

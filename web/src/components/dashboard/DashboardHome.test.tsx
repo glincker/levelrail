@@ -207,7 +207,7 @@ describe('DashboardHome', () => {
     ).toBeInTheDocument()
   })
 
-  it('first run shows the single first-deploy path and no separate quick start list', async () => {
+  it('first run shows the first-deploy path and no feature pitch', async () => {
     routeFetch({})
     renderHome([])
     expect(
@@ -216,16 +216,10 @@ describe('DashboardHome', () => {
     expect(screen.getByRole('tab', { name: 'Metrics' })).toBeInTheDocument()
     expect(screen.queryByText('Quick start')).not.toBeInTheDocument()
     expect(screen.queryByText('Add a node')).not.toBeInTheDocument()
-    expect(screen.getByText('What Acme does')).not.toBeVisible()
-    fireEvent.click(screen.getByRole('button', { name: 'More' }))
-    expect(screen.getByText('What Acme does')).toBeVisible()
+    expect(screen.queryByText('What Acme does')).not.toBeInTheDocument()
     expect(
-      screen.getByText(/Rolling, recreate, or blue-green strategy/),
-    ).toBeInTheDocument()
-    fireEvent.click(
-      screen.getByRole('tab', { name: /Eight managed databases/ }),
-    )
-    expect(screen.getByText(/ClickHouse/)).toBeInTheDocument()
+      screen.queryByText(/Rolling, recreate, or blue-green strategy/),
+    ).not.toBeInTheDocument()
   })
 
   it('first run leads with setup when the onboarding card applies', async () => {
