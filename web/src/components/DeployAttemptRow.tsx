@@ -3,12 +3,9 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   BanGlassIcon,
-  CircleAlertGlassIcon,
-  CommitGraphGlassIcon,
   DatabaseGlassIcon,
   EllipsisGlassIcon,
   ExternalLinkGlassIcon,
-  GitBranchGlassIcon,
   GitCompareGlassIcon,
   LockGlassIcon,
   RefreshCwGlassIcon,
@@ -21,22 +18,18 @@ import type { EnvironmentResource } from '../types/environment'
 import { isPendingApproval, useTriggerDeploy } from '../queries/deploys'
 import { useRollbackToDeploy } from '../queries/deployControl'
 import { usePublishLockActions } from '../queries/publishLock'
-import { formatDeployDuration } from '../lib/deployDuration'
 import { computeDeployStages } from '../lib/deployStages'
 import {
-  DEPLOY_ATTEMPT_SOURCE_LABEL,
   DEPLOY_ATTEMPT_STATUS_ICON,
   DEPLOY_ATTEMPT_STATUS_LABEL,
   DEPLOY_ATTEMPT_STATUS_TONE,
 } from '../lib/deployAttemptPresentation'
 import { CancelDeployDialog } from './CancelDeployDialog'
 import { RollbackWithDataDialog } from './RollbackWithDataDialog'
-import { DeployFailureActions } from './DeployFailureActions'
-import { DeployFailureDetails } from './DeployFailureDetails'
-import { DeployFromCacheButton } from './DeployFromCacheButton'
-import { ActionMenu, RelativeTime } from './kit'
+import { DeployAttemptFailure } from './DeployAttemptFailure'
+import { DeployAttemptMeta } from './DeployAttemptMeta'
+import { ActionMenu } from './kit'
 import { DeployAttemptNote } from './DeployAttemptNote'
-import { RolloutChip } from './DeployDigestChips'
 import { DeployPinnedStatus } from './DeployPinnedStatus'
 import { cn } from '@/lib/utils'
 import { commitSubject } from '../lib/deploymentPresentation'
@@ -57,16 +50,6 @@ const TONE_TEXT: Record<string, string> = {
 function shortTag(image: string): string {
   const tag = unpinnedImage(image).split(':').pop() ?? image
   return /^[0-9a-f]{40}$/.test(tag) ? tag.slice(0, 7) : tag
-}
-
-function durationSuffix(attempt: DeployAttempt): string {
-  if (attempt.finished_at) {
-    const ms =
-      new Date(attempt.finished_at).getTime() -
-      new Date(attempt.started_at).getTime()
-    if (ms < 1000) return ''
-  }
-  return ` · ${formatDeployDuration(attempt.started_at, attempt.finished_at)}`
 }
 
 export function DeployAttemptRow({
@@ -359,63 +342,11 @@ export function DeployAttemptRow({
           />
         ) : null}
 
-        <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-          {attempt.branch ? (
-            <span className="inline-flex items-center gap-1">
-              <GitBranchGlassIcon className="size-5" aria-hidden="true" />
-              <span className="font-mono">{attempt.branch}</span>
-            </span>
-          ) : null}
-          {attempt.commit_sha ? (
-            <span className="inline-flex items-center gap-1 font-mono">
-              <CommitGraphGlassIcon className="size-5" aria-hidden="true" />
-              {attempt.commit_sha.slice(0, 7)}
-            </span>
-          ) : null}
-          {attempt.source ? (
-            <span>{DEPLOY_ATTEMPT_SOURCE_LABEL[attempt.source]}</span>
-          ) : null}
-          {attempt.author ? <span>{attempt.author}</span> : null}
-          <span title={new Date(attempt.started_at).toLocaleString()}>
-            <RelativeTime at={attempt.started_at} live />
-            {durationSuffix(attempt)}
-          </span>
-          {attempt.rollout_state === 'mismatch' ? (
-            <RolloutChip attempt={attempt} />
-          ) : null}
-        </p>
+        <DeployAttemptMeta attempt={attempt} />
 
         <DeployAttemptNote attempt={attempt} />
 
-        {attempt.failure || attempt.error ? (
-          <div className="mt-2 flex items-start gap-2 rounded-md border border-tone-danger-border bg-tone-danger-soft px-3 py-2 text-sm">
-            <CircleAlertGlassIcon
-              className="mt-0.5 size-5 shrink-0 text-tone-danger"
-              aria-hidden="true"
-            />
-            <div className="min-w-0">
-              <p className="line-clamp-2 font-medium break-words text-tone-danger">
-                {attempt.failure?.cause ?? attempt.error}
-              </p>
-              {attempt.failure?.suggested_fix ? (
-                <p className="mt-0.5 line-clamp-2 text-xs break-words text-muted-foreground">
-                  {attempt.failure.suggested_fix}
-                </p>
-              ) : null}
-              <DeployFailureDetails failure={attempt.failure} />
-              {attempt.failure ? (
-                <DeployFailureActions
-                  failure={attempt.failure}
-                  appName={appName}
-                  image={attempt.image}
-                />
-              ) : null}
-              {attempt.failure?.code === 'git_host_unreachable' ? (
-                <DeployFromCacheButton appName={appName} />
-              ) : null}
-            </div>
-          </div>
-        ) : null}
+        <DeployAttemptFailure appName={appName} attempt={attempt} />
       </div>
 
       <div className="relative z-10 flex shrink-0 items-center gap-1.5">
