@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/cigate"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	"github.com/GLINCKER/levelrail/internal/gitlabapp"
+	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -25,6 +27,17 @@ const (
 // *store.DB satisfies it, test fakes need not.
 type ciGateSetter interface {
 	SetGitSourceCIGate(ctx context.Context, serviceName string, wait bool, checks []string) error
+}
+
+// gitSHAPattern accepts a full SHA-1 or SHA-256 object name.
+var gitSHAPattern = regexp.MustCompile(`^(?:[0-9a-f]{40}|[0-9a-f]{64})$`)
+
+func trimCIChecks(names []string) []string {
+	out := make([]string, 0, len(names))
+	for _, n := range names {
+		out = append(out, strings.TrimSpace(n))
+	}
+	return out
 }
 
 func validateCIChecks(names []string) error {
@@ -45,7 +58,7 @@ func (rt *Router) saveCIGate(w http.ResponseWriter, r *http.Request, name string
 		writeError(w, http.StatusNotImplemented, "CI gate is not available on this control plane")
 		return false
 	}
-	if err := setter.SetGitSourceCIGate(r.Context(), name, next.WaitForCI, next.CIRequiredChecks); err != nil {
+	if err := setter.SetGitSourceCIGate(r.Context(), name, next.WaitForCI, trimCIChecks(next.CIRequiredChecks)); err != nil {
 		rt.internalError(w, "api: set git source ci gate failed", err, slog.String("name", name))
 		return false
 	}
@@ -58,36 +71,40 @@ var newGitLabCIClient = gitlabapp.NewClient
 // ciReaderFor builds the status reader for a forge, or nil when the kind has
 // none. The GitLab project path comes from the stored repo URL (f.repo), never
 // from the webhook body.
-func ciReaderFor(f *forge) cigate.Provider {
+func ciReaderFor(f *forge, ref string) cigate.Provider {
 	switch f.kind {
 	case forgeGitHub:
 		owner, repo := f.ownerName()
 		ghc := githubapp.NewClient()
 		return &cigate.GitHub{HTTP: ghc.HTTP, BaseURL: ghc.APIBaseURL(f.instanceURL), Token: f.token, Owner: owner, Repo: repo}
 	case forgeGitLab:
-		return &cigate.GitLab{Client: newGitLabCIClient(), InstanceURL: f.instanceURL, Token: f.token, ProjectPath: f.repo}
+		return &cigate.GitLab{Client: newGitLabCIClient(), InstanceURL: f.instanceURL, Token: f.token, ProjectPath: f.repo, Ref: ref}
 	}
 	return nil
 }
 
 // gateOnCI holds a push deploy until the commit's CI checks conclude. It
 // returns a non-empty skip message when the deploy must not start. Sources
-// without the gate, and forges it cannot read, deploy as before.
+// without the gate deploy as before; a gated source whose provider cannot be
+// read does not deploy.
 func (rt *Router) gateOnCI(ctx context.Context, name string, gs store.GitSource, sha string) string {
 	if !gs.WaitForCI || sha == "" || sha == zeroGitSHA {
 		return ""
 	}
+	if !gitSHAPattern.MatchString(sha) {
+		return rt.skipForCIGate(ctx, name, sha, "commit id is not a full SHA")
+	}
 	f, err := rt.resolveForge(ctx, gs.RepoURL, gs.ConnectionID)
 	var reader cigate.Provider
 	if err == nil {
-		reader = ciReaderFor(f)
+		reader = ciReaderFor(f, ciGateRef(ctx, gs))
 	}
 	if reader == nil {
-		rt.logger.Warn("api: ci gate: provider cannot be read, deploying without the gate", slog.String("name", name))
-		return ""
+		rt.logger.Warn("api: ci gate: provider cannot be read, deploy held back", slog.String("name", name))
+		return rt.skipForCIGate(ctx, name, sha, "cannot read provider status")
 	}
 	cfg := cigate.ConfigFromEnv()
-	pol := cigate.Policy{Required: gs.CIRequiredChecks}
+	pol := cigate.Policy{Required: trimCIChecks(gs.CIRequiredChecks)}
 	if rt.brand != nil && rt.brand.Name != "" {
 		pol.IgnorePrefixes = []string{rt.brand.Name + " deploy"}
 	}
@@ -100,9 +117,26 @@ func (rt *Router) gateOnCI(ctx context.Context, name string, gs store.GitSource,
 	if err == nil {
 		reason = res.Reason()
 	}
+	return rt.skipForCIGate(ctx, name, sha, reason)
+}
+
+func (rt *Router) skipForCIGate(ctx context.Context, name, sha, reason string) string {
 	rt.logger.Info("api: ci gate: deploy skipped", slog.String("name", name), slog.String("commit", sha), slog.String("reason", reason))
 	rt.recordCIGateSkip(ctx, name, sha, reason)
 	return "not deployed: " + reason + "\n"
+}
+
+// ciGateRef is the branch the pipeline ran on. Tag pushes carry no branch in
+// the push metadata, so release mode reads every ref and relies on the
+// worst-state merge.
+func ciGateRef(ctx context.Context, gs store.GitSource) string {
+	if b := commitMetaFrom(ctx).Branch; b != "" {
+		return b
+	}
+	if effectiveGitSourceTriggerMode(gs.TriggerMode) == spec.TriggerModeRelease {
+		return ""
+	}
+	return gs.Branch
 }
 
 // recordCIGateSkip adds a failed attempt to the deploy history, which also

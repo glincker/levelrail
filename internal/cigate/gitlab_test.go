@@ -62,6 +62,11 @@ func TestGitLab_Verdicts(t *testing.T) {
 		{name: "all pass", code: 200, body: `[{"name":"build","status":"success"},{"name":"test","status":"success"}]`, pol: Policy{Required: []string{"build", "test"}}, want: OutcomePass},
 		{name: "one failed", code: 200, body: `[{"name":"build","status":"success"},{"name":"test","status":"failed"}]`, want: OutcomeFail, failing: "test"},
 		{name: "allowed failure passes", code: 200, body: `[{"name":"lint","status":"failed","allow_failure":true}]`, want: OutcomePass},
+		{name: "skipped passes in all-checks mode", code: 200, body: `[{"name":"build","status":"success"},{"name":"test","status":"skipped"}]`, want: OutcomePass},
+		{name: "skipped required fails", code: 200, body: `[{"name":"lint","status":"failed"},{"name":"test","status":"skipped"}]`, pol: Policy{Required: []string{"test"}}, want: OutcomeFail, failing: "test"},
+		{name: "allowed failure required fails", code: 200, body: `[{"name":"test","status":"failed","allow_failure":true}]`, pol: Policy{Required: []string{" test "}}, want: OutcomeFail, failing: "test"},
+		{name: "duplicate names worst wins", code: 200, body: `[{"name":"test","status":"success"},{"name":"test","status":"failed"},{"name":"test","status":"success"}]`, want: OutcomeFail, failing: "test"},
+		{name: "forged success while real job pending", code: 200, body: `[{"name":"test","status":"running"},{"name":"test","status":"success"}]`, pol: Policy{Required: []string{"test"}}, want: OutcomeTimeout},
 		{name: "canceled fails", code: 200, body: `[{"name":"test","status":"canceled"}]`, want: OutcomeFail, failing: "test"},
 		{name: "running never passes", code: 200, body: `[{"name":"build","status":"success"},{"name":"test","status":"running"}]`, want: OutcomeTimeout},
 		{name: "unknown state never passes", code: 200, body: `[{"name":"test","status":"brand_new"}]`, want: OutcomeTimeout},
@@ -141,5 +146,32 @@ func TestGitLab_RedirectIsNotFollowed(t *testing.T) {
 	g := &GitLab{Client: &gitlabapp.Client{HTTP: srv.Client()}, InstanceURL: srv.URL, Token: "tok", ProjectPath: "a/b"}
 	if _, err := g.Checks(context.Background(), "abc"); err == nil || leaked {
 		t.Fatalf("err = %v leaked = %v", err, leaked)
+	}
+}
+
+func TestGitLab_TooManyStatusesIsTerminal(t *testing.T) {
+	var calls int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		calls++
+		_, _ = w.Write([]byte("[" + strings.Repeat(`{"name":"j","status":"success"},`, 99) + `{"name":"j","status":"success"}]`))
+	}))
+	defer srv.Close()
+	g := &GitLab{Client: &gitlabapp.Client{HTTP: srv.Client()}, InstanceURL: srv.URL, Token: "tok", ProjectPath: "a/b"}
+	res := gate(t, g, Policy{})
+	if res.Outcome != OutcomeFail || calls != 10 {
+		t.Errorf("res = %+v calls = %d", res, calls)
+	}
+}
+
+func TestGitLab_RefIsSent(t *testing.T) {
+	var got string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		got = r.URL.Query().Get("ref")
+		_, _ = w.Write([]byte("[]"))
+	}))
+	defer srv.Close()
+	g := &GitLab{Client: &gitlabapp.Client{HTTP: srv.Client()}, InstanceURL: srv.URL, Token: "tok", ProjectPath: "a/b", Ref: "main"}
+	if _, err := g.Checks(context.Background(), "abc"); err != nil || got != "main" {
+		t.Fatalf("err = %v ref = %q", err, got)
 	}
 }

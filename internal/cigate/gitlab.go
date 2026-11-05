@@ -20,6 +20,8 @@ type GitLab struct {
 	Token       string
 	// ProjectPath is "namespace/project" or "namespace/subgroup/project".
 	ProjectPath string
+	// Ref scopes the read to one branch or tag; empty reads every ref on the SHA.
+	Ref string
 }
 
 // Checks returns the latest status of every job on sha.
@@ -27,40 +29,62 @@ func (g *GitLab) Checks(ctx context.Context, sha string) ([]Check, error) {
 	if g.Client == nil {
 		return nil, errors.New("cigate: no GitLab client configured")
 	}
-	list, err := g.Client.ListCommitStatuses(ctx, g.InstanceURL, g.Token, g.ProjectPath, sha)
+	list, err := g.Client.ListCommitStatuses(ctx, g.InstanceURL, g.Token, g.ProjectPath, sha, g.Ref)
 	if err != nil {
 		if ra, ok := gitprovider.IsRateLimited(err); ok {
 			return nil, &RateLimitError{RetryAfter: parseRetryAfter(ra)}
 		}
+		if errors.Is(err, gitlabapp.ErrTooManyStatuses) {
+			return nil, &TerminalError{Reason: "commit has too many CI statuses to read"}
+		}
 		return nil, fmt.Errorf("cigate: read GitLab checks: %w", err)
 	}
-	out := make([]Check, 0, len(list))
+	// The same job name can come from several pipelines (or a forged external
+	// status); the worst one decides.
+	worst := map[string]Check{}
+	order := make([]string, 0, len(list))
 	for _, s := range list {
-		out = append(out, Check{Name: s.Name, State: gitlabState(s)})
+		c := gitlabCheck(s)
+		prev, ok := worst[c.Name]
+		if !ok {
+			order = append(order, c.Name)
+		}
+		if !ok || severity(c) > severity(prev) {
+			worst[c.Name] = c
+		}
+	}
+	out := make([]Check, 0, len(order))
+	for _, n := range order {
+		out = append(out, worst[n])
 	}
 	return out, nil
 }
 
-// gitlabState fails closed: an unknown status stays Pending, never Passed.
-func gitlabState(s gitlabapp.CommitStatus) State {
+// gitlabCheck fails closed: an unknown status stays Pending, never Passed.
+// Skipped jobs and allowed failures pass softly, so a required name never
+// counts them (a skipped job usually means an earlier stage failed).
+func gitlabCheck(s gitlabapp.CommitStatus) Check {
+	c := Check{Name: s.Name, State: Pending}
 	switch s.Status {
-	case "success", "skipped":
-		return Passed
+	case "success":
+		c.State = Passed
+	case "skipped":
+		c.State = Skipped
 	case "failed":
 		if s.AllowFailure {
-			return Passed
+			c.State = Skipped
+		} else {
+			c.State = Failed
 		}
-		return Failed
 	case "canceled", "canceling":
-		return Failed
+		c.State = Failed
 	case "manual":
 		// A manual job nobody has to run does not block the pipeline.
 		if s.AllowFailure {
-			return Passed
+			c.State = Skipped
 		}
-		return Pending
 	}
-	return Pending
+	return c
 }
 
 func parseRetryAfter(v string) time.Duration {

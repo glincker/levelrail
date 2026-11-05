@@ -28,9 +28,10 @@ type CommitStatus struct {
 }
 
 // ListCommitStatuses returns the latest status per job name of sha in
-// projectPath, read from the API for that exact commit. Redirects are not
+// projectPath, read from the API for that exact commit. A non-empty ref limits
+// the list to that branch or tag, so other pipelines on the SHA are ignored. Redirects are not
 // followed, so the token only ever reaches instanceURL's own host.
-func (c *Client) ListCommitStatuses(ctx context.Context, instanceURL, accessToken, projectPath, sha string) ([]CommitStatus, error) {
+func (c *Client) ListCommitStatuses(ctx context.Context, instanceURL, accessToken, projectPath, sha, ref string) ([]CommitStatus, error) {
 	if c.HTTP == nil {
 		return nil, errors.New("gitlabapp: no HTTP client configured")
 	}
@@ -42,6 +43,9 @@ func (c *Client) ListCommitStatuses(ctx context.Context, instanceURL, accessToke
 	for page := 1; page <= statusMaxPages; page++ {
 		u := fmt.Sprintf("%s/projects/%s/repository/commits/%s/statuses?per_page=%d&page=%d",
 			apiBaseURL(instanceURL), encodedProjectID(projectPath), url.PathEscape(sha), statusPageSize, page)
+		if ref != "" {
+			u += "&ref=" + url.QueryEscape(ref)
+		}
 		var batch []CommitStatus
 		if err := rc.do(ctx, http.MethodGet, u, "Bearer "+accessToken, nil, &batch); err != nil {
 			return nil, err

@@ -34,7 +34,7 @@ func TestListCommitStatuses_PrefixPaginationAndAuth(t *testing.T) {
 	defer srv.Close()
 
 	c := &Client{HTTP: srv.Client()}
-	got, err := c.ListCommitStatuses(context.Background(), srv.URL+"/gitlab/", "tok", "grp/sub/web", "abc123")
+	got, err := c.ListCommitStatuses(context.Background(), srv.URL+"/gitlab/", "tok", "grp/sub/web", "abc123", "")
 	if err != nil {
 		t.Fatalf("error = %v", err)
 	}
@@ -54,7 +54,7 @@ func TestListCommitStatuses_ErrorsFailClosed(t *testing.T) {
 			w.WriteHeader(code)
 		}))
 		c := &Client{HTTP: srv.Client()}
-		_, err := c.ListCommitStatuses(context.Background(), srv.URL, "tok", "a/b", "sha")
+		_, err := c.ListCommitStatuses(context.Background(), srv.URL, "tok", "a/b", "sha", "")
 		srv.Close()
 		var apiErr *apiError
 		if !errors.As(err, &apiErr) || apiErr.StatusCode != code {
@@ -76,7 +76,7 @@ func TestListCommitStatuses_TruncatedListIsAnError(t *testing.T) {
 	}))
 	defer srv.Close()
 	c := &Client{HTTP: srv.Client()}
-	if _, err := c.ListCommitStatuses(context.Background(), srv.URL, "t", "a/b", "s"); !errors.Is(err, ErrTooManyStatuses) {
+	if _, err := c.ListCommitStatuses(context.Background(), srv.URL, "t", "a/b", "s", ""); !errors.Is(err, ErrTooManyStatuses) {
 		t.Errorf("err = %v", err)
 	}
 }
