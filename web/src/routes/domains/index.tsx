@@ -108,10 +108,6 @@ function DomainsPage() {
           action={
             noDomains && apps.length === 0 ? (
               <>
-                <HelpLink
-                  path="/domains-and-ingress"
-                  label={t('page.helpLabel')}
-                />
                 <p className="w-full text-sm text-foreground">
                   {t('banner.noApps')}
                 </p>
@@ -123,6 +119,10 @@ function DomainsPage() {
                 >
                   {t('banner.noAppsAction')}
                 </Button>
+                <HelpLink
+                  path="/domains-and-ingress"
+                  label={t('page.helpLabel')}
+                />
               </>
             ) : (
               <>
