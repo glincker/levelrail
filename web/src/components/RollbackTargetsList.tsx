@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { PinGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
+import { SectionTitle } from '@/components/ui/typography'
 import { RelativeTime } from '@/components/kit/RelativeTime'
 import { useRollbackTargets } from '../queries/deployGate'
 
@@ -11,9 +12,7 @@ export function RollbackTargetsList({ appName }: { appName: string }) {
 
   return (
     <section className="space-y-2" aria-label={t('targets.title')}>
-      <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        {t('targets.title')}
-      </h3>
+      <SectionTitle as="h3">{t('targets.title')}</SectionTitle>
       {!targets || targets.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t('targets.empty')}</p>
       ) : (
