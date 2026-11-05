@@ -61,9 +61,16 @@ func (e *Engine) Register(f Fix) error {
 	if _, dup := e.fixes[f.ID]; dup {
 		return fmt.Errorf("fixit: duplicate fix %s", f.ID)
 	}
+	f.Aliases = append(f.Aliases, registeredAliases[f.ID]...)
 	e.fixes[f.ID] = f
 	e.order = append(e.order, f.ID)
 	return nil
+}
+
+// registeredAliases adds doctor row codes to fixes defined in files that
+// should not need to know the doctor's row naming.
+var registeredAliases = map[string][]string{
+	"mesh.public_address.set": {"mesh_hub_endpoint"},
 }
 
 // Fingerprint identifies one failing check result.
@@ -121,7 +128,7 @@ func (e *Engine) view(ctx context.Context, f Fix, a Applicability) (View, error)
 		ID: f.ID, CheckID: f.CheckID, Subject: f.Subject, Title: f.Title, Why: f.Why, Risk: f.Risk,
 		Reversible: f.Reversible, Needs: f.Needs, BaseKind: f.Kind, Kind: eff, Failing: a.Failing,
 		Detail: a.Detail, Reason: a.Reason, Changes: a.Changes, Command: a.Command, Param: a.Param,
-		Attempts: attempts, State: StateOffer,
+		Attempts: attempts, State: StateOffer, aliases: f.Aliases, prefixes: f.CodePrefixes,
 	}
 	if v.Changes == nil {
 		v.Changes = []Change{}

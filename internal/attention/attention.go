@@ -45,6 +45,10 @@ type Item struct {
 	Params map[string]string `json:"params,omitempty"`
 	// Class is ClassIncident or ClassRecommendation.
 	Class string `json:"class"`
+	// Tier is one of the Tier constants and Group the root cause key; both
+	// come from Assess.
+	Tier  string `json:"tier,omitempty"`
+	Group string `json:"group,omitempty"`
 }
 
 // Input is everything Build reads; any field may be zero when its
@@ -284,10 +288,13 @@ func Build(in Input) []Item {
 	for _, c := range in.Doctor.Checks {
 		switch c.Status {
 		case "fail":
-			items = append(items, newItem(Critical, "doctor", c.Name, c.Message))
+			it := newItem(Critical, "doctor", c.Name, c.Message)
+			it.Tier, it.Group = Assess(Signal{Kind: c.Code, Severity: Critical, Status: c.Status, Class: ClassIncident, Message: c.Message})
+			items = append(items, it)
 		case "warn":
 			it := newItem(Warning, "doctor", c.Name, c.Message)
 			it.Class = DoctorClass(c.Code, c.Status)
+			it.Tier, it.Group = Assess(Signal{Kind: c.Code, Severity: Warning, Status: c.Status, Class: it.Class, Message: c.Message})
 			items = append(items, it)
 		}
 	}
@@ -297,6 +304,9 @@ func Build(in Input) []Item {
 			latest = *in.Updates.LatestVersion
 		}
 		items = append(items, newItem(Warning, "update", "control plane", latest+" is available (running "+in.Updates.CurrentVersion+")"))
+	}
+	for i := range items {
+		stamp(&items[i])
 	}
 	sort.SliceStable(items, func(i, j int) bool {
 		si, sj := severityRank(items[i].Severity), severityRank(items[j].Severity)

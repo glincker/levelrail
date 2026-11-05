@@ -67,6 +67,50 @@ func newHarness(t *testing.T, kind Kind, command string) *harness {
 	return h
 }
 
+func TestServesCodeByIdAliasAndPrefix(t *testing.T) {
+	eng := NewEngine(&memStore{})
+	detect := func(context.Context) (Applicability, error) { return Applicability{Failing: true, Detail: "d"}, nil }
+	for _, f := range []Fix{
+		{ID: "mesh.public_address.set", CheckID: "public_address", Subject: "mesh", Kind: KindGuided, Detect: detect},
+		{ID: "p", CheckID: "alpha", Subject: "s", Kind: KindGuided, Aliases: []string{"beta"}, CodePrefixes: []string{"gamma_"}, Detect: detect},
+	} {
+		if err := eng.Register(f); err != nil {
+			t.Fatal(err)
+		}
+	}
+	views, err := eng.List(context.Background(), "", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	serves := func(id, code string) bool {
+		for _, v := range views {
+			if v.ID == id {
+				return v.ServesCode(code)
+			}
+		}
+		t.Fatalf("fix %s not listed", id)
+		return false
+	}
+	cases := []struct {
+		id, code string
+		want     bool
+	}{
+		{"mesh.public_address.set", "public_address", true},
+		{"mesh.public_address.set", "mesh_hub_endpoint", true},
+		{"mesh.public_address.set", "other", false},
+		{"p", "alpha", true},
+		{"p", "beta", true},
+		{"p", "gamma_7", true},
+		{"p", "gamma", false},
+		{"p", "", false},
+	}
+	for _, c := range cases {
+		if got := serves(c.id, c.code); got != c.want {
+			t.Errorf("%s serves %q = %v, want %v", c.id, c.code, got, c.want)
+		}
+	}
+}
+
 func TestApplyFixed(t *testing.T) {
 	h := newHarness(t, KindAuto, "cmd")
 	r, err := h.eng.Apply(context.Background(), "x", "root", nil)
