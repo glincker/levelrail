@@ -14,10 +14,7 @@ import (
 )
 
 const (
-	envAttentionTokenWindow = "APP_ATTENTION_TOKEN_WINDOW" //nolint:gosec // env var name
 	envAttentionBackupGrace = "APP_ATTENTION_BACKUP_GRACE" //nolint:gosec // env var name
-
-	defaultAttentionTokenWindow = 7 * 24 * time.Hour
 
 	attentionBackupLookback = 20
 )
@@ -69,39 +66,6 @@ func feedItem(severity, kind, subject, detail string, params map[string]string) 
 	it := attention.NewItem(severity, kind, subject, detail)
 	it.Params = params
 	return it
-}
-
-func (rt *Router) tokenAttentionItems(r *http.Request, abilities []string, now time.Time) []attention.Item {
-	admin := hasAbility(abilities, AbilityRoot)
-	callerID, isSession := rt.currentSessionUserID(r)
-	if !isSession && !admin {
-		return nil
-	}
-	tokens, err := rt.libraryListTokens(r.Context(), callerID, admin)
-	if err != nil {
-		rt.logger.Warn("api: attention feed: list tokens failed", slog.String("error", err.Error()))
-		return nil
-	}
-	window := envDuration(envAttentionTokenWindow, defaultAttentionTokenWindow)
-	var items []attention.Item
-	for _, t := range tokens {
-		if t.RevokedAt != nil || t.ExpiresAt == nil {
-			continue
-		}
-		left := t.ExpiresAt.Sub(now)
-		params := map[string]string{"name": t.Name, "at": t.ExpiresAt.UTC().Format(time.RFC3339)}
-		switch {
-		case left <= 0 && -left <= window:
-			it := feedItem(attention.Warning, attention.KindTokenExpired, t.Name, "expired "+t.ExpiresAt.UTC().Format("2006-01-02")+", requests using it are rejected", params)
-			it.ID += ":" + t.ID
-			items = append(items, it)
-		case left > 0 && left <= window:
-			it := feedItem(attention.Warning, attention.KindTokenExpiring, t.Name, "expires "+t.ExpiresAt.UTC().Format("2006-01-02")+", anything using it will stop working", params)
-			it.ID += ":" + t.ID
-			items = append(items, it)
-		}
-	}
-	return items
 }
 
 func (rt *Router) databaseAttentionItems(r *http.Request, abilities []string, now time.Time) []attention.Item {
