@@ -371,7 +371,7 @@ export function LoginBrandPanel({ name }: { name: string }) {
               )}
             >
               <div className="space-y-5">
-                <p className="flex items-center gap-2 font-mono text-xs tracking-[0.08em] text-[#8d8d96] uppercase">
+                <p className="flex items-center gap-2 font-mono text-xs text-[#8d8d96]">
                   <span
                     aria-hidden="true"
                     className="size-1.5 rounded-full bg-[#00cbaa]"

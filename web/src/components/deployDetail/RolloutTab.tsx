@@ -182,7 +182,7 @@ export function RolloutTab({
         aria-label={t('rollout.title')}
         className="rounded-lg border border-border p-4"
       >
-        <h3 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <h3 className="mb-3 text-sm font-semibold text-foreground">
           {t('rollout.title')}
         </h3>
         {state.isStatic ? (

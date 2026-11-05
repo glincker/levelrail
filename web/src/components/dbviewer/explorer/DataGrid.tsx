@@ -58,7 +58,7 @@ function Cell({
   if (value === null) {
     return (
       <div role="gridcell" className={base} style={{ width }}>
-        <span className="rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium italic text-muted-foreground">
+        <span className="rounded bg-muted px-1.5 py-0.5 text-xs font-medium italic text-muted-foreground">
           {t('viewer.grid.null')}
         </span>
       </div>

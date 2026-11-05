@@ -30,22 +30,22 @@ export function PreviewCard({
             <rect width="10" height="10" fill={meta.theme_color} />
           </svg>
         ) : null}
-        <span className="truncate text-[11px] font-medium text-foreground">
+        <span className="truncate text-xs font-medium text-foreground">
           {appName}
         </span>
       </div>
       {meta?.title ? (
-        <p className="line-clamp-2 text-[11px] leading-snug text-foreground">
+        <p className="line-clamp-2 text-xs leading-snug text-foreground">
           {meta.title}
         </p>
       ) : null}
       {meta?.description ? (
-        <p className="line-clamp-2 text-[10px] leading-snug text-muted-foreground">
+        <p className="line-clamp-2 text-xs leading-snug text-muted-foreground">
           {meta.description}
         </p>
       ) : null}
       {commitSha ? (
-        <span className="mt-auto font-mono text-[10px] text-muted-foreground">
+        <span className="mt-auto font-mono text-xs text-muted-foreground">
           {commitSha.slice(0, SHA_LENGTH)}
         </span>
       ) : null}

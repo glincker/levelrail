@@ -121,13 +121,13 @@ function EphemeralDatabaseRow({
       </div>
       <div className="flex items-center gap-2">
         {database.status === 'teardown_failed' ? (
-          <Badge variant="destructive" className="rounded-full text-[10px]">
+          <Badge variant="destructive" className="rounded-full text-xs">
             Teardown failed
           </Badge>
         ) : (
           <Badge
             variant={database.ready.variant}
-            className="rounded-full text-[10px]"
+            className="rounded-full text-xs"
           >
             {database.ready.label}
           </Badge>
@@ -170,7 +170,7 @@ function DatabaseIsolationRow({
         variant={
           isolation.status === 'teardown_failed' ? 'destructive' : 'success'
         }
-        className="rounded-full text-[10px]"
+        className="rounded-full text-xs"
       >
         {isolation.status === 'teardown_failed'
           ? 'Teardown failed'

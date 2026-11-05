@@ -186,7 +186,7 @@ export function ClusterChip({
       onClick={onExpand}
       onFocus={onExpand}
       className={cn(
-        'absolute top-2.5 h-5 -translate-x-1/2 rounded-full border px-1.5 text-[11px] font-medium tabular-nums',
+        'absolute top-2.5 h-5 -translate-x-1/2 rounded-full border px-1.5 text-xs font-medium tabular-nums',
         FOCUS_RING,
         hasFailure
           ? 'border-tone-danger bg-tone-danger-solid text-white'

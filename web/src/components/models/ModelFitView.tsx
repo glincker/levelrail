@@ -77,7 +77,7 @@ export function FitNodeList({
           </li>
         ))}
       </ul>
-      <p className="text-[11px] text-muted-foreground">
+      <p className="text-xs text-muted-foreground">
         Estimate only. {report.note}
       </p>
     </div>

@@ -36,7 +36,7 @@ export function TemplateCategoryRail({
       aria-label={t('marketplace.categories.label')}
       className="hidden lg:block"
     >
-      <p className="px-2 pb-2 text-xs font-medium tracking-wide text-foreground/70 uppercase">
+      <p className="px-2 pb-2 text-xs font-medium text-foreground/70">
         {t('marketplace.categories.heading')}
       </p>
       <ul className="space-y-0.5">

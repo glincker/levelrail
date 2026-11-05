@@ -26,7 +26,7 @@ export function DeployFixRow({
   const links = deployFixLinks(stage, causeId, fixes)
   return (
     <div className="space-y-1.5" data-testid="deploy-fix-row">
-      <p className="flex items-center gap-1 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+      <p className="flex items-center gap-1 text-[13px] font-medium text-muted-foreground">
         <WrenchGlassIcon className="size-5" aria-hidden="true" />
         {t('fix.title')}
       </p>

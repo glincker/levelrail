@@ -51,7 +51,7 @@ function lastCheckLabel(iso: string | undefined): string {
 export function LoadBalancerOverviewHeader() {
   return (
     <div
-      className={`${LB_LIST_GRID} sticky top-0 z-10 border-b border-border bg-card px-4 py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase`}
+      className={`${LB_LIST_GRID} sticky top-0 z-10 border-b border-border bg-card px-4 py-2 text-xs font-medium text-muted-foreground`}
     >
       <span>App</span>
       <span>Algorithm</span>

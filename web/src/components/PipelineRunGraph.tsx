@@ -113,7 +113,7 @@ function MemberButton({
         y={cy}
         textAnchor="end"
         dominantBaseline="central"
-        className="fill-muted-foreground text-[11px] tabular-nums"
+        className="fill-muted-foreground text-xs tabular-nums"
       >
         {duration}
       </text>
@@ -173,7 +173,7 @@ function NodeView({
             y={14}
             textAnchor="end"
             dominantBaseline="central"
-            className="fill-muted-foreground text-[11px]"
+            className="fill-muted-foreground text-xs"
           >
             {node.members.length} runs
           </text>

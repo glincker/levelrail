@@ -190,7 +190,7 @@ export function StageOverlay({
             </DialogPrimitive.Close>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 border-t border-[var(--glinui-glass-border)] pt-2 pl-1 text-[10px] text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-3 border-t border-[var(--glinui-glass-border)] pt-2 pl-1 text-xs text-muted-foreground">
             {BASE_DOCS.map((doc) => (
               <span key={doc.description} className="flex items-center gap-1.5">
                 <span className="flex items-center gap-0.5">

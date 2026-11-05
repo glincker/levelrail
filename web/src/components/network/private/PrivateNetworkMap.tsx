@@ -102,7 +102,7 @@ export function PrivateNetworkMap({ data }: { data: MapData }) {
                     x={p.x}
                     y={p.y + 24}
                     textAnchor="middle"
-                    className="fill-foreground text-[10px]"
+                    className="fill-foreground text-xs"
                   >
                     {app.name}
                   </text>

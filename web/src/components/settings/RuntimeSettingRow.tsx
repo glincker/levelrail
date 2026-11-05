@@ -277,13 +277,13 @@ export function RuntimeSettingRow({
                 : t('row.defaultHint', { value: valueText(setting.default) })}
             </span>
           ) : null}
-          <code className="font-mono text-[11px] text-muted-foreground/70">
+          <code className="font-mono text-xs text-muted-foreground/70">
             <HighlightedText text={setting.key} query={highlight} />
           </code>
           {setting.env ? (
             <button
               type="button"
-              className="inline-flex min-h-7 items-center gap-1.5 rounded px-1.5 font-mono text-[11px] text-muted-foreground/70 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+              className="inline-flex min-h-7 items-center gap-1.5 rounded px-1.5 font-mono text-xs text-muted-foreground/70 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
               title={t('row.envCopy', { env: setting.env })}
               aria-label={t('row.envCopy', { env: setting.env })}
               onClick={() => {

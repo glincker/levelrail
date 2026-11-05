@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { SectionTitle } from '@/components/ui/typography'
 import { useTranslation } from 'react-i18next'
 import { ChevronDownGlassIcon, PlusGlassIcon } from '@thesvg/ui-react'
 import {
@@ -168,9 +169,9 @@ export function DeployModelDialog({
           >
             <div className="grid gap-5 md:grid-cols-2">
               <div className="space-y-3">
-                <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                <SectionTitle as="h3">
                   {t('deploy.sections.basics')}
-                </h3>
+                </SectionTitle>
                 <Field>
                   <FieldLabel htmlFor="model-name">
                     {t('deploy.fields.name')}
@@ -263,9 +264,9 @@ export function DeployModelDialog({
                 </Field>
               </div>
               <div className="space-y-3">
-                <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                <SectionTitle as="h3">
                   {t('deploy.sections.placement')}
-                </h3>
+                </SectionTitle>
                 <Field>
                   <FieldLabel htmlFor="model-node">
                     {t('deploy.fields.node')}

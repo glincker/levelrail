@@ -10,6 +10,7 @@ import {
 } from '@thesvg/ui-react'
 import { formatBytes } from '../../lib/format'
 import type { TemplateSummary } from '../../lib/templateSummary'
+import { FieldLabel } from '@/components/ui/typography'
 
 function Item({
   icon,
@@ -29,9 +30,7 @@ function Item({
         {icon}
       </span>
       <div className="min-w-0">
-        <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-          {label}
-        </dt>
+        <FieldLabel as="dt">{label}</FieldLabel>
         <dd className="text-sm break-words text-foreground">{children}</dd>
       </div>
     </div>

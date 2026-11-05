@@ -51,7 +51,7 @@ export function ModelDetailPage({
           <h1 className="text-lg font-semibold text-foreground">
             {model.name}
           </h1>
-          <Badge variant="outline" className="font-mono text-[11px]">
+          <Badge variant="outline" className="font-mono text-xs">
             {model.engine}
           </Badge>
           {model.external ? (

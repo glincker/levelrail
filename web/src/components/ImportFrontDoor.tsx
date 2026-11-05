@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { SectionTitle } from '@/components/ui/typography'
 import { useMutation } from '@tanstack/react-query'
 import { UploadGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -58,12 +59,9 @@ export function ImportFrontDoor({
 
   return (
     <section className="space-y-2" aria-labelledby="import-front-door-title">
-      <h3
-        id="import-front-door-title"
-        className="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-      >
+      <SectionTitle as="h3" id="import-front-door-title">
         Import anything
-      </h3>
+      </SectionTitle>
       <Textarea
         value={text}
         onChange={(e) => {

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { FieldLabel } from '@/components/ui/typography'
 import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -24,9 +25,7 @@ const STATES: readonly UpstreamState[] = [
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0">
-      <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-        {label}
-      </dt>
+      <FieldLabel as="dt">{label}</FieldLabel>
       <dd className="mt-0.5 text-sm text-foreground">{value}</dd>
     </div>
   )

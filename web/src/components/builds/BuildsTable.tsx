@@ -171,7 +171,7 @@ export function BuildsTable({ rows, running, onFixCache }: TableProps) {
       className={`overflow-auto rounded-lg border border-border bg-card ${virtualize ? 'h-[60vh]' : ''}`}
     >
       <div
-        className={`${GRID} sticky top-0 z-10 border-b border-border bg-card py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase`}
+        className={`${GRID} sticky top-0 z-10 border-b border-border bg-card py-2 text-xs font-medium text-muted-foreground`}
       >
         <span>{t('columns.build')}</span>
         <span>{t('columns.status')}</span>

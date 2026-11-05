@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils'
 import { avatarToneClass, orgInitials } from './orgSlug'
 
 const SIZES = {
-  xs: 'size-5 rounded text-[10px]',
+  xs: 'size-5 rounded text-xs',
   sm: 'size-7 rounded-md text-xs',
   lg: 'size-16 rounded-xl text-xl',
 } as const

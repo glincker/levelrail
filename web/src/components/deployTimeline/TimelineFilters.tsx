@@ -38,7 +38,7 @@ function FilterSelect({
   onChange: (v: string) => void
 }) {
   return (
-    <label className="flex flex-col gap-1 text-[11px] text-muted-foreground">
+    <label className="flex flex-col gap-1 text-xs text-muted-foreground">
       {label}
       <select
         className={SELECT_CLASS}
