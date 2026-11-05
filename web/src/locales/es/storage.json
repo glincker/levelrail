@@ -1,0 +1,35 @@
+{
+  "title": "Almacenamiento",
+  "subtitle": "Lo que Docker guarda en disco para tus apps y lo que se puede liberar sin riesgo.",
+  "node": {
+    "label": "Nodo",
+    "local": "Este servidor",
+    "partial": "Por ahora solo se mide el tamaño de las imágenes de este nodo.",
+    "unsupportedTitle": "Este nodo aún no es compatible",
+    "unsupported": "Levelrail todavía no puede leer el almacenamiento de este nodo. No se cambia nada.",
+    "retry": "Comprobar de nuevo"
+  },
+  "categories": {
+    "images": "Imágenes",
+    "containers": "Contenedores",
+    "volumes": "Volúmenes",
+    "buildCache": "Caché de builds"
+  },
+  "breakdown": {
+    "label": "Desglose del disco",
+    "barLabel": "{{size}} usados por Docker en total",
+    "measuring": "Midiendo",
+    "notMeasured": "Aún sin medir",
+    "canFree": "{{size}} se pueden liberar",
+    "nothingToFree": "Nada que liberar",
+    "free": "{{free}} libres de {{total}} en el disco de datos"
+  },
+  "tabs": {
+    "label": "Secciones de almacenamiento",
+    "images": "Imágenes",
+    "cache": "Caché de builds"
+  },
+  "engine": {
+    "title": "Motor y firmas"
+  }
+}

@@ -47,6 +47,7 @@ const ALLOWLIST: Record<string, string> = {
   '/oauth/complete': 'callback',
   '/oauth/consent': 'callback',
   '/dashboards': 'redirect',
+  '/images': 'redirect',
   '/databases/new': 'redirect',
   '/settings/janitor': 'redirect',
   '/dev/ui': 'test',

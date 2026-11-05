@@ -7,15 +7,11 @@ import { SkeletonList } from '@/components/kit'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { prefersReducedMotion } from '@/lib/reducedMotion'
-import { PageTemplate } from '../shell/PageTemplate'
-import { ImagesBanner } from './ImagesBanner'
 import { useIsRoot } from '../../hooks/useIsRoot'
-import { useNodeListOptional } from '../../queries/nodes'
 import {
   useImageInventory,
   type ImageEntry,
 } from '../../queries/imageInventory'
-import { DockerHealthCard } from './DockerHealthCard'
 import { DockerfileLintCard } from './DockerfileLintCard'
 import { ImageCleanupDialog } from './ImageCleanupDialog'
 import { ImageDetailSheet } from './ImageDetailSheet'
@@ -29,21 +25,28 @@ import {
   type ImageFilter,
   type ImageSort,
 } from './imageFilters'
-import { SignaturePolicyCard } from './SignaturePolicyCard'
 import { sizeLabel } from './imageFormat'
 
-interface PageProps {
+interface SectionProps {
+  node: string
+  gcOpen: boolean
+  onGcOpenChange: (open: boolean) => void
   filter?: ImageFilter
   onFilterChange?: (next: ImageFilter) => void
 }
 
 const LEAVE_MS = 320
 
-export function ImagesPage({ filter, onFilterChange }: PageProps = {}) {
+/** ImagesSection is the image inventory body: tiles, filters, list, cleanup and removal dialogs. */
+export function ImagesSection({
+  node,
+  gcOpen,
+  onGcOpenChange,
+  filter,
+  onFilterChange,
+}: SectionProps) {
   const { t } = useTranslation('images')
-  const [node, setNode] = useState('')
   const [detail, setDetail] = useState<ImageEntry | null>(null)
-  const [gcOpen, setGcOpen] = useState(false)
   const [localFilter, setLocalFilter] = useState<ImageFilter>('all')
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<ImageSort>('size')
@@ -56,7 +59,6 @@ export function ImagesPage({ filter, onFilterChange }: PageProps = {}) {
   const anchor = useRef<number | null>(null)
   const [snapshot, setSnapshot] = useState<ImageEntry[]>([])
   const isRoot = useIsRoot()
-  const nodes = useNodeListOptional().data
   const inventory = useImageInventory(node)
   const data = inventory.data
   const activeFilter = filter ?? localFilter
@@ -136,47 +138,9 @@ export function ImagesPage({ filter, onFilterChange }: PageProps = {}) {
 
   const managedRemovable = current.filter((i) => i.removable && !i.unmanaged)
 
-  const actions =
-    nodes && nodes.length > 0 ? (
-      <label className="flex items-center gap-2 text-sm text-muted-foreground">
-        {t('node.label')}
-        <select
-          className="h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-          value={node}
-          onChange={(e) => {
-            setNode(e.target.value)
-            setSelected(new Set())
-          }}
-        >
-          <option value="">{t('node.local')}</option>
-          {nodes.map((n) => (
-            <option key={n.id} value={n.id}>
-              {n.name}
-            </option>
-          ))}
-        </select>
-      </label>
-    ) : null
-
   return (
-    <PageTemplate
-      title={t('title')}
-      description={t('subtitle')}
-      width="wide"
-      banner={
-        <ImagesBanner
-          empty={data !== undefined && data.images.length === 0}
-          action={actions}
-        />
-      }
-    >
+    <>
       <div className="flex flex-col gap-4">
-        <DockerHealthCard
-          canFix={isRoot}
-          onFreeSpace={() => {
-            setGcOpen(true)
-          }}
-        />
         {inventory.isPending ? <SkeletonList rows={6} /> : null}
 
         {inventory.isError ? (
@@ -213,7 +177,6 @@ export function ImagesPage({ filter, onFilterChange }: PageProps = {}) {
             {!isRoot ? (
               <p className="text-sm text-muted-foreground">{t('rootOnly')}</p>
             ) : null}
-            <SignaturePolicyCard mode={data.signatures.mode} />
             {data.images.length === 0 ? null : (
               <>
                 <div className="flex flex-wrap items-center gap-2">
@@ -343,7 +306,7 @@ export function ImagesPage({ filter, onFilterChange }: PageProps = {}) {
             <ImageCleanupDialog
               node={node}
               open={gcOpen}
-              onOpenChange={setGcOpen}
+              onOpenChange={onGcOpenChange}
               candidates={managedRemovable}
               keepPerApp={data.retention.keep_per_app}
               reclaimBytes={data.totals.reclaimable_bytes}
@@ -372,6 +335,6 @@ export function ImagesPage({ filter, onFilterChange }: PageProps = {}) {
           setDetail(null)
         }}
       />
-    </PageTemplate>
+    </>
   )
 }

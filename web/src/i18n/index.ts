@@ -98,6 +98,7 @@ export const NAMESPACES = [
   'deployTimeline',
   'deployEvents',
   'images',
+  'storage',
   'buildCenter',
   'functions',
   'monitors',

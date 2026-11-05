@@ -38,7 +38,7 @@ const EXPECTED_GLOBAL = [
   '/firewall',
   '/loadbalancers',
   '/mail',
-  '/images',
+  '/storage',
   '/inbox',
   '/settings/registry',
   '/settings/registry-credentials',
@@ -268,11 +268,11 @@ describe('palette entries derived from the nav model', () => {
   const entries = navModelEntries(ROUTE_ENTRIES, (id) => id)
   const tos = [...ROUTE_ENTRIES, ...entries].map((e) => e.to)
 
-  it('makes templates, inbox, images and the other pages reachable', () => {
+  it('makes templates, inbox, storage and the other pages reachable', () => {
     for (const to of [
       '/templates',
       '/inbox',
-      '/images',
+      '/storage',
       '/resources',
       '/resource-advisor',
       '/network',

@@ -1,0 +1,35 @@
+{
+  "title": "Storage",
+  "subtitle": "What Docker keeps on disk for your apps, and what is safe to free.",
+  "node": {
+    "label": "Node",
+    "local": "This server",
+    "partial": "Only images are sized for this node so far.",
+    "unsupportedTitle": "This node is not supported yet",
+    "unsupported": "Levelrail cannot read storage from this node yet. Nothing here is changed.",
+    "retry": "Check again"
+  },
+  "categories": {
+    "images": "Images",
+    "containers": "Containers",
+    "volumes": "Volumes",
+    "buildCache": "Build cache"
+  },
+  "breakdown": {
+    "label": "Disk breakdown",
+    "barLabel": "{{size}} used by Docker in total",
+    "measuring": "Measuring",
+    "notMeasured": "Not measured yet",
+    "canFree": "{{size}} can be freed",
+    "nothingToFree": "Nothing to free",
+    "free": "{{free}} free of {{total}} on the data disk"
+  },
+  "tabs": {
+    "label": "Storage sections",
+    "images": "Images",
+    "cache": "Build cache"
+  },
+  "engine": {
+    "title": "Engine and signatures"
+  }
+}
