@@ -177,6 +177,9 @@ func runDoctorDef(ctx context.Context, def doctorCheckDef, log *slog.Logger) []d
 		}
 		if res[i].Status == doctorStatusFail || res[i].Status == doctorStatusWarn {
 			res[i].Class = attention.DoctorClass(res[i].Code, res[i].Status)
+			res[i].Tier, res[i].AttentionGroup = attention.Assess(attention.Signal{
+				Kind: res[i].Code, Status: res[i].Status, Class: res[i].Class, Message: res[i].Message,
+			})
 		}
 	}
 	return res
@@ -253,7 +256,7 @@ func (rt *Router) attachDoctorFixes(ctx context.Context, checks []doctorCheckRes
 			continue
 		}
 		for _, v := range views {
-			if v.CheckID == checks[i].Code && v.Failing {
+			if v.ServesCode(checks[i].Code) && v.Failing {
 				checks[i].FixID, checks[i].FixKind = v.ID, string(v.Kind)
 				break
 			}

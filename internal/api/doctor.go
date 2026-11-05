@@ -56,6 +56,10 @@ type doctorCheckResource struct {
 	// Class is "incident" or "recommendation" for a check that is not ok,
 	// from attention.DoctorClass.
 	Class string `json:"class,omitempty"`
+	// Tier and AttentionGroup come from attention.Assess. Group above already
+	// names the doctor section, so the root cause key has its own field.
+	Tier           string `json:"tier,omitempty"`
+	AttentionGroup string `json:"attention_group,omitempty"`
 	// CheckID is the registered check that produced this result, the id to re-run it by.
 	CheckID string `json:"check_id,omitempty"`
 	// Group is the section the check belongs to, stamped by the engine.

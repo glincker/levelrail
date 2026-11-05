@@ -40,7 +40,20 @@ func (rt *Router) settingsFixes() []fixit.Fix {
 	}
 }
 
+// settingsFixAliases maps a readiness check id to the doctor row codes that
+// report the same fact under another name.
+var settingsFixAliases = map[string][]string{
+	"backups_configured": {"control_plane_dr"},
+	"master_key_age":     {"master_key_rotation"},
+}
+
 func (rt *Router) guidedSettingsFix(id, check, title, why, reason string, c func(context.Context) (bool, string)) fixit.Fix {
+	f := rt.guidedSettingsFixBase(id, check, title, why, reason, c)
+	f.Aliases = settingsFixAliases[check]
+	return f
+}
+
+func (rt *Router) guidedSettingsFixBase(id, check, title, why, reason string, c func(context.Context) (bool, string)) fixit.Fix {
 	return fixit.GuidedCheckFix(fixit.GuidedDeps{
 		ID: id, CheckID: check, Subject: SubjectSettings, Title: title, Why: why, Risk: fixit.RiskSafe,
 		Check: func(ctx context.Context) (fixit.Finding, error) {
