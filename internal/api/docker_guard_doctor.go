@@ -48,12 +48,30 @@ func (rt *Router) doctorCheckDockerGuard(ctx context.Context) doctorCheckResourc
 		}
 		return out
 	case res.Effective == dockerguard.ModeAudit && res.WouldDeny > 0:
-		return warn(fmt.Sprintf("audit: %d request(s) would have been denied in the last %s (top rule %s)", res.WouldDeny, windowLabel(res.WindowSeconds), res.Window[0].Rule))
+		// Visible here but not a warning: the attention feed carries the single decision row.
+		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, DocsPath: dockerGuardDocsPath,
+			Message: fmt.Sprintf("audit: %d request(s) would have been denied in the last %s (top rule %s)", res.WouldDeny, windowLabel(res.WindowSeconds), res.Window[0].Rule)}
 	case res.Effective == dockerguard.ModeAudit:
-		return warn(fmt.Sprintf("audit: nothing would have been denied in the last %s; enforce is likely safe", windowLabel(res.WindowSeconds)))
+		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, DocsPath: dockerGuardDocsPath,
+			Message: fmt.Sprintf("audit: nothing would have been denied in the last %s; enforce is likely safe", windowLabel(res.WindowSeconds))}
 	default:
+		if rt.daemonIsolated(ctx) {
+			return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, DocsPath: dockerGuardDocsPath,
+				Message: "off: the Docker daemon is rootless or user-namespace remapped, which limits what a compromise can reach"}
+		}
 		return warn("off: every Levelrail process with the Docker socket can ask Docker for anything, including privileged containers")
 	}
+}
+
+// daemonIsolated is true only when the daemon is known to be rootless or
+// userns-remapped; unknown counts as not isolated so the warning stays.
+func (rt *Router) daemonIsolated(ctx context.Context) bool {
+	rep, ok := rt.dockerPinger.(daemonSecurityReporter)
+	if !ok {
+		return false
+	}
+	s, err := rep.DaemonSecurity(ctx)
+	return err == nil && (s.Rootless || s.UsernsRemap)
 }
 
 // doctorCheckDockerPrivilege reports what a compromise of this process
@@ -75,13 +93,18 @@ func (rt *Router) doctorCheckDockerPrivilege(ctx context.Context) doctorCheckRes
 	}
 	msg := strings.Join(facts, ", ")
 	isolated := secKnown && (sec.Rootless || sec.UsernsRemap)
-	enforced := rt.dockerGuard != nil && rt.dockerGuard.Status().Effective == dockerguard.ModeEnforce
-	if isolated || enforced || !secKnown {
+	// Audit and enforce both put the guard in front of the socket, the documented mitigation.
+	guarded := false
+	if rt.dockerGuard != nil {
+		m := rt.dockerGuard.Status().Effective
+		guarded = m == dockerguard.ModeEnforce || m == dockerguard.ModeAudit
+	}
+	if isolated || guarded || !secKnown {
 		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: msg, DocsPath: dockerGuardDocsPath}
 	}
 	return doctorCheckResource{Code: code, Name: name, Status: doctorStatusWarn, DocsPath: dockerGuardDocsPath,
-		Message: msg + "; a rootful daemon without the guard in enforce mode makes this process root equivalent",
-		Fix:     "Switch the Docker guard to enforce, or run Docker rootless or with userns-remap."}
+		Message: msg + "; a rootful daemon with the guard off makes this process root equivalent",
+		Fix:     "Turn the Docker guard on (audit, then enforce), or run Docker rootless or with userns-remap."}
 }
 
 // dockerGuardAttentionItems tells an admin what audit mode saw and offers
@@ -97,10 +120,10 @@ func (rt *Router) dockerGuardAttentionItems(r *http.Request, abilities []string,
 	case res.Effective == dockerguard.ModeAudit && res.WouldDeny > 0:
 		params["top_rule"] = res.Window[0].Rule
 		return []attention.Item{feedItem(attention.Warning, attention.KindDockerGuard, "would-deny",
-			fmt.Sprintf("audit mode: %d Docker API request(s) in the last %s would have been denied, most by rule %s", res.WouldDeny, window, res.Window[0].Rule), params)}
+			fmt.Sprintf("audit mode: %d Docker API request(s) in the last %s would have been denied, most by rule %s; review them, then switch to enforce", res.WouldDeny, window, res.Window[0].Rule), params)}
 	case res.ReadyToEnforce:
 		return []attention.Item{feedItem(attention.Info, attention.KindDockerGuard, "ready",
-			fmt.Sprintf("audit mode saw no would-be denials in the last %s; switch to enforce", window), params)}
+			fmt.Sprintf("audit mode saw no would-be denials in the last %s; enforce is likely safe, switch to it", window), params)}
 	case res.Effective == dockerguard.ModeEnforce && res.Denied > 0:
 		params["top_rule"] = res.Window[0].Rule
 		return []attention.Item{feedItem(attention.Warning, attention.KindDockerGuard, "denied",

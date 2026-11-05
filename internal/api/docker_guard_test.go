@@ -129,8 +129,8 @@ func TestDoctorCheckDockerGuard(t *testing.T) {
 		{name: "default enforce could not start", status: &dockerguard.Status{Mode: dockerguard.ModeEnforce, Source: dockerguard.SourceDefault, Effective: dockerguard.ModeOff, StartError: "not a unix socket"}, wantStatus: doctorStatusWarn, wantSubstr: "could not start", wantFix: "APP_DOCKER_GUARD"},
 		{name: "not configured", wantStatus: doctorStatusUnknown, wantSubstr: "no docker guard"},
 		{name: "enforce", status: &dockerguard.Status{Mode: dockerguard.ModeEnforce, Effective: dockerguard.ModeEnforce, Running: true}, decisions: []bool{true}, wantStatus: doctorStatusOK, wantSubstr: "1 request(s) denied", wantFix: "APP_DOCKER_GUARD=audit"},
-		{name: "audit with would deny", status: &dockerguard.Status{Mode: dockerguard.ModeAudit, Effective: dockerguard.ModeAudit, Running: true}, decisions: []bool{false, false}, wantStatus: doctorStatusWarn, wantSubstr: "2 request(s) would have been denied"},
-		{name: "audit clean", status: &dockerguard.Status{Mode: dockerguard.ModeAudit, Effective: dockerguard.ModeAudit, Running: true}, wantStatus: doctorStatusWarn, wantSubstr: "enforce is likely safe"},
+		{name: "audit with would deny", status: &dockerguard.Status{Mode: dockerguard.ModeAudit, Effective: dockerguard.ModeAudit, Running: true}, decisions: []bool{false, false}, wantStatus: doctorStatusOK, wantSubstr: "2 request(s) would have been denied"},
+		{name: "audit clean", status: &dockerguard.Status{Mode: dockerguard.ModeAudit, Effective: dockerguard.ModeAudit, Running: true}, wantStatus: doctorStatusOK, wantSubstr: "enforce is likely safe"},
 		{name: "off", status: &dockerguard.Status{Mode: dockerguard.ModeOff, Effective: dockerguard.ModeOff}, wantStatus: doctorStatusWarn, wantSubstr: "privileged containers"},
 		{name: "restart pending", status: &dockerguard.Status{Mode: dockerguard.ModeEnforce, Effective: dockerguard.ModeOff, RestartRequired: true}, wantStatus: doctorStatusWarn, wantSubstr: "restart"},
 		{name: "config error", status: &dockerguard.Status{Mode: dockerguard.ModeEnforce, Effective: dockerguard.ModeEnforce, Running: true, ConfigError: "bad"}, wantStatus: doctorStatusWarn, wantSubstr: "failing closed"},
@@ -176,7 +176,8 @@ func TestDoctorCheckDockerPrivilege(t *testing.T) {
 		{name: "rootless daemon", sec: docker.DaemonSecurity{Rootless: true}, mode: dockerguard.ModeAudit, wantStatus: doctorStatusOK, wantSubstr: "daemon rootless=true"},
 		{name: "userns remap", sec: docker.DaemonSecurity{UsernsRemap: true}, mode: dockerguard.ModeAudit, wantStatus: doctorStatusOK, wantSubstr: "userns-remap=true"},
 		{name: "rootful enforced", mode: dockerguard.ModeEnforce, wantStatus: doctorStatusOK, wantSubstr: "rootless=false"},
-		{name: "rootful audit warns", mode: dockerguard.ModeAudit, wantStatus: doctorStatusWarn, wantSubstr: "root equivalent"},
+		{name: "rootful audit is mitigated", mode: dockerguard.ModeAudit, wantStatus: doctorStatusOK, wantSubstr: "rootless=false"},
+		{name: "rootful guard off warns", mode: dockerguard.ModeOff, wantStatus: doctorStatusWarn, wantSubstr: "root equivalent"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -186,6 +187,28 @@ func TestDoctorCheckDockerPrivilege(t *testing.T) {
 				t.Fatalf("check = %+v", got)
 			}
 		})
+	}
+}
+
+func TestDockerGuardOffRootfulWarnsAuditIsOneRow(t *testing.T) {
+	t.Parallel()
+	rt, db := newTestRouter(t)
+	rt.dockerPinger = fakeSecurityPinger{}
+	rt.SetDockerGuard(&fakeDockerGuard{status: dockerguard.Status{Mode: dockerguard.ModeOff, Effective: dockerguard.ModeOff}})
+	if g, p := rt.doctorCheckDockerGuard(context.Background()), rt.doctorCheckDockerPrivilege(context.Background()); g.Status != doctorStatusWarn || p.Status != doctorStatusWarn {
+		t.Fatalf("guard off on rootful daemon must warn on both: %+v %+v", g, p)
+	}
+	rt.SetDockerGuard(&fakeDockerGuard{status: dockerguard.Status{Mode: dockerguard.ModeAudit, Effective: dockerguard.ModeAudit, Running: true}})
+	saveGuardDecision(t, db, dockerguard.RulePrivileged, false, time.Now().Add(-time.Minute))
+	warns := 0
+	for _, c := range []doctorCheckResource{rt.doctorCheckDockerGuard(context.Background()), rt.doctorCheckDockerPrivilege(context.Background())} {
+		if c.Status == doctorStatusWarn {
+			warns++
+		}
+	}
+	items := rt.dockerGuardAttentionItems(httptest.NewRequest(http.MethodGet, "/", nil), []string{AbilityRoot}, time.Now())
+	if warns != 0 || len(items) != 1 || items[0].Severity != attention.Warning {
+		t.Fatalf("audit with denials: doctor warns=%d items=%+v, want 0 and one actionable item", warns, items)
 	}
 }
 
