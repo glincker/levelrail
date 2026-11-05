@@ -22,17 +22,22 @@ const (
 	SourceDefault  = "default"
 )
 
+// ErrConfigInvalid means the settings file or mode failed to load, so the mode cannot be changed until the operator fixes it and restarts.
+var ErrConfigInvalid = errors.New("dockerguard: settings file or mode is invalid")
+
 // ErrPinnedByEnv means APP_DOCKER_GUARD is set, so the API cannot change it.
 var ErrPinnedByEnv = errors.New("dockerguard: mode is pinned by " + EnvMode)
 
 // Settings is the persisted part of the guard configuration.
 type Settings struct {
 	Mode Mode `json:"mode,omitempty"`
-	// AuditSince is when audit mode was first observed, so the attention
-	// feed can tell a week of clean observation from a fresh install.
+	// AuditSince is when the guard started observing in audit mode without a
+	// break, so the feed can tell a week of clean observation from a fresh start.
 	AuditSince time.Time `json:"audit_since,omitempty"`
-	UpdatedAt  time.Time `json:"updated_at,omitempty"`
-	UpdatedBy  string    `json:"updated_by,omitempty"`
+	// LastRunMode is the mode the guard actually ran in at the last boot or live switch.
+	LastRunMode Mode      `json:"last_run_mode,omitempty"`
+	UpdatedAt   time.Time `json:"updated_at,omitempty"`
+	UpdatedBy   string    `json:"updated_by,omitempty"`
 }
 
 // LoadSettings reads path; a missing file is the zero Settings.
@@ -139,15 +144,35 @@ func NewController(settingsPath string, lookup func(string) (string, bool), serv
 	return c
 }
 
-// NoteAuditStart stamps AuditSince the first time audit mode runs.
-func (c *Controller) NoteAuditStart(now time.Time) error {
+// NoteBoot records what the guard actually ran as at boot: an audit window
+// survives only a restart that stays in audit, anything else clears it.
+func (c *Controller) NoteBoot(now time.Time) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if c.bootMode != ModeAudit || !c.settings.AuditSince.IsZero() {
+	// A file that failed to parse is evidence for the operator: never write over it.
+	if c.configErr != nil {
 		return nil
 	}
-	c.settings.AuditSince = now.UTC()
-	return SaveSettings(c.path, c.settings)
+	ran := ModeOff
+	if c.server != nil {
+		ran = c.server.Guard.Mode()
+	}
+	next := c.settings
+	switch {
+	case ran != ModeAudit:
+		next.AuditSince = time.Time{}
+	case next.LastRunMode != ModeAudit || next.AuditSince.IsZero():
+		next.AuditSince = now.UTC()
+	}
+	next.LastRunMode = ran
+	if next.AuditSince.Equal(c.settings.AuditSince) && next.LastRunMode == c.settings.LastRunMode {
+		return nil
+	}
+	if err := SaveSettings(c.path, next); err != nil {
+		return err
+	}
+	c.settings = next
+	return nil
 }
 
 // Status reports the current configuration and counters.
@@ -182,10 +207,24 @@ func (c *Controller) SetMode(mode Mode, actor string, now time.Time) (Status, er
 		return Status{}, ErrPinnedByEnv
 	}
 	c.mu.Lock()
+	if c.configErr != nil {
+		c.mu.Unlock()
+		return Status{}, fmt.Errorf("%w: %w", ErrConfigInvalid, c.configErr)
+	}
 	next := c.settings
 	next.Mode, next.UpdatedAt, next.UpdatedBy = mode, now.UTC(), actor
-	if mode == ModeAudit && next.AuditSince.IsZero() {
+	// Only a running guard observes: without a server the next boot stamps the window.
+	switch {
+	case c.server == nil:
+		next.AuditSince = time.Time{}
+	case mode == ModeAudit && (c.server.Guard.Mode() != ModeAudit || next.AuditSince.IsZero()):
 		next.AuditSince = now.UTC()
+	}
+	if c.server != nil {
+		next.LastRunMode = mode
+		if mode == ModeOff {
+			next.LastRunMode = c.server.Guard.Mode()
+		}
 	}
 	if err := SaveSettings(c.path, next); err != nil {
 		c.mu.Unlock()

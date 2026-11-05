@@ -56,6 +56,8 @@ func buildExplainTable() map[string]Explanation {
 			"Open the check details to see what is missing, then follow the guided step. Nothing needs fixing if you accept the limits.", "", KindGuided),
 		ex("docker_guard", "The engine socket guard is not enforcing yet.", "Without it a compromised container could talk to the engine directly.",
 			"Open Settings, then Security, and switch the guard from audit to enforce once the audit log looks clean.", "", KindGuided),
+		ex("docker_guard_high_risk", "A caller asked the engine for host-level power while the guard was only auditing.", "Enforce mode would have blocked it, and something may already hold that power.",
+			"Open Settings, then Security, review the flagged rules in the issue list, then switch the guard to enforce.", "", KindGuided),
 		ex("docker_privilege", "The engine is running with more privilege than needed.", "A bug in a container is easier to turn into host access.",
 			"Open the check details for the setting to change, apply it on the host, then press Re-check.", "", KindGuided),
 		ex("container_hardening", "Containers are not started with the hardened defaults.", "Dropped capabilities limit what a compromised container can do.",
