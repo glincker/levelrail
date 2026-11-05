@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -51,6 +53,21 @@ func fakeMetadataDeps(t *testing.T, path, headerKey, headerVal string) hostprovi
 			b, err := io.ReadAll(resp.Body)
 			return resp.StatusCode, b, err
 		},
+	}
+}
+
+func TestDoctorCloudWarnsOnBadProviderOverride(t *testing.T) {
+	bad := filepath.Join(t.TempDir(), "override.json")
+	if err := os.WriteFile(bad, []byte("{not json"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv(hostprovider.EnvDataFile, bad)
+	var out, errb bytes.Buffer
+	if code := runDoctorCloud("levelrail-cli", nil, &out, &errb, fakeMetadataDeps(t, "", "", "")); code != exitOK {
+		t.Fatalf("exit %d: %s", code, errb.String())
+	}
+	if !strings.Contains(errb.String(), "provider data override ignored") || !strings.Contains(errb.String(), bad) {
+		t.Fatalf("missing warning: %q", errb.String())
 	}
 }
 

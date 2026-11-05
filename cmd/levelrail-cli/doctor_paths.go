@@ -14,10 +14,18 @@ const (
 	envHTTPAddr    = "APP_HTTP_ADDR"
 
 	defaultInstallDir = "/usr/local/bin"
-	defaultDataDir    = "/var/lib/levelrail-data"
-	systemdUnitPath   = "/etc/systemd/system/levelrail.service"
-	systemdDropinPath = "/etc/systemd/system/levelrail.service.d/10-install.conf"
 )
+
+// Host layout names derive from the brand binary name so a rebrand moves them together.
+func defaultDataDir(binary string) string { return "/var/lib/" + binary + "-data" }
+
+func systemdUnitPath(binary string) string {
+	return "/etc/systemd/system/" + binary + ".service"
+}
+
+func systemdDropinPath(binary string) string {
+	return "/etc/systemd/system/" + binary + ".service.d/10-install.conf"
+}
 
 type doctorPath struct {
 	Name   string `json:"name"`
@@ -39,14 +47,15 @@ func buildDoctorPaths(lookupEnv func(string) (string, bool), exists func(string)
 		}
 		return def
 	}
+	binary := brandBinaryName()
 	installDir := get(envInstallDir, defaultInstallDir)
-	releases := get(envReleasesDir, filepath.Join(installDir, "levelrail.releases"))
+	releases := get(envReleasesDir, filepath.Join(installDir, binary+".releases"))
 	entries := []doctorPath{
-		{Name: "control plane binary", Path: filepath.Join(installDir, "levelrail")},
+		{Name: "control plane binary", Path: filepath.Join(installDir, binary)},
 		{Name: "releases dir (rollback binaries)", Path: releases},
-		{Name: "data dir", Path: get(envDataDir, defaultDataDir)},
-		{Name: "systemd unit", Path: systemdUnitPath},
-		{Name: "systemd drop-in (addresses)", Path: systemdDropinPath},
+		{Name: "data dir", Path: get(envDataDir, defaultDataDir(binary))},
+		{Name: "systemd unit", Path: systemdUnitPath(binary)},
+		{Name: "systemd drop-in (addresses)", Path: systemdDropinPath(binary)},
 	}
 	if self, err := os.Executable(); err == nil {
 		entries = append([]doctorPath{{Name: "this CLI", Path: self}}, entries...)

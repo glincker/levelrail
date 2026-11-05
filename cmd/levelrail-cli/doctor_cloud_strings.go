@@ -71,5 +71,5 @@ func brandBinaryName() string {
 	if b, err := brand.LoadEmbedded(); err == nil {
 		return b.BinaryName
 	}
-	return "levelrail"
+	return "app"
 }
