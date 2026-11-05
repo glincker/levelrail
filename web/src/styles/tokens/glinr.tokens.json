@@ -923,7 +923,7 @@
       }
     },
     "accent-light": {
-      "$value": "#0a7ea4",
+      "$value": "#107292",
       "$description": "Default custom accent in light mode, set live by the appearance settings.",
       "$extensions": {
         "glinr": {
