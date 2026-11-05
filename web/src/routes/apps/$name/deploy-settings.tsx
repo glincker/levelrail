@@ -23,6 +23,7 @@ import { BuildHooksCard } from '../../../components/BuildHooksCard'
 import { BadgeSettingsCard } from '../../../components/BadgeSettingsCard'
 import { GitHubActionsCard } from '../../../components/GitHubActionsCard'
 import { CIDeployCard } from '../../../components/CIDeployCard'
+import { CITemplatesCard } from '../../../components/CITemplatesCard'
 import { SettingsGroup } from '../../../components/deploySettings/SettingsGroup'
 import { SettingsSectionNav } from '../../../components/deploySettings/SettingsSectionNav'
 import { DeployFlowStrip } from '../../../components/deploySettings/DeployFlowStrip'
@@ -137,6 +138,9 @@ function DeploySettingsSection() {
             <CIDeployCard appName={name} />
           </Suspense>
         </CardHelp>
+        <Suspense fallback={<CardSkeleton titleWidth="w-44" rows={4} />}>
+          <CITemplatesCard appName={name} />
+        </Suspense>
       </SettingsGroup>
     </div>
   )

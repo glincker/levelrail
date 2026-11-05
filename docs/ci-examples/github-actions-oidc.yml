@@ -1,7 +1,8 @@
 # .github/workflows/deploy.yml
+# Pin the CLI with LEVELRAIL_VERSION=vX.Y.Z on the installer step for reproducible builds.
 # Build, push and deploy by digest with no stored Levelrail token.
 # One-time setup on the control plane:
-#   levelrail-cli apps ci trust add my-app --repo example/my-app --ref refs/heads/main
+#   levelrail-cli apps ci trust add my-app --repo OWNER/REPO --ref refs/heads/main
 # Repository variable LEVELRAIL_API_URL holds the control plane URL (not a secret).
 name: deploy
 
@@ -23,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       APP: my-app
-      IMAGE: ghcr.io/example/my-app
+      IMAGE: ghcr.io/OWNER/REPO
       LEVELRAIL_API_URL: ${{ vars.LEVELRAIL_API_URL }}
       LEVELRAIL_CLI_INSTALL_DIR: ${{ github.workspace }}/.bin
     steps:

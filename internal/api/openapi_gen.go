@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1971 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1972 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -174,6 +174,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/apps/{name}/cdn", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePutAppCDN", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/cdn/resync", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleResyncAppCDN", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/changes", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppChanges", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/ci/templates", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetCITemplates", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/ci/trusts", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListCITrusts", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/ci/trusts", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCreateCITrust", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/ci/trusts/{id}", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteCITrust", Description: ""},

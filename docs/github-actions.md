@@ -11,7 +11,7 @@ Levelrail deploys an image your CI already built. On GitHub Actions you can do t
 One-time setup:
 
 1. Set the dashboard address in Settings (`levelrail-cli settings dashboard-url set --url https://...`). It is the audience the identity token is issued for, and the exchange fails with a `409` until it is set.
-2. Trust your repository on the app. On the app's Deploys page open **Deploy from CI** and add `owner/name` with a ref such as `refs/heads/main`. Refs must be full refs; globs such as `refs/heads/release/*` or `refs/tags/v*` work, and `*` does not cross a `/`. An environment is optional: when set, the job must run in that GitHub environment. CLI: `levelrail-cli apps github-actions trust add my-app --repo owner/name` (`--ref` defaults to `refs/heads/main`, `--environment` is optional).
+2. Trust your repository on the app. On the app's Deploys page open **Deploy from CI** and add `OWNER/REPO` (your real owner and repository) with a ref such as `refs/heads/main`. Refs must be full refs; globs such as `refs/heads/release/*` or `refs/tags/v*` work, and `*` does not cross a `/`. An environment is optional: when set, the job must run in that GitHub environment. CLI: `levelrail-cli apps github-actions trust add my-app --repo OWNER/REPO` (`--ref` defaults to `refs/heads/main`, `--environment` is optional).
 3. Copy the generated workflow from the same page, or print it with `levelrail-cli apps github-actions workflow my-app`.
 
 The workflow looks like this. Replace the API URL and app name. No `LEVELRAIL_API_TOKEN` secret is needed.

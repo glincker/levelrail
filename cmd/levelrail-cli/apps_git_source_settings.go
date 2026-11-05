@@ -2,13 +2,28 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
+	"net/http"
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
+
+// ciGateUnreadableHint explains the 422 the API answers when no CI reader can be built for the app's source.
+const ciGateUnreadableHint = `The CI gate needs a GitHub App or GitLab connection that can read this repository's checks.
+It cannot work when the source is an SSH or plain http repository URL, Gitea, Bitbucket,
+or a GitHub repository without the GitHub App installed. Connect the repository through a
+GitHub App or a GitLab connection, then turn the gate on again.
+`
+
+// isCIGateUnreadable is true for the 422 the API answers when the gate cannot read the source's CI status.
+func isCIGateUnreadable(err error) bool {
+	var apiErr *apiclient.APIError
+	return errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusUnprocessableEntity
+}
 
 // runAppsGitSourceSettings sets an app's push path filters and forge status
 // reporting. Only the flags given change; --paths and --paths-ignore replace
@@ -21,8 +36,8 @@ func runAppsGitSourceSettings(prog string, args []string, stdout, stderr io.Writ
 	fs.Var(&paths, "paths", "deploy only when a push changes a file matching these globs (comma separated, ** supported); empty clears the filter")
 	fs.Var(&ignore, "paths-ignore", "skip the deploy when every changed file matches these globs (comma separated); empty clears the filter")
 	fs.BoolVar(&report, "report-status", true, "post deploy and pipeline state back to the git forge (GitHub Deployments and commit statuses)")
-	fs.BoolVar(&waitCI, "wait-for-ci", false, "hold a push deploy until the commit's CI checks pass; a failure or timeout skips the deploy")
-	fs.Var(&ciChecks, "ci-check", "check name the deploy waits for (repeatable); none means every check on the commit")
+	fs.BoolVar(&waitCI, "wait-for-ci", false, "hold a push deploy until the commit's CI checks pass (GitHub and GitLab); a failure or timeout skips the deploy")
+	fs.Var(&ciChecks, "ci-check", "check the deploy waits for (repeatable): the GitHub check name or the GitLab job name; none means every check on the commit. A GitLab job that was skipped or is allowed to fail (allow_failure) fails the gate when named here")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps git-source settings <name> [flags]\n\nSets which pushes deploy by the files they changed, and whether deploy and\npipeline state is reported back to the git forge. Only the flags you pass\nchange. The server kill switch APP_GIT_STATUS_ENABLED=false turns reporting\noff for every app.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
@@ -58,6 +73,9 @@ func runAppsGitSourceSettings(prog string, args []string, stdout, stderr io.Writ
 
 	got, err := client.SetGitDeploySettings(context.Background(), name, req)
 	if err != nil {
+		if req.WaitForCI != nil && *req.WaitForCI && isCIGateUnreadable(err) {
+			_, _ = fmt.Fprint(stderr, ciGateUnreadableHint)
+		}
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("set git source settings for app %q: %w", name, err))
 	}
 	if err := renderResult(stdout, of.Format, of.Query, got, func() {
