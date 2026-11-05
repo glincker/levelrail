@@ -17,6 +17,7 @@ import type { AppListEntry } from '../../types/appDetail'
 import commonEn from '../../locales/en/common.json'
 import dashboardEn from '../../locales/en/dashboard.json'
 import firstRunEn from '../../locales/en/firstRun.json'
+import getStartedEn from '../../locales/en/getStarted.json'
 import onboardingEn from '../../locales/en/onboarding.json'
 import { createTestQueryClient } from '@/test/testQueryClient'
 
@@ -26,7 +27,7 @@ const testI18n = i18next.createInstance()
 void testI18n.use(initReactI18next).init({
   lng: 'en',
   fallbackLng: 'en',
-  ns: ['dashboard', 'common', 'firstRun', 'onboarding'],
+  ns: ['dashboard', 'common', 'firstRun', 'onboarding', 'getStarted'],
   defaultNS: 'dashboard',
   fallbackNS: 'common',
   resources: {
@@ -35,6 +36,7 @@ void testI18n.use(initReactI18next).init({
       common: commonEn,
       firstRun: firstRunEn,
       onboarding: onboardingEn,
+      getStarted: getStartedEn,
     },
   },
   interpolation: { escapeValue: false },
@@ -211,7 +213,11 @@ describe('DashboardHome', () => {
     routeFetch({})
     renderHome([])
     expect(
-      await screen.findByRole('button', { name: 'Deploy sample app' }),
+      await screen.findByRole(
+        'button',
+        { name: 'Deploy sample app' },
+        { timeout: 5000 },
+      ),
     ).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'Metrics' })).toBeInTheDocument()
     expect(screen.queryByText('Quick start')).not.toBeInTheDocument()

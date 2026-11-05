@@ -22,7 +22,6 @@ import { cn } from '@/lib/utils'
 import { DashboardHero } from './DashboardHero'
 import { FleetTiles } from './FleetTiles'
 import { OnboardingCard } from '../onboarding/OnboardingCard'
-import { useOnboardingCardShown } from '../../queries/meOnboarding'
 import { RestoreDueCard } from './RestoreDueCard'
 import { NextSteps } from './NextSteps'
 import { RecentActivity } from './RecentActivity'
@@ -40,6 +39,12 @@ import { useEnvironmentScope } from '../../lib/environmentScope'
 const FirstDeploy = lazy(() =>
   import('../getStarted/FirstDeploy').then((m) => ({
     default: m.FirstDeploy,
+  })),
+)
+
+const FirstRunStripLive = lazy(() =>
+  import('../getStarted/FirstRunStripLive').then((m) => ({
+    default: m.FirstRunStripLive,
   })),
 )
 
@@ -193,7 +198,6 @@ export function DashboardHome({
   const [deployStarted, setDeployStarted] = useState(false)
   const [firstRunDone, setFirstRunDone] = useState(false)
   const hasApps = summary.total > 0 || anyApps.data === true
-  const setupFirst = useOnboardingCardShown()
 
   if (summary.total === 0 && anyApps.isPending) {
     return <DashboardPending />
@@ -204,15 +208,15 @@ export function DashboardHome({
       <div className="space-y-8">
         <OnboardingCard />
         <Suspense fallback={null}>
-          <FirstDeploy
+          <FirstRunStripLive
             onStarted={() => {
               setDeployStarted(true)
             }}
             onDone={() => {
               setFirstRunDone(true)
             }}
-            secondary={setupFirst}
           />
+          {deployStarted ? null : <FirstDeploy secondary />}
         </Suspense>
         {hasApps ? null : <RecommendationsLine showSetup={isRoot} />}
       </div>
