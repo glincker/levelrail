@@ -22,9 +22,13 @@ A skipped deploy shows as a failed attempt in the deploy history with the
 reason (`skipped by CI gate: ...`), appears as a note on the webhook delivery,
 and fires the app's deploy notification channels like any failed deploy.
 
-GitHub is supported. For other providers the gate cannot read checks, logs a
+GitHub and GitLab (GitLab.com and self-managed) are supported. For other
+providers, such as Bitbucket and Gitea, the gate cannot read checks, logs a
 warning and the push deploys as before. The missed-webhook poller and release
 tag deploys are not gated.
+
+The checks are always read from the provider API for the pushed commit. The
+webhook body is never used to decide whether CI passed.
 
 ## Which checks count
 
@@ -34,6 +38,43 @@ tag deploys are not gated.
 - Required checks set: only those names are waited for. A required check that
   has not appeared yet counts as pending.
 - The platform's own deploy check is ignored, so the gate never waits on itself.
+
+## GitLab
+
+For a GitLab project the gate reads the statuses of the pushed commit from
+`GET /api/v4/projects/:id/repository/commits/:sha/statuses`, up to 10 pages of
+100. The status name is the job name, so `ci_required_checks` entries are the
+names of your GitLab CI jobs, for example `build` and `test`.
+
+| GitLab status | Gate result |
+| --- | --- |
+| `success`, `skipped` | Passes |
+| `failed` | Fails, unless the job has `allow_failure`, then it passes |
+| `canceled` | Fails |
+| `manual` | Passes only if the job has `allow_failure`, otherwise pending |
+| `created`, `pending`, `running` | Pending |
+| Any other value | Pending |
+
+Pending is never treated as a pass. If the API returns an error, the deploy does
+not start on that read. If the commit has more than 10 pages of statuses, the
+read fails instead of deciding on a partial list. A rate limit response (429) is
+retried until the timeout. As with GitHub, the deploy never starts on an
+unknown state, and if the wait times out it does not start.
+
+The request does not follow redirects, so the token is only sent to the
+configured GitLab host.
+
+Troubleshooting:
+
+- Every check stays pending or the read fails: the connected token needs read
+  access to the project and its pipelines.
+- A job fails but the deploy still starts: the job has `allow_failure: true`.
+  Remove it, or leave the job out of the required checks.
+- The deploy waits and then times out: a `manual` job without `allow_failure`
+  stays pending until someone runs it. Run the job, or set `allow_failure: true`
+  on it.
+- A required check never appears: the name must match the GitLab job name
+  exactly.
 
 ## Configure
 
