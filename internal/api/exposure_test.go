@@ -190,7 +190,7 @@ func TestDoctorExposureCheck(t *testing.T) {
 	if len(checks) != 2 || checks[0].Code != "exposure" || checks[0].Status != doctorStatusWarn {
 		t.Fatalf("checks = %+v", checks)
 	}
-	if checks[1].Code != "exposure_local_tcp_8108" || !strings.Contains(checks[1].Message, "high") {
+	if checks[1].Code != "exposure_local_typesense" || !strings.Contains(checks[1].Message, "high") {
 		t.Fatalf("finding check = %+v", checks[1])
 	}
 }
