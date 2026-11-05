@@ -32,6 +32,7 @@ databases.pooler_image
 deploy.drain_timeout
 deploy.max_concurrent
 deploy.previous_release_hold
+deploy.receipt_approval_window
 deploy.stable_window
 deploy.watch_window
 desktop.session_ttl

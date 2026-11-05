@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/deployreceipt"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/supplychain"
 )
@@ -68,12 +68,13 @@ func (rt *Router) handleGetDeployReceipt(w http.ResponseWriter, r *http.Request)
 	writeJSON(w, http.StatusOK, rec)
 }
 
-// envReceiptApprovalWindow bounds the image-and-time fallback match.
-const envReceiptApprovalWindow = "APP_DEPLOY_RECEIPT_APPROVAL_WINDOW"
-
-func receiptApprovalWindow() time.Duration {
-	if d, err := time.ParseDuration(strings.TrimSpace(os.Getenv(envReceiptApprovalWindow))); err == nil && d > 0 {
-		return d
+// receiptApprovalWindow bounds the image-and-time fallback match; the runtime
+// setting is the source, the default only covers a router without settings.
+func (rt *Router) receiptApprovalWindow(ctx context.Context) time.Duration {
+	if rt.runtimeSettings != nil {
+		if d := rt.runtimeSettings.Duration(ctx, runtimesettings.KeyDeployReceiptApprovalWindow); d > 0 {
+			return d
+		}
 	}
 	return 15 * time.Minute
 }
@@ -91,7 +92,7 @@ func (rt *Router) receiptApproval(ctx context.Context, a store.DeployAttempt) (*
 	}
 	var best *store.DeployApproval
 	var bestAt time.Time
-	earliest := a.StartedAt.Add(-receiptApprovalWindow())
+	earliest := a.StartedAt.Add(-rt.receiptApprovalWindow(ctx))
 	for i := range list {
 		ap := list[i]
 		if ap.HeldAttemptID == a.ID {
