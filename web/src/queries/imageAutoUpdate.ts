@@ -15,6 +15,7 @@ export interface ImageAutoUpdate {
   last_checked_at?: string
   last_result?: string
   has_webhook: boolean
+  has_signing_secret?: boolean
   window_cron?: string
   window_minutes?: number
 }
@@ -29,6 +30,8 @@ export interface ImageAutoUpdateInput {
 export interface ImageUpdateWebhook {
   path: string
   token: string
+  /** Shown once; the GitHub package webhook secret. */
+  signing_secret?: string
 }
 
 export const imageAutoUpdateKeys = {

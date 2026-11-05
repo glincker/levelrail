@@ -209,112 +209,114 @@ type Router struct {
 	// APP_CRITICAL_REQUEST_THRESHOLD and calls it unconditionally, the
 	// same "this package never reads the environment directly"
 	// convention WithSessionTTL's own doc comment establishes.
-	requestLogThresholds   requestLogThresholds
-	alertRules             AlertRules      // nil is valid: alert rule routes return 501, same shape as secrets/telemetry above
-	lb                     lbDeps          // zero value is valid: load balancer routes return 501
-	iac                    iacDeps         // zero value is valid: lazily builds the in-process handler apply calls
-	alertNoise             AlertNoise      // nil is valid: silence, maintenance window and alert history routes return 501
-	alertDefaults          AlertDefaults   // nil is valid: default alert routes return 501
-	inbox                  InboxStore      // nil is valid: notification inbox routes return 501
-	statusPage             StatusPageStore // nil is valid: status page routes return 501 and the public page stays off
-	statusView             StatusPageViewer
-	incidents              IncidentStore // nil is valid: /api/v1/incidents answers 501 (APP_INCIDENTS_ENABLED off)
-	incidentBodyMax        int
-	statusSampler          *statuspage.Service
-	statusHooks            *statuswebhook.Service // nil is valid: webhook routes return 501
-	statusHooksStore       statuswebhook.Store
-	statusLimiter          *apiRateLimiter
-	heartbeatMu            sync.Mutex
-	heartbeatLimiter       *apiRateLimiter
-	statusHost             statusHostCache
-	sessions               *sessionStore
-	mfaPending             *mfaPendingStore // always set, same "always present, not an Option" shape sessions itself has
-	passkeyLogin           *loginLimiter
-	setupTokenGuess        *loginLimiter     // failed setup-token guesses per client IP
-	wakeTokenGuess         *loginLimiter     // failed wake-token guesses per client IP
-	functionLimiter        functions.Limiter // requests held per function while it wakes
-	devicePollLimit        *apiRateLimiter
-	dbRevealLimit          *apiRateLimiter
-	emailRevealLimit       *apiRateLimiter
-	mfaVerify              *loginLimiter // separate budget from logins above: brute-forcing a 6-digit code after a correct password is a distinct attack this must independently rate limit
-	sessionTTL             time.Duration // 0 means "use defaultSessionTTL", set via WithSessionTTL
-	trustRoot              TrustRootProbe
-	volumeTransfers        volumeTransferGuard
-	dataDir                string // "" means "don't report disk usage", set via WithDataDir
-	diskGuard              *diskguard.Guard
-	localNodeID            string // "" means "not mesh-enabled", set via WithLocalNodeID; the one node HostDiskCollector/HostMemoryCollector's readings are real for
-	meshZone               string // "" means mesh DNS resolution is off, set via SetMeshZone; mirrors application.Controller's own meshZone, see GET /api/v1/apps/{name}/connections' own doc comment
-	readiness              ReadinessProbes
-	meshSettings           meshSettingsState                                             // see mesh_settings.go
-	serverProfile          serverProfileState                                            // see server_profile.go
-	fixit                  fixitState                                                    // see fixit.go
-	buildPerf              BuildPerformanceStore                                         // see build_performance.go
-	buildLoad              BuildLoadSource                                               // nil: the build center shows no live slot usage
-	buildCacheNodes        BuildCacheResolver                                            // nil: build cache routes return 501
-	buildRetrier           func(ctx context.Context, app, branch string) (string, error) // test seam, nil means TriggerScheduledDeploy
-	restart                restartState                                                  // see system_restart.go
-	cpHealth               cpHealthState                                                 // see system_cp_health.go
-	memAttribution         memoryAttributionCache                                        // see node_memory_attribution.go
-	nodeOnb                *nodeOnboardingState                                          // nil is valid: onboarding routes report that no agent has sent facts
-	nodeHostReports        NodeHostReports                                               // nil is valid: remote rows keep the placed-services-only shape
-	dockerGuard            DockerGuardController                                         // nil is valid: the docker guard routes report it as not configured
-	dockerPinger           DockerPinger                                                  // nil is valid: a control plane started without one reports DockerConnected: false, same shape as secrets/telemetry/alertRules above
-	images                 ImageLister                                                   // nil is valid: GET /apps/{name}/images returns an empty list, same shape as dockerPinger above
-	containers             ContainerLister                                               // nil is valid: GET /api/v1/system/containers returns 501, same shape as execRuntime above
-	hostMemory             func() (total, available int64, err error)                    // nil reads the real host; tests inject a fixed reading so advisor results do not depend on the machine's load
-	dockerDiskUsage        DockerDiskUsager                                              // nil is valid: GET /system/status omits its docker_disk_usage field, same "optional signal, absence is not an error" shape as dockerPinger above
-	imageInventory         ImageInventoryResolver                                        // nil: /api/v1/images routes return 501
-	imageVerifyKey         *ecdsa.PublicKey
-	imageVerifyMode        string
-	imageVerifyIssue       string
-	imageVerifyRequested   string
-	imageVerifier          *imagelife.Verifier
-	dockerPruner           DockerPruner             // nil is valid: POST /system/prune returns 501, same shape as builder/secrets above
-	orphanedVolumes        OrphanedVolumeManager    // nil is valid: GET/POST /system/volumes/orphaned* return 501, same shape as dockerPruner above
-	janitor                *janitor.Engine          // nil is valid: /system/janitor* return 501, and the disk fix falls back to a plain prune
-	janitorStore           janitor.Store            // set with janitor
-	nodeGuard              *nodeGuardState          // nil is valid: node capacity routes return 501 and nothing is blocked
-	orphanReaper           *orphans.Reaper          // nil is valid: GET /system/orphans and POST /system/orphans/reap return 501
-	orphanedContainers     OrphanedContainerManager // nil is valid: POST /system/containers/{name}/stop and .../remove return 501, same shape as orphanedVolumes above
-	registryAuthTester     RegistryAuthTester       // nil is valid: POST /api/v1/registry-credentials/{id}/test returns 501, same shape as dockerPinger above
-	teardownOpts           []application.Option
-	deleteTimeout          time.Duration
-	execRuntime            NodeRuntimeResolver  // nil is valid: POST /apps/{name}/exec returns 501, same shape as dockerPruner above
-	models                 ModelService         // nil is valid: /api/v1/models routes return 501, see WithModels
-	gpuHostDiagnoser       GPUHostDiagnoser     // nil is valid: doctor skips the detailed host GPU checks
-	publishLocks           PublishLockStore     // nil disables publish locks, see WithPublishLocks
-	deploySafety           DeploySafetyStore    // nil disables freeze windows, the stale-deploy guard and digest recording, see WithDeploySafety
-	imageResolver          docker.ImageResolver // nil deploys image tags unresolved, see WithDeploySafety
-	deployGate             DeployGateStore      // nil disables the gate timeline and rollback pins, see WithDeployGate
-	deployGateDefaults     deploysafety.Effective
-	reconcileNudger        ReconcileNudger      // nil is valid: a desired-state-changing handler just waits for the next resync tick instead of nudging, same "absence degrades, never errors" shape as dockerPinger above
-	certs                  CertStore            // always set, part of the core Store interface: unlike dockerPinger/images this isn't an optional plug-in, every *store.DB already has it
-	ingressSettings        IngressSettingsStore // always set, same "core Store interface, not an optional plug-in" shape as certs above: the settings row always exists (migrations/0023's own seeded row)
-	dnsWatcher             *dnsstatus.Watcher   // built lazily from the store; nil when it cannot persist
-	dnsWatcherOnce         sync.Once
-	domains                DomainStore                 // always set, same shape as ingressSettings above: service_domains is always queryable, empty is a valid, non-error result
-	domainBasicAuth        DomainBasicAuthStore        // always set, same "core Store interface" shape as domains above
-	domainBasicAuthSecrets DomainBasicAuthSecrets      // nil is valid: PUT/DELETE .../domains/{domain}/auth return 501, same shape as cloudflareTunnelSecrets above
-	domainMaintenance      DomainMaintenanceStore      // always set, same "core Store interface" shape as domainBasicAuth above; unlike it, no secrets dependency at all, so no nil/501 case
-	domainTLSCert          DomainTLSCertStore          // always set, same "core Store interface" shape as domainBasicAuth above
-	domainTLSCertSecrets   DomainTLSCertSecrets        // nil is valid: PUT/DELETE .../domains/{domain}/tls-cert return 501, same shape as domainBasicAuthSecrets above
-	mailCertLocks          sync.Map                    // app name to *sync.Mutex: one mail certificate install at a time per app
-	domainWAF              DomainWAFStore              // always set, same "core Store interface" shape as domainMaintenance above; no secrets dependency either
-	domainAuthGate         DomainAuthGateStore         // always set, core Store; the auth URL is not secret
-	gate                   GateStore                   // nil when the store lacks it: built-in gate requests fail closed
-	gateSecret             string                      // SetGate; empty refuses every gate check
-	gateSettings           GateSettings                // SetGate; zero fields fall back to defaults
-	gateEvents             gateEventCounter            // coalesced gate events awaiting flush
-	domainRedirect         DomainRedirectStore         // always set, same "core Store interface" shape as domainMaintenance above; no secrets dependency either
-	domainSearchVisibility DomainSearchVisibilityStore // always set, core Store
-	domainACME             DomainACMEChallengeStore    // per-host DNS-01 flag, domain_cutover_cert.go
-	domainPolicy           domainPolicyDeps            // per-domain traffic controls, domain_policies.go
-	cachePurges            CachePurgeStore             // purge history, cache_app.go
-	edgeFW                 edgeFirewallDeps            // ingress firewall rules, settings and live engine, firewall_edge.go
-	domainErrorPages       DomainErrorPagesStore       // always set, same "core Store interface" shape as domainWAF above; no secrets dependency either
-	masterKeyRotator       MasterKeyRotator            // nil is valid: POST /system/master-key/rotate returns 501, same shape as domainBasicAuthSecrets above
-	encryptionKeys         encryptionKeysDeps          // SetEncryptionKeys; zero value makes the encryption-keys routes return 501
-	secretBinder           SecretBinder                // nil is valid: the secrets binding routes return 501
+	requestLogThresholds    requestLogThresholds
+	alertRules              AlertRules      // nil is valid: alert rule routes return 501, same shape as secrets/telemetry above
+	lb                      lbDeps          // zero value is valid: load balancer routes return 501
+	iac                     iacDeps         // zero value is valid: lazily builds the in-process handler apply calls
+	alertNoise              AlertNoise      // nil is valid: silence, maintenance window and alert history routes return 501
+	alertDefaults           AlertDefaults   // nil is valid: default alert routes return 501
+	inbox                   InboxStore      // nil is valid: notification inbox routes return 501
+	statusPage              StatusPageStore // nil is valid: status page routes return 501 and the public page stays off
+	statusView              StatusPageViewer
+	incidents               IncidentStore // nil is valid: /api/v1/incidents answers 501 (APP_INCIDENTS_ENABLED off)
+	incidentBodyMax         int
+	statusSampler           *statuspage.Service
+	statusHooks             *statuswebhook.Service // nil is valid: webhook routes return 501
+	statusHooksStore        statuswebhook.Store
+	statusLimiter           *apiRateLimiter
+	heartbeatMu             sync.Mutex
+	heartbeatLimiter        *apiRateLimiter
+	statusHost              statusHostCache
+	sessions                *sessionStore
+	mfaPending              *mfaPendingStore // always set, same "always present, not an Option" shape sessions itself has
+	passkeyLogin            *loginLimiter
+	setupTokenGuess         *loginLimiter     // failed setup-token guesses per client IP
+	wakeTokenGuess          *loginLimiter     // failed wake-token guesses per client IP
+	functionLimiter         functions.Limiter // requests held per function while it wakes
+	devicePollLimit         *apiRateLimiter
+	dbRevealLimit           *apiRateLimiter
+	emailRevealLimit        *apiRateLimiter
+	mfaVerify               *loginLimiter // separate budget from logins above: brute-forcing a 6-digit code after a correct password is a distinct attack this must independently rate limit
+	sessionTTL              time.Duration // 0 means "use defaultSessionTTL", set via WithSessionTTL
+	trustRoot               TrustRootProbe
+	volumeTransfers         volumeTransferGuard
+	dataDir                 string // "" means "don't report disk usage", set via WithDataDir
+	diskGuard               *diskguard.Guard
+	localNodeID             string // "" means "not mesh-enabled", set via WithLocalNodeID; the one node HostDiskCollector/HostMemoryCollector's readings are real for
+	meshZone                string // "" means mesh DNS resolution is off, set via SetMeshZone; mirrors application.Controller's own meshZone, see GET /api/v1/apps/{name}/connections' own doc comment
+	readiness               ReadinessProbes
+	meshSettings            meshSettingsState                                             // see mesh_settings.go
+	serverProfile           serverProfileState                                            // see server_profile.go
+	fixit                   fixitState                                                    // see fixit.go
+	buildPerf               BuildPerformanceStore                                         // see build_performance.go
+	buildLoad               BuildLoadSource                                               // nil: the build center shows no live slot usage
+	buildCacheNodes         BuildCacheResolver                                            // nil: build cache routes return 501
+	buildRetrier            func(ctx context.Context, app, branch string) (string, error) // test seam, nil means TriggerScheduledDeploy
+	restart                 restartState                                                  // see system_restart.go
+	cpHealth                cpHealthState                                                 // see system_cp_health.go
+	memAttribution          memoryAttributionCache                                        // see node_memory_attribution.go
+	nodeOnb                 *nodeOnboardingState                                          // nil is valid: onboarding routes report that no agent has sent facts
+	nodeHostReports         NodeHostReports                                               // nil is valid: remote rows keep the placed-services-only shape
+	dockerGuard             DockerGuardController                                         // nil is valid: the docker guard routes report it as not configured
+	dockerPinger            DockerPinger                                                  // nil is valid: a control plane started without one reports DockerConnected: false, same shape as secrets/telemetry/alertRules above
+	images                  ImageLister                                                   // nil is valid: GET /apps/{name}/images returns an empty list, same shape as dockerPinger above
+	containers              ContainerLister                                               // nil is valid: GET /api/v1/system/containers returns 501, same shape as execRuntime above
+	hostMemory              func() (total, available int64, err error)                    // nil reads the real host; tests inject a fixed reading so advisor results do not depend on the machine's load
+	dockerDiskUsage         DockerDiskUsager                                              // nil is valid: GET /system/status omits its docker_disk_usage field, same "optional signal, absence is not an error" shape as dockerPinger above
+	imageInventory          ImageInventoryResolver                                        // nil: /api/v1/images routes return 501
+	imageVerifyKey          *ecdsa.PublicKey
+	imageVerifyMode         string
+	imageVerifyIssue        string
+	imageVerifyRequested    string
+	imageVerifier           *imagelife.Verifier
+	dockerPruner            DockerPruner             // nil is valid: POST /system/prune returns 501, same shape as builder/secrets above
+	orphanedVolumes         OrphanedVolumeManager    // nil is valid: GET/POST /system/volumes/orphaned* return 501, same shape as dockerPruner above
+	janitor                 *janitor.Engine          // nil is valid: /system/janitor* return 501, and the disk fix falls back to a plain prune
+	janitorStore            janitor.Store            // set with janitor
+	nodeGuard               *nodeGuardState          // nil is valid: node capacity routes return 501 and nothing is blocked
+	orphanReaper            *orphans.Reaper          // nil is valid: GET /system/orphans and POST /system/orphans/reap return 501
+	orphanedContainers      OrphanedContainerManager // nil is valid: POST /system/containers/{name}/stop and .../remove return 501, same shape as orphanedVolumes above
+	registryAuthTester      RegistryAuthTester       // nil is valid: POST /api/v1/registry-credentials/{id}/test returns 501, same shape as dockerPinger above
+	teardownOpts            []application.Option
+	deleteTimeout           time.Duration
+	execRuntime             NodeRuntimeResolver  // nil is valid: POST /apps/{name}/exec returns 501, same shape as dockerPruner above
+	models                  ModelService         // nil is valid: /api/v1/models routes return 501, see WithModels
+	gpuHostDiagnoser        GPUHostDiagnoser     // nil is valid: doctor skips the detailed host GPU checks
+	publishLocks            PublishLockStore     // nil disables publish locks, see WithPublishLocks
+	deploySafety            DeploySafetyStore    // nil disables freeze windows, the stale-deploy guard and digest recording, see WithDeploySafety
+	imageResolver           docker.ImageResolver // nil deploys image tags unresolved, see WithDeploySafety
+	deployGate              DeployGateStore      // nil disables the gate timeline and rollback pins, see WithDeployGate
+	deployGateDefaults      deploysafety.Effective
+	reconcileNudger         ReconcileNudger      // nil is valid: a desired-state-changing handler just waits for the next resync tick instead of nudging, same "absence degrades, never errors" shape as dockerPinger above
+	certs                   CertStore            // always set, part of the core Store interface: unlike dockerPinger/images this isn't an optional plug-in, every *store.DB already has it
+	ingressSettings         IngressSettingsStore // always set, same "core Store interface, not an optional plug-in" shape as certs above: the settings row always exists (migrations/0023's own seeded row)
+	dnsWatcher              *dnsstatus.Watcher   // built lazily from the store; nil when it cannot persist
+	dnsWatcherOnce          sync.Once
+	domains                 DomainStore                 // always set, same shape as ingressSettings above: service_domains is always queryable, empty is a valid, non-error result
+	domainBasicAuth         DomainBasicAuthStore        // always set, same "core Store interface" shape as domains above
+	domainBasicAuthSecrets  DomainBasicAuthSecrets      // nil is valid: PUT/DELETE .../domains/{domain}/auth return 501, same shape as cloudflareTunnelSecrets above
+	domainMaintenance       DomainMaintenanceStore      // always set, same "core Store interface" shape as domainBasicAuth above; unlike it, no secrets dependency at all, so no nil/501 case
+	domainTLSCert           DomainTLSCertStore          // always set, same "core Store interface" shape as domainBasicAuth above
+	domainTLSCertSecrets    DomainTLSCertSecrets        // nil is valid: PUT/DELETE .../domains/{domain}/tls-cert return 501, same shape as domainBasicAuthSecrets above
+	registryPushRotateLocks sync.Map                    // app name to *sync.Mutex: one registry webhook rotation at a time per app
+	registryPushLocks       sync.Map                    // app name to *sync.Mutex: one registry push deploy in flight per app
+	mailCertLocks           sync.Map                    // app name to *sync.Mutex: one mail certificate install at a time per app
+	domainWAF               DomainWAFStore              // always set, same "core Store interface" shape as domainMaintenance above; no secrets dependency either
+	domainAuthGate          DomainAuthGateStore         // always set, core Store; the auth URL is not secret
+	gate                    GateStore                   // nil when the store lacks it: built-in gate requests fail closed
+	gateSecret              string                      // SetGate; empty refuses every gate check
+	gateSettings            GateSettings                // SetGate; zero fields fall back to defaults
+	gateEvents              gateEventCounter            // coalesced gate events awaiting flush
+	domainRedirect          DomainRedirectStore         // always set, same "core Store interface" shape as domainMaintenance above; no secrets dependency either
+	domainSearchVisibility  DomainSearchVisibilityStore // always set, core Store
+	domainACME              DomainACMEChallengeStore    // per-host DNS-01 flag, domain_cutover_cert.go
+	domainPolicy            domainPolicyDeps            // per-domain traffic controls, domain_policies.go
+	cachePurges             CachePurgeStore             // purge history, cache_app.go
+	edgeFW                  edgeFirewallDeps            // ingress firewall rules, settings and live engine, firewall_edge.go
+	domainErrorPages        DomainErrorPagesStore       // always set, same "core Store interface" shape as domainWAF above; no secrets dependency either
+	masterKeyRotator        MasterKeyRotator            // nil is valid: POST /system/master-key/rotate returns 501, same shape as domainBasicAuthSecrets above
+	encryptionKeys          encryptionKeysDeps          // SetEncryptionKeys; zero value makes the encryption-keys routes return 501
+	secretBinder            SecretBinder                // nil is valid: the secrets binding routes return 501
 	// masterKeyFilePath is where the currently active master key came
 	// from on disk, "" if it was sourced from APP_MASTER_KEY instead
 	// (see cmd/levelrail/main.go's loadSecretsManager). A successful

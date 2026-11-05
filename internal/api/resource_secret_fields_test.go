@@ -54,6 +54,7 @@ var sensitiveFieldAllowlist = map[string]string{ //nolint:gosec // field names a
 	"mintSessionLinkResponse.Token":                     "show-once sign-in link token for the requester",
 	"mobilePairResponse.Token":                          "show-once mobile pairing token",
 	"imageUpdateWebhookResource.Token":                  "show-once on rotate",
+	"imageUpdateWebhookResource.SigningSecret":          "show-once on rotate",
 	"pipelineWebhookResource.Token":                     "show-once on mint or rotate",
 	"pipelineWebhookResource.Secret":                    "show-once on mint or rotate",
 	"teamInviteResource.Token":                          "show-once on invite creation",
