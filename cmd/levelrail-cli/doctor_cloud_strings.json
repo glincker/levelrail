@@ -1,0 +1,19 @@
+{
+  "generic_line": "Provider not detected. Allow inbound TCP 80 and 443 (keep 22 for SSH) in your provider's firewall or security group.",
+  "provider_line": "Provider: {name} (detected from {source})\nCreate these inbound rules:\n",
+  "rule_line": "  {rule} {protocol} {port} from {source}\n",
+  "console_line": "Console: {url}\n",
+  "step_line": "  {index}. {step}\n",
+  "note_line": "Note: {note}\n",
+  "docs_line": "Provider docs: {url}\n",
+  "rule_name_http": "{binary}-http",
+  "rule_name_https": "{binary}-https",
+  "flag_json": "print the rules as JSON to stdout and nothing else",
+  "usage": "Usage:\n  {prog} doctor cloud [--json]\n  {prog} doctor --cloud [--json]\n\nPrints the inbound firewall rules (names, ports 80 and 443) and the console\nlink for the cloud provider this server runs on, from its metadata service.\nAn unknown provider gets the generic ports line.\n\nFlags:\n",
+  "console_url.oracle": "https://cloud.oracle.com/",
+  "console_url.aws": "https://console.aws.amazon.com/",
+  "console_url.gcp": "https://console.cloud.google.com/",
+  "console_url.azure": "https://portal.azure.com/",
+  "console_url.digitalocean": "https://cloud.digitalocean.com/",
+  "console_url.hetzner": "https://console.hetzner.cloud/"
+}
