@@ -177,3 +177,27 @@ func TestGitHubRateLimit(t *testing.T) {
 		t.Fatalf("err = %v", err)
 	}
 }
+
+func TestEvaluateIgnoresOnTrimmedNameAndDropsEmpty(t *testing.T) {
+	checks := []Check{{"  Levelrail deploy / web", Failed}, {"   ", Failed}, {"test", Passed}}
+	res, done := evaluate(checks, Policy{IgnorePrefixes: []string{"levelrail deploy"}}, true)
+	if !done || res.Outcome != OutcomePass {
+		t.Fatalf("got %+v done %v", res, done)
+	}
+}
+
+func TestEvaluatePendingBeatsSkippedForTheSameName(t *testing.T) {
+	for _, order := range [][]Check{
+		{{"test", Skipped}, {"test", Pending}},
+		{{"test", Pending}, {"test", Skipped}},
+	} {
+		res, done := evaluate(order, Policy{Required: []string{"test"}}, true)
+		if done || len(res.Pending) != 1 || len(res.Failing) != 0 {
+			t.Fatalf("order %v: got %+v done %v", order, res, done)
+		}
+	}
+	res, done := evaluate([]Check{{"test", Skipped}}, Policy{Required: []string{"test"}}, true)
+	if !done || res.Outcome != OutcomeFail {
+		t.Fatalf("skipped required must fail, got %+v", res)
+	}
+}

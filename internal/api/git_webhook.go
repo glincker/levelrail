@@ -105,9 +105,10 @@ func (rt *Router) handleGitPushWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	pctx, outcome := withWebhookOutcome(r.Context())
+	pctx, gated := withCIGateMark(pctx)
 	status, message := rt.processGitPushWebhookPayload(pctx, name, *gs, body, r.Header)
 	// Only a delivery that started a deploy keeps its claim; rejected or ignored ones stay retryable.
-	if status >= http.StatusBadRequest || outcome.AttemptID == "" {
+	if (status >= http.StatusBadRequest || outcome.AttemptID == "") && !gated.Load() {
 		rt.webhookBodies.release(bodyKey)
 	}
 	deliveryErr, deliveryNote := "", ""
@@ -193,12 +194,28 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 		return http.StatusOK, msg
 	}
 
+	if gs.WaitForCI && (ev.Deleted || ev.After == zeroGitSHA) {
+		return http.StatusOK, "ignored: the ref was deleted, nothing to gate or deploy\n"
+	}
+	prevHead := rt.lastSeenHead(ctx, name)
 	rt.noteGitHead(ctx, name, ev.After)
-	if status, msg, handled := rt.admitGitPush(ctx, name, ev); handled {
+	gateSHA := gateCommitSHA(body, ev)
+	if gs.WaitForCI && gateSHA == "" && strings.HasPrefix(ev.Ref, "refs/tags/") {
+		status, msg := rt.startGatedTagResolve(ctx, name, gs, ev)
+		rt.restoreHeadIfRefused(ctx, name, ev.After, prevHead, status)
 		return status, msg
 	}
-	if msg := rt.gateOnCI(ctx, name, gs, ev.After); msg != "" {
-		return http.StatusOK, msg
+	if ciGateApplies(gs, gateSHA) {
+		gev := gatedPushEvent(ev, gateSHA)
+		if status, msg, handled := rt.admitGitPushCheck(ctx, name, gev); handled {
+			return status, msg
+		}
+		status, msg := rt.startGatedPush(ctx, name, gs, gev, gateSHA, prevHead)
+		rt.restoreHeadIfRefused(ctx, name, ev.After, prevHead, status)
+		return status, msg
+	}
+	if status, msg, handled := rt.admitGitPush(ctx, name, ev); handled {
+		return status, msg
 	}
 	queued, msg, release := rt.queueIfBusy(ctx, name, gs, deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: ev.After, CommitLabel: ev.After, CommitSHA: ev.After, Before: ev.Before, CommitAt: ev.HeadCommitAt, Branch: strings.TrimPrefix(ev.Ref, "refs/heads/")}, name+":"+ev.After)
 	defer release()
@@ -206,6 +223,14 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 		return http.StatusAccepted, msg
 	}
 	return rt.deployFromGitSource(withStartRelease(ctx, release), name, gs, ev.After, ev.After, rt.nextOrder(ctx, name, ev.After, ev.Before, ev.HeadCommitAt))
+}
+
+// restoreHeadIfRefused undoes noteGitHead when the gate refused the push (cap or
+// shutdown), because forges do not redeliver a 5xx; the poller then gates it.
+func (rt *Router) restoreHeadIfRefused(ctx context.Context, name, after, prevHead string, status int) {
+	if status >= http.StatusBadRequest {
+		rt.rollbackHead(ctx, name, after, prevHead)
+	}
 }
 
 // Routes GitHub's release event before ParsePushEventForProvider, since its payload is neither a push nor a pull_request.
@@ -279,13 +304,45 @@ func (rt *Router) processGitHubReleaseWebhookEvent(ctx context.Context, name str
 		return http.StatusBadRequest, "malformed payload"
 	}
 
-	label := dockerSafeTag(rel.TagName)
-	if held, msg := rt.holdIfFrozen(ctx, name, deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: "refs/tags/" + rel.TagName, CommitLabel: label}, name+":"+label); held {
+	if gs.WaitForCI {
+		// The tag is resolved inside the job and retried within the wait budget, so the
+		// forge gets its 202 at once and a tag that is not visible yet is not lost.
+		var pinned string
+		return rt.startGatedJob(ctx, ciGateJob{
+			name: name, gs: gs, tag: rel.TagName, sha: "tag:" + rel.TagName, label: rel.TagName, ref: "refs/tags/" + rel.TagName,
+			resolve: rt.tagPinner(name, gs, rel.TagName, &pinned),
+			run:     func(c context.Context) { rt.deployReleaseTag(c, name, gs, rel.TagName, pinned) },
+		})
+	}
+	return rt.deployReleaseTag(ctx, name, gs, rel.TagName, "")
+}
+
+// resolveReleaseTagSHA is a variable so tests can pin a tag without a git remote.
+var resolveReleaseTagSHA = resolveTagSHA
+
+// deployReleaseTag deploys a published release. pinned, when set, is the commit
+// the CI gate approved and is checked out instead of the movable tag.
+func (rt *Router) deployReleaseTag(ctx context.Context, name string, gs store.GitSource, tag, pinned string) (int, string) {
+	label := dockerSafeTag(tag)
+	ref := "refs/tags/" + tag
+	if pinned != "" {
+		ref = pinned
+	}
+	// A tag push and the release event of one annotated tag gate the same commit; the second must not deploy it again.
+	if pinned != "" {
+		rt.gitEnqueueMu.Lock()
+		state := rt.commitDeployState(ctx, name, pinned)
+		rt.gitEnqueueMu.Unlock()
+		if state != "" {
+			return http.StatusOK, fmt.Sprintf("ignored: commit %s is already %s\n", webhookShortSHA(pinned), state)
+		}
+	}
+	if held, msg := rt.holdIfFrozen(ctx, name, deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: ref, CommitLabel: label}, name+":"+label); held {
 		return http.StatusAccepted, msg
 	}
-	tagReq := deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: "refs/tags/" + rel.TagName, CommitLabel: label}
-	if _, protected, _ := rt.protectedEnvironmentOf(ctx, name); protected {
-		sha, err := rt.pinTagSHA(ctx, name, gs.RepoURL, rel.TagName)
+	tagReq := deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: ref, CommitLabel: label}
+	if _, protected, _ := rt.protectedEnvironmentOf(ctx, name); protected && pinned == "" {
+		sha, err := rt.pinTagSHA(ctx, name, gs.RepoURL, tag)
 		if err != nil {
 			rt.logger.Warn("api: git push webhook: resolve release tag failed", slog.String("name", name), slog.String("error", err.Error()))
 			return http.StatusServiceUnavailable, "deferred: the release tag could not be resolved, retry later\n"
@@ -295,12 +352,12 @@ func (rt *Router) processGitHubReleaseWebhookEvent(ctx context.Context, name str
 	if handled, status, hmsg := rt.holdIfProtected(ctx, name, tagReq, name+":"+label, store.DeployAttemptSourceWebhook, SystemApprovalActor); handled {
 		return status, hmsg
 	}
-	queued, msg, release := rt.queueIfBusy(ctx, name, gs, deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: "refs/tags/" + rel.TagName, CommitLabel: label}, name+":"+label)
+	queued, msg, release := rt.queueIfBusy(ctx, name, gs, deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: ref, CommitLabel: label}, name+":"+label)
 	defer release()
 	if queued {
 		return http.StatusAccepted, msg
 	}
-	return rt.deployFromGitSource(withStartRelease(ctx, release), name, gs, "refs/tags/"+rel.TagName, label, rt.nextOrder(ctx, name, "", "", time.Time{}))
+	return rt.deployFromGitSource(withStartRelease(ctx, release), name, gs, ref, label, rt.nextOrder(ctx, name, "", "", time.Time{}))
 }
 
 // dockerSafeTag makes tagName safe to use as a Docker image tag

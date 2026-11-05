@@ -9,6 +9,8 @@ const (
 	KeyDeployPreviousReleaseHold = "deploy.previous_release_hold"
 	KeyDeployStableWindow        = "deploy.stable_window"
 	KeyDeployWatchWindow         = "deploy.watch_window"
+	// KeyDeployCIGateMaxWaits caps the CI gate waits one app may hold at once, one per ref.
+	KeyDeployCIGateMaxWaits      = "deploy.ci_gate_max_waits_per_app"
 	minDeployDrainTimeout        = time.Second
 	maxDeployDrainTimeout        = 10 * time.Minute
 	maxDeployPreviousReleaseHold = time.Hour
@@ -18,6 +20,12 @@ const (
 )
 
 func init() {
+	Register(Definition{
+		Key: KeyDeployCIGateMaxWaits, Category: CategoryDeploys, Kind: KindInt, Default: "4",
+		Env: "APP_CI_GATE_MAX_WAITS_PER_APP", Apply: ApplyLive, CheckValue: intRangeCheck(1, 50),
+		Title:       "CI gate waits per app",
+		Description: "How many refs of one app may wait for CI at once. A newer deploy of the same ref replaces the wait; one past the limit is refused and can be retried.",
+	})
 	Register(Definition{
 		Key: KeyDeployDrainTimeout, Category: CategoryDeploys, Kind: KindDuration, Default: "15s",
 		Env: "APP_DEPLOY_DRAIN_TIMEOUT", Apply: ApplyLive, CheckValue: durationRangeCheck(minDeployDrainTimeout, maxDeployDrainTimeout),

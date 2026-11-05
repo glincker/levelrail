@@ -52,6 +52,14 @@ func gitlabProjectPathFromURL(repoURL, instanceURL string) (path string, ok bool
 		return "", false
 	}
 	path = strings.TrimSuffix(strings.Trim(u.Path, "/"), ".git")
+	// A relative-root instance (https://host/gitlab) prefixes every repo URL.
+	if prefix := strings.Trim(inst.Path, "/"); prefix != "" {
+		rest, found := strings.CutPrefix(path, prefix+"/")
+		if !found {
+			return "", false
+		}
+		path = rest
+	}
 	if path == "" {
 		return "", false
 	}

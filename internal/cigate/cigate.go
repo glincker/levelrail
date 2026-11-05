@@ -34,6 +34,9 @@ const (
 	Pending State = iota
 	Passed
 	Failed
+	// Skipped is a soft pass: a skipped job or an allowed failure. It does not
+	// block in all-checks mode but never satisfies a required name.
+	Skipped
 )
 
 // Check is one check run or commit status as the provider reports it.
@@ -151,6 +154,11 @@ func sleepCtx(ctx context.Context, d time.Duration) error {
 	}
 }
 
+// TerminalError marks a read failure that retrying cannot fix.
+type TerminalError struct{ Reason string }
+
+func (e *TerminalError) Error() string { return "cigate: " + e.Reason }
+
 // Wait polls p until every gated check concludes or the timeout passes.
 // A failed check ends the wait at once. Read errors are retried until the
 // timeout, so a flaky provider never reads as a pass.
@@ -172,6 +180,10 @@ func Wait(ctx context.Context, p Provider, sha string, pol Policy, cfg Config) (
 				interval += cfg.PollInterval / 2
 			}
 		} else {
+			var term *TerminalError
+			if errors.As(err, &term) {
+				return Result{Outcome: OutcomeFail, Failing: []string{term.Reason}}, nil
+			}
 			var rl *RateLimitError
 			if errors.As(err, &rl) && rl.RetryAfter > wait {
 				wait = rl.RetryAfter
@@ -189,33 +201,39 @@ func Wait(ctx context.Context, p Provider, sha string, pol Policy, cfg Config) (
 
 // evaluate returns the verdict so far and whether it is final.
 func evaluate(all []Check, pol Policy, noChecksGraceOver bool) (Result, bool) {
-	seen := map[string]State{}
+	seen := map[string]Check{}
 	for _, c := range all {
-		if ignored(c.Name, pol.IgnorePrefixes) {
+		name := strings.TrimSpace(c.Name)
+		if name == "" || ignored(name, pol.IgnorePrefixes) {
 			continue
 		}
-		// A rerun reports the same name again; a failure must not be hidden by an earlier pass.
-		if prev, ok := seen[c.Name]; ok && prev == Failed {
+		// A rerun reports the same name again; keep the worst so a failure is never hidden.
+		c.Name = name
+		if prev, ok := seen[name]; ok && severity(prev) >= severity(c) {
 			continue
 		}
-		seen[c.Name] = c.State
+		seen[name] = c
 	}
 	gated := map[string]bool{}
-	if len(pol.Required) == 0 {
+	required := map[string]bool{}
+	for _, n := range pol.Required {
+		if n = strings.TrimSpace(n); n != "" {
+			gated[n] = true
+			required[n] = true
+		}
+	}
+	if len(required) == 0 {
 		for n := range seen {
 			gated[n] = true
 		}
 	}
-	for _, n := range pol.Required {
-		gated[n] = true
-	}
 	var res Result
 	for n := range gated {
-		st, ok := seen[n]
+		c, ok := seen[n]
 		switch {
-		case ok && st == Failed:
+		case ok && c.State == Failed, ok && c.State == Skipped && required[n]:
 			res.Failing = append(res.Failing, n)
-		case !ok || st == Pending:
+		case !ok || c.State == Pending:
 			res.Pending = append(res.Pending, n)
 		}
 	}
@@ -232,6 +250,18 @@ func evaluate(all []Check, pol Policy, noChecksGraceOver bool) (Result, bool) {
 	}
 	res.Outcome = OutcomePass
 	return res, true
+}
+
+func severity(c Check) int {
+	switch c.State {
+	case Failed:
+		return 3
+	case Pending:
+		return 2
+	case Skipped:
+		return 1
+	}
+	return 0
 }
 
 func ignored(name string, prefixes []string) bool {

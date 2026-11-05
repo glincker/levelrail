@@ -39,6 +39,13 @@ func (rt *Router) triggerGitDeploy(ctx context.Context, serviceName, branch, sou
 
 	targeted := *gs
 	targeted.Branch = branch
+	if ciGateApplies(targeted, sha) {
+		status, message := rt.startGatedBranchDeploy(ctx, serviceName, targeted, sha, source)
+		if status >= http.StatusBadRequest {
+			return "", errors.New(strings.TrimSpace(message))
+		}
+		return strings.TrimSpace(message), nil
+	}
 	status, message := rt.deployFromGitSourceAs(ctx, serviceName, targeted, sha, sha, rt.nextOrder(ctx, serviceName, sha, "", time.Time{}), source)
 	message = strings.TrimSpace(message)
 	if status >= http.StatusBadRequest {

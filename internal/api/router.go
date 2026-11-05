@@ -490,6 +490,7 @@ type Router struct {
 	quotaMu sync.Mutex
 	// previewDeploys tracks approval-triggered background deploys.
 	previewDeploys sync.WaitGroup
+	ciGate         atomic.Pointer[ciGateTracker]
 	// previewStuckAfter is how long a preview may sit in deploying before the
 	// orphan sweep marks it failed (WithPreviewStuckAfter).
 	previewStuckAfter time.Duration

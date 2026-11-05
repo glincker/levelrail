@@ -389,9 +389,13 @@ func (rt *Router) prCommandRedeploy(ctx context.Context, name string, gs store.G
 		return prNotRun + why + "."
 	}
 	ctx = context.WithValue(ctx, commitMetaKey{}, commitMeta{Branch: branch, Author: ev.Commenter, Message: fmt.Sprintf("Redeploy requested by PR comment on #%d", ev.Number)})
-	if _, err := rt.triggerGitDeploy(ctx, name, branch, store.DeployAttemptSourcePRComment); err != nil {
+	msg, err := rt.triggerGitDeploy(ctx, name, branch, store.DeployAttemptSourcePRComment)
+	if err != nil {
 		rt.logger.Error("api: pr comment redeploy failed", slog.String("error", err.Error()), slog.String("app_name", name))
 		return "Redeploy failed. See the deploy history in the dashboard."
+	}
+	if strings.HasPrefix(msg, gatedAcceptedPrefix) {
+		return "Redeploy of " + codeSpan(branch) + " is waiting for CI and runs when it passes."
 	}
 	return "Redeploy of " + codeSpan(branch) + " finished."
 }
