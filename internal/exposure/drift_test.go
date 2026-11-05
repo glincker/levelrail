@@ -146,3 +146,44 @@ tcp LISTEN 0 4096 0.0.0.0:9999 0.0.0.0:*
 		t.Errorf("unknown owner must fall back, got %q", m)
 	}
 }
+
+func TestListenerDriftSkipsOwnPorts(t *testing.T) {
+	ls := []Listener{
+		{Protocol: "udp", Address: "0.0.0.0", Port: 5390, Process: "levelrail", PID: 7},
+		{Protocol: "tcp", Address: "[::]", Port: 5390, Process: "levelrail", PID: 7},
+		{Protocol: "udp", Address: "0.0.0.0", Port: 51820, Process: "levelrail", PID: 7},
+		{Protocol: "tcp", Address: "0.0.0.0", Port: 443, Process: "levelrail", PID: 7},
+	}
+	own := []OwnListener{{Port: 5390}, {Port: 51820, Protocol: "udp"}}
+	if got := CheckDrift(DriftInput{Listeners: ls, Own: own, Known: []int{443}, Prefix: driftPrefix}); len(got) != 0 {
+		t.Fatalf("own ports must not drift: %+v", got)
+	}
+	// A custom mesh port is read from config, so the old default now warns.
+	got := CheckDrift(DriftInput{Listeners: ls[2:3], Own: []OwnListener{{Port: 51999, Protocol: "udp"}}, Prefix: driftPrefix})
+	if len(got) != 1 || got[0].Port != 51820 {
+		t.Fatalf("a port not declared must still warn: %+v", got)
+	}
+	got = CheckDrift(DriftInput{Listeners: ls[:1], Own: []OwnListener{{Port: 5390, Protocol: "tcp"}}, Prefix: driftPrefix})
+	if len(got) != 1 {
+		t.Fatalf("protocol mismatch must warn: %+v", got)
+	}
+}
+
+func TestListenerDriftGroupsByProcess(t *testing.T) {
+	ls := []Listener{
+		{Protocol: "tcp", Address: "0.0.0.0", Port: 8080, Process: "foo", PID: 9},
+		{Protocol: "tcp", Address: "[::]", Port: 8080, Process: "foo", PID: 9},
+		{Protocol: "udp", Address: "*", Port: 9090, Process: "foo", PID: 9},
+		{Protocol: "tcp", Address: "0.0.0.0", Port: 7000},
+		{Protocol: "tcp", Address: "[::]", Port: 7000},
+	}
+	got := CheckDrift(DriftInput{Listeners: ls, Prefix: driftPrefix})
+	if len(got) != 2 {
+		t.Fatalf("want one row per process and one for the unnamed port, got %+v", got)
+	}
+	for _, f := range got {
+		if f.Port == 8080 && (len(f.Ports) != 2 || f.Ports[0] != "tcp/8080" || f.Ports[1] != "udp/9090" || !strings.Contains(f.Message, "tcp/8080, udp/9090") || f.Fix == "") {
+			t.Fatalf("grouped row wrong: %+v", f)
+		}
+	}
+}

@@ -30,7 +30,6 @@ import (
 const (
 	meshKeyFilename      = "mesh-node.key"
 	localNodeIDFilename  = "mesh-node.id"
-	defaultMeshDNSAddr   = ":5390"
 	defaultLocalNodeName = "local"
 )
 
@@ -51,10 +50,7 @@ func meshEnabled(ctx context.Context, db *store.DB, logger *slog.Logger) bool {
 
 // Defaults to an unprivileged port so the process can bind without root.
 func meshDNSAddr() string {
-	if v := os.Getenv("APP_MESH_DNS_ADDR"); v != "" {
-		return v
-	}
-	return defaultMeshDNSAddr
+	return network.ResolveDNSAddr(os.LookupEnv)
 }
 
 // An invalid override is treated as absent so the control plane still starts.
