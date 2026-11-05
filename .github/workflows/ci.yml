@@ -780,6 +780,9 @@ jobs:
         working-directory: web
         run: npm run check-bundle-size
 
+      - name: UI tells ratchet
+        run: sh scripts/check-ui-tells.sh
+
       # eslint on the full tree still has a pre-existing backlog (mostly
       # routeTree.gen.ts-related no-unsafe-* noise), so scope to changed
       # files only, same as the pre-commit hook does.
