@@ -217,5 +217,43 @@
   "more": {
     "title": "Get ready for production",
     "help": "These make the server safer for real users. None of them blocks your first deploy."
+  },
+  "strip": {
+    "title": "Get your first app live",
+    "live": "Your app is live",
+    "open": "Open",
+    "addDomain": "Add domain",
+    "continue": "Continue",
+    "deploy": "Deploy sample app",
+    "deploying": "Deploying...",
+    "review": "Review",
+    "gitUrl": "Or deploy a Git URL",
+    "viewApp": "View app",
+    "steps": {
+      "server": {
+        "title": "Check the server",
+        "todo": "Checking...",
+        "done": "All checks pass",
+        "attention": "Needs a look",
+        "failed": "A check failed",
+        "working": "Checking..."
+      },
+      "domain": {
+        "title": "Address",
+        "todo": "A generated address is used",
+        "done": "Domain set",
+        "working": "Issuing the certificate",
+        "failed": "Certificate failed",
+        "attention": "Needs a look"
+      },
+      "deploy": {
+        "title": "Deploy",
+        "todo": "Sample app or a Git URL",
+        "working": "Starting the app",
+        "done": "Running",
+        "failed": "Deploy failed",
+        "attention": "Needs a look"
+      }
+    }
   }
 }

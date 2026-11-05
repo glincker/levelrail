@@ -217,5 +217,43 @@
   "more": {
     "title": "Deja todo listo para producción",
     "help": "Estos pasos hacen más seguro el servidor para usuarios reales. Ninguno bloquea tu primer despliegue."
+  },
+  "strip": {
+    "title": "Pon tu primera aplicación en vivo",
+    "live": "Tu aplicación está en vivo",
+    "open": "Abrir",
+    "addDomain": "Añadir dominio",
+    "continue": "Continuar",
+    "deploy": "Desplegar app de ejemplo",
+    "deploying": "Desplegando...",
+    "review": "Revisar",
+    "gitUrl": "O desplegar una URL de Git",
+    "viewApp": "Ver aplicación",
+    "steps": {
+      "server": {
+        "title": "Revisar el servidor",
+        "todo": "Revisando...",
+        "done": "Todas las comprobaciones pasan",
+        "attention": "Requiere atención",
+        "failed": "Una comprobación falló",
+        "working": "Revisando..."
+      },
+      "domain": {
+        "title": "Dirección",
+        "todo": "Se usa una dirección generada",
+        "done": "Dominio configurado",
+        "working": "Emitiendo el certificado",
+        "failed": "Falló el certificado",
+        "attention": "Requiere atención"
+      },
+      "deploy": {
+        "title": "Desplegar",
+        "todo": "App de ejemplo o una URL de Git",
+        "working": "Iniciando la aplicación",
+        "done": "En ejecución",
+        "failed": "Falló el despliegue",
+        "attention": "Requiere atención"
+      }
+    }
   }
 }

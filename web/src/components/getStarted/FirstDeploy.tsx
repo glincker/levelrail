@@ -60,8 +60,8 @@ export function FirstDeploy({
   onDone,
   secondary = false,
 }: {
-  onStarted: () => void
-  onDone: () => void
+  onStarted?: () => void
+  onDone?: () => void
   /** True when another card (setup) owns the primary action; deploy paths then fold away. */
   secondary?: boolean
 }) {
@@ -82,7 +82,7 @@ export function FirstDeploy({
 
   function track() {
     setTracking(Date.now())
-    onStarted()
+    onStarted?.()
   }
 
   function deploySample() {
