@@ -205,7 +205,7 @@ export function SSHProvisionProgress({
 
 function SSHProvisionLog({ log }: { log: string }) {
   return (
-    <pre className="max-h-40 overflow-y-auto rounded-lg border border-border bg-muted/30 p-2 font-mono text-[11px] whitespace-pre-wrap text-muted-foreground">
+    <pre className="max-h-40 overflow-y-auto rounded-lg border border-border bg-muted/30 p-2 font-mono text-xs whitespace-pre-wrap text-muted-foreground">
       {log}
     </pre>
   )

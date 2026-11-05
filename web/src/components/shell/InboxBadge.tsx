@@ -25,7 +25,7 @@ export function InboxBadge() {
       {unread > 0 ? (
         <span
           aria-hidden="true"
-          className="absolute -top-1 -right-1 flex size-3.5 items-center justify-center rounded-full bg-destructive text-[9px] font-semibold text-white"
+          className="absolute -top-1 -right-1 flex size-3.5 items-center justify-center rounded-full bg-destructive text-xs font-semibold text-white"
         >
           {unread > 9 ? '9+' : unread}
         </span>

@@ -82,7 +82,7 @@ export function PipelineOverviewTable({
         className="h-[60vh] overflow-auto rounded-lg border border-border bg-card"
       >
         <div
-          className={`${GRID} sticky top-0 z-10 border-b border-border bg-card py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase`}
+          className={`${GRID} sticky top-0 z-10 border-b border-border bg-card py-2 text-[13px] font-medium text-muted-foreground`}
         >
           <span>Status</span>
           <span>Run</span>

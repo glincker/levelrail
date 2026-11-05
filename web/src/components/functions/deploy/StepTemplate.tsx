@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { PRESETS, type Preset, type PresetKind } from './presets'
+import { SectionTitle } from '@/components/ui/typography'
 
 const GROUPS: {
   kinds: PresetKind[]
@@ -64,9 +65,7 @@ export function StepTemplate({
       </h3>
       {GROUPS.map((g) => (
         <section key={g.titleKey} className="space-y-2">
-          <h4 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-            {t(g.titleKey)}
-          </h4>
+          <SectionTitle as="h4">{t(g.titleKey)}</SectionTitle>
           <div className="grid gap-2 sm:grid-cols-2">
             {PRESETS.filter((p) => g.kinds.includes(p.kind)).map((p) => (
               <PresetCard

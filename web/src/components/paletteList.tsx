@@ -21,7 +21,7 @@ function Header({ label, shortcut }: { label: string; shortcut?: number }) {
     >
       {label}
       {shortcut && shortcut <= GROUP_SHORTCUTS ? (
-        <span className="font-mono text-[11px] opacity-70">⌥{shortcut}</span>
+        <span className="font-mono text-xs opacity-70">⌥{shortcut}</span>
       ) : null}
     </p>
   )

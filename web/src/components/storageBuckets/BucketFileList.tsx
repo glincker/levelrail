@@ -94,7 +94,7 @@ export function BucketFileList({
     <div className="space-y-2">
       <div className="rounded-lg border border-border bg-card">
         <div
-          className={`${GRID} border-b border-border py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase`}
+          className={`${GRID} border-b border-border py-2 text-xs font-medium text-muted-foreground`}
         >
           <span>{t('browser.colName')}</span>
           <span>{t('browser.colSize')}</span>

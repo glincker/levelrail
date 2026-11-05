@@ -59,7 +59,7 @@ export function EnvPill({ d }: { d: Deployment }) {
     <span
       title={current ? 'Current production release' : d.environment}
       className={cn(
-        'inline-flex h-5 shrink-0 items-center rounded-full border px-2 text-[11px] font-medium capitalize',
+        'inline-flex h-5 shrink-0 items-center rounded-full border px-2 text-xs font-medium capitalize',
         current
           ? 'border-tone-accent-border bg-tone-accent-soft text-tone-accent'
           : 'border-border text-muted-foreground',
@@ -76,7 +76,7 @@ export function Author({ name }: { name: string }) {
   return (
     <span
       title={name}
-      className="flex size-5 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-medium text-muted-foreground"
+      className="flex size-5 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground"
     >
       <span aria-hidden="true">{initials(name)}</span>
       <span className="sr-only">{name}</span>

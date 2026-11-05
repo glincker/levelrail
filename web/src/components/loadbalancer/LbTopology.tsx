@@ -169,14 +169,14 @@ export function LbTopology({
                 <text
                   x={UP.x + 38}
                   y={cy - 3}
-                  className="fill-foreground text-[12px] font-medium"
+                  className="fill-foreground text-xs font-medium"
                 >
                   {`Replica ${u.replica}`}
                 </text>
                 <text
                   x={UP.x + 38}
                   y={cy + 12}
-                  className="fill-muted-foreground text-[11px]"
+                  className="fill-muted-foreground text-xs"
                 >
                   {`${view.label}${pct.get(u.id) ? `, ${formatShare(pct.get(u.id) ?? 0, algorithm)}` : ''}`}
                 </text>
@@ -189,7 +189,7 @@ export function LbTopology({
           <text
             x={UP.x}
             y={height - 8}
-            className="fill-muted-foreground text-[11px]"
+            className="fill-muted-foreground text-xs"
           >{`+${hidden} more in the table below`}</text>
         ) : null}
 
@@ -206,7 +206,7 @@ export function LbTopology({
             x={CLIENT.x + CLIENT.w / 2}
             y={midY + 4}
             textAnchor="middle"
-            className="fill-foreground text-[12px] font-medium"
+            className="fill-foreground text-xs font-medium"
           >
             Clients
           </text>
@@ -224,7 +224,7 @@ export function LbTopology({
             x={PROXY.x + PROXY.w / 2}
             y={midY - 2}
             textAnchor="middle"
-            className="fill-foreground text-[12px] font-medium"
+            className="fill-foreground text-xs font-medium"
           >
             Proxy
           </text>
@@ -232,7 +232,7 @@ export function LbTopology({
             x={PROXY.x + PROXY.w / 2}
             y={midY + 13}
             textAnchor="middle"
-            className="fill-muted-foreground text-[11px]"
+            className="fill-muted-foreground text-xs"
           >
             {algorithm.replace('_', ' ')}
           </text>

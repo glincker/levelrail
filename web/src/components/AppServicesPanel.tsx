@@ -43,7 +43,7 @@ export function AppServicesPanel({ appName }: { appName: string }) {
               {svc.name}
             </Link>
             {svc.name === appName ? (
-              <Badge variant="muted" className="px-1.5 text-[10px]">
+              <Badge variant="muted" className="px-1.5 text-xs">
                 this app
               </Badge>
             ) : null}

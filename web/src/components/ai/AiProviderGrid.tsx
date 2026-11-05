@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import type { AiProvider } from '../../queries/aiProviders'
 import { AiProviderCard } from './AiProviderCard'
 import { groupProviders } from './aiProviderState'
+import { SectionTitle } from '@/components/ui/typography'
 
 function Group({
   title,
@@ -17,11 +18,7 @@ function Group({
   if (providers.length === 0) return null
   return (
     <section className="space-y-3">
-      {title ? (
-        <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-          {title}
-        </h3>
-      ) : null}
+      {title ? <SectionTitle>{title}</SectionTitle> : null}
       <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {providers.map((p) => (
           <li key={p.id} className="flex">

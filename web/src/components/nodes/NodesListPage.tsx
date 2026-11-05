@@ -24,7 +24,7 @@ function ListHeader() {
   const { t } = useTranslation('nodes')
   return (
     <div
-      className={`${NODE_LIST_GRID} sticky top-0 z-10 hidden border-b border-border bg-card px-4 py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase lg:grid`}
+      className={`${NODE_LIST_GRID} sticky top-0 z-10 hidden border-b border-border bg-card px-4 py-2 text-xs font-medium text-muted-foreground lg:grid`}
     >
       <span aria-hidden="true" />
       <span>{t('list.name')}</span>

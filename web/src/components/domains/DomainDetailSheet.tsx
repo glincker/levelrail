@@ -20,13 +20,12 @@ import { DomainTLSCertControl } from '../DomainTLSCertControl'
 import { DomainWafControl } from '../DomainWafControl'
 import { ProxyDomainStatus } from '../ProxyDomainStatus'
 import { DomainRollbackStrip } from './DomainRollbackStrip'
+import { SectionTitle } from '@/components/ui/typography'
 
 function Group({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="space-y-2">
-      <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-        {title}
-      </h3>
+      <SectionTitle>{title}</SectionTitle>
       <div className="space-y-2">{children}</div>
     </section>
   )

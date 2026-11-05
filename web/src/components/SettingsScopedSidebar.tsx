@@ -364,7 +364,7 @@ export function SettingsScopedSidebar() {
                       {section.title}
                     </span>
                     <span
-                      className="text-[11px] text-sidebar-foreground/45 tabular-nums"
+                      className="text-xs text-sidebar-foreground/45 tabular-nums"
                       title={t('nav.groupCount', {
                         count: section.items.length,
                       })}

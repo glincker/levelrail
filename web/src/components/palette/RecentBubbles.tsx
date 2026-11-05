@@ -37,7 +37,7 @@ export function RecentBubbles({
     >
       {shown.map((group) => (
         <div key={group.id} className="flex shrink-0 items-center gap-1.5">
-          <span className="pr-1 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+          <span className="pr-1 text-xs font-medium text-muted-foreground">
             {group.label}
           </span>
           {group.bubbles.map((b) => (
@@ -77,7 +77,7 @@ export function RecentBubbles({
         type="button"
         tabIndex={-1}
         onClick={onClear}
-        className="shrink-0 rounded-full px-2 py-1 text-[11px] text-muted-foreground underline-offset-2 outline-none hover:text-foreground hover:underline focus-visible:ring-2 focus-visible:ring-ring/60"
+        className="shrink-0 rounded-full px-2 py-1 text-xs text-muted-foreground underline-offset-2 outline-none hover:text-foreground hover:underline focus-visible:ring-2 focus-visible:ring-ring/60"
       >
         {t('bubbles.clear')}
       </button>

@@ -52,7 +52,7 @@ function SampleRows() {
 function ListHeader() {
   return (
     <div
-      className={`${MODEL_LIST_GRID} sticky top-0 z-10 border-b border-border bg-card px-4 py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase`}
+      className={`${MODEL_LIST_GRID} sticky top-0 z-10 border-b border-border bg-card px-4 py-2 text-[13px] font-medium text-muted-foreground`}
     >
       <span>Model</span>
       <span>Engine</span>

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { SectionTitle } from '@/components/ui/typography'
 import { useTranslation } from 'react-i18next'
 import {
   DatabaseGlassIcon,
@@ -362,9 +363,7 @@ export function CreateResourceWizard({
             ) : null}
             {filteredApplications.length > 0 ? (
               <div className="space-y-2">
-                <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                  Applications
-                </h3>
+                <SectionTitle as="h3">Applications</SectionTitle>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                   {filteredApplications.map((option) => (
                     <OptionCard
@@ -382,9 +381,7 @@ export function CreateResourceWizard({
             {showDatabases ? (
               <div className="space-y-2">
                 {scope !== 'databases' && pickerEntries.length > 0 ? (
-                  <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                    Databases
-                  </h3>
+                  <SectionTitle as="h3">Databases</SectionTitle>
                 ) : null}
                 <DatabasePicker
                   entries={pickerEntries}

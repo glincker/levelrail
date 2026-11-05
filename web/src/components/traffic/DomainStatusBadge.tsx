@@ -69,7 +69,7 @@ export function DomainStatusBadge({
         data-status={status}
         title={reasonText}
         aria-describedby={reasonText ? describedBy : undefined}
-        className={cn(size === 'sm' && 'px-1.5 text-[11px]', className)}
+        className={cn(size === 'sm' && 'px-1.5 text-xs', className)}
       >
         <StatusIcon
           size="1.4em"

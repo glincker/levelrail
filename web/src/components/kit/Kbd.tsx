@@ -8,7 +8,7 @@ export function Kbd({ keys }: KbdProps) {
       {keys.map((k, i) => (
         <kbd
           key={`${k}-${i}`}
-          className="inline-flex h-5 min-w-5 items-center justify-center rounded-md border border-border bg-muted px-1.5 font-sans text-[11px] font-medium text-muted-foreground shadow-raised"
+          className="inline-flex h-5 min-w-5 items-center justify-center rounded-md border border-border bg-muted px-1.5 font-sans text-xs font-medium text-muted-foreground shadow-raised"
         >
           {k}
         </kbd>

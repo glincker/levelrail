@@ -66,7 +66,7 @@ export function PalettePreview({ item, onRun, onSecondary }: Props) {
           {pv.facts.map((f) => (
             <li
               key={f}
-              className="rounded-full border border-border bg-background px-2 py-0.5 text-[11px] text-muted-foreground"
+              className="rounded-full border border-border bg-background px-2 py-0.5 text-xs text-muted-foreground"
             >
               {f}
             </li>
@@ -74,7 +74,7 @@ export function PalettePreview({ item, onRun, onSecondary }: Props) {
         </ul>
       ) : null}
       {pv?.path ? (
-        <p className="truncate font-mono text-[11px] text-muted-foreground">
+        <p className="truncate font-mono text-xs text-muted-foreground">
           {pv.path}
         </p>
       ) : null}

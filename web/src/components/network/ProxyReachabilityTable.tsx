@@ -138,7 +138,7 @@ export function ProxyReachabilityTable({
                 volumeCount={app?.volumes?.length ?? 0}
                 volumeNames={app?.volumes?.map((v) => v.name) ?? []}
               />
-              <span className="text-right text-[11px] text-muted-foreground">
+              <span className="text-right text-xs text-muted-foreground">
                 {row.reason ?? t('fix.explanation')}
               </span>
             </div>
@@ -183,7 +183,7 @@ function TlsCell({ row }: { row: NetworkProxyDomain }) {
     <div className="flex flex-col items-start gap-0.5">
       <Badge variant={meta.variant}>{meta.label}</Badge>
       {row.tls_source ? (
-        <span className="text-[11px] text-muted-foreground">
+        <span className="text-xs text-muted-foreground">
           {row.tls_source === 'custom'
             ? t('tlsSource.custom')
             : t('tlsSource.acme')}

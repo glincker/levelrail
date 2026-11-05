@@ -51,7 +51,7 @@ export function WhatsNewPanel() {
         {unread > 0 ? (
           <span
             aria-hidden="true"
-            className="absolute -top-1 -right-1 flex size-3.5 items-center justify-center rounded-full bg-primary text-[9px] font-semibold text-primary-foreground"
+            className="absolute -top-1 -right-1 flex size-3.5 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground"
           >
             {unread > 9 ? '9+' : unread}
           </span>

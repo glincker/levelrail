@@ -70,7 +70,7 @@ export function CpuFitSummary({
           ) : null}
         </div>
       ) : null}
-      <p className="text-[11px] text-muted-foreground">{fit.note}</p>
+      <p className="text-xs text-muted-foreground">{fit.note}</p>
     </div>
   )
 }

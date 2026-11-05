@@ -129,13 +129,13 @@ function HeroSvg() {
             x="535"
             y="153"
             textAnchor="middle"
-            className="fill-foreground text-[10px]"
+            className="fill-foreground text-xs"
           >
             {t('hero.notice')}
           </text>
         </g>
         <circle className="lr-packet fill-primary" cx="100" cy="151" r="6" />
-        <g className="fill-muted-foreground text-[10px]" textAnchor="middle">
+        <g className="fill-muted-foreground text-xs" textAnchor="middle">
           <text x="111" y="188">
             {t('hero.site')}
           </text>

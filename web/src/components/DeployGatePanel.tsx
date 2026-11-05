@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { SectionTitle } from '@/components/ui/typography'
 import {
   CircleCheckGlassIcon,
   CircleXGlassIcon,
@@ -111,9 +112,7 @@ export function GateView({ gate }: { gate: DeployGate }) {
   return (
     <section className="space-y-3" aria-label={t('gate.title')}>
       <div className="flex flex-wrap items-center gap-2">
-        <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          {t('gate.title')}
-        </h3>
+        <SectionTitle as="h3">{t('gate.title')}</SectionTitle>
         <StatusBadge
           tone={STAGE_TONE[gate.stage]}
           label={t(`stage.${gate.stage}`)}

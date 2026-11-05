@@ -58,9 +58,7 @@ export function ReadinessRing({
           {score === null ? '-' : score}
         </span>
         {score === null ? null : (
-          <span className="text-xs uppercase tracking-wider text-muted-foreground">
-            %
-          </span>
+          <span className="text-xs text-muted-foreground">%</span>
         )}
       </div>
     </div>

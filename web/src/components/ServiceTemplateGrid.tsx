@@ -28,6 +28,7 @@ import { TemplateLogoTile } from './TemplateLogoTile'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { SectionTitle } from '@/components/ui/typography'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatBytes } from '../lib/format'
@@ -222,9 +223,7 @@ export function ServiceTemplateGrid({
         <div className="space-y-4">
           {categories.map((category) => (
             <div key={category} className="space-y-2">
-              <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                {category}
-              </h3>
+              <SectionTitle as="h3">{category}</SectionTitle>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
                 {filtered
                   .filter((template) => template.category === category)
