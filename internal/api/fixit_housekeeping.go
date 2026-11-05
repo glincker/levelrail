@@ -83,6 +83,8 @@ func (rt *Router) housekeepingFixes() []fixit.Fix {
 			},
 		}),
 	}
+	fixes = append(fixes, rt.controlPlaneDRFix())
+	fixes = append(fixes, rt.drillTargetFixes()...)
 	if rt.authLib.tokens != nil {
 		eng := rt.authLib.tokens
 		fixes = append(fixes, fixit.LegacyTokensFix(fixit.LegacyTokensDeps{
