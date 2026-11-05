@@ -112,6 +112,7 @@ type postureInput struct {
 	OpenSAML          []string
 	SAMLKnown         bool
 	MicrosoftNoTenant bool
+	Agent             agentPostureInput
 }
 
 func pass(id, sev string) postureItem {
@@ -230,6 +231,7 @@ func evaluatePosture(in postureInput) []postureItem {
 		agentsRule(in),
 		anomalyRule(in),
 	}
+	items = append(items, agentPostureRules(in)...)
 	if profile.For(profile.Active()).Recommendations {
 		for i := range items {
 			if items[i].ID == "offbox_backup_off" || items[i].ID == "master_key_rotation" {

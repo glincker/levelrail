@@ -36,6 +36,12 @@ Anyone with `read` gets the score and counts, plus a short checklist for their o
 | Only password sign-ins need new browser approval | low | `auth.approval_scope` | one click: every method |
 | The master key is missing, or was rotated longer ago than the warn window | low | rotation history, `APP_DOCTOR_MASTER_KEY_ROTATION_WARN_DAYS` | `secrets rotate-master-key` |
 | Secrets older than 90 days | low | secret update times | rotate the secret |
+| Production environments without protection | high | environments of kind production and their protected flag | Settings > Environments |
+| API tokens that can write or deploy but have no agent name | medium | live tokens, their abilities and agent label (AI control only governs labelled tokens) | Settings > API tokens |
+| AI control is in admin mode | medium | AI control mode | Settings > AI control |
+| Agent tokens can change production | medium | labelled tokens that can write or deploy, AI control mode and allowed environment kinds | Settings > AI control |
+| Production apps with no deploy policy or freeze window | medium | deploy policies at org, project and environment level, freeze windows | Settings > Deploy policies |
+| The audit log is not sent anywhere | low | enabled audit export destinations | Settings > Data export |
 
 ### Recommendations on a fresh server
 
@@ -147,3 +153,9 @@ Find and restrict container ports the internet can reach.
 
 </Card>
 </CardGroup>
+
+## Agent and deploy-safety checks
+
+The six checks for agent access, protected environments, deploy guards and audit export read only counts, flags and settings, never a token value. They show as **Recommended** and cost no score until an app is deployed (or `APP_SECURITY_POSTURE_STRICT=true`), so a fresh install is not marked down. The off-box audit anchor check already covers the anchor.
+
+For CI, `levelrail-cli security posture --fail-under 80` exits 1 when the score is below the value. The full checklist needs a root token.
