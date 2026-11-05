@@ -219,6 +219,16 @@ Single-server deployments are production ready today. Multi-node and a handful o
 | Verified backups | Every backup is re-downloaded and checksummed, with scheduled restore drills |
 | Tamper-evident security | Verifiable audit chain, [security policy](.github/SECURITY.md), signed releases and SBOM scanning |
 
+## How we test
+
+- [CI workflow](.github/workflows/ci.yml) runs on every change.
+- [`test/e2e`](test/e2e) drives the real HTTP API and a real reconciler against real containers on one machine.
+- [First-hour smoke test](docs/first-hour-smoke-test.md) replays install, deploy, rollback and uninstall in a clean container.
+- [Security policy](.github/SECURITY.md) says how to report a problem.
+- Releases are signed and carry a provenance attestation, see [Verify what you install](#verify-what-you-install) and [Installing](docs/installing.md).
+- [Feature status](docs/feature-status.md) lists the evidence behind each stable or beta label.
+- [Known limits](docs/known-limits.md) lists what is not proven yet.
+
 ## Levelrail vs Coolify, Dokploy, CapRover and Dokku (Coolify alternative)
 
 Most self-hosted platforms in this category manage servers by SSHing in and shelling out to the `docker` CLI, then parsing text, which tends to force polling loops. Levelrail uses a reverse-dialed agent and a level-triggered reconciler instead.
