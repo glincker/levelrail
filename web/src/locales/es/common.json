@@ -338,13 +338,13 @@
     },
     "navGroup": {
       "home": "Inicio",
-      "apps": "Aplicaciones",
+      "primary": "Inicio",
+      "build": "Compilar y ejecutar",
       "data": "Datos",
-      "traffic": "Redes",
-      "infrastructure": "Flota",
+      "traffic": "Red",
+      "infrastructure": "Flota y costes",
       "access": "Seguridad",
-      "ai": "IA",
-      "automation": "Automatización"
+      "ai": "IA"
     },
     "nav": {
       "dashboard": "Panel",

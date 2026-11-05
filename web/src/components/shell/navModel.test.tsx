@@ -112,18 +112,31 @@ describe('global nav model', () => {
     expect(GLOBAL_NAV_GROUPS.length).toBeLessThanOrEqual(8)
   })
 
-  it('groups Domains, DNS, Proxy, Private networks, Firewall, Load balancers and CDN under Networking', () => {
-    const net = GLOBAL_NAV_GROUPS.find((g) => g.id === 'traffic')
-    expect(net?.label).toBe('Networking')
-    expect(net?.items.map((i) => i.label)).toEqual([
+  it('shows seven primary links ungrouped', () => {
+    const primary = GLOBAL_NAV_GROUPS.filter((g) => g.ungrouped)
+    expect(primary).toHaveLength(1)
+    expect(primary[0]?.items.map((i) => i.label)).toEqual([
+      'Dashboard',
+      'Apps',
+      'Deployments',
+      'Databases',
       'Domains',
+      'Nodes',
+      'Alerts',
+    ])
+  })
+
+  it('groups DNS, Proxy, Private networks, Firewall, Load balancers and CDN under Network', () => {
+    const net = GLOBAL_NAV_GROUPS.find((g) => g.id === 'traffic')
+    expect(net?.label).toBe('Network')
+    expect(net?.items.map((i) => i.label)).toEqual([
       'DNS',
       'Proxy',
       'Private networks',
       'Firewall',
       'Load balancers',
-      'Mail',
       'CDN and caches',
+      'Mail',
     ])
   })
 
@@ -133,8 +146,10 @@ describe('global nav model', () => {
     }
   })
 
-  it('opens every group by default', () => {
-    expect(defaultGroupOpen()).toBe(true)
+  it('opens only the primary links by default', () => {
+    for (const g of GLOBAL_NAV_GROUPS) {
+      expect(defaultGroupOpen(g), g.id).toBe(g.ungrouped === true)
+    }
   })
 
   it('hides route-gated items until the router has the route', () => {
