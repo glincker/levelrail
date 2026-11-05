@@ -79,3 +79,45 @@ export function Lede({ className, ...props }: ComponentProps<'p'>) {
     />
   )
 }
+
+/*
+ * Label scale: FieldLabel 13px medium muted (sentence case, no tracking),
+ * SectionTitle 14px semibold, Body text-sm. Eyebrow stays the only uppercase label.
+ */
+export function FieldLabel({
+  as: Tag = 'p',
+  className,
+  ...props
+}: ComponentProps<'p'> & { as?: 'p' | 'span' | 'dt' }) {
+  const Component: ElementType = Tag
+  return (
+    <Component
+      className={cn(
+        'text-[13px] leading-5 font-medium text-muted-foreground',
+        className,
+      )}
+      {...props}
+    />
+  )
+}
+
+export function SectionTitle({
+  as: Tag = 'h3',
+  className,
+  ...props
+}: ComponentProps<'h3'> & { as?: 'h2' | 'h3' | 'h4' | 'p' }) {
+  const Component: ElementType = Tag
+  return (
+    <Component
+      className={cn(
+        'text-sm leading-5 font-semibold text-foreground',
+        className,
+      )}
+      {...props}
+    />
+  )
+}
+
+export function Body({ className, ...props }: ComponentProps<'p'>) {
+  return <p className={cn('text-sm text-foreground', className)} {...props} />
+}
