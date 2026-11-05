@@ -12,7 +12,7 @@ The build did not follow the original phase plan in order. Parts of multi-node s
 
 ## Now, next, later
 
-Last updated 2026-11-05. There is no stable release yet. Every release so far is a beta. Everything below is planned, not promised: quarters are targets, items can move or drop, and nothing here is a commitment to a date. Items marked planned have no shipped code unless the line says so.
+Last updated 2026-11-05 (v0.9.1). There is no stable release yet. Every release so far is a beta. Everything below is planned, not promised: quarters are targets, items can move or drop, and nothing here is a commitment to a date. Items marked planned have no shipped code unless the line says so.
 
 ### Now (Q4 2026)
 
