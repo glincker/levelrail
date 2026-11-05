@@ -82,7 +82,9 @@ describe('SitePublisher', () => {
   it('warns when there is no index.html', async () => {
     renderPublisher('docs')
     pickFolder([folderFile('dist/assets/a.js')])
-    expect(await screen.findByText(/No index\.html at the top/)).toBeTruthy()
+    expect(
+      await screen.findByText(/has no index\.html at the top/),
+    ).toBeTruthy()
   })
 
   it('explains an empty drop', async () => {

@@ -25,7 +25,12 @@ void testI18n.use(initReactI18next).init({
   interpolation: { escapeValue: false },
 })
 
-const check = { code: 'disk_space', status: 'pass' } as DoctorCheck
+const check: DoctorCheck = {
+  code: 'disk_space',
+  name: 'Disk space',
+  status: 'ok',
+  message: 'Plenty of space',
+}
 
 function renderDetail() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
