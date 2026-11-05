@@ -358,9 +358,13 @@ func TestPreviewLifecycle_ForkGetsNoEnvAndNoDatabase(t *testing.T) {
 	}
 	env := f.builder.calls[0].Service.Env
 	for k := range env {
-		if !strings.HasPrefix(k, "PREVIEW_") {
+		// PR_NUMBER is the platform alias of the webhook's PR number, checked by value below.
+		if !strings.HasPrefix(k, "PREVIEW_") && k != "PR_NUMBER" {
 			t.Errorf("fork preview inherited %q from production", k)
 		}
+	}
+	if got, ok := env["PR_NUMBER"]; ok && got.Value != "9" {
+		t.Errorf("fork PR_NUMBER = %q, want the pull request number 9", got.Value)
 	}
 }
 

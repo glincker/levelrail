@@ -83,9 +83,13 @@ func TestForkPreview_ApprovedForkGetsNothingFromTheParentApp(t *testing.T) {
 		}
 	}
 	for k := range req.Service.Env {
-		if !strings.HasPrefix(k, "PREVIEW_") {
+		// PR_NUMBER is the platform alias of the webhook's PR number, checked by value below.
+		if !strings.HasPrefix(k, "PREVIEW_") && k != "PR_NUMBER" {
 			t.Errorf("approved fork inherited env %q", k)
 		}
+	}
+	if got, ok := req.Service.Env["PR_NUMBER"]; ok && got.Value != "42" {
+		t.Errorf("approved fork PR_NUMBER = %q, want the pull request number 42", got.Value)
 	}
 	if after := parentSnapshot(t, db); string(after) != string(before) {
 		t.Errorf("parent app changed by a fork preview:\nbefore %s\nafter  %s", before, after)
