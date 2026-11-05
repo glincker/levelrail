@@ -164,6 +164,11 @@
     "title": "Status",
     "description": "Everything that needs attention right now. Refreshes every 30 seconds.",
     "healthyDescription": "All systems healthy. No failing apps or deploys, offline nodes, low disk, or expiring certificates.",
+    "nothingNeedsAttention": "Nothing needs attention",
+    "advisory": {
+      "title": "Advisory ({{count}})",
+      "region": "Advisory"
+    },
     "loading": "Loading status",
     "banner": {
       "diagram": {

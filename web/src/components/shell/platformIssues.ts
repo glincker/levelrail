@@ -4,6 +4,7 @@ import type { SystemStatus } from '../../queries/systemStatus'
 import type { NodeResource } from '../../types/nodeDetail'
 import { assessDiskPressure } from '../../lib/diskPressure'
 import { formatBytes } from '../../lib/format'
+import { doctorSilenceKeys, silencedWithLegacy } from '../../lib/attention'
 
 export type IssueSeverity = 'critical' | 'warning'
 
@@ -13,6 +14,7 @@ export type IssueAction =
 
 export interface PlatformIssue {
   id: string
+  legacyIds?: string[]
   severity: IssueSeverity
   title: string
   detail: string
@@ -92,7 +94,8 @@ export function derivePlatformIssues(src: IssueSources): PlatformIssue[] {
       continue
     }
     issues.push({
-      id: `doctor:${check.code}`,
+      id: doctorSilenceKeys(check)[0],
+      legacyIds: doctorSilenceKeys(check).slice(1),
       severity: check.status === 'fail' ? 'critical' : 'warning',
       title: check.name,
       detail: check.message,
@@ -135,8 +138,9 @@ export function summarizeIssues(
   issues: PlatformIssue[],
   isSnoozed: (id: string) => boolean,
 ): ChipSummary {
-  const visible = issues.filter((i) => !isSnoozed(i.id))
-  const snoozed = issues.filter((i) => isSnoozed(i.id))
+  const muted = silencedWithLegacy(issues, isSnoozed)
+  const visible = issues.filter((i) => !muted(i.id))
+  const snoozed = issues.filter((i) => muted(i.id))
   let level: ChipLevel = 'ok'
   if (visible.some((i) => i.severity === 'critical')) level = 'critical'
   else if (visible.length > 0) level = 'warning'

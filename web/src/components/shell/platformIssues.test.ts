@@ -66,8 +66,8 @@ describe('derivePlatformIssues', () => {
     expect(ids(issues)).toEqual([
       'node-offline:n1',
       'cert:a.com',
-      'doctor:disk_space',
-      'doctor:x',
+      'doctor:Disk',
+      'doctor:X',
       'insecure-connection',
     ])
     expect(issues[0]?.actions).toEqual([
@@ -172,5 +172,18 @@ describe('pickBanner never stacks', () => {
         isSnoozed: none,
       }),
     ).toBeNull()
+  })
+})
+
+describe('doctor silences', () => {
+  const doctor = {
+    ok: false,
+    checks: [{ code: 'x', name: 'X', status: 'warn' as const, message: 'm' }],
+  }
+  it.each(['doctor:X', 'doctor:x'])('honours a silence on %s', (key) => {
+    const issues = derivePlatformIssues({ doctor })
+    const summary = summarizeIssues(issues, (id) => id === key)
+    expect(summary.visible).toHaveLength(0)
+    expect(summary.snoozed).toHaveLength(1)
   })
 })
