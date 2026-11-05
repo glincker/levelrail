@@ -35,6 +35,7 @@ import { DeployFailureActions } from './DeployFailureActions'
 import { DeployFailureDetails } from './DeployFailureDetails'
 import { DeployFromCacheButton } from './DeployFromCacheButton'
 import { InfoTip, ActionMenu, RelativeTime } from './kit'
+import { StatusReasonTip } from './StatusReasonTip'
 import { RolloutChip } from './DeployDigestChips'
 import { DeployPinnedStatus } from './DeployPinnedStatus'
 import { cn } from '@/lib/utils'
@@ -408,6 +409,9 @@ export function DeployAttemptRow({
                 Deploys of one app run one at a time. This one starts on its own
                 when the deploy ahead of it finishes or is canceled.
               </InfoTip>
+            ) : null}
+            {note === attempt.reason ? (
+              <StatusReasonTip code={attempt.reason} />
             ) : null}
           </p>
         ) : null}

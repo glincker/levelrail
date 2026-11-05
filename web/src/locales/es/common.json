@@ -1,4 +1,8 @@
 {
+  "statusReasons": {
+    "about": "Qué significa este motivo",
+    "next": "Siguiente paso:"
+  },
   "deployHistory": {
     "filters": {
       "search": "Buscar mensaje, commit, autor",
