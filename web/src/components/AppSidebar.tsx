@@ -18,6 +18,7 @@ import { sidebarArea } from './shell/sidebarArea'
 import { scheduleIdle } from '../i18n/prefetch'
 import { BrandMarkGlyph } from './BrandMarkGlyph'
 import { SidebarStatusBadge } from './shell/SidebarStatusBadge'
+import { VersionFooter } from './shell/VersionFooter'
 import { SidebarVersionLink } from './shell/SidebarVersionLink'
 import { scheduleScrollActiveNavItem } from './shell/scrollActiveNavItem'
 
@@ -134,6 +135,7 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
+        <VersionFooter />
         <SidebarMenu>
           <SidebarMenuItem>
             <AccountMenu />
