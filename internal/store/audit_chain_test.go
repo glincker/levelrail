@@ -261,8 +261,8 @@ func TestAuditChain_RangeNamesBreakAndHead(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !rep.OK || rep.Checked != 3 || rep.Head != 3 || rep.HeadHash == "" {
-		t.Fatalf("range 1-3 = %+v, want ok, 3 checked, head 3", rep)
+	if !rep.OK || rep.ChainOK || rep.ProblemsOutside != 1 || rep.Checked != 3 || rep.RangeEnd != 3 || rep.RangeEndHash == "" || rep.Head != 6 || rep.HeadHash == "" {
+		t.Fatalf("range 1-3 = %+v, want range ok, chain not ok, head 6", rep)
 	}
 	rep, err = db.VerifyAuditChainRange(context.Background(), 0, 0)
 	if err != nil {
@@ -270,5 +270,94 @@ func TestAuditChain_RangeNamesBreakAndHead(t *testing.T) {
 	}
 	if rep.OK || rep.FirstBreak == nil || rep.FirstBreak.Seq != 4 {
 		t.Fatalf("full run = %+v, want first break at seq 4", rep)
+	}
+}
+
+func TestAuditChain_RangeAfterEditStaysNotChainOK(t *testing.T) {
+	useChainKey(t, "test-key-one")
+	db := openTestDB(t)
+	seedChain(t, db, 10, nil)
+	if _, err := db.Exec(`UPDATE audit_log SET actor_name = 'x' WHERE id = 'aud_004'`); err != nil {
+		t.Fatal(err)
+	}
+	rep, err := db.VerifyAuditChainRange(context.Background(), 6, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !rep.OK || rep.ChainOK || rep.ProblemsOutside == 0 {
+		t.Fatalf("range 6- = %+v, want range ok but chain_ok false", rep)
+	}
+}
+
+func TestAuditChain_RangeCoversDeletedRows(t *testing.T) {
+	useChainKey(t, "test-key-one")
+	db := openTestDB(t)
+	seedChain(t, db, 10, nil)
+	if _, err := db.Exec(`DELETE FROM audit_log WHERE id IN ('aud_005','aud_006','aud_007','aud_008')`); err != nil {
+		t.Fatal(err)
+	}
+	for _, r := range [][2]int64{{5, 8}, {6, 7}, {3, 6}, {8, 9}} {
+		rep, err := db.VerifyAuditChainRange(context.Background(), r[0], r[1])
+		if err != nil {
+			t.Fatal(err)
+		}
+		if rep.OK {
+			t.Errorf("range %v = %+v, want not ok: rows 5-8 are gone", r, rep)
+		}
+	}
+	rep, err := db.VerifyAuditChainRange(context.Background(), 1, 3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !rep.OK || rep.ChainOK {
+		t.Errorf("range 1-3 = %+v, want range ok, chain not ok", rep)
+	}
+}
+
+func TestAuditChain_RangePastHeadIsNotOK(t *testing.T) {
+	useChainKey(t, "test-key-one")
+	db := openTestDB(t)
+	seedChain(t, db, 10, nil)
+	for _, r := range [][2]int64{{1, 20}, {50, 0}, {50, 60}} {
+		rep, err := db.VerifyAuditChainRange(context.Background(), r[0], r[1])
+		if err != nil {
+			t.Fatal(err)
+		}
+		if rep.OK {
+			t.Errorf("range %v = %+v, want not ok past head 10", r, rep)
+		}
+	}
+}
+
+func TestAuditChain_RangeSeesTruncation(t *testing.T) {
+	useChainKey(t, "test-key-one")
+	db := openTestDB(t)
+	seedChain(t, db, 130, nil)
+	if _, err := db.Exec(`DELETE FROM audit_log WHERE chain_seq > 100`); err != nil {
+		t.Fatal(err)
+	}
+	rep, err := db.VerifyAuditChainRange(context.Background(), 1, 120)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rep.OK {
+		t.Fatalf("range 1-120 = %+v, want not ok: the chain was cut off at 100", rep)
+	}
+}
+
+func TestAuditChain_PurgedRangeIsCoveredByLinks(t *testing.T) {
+	useChainKey(t, "test-key-one")
+	db := openTestDB(t)
+	seedChain(t, db, 10, nil)
+	cut := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC).Add(5*time.Hour + time.Minute)
+	if _, err := db.DeleteAuditEntriesTiered(context.Background(), cut, cut); err != nil {
+		t.Fatal(err)
+	}
+	rep, err := db.VerifyAuditChainRange(context.Background(), 1, 4)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !rep.OK {
+		t.Fatalf("purged range 1-4 = %+v, want ok through the compacted link", rep)
 	}
 }

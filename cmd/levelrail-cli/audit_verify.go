@@ -42,19 +42,29 @@ func runAuditVerify(prog string, args []string, stdout, stderr io.Writer, lookup
 	}
 
 	if err := renderResult(stdout, of.Format, of.Query, report, func() {
-		if report.OK {
-			_, _ = fmt.Fprintf(stdout, "audit log intact: %d entries checked, %d checkpoints, head %d %s\n", report.Checked, report.Checkpoints, report.Head, report.HeadHash)
-			return
+		subject := "audit log"
+		if rangeFlag != "" {
+			subject = "range " + rangeFlag
 		}
-		_, _ = fmt.Fprintf(stdout, "audit log FAILED verification: %d problems\n", len(report.Problems))
-		for _, p := range report.Problems {
-			_, _ = fmt.Fprintf(stdout, "  entry %d: %s\n", p.Seq, p.Reason)
+		if report.OK {
+			_, _ = fmt.Fprintf(stdout, "%s intact: %d entries checked, %d checkpoints, chain head %d %s\n", subject, report.Checked, report.Checkpoints, report.Head, report.HeadHash)
+			if rangeFlag != "" {
+				_, _ = fmt.Fprintf(stdout, "range end %d %s\n", report.RangeEnd, report.RangeEndHash)
+			}
+		} else {
+			_, _ = fmt.Fprintf(stdout, "%s FAILED verification: %d problems\n", subject, len(report.Problems))
+			for _, p := range report.Problems {
+				_, _ = fmt.Fprintf(stdout, "  entry %d: %s\n", p.Seq, p.Reason)
+			}
+		}
+		if report.Outside > 0 {
+			_, _ = fmt.Fprintf(stdout, "warning: the whole chain has %d more problems outside this range; run without --range\n", report.Outside)
 		}
 	}); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)
 	}
-	if !report.OK {
+	if !report.OK || report.Outside > 0 {
 		return exitCheckFailed
 	}
 	return exitOK

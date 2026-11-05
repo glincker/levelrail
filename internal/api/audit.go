@@ -346,7 +346,7 @@ func (rt *Router) handleListAuditLog(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.URL.Query().Get("format") == "csv" {
-		rt.writeAuditLogCSV(w, entries)
+		rt.writeAuditLogCSV(w, entries, len(entries) >= limit)
 		return
 	}
 
@@ -370,7 +370,10 @@ var auditLogCSVHeader = []string{
 // byte slice first; the status line is committed before any row is
 // written, so a mid-write failure can only be logged, not turned into an
 // error response.
-func (rt *Router) writeAuditLogCSV(w http.ResponseWriter, entries []store.AuditEntry) {
+func (rt *Router) writeAuditLogCSV(w http.ResponseWriter, entries []store.AuditEntry, truncated bool) {
+	if truncated {
+		w.Header().Set("X-Audit-Truncated", "true")
+	}
 	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
 	w.Header().Set("Content-Disposition", `attachment; filename="audit-log.csv"`)
 	w.WriteHeader(http.StatusOK)

@@ -92,6 +92,9 @@
     "head": "Cabecera de la cadena: entrada {{seq}}",
     "firstBreak": "Primera rotura en la entrada {{seq}}",
     "failed": "Falló la verificación de la cadena",
-    "problem": "Entrada {{seq}}: {{reason}}"
+    "problem": "Entrada {{seq}}: {{reason}}",
+    "rangeEnd": "El rango termina en la entrada {{seq}}",
+    "outside_one": "Este rango está íntegro, pero la cadena completa tiene {{count}} problema fuera de él. Verifica sin rango.",
+    "outside_other": "Este rango está íntegro, pero la cadena completa tiene {{count}} problemas fuera de él. Verifica sin rango."
   }
 }

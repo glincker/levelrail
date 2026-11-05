@@ -104,6 +104,16 @@ export function AuditVerifySheet() {
                 />
                 {t('verify.okSummary', { count: report.checked })}
               </p>
+              {report.range_end ? (
+                <p className="text-muted-foreground">
+                  {t('verify.rangeEnd', { seq: report.range_end })}
+                </p>
+              ) : null}
+              {report.range_end_hash ? (
+                <code className="block rounded bg-muted p-2 text-xs break-all">
+                  {report.range_end_hash}
+                </code>
+              ) : null}
               <p className="text-muted-foreground">
                 {t('verify.head', { seq: report.head })}
               </p>
@@ -113,6 +123,19 @@ export function AuditVerifySheet() {
                 </code>
               ) : null}
             </>
+          ) : null}
+          {report?.ok && (report.problems_outside_range ?? 0) > 0 ? (
+            <p
+              role="alert"
+              className="flex items-center gap-1.5 font-medium text-destructive"
+            >
+              <ShieldAlertGlassIcon
+                className="text-tone-warning"
+                size="1.4em"
+                aria-hidden="true"
+              />
+              {t('verify.outside', { count: report.problems_outside_range })}
+            </p>
           ) : null}
           {report && !report.ok ? (
             <>

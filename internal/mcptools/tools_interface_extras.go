@@ -85,7 +85,7 @@ func registerInterfaceExtraTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "verify_audit_log",
-		Description: "Verify the audit hash chain; optional from/to sequence.",
+		Description: "Verify audit chain, optional from/to. Root token.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in auditVerifyInput) (*mcp.CallToolResult, apiclient.AuditChainReport, error) {
 		out, err := client.VerifyAuditLogRange(ctx, in.From, in.To)
 		if err != nil {

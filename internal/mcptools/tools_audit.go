@@ -3,6 +3,7 @@ package mcptools
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -11,7 +12,7 @@ import (
 func registerAuditTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_audit_log",
-		Description: "List recorded write, deploy and root requests, newest first: who, what, when, from where, success. Agent entries carry agent_name. Filter with q, agent, status=failed.",
+		Description: "List recorded write, deploy and root requests, newest first: who, what, when, from where, success. Filter with q, agent, status=failed.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in auditLogInput) (*mcp.CallToolResult, []apiclient.AuditLogEntryResource, error) {
 		entries, err := client.ListAuditLog(ctx, apiclient.ListAuditLogOptions{
 			Limit:      in.Limit,
@@ -21,8 +22,8 @@ func registerAuditTools(server *mcp.Server, client *apiclient.Client) {
 			Search:     in.Query,
 			FailedOnly: in.Status == "failed",
 			Agent:      in.Agent,
-			Since:      in.Since,
-			Until:      in.Until,
+			Since:      agoOrTime(in.Since),
+			Until:      agoOrTime(in.Until),
 			Actor:      in.Actor,
 		})
 		if err != nil {
@@ -34,7 +35,7 @@ func registerAuditTools(server *mcp.Server, client *apiclient.Client) {
 
 type auditLogInput struct {
 	Limit  int    `json:"limit,omitempty" jsonschema:"max entries; server default"`
-	Before string `json:"before,omitempty"`
+	Before string `json:"before,omitempty" jsonschema:"RFC3339"`
 	Path   string `json:"path,omitempty" jsonschema:"only this request path"`
 	Method string `json:"method,omitempty" jsonschema:"only this HTTP method, e.g. POST"`
 	Query  string `json:"q,omitempty" jsonschema:"case-insensitive substring of actor, ability, method, path or address"`
@@ -49,4 +50,12 @@ type auditLogInput struct {
 type auditVerifyInput struct {
 	From int64 `json:"from,omitempty"`
 	To   int64 `json:"to,omitempty"`
+}
+
+// agoOrTime turns a duration such as "24h" into an RFC3339 time that long ago and passes anything else through.
+func agoOrTime(raw string) string {
+	if d, err := time.ParseDuration(raw); err == nil && d > 0 {
+		return time.Now().Add(-d).UTC().Format(time.RFC3339)
+	}
+	return raw
 }

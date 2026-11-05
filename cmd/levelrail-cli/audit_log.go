@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/csv"
 	"fmt"
 	"io"
 	"os"
@@ -97,7 +99,7 @@ func runAuditLog(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 // outputPath, or to stdout when outputPath is empty.
 func runAuditLogExportCSV(ctx context.Context, client *Client, opts listAuditLogOptions, outputPath string, stdout, stderr io.Writer, of outputFlags) int {
 	jsonOut := of.Format == outputJSON
-	data, err := client.DownloadAuditLogCSV(ctx, opts)
+	data, err := downloadAllAuditCSV(ctx, client, opts)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("export audit log csv: %w", err))
 	}
@@ -198,4 +200,51 @@ func resolveAuditTime(raw string, now time.Time) (string, error) {
 		return "", fmt.Errorf("invalid time %q: use a duration like 24h or 7d, or an RFC3339 timestamp", raw)
 	}
 	return now.Add(-d).UTC().Format(time.RFC3339), nil
+}
+
+// auditCSVPageSize mirrors the API's largest page; the export pages with
+// --before until a short page, so no row is silently cut off.
+const auditCSVPageSize = 200
+
+const auditCSVTimeColumn = 9
+
+// downloadAllAuditCSV fetches CSV pages and joins them under one header. An
+// explicit --limit stays a single capped request.
+func downloadAllAuditCSV(ctx context.Context, client *Client, opts listAuditLogOptions) ([]byte, error) {
+	if opts.Limit > 0 {
+		return client.DownloadAuditLogCSV(ctx, opts)
+	}
+	opts.Limit = auditCSVPageSize
+	var all [][]string
+	for {
+		page, err := client.DownloadAuditLogCSV(ctx, opts)
+		if err != nil {
+			return nil, err
+		}
+		recs, err := csv.NewReader(bytes.NewReader(page)).ReadAll()
+		if err != nil {
+			return nil, fmt.Errorf("parse csv page: %w", err)
+		}
+		if len(recs) == 0 {
+			break
+		}
+		if len(all) == 0 {
+			all = append(all, recs[0])
+		}
+		rows := recs[1:]
+		all = append(all, rows...)
+		if len(rows) < auditCSVPageSize || len(rows[len(rows)-1]) <= auditCSVTimeColumn {
+			break
+		}
+		next := rows[len(rows)-1][auditCSVTimeColumn]
+		if next == opts.Before {
+			break
+		}
+		opts.Before = next
+	}
+	var buf bytes.Buffer
+	if err := csv.NewWriter(&buf).WriteAll(all); err != nil {
+		return nil, fmt.Errorf("write csv: %w", err)
+	}
+	return buf.Bytes(), nil
 }

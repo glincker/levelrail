@@ -110,4 +110,11 @@ func TestAuditLogRoute_SinceUntilActor(t *testing.T) {
 	if get("/verify?from=x").Code != http.StatusBadRequest {
 		t.Error("bad verify range should be 400")
 	}
+	if get("/verify?from=9&to=3").Code != http.StatusBadRequest {
+		t.Error("inverted verify range should be 400")
+	}
+	csvRec := get("?format=csv&limit=1")
+	if csvRec.Header().Get("X-Audit-Truncated") != "true" {
+		t.Error("a csv page filled to its limit should be marked truncated")
+	}
 }

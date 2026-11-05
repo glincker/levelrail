@@ -216,6 +216,10 @@ export interface AuditChainReport {
   unchained: number
   problems: AuditChainProblem[]
   head_hash?: string
+  chain_ok?: boolean
+  problems_outside_range?: number
+  range_end?: number
+  range_end_hash?: string
   first_break?: AuditChainProblem
 }
 

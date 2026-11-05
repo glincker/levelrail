@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Input } from '@/components/ui/input'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
@@ -166,6 +166,8 @@ function AuditLogSettingsPage() {
   const [range, setRange] = useState<AuditRange | undefined>(rangeFromLink)
   const [actor, setActor] = useState(actorFromLink ?? '')
   const [method, setMethod] = useState<string | undefined>(methodFromLink)
+  // Pinned when the range is chosen so list, paging and export share one window.
+  const since = useMemo(() => sinceForRange(range), [range])
   const [agentFilter, setAgentFilter] = useState<string | undefined>(
     agentFromLink,
   )
@@ -242,7 +244,7 @@ function AuditLogSettingsPage() {
       agent: agentFilter,
       action: actionFilter,
       path: pathFilter,
-      since: sinceForRange(range),
+      since: since,
       actor: activeActor,
       method,
     })
@@ -270,7 +272,7 @@ function AuditLogSettingsPage() {
     agentFilter,
     actionFilter,
     pathFilter,
-    range,
+    since,
     activeActor,
     method,
   ])
@@ -289,7 +291,7 @@ function AuditLogSettingsPage() {
         agent: agentFilter,
         action: actionFilter,
         path: pathFilter,
-        since: sinceForRange(range),
+        since: since,
         actor: activeActor,
         method,
       })
@@ -350,7 +352,7 @@ function AuditLogSettingsPage() {
               agent={agentFilter}
               action={actionFilter}
               path={pathFilter}
-              since={sinceForRange(range)}
+              since={since}
               actor={activeActor}
               method={method}
             />

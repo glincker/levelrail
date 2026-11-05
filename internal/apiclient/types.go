@@ -4015,15 +4015,18 @@ type AuditChainProblem struct {
 
 // AuditChainReport mirrors store.AuditChainReport.
 type AuditChainReport struct {
-	OK          bool                `json:"ok"`
-	Checked     int                 `json:"checked"`
-	Head        int64               `json:"head"`
-	Checkpoints int                 `json:"checkpoints"`
-	Unverified  int                 `json:"unverified"`
-	Unchained   int                 `json:"unchained"`
-	Problems    []AuditChainProblem `json:"problems"`
-	HeadHash    string              `json:"head_hash,omitempty"`
-	FirstBreak  *AuditChainProblem  `json:"first_break,omitempty"`
+	OK           bool                `json:"ok"`
+	Checked      int                 `json:"checked"`
+	Head         int64               `json:"head"`
+	Checkpoints  int                 `json:"checkpoints"`
+	Unverified   int                 `json:"unverified"`
+	Unchained    int                 `json:"unchained"`
+	Problems     []AuditChainProblem `json:"problems"`
+	HeadHash     string              `json:"head_hash,omitempty"`
+	ChainOK      bool                `json:"chain_ok"`
+	Outside      int                 `json:"problems_outside_range,omitempty"`
+	RangeEnd     int64               `json:"range_end,omitempty"`
+	RangeEndHash string              `json:"range_end_hash,omitempty"`
 }
 
 // AuditAnchor mirrors store.AuditAnchor: one signed chain head, no row content.
