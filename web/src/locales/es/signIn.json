@@ -130,17 +130,18 @@
     "openKeywords": "cli terminal command line install connect pair token",
     "install": {
       "title": "Instalar",
-      "lead": "Ejecuta esto una vez en tu terminal para instalar la CLI.",
-      "label": "Comando de instalación"
+      "label": "Comando de instalación",
+      "comment": "Instala la CLI (macOS y Linux)",
+      "commentWindows": "Instala la CLI (PowerShell)"
     },
     "connect": {
       "title": "Conectar",
-      "lead": "Obtén un comando de una línea que inicia sesión en tu terminal con este servidor. Sin contraseña ni paso de aprobación."
+      "comment": "Inicia sesión de esta terminal en {{server}}",
+      "pending": "Obtén un comando de inicio de sesión de un solo uso para este servidor",
+      "expired": "Ese comando caducó, obtén uno nuevo"
     },
     "manage": {
       "title": "CLIs conectadas",
-      "empty": "Aún no hay ninguna CLI conectada. Obtén tu comando de conexión a la izquierda y ejecútalo en tu terminal.",
-      "loading": "Cargando las CLIs conectadas...",
       "lastUsed": "Último uso {{when}}",
       "neverUsed": "Nunca usada",
       "lastIp": "Desde {{ip}}",
@@ -156,7 +157,6 @@
       "revokeFailed": "No se pudo revocar esta CLI",
       "revoked": "CLI revocada",
       "fullPage": "Administrar todo el acceso de la CLI",
-      "emptyAction": "Mostrar mi comando",
       "connectAnother": "Conectar otra CLI",
       "listLabel": "CLIs conectadas",
       "origin": {
@@ -202,21 +202,26 @@
     },
     "loadingBody": "Cargando la herramienta de línea de comandos...",
     "started": {
-      "title": "Primeros pasos",
-      "done": "Listo"
+      "title": "Primera ejecución"
     },
     "commands": {
-      "title": "Comandos comunes",
-      "lead": "Ejecútalos en una terminal donde la CLI esté conectada.",
-      "copy": "Copiar {{command}}",
-      "copied": "Copiado",
+      "title": "Pruébalo",
       "status": "Comprobar el estado del control plane",
       "list": "Listar tus aplicaciones",
       "logs": "Seguir los registros de una aplicación",
       "wait": "Esperar a que una aplicación esté lista",
       "open": "Mostrar las URL públicas de una aplicación",
       "up": "Desplegar el directorio actual"
-    }
+    },
+    "step": {
+      "done": "Listo",
+      "installUnknown": "Sin comprobar",
+      "connected": "Conectada",
+      "notConnected": "Sin conexión",
+      "ready": "Lista",
+      "afterConnect": "Tras conectar"
+    },
+    "copyAll": "Copiar todos los pasos"
   },
   "request": {
     "headline": "¿Aprobar este inicio de sesión?",

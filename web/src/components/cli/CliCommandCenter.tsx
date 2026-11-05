@@ -1,17 +1,16 @@
-import { useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import {
-  CheckGlassIcon,
-  ChevronDownGlassIcon,
-  CopyGlassIcon,
-  PlusGlassIcon,
-  TerminalGlassIcon,
-} from '@thesvg/ui-react'
+import { PlusGlassIcon, TerminalGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { CommandBlock } from '@/components/ui/code-block'
+import { FieldLabel } from '@/components/ui/typography'
+import {
+  TerminalBlock,
+  TerminalCopyButton,
+  type TerminalLine,
+} from '@/components/ui/terminal-block'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import {
   DialogDescription,
@@ -20,11 +19,12 @@ import {
 } from '@/components/ui/dialog'
 import { toast } from '@/components/ui/toast'
 import { cn } from '@/lib/utils'
-import { CopyCommand } from '../settings/CopyCommand'
 import { useBrand } from '../../hooks/useBrand'
 import { useCliPairing, formatLeft } from '../../hooks/useCliPairing'
 import { cliOrigin, type CliStatus } from '../../lib/cliConnection'
 import { CLI_INSTALL_COMMAND } from '../../lib/cliInstall'
+import { useAppListOptional } from '../../queries/apps'
+import { CLI_INSTALL_COMMAND_WINDOWS, detectCliPlatform } from './cliPlatform'
 import { formatAbsoluteTime, formatRelativeTime } from '../../lib/relativeTime'
 import { myCredentialsKey, useCliTokenRows } from '../../queries/myCredentials'
 import { useRevokeToken } from '../../queries/tokens'
@@ -62,97 +62,121 @@ function abilityChips(tok: TokenResource): AbilityKey[] {
 
 type Pairing = ReturnType<typeof useCliPairing>
 
-function ConnectStep({ p }: { p: Pairing }) {
-  const { t } = useTranslation('signIn', { useSuspense: false })
+function Step({
+  n,
+  title,
+  status,
+  children,
+}: {
+  n: number
+  title: string
+  status: string
+  children: ReactNode
+}) {
   return (
-    <section aria-labelledby="cli-connect-title" className="space-y-2">
-      <h3 id="cli-connect-title" className="text-sm font-semibold">
-        {t('cliModal.connect.title')}
-      </h3>
-      <p className="text-sm text-muted-foreground">
-        {t('cliModal.connect.lead')}
-      </p>
-      <div aria-live="polite" className="space-y-2">
-        {p.live ? (
-          <>
-            <code
-              aria-label={t('connectCli.commandLabel')}
-              data-testid="connect-cli-command"
-              className="block select-all overflow-x-auto rounded-md bg-muted px-3 py-2 font-mono text-xs"
-            >
-              {p.command}
-            </code>
-            <p className="text-xs text-muted-foreground">
-              {t('connectCli.expiresIn', { time: formatLeft(p.left) })}
-            </p>
-          </>
-        ) : p.expired ? (
-          <p className="text-sm text-muted-foreground">
-            {t('connectCli.expired')}
-          </p>
-        ) : null}
+    <section aria-labelledby={`cli-step-${n}`} className="min-w-0 space-y-1.5">
+      <div className="flex items-baseline justify-between gap-2">
+        <FieldLabel as="span" id={`cli-step-${n}`} className="text-foreground">
+          {n}. {title}
+        </FieldLabel>
+        <span className="text-xs text-muted-foreground">{status}</span>
       </div>
-      <div className="flex flex-wrap gap-2">
-        {p.live ? (
-          <Button type="button" size="sm" onClick={p.copy}>
-            {p.copied ? (
-              <CheckGlassIcon size="1.4em" aria-hidden="true" />
-            ) : (
-              <CopyGlassIcon size="1.4em" aria-hidden="true" />
-            )}
-            {t('connectCli.copy')}
-          </Button>
-        ) : null}
-        <Button
-          type="button"
-          size="sm"
-          variant={p.live ? 'outline' : 'default'}
-          disabled={p.pending}
-          onClick={p.generate}
-        >
-          {p.pairing ? t('connectCli.regenerate') : t('connectCli.generate')}
-        </Button>
-      </div>
+      {children}
     </section>
   )
 }
 
-function CommonCommands() {
+function InstallBlock({ windows }: { windows: boolean }) {
   const { t } = useTranslation('signIn', { useSuspense: false })
-  const brand = useBrand()
-  const bin = brand.BinaryName
-  // Each one is a real subcommand of the CLI (see its --help).
-  const commands = [
-    { key: 'status', cmd: `${bin} status` },
-    { key: 'list', cmd: `${bin} apps list` },
-    { key: 'logs', cmd: `${bin} apps logs <app> --follow` },
-    { key: 'wait', cmd: `${bin} apps wait <app>` },
-    { key: 'open', cmd: `${bin} open <app>` },
-    { key: 'up', cmd: `${bin} up` },
-  ] as const
   return (
-    <section aria-labelledby="cli-commands-title" className="space-y-2">
-      <h3 id="cli-commands-title" className="text-sm font-semibold">
-        {t('cliModal.commands.title')}
-      </h3>
-      <p className="text-sm text-muted-foreground">
-        {t('cliModal.commands.lead')}
-      </p>
-      <ul className="grid gap-2 md:grid-cols-2">
-        {commands.map((c) => (
-          <li key={c.key} className="min-w-0 space-y-1">
-            <p className="text-xs text-muted-foreground">
-              {t(`cliModal.commands.${c.key}`)}
-            </p>
-            <CommandBlock
-              code={c.cmd}
-              label={t('cliModal.commands.copy', { command: c.cmd })}
-            />
-          </li>
-        ))}
-      </ul>
-    </section>
+    <TerminalBlock
+      label={t('cliModal.install.label')}
+      prompt={windows ? '>' : '$'}
+      lines={[
+        {
+          kind: 'comment',
+          text: t(
+            windows
+              ? 'cliModal.install.commentWindows'
+              : 'cliModal.install.comment',
+          ),
+        },
+        { kind: 'command', text: installCommand(windows) },
+      ]}
+    />
   )
+}
+
+function installCommand(windows: boolean): string {
+  return windows ? CLI_INSTALL_COMMAND_WINDOWS : CLI_INSTALL_COMMAND
+}
+
+function ConnectBlock({ p }: { p: Pairing }) {
+  const { t } = useTranslation('signIn', { useSuspense: false })
+  const lines: TerminalLine[] = p.live
+    ? [
+        {
+          kind: 'comment',
+          text: t('cliModal.connect.comment', {
+            server: p.pairing?.server_url ?? '',
+          }),
+        },
+        { kind: 'command', text: p.command },
+      ]
+    : [
+        {
+          kind: 'comment',
+          text: t(
+            p.expired ? 'cliModal.connect.expired' : 'cliModal.connect.pending',
+          ),
+        },
+      ]
+  return (
+    <TerminalBlock
+      label={t('connectCli.commandLabel')}
+      lines={lines}
+      footer={
+        <>
+          {p.live ? (
+            <span role="timer" className="text-xs text-muted-foreground">
+              {t('connectCli.expiresIn', { time: formatLeft(p.left) })}
+            </span>
+          ) : null}
+          <Button
+            type="button"
+            size="xs"
+            variant={p.live ? 'ghost' : 'default'}
+            disabled={p.pending}
+            onClick={p.generate}
+          >
+            {p.pairing ? t('connectCli.regenerate') : t('connectCli.generate')}
+          </Button>
+        </>
+      }
+    />
+  )
+}
+
+type TryKey = 'status' | 'list' | 'logs' | 'wait' | 'open' | 'up'
+
+function tryLines(
+  bin: string,
+  app: string,
+  label: (key: TryKey) => string,
+): TerminalLine[] {
+  // Each one is a real subcommand of the CLI (see its --help).
+  const rows: [TryKey, string][] = [
+    ['status', `${bin} status`],
+    ['list', `${bin} apps list`],
+    ['logs', `${bin} apps logs ${app} --follow`],
+    ['wait', `${bin} apps wait ${app}`],
+    ['open', `${bin} open ${app}`],
+    ['up', `${bin} up`],
+  ]
+  return rows.flatMap(([key, cmd]): TerminalLine[] => [
+    { kind: 'comment', text: label(key) },
+    { kind: 'command', text: cmd },
+  ])
 }
 
 export default function CliCommandCenter({
@@ -163,20 +187,211 @@ export default function CliCommandCenter({
   const { t } = useTranslation('signIn', { useSuspense: false })
   const qc = useQueryClient()
   const { data: rows, isPending, isError } = useCliTokenRows(true)
+  const apps = useAppListOptional()
+  const brand = useBrand()
   const revoke = useRevokeToken()
   const p = useCliPairing()
   const [target, setTarget] = useState<TokenResource | null>(null)
   const [rotateTarget, setRotateTarget] = useState<TokenResource | null>(null)
   const [setupOpen, setSetupOpen] = useState<boolean | null>(null)
+  const windows = useMemo(() => detectCliPlatform() === 'windows', [])
 
   const connected = (rows ?? []).filter((r) => r.status !== 'expired').length
   const hasRows = (rows?.length ?? 0) > 0
-  // Setup stays open until a CLI is connected, then collapses unless the
-  // user chose otherwise.
-  const showSetup = setupOpen ?? !hasRows
+  // Connected: lead with the CLIs and fold install and connect away.
+  const showSetup = setupOpen ?? connected === 0
+  const app = apps.data?.[0]?.name ?? '<app>'
+  const tryText = tryLines(brand.BinaryName, app, (key) =>
+    t(`cliModal.commands.${key}`),
+  )
+  const allText = [
+    installCommand(windows),
+    ...(p.live ? [p.command] : []),
+    ...tryText.filter((l) => l.kind === 'command').map((l) => l.text),
+  ].join('\n')
+
+  const setup = (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <FieldLabel>{t('cliModal.started.title')}</FieldLabel>
+        <TerminalCopyButton
+          text={allText}
+          label={t('cliModal.copyAll')}
+          variant="ghost"
+        />
+      </div>
+      <Step
+        n={1}
+        title={t('cliModal.install.title')}
+        status={t(
+          connected > 0 ? 'cliModal.step.done' : 'cliModal.step.installUnknown',
+        )}
+      >
+        <InstallBlock windows={windows} />
+      </Step>
+      <Step
+        n={2}
+        title={t('cliModal.connect.title')}
+        status={t(
+          connected > 0
+            ? 'cliModal.step.connected'
+            : p.live
+              ? 'cliModal.step.ready'
+              : 'cliModal.step.notConnected',
+        )}
+      >
+        <div aria-live="polite">
+          <ConnectBlock p={p} />
+        </div>
+      </Step>
+    </div>
+  )
+
+  const tryIt = (
+    <Step
+      n={3}
+      title={t('cliModal.commands.title')}
+      status={t(
+        connected > 0 ? 'cliModal.step.ready' : 'cliModal.step.afterConnect',
+      )}
+    >
+      <TerminalBlock label={t('cliModal.commands.title')} lines={tryText} />
+    </Step>
+  )
+
+  const manage = (
+    <section aria-labelledby="cli-manage-title" className="space-y-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <FieldLabel as="span" id="cli-manage-title" className="text-foreground">
+          {t('cliModal.manage.title')}
+        </FieldLabel>
+        {connected > 0 ? (
+          <Button
+            type="button"
+            size="xs"
+            variant="outline"
+            aria-expanded={showSetup}
+            onClick={() => {
+              setSetupOpen(!showSetup)
+            }}
+          >
+            <PlusGlassIcon size="1.4em" aria-hidden="true" />
+            {t('cliModal.manage.connectAnother')}
+          </Button>
+        ) : null}
+      </div>
+      {isError ? (
+        <p role="alert" className="text-sm text-muted-foreground">
+          {t('cliModal.manage.loadFailed')}
+        </p>
+      ) : null}
+      {hasRows ? (
+        <ul
+          aria-label={t('cliModal.manage.listLabel')}
+          className="divide-y rounded-lg border"
+        >
+          {rows?.map(({ token: tok, status }) => {
+            const origin = cliOrigin(tok.name)
+            const chips = abilityChips(tok)
+            return (
+              <li
+                key={tok.id}
+                className="flex flex-wrap items-center justify-between gap-3 px-3 py-2"
+              >
+                <div className="min-w-0 flex-1 space-y-1">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        'size-2 shrink-0 rounded-full',
+                        STATUS_DOT[status],
+                      )}
+                    />
+                    <p className="truncate text-sm font-medium">{tok.name}</p>
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                      {t(`cliModal.manage.status.${status}`)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {origin ? t(`cliModal.manage.origin.${origin}`) : ''}
+                    {' · '}
+                    {t('cliModal.manage.created', {
+                      when: formatAbsoluteTime(tok.created_at),
+                    })}
+                    {' · '}
+                    {tok.last_used_at
+                      ? t('cliModal.manage.lastUsed', {
+                          when: formatRelativeTime(tok.last_used_at),
+                        })
+                      : t('cliModal.manage.neverUsed')}
+                    {tok.last_ip
+                      ? ` · ${t('cliModal.manage.lastIp', { ip: tok.last_ip })}`
+                      : ''}
+                    {' · '}
+                    {tok.expires_at
+                      ? t(
+                          status === 'expired'
+                            ? 'cliModal.manage.expired'
+                            : 'cliModal.manage.expires',
+                          { when: formatAbsoluteTime(tok.expires_at) },
+                        )
+                      : t('cliModal.manage.noExpiry')}
+                  </p>
+                  <ul
+                    aria-label={t('cliModal.manage.abilities')}
+                    className="flex flex-wrap gap-1"
+                  >
+                    {chips.map((c) => (
+                      <li key={c}>
+                        <Badge
+                          variant={
+                            c === 'abilityRoot' ? 'destructive' : 'outline'
+                          }
+                        >
+                          {t(`cliModal.manage.${c}`)}
+                        </Badge>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="flex shrink-0 gap-2">
+                  <Button
+                    type="button"
+                    size="xs"
+                    variant="outline"
+                    aria-label={t('cliModal.manage.rotateLabel', {
+                      name: tok.name,
+                    })}
+                    onClick={() => {
+                      setRotateTarget(tok)
+                    }}
+                  >
+                    {t('cliModal.manage.rotate')}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="xs"
+                    variant="outline"
+                    aria-label={t('cliModal.manage.revokeLabel', {
+                      name: tok.name,
+                    })}
+                    onClick={() => {
+                      setTarget(tok)
+                    }}
+                  >
+                    {t('cliModal.manage.revoke')}
+                  </Button>
+                </div>
+              </li>
+            )
+          })}
+        </ul>
+      ) : null}
+    </section>
+  )
 
   return (
-    <div className="min-w-0 space-y-5">
+    <div className="min-w-0 space-y-4">
       <DialogHeader>
         <div className="flex flex-wrap items-center gap-2 pr-8">
           <TerminalGlassIcon aria-hidden="true" className="size-6" />
@@ -195,223 +410,27 @@ export default function CliCommandCenter({
         <DialogDescription>{t('cliModal.subtitle')}</DialogDescription>
       </DialogHeader>
 
-      <section
-        aria-labelledby="cli-started-title"
-        className="rounded-lg border"
+      {connected > 0 ? (
+        <>
+          {manage}
+          {showSetup ? setup : null}
+          {tryIt}
+        </>
+      ) : (
+        <>
+          {setup}
+          {tryIt}
+          {hasRows ? manage : null}
+        </>
+      )}
+
+      <Link
+        to="/settings/cli-access"
+        onClick={onFullPage}
+        className="inline-block rounded-sm text-sm text-primary underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
       >
-        <h3 id="cli-started-title" className="text-sm font-semibold">
-          <button
-            type="button"
-            aria-expanded={showSetup}
-            aria-controls="cli-started-body"
-            onClick={() => {
-              setSetupOpen(!showSetup)
-            }}
-            className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-          >
-            <span className="flex items-center gap-2">
-              {t('cliModal.started.title')}
-              {hasRows ? (
-                <Badge variant="success">
-                  <CheckGlassIcon size="1.4em" aria-hidden="true" />
-                  {t('cliModal.started.done')}
-                </Badge>
-              ) : null}
-            </span>
-            <ChevronDownGlassIcon
-              aria-hidden="true"
-              className={cn(
-                'size-5 transition-transform motion-reduce:transition-none',
-                showSetup && 'rotate-180',
-              )}
-            />
-          </button>
-        </h3>
-        <div
-          id="cli-started-body"
-          hidden={!showSetup}
-          className="grid gap-5 border-t px-3 py-3 md:grid-cols-2"
-        >
-          <section
-            aria-labelledby="cli-install-title"
-            className="min-w-0 space-y-2"
-          >
-            <h3 id="cli-install-title" className="text-sm font-semibold">
-              {t('cliModal.install.title')}
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              {t('cliModal.install.lead')}
-            </p>
-            <CopyCommand
-              label={t('cliModal.install.label')}
-              command={CLI_INSTALL_COMMAND}
-            />
-          </section>
-          <div className="min-w-0">
-            <ConnectStep p={p} />
-          </div>
-        </div>
-      </section>
-
-      <section aria-labelledby="cli-manage-title" className="space-y-2">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 id="cli-manage-title" className="text-sm font-semibold">
-            {t('cliModal.manage.title')}
-          </h3>
-          {hasRows ? (
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setSetupOpen(true)
-                if (!p.live) {
-                  p.generate()
-                }
-              }}
-            >
-              <PlusGlassIcon size="1.4em" aria-hidden="true" />
-              {t('cliModal.manage.connectAnother')}
-            </Button>
-          ) : null}
-        </div>
-        {isPending ? (
-          <p className="text-sm text-muted-foreground">
-            {t('cliModal.manage.loading')}
-          </p>
-        ) : isError ? (
-          <p role="alert" className="text-sm text-muted-foreground">
-            {t('cliModal.manage.loadFailed')}
-          </p>
-        ) : !hasRows ? (
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dashed px-3 py-4">
-            <p className="text-sm text-muted-foreground">
-              {t('cliModal.manage.empty')}
-            </p>
-            <Button
-              type="button"
-              size="sm"
-              disabled={p.pending}
-              onClick={() => {
-                setSetupOpen(true)
-                p.generate()
-              }}
-            >
-              {t('cliModal.manage.emptyAction')}
-            </Button>
-          </div>
-        ) : (
-          <ul
-            aria-label={t('cliModal.manage.listLabel')}
-            className="divide-y rounded-lg border"
-          >
-            {rows.map(({ token: tok, status }) => {
-              const origin = cliOrigin(tok.name)
-              const chips = abilityChips(tok)
-              return (
-                <li
-                  key={tok.id}
-                  className="flex flex-wrap items-center justify-between gap-3 px-3 py-3"
-                >
-                  <div className="min-w-0 flex-1 space-y-1">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <span
-                        aria-hidden="true"
-                        className={cn(
-                          'size-2 shrink-0 rounded-full',
-                          STATUS_DOT[status],
-                        )}
-                      />
-                      <p className="truncate text-sm font-medium">{tok.name}</p>
-                      <span className="shrink-0 text-xs text-muted-foreground">
-                        {t(`cliModal.manage.status.${status}`)}
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {origin ? t(`cliModal.manage.origin.${origin}`) : ''}
-                      {' · '}
-                      {t('cliModal.manage.created', {
-                        when: formatAbsoluteTime(tok.created_at),
-                      })}
-                      {' · '}
-                      {tok.last_used_at
-                        ? t('cliModal.manage.lastUsed', {
-                            when: formatRelativeTime(tok.last_used_at),
-                          })
-                        : t('cliModal.manage.neverUsed')}
-                      {tok.last_ip
-                        ? ` · ${t('cliModal.manage.lastIp', { ip: tok.last_ip })}`
-                        : ''}
-                      {' · '}
-                      {tok.expires_at
-                        ? t(
-                            status === 'expired'
-                              ? 'cliModal.manage.expired'
-                              : 'cliModal.manage.expires',
-                            { when: formatAbsoluteTime(tok.expires_at) },
-                          )
-                        : t('cliModal.manage.noExpiry')}
-                    </p>
-                    <ul
-                      aria-label={t('cliModal.manage.abilities')}
-                      className="flex flex-wrap gap-1"
-                    >
-                      {chips.map((c) => (
-                        <li key={c}>
-                          <Badge
-                            variant={
-                              c === 'abilityRoot' ? 'destructive' : 'outline'
-                            }
-                          >
-                            {t(`cliModal.manage.${c}`)}
-                          </Badge>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="flex shrink-0 gap-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      aria-label={t('cliModal.manage.rotateLabel', {
-                        name: tok.name,
-                      })}
-                      onClick={() => {
-                        setRotateTarget(tok)
-                      }}
-                    >
-                      {t('cliModal.manage.rotate')}
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      aria-label={t('cliModal.manage.revokeLabel', {
-                        name: tok.name,
-                      })}
-                      onClick={() => {
-                        setTarget(tok)
-                      }}
-                    >
-                      {t('cliModal.manage.revoke')}
-                    </Button>
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
-        )}
-        <Link
-          to="/settings/cli-access"
-          onClick={onFullPage}
-          className="inline-block rounded-sm text-sm text-primary underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-        >
-          {t('cliModal.manage.fullPage')}
-        </Link>
-      </section>
-
-      <CommonCommands />
+        {t('cliModal.manage.fullPage')}
+      </Link>
 
       {rotateTarget ? (
         <RotateCliTokenDialog
