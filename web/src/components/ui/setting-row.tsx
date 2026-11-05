@@ -7,6 +7,8 @@ export interface SettingRowProps {
   /** Small status element beside the title. */
   badge?: ReactNode
   className?: string
+  /** Let the control use the full row instead of max-w-xl. */
+  wide?: boolean
   /** The control: input, switch, button group or read-only value. */
   children: ReactNode
 }
@@ -30,6 +32,7 @@ export function SettingRow({
   description,
   badge,
   className,
+  wide,
   children,
 }: SettingRowProps) {
   const titleId = useId()
@@ -55,7 +58,7 @@ export function SettingRow({
           </p>
         ) : null}
       </div>
-      <div className="min-w-0 md:max-w-xl">{children}</div>
+      <div className={cn('min-w-0', !wide && 'md:max-w-xl')}>{children}</div>
     </div>
   )
 }
