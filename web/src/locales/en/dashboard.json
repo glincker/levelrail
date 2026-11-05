@@ -143,14 +143,7 @@
     "title": "Usage details"
   },
   "hero": {
-    "greeting_morning": "Good morning",
-    "greeting_afternoon": "Good afternoon",
-    "greeting_evening": "Good evening",
-    "greeting_night": "Working late",
-    "greetingNamed_morning": "Good morning, {{name}}",
-    "greetingNamed_afternoon": "Good afternoon, {{name}}",
-    "greetingNamed_evening": "Good evening, {{name}}",
-    "greetingNamed_night": "Working late, {{name}}"
+    "title": "Dashboard"
   },
   "banners": {
     "httpsTitle": "This dashboard is on plain HTTP",
