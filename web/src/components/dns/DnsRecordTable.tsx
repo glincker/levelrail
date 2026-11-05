@@ -168,7 +168,7 @@ export function DnsRecordTable({
         <div key={group} role="rowgroup" aria-label={t(`group.${group}`)}>
           <div
             role="row"
-            className="flex items-center gap-1.5 border-b border-border bg-muted/50 px-2 py-1 text-xs font-medium uppercase tracking-wide text-muted-foreground"
+            className="flex items-center gap-1.5 border-b border-border bg-muted/50 px-2 py-1 text-xs font-medium text-muted-foreground"
           >
             <span role="rowheader">{t(`group.${group}`)}</span>
             <span aria-hidden>{changes.length}</span>

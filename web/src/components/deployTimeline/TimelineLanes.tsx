@@ -123,7 +123,7 @@ export function TimelineLanes({
         }}
       >
         <div className="min-w-[56rem]">
-          <div className="sticky top-0 z-20 flex border-b border-border bg-card text-[11px] text-muted-foreground">
+          <div className="sticky top-0 z-20 flex border-b border-border bg-card text-xs text-muted-foreground">
             <div className="sticky left-0 z-10 w-48 shrink-0 bg-card px-3 py-2">
               {t('chart.axisLabel')}
             </div>
@@ -143,7 +143,7 @@ export function TimelineLanes({
                 </span>
               ))}
               <span
-                className="absolute top-2 right-0 rounded-sm bg-tone-info-solid px-1 text-[10px] font-medium text-white"
+                className="absolute top-2 right-0 rounded-sm bg-tone-info-solid px-1 text-xs font-medium text-white"
                 data-testid="now-label"
               >
                 {t('chart.now')}
@@ -254,7 +254,7 @@ function LaneRow({
         ) : null}
         <div className="min-w-0">
           <div className="truncate text-sm font-medium">{lane.app}</div>
-          <div className="truncate text-[11px] text-muted-foreground">
+          <div className="truncate text-xs text-muted-foreground">
             {project || t('chart.unknownProject')}
           </div>
         </div>

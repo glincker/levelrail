@@ -120,7 +120,7 @@ export function ApiExplorerRoute({ route }: { route: OpenAPIRoute }) {
         <code className="min-w-0 flex-1 truncate text-left text-sm">
           {route.path}
         </code>
-        <Badge variant="outline" className="shrink-0 font-mono text-[10px]">
+        <Badge variant="outline" className="shrink-0 font-mono text-xs">
           {route.ability}
         </Badge>
         <ChevronDownGlassIcon

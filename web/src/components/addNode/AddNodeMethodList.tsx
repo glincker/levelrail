@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { BrandTile } from '../BrandLogoBadge'
 import { nodeProviderBrand } from '../../lib/providerBrands'
+import { SectionTitle } from '@/components/ui/typography'
 
 export type CloudProviderId =
   'hetzner' | 'digitalocean' | 'aws' | 'azure' | 'gcp'
@@ -106,9 +107,7 @@ export function AddNodeMethodList({
         className="space-y-2"
         aria-label={t('nodeProviders.addNodeDialog.cloud')}
       >
-        <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-          {t('nodeProviders.addNodeDialog.cloud')}
-        </h3>
+        <SectionTitle>{t('nodeProviders.addNodeDialog.cloud')}</SectionTitle>
         {ordered.map((id) => {
           const name = t(NAME_KEYS[id])
           const isConnected = connected.has(id)
@@ -171,9 +170,7 @@ export function AddNodeMethodList({
         className="space-y-2"
         aria-label={t('nodeProviders.addNodeDialog.own')}
       >
-        <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-          {t('nodeProviders.addNodeDialog.own')}
-        </h3>
+        <SectionTitle>{t('nodeProviders.addNodeDialog.own')}</SectionTitle>
         <Row
           mark={
             <span className="flex size-(--glinr-tile-size) shrink-0 items-center justify-center rounded-lg border border-border bg-background">

@@ -29,7 +29,7 @@ export function StatusPill({
         t.soft,
         t.border,
         t.text,
-        size === 'sm' ? 'h-5 px-2 text-[11px]' : 'h-6 px-2.5 text-xs',
+        size === 'sm' ? 'h-5 px-2 text-xs' : 'h-6 px-2.5 text-xs',
       )}
     >
       {icon ?? (

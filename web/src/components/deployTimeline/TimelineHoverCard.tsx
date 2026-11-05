@@ -10,7 +10,7 @@ const SHA_LENGTH = 7
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0">
-      <dt className="text-[11px] text-muted-foreground">{label}</dt>
+      <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd className="truncate text-sm">{value}</dd>
     </div>
   )

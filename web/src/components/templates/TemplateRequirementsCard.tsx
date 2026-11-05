@@ -18,6 +18,7 @@ import type {
   TemplateFinding,
   TemplateRequirements,
 } from '../../queries/serviceTemplates'
+import { SectionTitle } from '@/components/ui/typography'
 
 const LEVEL_VARIANT = {
   standard: 'success',
@@ -102,9 +103,7 @@ export function TemplateRequirementsCard({
           <CollapsiblePanel>
             <div className="mt-2 space-y-3">
               <section className="space-y-1">
-                <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                  {t('requirements.needsTitle')}
-                </h3>
+                <SectionTitle>{t('requirements.needsTitle')}</SectionTitle>
                 <ul className="space-y-1 text-sm">
                   {requirements.findings.map((f) => (
                     <li key={f.code}>
@@ -124,9 +123,7 @@ export function TemplateRequirementsCard({
                 </ul>
               </section>
               <section className="space-y-1">
-                <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                  {t('requirements.addsTitle')}
-                </h3>
+                <SectionTitle>{t('requirements.addsTitle')}</SectionTitle>
                 <ul className="list-disc space-y-1 pl-4 text-sm">
                   {requirements.protections.map((p) => (
                     <li key={p.code}>

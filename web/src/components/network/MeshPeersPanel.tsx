@@ -138,7 +138,7 @@ export function MeshPeersPanel({ localNodeId }: { localNodeId?: string }) {
         ) : (
           <div className="overflow-hidden rounded-lg border border-border">
             <div
-              className={`${MESH_PEER_GRID} border-b border-border bg-muted/40 px-3 py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase`}
+              className={`${MESH_PEER_GRID} border-b border-border bg-muted/40 px-3 py-2 text-xs font-medium text-muted-foreground`}
             >
               <span>Peer</span>
               <span>Health</span>

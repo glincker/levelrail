@@ -4,6 +4,7 @@ import type {
   DeployEventImpact,
   DeployEventWindow,
 } from '../../types/deployEvents'
+import { SectionTitle } from '@/components/ui/typography'
 
 function Side({
   label,
@@ -15,9 +16,7 @@ function Side({
   const { t } = useTranslation('deployEvents')
   return (
     <div className="min-w-0 flex-1">
-      <h4 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-        {label}
-      </h4>
+      <SectionTitle as="h4">{label}</SectionTitle>
       {w.has_traffic ? (
         <dl className="mt-1 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-sm">
           <dt className="text-muted-foreground">{t('impact.rate')}</dt>

@@ -243,7 +243,7 @@ export function ModelResidencyCard({ model }: { model: ModelResource }) {
               <Badge
                 key={name}
                 variant="muted"
-                className="rounded-full text-[10px]"
+                className="rounded-full text-xs"
               >
                 {name}
               </Badge>

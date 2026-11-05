@@ -58,7 +58,7 @@ function MemberStack({ orgId }: { orgId: string }) {
       {shown.map((m) => (
         <li
           key={m.user_id}
-          className="inline-flex size-7 items-center justify-center rounded-full bg-muted text-[10px] font-semibold ring-2 ring-card"
+          className="inline-flex size-7 items-center justify-center rounded-full bg-muted text-xs font-semibold ring-2 ring-card"
         >
           {orgInitials(m.display_name || m.email)}
         </li>
