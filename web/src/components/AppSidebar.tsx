@@ -9,6 +9,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  useSidebar,
 } from '@/components/ui/sidebar'
 import { useBrand } from '../hooks/useBrand'
 import { AccountMenu } from './shell/AccountMenu'
@@ -20,7 +21,10 @@ import { BrandMarkGlyph } from './BrandMarkGlyph'
 import { SidebarStatusBadge } from './shell/SidebarStatusBadge'
 import { VersionFooter } from './shell/VersionFooter'
 import { SidebarVersionLink } from './shell/SidebarVersionLink'
-import { scheduleScrollActiveNavItem } from './shell/scrollActiveNavItem'
+import {
+  scheduleResetSidebarScroll,
+  scheduleScrollActiveNavItem,
+} from './shell/scrollActiveNavItem'
 
 // Lazy: exactly one of these three renders at a time (mutually exclusive
 // by pathname below), so a session that never visits /databases or
@@ -77,6 +81,11 @@ export function AppSidebar() {
 
   // Keep the current page's entry visible in a long sidebar.
   useEffect(() => scheduleScrollActiveNavItem(), [pathname])
+  const { openMobile, isMobile } = useSidebar()
+  useEffect(() => {
+    if (!isMobile || !openMobile) return undefined
+    return scheduleResetSidebarScroll()
+  }, [isMobile, openMobile])
   useEffect(warmScopedSidebars, [])
 
   return (

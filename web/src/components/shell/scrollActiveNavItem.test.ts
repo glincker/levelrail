@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { scrollActiveNavItemIntoView } from './scrollActiveNavItem'
+import {
+  resetSidebarScroll,
+  scrollActiveNavItemIntoView,
+} from './scrollActiveNavItem'
 
 function rect(top: number, bottom: number): DOMRect {
   return {
@@ -57,5 +60,21 @@ describe('scrollActiveNavItemIntoView', () => {
     expect(() => {
       scrollActiveNavItemIntoView()
     }).not.toThrow()
+  })
+})
+
+describe('resetSidebarScroll', () => {
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('returns the scroller to the top when the active row is visible', () => {
+    const scrollTo = mount(150, 180)
+    const scroller = document.querySelector<HTMLElement>(
+      '[data-slot="sidebar-content"]',
+    )!
+    resetSidebarScroll()
+    expect(scroller.scrollTop).toBe(0)
+    expect(scrollTo).not.toHaveBeenCalled()
   })
 })
