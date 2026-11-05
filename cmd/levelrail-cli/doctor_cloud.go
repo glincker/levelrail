@@ -101,6 +101,9 @@ func runDoctorCloud(prog string, args []string, stdout, stderr io.Writer, deps h
 		}
 		return exitUsage
 	}
+	if _, werr := hostprovider.LoadData(); werr != nil {
+		_, _ = fmt.Fprint(stderr, cat.render("data_override_warning", "error", werr.Error()))
+	}
 	g, found := hostprovider.Detect(context.Background(), deps)
 	r := buildCloudReport(g, found, cat)
 	if *jsonOut {
