@@ -66,9 +66,9 @@ describe('buildAttentionItems', () => {
       'app:web',
       'node:n1',
       'cert:b.io',
-      'doctor:docker',
+      'doctor:Docker',
       'cert:a.io',
-      'doctor:disk',
+      'doctor:Disk',
     ])
     expect(items.filter((i) => i.severity === 'critical')).toHaveLength(4)
   })
@@ -97,7 +97,10 @@ describe('buildAttentionItems', () => {
         ],
       },
     })
-    expect(items.map((i) => i.id)).toEqual(['doctor:control_plane_dr'])
+    // The Doctor page and the server silence count key on the check name.
+    expect(items.map((i) => i.id)).toEqual([
+      'doctor:Control plane disaster recovery',
+    ])
     expect(items[0]?.class).toBe('recommendation')
   })
 

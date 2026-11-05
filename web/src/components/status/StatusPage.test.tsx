@@ -89,6 +89,64 @@ describe('StatusPage', () => {
     ).toBeVisible()
   })
 
+  it('keeps recommendations out of the main list in a collapsed advisory block', async () => {
+    const advice: AttentionItem[] = [
+      {
+        id: 'doctor:Backups',
+        severity: 'warning',
+        title: 'Backups are off',
+        detail: 'enable them',
+        target: { kind: 'system' },
+        class: 'recommendation',
+      },
+      {
+        id: 'update',
+        severity: 'warning',
+        title: 'New version',
+        detail: 'available',
+        target: { kind: 'system' },
+        class: 'recommendation',
+      },
+    ]
+    useAttentionItems.mockReturnValue({
+      items: [...items, ...advice],
+      isLoading: false,
+    })
+    render(<StatusPage />)
+    expect(screen.getAllByRole('listitem')).toHaveLength(2)
+    const toggle = screen.getByRole('button', {
+      name: 'statusPage.advisory.title',
+    })
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByText('Backups are off')).not.toBeVisible()
+    await userEvent.setup().click(toggle)
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByText('Backups are off')).toBeVisible()
+  })
+
+  it('shows a calm line when only advice remains', () => {
+    useAttentionItems.mockReturnValue({
+      items: [
+        {
+          id: 'update',
+          severity: 'warning',
+          title: 'New version',
+          detail: 'available',
+          target: { kind: 'system' },
+          class: 'recommendation',
+        },
+      ],
+      isLoading: false,
+    })
+    render(<StatusPage />)
+    expect(screen.getByText('statusPage.nothingNeedsAttention')).toBeVisible()
+    expect(
+      screen.getByRole('button', {
+        name: 'statusPage.advisory.title',
+      }),
+    ).toBeVisible()
+  })
+
   it('renders items with severity and uniquely named actions', async () => {
     useAttentionItems.mockReturnValue({ items, isLoading: false })
     render(<StatusPage />)

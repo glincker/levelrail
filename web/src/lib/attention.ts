@@ -161,7 +161,8 @@ export function buildAttentionItems({
   for (const check of doctor?.checks ?? []) {
     if (check.status === 'fail' || check.status === 'warn') {
       items.push({
-        id: `doctor:${check.code}`,
+        // Same id the Doctor page and the server silence count use.
+        id: `doctor:${check.name}`,
         severity: check.status === 'fail' ? 'critical' : 'warning',
         title: check.name,
         detail: check.message,
