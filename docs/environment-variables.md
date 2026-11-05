@@ -111,6 +111,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_DEPLOY_PREVIOUS_RELEASE_HOLD` | [`deploy.previous_release_hold`](/runtime-settings#deploys) | `3m` |
 | `APP_DEPLOY_STABLE_WINDOW` | [`deploy.stable_window`](/runtime-settings#deploys) | `10s` |
 | `APP_DEPLOY_WATCH_WINDOW` | [`deploy.watch_window`](/runtime-settings#deploys) | `5m` |
+| `APP_CI_GATE_MAX_WAITS_PER_APP` | [`deploys.ci_gate_max_waits_per_app`](/runtime-settings#deploys) | `4` |
 | `APP_IMAGE_KEEP_PER_APP` | [`images.keep_per_app`](/runtime-settings#deploys) | `3` |
 | `APP_NEXTJS_GENERATE_ACTIONS_KEY` | [`nextjs.generate_actions_key`](/runtime-settings#deploys) | `true` |
 | `APP_PLACEMENT_SCORE_MODE` | [`placement.score_mode`](/runtime-settings#deploys) | `spread` |

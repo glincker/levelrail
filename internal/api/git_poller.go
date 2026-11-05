@@ -290,16 +290,45 @@ func (rt *Router) handlePolledHead(ctx context.Context, name string, gs store.Gi
 		return nil
 	}
 
+	if ciGateApplies(gs, head) {
+		before := rel.LastSeenHead
+		// The head is noted only after a decision, so a shutdown, a DB error or a failed
+		// enqueue leaves it for the next poll to retry.
+		noteDecided := func(c context.Context) {
+			if err := rt.gitRel.NoteGitSourceHead(context.WithoutCancel(c), name, head, time.Now(), false); err != nil {
+				rt.logger.Warn("api: git poller: remember head failed", slog.String("name", name), slog.String("error", err.Error()))
+			}
+		}
+		rt.startGatedJob(ctx, ciGateJob{
+			name: name, gs: gs, gateSHA: head, tag: "", sha: head, before: before, label: webhookShortSHA(head),
+			source:    store.DeployAttemptSourcePoll,
+			ref:       "refs/heads/" + gs.Branch,
+			onDecided: func() { noteDecided(ctx) },
+			// The head stays un-noted, so the next poll retries it.
+			onShutdown: func() {},
+			run: func(c context.Context) {
+				if err := rt.enqueuePolledHead(c, name, gs, head, before); err != nil {
+					rt.logger.Warn("api: git poller: gated head not queued", slog.String("name", name), slog.String("error", err.Error()))
+				}
+			},
+		})
+		return nil
+	}
+	return rt.enqueuePolledHead(ctx, name, gs, head, rel.LastSeenHead)
+}
+
+// enqueuePolledHead dedupes, holds and queues a polled head, after the CI gate when one applies.
+func (rt *Router) enqueuePolledHead(ctx context.Context, name string, gs store.GitSource, head, before string) error {
 	rt.gitEnqueueMu.Lock()
 	defer rt.gitEnqueueMu.Unlock()
 	if state := rt.commitDeployState(ctx, name, head); state != "" {
 		return rt.gitRel.NoteGitSourceHead(ctx, name, head, time.Now(), false)
 	}
-	if reason := rt.staleGitDelivery(ctx, name, head, rel.LastSeenHead, time.Time{}); reason != "" {
+	if reason := rt.staleGitDelivery(ctx, name, head, before, time.Time{}); reason != "" {
 		rt.logger.Info("api: git poller: head is older than what is deployed or queued", slog.String("name", name), slog.String("reason", reason))
 		return rt.gitRel.NoteGitSourceHead(ctx, name, head, time.Now(), false)
 	}
-	hr := deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: head, CommitLabel: head, CommitSHA: head, Before: rel.LastSeenHead, Branch: gs.Branch}
+	hr := deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: head, CommitLabel: head, CommitSHA: head, Before: before, Branch: gs.Branch}
 	if held, _ := rt.holdIfFrozen(ctx, name, hr, name+":"+head); held {
 		return rt.gitRel.NoteGitSourceHead(ctx, name, head, time.Now(), false)
 	}

@@ -31,7 +31,16 @@ func bootRechecksFromEnv(raw string) (string, error) {
 	return strings.ReplaceAll(strings.TrimSpace(raw), ",", ":"), nil
 }
 
+// KeyCIGateMaxWaits caps the CI gate waits one app may hold at once, one per ref.
+const KeyCIGateMaxWaits = "deploys.ci_gate_max_waits_per_app"
+
 func init() {
+	Register(Definition{
+		Key: KeyCIGateMaxWaits, Category: CategoryDeploys, Kind: KindInt, Default: "4",
+		Env: "APP_CI_GATE_MAX_WAITS_PER_APP", Apply: ApplyLive, CheckValue: intRangeCheck(1, 50),
+		Title:       "CI gate waits per app",
+		Description: "How many refs of one app may wait for CI at once. A newer deploy of the same ref replaces the wait; one past the limit is refused and can be retried.",
+	})
 	Register(Definition{
 		Key: KeyBootRechecks, Category: CategoryDeploys, Kind: KindStringList, Default: "3s:10s",
 		Env: "APP_BOOT_RECHECKS", Apply: ApplyRestart, CheckItem: bootRecheckItemCheck, EnvConvert: bootRechecksFromEnv,

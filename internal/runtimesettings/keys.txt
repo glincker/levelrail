@@ -34,6 +34,7 @@ deploy.max_concurrent
 deploy.previous_release_hold
 deploy.stable_window
 deploy.watch_window
+deploys.ci_gate_max_waits_per_app
 desktop.session_ttl
 disk.critical_free_mb
 disk.low_free_mb
