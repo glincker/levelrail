@@ -2189,20 +2189,6 @@
  "list_stacks": [
   "stacks"
  ],
- "list_status_components": [
-  "description",
-  "display_name",
-  "group_id",
-  "id",
-  "kind",
-  "position",
-  "target"
- ],
- "list_status_groups": [
-  "id",
-  "name",
-  "position"
- ],
  "list_status_incidents": [
   "body",
   "component_ids",

@@ -13,7 +13,7 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | Toolset | Tools | Est. tokens |
 | --- | ---: | ---: |
 | account | 5 | 343 |
-| alerts | 14 | 1329 |
+| alerts | 12 | 1261 |
 | apps | 17 | 1855 |
 | audit | 2 | 250 |
 | backups | 14 | 1066 |
@@ -56,7 +56,7 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | teams | 2 | 88 |
 | templates | 2 | 126 |
 | webhooks | 1 | 128 |
-| **total** | **261** | **24643** |
+| **total** | **259** | **24575** |
 
 ## Default session (progressive disclosure)
 

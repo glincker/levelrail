@@ -49,26 +49,4 @@ func registerReadConfigTools(server *mcp.Server, client *apiclient.Client) {
 		}
 		return nil, out, nil
 	})
-
-	addTool(server, &mcp.Tool{
-		Name:        "list_status_components",
-		Description: "List the components shown on the public status page (kind, target, display name, group).",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.StatusComponent, error) {
-		out, err := client.ListStatusComponents(ctx)
-		if err != nil {
-			return nil, nil, fmt.Errorf("list status components: %w", err)
-		}
-		return nil, out, nil
-	})
-
-	addTool(server, &mcp.Tool{
-		Name:        "list_status_groups",
-		Description: "List the groups that organise status page components.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.StatusGroup, error) {
-		out, err := client.ListStatusGroups(ctx)
-		if err != nil {
-			return nil, nil, fmt.Errorf("list status groups: %w", err)
-		}
-		return nil, out, nil
-	})
 }

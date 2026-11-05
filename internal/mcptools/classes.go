@@ -203,8 +203,6 @@ var toolTable = map[string]Meta{
 	"list_alert_history":                    {clsR, "alerts", unt},
 	"get_status_page":                       {clsR, "alerts", 0},
 	"list_status_incidents":                 {clsR, "alerts", 0},
-	"list_status_components":                {clsR, "alerts", 0},
-	"list_status_groups":                    {clsR, "alerts", 0},
 	"list_monitors":                         {clsR, "alerts", 0},
 	"get_monitor_results":                   {clsR, "alerts", unt},
 	"list_deploy_policies":                  {clsR, "deploys", 0},
