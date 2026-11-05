@@ -144,6 +144,7 @@ describe('ImageAutoUpdateCard', () => {
             ? json({
                 path: '/api/v1/hooks/image-update/demo-app/tok',
                 token: 'tok',
+                signing_secret: 'whsec_once',
               })
             : json({ enabled: true, has_webhook: false }),
         ),
@@ -159,6 +160,10 @@ describe('ImageAutoUpdateCard', () => {
     expect(field).toHaveValue(
       `${window.location.origin}/api/v1/hooks/image-update/demo-app/tok`,
     )
+    expect(
+      screen.getByLabelText('GitHub webhook secret (shown once)'),
+    ).toHaveValue('whsec_once')
+    expect(screen.getByText(/Docker Hub: repository Webhooks/)).toBeVisible()
   })
 
   it('saves the update window with cron and minutes', async () => {

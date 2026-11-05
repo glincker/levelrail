@@ -308,7 +308,31 @@ export function ImageAutoUpdateCard({ appName }: { appName: string }) {
               <p className="text-xs text-muted-foreground">
                 {t('imageAutoUpdate.webhookShownOnce')}
               </p>
+              {rotate.data?.signing_secret ? (
+                <div className="space-y-1">
+                  <label
+                    htmlFor="image-update-signing-secret"
+                    className="text-xs text-muted-foreground"
+                  >
+                    {t('imageAutoUpdate.signingSecretLabel')}
+                  </label>
+                  <Input
+                    id="image-update-signing-secret"
+                    readOnly
+                    value={rotate.data.signing_secret}
+                    className="font-mono"
+                    onFocus={(e) => e.currentTarget.select()}
+                  />
+                </div>
+              ) : null}
             </div>
+          ) : null}
+          {setting.data.has_webhook || webhookUrl ? (
+            <ul className="space-y-1 text-xs text-muted-foreground">
+              <li>{t('imageAutoUpdate.providerHint.dockerhub')}</li>
+              <li>{t('imageAutoUpdate.providerHint.ghcr')}</li>
+              <li>{t('imageAutoUpdate.providerHint.protected')}</li>
+            </ul>
           ) : null}
         </div>
       </CardContent>

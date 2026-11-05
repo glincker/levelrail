@@ -37,6 +37,8 @@ type imageAutoUpdateResource struct {
 	LastCheckedAt *time.Time `json:"last_checked_at,omitempty"`
 	LastResult    string     `json:"last_result,omitempty"`
 	HasWebhook    bool       `json:"has_webhook"`
+	// HasSigningSecret reports whether GitHub package deliveries must carry a valid X-Hub-Signature-256.
+	HasSigningSecret bool `json:"has_signing_secret"`
 	// WindowCron and WindowMinutes: updates found outside the window wait for it.
 	WindowCron    string `json:"window_cron,omitempty"`
 	WindowMinutes int    `json:"window_minutes,omitempty"`
@@ -67,7 +69,9 @@ func (rt *Router) handleGetImageAutoUpdate(w http.ResponseWriter, r *http.Reques
 		rt.internalError(w, "api: get image auto-update", err, slog.String("name", name))
 		return
 	}
-	writeJSON(w, http.StatusOK, toImageAutoUpdateResource(u))
+	res := toImageAutoUpdateResource(u)
+	res.HasSigningSecret = rt.hasPushSigningSecret(r.Context(), name)
+	writeJSON(w, http.StatusOK, res)
 }
 
 func (rt *Router) handleSetImageAutoUpdate(w http.ResponseWriter, r *http.Request) {
@@ -219,6 +223,16 @@ const imageUpdateWebhookTimeout = 2 * time.Minute
 type imageUpdateWebhookResource struct {
 	Path  string `json:"path"`
 	Token string `json:"token"`
+	// SigningSecret is the GitHub package webhook secret, shown once alongside the token; empty when secrets are not configured.
+	SigningSecret string `json:"signing_secret,omitempty"`
+}
+
+func (rt *Router) hasPushSigningSecret(ctx context.Context, name string) bool {
+	if rt.gitSourceSecrets == nil {
+		return false
+	}
+	has, err := rt.gitSourceSecrets.Exists(ctx, imageUpdateSecretNS+name, imageUpdateSecretKey)
+	return err == nil && has
 }
 
 // handleRotateImageUpdateWebhook mints a fresh webhook token, shown once.
@@ -240,7 +254,19 @@ func (rt *Router) handleRotateImageUpdateWebhook(w http.ResponseWriter, r *http.
 		rt.internalError(w, "api: rotate image update webhook", err, slog.String("name", name))
 		return
 	}
-	writeJSON(w, http.StatusOK, imageUpdateWebhookResource{Path: "/api/v1/hooks/image-update/" + name + "/" + token, Token: token})
+	res := imageUpdateWebhookResource{Path: imageUpdateHookPrefix + name + "/" + token, Token: token}
+	if rt.gitSourceSecrets != nil {
+		secret, serr := randomToken()
+		if serr == nil {
+			serr = rt.gitSourceSecrets.SetValue(r.Context(), imageUpdateSecretNS+name, imageUpdateSecretKey, secret)
+		}
+		if serr != nil {
+			rt.internalError(w, "api: rotate image update webhook: signing secret", serr, slog.String("name", name))
+			return
+		}
+		res.SigningSecret = secret
+	}
+	writeJSON(w, http.StatusOK, res)
 }
 
 // handleImageUpdateWebhook is the public registry push hook. Unknown app,
@@ -258,6 +284,9 @@ func (rt *Router) handleImageUpdateWebhook(w http.ResponseWriter, r *http.Reques
 	}
 	if !u.Enabled || u.WebhookHash == "" || subtle.ConstantTimeCompare([]byte(hashToken(token)), []byte(u.WebhookHash)) != 1 {
 		writeError(w, http.StatusNotFound, "not found")
+		return
+	}
+	if rt.handleRegistryPushDelivery(w, r, name) {
 		return
 	}
 	if u.LastCheckedAt != nil && time.Since(*u.LastCheckedAt) < imageUpdateWebhookDebounce {

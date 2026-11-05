@@ -71,6 +71,9 @@ func toDeployApprovalResource(a store.DeployApproval) deployApprovalResource {
 // PrincipalTypeUser/PrincipalTypeToken vocabulary iam_policy.go's own
 // policies already key on.
 func (rt *Router) currentActor(r *http.Request) (actorType, actorID, actorName string, ok bool) {
+	if a, pushed := registryPushActorFrom(r.Context()); pushed {
+		return actorTypeRegistryPush, a.app, "registry push (" + a.provider + ")", true
+	}
 	if userID, sessOK := rt.currentSessionUserID(r); sessOK {
 		user, err := rt.auth.GetUserByID(r.Context(), userID)
 		if err != nil {

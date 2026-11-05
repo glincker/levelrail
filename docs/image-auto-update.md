@@ -55,5 +55,25 @@ A webhook for an app that has not opted in, or with a wrong token, answers
 `404`. Repeat deliveries within 30 seconds of a check are acknowledged and
 skipped. The check runs in the background and follows the same skip rules.
 
-A tag pinned by digest (`image@sha256:...`) never moves, so there is nothing
-to update.
+### Docker Hub and GitHub (ghcr.io) pushes
+
+The same URL understands push events and deploys the pushed digest, not the
+tag.
+
+- **Docker Hub:** add the URL under the repository's Webhooks. Docker Hub
+  sends no digest, so the control plane resolves the tag first.
+- **GitHub Packages (ghcr.io):** add the URL under Settings, Webhooks, with
+  content type `application/json`, event Packages, and the secret printed
+  with the URL (shown once). Deliveries without a valid
+  `X-Hub-Signature-256` answer `404`.
+
+The pushed repository must be the app's own image repository (otherwise
+`404`) and the pushed tag must be the app's tag (otherwise the delivery is
+acknowledged and ignored). A protected environment files a deploy approval
+for the digest instead of deploying. The outcome shows as the card's last
+result and as a `registry_push.deploy` audit row with the tag and digest.
+`deploys.registry_push_max_body_bytes` and `deploys.registry_push_timeout`
+are runtime settings. See ADR 073.
+
+A tag pinned by digest (`image@sha256:...`) never moves for the interval
+check, but a push still deploys the new digest of its tag.
