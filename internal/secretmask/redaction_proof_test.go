@@ -221,6 +221,7 @@ var sseWriters = map[string]string{
 	"internal/api/doctor_checks_extra.go": "UNREVIEWED: doctor check results",
 	"internal/api/pipelines.go":           "masked: pipeline_logs are masked at insert",
 	"internal/api/deploy_timeline.go":     "UNREVIEWED: deploy timeline",
+	"internal/api/dns_watch.go":           "structured watch entries only: domain, app, state, timestamps",
 }
 
 func TestEverySSEWriterInAPIIsClassified(t *testing.T) {

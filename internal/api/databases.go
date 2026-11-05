@@ -343,8 +343,7 @@ func (rt *Router) createDesiredDatabase(w http.ResponseWriter, r *http.Request, 
 
 	if defaultEnvID != "" {
 		if err := rt.setDatabaseEnvironment(r.Context(), req.Name, defaultEnvID); err != nil {
-			rt.logger.Error("api: create database: assign default environment failed", slog.String("error", err.Error()), slog.String("name", req.Name), slog.String("environment_id", defaultEnvID))
-			writeError(w, http.StatusInternalServerError, "internal error")
+			rt.internalError(w, "create database: assign default environment", err, slog.String("name", req.Name), slog.String("environment_id", defaultEnvID))
 			return false
 		}
 	}
