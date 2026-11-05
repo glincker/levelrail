@@ -212,16 +212,26 @@
   },
   "ciGate": {
     "title": "Wait for CI before deploying",
-    "description": "Hold a push deploy until the commit's checks pass. If a check fails or the wait times out, the deploy is skipped and the reason shows in webhook deliveries and deploy history.",
+    "description": "Hold a push deploy until the commit's checks pass. Works with GitHub and GitLab. If a check fails or the wait times out, the deploy is skipped and the reason shows in webhook deliveries and deploy history.",
     "toggle": "Wait for CI checks",
     "checksLabel": "Required checks",
-    "checksHelp": "Leave empty to wait for every check on the commit. Add names such as build or test to wait only for those.",
+    "checksHelp": "Leave empty to wait for every check on the commit. Add names to wait only for those. On GitHub use the check name, such as build or test. On GitLab use the job name.",
     "checkPlaceholder": "Check name",
     "add": "Add",
     "remove": "Remove {{name}}",
     "save": "Save",
     "saving": "Saving...",
     "saved": "CI gate saved.",
-    "saveFailed": "Could not save the CI gate."
+    "saveFailed": "Could not save the CI gate.",
+    "gitlabNote": "On GitLab a required job that was skipped, or that is allowed to fail (allow_failure), fails the gate. Leave such jobs out of the list.",
+    "unreadable": {
+      "title": "This repository's CI status cannot be read",
+      "intro": "The CI gate needs a GitHub App or GitLab connection that can read this repository's checks. It cannot work when the source is:",
+      "ssh": "an SSH or plain http repository URL",
+      "gitea": "Gitea",
+      "bitbucket": "Bitbucket",
+      "githubNoApp": "a GitHub repository without the GitHub App installed",
+      "fix": "Connect the repository through a GitHub App or a GitLab connection, then turn the gate on again."
+    }
   }
 }

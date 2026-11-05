@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import {
   PlusGlassIcon,
   ShieldCheckGlassIcon,
+  TriangleAlertGlassIcon,
   XGlassIcon,
 } from '@thesvg/ui-react'
 import {
@@ -12,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -54,6 +56,8 @@ function CiGateForm({
   const [enabled, setEnabled] = useState(wait)
   const [names, setNames] = useState(checks)
   const [draft, setDraft] = useState('')
+  // The API answers 422 when no CI reader can be built for this source.
+  const [unreadable, setUnreadable] = useState(false)
 
   const dirty =
     enabled !== wait || JSON.stringify(names) !== JSON.stringify(checks)
@@ -66,19 +70,23 @@ function CiGateForm({
     setDraft('')
   }
 
-  const submit = () =>
+  const submit = () => {
+    setUnreadable(false)
     save.mutate(
       { wait_for_ci: enabled, ci_required_checks: names },
       {
         onSuccess: () => toast.add({ title: t('saved'), type: 'success' }),
-        onError: (e) =>
+        onError: (e) => {
+          setUnreadable(e.status === 422)
           toast.add({
             title: t('saveFailed'),
-            description: e.message,
+            description: e.status === 422 ? undefined : e.message,
             type: 'error',
-          }),
+          })
+        },
       },
     )
+  }
 
   return (
     <Card>
@@ -94,7 +102,10 @@ function CiGateForm({
           <Switch
             id="ci-gate-wait"
             checked={enabled}
-            onCheckedChange={setEnabled}
+            onCheckedChange={(next) => {
+              setEnabled(next)
+              setUnreadable(false)
+            }}
             aria-label={t('toggle')}
           />
           <Label htmlFor="ci-gate-wait">{t('toggle')}</Label>
@@ -143,7 +154,24 @@ function CiGateForm({
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">{t('checksHelp')}</p>
+            <p className="text-xs text-muted-foreground">{t('gitlabNote')}</p>
           </div>
+        )}
+        {unreadable && (
+          <Alert variant="destructive" role="alert">
+            <TriangleAlertGlassIcon size="1.7em" />
+            <AlertTitle>{t('unreadable.title')}</AlertTitle>
+            <AlertDescription>
+              <p>{t('unreadable.intro')}</p>
+              <ul className="list-disc pl-5">
+                <li>{t('unreadable.ssh')}</li>
+                <li>{t('unreadable.gitea')}</li>
+                <li>{t('unreadable.bitbucket')}</li>
+                <li>{t('unreadable.githubNoApp')}</li>
+              </ul>
+              <p>{t('unreadable.fix')}</p>
+            </AlertDescription>
+          </Alert>
         )}
         <Button size="sm" onClick={submit} disabled={!dirty || save.isPending}>
           {save.isPending ? t('saving') : t('save')}
