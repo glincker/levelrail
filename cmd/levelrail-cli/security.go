@@ -93,6 +93,10 @@ func runSecurityPosture(prog string, args []string, stdout, stderr io.Writer, lo
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)
 	}
+	if failUnder > 0 && p.Counts.Unknown > 0 {
+		_, _ = fmt.Fprintf(stderr, "security posture: %d checks could not be evaluated, the score cannot be trusted\n", p.Counts.Unknown)
+		return exitCheckFailed
+	}
 	if failUnder > 0 && p.Score < failUnder {
 		_, _ = fmt.Fprintf(stderr, "security posture: score %d is below --fail-under %d\n", p.Score, failUnder)
 		return exitCheckFailed

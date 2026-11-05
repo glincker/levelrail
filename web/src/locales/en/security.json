@@ -278,7 +278,7 @@
     "agent_tokens_production": {
       "title": "Agent tokens can change production",
       "pass": "No agent token can change production",
-      "why": "Agent tokens that can write or deploy, while AI control allows production, can alter live apps without a person in the loop."
+      "why": "While AI control is above observe, agent tokens that can write or deploy can still reach routes the production guard does not cover, such as apply and environments."
     },
     "prod_env_unprotected": {
       "title": "Production environments without protection",
@@ -286,9 +286,9 @@
       "why": "A protected environment asks for approval before deploys, rollbacks and promotions reach it."
     },
     "prod_apps_unguarded": {
-      "title": "Production apps with no deploy policy or freeze window",
-      "pass": "Every production app has a deploy policy or freeze window",
-      "why": "Without a policy rule or a freeze window, nothing restricts what can ship to a production app."
+      "title": "Production apps with no enforcing deploy policy",
+      "pass": "Every production app has an enforcing deploy policy",
+      "why": "A rule in warn mode only reports. Without a rule in enforce mode, nothing blocks a risky deploy to a production app."
     },
     "audit_sink_none": {
       "title": "The audit log is not sent anywhere",

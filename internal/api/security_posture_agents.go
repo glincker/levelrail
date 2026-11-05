@@ -31,9 +31,7 @@ func agentNameOf(a *agentIdentity) string {
 }
 
 func canMutate(abilities []string) bool {
-	return slices.ContainsFunc(abilities, func(a string) bool {
-		return a == AbilityWrite || a == AbilityWriteSensitive || a == AbilityDeploy
-	})
+	return hasAbility(abilities, AbilityWrite) || hasAbility(abilities, AbilityWriteSensitive) || hasAbility(abilities, AbilityDeploy)
 }
 
 // collectPostureAgents gathers the AI control, production environment, deploy
@@ -77,8 +75,19 @@ func (rt *Router) collectPostureAgents(ctx context.Context, in *postureInput) {
 		}
 	}
 	in.Agent.ProdKnown = true
+	defaults := map[string]string{}
+	if d, ok := any(rt.projects).(interface {
+		DefaultEnvironmentIDs(context.Context) (map[string]string, error)
+	}); ok {
+		if m, derr := d.DefaultEnvironmentIDs(ctx); derr == nil {
+			defaults = m
+		}
+	}
 	var prodSvcs []store.DesiredService
 	for _, s := range svcs {
+		if s.EnvironmentID == "" {
+			s.EnvironmentID = defaults[s.ProjectID]
+		}
 		if s.EnvironmentID != "" && prod[s.EnvironmentID] {
 			prodSvcs = append(prodSvcs, s)
 		}
@@ -87,11 +96,12 @@ func (rt *Router) collectPostureAgents(ctx context.Context, in *postureInput) {
 	rt.collectPostureGuards(ctx, in, prodSvcs)
 }
 
-// collectPostureGuards names production apps with neither a deploy policy
-// rule nor a freeze window, direct or global.
+// collectPostureGuards names production apps with no enforcing deploy policy
+// rule. Freeze windows are recurring and hold only automatic deploys, so they
+// do not count as a standing guard.
 func (rt *Router) collectPostureGuards(ctx context.Context, in *postureInput, prodSvcs []store.DesiredService) {
 	db := rt.deployPolicyDB()
-	if db == nil || rt.deploySafety == nil {
+	if db == nil {
 		return
 	}
 	stored, err := db.ListDeployPolicies(ctx)
@@ -102,25 +112,23 @@ func (rt *Router) collectPostureGuards(ctx context.Context, in *postureInput, pr
 	for _, p := range stored {
 		byScope[p.Scope+"/"+p.ScopeID] = p.Rules
 	}
-	global, err := rt.deploySafety.ListDeployFreezeWindows(ctx, store.DeployFreezeScopeGlobal)
-	if err != nil {
-		return
-	}
 	for _, s := range prodSvcs {
 		set := policy.Merge(byScope[policy.ScopeOrg+"/"+policy.OrgScopeID], byScope[policy.ScopeProject+"/"+s.ProjectID],
 			byScope[policy.ScopeEnvironment+"/"+s.EnvironmentID])
-		if len(set) > 0 || len(global) > 0 {
-			continue
-		}
-		own, ferr := rt.deploySafety.ListDeployFreezeWindows(ctx, store.DeployFreezeScopeApp(s.Name))
-		if ferr != nil {
-			return
-		}
-		if len(own) == 0 {
+		if !hasEnforcedRule(set) {
 			in.Agent.ProdAppsNoGuard = append(in.Agent.ProdAppsNoGuard, s.Name)
 		}
 	}
 	in.Agent.GuardKnown = true
+}
+
+func hasEnforcedRule(set policy.Set) bool {
+	for _, r := range set {
+		if r.Mode == policy.ModeEnforce {
+			return true
+		}
+	}
+	return false
 }
 
 // agentPostureRules are recommended until an app is live (or strict mode), so a
@@ -139,7 +147,7 @@ func agentPostureRules(in postureInput) []postureItem {
 // agentTokenUnnamedRule: a token without an agent name is invisible to AI control.
 func agentTokenUnnamedRule(in postureInput) postureItem {
 	return tokenRule(in, "agent_token_unnamed", postureMedium, linkFix("/settings/tokens"), func(t store.APIToken) bool {
-		return t.AgentName == "" && canMutate(t.Abilities) && !hasAbility(t.Abilities, AbilityRoot)
+		return t.AgentName == "" && canMutate(t.Abilities)
 	})
 }
 
@@ -154,15 +162,15 @@ func aiControlAdminRule(in postureInput) postureItem {
 	return failing(id, postureMedium, nil, linkFix("/settings/ai-control"))
 }
 
-// agentTokensProdRule fires when labelled agent tokens can mutate and AI
-// control lets agents act in production environments.
+// agentTokensProdRule passes only when AI control keeps agents read-only. The
+// environment guard covers app and database routes only, so in operate or admin
+// mode a labelled write token can still reach other routes that change production.
 func agentTokensProdRule(in postureInput) postureItem {
 	const id = "agent_tokens_production"
-	switch {
-	case !in.TokensKnown || !in.Agent.AIKnown || !in.Agent.ProdKnown:
-		return unknown(id, postureMedium, "tokens, AI control or environments could not be read")
-	case in.Agent.ProdApps == 0 || in.Agent.AIMode == store.AIControlModeOff || in.Agent.AIMode == store.AIControlModeObserve ||
-		!slices.Contains(in.Agent.AIEnvKinds, store.EnvironmentKindProduction):
+	if !in.TokensKnown || !in.Agent.AIKnown {
+		return unknown(id, postureMedium, "tokens or AI control could not be read")
+	}
+	if in.Agent.AIMode == store.AIControlModeOff || in.Agent.AIMode == store.AIControlModeObserve {
 		return pass(id, postureMedium)
 	}
 	var names []string
@@ -174,8 +182,12 @@ func agentTokensProdRule(in postureInput) postureItem {
 	if len(names) == 0 {
 		return pass(id, postureMedium)
 	}
-	return failing(id, postureMedium, names, linkFix("/settings/ai-control"))
+	it := failing(id, postureMedium, names, linkFix("/settings/ai-control"))
+	it.Detail = agentProdReachDetail
+	return it
 }
+
+const agentProdReachDetail = "agent tokens can still reach routes the production guard does not cover: apply, environments"
 
 func prodEnvUnprotectedRule(in postureInput) postureItem {
 	const id = "prod_env_unprotected"

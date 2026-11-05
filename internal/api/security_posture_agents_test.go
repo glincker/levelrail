@@ -3,6 +3,7 @@ package api
 import (
 	"testing"
 
+	"github.com/GLINCKER/levelrail/internal/policy"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -37,6 +38,16 @@ func TestAgentPostureRules(t *testing.T) {
 			prodAgents(in)
 			in.Agent.AIMode = store.AIControlModeObserve
 		}},
+		{"agent_tokens_production", postureStatusFail, func(in *postureInput) {
+			prodAgents(in)
+			in.Agent.AIEnvKinds = []string{store.EnvironmentKindDev}
+		}},
+		{"agent_tokens_production", postureStatusFail, func(in *postureInput) {
+			in.Tokens = append(in.Tokens, store.APIToken{ID: "r", Name: "rootbot", AgentName: "x", Abilities: []string{AbilityRoot}})
+		}},
+		{"agent_token_unnamed", postureStatusFail, func(in *postureInput) {
+			in.Tokens = append(in.Tokens, store.APIToken{ID: "r", Name: "rootkey", Abilities: []string{AbilityRoot}})
+		}},
 		{"prod_env_unprotected", postureStatusFail, func(in *postureInput) { in.Agent.ProdEnvOpen = []string{"production"} }},
 		{"prod_env_unprotected", postureStatusUnknown, func(in *postureInput) { in.Agent.ProdKnown = false }},
 		{"prod_apps_unguarded", postureStatusFail, func(in *postureInput) { in.Agent.ProdAppsNoGuard = []string{"web"} }},
@@ -63,5 +74,27 @@ func TestAgentPostureRecommendedUntilLive(t *testing.T) {
 	in.AppsLive = true
 	if it := postureByID(evaluatePosture(in))["audit_sink_none"]; it.Recommended {
 		t.Fatal("live server: want scoring")
+	}
+}
+
+func TestHasEnforcedRule(t *testing.T) {
+	if hasEnforcedRule(policy.Set{"a": {Mode: policy.ModeWarn}, "b": {Mode: policy.ModeOff}}) {
+		t.Fatal("warn and off rules must not count as a guard")
+	}
+	if !hasEnforcedRule(policy.Set{"a": {Mode: policy.ModeEnforce}}) {
+		t.Fatal("an enforce rule must count")
+	}
+	if hasEnforcedRule(nil) {
+		t.Fatal("empty set is unguarded")
+	}
+}
+
+func TestAgentTokensProductionDetail(t *testing.T) {
+	in := healthyPosture()
+	in.Agent.AIMode = store.AIControlModeOperate
+	in.Tokens = append(in.Tokens, store.APIToken{ID: "a", Name: "bot", AgentName: "x", Abilities: []string{AbilityWrite}})
+	it := postureByID(evaluatePosture(in))["agent_tokens_production"]
+	if it.Status != postureStatusFail || it.Detail != agentProdReachDetail {
+		t.Fatalf("got %s %q", it.Status, it.Detail)
 	}
 }
