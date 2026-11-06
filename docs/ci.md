@@ -450,25 +450,34 @@ passes `CI required` the same way a skipped area does.
 
 ## Release branch pushes
 
-`ci.yml` also runs on `push` to `release/**`, so each push to the release line
-gets the same impact-scoped run a PR gets. Concurrency groups a release branch by
-ref and cancels the older run, so a burst of pushes keeps only the newest.
-Because a cancelled run never reports its commit, `changes` diffs a release push
-against its merge-base with `main` (the cumulative release diff), not against
-`github.event.before`. Other pushes use `before` and fall back to the same
-merge-base when it is the zero SHA or no longer reachable (a force push).
-Public repository minutes are free, but a push burst still queues runners and
-delays the PR checks, so batch pushes. `paths-ignore` for Markdown and `adr/**`
-stays: required checks only matter on PRs, which have no path filter.
-`coverage-gate` and the cache saves also run for these pushes. The draft logic
-is unchanged because it reads the pull request payload.
+`ci.yml` has no `push` trigger for `release/**`. It used to have one, and the
+concurrency group included the event name, so a push to a release branch with
+an open PR started both a `push` run and a `pull_request` run of the whole
+matrix (about 96 and 137 runner-minutes in the two runs of one release push,
+with the PR run's jobs queued behind the push run's). The `pull_request` run
+covers the same commit and is the one `CI required` gates on, so the push run
+was pure duplication, plus a `Coverage gate` that is informational.
+
+A push to a release branch with no open PR (the release line before its PR
+exists) runs `release-push-check.yml` instead: one job that looks up the open
+PR for the branch, and if there is none, runs `go build ./...` and
+`go vet ./...` when Go changed and the web build when `web/` changed, scoped
+by `scripts/ci-changes.sh` against the merge-base with `main`. It fails open
+(a failed lookup runs the checks) and is not a required check. With an open PR
+it exits after the lookup, in about 10 seconds. The real gate stays the
+release PR's CI run. `paths-ignore` for Markdown and `adr/**` stays on both
+push triggers.
+
+A `main` push uses `github.event.before` and falls back to the merge-base
+with `main` when that is the zero SHA or no longer reachable (a force push).
 
 ## Concurrency and merge queue
 
 A new push to a PR cancels that PR's previous CI run (`ci.yml`, `secret-scan.yml`,
 `pr-hygiene.yml`, `pr-security.yml`). `sonar.yml`, `security-scheduled.yml` and
 `codeql.yml` cancel a superseded run of the same ref, and `dependabot-auto-merge.yml`
-of the same PR. The group key includes the event name and, outside pull
+of the same PR, and `release-push-check.yml` cancels a superseded run of the
+same branch. The group key includes the event name and, outside pull
 requests, the commit SHA, so `merge_group` and `main` runs never share a
 group with a PR and are never cancelled; `nightly.yml` has no group.
 
