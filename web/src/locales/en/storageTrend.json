@@ -1,0 +1,35 @@
+{
+  "title": "Disk use over time",
+  "range": {
+    "label": "Range",
+    "days": "{{count}}d"
+  },
+  "chart": {
+    "label": "Used disk space over the last {{days}} days. Use the arrow keys to read each day."
+  },
+  "tooltip": {
+    "used": "Used",
+    "free": "Free",
+    "images": "Images",
+    "containers": "Containers",
+    "volumes": "Volumes",
+    "buildCache": "Build cache"
+  },
+  "forecast": {
+    "full_one": "Full in about {{count}} day at the current rate",
+    "full_other": "Full in about {{count}} days at the current rate",
+    "needsDays": "The fill date appears after {{count}} days of data.",
+    "flat": "Usage is flat or shrinking, so there is no fill date.",
+    "legend": "Projected"
+  },
+  "legend": {
+    "used": "Used"
+  },
+  "states": {
+    "loading": "Loading disk history",
+    "collecting": "Collecting data, the first trend appears after two days.",
+    "unavailable": "Disk history is not stored on this server, so there is no trend to show.",
+    "error": "Disk history could not be loaded.",
+    "retry": "Try again"
+  }
+}

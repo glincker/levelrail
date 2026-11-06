@@ -100,6 +100,7 @@ export const NAMESPACES = [
   'images',
   'storage',
   'storagePolicy',
+  'storageTrend',
   'buildCenter',
   'functions',
   'monitors',
