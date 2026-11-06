@@ -128,6 +128,7 @@ export const NAMESPACES = [
   'firewall',
   'rules',
   'storageBuckets',
+  'storageList',
   'dashboards',
   'passkeys',
   'account',
