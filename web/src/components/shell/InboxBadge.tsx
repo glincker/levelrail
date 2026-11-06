@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { InboxGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
+import { CountBadge } from './CountBadge'
 import { inboxUnread } from '../../lib/inboxEntries'
 import { useInboxEntries } from '../../queries/inboxFeed'
 
@@ -22,14 +23,7 @@ export function InboxBadge() {
       nativeButton={false}
     >
       <InboxGlassIcon size="1.4em" />
-      {unread > 0 ? (
-        <span
-          aria-hidden="true"
-          className="absolute -top-1 -right-1 flex size-3.5 items-center justify-center rounded-full bg-destructive text-xs font-semibold text-white"
-        >
-          {unread > 9 ? '9+' : unread}
-        </span>
-      ) : null}
+      {unread > 0 ? <CountBadge count={unread} tone="destructive" /> : null}
     </Button>
   )
 }
