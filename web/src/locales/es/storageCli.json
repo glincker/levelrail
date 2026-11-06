@@ -1,0 +1,39 @@
+{
+  "title": "Ejecutar en una terminal",
+  "description": "Las mismas herramientas de almacenamiento desde la línea de comandos. Primero la vista previa, luego aplicar.",
+  "tabsLabel": "Grupos de comandos",
+  "tabs": {
+    "usage": "Ver uso",
+    "clean": "Limpiar con seguridad",
+    "automate": "Automatizar"
+  },
+  "server": "Los comandos se ejecutan contra {{server}}. Antes, inicia sesión con el comando de conexión de la guía de la CLI.",
+  "role": {
+    "viewer": "Lector",
+    "admin": "Administrador"
+  },
+  "yourRole": "Tu rol: {{role}}",
+  "needsAdmin": "Requiere administrador",
+  "needsSensitive": "Requiere además el permiso write:sensitive",
+  "dryRunFirst": "Simulacro primero: en cada grupo las vistas previas van antes de aplicar, y no se elimina nada hasta que ejecutas el comando de aplicar.",
+  "whyNoSystemPrune": "system-prune no aparece a propósito: elimina los volúmenes sin uso, que pueden guardar datos que aún necesitas.",
+  "blockLabel": "Comando: {{command}}",
+  "commands": {
+    "doctorDisk": "Estado del disco y espacio libre en este servidor",
+    "imagesList": "Imágenes y lo que cuesta cada una",
+    "janitorStatus": "Última ejecución del limpiador y la política activa",
+    "buildsCache": "Tamaño de la caché de compilación y lo que liberaría una limpieza",
+    "buildCacheShow": "Caché de compilación compartida entre todas las apps",
+    "volumesOrphaned": "Volúmenes que ninguna app usa ya",
+    "containersOrphans": "Contenedores que dejaron las apps eliminadas",
+    "janitorDryRun": "Vista previa de lo que eliminaría el limpiador",
+    "janitorRun": "Ejecuta el limpiador tras revisar la vista previa",
+    "imagesGcPreview": "Vista previa de las imágenes antiguas que se irían",
+    "imagesGcApply": "Elimina las imágenes que listó la vista previa",
+    "imagesPruneDry": "Vista previa de imágenes sin gestionar que ninguna app posee",
+    "buildsCacheApply": "Limpia la caché de compilación tras la vista previa",
+    "volumesCleanup": "Elimina solo los volúmenes huérfanos que nombres",
+    "containersReap": "Elimina contenedores que dejaron las apps eliminadas",
+    "janitorPolicy": "Activa la limpieza automática con una edad de caché y un margen de espacio libre"
+  }
+}
