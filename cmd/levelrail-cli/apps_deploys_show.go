@@ -34,7 +34,30 @@ func runAppsDeploysShow(prog string, args []string, stdout, stderr io.Writer, lo
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get deploy %q for app %q: %w", deployID, name, err))
 	}
-	return writeScheduledTaskResult(stdout, stderr, of, attempt, func() { printDeployAttemptDetail(stdout, attempt) })
+	return writeScheduledTaskResult(stdout, stderr, of, attempt, func() {
+		printDeployAttemptDetail(stdout, attempt)
+		// Phases are best effort: an older control plane simply lacks them.
+		if ph, perr := client.GetDeployPhases(context.Background(), attempt.ID); perr == nil && len(ph.Phases) > 0 {
+			printDeployPhases(stdout, ph)
+		}
+	})
+}
+
+func printDeployPhases(w io.Writer, ph apiclient.DeployPhases) {
+	_, _ = fmt.Fprintln(w, "\nphases:")
+	for _, p := range ph.Phases {
+		line := fmt.Sprintf("  %-13s %-8s", p.Phase, p.Status)
+		if p.DurationMS != nil {
+			line += " " + (time.Duration(*p.DurationMS) * time.Millisecond).Round(time.Second).String()
+		}
+		if p.TypicalMS != nil {
+			line += " (usually " + (time.Duration(*p.TypicalMS) * time.Millisecond).Round(time.Second).String() + ")"
+		}
+		_, _ = fmt.Fprintln(w, line)
+	}
+	if ph.ETAMS != nil {
+		_, _ = fmt.Fprintf(w, "  about %s left\n", (time.Duration(*ph.ETAMS) * time.Millisecond).Round(time.Second))
+	}
 }
 
 func printDeployAttemptDetail(w io.Writer, a deployAttemptResource) {

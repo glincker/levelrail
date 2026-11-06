@@ -2200,6 +2200,7 @@ Routes that do not fit an existing group.
 | DELETE | /api/v1/me/preferences/appearance | Public | handleDeleteMePreferenceAppearance |
 | POST | /api/v1/images/remove | AbilityRoot | handleImageRemove |
 | GET | /api/v1/status-reasons | AbilityRead | handleListStatusReasons |
+| GET | /api/v1/deployments/{id}/phases | AbilityRead | handleGetDeployPhases |
 | POST | /mcp | Public |  |
 
 ## See also

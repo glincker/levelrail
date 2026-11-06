@@ -237,6 +237,8 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/deployments/{id}/timeline", rt.requireAbility(AbilityRead, rt.handleGetDeployTimeline))
 	mux.HandleFunc("GET /api/v1/deployments/{id}/timeline/stream", rt.requireAbility(AbilityRead, rt.withStreamReauth(timelineStreamResource, rt.handleDeployTimelineStream)))
 	mux.HandleFunc("GET /api/v1/deployments/{id}/timeline/compare", rt.requireAbility(AbilityRead, rt.handleCompareDeployTimelines))
+	// Deploy phases (deploy_phases.go): stages with status, timing and ETA, derived from stored trace rows and the build log. AbilityRead.
+	mux.HandleFunc("GET /api/v1/deployments/{id}/phases", rt.requireAbility(AbilityRead, rt.handleGetDeployPhases))
 
 	// Deploy comparison (deploy_compare.go): a before/after diff between
 	// two attempts, or one attempt against the app's current live state
