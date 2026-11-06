@@ -47,7 +47,7 @@ func TestDiagnosticPageCasesAndNextSteps(t *testing.T) {
 				t.Errorf("page missing %q", want)
 			}
 		}
-		if strings.Contains(b, "http://") || strings.Contains(b, " onclick=") || strings.Contains(b, "%CASE%") {
+		if strings.Contains(b, "<link") || strings.Contains(b, " src=") || strings.Contains(b, " onclick=") || strings.Contains(b, "%CASE%") {
 			t.Error("page must be self-contained with no handlers or leftover placeholders")
 		}
 	}
