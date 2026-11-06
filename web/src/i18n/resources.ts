@@ -2,6 +2,7 @@ import type common from '../locales/en/common.json'
 import type gitRepos from '../locales/en/gitRepos.json'
 import type firewall from '../locales/en/firewall.json'
 import type storageBuckets from '../locales/en/storageBuckets.json'
+import type storageCleanup from '../locales/en/storageCleanup.json'
 import type dashboards from '../locales/en/dashboards.json'
 import type passkeys from '../locales/en/passkeys.json'
 import type account from '../locales/en/account.json'
@@ -275,6 +276,7 @@ declare module 'i18next' {
       firewall: typeof firewall
       rules: typeof rules
       storageBuckets: typeof storageBuckets
+      storageCleanup: typeof storageCleanup
       dashboards: typeof dashboards
       passkeys: typeof passkeys
       account: typeof account
