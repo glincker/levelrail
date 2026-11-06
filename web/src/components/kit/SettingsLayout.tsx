@@ -18,6 +18,8 @@ export interface SectionNavItem {
   icon?: ReactNode
 }
 
+const MAIN_CLIP_CLASS = 'overflow-y-clip!'
+
 // Scrolls we start ourselves ignore the observer until they settle.
 const PIN_FALLBACK_MS = 900
 
@@ -192,6 +194,13 @@ export function SettingsLayout({
   children,
 }: SettingsLayoutProps) {
   const [active, setActive] = useActiveSection(sections.map((s) => s.id))
+  const root = useRef<HTMLDivElement>(null)
+  // The shell main is overflow-y-auto, which traps sticky; clip it only while this layout is mounted.
+  useEffect(() => {
+    const main = root.current?.closest('main')
+    main?.classList.add(MAIN_CLIP_CLASS)
+    return () => main?.classList.remove(MAIN_CLIP_CLASS)
+  }, [])
   const navigate = useCallback(
     (id: string) => {
       setActive(id)
@@ -201,6 +210,7 @@ export function SettingsLayout({
   )
   return (
     <div
+      ref={root}
       className={cn(
         'flex flex-col gap-4 xl:grid xl:grid-cols-[11rem_minmax(0,1fr)] xl:items-start xl:gap-8',
         className,

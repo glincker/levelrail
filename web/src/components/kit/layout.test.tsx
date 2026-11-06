@@ -136,6 +136,23 @@ describe('SettingsLayout', () => {
     ).toBe('true')
   })
 
+  it('clips the shell main only while mounted', () => {
+    const main = document.createElement('main')
+    document.body.appendChild(main)
+    const view = render(
+      <AllI18n>
+        <SettingsLayout sections={items}>
+          <p>x</p>
+        </SettingsLayout>
+      </AllI18n>,
+      { container: main.appendChild(document.createElement('div')) },
+    )
+    expect(main.classList.contains('overflow-y-clip!')).toBe(true)
+    view.unmount()
+    expect(main.classList.contains('overflow-y-clip!')).toBe(false)
+    main.remove()
+  })
+
   it('renders section children', () => {
     wrap(
       <SettingsSection id="s" title="Sec" description="Desc">
