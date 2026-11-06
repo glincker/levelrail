@@ -209,6 +209,9 @@
     "tooltip": "Se incorpora en la compilación. Cambiarla requiere recompilar.",
     "noticeTitle": "Hace falta recompilar",
     "noticeDescription": "{{keys}} se incorpora en la compilación. Recompila la app para aplicar el cambio.",
-    "rebuild": "Recompilar ahora"
+    "rebuild": "Recompilar ahora",
+    "started": "Recompilando \"{{name}}\" desde el código fuente.",
+    "view": "Ver compilación",
+    "noGitSource": "No hay un origen git conectado. Ejecuta levelrail-cli deploy desde la carpeta de tu proyecto para aplicar este cambio, o recompila la imagen donde se construye, porque el valor está incorporado en la imagen."
   }
 }

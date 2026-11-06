@@ -209,6 +209,9 @@
     "tooltip": "Baked into the build. Changing it needs a rebuild.",
     "noticeTitle": "Rebuild needed",
     "noticeDescription": "{{keys}} is baked into the build. Rebuild the app to apply the change.",
-    "rebuild": "Rebuild now"
+    "rebuild": "Rebuild now",
+    "started": "Rebuilding \"{{name}}\" from source.",
+    "view": "View build",
+    "noGitSource": "No git source is connected. Run levelrail-cli deploy from your project folder to apply this change, or rebuild the image where it is built, because the value is baked into the image."
   }
 }
