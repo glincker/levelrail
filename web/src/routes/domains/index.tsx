@@ -20,6 +20,9 @@ import {
   DomainsTableSkeleton,
 } from '../../components/DomainsTable'
 import { ParkedDomainsGroup } from '../../components/domains/ParkedDomainsGroup'
+import { DomainsFirstRun } from '../../components/domains/DomainsFirstRun'
+import { DomainsTabs } from '../../components/domains/DomainsTabs'
+import { usePlatformStatus } from '../../components/platform/usePlatformStatus'
 import { DomainsStatusBar } from '../../components/domains/DomainsStatusBar'
 import { serverAddressQueryOptions } from '../../queries/serverAddress'
 import { useProxyIntegration } from '../../queries/proxyIntegration'
@@ -90,6 +93,7 @@ function DomainsPage() {
     [apps],
   )
 
+  const { httpsOff } = usePlatformStatus()
   const noDomains = domains.length === 0
   const bannerSize = noDomains ? 'hero' : 'compact'
   return (
@@ -106,11 +110,8 @@ function DomainsPage() {
               : 'domains:page.description'
           }
           action={
-            noDomains && apps.length === 0 ? (
-              <>
-                <p className="w-full text-sm text-foreground">
-                  {t('banner.noApps')}
-                </p>
+            <>
+              {noDomains && apps.length === 0 ? (
                 <Button
                   size="sm"
                   variant="outline"
@@ -119,30 +120,35 @@ function DomainsPage() {
                 >
                   {t('banner.noAppsAction')}
                 </Button>
-                <HelpLink
-                  path="/domains-and-ingress"
-                  label={t('page.helpLabel')}
-                />
-              </>
-            ) : (
-              <>
-                <HelpLink
-                  path="/domains-and-ingress"
-                  label={t('page.helpLabel')}
-                />
-              </>
-            )
+              ) : null}
+              <HelpLink
+                path="/domains-and-ingress"
+                label={t('page.helpLabel')}
+              />
+            </>
           }
           illustration={<LazyDomainsDiagram size={bannerSize} />}
           size={bannerSize}
         />
       }
     >
+      <DomainsTabs />
       <DomainsStatusBar
         onAdd={() => {
           setAddOpen(true)
         }}
       />
+
+      {noDomains ? (
+        <DomainsFirstRun
+          appCount={apps.length}
+          domainCount={domains.length}
+          httpsOff={httpsOff}
+          onAdd={() => {
+            setAddOpen(true)
+          }}
+        />
+      ) : null}
 
       {noDomains ? null : (
         <DomainsTable
