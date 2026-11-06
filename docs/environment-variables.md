@@ -122,6 +122,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_REGISTRY_PUSH_MAX_BODY_BYTES` | [`deploys.registry_push_max_body_bytes`](/runtime-settings#deploys) | `262144` |
 | `APP_REGISTRY_PUSH_TIMEOUT` | [`deploys.registry_push_timeout`](/runtime-settings#deploys) | `5m` |
 | `APP_IMAGE_KEEP_PER_APP` | [`images.keep_per_app`](/runtime-settings#deploys) | `3` |
+| `APP_JOBS_HTTP_TIMEOUT_SECONDS` | [`jobs.http_timeout_seconds`](/runtime-settings#deploys) | `30` |
 | `APP_NEXTJS_GENERATE_ACTIONS_KEY` | [`nextjs.generate_actions_key`](/runtime-settings#deploys) | `true` |
 | `APP_PLACEMENT_SCORE_MODE` | [`placement.score_mode`](/runtime-settings#deploys) | `spread` |
 | `APP_PROJECTS_DEFAULT_ENVIRONMENT` | [`projects.default_environment`](/runtime-settings#deploys) | `false` |

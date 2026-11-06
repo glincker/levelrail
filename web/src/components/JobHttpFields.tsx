@@ -1,5 +1,6 @@
 import type { Control, FormState, UseFormRegister } from 'react-hook-form'
-import { Controller } from 'react-hook-form'
+import { Controller, useFieldArray } from 'react-hook-form'
+import { CirclePlusGlassIcon, TrashGlassIcon } from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
 import {
   Field,
@@ -8,6 +9,7 @@ import {
   FieldLabel,
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import {
   Select,
@@ -33,6 +35,7 @@ export function JobHttpFields({
   formState: FormState<JobFormValues>
 }) {
   const { t } = useTranslation('jobs')
+  const headers = useFieldArray({ control, name: 'httpHeaders' })
   return (
     <div className="space-y-4">
       <Field>
@@ -83,6 +86,55 @@ export function JobHttpFields({
         <FieldLabel htmlFor="job-http-body">{t('dialog.http.body')}</FieldLabel>
         <Input id="job-http-body" {...register('httpBody')} />
         <FieldDescription>{t('dialog.http.bodyHint')}</FieldDescription>
+      </Field>
+      <Field>
+        <FieldLabel>{t('dialog.http.headers')}</FieldLabel>
+        <FieldDescription>{t('dialog.http.headersHint')}</FieldDescription>
+        {headers.fields.map((f, i) => (
+          <div key={f.id} className="flex flex-wrap items-center gap-2">
+            <Input
+              className="w-40"
+              aria-label={t('dialog.http.headerName')}
+              placeholder="Authorization"
+              {...register(`httpHeaders.${i}.name`)}
+            />
+            <Input
+              className="w-40"
+              aria-label={t('dialog.http.headerSecret')}
+              placeholder={t('dialog.http.headerSecretPlaceholder')}
+              {...register(`httpHeaders.${i}.secretRef`)}
+            />
+            <Input
+              className="w-24"
+              aria-label={t('dialog.http.headerPrefix')}
+              placeholder="Bearer "
+              {...register(`httpHeaders.${i}.prefix`)}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label={t('dialog.http.headerRemove')}
+              onClick={() => {
+                headers.remove(i)
+              }}
+            >
+              <TrashGlassIcon className="size-4" />
+            </Button>
+          </div>
+        ))}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="w-fit"
+          onClick={() => {
+            headers.append({ name: '', secretRef: '', value: '', prefix: '' })
+          }}
+        >
+          <CirclePlusGlassIcon className="size-4" />
+          {t('dialog.http.headerAdd')}
+        </Button>
       </Field>
       <Field orientation="horizontal">
         <Controller

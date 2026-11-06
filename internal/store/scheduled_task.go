@@ -100,8 +100,11 @@ type ScheduledTask struct {
 	ID          string
 	ServiceName string
 	Command     []string
-	Schedule    string
-	Enabled     bool
+	// SpecHTTP is the request of a spec-declared http job. It is stored in
+	// scheduled_task_http by SyncSpecScheduledTasks, not in this table.
+	SpecHTTP *ScheduledTaskHTTP
+	Schedule string
+	Enabled  bool
 	// ConcurrencyPolicy governs what happens when this task's next due
 	// run finds a previous invocation still executing (internal/
 	// scheduledtask.Runner): allow, forbid, or replace. Always one of

@@ -414,12 +414,39 @@
     },
     "job": {
       "type": "object",
-      "required": ["name", "schedule", "command"],
+      "required": ["name", "schedule"],
       "additionalProperties": false,
       "properties": {
         "name": { "description": "Job name, unique within the service.", "type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,62}$" },
         "schedule": { "description": "Cron expression for when the job runs.", "type": "string", "minLength": 1 },
         "command": { "description": "Command to run, as an argument list.", "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 },
+        "http": {
+          "description": "Call a path on the app over its internal address instead of running a command.",
+          "type": "object",
+          "required": ["path"],
+          "additionalProperties": false,
+          "properties": {
+            "path": { "description": "Request path, starting with /.", "type": "string", "pattern": "^/" },
+            "method": { "description": "GET (default) or POST.", "enum": ["GET", "POST", "get", "post"] },
+            "body": { "description": "Request body for POST.", "type": "string" },
+            "background": { "description": "Await the call under the longer background timeout.", "type": "boolean" },
+            "headers": {
+              "description": "Request headers. Use secretRef for secrets, never the secret text.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["name"],
+                "additionalProperties": false,
+                "properties": {
+                  "name": { "type": "string", "minLength": 1 },
+                  "value": { "description": "Literal, non-secret value.", "type": "string" },
+                  "secretRef": { "description": "Name of an app env secret read at run time.", "type": "string", "minLength": 1 },
+                  "prefix": { "description": "Text put before the secret, such as \"Bearer \".", "type": "string" }
+                }
+              }
+            }
+          }
+        },
         "timezone": { "description": "Time zone the schedule is read in.", "type": "string", "minLength": 1 },
         "mode": { "description": "fresh starts a new container from the service image; exec runs inside the running one.", "default": "fresh", "enum": ["fresh", "exec"] },
         "concurrency": { "description": "Overlap policy when a run is still going: allow, forbid or replace.", "default": "forbid", "enum": ["allow", "forbid", "replace"] },

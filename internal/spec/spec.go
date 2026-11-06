@@ -170,7 +170,10 @@ type Service struct {
 type Job struct {
 	Name     string   `yaml:"name"`
 	Schedule string   `yaml:"schedule"`
-	Command  []string `yaml:"command"`
+	Command  []string `yaml:"command,omitempty"`
+	// HTTP makes the job call a path on the app itself instead of running
+	// Command; exactly one of the two is set.
+	HTTP     *JobHTTP `yaml:"http,omitempty"`
 	Timezone string   `yaml:"timezone,omitempty"`
 	// Mode is "fresh" (default, a new container from the service's image
 	// and spec) or "exec" (inside the running container).
@@ -187,6 +190,25 @@ type Job struct {
 	WarnAfter       string  `yaml:"warnAfter,omitempty"`
 	// Enabled defaults to true when omitted.
 	Enabled *bool `yaml:"enabled,omitempty"`
+}
+
+// JobHTTP is the request an http job sends to its app. Header values are
+// literals or references to an app env secret, never secret text.
+type JobHTTP struct {
+	Path       string      `yaml:"path"`
+	Method     string      `yaml:"method,omitempty"`
+	Body       string      `yaml:"body,omitempty"`
+	Background bool        `yaml:"background,omitempty"`
+	Headers    []JobHeader `yaml:"headers,omitempty"`
+}
+
+// JobHeader is one request header: Value is a literal, SecretRef names an
+// env var holding the secret, Prefix (for example "Bearer ") precedes it.
+type JobHeader struct {
+	Name      string `yaml:"name"`
+	Value     string `yaml:"value,omitempty"`
+	SecretRef string `yaml:"secretRef,omitempty"`
+	Prefix    string `yaml:"prefix,omitempty"`
 }
 
 // EgressModeAllowlist is the only meaningful Egress.Mode value today; see

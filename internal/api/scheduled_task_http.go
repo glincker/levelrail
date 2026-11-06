@@ -25,6 +25,52 @@ type jobHTTPResource struct {
 	Path       string `json:"path"`
 	Body       string `json:"body,omitempty"`
 	Background bool   `json:"background,omitempty"`
+	// Headers carry names and secret references only; values are read from
+	// the app env at run time and never returned.
+	Headers []jobHeaderResource `json:"headers,omitempty"`
+}
+
+type jobHeaderResource struct {
+	Name      string `json:"name"`
+	Value     string `json:"value,omitempty"`
+	SecretRef string `json:"secretRef,omitempty"`
+	Prefix    string `json:"prefix,omitempty"`
+}
+
+const maxJobHTTPHeaders = 20
+
+func validateJobHeaders(hs []jobHeaderResource) error {
+	if len(hs) > maxJobHTTPHeaders {
+		return fmt.Errorf("http.headers allows at most %d headers", maxJobHTTPHeaders)
+	}
+	for i, h := range hs {
+		if strings.TrimSpace(h.Name) == "" || strings.ContainsAny(h.Name, " :\r\n") {
+			return fmt.Errorf("http.headers[%d]: invalid header name", i)
+		}
+		if (h.Value == "") == (h.SecretRef == "") {
+			return fmt.Errorf("http.headers[%d]: set exactly one of value or secretRef", i)
+		}
+		if strings.ContainsAny(h.Value+h.Prefix, "\r\n") {
+			return fmt.Errorf("http.headers[%d]: value must be one line", i)
+		}
+	}
+	return nil
+}
+
+func headersToStore(hs []jobHeaderResource) []store.ScheduledTaskHeader {
+	out := make([]store.ScheduledTaskHeader, 0, len(hs))
+	for _, h := range hs {
+		out = append(out, store.ScheduledTaskHeader{Name: h.Name, Value: h.Value, SecretRef: h.SecretRef, Prefix: h.Prefix})
+	}
+	return out
+}
+
+func headersFromStore(hs []store.ScheduledTaskHeader) []jobHeaderResource {
+	out := make([]jobHeaderResource, 0, len(hs))
+	for _, h := range hs {
+		out = append(out, jobHeaderResource{Name: h.Name, Value: h.Value, SecretRef: h.SecretRef, Prefix: h.Prefix})
+	}
+	return out
 }
 
 const maxJobHTTPBody = 64 * 1024
@@ -51,7 +97,7 @@ func validateJobHTTP(h *jobHTTPResource) error {
 	if len(h.Body) > maxJobHTTPBody {
 		return fmt.Errorf("http.body must be at most %d bytes", maxJobHTTPBody)
 	}
-	return nil
+	return validateJobHeaders(h.Headers)
 }
 
 func (rt *Router) jobHTTPStore() ScheduledTaskHTTPStore {
@@ -74,6 +120,7 @@ func (rt *Router) persistJobHTTP(ctx context.Context, task store.ScheduledTask, 
 	}
 	return hs.SetScheduledTaskHTTP(ctx, store.ScheduledTaskHTTP{
 		TaskID: task.ID, Method: h.Method, Path: h.Path, Body: h.Body, Background: h.Background,
+		Headers: headersToStore(h.Headers),
 	})
 }
 
@@ -90,7 +137,7 @@ func (rt *Router) withJobHTTP(ctx context.Context, res scheduledTaskResource) sc
 		}
 		return res
 	}
-	res.HTTP = &jobHTTPResource{Method: h.Method, Path: h.Path, Body: h.Body, Background: h.Background}
+	res.HTTP = &jobHTTPResource{Method: h.Method, Path: h.Path, Body: h.Body, Background: h.Background, Headers: headersFromStore(h.Headers)}
 	return res
 }
 

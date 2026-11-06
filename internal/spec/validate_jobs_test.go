@@ -100,3 +100,38 @@ func TestParse_JobsLeapDayScheduleIsValid(t *testing.T) {
 		t.Fatalf("Parse: %v", err)
 	}
 }
+
+func TestParse_HTTPJobs(t *testing.T) {
+	base := "version: 1\nservices:\n  web:\n    build:\n      type: image\n      image: nginx:1\n    port: 80\n    jobs:\n"
+	tests := []struct {
+		name, job, wantErr string
+	}{
+		{"valid", `      - name: cleanup
+        schedule: "*/15 * * * *"
+        http:
+          path: /api/cron/cleanup
+          method: get
+          headers:
+            - {name: Authorization, secretRef: CRON_SECRET, prefix: "Bearer "}
+`, ""},
+		{"relative path", "      - {name: a, schedule: \"* * * * *\", http: {path: api}}\n", "http/path"},
+		{"bad method", "      - {name: a, schedule: \"* * * * *\", http: {path: /x, method: PUT}}\n", "http/method"},
+		{"bad schedule", "      - {name: a, schedule: \"61 * * * *\", http: {path: /x}}\n", "schedule"},
+		{"both", "      - {name: a, schedule: \"* * * * *\", command: [x], http: {path: /x}}\n", "not both"},
+		{"header both", "      - {name: a, schedule: \"* * * * *\", http: {path: /x, headers: [{name: A, value: v, secretRef: S}]}}\n", "exactly one"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := Parse([]byte(base + tt.job))
+			if tt.wantErr == "" {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				return
+			}
+			if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+				t.Fatalf("error %v, want %q", err, tt.wantErr)
+			}
+		})
+	}
+}

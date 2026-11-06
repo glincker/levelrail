@@ -41,6 +41,7 @@ func (rt *Router) attachRuntimeSettings(s Store) {
 	rt.runtimeSettings = svc
 	build.SetNetworkResolver(func(ctx context.Context) (string, error) { return svc.StringChecked(ctx, build.KeyBuildNetwork) })
 	wireBuildCacheSettings(svc)
+	wireJobHTTPSettings(svc)
 	loopbackDistrusted.Store(!svc.Bool(context.Background(), runtimesettings.KeyTrustLoopbackForwarded))
 }
 
