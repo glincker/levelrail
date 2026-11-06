@@ -208,9 +208,8 @@ describe('FirstAppStatus address priority', () => {
     expect(
       screen.getByText(getStartedEn.first.status.certNote),
     ).toBeInTheDocument()
-    expect(
-      screen.queryByRole('link', { name: /https/i }),
-    ).not.toBeInTheDocument()
+    // The fallback address is the only https link, no second alarming one.
+    expect(screen.getAllByRole('link', { name: /https/i })).toHaveLength(1)
   })
 
   it('drops the note once HTTPS is issued', () => {
