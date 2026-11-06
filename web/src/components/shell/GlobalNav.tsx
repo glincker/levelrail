@@ -19,6 +19,7 @@ import {
   type ExperimentalFeature,
 } from '@/lib/experimental'
 import { LockedFeatureMark } from './LockedFeatureMark'
+import { BetaBadge } from '../BetaBadge'
 import { CollapsibleSection, NAV_ROW_CLASS } from './CollapsibleSection'
 import { NavBadge } from './NavBadge'
 import { cn } from '@/lib/utils'
@@ -143,12 +144,14 @@ function NavLinkItem({
   counts,
   experimental,
   pin,
+  beta,
 }: {
   item: GlobalNavItem
   pathname: string
   counts: Record<string, number>
   experimental: readonly string[]
   pin?: PinControl
+  beta?: boolean
 }) {
   const { t } = useTranslation('traffic')
   const { t: tc } = useTranslation()
@@ -193,6 +196,9 @@ function NavLinkItem({
       >
         {item.icon}
         <span>{label}</span>
+        {beta ? (
+          <BetaBadge className="shrink-0 group-data-[collapsible=icon]:hidden" />
+        ) : null}
         <NavBadge
           count={count}
           tone={
@@ -339,8 +345,9 @@ export function GlobalNav() {
           )
         })}
       </div>
-      <SidebarGroup className="mt-auto border-t border-sidebar-border pt-2">
-        <SidebarGroupContent>
+      {/* mt-auto pins the block to the bottom only when there is spare height. */}
+      <SidebarGroup className="mt-auto px-2 pb-2 pt-0">
+        <SidebarGroupContent className="border-t border-sidebar-border pt-2">
           <SidebarMenu>
             {visibleGlobalFooter().map((item) => (
               <NavLinkItem
@@ -349,6 +356,7 @@ export function GlobalNav() {
                 pathname={pathname}
                 counts={counts}
                 experimental={experimental}
+                beta={item.feature !== undefined}
               />
             ))}
           </SidebarMenu>
