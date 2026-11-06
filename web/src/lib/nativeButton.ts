@@ -18,3 +18,9 @@ export function nativeButtonFromRender(
   if (type === Link) return false
   return undefined
 }
+
+/** True when `render` is an anchor or a router Link, so the control is a link semantically. */
+export function isLinkRender(render: unknown): boolean {
+  if (!isValidElement(render)) return false
+  return render.type === 'a' || render.type === Link
+}

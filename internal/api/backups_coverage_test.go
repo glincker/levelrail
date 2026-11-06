@@ -226,11 +226,12 @@ func TestStorageOrphans_ListAndReclaim(t *testing.T) {
 	if len(vols.removed) != 0 {
 		t.Fatalf("removed too early: %v", vols.removed)
 	}
-	if rec := do(t, rt, cookie, http.MethodDelete, "/api/v1/storage/orphans/db-gone-data", `{"confirm":"db-gone-data"}`); rec.Code != http.StatusOK {
-		t.Fatalf("reclaim = %d, body = %s", rec.Code, rec.Body.String())
+	// The database volume lock keeps db- data from automatic and orphan removal.
+	if rec := do(t, rt, cookie, http.MethodDelete, "/api/v1/storage/orphans/db-gone-data", `{"confirm":"db-gone-data"}`); rec.Code != http.StatusConflict {
+		t.Fatalf("locked reclaim = %d, want 409, body = %s", rec.Code, rec.Body.String())
 	}
-	if len(vols.removed) != 1 || vols.removed[0] != "db-gone-data" {
-		t.Fatalf("removed = %v", vols.removed)
+	if len(vols.removed) != 0 {
+		t.Fatalf("locked volume removed: %v", vols.removed)
 	}
 }
 

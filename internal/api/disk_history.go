@@ -67,7 +67,7 @@ func (rt *Router) handleDiskHistory(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 	samples, err := rt.diskHistory.Since(r.Context(), now.Add(-time.Duration(days)*24*time.Hour))
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "could not read disk history")
+		rt.internalError(w, "api: read disk history failed", err)
 		return
 	}
 	if samples == nil {
