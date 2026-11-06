@@ -35,6 +35,9 @@ func (rt *Router) NewJanitor(db janitor.Store, dk janitor.Docker) *janitor.Engin
 			if rt.orphanedVolumes == nil {
 				return errors.New("volume management is not configured")
 			}
+			if prot, why := rt.volumeLock(name); prot {
+				return fmt.Errorf("volume %q kept: %s", name, why)
+			}
 			return rt.orphanedVolumes.RemoveVolume(ctx, name)
 		},
 		Logger:          rt.logger,
@@ -45,6 +48,7 @@ func (rt *Router) NewJanitor(db janitor.Store, dk janitor.Docker) *janitor.Engin
 	})
 	rt.janitor = eng
 	rt.janitorStore = db
+	rt.installJanitorVolumeLock()
 	return eng
 }
 
