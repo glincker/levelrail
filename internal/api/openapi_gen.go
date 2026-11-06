@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1974 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1975 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1956,6 +1956,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/system/server-address", Ability: "AbilityRoot", Group: "System", Handler: "handleSetServerAddress", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/shield/bots", Ability: "AbilityRead", Group: "System", Handler: "handleShieldBotList", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/status", Ability: "AbilityRead", Group: "System", Handler: "handleSystemStatus", Description: "System status (General settings page): configured/not-configured signals plus disk usage, AbilityRead like everything else an authenticated operator can passively view."},
+	{Method: "GET", Path: "/api/v1/system/storage/inventory", Ability: "AbilityRead", Group: "System", Handler: "handleStorageInventory", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/volumes/orphaned", Ability: "AbilityRead", Group: "System", Handler: "handleListOrphanedVolumes", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/volumes/orphaned/cleanup", Ability: "AbilityRoot", Group: "System", Handler: "handleCleanupOrphanedVolumes", Description: ""},
 	{Method: "GET", Path: "/api/v1/updates", Ability: "AbilityRead", Group: "System", Handler: "handleGetUpdates", Description: "Updates (Settings > Updates page): running version vs. GitHub's latest published release, AbilityRead like system/status above."},
