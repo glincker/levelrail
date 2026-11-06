@@ -420,10 +420,21 @@ applies. Live Docker lanes should keep `-count=1`.
   lint, and each test lane group), keyed on the Go version and `go.sum` plus
   `tools/go.sum`. Pushes to `main` save one fresh cache per day, in the job's
   post step so it holds what the job compiled. All test lanes share one cache
-  (`go-test-all`, saved by the first lane). PR runs only
-  restore, so they cannot churn the repository's 10 GB cache quota. Every
+  (`go-test-all`, saved by the first lane). Every
   job that needs this shares `.github/actions/setup-go-cached` instead of
-  repeating setup-go plus restore/save inline.
+  repeating setup-go plus restore/save inline. `Plan Go work` uses plain
+  setup-go with no cache: it only runs `go list`, and restoring the 2.4 GB
+  build cache took 86 s of a 108 s job.
+- Who can read what: a `pull_request` run restores caches from `main` and from
+  its own `refs/pull/N/merge` ref, never from a branch push. A release PR therefore
+  never saw the caches the release-branch push run saved, and `main` only saves
+  when a release merges. The release PR's own runs now save (workflow env
+  `CI_SAVE_CACHE`: `main` pushes, plus same-repo PRs whose head branch starts
+  with `release/`), once per day per cache key because an exact key hit skips
+  the save. Other PRs still only restore, so they cannot churn the repository's
+  10 GB quota. Set the repository variable `CI_PR_CACHE_SAVE=false` to go back
+  to push-only saves. Watch the quota with `gh cache list`: it held 9.5 GB
+  when measured, with the Go caches at 1.0 to 2.4 GB each.
 - golangci-lint: the action's own analysis cache, saved on `main` only.
 - npm: `actions/setup-node`'s npm cache, keyed on `web/package-lock.json`.
 - Dependabot: its PRs go through the same scoping. A GitHub Actions bump touches
@@ -495,8 +506,8 @@ the same tree, so put a `github.event_name != 'push'` guard back on the heavy
 jobs at that point.
 
 `Build, vet` also refreshes the daily Go build cache on `push`
-(the cache `save` flag, true only for push events), which PR runs depend on
-staying warm. `codeql.yml` and `secret-scan.yml` are separate workflow
+(the cache `save` flag, true for `main` pushes and release PR runs, see
+Caching), which PR runs depend on staying warm. `codeql.yml` and `secret-scan.yml` are separate workflow
 files with their own `push` triggers, unaffected by anything in `ci.yml`.
 
 ## Check what a diff would run
@@ -587,6 +598,36 @@ the shard split covers every internal/api test from `go test -list` exactly
 once. Test builds hash passwords at bcrypt's minimum cost: over 10
 minutes serial became about 3.
 
+## Measured: release push duplication and cold PR caches
+
+Measured 2026-11-06 from `gh run view` on `release/v0.9.1` and `release/v0.9.2`.
+Of the last 40 `ci.yml` runs, 32 were `push` runs on release branches, and every
+push to a branch with an open PR started a `push` run and a `pull_request` run a
+few seconds apart. Two runs of the same release commit (`42092187388` push,
+`42092199731` PR), job seconds:
+
+| Job | Push run | PR run | Why the PR run is slower |
+| --- | --- | --- | --- |
+| `Build, vet` | 323 | 729 | `go build` 66 vs 202, cross-compile 43 vs 327: cold build cache |
+| `Lint` | 207 | 403 | `golangci-lint` 142 vs 386: cold |
+| `Test (api-1..4)` | 316 to 331 | 404 to 542 | `go test` 274 vs 479 |
+| `Test (rest)` | 330 | 573 | 275 vs 544 |
+| Whole run | 95.5 runner-min, 16 min | 136.8 runner-min, 18 min | |
+
+The push run was warm because it saved and restored caches on its own ref; the
+PR run could only read `main`'s caches, and `main` had no `go-build` entry (it is
+saved once per release merge). Both runs also fought over the 20 concurrent job
+slots of the runner pool: PR run test lanes started 356 to 509 s after the run
+began. A release PR that is pushed to again cancels its previous PR run, but not
+the push run, so bursts of pushes left several full push runs finishing in the
+background (`cancelled` in the run list is mostly those).
+
+Expected effect, per push to a release PR: about 95 runner-minutes less (the
+duplicate run), PR run jobs start without queueing behind a second matrix, and
+from the second run of a day the PR run is warm (`Build, vet` about 330 s instead
+of 730 s, lanes about 300 to 330 s instead of 400 to 570 s). The first run of a
+day after a release merge still restores whatever `main` has.
+
 ## Expected effect of the lane changes
 
 Estimates from the artifacts of three recent runs, to be compared with the table
@@ -619,6 +660,8 @@ interfaces, moving shared types to leaf packages) is the lasting fix for
 
 ## Tuning
 
+- `CI_PR_CACHE_SAVE`: set to `false` to stop release PR runs from saving Go
+  and tsc caches (Caching explains the default).
 - `CI_SMALL_LANE_MAX`: the package count at or under which non-api
   packages share one lane (default 8), read by `scripts/ci-go-plan.sh`.
 - To force the full suite on a PR, change `.github/workflows/ci.yml` or one
