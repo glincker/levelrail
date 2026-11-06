@@ -8,10 +8,12 @@ name: CI
 # failure: each runs (and fails) whenever an upstream job failed, and skips
 # only when its area has no work, which GitHub reports as success.
 on:
+  # A push to release/** is not listed: with an open PR the pull_request run
+  # covers the same commit, and without one release-push-check.yml runs a
+  # cheap build check. Listing it ran the whole matrix twice per push.
   push:
     branches:
       - main
-      - 'release/**'
     paths-ignore:
       - '**/*.md'
       - 'adr/**'
@@ -23,11 +25,11 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
   merge_group:
 
-# PR runs and release-branch pushes cancel superseded runs (a burst of pushes
-# keeps only the newest); main and merge queue runs never cancel.
+# PR runs cancel superseded runs (a burst of pushes keeps only the newest);
+# main and merge queue runs never cancel.
 concurrency:
-  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || (startsWith(github.ref, 'refs/heads/release/') && github.ref) || github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/')) }}
+  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -67,7 +69,6 @@ jobs:
           EVENT: ${{ github.event_name }}
           MERGE_GROUP_BASE: ${{ github.event.merge_group.base_sha }}
           BEFORE: ${{ github.event.before }}
-          REF: ${{ github.ref }}
         run: |
           # A PR checkout is the test merge commit: its first parent is the
           # exact base the diff should be against.
@@ -76,19 +77,13 @@ jobs:
             merge_group) base="$MERGE_GROUP_BASE" ;;
             *) base="$BEFORE" ;;
           esac
-          # A cancelled release run never reports its commit, so a diff against
-          # the previous push would skip its areas. Use the cumulative diff from
-          # main, and the same fallback when `before` is zero or unreachable.
+          # A zero or unreachable `before` (a force push) falls back to the
+          # merge-base with main.
           zero=0000000000000000000000000000000000000000
           if [ "$EVENT" = push ]; then
-            case "$REF" in
-              refs/heads/release/*) base="$(git merge-base origin/main HEAD 2>/dev/null || true)" ;;
-              *)
-                if [ -z "$base" ] || [ "$base" = "$zero" ] || ! git cat-file -e "$base" 2>/dev/null; then
-                  base="$(git merge-base origin/main HEAD 2>/dev/null || true)"
-                fi
-                ;;
-            esac
+            if [ -z "$base" ] || [ "$base" = "$zero" ] || ! git cat-file -e "$base" 2>/dev/null; then
+              base="$(git merge-base origin/main HEAD 2>/dev/null || true)"
+            fi
           fi
           echo "base=$base" >> "$GITHUB_OUTPUT"
           if [ "$EVENT" = pull_request ] || [ "$EVENT" = merge_group ]; then
@@ -532,8 +527,7 @@ jobs:
       # Advisory: runs after the gates, and an upload failure never fails CI.
       - name: Upload coverage to Codecov
         if: >-
-          env.CODECOV_TOKEN != '' && github.event_name == 'push'
-          && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/'))
+          env.CODECOV_TOKEN != '' && github.event_name == 'push' && github.ref == 'refs/heads/main'
         continue-on-error: true
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
