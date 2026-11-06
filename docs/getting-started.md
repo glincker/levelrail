@@ -50,7 +50,7 @@ Use the address from your own output. If port 8080 was taken, the installer pick
 Back up `master.key` now. Every stored secret is encrypted with it, and nothing can recover it if it is lost.
 
 <Tip>
-To pin a release, set `LEVELRAIL_VERSION=v0.9.0` before the command. You can also run Levelrail as a container. See [Installing](/installing).
+To pin a release, set `LEVELRAIL_VERSION=vX.Y.Z` before the command. You can also run Levelrail as a container. See [Installing](/installing).
 </Tip>
 
 <Accordion title="If the install fails">
