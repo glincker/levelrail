@@ -130,6 +130,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_VOLUMES_TRANSFER_SPOOL_DIR` | [`volumes.transfer_spool_dir`](/runtime-settings#deploys) | `volume-transfer` |
 | `APP_VOLUMES_TRANSFER_TIMEOUT` | [`volumes.transfer_timeout`](/runtime-settings#deploys) | `30m` |
 | `APP_DISK_CRITICAL_FREE_MB` | [`disk.critical_free_mb`](/runtime-settings#observability) | `512` |
+| `APP_DISK_HISTORY_RETENTION_DAYS` | [`disk.history_retention_days`](/runtime-settings#observability) | `90` |
+| `APP_DISK_HISTORY_SAMPLE_INTERVAL` | [`disk.history_sample_interval`](/runtime-settings#observability) | `24h` |
 | `APP_DISK_LOW_FREE_MB` | [`disk.low_free_mb`](/runtime-settings#observability) | `1024` |
 | `APP_DISK_RESERVE_MB` | [`disk.reserve_mb`](/runtime-settings#observability) | `16` |
 | `APP_HEARTBEAT_JOB_BACKOFF_BASE` | [`heartbeat.job_backoff_base`](/runtime-settings#observability) | `2s` |

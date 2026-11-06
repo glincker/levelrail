@@ -87,6 +87,7 @@ func bootAndServe(ctx context.Context, stop context.CancelFunc, logger *slog.Log
 	s.startAlerting()
 	s.startHeartbeat()
 	s.startMonitors()
+	s.startDiskHistory()
 	s.startSchedulers()
 	return s.serve()
 }

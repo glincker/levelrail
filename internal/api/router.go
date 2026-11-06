@@ -263,6 +263,7 @@ type Router struct {
 	images                  ImageLister                                                   // nil is valid: GET /apps/{name}/images returns an empty list, same shape as dockerPinger above
 	containers              ContainerLister                                               // nil is valid: GET /api/v1/system/containers returns 501, same shape as execRuntime above
 	hostMemory              func() (total, available int64, err error)                    // nil reads the real host; tests inject a fixed reading so advisor results do not depend on the machine's load
+	diskHistory             DiskHistoryReader                                             // nil answers 501 on GET /system/disk/history
 	dockerDiskUsage         DockerDiskUsager                                              // nil is valid: GET /system/status omits its docker_disk_usage field, same "optional signal, absence is not an error" shape as dockerPinger above
 	imageInventory          ImageInventoryResolver                                        // nil: /api/v1/images routes return 501
 	imageVerifyKey          *ecdsa.PublicKey

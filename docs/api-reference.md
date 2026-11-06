@@ -121,6 +121,7 @@ System endpoints for:
 | POST | /api/v1/updates/self-upgrade/attempts/{id}/cancel | AbilityWrite | handleSelfUpgradeAttemptCancel |
 | POST | /api/v1/updates/migration-dry-run | AbilityWrite | handleMigrationDryRun |
 | GET | /api/v1/system/storage/inventory | AbilityRead | handleStorageInventory |
+| GET | /api/v1/system/disk/history | AbilityRead | handleDiskHistory |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
