@@ -29,3 +29,26 @@ func TestDiagnosticRoutesSelectionAndEscaping(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestDiagnosticPageCasesAndNextSteps(t *testing.T) {
+	body := func(status int) string {
+		return diagnosticRoutes(status, "Levelrail", "https://d.example")[0].Handle[0].(StaticResponseHandler).Body
+	}
+	b404, b503 := body(404), body(503)
+	if !strings.Contains(b404, "not attached to any app") || strings.Contains(b404, "healthy replica") {
+		t.Errorf("404 must name the unattached case only: %s", b404)
+	}
+	if !strings.Contains(b503, "no healthy replica") || strings.Contains(b503, "not attached to any app") {
+		t.Errorf("503 must name the no-replica case only: %s", b503)
+	}
+	for _, b := range []string{b404, b503} {
+		for _, want := range []string{"<svg", "levelrail-cli domains list", "levelrail-cli apps deploys list", "levelrail-cli logs", "<main>", "prefers-color-scheme:dark"} {
+			if !strings.Contains(b, want) {
+				t.Errorf("page missing %q", want)
+			}
+		}
+		if strings.Contains(b, "<link") || strings.Contains(b, " src=") || strings.Contains(b, " onclick=") || strings.Contains(b, "%CASE%") {
+			t.Error("page must be self-contained with no handlers or leftover placeholders")
+		}
+	}
+}
