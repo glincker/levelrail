@@ -1195,6 +1195,14 @@ Fix: connect a DNS provider (Cloudflare or Route53) on the Domains page and enab
 
 Still stuck? Run `levelrail-cli domains doctor <app> <domain>` and attach its full JSON output to an issue on [GitHub](https://github.com/glincker/levelrail/issues), or check the [ACME verification runbook](/acme-verification-runbook).
 
+### A detached domain shows a bare proxy 503
+
+When a domain is detached, Levelrail removes its route file. A front proxy such as Traefik then answers hosts nothing claims with its own bare `no available server` 503. To land those hosts on the Levelrail diagnostic page instead, turn on the runtime setting `proxy.unrouted_to_levelrail` (environment seed `LEVELRAIL_PROXY_UNROUTED_TO_LEVELRAIL`, default off). Levelrail then writes `levelrail-managed-unrouted.yaml` with a catch-all router at priority -500, above the proxy's own catch-all and below every host router, so it never overrides another router. It supports the Traefik provider only; other providers are skipped and logged once.
+
+Risk: the catch-all also receives hosts of other apps on the same front proxy, but only when they have no router at all. Hosts that have any router keep using it. Browsers that reach an unrouted host over HTTPS see the proxy's default certificate warning before the page.
+
+The diagnostic page names the real cause (unattached, building, stopped, starting, no healthy replica) with the exact CLI command to fix it, and only names the app when the visitor's host is already attached to it. Results are reused for `ingress.diagnostic_cache_ttl_seconds` seconds (default 5).
+
 ## Next steps
 
 <CardGroup cols={2}>

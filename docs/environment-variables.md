@@ -92,6 +92,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CLOUDFLARE_IPS_MIN_RANGES` | [`ingress.cloudflare_ips_min_ranges`](/runtime-settings#networking) | `10` |
 | `APP_CLOUDFLARE_IPS_REFRESH` | [`ingress.cloudflare_ips_refresh`](/runtime-settings#networking) | `24h` |
 | `APP_CLOUDFLARE_IPS_TIMEOUT` | [`ingress.cloudflare_ips_timeout`](/runtime-settings#networking) | `15s` |
+| `LEVELRAIL_INGRESS_DIAGNOSTIC_CACHE_TTL_SECONDS` | [`ingress.diagnostic_cache_ttl_seconds`](/runtime-settings#networking) | `5` |
 | `APP_INGRESS_DNS01_ALL_HOSTS` | [`ingress.dns01_all_hosts`](/runtime-settings#networking) | `false` |
 | `APP_INGRESS_FALLBACK_CERTS` | [`ingress.fallback_certs`](/runtime-settings#networking) | `eager` |
 | `APP_INGRESS_MAX_BODY_BYTES` | [`ingress.max_body_bytes`](/runtime-settings#networking) | `1073741824` |
@@ -100,6 +101,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_MESH_HUB_RESOLVE_TTL` | [`mesh.hub_resolve_ttl`](/runtime-settings#networking) | `5m` |
 | `APP_MESH_HUB_STALE_MAX` | [`mesh.hub_stale_max`](/runtime-settings#networking) | `24h` |
 | `APP_OIDC_LISTEN_PORT` | [`pipelines.oidc_listen_port`](/runtime-settings#networking) | `9095` |
+| `LEVELRAIL_PROXY_UNROUTED_TO_LEVELRAIL` | [`proxy.unrouted_to_levelrail`](/runtime-settings#networking) | `false` |
 | `APP_TRUST_LOOPBACK_FORWARDED` | [`security.trust_loopback_forwarded_headers`](/runtime-settings#networking) | `true` |
 | `APP_BACKUP_LOCAL_ROOT` | [`backup.local_root`](/runtime-settings#deploys) | empty |
 | `APP_BOOT_EVENT_RECHECK` | [`boot.event_recheck`](/runtime-settings#deploys) | `3s` |

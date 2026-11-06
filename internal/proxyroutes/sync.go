@@ -103,7 +103,10 @@ type Syncer struct {
 	Unit string
 	// RouterPriority 0 means DefaultRouterPriority.
 	RouterPriority int
-	Logger         *slog.Logger
+	// Unrouted reports whether the opt in catch-all file is wanted; nil is off.
+	Unrouted         func(context.Context) bool
+	UnroutedPriority int
+	Logger           *slog.Logger
 	// Exec validates and reloads a managed proxy that needs it (nginx); nil
 	// makes such a provider refuse to write anything.
 	Exec Exec
@@ -324,6 +327,10 @@ func (s *Syncer) Sync(ctx context.Context) (Report, error) {
 		byName[it.File] = it
 		want = append(want, File{Domain: it.Domain, Name: it.File, Content: it.Content})
 	}
+	extra, hasExtra := s.unroutedFile(ctx, p)
+	if hasExtra {
+		want = append(want, extra)
+	}
 	if p.Provider.Mode() != "" && p.Provider.Kind() != KindTraefik && s.Exec == nil {
 		msg := "cannot reach the proxy container: Docker is not available to this process"
 		for _, it := range p.Items {
@@ -345,7 +352,9 @@ func (s *Syncer) Sync(ctx context.Context) (Report, error) {
 		for _, o := range res.Files {
 			if o.Changed {
 				rep.Failed[o.Domain] = rejected.Error()
-				s.markFailed(ctx, byName[o.Name].Target, rejected.Error())
+				if _, ok := byName[o.Name]; ok {
+					s.markFailed(ctx, byName[o.Name].Target, rejected.Error())
+				}
 			}
 		}
 		for _, r := range res.Removed {
@@ -355,7 +364,10 @@ func (s *Syncer) Sync(ctx context.Context) (Report, error) {
 	}
 	now := time.Now()
 	for _, o := range res.Files {
-		it := byName[o.Name]
+		it, tracked := byName[o.Name]
+		if !tracked {
+			continue
+		}
 		if rejected != nil && o.Changed {
 			continue
 		}
