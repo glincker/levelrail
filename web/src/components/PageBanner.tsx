@@ -116,7 +116,12 @@ export function PageBanner({
         )}
       </div>
       {action ? (
-        <div className="z-10 flex shrink-0 flex-wrap items-center gap-2 self-start px-4 pb-4 sm:ml-auto sm:justify-end sm:self-center sm:px-5 sm:py-4">
+        <div
+          className={cn(
+            'z-10 flex shrink-0 flex-wrap items-center gap-2 self-start px-4 pb-4 sm:ml-auto sm:justify-end sm:px-5 sm:py-4',
+            compact && 'sm:self-center',
+          )}
+        >
           {action}
         </div>
       ) : null}

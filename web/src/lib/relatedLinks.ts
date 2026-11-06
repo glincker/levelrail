@@ -35,10 +35,6 @@ export const RELATED_LINKS: Readonly<Record<string, RelatedLinkEntry[]>> = {
   '/alerts': [
     { to: '/settings/notification-channels', labelKey: 'notificationChannels' },
   ],
-  '/domains': [
-    { to: '/settings/certificates', labelKey: 'certificates' },
-    { to: '/dns', labelKey: 'dns' },
-  ],
   '/domains/$domain': [
     { to: '/settings/platform/https', labelKey: 'platformHttps' },
     { to: '/network', labelKey: 'network' },

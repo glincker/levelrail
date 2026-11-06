@@ -1090,7 +1090,6 @@
       "server": "server",
       "browser": "browser"
     },
-    "noApps": "Deploy an app first, then point a domain at it.",
     "noAppsAction": "New app"
   },
   "editor": {
@@ -1179,7 +1178,11 @@
     "fixAddress": "Fix: check address",
     "details": "Address details",
     "enableHttps": "Enable HTTPS",
-    "parked": "{{count}} parked"
+    "parked": "{{count}} parked",
+    "addressLabel": "Server address",
+    "httpsLabel": "HTTPS",
+    "portsLabel": "Ports check",
+    "unknown": "Not checked yet"
   },
   "cutover": {
     "title": "Cutover checklist",
@@ -1508,5 +1511,30 @@
     "consequenceSkip": "Records edited since are left alone.",
     "outcomes": "Rollback results",
     "skipped": "Changed since, left alone"
+  },
+  "firstRun": {
+    "label": "First steps",
+    "step": "Step {{n}}",
+    "done": "Done",
+    "current": "Next",
+    "deploy": {
+      "title": "Deploy an app",
+      "body": "A domain points at an app, so deploy one first."
+    },
+    "domain": {
+      "title": "Add your domain",
+      "body": "Point your own web address at the app.",
+      "action": "Add domain"
+    },
+    "https": {
+      "title": "Turn on HTTPS",
+      "body": "Certificates are issued for you once HTTPS is on."
+    }
+  },
+  "tabs": {
+    "label": "Domains and related",
+    "domains": "Domains",
+    "certificates": "Certificates",
+    "dns": "DNS"
   }
 }
