@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1972 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1974 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -203,6 +203,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/apps/{name}/deploy-safety", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePutDeploySafety", Description: "Deploy tier, like auto-rollback: these thresholds decide when a release takes traffic and when it is rolled back."},
 	{Method: "POST", Path: "/api/v1/apps/{name}/deploy-spec", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeploySpec", Description: "Multi-service fan-out (handleDeploySpec's own doc comment, apps_multi.go): one app.yaml's services: map, built and deployed as N independent services under one store.App named {name}. Same AbilityDeploy boundary as the manual build trigger above: this also ultimately writes desired state."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/deployments/{id}/preview", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetPreviewImage", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/deployments/{id}/receipt", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetDeployReceipt", Description: "Deploy receipt (deploy_receipt.go): one unsigned JSON or markdown record of a deploy with its commit, image digest, requester, approver and gate timeline. AbilityRead on the app."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/deployments/{id}/sbom", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetSBOM", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/deployments/{id}/scan", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleScanDeployment", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/deployments/{id}/secret-scan", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetDeploymentSecretScan", Description: ""},

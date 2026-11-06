@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-11-05T11:00:00Z",
+  "signed": false,
+  "deploy_id": "dep_1",
+  "app": "web",
+  "source": "git_push",
+  "status": "succeeded",
+  "verdict": "succeeded",
+  "started_at": "2026-11-05T10:00:00Z",
+  "finished_at": "2026-11-05T10:01:00Z",
+  "requester": {
+    "kind": "user",
+    "id": "u1",
+    "name": "Ana"
+  },
+  "approval": {
+    "id": "apr_1",
+    "action": "deploy",
+    "status": "approved",
+    "requester": {
+      "kind": "user",
+      "id": "u1",
+      "name": "Ana"
+    },
+    "approver": {
+      "kind": "user",
+      "id": "u2",
+      "name": "Bo",
+      "at": "2026-11-05T10:00:30Z"
+    },
+    "freeze_override": "incident fix",
+    "matched_by": ""
+  },
+  "commit": {
+    "sha": "abc",
+    "branch": "main",
+    "author": "dev"
+  },
+  "image": {
+    "tag": "repo/web:abc",
+    "digest": "sha256:aa",
+    "digest_source": "LocalBuild"
+  },
+  "sbom": {
+    "recorded": true,
+    "format": "spdx",
+    "package_count": 12,
+    "generated_at": "2026-11-05T10:00:00Z",
+    "scan_status": "ok"
+  },
+  "gate_timeline": [
+    {
+      "at": "2026-11-05T10:00:00Z",
+      "phase": "readiness",
+      "status": "passed"
+    }
+  ]
+}

@@ -33,6 +33,7 @@ deploy.ci_gate_max_waits_per_app
 deploy.drain_timeout
 deploy.max_concurrent
 deploy.previous_release_hold
+deploy.receipt_approval_window
 deploy.stable_window
 deploy.watch_window
 deploys.registry_push_debounce

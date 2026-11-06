@@ -692,6 +692,7 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/visitors/export | AbilityRead | handleAppVisitorsExport |
 | POST | /api/v1/apps/repo-plan | AbilityWrite | handleRepoPlan |
 | GET | /api/v1/apps/{name}/ci/templates | AbilityRead | handleGetCITemplates |
+| GET | /api/v1/apps/{name}/deployments/{id}/receipt | AbilityRead | handleGetDeployReceipt |
 
 </Accordion>
 
@@ -2196,8 +2197,8 @@ Routes that do not fit an existing group.
 | PUT | /api/v1/me/preferences/appearance | Public | handlePutMePreferenceAppearance |
 | DELETE | /api/v1/me/preferences/appearance | Public | handleDeleteMePreferenceAppearance |
 | POST | /api/v1/images/remove | AbilityRoot | handleImageRemove |
-| POST | /mcp | Public |  |
 | GET | /api/v1/status-reasons | AbilityRead | handleListStatusReasons |
+| POST | /mcp | Public |  |
 
 ## See also
 
