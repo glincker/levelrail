@@ -1,5 +1,21 @@
 import type { ImageEntry } from '../../queries/imageInventory'
 import type { StorageInventory } from '../../queries/storageInventory'
+import type { RuntimeSetting } from '../../types/runtimeSettings'
+
+export const LARGE_UNMANAGED_KEY = 'storage.large_unmanaged_image_mb'
+const BYTES_PER_MB = 1024 * 1024
+
+// Reads the live runtime setting. Before the settings load there is no threshold, so
+// nothing is flagged large rather than guessing a number the server may have changed.
+export function largeUnmanagedBytes(
+  settings: RuntimeSetting[] | undefined,
+): number {
+  const found = settings?.find((s) => s.key === LARGE_UNMANAGED_KEY)
+  const mb = Number(found?.value)
+  return Number.isFinite(mb) && mb > 0
+    ? mb * BYTES_PER_MB
+    : Number.POSITIVE_INFINITY
+}
 
 export type ItemKind = 'image' | 'volume' | 'container' | 'buildCache'
 export type StorageFilter =

@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import type { ImageEntry } from '../../queries/imageInventory'
 import type { StorageInventory } from '../../queries/storageInventory'
-import { buildItemRows, filterRows, groupRows, parseView } from './itemRows'
+import {
+  buildItemRows,
+  filterRows,
+  groupRows,
+  largeUnmanagedBytes,
+  parseView,
+} from './itemRows'
 
 function image(over: Partial<ImageEntry>): ImageEntry {
   return {
@@ -125,5 +131,20 @@ describe('grouping', () => {
   it('treats unknown views as By type', () => {
     expect(parseView('nope')).toBe('type')
     expect(parseView('app')).toBe('app')
+  })
+})
+
+describe('largeUnmanagedBytes', () => {
+  const setting = (value: number) =>
+    [{ key: 'storage.large_unmanaged_image_mb', value }] as never
+
+  it('reads the runtime setting in MiB', () => {
+    expect(largeUnmanagedBytes(setting(500))).toBe(500 * 1024 * 1024)
+    expect(largeUnmanagedBytes(setting(1))).toBe(1024 * 1024)
+  })
+
+  it('flags nothing until the setting is known', () => {
+    expect(largeUnmanagedBytes(undefined)).toBe(Number.POSITIVE_INFINITY)
+    expect(largeUnmanagedBytes([])).toBe(Number.POSITIVE_INFINITY)
   })
 })
