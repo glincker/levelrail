@@ -8,9 +8,9 @@ import storageEn from '../../locales/en/storage.json'
 import {
   buildDiskSegments,
   columnWeights,
-  gridTemplate,
-  innerTemplate,
-  MIN_SEGMENT_PX,
+  hatchUnits,
+  quantizeUnits,
+  ROW_UNITS,
 } from './diskBar'
 import { StorageDiskBar, type StorageDiskBarProps } from './StorageDiskBar'
 import { StorageVerdict } from './StorageVerdict'
@@ -67,11 +67,11 @@ describe('disk segments', () => {
     const other = s.find((x) => x.id === 'other')
     expect(other?.bytes).toBeCloseTo(25 * GIB - 0.001 * GIB, -6)
     expect(s.find((x) => x.id === 'images')?.topItems).toHaveLength(3)
-    const tpl = gridTemplate(
+    const units = quantizeUnits(
       columnWeights(s, 200 * GIB, 100 * GIB).map((c) => c.weight),
     )
-    expect(tpl).toContain(`minmax(${MIN_SEGMENT_PX}px,`)
-    expect(tpl.match(/minmax/g)).toHaveLength(6)
+    expect(units).toHaveLength(6)
+    expect(Math.min(...units)).toBeGreaterThanOrEqual(1)
   })
 
   it('never derives other when a category is unmeasured', () => {
@@ -86,18 +86,24 @@ describe('disk segments', () => {
   })
 
   it('splits the hatch by reclaimable bytes', () => {
-    expect(innerTemplate(30, 10)).toBe('20fr 10fr')
-    expect(innerTemplate(30, 99)).toBe('0fr 30fr')
+    expect(hatchUnits(30, 10)).toBe(67)
+    expect(hatchUnits(30, 99)).toBe(ROW_UNITS)
+    expect(hatchUnits(30, 0)).toBe(0)
   })
 })
 
 describe('StorageDiskBar', () => {
-  it('sets fractional columns and a hatch part on reclaimable segments', () => {
+  it('sizes segments with literal classes, no style attribute, summing to 100', () => {
     renderBar()
-    const grid = screen.getByRole('button', {
-      name: 'App data, 40 GiB',
-    }).parentElement
-    expect(grid?.style.gridTemplateColumns).toContain('fr')
+    const row = screen.getByRole('button', { name: 'App data, 40 GiB' })
+      .parentElement as HTMLElement
+    expect(row.querySelectorAll('[style]')).toHaveLength(0)
+    expect(row.hasAttribute('style')).toBe(false)
+    const sum = Array.from(row.children).reduce(
+      (n, c) => n + Number(/basis-\[([\d.]+)%\]/.exec(c.className)?.[1]),
+      0,
+    )
+    expect(sum).toBeCloseTo(100, 5)
     expect(screen.getByTestId('hatch-images')).toBeInTheDocument()
     expect(screen.queryByTestId('hatch-appData')).toBeNull()
   })
@@ -131,7 +137,9 @@ describe('StorageDiskBar', () => {
     images.focus()
     await user.keyboard('{Enter}')
     expect(onSelect).toHaveBeenCalledWith('images')
-    await user.click(screen.getByRole('button', { name: /^Build cache\s*5/ }))
+    await user.click(
+      screen.getByRole('button', { name: 'Filter: Build cache' }),
+    )
     expect(onSelect).toHaveBeenLastCalledWith('buildCache')
     const order = screen.getAllByRole('button').map((b) => b.tagName)
     expect(order.length).toBe(10)

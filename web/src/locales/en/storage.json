@@ -49,6 +49,7 @@
     "legend": "Filter by category",
     "unmeasured": "Not measured",
     "segmentLabel": "{{name}}, {{size}}",
+    "filterLabel": "Filter: {{name}}",
     "categories": {
       "appData": "App data",
       "images": "Images",
