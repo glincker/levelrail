@@ -34,9 +34,6 @@ export type DiskColumnId = DiskCategory | 'free'
 /** Unknown sizes still need room on the bar so the dotted outline is visible. */
 const UNMEASURED_SHARE = 0.04
 
-/** Smallest a segment may render, so a 0.5 percent segment stays visible and pressable. */
-export const MIN_SEGMENT_PX = 8
-
 export function buildDiskSegments(input: {
   totalBytes: number
   freeBytes: number
@@ -88,15 +85,28 @@ export function columnWeights(
   return cols
 }
 
-export function gridTemplate(weights: number[]): string {
-  const total = weights.reduce((n, w) => n + w, 0) || 1
-  return weights
-    .map((w) => `minmax(${MIN_SEGMENT_PX}px, ${(w / total).toFixed(5)}fr)`)
-    .join(' ')
+/** Row resolution: segments snap to 0.5 percent, so the row is 200 units. */
+export const ROW_UNITS = 200
+
+/** Quantise weights to whole units (min 1) summing to ROW_UNITS; the biggest absorbs rounding. */
+export function quantizeUnits(weights: number[]): number[] {
+  const sum = weights.reduce((n, w) => n + w, 0) || 1
+  const units = weights.map((w) =>
+    Math.max(1, Math.round((w / sum) * ROW_UNITS)),
+  )
+  if (units.length === 0) return units
+  let big = 0
+  units.forEach((u, i) => {
+    if (u > (units[big] ?? 0)) big = i
+  })
+  const diff = ROW_UNITS - units.reduce((n, u) => n + u, 0)
+  units[big] = Math.max(1, (units[big] ?? 0) + diff)
+  return units
 }
 
-/** Split a segment into plain and reclaimable parts for the hatch overlay. */
-export function innerTemplate(bytes: number, reclaimable: number): string {
-  const r = Math.min(Math.max(reclaimable, 0), bytes)
-  return `${Math.max(bytes - r, 0).toFixed(0)}fr ${r.toFixed(0)}fr`
+/** Reclaimable part of a segment in units of 0.5 percent of that segment. */
+export function hatchUnits(bytes: number, reclaimable: number): number {
+  if (bytes <= 0 || reclaimable <= 0) return 0
+  const r = Math.min(reclaimable, bytes)
+  return Math.min(ROW_UNITS, Math.max(1, Math.round((r / bytes) * ROW_UNITS)))
 }

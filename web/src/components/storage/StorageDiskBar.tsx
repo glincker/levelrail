@@ -1,4 +1,3 @@
-import { useLayoutEffect, useRef, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { sizeLabel } from '../images/imageFormat'
@@ -8,11 +7,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '../ui/tooltip'
+import { BASIS } from './diskBarBasis'
 import {
   buildDiskSegments,
   columnWeights,
-  gridTemplate,
-  innerTemplate,
+  hatchUnits,
+  quantizeUnits,
   type DiskCategory,
   type DiskCategoryInput,
   type DiskSegment,
@@ -45,27 +45,6 @@ export interface StorageDiskBarProps {
   categories: Partial<Record<DiskCategory, DiskCategoryInput>>
   active?: DiskCategory | null
   onSelect: (category: DiskCategory) => void
-}
-
-/** Fractional column widths are not expressible as Tailwind classes, so the template is set on the node. */
-function FractionGrid({
-  template,
-  className,
-  children,
-}: {
-  template: string
-  className?: string
-  children: ReactNode
-}) {
-  const ref = useRef<HTMLDivElement>(null)
-  useLayoutEffect(() => {
-    ref.current?.style.setProperty('grid-template-columns', template)
-  }, [template])
-  return (
-    <div ref={ref} className={cn('grid', className)}>
-      {children}
-    </div>
-  )
 }
 
 function percent(share: number): string {
@@ -126,20 +105,24 @@ export function StorageDiskBar({
   const { t } = useTranslation('storage')
   const segments = buildDiskSegments({ totalBytes, freeBytes, categories })
   const cols = columnWeights(segments, totalBytes, freeBytes)
-  const template = gridTemplate(cols.map((c) => c.weight))
+  const units = quantizeUnits(cols.map((c) => c.weight))
   const byId = new Map(segments.map((s) => [s.id, s]))
 
   return (
     <section aria-label={t('disk.label')} className="flex flex-col gap-3">
       <TooltipProvider delay={0}>
-        <FractionGrid template={template} className="h-9 gap-0.5">
-          {cols.map((c) => {
+        <div className="flex h-9 gap-0.5">
+          {cols.map((c, idx) => {
+            const basis = BASIS[units[idx] ?? 1]
             if (c.id === 'free') {
               return (
                 <div
                   key="free"
                   aria-hidden="true"
-                  className="rounded-sm rounded-r-md bg-muted"
+                  className={cn(
+                    'min-w-2 shrink grow-0 rounded-sm rounded-r-md bg-muted',
+                    basis,
+                  )}
                 />
               )
             }
@@ -161,8 +144,9 @@ export function StorageDiskBar({
                       aria-label={label}
                       onClick={() => onSelect(s.id)}
                       className={cn(
-                        'relative min-w-0 overflow-hidden rounded-sm outline-none first:rounded-l-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                        'relative min-w-2 shrink grow-0 overflow-hidden rounded-sm outline-none first:rounded-l-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                         'transition-[opacity,box-shadow] duration-150 motion-reduce:transition-none',
+                        basis,
                         active && !pressed && 'opacity-45',
                         pressed && 'ring-2 ring-foreground/70',
                         s.bytes === null
@@ -176,17 +160,22 @@ export function StorageDiskBar({
                   }
                 >
                   {s.bytes !== null && s.reclaimableBytes > 0 ? (
-                    <FractionGrid
-                      template={innerTemplate(s.bytes, s.reclaimableBytes)}
-                      className="absolute inset-0"
-                    >
-                      <span />
-                      <span data-testid={`hatch-${s.id}`} className={HATCH} />
-                    </FractionGrid>
+                    <span className="absolute inset-0 flex">
+                      <span className="flex-1" />
+                      <span
+                        data-testid={`hatch-${s.id}`}
+                        className={cn(
+                          'shrink-0 grow-0',
+                          BASIS[hatchUnits(s.bytes, s.reclaimableBytes)],
+                          HATCH,
+                        )}
+                      />
+                    </span>
                   ) : null}
                 </TooltipTrigger>
                 <TooltipContent
                   side="top"
+                  variant="card"
                   className="max-w-64 flex-col items-stretch gap-0 py-2"
                 >
                   <SegmentCard s={s} />
@@ -194,7 +183,7 @@ export function StorageDiskBar({
               </Tooltip>
             )
           })}
-        </FractionGrid>
+        </div>
       </TooltipProvider>
       <ul
         aria-label={t('disk.legend')}
@@ -205,6 +194,9 @@ export function StorageDiskBar({
             <button
               type="button"
               aria-pressed={active === s.id}
+              aria-label={t('disk.filterLabel', {
+                name: t(`disk.categories.${s.id}`),
+              })}
               onClick={() => onSelect(s.id)}
               className="flex items-center gap-2 rounded-sm px-1 py-0.5 text-[13px] text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring aria-pressed:text-foreground"
             >
