@@ -71,3 +71,111 @@ export function certificatePath(
   if (challenge === 'dns-01-required' || privateHost) return 'dns-01-private'
   return 'http-01'
 }
+
+export type DomainKind =
+  'empty' | 'invalid' | 'wildcard' | 'apex' | 'www' | 'subdomain'
+
+// normalizeDomainInput forgives a pasted URL so a non technical user is not
+// blocked by "https://" or a trailing slash.
+export function normalizeDomainInput(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/^[a-z]+:\/\//, '')
+    .replace(/[/?#].*$/, '')
+    .replace(/\.$/, '')
+}
+
+export function classifyDomain(value: string): DomainKind {
+  const d = normalizeDomainInput(value)
+  if (d === '') return 'empty'
+  if (d.startsWith('*.')) return 'wildcard'
+  if (!isValidDomain(d)) return 'invalid'
+  const pair = wwwPair(d)
+  if (pair?.typed === 'apex') return 'apex'
+  if (pair?.typed === 'www') return 'www'
+  return 'subdomain'
+}
+
+export type WizardStep = 1 | 2 | 3
+
+export interface WizardState {
+  step: WizardStep
+  domain: string
+  app: string
+  // added is the domain already saved to the app, so Back then Next never re-adds it.
+  added: string
+}
+
+const STORAGE_KEY = 'levelrail.addDomainWizard'
+
+export function loadWizardState(): WizardState | null {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY)
+    if (!raw) return null
+    const v: unknown = JSON.parse(raw)
+    if (typeof v !== 'object' || v === null) return null
+    const o = v as Record<string, unknown>
+    const step = o.step
+    if (step !== 1 && step !== 2 && step !== 3) return null
+    if (
+      typeof o.domain !== 'string' ||
+      typeof o.app !== 'string' ||
+      typeof o.added !== 'string'
+    ) {
+      return null
+    }
+    return { step, domain: o.domain, app: o.app, added: o.added }
+  } catch {
+    return null
+  }
+}
+
+export function saveWizardState(state: WizardState): void {
+  try {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+  } catch {
+    // Storage can be blocked; the wizard still works, it just forgets on reload.
+  }
+}
+
+export function clearWizardState(): void {
+  try {
+    sessionStorage.removeItem(STORAGE_KEY)
+  } catch {
+    // Nothing to clear when storage is unavailable.
+  }
+}
+
+export interface DnsRow {
+  type: 'A' | 'AAAA' | 'CNAME'
+  name: string
+  value: string
+}
+
+const IPV4 = /^\d{1,3}(\.\d{1,3}){3}$/
+
+// wizardRecords picks the simplest record that works: an apex cannot be a
+// CNAME at most registrars, so it gets an A record when an address is known.
+export function wizardRecords(
+  domain: string,
+  kind: DomainKind,
+  host: string | undefined,
+  ipv4: string | undefined,
+  ipv6: string | undefined,
+): DnsRow[] {
+  if (!host && !ipv4 && !ipv6) return []
+  const rows: DnsRow[] = []
+  const hostIsIp = host ? host.includes(':') || IPV4.test(host) : false
+  if (host && !hostIsIp && kind !== 'apex') {
+    return [{ type: 'CNAME', name: domain, value: host }]
+  }
+  const a = ipv4 ?? (host && IPV4.test(host) ? host : undefined)
+  if (a) rows.push({ type: 'A', name: domain, value: a })
+  const aaaa = ipv6 ?? (host?.includes(':') ? host : undefined)
+  if (aaaa) rows.push({ type: 'AAAA', name: domain, value: aaaa })
+  if (rows.length === 0 && host) {
+    rows.push({ type: 'CNAME', name: domain, value: host })
+  }
+  return rows
+}

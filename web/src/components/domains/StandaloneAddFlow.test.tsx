@@ -138,6 +138,7 @@ describe('AddDomainsDialog proxy mode', () => {
     expect(
       screen.getByRole('radio', { name: 'Route to an app' }),
     ).toHaveAttribute('aria-checked', 'true')
+    await user.click(screen.getByRole('button', { name: /^Advanced/ }))
     expect(await screen.findByText('203.0.113.4')).toBeInTheDocument()
     expect(screen.getByText('2001:db8::4')).toBeInTheDocument()
     await user.click(
