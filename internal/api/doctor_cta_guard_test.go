@@ -83,24 +83,31 @@ func doctorNetworkSources(t *testing.T) map[string]*ast.File {
 	return files
 }
 
+// doctorStringConsts collects only package-level declarations: nested consts such as a
+// function-local "code" would otherwise leak across functions in map-iteration order.
 func doctorStringConsts(files map[string]*ast.File) map[string]string {
 	out := map[string]string{}
 	for _, f := range files {
-		ast.Inspect(f, func(n ast.Node) bool {
-			vs, ok := n.(*ast.ValueSpec)
+		for _, d := range f.Decls {
+			gd, ok := d.(*ast.GenDecl)
 			if !ok {
-				return true
+				continue
 			}
-			for i, name := range vs.Names {
-				if i >= len(vs.Values) {
-					break
+			for _, spec := range gd.Specs {
+				vs, ok := spec.(*ast.ValueSpec)
+				if !ok {
+					continue
 				}
-				if s, ok := doctorResolveString(vs.Values[i], nil); ok {
-					out[name.Name] = s
+				for i, name := range vs.Names {
+					if i >= len(vs.Values) {
+						break
+					}
+					if s, ok := doctorResolveString(vs.Values[i], nil); ok {
+						out[name.Name] = s
+					}
 				}
 			}
-			return true
-		})
+		}
 	}
 	return out
 }
