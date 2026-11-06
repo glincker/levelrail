@@ -34,12 +34,14 @@ import {
 import { findProxyDomain } from '../lib/proxyIntegration'
 import {
   proxyIntegrationQueryOptions,
+  useVerifyProxyDomain,
   type ProxyDomain,
 } from '../queries/proxyIntegration'
 import { useQuery } from '@tanstack/react-query'
 import { AcmeFailureHint } from './AcmeFailureHint'
 import { DnsProviderBadge } from './DnsProviderBadge'
 import { ProxyManagedCertNote } from './ProxyManagedCertNote'
+import { DomainReadinessSteps } from './domains/DomainReadinessSteps'
 
 // The subset of a domain-check result DomainCheckPanel needs to render:
 // shared by domainCheck.ts's per-app DomainCheckResult and domains.ts's
@@ -497,27 +499,41 @@ export function DomainCheckPanel({
         <DnsResolverReport data={data} />
       ) : null}
 
-      <div className="mt-2 flex items-center gap-2" aria-live="polite">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={onRefetch}
-          disabled={isFetching}
-        >
-          <RefreshCwGlassIcon
-            className={isFetching ? 'size-5 animate-spin' : 'size-5'}
-          />
-          {isFetching ? t('dnsCheck.checking') : 'Check now'}
-        </Button>
-        {data?.checked_at && !isFetching ? (
-          <span className="text-xs text-muted-foreground">
-            {t('dnsCheck.checkedAt', {
-              time: new Date(data.checked_at).toLocaleTimeString(),
-            })}
-          </span>
-        ) : null}
-      </div>
+      {data ? (
+        <DomainReadinessSteps
+          domain={domain}
+          proxyRow={proxyRow}
+          authoritative={data.authoritative}
+          localStale={data.local_stale}
+          checkedAt={data.checked_at}
+          isFetching={isFetching}
+          onRefetch={onRefetch}
+          input={{
+            status: data.status,
+            verdict: data.verdict,
+            tlsOwner: data.tls_owner,
+            hasAcmeFailure: Boolean(data.acme_failure),
+            certTrusted: proxyCertTrusted(proxyRow, data.proxy_certificate),
+            proxyCertificate: data.proxy_certificate,
+            proxyRow,
+          }}
+        />
+      ) : (
+        <div className="mt-2 flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onRefetch}
+            disabled={isFetching}
+          >
+            <RefreshCwGlassIcon
+              className={isFetching ? 'size-5 animate-spin' : 'size-5'}
+            />
+            {isFetching ? t('dnsCheck.checking') : t('readiness.checkNow')}
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
@@ -540,6 +556,7 @@ export function DomainDnsCheck({
   const { data, isFetching, refetch } = useDomainCheck(appName, domain)
   const { data: proxy } = useQuery(proxyIntegrationQueryOptions())
   const proxyRow = proxy ? findProxyDomain(proxy, domain) : undefined
+  const verify = useVerifyProxyDomain()
   return (
     <DomainCheckPanel
       proxyRow={proxyRow}
@@ -548,6 +565,7 @@ export function DomainDnsCheck({
       isFetching={isFetching}
       onRefetch={() => {
         void refetch()
+        if (proxyRow) verify.mutate(domain)
       }}
     />
   )

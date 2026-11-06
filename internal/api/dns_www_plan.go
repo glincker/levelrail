@@ -55,6 +55,10 @@ func (rt *Router) handleGetDomainWWWPlan(w http.ResponseWriter, r *http.Request)
 	if !ok {
 		return
 	}
+	if r.URL.Query().Get("redirect") == "false" {
+		st.res.Redirect = nil
+		st.res.Message = joinNote(st.res.Message, wwwNoRedirectNote)
+	}
 	writeJSON(w, http.StatusOK, st.res)
 }
 

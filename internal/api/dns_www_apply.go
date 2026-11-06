@@ -21,7 +21,19 @@ type wwwApplyRequest struct {
 	Canonical string `json:"canonical"`
 	Replace   bool   `json:"replace"`
 	Confirm   bool   `json:"confirm"`
+	// Redirect is a pointer so an absent field keeps the redirect; only an explicit false skips it.
+	Redirect *bool `json:"redirect,omitempty"`
 }
+
+// joinNote appends a note to a message that may be empty.
+func joinNote(msg, note string) string {
+	if msg == "" {
+		return note
+	}
+	return msg + "; " + note
+}
+
+const wwwNoRedirectNote = "no redirect: both hosts serve the app"
 
 // Per-record apply results beyond the dnsrecords outcomes.
 const (
@@ -84,6 +96,10 @@ func (rt *Router) handleApplyDomainWWW(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	app := r.PathValue("name")
+	skipRedirect := req.Redirect != nil && !*req.Redirect
+	if skipRedirect {
+		st.res.Redirect = nil
+	}
 	out := wwwApplyResponse{Domain: domain, Provider: st.res.Provider, Zone: st.res.Zone, Mode: st.res.Mode,
 		Canonical: st.res.Canonical, Records: []wwwApplyRecord{}, Redirect: st.res.Redirect, Undo: []undoAction{}}
 	failed, conflicts := false, false
@@ -121,6 +137,9 @@ func (rt *Router) handleApplyDomainWWW(w http.ResponseWriter, r *http.Request) {
 			}
 			out.Undo = append(out.Undo, undo...)
 		}
+		if skipRedirect && isWWW && rec.Result != wwwResultNotAttempted {
+			rec.Message = joinNote(rec.Message, wwwNoRedirectNote)
+		}
 		out.Records = append(out.Records, rec)
 	}
 	out.Applied = !failed && !conflicts
@@ -131,6 +150,9 @@ func (rt *Router) handleApplyDomainWWW(w http.ResponseWriter, r *http.Request) {
 		out.Message = "conflicting records were left alone; pass replace to overwrite them"
 	}
 	switch {
+	case skipRedirect:
+		out.RedirectMessage = "skipped: redirect was turned off"
+		out.Message = joinNote(out.Message, wwwNoRedirectNote)
 	case failed:
 		out.RedirectMessage = "not applied because a DNS record failed"
 	case conflicts:

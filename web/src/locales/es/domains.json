@@ -1536,5 +1536,122 @@
     "domains": "Dominios",
     "certificates": "Certificados",
     "dns": "DNS"
+  },
+  "www": {
+    "title": "Direccion www",
+    "help": "Haz que {{domain}} y www.{{domain}} funcionen, con una sola redireccion.",
+    "choiceLabel": "Que debe pasar",
+    "choice": {
+      "apex": "Enviar a los visitantes de www a {{domain}}",
+      "www": "Enviar a los visitantes de {{domain}} a www.{{domain}}",
+      "both": "Servir ambos, sin redireccion",
+      "apexOnly": "Solo la direccion principal"
+    },
+    "loading": "Leyendo tus registros DNS",
+    "error": "No pudimos leer el plan DNS: {{message}}",
+    "retry": "Comprobar de nuevo",
+    "records": "Registros DNS",
+    "col": {
+      "type": "Tipo",
+      "name": "Nombre",
+      "value": "Valor",
+      "now": "Ahora"
+    },
+    "outcome": {
+      "created": "Se anadira",
+      "updated": "Se cambiara",
+      "unchanged": "Ya es correcto",
+      "conflict": "Existe otro registro"
+    },
+    "copy": "Copiar {{value}}",
+    "copied": "Copiado",
+    "redirect": "{{from}} redirigira a {{to}}.",
+    "noProvider": "No hay proveedor DNS conectado para este dominio. Anade estos registros donde gestionas el DNS y comprueba de nuevo.",
+    "replaceWarning": "Ya existe otro registro. Aplicar lo reemplazara.",
+    "apply": "Aplicar por mi",
+    "applyReplace": "Reemplazar y aplicar",
+    "applying": "Aplicando",
+    "applyError": "No se pudo aplicar: {{message}}",
+    "applied": "Listo. Ambas direcciones estan configuradas.",
+    "partial": "Algunos registros no se aplicaron.",
+    "result": {
+      "created": "Anadido",
+      "updated": "Cambiado",
+      "unchanged": "Ya era correcto",
+      "conflict": "Sin cambios",
+      "failed": "Fallo",
+      "not_attempted": "No intentado"
+    },
+    "redirectApplied": "La redireccion esta activa."
+  },
+  "readiness": {
+    "title": "Estado del dominio",
+    "checkNow": "Comprobar ahora",
+    "countdown": "Se comprobará de nuevo en {{seconds}}s",
+    "allDone": "Todo listo, no hacen falta más comprobaciones.",
+    "step": {
+      "dns": "El DNS apunta aquí",
+      "cert": "Certificado emitido",
+      "site": "El sitio responde"
+    },
+    "say": {
+      "dns": {
+        "done": "Tu dominio apunta a este servidor.",
+        "progress": "Esperando al DNS. Agrega el registro de arriba.",
+        "blocked": "El dominio apunta a otro lugar. Corrige el registro de arriba.",
+        "waiting": "Esperando al DNS."
+      },
+      "cert": {
+        "done": "Tu certificado está listo.",
+        "progress": "Emitiendo tu certificado, normalmente en menos de un minuto.",
+        "blocked": "No se pudo emitir. Mira la solución de abajo.",
+        "waiting": "Empieza cuando el DNS apunte aquí."
+      },
+      "site": {
+        "done": "Tu sitio responde por HTTPS.",
+        "progress": "Esperando a que el sitio responda.",
+        "blocked": "El sitio no responde. Mira más abajo.",
+        "waiting": "Empieza cuando el certificado esté listo."
+      }
+    },
+    "ttl": "Los cambios de DNS pueden tardar hasta {{time}} en llegar a todos.",
+    "unit": {
+      "s_one": "{{count}} segundo",
+      "s_other": "{{count}} segundos",
+      "m_one": "{{count}} minuto",
+      "m_other": "{{count}} minutos",
+      "h_one": "{{count}} hora",
+      "h_other": "{{count}} horas"
+    },
+    "localLag": "El DNS público ya es correcto. El resolvedor de este servidor puede tardar un poco, y eso no afecta a tu sitio.",
+    "issuing": "Emitiendo tu certificado. Esta página se actualiza sola.",
+    "issueFailed": "No se pudo emitir el certificado. Comprueba que el registro apunta aquí y que el puerto 80 está abierto, y pulsa Comprobar ahora.",
+    "route": {
+      "503": "La ruta responde 503: el servidor es accesible, pero la app que hay detrás no está lista o no está asociada a este dominio.",
+      "404": "La ruta responde 404: el servidor es accesible, pero aún no conoce este dominio."
+    },
+    "diagnose": "¿Por qué no responde?"
+  },
+  "moreOptions": {
+    "title": "Más opciones",
+    "activeLabel": "Opciones activadas",
+    "access": "Acceso",
+    "routing": "Enrutamiento",
+    "protection": "Protección y detalles",
+    "chip": {
+      "basicAuth": "Autenticación basica",
+      "authGate": "Acceso con inicio de sesión",
+      "redirect": "Redirección",
+      "maintenance": "Mantenimiento",
+      "waf": "WAF / limite de peticiones",
+      "errorPages": "Páginas de error propias",
+      "hidden": "Oculto a buscadores",
+      "ownCert": "Certificado propio"
+    },
+    "links": {
+      "allSettings": "Todos los ajustes",
+      "diagnose": "Diagnosticar",
+      "deploys": "La app no está en marcha, ver despliegues"
+    }
   }
 }
