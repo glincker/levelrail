@@ -19,8 +19,9 @@ import {
   type ExperimentalFeature,
 } from '@/lib/experimental'
 import { LockedFeatureMark } from './LockedFeatureMark'
-import { CollapsibleSection } from './CollapsibleSection'
+import { CollapsibleSection, NAV_ROW_CLASS } from './CollapsibleSection'
 import { NavBadge } from './NavBadge'
+import { cn } from '@/lib/utils'
 import {
   chordFor,
   defaultGroupOpen,
@@ -124,7 +125,7 @@ function LockedNavLinkItem({
         }
         tooltip={label}
         title={label}
-        className="text-muted-foreground"
+        className={cn(NAV_ROW_CLASS, 'text-muted-foreground')}
         data-locked="true"
       >
         {item.icon}
@@ -179,6 +180,7 @@ function NavLinkItem({
           />
         }
         isActive={isGlobalItemActive(pathname, item)}
+        className={NAV_ROW_CLASS}
         title={label}
         tooltip={{
           children: (
@@ -263,7 +265,7 @@ export function GlobalNav() {
 
   return (
     <>
-      <div className="flex flex-col gap-1 p-2">
+      <div className="flex flex-col gap-2 p-2">
         <GetStartedNavItem />
         {!rail && pinned.length > 0 ? (
           <CollapsibleSection
@@ -329,6 +331,7 @@ export function GlobalNav() {
               header={t(`shell.navGroup.${group.id}`, {
                 defaultValue: group.label,
               })}
+              active={group.items.some((i) => isGlobalItemActive(pathname, i))}
               hint={<GroupAttention group={group} counts={counts} />}
             >
               {menu}
@@ -336,7 +339,7 @@ export function GlobalNav() {
           )
         })}
       </div>
-      <SidebarGroup className="mt-auto">
+      <SidebarGroup className="mt-auto border-t border-sidebar-border pt-2">
         <SidebarGroupContent>
           <SidebarMenu>
             {visibleGlobalFooter().map((item) => (

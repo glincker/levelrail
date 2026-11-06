@@ -26,7 +26,7 @@ export function SidebarVersionLinkView({
       to="/settings/updates"
       aria-label={hint ? `${label}. ${hint}` : label}
       title={hint ?? label}
-      className="mt-1 flex items-center gap-1.5 truncate rounded-md px-2 py-0.5 text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none group-data-[collapsible=icon]:hidden"
+      className="mt-1 flex h-7 cursor-pointer items-center gap-1.5 truncate rounded-md px-2.5 text-xs text-sidebar-foreground/60 transition-colors duration-150 ease-out hover:bg-sidebar-accent/70 hover:text-sidebar-foreground active:bg-sidebar-accent motion-reduce:transition-none focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none group-data-[collapsible=icon]:hidden"
     >
       <span className="truncate">{label}</span>
       {hint ? (
