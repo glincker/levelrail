@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1976 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1982 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -437,6 +437,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/validate-spec", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleValidateSpec", Description: "Live app.yaml validation (apps_validate_spec.go): read-only, same AbilityRead/POST shape as preflight above. Never saves or deploys anything, only runs the submitted body through internal/spec's own Parse-time checks for an editor's earlier, friendlier feedback."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/visitors", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppVisitors", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/visitors/export", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppVisitorsExport", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/vitals", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetVitals", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/vitals", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetVitals", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/vitals/rotate-key", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRotateVitalsKey", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/watch", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppWatch", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/watch/stop", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleStopAppWatch", Description: ""},
 	{Method: "GET", Path: "/api/v1/deploys/failed", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListFailedDeploys", Description: ""},
@@ -1716,6 +1719,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/usage/settings", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetUsageSettings", Description: ""},
 	{Method: "PUT", Path: "/api/v1/usage/settings", Ability: "AbilityRoot", Group: "Other", Handler: "handlePutUsageSettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/usage/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleUsageSummary", Description: ""},
+	{Method: "GET", Path: "/api/v1/vitals/snippet.js", Ability: "Public", Group: "Other", Handler: "handleVitalsSnippet", Description: ""},
+	{Method: "OPTIONS", Path: "/api/v1/vitals/{app}", Ability: "Public", Group: "Other", Handler: "handleVitalsPreflight", Description: ""},
+	{Method: "POST", Path: "/api/v1/vitals/{app}", Ability: "Public", Group: "Other", Handler: "handleVitalsBeacon", Description: ""},
 	{Method: "GET", Path: "/api/v2/apps", Ability: "AbilityRead", Group: "Other", Handler: "handleList", Description: ""},
 	{Method: "GET", Path: "/api/v2/apps/{name}", Ability: "AbilityRead", Group: "Other", Handler: "handleGet", Description: ""},
 	{Method: "PATCH", Path: "/api/v2/apps/{name}", Ability: "AbilityWrite", Group: "Other", Handler: "handleApply", Description: ""},

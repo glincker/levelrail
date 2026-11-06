@@ -152,6 +152,9 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_METRICS_RETENTION` | [`telemetry.metrics_retention`](/runtime-settings#observability) | `360h` |
 | `APP_VISITOR_HISTORY_RETENTION` | [`telemetry.visitor_history_retention`](/runtime-settings#observability) | `168h0m0s` |
 | `APP_VISITOR_SALT_ROTATION` | [`telemetry.visitor_salt_rotation`](/runtime-settings#observability) | `24h0m0s` |
+| `APP_VITALS_ENABLED` | [`vitals.enabled`](/runtime-settings#observability) | `false` |
+| `APP_VITALS_MAX_BODY_BYTES` | [`vitals.max_body_bytes`](/runtime-settings#observability) | `4096` |
+| `APP_VITALS_RATE_PER_MIN` | [`vitals.rate_limit_per_minute`](/runtime-settings#observability) | `600` |
 | `APP_ACCOUNT_PREFERENCES_MAX_BYTES` | [`account.preferences_max_bytes`](/runtime-settings#data-retention) | `8192` |
 | `APP_BACKUP_DEFAULT_RETENTION_HOURS` | [`backup.default_retention_hours`](/runtime-settings#data-retention) | `168` |
 | `APP_CLEANUP_ENABLED` | [`cleanup.enabled`](/runtime-settings#data-retention) | `true` |
@@ -173,6 +176,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_RETENTION_USAGE_COST_DAYS` | [`retention.usage_cost_days`](/runtime-settings#data-retention) | `90` |
 | `APP_WEBHOOK_DELIVERY_RETENTION_DAYS` | [`retention.webhook_delivery_days`](/runtime-settings#data-retention) | `30` |
 | `APP_JOBS_HISTORY_KEEP` | [`scheduled_tasks.history_keep`](/runtime-settings#data-retention) | `200` |
+| `APP_VITALS_RETENTION_DAYS` | [`vitals.retention_days`](/runtime-settings#data-retention) | `30` |
 | `APP_ONBOARDING_ENABLED` | [`onboarding.enabled`](/runtime-settings#experimental) | `true` |
 | `APP_ONBOARDING_RESTORE_REMINDER_DAYS` | [`onboarding.restore_reminder_days`](/runtime-settings#experimental) | `7` |
 <!-- runtime-settings:end -->

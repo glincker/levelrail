@@ -1,0 +1,15 @@
+{
+  "title": "Web vitals",
+  "collect": "Collect",
+  "errorTitle": "Web vitals update failed",
+  "snippetHint": "Add this tag to your site. It sends LCP, INP, CLS, TTFB and FCP from real visits, with no cookies and no IP addresses.",
+  "copySnippet": "Copy snippet",
+  "copied": "Copied",
+  "createKey": "Create beacon key",
+  "rotateKey": "Rotate key",
+  "emptyDisabled": "Turn on collection and add the snippet to see how real visitors experience this app.",
+  "emptyEnabled": "No data yet. Visit your site with the snippet installed and results appear here.",
+  "p75Label": "{{metric}} p75",
+  "route": "Route",
+  "windowNote": "p75 over the last {{days}} days. Green is good, amber needs improvement, red is poor."
+}

@@ -163,6 +163,7 @@ var Tree = map[string]*Node{
 		"build-cache":        {Subs: map[string]*Node{"show": nil, "set": nil, "clear": nil, "remove": nil}},
 		"health":             {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil, "discover": nil}},
 		"health-score":       nil,
+		"vitals":             nil,
 		"volumes":            {Subs: map[string]*Node{"get": nil, "attach": nil, "detach": nil, "ls": nil, "cp": nil, "rm": nil}},
 		"integrations":       {Subs: map[string]*Node{"catalog": nil, "list": nil, "add": nil, "remove": nil}},
 	}},

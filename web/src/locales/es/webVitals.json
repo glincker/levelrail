@@ -1,0 +1,15 @@
+{
+  "title": "Métricas web",
+  "collect": "Recopilar",
+  "errorTitle": "No se pudo actualizar las métricas web",
+  "snippetHint": "Añade esta etiqueta a tu sitio. Envía LCP, INP, CLS, TTFB y FCP de visitas reales, sin cookies ni direcciones IP.",
+  "copySnippet": "Copiar fragmento",
+  "copied": "Copiado",
+  "createKey": "Crear clave del indicador",
+  "rotateKey": "Rotar clave",
+  "emptyDisabled": "Activa la recopilación y añade el fragmento para ver cómo experimentan esta app los visitantes reales.",
+  "emptyEnabled": "Aún no hay datos. Visita tu sitio con el fragmento instalado y los resultados aparecerán aquí.",
+  "p75Label": "{{metric}} p75",
+  "route": "Ruta",
+  "windowNote": "p75 de los últimos {{days}} días. Verde es bueno, ámbar necesita mejorar, rojo es deficiente."
+}
