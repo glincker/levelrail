@@ -72,6 +72,9 @@ func runAppsLogs(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("query logs for app %q: %w", name, err))
 	}
 	entries = tailEntries(entries, tail)
+	if len(entries) == 0 && !jsonOut {
+		hintBuildingDeploy(client, prog, name, stderr)
+	}
 
 	if err := renderResult(stdout, of.Format, of.Query, entries, func() { printLogEntriesHuman(stdout, entries) }); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
@@ -126,4 +129,18 @@ Flags:
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
+}
+
+// hintBuildingDeploy points at the build log when an app has no runtime logs because its first deploy is still building.
+func hintBuildingDeploy(client *Client, prog, name string, stderr io.Writer) {
+	attempts, err := client.ListDeployAttempts(context.Background(), name)
+	if err != nil {
+		return
+	}
+	for _, a := range attempts {
+		if a.Status == "building" || a.Status == "queued" {
+			_, _ = fmt.Fprintf(stderr, "no container logs yet, deploy %s is %s: %s\n", a.ID, a.Status, followHint(prog, name, a.ID))
+			return
+		}
+	}
 }

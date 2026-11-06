@@ -52,19 +52,24 @@ func runDeployStatic(prog, src string, o staticOpts, newClient func() *Client, s
 	ctx := context.Background()
 
 	if o.fromHash != "" {
-		if !validUploadHash(o.fromHash) {
-			return reportError(stdout, stderr, jsonOut, newValidationError("--upload-hash must be a 64 character hex digest"))
+		if err := validateUploadFlags(prog, inf, nil, o.fromHash); err != nil {
+			return reportError(stdout, stderr, jsonOut, err)
 		}
 		res.Hash = o.fromHash
 		if o.dryRun {
-			say("would republish upload %s as static site %q", o.fromHash[:12], name)
+			say("would republish upload %s as static site %q", shortHash(o.fromHash), name)
 			return writeScheduledTaskResult(stdout, stderr, of, res, func() {})
 		}
 		client := newClient()
-		if err := ensureUploadApp(ctx, client, inf, nil, &res, say); err != nil {
+		fromHash, err := resolveUploadHash(ctx, client, name, o.fromHash)
+		if err != nil {
 			return reportError(stdout, stderr, jsonOut, err)
 		}
-		return finishUploadDeploy(ctx, client, prog, inf, o.fromHash, nil, o.timeout, o.urlWait, &res, stdout, stderr, of, jsonOut)
+		res.Hash = fromHash
+		if err := ensureUploadApp(ctx, client, inf, nil, &res, say); err != nil {
+			return reportError(stdout, stderr, jsonOut, createdAppNote(prog, &res, err))
+		}
+		return finishUploadDeploy(ctx, client, prog, inf, fromHash, nil, o.timeout, o.urlWait, &res, stdout, stderr, of, jsonOut)
 	}
 
 	st, err := os.Stat(src)
@@ -121,11 +126,11 @@ func runDeployStatic(prog, src string, o staticOpts, newClient func() *Client, s
 	}
 	client := newClient()
 	if err := ensureUploadApp(ctx, client, inf, nil, &res, say); err != nil {
-		return reportError(stdout, stderr, jsonOut, err)
+		return reportError(stdout, stderr, jsonOut, createdAppNote(prog, &res, err))
 	}
 	hash, err := upload(client)
 	if err != nil {
-		return reportError(stdout, stderr, jsonOut, err)
+		return reportError(stdout, stderr, jsonOut, createdAppNote(prog, &res, err))
 	}
 	return finishUploadDeploy(ctx, client, prog, inf, hash, nil, o.timeout, o.urlWait, &res, stdout, stderr, of, jsonOut)
 }
