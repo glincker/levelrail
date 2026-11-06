@@ -25,6 +25,8 @@ import {
   chordFor,
   defaultGroupOpen,
   isGlobalItemActive,
+  isItemDisclosed,
+  itemBadgeCount,
   linkTarget,
   pinnedGlobalItems,
   resolveOpen,
@@ -34,7 +36,6 @@ import {
 } from './navModel'
 import { useExperimentalFeatures } from '@/hooks/useExperimental'
 import { useRouteAvailable } from '@/lib/routeAvailability'
-import { ProjectsNavItem } from './ProjectsNavTree'
 import { useNavCounts } from './useNavCounts'
 import { usePersistedToggles } from './usePersistedToggles'
 import { GetStartedNavItem } from './GetStartedNavItem'
@@ -156,7 +157,7 @@ function NavLinkItem({
     return <LockedNavLinkItem item={item} feature={item.feature} pin={pin} />
   }
   const chord = chordFor(item.to)
-  const count = item.badge ? (counts[item.badge] ?? 0) : 0
+  const count = itemBadgeCount(item, counts)
   const trafficKey =
     item.badge && item.badge in TRAFFIC_BADGE_KEYS
       ? TRAFFIC_BADGE_KEYS[item.badge as keyof typeof TRAFFIC_BADGE_KEYS]
@@ -214,10 +215,7 @@ function GroupAttention({
   counts: Record<string, number>
 }) {
   const { t } = useTranslation()
-  const total = group.items.reduce(
-    (n, i) => n + (i.badge ? (counts[i.badge] ?? 0) : 0),
-    0,
-  )
+  const total = group.items.reduce((n, i) => n + itemBadgeCount(i, counts), 0)
   return total > 0 ? (
     <NavBadge
       count={total}
@@ -248,7 +246,7 @@ export function GlobalNav() {
 
   // Decided once on mount so navigating never flips a group the user did not touch.
   const [initialOpen] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(groups.map((gr) => [gr.id, defaultGroupOpen(gr)])),
+    Object.fromEntries(groups.map((gr) => [gr.id, defaultGroupOpen()])),
   )
 
   // Reveal the current page by opening its group, and keep it open.
@@ -289,14 +287,9 @@ export function GlobalNav() {
         {groups.map((group) => {
           const menu = (
             <SidebarMenu>
-              {group.items.map((item) =>
-                item.id === 'projects' ? (
-                  <ProjectsNavItem
-                    key={item.id}
-                    item={item}
-                    pathname={pathname}
-                  />
-                ) : (
+              {group.items
+                .filter((item) => isItemDisclosed(item, counts, pathname))
+                .map((item) => (
                   <NavLinkItem
                     key={item.id}
                     item={item}
@@ -305,8 +298,7 @@ export function GlobalNav() {
                     experimental={experimental}
                     pin={pinFor(item.id)}
                   />
-                ),
-              )}
+                ))}
             </SidebarMenu>
           )
           if (rail || group.ungrouped) {

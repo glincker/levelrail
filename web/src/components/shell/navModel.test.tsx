@@ -8,10 +8,13 @@ import {
   allGlobalItems,
   defaultGroupOpen,
   isGlobalItemActive,
+  isItemDisclosed,
+  itemBadgeCount,
   pinnedGlobalItems,
   resolveOpen,
 } from './navModel'
 import { ROUTE_ENTRIES, navModelEntries } from '../commandPaletteData'
+import { sidebarArea } from './sidebarArea'
 import { isBoolRecord, readJson, writeJson } from './persist'
 
 const EXPECTED_GLOBAL = [
@@ -40,6 +43,7 @@ const EXPECTED_GLOBAL = [
   '/mail',
   '/storage',
   '/inbox',
+  '/images',
   '/settings/registry',
   '/settings/registry-credentials',
   '/settings/network-shares',
@@ -54,6 +58,23 @@ const EXPECTED_GLOBAL = [
   '/terminal',
   '/settings',
   '/help',
+]
+
+const FOLDED_PATHS = [
+  '/status',
+  '/projects',
+  '/approvals',
+  '/backups',
+  '/dns',
+  '/firewall',
+  '/loadbalancers',
+  '/cdn',
+  '/network',
+  '/settings/network-shares',
+  '/settings/node-providers',
+  '/settings/registry',
+  '/settings/registry-credentials',
+  '/settings/iam-policies',
 ]
 
 const EXPECTED_APP = [
@@ -112,44 +133,53 @@ describe('global nav model', () => {
     expect(GLOBAL_NAV_GROUPS.length).toBeLessThanOrEqual(8)
   })
 
-  it('shows seven primary links ungrouped', () => {
+  it('shows only Dashboard ungrouped and fifteen or fewer sidebar rows', () => {
     const primary = GLOBAL_NAV_GROUPS.filter((g) => g.ungrouped)
     expect(primary).toHaveLength(1)
-    expect(primary[0]?.items.map((i) => i.label)).toEqual([
-      'Dashboard',
-      'Apps',
-      'Deployments',
-      'Databases',
-      'Domains',
-      'Nodes',
-      'Alerts',
-    ])
+    expect(primary[0]?.items.map((i) => i.label)).toEqual(['Dashboard'])
+    const rows = GLOBAL_NAV_GROUPS.flatMap((g) => g.items)
+    expect(rows.length).toBeLessThanOrEqual(15)
   })
 
-  it('groups DNS, Proxy, Private networks, Firewall, Load balancers and CDN under Network', () => {
+  it('groups Domains, Traffic and Private network under Network', () => {
     const net = GLOBAL_NAV_GROUPS.find((g) => g.id === 'traffic')
     expect(net?.label).toBe('Network')
     expect(net?.items.map((i) => i.label)).toEqual([
-      'DNS',
-      'Proxy',
-      'Private networks',
-      'Firewall',
-      'Load balancers',
-      'CDN and caches',
-      'Mail',
+      'Domains',
+      'Traffic',
+      'Private network',
     ])
   })
 
-  it('keeps every group at eight items or fewer', () => {
+  it('keeps every group at five items or fewer', () => {
     for (const g of GLOBAL_NAV_GROUPS) {
-      expect(g.items.length, g.id).toBeLessThanOrEqual(8)
+      expect(g.items.length, g.id).toBeLessThanOrEqual(5)
     }
   })
 
-  it('opens only the primary links by default', () => {
+  it('opens every group by default', () => {
     for (const g of GLOBAL_NAV_GROUPS) {
-      expect(defaultGroupOpen(g), g.id).toBe(g.ungrouped === true)
+      expect(defaultGroupOpen(), g.id).toBe(true)
     }
+  })
+
+  it('aggregates domain and DNS attention onto Domains', () => {
+    const domains = allGlobalItems().find((i) => i.id === 'domains')
+    expect(
+      domains &&
+        itemBadgeCount(domains, { 'domains-attention': 2, 'dns-attention': 1 }),
+    ).toBe(3)
+  })
+
+  it('hides Functions until there are functions, unless on its page', () => {
+    const fn = allGlobalItems().find((i) => i.id === 'functions')
+    expect(fn && isItemDisclosed(fn, {}, '/apps')).toBe(false)
+    expect(fn && isItemDisclosed(fn, { functions: 2 }, '/apps')).toBe(true)
+    expect(fn && isItemDisclosed(fn, {}, '/functions')).toBe(true)
+  })
+
+  it.each(FOLDED_PATHS)('keeps the main sidebar for %s', (path) => {
+    expect(sidebarArea(path)).toBe('global')
   })
 
   it('hides route-gated items until the router has the route', () => {
@@ -157,8 +187,7 @@ describe('global nav model', () => {
       visibleGlobalGroups(() => has)
         .flatMap((g) => g.items)
         .map((i) => i.label)
-    expect(labels(false)).not.toContain('DNS')
-    expect(labels(true)).toContain('DNS')
+    expect(labels(true)).not.toContain('DNS')
     expect(labels(false)).toContain('Domains')
   })
 
@@ -166,11 +195,11 @@ describe('global nav model', () => {
     ['/', '/', true],
     ['/apps/web/logs', '/apps', true],
     ['/appsettings', '/apps', false],
-    ['/status', '/', false],
-    ['/network', '/network', true],
-    ['/network/proxy', '/network', false],
-    ['/network/private', '/network', false],
+    ['/status', '/', true],
+    ['/network', '/network/private', true],
+    ['/network/proxy', '/network/private', false],
     ['/network/proxy', '/network/proxy', true],
+    ['/firewall', '/network/proxy', true],
   ])('active match %s vs %s', (path, to, want) => {
     const item = allGlobalItems().find((i) => i.to === to)
     expect(item && isGlobalItemActive(path, item)).toBe(want)
@@ -179,7 +208,8 @@ describe('global nav model', () => {
 
 describe('grouped nav entries', () => {
   const REMOVED = ['/deploy-timeline', '/builds', '/costs']
-  const item = (to: string) => allGlobalItems().find((i) => i.to === to)
+  const sidebarRows = () => GLOBAL_NAV_GROUPS.flatMap((g) => g.items)
+  const item = (to: string) => sidebarRows().find((i) => i.to === to)
 
   it.each([
     ['/deployments', '/deployments', true],
@@ -193,6 +223,9 @@ describe('grouped nav entries', () => {
     ['/costs/x', '/usage', true],
     ['/costsx', '/usage', false],
     ['/images', '/deployments', false],
+    ['/resources', '/usage', true],
+    ['/approvals', '/pipelines', true],
+    ['/settings/registry', '/images', true],
   ])('active match %s vs %s', (path, to, want) => {
     const it2 = item(to)
     expect(it2 && isGlobalItemActive(path, it2)).toBe(want)

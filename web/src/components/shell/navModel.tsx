@@ -123,6 +123,12 @@ export interface GlobalNavItem {
   // Sibling pages shown as tabs under this entry: also mark it active.
   alsoActive?: readonly string[]
   badge?: GlobalBadge
+  // Further counts summed into the badge when this row stands in for folded pages.
+  extraBadges?: readonly GlobalBadge[]
+  // Exact paths that also light this row (a prefix would over-match).
+  alsoExact?: readonly string[]
+  // Hidden from the sidebar until the user has data; stays in palette and routes.
+  showWhen?: 'has-functions'
   feature?: ExperimentalFeature
   // Hidden until the router actually has this route (it lands in another PR).
   requiresRoute?: boolean
@@ -143,7 +149,27 @@ export const DEPLOYMENT_GROUP_PATHS = [
   '/builds',
 ] as const
 
-export const COST_GROUP_PATHS = ['/usage', '/costs'] as const
+export const COST_GROUP_PATHS = [
+  '/usage',
+  '/costs',
+  '/resource-advisor',
+  '/resources',
+] as const
+
+export const APPS_GROUP_PATHS = ['/projects', '/templates'] as const
+export const PIPELINE_GROUP_PATHS = ['/pipelines', '/approvals'] as const
+export const DOMAIN_GROUP_PATHS = ['/domains', '/dns', '/mail'] as const
+export const TRAFFIC_GROUP_PATHS = [
+  '/network/proxy',
+  '/loadbalancers',
+  '/cdn',
+  '/firewall',
+] as const
+export const REGISTRY_GROUP_PATHS = [
+  '/images',
+  '/settings/registry',
+  '/settings/registry-credentials',
+] as const
 
 export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
   {
@@ -157,13 +183,22 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         to: '/',
         icon: <GaugeGlassIcon size="1.4em" />,
         exact: true,
+        // Status is reached from the dashboard status strip.
+        alsoActive: ['/status'],
       },
+    ],
+  },
+  {
+    id: 'build',
+    label: 'Build',
+    items: [
       {
         id: 'apps',
         label: 'Apps',
         to: '/apps',
         icon: <LayersGlassIcon size="1.4em" />,
         badge: 'failing-apps',
+        alsoActive: APPS_GROUP_PATHS,
       },
       {
         id: 'deployments',
@@ -173,85 +208,19 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         alsoActive: DEPLOYMENT_GROUP_PATHS,
       },
       {
-        id: 'databases',
-        label: 'Databases',
-        to: '/databases',
-        icon: <DatabaseGlassIcon size="1.4em" />,
-      },
-      {
-        id: 'domains',
-        label: 'Domains',
-        to: '/domains',
-        icon: <GlobeGlassIcon size="1.4em" />,
-        badge: 'domains-attention',
-      },
-      {
-        id: 'nodes',
-        label: 'Nodes',
-        to: '/nodes',
-        icon: <ServerGlassIcon size="1.4em" />,
-      },
-      {
-        id: 'alerts',
-        label: 'Alerts',
-        to: '/alerts',
-        icon: <BellGlassIcon size="1.4em" />,
-      },
-    ],
-  },
-  {
-    id: 'build',
-    label: 'Build and run',
-    items: [
-      {
-        id: 'projects',
-        label: 'Projects',
-        to: '/projects',
-        icon: <FolderGlassIcon size="1.4em" />,
+        id: 'pipelines',
+        label: 'Pipelines',
+        to: '/pipelines',
+        icon: <BinaryTreeGlassIcon size="1.4em" />,
+        badge: 'approvals',
+        alsoActive: PIPELINE_GROUP_PATHS,
       },
       {
         id: 'functions',
         label: 'Functions',
         to: '/functions',
         icon: <ZapGlassIcon size="1.4em" />,
-      },
-      {
-        id: 'storage',
-        label: 'Storage',
-        to: '/storage',
-        icon: <ArchiveGlassIcon size="1.4em" />,
-      },
-      {
-        id: 'registry',
-        label: 'Container registry',
-        to: '/settings/registry',
-        icon: <PackageGlassIcon size="1.4em" />,
-      },
-      {
-        id: 'pipelines',
-        label: 'Pipelines',
-        to: '/pipelines',
-        icon: <BinaryTreeGlassIcon size="1.4em" />,
-      },
-      {
-        id: 'approvals',
-        label: 'Deploy approvals',
-        to: '/approvals',
-        icon: <GavelGlassIcon size="1.4em" />,
-        badge: 'approvals',
-      },
-      {
-        id: 'templates',
-        label: 'Templates',
-        to: '/templates',
-        icon: <LayoutGridGlassIcon size="1.4em" />,
-      },
-      {
-        id: 'inbox',
-        label: 'Inbox',
-        to: '/inbox',
-        icon: <InboxGlassIcon size="1.4em" />,
-        badge: 'inbox',
+        showWhen: 'has-functions',
       },
     ],
   },
@@ -260,22 +229,18 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
     label: 'Data',
     items: [
       {
-        id: 'backups',
-        label: 'Backups',
-        to: '/backups',
-        icon: <UploadGlassIcon size="1.4em" />,
+        id: 'databases',
+        label: 'Databases',
+        to: '/databases',
+        icon: <DatabaseGlassIcon size="1.4em" />,
+        alsoActive: ['/backups'],
       },
       {
-        id: 'network-shares',
-        label: 'Network shares',
-        to: '/settings/network-shares',
-        icon: <FolderGlassIcon size="1.4em" />,
-      },
-      {
-        id: 'assets',
-        label: 'Assets',
-        to: '/assets',
-        icon: <ImagesGlassIcon size="1.4em" />,
+        id: 'storage',
+        label: 'Storage',
+        to: '/storage',
+        icon: <ArchiveGlassIcon size="1.4em" />,
+        alsoActive: ['/settings/network-shares', '/assets'],
       },
     ],
   },
@@ -284,80 +249,49 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
     label: 'Network',
     items: [
       {
-        id: 'dns',
-        label: 'DNS',
-        to: '/dns',
-        icon: <ListGlassIcon size="1.4em" />,
-        badge: 'dns-attention',
-        requiresRoute: true,
+        id: 'domains',
+        label: 'Domains',
+        to: '/domains',
+        icon: <GlobeGlassIcon size="1.4em" />,
+        badge: 'domains-attention',
+        extraBadges: ['dns-attention'],
+        alsoActive: DOMAIN_GROUP_PATHS,
       },
       {
         id: 'proxy',
-        label: 'Proxy',
+        label: 'Traffic',
         to: '/network/proxy',
         icon: <TrafficConeGlassIcon size="1.4em" />,
         badge: 'proxy-attention',
+        alsoActive: TRAFFIC_GROUP_PATHS,
       },
       {
         id: 'private-networks',
-        label: 'Private networks',
+        label: 'Private network',
         to: '/network/private',
         icon: <LockGlassIcon size="1.4em" />,
-      },
-      {
-        id: 'firewall',
-        label: 'Firewall',
-        to: '/firewall',
-        icon: (
-          <ShieldCheckGlassIcon className="text-tone-success" size="1.4em" />
-        ),
-      },
-      {
-        id: 'loadbalancers',
-        label: 'Load balancers',
-        to: '/loadbalancers',
-        icon: <SplitGlassIcon size="1.4em" />,
-        feature: 'load-balancer',
-      },
-      {
-        id: 'cdn',
-        label: 'CDN and caches',
-        to: '/cdn',
-        icon: <GlobeGlassIcon size="1.4em" />,
-      },
-      {
-        id: 'mail',
-        label: 'Mail',
-        to: '/mail',
-        icon: <MailGlassIcon size="1.4em" />,
-        feature: 'mail',
+        // Topology is exactly /network; a prefix match would also light Traffic's pages.
+        alsoExact: ['/network'],
       },
     ],
   },
   {
     id: 'infrastructure',
-    label: 'Fleet and cost',
+    label: 'Infrastructure',
     items: [
       {
-        id: 'network',
-        label: 'Topology',
-        to: '/network',
-        // Proxy and Private networks live under /network/*, so prefix matching lit two rows.
-        exact: true,
-        icon: <Share2GlassIcon size="1.4em" />,
+        id: 'nodes',
+        label: 'Servers',
+        to: '/nodes',
+        icon: <ServerGlassIcon size="1.4em" />,
+        alsoActive: ['/settings/node-providers'],
       },
       {
-        id: 'node-providers',
-        label: 'Cloud providers',
-        to: '/settings/node-providers',
-        icon: <CloudGlassIcon size="1.4em" />,
-      },
-      {
-        id: 'resource-advisor',
-        label: 'Resource advisor',
-        to: '/resource-advisor',
-        icon: <LightbulbGlassIcon size="1.4em" />,
-        feature: 'resource-advisor',
+        id: 'registry',
+        label: 'Registry',
+        to: '/images',
+        icon: <PackageGlassIcon size="1.4em" />,
+        alsoActive: REGISTRY_GROUP_PATHS,
       },
       {
         id: 'usage',
@@ -365,18 +299,6 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         to: '/usage',
         icon: <CoinsGlassIcon size="1.4em" />,
         alsoActive: COST_GROUP_PATHS,
-      },
-      {
-        id: 'resources',
-        label: 'Resources',
-        to: '/resources',
-        icon: <FileSearchGlassIcon size="1.4em" />,
-      },
-      {
-        id: 'status',
-        label: 'Status',
-        to: '/status',
-        icon: <ActivityGlassIcon size="1.4em" />,
       },
     ],
   },
@@ -386,58 +308,132 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
     items: [
       {
         id: 'security',
-        label: 'Security center',
+        label: 'Security',
         to: '/security',
         icon: (
           <ShieldAlertGlassIcon className="text-tone-warning" size="1.4em" />
         ),
-      },
-      {
-        id: 'iam-policies',
-        label: 'IAM policies',
-        to: '/settings/iam-policies',
-        icon: (
-          <ShieldCheckGlassIcon className="text-tone-success" size="1.4em" />
-        ),
-      },
-      {
-        id: 'registry-credentials',
-        label: 'Registry credentials',
-        to: '/settings/registry-credentials',
-        icon: <KeyGlassIcon size="1.4em" />,
-      },
-    ],
-  },
-  {
-    id: 'ai',
-    label: 'AI',
-    items: [
-      {
-        id: 'models',
-        label: 'AI models',
-        to: '/models',
-        icon: <CpuGlassIcon size="1.4em" />,
-        feature: 'ai-models',
+        alsoActive: ['/settings/iam-policies'],
       },
     ],
   },
 ]
 
+const folded = (
+  id: string,
+  label: string,
+  to: GlobalTo | PendingTo,
+  icon: React.ReactNode,
+  extra: Partial<GlobalNavItem> = {},
+): GlobalNavItem => ({ id, label, to, icon, ...extra })
+
+// Destinations folded into a parent row's tab strip. No sidebar row, but they
+// stay in the command palette and light their parent through alsoActive.
+export const FOLDED_GLOBAL_PAGES: GlobalNavItem[] = [
+  folded('status', 'Status', '/status', <ActivityGlassIcon size="1.4em" />),
+  folded('projects', 'Projects', '/projects', <FolderGlassIcon size="1.4em" />),
+  folded(
+    'templates',
+    'Templates',
+    '/templates',
+    <LayoutGridGlassIcon size="1.4em" />,
+  ),
+  folded(
+    'approvals',
+    'Deploy approvals',
+    '/approvals',
+    <GavelGlassIcon size="1.4em" />,
+  ),
+  folded('backups', 'Backups', '/backups', <UploadGlassIcon size="1.4em" />),
+  folded(
+    'network-shares',
+    'Network shares',
+    '/settings/network-shares',
+    <FolderGlassIcon size="1.4em" />,
+  ),
+  folded('assets', 'Assets', '/assets', <ImagesGlassIcon size="1.4em" />),
+  folded('dns', 'DNS', '/dns', <ListGlassIcon size="1.4em" />, {
+    requiresRoute: true,
+  }),
+  folded('mail', 'Mail', '/mail', <MailGlassIcon size="1.4em" />, {
+    feature: 'mail',
+  }),
+  folded(
+    'firewall',
+    'Firewall',
+    '/firewall',
+    <ShieldCheckGlassIcon className="text-tone-success" size="1.4em" />,
+  ),
+  folded(
+    'loadbalancers',
+    'Load balancers',
+    '/loadbalancers',
+    <SplitGlassIcon size="1.4em" />,
+    { feature: 'load-balancer' },
+  ),
+  folded('cdn', 'CDN and caches', '/cdn', <GlobeGlassIcon size="1.4em" />),
+  folded('network', 'Topology', '/network', <Share2GlassIcon size="1.4em" />, {
+    exact: true,
+  }),
+  folded(
+    'node-providers',
+    'Cloud providers',
+    '/settings/node-providers',
+    <CloudGlassIcon size="1.4em" />,
+  ),
+  folded(
+    'registry-settings',
+    'Registry settings',
+    '/settings/registry',
+    <PackageGlassIcon size="1.4em" />,
+  ),
+  folded(
+    'registry-credentials',
+    'Registry credentials',
+    '/settings/registry-credentials',
+    <KeyGlassIcon size="1.4em" />,
+  ),
+  folded(
+    'resource-advisor',
+    'Resource advisor',
+    '/resource-advisor',
+    <LightbulbGlassIcon size="1.4em" />,
+    { feature: 'resource-advisor' },
+  ),
+  folded(
+    'resources',
+    'Resources',
+    '/resources',
+    <FileSearchGlassIcon size="1.4em" />,
+  ),
+  folded(
+    'iam-policies',
+    'IAM policies',
+    '/settings/iam-policies',
+    <ShieldCheckGlassIcon className="text-tone-success" size="1.4em" />,
+  ),
+  folded('inbox', 'Inbox', '/inbox', <InboxGlassIcon size="1.4em" />),
+  folded('alerts', 'Alerts', '/alerts', <BellGlassIcon size="1.4em" />),
+  folded('models', 'AI models', '/models', <CpuGlassIcon size="1.4em" />, {
+    feature: 'ai-models',
+  }),
+  folded(
+    'assistant',
+    'AI assistant',
+    '/ai-assistant',
+    <BotGlassIcon size="1.4em" />,
+    { feature: 'ai-chat' },
+  ),
+  folded(
+    'console',
+    'Console',
+    '/terminal',
+    <TerminalGlassIcon size="1.4em" />,
+    { feature: 'cli-console' },
+  ),
+]
+
 export const GLOBAL_NAV_FOOTER: GlobalNavItem[] = [
-  {
-    id: 'assistant',
-    label: 'AI assistant',
-    to: '/ai-assistant',
-    icon: <BotGlassIcon size="1.4em" />,
-    feature: 'ai-chat',
-  },
-  {
-    id: 'console',
-    label: 'Console',
-    to: '/terminal',
-    icon: <TerminalGlassIcon size="1.4em" />,
-    feature: 'cli-console',
-  },
   {
     id: 'settings',
     label: 'Settings',
@@ -476,15 +472,45 @@ export function visibleAppSections(isStatic = false): AppNavSection[] {
 }
 
 export function allGlobalItems(): GlobalNavItem[] {
-  return [...GLOBAL_NAV_GROUPS.flatMap((g) => g.items), ...GLOBAL_NAV_FOOTER]
+  return [
+    ...GLOBAL_NAV_GROUPS.flatMap((g) => g.items),
+    ...FOLDED_GLOBAL_PAGES,
+    ...GLOBAL_NAV_FOOTER,
+  ]
+}
+
+export function itemBadgeCount(
+  item: GlobalNavItem,
+  counts: Record<string, number>,
+): number {
+  return [item.badge, ...(item.extraBadges ?? [])].reduce(
+    (n, b) => n + (b ? (counts[b] ?? 0) : 0),
+    0,
+  )
+}
+
+// A row with no data yet stays out of the way unless the user is on its page.
+export function isItemDisclosed(
+  item: GlobalNavItem,
+  counts: Record<string, number>,
+  pathname: string,
+): boolean {
+  if (item.showWhen === 'has-functions') {
+    return (counts.functions ?? 0) > 0 || isGlobalItemActive(pathname, item)
+  }
+  return true
 }
 
 export function isGlobalItemActive(
   pathname: string,
   item: GlobalNavItem,
 ): boolean {
-  if (item.exact) return pathname === item.to
-  if (pathname === item.to || pathname.startsWith(`${item.to}/`)) return true
+  if (item.exact) {
+    if (pathname === item.to) return true
+  } else if (pathname === item.to || pathname.startsWith(`${item.to}/`)) {
+    return true
+  }
+  if ((item.alsoExact ?? []).includes(pathname)) return true
   return (item.alsoActive ?? []).some((p) => matchesPrefix(pathname, p))
 }
 
@@ -836,10 +862,10 @@ export function isSingleSection(section: AppNavSection): boolean {
   return section.items.length === 1
 }
 
-// Only the primary links start open; the long tail is one click away.
+// With about 15 rows every group starts open.
 // Anything the user toggles is persisted and wins from then on.
-export function defaultGroupOpen(group: GlobalNavGroup): boolean {
-  return group.ungrouped === true
+export function defaultGroupOpen(): boolean {
+  return true
 }
 
 export function resolveOpen(
