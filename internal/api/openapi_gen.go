@@ -1655,6 +1655,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/status-page/webhooks/{id}/resume", Ability: "AbilityWrite", Group: "Other", Handler: "handleResumeStatusWebhook", Description: ""},
 	{Method: "POST", Path: "/api/v1/status-page/webhooks/{id}/rotate", Ability: "AbilityWrite", Group: "Other", Handler: "handleRotateStatusWebhook", Description: ""},
 	{Method: "POST", Path: "/api/v1/status-page/webhooks/{id}/test", Ability: "AbilityWrite", Group: "Other", Handler: "handleTestStatusWebhook", Description: ""},
+	{Method: "GET", Path: "/api/v1/status-reasons", Ability: "AbilityRead", Group: "Other", Handler: "handleListStatusReasons", Description: ""},
 	{Method: "GET", Path: "/api/v1/storage/buckets", Ability: "AbilityRead", Group: "Other", Handler: "handleListStorageBuckets", Description: ""},
 	{Method: "POST", Path: "/api/v1/storage/buckets", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreateStorageBucket", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/storage/buckets/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDeleteStorageBucket", Description: ""},
