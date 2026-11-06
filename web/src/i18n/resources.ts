@@ -123,6 +123,7 @@ import type deployTimeline from '../locales/en/deployTimeline.json'
 import type deployEvents from '../locales/en/deployEvents.json'
 import type images from '../locales/en/images.json'
 import type storage from '../locales/en/storage.json'
+import type storageTrend from '../locales/en/storageTrend.json'
 import type buildCenter from '../locales/en/buildCenter.json'
 import type functions from '../locales/en/functions.json'
 import type advisories from '../locales/en/advisories.json'
@@ -250,6 +251,7 @@ declare module 'i18next' {
       deployEvents: typeof deployEvents
       images: typeof images
       storage: typeof storage
+      storageTrend: typeof storageTrend
       buildCenter: typeof buildCenter
       functions: typeof functions
       advisories: typeof advisories
