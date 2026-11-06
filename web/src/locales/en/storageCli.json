@@ -1,0 +1,39 @@
+{
+  "title": "Run in a terminal",
+  "description": "The same storage tools from the command line. Preview first, then apply.",
+  "tabsLabel": "Command groups",
+  "tabs": {
+    "usage": "See usage",
+    "clean": "Clean safely",
+    "automate": "Automate"
+  },
+  "server": "Commands run against {{server}}. Sign in with the connect command from the CLI guide first.",
+  "role": {
+    "viewer": "Viewer",
+    "admin": "Admin"
+  },
+  "yourRole": "Your role: {{role}}",
+  "needsAdmin": "Needs admin",
+  "needsSensitive": "Also needs the write:sensitive scope",
+  "dryRunFirst": "Dry run first: previews come before the apply step in every group, and nothing is removed until you run the apply command.",
+  "whyNoSystemPrune": "system-prune is not listed on purpose: it removes unused volumes, which can hold data you still need.",
+  "blockLabel": "Command: {{command}}",
+  "commands": {
+    "doctorDisk": "Disk health and free space on this server",
+    "imagesList": "Images and what each one costs",
+    "janitorStatus": "Last janitor run and the active policy",
+    "buildsCache": "Build cache size and what a prune would free",
+    "buildCacheShow": "Shared build cache across all apps",
+    "volumesOrphaned": "Volumes no app uses any more",
+    "containersOrphans": "Containers left behind by removed apps",
+    "janitorDryRun": "Preview what the janitor would remove",
+    "janitorRun": "Run the janitor after you checked the preview",
+    "imagesGcPreview": "Preview which old images would go",
+    "imagesGcApply": "Remove the images the preview listed",
+    "imagesPruneDry": "Preview unmanaged images that no app owns",
+    "buildsCacheApply": "Prune the build cache after the preview",
+    "volumesCleanup": "Remove only the orphaned volumes you name",
+    "containersReap": "Remove containers left behind by removed apps",
+    "janitorPolicy": "Turn on automatic cleanup with a build cache age and a free space budget"
+  }
+}
