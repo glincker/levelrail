@@ -1,3 +1,4 @@
+import { ListSkeleton } from "@/components/ui/list-skeleton"
 import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
@@ -41,7 +42,7 @@ export function ConfigureLoadBalancerDialog({
 
   let body: ReactNode
   if (apps.isPending) {
-    body = <p className="text-sm text-muted-foreground">Loading apps...</p>
+    body = <ListSkeleton />
   } else if (apps.isError) {
     body = (
       <p className="text-sm text-destructive">
