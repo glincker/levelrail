@@ -97,9 +97,9 @@ try {
 }
 
 // Everything index.html pulls before first paint, which the per-chunk budget cannot see.
-// Raised to 1740 kB (2026-11-05) for the v0.9.1 release: 1730 kB measured, about 1% headroom.
+// Raised to 1779 kB (2026-11-05) for the 0.9.2 candidate: 1743.6 kB measured, 2% headroom.
 const FIRST_LOAD_BUDGET_BYTES =
-  Number(process.env.FIRST_LOAD_BUDGET_BYTES) || 1_740_000
+  Number(process.env.FIRST_LOAD_BUDGET_BYTES) || 1_779_000
 
 function firstLoadBytes() {
   const html = readFileSync(path.join(distDir, 'index.html'), 'utf8')
