@@ -33,6 +33,7 @@ export function setLastSeenVersion(version: string): void {
 
 export function resetWhatsNewStoreForTests(): void {
   current = undefined
+  toasted = undefined
 }
 
 // useLastSeenVersion is the version the operator last opened the
@@ -54,4 +55,45 @@ export function unreadCount(
   if (lastSeenVersion === '') return entries.length
   const idx = entries.findIndex((e) => e.version === lastSeenVersion)
   return idx === -1 ? entries.length : idx
+}
+
+export const TOASTED_VERSION_KEY = 'shell.whatsnew.toastedVersion'
+
+let toasted: string | undefined
+
+function loadToasted(): string {
+  toasted ??= readJson(TOASTED_VERSION_KEY, '', isString)
+  return toasted
+}
+
+// One quiet "Updated to X" toast per version, never on a first-ever load
+// (lastSeen empty) and never again once shown.
+export function shouldToastUpgrade(latest: string, lastSeen: string): boolean {
+  return (
+    latest !== '' &&
+    lastSeen !== '' &&
+    lastSeen !== latest &&
+    loadToasted() !== latest
+  )
+}
+
+export function markUpgradeToasted(version: string): void {
+  toasted = version
+  writeJson(TOASTED_VERSION_KEY, version)
+}
+
+const openRequests = new Set<() => void>()
+
+// Lets the toast CTA open whichever panel instance is currently visible.
+export function onWhatsNewOpenRequest(cb: () => void): () => void {
+  openRequests.add(cb)
+  return () => {
+    openRequests.delete(cb)
+  }
+}
+
+export function requestOpenWhatsNew(): void {
+  openRequests.forEach((cb) => {
+    cb()
+  })
 }

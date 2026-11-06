@@ -427,7 +427,36 @@
       "title": "Novedades",
       "unread": "Novedades: {{count}} sin leer",
       "allCaughtUp": "Novedades: todo al día",
-      "empty": "Aún no hay notas de versión disponibles."
+      "empty": "Aún no hay notas de versión disponibles.",
+      "loading": "Cargando notas de versión...",
+      "error": "No se pudieron cargar las notas de versión.",
+      "retry": "Reintentar",
+      "markSeen": "Marcar todo como visto",
+      "updateAvailable": "Actualización disponible: {{version}}",
+      "onLatest": "Tienes la última versión",
+      "update": "Actualizar ahora",
+      "releaseNotes": "Notas de versión",
+      "highlights": "Destacados",
+      "allChanges": "Todos los cambios ({{count}})",
+      "toast": {
+        "title": "Actualizado a {{version}}",
+        "body": "Mira las novedades",
+        "open": "Ver novedades"
+      },
+      "groups": {
+        "apps": "Apps",
+        "domains": "Dominios",
+        "storage": "Almacenamiento",
+        "nextjs": "Next.js",
+        "other": "Otros"
+      },
+      "cta": {
+        "domains": "Abrir Dominios",
+        "storage": "Abrir Almacenamiento",
+        "apps": "Abrir Apps",
+        "deployments": "Abrir Despliegues",
+        "settings": "Abrir Ajustes"
+      }
     },
     "navAttention": "{{count}} requieren atención",
     "logoStatus": {
