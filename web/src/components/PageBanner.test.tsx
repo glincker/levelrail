@@ -47,4 +47,28 @@ describe('PageBanner', () => {
     expect(screen.queryByTestId('icon')).toBeNull()
     expect(document.querySelector('.grain-orb')).toBeNull()
   })
+  it('keeps the help control in the action row, never absolutely positioned', () => {
+    render(
+      <PageBanner
+        icon={<svg />}
+        titleKey="banner.title"
+        descriptionKey="banner.description"
+        action={
+          <>
+            <button type="button">primary</button>
+            <a data-slot="help-link" href="/help" aria-label="Help">
+              ?
+            </a>
+          </>
+        }
+      />,
+    )
+    const header = screen.getByTestId('page-banner-full')
+    const help = screen.getByLabelText('Help')
+    const primary = screen.getByRole('button', { name: 'primary' })
+    expect(help.parentElement).toBe(primary.parentElement)
+    expect(help.parentElement?.className).toContain('flex')
+    expect(header.className).not.toContain('help-link')
+    expect(header.className).not.toMatch(/\babsolute\b/)
+  })
 })

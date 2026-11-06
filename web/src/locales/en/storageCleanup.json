@@ -1,0 +1,69 @@
+{
+  "title": "Cleanup plan",
+  "description": "Review what Levelrail would remove, then apply only what you pick.",
+  "tabs": {
+    "label": "Cleanup sections",
+    "plan": "Plan",
+    "history": "History"
+  },
+  "stages": {
+    "containers": "Containers",
+    "images": "Images",
+    "build_cache": "Build cache",
+    "volumes": "Volumes",
+    "deploy_attempts": "Deploy attempts",
+    "api_tokens": "API tokens"
+  },
+  "wholeStage": "Cleaned together, all of this stage or none.",
+  "selectStage": "Select all of {{stage}}",
+  "selectRow": "Select {{name}}",
+  "locked": {
+    "database": "Database data is never removed automatically.",
+    "kept": "Kept for now.",
+    "label": "Locked"
+  },
+  "stageNote": "Not run: {{reason}}",
+  "loading": "Checking what can be removed",
+  "empty": "Nothing needs removing.",
+  "error": "Could not load the cleanup plan.",
+  "retry": "Try again",
+  "selected": "{{size}} selected in {{count}} items",
+  "none": "Nothing selected",
+  "preview": "Preview",
+  "previewing": "Previewing",
+  "apply": "Apply",
+  "applying": "Applying",
+  "confirm": {
+    "line": "Remove {{size}} in {{count}} items now? Deleted data cannot be restored.",
+    "yes": "Yes, delete",
+    "cancel": "Cancel"
+  },
+  "result": {
+    "previewed": "Preview: {{size}} would be reclaimed.",
+    "applied": "Done: {{size}} reclaimed.",
+    "ignoredTitle": "Not touched",
+    "ignoredRow": "{{name}} ({{stage}}): {{reason}}",
+    "failed": "The run reported an error: {{error}}"
+  },
+  "history": {
+    "loading": "Loading past runs",
+    "empty": "No cleanup runs yet.",
+    "error": "Could not load cleanup history.",
+    "time": "Time",
+    "by": "Started by",
+    "reclaimed": "Reclaimed",
+    "mode": "Mode",
+    "dryRun": "Dry run",
+    "applied": "Applied",
+    "trigger": {
+      "scheduled": "Scheduled",
+      "manual": "Manual",
+      "disk_fix": "Disk fix"
+    },
+    "kind": {
+      "user": "user",
+      "api_token": "API token",
+      "schedule": "schedule"
+    }
+  }
+}

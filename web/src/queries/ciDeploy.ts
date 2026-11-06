@@ -123,3 +123,38 @@ export function useRemoveCITrust(appName: string) {
       queryClient.invalidateQueries({ queryKey: ciDeployKeys.all(appName) }),
   })
 }
+
+export interface CITemplate {
+  id: string
+  target: string
+  /** "oidc" needs a pipeline trust, "token" needs a stored deployer token. */
+  auth: 'oidc' | 'token'
+  content: string
+}
+
+export interface CITemplates {
+  templates: CITemplate[]
+  api_url: string
+  needs_domain: boolean
+  deployer_abilities: string[]
+  /** Absent when the app is in no project, so a stored token would be install-wide. */
+  deployer_scope?: { team_id: string; project_id: string; team_role: string }
+  /** True when the app is in a project but this server cannot scope a token to it. */
+  deployer_scope_unavailable?: boolean
+  /** True when the app names a project that no longer exists. */
+  deployer_scope_project_missing?: boolean
+}
+
+export function useCITemplates(appName: string) {
+  return useSuspenseQuery(
+    queryOptions({
+      queryKey: [...ciDeployKeys.all(appName), 'templates'] as const,
+      queryFn: () =>
+        request<CITemplates>(
+          `${base(appName)}/templates`,
+          undefined,
+          'fetch ci templates',
+        ),
+    }),
+  )
+}

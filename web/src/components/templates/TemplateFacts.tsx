@@ -3,6 +3,7 @@ import { ExternalLinkGlassIcon } from '@thesvg/ui-react'
 import { formatBytes } from '../../lib/format'
 import { registryLinkForImage } from '../../lib/imageRegistry'
 import type { ComposePreviewService } from '../../types/compose'
+import { FieldLabel } from '@/components/ui/typography'
 
 function uniq(values: string[]): string[] {
   return Array.from(new Set(values))
@@ -17,9 +18,7 @@ function Row({
 }) {
   return (
     <div className="space-y-1">
-      <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-        {label}
-      </dt>
+      <FieldLabel as="dt">{label}</FieldLabel>
       <dd className="text-sm text-foreground">{children}</dd>
     </div>
   )

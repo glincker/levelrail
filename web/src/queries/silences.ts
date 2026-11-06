@@ -41,6 +41,74 @@ export interface CreateSilenceInput {
 
 export const silenceKeys = {
   all: ['silences'] as const,
+  policy: ['silences', 'policy'] as const,
+}
+
+// The server's cap for security issues, from GET /api/v1/silences.
+export interface SilencePolicy {
+  protected_max_days?: number
+  protected_keys?: string[]
+}
+
+const DURATION_HOURS: Record<SilenceDuration, number> = {
+  '1h': 1,
+  '1d': 24,
+  '1w': 168,
+  '30d': 720,
+  forever: Number.POSITIVE_INFINITY,
+}
+
+// Mirrors the server's protected list so the menu fails closed while the policy loads.
+const LIKELY_PROTECTED = [
+  'login_anomaly',
+  'account_flagged',
+  'db_security_updates',
+  'db_upgrade_failed',
+  'docker_guard',
+  'secret_rotation_failed',
+  'backup_overdue',
+  'data_copy',
+  'firewall_attack_suggested',
+  'doctor:docker_guard',
+  'doctor:docker_privilege',
+  'doctor:Docker API guard',
+  'doctor:Docker privilege',
+  'doctor:Podman API guard',
+  'doctor:Podman privilege',
+]
+const UNLOADED_MAX_HOURS = 168
+
+// Durations the server will accept for issueKey, so the menu never offers one that fails.
+export function allowedSilenceDurations(
+  issueKey: string,
+  policy: SilencePolicy | undefined,
+): SilenceDuration[] {
+  const kind = issueKey.split(':')[0] ?? ''
+  if (!policy?.protected_keys) {
+    const looksProtected =
+      LIKELY_PROTECTED.includes(kind) || LIKELY_PROTECTED.includes(issueKey)
+    return looksProtected
+      ? SILENCE_DURATIONS.filter((d) => DURATION_HOURS[d] <= UNLOADED_MAX_HOURS)
+      : SILENCE_DURATIONS
+  }
+  const days = policy.protected_max_days ?? 0
+  const keys = policy.protected_keys
+  const protectedKey = keys.includes(kind) || keys.includes(issueKey)
+  if (!protectedKey || days <= 0) return SILENCE_DURATIONS
+  return SILENCE_DURATIONS.filter((d) => DURATION_HOURS[d] <= days * 24)
+}
+
+export function useSilencePolicy(enabled: boolean) {
+  return useQuery({
+    queryKey: silenceKeys.policy,
+    enabled,
+    retry: false,
+    queryFn: async (): Promise<SilencePolicy> => {
+      const res = await fetch('/api/v1/silences')
+      if (!res.ok) throw await failure(res, 'fetch silence policy')
+      return (await res.json()) as SilencePolicy
+    },
+  })
 }
 
 async function failure(res: Response, what: string): Promise<ApiError> {

@@ -157,6 +157,10 @@ export interface CreateTokenRequest {
   no_expiry?: boolean
   // Labels the token as issued to an AI agent; audit entries record its name.
   agent?: TokenAgent
+  // Limits the token to one project of one team; team_id is required with the others.
+  team_id?: string
+  project_id?: string
+  team_role?: string
 }
 
 // Matches createTokenResponse: tokenResource's fields plus the plaintext

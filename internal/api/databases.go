@@ -304,6 +304,16 @@ func (rt *Router) createDesiredDatabase(w http.ResponseWriter, r *http.Request, 
 		return false
 	}
 
+	pending, err := rt.databaseTeardownPending(r.Context(), req.Name, req.NodeID)
+	if err != nil {
+		rt.internalError(w, "api: create database: check pending teardown failed", err, slog.String("name", req.Name))
+		return false
+	}
+	if pending {
+		writeError(w, http.StatusConflict, "a database with this name is still being removed from this node; try again shortly")
+		return false
+	}
+
 	dbReserve := serviceReservation(req.Resources, 1)
 	quotaRelease, quotaOK := rt.admitQuotaOrWrite(w, r, req.ProjectID, store.ResourceOwner{},
 		quota.Amounts{Databases: 1, MemoryBytes: dbReserve.MemoryBytes, NanoCPUs: dbReserve.NanoCPUs})

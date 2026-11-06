@@ -5,6 +5,7 @@ import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
 import { cva, type VariantProps } from 'class-variance-authority'
 
 import { cn } from '@/lib/utils'
+import { nativeButtonFromRender } from '@/lib/nativeButton'
 import { Button } from '@/components/ui/button'
 import { XGlassIcon } from '@thesvg/ui-react'
 function Dialog({ ...props }: DialogPrimitive.Root.Props) {
@@ -12,7 +13,13 @@ function Dialog({ ...props }: DialogPrimitive.Root.Props) {
 }
 
 function DialogTrigger({ ...props }: DialogPrimitive.Trigger.Props) {
-  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />
+  return (
+    <DialogPrimitive.Trigger
+      data-slot="dialog-trigger"
+      {...props}
+      nativeButton={nativeButtonFromRender(props.render, props.nativeButton)}
+    />
+  )
 }
 
 function DialogPortal({ ...props }: DialogPrimitive.Portal.Props) {
@@ -20,7 +27,13 @@ function DialogPortal({ ...props }: DialogPrimitive.Portal.Props) {
 }
 
 function DialogClose({ ...props }: DialogPrimitive.Close.Props) {
-  return <DialogPrimitive.Close data-slot="dialog-close" {...props} />
+  return (
+    <DialogPrimitive.Close
+      data-slot="dialog-close"
+      {...props}
+      nativeButton={nativeButtonFromRender(props.render, props.nativeButton)}
+    />
+  )
 }
 
 function DialogOverlay({
@@ -39,6 +52,10 @@ function DialogOverlay({
   )
 }
 
+// The base class pins the grid to one `minmax(0,1fr)` column. An implicit `auto`
+// column grows to the widest unbreakable child (an image digest, a long path), which
+// pushes lists, notes and the footer past the popup edge where `overflow-y-auto` clips them.
+//
 // `size` follows the same cva shape as buttonVariants (button.tsx):
 // a base class string every popup gets regardless of variant, plus a
 // `variants.size` map for the parts that actually differ.
@@ -64,7 +81,7 @@ function DialogOverlay({
 // treatment rather than a true edge-to-edge one, and sidesteps the
 // mismatch entirely by never changing the radius at all.
 const dialogContentVariants = cva(
-  'fixed z-50 grid gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground shadow-dialog ring-1 ring-foreground/10 duration-100 outline-none data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95',
+  'fixed z-50 grid grid-cols-[minmax(0,1fr)] gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground shadow-dialog ring-1 ring-foreground/10 duration-100 outline-none data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95',
   {
     variants: {
       size: {

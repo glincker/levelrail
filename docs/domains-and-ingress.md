@@ -157,7 +157,7 @@ If you have connected Cloudflare DNS or Route53 DNS (see [Wildcard domains](#wil
 The zone shown is a best-effort guess, the domain's last two labels (`app.example.com` becomes `example.com`). That is wrong for multi-label public suffixes like `.co.uk`; the panel always echoes the exact zone it queried.
 </Note>
 
-The CLI covers add, list and remove. Editing a record in place is dashboard-only (it is a delete-then-add under the hood).
+The CLI covers add, list and remove. Editing a record in place is dashboard-only (it deletes the record and adds a new one).
 
 ```bash
 levelrail-cli domains dns list <app> <domain>
@@ -802,7 +802,7 @@ This is a request that well-behaved crawlers honour. It is not access control: u
 An auth gate puts your own auth service (Authelia, oauth2-proxy, a small app of your own) in front of a domain. Before a request reaches your app, the ingress sends a `GET` to the auth service with the original request's `Cookie` and `Authorization` headers plus `X-Forwarded-Method`, `X-Forwarded-Uri`, `X-Forwarded-Host`, `X-Forwarded-Proto` and `X-Forwarded-For`. The request body is never sent.
 
 - **2xx**: the request goes on to your app, carrying only the response headers you listed in **copy headers**.
-- **Anything else**: the auth service's status, headers (including `Location` and `Set-Cookie`) and body go straight back to the visitor. A `302` to your login page just works.
+- **Anything else**: the auth service's status, headers (including `Location` and `Set-Cookie`) and body go straight back to the visitor. A `302` to your login page is passed through as is.
 - **Auth service down or too slow**: the visitor gets a `502` (unreachable) or `504` (timed out). The request never reaches your app.
 
 The gate is off by default and runs after rate limiting, the WAF and basic auth, and before caching and the proxy to your app.

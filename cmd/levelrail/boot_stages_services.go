@@ -287,6 +287,7 @@ func (s *bootState) startMesh() error {
 		apiRouter.SetLocalNodeID(meshCfg.localNodeID)
 		agentRegistry.SetLocal(meshCfg.localNodeID, agent.NewLocal(client))
 		apiRouter.SetMesh(meshCfg.device, meshCfg.coordinator)
+		apiRouter.SetMeshHubResolver(meshCfg.hubHost)
 	}
 	apiRouter.SetMeshPaths(newMeshPathResolver(meshCfg, db))
 	apiRouter.SetMeshPeerStatus(agent.NewGRPCSink(agentRegistry))

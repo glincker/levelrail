@@ -57,7 +57,7 @@ export function StaticSitesCard() {
                   <Badge
                     key={domain}
                     variant="outline"
-                    className="gap-1 font-mono text-[11px] text-muted-foreground"
+                    className="gap-1 font-mono text-xs text-muted-foreground"
                   >
                     <GlobeGlassIcon className="size-4.5" aria-hidden="true" />
                     {domain}

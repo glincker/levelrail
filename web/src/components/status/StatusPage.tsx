@@ -16,7 +16,13 @@ import { toast } from '@/components/ui/toast'
 import { useAttentionItems } from '@/queries/attention'
 import { useRestartApp } from '@/queries/apps'
 import { useTriggerDeploy } from '@/queries/deploys'
+import {
+  attentionClassOf,
+  canonicalSilences,
+  silencedWithLegacy,
+} from '@/lib/attention'
 import type { AttentionItem } from '@/lib/attention'
+import { StatusAdvisory } from '@/components/status/StatusAdvisory'
 import { ResolvedLoginControls } from '@/components/attention/ResolvedLoginControls'
 import { CopyFailureDetail } from '@/components/attention/CopyFailureDetail'
 import { CopyItemControls } from '@/components/attention/CopyItemControls'
@@ -209,16 +215,91 @@ function ItemActions({ item }: { item: AttentionItem }) {
   )
 }
 
-function severityIcon(severity: AttentionItem['severity']) {
-  if (severity === 'critical') return CircleAlertGlassIcon
-  return severity === 'info' ? InfoGlassIcon : TriangleAlertGlassIcon
+function SeverityIcon({
+  severity,
+  className,
+}: {
+  severity: AttentionItem['severity']
+  className: string
+}) {
+  if (severity === 'critical') {
+    return <CircleAlertGlassIcon className={className} aria-hidden="true" />
+  }
+  return severity === 'info' ? (
+    <InfoGlassIcon className={className} aria-hidden="true" />
+  ) : (
+    <TriangleAlertGlassIcon className={className} aria-hidden="true" />
+  )
+}
+
+function StatusRow({ item }: { item: AttentionItem }) {
+  const { t } = useTranslation('attention')
+  return (
+    <li className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-3">
+      <div className="flex min-w-0 flex-1 items-start gap-2.5">
+        <SeverityIcon
+          severity={item.severity}
+          className={cn(
+            'size-6 shrink-0',
+            item.severity === 'critical'
+              ? 'text-destructive'
+              : item.severity === 'info'
+                ? 'text-muted-foreground'
+                : 'text-tone-warning',
+          )}
+          aria-hidden="true"
+        />
+        <div className="min-w-0 flex-1">
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium">
+            <span className="min-w-0 break-words">{item.title}</span>
+            <Badge
+              variant={item.severity === 'critical' ? 'destructive' : 'muted'}
+            >
+              {item.device
+                ? t(`deviceLogin.state.${item.device.state}`)
+                : item.severity}
+            </Badge>
+          </p>
+          <p className="text-xs break-words text-muted-foreground">
+            {item.detail}
+            {item.device?.requesterIp ? ` (${item.device.requesterIp})` : ''}
+          </p>
+          {item.copy ? (
+            <CopyFailureDetail
+              hint={item.copy.hint}
+              technical={item.copy.technical}
+            />
+          ) : item.action ? (
+            <p className="text-xs break-words text-muted-foreground">
+              {item.action}
+            </p>
+          ) : null}
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <ItemActions item={item} />
+        {item.severity === 'info' ? null : (
+          <SilenceMenu
+            issueKey={item.id}
+            severity={item.severity}
+            title={item.title}
+          />
+        )}
+      </div>
+    </li>
+  )
 }
 
 export function StatusPage() {
   const { items: all, isLoading } = useAttentionItems()
   const { t } = useTranslation('attention')
-  const { isSnoozed, silences, now } = useSnoozed()
-  const items = all.filter((i) => !isSnoozed(i.id))
+  const { isSnoozed: baseSnoozed, silences, now } = useSnoozed()
+  const isSnoozed = silencedWithLegacy(all, baseSnoozed)
+  const visible = all.filter((i) => !isSnoozed(i.id))
+  const items = visible.filter((i) => attentionClassOf(i) !== 'recommendation')
+  const advisory = visible.filter(
+    (i) => attentionClassOf(i) === 'recommendation',
+  )
 
   const healthy = !isLoading && items.length === 0
   const size = healthy ? 'hero' : 'compact'
@@ -248,78 +329,26 @@ export function StatusPage() {
           })}
           className="h-24 animate-pulse rounded-lg bg-muted motion-reduce:animate-none"
         />
-      ) : items.length === 0 ? null : (
+      ) : items.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          {t('statusPage.nothingNeedsAttention')}
+        </p>
+      ) : (
         <ul className="space-y-2">
-          {items.map((item) => {
-            const Icon = severityIcon(item.severity)
-            return (
-              <li
-                key={item.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-3"
-              >
-                <div className="flex min-w-0 flex-1 items-start gap-2.5">
-                  <Icon
-                    className={cn(
-                      'size-6 shrink-0',
-                      item.severity === 'critical'
-                        ? 'text-destructive'
-                        : item.severity === 'info'
-                          ? 'text-muted-foreground'
-                          : 'text-tone-warning',
-                    )}
-                    aria-hidden="true"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium">
-                      <span className="min-w-0 break-words">{item.title}</span>
-                      <Badge
-                        variant={
-                          item.severity === 'critical' ? 'destructive' : 'muted'
-                        }
-                      >
-                        {item.device
-                          ? t(`deviceLogin.state.${item.device.state}`)
-                          : item.severity}
-                      </Badge>
-                    </p>
-                    <p className="text-xs break-words text-muted-foreground">
-                      {item.detail}
-                      {item.device?.requesterIp
-                        ? ` (${item.device.requesterIp})`
-                        : ''}
-                    </p>
-                    {item.copy ? (
-                      <CopyFailureDetail
-                        hint={item.copy.hint}
-                        technical={item.copy.technical}
-                      />
-                    ) : item.action ? (
-                      <p className="text-xs break-words text-muted-foreground">
-                        {item.action}
-                      </p>
-                    ) : null}
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <ItemActions item={item} />
-                  {item.severity === 'info' ? null : (
-                    <SilenceMenu
-                      issueKey={item.id}
-                      severity={item.severity}
-                      title={item.title}
-                    />
-                  )}
-                </div>
-              </li>
-            )
-          })}
+          {items.map((item) => (
+            <StatusRow key={item.id} item={item} />
+          ))}
         </ul>
       )}
+      <StatusAdvisory
+        items={advisory}
+        renderItem={(item) => <StatusRow key={item.id} item={item} />}
+      />
       <MonitorsSection />
       <IncidentsSection />
       <SilencedSection
         items={all}
-        silences={silences}
+        silences={canonicalSilences(all, silences)}
         now={now}
         isSnoozed={isSnoozed}
       />

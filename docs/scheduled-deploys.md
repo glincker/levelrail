@@ -60,7 +60,7 @@ list`), distinct from `git push`, `manual`, `api`, `rollback` and
 A schedule due while a [deploy freeze window](/deploy-safety#freeze-windows)
 is active is skipped, not forced: no deploy is triggered, and the
 skip is recorded in the schedule's history with the freeze's reason and
-end time. It is not queued to run once the freeze lifts; it simply waits
+end time. It is not queued to run once the freeze lifts; it waits
 for its next natural occurrence, the same way a schedule due outside any
 freeze always has.
 
@@ -79,7 +79,7 @@ in the control plane process's memory. Two cases follow from that:
   occurrence, never once per missed occurrence. It then resumes its
   normal cadence. This is a deliberate difference from scheduled tasks
   and scheduled backups, whose position lives only in memory and is
-  simply lost on restart: a missed scheduled deploy is worth catching up
+  lost on restart: a missed scheduled deploy is worth catching up
   once, a missed backup or task run is not.
 
 The next-fire time is re-armed *before* the redeploy is actually

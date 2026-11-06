@@ -111,11 +111,54 @@ func (rt *Router) RetryDatabaseTeardowns(ctx context.Context) error {
 		if ctx.Err() != nil {
 			break
 		}
+		if rt.databaseTeardownSuperseded(ctx, j, js) {
+			continue
+		}
 		if err := rt.runDatabaseTeardown(ctx, j.Name, j.NodeID, j.Purge); err != nil {
 			errs = append(errs, fmt.Errorf("database %q: %w", j.Name, err))
 		}
 	}
 	return errors.Join(errs...)
+}
+
+// databaseTeardownSuperseded drops a job whose database name is live again on
+// the same node, so a retry never tears down or purges the new database. A
+// failed lookup also skips the job: the next retry decides.
+func (rt *Router) databaseTeardownSuperseded(ctx context.Context, j store.DatabaseTeardownJob, js databaseTeardownJobStore) bool {
+	d, err := rt.databases.GetDesiredDatabase(ctx, j.Name)
+	if errors.Is(err, store.ErrDatabaseNotFound) {
+		return false
+	}
+	if err != nil {
+		rt.logger.Error("api: database teardown retry skipped, lookup failed", slog.String("name", j.Name), slog.String("error", err.Error()))
+		return true
+	}
+	if d.NodeID != j.NodeID {
+		return false
+	}
+	rt.logger.Warn("api: stale database teardown dropped, the name is live again", slog.String("name", j.Name), slog.String("node_id", j.NodeID))
+	if ferr := js.FinishDatabaseTeardownJob(ctx, j.Name, j.NodeID); ferr != nil {
+		rt.logger.Error("api: clear superseded teardown job failed", slog.String("name", j.Name), slog.String("error", ferr.Error()))
+	}
+	return true
+}
+
+// databaseTeardownPending reports whether a teardown for name on nodeID is still owed.
+func (rt *Router) databaseTeardownPending(ctx context.Context, name, nodeID string) (bool, error) {
+	js := rt.teardownJobStore()
+	if js == nil {
+		return false, nil
+	}
+	jobs, err := js.ListDatabaseTeardownJobs(ctx)
+	if err != nil {
+		return false, fmt.Errorf("list database teardown jobs: %w", err)
+	}
+	for _, j := range jobs {
+		if j.Name == name && j.NodeID == nodeID {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // removeRemoteVolumes deletes volumes on a remote node through its agent. A failure

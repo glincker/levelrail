@@ -19,7 +19,7 @@
   "fastapi": "fastapi",
   "flask": "flask",
   "gmail": "gmail",
-  "go": "go",
+  "go": { "slug": "go", "variant": "mono" },
   "google-cloud-storage": "google-cloud-storage",
   "laravel": "laravel",
   "local-gemma": "gemma-google",

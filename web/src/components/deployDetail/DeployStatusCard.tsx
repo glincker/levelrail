@@ -12,6 +12,7 @@ import { TONE, type Tone } from '../kit/tone'
 import { cn } from '@/lib/utils'
 import type { DeployAction, DeployState } from '../../lib/deployState'
 import { useDeployDetailT } from './useDeployDetailT'
+import { FieldLabel } from '@/components/ui/typography'
 
 const TONE_ICON: Record<Tone, UiIcon> = {
   neutral: InfoGlassIcon,
@@ -58,9 +59,7 @@ export function DeployStatusCard({
           aria-hidden="true"
         />
         <div className="min-w-0 space-y-1">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {msg(state.label)}
-          </p>
+          <FieldLabel>{msg(state.label)}</FieldLabel>
           <p className="text-sm text-foreground">{msg(state.headline)}</p>
           {state.next ? (
             <p className="text-sm text-muted-foreground">{msg(state.next)}</p>

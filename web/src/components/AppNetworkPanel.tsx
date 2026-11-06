@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { FieldLabel, SectionTitle } from '@/components/ui/typography'
 import {
   ArrowRightGlassIcon,
   CheckGlassIcon,
@@ -112,9 +113,7 @@ export function AppNetworkPanel({ app }: { app: AppDetail }) {
         </div>
 
         <div className="border-t border-border pt-4">
-          <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-            Domains
-          </h3>
+          <SectionTitle as="h3">Domains</SectionTitle>
           {domains.length === 0 ? (
             <div className="mt-2 space-y-2">
               {fallbackURL ? (
@@ -218,9 +217,7 @@ function FlowField({
 }) {
   return (
     <div className="min-w-0">
-      <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-        {label}
-      </dt>
+      <FieldLabel as="dt">{label}</FieldLabel>
       <dd className="mt-0.5 flex min-w-0 items-center text-sm text-foreground">
         {children}
       </dd>
@@ -317,9 +314,7 @@ function PathNode({
       <div className="min-w-0 leading-tight">
         <p className="truncate text-xs font-medium">{label}</p>
         {sublabel ? (
-          <p className="truncate text-[10px] text-muted-foreground">
-            {sublabel}
-          </p>
+          <p className="truncate text-xs text-muted-foreground">{sublabel}</p>
         ) : null}
       </div>
     </div>

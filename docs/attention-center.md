@@ -101,7 +101,7 @@ You can also toggle both when editing a channel in the dashboard. A notice conta
 | `APP_DEVICE_EXPIRY_SWEEP_INTERVAL` | `30s` | How often expiry is recorded |
 | `APP_ATTENTION_RESOLVED_WINDOW` | `24h` | How long expired and denied logins stay visible |
 | `APP_DEVICE_HISTORY_RETENTION` | `720h` | How long resolved requests are kept |
-| `APP_ATTENTION_TOKEN_WINDOW` | `168h` | How far ahead token expiry is flagged, and how long after |
+| `APP_ATTENTION_TOKEN_WINDOW` | `168h` | Seeds the runtime setting `tokens.expiry_warning_days` (hours rounded up to whole days, 1 to 90) while nothing is stored. It is how far ahead token expiry is flagged, and how long after |
 | `APP_ATTENTION_BACKUP_GRACE` | `6h` | Slack past a backup's expected interval before it is overdue |
 | `APP_MAINTENANCE_ATTENTION_AFTER` | `4h` | How long a domain may stay in maintenance before it is raised as an item. Only domains of apps the caller can read are raised; a domain with no app needs the root ability. Maintenance mutes only down, DNS, certificate and request error or latency alerts, so CPU, memory, disk, restart and crash alerts still surface here |
 | `APP_ATTENTION_SHORT_LIVED_CERT` | `168h` | Certificates valid for no longer than this are auto-renewed internal issuance and never raise an expiry item |

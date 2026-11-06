@@ -136,7 +136,7 @@ function EnvironmentPicker({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+      <span className="text-[13px] font-medium text-muted-foreground">
         {label}
       </span>
       <Select

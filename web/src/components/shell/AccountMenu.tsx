@@ -131,7 +131,7 @@ export function AccountMenu() {
         <span className="flex min-w-0 flex-col text-left group-data-[collapsible=icon]:hidden">
           <span className="truncate text-sm font-medium">{name}</span>
           {email ? (
-            <span className="truncate text-[11px] text-sidebar-foreground/60">
+            <span className="truncate text-xs text-sidebar-foreground/60">
               {email}
             </span>
           ) : null}

@@ -130,17 +130,18 @@
     "openKeywords": "cli terminal command line install connect pair token",
     "install": {
       "title": "Install",
-      "lead": "Run this once in your terminal to install the CLI.",
-      "label": "Install command"
+      "label": "Install command",
+      "comment": "Install the CLI (macOS and Linux)",
+      "commentWindows": "Install the CLI (PowerShell)"
     },
     "connect": {
       "title": "Connect",
-      "lead": "Get a one-line command that signs your terminal in to this server. No password or approval step."
+      "comment": "Sign this terminal in to {{server}}",
+      "pending": "Get a one-time sign-in command for this server",
+      "expired": "That command expired, get a new one"
     },
     "manage": {
       "title": "Connected CLIs",
-      "empty": "No CLI is connected yet. Get your connect command on the left and run it in your terminal.",
-      "loading": "Loading connected CLIs...",
       "lastUsed": "Last used {{when}}",
       "neverUsed": "Never used",
       "lastIp": "From {{ip}}",
@@ -156,7 +157,6 @@
       "revokeFailed": "Could not revoke this CLI",
       "revoked": "CLI revoked",
       "fullPage": "Manage all CLI access",
-      "emptyAction": "Show my command",
       "connectAnother": "Connect another CLI",
       "listLabel": "Connected CLIs",
       "origin": {
@@ -202,21 +202,26 @@
     },
     "loadingBody": "Loading the command line tool...",
     "started": {
-      "title": "Get started",
-      "done": "Done"
+      "title": "First run"
     },
     "commands": {
-      "title": "Common commands",
-      "lead": "Run these in a terminal where the CLI is connected.",
-      "copy": "Copy {{command}}",
-      "copied": "Copied",
+      "title": "Try it",
       "status": "Check control plane health",
       "list": "List your apps",
       "logs": "Follow an app's logs",
       "wait": "Wait for an app to be ready",
       "open": "Print an app's public URLs",
       "up": "Deploy the current directory"
-    }
+    },
+    "step": {
+      "done": "Done",
+      "installUnknown": "Not checked",
+      "connected": "Connected",
+      "notConnected": "Not connected",
+      "ready": "Ready",
+      "afterConnect": "After you connect"
+    },
+    "copyAll": "Copy all steps"
   },
   "request": {
     "headline": "Approve this sign-in?",

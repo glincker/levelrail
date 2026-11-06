@@ -6,6 +6,7 @@ import {
   LoaderCircleGlassIcon,
   TriangleAlertGlassIcon,
 } from '@thesvg/ui-react'
+import { SectionTitle } from '@/components/ui/typography'
 import { useDeployDetailT } from './deployDetail/useDeployDetailT'
 import type {
   DeployStepEvent,
@@ -223,9 +224,9 @@ export function DeployTraceList({ steps }: { steps: DeployStepEvent[] }) {
         if (rows.length === 0) return null
         return (
           <section key={g.id} aria-label={t(`trace.group.${g.id}`)}>
-            <h4 className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <SectionTitle as="h4" className="mb-1">
               {t(`trace.group.${g.id}`)}
-            </h4>
+            </SectionTitle>
             <ol className="flex flex-col gap-1.5">
               <GroupRows rows={rows} />
             </ol>

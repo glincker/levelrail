@@ -181,7 +181,7 @@ function AppDetailLayout() {
             aria-hidden="true"
             className="hidden h-5 w-px bg-border lg:block"
           />
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
             <PublishLockToggle appName={app.name} />
             <IacExportButton kind="app" name={app.name} />
             <IacImportPreview name={app.name} />

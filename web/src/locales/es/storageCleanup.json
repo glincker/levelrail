@@ -1,0 +1,69 @@
+{
+  "title": "Plan de limpieza",
+  "description": "Revisa lo que Levelrail eliminaría y aplica solo lo que elijas.",
+  "tabs": {
+    "label": "Secciones de limpieza",
+    "plan": "Plan",
+    "history": "Historial"
+  },
+  "stages": {
+    "containers": "Contenedores",
+    "images": "Imágenes",
+    "build_cache": "Caché de compilación",
+    "volumes": "Volúmenes",
+    "deploy_attempts": "Intentos de despliegue",
+    "api_tokens": "Tokens de API"
+  },
+  "wholeStage": "Se limpia en conjunto, toda esta etapa o nada.",
+  "selectStage": "Seleccionar todo en {{stage}}",
+  "selectRow": "Seleccionar {{name}}",
+  "locked": {
+    "database": "Los datos de bases de datos nunca se eliminan automáticamente.",
+    "kept": "Se conserva por ahora.",
+    "label": "Bloqueado"
+  },
+  "stageNote": "No se ejecutó: {{reason}}",
+  "loading": "Revisando qué se puede eliminar",
+  "empty": "No hay nada que eliminar.",
+  "error": "No se pudo cargar el plan de limpieza.",
+  "retry": "Reintentar",
+  "selected": "{{size}} seleccionados en {{count}} elementos",
+  "none": "Nada seleccionado",
+  "preview": "Vista previa",
+  "previewing": "Generando vista previa",
+  "apply": "Aplicar",
+  "applying": "Aplicando",
+  "confirm": {
+    "line": "¿Eliminar {{size}} en {{count}} elementos ahora? Los datos eliminados no se pueden restaurar.",
+    "yes": "Sí, eliminar",
+    "cancel": "Cancelar"
+  },
+  "result": {
+    "previewed": "Vista previa: se recuperarían {{size}}.",
+    "applied": "Listo: se recuperaron {{size}}.",
+    "ignoredTitle": "Sin cambios",
+    "ignoredRow": "{{name}} ({{stage}}): {{reason}}",
+    "failed": "La ejecución informó un error: {{error}}"
+  },
+  "history": {
+    "loading": "Cargando ejecuciones anteriores",
+    "empty": "Aún no hay limpiezas.",
+    "error": "No se pudo cargar el historial de limpieza.",
+    "time": "Hora",
+    "by": "Iniciada por",
+    "reclaimed": "Recuperado",
+    "mode": "Modo",
+    "dryRun": "Simulación",
+    "applied": "Aplicada",
+    "trigger": {
+      "scheduled": "Programada",
+      "manual": "Manual",
+      "disk_fix": "Arreglo de disco"
+    },
+    "kind": {
+      "user": "usuario",
+      "api_token": "token de API",
+      "schedule": "programación"
+    }
+  }
+}

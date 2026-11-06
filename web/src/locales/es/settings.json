@@ -2783,7 +2783,7 @@
     },
     "notConfigured": "Este plano de control se inició sin la protección.",
     "pinned": "El modo lo define APP_DOCKER_GUARD en el servidor. Quítelo para cambiar el modo aquí.",
-    "readyToEnforce": "El modo Auditoría no detectó denegaciones probables en los últimos {{days}} días. Es probable que Aplicar sea seguro.",
+    "readyToEnforce": "El modo Auditoría no detectó denegaciones probables en los últimos {{days}} días; no se vieron las tareas que se ejecutan con menos frecuencia. Es probable que Aplicar sea seguro.",
     "restartRequired": "El modo guardado es distinto del que se está ejecutando. Reinicie el plano de control para aplicarlo.",
     "ruleCounts": "{{wouldDeny}} se denegarían, {{denied}} denegadas",
     "save": "Guardar modo",
@@ -2792,7 +2792,8 @@
     "title": "Protección de la API de Docker",
     "viewAudit": "Ver en el registro de auditoría",
     "windowEmpty": "No hay nada marcado.",
-    "windowTitle": "Solicitudes marcadas, últimos {{days}} días"
+    "windowTitle": "Solicitudes marcadas, últimos {{days}} días",
+    "windowUnknown": "Desconocido: no se pudo leer el registro de auditoría, así que no se sabe qué vio la protección."
   },
   "drCard": {
     "backingUp": "Haciendo copia...",

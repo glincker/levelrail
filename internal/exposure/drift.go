@@ -32,6 +32,15 @@ type DriftFinding struct {
 	Fix      string    `json:"fix,omitempty"`
 	// Rules are the DOCKER-USER rules involved, verbatim.
 	Rules []string `json:"rules,omitempty"`
+	// Ports lists every port/protocol one grouped listener row covers, sorted.
+	Ports []string `json:"ports,omitempty"`
+}
+
+// OwnListener is a port the platform itself opens, read from the same
+// configuration that opens it. An empty Protocol covers tcp and udp.
+type OwnListener struct {
+	Port     int
+	Protocol string
 }
 
 // Listener is one listening socket as `ss` reports it.
@@ -53,7 +62,9 @@ type DriftInput struct {
 	// Listeners is nil when sockets could not be read, which skips that check.
 	Listeners []Listener
 	// Known lists ports expected to listen publicly (control plane, ingress, SSH).
-	Known  []int
+	Known []int
+	// Own lists the platform's own listeners (mesh, mesh DNS) as configured now.
+	Own    []OwnListener
 	Prefix string
 }
 
@@ -74,15 +85,7 @@ func CheckDrift(in DriftInput) []DriftFinding {
 	if in.Chain.Readable {
 		out = append(out, chainDrift(in)...)
 	}
-	for _, l := range in.Listeners {
-		if publicAddr(l.Address) && !published[restrictionID(l.Protocol, l.Port)] && !slices.Contains(in.Known, l.Port) {
-			out = append(out, DriftFinding{
-				Kind: DriftListenerUndeclared, Severity: SeverityMedium, Port: l.Port, Protocol: l.Protocol, Subject: l.Address,
-				Message: fmt.Sprintf("%s listens on %s:%d/%s and no container or platform service declares it", listenerOwner(l), l.Address, l.Port, l.Protocol),
-				Fix:     listenerFix(l),
-			})
-		}
-	}
+	out = append(out, listenerDrift(in, published)...)
 	sort.SliceStable(out, func(i, j int) bool {
 		if r := severityRank(out[i].Severity) - severityRank(out[j].Severity); r != 0 {
 			return r > 0
@@ -195,11 +198,62 @@ func listenerOwner(l Listener) string {
 	return "something"
 }
 
-func listenerFix(l Listener) string {
-	if l.Process != "" {
-		return fmt.Sprintf("stop %s or bind it to a private address", l.Process)
+func listenerFix(process string) string {
+	if process != "" {
+		return fmt.Sprintf("if you do not recognise %s, stop it or bind it to a private address; if it is expected, restrict it with a firewall restriction", process)
 	}
 	return "find the process with ss -ltnup (as root), then stop it or bind it to a private address"
+}
+
+func (in DriftInput) ownsListener(l Listener) bool {
+	return slices.ContainsFunc(in.Own, func(o OwnListener) bool {
+		return o.Port == l.Port && (o.Protocol == "" || o.Protocol == l.Protocol)
+	})
+}
+
+// listenerDrift reports public listeners nothing declares, one row per owning
+// process with IPv4 and IPv6 of the same port merged.
+func listenerDrift(in DriftInput, published map[string]bool) []DriftFinding {
+	type group struct {
+		first Listener
+		ports map[string]bool
+	}
+	var order []string
+	groups := map[string]*group{}
+	for _, l := range in.Listeners {
+		if !publicAddr(l.Address) || published[restrictionID(l.Protocol, l.Port)] || slices.Contains(in.Known, l.Port) || in.ownsListener(l) {
+			continue
+		}
+		key := restrictionID(l.Protocol, l.Port)
+		if l.Process != "" {
+			key = fmt.Sprintf("%s/%d", l.Process, l.PID)
+		}
+		g := groups[key]
+		if g == nil {
+			g = &group{first: l, ports: map[string]bool{}}
+			groups[key] = g
+			order = append(order, key)
+		}
+		g.ports[restrictionID(l.Protocol, l.Port)] = true
+	}
+	var out []DriftFinding
+	for _, key := range order {
+		g := groups[key]
+		ports := make([]string, 0, len(g.ports))
+		for p := range g.ports {
+			ports = append(ports, p)
+		}
+		sort.Strings(ports)
+		proto, p, _ := strings.Cut(ports[0], "/")
+		port, _ := strconv.Atoi(p)
+		out = append(out, DriftFinding{
+			Kind: DriftListenerUndeclared, Severity: SeverityMedium, Port: port, Protocol: proto, Subject: g.first.Process,
+			Message: fmt.Sprintf("%s listens on %s and no container or platform service declares it", listenerOwner(g.first), strings.Join(ports, ", ")),
+			Fix:     listenerFix(g.first.Process),
+			Ports:   ports,
+		})
+	}
+	return out
 }
 
 // parseSSProcess reads the first process entry (name and pid) of an ss -p line.

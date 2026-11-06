@@ -47,7 +47,20 @@
     "searchLabel": "Search audit log entries",
     "failedOnly": "Failed only",
     "loading": "Loading...",
-    "loadOlder": "Load older entries"
+    "loadOlder": "Load older entries",
+    "rangeLabel": "Filter by time range",
+    "anyTime": "Any time",
+    "range": {
+      "1h": "Last hour",
+      "24h": "Last 24 hours",
+      "7d": "Last 7 days",
+      "30d": "Last 30 days"
+    },
+    "methodLabel": "Filter by method",
+    "anyMethod": "Any method",
+    "actorLabel": "Filter by actor",
+    "actorPlaceholder": "Actor name",
+    "exportCsv": "Export CSV (latest {{count}} rows)"
   },
   "anchor": {
     "title": "Audit anchor",
@@ -64,5 +77,24 @@
     "queued": "Queued",
     "lastError": "Last error",
     "lastErrorAt": "at {{time}}"
+  },
+  "verify": {
+    "button": "Verify chain",
+    "title": "Verify audit chain",
+    "description": "Re-computes every hash link. Leave the range empty to check the whole log.",
+    "from": "From entry",
+    "to": "To entry",
+    "run": "Verify",
+    "running": "Verifying",
+    "failedToRun": "Verification could not run.",
+    "okSummary_one": "{{count}} row verified, no breaks.",
+    "okSummary_other": "{{count}} rows verified, no breaks.",
+    "head": "Chain head: entry {{seq}}",
+    "firstBreak": "First break at entry {{seq}}",
+    "failed": "Chain verification failed",
+    "problem": "Entry {{seq}}: {{reason}}",
+    "rangeEnd": "Range ends at entry {{seq}}",
+    "outside_one": "This range is intact, but the whole chain has {{count}} problem outside it. Verify without a range.",
+    "outside_other": "This range is intact, but the whole chain has {{count}} problems outside it. Verify without a range."
   }
 }

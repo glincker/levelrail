@@ -1,4 +1,5 @@
 import { useId, useState, type ReactNode } from 'react'
+import { FieldLabel } from '@/components/ui/typography'
 import {
   CircleAlertGlassIcon,
   LightbulbGlassIcon,
@@ -138,15 +139,11 @@ export function DeployFailureSummaryCard({
           </h2>
           <dl className="space-y-3 text-sm">
             <div>
-              <dt className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Failing stage
-              </dt>
+              <FieldLabel as="dt">Failing stage</FieldLabel>
               <dd className="mt-1 text-foreground">{summary.stageLabel}</dd>
             </div>
             <div>
-              <dt className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Error
-              </dt>
+              <FieldLabel as="dt">Error</FieldLabel>
               <dd className="mt-1">
                 <p
                   id={messageId}
@@ -171,10 +168,10 @@ export function DeployFailureSummaryCard({
             </div>
             {summary.cause ? (
               <div>
-                <dt className="flex items-center gap-1 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                <FieldLabel as="dt" className="flex items-center gap-1">
                   <LightbulbGlassIcon className="size-5" aria-hidden="true" />
                   Likely cause and fix
-                </dt>
+                </FieldLabel>
                 <dd className="mt-1 text-foreground">
                   <p className="font-medium">{summary.cause.title}</p>
                   <p className="text-muted-foreground">{summary.cause.hint}</p>

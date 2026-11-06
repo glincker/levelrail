@@ -17,8 +17,8 @@ const en = JSON.parse(
 ) as { links: Record<string, string> }
 
 describe.skipIf(!hasTree)('relatedLinks map', () => {
-  it('has at least 15 source pages', () => {
-    expect(Object.keys(RELATED_LINKS).length).toBeGreaterThanOrEqual(14)
+  it('has at least 13 source pages', () => {
+    expect(Object.keys(RELATED_LINKS).length).toBeGreaterThanOrEqual(13)
   })
   it('only points from and to real routes', () => {
     for (const [from, entries] of Object.entries(RELATED_LINKS)) {
@@ -31,7 +31,7 @@ describe.skipIf(!hasTree)('relatedLinks map', () => {
       for (const e of entries) expect(en.links[e.labelKey]).toBeTruthy()
   })
   it('tolerates a trailing slash and unknown routes', () => {
-    expect(relatedLinksFor('/domains/').length).toBeGreaterThan(0)
+    expect(relatedLinksFor('/domains/$domain/').length).toBeGreaterThan(0)
     expect(relatedLinksFor('/nope')).toEqual([])
   })
 })

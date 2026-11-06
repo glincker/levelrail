@@ -33,10 +33,7 @@ export function PageRailSection({
   const id = useId()
   return (
     <section aria-labelledby={id} className="space-y-3">
-      <h2
-        id={id}
-        className="font-(family-name:--glinr-font-eyebrow) text-(length:--glinr-type-size-eyebrow) leading-4 tracking-widest text-muted-foreground uppercase"
-      >
+      <h2 id={id} className="text-sm leading-5 font-semibold text-foreground">
         {title}
       </h2>
       <div className="space-y-3">{children}</div>

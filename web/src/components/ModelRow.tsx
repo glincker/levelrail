@@ -89,11 +89,11 @@ export function ModelRow({ model }: { model: ModelResource }) {
         </span>
       </span>
       <span className="min-w-0">
-        <Badge variant="outline" className="font-mono text-[11px]">
+        <Badge variant="outline" className="font-mono text-xs">
           {model.engine}
         </Badge>
         {model.compute === 'cpu' ? (
-          <Badge variant="outline" className="ml-1 text-[11px]">
+          <Badge variant="outline" className="ml-1 text-xs">
             CPU
           </Badge>
         ) : null}

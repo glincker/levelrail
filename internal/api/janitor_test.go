@@ -102,3 +102,46 @@ func TestJanitorEndpoints(t *testing.T) {
 		t.Fatalf("runs status = %d, body = %s", rec.Code, rec.Body.String())
 	}
 }
+
+func TestJanitorRunItemAllowlist(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	rt.NewJanitor(db, janitorTestDocker{})
+	post := func(target, body string) *httptest.ResponseRecorder {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, target, body))
+		return rec
+	}
+	cases := []struct {
+		name       string
+		body       string
+		wantStatus int
+		wantStages int
+		wantIgnore int
+	}{
+		{"empty items refused", `{"items":[]}`, http.StatusBadRequest, 0, 0},
+		{"no body runs everything", ``, http.StatusOK, len(janitor.AllStages), 0},
+		{"db volume and unknown reported", `{"items":[{"stage":"volumes","names":["db-x"]},{"stage":"deploy_attempts","names":["ghost"]}]}`, http.StatusOK, 1, 2},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			rec := post("/api/v1/system/janitor/run?dry_run=true", tc.body)
+			if rec.Code != tc.wantStatus {
+				t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+			}
+			if tc.wantStatus != http.StatusOK {
+				return
+			}
+			var rep janitor.Report
+			if err := json.Unmarshal(rec.Body.Bytes(), &rep); err != nil {
+				t.Fatal(err)
+			}
+			if len(rep.Stages) != tc.wantStages || len(rep.Ignored) != tc.wantIgnore {
+				t.Errorf("stages=%d ignored=%v", len(rep.Stages), rep.Ignored)
+			}
+			if rep.Actor == nil || rep.Actor.Kind != janitor.ActorUser {
+				t.Errorf("actor = %+v, want a user", rep.Actor)
+			}
+		})
+	}
+}

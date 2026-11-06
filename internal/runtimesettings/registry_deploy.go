@@ -9,15 +9,31 @@ const (
 	KeyDeployPreviousReleaseHold = "deploy.previous_release_hold"
 	KeyDeployStableWindow        = "deploy.stable_window"
 	KeyDeployWatchWindow         = "deploy.watch_window"
-	minDeployDrainTimeout        = time.Second
-	maxDeployDrainTimeout        = 10 * time.Minute
-	maxDeployPreviousReleaseHold = time.Hour
-	minDeployStableWindow        = time.Second
-	maxDeployStableWindow        = 10 * time.Minute
-	maxDeployWatchWindow         = 24 * time.Hour
+	// KeyDeployCIGateMaxWaits caps the CI gate waits one app may hold at once, one per ref.
+	KeyDeployCIGateMaxWaits = "deploy.ci_gate_max_waits_per_app"
+	// KeyDeployReceiptApprovalWindow is the longest gap between an approval and the deploy it released.
+	KeyDeployReceiptApprovalWindow = "deploy.receipt_approval_window"
+	minDeployDrainTimeout          = time.Second
+	maxDeployDrainTimeout          = 10 * time.Minute
+	maxDeployPreviousReleaseHold   = time.Hour
+	minDeployStableWindow          = time.Second
+	maxDeployStableWindow          = 10 * time.Minute
+	maxDeployWatchWindow           = 24 * time.Hour
 )
 
 func init() {
+	Register(Definition{
+		Key: KeyDeployCIGateMaxWaits, Category: CategoryDeploys, Kind: KindInt, Default: "4",
+		Env: "APP_CI_GATE_MAX_WAITS_PER_APP", Apply: ApplyLive, CheckValue: intRangeCheck(1, 50),
+		Title:       "CI gate waits per app",
+		Description: "How many refs of one app may wait for CI at once. A newer deploy of the same ref replaces the wait; one past the limit is refused and can be retried.",
+	})
+	Register(Definition{
+		Key: KeyDeployReceiptApprovalWindow, Category: CategoryDeploys, Kind: KindDuration, Default: "15m",
+		Env: "APP_DEPLOY_RECEIPT_APPROVAL_WINDOW", Apply: ApplyLive, CheckValue: durationRangeCheck(time.Minute, 24*time.Hour),
+		Title:       "Deploy receipt approval window",
+		Description: "How long before a deploy started an approval may have been decided for the receipt to name it as the approval that released that deploy, from 1m to 24h. A longer window can name an approval meant for an earlier deploy. The next receipt uses a changed value.",
+	})
 	Register(Definition{
 		Key: KeyDeployDrainTimeout, Category: CategoryDeploys, Kind: KindDuration, Default: "15s",
 		Env: "APP_DEPLOY_DRAIN_TIMEOUT", Apply: ApplyLive, CheckValue: durationRangeCheck(minDeployDrainTimeout, maxDeployDrainTimeout),

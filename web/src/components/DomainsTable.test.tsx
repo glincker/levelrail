@@ -79,9 +79,10 @@ describe('DomainsTable', () => {
   it('points to deploying an app when there are no apps', () => {
     renderTable({ domains: [], appCount: 0 })
     expect(screen.getByText('No apps to route yet')).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Deploy an app' }),
-    ).toHaveAttribute('href', '/apps')
+    expect(screen.getByRole('link', { name: 'Deploy an app' })).toHaveAttribute(
+      'href',
+      '/apps',
+    )
   })
 
   it('offers Add domain when apps exist but no domains do', async () => {

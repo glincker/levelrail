@@ -67,7 +67,7 @@ export function SidebarUpgradeLabel() {
       ? t('pipeline.sidebar.running')
       : `${s.view.percent}%`
   return (
-    <span className="ml-auto rounded-full bg-primary/10 px-1.5 text-[10px] font-medium text-primary group-data-[collapsible=icon]:hidden">
+    <span className="ml-auto rounded-full bg-primary/10 px-1.5 text-xs font-medium text-primary group-data-[collapsible=icon]:hidden">
       {text}
     </span>
   )

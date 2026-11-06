@@ -2,6 +2,7 @@ import { Button as ButtonPrimitive } from '@base-ui/react/button'
 import { cva, type VariantProps } from 'class-variance-authority'
 
 import { cn } from '@/lib/utils'
+import { isLinkRender, nativeButtonFromRender } from '@/lib/nativeButton'
 import { useIsDemo } from '@/hooks/useDemo'
 import { DemoBlockedTip } from '@/components/ui/demo-blocked-tip'
 
@@ -68,11 +69,15 @@ function Button({
 }: ButtonProps) {
   const demo = useIsDemo()
   const blocked = writeAction && demo
+  // Base UI stamps role="button" on non-native renders; a link must stay a link for assistive tech.
+  const role = props.role ?? (isLinkRender(props.render) ? 'link' : undefined)
   const node = (
     <ButtonPrimitive
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
+      role={role}
+      nativeButton={nativeButtonFromRender(props.render, props.nativeButton)}
       disabled={blocked ? true : props.disabled}
     />
   )

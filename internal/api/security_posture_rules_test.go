@@ -47,6 +47,7 @@ func healthyPosture() postureInput {
 		ShieldKnown:       true,
 		AgentsKnown:       true,
 		SAMLKnown:         true,
+		Agent:             healthyAgentPosture(),
 	}
 }
 

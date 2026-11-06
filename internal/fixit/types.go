@@ -5,6 +5,7 @@ package fixit
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 )
 
@@ -104,14 +105,18 @@ type Input struct {
 
 // Fix is one registered remedy for one check.
 type Fix struct {
-	ID         string
-	CheckID    string
-	Subject    string
-	Kind       Kind
-	Title      string
-	Why        string
-	Risk       Risk
-	Reversible bool
+	ID      string
+	CheckID string
+	// Aliases and CodePrefixes name the doctor row codes that differ from
+	// CheckID but report the same fact, so the fix reaches those rows too.
+	Aliases      []string
+	CodePrefixes []string
+	Subject      string
+	Kind         Kind
+	Title        string
+	Why          string
+	Risk         Risk
+	Reversible   bool
 	// Needs is the API ability the caller must hold to apply.
 	Needs string
 	// Detect re-runs the originating check and plans the fix.
@@ -161,6 +166,31 @@ type View struct {
 	Attempts   []Attempt     `json:"attempts"`
 	Blocked    string        `json:"blocked,omitempty"`
 	RetryAfter time.Duration `json:"-"`
+
+	aliases  []string
+	prefixes []string
+}
+
+// ServesCode reports whether a doctor row code is this fix's check id, one of
+// its aliases, or under one of its declared prefixes.
+func (v View) ServesCode(code string) bool {
+	if code == "" {
+		return false
+	}
+	if v.CheckID == code {
+		return true
+	}
+	for _, a := range v.aliases {
+		if a == code {
+			return true
+		}
+	}
+	for _, p := range v.prefixes {
+		if p != "" && strings.HasPrefix(code, p) {
+			return true
+		}
+	}
+	return false
 }
 
 // Result is the outcome of Apply.
@@ -169,4 +199,26 @@ type Result struct {
 	Outcome OutcomeStatus `json:"outcome"`
 	Detail  string        `json:"detail"`
 	View    View          `json:"view"`
+}
+
+// ServesCode reports whether a doctor row code is this fix's check id, one of
+// its declared or registered aliases, or under one of its declared prefixes.
+func (f Fix) ServesCode(code string) bool {
+	if code == "" {
+		return false
+	}
+	if f.CheckID == code {
+		return true
+	}
+	for _, a := range append(append([]string(nil), f.Aliases...), registeredAliases[f.ID]...) {
+		if a == code {
+			return true
+		}
+	}
+	for _, p := range f.CodePrefixes {
+		if p != "" && strings.HasPrefix(code, p) {
+			return true
+		}
+	}
+	return false
 }

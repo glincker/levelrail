@@ -75,6 +75,7 @@ function ItemLink({
             />
           }
           tooltip={label ?? item.label}
+          title={label ?? item.label}
           data-locked="true"
           className={cn('text-muted-foreground', sub && 'h-7 pl-6 text-[13px]')}
         >
@@ -91,6 +92,7 @@ function ItemLink({
         render={<Link to={item.to} params={{ name }} />}
         isActive={activeId === item.id}
         tooltip={label ?? item.label}
+        title={label ?? item.label}
         className={cn(sub && 'h-7 pl-6 text-[13px]')}
       >
         {item.icon}

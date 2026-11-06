@@ -5,7 +5,7 @@ description: Features hidden at launch, the APP_EXPERIMENTAL switch that turns t
 "og:url": "https://docs.levelrail.com/experimental-features"
 ---
 
-Some features have unit tests but no end-to-end or real-infrastructure evidence (see [feature status](/feature-status)). They are off by default. To turn them on, set one env var:
+Last updated 2026-11-05 (v0.9.1). Some features have unit tests but no end-to-end or real-infrastructure evidence (see [feature status](/feature-status)). They are off by default. To turn them on, set one env var:
 
 ```
 APP_EXPERIMENTAL=ai-models,load-balancer
@@ -57,7 +57,7 @@ Proposed, not in force. A flag leaves this list when its row is met and the evid
 | `ai-models` | experimental | Stays experimental: needs NVIDIA hardware and a real GPU run. Every current test uses fakes |
 | `plugins` | experimental | Stays experimental: needs a signing and approval review and a sandbox escape review |
 | `mail` | experimental | Stays experimental: needs a run against real DNS providers and a real mail receiver |
-| `mcp-http` | experimental | Stays experimental: read only and without OAuth. Needs an OAuth design and an authz review |
+| `mcp-http` | experimental | Stays experimental: read only. OAuth for remote clients exists (see [Remote MCP](/mcp#oauth-for-remote-clients)) but is itself experimental. Needs a real client run and an authz review |
 | `cloudflare-tunnel` | experimental | Stays experimental: reconciler unit tests only and it needs a real account |
 | `access-roles` | experimental | No criteria stated. Proposed: an e2e where a custom role is denied a real action, and an authz review |
 | `global-environments` | experimental | No criteria stated. Proposed: an e2e of the switcher with isolation between environments, and a migration check on an existing install |

@@ -13,8 +13,10 @@ import { toast, toastAction } from '@/components/ui/toast'
 import { ApiError } from '../../lib/apiError'
 import {
   SILENCE_DURATIONS,
+  allowedSilenceDurations,
   useCreateSilence,
   useDeleteSilence,
+  useSilencePolicy,
   type SilenceDuration,
 } from '../../queries/silences'
 
@@ -39,6 +41,8 @@ export function SilenceMenu({
   const [reason, setReason] = useState('')
   const [pending, setPending] = useState<SilenceDuration | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const policy = useSilencePolicy(open)
+  const durations = allowedSilenceDurations(issueKey, policy.data)
 
   const submit = (duration: SilenceDuration, confirm: boolean) => {
     setError(null)
@@ -105,7 +109,7 @@ export function SilenceMenu({
               }}
             />
             <ul className="space-y-0.5">
-              {SILENCE_DURATIONS.map((d) => (
+              {durations.map((d) => (
                 <li key={d}>
                   <Button
                     type="button"
@@ -122,6 +126,13 @@ export function SilenceMenu({
                 </li>
               ))}
             </ul>
+            {durations.length < SILENCE_DURATIONS.length ? (
+              <p className="text-xs text-muted-foreground">
+                {t('silence.cappedHint', {
+                  days: policy.data?.protected_max_days ?? 0,
+                })}
+              </p>
+            ) : null}
           </div>
         </PopoverContent>
       </Popover>

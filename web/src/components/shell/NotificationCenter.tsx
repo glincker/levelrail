@@ -17,6 +17,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
+import { CountBadge } from './CountBadge'
 import { pollUnlessMissing } from '../../lib/pollUnlessMissing'
 import { useActivityEvents } from '../../queries/activity'
 import { useDeployApprovalsOptional } from '../../queries/deployApprovals'
@@ -89,14 +90,7 @@ export function NotificationCenter() {
         }
       >
         <BellGlassIcon size="1.4em" />
-        {unread > 0 ? (
-          <span
-            aria-hidden="true"
-            className="absolute -top-1 -right-1 flex size-3.5 items-center justify-center rounded-full bg-destructive text-[9px] font-semibold text-white"
-          >
-            {unread > 9 ? '9+' : unread}
-          </span>
-        ) : null}
+        {unread > 0 ? <CountBadge count={unread} tone="destructive" /> : null}
       </PopoverTrigger>
       <PopoverContent
         align="end"

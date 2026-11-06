@@ -1,0 +1,26 @@
+{
+  "ciGate": {
+    "title": "Esperar a CI antes de desplegar",
+    "description": "Retén un despliegue por push hasta que pasen las comprobaciones del commit. Funciona con GitHub y GitLab. Si una comprobación falla o se agota la espera, se omite el despliegue y el motivo aparece en las entregas del webhook y en el historial de despliegues.",
+    "toggle": "Esperar las comprobaciones de CI",
+    "checksLabel": "Comprobaciones requeridas",
+    "checksHelp": "Déjalo vacío para esperar todas las comprobaciones del commit. Añade nombres para esperar solo esas. En GitHub usa el nombre de la comprobación, como build o test. En GitLab usa el nombre del job.",
+    "checkPlaceholder": "Nombre de la comprobación",
+    "add": "Añadir",
+    "remove": "Quitar {{name}}",
+    "save": "Guardar",
+    "saving": "Guardando...",
+    "saved": "Puerta de CI guardada.",
+    "saveFailed": "No se pudo guardar la puerta de CI.",
+    "gitlabNote": "En GitLab, un job requerido que se omitió o que puede fallar (allow_failure) hace fallar la puerta. No incluyas esos jobs en la lista.",
+    "unreadable": {
+      "title": "No se puede leer el estado de CI de este repositorio",
+      "intro": "La puerta de CI necesita una GitHub App o una conexión de GitLab que pueda leer las comprobaciones del repositorio. No funciona cuando el origen es:",
+      "ssh": "una URL de repositorio SSH o http simple",
+      "gitea": "Gitea",
+      "bitbucket": "Bitbucket",
+      "githubNoApp": "un repositorio de GitHub sin la GitHub App instalada",
+      "fix": "Conecta el repositorio con una GitHub App o una conexión de GitLab y vuelve a activar la puerta."
+    }
+  }
+}

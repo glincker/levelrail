@@ -1,0 +1,61 @@
+{
+  "viewLabel": "Group the list",
+  "view": { "type": "By type", "app": "By app" },
+  "search": "Search by name or id",
+  "searchLabel": "Search items",
+  "clearFilter": "Show all categories",
+  "filterActive": "Showing {{category}} only",
+  "category": {
+    "appData": "App data",
+    "images": "Images",
+    "buildCache": "Build cache",
+    "containersLogs": "Containers and logs",
+    "other": "Other"
+  },
+  "kind": {
+    "image": "Images",
+    "volume": "Volumes",
+    "container": "Stopped containers",
+    "buildCache": "Build cache"
+  },
+  "kindOne": {
+    "image": "Image",
+    "volume": "Volume",
+    "container": "Container",
+    "buildCache": "Build cache"
+  },
+  "cols": {
+    "name": "Name",
+    "size": "Size",
+    "app": "Owner app",
+    "type": "Type",
+    "reason": "Reason"
+  },
+  "sortBy": "Sort by {{column}}",
+  "noApp": "No app",
+  "sizeUnknown": "Not measured",
+  "group": {
+    "total": "{{size}} in total",
+    "count_one": "{{count}} {{kind}}",
+    "count_other": "{{count}} {{kind}}",
+    "lastDeployed": "Last deployed"
+  },
+  "reason": {
+    "none": "None",
+    "orphaned": "Orphaned: no app owns this volume",
+    "inUse": "In use",
+    "inUseBy": "In use by {{app}}",
+    "unused": "Not in use",
+    "stopped": "Stopped container",
+    "databaseProtected": "Holds a database, never removed",
+    "buildCache": "Rebuilt on the next build"
+  },
+  "protected": "Protected",
+  "loading": "Reading what is on disk",
+  "error": "Could not read the storage inventory.",
+  "retry": "Try again",
+  "empty": "Nothing to show here.",
+  "emptyFiltered": "No items match.",
+  "unsupportedTitle": "This node is not supported yet",
+  "unsupportedFallback": "Levelrail cannot list items on this node yet. Nothing here is changed."
+}

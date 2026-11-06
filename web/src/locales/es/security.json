@@ -264,6 +264,36 @@
       "pass": "Cada conexión SAML activa limita el inicio de sesión a tus dominios",
       "title": "Conexiones SAML que aceptan cualquier dominio de correo",
       "why": "Sin una lista de dominios permitidos, cualquier dirección que tu proveedor de identidad declare puede coincidir con una cuenta aquí. Añade tus dominios en los ajustes de la conexión."
+    },
+    "agent_token_unnamed": {
+      "title": "Tokens de API que pueden cambiar cosas sin nombre de agente",
+      "pass": "Cada token de escritura o despliegue está etiquetado o revisado",
+      "why": "Un token sin nombre de agente no lo gobierna el control de IA, así que una herramienta de IA que lo tenga actúa sin límites de modo ni de entorno."
+    },
+    "ai_control_admin": {
+      "title": "El control de IA está en modo admin",
+      "pass": "El control de IA está por debajo del modo admin",
+      "why": "El modo admin permite a los agentes cambiar ajustes y accesos, no solo apps. El modo operar cubre los despliegues diarios."
+    },
+    "agent_tokens_production": {
+      "title": "Los tokens de agente pueden cambiar producción",
+      "pass": "Ningún token de agente puede cambiar producción",
+      "why": "Los tokens de agente con escritura o despliegue, con el control de IA por encima de observar, pueden llegar a rutas que la protección de producción no cubre, como apply y entornos."
+    },
+    "prod_env_unprotected": {
+      "title": "Entornos de producción sin protección",
+      "pass": "Todos los entornos de producción están protegidos",
+      "why": "Un entorno protegido pide aprobación antes de que lleguen despliegues, reversiones y promociones."
+    },
+    "prod_apps_unguarded": {
+      "title": "Apps de producción sin política de despliegue que bloquee",
+      "pass": "Cada app de producción tiene una política de despliegue que bloquea",
+      "why": "Una regla en modo aviso solo informa. Sin una regla en modo bloqueo, nada impide un despliegue arriesgado en producción."
+    },
+    "audit_sink_none": {
+      "title": "El registro de auditoría no se envía a ningún sitio",
+      "pass": "El registro de auditoría se reenvía a un destino externo",
+      "why": "Un flujo de auditoría fuera de esta máquina conserva el rastro de acciones de agentes y despliegues aunque se pierda este host."
     }
   },
   "actions": {

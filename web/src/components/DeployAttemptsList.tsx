@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import { SectionTitle } from '@/components/ui/typography'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -186,18 +187,18 @@ export function DeployAttemptsList({
         ) : null}
         {latestAttempt ? (
           <section aria-label={t('deployHistory.latest')} className="mb-4">
-            <h3 className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <SectionTitle as="h3" className="mb-1.5">
               {t('deployHistory.latest')}
-            </h3>
+            </SectionTitle>
             <ul className="overflow-hidden rounded-lg border border-border bg-muted/20">
               {rowFor(latestAttempt, true)}
             </ul>
           </section>
         ) : null}
         {attempts.length > 1 ? (
-          <h3 className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <SectionTitle as="h3" className="mb-1.5">
             {t('deployHistory.earlier')}
-          </h3>
+          </SectionTitle>
         ) : null}
         {attempts.length > 1 ? (
           <DeployAttemptFilterBar

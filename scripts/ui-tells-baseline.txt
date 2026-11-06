@@ -1,5 +1,5 @@
-uppercase_tracking 66
-tiny_text 72
+uppercase_tracking 4
+tiny_text 0
 raw_palette 192
 color_literal 104
 arbitrary_rounded 19

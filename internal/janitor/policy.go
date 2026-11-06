@@ -7,6 +7,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -140,4 +142,30 @@ func SavePolicy(ctx context.Context, s PolicyStore, p Policy, actor string, now 
 		return fmt.Errorf("janitor: save policy: %w", err)
 	}
 	return nil
+}
+
+var volumeProtector atomic.Pointer[func(name string) (bool, string)]
+
+// SetVolumeProtector installs the boot-time database volume lock the volumes
+// stage consults on top of the built-in db- rule. Janitor cannot import api.
+func SetVolumeProtector(fn func(name string) (bool, string)) {
+	if fn == nil {
+		volumeProtector.Store(nil)
+		return
+	}
+	volumeProtector.Store(&fn)
+}
+
+// volumeProtected is the one place that decides a volume is never cleaned up
+// automatically, whatever an allowlist says.
+func volumeProtected(name string) (bool, string) {
+	if fn := volumeProtector.Load(); fn != nil {
+		if prot, why := (*fn)(name); prot {
+			return true, why
+		}
+	}
+	if strings.HasPrefix(name, "db-") {
+		return true, "database data is never removed automatically"
+	}
+	return false, ""
 }

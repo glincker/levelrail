@@ -2,6 +2,7 @@ package janitor
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -85,5 +86,38 @@ func TestAnonymousVolumes_RemovedOnlyWhenEnabled_NeverNamed(t *testing.T) {
 	}
 	if len(removed) != 0 {
 		t.Fatalf("named volumes removed: %v", removed)
+	}
+}
+
+func TestAnonymousVolumes_PressureKeepsThemWhenDeletionOff(t *testing.T) {
+	d, res, removed := runAnon(t, func(*Policy) {}, Options{Trigger: TriggerManual, Force: true})
+	if d.pruned != 0 || len(removed) != 0 {
+		t.Fatalf("pressure pruned volumes with deletion off: pruned=%d removed=%v", d.pruned, removed)
+	}
+	found := false
+	for _, it := range res.Items {
+		if it.Action == ActionRemoved {
+			t.Fatalf("removed item with deletion off: %+v", it)
+		}
+		if it.Action == ActionKept && strings.Contains(it.Detail, "deletion is off") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("run record must say volumes were skipped: %+v", res.Items)
+	}
+}
+
+func TestAnonymousVolumes_PressureStillPrunesWhenEnabled(t *testing.T) {
+	d, _, _ := runAnon(t, func(p *Policy) { p.DeleteOrphanVolumes = true }, Options{Trigger: TriggerManual, Force: true})
+	if d.pruned != 1 {
+		t.Fatalf("pruned = %d, want 1", d.pruned)
+	}
+}
+
+func TestAnonymousVolumes_PressureDryRunDeletesNothing(t *testing.T) {
+	d, _, removed := runAnon(t, func(p *Policy) { p.DeleteOrphanVolumes = true }, Options{Trigger: TriggerManual, Force: true, DryRun: true})
+	if d.pruned != 0 || len(removed) != 0 {
+		t.Fatalf("dry run deleted: pruned=%d removed=%v", d.pruned, removed)
 	}
 }

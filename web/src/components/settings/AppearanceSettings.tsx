@@ -6,6 +6,7 @@ import {
   LayoutDashboardGlassIcon,
   MoonGlassIcon,
   PaletteGlassIcon,
+  RefreshCwGlassIcon,
   RotateCcwGlassIcon,
   SparklesGlassIcon,
   TypeGlassIcon,
@@ -169,7 +170,7 @@ function RadiusSample({ id }: { id: string }) {
   return (
     <span
       aria-hidden="true"
-      className={`block size-8 border-t-2 border-l-2 border-state-accent ${RADIUS_SAMPLE[id] ?? ''}`}
+      className={`block size-6 border-t-2 border-l-2 border-state-accent ${RADIUS_SAMPLE[id] ?? ''}`}
     />
   )
 }
@@ -423,7 +424,8 @@ function SectionCard({
 }
 
 // Stack title over control: the section cards are only half width from xl.
-const ROW = 'md:grid-cols-1 lg:grid-cols-1'
+const ROW = 'md:grid-cols-1 lg:grid-cols-1 py-3'
+const ROW_PAIR = 'md:grid-cols-1 lg:grid-cols-1 py-0'
 
 /** AppearanceSettings is the one place for theme base, font, size, width, spacing and density. */
 export function AppearanceSettings() {
@@ -455,6 +457,7 @@ export function AppearanceSettings() {
       label: t(`appearancePage.darkBase.${v}`),
       hint: t(`appearancePage.darkBase.${v}Hint`),
       sample: <BaseSample id={v} />,
+      block: true,
       isDefault: v === DEF.darkBase,
       isRecommended: v === REC.darkBase,
     }),
@@ -465,6 +468,7 @@ export function AppearanceSettings() {
       label: t(`appearancePage.lightBase.${v}`),
       hint: t(`appearancePage.lightBase.${v}Hint`),
       sample: <BaseSample id={v} />,
+      block: true,
       isDefault: v === DEF.lightBase,
       isRecommended: v === REC.lightBase,
     }),
@@ -547,11 +551,31 @@ export function AppearanceSettings() {
   const current = activePreset(appearance, width, density, theme)
 
   const sections = [
-    { id: 'presets', label: t('appearancePage.presets.title') },
-    { id: 'color', label: t('appearancePage.sections.color') },
-    { id: 'type', label: t('appearancePage.sections.type') },
-    { id: 'layout', label: t('appearancePage.sections.layout') },
-    { id: 'sync', label: t('appearancePage.sections.sync') },
+    {
+      id: 'presets',
+      label: t('appearancePage.presets.title'),
+      icon: <SparklesGlassIcon size="1.1em" />,
+    },
+    {
+      id: 'color',
+      label: t('appearancePage.sections.color'),
+      icon: <PaletteGlassIcon size="1.1em" />,
+    },
+    {
+      id: 'type',
+      label: t('appearancePage.sections.type'),
+      icon: <TypeGlassIcon size="1.1em" />,
+    },
+    {
+      id: 'layout',
+      label: t('appearancePage.sections.layout'),
+      icon: <LayoutDashboardGlassIcon size="1.1em" />,
+    },
+    {
+      id: 'sync',
+      label: t('appearancePage.sections.sync'),
+      icon: <RefreshCwGlassIcon size="1.1em" />,
+    },
   ]
 
   return (
@@ -661,6 +685,7 @@ export function AppearanceSettings() {
             />
           </SettingRow>
           <SettingRow
+            wide
             className={ROW}
             title={t('appearancePage.darkBase.title')}
             description={t('appearancePage.darkBase.description')}
@@ -674,6 +699,7 @@ export function AppearanceSettings() {
             />
           </SettingRow>
           <SettingRow
+            wide
             className={ROW}
             title={t('appearancePage.lightBase.title')}
             description={t('appearancePage.lightBase.description')}
@@ -687,6 +713,7 @@ export function AppearanceSettings() {
             />
           </SettingRow>
           <SettingRow
+            wide
             className={ROW}
             title={t('appearancePage.accent.title')}
             description={t('appearancePage.accent.description')}
@@ -696,7 +723,6 @@ export function AppearanceSettings() {
               value={appearance.accent}
               options={accentOptions}
               onChange={(accent) => setAppearance({ accent })}
-              className="sm:grid-cols-3"
               {...common}
             />
             {appearance.accent === 'custom' ? (
@@ -704,6 +730,7 @@ export function AppearanceSettings() {
             ) : null}
           </SettingRow>
           <SettingRow
+            wide
             className={ROW}
             title={t('appearancePage.contrast.title')}
             description={t('appearancePage.contrast.description')}
@@ -713,7 +740,6 @@ export function AppearanceSettings() {
               value={appearance.contrast}
               options={contrastOptions}
               onChange={(contrast) => setAppearance({ contrast })}
-              className="sm:grid-cols-3"
               {...common}
             />
             <p className="mt-2 rounded-md border border-border px-3 py-2 text-sm text-muted-foreground">
@@ -739,6 +765,7 @@ export function AppearanceSettings() {
           title={t('appearancePage.sections.type')}
         >
           <SettingRow
+            wide
             className={ROW}
             title={t('appearancePage.font.title')}
             description={t('appearancePage.font.description')}
@@ -748,7 +775,6 @@ export function AppearanceSettings() {
               value={appearance.font}
               options={fontOptions}
               onChange={(font) => setAppearance({ font })}
-              className="sm:grid-cols-3"
               {...common}
             />
           </SettingRow>
@@ -766,6 +792,7 @@ export function AppearanceSettings() {
             />
           </SettingRow>
           <SettingRow
+            wide
             className={ROW}
             title={t('appearancePage.codeFont.title')}
             description={t('appearancePage.codeFont.description')}
@@ -775,7 +802,6 @@ export function AppearanceSettings() {
               value={appearance.codeFont}
               options={codeFontOptions}
               onChange={(codeFont) => setAppearance({ codeFont })}
-              className="sm:grid-cols-4"
               {...common}
             />
           </SettingRow>
@@ -824,6 +850,7 @@ export function AppearanceSettings() {
           title={t('appearancePage.sections.layout')}
         >
           <SettingRow
+            wide
             className={ROW}
             title={t('appearancePage.width.title')}
             description={t('appearancePage.width.description')}
@@ -833,7 +860,6 @@ export function AppearanceSettings() {
               value={width}
               options={widthOptions}
               onChange={setPageWidth}
-              className="sm:grid-cols-5"
               {...common}
             />
             {width === 'custom' ? (
@@ -857,62 +883,70 @@ export function AppearanceSettings() {
               </div>
             ) : null}
           </SettingRow>
-          <SettingRow
-            className={ROW}
-            title={t('appearancePage.radius.title')}
-            description={t('appearancePage.radius.description')}
-          >
-            <ChoiceGroup
-              label={t('appearancePage.radius.title')}
-              value={appearance.radius}
-              options={radiusOptions}
-              onChange={(radius) => setAppearance({ radius })}
-              className="sm:grid-cols-3"
-              {...common}
-            />
-          </SettingRow>
-          <SettingRow
-            className={ROW}
-            title={t('appearancePage.gutter.title')}
-            description={t('appearancePage.gutter.description')}
-          >
-            <ChoiceGroup
-              label={t('appearancePage.gutter.title')}
-              value={appearance.gutter}
-              options={gutterOptions}
-              onChange={(gutter) => setAppearance({ gutter })}
-              className="sm:grid-cols-3"
-              {...common}
-            />
-          </SettingRow>
-          <SettingRow
-            className={ROW}
-            title={t('generalPage.density.title')}
-            description={t('appearancePage.density.description')}
-          >
-            <ChoiceGroup
-              label={t('generalPage.density.title')}
-              value={density}
-              options={densityOptions}
-              onChange={setDensity}
-              className="sm:grid-cols-2"
-              {...common}
-            />
-          </SettingRow>
-          <SettingRow
-            className={ROW}
-            title={t('appearancePage.motion.title')}
-            description={t('appearancePage.motion.description')}
-          >
-            <ChoiceGroup
-              label={t('appearancePage.motion.title')}
-              value={appearance.motion}
-              options={motionOptions}
-              onChange={(motion) => setAppearance({ motion })}
-              className="sm:grid-cols-3"
-              {...common}
-            />
-          </SettingRow>
+          <div className="grid gap-x-8 gap-y-4 py-4 xl:grid-cols-2">
+            <SettingRow
+              wide
+              className={ROW_PAIR}
+              title={t('appearancePage.radius.title')}
+              description={t('appearancePage.radius.description')}
+            >
+              <ChoiceGroup
+                compact
+                label={t('appearancePage.radius.title')}
+                value={appearance.radius}
+                options={radiusOptions}
+                onChange={(radius) => setAppearance({ radius })}
+                {...common}
+              />
+            </SettingRow>
+            <SettingRow
+              wide
+              className={ROW_PAIR}
+              title={t('appearancePage.gutter.title')}
+              description={t('appearancePage.gutter.description')}
+            >
+              <ChoiceGroup
+                compact
+                label={t('appearancePage.gutter.title')}
+                value={appearance.gutter}
+                options={gutterOptions}
+                onChange={(gutter) => setAppearance({ gutter })}
+                {...common}
+              />
+            </SettingRow>
+          </div>
+          <div className="grid gap-x-8 gap-y-4 py-4 xl:grid-cols-2">
+            <SettingRow
+              wide
+              className={ROW_PAIR}
+              title={t('generalPage.density.title')}
+              description={t('appearancePage.density.description')}
+            >
+              <ChoiceGroup
+                compact
+                label={t('generalPage.density.title')}
+                value={density}
+                options={densityOptions}
+                onChange={setDensity}
+                {...common}
+              />
+            </SettingRow>
+            <SettingRow
+              wide
+              className={ROW_PAIR}
+              title={t('appearancePage.motion.title')}
+              description={t('appearancePage.motion.description')}
+            >
+              <ChoiceGroup
+                compact
+                label={t('appearancePage.motion.title')}
+                value={appearance.motion}
+                options={motionOptions}
+                onChange={(motion) => setAppearance({ motion })}
+                {...common}
+              />
+            </SettingRow>
+          </div>
         </SectionCard>
       </SettingsSection>
 

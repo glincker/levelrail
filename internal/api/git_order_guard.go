@@ -104,18 +104,38 @@ func (rt *Router) noteGitHead(ctx context.Context, name, head string) {
 func (rt *Router) admitGitPush(ctx context.Context, name string, ev webhook.PushEvent) (int, string, bool) {
 	rt.gitEnqueueMu.Lock()
 	defer rt.gitEnqueueMu.Unlock()
-	if !isWebhookReplay(ctx) {
-		switch rt.commitDeployState(ctx, name, ev.After) {
-		case "deployed":
-			return http.StatusOK, fmt.Sprintf("ignored: commit %s is already deployed\n", webhookShortSHA(ev.After)), true
-		case "in flight":
-			return http.StatusOK, fmt.Sprintf("ignored: commit %s is already in flight\n", webhookShortSHA(ev.After)), true
-		}
-		if reason := rt.staleGitDelivery(ctx, name, ev.After, ev.Before, ev.HeadCommitAt); reason != "" {
-			rt.logger.Info("api: git push webhook: delivery older than deployed commit", slog.String("name", name), slog.String("commit", webhookShortSHA(ev.After)), slog.String("reason", reason))
-			return http.StatusOK, staleDeliveryMessage(ev.After, reason), true
-		}
+	if status, msg, handled := rt.admitPushCheckLocked(ctx, name, ev); handled {
+		return status, msg, true
 	}
+	return rt.admitPushHoldLocked(ctx, name, ev)
+}
+
+// admitGitPushCheck is the dedupe and stale-delivery half of admitGitPush, run
+// before a CI gate wait; hold and enqueue run after the gate passes.
+func (rt *Router) admitGitPushCheck(ctx context.Context, name string, ev webhook.PushEvent) (int, string, bool) {
+	rt.gitEnqueueMu.Lock()
+	defer rt.gitEnqueueMu.Unlock()
+	return rt.admitPushCheckLocked(ctx, name, ev)
+}
+
+func (rt *Router) admitPushCheckLocked(ctx context.Context, name string, ev webhook.PushEvent) (int, string, bool) {
+	if isWebhookReplay(ctx) {
+		return 0, "", false
+	}
+	switch rt.commitDeployState(ctx, name, ev.After) {
+	case "deployed":
+		return http.StatusOK, fmt.Sprintf("ignored: commit %s is already deployed\n", webhookShortSHA(ev.After)), true
+	case "in flight":
+		return http.StatusOK, fmt.Sprintf("ignored: commit %s is already in flight\n", webhookShortSHA(ev.After)), true
+	}
+	if reason := rt.staleGitDelivery(ctx, name, ev.After, ev.Before, ev.HeadCommitAt); reason != "" {
+		rt.logger.Info("api: git push webhook: delivery older than deployed commit", slog.String("name", name), slog.String("commit", webhookShortSHA(ev.After)), slog.String("reason", reason))
+		return http.StatusOK, staleDeliveryMessage(ev.After, reason), true
+	}
+	return 0, "", false
+}
+
+func (rt *Router) admitPushHoldLocked(ctx context.Context, name string, ev webhook.PushEvent) (int, string, bool) {
 	hr := deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: ev.After, CommitLabel: ev.After, CommitSHA: ev.After, Before: ev.Before, CommitAt: ev.HeadCommitAt}
 	if held, msg := rt.holdIfFrozen(ctx, name, hr, name+":"+ev.After); held {
 		return http.StatusAccepted, msg, true
@@ -130,4 +150,32 @@ func (rt *Router) admitGitPush(ctx context.Context, name string, ev webhook.Push
 		}
 	}
 	return 0, "", false
+}
+
+// rollbackHead writes to as the remembered head only while it is still from, so a
+// head the poller already moved past is never reopened.
+func (rt *Router) rollbackHead(ctx context.Context, name, from, to string) {
+	if rt.gitRel == nil || to == "" {
+		return
+	}
+	rt.gitEnqueueMu.Lock()
+	defer rt.gitEnqueueMu.Unlock()
+	if rt.lastSeenHead(ctx, name) != from {
+		return
+	}
+	if err := rt.gitRel.NoteGitSourceHead(ctx, name, to, time.Now(), false); err != nil {
+		rt.logger.Warn("api: ci gate: restore head failed", slog.String("name", name), slog.String("error", err.Error()))
+	}
+}
+
+// lastSeenHead is the head the poller last remembered for name, "" when unknown.
+func (rt *Router) lastSeenHead(ctx context.Context, name string) string {
+	if rt.gitRel == nil {
+		return ""
+	}
+	rel, err := rt.gitRel.GetGitSourceReliability(ctx, name)
+	if err != nil {
+		return ""
+	}
+	return rel.LastSeenHead
 }

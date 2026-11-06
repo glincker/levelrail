@@ -1090,7 +1090,6 @@
       "server": "servidor",
       "browser": "navegador"
     },
-    "noApps": "Despliega primero una aplicación y luego apunta un dominio a ella.",
     "noAppsAction": "Nueva aplicación"
   },
   "editor": {
@@ -1179,7 +1178,11 @@
     "fixAddress": "Arreglar: revisar dirección",
     "details": "Detalles de la dirección",
     "enableHttps": "Activar HTTPS",
-    "parked": "{{count}} aparcados"
+    "parked": "{{count}} aparcados",
+    "addressLabel": "Dirección del servidor",
+    "httpsLabel": "HTTPS",
+    "portsLabel": "Revisión de puertos",
+    "unknown": "Aún sin revisar"
   },
   "cutover": {
     "title": "Lista de migración",
@@ -1508,5 +1511,30 @@
     "consequenceSkip": "Los registros editados después se dejan como están.",
     "outcomes": "Resultados del deshacer",
     "skipped": "Cambiado después, se deja como está"
+  },
+  "firstRun": {
+    "label": "Primeros pasos",
+    "step": "Paso {{n}}",
+    "done": "Hecho",
+    "current": "Siguiente",
+    "deploy": {
+      "title": "Despliega una aplicación",
+      "body": "Un dominio apunta a una aplicación, así que despliega una primero."
+    },
+    "domain": {
+      "title": "Agrega tu dominio",
+      "body": "Apunta tu propia dirección web a la aplicación.",
+      "action": "Agregar dominio"
+    },
+    "https": {
+      "title": "Activa HTTPS",
+      "body": "Los certificados se emiten solos cuando HTTPS está activo."
+    }
+  },
+  "tabs": {
+    "label": "Dominios y relacionados",
+    "domains": "Dominios",
+    "certificates": "Certificados",
+    "dns": "DNS"
   }
 }

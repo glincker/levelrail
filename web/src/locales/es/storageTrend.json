@@ -1,0 +1,35 @@
+{
+  "title": "Uso del disco en el tiempo",
+  "range": {
+    "label": "Rango",
+    "days": "{{count}} d"
+  },
+  "chart": {
+    "label": "Espacio de disco usado en los últimos {{days}} días. Usa las flechas para leer cada día."
+  },
+  "tooltip": {
+    "used": "Usado",
+    "free": "Libre",
+    "images": "Imágenes",
+    "containers": "Contenedores",
+    "volumes": "Volúmenes",
+    "buildCache": "Caché de compilación"
+  },
+  "forecast": {
+    "full_one": "Lleno en unos {{count}} día al ritmo actual",
+    "full_other": "Lleno en unos {{count}} días al ritmo actual",
+    "needsDays": "La fecha de llenado aparece tras {{count}} días de datos.",
+    "flat": "El uso es estable o baja, así que no hay fecha de llenado.",
+    "legend": "Proyección"
+  },
+  "legend": {
+    "used": "Usado"
+  },
+  "states": {
+    "loading": "Cargando el historial del disco",
+    "collecting": "Recopilando datos, la primera tendencia aparece tras dos días.",
+    "unavailable": "Este servidor no guarda el historial del disco, así que no hay tendencia que mostrar.",
+    "error": "No se pudo cargar el historial del disco.",
+    "retry": "Reintentar"
+  }
+}

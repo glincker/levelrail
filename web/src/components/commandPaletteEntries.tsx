@@ -45,7 +45,7 @@ function Highlighted({
 
 export function Kbd({ children }: { children: React.ReactNode }) {
   return (
-    <kbd className="rounded border border-border bg-background px-1 font-mono text-[10px] leading-4 text-muted-foreground">
+    <kbd className="rounded border border-border bg-background px-1 font-mono text-xs leading-4 text-muted-foreground">
       {children}
     </kbd>
   )
@@ -147,7 +147,7 @@ export function ResultRow({
           aria-hidden="true"
         >
           {item.secondaryHint ? (
-            <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
               <Kbd>Tab</Kbd>
               {item.secondaryHint}
             </span>

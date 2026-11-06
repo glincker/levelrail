@@ -71,6 +71,9 @@ func toDeployApprovalResource(a store.DeployApproval) deployApprovalResource {
 // PrincipalTypeUser/PrincipalTypeToken vocabulary iam_policy.go's own
 // policies already key on.
 func (rt *Router) currentActor(r *http.Request) (actorType, actorID, actorName string, ok bool) {
+	if a, pushed := registryPushActorFrom(r.Context()); pushed {
+		return actorTypeRegistryPush, a.app, "registry push (" + a.provider + ")", true
+	}
 	if userID, sessOK := rt.currentSessionUserID(r); sessOK {
 		user, err := rt.auth.GetUserByID(r.Context(), userID)
 		if err != nil {
@@ -329,6 +332,8 @@ func (rt *Router) approvalHuman(ctx context.Context, actorType, actorID string) 
 		return actorID, nil
 	case store.PrincipalTypeToken:
 		return rt.tokenOwnerOf(ctx, actorID)
+	case actorTypeRegistryPush:
+		return rt.pushRotator(ctx, actorID)
 	default:
 		return "", nil
 	}

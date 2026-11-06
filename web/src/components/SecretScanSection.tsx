@@ -2,6 +2,7 @@ import { CardSkeleton } from '@/components/ui/card-skeleton'
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
+import { SectionTitle } from '@/components/ui/typography'
 import { Input } from '@/components/ui/input'
 import { toast } from '@/components/ui/toast'
 import { StatusPill, type Tone } from './kit'
@@ -153,9 +154,7 @@ export function SecretScanSection({
   }
   return (
     <section className="flex flex-col gap-2">
-      <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-        {t('section.title')}
-      </h3>
+      <SectionTitle as="h3">{t('section.title')}</SectionTitle>
       {body}
     </section>
   )

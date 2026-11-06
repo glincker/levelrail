@@ -108,7 +108,7 @@ function HelpLayout() {
         <button
           type="button"
           onClick={() => toggleSection(sectionKey)}
-          className="mb-1.5 w-full flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium tracking-wide text-muted-foreground uppercase hover:text-foreground transition-colors"
+          className="mb-1.5 w-full flex items-center gap-1.5 px-2 py-1.5 text-[13px] font-medium text-muted-foreground hover:text-foreground transition-colors"
           aria-expanded={isExpanded}
         >
           {isExpanded ? (
@@ -190,7 +190,7 @@ function HelpLayout() {
 
             {filteredCategories.map((category) => (
               <div key={category.name}>
-                <p className="mb-1.5 px-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                <p className="mb-1.5 px-2 text-[13px] font-medium text-muted-foreground">
                   {category.name}
                 </p>
                 <ul className="space-y-0.5">
@@ -215,7 +215,7 @@ function HelpLayout() {
             aria-label={tHelp('toc.title')}
             className="sticky top-4 hidden max-h-[calc(100vh-2rem)] self-start overflow-y-auto xl:block"
           >
-            <p className="mb-2 flex items-center gap-1.5 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+            <p className="mb-2 flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground">
               <ListGlassIcon className="size-5" aria-hidden="true" />
               {tHelp('toc.title')}
             </p>

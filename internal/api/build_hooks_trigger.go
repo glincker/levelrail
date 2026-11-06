@@ -195,6 +195,9 @@ func (rt *Router) executeBuildHook(ctx context.Context, h store.BuildHook, p bui
 		rt.logger.Warn("api: build hook: deploy failed", slog.String("hook_id", h.ID), slog.String("name", h.ServiceName), slog.String("error", err.Error()))
 		return "failed: " + err.Error()
 	}
+	if strings.HasPrefix(msg, gatedAcceptedPrefix) || strings.HasPrefix(msg, "ignored: ") {
+		return msg
+	}
 	if msg == "" {
 		return "deployed"
 	}

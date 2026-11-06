@@ -61,7 +61,7 @@ export function PageBanner({
     <header
       data-testid={compact ? 'page-banner-compact' : 'page-banner-full'}
       className={cn(
-        'relative isolate flex flex-col items-stretch overflow-hidden sm:flex-row [&_[data-slot=help-link]]:absolute [&_[data-slot=help-link]]:right-3 [&_[data-slot=help-link]]:bottom-3 [&_[data-slot=help-link]]:z-20',
+        'relative isolate flex flex-col items-stretch overflow-hidden sm:flex-row',
         compact
           ? 'rounded-xl border border-border bg-card'
           : 'banner-edge rounded-3xl bg-[linear-gradient(180deg,color-mix(in_oklab,var(--card),var(--foreground)_4%),var(--card))]',
@@ -116,7 +116,12 @@ export function PageBanner({
         )}
       </div>
       {action ? (
-        <div className="z-10 flex shrink-0 flex-wrap items-center gap-2 self-start px-4 pb-4 sm:ml-auto sm:justify-end sm:self-center sm:px-5 sm:py-4">
+        <div
+          className={cn(
+            'z-10 flex shrink-0 flex-wrap items-center gap-2 self-start px-4 pb-4 sm:ml-auto sm:justify-end sm:px-5 sm:py-4',
+            compact && 'sm:self-center',
+          )}
+        >
           {action}
         </div>
       ) : null}

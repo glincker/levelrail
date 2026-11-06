@@ -8,6 +8,7 @@
   "docs_line": "Provider docs: {url}\n",
   "rule_name_http": "{binary}-http",
   "rule_name_https": "{binary}-https",
+  "data_override_warning": "warning: provider data override ignored, using built-in defaults: {error}\n",
   "flag_json": "print the rules as JSON to stdout and nothing else",
   "usage": "Usage:\n  {prog} doctor cloud [--json]\n  {prog} doctor --cloud [--json]\n\nPrints the inbound firewall rules (names, ports 80 and 443) and the console\nlink for the cloud provider this server runs on, from its metadata service.\nAn unknown provider gets the generic ports line.\n\nFlags:\n",
   "console_url.oracle": "https://cloud.oracle.com/",

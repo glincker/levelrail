@@ -124,7 +124,7 @@ If the old proxy cannot be started, the run ends as "Needs attention" with the c
 | The old platform starts its proxy again | Warning, or an automatic rollback | Coolify can restart its proxy when it sees it stopped. Stop the proxy from the Coolify dashboard as well |
 | The old proxy has restart policy `always` | Warning | Docker would start it again after a reboot. Set `unless-stopped` |
 | The old proxy serves domains Levelrail does not manage | Blocker | Import and route them first, or accept that they go offline |
-| systemd holds the ingress sockets | Warning | The control plane ignores them and binds 80 and 443 itself, so a restart on those ports is no longer seamless. Rollback returns to the sockets |
+| systemd holds the ingress sockets | Warning | The control plane ignores them and binds 80 and 443 itself, so a restart on those ports no longer happens without a gap in service. Rollback returns to the sockets |
 | nginx or Caddy as the old proxy | Warning "Saved, not enforced" | For these two Levelrail only saves configuration snippets for you to apply, it never loads them. After the takeover only Levelrail's own routes answer |
 
 <Warning>

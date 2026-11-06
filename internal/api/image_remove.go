@@ -94,6 +94,10 @@ func (rt *Router) handleImageRemove(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if req.DryRun {
+		// The preview total must match what a real run frees, so the confirm dialog never reads "0 B".
+		for _, e := range resp.Candidates {
+			resp.ReclaimedBytes += imagelife.Reclaimable(e)
+		}
 		writeJSON(w, http.StatusOK, resp)
 		return
 	}

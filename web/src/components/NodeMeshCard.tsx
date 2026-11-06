@@ -244,7 +244,7 @@ export function NodeMeshCard({
           >
             <div
               role="row"
-              className={`${PEER_LIST_GRID} border-b border-border bg-muted/40 px-3 py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase`}
+              className={`${PEER_LIST_GRID} border-b border-border bg-muted/40 px-3 py-2 text-[13px] font-medium text-muted-foreground`}
             >
               <span role="columnheader">Peer</span>
               <span role="columnheader">Health</span>

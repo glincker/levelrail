@@ -67,7 +67,7 @@ export function LogRow({
       >
         <div
           style={{ height: LOG_ROW_HEIGHT_PX }}
-          className="flex w-full items-center gap-2 border-l-2 border-amber-600/60 bg-amber-950/20 px-3 text-left text-[11px] text-amber-400/90 italic"
+          className="flex w-full items-center gap-2 border-l-2 border-amber-600/60 bg-amber-950/20 px-3 text-left text-xs text-amber-400/90 italic"
         >
           <span aria-hidden="true">---</span>
           {t('logs.previousContainerEnded')}
@@ -111,7 +111,7 @@ export function LogRow({
         }`}
       >
         <span
-          className={`w-7 shrink-0 text-[10px] font-semibold ${tag?.className ?? ''}`}
+          className={`w-7 shrink-0 text-xs font-semibold ${tag?.className ?? ''}`}
         >
           <span aria-hidden="true">{tag?.label ?? ''}</span>
           {level ? <span className="sr-only">{level}</span> : null}
@@ -148,7 +148,7 @@ export function LogRow({
           <button
             type="button"
             onClick={handleCopy}
-            className="mt-1 flex min-h-6 items-center gap-1 rounded px-1.5 py-0.5 text-[11px] focus-visible:ring-1 focus-visible:ring-neutral-400 focus-visible:outline-none text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
+            className="mt-1 flex min-h-6 items-center gap-1 rounded px-1.5 py-0.5 text-xs focus-visible:ring-1 focus-visible:ring-neutral-400 focus-visible:outline-none text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
           >
             {copied ? (
               <CheckGlassIcon className="size-4.5" aria-hidden="true" />

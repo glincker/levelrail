@@ -84,7 +84,7 @@ export function DocsRenderer({
       btn.dataset.docsCopy = 'true'
       btn.textContent = copyLabel
       btn.className =
-        'absolute right-2 top-2 rounded border border-border bg-background px-1.5 py-0.5 text-[11px] text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100'
+        'absolute right-2 top-2 rounded border border-border bg-background px-1.5 py-0.5 text-xs text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100'
       pre.classList.add('group')
       btn.addEventListener('click', () => {
         const code = pre.querySelector('code')?.textContent ?? pre.textContent

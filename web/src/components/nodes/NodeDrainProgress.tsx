@@ -51,7 +51,7 @@ export function NodeDrainProgress({ drain }: { drain: NodeDrain }) {
 
       {drain.blocked.length > 0 ? (
         <div>
-          <p className="mb-1 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+          <p className="mb-1 text-[13px] font-medium text-muted-foreground">
             {t('drain.blockedTitle')}
           </p>
           <ul className="space-y-0.5 text-sm">
@@ -69,7 +69,7 @@ export function NodeDrainProgress({ drain }: { drain: NodeDrain }) {
 
       {drain.moves.length > 0 ? (
         <div>
-          <p className="mb-1 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+          <p className="mb-1 text-[13px] font-medium text-muted-foreground">
             {t('drain.movesTitle')}
           </p>
           <VirtualRows

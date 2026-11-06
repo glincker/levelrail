@@ -96,6 +96,8 @@ Each file builds an image, pushes it, deploys it pinned by digest and waits for 
 | GitHub Actions | [ci-examples/github-actions-oidc.yml](https://github.com/glincker/levelrail/blob/main/docs/ci-examples/github-actions-oidc.yml) | OIDC, no stored Levelrail secret |
 | GitLab CI | [ci-examples/gitlab-ci.yml](https://github.com/glincker/levelrail/blob/main/docs/ci-examples/gitlab-ci.yml) | OIDC (`id_tokens`), no stored Levelrail secret |
 | CircleCI | [ci-examples/circleci.yml](https://github.com/glincker/levelrail/blob/main/docs/ci-examples/circleci.yml) | OIDC, no stored Levelrail secret |
+| Jenkins | [ci-examples/token/jenkins.groovy](https://github.com/glincker/levelrail/blob/main/docs/ci-examples/token/jenkins.groovy) | Stored deployer token |
+| Buildkite | [ci-examples/token/buildkite.yml](https://github.com/glincker/levelrail/blob/main/docs/ci-examples/token/buildkite.yml) | Stored deployer token |
 
 Each file needs a CI trust on the app once (see [OIDC support](#oidc-support)). The job then runs `levelrail-cli apps ci token my-app --provider <github|gitlab|circleci>`, which swaps the job's identity token for a deploy token that expires after 15 minutes. On GitLab and CircleCI the token is read from `LEVELRAIL_ID_TOKEN`, or from the variable named by `--id-token-env`. `apps github-actions token` and `apps github-actions trust` still work as deprecated aliases of `apps ci token` and `apps ci trust`.
 
@@ -125,13 +127,13 @@ A CI trust lets one pipeline identity deploy one app. The exchange endpoint (`PO
 
 | Provider | Trust flags | Repository is | Ref and environment are matched against |
 | --- | --- | --- | --- |
-| GitHub Actions | `--repo owner/name` | `repository` | `ref`, `environment` |
+| GitHub Actions | `--repo OWNER/REPO` | `repository` | `ref`, `environment` |
 | GitLab CI | `--provider gitlab --repo group/project`, `--issuer` for self-managed, `--no-protected-ref` to opt out | `project_path` | `ref` and `ref_type` (as `refs/heads/<branch>` or `refs/tags/<tag>`), `environment`, `ref_protected` |
 | CircleCI | `--provider circleci --org-id <ORG_ID> --repo <PROJECT_ID>` | `oidc.circleci.com/project-id` | `oidc.circleci.com/vcs-ref`, and `--environment <CONTEXT_ID>` must appear in `oidc.circleci.com/context-ids` |
 
 ```bash
-levelrail-cli apps ci trust add my-app --repo example/my-app --ref refs/heads/main
-levelrail-cli apps ci trust add my-app --provider gitlab --repo example/my-app --ref refs/heads/main
+levelrail-cli apps ci trust add my-app --repo OWNER/REPO --ref refs/heads/main
+levelrail-cli apps ci trust add my-app --provider gitlab --repo OWNER/REPO --ref refs/heads/main
 levelrail-cli apps ci trust add my-app --provider gitlab --issuer https://gitlab.example.com --repo team/my-app --ref 'refs/tags/v*'
 levelrail-cli apps ci trust add my-app --provider circleci --org-id <ORG_ID> --repo <PROJECT_ID> --ref refs/heads/main --environment <CONTEXT_ID>
 levelrail-cli apps ci trust list my-app
@@ -249,64 +251,13 @@ workflows:
 
 ## Jenkins
 
-Create two **Secret text** credentials with the ids `levelrail-api-url` and `levelrail-token` under **Manage Jenkins > Credentials**.
-
-```groovy
-pipeline {
-  agent any
-  environment {
-    IMAGE = "registry.example.com/team/my-app:${env.GIT_COMMIT}"
-    LEVELRAIL_API_URL = credentials('levelrail-api-url')
-    LEVELRAIL_TOKEN = credentials('levelrail-token')
-    LEVELRAIL_CLI_INSTALL_DIR = "${env.WORKSPACE}/.bin"
-    CI = 'true'
-  }
-  stages {
-    stage('Build and push') {
-      steps {
-        sh 'docker build -t "$IMAGE" .'
-        sh 'docker push "$IMAGE"'
-      }
-    }
-    stage('Deploy') {
-      steps {
-        sh 'curl -fsSL https://levelrail.com/install-cli.sh | sh'
-        sh '''
-          export PATH="$LEVELRAIL_CLI_INSTALL_DIR:$PATH"
-          levelrail-cli apps deploy my-app --image "$IMAGE" --idempotency-key "jenkins-$BUILD_TAG"
-          levelrail-cli apps wait my-app --timeout 5m
-        '''
-      }
-    }
-  }
-}
-```
+Create two **Secret text** credentials with the ids `levelrail-api-url` and `levelrail-token` under **Manage Jenkins > Credentials**. The complete `Jenkinsfile` is [ci-examples/token/jenkins.groovy](https://github.com/glincker/levelrail/blob/main/docs/ci-examples/token/jenkins.groovy); the dashboard shows the same file for your app under **Deploy settings**, and `levelrail-cli apps ci template my-app jenkins` prints it.
 
 The single-quoted `sh` strings keep Groovy from interpolating the secrets into the command line, and Jenkins masks the credential values in the log.
 
 ## Buildkite
 
-Keep the secrets in your agent environment hook, a secrets manager plugin, or **Pipeline Settings**. Do not put them in `pipeline.yml`.
-
-```yaml
-steps:
-  - label: "Build and push"
-    command: |
-      docker build -t "registry.example.com/team/my-app:$BUILDKITE_COMMIT" .
-      docker push "registry.example.com/team/my-app:$BUILDKITE_COMMIT"
-  - wait
-  - label: "Deploy to Levelrail"
-    branches: "main"
-    env:
-      LEVELRAIL_CLI_INSTALL_DIR: "$BUILDKITE_BUILD_CHECKOUT_PATH/.bin"
-    command: |
-      curl -fsSL https://levelrail.com/install-cli.sh | sh
-      export PATH="$$LEVELRAIL_CLI_INSTALL_DIR:$$PATH"
-      levelrail-cli apps deploy my-app \
-        --image "registry.example.com/team/my-app:$BUILDKITE_COMMIT" \
-        --idempotency-key "buildkite-$BUILDKITE_BUILD_ID"
-      levelrail-cli apps wait my-app --timeout 5m
-```
+Keep the secrets in your agent environment hook, a secrets manager plugin, or **Pipeline Settings**. Do not put them in `pipeline.yml`. The complete pipeline is [ci-examples/token/buildkite.yml](https://github.com/glincker/levelrail/blob/main/docs/ci-examples/token/buildkite.yml); `levelrail-cli apps ci template my-app buildkite` prints it for your app.
 
 `$$` stops Buildkite from expanding the variable at upload time. `LEVELRAIL_API_URL` and `LEVELRAIL_TOKEN` must already be in the step's environment.
 

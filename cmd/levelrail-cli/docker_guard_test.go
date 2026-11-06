@@ -72,3 +72,11 @@ func TestRun_DockerGuard(t *testing.T) {
 		})
 	}
 }
+
+func TestPrintDockerGuardUnknownWindow(t *testing.T) {
+	var out bytes.Buffer
+	printDockerGuard(&out, apiclient.DockerGuardResource{Configured: true, Mode: "audit", WindowSeconds: 7 * 86400, WindowError: "audit log read failed"})
+	if !strings.Contains(out.String(), "unknown") || strings.Contains(out.String(), "0 would deny") {
+		t.Fatalf("output = %q", out.String())
+	}
+}

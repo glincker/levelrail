@@ -1,0 +1,61 @@
+{
+  "title": "Storage",
+  "subtitle": "What Docker keeps on disk for your apps, and what is safe to free.",
+  "node": {
+    "label": "Node",
+    "local": "This server",
+    "partial": "Only images are sized for this node so far.",
+    "unsupportedTitle": "This node is not supported yet",
+    "unsupported": "Levelrail cannot read storage from this node yet. Nothing here is changed.",
+    "retry": "Check again"
+  },
+  "engine": {
+    "title": "Engine and signatures"
+  },
+  "verdict": {
+    "space": "{{free}} free of {{total}}.",
+    "health": {
+      "healthy": "Healthy",
+      "low": "Low on space",
+      "critical": "Critical"
+    },
+    "safe": "{{size}} can be removed safely.",
+    "nothingSafe": "Nothing needs removing.",
+    "forecast_one": "Full in about {{count}} day at the current rate.",
+    "forecast_other": "Full in about {{count}} days at the current rate."
+  },
+  "disk": {
+    "label": "Disk usage",
+    "legend": "Filter by category",
+    "unmeasured": "Not measured",
+    "segmentLabel": "{{name}}, {{size}}",
+    "filterLabel": "Filter: {{name}}",
+    "categories": {
+      "appData": "App data",
+      "images": "Images",
+      "buildCache": "Build cache",
+      "containersLogs": "Containers and logs",
+      "other": "Other",
+      "free": "Free"
+    },
+    "meaning": {
+      "appData": "Volumes and databases that belong to your apps. Never removed automatically.",
+      "images": "Docker images for your deploys. Old and unused ones can go.",
+      "buildCache": "Layers kept to make builds faster. Safe to clear, the next build just runs slower.",
+      "containersLogs": "Stopped containers and their log files.",
+      "other": "Everything else on the disk, outside Levelrail."
+    },
+    "tip": {
+      "sizeShare": "{{size}}, {{share}} of the disk",
+      "reclaimable": "{{size}} can be removed safely",
+      "nothingToFree": "Nothing to remove"
+    }
+  },
+  "actions": {
+    "terminal": "Run in a terminal",
+    "review": "Review cleanup"
+  },
+  "errors": {
+    "status": "Disk usage could not be read right now."
+  }
+}

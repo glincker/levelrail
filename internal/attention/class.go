@@ -13,6 +13,7 @@ const (
 var recommendationKinds = map[string]bool{
 	KindInvites:           true,
 	KindTokenUnused:       true,
+	KindTokenExpired:      true,
 	KindDBSecurityUpdates: true,
 	KindDBEOL:             true,
 	KindDockerGuard:       true,
@@ -21,10 +22,14 @@ var recommendationKinds = map[string]bool{
 	"node_agent":          true,
 }
 
-// ClassOf classifies one item. An enforce-mode guard denial and every
-// other unlisted kind is an incident.
+// DockerGuardWouldDenyHigh prefixes the guard item subject when the audit
+// window holds a would-be denial for a rule that means host-level power.
+const DockerGuardWouldDenyHigh = "would-deny:high"
+
+// ClassOf classifies one item. An enforce-mode guard denial, a high-risk
+// audit finding and every other unlisted kind is an incident.
 func ClassOf(kind, subject string) string {
-	if kind == KindDockerGuard && subject == "denied" {
+	if kind == KindDockerGuard && (subject == "denied" || strings.HasPrefix(subject, DockerGuardWouldDenyHigh)) {
 		return ClassIncident
 	}
 	if recommendationKinds[kind] {

@@ -1,4 +1,5 @@
 import { SelectedMark, selectableCardClass } from './ui/selectable-card'
+import { SectionTitle } from '@/components/ui/typography'
 import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { DatabaseGlassIcon, SearchGlassIcon } from '@thesvg/ui-react'
@@ -272,9 +273,7 @@ export function DatabasePicker({
           {family === 'all' ? (
             groups.map((g) => (
               <section key={g.family} className="space-y-2">
-                <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                  {t(FAMILY_KEYS[g.family])}
-                </h3>
+                <SectionTitle as="h3">{t(FAMILY_KEYS[g.family])}</SectionTitle>
                 <div data-grid className={gridClassName}>
                   {g.items.map(renderCard)}
                 </div>

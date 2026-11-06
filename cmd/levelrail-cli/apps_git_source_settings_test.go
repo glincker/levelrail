@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -106,6 +107,45 @@ func TestReportSummary(t *testing.T) {
 	for _, tt := range tests {
 		if got := reportSummary(tt.r); got != tt.want {
 			t.Errorf("reportSummary(%+v) = %q, want %q", tt.r, got, tt.want)
+		}
+	}
+}
+
+func TestRun_AppsGitSourceSettings_ExplainsAnUnreadableCISource(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		_, _ = w.Write([]byte(`{"error":"wait_for_ci needs a GitHub App or GitLab connection that can read this repository's CI status"}`))
+	}))
+	defer srv.Close()
+
+	for _, tc := range []struct {
+		name     string
+		args     []string
+		wantHint bool
+	}{
+		{"enabling the gate", []string{"--wait-for-ci"}, true},
+		{"a settings change that is not the gate", []string{"--report-status=false"}, false},
+	} {
+		var stdout, stderr bytes.Buffer
+		args := append([]string{"apps", "git-source", "settings", "web", "--token", "t", "--api-url", srv.URL}, tc.args...)
+		if got := run("levelrail-cli-test", args, &stdout, &stderr, envMap()); got == exitOK {
+			t.Fatalf("%s: exit = %d, want a failure", tc.name, got)
+		}
+		hinted := strings.Contains(stderr.String(), "SSH or plain http repository URL, Gitea, Bitbucket")
+		if hinted != tc.wantHint {
+			t.Errorf("%s: hint shown = %v, want %v (stderr = %q)", tc.name, hinted, tc.wantHint, stderr.String())
+		}
+	}
+}
+
+func TestRun_AppsGitSourceSettings_HelpNamesGitLabAndCheckNames(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	run("levelrail-cli-test", []string{"apps", "git-source", "settings", "--help"}, &stdout, &stderr, envMap())
+	help := stdout.String() + stderr.String()
+	for _, want := range []string{"GitHub and GitLab", "GitLab job name", "allow_failure"} {
+		if !strings.Contains(help, want) {
+			t.Errorf("help is missing %q:\n%s", want, help)
 		}
 	}
 }

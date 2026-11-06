@@ -65,6 +65,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_BUILD_NETWORK` | [`security.build_network`](/runtime-settings#security) | `open` |
 | `APP_WEBHOOK_REPLAY_PROTECTION` | [`security.webhook_replay_protection`](/runtime-settings#security) | `true` |
 | `APP_WEBHOOK_REPLAY_WINDOW` | [`security.webhook_replay_window`](/runtime-settings#security) | `10m` |
+| `APP_ATTENTION_TOKEN_WINDOW` | [`tokens.expiry_warning_days`](/runtime-settings#security) | `7` |
 | `APP_API_MAX_BODY_BYTES` | [`api.max_body_bytes`](/runtime-settings#networking) | `16777216` |
 | `APP_ASSETS_UPLOAD_MAX_BYTES` | [`assets.upload_max_bytes`](/runtime-settings#networking) | `1073741824` |
 | `APP_CUTOVER_VERIFY_CERT_FAIL_DAYS` | [`cutover.verify_cert_fail_days`](/runtime-settings#networking) | `7` |
@@ -96,6 +97,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_INGRESS_MAX_BODY_BYTES` | [`ingress.max_body_bytes`](/runtime-settings#networking) | `1073741824` |
 | `APP_PROXY_CERT_WAIT` | [`ingress.proxy_cert_wait`](/runtime-settings#networking) | `5m0s` |
 | `APP_INGRESS_TRUSTED_PROXY_PRESET` | [`ingress.trusted_proxy_preset`](/runtime-settings#networking) | `none` |
+| `APP_MESH_HUB_RESOLVE_TTL` | [`mesh.hub_resolve_ttl`](/runtime-settings#networking) | `5m` |
+| `APP_MESH_HUB_STALE_MAX` | [`mesh.hub_stale_max`](/runtime-settings#networking) | `24h` |
 | `APP_OIDC_LISTEN_PORT` | [`pipelines.oidc_listen_port`](/runtime-settings#networking) | `9095` |
 | `APP_TRUST_LOOPBACK_FORWARDED` | [`security.trust_loopback_forwarded_headers`](/runtime-settings#networking) | `true` |
 | `APP_BACKUP_LOCAL_ROOT` | [`backup.local_root`](/runtime-settings#deploys) | empty |
@@ -106,11 +109,16 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CONTAINERS_RESTART_POLICY` | [`containers.restart_policy`](/runtime-settings#deploys) | `unless-stopped` |
 | `APP_DATABASES_POOLER_DEFAULT` | [`databases.pooler_default`](/runtime-settings#deploys) | `off` |
 | `APP_PG_POOLER_IMAGE` | [`databases.pooler_image`](/runtime-settings#deploys) | `edoburu/pgbouncer:v1.26.1-p0` |
+| `APP_CI_GATE_MAX_WAITS_PER_APP` | [`deploy.ci_gate_max_waits_per_app`](/runtime-settings#deploys) | `4` |
 | `APP_DEPLOY_DRAIN_TIMEOUT` | [`deploy.drain_timeout`](/runtime-settings#deploys) | `15s` |
 | `APP_DEPLOY_MAX_CONCURRENT` | [`deploy.max_concurrent`](/runtime-settings#deploys) | `0` |
 | `APP_DEPLOY_PREVIOUS_RELEASE_HOLD` | [`deploy.previous_release_hold`](/runtime-settings#deploys) | `3m` |
+| `APP_DEPLOY_RECEIPT_APPROVAL_WINDOW` | [`deploy.receipt_approval_window`](/runtime-settings#deploys) | `15m` |
 | `APP_DEPLOY_STABLE_WINDOW` | [`deploy.stable_window`](/runtime-settings#deploys) | `10s` |
 | `APP_DEPLOY_WATCH_WINDOW` | [`deploy.watch_window`](/runtime-settings#deploys) | `5m` |
+| `APP_REGISTRY_PUSH_DEBOUNCE` | [`deploys.registry_push_debounce`](/runtime-settings#deploys) | `30s` |
+| `APP_REGISTRY_PUSH_MAX_BODY_BYTES` | [`deploys.registry_push_max_body_bytes`](/runtime-settings#deploys) | `262144` |
+| `APP_REGISTRY_PUSH_TIMEOUT` | [`deploys.registry_push_timeout`](/runtime-settings#deploys) | `5m` |
 | `APP_IMAGE_KEEP_PER_APP` | [`images.keep_per_app`](/runtime-settings#deploys) | `3` |
 | `APP_NEXTJS_GENERATE_ACTIONS_KEY` | [`nextjs.generate_actions_key`](/runtime-settings#deploys) | `true` |
 | `APP_PLACEMENT_SCORE_MODE` | [`placement.score_mode`](/runtime-settings#deploys) | `spread` |
@@ -122,6 +130,10 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_VOLUMES_TRANSFER_SPOOL_DIR` | [`volumes.transfer_spool_dir`](/runtime-settings#deploys) | `volume-transfer` |
 | `APP_VOLUMES_TRANSFER_TIMEOUT` | [`volumes.transfer_timeout`](/runtime-settings#deploys) | `30m` |
 | `APP_DISK_CRITICAL_FREE_MB` | [`disk.critical_free_mb`](/runtime-settings#observability) | `512` |
+| `APP_DISK_FORECAST_MIN_DAYS` | [`disk.forecast_min_days`](/runtime-settings#observability) | `7` |
+| `APP_DISK_FORECAST_WINDOW_DAYS` | [`disk.forecast_window_days`](/runtime-settings#observability) | `30` |
+| `APP_DISK_HISTORY_RETENTION_DAYS` | [`disk.history_retention_days`](/runtime-settings#observability) | `90` |
+| `APP_DISK_HISTORY_SAMPLE_INTERVAL` | [`disk.history_sample_interval`](/runtime-settings#observability) | `24h` |
 | `APP_DISK_LOW_FREE_MB` | [`disk.low_free_mb`](/runtime-settings#observability) | `1024` |
 | `APP_DISK_RESERVE_MB` | [`disk.reserve_mb`](/runtime-settings#observability) | `16` |
 | `APP_HEARTBEAT_JOB_BACKOFF_BASE` | [`heartbeat.job_backoff_base`](/runtime-settings#observability) | `2s` |
@@ -129,6 +141,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_HEARTBEAT_JOB_MAX_ATTEMPTS` | [`heartbeat.job_max_attempts`](/runtime-settings#observability) | `3` |
 | `APP_HEARTBEAT_JOB_QUEUE` | [`heartbeat.job_queue`](/runtime-settings#observability) | `64` |
 | `APP_MONITOR_RAW_RETENTION` | [`monitors.raw_retention`](/runtime-settings#observability) | `48h` |
+| `APP_STORAGE_LARGE_UNMANAGED_IMAGE_MB` | [`storage.large_unmanaged_image_mb`](/runtime-settings#observability) | `500` |
 | `APP_ACCESS_LOG_RETENTION` | [`telemetry.access_log_retention`](/runtime-settings#observability) | `8760h0m0s` |
 | `APP_LOG_BUDGET_MB` | [`telemetry.log_budget_mb`](/runtime-settings#observability) | `0` |
 | `APP_LOGS_RETENTION` | [`telemetry.logs_retention`](/runtime-settings#observability) | `360h` |
@@ -542,7 +555,7 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 | `APP_BRAND_SHORT_NAME` | computed | Short brand name the CLI uses for its server credentials key, lowercased. CLI. |
 | `APP_BRAND_BINARY_NAME` | computed | CLI binary name shown in help and install output. The MCP binary name is derived from it. CLI. |
 | `APP_BRAND_DOCS_URL` | computed | Base URL the deploy command uses for its launcher link, with /deploy.html appended. CLI. |
-| `APP_CHANGELOG_FILE` | ``./CHANGELOG.md`` | Path to the changelog shown in the what's-new panel. A missing file is not an error, and the panel is simply empty. Control plane. |
+| `APP_CHANGELOG_FILE` | ``./CHANGELOG.md`` | Path to the changelog shown in the what's-new panel. A missing file is not an error, and the panel is empty. Control plane. |
 | `APP_CLI_BINARY` | computed | Path to the CLI binary the control plane console runs. Unset looks for it next to the control plane binary, never on PATH. Control plane. |
 | `APP_AUDIT_ANCHOR_DIR` | computed | Local directory where audit log anchors, which are checkpoints of the audit log, are written. Control plane. |
 

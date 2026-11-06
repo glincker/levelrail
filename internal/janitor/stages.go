@@ -171,8 +171,8 @@ func (e *Engine) volumes(ctx context.Context, p Policy, dry, pressure bool, now 
 		if v.Mounted {
 			continue
 		}
-		if strings.HasPrefix(v.Name, "db-") {
-			res.Items = append(res.Items, Item{Name: v.Name, Detail: "database data is never removed automatically", SizeBytes: size, Action: ActionKept})
+		if prot, why := volumeProtected(v.Name); prot {
+			res.Items = append(res.Items, Item{Name: v.Name, Detail: why, SizeBytes: size, Action: ActionKept})
 			continue
 		}
 		first, quarantined := since[v.Name]
@@ -244,7 +244,12 @@ func (e *Engine) volumes(ctx context.Context, p Policy, dry, pressure bool, now 
 			res.Items = append(res.Items, item)
 		}
 	}
-	if pressure && !dry {
+	if pressure && !dry && !p.DeleteOrphanVolumes {
+		// Anonymous volumes can hold real data, so pressure never overrides the opt-in.
+		res.Items = append(res.Items, Item{Name: "anonymous volumes", Action: ActionKept,
+			Detail: "skipped under disk pressure: volume deletion is off"})
+	}
+	if pressure && !dry && p.DeleteOrphanVolumes {
 		pr, err := e.Docker.PruneAnonymousVolumes(ctx)
 		if err != nil {
 			res.Status, res.Error = StatusFailed, err.Error()

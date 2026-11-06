@@ -1,0 +1,56 @@
+{
+  "label": "Storage policy",
+  "needsAdmin": "Needs admin",
+  "applied": "Applied",
+  "save": "Save",
+  "saving": "Saving",
+  "cancel": "Cancel",
+  "close": "Close",
+  "range": "The server checks the allowed range when you save.",
+  "invalid": "Enter a whole number above zero.",
+  "invalidGb": "Enter a number of GB above zero.",
+  "cleanup": {
+    "title": "Automatic cleanup",
+    "on": "On",
+    "off": "Off",
+    "dryRun": "On, dry run",
+    "what": "Removes unused containers, images and build cache when free space runs low. Dry run only reports what it would remove.",
+    "enabled": "Clean up automatically",
+    "dryRunField": "Dry run only",
+    "budget": "Start cleanup below this free space",
+    "budgetUnit": "% of the disk free",
+    "budgetValue": "below {{percent}}% free"
+  },
+  "keepImages": {
+    "title": "Keep last images per app",
+    "value_one": "{{count}} image per app",
+    "value_other": "{{count}} images per app",
+    "field": "Images to keep",
+    "unit": "images per app",
+    "what": "Older images of each app are removed by image cleanup. Live images and rollback pins are always kept."
+  },
+  "cacheAge": {
+    "title": "Build cache max age",
+    "hours_one": "{{count}} hour",
+    "hours_other": "{{count}} hours",
+    "days_one": "{{count}} day",
+    "days_other": "{{count}} days",
+    "field": "Maximum age",
+    "unit": "hours",
+    "what": "Build cache older than this is removed by automatic cleanup."
+  },
+  "lowDisk": {
+    "title": "Low disk warning",
+    "value": "below {{gb}} GB free",
+    "field": "Warn below",
+    "unit": "GB free",
+    "what": "Raises a low disk warning and alert when free space drops under this."
+  },
+  "criticalDisk": {
+    "title": "Critical disk threshold",
+    "value": "below {{gb}} GB free",
+    "field": "Critical below",
+    "unit": "GB free",
+    "what": "Builds, image pulls and backups are refused below this free space."
+  }
+}

@@ -10,8 +10,11 @@ import (
 
 // removeExistingVolumes removes the named volumes that exist on the control
 // plane's own node. A volume already gone counts as clean, so a retried
-// teardown converges. Returns the names it could not remove.
-func (rt *Router) removeExistingVolumes(ctx context.Context, names []string) []string {
+// teardown converges. Returns the names it could not remove, including locked
+// database volumes, so no caller reports success for a volume it kept.
+// teardownDB is true only for tearing down a database itself, which owns its
+// db- volumes and must not be stopped by the lock.
+func (rt *Router) removeExistingVolumes(ctx context.Context, names []string, teardownDB bool) []string {
 	if rt.orphanedVolumes == nil || len(names) == 0 {
 		return nil
 	}
@@ -27,6 +30,11 @@ func (rt *Router) removeExistingVolumes(ctx context.Context, names []string) []s
 	var failed []string
 	for _, n := range names {
 		if !present[n] {
+			continue
+		}
+		if prot, _ := rt.volumeLock(n); prot && !teardownDB {
+			rt.logger.Warn("api: preview cleanup: database volume kept", slog.String("volume", n))
+			failed = append(failed, "volume:"+n+" (locked)")
 			continue
 		}
 		if err := rt.orphanedVolumes.RemoveVolume(ctx, n); err != nil {

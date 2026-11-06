@@ -1,0 +1,61 @@
+{
+  "title": "Almacenamiento",
+  "subtitle": "Lo que Docker guarda en disco para tus apps y lo que se puede liberar sin riesgo.",
+  "node": {
+    "label": "Nodo",
+    "local": "Este servidor",
+    "partial": "Por ahora solo se mide el tamaño de las imágenes de este nodo.",
+    "unsupportedTitle": "Este nodo aún no es compatible",
+    "unsupported": "Levelrail todavía no puede leer el almacenamiento de este nodo. No se cambia nada.",
+    "retry": "Comprobar de nuevo"
+  },
+  "engine": {
+    "title": "Motor y firmas"
+  },
+  "verdict": {
+    "space": "{{free}} libres de {{total}}.",
+    "health": {
+      "healthy": "Bien",
+      "low": "Poco espacio",
+      "critical": "Crítico"
+    },
+    "safe": "Se pueden quitar {{size}} sin riesgo.",
+    "nothingSafe": "No hace falta quitar nada.",
+    "forecast_one": "Se llenará en unos {{count}} día al ritmo actual.",
+    "forecast_other": "Se llenará en unos {{count}} días al ritmo actual."
+  },
+  "disk": {
+    "label": "Uso del disco",
+    "legend": "Filtrar por categoría",
+    "unmeasured": "Sin medir",
+    "segmentLabel": "{{name}}, {{size}}",
+    "filterLabel": "Filtro: {{name}}",
+    "categories": {
+      "appData": "Datos de apps",
+      "images": "Imágenes",
+      "buildCache": "Caché de builds",
+      "containersLogs": "Contenedores y logs",
+      "other": "Otros",
+      "free": "Libre"
+    },
+    "meaning": {
+      "appData": "Volúmenes y bases de datos de tus apps. Nunca se quitan solos.",
+      "images": "Imágenes Docker de tus despliegues. Las viejas y sin uso se pueden quitar.",
+      "buildCache": "Capas que aceleran los builds. Se pueden borrar, el siguiente build solo tarda más.",
+      "containersLogs": "Contenedores detenidos y sus archivos de log.",
+      "other": "Todo lo demás del disco, fuera de Levelrail."
+    },
+    "tip": {
+      "sizeShare": "{{size}}, {{share}} del disco",
+      "reclaimable": "Se pueden quitar {{size}} sin riesgo",
+      "nothingToFree": "Nada que quitar"
+    }
+  },
+  "actions": {
+    "terminal": "Ejecutar en una terminal",
+    "review": "Revisar limpieza"
+  },
+  "errors": {
+    "status": "No se pudo leer el uso del disco ahora."
+  }
+}

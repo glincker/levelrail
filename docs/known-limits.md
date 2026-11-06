@@ -1,5 +1,7 @@
 # Known limits
 
+Last updated 2026-11-05 (v0.9.1).
+
 Current limits, each with the page it comes from. Labels and evidence change with every release, so check [feature status](feature-status.md) for the latest.
 
 ## Release maturity

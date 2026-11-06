@@ -1,4 +1,12 @@
 {
+  "deployNote": {
+    "queueLabel": "Sobre la cola",
+    "queueBody": "Los despliegues de una app se ejecutan de uno en uno. Este empieza solo cuando termina o se cancela el que tiene delante."
+  },
+  "statusReasons": {
+    "about": "Qué significa este motivo",
+    "next": "Siguiente paso:"
+  },
   "deployHistory": {
     "filters": {
       "search": "Buscar mensaje, commit, autor",
@@ -380,7 +388,7 @@
       "settings": "Ajustes",
       "help": "Ayuda",
       "functions": "Funciones",
-      "images": "Imágenes",
+      "storage": "Almacenamiento",
       "assets": "Recursos estáticos",
       "mail": "Correo",
       "resource-advisor": "Asesor de recursos",
@@ -1313,5 +1321,9 @@
     "jumpTo": "Ir a",
     "onThisPage": "En esta página",
     "retry": "Reintentar"
+  },
+  "roleGate": {
+    "needsAdmin": "Requiere administrador",
+    "needsOperator": "Requiere operador"
   }
 }

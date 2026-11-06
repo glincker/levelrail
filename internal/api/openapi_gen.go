@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1971 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1976 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -174,6 +174,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/apps/{name}/cdn", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePutAppCDN", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/cdn/resync", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleResyncAppCDN", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/changes", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppChanges", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/ci/templates", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetCITemplates", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/ci/trusts", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListCITrusts", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/ci/trusts", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCreateCITrust", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/ci/trusts/{id}", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteCITrust", Description: ""},
@@ -202,6 +203,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/apps/{name}/deploy-safety", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePutDeploySafety", Description: "Deploy tier, like auto-rollback: these thresholds decide when a release takes traffic and when it is rolled back."},
 	{Method: "POST", Path: "/api/v1/apps/{name}/deploy-spec", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeploySpec", Description: "Multi-service fan-out (handleDeploySpec's own doc comment, apps_multi.go): one app.yaml's services: map, built and deployed as N independent services under one store.App named {name}. Same AbilityDeploy boundary as the manual build trigger above: this also ultimately writes desired state."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/deployments/{id}/preview", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetPreviewImage", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/deployments/{id}/receipt", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetDeployReceipt", Description: "Deploy receipt (deploy_receipt.go): one unsigned JSON or markdown record of a deploy with its commit, image digest, requester, approver and gate timeline. AbilityRead on the app."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/deployments/{id}/sbom", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetSBOM", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/deployments/{id}/scan", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleScanDeployment", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/deployments/{id}/secret-scan", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetDeploymentSecretScan", Description: ""},
@@ -1654,6 +1656,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/status-page/webhooks/{id}/resume", Ability: "AbilityWrite", Group: "Other", Handler: "handleResumeStatusWebhook", Description: ""},
 	{Method: "POST", Path: "/api/v1/status-page/webhooks/{id}/rotate", Ability: "AbilityWrite", Group: "Other", Handler: "handleRotateStatusWebhook", Description: ""},
 	{Method: "POST", Path: "/api/v1/status-page/webhooks/{id}/test", Ability: "AbilityWrite", Group: "Other", Handler: "handleTestStatusWebhook", Description: ""},
+	{Method: "GET", Path: "/api/v1/status-reasons", Ability: "AbilityRead", Group: "Other", Handler: "handleListStatusReasons", Description: ""},
 	{Method: "GET", Path: "/api/v1/storage/buckets", Ability: "AbilityRead", Group: "Other", Handler: "handleListStorageBuckets", Description: ""},
 	{Method: "POST", Path: "/api/v1/storage/buckets", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreateStorageBucket", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/storage/buckets/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDeleteStorageBucket", Description: ""},
@@ -1910,6 +1913,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/system/control-plane-dr/settings", Ability: "AbilityWriteSensitive", Group: "System", Handler: "handleUpdateControlPlaneDR", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/control-plane-health", Ability: "AbilityRead", Group: "System", Handler: "handleGetCPHealth", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/control-plane-health/fix", Ability: "AbilityRoot", Group: "System", Handler: "handleCPHealthFix", Description: "Checkpointing and ANALYZE briefly hold the single database connection, so AbilityRoot."},
+	{Method: "GET", Path: "/api/v1/system/disk/history", Ability: "AbilityRead", Group: "System", Handler: "handleDiskHistory", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/docker-guard", Ability: "AbilityRead", Group: "System", Handler: "handleGetDockerGuard", Description: "Docker API guard status (Security settings page): AbilityRead like system/doctor."},
 	{Method: "PUT", Path: "/api/v1/system/docker-guard", Ability: "AbilityRoot", Group: "System", Handler: "handleUpdateDockerGuard", Description: "Switching modes changes the host-protection boundary, so AbilityRoot."},
 	{Method: "GET", Path: "/api/v1/system/doctor", Ability: "AbilityRead", Group: "System", Handler: "handleSystemDoctor", Description: "Doctor (levelrail-cli doctor): a superset preflight bundle of the same individual checks above, plus a few doctor-only ones (data dir writability, ingress port availability, SQLite reachability), AbilityRead like system/status above."},
@@ -1953,6 +1957,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/system/server-address", Ability: "AbilityRoot", Group: "System", Handler: "handleSetServerAddress", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/shield/bots", Ability: "AbilityRead", Group: "System", Handler: "handleShieldBotList", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/status", Ability: "AbilityRead", Group: "System", Handler: "handleSystemStatus", Description: "System status (General settings page): configured/not-configured signals plus disk usage, AbilityRead like everything else an authenticated operator can passively view."},
+	{Method: "GET", Path: "/api/v1/system/storage/inventory", Ability: "AbilityRead", Group: "System", Handler: "handleStorageInventory", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/volumes/orphaned", Ability: "AbilityRead", Group: "System", Handler: "handleListOrphanedVolumes", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/volumes/orphaned/cleanup", Ability: "AbilityRoot", Group: "System", Handler: "handleCleanupOrphanedVolumes", Description: ""},
 	{Method: "GET", Path: "/api/v1/updates", Ability: "AbilityRead", Group: "System", Handler: "handleGetUpdates", Description: "Updates (Settings > Updates page): running version vs. GitHub's latest published release, AbilityRead like system/status above."},

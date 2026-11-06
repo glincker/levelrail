@@ -102,6 +102,20 @@ describe('SectionNav', () => {
   })
 })
 
+describe('SectionNav icons', () => {
+  it('renders a decorative icon before the label', () => {
+    wrap(
+      <SectionNav
+        items={[{ id: 'one', label: 'One', icon: <svg data-testid="ic" /> }]}
+        active="one"
+        onNavigate={vi.fn()}
+      />,
+    )
+    const ic = screen.getByTestId('ic')
+    expect(ic.parentElement?.getAttribute('aria-hidden')).toBe('true')
+  })
+})
+
 describe('SettingsLayout', () => {
   it('follows the intersecting section', () => {
     wrap(
@@ -120,6 +134,23 @@ describe('SettingsLayout', () => {
     expect(
       screen.getByRole('link', { name: 'Two' }).getAttribute('aria-current'),
     ).toBe('true')
+  })
+
+  it('clips the shell main only while mounted', () => {
+    const main = document.createElement('main')
+    document.body.appendChild(main)
+    const view = render(
+      <AllI18n>
+        <SettingsLayout sections={items}>
+          <p>x</p>
+        </SettingsLayout>
+      </AllI18n>,
+      { container: main.appendChild(document.createElement('div')) },
+    )
+    expect(main.classList.contains('overflow-y-clip!')).toBe(true)
+    view.unmount()
+    expect(main.classList.contains('overflow-y-clip!')).toBe(false)
+    main.remove()
   })
 
   it('renders section children', () => {
