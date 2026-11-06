@@ -3,10 +3,12 @@ package api
 import (
 	"encoding/csv"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestAuditLogRoute_SearchAndFailed(t *testing.T) {
@@ -65,5 +67,63 @@ func TestAuditLogRoute_SearchAndFailed(t *testing.T) {
 
 	if rec := get("?status=bogus"); rec.Code != http.StatusBadRequest {
 		t.Errorf("status=bogus code = %d, want 400", rec.Code)
+	}
+}
+
+func TestAuditLogRoute_SinceUntilActor(t *testing.T) {
+	t.Parallel()
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seed := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(seed, authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{"name":"web","image":"levelrail/web:1","port":3000}`))
+
+	get := func(query string) *httptest.ResponseRecorder {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/audit-log"+query, ""))
+		return rec
+	}
+	count := func(query string) int {
+		t.Helper()
+		r := get(query)
+		if r.Code != http.StatusOK {
+			t.Fatalf("%s: status %d: %s", query, r.Code, r.Body.String())
+		}
+		var out []auditLogEntryResource
+		if err := json.Unmarshal(r.Body.Bytes(), &out); err != nil {
+			t.Fatal(err)
+		}
+		return len(out)
+	}
+	if count("?since=2000-01-01T00:00:00Z") == 0 {
+		t.Error("since in the past should keep the new entry")
+	}
+	if count("?since=2999-01-01T00:00:00Z") != 0 {
+		t.Error("since in the future should keep nothing")
+	}
+	if count("?until=2000-01-01T00:00:00Z") != 0 {
+		t.Error("until in the past should keep nothing")
+	}
+	if count("?actor=nobody-here") != 0 {
+		t.Error("unknown actor should keep nothing")
+	}
+	if get("?since=yesterday").Code != http.StatusBadRequest {
+		t.Error("bad since should be 400")
+	}
+	if get("/verify?from=x").Code != http.StatusBadRequest {
+		t.Error("bad verify range should be 400")
+	}
+	if get("/verify?from=9&to=3").Code != http.StatusBadRequest {
+		t.Error("inverted verify range should be 400")
+	}
+	rt.Handler().ServeHTTP(httptest.NewRecorder(), authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{not json`))
+	for i := 0; i < 50 && count("?status=failed") == 0; i++ {
+		time.Sleep(20 * time.Millisecond)
+	}
+	failed := count("?status=failed")
+	if got := get(fmt.Sprintf("?format=csv&status=failed&limit=%d", failed)); got.Header().Get("X-Audit-Truncated") != "" {
+		t.Error("a csv page holding every matching row must not be marked truncated")
+	}
+	if got := get("?format=csv&limit=1"); got.Header().Get("X-Audit-Truncated") != "true" {
+		t.Error("a csv page with a further row must be marked truncated")
 	}
 }

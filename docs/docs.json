@@ -288,6 +288,7 @@
               "data-export",
               "traffic-export",
               "audit-event-schema",
+              "audit-log",
               "control-plane-backup",
               "whole-server-recovery",
               "archives",

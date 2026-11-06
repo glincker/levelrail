@@ -3,6 +3,7 @@ package mcptools
 import (
 	"context"
 	"net/http"
+	"slices"
 	"strings"
 	"testing"
 
@@ -50,6 +51,12 @@ func TestInterfaceExtraTools(t *testing.T) {
 	}
 	if out := call("verify_audit_log", nil); !strings.Contains(out, `"ok":true`) {
 		t.Errorf("verify_audit_log = %s", out)
+	}
+	if out := call("verify_audit_log", map[string]any{"from": 100, "to": 200}); !strings.Contains(out, `"ok":true`) {
+		t.Errorf("ranged verify_audit_log = %s", out)
+	}
+	if !slices.Contains(paths, "/api/v1/audit-log/verify?from=100&to=200") {
+		t.Errorf("verify range not forwarded: %v", paths)
 	}
 	if out := call("get_cdn_overview", map[string]any{"window": "1h"}); !strings.Contains(out, `"window":"1h"`) {
 		t.Errorf("get_cdn_overview = %s", out)

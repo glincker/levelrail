@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Input } from '@/components/ui/input'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
@@ -19,9 +19,13 @@ import {
   SelectValue,
 } from '../../components/ui/select'
 import {
+  AUDIT_LOG_EXPORT_LIMIT,
   auditLogExportURL,
   auditLogQueryOptions,
   fetchAuditLog,
+  isAuditRange,
+  sinceForRange,
+  type AuditRange,
   CLIENT_KIND_LABELS,
   CLIENT_KIND_OPTIONS,
   type AuditLogEntry,
@@ -31,6 +35,8 @@ import { PurgeAuditLogDialog } from '../../components/PurgeAuditLogDialog'
 import { AuditIntegrityBadge } from '../../components/AuditIntegrityBadge'
 import { AuditAnchorCard } from '../../components/AuditAnchorCard'
 import { AuditLogTable } from '../../components/AuditLogTable'
+import { AuditFilterBar } from '../../components/audit/AuditFilterBar'
+import { AuditVerifySheet } from '../../components/audit/AuditVerifySheet'
 import { AgentFilterChips } from '../../components/AgentFilterChips'
 import { collectAgentNames } from '../../lib/agentNames'
 import { tokenListQueryOptions } from '../../queries/tokens'
@@ -57,7 +63,21 @@ const SEARCH_DEBOUNCE_MS = 300
 export const Route = createFileRoute('/settings/audit-log')({
   validateSearch: (
     search: Record<string, unknown>,
-  ): { agent?: string; action?: string; path?: string } => ({
+  ): {
+    agent?: string
+    action?: string
+    path?: string
+    range?: AuditRange
+    actor?: string
+    method?: string
+  } => ({
+    ...(isAuditRange(search.range) ? { range: search.range } : {}),
+    ...(typeof search.actor === 'string' && search.actor !== ''
+      ? { actor: search.actor }
+      : {}),
+    ...(typeof search.method === 'string' && search.method !== ''
+      ? { method: search.method }
+      : {}),
     ...(typeof search.agent === 'string' && search.agent !== ''
       ? { agent: search.agent }
       : {}),
@@ -88,7 +108,13 @@ function ExportAuditLogLink({
   agent,
   action,
   path,
+  since,
+  actor,
+  method,
 }: {
+  since?: string
+  actor?: string
+  method?: string
   clientKind?: string
   search?: string
   failedOnly?: boolean
@@ -96,6 +122,7 @@ function ExportAuditLogLink({
   action?: string
   path?: string
 }) {
+  const { t } = useTranslation('auditLog')
   return (
     <a
       href={auditLogExportURL({
@@ -105,12 +132,15 @@ function ExportAuditLogLink({
         agent,
         action,
         path,
+        since,
+        actor,
+        method,
       })}
       download
       className={buttonVariants({ variant: 'outline', size: 'sm' })}
     >
       <DownloadGlassIcon className="size-5" aria-hidden="true" />
-      Export CSV
+      {t('filters.exportCsv', { count: AUDIT_LOG_EXPORT_LIMIT })}
     </a>
   )
 }
@@ -129,7 +159,16 @@ function AuditLogSettingsPage() {
     agent: agentFromLink,
     action: actionFromLink,
     path: pathFromLink,
+    range: rangeFromLink,
+    actor: actorFromLink,
+    method: methodFromLink,
   } = Route.useSearch()
+  const navigate = Route.useNavigate()
+  const [range, setRange] = useState<AuditRange | undefined>(rangeFromLink)
+  const [actor, setActor] = useState(actorFromLink ?? '')
+  const [method, setMethod] = useState<string | undefined>(methodFromLink)
+  // Pinned when the range is chosen so list, paging and export share one window.
+  const since = useMemo(() => sinceForRange(range), [range])
   const [agentFilter, setAgentFilter] = useState<string | undefined>(
     agentFromLink,
   )
@@ -156,6 +195,15 @@ function AuditLogSettingsPage() {
   const [exhausted, setExhausted] = useState(initial.length < AUDIT_PAGE_SIZE)
 
   const debouncedSearch = useDebouncedValue(search.trim(), SEARCH_DEBOUNCE_MS)
+  const debouncedActor = useDebouncedValue(actor.trim(), SEARCH_DEBOUNCE_MS)
+  const activeActor = debouncedActor === '' ? undefined : debouncedActor
+
+  useEffect(() => {
+    void navigate({
+      search: (prev) => ({ ...prev, range, actor: activeActor, method }),
+      replace: true,
+    })
+  }, [navigate, range, activeActor, method])
 
   const activeClientKind =
     clientKindFilter === ALL_CLIENT_KINDS ? undefined : clientKindFilter
@@ -166,7 +214,10 @@ function AuditLogSettingsPage() {
     failedOnly ||
     agentFilter !== undefined ||
     actionFilter !== undefined ||
-    pathFilter !== undefined
+    pathFilter !== undefined ||
+    range !== undefined ||
+    activeActor !== undefined ||
+    method !== undefined
 
   // Server-driven: any filter change refetches the first page. The first
   // run is skipped because the route loader already supplied it, unless a
@@ -174,7 +225,10 @@ function AuditLogSettingsPage() {
   const firstRun = useRef(
     agentFromLink === undefined &&
       actionFromLink === undefined &&
-      pathFromLink === undefined,
+      pathFromLink === undefined &&
+      rangeFromLink === undefined &&
+      actorFromLink === undefined &&
+      methodFromLink === undefined,
   )
   useEffect(() => {
     if (firstRun.current) {
@@ -191,6 +245,9 @@ function AuditLogSettingsPage() {
       agent: agentFilter,
       action: actionFilter,
       path: pathFilter,
+      since: since,
+      actor: activeActor,
+      method,
     })
       .then((next) => {
         if (cancelled) return
@@ -216,6 +273,9 @@ function AuditLogSettingsPage() {
     agentFilter,
     actionFilter,
     pathFilter,
+    since,
+    activeActor,
+    method,
   ])
 
   async function handleLoadMore() {
@@ -232,6 +292,9 @@ function AuditLogSettingsPage() {
         agent: agentFilter,
         action: actionFilter,
         path: pathFilter,
+        since: since,
+        actor: activeActor,
+        method,
       })
       setEntries((prev) => [...prev, ...next])
       if (next.length < AUDIT_PAGE_SIZE) {
@@ -280,6 +343,7 @@ function AuditLogSettingsPage() {
             </SelectContent>
           </Select>
           <AuditIntegrityBadge />
+          <AuditVerifySheet />
           <PurgeAuditLogDialog />
           {entries.length > 0 ? (
             <ExportAuditLogLink
@@ -289,6 +353,9 @@ function AuditLogSettingsPage() {
               agent={agentFilter}
               action={actionFilter}
               path={pathFilter}
+              since={since}
+              actor={activeActor}
+              method={method}
             />
           ) : null}
         </>
@@ -304,6 +371,14 @@ function AuditLogSettingsPage() {
           placeholder={t('filters.searchPlaceholder')}
           aria-label={t('filters.searchLabel')}
           className="max-w-xs"
+        />
+        <AuditFilterBar
+          value={{ range, actor, method }}
+          onChange={(next) => {
+            setRange(next.range)
+            setActor(next.actor)
+            setMethod(next.method)
+          }}
         />
         <Button
           type="button"

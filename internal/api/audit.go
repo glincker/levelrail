@@ -286,6 +286,22 @@ func parseAuditLogQuery(w http.ResponseWriter, r *http.Request) (limit int, befo
 		AgentName:  strings.TrimSpace(r.URL.Query().Get("agent")),
 		Action:     strings.TrimSpace(r.URL.Query().Get("action")),
 	}
+	filter.Actor = strings.TrimSpace(r.URL.Query().Get("actor"))
+	for _, p := range []struct {
+		name string
+		dst  *time.Time
+	}{{"since", &filter.Since}, {"until", &filter.Until}} {
+		raw := r.URL.Query().Get(p.name)
+		if raw == "" {
+			continue
+		}
+		t, err := time.Parse(time.RFC3339, raw)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, p.name+" must be an RFC3339 timestamp")
+			return 0, nil, store.AuditEntryFilter{}, false
+		}
+		*p.dst = t
+	}
 	switch status := r.URL.Query().Get("status"); status {
 	case "":
 	case "failed":
@@ -310,7 +326,8 @@ func parseAuditLogQuery(w http.ResponseWriter, r *http.Request) (limit int, befo
 // maxAuditLogLimit. ?path and ?method narrow to one resource's own
 // trail (e.g. an app's config-change history), both exact match.
 // ?client_kind narrows to one caller surface (cli/dashboard/mcp/api), also
-// exact match. ?q is a case-insensitive substring search across actor
+// exact match. ?since (inclusive) and ?until (exclusive) bound created_at as
+// RFC3339 timestamps; ?actor matches the actor name exactly. ?q is a case-insensitive substring search across actor
 // name, ability, method, path and remote address; ?status=failed keeps only
 // status_code >= 400. ?format=csv returns the same rows as a CSV download instead of JSON,
 // for compliance/record-keeping export; the row shape is identical to
@@ -322,14 +339,23 @@ func (rt *Router) handleListAuditLog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	entries, err := rt.auditLog.ListAuditEntries(r.Context(), limit, before, filter)
+	isCSV := r.URL.Query().Get("format") == "csv"
+	fetch := limit
+	if isCSV {
+		fetch++
+	}
+	entries, err := rt.auditLog.ListAuditEntries(r.Context(), fetch, before, filter)
 	if err != nil {
 		rt.internalError(w, "api: list audit log failed", err)
 		return
 	}
 
-	if r.URL.Query().Get("format") == "csv" {
-		rt.writeAuditLogCSV(w, entries)
+	if isCSV {
+		truncated := len(entries) > limit
+		if truncated {
+			entries = entries[:limit]
+		}
+		rt.writeAuditLogCSV(w, entries, truncated)
 		return
 	}
 
@@ -353,7 +379,10 @@ var auditLogCSVHeader = []string{
 // byte slice first; the status line is committed before any row is
 // written, so a mid-write failure can only be logged, not turned into an
 // error response.
-func (rt *Router) writeAuditLogCSV(w http.ResponseWriter, entries []store.AuditEntry) {
+func (rt *Router) writeAuditLogCSV(w http.ResponseWriter, entries []store.AuditEntry, truncated bool) {
+	if truncated {
+		w.Header().Set("X-Audit-Truncated", "true")
+	}
 	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
 	w.Header().Set("Content-Disposition", `attachment; filename="audit-log.csv"`)
 	w.WriteHeader(http.StatusOK)
