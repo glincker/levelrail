@@ -74,6 +74,11 @@ func TestRun_AuditVerifyRangeWarnsAboutBreaksElsewhere(t *testing.T) {
 }
 
 func fakeAuditCSVServer(total int) *httptest.Server {
+	return fakeAuditCSVServerWith(total, true, false)
+}
+
+// fakeAuditCSVServerWith can mimic a server that never sends X-Audit-Truncated, or one whose rows all share a timestamp.
+func fakeAuditCSVServerWith(total int, sendTruncated, oneTimestamp bool) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		before, _ := time.Parse(time.RFC3339Nano, r.URL.Query().Get("before"))
 		limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
@@ -86,6 +91,9 @@ func fakeAuditCSVServer(total int) *httptest.Server {
 		for i := total; i >= 1; i-- {
 			// Pairs of rows share a timestamp, so one straddles every even page boundary.
 			at := base.Add(time.Duration(i/2) * time.Second)
+			if oneTimestamp {
+				at = base
+			}
 			if !before.IsZero() && !at.Before(before) {
 				continue
 			}
@@ -96,7 +104,7 @@ func fakeAuditCSVServer(total int) *httptest.Server {
 			rows = append(rows, []string{fmt.Sprint("aud_", i), "", "", "", "", "", "", "", "", at.Format("2006-01-02T15:04:05.000000000Z"), ""})
 		}
 		w.Header().Set("Content-Type", "text/csv")
-		if more {
+		if more && sendTruncated {
 			w.Header().Set("X-Audit-Truncated", "true")
 		}
 		cw := csv.NewWriter(w)
@@ -127,6 +135,37 @@ func TestRun_AuditLogCSVPagesWithoutLosingTiedRows(t *testing.T) {
 	}
 	if len(seen) != total {
 		t.Errorf("rows = %d, want %d", len(seen), total)
+	}
+}
+
+func TestRun_AuditLogCSVPagesAgainstServerWithoutTruncatedHeader(t *testing.T) {
+	const total = 450
+	srv := fakeAuditCSVServerWith(total, false, false)
+	defer srv.Close()
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"audit-log", "--api-url", srv.URL, "--export", "csv"}, &stdout, &stderr, envMap())
+	if got != exitOK {
+		t.Fatalf("exit = %d, stderr=%q", got, stderr.String())
+	}
+	recs, err := csv.NewReader(&stdout).ReadAll()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(recs)-1 != total {
+		t.Errorf("rows = %d, want %d (an old server sends no truncation header)", len(recs)-1, total)
+	}
+}
+
+func TestRun_AuditLogCSVFailsWhenTimestampTieCannotAdvance(t *testing.T) {
+	srv := fakeAuditCSVServerWith(450, false, true)
+	defer srv.Close()
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"audit-log", "--api-url", srv.URL, "--export", "csv"}, &stdout, &stderr, envMap())
+	if got == exitOK {
+		t.Fatalf("exit = 0, want non-zero when the export is incomplete (stderr=%q)", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "export incomplete") {
+		t.Errorf("stderr = %q", stderr.String())
 	}
 }
 

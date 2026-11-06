@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/csv"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -247,14 +248,15 @@ func downloadAllAuditCSV(ctx context.Context, client *Client, opts listAuditLogO
 				added++
 			}
 		}
+		// Servers before X-Audit-Truncated never send it, so a full page also means "maybe more".
+		more = more || len(recs)-1 == auditCSVPageSize
 		if !more || len(recs) < 2 {
 			break
 		}
 		last := recs[len(recs)-1]
 		at, perr := time.Parse(time.RFC3339Nano, last[auditCSVTimeColumn])
 		if perr != nil || added == 0 {
-			_, _ = fmt.Fprintln(stderr, "warning: output truncated: could not advance past a page of rows sharing one timestamp")
-			break
+			return nil, errors.New("export incomplete: could not advance past a page of rows sharing one timestamp")
 		}
 		// One nanosecond past the last row re-reads rows tied with it; seen drops the repeats.
 		opts.Before = at.Add(time.Nanosecond).UTC().Format(time.RFC3339Nano)
