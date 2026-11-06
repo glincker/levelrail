@@ -351,6 +351,50 @@
         "costs": "Cost explorer"
       }
     },
+    "navTabs": {
+      "group": {
+        "apps": "Apps sections",
+        "pipelines": "Pipeline sections",
+        "databases": "Database sections",
+        "storage": "Storage sections",
+        "domains": "Domain sections",
+        "traffic": "Traffic sections",
+        "servers": "Server sections",
+        "registry": "Registry sections",
+        "cost": "Usage and cost sections",
+        "security": "Security sections"
+      },
+      "tab": {
+        "apps": "Apps",
+        "projects": "Projects",
+        "templates": "Templates",
+        "pipelines": "Pipelines",
+        "approvals": "Approvals",
+        "databases": "Databases",
+        "backups": "Backups",
+        "storage": "Overview",
+        "assets": "Assets",
+        "networkShares": "Network shares",
+        "domains": "Domains",
+        "dns": "DNS",
+        "mail": "Mail",
+        "proxy": "Proxy",
+        "loadBalancers": "Load balancers",
+        "cdn": "CDN",
+        "firewall": "Firewall",
+        "nodes": "Nodes",
+        "providers": "Cloud providers",
+        "images": "Images",
+        "registry": "Registry",
+        "credentials": "Credentials",
+        "usage": "Usage",
+        "costs": "Costs",
+        "advisor": "Resource advisor",
+        "resources": "Resources",
+        "security": "Security center",
+        "iam": "IAM policies"
+      }
+    },
     "pins": {
       "group": "Pinned",
       "pin": "Pin {{label}}",

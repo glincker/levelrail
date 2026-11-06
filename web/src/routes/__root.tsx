@@ -18,6 +18,7 @@ import { ThemeProvider } from '../components/ThemeProvider'
 import { PreferencesApplier } from '../components/account/PreferencesApplier'
 import { AppearanceSyncApplier } from '../components/account/AppearanceSyncApplier'
 import { AppHeader } from '../components/shell/AppHeader'
+import { NavTabStrip } from '../components/shell/NavTabStrip'
 import { ShellBanner } from '../components/shell/ShellBanner'
 import { MAIN_CONTENT_ID, SkipLink } from '../components/shell/SkipLink'
 import { DeviceLoginBanner } from '../components/attention/DeviceLoginBanner'
@@ -205,6 +206,9 @@ function AppShell() {
         >
           <div className="mx-auto w-full min-w-0 max-w-(--glinr-content-max) has-[[data-page-width=full]]:max-w-none has-[[data-page-width=wide]]:max-w-(--glinr-content-max-wide)">
             <div className="mb-4 empty:hidden"></div>
+            <div className="mb-4 border-b border-border empty:hidden">
+              <NavTabStrip />
+            </div>
             <React.Suspense fallback={<DelayedFallback />}>
               <Outlet />
             </React.Suspense>

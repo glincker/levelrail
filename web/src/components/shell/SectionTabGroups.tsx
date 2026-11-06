@@ -6,6 +6,7 @@ import {
   type PlatformTabTo,
 } from '@/lib/platformSettingsIndex'
 import { matchesPrefix } from './navModel'
+import { NavTabStrip } from './NavTabStrip'
 
 /** Deploys, Timeline and Builds share one sidebar entry; each stays its own route. */
 export function DeploymentsSectionTabs() {
@@ -35,27 +36,9 @@ export function DeploymentsSectionTabs() {
   )
 }
 
-/** Usage and the cost explorer share one sidebar entry. */
+/** Usage, costs, advisor and resources share one sidebar entry. */
 export function CostSectionTabs() {
-  const { t } = useTranslation()
-  const pathname = useRouterState({ select: (s) => s.location.pathname })
-  return (
-    <SectionTabs
-      ariaLabel={t('shell.sectionTabs.cost.label')}
-      items={[
-        {
-          to: '/usage',
-          label: t('shell.sectionTabs.cost.usage'),
-          active: matchesPrefix(pathname, '/usage'),
-        },
-        {
-          to: '/costs',
-          label: t('shell.sectionTabs.cost.costs'),
-          active: matchesPrefix(pathname, '/costs'),
-        },
-      ]}
-    />
-  )
+  return <NavTabStrip groupId="cost" />
 }
 
 /** Platform settings pages share one sidebar entry; the overview is exact so it is not lit on its children. */

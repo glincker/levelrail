@@ -1,4 +1,4 @@
-import { useEffect, useId, useState, type KeyboardEvent } from 'react'
+import { Fragment, useEffect, useId, useState, type KeyboardEvent } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
 import { PinGlassIcon } from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
@@ -27,6 +27,7 @@ import {
   isGlobalItemActive,
   isItemDisclosed,
   itemBadgeCount,
+  FOLDED_GLOBAL_PAGES,
   linkTarget,
   pinnedGlobalItems,
   resolveOpen,
@@ -36,6 +37,7 @@ import {
 } from './navModel'
 import { useExperimentalFeatures } from '@/hooks/useExperimental'
 import { useRouteAvailable } from '@/lib/routeAvailability'
+import { ProjectsNavItem } from './ProjectsNavTree'
 import { useNavCounts } from './useNavCounts'
 import { usePersistedToggles } from './usePersistedToggles'
 import { GetStartedNavItem } from './GetStartedNavItem'
@@ -235,6 +237,7 @@ export function GlobalNav() {
   const experimental = useExperimentalFeatures()
   const routeAvailable = useRouteAvailable()
   const groups = visibleGlobalGroups(routeAvailable)
+  const projectsItem = FOLDED_GLOBAL_PAGES.find((i) => i.id === 'projects')
   const { pins, toggle, full, max } = useNavPins()
   const pinned = pinnedGlobalItems(groups, pins)
   const pinFor = (id: string): PinControl => ({
@@ -290,14 +293,21 @@ export function GlobalNav() {
               {group.items
                 .filter((item) => isItemDisclosed(item, counts, pathname))
                 .map((item) => (
-                  <NavLinkItem
-                    key={item.id}
-                    item={item}
-                    pathname={pathname}
-                    counts={counts}
-                    experimental={experimental}
-                    pin={pinFor(item.id)}
-                  />
+                  <Fragment key={item.id}>
+                    <NavLinkItem
+                      item={item}
+                      pathname={pathname}
+                      counts={counts}
+                      experimental={experimental}
+                      pin={pinFor(item.id)}
+                    />
+                    {item.id === 'apps' && projectsItem ? (
+                      <ProjectsNavItem
+                        item={projectsItem}
+                        pathname={pathname}
+                      />
+                    ) : null}
+                  </Fragment>
                 ))}
             </SidebarMenu>
           )

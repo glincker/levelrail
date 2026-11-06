@@ -171,6 +171,110 @@ export const REGISTRY_GROUP_PATHS = [
   '/settings/registry-credentials',
 ] as const
 
+export interface NavTab {
+  id: string
+  to: GlobalTo
+  feature?: ExperimentalFeature
+  // Hidden until the router has the route (DNS lands in another change).
+  requiresRoute?: boolean
+}
+
+export interface NavTabGroup {
+  id: string
+  tabs: readonly NavTab[]
+  // Paths whose page already mounts this strip in its own header.
+  inPagePaths?: readonly string[]
+}
+
+// One strip per folded sidebar row, so every folded page can reach its siblings.
+export const NAV_TAB_GROUPS: readonly NavTabGroup[] = [
+  {
+    id: 'apps',
+    tabs: [
+      { id: 'apps', to: '/apps' },
+      { id: 'projects', to: '/projects' },
+      { id: 'templates', to: '/templates' },
+    ],
+  },
+  {
+    id: 'pipelines',
+    tabs: [
+      { id: 'pipelines', to: '/pipelines' },
+      { id: 'approvals', to: '/approvals' },
+    ],
+  },
+  {
+    id: 'databases',
+    tabs: [
+      { id: 'databases', to: '/databases' },
+      { id: 'backups', to: '/backups' },
+    ],
+  },
+  {
+    id: 'storage',
+    tabs: [
+      { id: 'storage', to: '/storage' },
+      { id: 'assets', to: '/assets' },
+      { id: 'networkShares', to: '/settings/network-shares' },
+    ],
+  },
+  {
+    id: 'domains',
+    tabs: [
+      { id: 'domains', to: '/domains' },
+      { id: 'dns', to: '/dns', requiresRoute: true },
+      { id: 'mail', to: '/mail', feature: 'mail' },
+    ],
+  },
+  {
+    id: 'traffic',
+    tabs: [
+      { id: 'proxy', to: '/network/proxy' },
+      { id: 'loadBalancers', to: '/loadbalancers', feature: 'load-balancer' },
+      { id: 'cdn', to: '/cdn' },
+      { id: 'firewall', to: '/firewall' },
+    ],
+  },
+  {
+    id: 'servers',
+    tabs: [
+      { id: 'nodes', to: '/nodes' },
+      { id: 'providers', to: '/settings/node-providers' },
+    ],
+  },
+  {
+    id: 'registry',
+    tabs: [
+      { id: 'images', to: '/images' },
+      { id: 'registry', to: '/settings/registry' },
+      { id: 'credentials', to: '/settings/registry-credentials' },
+    ],
+  },
+  {
+    id: 'cost',
+    inPagePaths: ['/usage', '/costs'],
+    tabs: [
+      { id: 'usage', to: '/usage' },
+      { id: 'costs', to: '/costs' },
+      { id: 'advisor', to: '/resource-advisor', feature: 'resource-advisor' },
+      { id: 'resources', to: '/resources' },
+    ],
+  },
+  {
+    id: 'security',
+    tabs: [
+      { id: 'security', to: '/security' },
+      { id: 'iam', to: '/settings/iam-policies' },
+    ],
+  },
+]
+
+// The strip group whose tab is exactly this page; sub-pages keep their own chrome.
+export function navTabGroupFor(pathname: string): NavTabGroup | undefined {
+  const bare = pathname.length > 1 ? pathname.replace(/\/$/, '') : pathname
+  return NAV_TAB_GROUPS.find((g) => g.tabs.some((t) => t.to === bare))
+}
+
 export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
   {
     id: 'primary',
@@ -285,6 +389,12 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         to: '/nodes',
         icon: <ServerGlassIcon size="1.4em" />,
         alsoActive: ['/settings/node-providers'],
+      },
+      {
+        id: 'alerts',
+        label: 'Alerts',
+        to: '/alerts',
+        icon: <BellGlassIcon size="1.4em" />,
       },
       {
         id: 'registry',
@@ -413,7 +523,6 @@ export const FOLDED_GLOBAL_PAGES: GlobalNavItem[] = [
     <ShieldCheckGlassIcon className="text-tone-success" size="1.4em" />,
   ),
   folded('inbox', 'Inbox', '/inbox', <InboxGlassIcon size="1.4em" />),
-  folded('alerts', 'Alerts', '/alerts', <BellGlassIcon size="1.4em" />),
   folded('models', 'AI models', '/models', <CpuGlassIcon size="1.4em" />, {
     feature: 'ai-models',
   }),
