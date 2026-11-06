@@ -10,6 +10,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { changelogQueryOptions } from '../../queries/changelog'
+import { CountBadge } from './CountBadge'
 import { setLastSeenVersion, unreadCount, useLastSeenVersion } from './whatsNew'
 
 // Bell-style unread badge, same shape as NotificationCenter's own, but
@@ -48,14 +49,7 @@ export function WhatsNewPanel() {
         }
       >
         <SparklesGlassIcon size="1.4em" />
-        {unread > 0 ? (
-          <span
-            aria-hidden="true"
-            className="absolute -top-1 -right-1 flex size-3.5 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground"
-          >
-            {unread > 9 ? '9+' : unread}
-          </span>
-        ) : null}
+        {unread > 0 ? <CountBadge count={unread} tone="primary" /> : null}
       </PopoverTrigger>
       <PopoverContent align="end" className="w-96 max-w-[calc(100vw-1rem)]">
         <PopoverHeader>
