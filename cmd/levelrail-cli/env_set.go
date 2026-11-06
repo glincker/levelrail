@@ -48,6 +48,7 @@ func runEnvSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 			secretKeys = append(secretKeys, b.Key)
 		}
 	}
+	var rebuildKeys []string
 	plan := planEnvImport(app.Env, entries, secretKeys, false)
 	result := envImportResult{App: name, Plan: plan}
 	warnEnvSecrets(ctx, client, stderr, name, plan)
@@ -56,9 +57,11 @@ func runEnvSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 	}
 	if len(plan.New) > 0 || len(plan.Changed) > 0 {
 		app.Env = plan.Merged
-		if _, err := client.UpdateApp(ctx, name, app); err != nil {
+		saved, err := client.UpdateApp(ctx, name, app)
+		if err != nil {
 			return reportError(stdout, stderr, jsonOut, fmt.Errorf("update env for app %q: %w", name, err))
 		}
+		rebuildKeys = saved.RebuildKeys
 		result.Applied = true
 	}
 	code := writeScheduledTaskResult(stdout, stderr, of, result, func() { printEnvImportHuman(stdout, name, result) })
@@ -67,11 +70,19 @@ func runEnvSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		if of.Format == outputJSON || of.Query != "" {
 			hintOut = io.Discard
 		}
+		printRebuildHint(hintOut, prog, name, rebuildKeys)
 		if applyCode := afterConfigWrite(ctx, client, prog, name, apply, hintOut, stderr); code == exitOK {
 			code = applyCode
 		}
 	}
 	return code
+}
+
+// printRebuildHint tells the user which saved keys only take effect after a rebuild.
+func printRebuildHint(w io.Writer, prog, app string, keys []string) {
+	for _, k := range keys {
+		_, _ = fmt.Fprintf(w, "%s is baked in at build time: run %s deploy ... or %s apps rebuild %s to apply\n", k, prog, prog, app)
+	}
 }
 
 func envSetUsage(prog string) string {
@@ -81,6 +92,7 @@ func envSetUsage(prog string) string {
 Sets plain environment variables on an app, creating or changing them.
 Keys stored as secrets are refused, use "%[1]s apps secrets set" for those.
 Changes reach the running container at the next restart, or now with --apply.
+NEXT_PUBLIC_ and VITE_ keys are baked in at build time and need a rebuild.
 
 Flags:
   --apply             restart the app now so the new env reaches the running container

@@ -52,9 +52,14 @@ const app: AppDetail = {
   replicas: 1,
   suspended: false,
   env_dirty: false,
-  env: { PORT: '3000', API_SECRET: MASKED_VALUE },
+  env: {
+    PORT: '3000',
+    API_SECRET: MASKED_VALUE,
+    NEXT_PUBLIC_SITE: 'https://a.example',
+  },
   env_meta: {
     PORT: { sensitive: false, set: true, value_redacted: false },
+    NEXT_PUBLIC_SITE: { sensitive: false, set: true, value_redacted: false },
     API_SECRET: {
       sensitive: true,
       set: true,
@@ -212,6 +217,13 @@ describe('EnvironmentEditor', () => {
     ).toBeInTheDocument()
     expect(screen.getAllByText('Hidden value').length).toBeGreaterThan(0)
     expect(document.body.textContent).not.toContain(REAL_SECRET)
+  })
+
+  it('marks build time variables with a badge', async () => {
+    mockServer()
+    renderEditor()
+    await screen.findByText('NEXT_PUBLIC_SITE')
+    expect(screen.getAllByText('Build time')).toHaveLength(1)
   })
 
   it('asks for a password before revealing, then auto-hides the value', async () => {

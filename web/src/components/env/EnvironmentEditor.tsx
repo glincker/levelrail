@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { ListGlassIcon, RefreshCwGlassIcon } from '@thesvg/ui-react'
 import type { AppDetail } from '../../types/appDetail'
 import { useRestartApp } from '../../queries/apps'
+import { useRedeployApp } from '../../hooks/useRedeployApp'
 import {
   EnvApiError,
   exportEnv,
@@ -69,6 +70,8 @@ export function EnvironmentEditor({ app }: { app: AppDetail }) {
   const updateSettings = useUpdateEnvSettings(app.name)
   const convert = useConvertToSecret(app.name)
   const restartApp = useRestartApp()
+  const rebuild = useRedeployApp(app.name, app.image)
+  const [rebuildKeys, setRebuildKeys] = useState<string[]>([])
   const [mode, setMode] = useState<'table' | 'bulk'>('table')
   const [bulkText, setBulkText] = useState('')
   const [adding, setAdding] = useState<{ key?: string } | null>(null)
@@ -205,7 +208,7 @@ export function EnvironmentEditor({ app }: { app: AppDetail }) {
     setSaving(true)
     setSaveError(null)
     try {
-      await state.save()
+      setRebuildKeys(await state.save())
       setReviewOpen(false)
       toast.add({ title: t('saved'), type: 'success' })
     } catch (error) {
@@ -281,6 +284,31 @@ export function EnvironmentEditor({ app }: { app: AppDetail }) {
           onDiscard={state.discard}
         />
         <EnvPolicyNotice settings={policy} />
+        {rebuildKeys.length > 0 ? (
+          <Alert>
+            <RefreshCwGlassIcon size="1.4em" aria-hidden />
+            <AlertTitle>{t('buildTime.noticeTitle')}</AlertTitle>
+            <AlertDescription>
+              {t('buildTime.noticeDescription', {
+                keys: rebuildKeys.join(', '),
+              })}
+            </AlertDescription>
+            <AlertAction>
+              <Button
+                type="button"
+                size="sm"
+                writeAction
+                disabled={rebuild.isPending}
+                onClick={() => {
+                  rebuild.redeploy()
+                  setRebuildKeys([])
+                }}
+              >
+                {t('buildTime.rebuild')}
+              </Button>
+            </AlertAction>
+          </Alert>
+        ) : null}
         {app.env_dirty ? (
           <Alert>
             <RefreshCwGlassIcon size="1.4em" aria-hidden />

@@ -203,5 +203,12 @@
       "changed": "Changed",
       "removed": "Removed"
     }
+  },
+  "buildTime": {
+    "badge": "Build time",
+    "tooltip": "Baked into the build. Changing it needs a rebuild.",
+    "noticeTitle": "Rebuild needed",
+    "noticeDescription": "{{keys}} is baked into the build. Rebuild the app to apply the change.",
+    "rebuild": "Rebuild now"
   }
 }

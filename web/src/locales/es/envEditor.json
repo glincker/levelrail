@@ -203,5 +203,12 @@
       "changed": "Modificada",
       "removed": "Eliminada"
     }
+  },
+  "buildTime": {
+    "badge": "Compilación",
+    "tooltip": "Se incorpora en la compilación. Cambiarla requiere recompilar.",
+    "noticeTitle": "Hace falta recompilar",
+    "noticeDescription": "{{keys}} se incorpora en la compilación. Recompila la app para aplicar el cambio.",
+    "rebuild": "Recompilar ahora"
   }
 }

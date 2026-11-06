@@ -75,6 +75,14 @@ const PUBLIC_PREFIXES = [
   'GATSBY_',
 ]
 
+// Frameworks inline these into the client bundle at build, so a change only
+// shows after a rebuild.
+export const BUILD_TIME_PREFIXES = ['NEXT_PUBLIC_', 'VITE_']
+
+export function isBuildTimeKey(key: string): boolean {
+  return BUILD_TIME_PREFIXES.some((p) => key.startsWith(p))
+}
+
 export function looksSensitive(key: string): boolean {
   const upper = key.toUpperCase()
   if (PUBLIC_PREFIXES.some((p) => upper.startsWith(p))) {

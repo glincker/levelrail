@@ -5,6 +5,7 @@ import {
   buildRows,
   buildSavePlan,
   computeChanges,
+  isBuildTimeKey,
   looksSensitive,
   rowsToDotenv,
 } from './envRows'
@@ -129,5 +130,13 @@ describe('bulk dotenv round trip', () => {
     const text = rowsToDotenv(rows, revealed)
     expect(text).toContain('API_SECRET="the real value"')
     expect(computeChanges(applyDotenv(rows, text, revealed))).toEqual([])
+  })
+})
+
+describe('isBuildTimeKey', () => {
+  it('flags framework build time prefixes only', () => {
+    expect(isBuildTimeKey('NEXT_PUBLIC_API_URL')).toBe(true)
+    expect(isBuildTimeKey('VITE_FLAG')).toBe(true)
+    expect(isBuildTimeKey('DATABASE_URL')).toBe(false)
   })
 })
