@@ -1583,5 +1583,27 @@
       "not_attempted": "Not tried"
     },
     "redirectApplied": "The redirect is active."
+  },
+  "moreOptions": {
+    "title": "More options",
+    "activeLabel": "Options that are on",
+    "access": "Access",
+    "routing": "Routing",
+    "protection": "Protection and polish",
+    "chip": {
+      "basicAuth": "Basic auth",
+      "authGate": "Sign-in gate",
+      "redirect": "Redirect",
+      "maintenance": "Maintenance",
+      "waf": "WAF / rate limit",
+      "errorPages": "Custom error pages",
+      "hidden": "Hidden from search",
+      "ownCert": "Own certificate"
+    },
+    "links": {
+      "allSettings": "All settings",
+      "diagnose": "Diagnose",
+      "deploys": "App is not running, see deploys"
+    }
   }
 }

@@ -96,6 +96,39 @@ describe('DomainWwwCard', () => {
     )
   })
 
+  it('sends redirect false only for serve both', async () => {
+    const fetchMock = vi.fn((_url: string, init?: RequestInit) =>
+      Promise.resolve(
+        init?.method === 'POST'
+          ? Response.json({ applied: true, records: [], redirect: null })
+          : Response.json(plan('cloudflare')),
+      ),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    renderCard()
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Apply for me' }),
+    )
+    await waitFor(() =>
+      expect(fetchMock.mock.calls.some((c) => c[1]?.method === 'POST')).toBe(
+        true,
+      ),
+    )
+    const first = fetchMock.mock.calls.find((c) => c[1]?.method === 'POST')
+    expect(JSON.stringify(first?.[1])).not.toContain('redirect')
+    await userEvent.click(screen.getByRole('radio', { name: /both/i }))
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Apply for me' }),
+    )
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.some((c) =>
+          /redirect.{1,3}false/.test(JSON.stringify(c[1])),
+        ),
+      ).toBe(true),
+    )
+  })
+
   it('hides for www and automatic hostnames', () => {
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)

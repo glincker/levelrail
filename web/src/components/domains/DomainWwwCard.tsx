@@ -253,7 +253,11 @@ export function DomainWwwCard({
                 size="sm"
                 disabled={apply.isPending}
                 onClick={() =>
-                  apply.mutate({ ...choice, replace: Boolean(hasConflict) })
+                  apply.mutate({
+                    ...choice,
+                    replace: Boolean(hasConflict),
+                    ...(choiceId === 'both' ? { redirect: false } : {}),
+                  })
                 }
               >
                 {apply.isPending

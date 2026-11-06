@@ -105,6 +105,8 @@ export function domainWwwPlanQueryOptions(
 
 export interface WwwApplyInput extends WwwChoice {
   replace: boolean
+  // Only sent as false for "serve both"; omitted keeps the server default.
+  redirect?: boolean
 }
 
 export function useApplyDomainWww(app: string, domain: string) {
