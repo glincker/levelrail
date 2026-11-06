@@ -6,12 +6,12 @@ import type { RuntimeSetting } from '../../types/runtimeSettings'
 import {
   buildDiskCategories,
   diskHealth,
+  percentFloors,
   safeReclaimableBytes,
 } from './storageData'
 import { normalizeStorageSearch } from './storageTabs'
 
 const MB = 1024 * 1024
-const fallback = { lowPercent: 15, criticalPercent: 5 }
 
 function setting(key: string, value: string): RuntimeSetting {
   return { key, value } as RuntimeSetting
@@ -62,7 +62,6 @@ describe('diskHealth', () => {
       freeBytes: freeMb * MB,
       totalBytes: 100_000 * MB,
       settings: s,
-      fallback,
     })
 
   it('uses the runtime floors', () => {
@@ -71,10 +70,23 @@ describe('diskHealth', () => {
     expect(run(100, settings)).toBe('critical')
   })
 
-  it('falls back to percent only without settings', () => {
-    expect(run(50_000, undefined)).toBe('healthy')
-    expect(run(10_000, undefined)).toBe('low')
-    expect(run(1_000, undefined)).toBe('critical')
+  it('falls back to the live percent settings when MiB floors are missing', () => {
+    const pct = [
+      setting('storage.low_free_percent', '15'),
+      setting('storage.critical_free_percent', '5'),
+    ]
+    expect(run(50_000, pct)).toBe('healthy')
+    expect(run(10_000, pct)).toBe('low')
+    expect(run(1_000, pct)).toBe('critical')
+    expect(run(1_000, undefined)).toBe('healthy')
+  })
+
+  it('clamps critical percent to the low percent', () => {
+    const s = [
+      setting('storage.low_free_percent', '10'),
+      setting('storage.critical_free_percent', '20'),
+    ]
+    expect(percentFloors(s)).toEqual({ lowPercent: 10, criticalPercent: 10 })
   })
 })
 

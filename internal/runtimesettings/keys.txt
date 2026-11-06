@@ -120,7 +120,9 @@ security.protected_silence_max_days
 security.trust_loopback_forwarded_headers
 security.webhook_replay_protection
 security.webhook_replay_window
+storage.critical_free_percent
 storage.large_unmanaged_image_mb
+storage.low_free_percent
 telemetry.access_log_retention
 telemetry.log_budget_mb
 telemetry.logs_retention
