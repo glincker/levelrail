@@ -31,6 +31,11 @@ function ratingTone(stat?: VitalsStat): string {
   return 'text-muted-foreground'
 }
 
+// Above the top histogram bound the value is only a lower bound.
+function formatOverflow(metric: VitalsMetric, bound: number): string {
+  return metric === 'CLS' ? `>${bound}` : `>${bound / 1000} s`
+}
+
 function StatValue({
   metric,
   stat,
@@ -43,7 +48,9 @@ function StatValue({
   }
   return (
     <span className={ratingTone(stat)}>
-      {formatVitalValue(metric, stat.p75)}
+      {stat.overflow
+        ? formatOverflow(metric, stat.p75)
+        : formatVitalValue(metric, stat.p75)}
     </span>
   )
 }

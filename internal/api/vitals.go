@@ -7,11 +7,8 @@ import (
 	"errors"
 	"math"
 	"net/http"
-	"net/url"
 	"sort"
 	"strings"
-	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -36,9 +33,7 @@ var vitalsMetricOrder = []string{"LCP", "INP", "CLS", "TTFB", "FCP"}
 
 const (
 	vitalsReportDays     = 7
-	vitalsMaxRouteLen    = 120
 	vitalsMaxMetricsSent = 10
-	vitalsPruneEvery     = 10 * time.Minute
 )
 
 // vitalsStore is the optional store surface; the production *store.DB satisfies it.
@@ -46,43 +41,16 @@ type vitalsStore interface {
 	GetVitalsConfig(ctx context.Context, app string) (store.VitalsConfig, bool, error)
 	SetVitalsEnabled(ctx context.Context, app string, enabled bool) (store.VitalsConfig, error)
 	RotateVitalsKey(ctx context.Context, app string, enabledIfNew bool) (store.VitalsConfig, error)
-	AddVitalsHits(ctx context.Context, app, route, device string, at time.Time, hits []store.VitalsHit) error
-	QueryVitals(ctx context.Context, app string, since time.Time) ([]store.VitalsBucketCount, error)
-	PruneVitals(ctx context.Context, before time.Time) (int64, error)
+	AddVitalsCounts(ctx context.Context, rows []store.VitalsCount) error
+	VitalsRoutesSince(ctx context.Context, app string, since time.Time, limit int) ([]string, error)
+	QueryVitals(ctx context.Context, app string, since time.Time, topRoutes int) ([]store.VitalsBucketCount, error)
+	PruneVitalsBatch(ctx context.Context, before time.Time, limit int) (int64, error)
 }
 
 func (rt *Router) vitalsDB() (vitalsStore, bool) {
 	v, ok := rt.apps.(vitalsStore)
 	return v, ok
 }
-
-// vitalsLimiter is a per-app fixed window kept in memory; nothing about callers is stored.
-var vitalsLimiter = struct {
-	sync.Mutex
-	m map[string]*vitalsWindow
-}{m: map[string]*vitalsWindow{}}
-
-type vitalsWindow struct {
-	start time.Time
-	n     int
-}
-
-func vitalsAllow(app string, limit int, now time.Time) bool {
-	vitalsLimiter.Lock()
-	defer vitalsLimiter.Unlock()
-	w := vitalsLimiter.m[app]
-	if w == nil || now.Sub(w.start) >= time.Minute {
-		if len(vitalsLimiter.m) > 10000 {
-			clear(vitalsLimiter.m)
-		}
-		w = &vitalsWindow{start: now}
-		vitalsLimiter.m[app] = w
-	}
-	w.n++
-	return w.n <= limit
-}
-
-var vitalsLastPrune atomic.Int64
 
 type vitalsBeacon struct {
 	Key  string `json:"key"`
@@ -116,7 +84,8 @@ func (rt *Router) handleVitalsBeacon(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ctx := r.Context()
-	if !vitalsAllow(app, rt.runtimeSettings.Int(ctx, KeyVitalsRatePerMin), time.Now()) {
+	v := rt.vitalsRuntime()
+	if ok, _ := v.perIP.allow(clientIP(r)); !ok {
 		w.Header().Set("Retry-After", "60")
 		writeError(w, http.StatusTooManyRequests, "too many beacons")
 		return
@@ -141,6 +110,19 @@ func (rt *Router) handleVitalsBeacon(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "not found")
 		return
 	}
+	if _, err := rt.apps.GetDesiredService(ctx, app); errors.Is(err, store.ErrServiceNotFound) {
+		writeError(w, http.StatusNotFound, "not found")
+		return
+	} else if err != nil {
+		rt.internalError(w, "api: vitals beacon: load app", err)
+		return
+	}
+	// Charged only after the key matched, so junk requests cannot burn an app's quota.
+	if ok, _ := v.perApp.allow(app); !ok {
+		w.Header().Set("Retry-After", "60")
+		writeError(w, http.StatusTooManyRequests, "too many beacons")
+		return
+	}
 	if origin := r.Header.Get("Origin"); origin != "" && !rt.vitalsOriginAllowed(ctx, app, origin) {
 		writeError(w, http.StatusForbidden, "origin not allowed")
 		return
@@ -151,50 +133,12 @@ func (rt *Router) handleVitalsBeacon(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	now := time.Now()
-	if err := db.AddVitalsHits(ctx, app, normalizeVitalsRoute(b.Path), vitalsDevice(r.UserAgent()), now, hits); err != nil {
-		rt.internalError(w, "api: vitals beacon: store", err)
-		return
+	route := v.gate.admit(ctx, db, app, normalizeVitalsRoute(b.Path), rt.runtimeSettings.Int(ctx, KeyVitalsMaxRoutes), now)
+	device, hour := vitalsDevice(r.UserAgent()), now.UTC().Truncate(time.Hour)
+	for _, h := range hits {
+		v.buf.add(vitalsKey{app: app, route: route, metric: h.Metric, device: device, hour: hour, bucket: h.Bucket}, 1)
 	}
-	rt.pruneVitals(ctx, db, now)
 	w.WriteHeader(http.StatusNoContent)
-}
-
-func (rt *Router) pruneVitals(ctx context.Context, db vitalsStore, now time.Time) {
-	last := vitalsLastPrune.Load()
-	if now.UnixNano()-last < int64(vitalsPruneEvery) || !vitalsLastPrune.CompareAndSwap(last, now.UnixNano()) {
-		return
-	}
-	days := rt.runtimeSettings.Int(ctx, KeyVitalsRetentionDay)
-	if _, err := db.PruneVitals(ctx, now.Add(-time.Duration(days)*24*time.Hour)); err != nil {
-		rt.logger.Warn("api: prune vitals failed", "error", err.Error())
-	}
-}
-
-// vitalsOriginAllowed accepts the app's own domains and localhost; an app with no domains accepts any origin.
-func (rt *Router) vitalsOriginAllowed(ctx context.Context, app, origin string) bool {
-	u, err := url.Parse(origin)
-	if err != nil || u.Hostname() == "" {
-		return false
-	}
-	host := strings.ToLower(u.Hostname())
-	if host == "localhost" || host == "127.0.0.1" || rt.domains == nil {
-		return true
-	}
-	doms, err := rt.domains.ListServiceDomains(ctx)
-	if err != nil {
-		return true
-	}
-	own := false
-	for _, d := range doms {
-		if d.ServiceName != app {
-			continue
-		}
-		own = true
-		if strings.EqualFold(d.Domain, host) {
-			return true
-		}
-	}
-	return !own
 }
 
 func vitalsHits(b vitalsBeacon) []store.VitalsHit {
@@ -211,46 +155,6 @@ func vitalsHits(b vitalsBeacon) []store.VitalsHit {
 	return hits
 }
 
-// normalizeVitalsRoute drops query and fragment and folds id-like segments so routes stay low cardinality.
-func normalizeVitalsRoute(p string) string {
-	if u, err := url.Parse(p); err == nil {
-		p = u.Path
-	}
-	if i := strings.IndexAny(p, "?#"); i >= 0 {
-		p = p[:i]
-	}
-	if !strings.HasPrefix(p, "/") {
-		p = "/" + p
-	}
-	segs := strings.Split(p, "/")
-	for i, s := range segs {
-		if vitalsIDSegment(s) {
-			segs[i] = ":id"
-		}
-	}
-	p = strings.Join(segs, "/")
-	if len(p) > vitalsMaxRouteLen {
-		p = p[:vitalsMaxRouteLen]
-	}
-	return p
-}
-
-func vitalsIDSegment(s string) bool {
-	if s == "" {
-		return false
-	}
-	digits, hexish := true, true
-	for _, c := range s {
-		if c < '0' || c > '9' {
-			digits = false
-		}
-		if (c < '0' || c > '9') && (c < 'a' || c > 'f') && (c < 'A' || c > 'F') && c != '-' {
-			hexish = false
-		}
-	}
-	return digits || (hexish && len(s) >= 16)
-}
-
 // vitalsDevice reduces the user agent to a coarse class; the string itself is never kept.
 func vitalsDevice(ua string) string {
 	l := strings.ToLower(ua)
@@ -261,11 +165,14 @@ func vitalsDevice(ua string) string {
 }
 
 type vitalsStat struct {
-	Count  int64   `json:"count"`
-	P50    float64 `json:"p50"`
-	P75    float64 `json:"p75"`
-	P95    float64 `json:"p95"`
-	Rating string  `json:"rating"`
+	Count int64   `json:"count"`
+	P50   float64 `json:"p50"`
+	P75   float64 `json:"p75"`
+	P95   float64 `json:"p95"`
+	// Overflow means the percentile lies above the top histogram bound, so the value is a lower bound.
+	Overflow    bool   `json:"overflow,omitempty"`
+	P95Overflow bool   `json:"p95_overflow,omitempty"`
+	Rating      string `json:"rating"`
 }
 
 type vitalsRouteRow struct {
@@ -281,7 +188,7 @@ type vitalsResponse struct {
 	Routes    []vitalsRouteRow      `json:"routes"`
 }
 
-func vitalsPercentile(metric string, buckets map[int]int64, total int64, p float64) float64 {
+func vitalsPercentile(metric string, buckets map[int]int64, total int64, p float64) (val float64, overflow bool) {
 	spec := vitalsMetrics[metric]
 	idx := make([]int, 0, len(buckets))
 	for b := range buckets {
@@ -293,10 +200,10 @@ func vitalsPercentile(metric string, buckets map[int]int64, total int64, p float
 	for _, b := range idx {
 		cum += buckets[b]
 		if cum >= need {
-			return spec.bounds[min(b, len(spec.bounds)-1)]
+			return spec.bounds[min(b, len(spec.bounds)-1)], b >= len(spec.bounds)
 		}
 	}
-	return spec.bounds[len(spec.bounds)-1]
+	return spec.bounds[len(spec.bounds)-1], true
 }
 
 func vitalsStatOf(metric string, buckets map[int]int64) vitalsStat {
@@ -308,9 +215,9 @@ func vitalsStatOf(metric string, buckets map[int]int64) vitalsStat {
 	if total == 0 {
 		return st
 	}
-	st.P50 = vitalsPercentile(metric, buckets, total, 0.5)
-	st.P75 = vitalsPercentile(metric, buckets, total, 0.75)
-	st.P95 = vitalsPercentile(metric, buckets, total, 0.95)
+	st.P50, _ = vitalsPercentile(metric, buckets, total, 0.5)
+	st.P75, st.Overflow = vitalsPercentile(metric, buckets, total, 0.75)
+	st.P95, st.P95Overflow = vitalsPercentile(metric, buckets, total, 0.95)
 	spec := vitalsMetrics[metric]
 	switch {
 	case st.P75 <= spec.good:
@@ -387,11 +294,11 @@ func (rt *Router) writeVitals(w http.ResponseWriter, r *http.Request, db vitalsS
 		rt.internalError(w, "api: vitals: load config", err)
 		return
 	}
-	resp := vitalsResponse{Enabled: rt.runtimeSettings.Bool(ctx, KeyVitalsEnabled), Days: vitalsReportDays}
+	resp := vitalsResponse{Days: vitalsReportDays}
 	if found {
 		resp.Enabled, resp.PublicKey = cfg.Enabled, cfg.PublicKey
 	}
-	rows, err := db.QueryVitals(ctx, name, time.Now().Add(-vitalsReportDays*24*time.Hour))
+	rows, err := db.QueryVitals(ctx, name, time.Now().Add(-vitalsReportDays*24*time.Hour), rt.runtimeSettings.Int(ctx, KeyVitalsTopRoutes))
 	if err != nil {
 		rt.internalError(w, "api: vitals: query", err)
 		return

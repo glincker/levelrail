@@ -6,14 +6,16 @@ import "net/http"
 const vitalsSnippetJS = `(function(){var s=document.currentScript,d=s.dataset,m={},c=0;
 if(!d.app||!d.key||Math.random()*100>=(+d.sample||100))return;
 var u=new URL(s.src).origin+"/api/v1/vitals/"+encodeURIComponent(d.app);
-function o(t,f,x){try{new PerformanceObserver(function(l){l.getEntries().forEach(f)}).observe(Object.assign({type:t,buffered:true},x))}catch(e){}}
+var ob=[],sent=0;
+function o(t,f,x){try{var p=new PerformanceObserver(function(l){l.getEntries().forEach(f)});p.observe(Object.assign({type:t,buffered:true},x));ob.push([p,f])}catch(e){}}
 o("largest-contentful-paint",function(e){m.LCP=e.startTime});
 o("layout-shift",function(e){if(!e.hadRecentInput){c+=e.value;m.CLS=c}});
 o("event",function(e){if(e.interactionId&&e.duration>(m.INP||0))m.INP=e.duration},{durationThreshold:40});
 o("paint",function(e){if(e.name==="first-contentful-paint")m.FCP=e.startTime});
 var n=performance.getEntriesByType("navigation")[0];if(n)m.TTFB=n.responseStart;
-function send(){var l=Object.keys(m).map(function(k){return{n:k,v:m[k]}});if(l.length)navigator.sendBeacon(u,JSON.stringify({key:d.key,path:location.pathname,m:l}));m={}}
+function send(){if(sent)return;sent=1;ob.forEach(function(r){r[0].takeRecords().forEach(r[1]);r[0].disconnect()});var l=Object.keys(m).map(function(k){return{n:k,v:m[k]}});if(l.length)navigator.sendBeacon(u,JSON.stringify({key:d.key,path:location.pathname,m:l}))}
 addEventListener("visibilitychange",function(){if(document.visibilityState==="hidden")send()});
+addEventListener("pagehide",send);
 })();
 `
 

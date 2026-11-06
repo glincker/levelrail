@@ -36,13 +36,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
 ## Endpoint
 
-`POST /api/v1/vitals/{app}` takes `{"key": "...", "path": "/blog/12", "m": [{"n": "LCP", "v": 1200}]}` from `navigator.sendBeacon`. Unknown app, disabled app and wrong key all answer the same 404. Beacons are rate limited per app and size capped, and the Origin must be one of the app's domains or localhost (an app with no domain accepts any). The key is public by design: it only lets a page add counters. Rotate it from the card if it is abused.
+`POST /api/v1/vitals/{app}` takes `{"key": "...", "path": "/blog/12", "m": [{"n": "LCP", "v": 1200}]}` from `navigator.sendBeacon`. Unknown app, disabled app and wrong key all answer the same 404. Beacons are rate limited per client address (before the body is read) and per app (only after the key matched), and size capped. The Origin must be one of the app's domains or localhost (an app with no domain accepts any); this check is advisory, since a non browser client can send any Origin, and a failed domain lookup denies the beacon. The key is public by design: it only lets a page add counters. Rotate it from the card if it is abused.
 
 ## Storage and privacy
 
-Only histogram counters are stored, per app, route, metric, hour, device class (mobile or desktop) and fixed bucket. No raw events, cookies, IP addresses, user agent strings or query strings are kept, and id-like path segments fold into `:id`. Percentiles are bucket upper bounds, so p75 is accurate to one bucket.
+Only histogram counters are stored, per app, route, metric, hour, device class (mobile or desktop) and fixed bucket. No raw events, cookies, IP addresses, user agent strings or query strings are kept.
 
-Runtime settings: `vitals.enabled` (default for apps without their own switch), `vitals.rate_limit_per_minute`, `vitals.retention_days` (default 30) and `vitals.max_body_bytes`. Environment variables only seed them.
+Routes are normalized before they are stored. Only short lowercase words joined by hyphens (up to 24 characters, at most 6 segments) are kept, for example `/blog/my-post`. Every other segment, such as numbers, hex or base64 ids, tokens, emails, short links and non ASCII text, becomes `:id`. Each app records at most `vitals.max_routes_per_app` distinct routes per day (default 200); further routes are counted under `/other`. Nothing else about the page is stored. The report and card show the busiest `vitals.report_top_routes` routes (default 50). Rollups are kept for `vitals.retention_days` days (default 30) and removed by a background job; deleting an app deletes its key and rollups. Percentiles are bucket upper bounds, so p75 is accurate to one bucket, and a value above the top bound is shown as a lower bound such as `>10 s`.
+
+Counters are buffered in memory and written every `vitals.flush_interval_seconds` (default 10). A clean shutdown flushes them; a crash loses at most one interval.
+
+Runtime settings: `vitals.enabled` (whether a key created by Rotate starts enabled; an app only collects once it has a saved config with collection on), `vitals.rate_limit_per_minute`, `vitals.rate_limit_per_ip_per_minute`, `vitals.max_routes_per_app`, `vitals.report_top_routes`, `vitals.flush_interval_seconds`, `vitals.retention_days` and `vitals.max_body_bytes`. Environment variables only seed them.
 
 ## Why the control plane API (ADR 074 open question 7)
 

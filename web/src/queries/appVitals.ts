@@ -18,6 +18,8 @@ export interface VitalsStat {
   p50: number
   p75: number
   p95: number
+  overflow?: boolean
+  p95_overflow?: boolean
   rating: VitalsRating | ''
 }
 

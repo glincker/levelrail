@@ -58,4 +58,23 @@ describe('VitalsCard', () => {
     renderWithProviders(<VitalsCard appName="web" />)
     expect(await screen.findByText('emptyDisabled')).toBeTruthy()
   })
+
+  it('renders a lower bound when a percentile overflows the top bucket', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(
+          jsonResponse({
+            enabled: true,
+            public_key: 'abc123',
+            days: 7,
+            overall: { LCP: { ...stat(10000, 'poor'), overflow: true } },
+            routes: [],
+          }),
+        ),
+      ),
+    )
+    renderWithProviders(<VitalsCard appName="web" />)
+    expect((await screen.findAllByText('>10 s'))[0]).toBeTruthy()
+  })
 })

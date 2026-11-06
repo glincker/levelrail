@@ -153,8 +153,12 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_VISITOR_HISTORY_RETENTION` | [`telemetry.visitor_history_retention`](/runtime-settings#observability) | `168h0m0s` |
 | `APP_VISITOR_SALT_ROTATION` | [`telemetry.visitor_salt_rotation`](/runtime-settings#observability) | `24h0m0s` |
 | `APP_VITALS_ENABLED` | [`vitals.enabled`](/runtime-settings#observability) | `false` |
+| `APP_VITALS_FLUSH_SECONDS` | [`vitals.flush_interval_seconds`](/runtime-settings#observability) | `10` |
 | `APP_VITALS_MAX_BODY_BYTES` | [`vitals.max_body_bytes`](/runtime-settings#observability) | `4096` |
+| `APP_VITALS_MAX_ROUTES` | [`vitals.max_routes_per_app`](/runtime-settings#observability) | `200` |
+| `APP_VITALS_RATE_PER_IP` | [`vitals.rate_limit_per_ip_per_minute`](/runtime-settings#observability) | `120` |
 | `APP_VITALS_RATE_PER_MIN` | [`vitals.rate_limit_per_minute`](/runtime-settings#observability) | `600` |
+| `APP_VITALS_REPORT_TOP_ROUTES` | [`vitals.report_top_routes`](/runtime-settings#observability) | `50` |
 | `APP_ACCOUNT_PREFERENCES_MAX_BYTES` | [`account.preferences_max_bytes`](/runtime-settings#data-retention) | `8192` |
 | `APP_BACKUP_DEFAULT_RETENTION_HOURS` | [`backup.default_retention_hours`](/runtime-settings#data-retention) | `168` |
 | `APP_CLEANUP_ENABLED` | [`cleanup.enabled`](/runtime-settings#data-retention) | `true` |
