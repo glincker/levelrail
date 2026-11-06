@@ -29,6 +29,7 @@ import { DomainSearchVisibilityControl } from '../DomainSearchVisibilityControl'
 import { DomainTLSCertControl } from '../DomainTLSCertControl'
 import { DomainWafControl } from '../DomainWafControl'
 import { DomainDiagnoseDialog } from './DomainDiagnoseDialog'
+import { CompactSettingsProvider } from './compactSettings'
 
 type ChipKey =
   | 'basicAuth'
@@ -70,7 +71,7 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
       <h4 className="text-xs font-semibold tracking-wide text-muted-foreground">
         {title}
       </h4>
-      <div className="space-y-2">{children}</div>
+      <div className="divide-y divide-border">{children}</div>
     </section>
   )
 }
@@ -123,6 +124,25 @@ function NextLinks({ appName, domain }: { appName: string; domain: string }) {
   )
 }
 
+const storageKey = (domain: string) => `lr.moreOptions.open.${domain}`
+
+// sessionStorage can throw (private mode, blocked data), so it is optional.
+function readOpen(domain: string): boolean {
+  try {
+    return sessionStorage.getItem(storageKey(domain)) === '1'
+  } catch {
+    return false
+  }
+}
+
+function writeOpen(domain: string, open: boolean) {
+  try {
+    sessionStorage.setItem(storageKey(domain), open ? '1' : '0')
+  } catch {
+    // Remembering the state is a convenience only.
+  }
+}
+
 // One collapsed disclosure for everything beyond "is it working": the
 // header chips show which options are on so state stays visible closed.
 export function DomainMoreOptions({
@@ -133,7 +153,7 @@ export function DomainMoreOptions({
   domain: string
 }) {
   const { t } = useTranslation('domains')
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(() => readOpen(domain))
   const panelId = useId()
   const active = useActiveChips(appName, domain)
   return (
@@ -144,7 +164,8 @@ export function DomainMoreOptions({
           aria-expanded={open}
           aria-controls={panelId}
           onClick={() => {
-            setOpen((v) => !v)
+            writeOpen(domain, !open)
+            setOpen(!open)
           }}
           className="flex items-center gap-1 rounded-sm py-0.5 text-sm font-medium focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
         >
@@ -171,26 +192,28 @@ export function DomainMoreOptions({
       </div>
       <div id={panelId} hidden={!open}>
         {open ? (
-          <div className="space-y-4 border-t border-border p-2">
-            <Group title={t('moreOptions.access')}>
-              <DomainBasicAuthControl appName={appName} domain={domain} />
-              <DomainAuthGateControl appName={appName} domain={domain} />
-            </Group>
-            <Group title={t('moreOptions.routing')}>
-              <DomainDnsRecordsControl appName={appName} domain={domain} />
-              <DomainRedirectControl appName={appName} domain={domain} />
-              <DomainMaintenanceControl appName={appName} domain={domain} />
-            </Group>
-            <Group title={t('moreOptions.protection')}>
-              <DomainWafControl appName={appName} domain={domain} />
-              <DomainErrorPagesControl appName={appName} domain={domain} />
-              <DomainSearchVisibilityControl
-                appName={appName}
-                domain={domain}
-              />
-              <DomainTLSCertControl appName={appName} domain={domain} />
-            </Group>
-          </div>
+          <CompactSettingsProvider value>
+            <div className="space-y-3 border-t border-border px-2 py-2">
+              <Group title={t('moreOptions.access')}>
+                <DomainBasicAuthControl appName={appName} domain={domain} />
+                <DomainAuthGateControl appName={appName} domain={domain} />
+              </Group>
+              <Group title={t('moreOptions.routing')}>
+                <DomainDnsRecordsControl appName={appName} domain={domain} />
+                <DomainRedirectControl appName={appName} domain={domain} />
+                <DomainMaintenanceControl appName={appName} domain={domain} />
+              </Group>
+              <Group title={t('moreOptions.protection')}>
+                <DomainWafControl appName={appName} domain={domain} />
+                <DomainErrorPagesControl appName={appName} domain={domain} />
+                <DomainSearchVisibilityControl
+                  appName={appName}
+                  domain={domain}
+                />
+                <DomainTLSCertControl appName={appName} domain={domain} />
+              </Group>
+            </div>
+          </CompactSettingsProvider>
         ) : null}
       </div>
       <div className="border-t border-border px-1 py-0.5">

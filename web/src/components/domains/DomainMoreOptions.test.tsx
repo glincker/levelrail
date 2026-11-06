@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import domainsEn from '../../locales/en/domains.json'
 import { DomainMoreOptions } from './DomainMoreOptions'
 
@@ -81,6 +81,10 @@ void testI18n.use(initReactI18next).init({
 })
 
 describe('DomainMoreOptions', () => {
+  beforeEach(() => {
+    sessionStorage.clear()
+  })
+
   it('is collapsed, shows chips only for options that are on', () => {
     render(
       <I18nextProvider i18n={testI18n}>
@@ -109,5 +113,20 @@ describe('DomainMoreOptions', () => {
     for (const g of ['Access', 'Routing', 'Protection and polish']) {
       expect(screen.getByText(g)).toBeInTheDocument()
     }
+  })
+
+  it('remembers the open state per domain for the session', async () => {
+    const view = (domain: string) => (
+      <I18nextProvider i18n={testI18n}>
+        <DomainMoreOptions appName="web" domain={domain} />
+      </I18nextProvider>
+    )
+    const first = render(view('a.com'))
+    await userEvent.click(screen.getByRole('button', { name: 'More options' }))
+    first.unmount()
+    render(view('a.com'))
+    expect(
+      screen.getByRole('button', { name: 'More options' }),
+    ).toHaveAttribute('aria-expanded', 'true')
   })
 })

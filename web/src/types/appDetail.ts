@@ -233,6 +233,9 @@ export interface AppDetail {
   // recreated, so the change is not live yet. No omitempty on the Go
   // side, same always-present shape as suspended.
   env_dirty: boolean
+  // Response-only on PUT: build-time env keys changed, a rebuild applies them.
+  rebuild_required?: boolean
+  rebuild_keys?: string[]
   // volumes carries `omitempty` on the Go side and is response-only
   // (internal/api/apps.go's appResource own doc comment): this app's
   // named Docker volumes, declared through app.yaml's volumes: field,

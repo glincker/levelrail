@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import {
   EllipsisGlassIcon,
+  WrenchGlassIcon,
   LockGlassIcon,
   PlusGlassIcon,
   ReplyGlassIcon,
@@ -8,11 +9,16 @@ import {
   ShieldOffGlassIcon,
   TrashGlassIcon,
 } from '@thesvg/ui-react'
-import { MASKED_VALUE, type EnvRow } from '../../lib/envRows'
+import { MASKED_VALUE, isBuildTimeKey, type EnvRow } from '../../lib/envRows'
 import type { EnvTier } from '../../lib/envProvenance'
 import { EnvVarValue } from './EnvVarValue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,6 +65,19 @@ export function EnvVarRow(props: EnvVarRowProps) {
         >
           {row.key}
         </span>
+        {isBuildTimeKey(row.key) ? (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Badge variant="outline" className="gap-1">
+                  <WrenchGlassIcon size="1.4em" aria-hidden />
+                  {t('buildTime.badge')}
+                </Badge>
+              }
+            />
+            <TooltipContent>{t('buildTime.tooltip')}</TooltipContent>
+          </Tooltip>
+        ) : null}
         {row.sensitive && row.type === 'plain' ? (
           <Badge variant="outline" className="gap-1">
             <LockGlassIcon size="1.4em" aria-hidden />

@@ -52,9 +52,14 @@ const app: AppDetail = {
   replicas: 1,
   suspended: false,
   env_dirty: false,
-  env: { PORT: '3000', API_SECRET: MASKED_VALUE },
+  env: {
+    PORT: '3000',
+    API_SECRET: MASKED_VALUE,
+    NEXT_PUBLIC_SITE: 'https://a.example',
+  },
   env_meta: {
     PORT: { sensitive: false, set: true, value_redacted: false },
+    NEXT_PUBLIC_SITE: { sensitive: false, set: true, value_redacted: false },
     API_SECRET: {
       sensitive: true,
       set: true,
@@ -214,6 +219,13 @@ describe('EnvironmentEditor', () => {
     expect(document.body.textContent).not.toContain(REAL_SECRET)
   })
 
+  it('marks build time variables with a badge', async () => {
+    mockServer()
+    renderEditor()
+    await screen.findByText('NEXT_PUBLIC_SITE')
+    expect(screen.getAllByText('Build time')).toHaveLength(1)
+  })
+
   it('asks for a password before revealing, then auto-hides the value', async () => {
     const calls = mockServer()
     const user = userEvent.setup()
@@ -274,6 +286,52 @@ describe('EnvironmentEditor', () => {
       env: Record<string, string>
     }
     expect(sent.env).toEqual({ PORT: '4000', API_SECRET: MASKED_VALUE })
+  })
+
+  it('rebuild now runs a source build from the git source, not a redeploy', async () => {
+    const calls = mockServer({
+      'PUT /api/v1/apps/demo': () =>
+        json({ ...app, rebuild_keys: ['NEXT_PUBLIC_SITE'] }),
+      'GET /api/v1/apps/demo/git-source': () =>
+        json({
+          repo_url: 'https://git.example/demo.git',
+          branch: 'main',
+          build_type: 'dockerfile',
+        }),
+      'POST /api/v1/apps/demo/builds': () => json({ id: 'att_1' }, 202),
+    })
+    const user = userEvent.setup()
+    renderEditor()
+    await screen.findByText('API_SECRET')
+    await user.click(screen.getByRole('button', { name: 'Edit as .env' }))
+    const textarea = screen.getByLabelText<HTMLTextAreaElement>(
+      'Variables as .env text, one KEY=value per line',
+    )
+    await user.clear(textarea)
+    await user.type(
+      textarea,
+      `NEXT_PUBLIC_SITE=https://b.example{enter}API_SECRET=${MASKED_VALUE}{enter}DB_PASSWORD=${MASKED_VALUE}`,
+    )
+    await user.click(screen.getByRole('button', { name: 'Apply to table' }))
+    await user.click(screen.getByRole('button', { name: 'Review changes' }))
+    const dialog = await screen.findByRole('dialog')
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Save changes' }),
+    )
+    await user.click(await screen.findByRole('button', { name: 'Rebuild now' }))
+    await waitFor(() => {
+      expect(
+        calls.some(
+          (c) => c.method === 'POST' && c.url === '/api/v1/apps/demo/builds',
+        ),
+      ).toBe(true)
+    })
+    const post = calls.find((c) => c.url === '/api/v1/apps/demo/builds')
+    expect(JSON.parse(post?.body ?? '{}')).toMatchObject({
+      repo_url: 'https://git.example/demo.git',
+      ref: 'main',
+    })
+    expect(calls.some((c) => c.url === '/api/v1/apps/demo/deploys')).toBe(false)
   })
 
   it('suggests Secret when a new name looks sensitive', async () => {

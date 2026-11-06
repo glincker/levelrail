@@ -73,7 +73,7 @@ levelrail-cli deploy --dry-run
 levelrail-cli deploy --env LOG_LEVEL=info --build-env NODE_ENV=production
 ```
 
-`--env` sets runtime variables on the app and is repeatable. `--build-env` passes Dockerfile `ARG` values to the build and is repeatable. For secrets use `levelrail-cli apps secrets set`, not `--env`, because env values are visible in the app's env list.
+`--env` sets runtime variables on the app and is repeatable. `--build-env` passes Dockerfile `ARG` values to the build and is repeatable. It is refused up front, before anything is created or uploaded, for a build that has no Dockerfile; those builds read `--env` at build time (for example `NEXT_PUBLIC_*` values are inlined). For secrets use `levelrail-cli apps secrets set`, not `--env`, because env values are visible in the app's env list.
 
 ## Size limits and retention
 
@@ -96,10 +96,10 @@ Every build is tagged with its archive hash, so the normal rollback works:
 levelrail-cli rollback demo-app
 ```
 
-To rebuild an earlier upload from the stored archive without sending the directory again, pass its hash from the app overview or deploy history:
+To rebuild an earlier upload from the stored archive without sending the directory again, pass its digest, or a unique prefix of at least 8 characters (the full digest is printed after every upload):
 
 ```bash
-levelrail-cli deploy --app demo-app --upload-hash 3f9c1a0b52de...
+levelrail-cli deploy --app demo-app --upload-hash 3f9c1a0b
 ```
 
 This only works while the archive is still within the retention period; after that, deploy the directory again.

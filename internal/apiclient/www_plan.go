@@ -18,6 +18,8 @@ type WWWPlanRecord struct {
 		Type  string `json:"type"`
 		Value string `json:"value"`
 	} `json:"replaces"`
+	Current []string `json:"current,omitempty"`
+	State   string   `json:"state,omitempty"`
 }
 
 // WWWPlan is GET .../domains/{domain}/dns/plan's body.
@@ -32,7 +34,11 @@ type WWWPlan struct {
 		From string `json:"from"`
 		To   string `json:"to"`
 	} `json:"redirect"`
-	Message string `json:"message"`
+	Message        string `json:"message"`
+	WWWAttached    bool   `json:"www_attached"`
+	WWWPointsHere  bool   `json:"www_points_here"`
+	ApexPointsHere bool   `json:"apex_points_here"`
+	WWWRedirects   bool   `json:"www_redirects"`
 }
 
 // DomainWWWPlan reads the apex and www DNS preview; empty mode or canonical
@@ -91,14 +97,19 @@ type WWWApply struct {
 	Undo            []WWWApplyUndo `json:"undo"`
 	RunID           string         `json:"run_id"`
 	Message         string         `json:"message"`
+	WWWAttached     bool           `json:"www_attached"`
+	AttachedNow     bool           `json:"attached_now"`
 }
 
 // DomainWWWApply writes the apex and www records. The server refuses unless
 // confirm is true.
-func (c *Client) DomainWWWApply(ctx context.Context, app, domain, mode, canonical string, replace, confirm, noRedirect bool) (WWWApply, error) {
+func (c *Client) DomainWWWApply(ctx context.Context, app, domain, mode, canonical string, replace, confirm, noRedirect, attach bool) (WWWApply, error) {
 	body := map[string]any{"mode": mode, "canonical": canonical, "replace": replace, "confirm": confirm}
 	if noRedirect {
 		body["redirect"] = false
+	}
+	if attach {
+		body["attach"] = true
 	}
 	path := "/api/v1/apps/" + PathEscape(app) + "/domains/" + PathEscape(domain) + "/dns/apply"
 	var out WWWApply

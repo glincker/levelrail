@@ -9,6 +9,14 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
+// appUpdateResponse adds the build-time env hint to the saved app; the
+// rebuild itself stays an explicit user action.
+type appUpdateResponse struct {
+	appResource
+	RebuildRequired bool     `json:"rebuild_required,omitempty"`
+	RebuildKeys     []string `json:"rebuild_keys,omitempty"`
+}
+
 // handleUpdateApp handles PUT /api/v1/apps/{name}. A field the body omits
 // keeps its stored value; an explicit empty value or null clears it.
 func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
@@ -130,5 +138,6 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 		req.EnvDirty = saved.EnvDirty
 	}
 	rt.redactAppResponse(r.Context(), &req, desired)
-	writeJSON(w, http.StatusOK, req)
+	keys := buildTimeEnvChanges(existing.Env, desired.Env)
+	writeJSON(w, http.StatusOK, appUpdateResponse{appResource: req, RebuildRequired: len(keys) > 0, RebuildKeys: keys})
 }

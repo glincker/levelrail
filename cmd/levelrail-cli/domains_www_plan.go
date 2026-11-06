@@ -39,10 +39,22 @@ func runDomainsWWWPlan(prog string, args []string, stdout, stderr io.Writer, loo
 		if plan.Redirect != nil {
 			_, _ = fmt.Fprintf(stdout, "redirect: %s -> %s (308)\n", plan.Redirect.From, plan.Redirect.To)
 		}
+		_, _ = fmt.Fprintf(stdout, "www attached to app: %s\n", wwwYesNo(plan.WWWAttached))
+		_, _ = fmt.Fprintf(stdout, "www DNS points here: %s\n", wwwYesNo(plan.WWWPointsHere))
+		if !plan.WWWAttached {
+			_, _ = fmt.Fprintf(stdout, "next: %s domains www-apply %s %s --attach --yes\n", prog, rest[0], rest[1])
+		}
 		if plan.Message != "" {
 			_, _ = fmt.Fprintf(stdout, "note: %s\n", plan.Message)
 		}
 	})
+}
+
+func wwwYesNo(b bool) string {
+	if b {
+		return "yes"
+	}
+	return "no"
 }
 
 func domainsWWWPlanUsage(prog string) string {
@@ -50,7 +62,8 @@ func domainsWWWPlanUsage(prog string) string {
   %[1]s domains www-plan <app> <domain> [--mode both|apex_only|www_only] [--canonical apex|www] [--no-redirect] [flags]
 
 Previews the apex and www DNS records for a bare domain and the 308 redirect
-between the two hosts. Read only: no DNS record is written.
+between the two hosts, plus whether www is attached to the app and whether
+public DNS for it points at this server. Read only: no DNS record is written.
 
 Flags:
   --mode string            both, apex_only or www_only (default: the domains.www_mode setting)

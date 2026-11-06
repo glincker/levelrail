@@ -86,13 +86,84 @@ function RecordRows({ records }: { records: WwwPlanRecord[] }) {
               ) : null}
             </span>
             <span className="text-xs text-muted-foreground">
-              {t(`www.outcome.${r.outcome}`)}
+              {r.state
+                ? t(`www.state.${r.state}`)
+                : t(`www.outcome.${r.outcome}`)}
             </span>
             <CopyButton value={r.value} />
           </li>
         )
       })}
     </ul>
+  )
+}
+
+function ConnectRecommendation({
+  domain,
+  pointsHere,
+  cnameValue,
+  pending,
+  checking,
+  onConnect,
+  onCheck,
+  onOther,
+}: {
+  domain: string
+  pointsHere: boolean
+  cnameValue: string
+  pending: boolean
+  checking: boolean
+  onConnect: () => void
+  onCheck: () => void
+  onOther: () => void
+}) {
+  const { t } = useTranslation('domains')
+  return (
+    <div className="space-y-2 rounded-md border border-primary/40 bg-muted/40 p-3">
+      <p className="text-sm">
+        {pointsHere
+          ? t('www.connectPointsHere', { domain })
+          : t('www.connectNeedsDns', { domain })}
+      </p>
+      {pointsHere ? null : (
+        <p className="flex items-center gap-2 font-mono text-sm">
+          <span>CNAME www</span>
+          <span className="break-all">{cnameValue}</span>
+          <CopyButton value={cnameValue} />
+        </p>
+      )}
+      <div className="flex flex-wrap items-center gap-3">
+        {pointsHere ? (
+          <Button
+            type="button"
+            size="sm"
+            disabled={pending}
+            onClick={onConnect}
+          >
+            {pending ? t('www.connecting') : t('www.connectButton')}
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={checking}
+            onClick={onCheck}
+          >
+            {t('www.retry')}
+          </Button>
+        )}
+        <Button
+          type="button"
+          variant="link"
+          size="sm"
+          className="h-auto p-0 text-muted-foreground"
+          onClick={onOther}
+        >
+          {t('www.otherOptions')}
+        </Button>
+      </div>
+    </div>
   )
 }
 
@@ -148,6 +219,7 @@ export function DomainWwwCard({
   const { t } = useTranslation('domains')
   const groupId = useId()
   const [choiceId, setChoiceId] = useState<ChoiceId>('apex')
+  const [showOptions, setShowOptions] = useState(false)
   const hidden = wwwDoesNotApply(domain)
   const choice = CHOICES[choiceId]
   const plan = useQuery({
@@ -165,6 +237,10 @@ export function DomainWwwCard({
   const hasProvider = Boolean(data?.provider)
   const hasConflict = data?.records.some((r) => r.outcome === 'conflict')
   const showRedirect = choiceId !== 'both' && data?.redirect
+  const recommend = data?.www_attached === false && !showOptions
+  const connected = data?.www_attached === true && showOptions === false
+  const cnameValue =
+    data?.records.find((r) => r.name === 'www')?.value ?? domain
 
   return (
     <section
@@ -180,7 +256,35 @@ export function DomainWwwCard({
         </p>
       </div>
 
-      <fieldset className="space-y-1">
+      {recommend && data ? (
+        <ConnectRecommendation
+          domain={domain}
+          pointsHere={data.www_points_here === true}
+          cnameValue={cnameValue}
+          pending={apply.isPending}
+          checking={plan.isFetching}
+          onConnect={() =>
+            apply.mutate({ ...choice, replace: false, attach: true })
+          }
+          onCheck={() => void plan.refetch()}
+          onOther={() => setShowOptions(true)}
+        />
+      ) : connected && data?.www_redirects ? (
+        <p className="flex items-center gap-2 text-sm text-tone-success">
+          <CircleCheckGlassIcon size="1.2em" />
+          {t('www.connectedRedirect', { domain })}
+        </p>
+      ) : null}
+      {recommend && apply.isError ? (
+        <Alert variant="destructive">
+          <AlertDescription>
+            {t('www.applyError', { message: apply.error.message })}
+          </AlertDescription>
+        </Alert>
+      ) : null}
+      {recommend && apply.data ? <ApplyResult result={apply.data} /> : null}
+
+      <fieldset className={recommend ? 'hidden' : 'space-y-1'}>
         <legend className="sr-only">{t('www.choiceLabel')}</legend>
         {CHOICE_ORDER.map((id) => (
           <label key={id} className="flex items-center gap-2 text-sm">
@@ -217,7 +321,7 @@ export function DomainWwwCard({
             </Button>
           </AlertDescription>
         </Alert>
-      ) : data ? (
+      ) : data && recommend ? null : data ? (
         <div className="space-y-2">
           <RecordRows records={data.records} />
           {showRedirect ? (

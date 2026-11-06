@@ -127,6 +127,10 @@ type AppResource struct {
 	// Env was saved since the running container was last recreated, so
 	// the change is not live yet. Clears on restart or redeploy.
 	EnvDirty bool `json:"env_dirty"`
+	// RebuildRequired and RebuildKeys are response-only on PUT: build-time
+	// env keys (NEXT_PUBLIC_, VITE_) changed, which need a rebuild to apply.
+	RebuildRequired bool     `json:"rebuild_required,omitempty"`
+	RebuildKeys     []string `json:"rebuild_keys,omitempty"`
 	// PreviousReleaseHeldUntil mirrors internal/api's GET app payload: when
 	// the kept previous release, an instant rollback target, is removed.
 	PreviousReleaseHeldUntil string `json:"previous_release_held_until,omitempty"`

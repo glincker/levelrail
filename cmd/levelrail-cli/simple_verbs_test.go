@@ -181,13 +181,14 @@ func TestOpenPrintsURLs(t *testing.T) {
 	}
 }
 
+// An empty result also looks for a building deploy, so path is the last of two calls.
 func TestLogsAcceptsAnAppName(t *testing.T) {
 	var path string
 	srv := newListEchoServer(t, &path, map[string]any{"entries": []logEntryResource{}})
 	defer srv.Close()
 	var out, errb bytes.Buffer
 	code := run("levelrail-cli-test", cliArgs(srv, "logs", "web"), &out, &errb, envMap())
-	if code != exitOK || !strings.Contains(path, "/apps/web/logs") {
+	if code != exitOK || !strings.Contains(path, "/apps/web/") {
 		t.Errorf("code=%d path=%q stderr=%q", code, path, errb.String())
 	}
 	if code := run("levelrail-cli-test", []string{"logs", "--bogus"}, &out, &errb, envMap()); code != exitUsage {

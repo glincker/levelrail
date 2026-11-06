@@ -48,6 +48,7 @@ func runEnvSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 			secretKeys = append(secretKeys, b.Key)
 		}
 	}
+	var rebuildKeys []string
 	plan := planEnvImport(app.Env, entries, secretKeys, false)
 	result := envImportResult{App: name, Plan: plan}
 	warnEnvSecrets(ctx, client, stderr, name, plan)
@@ -56,9 +57,11 @@ func runEnvSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 	}
 	if len(plan.New) > 0 || len(plan.Changed) > 0 {
 		app.Env = plan.Merged
-		if _, err := client.UpdateApp(ctx, name, app); err != nil {
+		saved, err := client.UpdateApp(ctx, name, app)
+		if err != nil {
 			return reportError(stdout, stderr, jsonOut, fmt.Errorf("update env for app %q: %w", name, err))
 		}
+		rebuildKeys = saved.RebuildKeys
 		result.Applied = true
 	}
 	code := writeScheduledTaskResult(stdout, stderr, of, result, func() { printEnvImportHuman(stdout, name, result) })
@@ -67,11 +70,28 @@ func runEnvSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		if of.Format == outputJSON || of.Query != "" {
 			hintOut = io.Discard
 		}
+		gitApp := false
+		if len(rebuildKeys) > 0 {
+			_, gerr := client.GetGitSource(ctx, name)
+			gitApp = gerr == nil
+		}
+		printRebuildHint(hintOut, prog, name, rebuildKeys, gitApp)
 		if applyCode := afterConfigWrite(ctx, client, prog, name, apply, hintOut, stderr); code == exitOK {
 			code = applyCode
 		}
 	}
 	return code
+}
+
+// printRebuildHint names the command that rebuilds this app's source; the CLI cannot tell upload from image-only apps cheaply.
+func printRebuildHint(w io.Writer, prog, app string, keys []string, gitApp bool) {
+	for _, k := range keys {
+		if gitApp {
+			_, _ = fmt.Fprintf(w, "%s is baked in at build time: run %s deploy %s --latest to apply\n", k, prog, app)
+			continue
+		}
+		_, _ = fmt.Fprintf(w, "%s is baked in at build time: run %s deploy <dir> from your project folder to apply, or rebuild the image where it is built\n", k, prog)
+	}
 }
 
 func envSetUsage(prog string) string {
@@ -81,6 +101,7 @@ func envSetUsage(prog string) string {
 Sets plain environment variables on an app, creating or changing them.
 Keys stored as secrets are refused, use "%[1]s apps secrets set" for those.
 Changes reach the running container at the next restart, or now with --apply.
+NEXT_PUBLIC_ and VITE_ keys are baked in at build time: a git app needs "%[1]s deploy <app> --latest", an upload app "%[1]s deploy <dir>".
 
 Flags:
   --apply             restart the app now so the new env reaches the running container

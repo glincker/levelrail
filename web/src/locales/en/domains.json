@@ -1582,7 +1582,20 @@
       "failed": "Failed",
       "not_attempted": "Not tried"
     },
-    "redirectApplied": "The redirect is active."
+    "redirectApplied": "The redirect is active.",
+    "connectTitle": "Connect www to this app",
+    "connectPointsHere": "www.{{domain}} already points to this server but is not connected to this app. Connect it and send www visitors to {{domain}}.",
+    "connectNeedsDns": "www.{{domain}} is not connected to this app yet. Add this CNAME where you manage DNS, then check again.",
+    "connectButton": "Connect www and redirect",
+    "connecting": "Connecting",
+    "otherOptions": "Choose another option",
+    "connectedRedirect": "www redirects to {{domain}}",
+    "connectedNoRedirect": "www is connected to this app",
+    "connectDone": "www is connected to this app.",
+    "state": {
+      "already_correct": "Already set",
+      "missing": "Not set"
+    }
   },
   "moreOptions": {
     "title": "More options",
@@ -1650,7 +1663,8 @@
     "issueFailed": "The certificate could not be issued. Check that the record points here and port 80 is open, then press Check now.",
     "route": {
       "503": "The route answers 503, which means the server is reachable but the app behind it is not ready or not attached to this domain.",
-      "404": "The route answers 404, which means the server is reachable but does not know this domain yet."
+      "404": "The route answers 404, which means the server is reachable but does not know this domain yet.",
+      "5xx": "The route answers a server error, which means the server is reachable but the app behind it is failing. Check the app logs."
     },
     "diagnose": "Why is it not answering?"
   }

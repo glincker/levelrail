@@ -5,11 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"os"
 	"runtime"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -234,6 +236,11 @@ func (l *Limiter) run(ctx context.Context, tag, srcDir string, progress func(Pro
 	if w := LowMemoryWarning(DetectBuildFramework(srcDir), hostMB); w != "" && progress != nil {
 		progress(ProgressEvent{Step: "memory guard", Log: w, Stream: "stderr"})
 	}
+	for _, line := range NextBuildNotes(srcDir, hostMB, l.nextMinFreeMiB(ctx)) {
+		if progress != nil {
+			progress(ProgressEvent{Step: "next.js", Log: line, Stream: "stderr"})
+		}
+	}
 	heapMB := 0
 	if nodeID == "" {
 		heapMB = NodeHeapMB(lim.MemoryMB, l.guard.NodeHeapPercent)
@@ -380,3 +387,53 @@ func (l *Limiter) Queued() (waiting, running int) {
 
 // HostPlatform is the OS/arch BuildKit builds for: the daemon's own platform, since no cross-platform target is requested.
 func HostPlatform() string { return runtime.GOOS + "/" + runtime.GOARCH }
+
+// EnvBuildNextMinFreeMemoryMiB seeds the Next.js low memory warning threshold.
+const EnvBuildNextMinFreeMemoryMiB = "APP_BUILD_NEXT_MIN_FREE_MEMORY_MIB"
+
+// KeyBuildNextMinFreeMemoryMiB is the runtime setting key.
+const KeyBuildNextMinFreeMemoryMiB = "build.next_min_free_memory_mib"
+
+// DefaultNextMinFreeMemoryMiB is the seed default when no setting is wired.
+const DefaultNextMinFreeMemoryMiB = 2048
+
+var nextMinFreeResolver atomic.Pointer[func(context.Context) int]
+
+// SetNextMinFreeMemoryResolver wires the saved setting in at boot so changes apply live.
+func SetNextMinFreeMemoryResolver(fn func(context.Context) int) {
+	if fn == nil {
+		nextMinFreeResolver.Store(nil)
+		return
+	}
+	nextMinFreeResolver.Store(&fn)
+}
+
+func (l *Limiter) nextMinFreeMiB(ctx context.Context) int {
+	if fn := nextMinFreeResolver.Load(); fn != nil {
+		return (*fn)(ctx)
+	}
+	if v, err := strconv.Atoi(strings.TrimSpace(os.Getenv(EnvBuildNextMinFreeMemoryMiB))); err == nil {
+		return v
+	}
+	return DefaultNextMinFreeMemoryMiB
+}
+
+// NextBuildNotes returns the build log lines for a Next.js source: what was detected and, when
+// the host is under minFreeMiB, a memory warning. It never blocks a build.
+func NextBuildNotes(srcDir string, hostMiB, minFreeMiB int) []string {
+	prof := DetectNext(srcDir)
+	if !prof.Detected {
+		return nil
+	}
+	yn := func(b bool) string {
+		if b {
+			return "yes"
+		}
+		return "no"
+	}
+	notes := []string{fmt.Sprintf("next.js %d detected (standalone: %s, app router: %s)", prof.Major, yn(prof.Standalone), yn(prof.UsesAppRouter))}
+	if minFreeMiB > 0 && hostMiB > 0 && hostMiB < minFreeMiB {
+		notes = append(notes, fmt.Sprintf("next.js builds can run out of memory on this host (%d MiB free). Add swap or build elsewhere.", hostMiB))
+	}
+	return notes
+}
