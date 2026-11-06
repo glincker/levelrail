@@ -63,10 +63,12 @@ func (s *Syncer) unroutedFile(ctx context.Context, p Plan) (File, bool) {
 		})
 		return File{}, false
 	}
+	// A transient failure below returns only the name so the caller keeps the file already on disk.
+	failed := File{Name: s.NS.UnroutedFileName(p.Provider.Ext())}
 	up, err := PathFromSettings(p.Settings.UpstreamHost, s.Unit).Resolve(s.Ingress)
 	if err != nil {
 		s.warn(ctx, "unrouted upstream", unroutedName, err)
-		return File{}, false
+		return failed, false
 	}
 	prio := s.UnroutedPriority
 	if prio == 0 {
@@ -78,7 +80,7 @@ func (s *Syncer) unroutedFile(ctx context.Context, p Plan) (File, bool) {
 	})
 	if err != nil {
 		s.warn(ctx, "unrouted render", unroutedName, err)
-		return File{}, false
+		return failed, false
 	}
 	return File{Domain: unroutedName, Name: s.NS.UnroutedFileName(p.Provider.Ext()), Content: content}, true
 }

@@ -330,6 +330,8 @@ func (s *Syncer) Sync(ctx context.Context) (Report, error) {
 	extra, hasExtra := s.unroutedFile(ctx, p)
 	if hasExtra {
 		want = append(want, extra)
+	} else if extra.Name != "" {
+		keep[extra.Name] = true
 	}
 	if p.Provider.Mode() != "" && p.Provider.Kind() != KindTraefik && s.Exec == nil {
 		msg := "cannot reach the proxy container: Docker is not available to this process"
@@ -366,6 +368,9 @@ func (s *Syncer) Sync(ctx context.Context) (Report, error) {
 	for _, o := range res.Files {
 		it, tracked := byName[o.Name]
 		if !tracked {
+			if hasExtra && o.Name == extra.Name && o.Changed && o.Err == nil && rejected == nil {
+				s.audit(ctx, store.AuditActionProxyRouteWrite, o.Domain)
+			}
 			continue
 		}
 		if rejected != nil && o.Changed {

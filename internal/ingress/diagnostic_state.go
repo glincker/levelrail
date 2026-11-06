@@ -2,19 +2,19 @@ package ingress
 
 import (
 	"context"
-	"html"
-	"net"
 	"net/http"
 	"strings"
-	"sync"
-	"time"
+
+	"golang.org/x/net/idna"
 )
 
-// Runtime setting key and env seed for how long a host's state is reused.
+// Runtime setting keys and env seeds: how often the host state snapshot
+// refreshes, and whether the page may reveal a host's state at all.
 const (
 	KeyDiagnosticCacheTTLSeconds = "ingress.diagnostic_cache_ttl_seconds"
 	EnvDiagnosticCacheTTLSeconds = "LEVELRAIL_INGRESS_DIAGNOSTIC_CACHE_TTL_SECONDS"
-	diagnosticCacheMaxHosts      = 2048
+	KeyDiagnosticShowState       = "ingress.diagnostic_show_state"
+	EnvDiagnosticShowState       = "LEVELRAIL_INGRESS_DIAGNOSTIC_SHOW_STATE"
 )
 
 // HostState is the real reason a host has no answering app.
@@ -28,13 +28,32 @@ const (
 	StateStarting   HostState = "starting"
 	StateUnhealthy  HostState = "unhealthy"
 	StateUnknown    HostState = "unknown"
+	// StateNotLoaded means no snapshot has been built yet, so nothing is known.
+	StateNotLoaded HostState = "not_loaded"
 )
 
-// HostInfo is what a lookup returns. App is set only when the host is
-// attached to it, so an unattached host never leaks an app name.
+// HostInfo is what a lookup returns. It never carries an app name: the
+// public page must not disclose internal names.
 type HostInfo struct {
 	State HostState
-	App   string
+}
+
+// NormalizeHost lowercases, strips a port and trailing dot, and converts to
+// ASCII (punycode) so both sides of a match compare equal.
+func NormalizeHost(h string) string {
+	h = strings.ToLower(strings.TrimSpace(h))
+	if strings.HasPrefix(h, "[") {
+		if i := strings.Index(h, "]"); i > 0 {
+			h = h[1:i]
+		}
+	} else if i := strings.LastIndex(h, ":"); i >= 0 && strings.Count(h, ":") == 1 {
+		h = h[:i]
+	}
+	h = strings.TrimSuffix(h, ".")
+	if a, err := idna.Lookup.ToASCII(h); err == nil {
+		h = a
+	}
+	return h
 }
 
 // HostLookup maps a lowercase host to its state; it must not hit the DB per call.
@@ -47,10 +66,7 @@ func cmdItem(label, cmd string) string {
 }
 
 func stateContent(info HostInfo) (stateContentSet, bool) {
-	app := "&lt;app&gt;"
-	if info.App != "" {
-		app = html.EscapeString(info.App)
-	}
+	const app = "&lt;app&gt;"
 	switch info.State {
 	case StateUnattached:
 		return stateContentSet{"This address is not attached to an app",
@@ -76,48 +92,18 @@ func stateContent(info HostInfo) (stateContentSet, bool) {
 	return stateContentSet{}, false
 }
 
-// CachedLookup reuses results for a TTL read live, so a settings change applies
-// without a restart. The map is capped so random hostnames cannot grow it.
-func CachedLookup(inner HostLookup, ttl func(context.Context) time.Duration) HostLookup {
-	type entry struct {
-		info HostInfo
-		at   time.Time
-	}
-	var mu sync.Mutex
-	cache := map[string]entry{}
-	return func(ctx context.Context, host string) HostInfo {
-		d := ttl(ctx)
-		now := time.Now()
-		mu.Lock()
-		e, ok := cache[host]
-		mu.Unlock()
-		if ok && d > 0 && now.Sub(e.at) < d {
-			return e.info
-		}
-		info := inner(ctx, host)
-		if d > 0 {
-			mu.Lock()
-			if len(cache) >= diagnosticCacheMaxHosts {
-				cache = map[string]entry{}
-			}
-			cache[host] = entry{info, now}
-			mu.Unlock()
-		}
-		return info
-	}
-}
-
 // DiagnosticHandler answers a request for a host with no answering app: HTML
-// for browsers, short plain text for other clients. Never reveals env or IPs.
-func DiagnosticHandler(lookup HostLookup, brandName, docsURL string) http.Handler {
+// for browsers, short plain text for other clients. Unless showState is true
+// every host gets the same generic 404, so probing learns nothing.
+func DiagnosticHandler(lookup HostLookup, showState func(context.Context) bool, brandName, docsURL string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		host := strings.ToLower(r.Host)
-		if h, _, err := net.SplitHostPort(host); err == nil {
-			host = h
+		info := HostInfo{State: StateNotLoaded}
+		if lookup != nil && showState != nil && showState(r.Context()) {
+			info = lookup(r.Context(), NormalizeHost(r.Host))
 		}
-		info := HostInfo{State: StateUnknown}
-		if lookup != nil {
-			info = lookup(r.Context(), host)
+		if info.State == StateNotLoaded {
+			WriteGenericDiagnostic(w, r, brandName, docsURL)
+			return
 		}
 		status := http.StatusServiceUnavailable
 		if info.State == StateUnattached {
@@ -140,4 +126,18 @@ func DiagnosticHandler(lookup HostLookup, brandName, docsURL string) http.Handle
 		w.WriteHeader(status)
 		_, _ = w.Write([]byte(msg + "\n"))
 	})
+}
+
+// WriteGenericDiagnostic is the same 404 body the static ingress page gives.
+func WriteGenericDiagnostic(w http.ResponseWriter, r *http.Request, brandName, docsURL string) {
+	w.Header().Set("Cache-Control", "no-store")
+	if strings.Contains(r.Header.Get("Accept"), "text/html") {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(renderDiagnosticHTML(http.StatusNotFound, HostInfo{}, brandName, docsURL)))
+		return
+	}
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.WriteHeader(http.StatusNotFound)
+	_, _ = w.Write([]byte(diagnosticMessage404 + "\n"))
 }

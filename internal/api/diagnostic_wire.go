@@ -4,20 +4,23 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
-	"regexp"
-	"strings"
 	"sync/atomic"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// diagnosticTTL is set by wireDiagnosticSettings; it stays nil until runtime
-// settings attach, in which case the default applies.
-var diagnosticTTL atomic.Pointer[func(context.Context) time.Duration]
+// diagnosticTTL and diagnosticShow are set by wireDiagnosticSettings; they stay
+// nil until runtime settings attach, in which case the defaults apply (refresh
+// every 5 s, state hidden).
+var (
+	diagnosticTTL  atomic.Pointer[func(context.Context) time.Duration]
+	diagnosticShow atomic.Pointer[func(context.Context) bool]
+)
 
 // diagnosticHandler is nil until StartDiagnostic runs; the route answers 404 then.
 var diagnosticHandler atomic.Pointer[http.Handler]
@@ -35,6 +38,15 @@ const defaultDiagnosticTTL = 5 * time.Second
 func wireDiagnosticSettings(svc *runtimesettings.Service) {
 	f := DiagnosticCacheTTL(svc)
 	diagnosticTTL.Store(&f)
+	g := DiagnosticShowState(svc)
+	diagnosticShow.Store(&g)
+}
+
+func liveDiagnosticShow(ctx context.Context) bool {
+	if f := diagnosticShow.Load(); f != nil {
+		return (*f)(ctx)
+	}
+	return false
 }
 
 func liveDiagnosticTTL(ctx context.Context) time.Duration {
@@ -55,16 +67,6 @@ type DiagnosticStore interface {
 type DiagnosticContainers interface {
 	ListByPrefix(ctx context.Context, prefix string) ([]docker.ContainerState, error)
 }
-
-func isReplicaOf(container, service string) bool {
-	if container == service {
-		return true
-	}
-	rest, ok := strings.CutPrefix(container, service)
-	return ok && replicaSuffix.MatchString(rest)
-}
-
-var replicaSuffix = regexp.MustCompile(`^-\d+$`)
 
 // DiagnosticFacts gathers per service facts; freshWindow is how long a
 // running container counts as still starting.
@@ -95,17 +97,19 @@ func DiagnosticFacts(st DiagnosticStore, cs DiagnosticContainers, freshWindow ti
 			f := ingress.ServiceFacts{
 				Name: s.Name, Domains: s.Domains, Building: building[s.Name],
 				Stopped: s.Suspended || s.Replicas == 0,
+				// Only this node's containers are listed, so other nodes' apps are unknowable here.
+				Remote: s.NodeID != "",
 			}
 			for _, c := range containers {
-				if !isReplicaOf(c.Name, s.Name) {
+				if !application.OwnsContainer(s.Name, c.Name) {
 					continue
 				}
 				f.Containers++
 				if c.Running {
 					f.Running++
-					if !c.Created.IsZero() && now().Sub(c.Created) < freshWindow {
-						f.Fresh = true
-					}
+				}
+				if !c.Created.IsZero() && now().Sub(c.Created) < freshWindow {
+					f.Fresh = true
 				}
 			}
 			out = append(out, f)
@@ -127,11 +131,10 @@ func (rt *Router) StartDiagnostic(ctx context.Context, token, brandName, docsURL
 		cs, _ = any(rt.containers).(DiagnosticContainers)
 	}
 	snap := ingress.NewDiagnosticSnapshot(DiagnosticFacts(st, cs, freshWindow, time.Now))
-	go snap.Run(ctx, liveDiagnosticTTL, func(err error) {
+	go snap.Run(ctx, liveDiagnosticTTL, liveDiagnosticShow, func(err error) {
 		rt.logger.Warn("api: diagnostic snapshot refresh failed", slog.String("error", err.Error()))
 	})
-	// The snapshot is already an in-memory cache, so no per host cache layer.
-	h := ingress.TrustedDiagnosticHandler(token, ingress.DiagnosticHandler(snap.Lookup, brandName, docsURL))
+	h := ingress.TrustedDiagnosticHandler(token, ingress.DiagnosticHandler(snap.Lookup, liveDiagnosticShow, brandName, docsURL), brandName, docsURL)
 	diagnosticHandler.Store(&h)
 	return h
 }

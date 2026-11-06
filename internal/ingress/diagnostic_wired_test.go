@@ -20,6 +20,7 @@ func TestStateOfTable(t *testing.T) {
 		{"no containers yet", ServiceFacts{}, StateStarting},
 		{"fresh running", ServiceFacts{Containers: 1, Running: 1, Fresh: true}, StateStarting},
 		{"exited only", ServiceFacts{Containers: 1}, StateUnhealthy},
+		{"remote node", ServiceFacts{Remote: true}, StateUnknown},
 		{"old running yet unrouted", ServiceFacts{Containers: 1, Running: 1}, StateUnknown},
 	}
 	for _, c := range cases {
@@ -31,19 +32,27 @@ func TestStateOfTable(t *testing.T) {
 
 func TestSnapshotLookupUnattachedAndAttached(t *testing.T) {
 	s := NewDiagnosticSnapshot(func(context.Context) ([]ServiceFacts, error) {
-		return []ServiceFacts{{Name: "web", Domains: []string{"Web.Example.com"}, Stopped: true}}, nil
+		return []ServiceFacts{{Name: "web", Domains: []string{"Web.Example.com", "*.wild.test"}, Stopped: true}}, nil
 	})
-	if got := s.Lookup(context.Background(), "web.example.com"); got.State != StateUnattached {
+	if got := s.Lookup(context.Background(), "web.example.com"); got.State != StateNotLoaded {
 		t.Fatalf("before refresh: %v", got)
 	}
 	if err := s.Refresh(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if got := s.Lookup(context.Background(), "web.example.com"); got.State != StateStopped || got.App != "web" {
+	if got := s.Lookup(context.Background(), "web.example.com"); got.State != StateStopped {
 		t.Fatalf("attached: %v", got)
 	}
-	if got := s.Lookup(context.Background(), "other.example.com"); got.State != StateUnattached || got.App != "" {
+	if got := s.Lookup(context.Background(), "WEB.example.com.:443"); got.State != StateStopped {
+		t.Fatalf("normalized: %v", got)
+	}
+	if got := s.Lookup(context.Background(), "other.example.com"); got.State != StateUnattached {
 		t.Fatalf("unattached leaked: %v", got)
+	}
+	for host, want := range map[string]HostState{"a.wild.test": StateStopped, "a.b.wild.test": StateUnattached, "wild.test": StateUnattached} {
+		if got := s.Lookup(context.Background(), host).State; got != want {
+			t.Errorf("wildcard %s: got %s want %s", host, got, want)
+		}
 	}
 }
 
@@ -66,14 +75,14 @@ func TestCatchAllFallsBackToStaticWhenEndpointDown(t *testing.T) {
 func TestTrustedDiagnosticIgnoresClientHeaders(t *testing.T) {
 	var gotHost string
 	inner := http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) { gotHost = r.Host })
-	h := TrustedDiagnosticHandler("secret", inner)
+	h := TrustedDiagnosticHandler("secret", inner, "B", "https://d")
 
 	req := httptest.NewRequest(http.MethodGet, DiagnosticPath, nil)
 	req.Header.Set(DiagnosticHostHeader, "evil.example.com")
 	req.Header.Set(DiagnosticTokenHeader, "guess")
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, req)
-	if rec.Code != http.StatusNotFound || gotHost != "" {
+	if rec.Code != http.StatusNotFound || gotHost != "" || !strings.Contains(rec.Body.String(), "No app is serving this address") {
 		t.Fatalf("client supplied headers were trusted: %d %q", rec.Code, gotHost)
 	}
 

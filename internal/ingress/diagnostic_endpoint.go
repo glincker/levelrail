@@ -15,12 +15,13 @@ const (
 
 // TrustedDiagnosticHandler serves inner only for requests carrying the
 // per-process token the ingress adds, and takes the host from the ingress
-// header. Anyone else, including a client calling the path directly, gets 404.
-func TrustedDiagnosticHandler(token string, inner http.Handler) http.Handler {
+// header. Anyone else, including a client calling the path directly or a hop
+// carrying a previous process token, gets the generic page with status 404.
+func TrustedDiagnosticHandler(token string, inner http.Handler, brandName, docsURL string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		got := r.Header.Get(DiagnosticTokenHeader)
 		if token == "" || subtle.ConstantTimeCompare([]byte(got), []byte(token)) != 1 {
-			http.NotFound(w, r)
+			WriteGenericDiagnostic(w, r, brandName, docsURL)
 			return
 		}
 		r2 := r.Clone(r.Context())

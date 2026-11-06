@@ -42,14 +42,19 @@ func TestDiagnosticFactsMapsStates(t *testing.T) {
 			{Name: "boot", Replicas: 1, Domains: []string{"boot.test"}},
 			{Name: "dead", Replicas: 1, Domains: []string{"dead.test"}},
 			{Name: "web", Replicas: 1, Domains: []string{"web.test"}},
+			{Name: "far", Replicas: 1, NodeID: "node-2", Domains: []string{"far.test"}},
+			{Name: "loop", Replicas: 1, Domains: []string{"loop.test"}},
 		},
 		queued: []store.DeployAttempt{{ServiceName: "build"}},
 	}
 	cs := fakeDiagContainers{
-		{Name: "boot-1", Running: true, Created: now.Add(-5 * time.Second)},
-		{Name: "dead", Running: false},
-		{Name: "web", Running: true, Created: now.Add(-time.Hour)},
-		{Name: "web-api", Running: true, Created: now}, // another service, must not count for web
+		{Name: "boot-1a2b3c4d", Running: true, Created: now.Add(-5 * time.Second)},
+		{Name: "dead-1a2b3c4d", Running: false, Created: now.Add(-time.Hour)},
+		{Name: "web-1a2b3c4d", Running: true, Created: now.Add(-time.Hour)},
+		{Name: "web-1a2b3c4d-r2", Running: true, Created: now.Add(-time.Hour)},
+		{Name: "web-api-1a2b3c4d", Running: true, Created: now}, // another service, must not count for web
+		{Name: "loop-1a2b3c4d", Running: false, Created: now.Add(-time.Hour)},
+		{Name: "far-1a2b3c4d", Running: false, Created: now.Add(-time.Hour)},
 	}
 	snap := ingress.NewDiagnosticSnapshot(DiagnosticFacts(st, cs, time.Minute, func() time.Time { return now }))
 	if err := snap.Refresh(context.Background()); err != nil {
@@ -58,7 +63,7 @@ func TestDiagnosticFactsMapsStates(t *testing.T) {
 	want := map[string]ingress.HostState{
 		"build.test": ingress.StateBuilding, "off.test": ingress.StateStopped, "zero.test": ingress.StateStopped,
 		"new.test": ingress.StateStarting, "boot.test": ingress.StateStarting, "dead.test": ingress.StateUnhealthy,
-		"web.test": ingress.StateUnknown, "gone.test": ingress.StateUnattached,
+		"web.test": ingress.StateUnknown, "far.test": ingress.StateUnknown, "loop.test": ingress.StateUnhealthy, "gone.test": ingress.StateUnattached,
 	}
 	for host, w := range want {
 		if got := snap.Lookup(context.Background(), host).State; got != w {

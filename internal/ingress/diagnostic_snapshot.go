@@ -19,6 +19,9 @@ type ServiceFacts struct {
 	// recently enough that it may still be passing its readiness check.
 	Containers, Running int
 	Fresh               bool
+	// Remote is true when the service is placed on another node, whose
+	// containers this process cannot list.
+	Remote bool
 }
 
 // FactsSource gathers facts for every service; it is the only DB and Docker
@@ -33,7 +36,9 @@ func StateOf(f ServiceFacts) HostState {
 		return StateBuilding
 	case f.Stopped:
 		return StateStopped
-	case f.Containers == 0 || (f.Running > 0 && f.Fresh):
+	case f.Remote:
+		return StateUnknown
+	case f.Containers == 0 || f.Fresh:
 		return StateStarting
 	case f.Running == 0:
 		return StateUnhealthy
@@ -46,10 +51,12 @@ func StateOf(f ServiceFacts) HostState {
 type DiagnosticSnapshot struct {
 	src   FactsSource
 	hosts atomic.Pointer[map[string]HostInfo]
+	// loaded flips on the first successful refresh.
+	loaded atomic.Bool
 }
 
-// NewDiagnosticSnapshot returns an empty snapshot; every host reads as
-// unattached until the first refresh succeeds.
+// NewDiagnosticSnapshot returns an empty snapshot; every host reads as not
+// loaded until the first refresh succeeds.
 func NewDiagnosticSnapshot(src FactsSource) *DiagnosticSnapshot {
 	s := &DiagnosticSnapshot{src: src}
 	empty := map[string]HostInfo{}
@@ -65,32 +72,52 @@ func (s *DiagnosticSnapshot) Refresh(ctx context.Context) error {
 	}
 	m := make(map[string]HostInfo, len(facts))
 	for _, f := range facts {
-		info := HostInfo{State: StateOf(f), App: f.Name}
+		info := HostInfo{State: StateOf(f)}
 		for _, d := range f.Domains {
-			if d = strings.ToLower(strings.TrimSpace(d)); d != "" {
+			if d = NormalizeHost(d); d != "" {
 				m[d] = info
 			}
 		}
 	}
 	s.hosts.Store(&m)
+	s.loaded.Store(true)
 	return nil
 }
 
-// Lookup is the HostLookup over the current map. A host no service owns is
-// unattached and carries no app name.
+// Lookup is the HostLookup over the current map; a wildcard domain matches
+// exactly one label. A host no service owns is unattached.
 func (s *DiagnosticSnapshot) Lookup(_ context.Context, host string) HostInfo {
-	if info, ok := (*s.hosts.Load())[host]; ok {
+	if !s.loaded.Load() {
+		return HostInfo{State: StateNotLoaded}
+	}
+	host = NormalizeHost(host)
+	m := *s.hosts.Load()
+	if info, ok := m[host]; ok {
 		return info
+	}
+	if _, rest, ok := strings.Cut(host, "."); ok {
+		if info, ok := m["*."+rest]; ok {
+			return info
+		}
 	}
 	return HostInfo{State: StateUnattached}
 }
 
+// refreshTimeout bounds one Docker and DB pass so a stuck daemon cannot pin the loop.
+const refreshTimeout = 10 * time.Second
+
 // Run refreshes now and then every interval until ctx ends; interval is read
-// each round so a settings change applies live.
-func (s *DiagnosticSnapshot) Run(ctx context.Context, interval func(context.Context) time.Duration, onErr func(error)) {
+// each round so a settings change applies live. While enabled reports false it
+// skips the Docker and DB work entirely.
+func (s *DiagnosticSnapshot) Run(ctx context.Context, interval func(context.Context) time.Duration, enabled func(context.Context) bool, onErr func(error)) {
 	for {
-		if err := s.Refresh(ctx); err != nil && onErr != nil {
-			onErr(err)
+		if enabled == nil || enabled(ctx) {
+			rctx, cancel := context.WithTimeout(ctx, refreshTimeout)
+			err := s.Refresh(rctx)
+			cancel()
+			if err != nil && onErr != nil {
+				onErr(err)
+			}
 		}
 		d := interval(ctx)
 		if d < time.Second {
