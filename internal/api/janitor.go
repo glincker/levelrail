@@ -11,6 +11,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/janitor"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 const janitorHistoryDefault = 20
@@ -143,6 +144,24 @@ func (rt *Router) handleUpdateJanitorPolicy(w http.ResponseWriter, r *http.Reque
 	writeJSON(w, http.StatusOK, policy)
 }
 
+// janitorRunRequest is the optional body of a run. Items limits the pass to the
+// listed items; the same body with dry_run=true previews exactly that set.
+type janitorRunRequest struct {
+	Items *[]janitor.ItemSelection `json:"items"`
+}
+
+func (rt *Router) janitorActor(r *http.Request) *janitor.Actor {
+	typ, _, name, ok := rt.currentActor(r)
+	if !ok {
+		return nil
+	}
+	kind := janitor.ActorUser
+	if typ == store.PrincipalTypeToken {
+		kind = janitor.ActorToken
+	}
+	return &janitor.Actor{Name: name, Kind: kind}
+}
+
 // handleRunJanitor handles POST /api/v1/system/janitor/run. dry_run=true
 // previews without changing anything. force=false waits for disk pressure.
 func (rt *Router) handleRunJanitor(w http.ResponseWriter, r *http.Request) {
@@ -150,7 +169,19 @@ func (rt *Router) handleRunJanitor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	q := r.URL.Query()
-	opts := janitor.Options{Trigger: janitor.TriggerManual, DryRun: q.Get("dry_run") == "true", Force: q.Get("force") != "false"}
+	opts := janitor.Options{Trigger: janitor.TriggerManual, DryRun: q.Get("dry_run") == "true", Force: q.Get("force") != "false", Actor: rt.janitorActor(r)}
+	var body janitorRunRequest
+	if err := decodeJSONBody(r, &body); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if body.Items != nil {
+		if len(*body.Items) == 0 {
+			writeError(w, http.StatusBadRequest, "items must list at least one stage")
+			return
+		}
+		opts.Items = *body.Items
+	}
 	rep, err := rt.janitor.Run(r.Context(), opts)
 	if errors.Is(err, janitor.ErrBusy) {
 		writeError(w, http.StatusConflict, err.Error())

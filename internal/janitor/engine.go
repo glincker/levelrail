@@ -71,6 +71,10 @@ type Report struct {
 	Stages         []StageResult `json:"stages"`
 	ReclaimedBytes int64         `json:"reclaimed_bytes"`
 	Error          string        `json:"error,omitempty"`
+	// Actor is who started the pass; absent on runs recorded before it was tracked.
+	Actor *Actor `json:"actor,omitempty"`
+	// Ignored lists allowlist entries the pass did not act on.
+	Ignored []IgnoredItem `json:"ignored_items,omitempty"`
 }
 
 // Docker is the daemon surface a pass uses. *docker.Client satisfies it.
@@ -144,6 +148,9 @@ type Options struct {
 	Force bool
 	// Stages limits the pass to these stages; empty runs every stage the policy enables.
 	Stages []Stage
+	// Items, when set, limits the pass to the listed items; it replaces Stages.
+	Items []ItemSelection
+	Actor *Actor
 }
 
 func newID() string {
@@ -168,23 +175,39 @@ func (e *Engine) Run(ctx context.Context, opts Options) (Report, error) {
 		rep.Pressure = rep.FreePercent < policy.DiskFreeBudgetPercent
 	}
 	pressure := rep.Pressure || opts.Force
+	rep.Actor = opts.Actor
+	if rep.Actor == nil && opts.Trigger == TriggerScheduled {
+		rep.Actor = &Actor{Name: "scheduler", Kind: ActorSchedule}
+	}
 
+	eng, volPressure := e, pressure
+	var sc *scope
+	if len(opts.Items) > 0 {
+		sc = newScope(opts.Items)
+		eng, volPressure = sc.engine(e), false
+	}
 	steps := []struct {
 		stage Stage
 		run   func() StageResult
 	}{
-		{StageContainers, func() StageResult { return e.containers(ctx, opts.DryRun, pressure) }},
-		{StageImages, func() StageResult { return e.images(ctx, opts.DryRun, pressure) }},
-		{StageBuildCache, func() StageResult { return e.buildCache(ctx, policy, opts.DryRun, pressure, now) }},
-		{StageVolumes, func() StageResult { return e.volumes(ctx, policy, opts.DryRun, pressure, now) }},
-		{StageAttempts, func() StageResult { return e.attempts(ctx, policy, opts.DryRun, now) }},
-		{StageTokens, func() StageResult { return e.tokens(ctx, opts.DryRun, opts.Trigger, now) }},
+		{StageContainers, func() StageResult { return eng.containers(ctx, opts.DryRun, pressure) }},
+		{StageImages, func() StageResult { return eng.images(ctx, opts.DryRun, pressure) }},
+		{StageBuildCache, func() StageResult { return eng.buildCache(ctx, policy, opts.DryRun, pressure, now) }},
+		{StageVolumes, func() StageResult { return eng.volumes(ctx, policy, opts.DryRun, volPressure, now) }},
+		{StageAttempts, func() StageResult { return eng.attempts(ctx, policy, opts.DryRun, now) }},
+		{StageTokens, func() StageResult { return eng.tokens(ctx, opts.DryRun, opts.Trigger, now) }},
 	}
 	for _, s := range steps {
-		if len(opts.Stages) > 0 && !slices.Contains(opts.Stages, s.stage) {
-			continue
-		}
-		if len(opts.Stages) == 0 && !policy.stageOn(s.stage) {
+		switch {
+		case sc != nil:
+			if !sc.has(s.stage) {
+				continue
+			}
+		case len(opts.Stages) > 0:
+			if !slices.Contains(opts.Stages, s.stage) {
+				continue
+			}
+		case !policy.stageOn(s.stage):
 			rep.Stages = append(rep.Stages, StageResult{Stage: s.stage, Status: StatusSkipped, Reason: "disabled in policy", Items: []Item{}})
 			continue
 		}
@@ -192,11 +215,17 @@ func (e *Engine) Run(ctx context.Context, opts Options) (Report, error) {
 		if res.Items == nil {
 			res.Items = []Item{}
 		}
+		if sc != nil {
+			sc.finish(s.stage, res)
+		}
 		rep.ReclaimedBytes += res.ReclaimedBytes
 		if res.Error != "" && rep.Error == "" {
 			rep.Error = string(res.Stage) + ": " + res.Error
 		}
 		rep.Stages = append(rep.Stages, res)
+	}
+	if sc != nil {
+		rep.Ignored = sc.ignored
 	}
 	e.lastRun = now
 	e.record(ctx, rep)
@@ -214,6 +243,9 @@ func (e *Engine) record(ctx context.Context, rep Report) {
 	}
 	run := store.JanitorRun{ID: rep.ID, StartedAt: rep.StartedAt, Trigger: rep.Trigger, DryRun: rep.DryRun,
 		ReclaimedBytes: rep.ReclaimedBytes, FreePercent: rep.FreePercent, Body: string(body), Error: rep.Error}
+	if rep.Actor != nil {
+		run.ActorName, run.ActorKind = rep.Actor.Name, rep.Actor.Kind
+	}
 	if err := e.Store.InsertJanitorRun(ctx, run, historyKeep); err != nil {
 		e.Logger.Error("janitor: record run", slog.String("run_id", rep.ID), slog.String("error", err.Error()))
 	}
@@ -247,6 +279,9 @@ func (e *Engine) History(ctx context.Context, limit int) ([]Report, error) {
 	for _, r := range runs {
 		rep := Report{ID: r.ID, StartedAt: r.StartedAt, Trigger: r.Trigger, DryRun: r.DryRun,
 			FreePercent: r.FreePercent, ReclaimedBytes: r.ReclaimedBytes, Error: r.Error, Stages: []StageResult{}}
+		if r.ActorKind != "" {
+			rep.Actor = &Actor{Name: r.ActorName, Kind: r.ActorKind}
+		}
 		if err := json.Unmarshal([]byte(r.Body), &rep.Stages); err != nil {
 			e.Logger.Warn("janitor: decode stored run", slog.String("run_id", r.ID), slog.String("error", err.Error()))
 		}
