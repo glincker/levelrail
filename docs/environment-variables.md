@@ -114,6 +114,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CI_GATE_MAX_WAITS_PER_APP` | [`deploy.ci_gate_max_waits_per_app`](/runtime-settings#deploys) | `4` |
 | `APP_DEPLOY_DRAIN_TIMEOUT` | [`deploy.drain_timeout`](/runtime-settings#deploys) | `15s` |
 | `APP_DEPLOY_MAX_CONCURRENT` | [`deploy.max_concurrent`](/runtime-settings#deploys) | `0` |
+| `APP_DEPLOY_NEXT_ASSET_GRACE_SECONDS` | [`deploy.next_asset_grace_seconds`](/runtime-settings#deploys) | `1800` |
+| `APP_DEPLOY_NEXT_DEPLOYMENT_ID` | [`deploy.next_deployment_id`](/runtime-settings#deploys) | `true` |
 | `APP_DEPLOY_PREVIOUS_RELEASE_HOLD` | [`deploy.previous_release_hold`](/runtime-settings#deploys) | `3m` |
 | `APP_DEPLOY_RECEIPT_APPROVAL_WINDOW` | [`deploy.receipt_approval_window`](/runtime-settings#deploys) | `15m` |
 | `APP_DEPLOY_STABLE_WINDOW` | [`deploy.stable_window`](/runtime-settings#deploys) | `10s` |
