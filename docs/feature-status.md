@@ -4,7 +4,7 @@ description: Per-feature maturity labels (stable, beta, hide-behind-flag) with t
 "og:url": "https://docs.levelrail.com/feature-status"
 ---
 
-This page labels every major feature by how much evidence backs it today. The evidence was first gathered on 2026-09-26. E2E rows were re-checked against main on 2026-10-05. Counts come from the generated pages linked below. Every claim cites a path, and where evidence is missing the page says so.
+This page labels every major feature by how much evidence backs it today. The evidence was first gathered on 2026-09-26. E2E rows were re-checked against main on 2026-10-05. Last updated 2026-11-05 (v0.9.1). Counts come from the generated pages linked below. Every claim cites a path, and where evidence is missing the page says so.
 
 ## How to read the labels
 
@@ -12,7 +12,7 @@ This page labels every major feature by how much evidence backs it today. The ev
 | --- | --- |
 | **stable** | Unit tests, a doc page, and either a live end-to-end test in `test/e2e` or a documented live verification. |
 | **beta** | Works and is tested, but has no end-to-end test and no record of a run on real infrastructure. Expect rough edges. |
-| **hide-behind-flag** | Hardware-dependent or outside the core single-node story, or too thinly evidenced. Off by default and enabled with `APP_EXPERIMENTAL` (see [Experimental features](/experimental-features)). |
+| **hide-behind-flag** | (called experimental in the flag table and in [Experimental features](/experimental-features)) Hardware-dependent or outside the core single-node story, or too thinly evidenced. Off by default and enabled with `APP_EXPERIMENTAL` (see [Experimental features](/experimental-features)). |
 
 **Stable scope.** Single node is stable. Multi-node, stacks and flagged features are beta or experimental. A stable label means tests plus a live end-to-end run on one machine; it does not mean a run on a fresh production host, which tier 4 below tracks. The upgrade, resilience and template rows are beta for that reason. A draft of the terms a stable line would carry is in [Support policy](/support-policy).
 
@@ -29,6 +29,14 @@ Because tier 4 is empty for almost every row, the "real infra" column below read
 
 | Area | Label | One-line justification |
 | --- | --- | --- |
+| Compose apps | beta | Live Docker tests: a compose healthcheck gates deploy success (`test/e2e/reconcile/compose_healthcheck_test.go`) and a multi-service fan-out (`test/e2e/reconcile/multi_service_test.go`), plus the template fleet (`test/e2e/template_fleet_test.go`). No run on a fresh real host. See [compose apps](/compose-apps). |
+| Git deploys (webhook, git push remote) | stable (GitHub webhook), beta (GitLab, Bitbucket, Gitea webhooks, git push remote) | A live push-to-running-container test (`test/e2e/reconcile/webhook_test.go`); GitLab and Bitbucket lifecycle e2e replay synthetic webhooks (`test/e2e/preview_environments_gitlab_bitbucket_test.go`). Git push to your own server is behind `git-push`, see [Git push deploy](/git-push-deploy). No real forge was involved. See [git integrations](/git-integrations). |
+| Railpack builds | beta | Live builds that skip without Docker: Node, Go, Java and Python (`internal/build/railpack_test.go`, `TestClient_BuildRailpack_Live_*`). Ruby is detected by unit tests only and has no live build; PHP has no recorded live build. |
+| Public ACME certificates | beta | One recorded run against a public CA on 2026-10-05 (`docs/acme-verification-runbook.md`) and local CA tests (`internal/ingress/acme_live_test.go`). Real renewal and DNS-01 wildcards are not verified. The default is an internal certificate until ACME is enabled. |
+| CI OIDC deploy trust (GitHub Actions, GitLab CI, CircleCI) | beta | Unit tests only for all three providers (`internal/api/ci_oidc_test.go`, `ci_oidc_gitlab_test.go`, `ci_oidc_stack_provider_test.go`). No e2e test and no run against a real CI provider. See [use any CI](/use-any-ci). |
+| Functions | beta | Unit tests for the runtime, queue, limits and dev loop (`internal/functions`) and API tests (`internal/api/functions_test.go`, `functions_invoke_test.go`). No e2e test and no run on a real host. See [functions](/functions). |
+| One-shot and scheduled jobs | beta | API unit tests (`internal/api/jobs_test.go`, `jobs_oneshot_test.go`); no e2e test and no run on a real host. See [jobs](/jobs). |
+| Private networks | beta | Unit tests (`internal/privnet/privnet_test.go`); containers of a compose app share one by service name (see [compose apps](/compose-apps)). No cross-node e2e and no real host run. See [private networks](/private-networks). |
 | Deploy approvals | stable | Live e2e proves a second user's approval is the only thing that cuts over (`test/e2e/protected_environment_test.go`). |
 | Upgrade restore points and post-upgrade verification | beta | Unit tests (`internal/selfupgrade/restorepoint_test.go`) plus a harness that upgrades the real v0.8.5 to v0.8.8 binaries (last run 2026-10-30, all passed) with seeded data, then checks the restore point, an automatic restore after a failed verification and a refused downgrade (`scripts/upgrade-harness.sh`, `TestReleaseUpgradeHarness`). A second test upgrades v0.8.2 data across real migrations (email providers backfill, spend cap guard mode, migration list, downgrade refusal, automatic restores; `TestReleaseUpgradeSchemaMigration`). A manual `restore-point` across a schema change used to re-migrate the database; that is fixed (commit `a4dc676bb`) with a regression test in `cmd/levelrail/restore_schema_guard_test.go`. Not yet proven: systemd and agent reconnection, or a live host. See [Upgrade safely](/upgrade-safely). |
 | PITR and database backups (Postgres) | stable | Live e2e restores before a marker row through the real API with an S3 compatible bucket (`test/e2e/pitr_test.go`), plus live Docker dump and restore tests. |
@@ -60,7 +68,7 @@ Because tier 4 is empty for almost every row, the "real infra" column below read
 | AI assistant (in-app chat) | hide-behind-flag | Tested against fake Anthropic responses only (unit, plus a real-HTTP e2e session lifecycle test with a fake provider); `docs/ai-assistant-chat.md` now documents it. |
 | AI models (GPU) | hide-behind-flag | Needs NVIDIA hardware, every test uses fakes, docs state v1 scope is NVIDIA on Linux only. |
 | Load balancer | hide-behind-flag | Live e2e with real traffic and drain (`test/e2e/loadbalancer_test.go`), but gated behind `load-balancer` and not exercised across real hosts. |
-| Platform as code (iac) | hide-behind-flag | Live e2e covers export, plan and apply (`test/e2e/iac_apply_test.go`), but the apply path changes many resources in one run and stays gated behind `iac`. |
+| Platform as code (iac) | experimental (behind the `iac` flag) | Live e2e covers export, plan and apply (`test/e2e/iac_apply_test.go`), but the apply path changes many resources in one run and stays gated behind `iac`. |
 | Canvas | beta | Visual project editor behind the `canvas` toggle, off by default. Unit and component tests only (`web/src/lib/canvasDraft.test.ts`, `web/src/components/canvas/canvas.test.tsx`); it reuses the platform-as-code plan and apply, so it also needs `iac` on. No e2e, not yet run against a real instance. [Canvas](/canvas) |
 | Resource advisor | beta | Unit tests for every rule and threshold in `internal/resourceadvisor` and API tests for apply, dismiss and snooze; CLI and MCP read tool; dedicated doc page. Behind the `resource-advisor` toggle, off by default. No e2e test and no run against real long-term usage history on a live host. [Resource advisor](/resource-advisor) |
 | CLI console | beta | Unit tests for the line parser, command policy, redaction and runner, API tests for the gate order, step-up, rate limit and token revocation. Behind the `cli-console` toggle, off by default. No e2e test and no run on a real host. [CLI console](/cli-console) |
@@ -80,6 +88,24 @@ Because tier 4 is empty for almost every row, the "real infra" column below read
 | Templates added in 0.9.0 | beta | Observability, mail, self-hosted app, database and data store templates in `internal/catalog`, checked by the catalog tests (`internal/catalog/catalog_test.go`). They are not in the recorded 2026-10-25 deploy smoke, so each one is unproven on a real host. |
 | Ingress abuse defense | beta | Unit tests in `internal/abuse` (rate limit, deny lists, modes, replay, fail open). No e2e test and not benchmarked on real traffic. See [ingress abuse defense](/abuse-defense). |
 | Chaos test matrix | beta | Fast tests on fake Docker and agent clients (`test/chaos`, `internal/reconcile`) plus live tests against one local Docker daemon (`test/e2e/reconcile/chaos_live_test.go`). Faults are injected at the runtime boundary: dockerd is not stopped and no real disk is filled. Not run on a real host. See [chaos test coverage](/chaos-coverage). |
+
+## Stable criteria per row
+
+A row becomes stable only when its evidence is linked here. The bar by kind of row:
+
+| Row kind | Evidence needed for stable |
+| --- | --- |
+| Any row | Unit tests, a doc page, and a live end-to-end test or a documented live run, as in the labels above. |
+| Storage and databases (PITR, backups, engines) | A restore through the real API from a real bucket, and an upgrade run that keeps the data. |
+| Identity (SSO, SCIM, OIDC) | A run against each identity provider named in the docs, not only a local lab. |
+| Notification channels and email providers | One accepted send per vendor, or a local receiver for open protocols. |
+| Node and network (multi-node, mesh, private networks) | A run across real hosts over a real network. |
+| Builds and certificates (Railpack, ACME) | A live build per language, or a real renewal and wildcard run. |
+| CI and forge integrations | A run against the real forge or CI provider. |
+| Flagged features | The proposed proof in [Experimental features](/experimental-features#graduation-criteria-proposed). |
+| Anything that changes many resources or touches secrets | An authz review on top of the above. |
+
+Single node stays the stable scope; a row that is stable here is stable on one machine.
 
 ## Identity and access
 
@@ -171,7 +197,7 @@ Kinds, from the `NotifyKind` constants in `internal/alerting/rules.go`: generic,
 - E2E: `test/e2e/iac_apply_test.go` (`TestIaCApply_Live_ExportPlanApplyRoundTrip`, plus a gate-off test that expects 404). Live Docker: none beyond that.
 - Docs: `docs/platform-as-code.md`, `docs/app-spec-reference.md`, `docs/schemas/`.
 - Real infra: none found.
-- Label: hide-behind-flag. The apply path can change many resources in one run, so it stays opt-in until it has more real-world runs.
+- Label: experimental (the legend calls this hide-behind-flag). The apply path can change many resources in one run, so it stays opt-in until it has more real-world runs.
 
 ### Log archive
 
