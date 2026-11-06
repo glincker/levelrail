@@ -42,6 +42,8 @@ func TestSecurityCommands(t *testing.T) {
 	}{
 		{"posture", []string{"security", "posture"}, exitOK, "GET", "/api/v1/security/posture", "admin_without_mfa"},
 		{"posture json", []string{"security", "posture", "--json"}, exitOK, "GET", "/api/v1/security/posture", `"score": 72`},
+		{"posture above floor", []string{"security", "posture", "--fail-under", "70"}, exitOK, "GET", "/api/v1/security/posture", "admin_without_mfa"},
+		{"posture below floor", []string{"security", "posture", "--fail-under", "80"}, exitCheckFailed, "GET", "/api/v1/security/posture", "admin_without_mfa"},
 		{"sessions list", []string{"security", "sessions", "list"}, exitOK, "GET", "/api/v1/security/sessions", "Firefox on Linux"},
 		{"sessions list for a user", []string{"security", "sessions", "list", "--user", "user_b"}, exitOK, "GET", "/api/v1/security/sessions?user_id=user_b", "s1"},
 		{"revoke", []string{"security", "sessions", "revoke", "s1"}, exitOK, "DELETE", "/api/v1/security/sessions/s1", "revoked session s1"},
@@ -76,5 +78,22 @@ func TestSecurityCommands(t *testing.T) {
 	run("levelrail-cli-test", []string{"security", "policy", "set", "--max-token-lifetime-days", "0", "--api-url", srv.URL, "--token", "t"}, &stdout, &stderr, envMap())
 	if v, ok := gotBody["max_token_lifetime_days"]; !ok || v != float64(0) || len(gotBody) != 1 {
 		t.Fatalf("an explicit 0 must be sent and nothing else: %v", gotBody)
+	}
+}
+
+func TestSecurityPostureFailUnderRejectsUnknown(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"score":100,"grade":"A","full":true,"counts":{"unknown":6},"items":[],"account":[]}`))
+	}))
+	defer srv.Close()
+	var stdout, stderr bytes.Buffer
+	args := []string{"security", "posture", "--fail-under", "80", "--api-url", srv.URL, "--token", "t"}
+	if got := run("levelrail-cli-test", args, &stdout, &stderr, envMap()); got != exitCheckFailed {
+		t.Fatalf("exit = %d, want %d (stderr=%q)", got, exitCheckFailed, stderr.String())
+	}
+	args = []string{"security", "posture", "--api-url", srv.URL, "--token", "t"}
+	if got := run("levelrail-cli-test", args, &stdout, &stderr, envMap()); got != exitOK {
+		t.Fatalf("without the floor, exit = %d, want 0", got)
 	}
 }

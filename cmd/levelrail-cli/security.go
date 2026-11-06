@@ -77,7 +77,11 @@ func securityCommand(prog, label, jsonHelp string, args []string, stderr io.Writ
 }
 
 func runSecurityPosture(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	client, _, jsonOut, of, code, ok := securityCommand(prog, "security posture", "print the posture as JSON to stdout and nothing else", args, stderr, lookupEnv, nil)
+	var failUnder int
+	withFloor := func(fs *flag.FlagSet) {
+		fs.IntVar(&failUnder, "fail-under", 0, "exit non-zero when the score is below this value, for CI (0 to stop)")
+	}
+	client, _, jsonOut, of, code, ok := securityCommand(prog, "security posture", "print the posture as JSON to stdout and nothing else", args, stderr, lookupEnv, withFloor)
 	if !ok {
 		return code
 	}
@@ -88,6 +92,14 @@ func runSecurityPosture(prog string, args []string, stdout, stderr io.Writer, lo
 	if err := renderResult(stdout, of.Format, of.Query, p, func() { printPosture(stdout, prog, p) }); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)
+	}
+	if failUnder > 0 && p.Counts.Unknown > 0 {
+		_, _ = fmt.Fprintf(stderr, "security posture: %d checks could not be evaluated, the score cannot be trusted\n", p.Counts.Unknown)
+		return exitCheckFailed
+	}
+	if failUnder > 0 && p.Score < failUnder {
+		_, _ = fmt.Fprintf(stderr, "security posture: score %d is below --fail-under %d\n", p.Score, failUnder)
+		return exitCheckFailed
 	}
 	return exitOK
 }

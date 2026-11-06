@@ -127,7 +127,7 @@ func (rt *Router) collectPosture(ctx context.Context, now time.Time) postureInpu
 		in.TokensKnown = true
 		for _, t := range toks {
 			in.Tokens = append(in.Tokens, store.APIToken{ID: t.ID, Name: t.Name, Abilities: t.Abilities, CreatedAt: t.CreatedAt,
-				LastUsedAt: t.LastUsedAt, ExpiresAt: t.ExpiresAt, RevokedAt: t.RevokedAt})
+				LastUsedAt: t.LastUsedAt, ExpiresAt: t.ExpiresAt, RevokedAt: t.RevokedAt, AgentName: agentNameOf(t.Agent)})
 		}
 	}
 	if s, err := rt.codeLoginSettings(ctx); err == nil {
@@ -156,6 +156,7 @@ func (rt *Router) collectPosture(ctx context.Context, now time.Time) postureInpu
 	rt.collectPostureSAML(ctx, &in)
 	rt.collectPostureOffsite(ctx, &in)
 	rt.collectPostureMicrosoft(ctx, &in)
+	rt.collectPostureAgents(ctx, &in)
 	if nodes, err := rt.nodes.ListNodes(ctx); err == nil {
 		in.AgentsKnown = true
 		for _, n := range nodes {

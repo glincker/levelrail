@@ -264,6 +264,36 @@
       "title": "Your account needs a new password",
       "pass": "Your account is not flagged",
       "why": "A sign-in to your account was reported as not yours."
+    },
+    "agent_token_unnamed": {
+      "title": "API tokens that can change things have no agent name",
+      "pass": "Every write or deploy token is labelled or reviewed",
+      "why": "A token with no agent name is not governed by AI control, so an AI tool holding it acts with no mode or environment limits."
+    },
+    "ai_control_admin": {
+      "title": "AI control is in admin mode",
+      "pass": "AI control is below admin mode",
+      "why": "Admin mode lets agents change settings and access, not only apps. Operate mode covers day to day deploys."
+    },
+    "agent_tokens_production": {
+      "title": "Agent tokens can change production",
+      "pass": "No agent token can change production",
+      "why": "While AI control is above observe, agent tokens that can write or deploy can still reach routes the production guard does not cover, such as apply and environments."
+    },
+    "prod_env_unprotected": {
+      "title": "Production environments without protection",
+      "pass": "Every production environment is protected",
+      "why": "A protected environment asks for approval before deploys, rollbacks and promotions reach it."
+    },
+    "prod_apps_unguarded": {
+      "title": "Production apps with no enforcing deploy policy",
+      "pass": "Every production app has an enforcing deploy policy",
+      "why": "A rule in warn mode only reports. Without a rule in enforce mode, nothing blocks a risky deploy to a production app."
+    },
+    "audit_sink_none": {
+      "title": "The audit log is not sent anywhere",
+      "pass": "The audit log is forwarded to an external destination",
+      "why": "An audit stream outside this machine keeps a record of agent and deploy actions even if this host is lost."
     }
   },
   "actions": {
