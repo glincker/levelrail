@@ -339,14 +339,23 @@ func (rt *Router) handleListAuditLog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	entries, err := rt.auditLog.ListAuditEntries(r.Context(), limit, before, filter)
+	isCSV := r.URL.Query().Get("format") == "csv"
+	fetch := limit
+	if isCSV {
+		fetch++
+	}
+	entries, err := rt.auditLog.ListAuditEntries(r.Context(), fetch, before, filter)
 	if err != nil {
 		rt.internalError(w, "api: list audit log failed", err)
 		return
 	}
 
-	if r.URL.Query().Get("format") == "csv" {
-		rt.writeAuditLogCSV(w, entries, len(entries) >= limit)
+	if isCSV {
+		truncated := len(entries) > limit
+		if truncated {
+			entries = entries[:limit]
+		}
+		rt.writeAuditLogCSV(w, entries, truncated)
 		return
 	}
 

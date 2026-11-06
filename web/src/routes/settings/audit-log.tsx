@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from '../../components/ui/select'
 import {
+  AUDIT_LOG_EXPORT_LIMIT,
   auditLogExportURL,
   auditLogQueryOptions,
   fetchAuditLog,
@@ -139,7 +140,7 @@ function ExportAuditLogLink({
       className={buttonVariants({ variant: 'outline', size: 'sm' })}
     >
       <DownloadGlassIcon className="size-5" aria-hidden="true" />
-      {t('filters.exportCsv')}
+      {t('filters.exportCsv', { count: AUDIT_LOG_EXPORT_LIMIT })}
     </a>
   )
 }

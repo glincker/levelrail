@@ -18,11 +18,11 @@ levelrail-cli audit-log --since 24h --agent ci-bot --status failed
 levelrail-cli audit-log --since 7d --actor alice --export csv --output-file audit.csv
 ```
 
-`--since` and `--until` take a duration such as `24h` or `7d`, or an RFC3339 timestamp. The `list_audit_log` agent tool takes RFC3339 timestamps only.
+`--since` and `--until` take a duration such as `24h` or `7d`, or an RFC3339 timestamp; the `list_audit_log` agent tool accepts the same. With `--limit` the CLI warns on stderr when rows were cut.
 
 ## Export
 
-The Export CSV button, `GET /api/v1/audit-log?format=csv` and `--export csv` use the same filter parameters. A single API request or dashboard export returns at most 200 rows (the page size); when more match, the response carries the header `X-Audit-Truncated: true`. The CLI export pages with `before` until the filter is exhausted, so it writes every matching row. Use it for complete exports.
+The Export CSV button, `GET /api/v1/audit-log?format=csv` and `--export csv` use the same filter parameters. A single API request returns at most 200 rows (the page size); when more match, the response carries the header `X-Audit-Truncated: true`. The dashboard button is labelled with that cap and exports the latest 200 matching rows. The CLI export pages with `before` until the filter is exhausted, so it writes every matching row. Use it for complete exports.
 
 ## Verify the chain
 

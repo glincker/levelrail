@@ -3,6 +3,8 @@ package mcptools
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
@@ -54,7 +56,14 @@ type auditVerifyInput struct {
 
 // agoOrTime turns a duration such as "24h" into an RFC3339 time that long ago and passes anything else through.
 func agoOrTime(raw string) string {
-	if d, err := time.ParseDuration(raw); err == nil && d > 0 {
+	d, err := time.ParseDuration(raw)
+	if err != nil && strings.HasSuffix(raw, "d") {
+		var days int
+		if days, err = strconv.Atoi(strings.TrimSuffix(raw, "d")); err == nil {
+			d = time.Duration(days) * 24 * time.Hour
+		}
+	}
+	if err == nil && d > 0 {
 		return time.Now().Add(-d).UTC().Format(time.RFC3339)
 	}
 	return raw

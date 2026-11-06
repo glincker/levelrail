@@ -3,10 +3,12 @@ package api
 import (
 	"encoding/csv"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestAuditLogRoute_SearchAndFailed(t *testing.T) {
@@ -113,8 +115,15 @@ func TestAuditLogRoute_SinceUntilActor(t *testing.T) {
 	if get("/verify?from=9&to=3").Code != http.StatusBadRequest {
 		t.Error("inverted verify range should be 400")
 	}
-	csvRec := get("?format=csv&limit=1")
-	if csvRec.Header().Get("X-Audit-Truncated") != "true" {
-		t.Error("a csv page filled to its limit should be marked truncated")
+	rt.Handler().ServeHTTP(httptest.NewRecorder(), authedRequest(t, cookie, http.MethodPost, "/api/v1/apps", `{not json`))
+	for i := 0; i < 50 && count("?status=failed") == 0; i++ {
+		time.Sleep(20 * time.Millisecond)
+	}
+	failed := count("?status=failed")
+	if got := get(fmt.Sprintf("?format=csv&status=failed&limit=%d", failed)); got.Header().Get("X-Audit-Truncated") != "" {
+		t.Error("a csv page holding every matching row must not be marked truncated")
+	}
+	if got := get("?format=csv&limit=1"); got.Header().Get("X-Audit-Truncated") != "true" {
+		t.Error("a csv page with a further row must be marked truncated")
 	}
 }

@@ -361,3 +361,43 @@ func TestAuditChain_PurgedRangeIsCoveredByLinks(t *testing.T) {
 		t.Fatalf("purged range 1-4 = %+v, want ok through the compacted link", rep)
 	}
 }
+
+func TestAuditChain_RangeSeesDeletedOldestRows(t *testing.T) {
+	useChainKey(t, "test-key-one")
+	db := openTestDB(t)
+	seedChain(t, db, 10, nil)
+	if _, err := db.Exec(`DELETE FROM audit_log WHERE chain_seq <= 4`); err != nil {
+		t.Fatal(err)
+	}
+	rep, err := db.VerifyAuditChainRange(context.Background(), 1, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rep.OK || rep.ChainOK {
+		t.Fatalf("range 1-10 = %+v, want not ok: rows 1-4 are gone", rep)
+	}
+	rep, err = db.VerifyAuditChainRange(context.Background(), 5, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !rep.OK || rep.ChainOK {
+		t.Fatalf("range 5-10 = %+v, want range ok, chain not ok", rep)
+	}
+}
+
+func TestAuditChain_CompactedLinkAtOneIsIntact(t *testing.T) {
+	useChainKey(t, "test-key-one")
+	db := openTestDB(t)
+	seedChain(t, db, 10, nil)
+	cut := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC).Add(5*time.Hour + time.Minute)
+	if _, err := db.DeleteAuditEntriesTiered(context.Background(), cut, cut); err != nil {
+		t.Fatal(err)
+	}
+	rep, err := db.VerifyAuditChainRange(context.Background(), 1, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !rep.OK || !rep.ChainOK {
+		t.Fatalf("range 1-10 over a compacted prefix = %+v, want intact", rep)
+	}
+}

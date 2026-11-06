@@ -4088,13 +4088,19 @@ func (c *Client) ListAuditLog(ctx context.Context, opts ListAuditLogOptions) ([]
 // It bypasses do() because the body is passed through unmodified, not decoded as JSON.
 // is a CSV file to pass through unmodified, not a JSON value to decode.
 func (c *Client) DownloadAuditLogCSV(ctx context.Context, opts ListAuditLogOptions) ([]byte, error) {
+	data, _, err := c.DownloadAuditLogCSVPage(ctx, opts)
+	return data, err
+}
+
+// DownloadAuditLogCSVPage returns one CSV page and whether further matching rows exist (X-Audit-Truncated).
+func (c *Client) DownloadAuditLogCSVPage(ctx context.Context, opts ListAuditLogOptions) ([]byte, bool, error) {
 	q := auditLogQuery(opts)
 	q.Set("format", "csv")
 	path := "/api/v1/audit-log?" + q.Encode()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+path, nil) //nolint:gosec // c.baseURL is the operator-supplied API target this client exists to call, not attacker-controlled input
 	if err != nil {
-		return nil, fmt.Errorf("build request: %w", err)
+		return nil, false, fmt.Errorf("build request: %w", err)
 	}
 	if c.token != "" {
 		req.Header.Set(headerAuthorization, bearerPrefix+c.token)
@@ -4107,19 +4113,19 @@ func (c *Client) DownloadAuditLogCSV(ctx context.Context, opts ListAuditLogOptio
 	resp, err := c.hc.Do(req) //nolint:gosec // same target as above
 	if err != nil {
 		TraceRequest(http.MethodGet, c.baseURL+path, "", time.Since(start), err)
-		return nil, fmt.Errorf("request GET %s: %w", c.baseURL+path, err)
+		return nil, false, fmt.Errorf("request GET %s: %w", c.baseURL+path, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	TraceRequest(http.MethodGet, c.baseURL+path, resp.Status, time.Since(start), nil)
 
 	data, err := httpx.ReadAll(resp.Body, httpx.MaxDownload)
 	if err != nil {
-		return nil, fmt.Errorf("read response body: %w", err)
+		return nil, false, fmt.Errorf("read response body: %w", err)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, &APIError{StatusCode: resp.StatusCode, Message: ExtractErrorMessage(data), RetryAfter: retryAfterHeader(resp.Header)}
+		return nil, false, &APIError{StatusCode: resp.StatusCode, Message: ExtractErrorMessage(data), RetryAfter: retryAfterHeader(resp.Header)}
 	}
-	return data, nil
+	return data, resp.Header.Get("X-Audit-Truncated") == "true", nil
 }
 
 // PurgeAuditLog calls POST /api/v1/audit-log/purge: deletes every

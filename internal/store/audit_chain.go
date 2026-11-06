@@ -223,6 +223,9 @@ func (db *DB) verifyChain(ctx context.Context, q auditQuerier) (AuditChainReport
 		}
 		if last == nil {
 			firstSeq = n.from
+			if n.from > 1 {
+				gap(1, n.from-1, "entries 1 to %d are missing", n.from-1)
+			}
 		}
 		nodes[n.to] = n.hash
 		spans = append(spans, [2]int64{n.from, n.to})
@@ -402,7 +405,8 @@ func mergeAuditLinks(ctx context.Context, tx *sql.Tx) error {
 // problems that overlap it, rows inside it, and whether it lies on the chain.
 // A zero bound is open; ChainOK still reports the whole chain.
 func (db *DB) VerifyAuditChainRange(ctx context.Context, from, to int64) (AuditChainReport, error) {
-	tx, err := db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	// The read pool keeps the long walk off the single writer connection.
+	tx, err := db.reader().db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return AuditChainReport{}, fmt.Errorf("store: begin audit verify: %w", err)
 	}
@@ -437,8 +441,8 @@ func (db *DB) VerifyAuditChainRange(ctx context.Context, from, to int64) (AuditC
 				covered += b - a + 1
 			}
 		}
-		if covered == 0 && lo <= hi {
-			kept = append(kept, AuditChainProblem{Seq: lo, SeqFrom: lo, SeqTo: hi, Reason: fmt.Sprintf("no entries exist in range %d to %d", lo, hi)})
+		if lo <= hi && covered < hi-lo+1 {
+			kept = append(kept, AuditChainProblem{Seq: lo, SeqFrom: lo, SeqTo: hi, Reason: fmt.Sprintf("only %d of the %d entries in range %d to %d exist", covered, hi-lo+1, lo, hi)})
 		}
 		if err := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM audit_log WHERE chain_seq >= ? AND chain_seq <= ?`, lo, hi).Scan(&rep.Checked); err != nil {
 			return rep, fmt.Errorf("store: count audit rows in range: %w", err)

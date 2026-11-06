@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -72,24 +73,41 @@ func TestRun_AuditVerifyRangeWarnsAboutBreaksElsewhere(t *testing.T) {
 	}
 }
 
-func TestRun_AuditLogCSVPagesUntilExhausted(t *testing.T) {
-	const total = 250
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		before := r.URL.Query().Get("before")
-		cw := csv.NewWriter(w)
-		_ = cw.Write([]string{"id", "a", "b", "c", "d", "e", "f", "g", "h", "created_at", "k"})
+func fakeAuditCSVServer(total int) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		before, _ := time.Parse(time.RFC3339Nano, r.URL.Query().Get("before"))
+		limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+		if limit == 0 || limit > 200 {
+			limit = 200
+		}
+		base := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+		var rows [][]string
+		more := false
 		for i := total; i >= 1; i-- {
-			ts := fmt.Sprintf("2026-01-01T00:%02d:%02d.000000000Z", i/60, i%60)
-			if before != "" && ts >= before {
+			// Pairs of rows share a timestamp, so one straddles every even page boundary.
+			at := base.Add(time.Duration(i/2) * time.Second)
+			if !before.IsZero() && !at.Before(before) {
 				continue
 			}
-			_ = cw.Write([]string{fmt.Sprint("aud_", i), "", "", "", "", "", "", "", "", ts, ""})
-			if i == total-199 {
+			if len(rows) == limit {
+				more = true
 				break
 			}
+			rows = append(rows, []string{fmt.Sprint("aud_", i), "", "", "", "", "", "", "", "", at.Format("2006-01-02T15:04:05.000000000Z"), ""})
 		}
-		cw.Flush()
+		w.Header().Set("Content-Type", "text/csv")
+		if more {
+			w.Header().Set("X-Audit-Truncated", "true")
+		}
+		cw := csv.NewWriter(w)
+		_ = cw.Write([]string{"id", "a", "b", "c", "d", "e", "f", "g", "h", "created_at", "k"})
+		_ = cw.WriteAll(rows)
 	}))
+}
+
+func TestRun_AuditLogCSVPagesWithoutLosingTiedRows(t *testing.T) {
+	const total = 450
+	srv := fakeAuditCSVServer(total)
 	defer srv.Close()
 	var stdout, stderr bytes.Buffer
 	got := run("levelrail-cli-test", []string{"audit-log", "--api-url", srv.URL, "--export", "csv"}, &stdout, &stderr, envMap())
@@ -100,7 +118,31 @@ func TestRun_AuditLogCSVPagesUntilExhausted(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(recs) != total+1 {
-		t.Errorf("rows = %d, want %d plus header", len(recs)-1, total)
+	seen := map[string]bool{}
+	for _, r := range recs[1:] {
+		if seen[r[0]] {
+			t.Fatalf("duplicate row %s", r[0])
+		}
+		seen[r[0]] = true
+	}
+	if len(seen) != total {
+		t.Errorf("rows = %d, want %d", len(seen), total)
+	}
+}
+
+func TestRun_AuditLogCSVLimitWarnsWhenCut(t *testing.T) {
+	srv := fakeAuditCSVServer(450)
+	defer srv.Close()
+	var stdout, stderr bytes.Buffer
+	got := run("levelrail-cli-test", []string{"audit-log", "--api-url", srv.URL, "--export", "csv", "--limit", "300"}, &stdout, &stderr, envMap())
+	if got != exitOK {
+		t.Fatalf("exit = %d, stderr=%q", got, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "truncated") {
+		t.Errorf("stderr = %q, want a truncation warning", stderr.String())
+	}
+	recs, _ := csv.NewReader(&stdout).ReadAll()
+	if len(recs) != 201 {
+		t.Errorf("rows = %d, want the server's 200 plus header", len(recs))
 	}
 }

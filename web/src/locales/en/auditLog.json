@@ -60,7 +60,7 @@
     "anyMethod": "Any method",
     "actorLabel": "Filter by actor",
     "actorPlaceholder": "Actor name",
-    "exportCsv": "Export CSV"
+    "exportCsv": "Export CSV (latest {{count}} rows)"
   },
   "anchor": {
     "title": "Audit anchor",

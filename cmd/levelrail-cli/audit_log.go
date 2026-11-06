@@ -99,7 +99,7 @@ func runAuditLog(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 // outputPath, or to stdout when outputPath is empty.
 func runAuditLogExportCSV(ctx context.Context, client *Client, opts listAuditLogOptions, outputPath string, stdout, stderr io.Writer, of outputFlags) int {
 	jsonOut := of.Format == outputJSON
-	data, err := downloadAllAuditCSV(ctx, client, opts)
+	data, err := downloadAllAuditCSV(ctx, client, opts, stderr)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("export audit log csv: %w", err))
 	}
@@ -203,21 +203,29 @@ func resolveAuditTime(raw string, now time.Time) (string, error) {
 }
 
 // auditCSVPageSize mirrors the API's largest page; the export pages with
-// --before until a short page, so no row is silently cut off.
+// --before until the server says nothing is left, so no row is silently cut off.
 const auditCSVPageSize = 200
 
-const auditCSVTimeColumn = 9
+const (
+	auditCSVIDColumn   = 0
+	auditCSVTimeColumn = 9
+)
 
 // downloadAllAuditCSV fetches CSV pages and joins them under one header. An
-// explicit --limit stays a single capped request.
-func downloadAllAuditCSV(ctx context.Context, client *Client, opts listAuditLogOptions) ([]byte, error) {
+// explicit --limit stays a single request and warns when rows were cut.
+func downloadAllAuditCSV(ctx context.Context, client *Client, opts listAuditLogOptions, stderr io.Writer) ([]byte, error) {
 	if opts.Limit > 0 {
-		return client.DownloadAuditLogCSV(ctx, opts)
+		data, cut, err := client.DownloadAuditLogCSVPage(ctx, opts)
+		if cut {
+			_, _ = fmt.Fprintln(stderr, "warning: output truncated: more rows match than --limit allows (the server caps a page at 200); omit --limit to export everything")
+		}
+		return data, err
 	}
 	opts.Limit = auditCSVPageSize
 	var all [][]string
+	seen := map[string]bool{}
 	for {
-		page, err := client.DownloadAuditLogCSV(ctx, opts)
+		page, more, err := client.DownloadAuditLogCSVPage(ctx, opts)
 		if err != nil {
 			return nil, err
 		}
@@ -231,16 +239,25 @@ func downloadAllAuditCSV(ctx context.Context, client *Client, opts listAuditLogO
 		if len(all) == 0 {
 			all = append(all, recs[0])
 		}
-		rows := recs[1:]
-		all = append(all, rows...)
-		if len(rows) < auditCSVPageSize || len(rows[len(rows)-1]) <= auditCSVTimeColumn {
+		added := 0
+		for _, row := range recs[1:] {
+			if len(row) > auditCSVTimeColumn && !seen[row[auditCSVIDColumn]] {
+				seen[row[auditCSVIDColumn]] = true
+				all = append(all, row)
+				added++
+			}
+		}
+		if !more || len(recs) < 2 {
 			break
 		}
-		next := rows[len(rows)-1][auditCSVTimeColumn]
-		if next == opts.Before {
+		last := recs[len(recs)-1]
+		at, perr := time.Parse(time.RFC3339Nano, last[auditCSVTimeColumn])
+		if perr != nil || added == 0 {
+			_, _ = fmt.Fprintln(stderr, "warning: output truncated: could not advance past a page of rows sharing one timestamp")
 			break
 		}
-		opts.Before = next
+		// One nanosecond past the last row re-reads rows tied with it; seen drops the repeats.
+		opts.Before = at.Add(time.Nanosecond).UTC().Format(time.RFC3339Nano)
 	}
 	var buf bytes.Buffer
 	if err := csv.NewWriter(&buf).WriteAll(all); err != nil {

@@ -60,7 +60,7 @@
     "anyMethod": "Cualquier método",
     "actorLabel": "Filtrar por actor",
     "actorPlaceholder": "Nombre del actor",
-    "exportCsv": "Exportar CSV"
+    "exportCsv": "Exportar CSV (últimas {{count}} filas)"
   },
   "anchor": {
     "title": "Ancla de auditoría",
