@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -140,4 +141,13 @@ func SavePolicy(ctx context.Context, s PolicyStore, p Policy, actor string, now 
 		return fmt.Errorf("janitor: save policy: %w", err)
 	}
 	return nil
+}
+
+// volumeProtected is the one place that decides a volume is never cleaned up
+// automatically, whatever an allowlist says.
+func volumeProtected(name string) (bool, string) {
+	if strings.HasPrefix(name, "db-") {
+		return true, "database data is never removed automatically"
+	}
+	return false, ""
 }
