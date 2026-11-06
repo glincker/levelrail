@@ -45,13 +45,13 @@ func logBudgetCheck(canonical string) error {
 func init() {
 	Register(Definition{
 		Key: KeyDiskLowFreeMB, Category: CategoryObservability, Kind: KindInt, Default: "1024",
-		Env: "APP_DISK_LOW_FREE_MB", Apply: ApplyLive, CheckValue: intRangeCheck(64, 1048576),
+		Env: "APP_DISK_LOW_FREE_MB", Apply: ApplyLive, CheckValue: mibRangeCheck(64, 1048576),
 		Title:       "Low disk threshold",
 		Description: "Free space in MiB on the data or Docker volume below which the disk guard raises a low-disk warning and alert (64 to 1048576). Critical is clamped to this value when it is higher.",
 	})
 	Register(Definition{
 		Key: KeyDiskCriticalFreeMB, Category: CategoryObservability, Kind: KindInt, Default: "512",
-		Env: "APP_DISK_CRITICAL_FREE_MB", Apply: ApplyLive, CheckValue: intRangeCheck(16, 1048576),
+		Env: "APP_DISK_CRITICAL_FREE_MB", Apply: ApplyLive, CheckValue: mibRangeCheck(16, 1048576),
 		Title:       "Critical disk threshold",
 		Description: "Free space in MiB below which builds, image pulls and backups are refused and the disk reserve is released (16 to 1048576). A value above the low threshold is treated as equal to it.",
 	})

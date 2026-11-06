@@ -1,57 +1,51 @@
 import { createFileRoute } from '@tanstack/react-router'
-import {
-  parseImageFilter,
-  type ImageFilter,
-} from '../components/images/imageFilters'
+import type { ImageFilter } from '../components/images/imageFilters'
+import type { StorageFilter } from '../components/storage/itemRows'
 import { StorageHubPage } from '../components/storage/StorageHubPage'
-import {
-  parseStorageTab,
-  type StorageTab,
-} from '../components/storage/storageTabs'
+import { normalizeStorageSearch } from '../components/storage/storageTabs'
 
+// The images redirect still hands over image chips, so the type stays wide; values are normalised below.
 interface StorageSearch {
-  tab?: StorageTab
-  filter?: ImageFilter
-  review?: true
+  filter?: StorageFilter | ImageFilter
+  view?: 'app'
+  drawer?: 'cleanup'
 }
 
-// Tab, chip and review flag live in the URL so a view can be shared or linked from a banner.
+// Filter, view and drawer live in the URL so a view can be shared or linked from a banner.
 export const Route = createFileRoute('/storage')({
-  validateSearch: (search: Record<string, unknown>): StorageSearch => {
-    const tab = parseStorageTab(search.tab)
-    const filter = parseImageFilter(search.filter)
-    const review = search.review === '1' || search.review === true
-    return {
-      ...(tab === 'images' ? {} : { tab }),
-      ...(filter === 'all' ? {} : { filter }),
-      ...(review ? { review: true as const } : {}),
-    }
-  },
+  validateSearch: (search: Record<string, unknown>): StorageSearch =>
+    normalizeStorageSearch(search),
   component: StorageRoute,
 })
 
 function StorageRoute() {
-  const { tab, filter, review } = Route.useSearch()
+  const { filter, view, drawer } = Route.useSearch()
   const navigate = Route.useNavigate()
   return (
     <StorageHubPage
-      tab={tab ?? 'images'}
-      filter={filter ?? 'all'}
-      review={review === true}
-      onTabChange={(next) => {
+      filter={filter}
+      view={view}
+      drawerOpen={drawer === 'cleanup'}
+      onFilterChange={(next) => {
+        void navigate({
+          search: (prev) => ({ ...prev, filter: next ?? undefined }),
+          replace: true,
+        })
+      }}
+      onViewChange={(next) => {
         void navigate({
           search: (prev) => ({
             ...prev,
-            tab: next === 'images' ? undefined : next,
+            view: next === 'app' ? 'app' : undefined,
           }),
           replace: true,
         })
       }}
-      onFilterChange={(next) => {
+      onDrawerChange={(open) => {
         void navigate({
           search: (prev) => ({
             ...prev,
-            filter: next === 'all' ? undefined : next,
+            drawer: open ? 'cleanup' : undefined,
           }),
           replace: true,
         })

@@ -9,26 +9,6 @@
     "unsupported": "Levelrail todavía no puede leer el almacenamiento de este nodo. No se cambia nada.",
     "retry": "Comprobar de nuevo"
   },
-  "categories": {
-    "images": "Imágenes",
-    "containers": "Contenedores",
-    "volumes": "Volúmenes",
-    "buildCache": "Caché de builds"
-  },
-  "breakdown": {
-    "label": "Desglose del disco",
-    "barLabel": "{{size}} usados por Docker en total",
-    "measuring": "Midiendo",
-    "notMeasured": "Aún sin medir",
-    "canFree": "{{size}} se pueden liberar",
-    "nothingToFree": "Nada que liberar",
-    "free": "{{free}} libres de {{total}} en el disco de datos"
-  },
-  "tabs": {
-    "label": "Secciones de almacenamiento",
-    "images": "Imágenes",
-    "cache": "Caché de builds"
-  },
   "engine": {
     "title": "Motor y firmas"
   },
@@ -70,5 +50,12 @@
       "reclaimable": "Se pueden quitar {{size}} sin riesgo",
       "nothingToFree": "Nada que quitar"
     }
+  },
+  "actions": {
+    "terminal": "Ejecutar en una terminal",
+    "review": "Revisar limpieza"
+  },
+  "errors": {
+    "status": "No se pudo leer el uso del disco ahora."
   }
 }

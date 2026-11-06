@@ -7,12 +7,14 @@ import { RelativeTime } from '@/components/kit'
 import { cn } from '@/lib/utils'
 import { formatSize } from '../../lib/format'
 import { useImageInventory } from '../../queries/imageInventory'
+import { useRuntimeSettings } from '../../queries/runtimeSettings'
 import { useStorageInventory } from '../../queries/storageInventory'
 import {
   ITEM_KINDS,
   buildItemRows,
   filterRows,
   groupRows,
+  largeUnmanagedBytes,
   parseFilter,
   parseView,
   type ItemGroup,
@@ -20,12 +22,6 @@ import {
   type SortKey,
   type StorageItemRow,
 } from './itemRows'
-
-// Operators tune what counts as a large unmanaged image without a rebuild.
-const LARGE_UNMANAGED_MB = Number(
-  import.meta.env.VITE_STORAGE_LARGE_UNMANAGED_MB ?? 500,
-)
-const MB = 1024 * 1024
 
 export interface StorageItemListProps {
   node: string
@@ -140,6 +136,7 @@ export function StorageItemList({
   const [sort, setSort] = useState<SortKey>('size')
   const inventory = useStorageInventory(node)
   const images = useImageInventory(node)
+  const largeBytes = largeUnmanagedBytes(useRuntimeSettings().data?.settings)
   const activeView = parseView(view)
   const activeFilter = parseFilter(filter)
   const unsupported = inventory.data?.unsupported === true
@@ -150,9 +147,9 @@ export function StorageItemList({
         images: images.data?.images ?? [],
         inventory: inventory.data,
         buildCacheBytes,
-        largeBytes: LARGE_UNMANAGED_MB * MB,
+        largeBytes,
       }),
-    [images.data, inventory.data, buildCacheBytes],
+    [images.data, inventory.data, buildCacheBytes, largeBytes],
   )
   const groups = useMemo(
     () => groupRows(filterRows(rows, activeFilter, query), activeView, sort),
