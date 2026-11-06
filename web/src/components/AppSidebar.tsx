@@ -18,7 +18,6 @@ import { GlobalNav } from './shell/GlobalNav'
 import { sidebarArea } from './shell/sidebarArea'
 import { scheduleIdle } from '../i18n/prefetch'
 import { BrandMarkGlyph } from './BrandMarkGlyph'
-import { SidebarStatusBadge } from './shell/SidebarStatusBadge'
 import { VersionFooter } from './shell/VersionFooter'
 import { SidebarVersionLink } from './shell/SidebarVersionLink'
 import {
@@ -96,11 +95,10 @@ export function AppSidebar() {
             <SidebarMenuButton
               size="lg"
               render={<Link to="/" />}
-              className="gap-3 rounded-xl border border-sidebar-border bg-sidebar-accent/40 data-[slot=sidebar-menu-button]:!p-1.5 hover:bg-sidebar-accent"
+              className="cursor-pointer gap-3 rounded-md transition-colors duration-150 ease-out motion-reduce:transition-none data-[slot=sidebar-menu-button]:!p-1.5 hover:bg-sidebar-accent/70 active:bg-sidebar-accent"
             >
               <span className="relative flex size-8 shrink-0 items-center justify-center text-sm font-bold text-foreground">
                 <BrandMarkGlyph svgWrapperClassName="flex size-7 items-center justify-center [&_svg]:size-full" />
-                <SidebarStatusBadge />
               </span>
               <span className="truncate text-sm font-semibold">
                 {brand.ShortName || brand.Name}
