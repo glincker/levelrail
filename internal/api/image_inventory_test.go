@@ -118,6 +118,9 @@ func TestImageRemove(t *testing.T) {
 	if code != http.StatusOK || len(out.Candidates) != 1 || len(inv.removed) != 0 {
 		t.Fatalf("dry run: code=%d out=%+v removed=%v", code, out, inv.removed)
 	}
+	if out.ReclaimedBytes != 50 {
+		t.Errorf("dry run reclaimed = %d, want 50 (size minus shared)", out.ReclaimedBytes)
+	}
 
 	out, _ = do(`{"ids":["sha256:foreign","sha256:live","sha256:stopped","sha256:nope"]}`)
 	if len(out.Removed) != 1 || len(out.Failed) != 3 || out.ReclaimedBytes != 50 {
