@@ -14,6 +14,7 @@ import {
   useSetDomainMaintenance,
 } from '../queries/domainMaintenance'
 import type { DomainMaintenance } from '../queries/domainMaintenance'
+import { useCompactSettings } from './domains/compactSettings'
 import { SettingSummary } from './domains/SettingSummary'
 import { EnforcedBadge, EnforcementNote } from './domains/EnforcementGate'
 import { DomainMaintenanceForm } from './domains/DomainMaintenanceForm'
@@ -61,6 +62,7 @@ export function DomainMaintenanceControl({
   domain: string
 }) {
   const { t } = useTranslation('domains')
+  const compact = useCompactSettings()
   const { data: maintenance, isLoading } = useDomainMaintenance(appName, domain)
   const setMaintenance = useSetDomainMaintenance(appName, domain)
   const clearMaintenance = useClearDomainMaintenance(appName, domain)
@@ -93,6 +95,7 @@ export function DomainMaintenanceControl({
   return (
     <>
       <SettingSummary
+        help={t('maintenance.activeHint', { domain })}
         status={
           enabled ? (
             <EnforcedBadge domain={domain} control="maintenance">
@@ -113,7 +116,7 @@ export function DomainMaintenanceControl({
             {enabled && maintenance ? (
               <MaintenanceSummary m={maintenance} />
             ) : null}
-            {enabled && isEnforced(enforcement, 'maintenance') ? (
+            {enabled && !compact && isEnforced(enforcement, 'maintenance') ? (
               <p className="mt-2 text-xs text-muted-foreground">
                 {t('maintenance.activeHint', { domain })}
               </p>

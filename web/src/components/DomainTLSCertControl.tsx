@@ -17,6 +17,7 @@ import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/components/ui/toast'
+import { useCompactSettings } from './domains/compactSettings'
 import { SettingSummary } from './domains/SettingSummary'
 import {
   useClearDomainTLSCert,
@@ -34,6 +35,7 @@ export function DomainTLSCertControl({
   domain: string
 }) {
   const { t } = useTranslation('domains')
+  const compact = useCompactSettings()
   const { data: cert, isLoading } = useDomainTLSCert(appName, domain)
   const [open, setOpen] = useState(false)
   const [certPEM, setCertPEM] = useState('')
@@ -90,6 +92,7 @@ export function DomainTLSCertControl({
 
   return (
     <SettingSummary
+      help={t('proxySetup.byo.hint')}
       title={t('proxySetup.byo.disclosure')}
       status={
         uploaded ? (
@@ -120,9 +123,11 @@ export function DomainTLSCertControl({
       }
       note={
         <>
-          <p className="text-xs text-muted-foreground">
-            {t('proxySetup.byo.hint')}
-          </p>
+          {compact ? null : (
+            <p className="text-xs text-muted-foreground">
+              {t('proxySetup.byo.hint')}
+            </p>
+          )}
           {uploaded && cert?.apply_issue ? (
             <Alert variant="destructive" className="mt-2">
               <AlertDescription>

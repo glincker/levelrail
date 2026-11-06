@@ -1538,14 +1538,14 @@
     "dns": "DNS"
   },
   "www": {
-    "title": "Direccion www",
-    "help": "Haz que {{domain}} y www.{{domain}} funcionen, con una sola redireccion.",
-    "choiceLabel": "Que debe pasar",
+    "title": "Dirección www",
+    "help": "Haz que {{domain}} y www.{{domain}} funcionen, con una sola redirección.",
+    "choiceLabel": "Qué debe pasar",
     "choice": {
       "apex": "Enviar a los visitantes de www a {{domain}}",
       "www": "Enviar a los visitantes de {{domain}} a www.{{domain}}",
-      "both": "Servir ambos, sin redireccion",
-      "apexOnly": "Solo la direccion principal"
+      "both": "Servir ambas, sin redirección",
+      "apexOnly": "Solo la dirección principal"
     },
     "loading": "Leyendo tus registros DNS",
     "error": "No pudimos leer el plan DNS: {{message}}",
@@ -1558,31 +1558,31 @@
       "now": "Ahora"
     },
     "outcome": {
-      "created": "Se anadira",
-      "updated": "Se cambiara",
+      "created": "Se añadirá",
+      "updated": "Se cambiará",
       "unchanged": "Ya es correcto",
       "conflict": "Existe otro registro"
     },
     "copy": "Copiar {{value}}",
     "copied": "Copiado",
-    "redirect": "{{from}} redirigira a {{to}}.",
-    "noProvider": "No hay proveedor DNS conectado para este dominio. Anade estos registros donde gestionas el DNS y comprueba de nuevo.",
-    "replaceWarning": "Ya existe otro registro. Aplicar lo reemplazara.",
+    "redirect": "{{from}} redirigirá a {{to}}.",
+    "noProvider": "No hay proveedor DNS conectado para este dominio. Añade estos registros donde gestionas el DNS y comprueba de nuevo.",
+    "replaceWarning": "Ya existe otro registro. Aplicar lo reemplazará.",
     "apply": "Aplicar por mi",
     "applyReplace": "Reemplazar y aplicar",
     "applying": "Aplicando",
     "applyError": "No se pudo aplicar: {{message}}",
-    "applied": "Listo. Ambas direcciones estan configuradas.",
+    "applied": "Listo. Ambas direcciones están configuradas.",
     "partial": "Algunos registros no se aplicaron.",
     "result": {
-      "created": "Anadido",
+      "created": "Añadido",
       "updated": "Cambiado",
       "unchanged": "Ya era correcto",
       "conflict": "Sin cambios",
-      "failed": "Fallo",
+      "failed": "Falló",
       "not_attempted": "No intentado"
     },
-    "redirectApplied": "La redireccion esta activa."
+    "redirectApplied": "La redirección está activa."
   },
   "readiness": {
     "title": "Estado del dominio",
@@ -1639,11 +1639,11 @@
     "routing": "Enrutamiento",
     "protection": "Protección y detalles",
     "chip": {
-      "basicAuth": "Autenticación basica",
+      "basicAuth": "Autenticación básica",
       "authGate": "Acceso con inicio de sesión",
       "redirect": "Redirección",
       "maintenance": "Mantenimiento",
-      "waf": "WAF / limite de peticiones",
+      "waf": "WAF / límite de peticiones",
       "errorPages": "Páginas de error propias",
       "hidden": "Oculto a buscadores",
       "ownCert": "Certificado propio"
