@@ -601,7 +601,7 @@ minutes serial became about 3.
 ## Measured: release push duplication and cold PR caches
 
 Measured 2026-11-06 from `gh run view` on `release/v0.9.1` and `release/v0.9.2`.
-Of the last 40 `ci.yml` runs, 32 were `push` runs on release branches, and every
+Of the last 40 `ci.yml` runs, 29 were `push` runs on release branches, and every
 push to a branch with an open PR started a `push` run and a `pull_request` run a
 few seconds apart. Two runs of the same release commit (`42092187388` push,
 `42092199731` PR), job seconds:
