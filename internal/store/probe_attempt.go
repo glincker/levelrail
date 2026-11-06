@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"sort"
 	"time"
 )
 
@@ -41,7 +42,7 @@ func (db *DB) RecordProbeAttempt(ctx context.Context, a ProbeAttempt) error {
 		FROM deploy_attempts
 		WHERE service_name = ? AND image = ? AND status = ?
 		ORDER BY started_at DESC LIMIT 1
-	`, a.Target, a.Success, a.StatusCode, a.ExitCode, a.Error, a.LatencyMS, a.ProbedAt.UTC().Format(time.RFC3339Nano),
+	`, a.Target, a.Success, a.StatusCode, a.ExitCode, a.Error, a.LatencyMS, a.ProbedAt.UTC().Format(auditTimeLayout),
 		a.ServiceName, a.Image, DeployAttemptStatusSucceeded)
 	if err != nil {
 		return fmt.Errorf("store: record probe attempt for %q: %w", a.ServiceName, err)
@@ -81,5 +82,7 @@ func (db *DB) ListProbeAttempts(ctx context.Context, deployID string) ([]ProbeAt
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("store: iterate probe attempts for %q: %w", deployID, err)
 	}
+	// Rows written before the fixed-width layout sort wrongly as text, so order by the parsed time.
+	sort.SliceStable(out, func(i, j int) bool { return out[i].ProbedAt.Before(out[j].ProbedAt) })
 	return out, nil
 }
