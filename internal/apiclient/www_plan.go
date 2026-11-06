@@ -37,8 +37,11 @@ type WWWPlan struct {
 
 // DomainWWWPlan reads the apex and www DNS preview; empty mode or canonical
 // lets the server use its live settings.
-func (c *Client) DomainWWWPlan(ctx context.Context, app, domain, mode, canonical string) (WWWPlan, error) {
+func (c *Client) DomainWWWPlan(ctx context.Context, app, domain, mode, canonical string, noRedirect bool) (WWWPlan, error) {
 	q := url.Values{}
+	if noRedirect {
+		q.Set("redirect", "false")
+	}
 	if mode != "" {
 		q.Set("mode", mode)
 	}
@@ -92,8 +95,11 @@ type WWWApply struct {
 
 // DomainWWWApply writes the apex and www records. The server refuses unless
 // confirm is true.
-func (c *Client) DomainWWWApply(ctx context.Context, app, domain, mode, canonical string, replace, confirm bool) (WWWApply, error) {
+func (c *Client) DomainWWWApply(ctx context.Context, app, domain, mode, canonical string, replace, confirm, noRedirect bool) (WWWApply, error) {
 	body := map[string]any{"mode": mode, "canonical": canonical, "replace": replace, "confirm": confirm}
+	if noRedirect {
+		body["redirect"] = false
+	}
 	path := "/api/v1/apps/" + PathEscape(app) + "/domains/" + PathEscape(domain) + "/dns/apply"
 	var out WWWApply
 	err := c.do(ctx, http.MethodPost, path, body, &out)

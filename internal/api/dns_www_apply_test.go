@@ -271,6 +271,27 @@ func TestWWWApplyRedirectAppliedWhenTwinAttached(t *testing.T) {
 	}
 }
 
+func TestWWWApplyRedirectFalseSkipsRedirect(t *testing.T) {
+	mgr := &fakeDNSManager{}
+	rt, cookie := wwwApplyRouter(t, mgr)
+	db := rt.auditLog.(*store.DB)
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000, Domains: []string{"far.example.com", "www.far.example.com"}}); err != nil {
+		t.Fatal(err)
+	}
+	code, out := wwwApplyCall(t, rt, cookie, `{"mode":"both","canonical":"apex","confirm":true,"redirect":false}`)
+	if code != http.StatusOK || !out.Applied || out.RedirectApplied || out.Redirect != nil {
+		t.Fatalf("status = %d out = %+v", code, out)
+	}
+	if !strings.Contains(out.Message, "no redirect") || !strings.Contains(out.RedirectMessage, "skipped") {
+		t.Fatalf("messages = %q / %q", out.Message, out.RedirectMessage)
+	}
+	for _, rec := range out.Records {
+		if rec.Name == "www" && !strings.Contains(rec.Message, "no redirect") {
+			t.Fatalf("www record message = %q", rec.Message)
+		}
+	}
+}
+
 func TestWWWApplyNonRootForbidden(t *testing.T) {
 	mgr := &fakeDNSManager{}
 	rt, _ := wwwApplyRouter(t, mgr)
