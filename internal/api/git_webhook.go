@@ -458,6 +458,7 @@ func (rt *Router) deployFromGitSourceInner(ctx context.Context, name string, gs 
 
 	attemptID, progress, finishAttempt, _ := rt.beginBuildDeployAttempt(ctx, buildReq, *existing, source, "")
 	buildReq.AttemptID = attemptID
+	buildReq.RefreshDesired = rt.keepStoredDomains
 	buildCtx := ctx
 	if attemptID != "" {
 		buildReq.Commit = func() error { return rt.cancels.Commit(attemptID) }

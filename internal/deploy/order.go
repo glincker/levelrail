@@ -109,6 +109,11 @@ func (p *Pipeline) saveDesired(ctx context.Context, req Request, desired store.D
 		}
 		defer release()
 	}
+	if req.RefreshDesired != nil {
+		if err := req.RefreshDesired(ctx, &desired); err != nil {
+			return false, err
+		}
+	}
 	if err := commitPoint(req); err != nil {
 		return false, err
 	}

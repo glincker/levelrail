@@ -174,6 +174,10 @@ type Request struct {
 	Commit func() error
 	// NoCache disables BuildKit's layer cache for a dockerfile build.
 	NoCache bool
+	// RefreshDesired, when set, runs on the service just before it is saved so
+	// fields edited during a long build are not overwritten by the snapshot
+	// the request was built from.
+	RefreshDesired func(ctx context.Context, desired *store.DesiredService) error
 	// Preview marks a pull request preview build, which may not use
 	// build.secrets unless APP_PREVIEW_BUILD_SECRETS is true.
 	Preview bool
