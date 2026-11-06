@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
@@ -25,6 +25,21 @@ import { SetupStepHint } from '../getStarted/SetupStepHint'
 import { ReachabilityPill } from './ReachabilityPill'
 import { ServerAddressCard } from './ServerAddressCard'
 
+function StatusItem({
+  label,
+  children,
+}: {
+  label: string
+  children: ReactNode
+}) {
+  return (
+    <div className="flex min-w-0 flex-col gap-0.5">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <div className="flex min-h-7 min-w-0 items-center">{children}</div>
+    </div>
+  )
+}
+
 // One bar for HTTPS, address, reachability and parked count, with the one
 // primary action on the right. Setup hint and address details sit in the disclosure.
 export function DomainsStatusBar({ onAdd }: { onAdd: () => void }) {
@@ -48,17 +63,11 @@ export function DomainsStatusBar({ onAdd }: { onAdd: () => void }) {
         <div
           role="region"
           aria-label={t('statusBar.label')}
-          className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-border bg-card px-4 py-2 text-sm"
+          className="grid items-center gap-x-6 gap-y-3 rounded-lg border border-border bg-card px-4 py-3 text-sm sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.5fr)_auto]"
         >
-          {httpsOff === undefined ? null : (
-            <Badge variant={httpsOff ? 'warning' : 'success'}>
-              {httpsOff ? t('statusBar.httpsOff') : t('statusBar.httpsOn')}
-            </Badge>
-          )}
-          <span className="flex min-w-0 items-center gap-1.5 text-muted-foreground">
-            {t('statusBar.address')}
+          <StatusItem label={t('statusBar.addressLabel')}>
             {ip ? (
-              <>
+              <span className="flex min-w-0 items-center gap-1">
                 <span className="truncate font-mono text-foreground">{ip}</span>
                 <Button
                   type="button"
@@ -79,35 +88,56 @@ export function DomainsStatusBar({ onAdd }: { onAdd: () => void }) {
                     <CopyGlassIcon size="1.4em" />
                   )}
                 </Button>
-              </>
+                {httpsOff === false && addressProblem ? (
+                  <Button
+                    type="button"
+                    size="xs"
+                    variant="outline"
+                    onClick={() => {
+                      setOpen(true)
+                    }}
+                  >
+                    {t('statusBar.fixAddress')}
+                  </Button>
+                ) : null}
+              </span>
             ) : (
-              <span>{t('serverAddress.none')}</span>
+              <span className="text-muted-foreground">
+                {t('serverAddress.none')}
+              </span>
             )}
-          </span>
-          {httpsOff === false && addressProblem ? (
-            <Button
-              type="button"
-              size="xs"
-              variant="outline"
-              onClick={() => {
-                setOpen(true)
-              }}
-            >
-              {t('statusBar.fixAddress')}
-            </Button>
-          ) : null}
-          <ReachabilityPill />
-          {parked.length > 0 ? (
-            <a
-              href="#parked-domains-heading"
-              className="rounded-md hover:opacity-80"
-            >
-              <Badge variant="muted">
-                {t('statusBar.parked', { count: parked.length })}
+          </StatusItem>
+          <StatusItem label={t('statusBar.httpsLabel')}>
+            {httpsOff === undefined ? (
+              <span className="text-muted-foreground">
+                {t('statusBar.unknown')}
+              </span>
+            ) : (
+              <Badge variant={httpsOff ? 'warning' : 'success'}>
+                {httpsOff ? t('statusBar.httpsOff') : t('statusBar.httpsOn')}
               </Badge>
-            </a>
-          ) : null}
-          <div className="ml-auto flex items-center gap-3">
+            )}
+          </StatusItem>
+          <StatusItem label={t('statusBar.portsLabel')}>
+            <ReachabilityPill
+              fallback={
+                <span className="text-muted-foreground">
+                  {t('statusBar.unknown')}
+                </span>
+              }
+            />
+          </StatusItem>
+          <div className="flex flex-wrap items-center gap-3 sm:col-span-2 sm:justify-end xl:col-span-1">
+            {parked.length > 0 ? (
+              <a
+                href="#parked-domains-heading"
+                className="rounded-md hover:opacity-80"
+              >
+                <Badge variant="muted">
+                  {t('statusBar.parked', { count: parked.length })}
+                </Badge>
+              </a>
+            ) : null}
             <CollapsibleTrigger className="flex w-auto items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
               {t('statusBar.details')}
               <ChevronDownGlassIcon className="size-4.5" aria-hidden="true" />
