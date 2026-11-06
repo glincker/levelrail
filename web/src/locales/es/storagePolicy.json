@@ -1,0 +1,56 @@
+{
+  "label": "Política de almacenamiento",
+  "needsAdmin": "Requiere admin",
+  "applied": "Aplicado",
+  "save": "Guardar",
+  "saving": "Guardando",
+  "cancel": "Cancelar",
+  "close": "Cerrar",
+  "range": "El servidor comprueba el rango permitido al guardar.",
+  "invalid": "Introduce un número entero mayor que cero.",
+  "invalidGb": "Introduce un número de GB mayor que cero.",
+  "cleanup": {
+    "title": "Limpieza automática",
+    "on": "Activada",
+    "off": "Desactivada",
+    "dryRun": "Activada, simulación",
+    "what": "Elimina contenedores, imágenes y caché de compilación sin uso cuando queda poco espacio. La simulación solo informa de lo que eliminaría.",
+    "enabled": "Limpiar automáticamente",
+    "dryRunField": "Solo simulación",
+    "budget": "Iniciar la limpieza por debajo de este espacio libre",
+    "budgetUnit": "% del disco libre",
+    "budgetValue": "por debajo del {{percent}}% libre"
+  },
+  "keepImages": {
+    "title": "Últimas imágenes por app",
+    "value_one": "{{count}} imagen por app",
+    "value_other": "{{count}} imágenes por app",
+    "field": "Imágenes a conservar",
+    "unit": "imágenes por app",
+    "what": "La limpieza de imágenes elimina las más antiguas de cada app. Las imágenes en uso y los puntos de reversión se conservan siempre."
+  },
+  "cacheAge": {
+    "title": "Antigüedad máxima de la caché",
+    "hours_one": "{{count}} hora",
+    "hours_other": "{{count}} horas",
+    "days_one": "{{count}} día",
+    "days_other": "{{count}} días",
+    "field": "Antigüedad máxima",
+    "unit": "horas",
+    "what": "La limpieza automática elimina la caché de compilación más antigua que esto."
+  },
+  "lowDisk": {
+    "title": "Aviso de poco disco",
+    "value": "por debajo de {{gb}} GB libres",
+    "field": "Avisar por debajo de",
+    "unit": "GB libres",
+    "what": "Genera un aviso y una alerta de poco disco cuando el espacio libre baja de este valor."
+  },
+  "criticalDisk": {
+    "title": "Umbral crítico de disco",
+    "value": "por debajo de {{gb}} GB libres",
+    "field": "Crítico por debajo de",
+    "unit": "GB libres",
+    "what": "Las compilaciones, descargas de imágenes y copias de seguridad se rechazan por debajo de este espacio libre."
+  }
+}
