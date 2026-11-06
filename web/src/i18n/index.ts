@@ -99,6 +99,7 @@ export const NAMESPACES = [
   'deployEvents',
   'images',
   'storage',
+  'storagePolicy',
   'buildCenter',
   'functions',
   'monitors',
