@@ -1536,5 +1536,53 @@
     "domains": "Domains",
     "certificates": "Certificates",
     "dns": "DNS"
+  },
+  "readiness": {
+    "title": "Domain readiness",
+    "checkNow": "Check now",
+    "countdown": "Checking again in {{seconds}}s",
+    "allDone": "All set, no more checks needed.",
+    "step": {
+      "dns": "DNS points here",
+      "cert": "Certificate issued",
+      "site": "Site answering"
+    },
+    "say": {
+      "dns": {
+        "done": "Your domain points at this server.",
+        "progress": "Waiting for DNS. Add the record shown above.",
+        "blocked": "The domain points somewhere else. Fix the record shown above.",
+        "waiting": "Waiting for DNS."
+      },
+      "cert": {
+        "done": "Your certificate is ready.",
+        "progress": "Issuing your certificate, usually under a minute.",
+        "blocked": "Issuing failed. See the fix below.",
+        "waiting": "Starts once DNS points here."
+      },
+      "site": {
+        "done": "Your site is answering over HTTPS.",
+        "progress": "Waiting for the site to answer.",
+        "blocked": "The site is not answering. See below.",
+        "waiting": "Starts once the certificate is ready."
+      }
+    },
+    "ttl": "DNS changes can take up to {{time}} to reach everyone.",
+    "unit": {
+      "s_one": "{{count}} second",
+      "s_other": "{{count}} seconds",
+      "m_one": "{{count}} minute",
+      "m_other": "{{count}} minutes",
+      "h_one": "{{count}} hour",
+      "h_other": "{{count}} hours"
+    },
+    "localLag": "Public DNS is already right. This server's own resolver may lag a little, which does not stop your site.",
+    "issuing": "Issuing your certificate. This page updates by itself.",
+    "issueFailed": "The certificate could not be issued. Check that the record points here and port 80 is open, then press Check now.",
+    "route": {
+      "503": "The route answers 503, which means the server is reachable but the app behind it is not ready or not attached to this domain.",
+      "404": "The route answers 404, which means the server is reachable but does not know this domain yet."
+    },
+    "diagnose": "Why is it not answering?"
   }
 }
