@@ -1536,5 +1536,52 @@
     "domains": "Dominios",
     "certificates": "Certificados",
     "dns": "DNS"
+  },
+  "www": {
+    "title": "Direccion www",
+    "help": "Haz que {{domain}} y www.{{domain}} funcionen, con una sola redireccion.",
+    "choiceLabel": "Que debe pasar",
+    "choice": {
+      "apex": "Enviar a los visitantes de www a {{domain}}",
+      "www": "Enviar a los visitantes de {{domain}} a www.{{domain}}",
+      "both": "Servir ambos, sin redireccion",
+      "apexOnly": "Solo la direccion principal"
+    },
+    "loading": "Leyendo tus registros DNS",
+    "error": "No pudimos leer el plan DNS: {{message}}",
+    "retry": "Comprobar de nuevo",
+    "records": "Registros DNS",
+    "col": {
+      "type": "Tipo",
+      "name": "Nombre",
+      "value": "Valor",
+      "now": "Ahora"
+    },
+    "outcome": {
+      "created": "Se anadira",
+      "updated": "Se cambiara",
+      "unchanged": "Ya es correcto",
+      "conflict": "Existe otro registro"
+    },
+    "copy": "Copiar {{value}}",
+    "copied": "Copiado",
+    "redirect": "{{from}} redirigira a {{to}}.",
+    "noProvider": "No hay proveedor DNS conectado para este dominio. Anade estos registros donde gestionas el DNS y comprueba de nuevo.",
+    "replaceWarning": "Ya existe otro registro. Aplicar lo reemplazara.",
+    "apply": "Aplicar por mi",
+    "applyReplace": "Reemplazar y aplicar",
+    "applying": "Aplicando",
+    "applyError": "No se pudo aplicar: {{message}}",
+    "applied": "Listo. Ambas direcciones estan configuradas.",
+    "partial": "Algunos registros no se aplicaron.",
+    "result": {
+      "created": "Anadido",
+      "updated": "Cambiado",
+      "unchanged": "Ya era correcto",
+      "conflict": "Sin cambios",
+      "failed": "Fallo",
+      "not_attempted": "No intentado"
+    },
+    "redirectApplied": "La redireccion esta activa."
   }
 }

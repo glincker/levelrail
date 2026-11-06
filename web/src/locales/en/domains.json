@@ -1536,5 +1536,52 @@
     "domains": "Domains",
     "certificates": "Certificates",
     "dns": "DNS"
+  },
+  "www": {
+    "title": "www address",
+    "help": "Make {{domain}} and www.{{domain}} both work, with one redirect.",
+    "choiceLabel": "What should happen",
+    "choice": {
+      "apex": "Send www visitors to {{domain}}",
+      "www": "Send {{domain}} visitors to www.{{domain}}",
+      "both": "Serve both, no redirect",
+      "apexOnly": "Only the main address"
+    },
+    "loading": "Reading your DNS records",
+    "error": "We could not read the DNS plan: {{message}}",
+    "retry": "Check again",
+    "records": "DNS records",
+    "col": {
+      "type": "Type",
+      "name": "Name",
+      "value": "Value",
+      "now": "Now"
+    },
+    "outcome": {
+      "created": "Will add",
+      "updated": "Will change",
+      "unchanged": "Already correct",
+      "conflict": "Different record exists"
+    },
+    "copy": "Copy {{value}}",
+    "copied": "Copied",
+    "redirect": "{{from}} will redirect to {{to}}.",
+    "noProvider": "No DNS provider is connected for this domain. Add these records where you manage DNS, then check again.",
+    "replaceWarning": "A different record already exists. Applying will replace it.",
+    "apply": "Apply for me",
+    "applyReplace": "Replace and apply",
+    "applying": "Applying",
+    "applyError": "Could not apply: {{message}}",
+    "applied": "Done. Both addresses are set up.",
+    "partial": "Some records were not applied.",
+    "result": {
+      "created": "Added",
+      "updated": "Changed",
+      "unchanged": "Already correct",
+      "conflict": "Left alone",
+      "failed": "Failed",
+      "not_attempted": "Not tried"
+    },
+    "redirectApplied": "The redirect is active."
   }
 }
