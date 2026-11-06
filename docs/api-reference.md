@@ -695,6 +695,8 @@ Endpoints for:
 | POST | /api/v1/apps/repo-plan | AbilityWrite | handleRepoPlan |
 | GET | /api/v1/apps/{name}/ci/templates | AbilityRead | handleGetCITemplates |
 | GET | /api/v1/apps/{name}/deployments/{id}/receipt | AbilityRead | handleGetDeployReceipt |
+| GET | /api/v1/apps/{name}/build-cache | AbilityRead | handleGetAppBuildCache |
+| DELETE | /api/v1/apps/{name}/build-cache | AbilityDeploy | handleClearAppBuildCache |
 
 </Accordion>
 

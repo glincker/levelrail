@@ -334,6 +334,8 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	// receiver uses, for an operator with no working git webhook
 	// configured. AbilityDeploy, the same boundary as the image-tag
 	// trigger above: this also ultimately writes desired state.
+	mux.HandleFunc("GET /api/v1/apps/{name}/build-cache", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppBuildCache))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/build-cache", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleClearAppBuildCache))
 	mux.HandleFunc("POST /api/v1/apps/{name}/builds", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleTriggerBuild))
 	mux.HandleFunc("POST /api/v1/apps/{name}/uploads", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleUploadSource))
 	mux.HandleFunc("GET /api/v1/apps/{name}/uploads", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListUploads))

@@ -111,6 +111,7 @@ export const NAMESPACES = [
   'secretScan',
   'appFiles',
   'maintenance',
+  'appBuildCache',
   'buildPerformance',
   'janitor',
   'cleanup',

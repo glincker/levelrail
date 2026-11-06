@@ -251,6 +251,7 @@ type Router struct {
 	fixit                   fixitState                                                    // see fixit.go
 	buildPerf               BuildPerformanceStore                                         // see build_performance.go
 	buildLoad               BuildLoadSource                                               // nil: the build center shows no live slot usage
+	appBuildCache           AppBuildCacher                                                // nil: per app build cache routes return 501
 	buildCacheNodes         BuildCacheResolver                                            // nil: build cache routes return 501
 	buildRetrier            func(ctx context.Context, app, branch string) (string, error) // test seam, nil means TriggerScheduledDeploy
 	restart                 restartState                                                  // see system_restart.go

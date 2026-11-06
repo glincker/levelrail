@@ -89,6 +89,7 @@ import type eventWebhooks from '../locales/en/eventWebhooks.json'
 import type mcpConsent from '../locales/en/mcpConsent.json'
 import type trafficExport from '../locales/en/trafficExport.json'
 import type maintenance from '../locales/en/maintenance.json'
+import type appBuildCache from '../locales/en/appBuildCache.json'
 import type buildPerformance from '../locales/en/buildPerformance.json'
 import type janitor from '../locales/en/janitor.json'
 import type cleanup from '../locales/en/cleanup.json'
@@ -270,6 +271,7 @@ declare module 'i18next' {
       secretScan: typeof secretScan
       appFiles: typeof appFiles
       maintenance: typeof maintenance
+      appBuildCache: typeof appBuildCache
       buildPerformance: typeof buildPerformance
       janitor: typeof janitor
       cleanup: typeof cleanup
