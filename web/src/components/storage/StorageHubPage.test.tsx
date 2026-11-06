@@ -10,7 +10,7 @@ const GIB = 1024 ** 3
 const state = vi.hoisted(() => ({
   role: 'admin',
   status: {
-    data: undefined,
+    data: undefined as object | undefined,
     isPending: false,
     isError: false,
     refetch: () => Promise.resolve(),

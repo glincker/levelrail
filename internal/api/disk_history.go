@@ -74,14 +74,16 @@ func (rt *Router) handleDiskHistory(w http.ResponseWriter, r *http.Request) {
 		samples = []diskhistory.Sample{}
 	}
 	resp := diskHistoryResponse{Samples: samples, RetentionDays: retention, Forecast: diskForecastResource{BasisDays: diskhistory.BasisDays(samples)}}
-	// The forecast always fits the last 30 days, whatever window the chart asked for.
+	// The forecast fits the configured window, whatever range the chart asked for.
+	window := rt.runtimeSettings.Int(r.Context(), runtimesettings.KeyDiskForecastWindowDays)
+	minDays := rt.runtimeSettings.Int(r.Context(), runtimesettings.KeyDiskForecastMinDays)
 	fit := samples
-	if days < diskhistory.DefaultWindowDays {
-		if fit, err = rt.diskHistory.Since(r.Context(), now.Add(-diskhistory.DefaultWindowDays*24*time.Hour)); err != nil {
+	if days < window {
+		if fit, err = rt.diskHistory.Since(r.Context(), now.Add(-time.Duration(window)*24*time.Hour)); err != nil {
 			fit = samples
 		}
 	}
-	if f := diskhistory.Forecast(fit); f != nil {
+	if f := diskhistory.ForecastWith(fit, window, minDays); f != nil {
 		resp.Forecast.DaysUntilFull = &f.DaysUntilFull
 		resp.Forecast.BasisDays = f.BasisDays
 	}
