@@ -708,9 +708,9 @@ const item = (
 
 export const APP_NAV_SECTIONS: AppNavSection[] = [
   {
-    id: 'overview',
-    label: 'Overview',
-    icon: <LayoutGridGlassIcon size="1.4em" />,
+    id: 'deploy',
+    label: 'Deploy',
+    icon: <RocketGlassIcon size="1.4em" />,
     items: [
       item(
         'overview',
@@ -718,13 +718,6 @@ export const APP_NAV_SECTIONS: AppNavSection[] = [
         '/apps/$name/overview',
         <LayoutGridGlassIcon size="1.4em" />,
       ),
-    ],
-  },
-  {
-    id: 'deployments',
-    label: 'Deployments',
-    icon: <RocketGlassIcon size="1.4em" />,
-    items: [
       item(
         'deploys',
         'Deploys',
@@ -934,13 +927,6 @@ export const APP_NAV_SECTIONS: AppNavSection[] = [
         '/apps/$name/alerts',
         <BellGlassIcon size="1.4em" />,
       ),
-    ],
-  },
-  {
-    id: 'exec',
-    label: 'Exec',
-    icon: <TerminalGlassIcon size="1.4em" />,
-    items: [
       item(
         'exec',
         'Exec',

@@ -1,5 +1,4 @@
-export type AppTabGroupId =
-  'basics' | 'network' | 'data' | 'observe' | 'advanced'
+export type AppTabGroupId = 'deploy' | 'traffic' | 'config' | 'observe'
 
 export interface AppTabGroupDef {
   id: AppTabGroupId
@@ -10,32 +9,66 @@ export interface AppTabGroupDef {
 // New tab: add its route slug to one group here. Anything unlisted lands in
 // Advanced, so a tab can never go missing from the nav.
 export const APP_TAB_GROUPS: readonly AppTabGroupDef[] = [
-  { id: 'basics', slugs: ['overview', 'deploys', 'environment', 'logs'] },
   {
-    id: 'network',
+    id: 'deploy',
+    slugs: [
+      'overview',
+      'deploys',
+      'source',
+      'previews',
+      'deploy-settings',
+      'pipelines',
+    ],
+  },
+  {
+    id: 'traffic',
     slugs: [
       'go-live',
       'domains',
-      'static-routes',
-      'cache',
-      'network',
       'loadbalancer',
+      'load-balancer',
+      'network',
+      'cache',
+      'forms',
+      'static-routes',
     ],
   },
-  { id: 'data', slugs: ['volumes'] },
+  {
+    id: 'config',
+    slugs: [
+      'environment',
+      'services',
+      'resources',
+      'volumes',
+      'health',
+      'scheduled-tasks',
+      'feature-flags',
+      'split-testing',
+      'integrations',
+    ],
+  },
   {
     id: 'observe',
     slugs: [
       'metrics',
-      'traces',
-      'streams',
-      'alerts',
+      'logs',
+      'log-pipeline',
       'requests',
       'traffic',
+      'traces',
+      'streams',
       'errors',
+      'alerts',
+      'exec',
     ],
   },
-  { id: 'advanced', slugs: [] },
+]
+
+// Empty-by-default Config tabs; the sidebar folds them under a More row.
+export const CONFIG_MORE_SLUGS: readonly string[] = [
+  'feature-flags',
+  'split-testing',
+  'integrations',
 ]
 
 // Tabs with nothing to show for a static site (no container, volume or shell).
@@ -45,7 +78,7 @@ export const STATIC_HIDDEN_SLUGS: readonly string[] = [
   'scheduled-tasks',
 ]
 
-export const FALLBACK_GROUP: AppTabGroupId = 'advanced'
+export const FALLBACK_GROUP: AppTabGroupId = 'config'
 
 export function groupForSlug(slug: string): AppTabGroupId {
   return (
@@ -68,7 +101,7 @@ function rank(group: AppTabGroupDef, slug: string): number {
   return i === -1 ? group.slugs.length : i
 }
 
-/** Buckets tabs into the five groups; empty groups are dropped. */
+/** Buckets tabs into the groups; empty groups are dropped. */
 export function groupTabs<T extends { slug: string }>(
   tabs: readonly T[],
   { isStatic = false, showAll = false }: GroupTabsOptions = {},

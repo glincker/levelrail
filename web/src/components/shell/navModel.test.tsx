@@ -249,18 +249,18 @@ describe('grouped nav entries', () => {
 })
 
 describe('app nav model', () => {
-  it('covers every existing app route exactly once in 6 sections', () => {
-    expect(APP_NAV_SECTIONS).toHaveLength(6)
+  it('covers every existing app route exactly once in 4 sections', () => {
+    expect(APP_NAV_SECTIONS).toHaveLength(4)
     const slugs = APP_NAV_SECTIONS.flatMap((s) => s.items.map((i) => i.slug))
     expect(slugs.sort()).toEqual([...EXPECTED_APP].sort())
   })
 
   it.each([
-    ['/apps/web/deploys/abc/logs', 'deployments', 'deploys'],
-    ['/apps/web/pipelines/x', 'deployments', 'pipelines'],
+    ['/apps/web/deploys/abc/logs', 'deploy', 'deploys'],
+    ['/apps/web/pipelines/x', 'deploy', 'pipelines'],
     ['/apps/web/network', 'traffic', 'network'],
     ['/apps/web/volumes', 'config', 'volumes'],
-    ['/apps/web/exec', 'exec', 'exec'],
+    ['/apps/web/exec', 'observe', 'exec'],
   ])('resolves %s', (path, section, item) => {
     const a = activeAppSection(path)
     expect([a?.section.id, a?.item.id]).toEqual([section, item])

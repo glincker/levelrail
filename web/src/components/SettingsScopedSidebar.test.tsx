@@ -79,36 +79,38 @@ describe('SettingsScopedSidebar', () => {
     vi.restoreAllMocks()
   })
 
-  it('opens only the group holding the current page by default', () => {
+  it('drills into the area holding the current page', () => {
+    renderSidebar()
+
+    expect(
+      screen.getByRole('button', { name: 'Back to all settings areas' }),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('People and access')).not.toBeInTheDocument()
+    expect(screen.queryByText('Vault')).not.toBeInTheDocument()
+  })
+
+  it('goes back to the areas list and drills into another area', async () => {
+    const user = userEvent.setup()
+    renderSidebar()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Back to all settings areas' }),
+    )
+    expect(screen.getByText('People and access')).toBeInTheDocument()
+
+    await user.click(screen.getByText('Security'))
+    expect(screen.getByText('Vault')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Back to all settings areas' }),
+    ).toHaveFocus()
+  })
+
+  it('shows areas, not pages, on the settings hub', () => {
+    currentPathname = '/settings'
     renderSidebar()
 
     expect(screen.getByText('People and access')).toBeInTheDocument()
     expect(screen.queryByText('Users')).not.toBeInTheDocument()
-    expect(screen.queryByText('Vault')).not.toBeInTheDocument()
-  })
-
-  it('toggles a group open and closed on heading click', async () => {
-    const user = userEvent.setup()
-    renderSidebar()
-
-    expect(screen.queryByText('Users')).not.toBeInTheDocument()
-
-    await user.click(screen.getByText('People and access'))
-    expect(screen.getByText('Users')).toBeInTheDocument()
-
-    await user.click(screen.getByText('People and access'))
-    expect(screen.queryByText('Users')).not.toBeInTheDocument()
-  })
-
-  it('respects a stored preference that previously opened a group', () => {
-    localStorage.setItem(
-      'settings-sidebar-open-groups:v2',
-      JSON.stringify({ access: true }),
-    )
-
-    renderSidebar()
-
-    expect(screen.getByText('Users')).toBeInTheDocument()
   })
 
   it('keeps Platform active on every platform page', () => {
@@ -133,20 +135,20 @@ describe('SettingsScopedSidebar', () => {
 
     expect(screen.getByRole('link', { name: 'Platform' })).toBeInTheDocument()
     expect(screen.queryByText('Users')).not.toBeInTheDocument()
+    await user.click(
+      screen.getByRole('button', { name: 'Back to all settings areas' }),
+    )
     await user.click(screen.getByText('People and access'))
     expect(screen.getByText('Users')).toBeInTheDocument()
   })
 
-  it('filters items by search, expanding only matching groups', async () => {
+  it('shows a flat result list across areas while searching', async () => {
     const user = userEvent.setup()
     renderSidebar()
-
-    expect(screen.queryByText('Vault')).not.toBeInTheDocument()
 
     await user.type(screen.getByLabelText('Search settings'), 'vault')
 
     expect(screen.getByText('Vault')).toBeInTheDocument()
-    expect(screen.getByText('Security')).toBeInTheDocument()
     expect(screen.queryByText('Domains and TLS')).not.toBeInTheDocument()
 
     await user.clear(screen.getByLabelText('Search settings'))
@@ -169,10 +171,16 @@ describe('SettingsScopedSidebar', () => {
 
     expect(screen.queryByText('Pinned')).not.toBeInTheDocument()
 
+    await user.click(
+      screen.getByRole('button', { name: 'Back to all settings areas' }),
+    )
     await user.click(screen.getByText('People and access'))
     const pin = screen.getByRole('button', { name: 'Pin Users' })
     expect(pin).toHaveAttribute('aria-pressed', 'false')
     await user.click(pin)
+    await user.click(
+      screen.getByRole('button', { name: 'Back to all settings areas' }),
+    )
 
     expect(screen.getByText('Pinned')).toBeInTheDocument()
     expect(
@@ -193,41 +201,5 @@ describe('SettingsScopedSidebar', () => {
     renderSidebar()
 
     expect(screen.queryByText('Pinned')).not.toBeInTheDocument()
-  })
-
-  it('expands and collapses every group', async () => {
-    const user = userEvent.setup()
-    renderSidebar()
-
-    await user.click(screen.getByRole('button', { name: 'Expand all groups' }))
-    expect(screen.getByText('Users')).toBeInTheDocument()
-    expect(screen.getByText('Vault')).toBeInTheDocument()
-
-    await user.click(
-      screen.getByRole('button', { name: 'Collapse all groups' }),
-    )
-    expect(screen.queryByText('Users')).not.toBeInTheDocument()
-    expect(screen.queryByText('Vault')).not.toBeInTheDocument()
-  })
-
-  it('keeps one group open at a time when asked, and remembers it', async () => {
-    const user = userEvent.setup()
-    renderSidebar()
-
-    const toggle = screen.getByRole('button', {
-      name: 'Open one group at a time',
-    })
-    expect(toggle).toHaveAttribute('aria-pressed', 'false')
-    await user.click(toggle)
-    expect(toggle).toHaveAttribute('aria-pressed', 'true')
-    expect(localStorage.getItem('settings-sidebar-one-at-a-time:v1')).toBe(
-      'true',
-    )
-
-    await user.click(screen.getByText('People and access'))
-    expect(screen.getByText('Users')).toBeInTheDocument()
-    await user.click(screen.getByText('Security'))
-    expect(screen.getByText('Vault')).toBeInTheDocument()
-    expect(screen.queryByText('Users')).not.toBeInTheDocument()
   })
 })

@@ -21,14 +21,14 @@ vi.mock('./useAppTabs', () => ({
   useAppTabs: () => ({
     groups: [
       {
-        id: 'basics',
+        id: 'deploy',
         items: [
           { id: 'a', slug: 'deploys', label: 'Deploys', to: '/d' },
           { id: 'b', slug: 'logs', label: 'Logs', to: '/l' },
         ],
       },
     ],
-    activeGroup: 'basics',
+    activeGroup: 'deploy',
     activeSlug: 'deploys',
     isStatic: false,
     hiddenCount: 0,

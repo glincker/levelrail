@@ -897,12 +897,13 @@
   },
   "appTabs": {
     "groups": {
-      "advanced": "Avanzado",
-      "basics": "Básicos",
-      "data": "Datos",
-      "network": "Red",
-      "observe": "Observar"
+      "config": "Configuración",
+      "deploy": "Despliegue",
+      "observe": "Observar",
+      "traffic": "Tráfico"
     },
+    "more": "Más",
+    "overview": "Resumen",
     "pages": "Páginas de {{section}}",
     "sections": "Secciones de la aplicación",
     "showAll": "Mostrar todas las pestañas ({{count}} ocultas)",

@@ -296,12 +296,13 @@
     "showAll": "Show all tabs ({{count}} hidden)",
     "showLess": "Hide tabs that do not apply",
     "groups": {
-      "basics": "Basics",
-      "network": "Network",
-      "data": "Data",
-      "observe": "Observe",
-      "advanced": "Advanced"
-    }
+      "deploy": "Deploy",
+      "traffic": "Traffic",
+      "config": "Config",
+      "observe": "Observe"
+    },
+    "more": "More",
+    "overview": "Overview"
   },
   "recommended": {
     "title": "Recommended next",
