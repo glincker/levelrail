@@ -80,6 +80,11 @@ func IsProtectedVolumeName(name string) (bool, string) {
 	return IsProtectedVolume(Volume{Name: name})
 }
 
+// DatabaseOwner returns the database a volume name belongs to, or "".
+func DatabaseOwner(name string, dbs map[string]bool) string {
+	return databaseOf(name, dbs)
+}
+
 // databaseOf finds the database a db-<name>-<role> volume belongs to,
 // preferring the longest known name so dashed database names resolve.
 func databaseOf(name string, dbs map[string]bool) string {

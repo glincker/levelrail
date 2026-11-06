@@ -29,6 +29,10 @@ func (rt *Router) removeExistingVolumes(ctx context.Context, names []string) []s
 		if !present[n] {
 			continue
 		}
+		if prot, _ := rt.volumeLock(ctx, n); prot {
+			rt.logger.Warn("api: preview cleanup: database volume kept", slog.String("volume", n))
+			continue
+		}
 		if err := rt.orphanedVolumes.RemoveVolume(ctx, n); err != nil {
 			rt.logger.Error("api: preview cleanup: remove volume failed", slog.String("error", err.Error()), slog.String("volume", n))
 			failed = append(failed, "volume:"+n)
