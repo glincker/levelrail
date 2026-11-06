@@ -319,6 +319,8 @@ type Controller struct {
 	// dashboard route", the default, matching how every currently
 	// existing deployment has no such route today.
 	dashboardDial string
+	// nextGraceIDs lists a service's Next.js deployment ids still in grace; nil disables skew routing.
+	nextGraceIDs func(service string, now time.Time) []string
 
 	// gateSecret authenticates built-in auth gate subrequests to the
 	// dashboard's check endpoint; empty leaves built-in gated hosts unrouted.
@@ -1048,7 +1050,9 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		})
 		maintenanceRoutes = append(maintenanceRoutes, maintenancePages(fallback, maintenanceSettings)...)
 		svcRoutes = append(svcRoutes, gatedRoutes...)
+		skew := c.nextSkewFor(ctx, svc, dial, now)
 		for i := range svcRoutes {
+			svcRoutes[i].NextSkew = skew
 			svcRoutes[i].LB = lb
 			svcRoutes[i].MaxBodyBytes = bodyLimits[svc.Name]
 		}

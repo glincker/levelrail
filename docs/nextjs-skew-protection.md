@@ -29,12 +29,37 @@ extended to the grace window for Next.js apps in the reconciler
 (`internal/reconcile/application`, `WithPreviousReleaseHold`), which this slice
 may not touch.
 
-## Not finished (for the ingress slice)
+## Cutover wiring (S11)
 
-1. TODO: call `NextGraceBook.Begin` at cutover with the previous desired
-   service's `NEXT_DEPLOYMENT_ID` and image. The book is in memory; a restart
-   forgets it. A durable record needs a migration, deliberately not added here.
-2. TODO: the reconciler keeps previous containers for `max(hold, grace)` when a
-   grace record is active.
-3. TODO: `internal/ingress/next_skew.go` (S11) reads `NextGraceBook.Active` and
-   adds the id based route to the held containers.
+- Deploy tail: `finishDeploy` reads the previous desired service before saving the
+  new one and, once the new release is current, calls `NextGraceBook.Begin` with the
+  previous `NEXT_DEPLOYMENT_ID` and image. Only Next.js apps whose deploy set an id,
+  with the setting on and grace above 0, open a window. Previews never do.
+- Durable: windows live in `next_asset_grace` (migration 3202). The shared book writes
+  through and `Load` restores it at boot, so a control plane restart keeps the window.
+- Hold: `application.WithNextGraceHold` extends the previous release hold to the end of
+  the window. The same logic keeps only the newest previous release, and
+  `deploy.next_asset_grace_max_held` (default 1, max 3) caps how many generations get a
+  window. Rollback and the next deploy use the normal retire path, so a release that is
+  no longer the newest previous one is removed as before.
+- Ingress: `internal/ingress/next_skew.go` adds a route before the host route. It
+  matches `/_next/static/*` and `/_next/data/*` carrying `?dpl=<old id>` or the
+  `x-deployment-id` header and proxies to the held previous containers. Everything
+  else goes to the current release. The held containers are never in the normal
+  upstream pool. The route is rebuilt by the normal ingress pass, so it appears with
+  the deploy and disappears at the next resync after the window ends.
+
+## Cost
+
+A held generation keeps its containers running for the whole window (default 30
+minutes): one extra copy of the app's memory and CPU. Lower
+`deploy.next_asset_grace_seconds` or set it to 0 to avoid that.
+
+## Still needs a real host
+
+- A real cutover on a Next.js app with `deploymentId` honored by the build: confirm an
+  old tab's chunk request with `?dpl=<old>` is answered by the held container, a request
+  without it by the new one, and that the held container goes away after the window.
+- The held upstream is the best ranked other running container of the service. With
+  multi node placement or a failover pool that ranking is unproven.
+- A control plane restart in the middle of a window, with the held containers still up.

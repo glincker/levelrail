@@ -268,14 +268,15 @@ type Controller struct {
 	egressReadyBudget       time.Duration
 	egressReadyPollInterval time.Duration
 
-	rollouts            RolloutRecorder                            // nil is valid: rollout state just isn't recorded
-	servingImageID      string                                     // image ID of the last replica proven ready this pass
-	stopGrace           time.Duration                              // 0 uses defaultStopGrace
-	previousReleaseHold time.Duration                              // 0 removes the previous release at cutover
-	deployWindows       func(context.Context) deploysafety.Windows // live override of the timings, see WithDeployWindows
-	restartPolicy       func(context.Context) string               // stored runtime setting, read per container create
-	policySwept         sync.Map                                   // container IDs already brought to the desired restart policy
-	applied             AppliedConfigRecorder                      // nil is valid: pending changes just aren't tracked
+	rollouts            RolloutRecorder                               // nil is valid: rollout state just isn't recorded
+	servingImageID      string                                        // image ID of the last replica proven ready this pass
+	stopGrace           time.Duration                                 // 0 uses defaultStopGrace
+	nextGraceUntil      func(service string, now time.Time) time.Time // nil holds only for previousReleaseHold
+	previousReleaseHold time.Duration                                 // 0 removes the previous release at cutover
+	deployWindows       func(context.Context) deploysafety.Windows    // live override of the timings, see WithDeployWindows
+	restartPolicy       func(context.Context) string                  // stored runtime setting, read per container create
+	policySwept         sync.Map                                      // container IDs already brought to the desired restart policy
+	applied             AppliedConfigRecorder                         // nil is valid: pending changes just aren't tracked
 	lastHeldUntil       time.Time
 	now                 func() time.Time // nil uses time.Now; tests step a fake clock
 	unconfirmedMu       sync.Mutex

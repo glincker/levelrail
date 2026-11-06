@@ -429,9 +429,13 @@ func (p *Pipeline) finishDeploy(ctx context.Context, req Request, res *build.Res
 	resolution := p.buildResolution(ctx, res.Tag, res.ExporterResponse)
 	resolution.apply(&desired)
 
+	prevID, prevImage := p.previousNextRelease(ctx, req)
 	held, err := p.saveDesired(ctx, req, desired)
 	if err != nil {
 		return "", fmt.Errorf("deploy: service %q: save desired state: %w", req.ServiceName, err)
+	}
+	if !held {
+		p.beginNextGrace(ctx, req, prevID, prevImage)
 	}
 	p.recordDigest(ctx, req, resolution)
 	if !held {

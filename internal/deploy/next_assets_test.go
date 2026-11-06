@@ -88,3 +88,60 @@ func TestNextGraceBook(t *testing.T) {
 		}
 	})
 }
+
+type memGraceStore struct{ rows map[string]NextAssetGrace }
+
+func (m *memGraceStore) key(g NextAssetGrace) string { return g.Service + "/" + g.DeploymentID }
+func (m *memGraceStore) InsertNextAssetGrace(_ context.Context, g NextAssetGrace) error {
+	m.rows[m.key(g)] = g
+	return nil
+}
+func (m *memGraceStore) ListActiveNextAssetGrace(_ context.Context, now time.Time) ([]NextAssetGrace, error) {
+	var out []NextAssetGrace
+	for _, g := range m.rows {
+		if g.Until.After(now) {
+			out = append(out, g)
+		}
+	}
+	return out, nil
+}
+func (m *memGraceStore) DeleteExpiredNextAssetGrace(_ context.Context, now time.Time) error {
+	for k, g := range m.rows {
+		if !g.Until.After(now) {
+			delete(m.rows, k)
+		}
+	}
+	return nil
+}
+func (m *memGraceStore) DeleteNextAssetGraceForService(_ context.Context, s string) error {
+	for k, g := range m.rows {
+		if g.Service == s {
+			delete(m.rows, k)
+		}
+	}
+	return nil
+}
+
+func TestNextGraceBookSurvivesRestartAndCapsGenerations(t *testing.T) {
+	t.Setenv(EnvNextAssetGraceSecs, "600")
+	ctx := context.Background()
+	now := time.Now()
+	st := &memGraceStore{rows: map[string]NextAssetGrace{}}
+	b := NewNextGraceBook().WithStore(st)
+	b.Begin(ctx, "web", "d1", "img1", now)
+	b.Begin(ctx, "web", "d2", "img2", now.Add(time.Minute))
+	// Default cap is 1: only the newest generation stays held.
+	if act := b.Active("web", now.Add(2*time.Minute)); len(act) != 1 || act[0].DeploymentID != "d2" {
+		t.Fatalf("active = %+v", act)
+	}
+	restarted := NewNextGraceBook().WithStore(st)
+	if err := restarted.Load(ctx, now.Add(2*time.Minute)); err != nil {
+		t.Fatal(err)
+	}
+	if act := restarted.Active("web", now.Add(2*time.Minute)); len(act) != 1 || act[0].DeploymentID != "d2" {
+		t.Fatalf("after restart = %+v", act)
+	}
+	if !restarted.HeldUntil("web", now).After(now.Add(10 * time.Minute)) {
+		t.Fatal("HeldUntil must be the end of the window")
+	}
+}

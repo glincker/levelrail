@@ -33,6 +33,13 @@ func WithPreviousReleaseHold(d time.Duration) Option {
 	return func(ctrl *Controller) { ctrl.previousReleaseHold = d }
 }
 
+// WithNextGraceHold extends the previous release hold to the end of a Next.js
+// old asset grace window. until returns zero when the service has no open window.
+// Only the newest previous release is ever held, so the extra cost is one copy.
+func WithNextGraceHold(until func(service string, now time.Time) time.Time) Option {
+	return func(ctrl *Controller) { ctrl.nextGraceUntil = until }
+}
+
 // NameImage is the image identity container names hash. A build's local
 // image ID is folded in so rebuilding the same tag with new content gets a
 // new container instead of silently keeping the old one.
@@ -166,7 +173,14 @@ func (c *Controller) heldFilterFor(all []docker.ContainerState, targets []string
 			cutover = t
 		}
 	}
-	holding := !cutover.IsZero() && now.Before(cutover.Add(hold))
+	holdEnd := cutover.Add(hold)
+	// An open Next.js asset grace window extends the hold of the newest previous release.
+	if c.nextGraceUntil != nil && !cutover.IsZero() {
+		if g := c.nextGraceUntil(c.serviceName, now); g.After(holdEnd) {
+			holdEnd = g
+		}
+	}
+	holding := !cutover.IsZero() && now.Before(holdEnd)
 	currentBase := ""
 	if len(targets) > 0 {
 		currentBase = releaseOf(targets[0])
@@ -184,7 +198,7 @@ func (c *Controller) heldFilterFor(all []docker.ContainerState, targets []string
 		due = append(due, cs)
 	}
 	if newestPrevious != "" {
-		heldUntil = cutover.Add(hold)
+		heldUntil = holdEnd
 	}
 	return due, heldUntil
 }
