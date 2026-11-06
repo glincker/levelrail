@@ -1,13 +1,14 @@
 import type {
   DnsSource,
   DomainCheckResult,
+  DomainRouteStatus,
   ProxyCertificate,
 } from '../../queries/domainCheck'
 import type { ProxyDomain } from '../../queries/proxyIntegration'
 
 export type StepState = 'done' | 'progress' | 'blocked' | 'waiting'
 export type ReadinessStepId = 'dns' | 'cert' | 'site'
-export type RouteProblem = '503' | '404'
+export type RouteProblem = '503' | '404' | '5xx'
 
 export interface ReadinessInput {
   status: DomainCheckResult['status']
@@ -17,6 +18,7 @@ export interface ReadinessInput {
   certTrusted: boolean
   proxyCertificate?: ProxyCertificate | null
   proxyRow?: ProxyDomain
+  route?: DomainRouteStatus
 }
 
 export interface ReadinessStep {
@@ -55,13 +57,18 @@ export function readinessSteps(i: ReadinessInput): ReadinessStep[] {
   const answering = i.proxyRow
     ? i.proxyRow.reachable && certDone
     : dnsDone && certDone
-  const site: StepState = answering
-    ? 'done'
-    : !certDone
-      ? 'waiting'
-      : i.proxyRow?.last_error
+  const routeKind = routeVerdict(i.route)
+  const site: StepState = !certDone
+    ? 'waiting'
+    : routeKind === 'ok'
+      ? 'done'
+      : routeKind
         ? 'blocked'
-        : 'progress'
+        : answering
+          ? 'done'
+          : i.proxyRow?.last_error
+            ? 'blocked'
+            : 'progress'
   return [
     { id: 'dns', state: dns },
     { id: 'cert', state: cert },
@@ -73,8 +80,25 @@ export function allStepsDone(steps: ReadinessStep[]): boolean {
   return steps.every((s) => s.state === 'done')
 }
 
-// Route status only reaches us as text in the proxy row, so look for the code there.
-export function routeProblem(row?: ProxyDomain): RouteProblem | undefined {
+// The structured route status wins; undefined means "no usable status".
+function routeVerdict(
+  route?: DomainRouteStatus,
+): RouteProblem | 'ok' | undefined {
+  if (!route || route.status <= 0) return undefined
+  if (route.status === 503) return '503'
+  if (route.status === 404) return '404'
+  if (route.status >= 500) return '5xx'
+  if (route.status < 400) return 'ok'
+  return undefined
+}
+
+// Falls back to scanning the proxy row text only when the check has no route field.
+export function routeProblem(
+  row?: ProxyDomain,
+  route?: DomainRouteStatus,
+): RouteProblem | undefined {
+  const v = routeVerdict(route)
+  if (v) return v === 'ok' ? undefined : v
   if (!row || row.reachable) return undefined
   const text = `${row.last_error} ${(row.evidence ?? []).join(' ')}`
   if (/\b503\b/.test(text)) return '503'

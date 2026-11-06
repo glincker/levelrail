@@ -22,6 +22,7 @@ import {
   type DnsVerdict,
   type DomainCheckStatus,
   type DomainResolver,
+  type DomainRouteStatus,
   type ProxyCertificate,
   type TlsOwner,
 } from '../queries/domainCheck'
@@ -59,6 +60,7 @@ export interface DomainCheckPanelData {
   tls_owner?: TlsOwner
   proxy_certificate?: ProxyCertificate
   checked_at?: string
+  route?: DomainRouteStatus
   resolvers?: DomainResolver[]
   authoritative?: DnsSource[]
   public?: DnsSource[]
@@ -516,6 +518,7 @@ export function DomainCheckPanel({
             certTrusted: proxyCertTrusted(proxyRow, data.proxy_certificate),
             proxyCertificate: data.proxy_certificate,
             proxyRow,
+            route: data.route,
           }}
         />
       ) : (
@@ -553,7 +556,9 @@ export function DomainDnsCheck({
   appName: string
   domain: string
 }) {
-  const { data, isFetching, refetch } = useDomainCheck(appName, domain)
+  const { data, isFetching, refetch } = useDomainCheck(appName, domain, {
+    poll: false,
+  })
   const { data: proxy } = useQuery(proxyIntegrationQueryOptions())
   const proxyRow = proxy ? findProxyDomain(proxy, domain) : undefined
   const verify = useVerifyProxyDomain()

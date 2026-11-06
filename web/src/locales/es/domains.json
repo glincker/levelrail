@@ -1628,7 +1628,8 @@
     "issueFailed": "No se pudo emitir el certificado. Comprueba que el registro apunta aquí y que el puerto 80 está abierto, y pulsa Comprobar ahora.",
     "route": {
       "503": "La ruta responde 503: el servidor es accesible, pero la app que hay detrás no está lista o no está asociada a este dominio.",
-      "404": "La ruta responde 404: el servidor es accesible, pero aún no conoce este dominio."
+      "404": "La ruta responde 404: el servidor es accesible, pero aún no conoce este dominio.",
+      "5xx": "La ruta responde con un error del servidor: el servidor es accesible pero la aplicación detrás falla. Revisa los registros de la aplicación."
     },
     "diagnose": "¿Por qué no responde?"
   },

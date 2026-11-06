@@ -90,7 +90,7 @@ export function DomainReadinessSteps({
         }),
       })
     : ''
-  const problem = routeProblem(proxyRow)
+  const problem = routeProblem(proxyRow, input.route)
   return (
     <div className="mt-2 space-y-2 text-xs" data-testid="readiness-steps">
       <ol
