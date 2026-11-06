@@ -40,6 +40,8 @@ deploys.registry_push_max_body_bytes
 deploys.registry_push_timeout
 desktop.session_ttl
 disk.critical_free_mb
+disk.history_retention_days
+disk.history_sample_interval
 disk.low_free_mb
 disk.reserve_mb
 dns.verify_provider_on_save
