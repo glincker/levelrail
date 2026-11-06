@@ -54,6 +54,10 @@ type Hardening struct {
 	// backendless apps; both come from the brand layer.
 	BrandName string
 	DocsURL   string
+	// DiagnosticDial and DiagnosticToken send the catch-all to the control
+	// plane for the live-state page; empty keeps the static page.
+	DiagnosticDial  string
+	DiagnosticToken string
 }
 
 // DefaultHardening returns defaults that are safe for general web apps: no

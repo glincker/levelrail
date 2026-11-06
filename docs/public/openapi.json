@@ -152830,6 +152830,47 @@
         ]
       }
     },
+    "/internal/diagnostic": {
+      "get": {
+        "description": "Token gated by the ingress; see TrustedDiagnosticHandler.\n\nNo authentication required.",
+        "operationId": "handleInternalDiagnostic",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [],
+        "summary": "Token gated by the ingress; see TrustedDiagnosticHandler.",
+        "tags": [
+          "Other"
+        ]
+      }
+    },
     "/mcp": {
       "post": {
         "description": "Unauthenticated at the mux: serve checks the bearer token itself, plus flag, Origin and limits.\n\nNo authentication required.",

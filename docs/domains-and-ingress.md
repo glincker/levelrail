@@ -1201,7 +1201,9 @@ When a domain is detached, Levelrail removes its route file. A front proxy such 
 
 Risk: the catch-all also receives hosts of other apps on the same front proxy, but only when they have no router at all. Hosts that have any router keep using it. Browsers that reach an unrouted host over HTTPS see the proxy's default certificate warning before the page.
 
-The diagnostic page names the real cause (unattached, building, stopped, starting, no healthy replica) with the exact CLI command to fix it, and only names the app when the visitor's host is already attached to it. Results are reused for `ingress.diagnostic_cache_ttl_seconds` seconds (default 5).
+The diagnostic page names the real cause (unattached, building, stopped, starting, no healthy replica) with the exact CLI command to fix it, and only names the app when the visitor's host is already attached to it. The state comes from an in-memory snapshot of your apps, domains, deploys and containers. A background loop rebuilds it every `ingress.diagnostic_cache_ttl_seconds` seconds (default 5, applied live), so a visitor request never queries the database.
+
+How it is served: the ingress catch-all proxies to the control plane at `GET /internal/diagnostic`, adding the original host in a header the ingress sets itself and a per-process token. The endpoint answers 404 to anyone without the token, and ignores host or state headers a client sends. If the control plane cannot be reached, the ingress falls back to the static page baked into its config, which still shows the generic causes. The snapshot reports "starting" for a running container younger than `LEVELRAIL_INGRESS_DIAGNOSTIC_STARTING_SECONDS` (default 60).
 
 ## Next steps
 

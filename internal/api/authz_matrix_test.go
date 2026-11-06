@@ -42,6 +42,7 @@ var libraryOnlyRoutes = map[string]string{
 var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credentials
 	"GET /healthz":                                   "liveness probe for systemd and load balancers",
 	"GET /readyz":                                    "readiness probe, no data beyond ready/not ready",
+	"GET /internal/diagnostic":                       "ingress-only hop gated by a per-process token, answers 404 without it",
 	"GET /api/v1/brand":                              "login screen needs branding before a session exists",
 	"GET /api/v1/instance":                           "CLI verifies which server it reached before sending a token; id and HMAC fingerprint only, rate limited",
 	"GET /api/v1/demo":                               "demo banner, boolean only on a real instance",

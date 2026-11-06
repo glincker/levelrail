@@ -333,6 +333,7 @@ func (s *bootState) startMesh() error {
 	apiRouter.SetProxyIntegration(proxySyncer, db, proxyVerifyTimeout(logger))
 	routeCheck := newRouteCheck(logger)
 	apiRouter.SetProxyRouteCheck(routeCheck)
+	wireDiagnostic(ctx, apiRouter, edge.hardening, proxySyncer, logger)
 	apiRouter.ResumeCutoverRuns(ctx)
 	go apiRouter.ResumeTakeover(ctx)
 	s.lbRegistry = lbRegistry
