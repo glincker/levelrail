@@ -2,7 +2,9 @@ package api
 
 import (
 	"context"
+	"errors"
 	"net/http"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -46,5 +48,57 @@ func TestWWWPlanRejectsNonApexAndBadMode(t *testing.T) {
 	}
 	if code := trafficCall(t, rt, cookie, http.MethodGet, "/api/v1/apps/web/domains/far.example.com/dns/plan?mode=nope", nil); code != http.StatusBadRequest {
 		t.Fatalf("bad mode status = %d, want 400", code)
+	}
+}
+
+func wwwNoProviderRouter(t *testing.T, addrs map[string][]string) (*Router, *http.Cookie) {
+	t.Helper()
+	var calls atomic.Int32
+	rt, cookie := cutoverRouter(t, false, &calls)
+	rt.domainAuto.resolveTarget = func(context.Context, string) (*dnsTarget, error) { return nil, nil }
+	rt.publicHost = "203.0.113.7"
+	rt.detectPublicIPs = func(context.Context) []string { return nil }
+	rt.lookupHost = func(_ context.Context, host string) ([]string, error) {
+		if a, ok := addrs[host]; ok {
+			return a, nil
+		}
+		return nil, errors.New("no such host")
+	}
+	return rt, cookie
+}
+
+func TestWWWPlanLookupMarksRecordsAlreadyCorrect(t *testing.T) {
+	rt, cookie := wwwNoProviderRouter(t, map[string][]string{
+		"far.example.com":     {"203.0.113.7"},
+		"www.far.example.com": {"203.0.113.7"},
+	})
+	var res wwwPlanResponse
+	if code := trafficCall(t, rt, cookie, http.MethodGet, "/api/v1/apps/web/domains/far.example.com/dns/plan", &res); code != http.StatusOK {
+		t.Fatalf("status = %d", code)
+	}
+	if !res.ApexPointsHere || !res.WWWPointsHere || res.WWWAttached {
+		t.Fatalf("facts = %+v", res)
+	}
+	for _, rec := range res.Records {
+		if rec.State != wwwStateAlreadyRight || len(rec.Current) != 1 {
+			t.Fatalf("record = %+v", rec)
+		}
+	}
+	if strings.Contains(res.Message, "empty zone") || res.Message == "" {
+		t.Fatalf("message = %q", res.Message)
+	}
+}
+
+func TestWWWPlanLookupMissingWWW(t *testing.T) {
+	rt, cookie := wwwNoProviderRouter(t, map[string][]string{"far.example.com": {"203.0.113.7"}})
+	var res wwwPlanResponse
+	if code := trafficCall(t, rt, cookie, http.MethodGet, "/api/v1/apps/web/domains/far.example.com/dns/plan", &res); code != http.StatusOK {
+		t.Fatalf("status = %d", code)
+	}
+	if !res.ApexPointsHere || res.WWWPointsHere {
+		t.Fatalf("facts = %+v", res)
+	}
+	if res.Records[0].State != wwwStateAlreadyRight || res.Records[1].State != wwwStateMissing {
+		t.Fatalf("records = %+v", res.Records)
 	}
 }

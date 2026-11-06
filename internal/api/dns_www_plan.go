@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/dnsrecords"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/GLINCKER/levelrail/internal/trafficpolicy"
 	"github.com/libdns/libdns"
 )
 
@@ -19,6 +21,9 @@ type wwwPlanRecord struct {
 	TTLSeconds int                 `json:"ttl_seconds"`
 	Outcome    string              `json:"outcome"`
 	Replaces   []dnsRecordResource `json:"replaces"`
+	// Current and State come from a public lookup when no provider can read the zone.
+	Current []string `json:"current,omitempty"`
+	State   string   `json:"state,omitempty"`
 }
 
 type wwwPlanRedirect struct {
@@ -35,6 +40,11 @@ type wwwPlanResponse struct {
 	Records   []wwwPlanRecord  `json:"records"`
 	Redirect  *wwwPlanRedirect `json:"redirect"`
 	Message   string           `json:"message"`
+	// Lookup facts: additive, set by the plan endpoint only.
+	WWWAttached    bool `json:"www_attached"`
+	WWWPointsHere  bool `json:"www_points_here"`
+	ApexPointsHere bool `json:"apex_points_here"`
+	WWWRedirects   bool `json:"www_redirects"`
 }
 
 // wwwPlanState is a resolved plan: the response plus what apply needs to write it.
@@ -59,7 +69,64 @@ func (rt *Router) handleGetDomainWWWPlan(w http.ResponseWriter, r *http.Request)
 		st.res.Redirect = nil
 		st.res.Message = joinNote(st.res.Message, wwwNoRedirectNote)
 	}
+	rt.annotateWWWPlan(r.Context(), r.PathValue("name"), domain, st.target == nil, &st.res)
 	writeJSON(w, http.StatusOK, st.res)
+}
+
+const (
+	wwwEmptyZoneNote     = "no DNS provider manages this domain's zone, so the plan assumes an empty zone"
+	wwwLookupNote        = "no DNS provider manages this domain's zone; current values come from a public DNS lookup"
+	wwwStateAlreadyRight = "already_correct"
+	wwwStateMissing      = "missing"
+)
+
+// annotateWWWPlan adds the public lookup facts. Without a provider the lookup
+// also stands in for the zone read, so matching records are marked already correct.
+func (rt *Router) annotateWWWPlan(ctx context.Context, app, domain string, noProvider bool, res *wwwPlanResponse) {
+	twin, _ := trafficpolicy.Counterpart(domain)
+	if owns, err := rt.appOwnsDomain(ctx, app, twin); err == nil {
+		res.WWWAttached = owns
+	}
+	if hr, err := rt.hostRedirects(ctx); err == nil {
+		_, fromTwin := hr[twin]
+		_, fromApex := hr[domain]
+		res.WWWRedirects = fromTwin || fromApex
+	}
+	expected := expectedIPs(ctx, rt.lookupHost, rt.publicHost)
+	for _, ip := range rt.detectedPublicIPs(ctx) {
+		if !containsString(expected, ip) {
+			expected = append(expected, ip)
+		}
+	}
+	lookup := func(host string) []string {
+		lctx, cancel := context.WithTimeout(ctx, domainCheckLookupTimeout)
+		defer cancel()
+		got, err := rt.lookupHost(lctx, host)
+		if err != nil {
+			return nil
+		}
+		return got
+	}
+	apexAddrs, wwwAddrs := lookup(domain), lookup(twin)
+	res.ApexPointsHere = hostsOverlap(apexAddrs, expected)
+	res.WWWPointsHere = hostsOverlap(wwwAddrs, expected) || (res.ApexPointsHere && hostsOverlap(wwwAddrs, apexAddrs))
+	if !noProvider {
+		return
+	}
+	for i := range res.Records {
+		rec := &res.Records[i]
+		rec.Current, rec.State = apexAddrs, wwwStateMissing
+		ok := res.ApexPointsHere
+		if rec.Name == "www" {
+			rec.Current, ok = wwwAddrs, res.WWWPointsHere
+		}
+		if ok {
+			rec.State = wwwStateAlreadyRight
+		}
+	}
+	if res.Message == wwwEmptyZoneNote {
+		res.Message = wwwLookupNote
+	}
 }
 
 // buildWWWPlan resolves mode and canonical (request, then live settings, then
@@ -95,7 +162,7 @@ func (rt *Router) buildWWWPlan(w http.ResponseWriter, r *http.Request, domain, m
 	switch {
 	case errors.Is(err, dnsrecords.ErrZoneNotFound), err == nil && target == nil:
 		target = nil
-		res.Message = "no DNS provider manages this domain's zone, so the plan assumes an empty zone"
+		res.Message = wwwEmptyZoneNote
 	case err != nil:
 		rt.logger.Error("api: www plan: resolve dns target failed", slog.String("error", err.Error()), slog.String("domain", domain))
 		writeError(w, http.StatusBadGateway, "could not reach the DNS provider")

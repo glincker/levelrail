@@ -1582,7 +1582,20 @@
       "failed": "Fallo",
       "not_attempted": "No intentado"
     },
-    "redirectApplied": "La redireccion esta activa."
+    "redirectApplied": "La redireccion esta activa.",
+    "connectTitle": "Conecta www a esta app",
+    "connectPointsHere": "www.{{domain}} ya apunta a este servidor pero no está conectado a esta app. Conéctalo y envía a los visitantes de www a {{domain}}.",
+    "connectNeedsDns": "www.{{domain}} aún no está conectado a esta app. Añade este CNAME donde gestionas el DNS y vuelve a comprobar.",
+    "connectButton": "Conectar www y redirigir",
+    "connecting": "Conectando",
+    "otherOptions": "Elegir otra opción",
+    "connectedRedirect": "www redirige a {{domain}}",
+    "connectedNoRedirect": "www está conectado a esta app",
+    "connectDone": "www está conectado a esta app.",
+    "state": {
+      "already_correct": "Ya configurado",
+      "missing": "Sin configurar"
+    }
   },
   "readiness": {
     "title": "Estado del dominio",

@@ -23,6 +23,8 @@ type wwwApplyRequest struct {
 	Confirm   bool   `json:"confirm"`
 	// Redirect is a pointer so an absent field keeps the redirect; only an explicit false skips it.
 	Redirect *bool `json:"redirect,omitempty"`
+	// Attach adds the www twin to the app when missing; off by default so old callers see no change.
+	Attach bool `json:"attach,omitempty"`
 }
 
 // joinNote appends a note to a message that may be empty.
@@ -61,6 +63,8 @@ type wwwApplyResponse struct {
 	Undo            []undoAction     `json:"undo"`
 	RunID           string           `json:"run_id,omitempty"`
 	Message         string           `json:"message,omitempty"`
+	WWWAttached     bool             `json:"www_attached"`
+	AttachedNow     bool             `json:"attached_now"`
 }
 
 // handleApplyDomainWWW writes the apex and www records the plan lists. A
@@ -84,8 +88,12 @@ func (rt *Router) handleApplyDomainWWW(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if st.target == nil {
+	if st.target == nil && !req.Attach {
 		writeError(w, http.StatusConflict, "no DNS provider manages this domain's zone; nothing can be written")
+		return
+	}
+	if st.target == nil {
+		rt.applyWWWAttachOnly(w, r, domain, st, req)
 		return
 	}
 	if !req.Confirm {
@@ -99,6 +107,13 @@ func (rt *Router) handleApplyDomainWWW(w http.ResponseWriter, r *http.Request) {
 	skipRedirect := req.Redirect != nil && !*req.Redirect
 	if skipRedirect {
 		st.res.Redirect = nil
+	}
+	attachedNow := false
+	if req.Attach && st.res.Mode != dnsrecords.WWWApexOnly {
+		var ok bool
+		if attachedNow, ok = rt.attachWWWTwin(w, r, app, domain); !ok {
+			return
+		}
 	}
 	out := wwwApplyResponse{Domain: domain, Provider: st.res.Provider, Zone: st.res.Zone, Mode: st.res.Mode,
 		Canonical: st.res.Canonical, Records: []wwwApplyRecord{}, Redirect: st.res.Redirect, Undo: []undoAction{}}
@@ -160,6 +175,8 @@ func (rt *Router) handleApplyDomainWWW(w http.ResponseWriter, r *http.Request) {
 	default:
 		out.RedirectApplied, out.RedirectMessage = rt.applyWWWRedirect(ctx, r, app, domain, out.Redirect, st.res.Canonical, req.Replace)
 	}
+	out.AttachedNow = attachedNow
+	out.WWWAttached, _ = rt.wwwTwinAttached(ctx, app, domain)
 	if len(out.Undo) > 0 {
 		state := "applied"
 		if !out.Applied {
@@ -230,4 +247,60 @@ func (rt *Router) applyWWWRedirect(ctx context.Context, r *http.Request, app, do
 		return false, e.Error
 	}
 	return false, fmt.Sprintf("the redirect was not saved (status %d)", rec.Code)
+}
+
+func (rt *Router) wwwTwinAttached(ctx context.Context, app, domain string) (bool, error) {
+	twin, _ := trafficpolicy.Counterpart(domain)
+	return rt.appOwnsDomain(ctx, app, twin)
+}
+
+// attachWWWTwin adds the twin through the same steps a domain edit takes, so
+// the route files, certificate and watcher follow. ok false means the error is written.
+func (rt *Router) attachWWWTwin(w http.ResponseWriter, r *http.Request, app, domain string) (attached, ok bool) {
+	ctx := r.Context()
+	twin, _ := trafficpolicy.Counterpart(domain)
+	owns, err := rt.appOwnsDomain(ctx, app, twin)
+	if err != nil {
+		rt.internalError(w, "api: www attach owner check failed", err, slog.String("domain", twin))
+		return false, false
+	}
+	if owns {
+		return false, true
+	}
+	var before []string
+	if svc, gerr := rt.apps.GetDesiredService(ctx, app); gerr == nil {
+		before = svc.Domains
+	}
+	if err := rt.ensureCounterpart(w, r, app, twin, true); err != nil {
+		return false, false
+	}
+	rt.rerenderDomainEnv(r, app, before)
+	rt.nudgeReconciler()
+	rt.watchDomain(ctx, app, twin)
+	return true, true
+}
+
+// applyWWWAttachOnly serves attach when no provider holds the zone: the DNS is
+// already set elsewhere, so only the app attach and the redirect remain.
+func (rt *Router) applyWWWAttachOnly(w http.ResponseWriter, r *http.Request, domain string, st wwwPlanState, req wwwApplyRequest) {
+	app := r.PathValue("name")
+	attachedNow := false
+	if st.res.Mode != dnsrecords.WWWApexOnly {
+		var ok bool
+		if attachedNow, ok = rt.attachWWWTwin(w, r, app, domain); !ok {
+			return
+		}
+	}
+	out := wwwApplyResponse{Domain: domain, Mode: st.res.Mode, Canonical: st.res.Canonical, Applied: true,
+		Records: []wwwApplyRecord{}, Redirect: st.res.Redirect, Undo: []undoAction{}, AttachedNow: attachedNow,
+		Message: "no DNS provider manages this domain's zone; no DNS was written"}
+	if req.Redirect != nil && !*req.Redirect {
+		out.Redirect = nil
+		out.RedirectMessage = "skipped: redirect was turned off"
+		out.Message = joinNote(out.Message, wwwNoRedirectNote)
+	} else {
+		out.RedirectApplied, out.RedirectMessage = rt.applyWWWRedirect(r.Context(), r, app, domain, out.Redirect, st.res.Canonical, req.Replace)
+	}
+	out.WWWAttached, _ = rt.wwwTwinAttached(r.Context(), app, domain)
+	writeJSON(w, http.StatusOK, out)
 }

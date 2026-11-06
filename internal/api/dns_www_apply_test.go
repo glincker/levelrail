@@ -305,3 +305,65 @@ func TestWWWApplyNonRootForbidden(t *testing.T) {
 		t.Fatalf("nothing may be written: %+v", mgr.recs)
 	}
 }
+
+func wwwAttached(t *testing.T, rt *Router) bool {
+	t.Helper()
+	svc, err := rt.auditLog.(*store.DB).GetDesiredService(context.Background(), "web")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var www bool
+	for _, d := range svc.Domains {
+		www = www || d == "www.far.example.com"
+	}
+	return www
+}
+
+func TestWWWApplyAttachThenRedirect(t *testing.T) {
+	rt, cookie := wwwApplyRouter(t, &fakeDNSManager{})
+	code, out := wwwApplyCall(t, rt, cookie, `{"mode":"both","canonical":"apex","confirm":true,"attach":true}`)
+	if code != http.StatusOK || !out.Applied || !out.AttachedNow || !out.WWWAttached || !out.RedirectApplied {
+		t.Fatalf("status = %d out = %+v", code, out)
+	}
+	var plan wwwPlanResponse
+	if c := trafficCall(t, rt, cookie, http.MethodGet, "/api/v1/apps/web/domains/far.example.com/dns/plan", &plan); c != http.StatusOK || !plan.WWWAttached || !plan.WWWRedirects {
+		t.Fatalf("plan after attach = %d %+v", c, plan)
+	}
+	if !wwwAttached(t, rt) {
+		t.Fatal("www twin was not attached")
+	}
+}
+
+func TestWWWApplyAttachWithoutRedirect(t *testing.T) {
+	rt, cookie := wwwApplyRouter(t, &fakeDNSManager{})
+	code, out := wwwApplyCall(t, rt, cookie, `{"mode":"both","canonical":"apex","confirm":true,"attach":true,"redirect":false}`)
+	if code != http.StatusOK || !out.AttachedNow || out.RedirectApplied || out.Redirect != nil {
+		t.Fatalf("status = %d out = %+v", code, out)
+	}
+	if !wwwAttached(t, rt) {
+		t.Fatal("www twin was not attached")
+	}
+}
+
+func TestWWWApplyAttachAlreadyAttachedIsNoOp(t *testing.T) {
+	rt, cookie := wwwApplyRouter(t, &fakeDNSManager{})
+	db := rt.auditLog.(*store.DB)
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000, Domains: []string{"far.example.com", "www.far.example.com"}}); err != nil {
+		t.Fatal(err)
+	}
+	code, out := wwwApplyCall(t, rt, cookie, `{"mode":"both","canonical":"apex","confirm":true,"attach":true}`)
+	if code != http.StatusOK || out.AttachedNow || !out.WWWAttached || !out.RedirectApplied {
+		t.Fatalf("status = %d out = %+v", code, out)
+	}
+}
+
+func TestWWWApplyAttachWithoutProviderStillAttaches(t *testing.T) {
+	var calls atomic.Int32
+	rt, cookie := cutoverRouter(t, false, &calls)
+	rt.domainAuto.resolveTarget = func(context.Context, string) (*dnsTarget, error) { return nil, nil }
+	rt.publicHost = "203.0.113.7"
+	code, out := wwwApplyCall(t, rt, cookie, `{"attach":true}`)
+	if code != http.StatusOK || !out.AttachedNow || !out.RedirectApplied || len(out.Records) != 0 {
+		t.Fatalf("status = %d out = %+v", code, out)
+	}
+}

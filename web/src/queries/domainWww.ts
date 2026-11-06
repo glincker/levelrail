@@ -29,6 +29,9 @@ export interface WwwPlanRecord {
   ttl_seconds: number
   outcome: 'created' | 'updated' | 'unchanged' | 'conflict'
   replaces: WwwExistingRecord[]
+  // Public lookup result, present when no provider can read the zone.
+  current?: string[]
+  state?: 'already_correct' | 'missing'
 }
 
 export interface WwwRedirect {
@@ -45,6 +48,10 @@ export interface WwwPlan {
   records: WwwPlanRecord[]
   redirect: WwwRedirect | null
   message: string
+  www_attached?: boolean
+  www_points_here?: boolean
+  apex_points_here?: boolean
+  www_redirects?: boolean
 }
 
 export interface WwwApplyRecord extends WwwPlanRecord {
@@ -60,6 +67,8 @@ export interface WwwApplyResult {
   redirect_applied: boolean
   redirect_message?: string
   message?: string
+  www_attached?: boolean
+  attached_now?: boolean
 }
 
 export const domainWwwKeys = {
@@ -107,6 +116,8 @@ export interface WwwApplyInput extends WwwChoice {
   replace: boolean
   // Only sent as false for "serve both"; omitted keeps the server default.
   redirect?: boolean
+  // Adds the www host to the app first; server default is off.
+  attach?: boolean
 }
 
 export function useApplyDomainWww(app: string, domain: string) {

@@ -129,6 +129,77 @@ describe('DomainWwwCard', () => {
     )
   })
 
+  it('recommends connecting www when DNS already points here', async () => {
+    const fetchMock = vi.fn((_url: string, init?: RequestInit) =>
+      Promise.resolve(
+        init?.method === 'POST'
+          ? Response.json({ applied: true, records: [], redirect: null })
+          : Response.json({
+              ...plan(''),
+              www_attached: false,
+              www_points_here: true,
+            }),
+      ),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    renderCard()
+    expect(
+      await screen.findByText(/already points to this server/),
+    ).toBeTruthy()
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Connect www and redirect' }),
+    )
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.some((c) =>
+          /attach.{1,3}true/.test(JSON.stringify(c[1])),
+        ),
+      ).toBe(true),
+    )
+  })
+
+  it('asks for the CNAME and hides the button until DNS points here', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(
+          Response.json({
+            ...plan(''),
+            www_attached: false,
+            www_points_here: false,
+          }),
+        ),
+      ),
+    )
+    renderCard()
+    expect(await screen.findByText(/Add this CNAME/)).toBeTruthy()
+    expect(
+      screen.queryByRole('button', { name: 'Connect www and redirect' }),
+    ).toBeNull()
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Choose another option' }),
+    )
+    expect(screen.getByRole('radio', { name: /both/i })).toBeTruthy()
+  })
+
+  it('shows a compact line when www is connected and redirecting', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(
+          Response.json({
+            ...plan('cloudflare'),
+            www_attached: true,
+            www_points_here: true,
+            www_redirects: true,
+          }),
+        ),
+      ),
+    )
+    renderCard()
+    expect(await screen.findByText('www redirects to a.com')).toBeTruthy()
+  })
+
   it('hides for www and automatic hostnames', () => {
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
