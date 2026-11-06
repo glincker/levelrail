@@ -19,6 +19,9 @@ type JanitorRun struct {
 	FreePercent    float64
 	Body           string
 	Error          string
+	// ActorName and ActorKind are empty for runs recorded before actors were tracked.
+	ActorName string
+	ActorKind string
 }
 
 // JanitorQuarantine is a volume held back before deletion.
@@ -67,9 +70,10 @@ func (db *DB) InsertJanitorRun(ctx context.Context, r JanitorRun, keep int) erro
 	if r.DryRun {
 		dry = 1
 	}
-	_, err := db.ExecContext(ctx, `INSERT INTO janitor_runs (id, started_at, trigger, dry_run, reclaimed_bytes, free_percent, body, error)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		r.ID, r.StartedAt.UTC().Format(time.RFC3339Nano), r.Trigger, dry, r.ReclaimedBytes, r.FreePercent, r.Body, r.Error)
+	_, err := db.ExecContext(ctx, `INSERT INTO janitor_runs (id, started_at, trigger, dry_run, reclaimed_bytes, free_percent, body, error, actor_name, actor_kind)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		r.ID, r.StartedAt.UTC().Format(time.RFC3339Nano), r.Trigger, dry, r.ReclaimedBytes, r.FreePercent, r.Body, r.Error,
+		nullIfEmpty(r.ActorName), nullIfEmpty(r.ActorKind))
 	if err != nil {
 		return fmt.Errorf("store: insert janitor run: %w", err)
 	}
@@ -84,7 +88,7 @@ func (db *DB) InsertJanitorRun(ctx context.Context, r JanitorRun, keep int) erro
 
 // ListJanitorRuns returns the newest runs first.
 func (db *DB) ListJanitorRuns(ctx context.Context, limit int) ([]JanitorRun, error) {
-	rows, err := db.QueryContext(ctx, `SELECT id, started_at, trigger, dry_run, reclaimed_bytes, free_percent, body, error
+	rows, err := db.QueryContext(ctx, `SELECT id, started_at, trigger, dry_run, reclaimed_bytes, free_percent, body, error, actor_name, actor_kind
 		FROM janitor_runs ORDER BY started_at DESC LIMIT ?`, limit)
 	if err != nil {
 		return nil, fmt.Errorf("store: list janitor runs: %w", err)
@@ -95,9 +99,11 @@ func (db *DB) ListJanitorRuns(ctx context.Context, limit int) ([]JanitorRun, err
 		var r JanitorRun
 		var started string
 		var dry int
-		if err := rows.Scan(&r.ID, &started, &r.Trigger, &dry, &r.ReclaimedBytes, &r.FreePercent, &r.Body, &r.Error); err != nil {
+		var actorName, actorKind sql.NullString
+		if err := rows.Scan(&r.ID, &started, &r.Trigger, &dry, &r.ReclaimedBytes, &r.FreePercent, &r.Body, &r.Error, &actorName, &actorKind); err != nil {
 			return nil, fmt.Errorf("store: scan janitor run: %w", err)
 		}
+		r.ActorName, r.ActorKind = actorName.String, actorKind.String
 		r.DryRun = dry == 1
 		if r.StartedAt, err = time.Parse(time.RFC3339Nano, started); err != nil {
 			return nil, fmt.Errorf("store: parse janitor run time: %w", err)

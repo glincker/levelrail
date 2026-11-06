@@ -171,8 +171,8 @@ func (e *Engine) volumes(ctx context.Context, p Policy, dry, pressure bool, now 
 		if v.Mounted {
 			continue
 		}
-		if strings.HasPrefix(v.Name, "db-") {
-			res.Items = append(res.Items, Item{Name: v.Name, Detail: "database data is never removed automatically", SizeBytes: size, Action: ActionKept})
+		if prot, why := volumeProtected(v.Name); prot {
+			res.Items = append(res.Items, Item{Name: v.Name, Detail: why, SizeBytes: size, Action: ActionKept})
 			continue
 		}
 		first, quarantined := since[v.Name]
