@@ -1,0 +1,61 @@
+{
+  "viewLabel": "Agrupar la lista",
+  "view": { "type": "Por tipo", "app": "Por app" },
+  "search": "Buscar por nombre o id",
+  "searchLabel": "Buscar elementos",
+  "clearFilter": "Mostrar todas las categorías",
+  "filterActive": "Solo se muestra {{category}}",
+  "category": {
+    "appData": "Datos de apps",
+    "images": "Imágenes",
+    "buildCache": "Caché de builds",
+    "containersLogs": "Contenedores y logs",
+    "other": "Otros"
+  },
+  "kind": {
+    "image": "Imágenes",
+    "volume": "Volúmenes",
+    "container": "Contenedores detenidos",
+    "buildCache": "Caché de builds"
+  },
+  "kindOne": {
+    "image": "Imagen",
+    "volume": "Volumen",
+    "container": "Contenedor",
+    "buildCache": "Caché de builds"
+  },
+  "cols": {
+    "name": "Nombre",
+    "size": "Tamaño",
+    "app": "App propietaria",
+    "type": "Tipo",
+    "reason": "Motivo"
+  },
+  "sortBy": "Ordenar por {{column}}",
+  "noApp": "Sin app",
+  "sizeUnknown": "Sin medir",
+  "group": {
+    "total": "{{size}} en total",
+    "count_one": "{{count}} {{kind}}",
+    "count_other": "{{count}} {{kind}}",
+    "lastDeployed": "Último despliegue"
+  },
+  "reason": {
+    "none": "Ninguno",
+    "orphaned": "Huérfano: ninguna app es dueña de este volumen",
+    "inUse": "En uso",
+    "inUseBy": "En uso por {{app}}",
+    "unused": "Sin uso",
+    "stopped": "Contenedor detenido",
+    "databaseProtected": "Contiene una base de datos, nunca se elimina",
+    "buildCache": "Se reconstruye en el siguiente build"
+  },
+  "protected": "Protegido",
+  "loading": "Leyendo lo que hay en disco",
+  "error": "No se pudo leer el inventario de almacenamiento.",
+  "retry": "Reintentar",
+  "empty": "No hay nada que mostrar aquí.",
+  "emptyFiltered": "Ningún elemento coincide.",
+  "unsupportedTitle": "Este nodo aún no es compatible",
+  "unsupportedFallback": "Levelrail todavía no puede listar elementos en este nodo. No se cambia nada."
+}

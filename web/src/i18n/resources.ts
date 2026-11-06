@@ -3,6 +3,7 @@ import type gitRepos from '../locales/en/gitRepos.json'
 import type firewall from '../locales/en/firewall.json'
 import type storageBuckets from '../locales/en/storageBuckets.json'
 import type storageCli from '../locales/en/storageCli.json'
+import type storageList from '../locales/en/storageList.json'
 import type dashboards from '../locales/en/dashboards.json'
 import type passkeys from '../locales/en/passkeys.json'
 import type account from '../locales/en/account.json'
@@ -281,6 +282,7 @@ declare module 'i18next' {
       rules: typeof rules
       storageBuckets: typeof storageBuckets
       storageCli: typeof storageCli
+      storageList: typeof storageList
       dashboards: typeof dashboards
       passkeys: typeof passkeys
       account: typeof account

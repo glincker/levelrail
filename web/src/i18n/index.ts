@@ -131,6 +131,7 @@ export const NAMESPACES = [
   'rules',
   'storageBuckets',
   'storageCli',
+  'storageList',
   'dashboards',
   'passkeys',
   'account',
