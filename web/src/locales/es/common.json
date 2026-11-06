@@ -1313,5 +1313,9 @@
     "jumpTo": "Ir a",
     "onThisPage": "En esta página",
     "retry": "Reintentar"
+  },
+  "roleGate": {
+    "needsAdmin": "Requiere administrador",
+    "needsOperator": "Requiere operador"
   }
 }
