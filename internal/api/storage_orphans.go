@@ -225,7 +225,7 @@ func (rt *Router) handleReclaimStorageOrphan(w http.ResponseWriter, r *http.Requ
 		writeError(w, http.StatusNotFound, "volume is not orphaned data (it may be in use again, or already removed)")
 		return
 	}
-	if prot, why := rt.volumeLock(r.Context(), id); prot {
+	if prot, why := rt.volumeLock(id); prot {
 		writeError(w, http.StatusConflict, "this volume is locked and was not removed: "+why)
 		return
 	}

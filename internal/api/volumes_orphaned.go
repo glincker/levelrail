@@ -127,7 +127,7 @@ func (rt *Router) handleCleanupOrphanedVolumes(w http.ResponseWriter, r *http.Re
 			resp.Skipped = append(resp.Skipped, name)
 			continue
 		}
-		if prot, _ := rt.volumeLock(r.Context(), name); prot {
+		if prot, _ := rt.volumeLock(name); prot {
 			resp.Skipped = append(resp.Skipped, name)
 			continue
 		}

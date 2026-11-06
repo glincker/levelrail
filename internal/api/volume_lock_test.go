@@ -75,10 +75,10 @@ func TestVolumeLockAppDeleteDataStillPurgesAppVolumes(t *testing.T) {
 func TestVolumeLockJanitorRemoveRefusesDatabaseVolume(t *testing.T) {
 	fake := &fakeOrphanedVolumeManager{}
 	rt, _ := newTestRouterWithOrphanedVolumeManager(t, fake)
-	if prot, _ := rt.volumeLock(context.Background(), "db-x-data"); !prot {
+	if prot, _ := rt.volumeLock("db-x-data"); !prot {
 		t.Error("db- volume must be locked")
 	}
-	if prot, _ := rt.volumeLock(context.Background(), "web-data"); prot {
+	if prot, _ := rt.volumeLock("web-data"); prot {
 		t.Error("app volume must not be locked")
 	}
 }

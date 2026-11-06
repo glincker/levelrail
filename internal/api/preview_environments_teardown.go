@@ -142,7 +142,7 @@ func (rt *Router) teardownPreviewApp(ctx context.Context, previewAppID string) [
 	if owned, err := rt.previewOwnedVolumes(ctx, volumes); err != nil {
 		rt.logger.Error("api: teardown preview app: resolve volumes failed", slog.String("error", err.Error()), slog.String("preview_app_id", previewAppID))
 		return []string{previewAppID + ":volumes"}
-	} else if volFailed := rt.removeExistingVolumes(ctx, owned); len(volFailed) > 0 {
+	} else if volFailed := rt.removeExistingVolumes(ctx, owned, false); len(volFailed) > 0 {
 		return volFailed
 	}
 	if err := rt.previewEnvironments.ClearPreviewPendingVolumes(ctx, previewAppID); err != nil {

@@ -321,7 +321,7 @@ func (rt *Router) handleComposeDown(w http.ResponseWriter, r *http.Request) {
 	if removeVolumes && rt.orphanedVolumes != nil {
 		var kept []string
 		for _, v := range volumes {
-			if prot, why := rt.volumeLock(r.Context(), v); prot {
+			if prot, why := rt.volumeLock(v); prot {
 				volumeErrors = append(volumeErrors, v+": kept, "+why)
 				continue
 			}
