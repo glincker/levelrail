@@ -42,6 +42,9 @@ const (
 	vmExitFail     = 1
 )
 
+// errLimactlMissing carries the install hint so every vm subcommand fails the same clear way.
+var errLimactlMissing = errors.New("limactl not found; install Lima with `brew install lima`, then retry")
+
 var errVMUnsupported = errors.New("the managed VM is not supported on this platform yet (macOS only for now; use `levelrail dev` instead)")
 
 // vmRunner is the only door to limactl, so tests never boot a VM.
@@ -86,6 +89,7 @@ const vmUsage = `Usage:
   %[1]s vm upgrade --control-plane-bin PATH
   %[1]s vm reset --yes [--keep-credentials]
   %[1]s vm uninstall --yes
+  %[1]s vm destroy --yes   (same as uninstall: deletes the VM and all its data)
   %[1]s vm token (--check | --exchange --cookie-jar PATH) [--json]
 
 Runs Levelrail in a private Linux VM with no host folders mounted (macOS, experimental).
@@ -103,7 +107,7 @@ Flags:
   --json                   status: print JSON
 
   --encrypt RECIPIENT      export: encrypt with an age X25519 public key (age1...)
-  --yes                    reset, uninstall: confirm the deletion listed first
+  --yes                    reset, uninstall, destroy: confirm the deletion listed first
   --keep-credentials       reset: keep the first-admin credentials file
   --cookie-jar PATH        token --exchange: write the session cookie here (mode 0600)
 
@@ -180,7 +184,7 @@ func parseVMFlags(prog, sub string, args []string, stderr io.Writer) (vmFlags, [
 	case "reset":
 		fs.BoolVar(&f.yes, "yes", false, "confirm the deletion")
 		fs.BoolVar(&f.keepCreds, "keep-credentials", false, "keep the first-admin credentials file")
-	case "uninstall":
+	case "uninstall", "destroy":
 		fs.BoolVar(&f.yes, "yes", false, "confirm the deletion")
 	case "token":
 		fs.BoolVar(&f.check, "check", false, "exit 0 when the guest token file exists")
@@ -197,9 +201,9 @@ func parseVMFlags(prog, sub string, args []string, stderr io.Writer) (vmFlags, [
 func vmDispatch(ctx context.Context, env *vmEnv, prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	sub := args[0]
 	switch sub {
-	case "init", "start", "stop", "status", "shell", "set", "export", "upgrade", "reset", "uninstall", "token":
+	case "init", "start", "stop", "status", "shell", "set", "export", "upgrade", "reset", "uninstall", "destroy", "token":
 	default:
-		_, _ = fmt.Fprintf(stderr, "%s vm: unknown command %q (init, start, stop, status, shell, set, export, upgrade, reset, uninstall, token)\n", prog, sub)
+		_, _ = fmt.Fprintf(stderr, "%s vm: unknown command %q (init, start, stop, status, shell, set, export, upgrade, reset, uninstall, destroy, token)\n", prog, sub)
 		return exitUsage
 	}
 	f, rest, err := parseVMFlags(prog, sub, args[1:], stderr)
@@ -239,13 +243,14 @@ func vmDispatch(ctx context.Context, env *vmEnv, prog string, args []string, std
 		err = env.export(ctx, rest[0], f.encrypt, stdout)
 	case "upgrade":
 		err = env.upgrade(ctx, f.bin, stdout, lookupEnv)
-	case "reset", "uninstall":
+	case "reset", "uninstall", "destroy":
+		uninstall := sub != "reset"
 		if !f.yes {
-			env.printDeletion(stdout, sub == "uninstall", f.keepCreds)
+			env.printDeletion(stdout, uninstall, f.keepCreds)
 			_, _ = fmt.Fprintf(stderr, "%s vm %s: nothing deleted; add --yes to confirm\n", prog, sub)
 			return exitUsage
 		}
-		err = env.reset(ctx, sub == "uninstall", f.keepCreds, stdout)
+		err = env.reset(ctx, uninstall, f.keepCreds, stdout)
 	case "token":
 		err = env.token(ctx, f, stdout)
 	}
