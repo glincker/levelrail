@@ -49,6 +49,7 @@ var gitProbeVersionPath = map[string]string{
 	gitProviderForgejo:         "/api/v1/version",
 	gitProviderGitLab:          "/api/v4/version",
 	gitProviderBitbucketServer: "/rest/api/1.0/application-properties",
+	gitProviderAzureDevOps:     "/_apis/connectionData?connectOptions=none&api-version=7.1",
 }
 
 const (

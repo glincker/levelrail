@@ -13,7 +13,7 @@ import (
 func gitConnectionsUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s git-providers connections [--provider P] [flags]            list every GitLab, Bitbucket, Bitbucket Server, Gitea and Forgejo account
-  %[1]s git-providers add --type <gitlab|bitbucket|bitbucket_server|gitea|forgejo> [flags]
+  %[1]s git-providers add --type <gitlab|bitbucket|bitbucket_server|azure_devops|gitea|forgejo> [flags]
                                                                     register another account
   %[1]s git-providers test --type T --instance-url URL [--pat TOKEN] check a URL and token, with a fix hint on failure
   %[1]s git-providers rename <id> <label> [flags]                    rename a connection
@@ -29,7 +29,7 @@ Check one first with git-providers test. Bitbucket Cloud takes an API token as e
 
 Authorizing a registered account is a browser redirect: open the printed
 authorize path on your control plane, or press Authorize in the dashboard.
-REPO is a project id for GitLab, PROJECT/slug for Bitbucket Server, owner/name otherwise.
+REPO is a project id for GitLab, PROJECT/slug for Bitbucket Server, PROJECT/repo for Azure DevOps, owner/name otherwise.
 `, prog)
 }
 
@@ -78,7 +78,7 @@ func runGitConnectionsCmd(prog, sub string, args []string, stdout, stderr io.Wri
 	clientSecret := fs.String("client-secret", "", "OAuth application client secret")
 	name := fs.String("label", "", "display label")
 	pat := fs.String("pat", "", "personal access token (add: connect with a token; test: also checks scopes and repository access)")
-	provType := fs.String("type", "", "provider: gitlab, bitbucket, bitbucket_server, gitea or forgejo (add, test)")
+	provType := fs.String("type", "", "provider: gitlab, bitbucket, bitbucket_server, azure_devops, gitea or forgejo (add, test)")
 	reuse := fs.String("reuse", "", "reuse the OAuth application of this connection id")
 	req := bindUseAsSourceFlags(fs)
 

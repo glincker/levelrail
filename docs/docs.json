@@ -312,6 +312,7 @@
               "pipelines",
               "pipelines-oidc",
               "git-integrations",
+              "azure-devops",
               "git-reliability",
               "ci-gate",
               "git-push-deploy",

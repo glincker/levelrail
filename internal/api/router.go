@@ -110,6 +110,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/statuspage"
 	"github.com/GLINCKER/levelrail/internal/statuswebhook"
 
+	"github.com/GLINCKER/levelrail/internal/azuredevops"
 	"github.com/GLINCKER/levelrail/internal/bitbucketapp"
 	"github.com/GLINCKER/levelrail/internal/bitbucketserver"
 	"github.com/GLINCKER/levelrail/internal/brand"
@@ -776,6 +777,7 @@ type Router struct {
 	bitbucketAppClient           BitbucketAppClient       // always set (NewRouter defaults it to a real *bitbucketapp.Client), overridable in this package's own tests
 	giteaAppClient               GiteaAppClient           // always set (NewRouter defaults it to a real *giteaapp.Client), overridable in this package's own tests
 	bitbucketServerClient        BitbucketServerClient    // always set, overridable in this package's own tests
+	azureDevOpsClient            AzureDevOpsClient        // always set, overridable in this package's own tests
 	setupGuide                   SetupGuideStore          // nil unless the store implements it: /api/v1/setup/guide routes return 501
 	onboarding                   OnboardingStore          // always set, same "core Store interface, not an optional plug-in" shape as ingressSettings above: the row always exists (migrations/0067's own seeded row)
 	dbPinger                     DBPinger                 // nil is valid: GET /system/doctor reports its database check as unknown, same shape as dockerPinger above
@@ -1093,6 +1095,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		bitbucketAppClient:          bitbucketapp.NewClient(),
 		giteaAppClient:              giteaapp.NewClient(),
 		bitbucketServerClient:       bitbucketserver.NewClient(),
+		azureDevOpsClient:           azuredevops.NewClient(),
 		onboarding:                  s,
 		webhookDeliveries:           s,
 		cloneRestoreHistory:         s,
