@@ -764,7 +764,7 @@ func (rt *Router) handleCreateNodeJoinToken(w http.ResponseWriter, r *http.Reque
 	}
 	resp := createNodeJoinTokenResponse{Token: rec.plaintext, ExpiresAt: rec.expiresAt, CAFingerprint: rt.agentCAFingerprint, ControlPlaneAddr: addr}
 	if addr != "" {
-		cmds := rt.buildJoinCommands(addr, rec.plaintext, rt.agentCAFingerprint, req.NodeName, req.Mesh, domain)
+		cmds := rt.buildJoinCommands(r.Context(), addr, rec.plaintext, rt.agentCAFingerprint, req.NodeName, req.Mesh, domain)
 		resp.JoinCommands = &cmds
 	}
 	writeJSON(w, http.StatusCreated, resp)

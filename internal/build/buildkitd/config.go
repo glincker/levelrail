@@ -3,6 +3,7 @@
 package buildkitd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -74,6 +75,9 @@ type Config struct {
 	// SecurityOpt holds relaxations the preflight proved necessary (ADR 046).
 	// Empty by default: none is applied on a guess.
 	SecurityOpt []string
+	// MirrorPrefix returns the live registry.mirror_prefix at reconcile time.
+	// Nil keeps the env seeded image.
+	MirrorPrefix func(context.Context) string
 }
 
 // SocketAddr is the unix address a BuildKit client dials.

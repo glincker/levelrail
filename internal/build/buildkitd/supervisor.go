@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings/registrymirror"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -43,6 +44,15 @@ type Supervisor struct {
 	failures     int
 	retryAt      time.Time
 	upgradeSince time.Time
+	image        string
+}
+
+// imageRef is the live mirrored image once reconcile ran, else the seeded one.
+func (s *Supervisor) imageRef() string {
+	if s.image != "" {
+		return s.image
+	}
+	return s.cfg.Image
 }
 
 // New builds a supervisor and refuses an unpinned image.
@@ -142,6 +152,10 @@ func (s *Supervisor) reconcile(ctx context.Context) error {
 	if err := s.writeConfig(); err != nil {
 		return err
 	}
+	s.image = s.cfg.Image
+	if s.cfg.MirrorPrefix != nil {
+		s.image = registrymirror.Apply(s.cfg.Image, s.cfg.MirrorPrefix(ctx))
+	}
 	if err := s.rt.EnsureVolume(ctx, VolumeName); err != nil {
 		return fmt.Errorf("buildkitd: state volume: %w", err)
 	}
@@ -149,7 +163,7 @@ func (s *Supervisor) reconcile(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("buildkitd: inspect: %w", err)
 	}
-	if st != nil && st.Image != s.cfg.Image {
+	if st != nil && st.Image != s.imageRef() {
 		if s.inflight > 0 {
 			if s.upgradeSince.IsZero() {
 				s.upgradeSince = s.now()
@@ -159,7 +173,7 @@ func (s *Supervisor) reconcile(ctx context.Context) error {
 			}
 		}
 		s.upgradeSince = time.Time{}
-		slog.Info("buildkitd image changed, replacing", "from", st.Image, "to", s.cfg.Image)
+		slog.Info("buildkitd image changed, replacing", "from", st.Image, "to", s.imageRef())
 		if err := s.remove(ctx, st); err != nil {
 			return err
 		}
@@ -239,7 +253,7 @@ func (s *Supervisor) spec() docker.ContainerSpec {
 		SecurityOpt: append([]string(nil), s.cfg.SecurityOpt...),
 		Devices:     devices,
 		Name:        ContainerName,
-		Image:       s.cfg.Image,
+		Image:       s.imageRef(),
 		NetworkMode: "none",
 		Labels:      map[string]string{"levelrail.managed": "true", "levelrail.role": "buildkitd"},
 		Command: []string{
