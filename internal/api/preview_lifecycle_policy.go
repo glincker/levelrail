@@ -31,6 +31,9 @@ func forkSecretsApproved(ctx context.Context) bool {
 // fields of a policy update onto s, returning a client-facing message for the
 // first invalid value.
 func (rt *Router) applyPreviewPolicyLifecycleFields(ctx context.Context, appName string, s *store.PreviewAppSettings, req setPreviewPolicyRequest) string {
+	if msg := applyPreviewMigrateFields(s, req); msg != "" {
+		return msg
+	}
 	if req.MaxPreviews != nil {
 		if *req.MaxPreviews < 0 || *req.MaxPreviews > 100 {
 			return "max_previews must be between 0 and 100 (0 uses the platform cap)"

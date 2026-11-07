@@ -145,6 +145,13 @@ levelrail-cli apps branch-deploys delete web staging
 - `APP_BRANCH_DEPLOY_MAX_PER_APP` (default 10) caps live branch deploys per app. A push past the cap is ignored with a note.
 - Branch-scoped env overrides are set with `levelrail-cli apps branch-env`.
 
+## Migration step and prebuilt images
+
+Two optional settings per app, both off by default. They are set through `PUT /api/v1/apps/{name}/preview-policy` (`migrate_command`, `migrate_timeout_seconds`, `image_tag_template`).
+
+- **Migration step.** `migrate_command` (for example `npm run migrate`) runs once through `sh -c` inside the preview's container, after the database strategy has been applied and before the preview is marked active. The container carries the preview's environment. If the command exits non-zero or times out, the preview is marked failed and the masked output tail is the failure reason, shown in the preview list and the pull request comment. The timeout is `migrate_timeout_seconds`, else `APP_PREVIEW_MIGRATE_TIMEOUT` (default 10 minutes). The wait for the container to be running is `APP_PREVIEW_MIGRATE_WAIT` (default 2 minutes). It applies to single-service previews, not static or multi-service ones.
+- **Prebuilt image.** `image_tag_template` deploys a registry image for the pull request with no build, for example `ghcr.io/org/app:pr-{number}`. Placeholders are `{number}`, `{sha}`, `{short_sha}` and `{branch}`, and at least one is required. Your CI must push that tag before the pull request event arrives, or the deploy fails. It applies to single-service previews.
+
 ## Not yet
 
 - **Static site previews.** Static sites publish a preview under the name `<app>-pr-<number>`. This page does not yet cover their files, gate, or teardown in detail.

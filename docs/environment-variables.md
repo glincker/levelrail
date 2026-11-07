@@ -645,6 +645,8 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 | `APP_DB_RECREATE_BACKOFF_MAX` | ``15m`` | Longest wait between database recreates under backoff. Control plane. |
 | `APP_EXTERNAL_DB_PROBE_TIMEOUT` | ``2m`` | Time limit for probing an external database connection. Control plane. |
 | `APP_PREVIEW_SEED_TIMEOUT` | ``30m`` | Time limit for seeding a preview's database from the newest source backup. Control plane. |
+| `APP_PREVIEW_MIGRATE_TIMEOUT` | ``10m`` | Default time limit for a preview's migrate command when the app sets none. Control plane. |
+| `APP_PREVIEW_MIGRATE_WAIT` | ``2m`` | How long to wait for the preview container to run before its migrate command. Control plane. |
 | `APP_FAILURE_CONTEXT_QUIET` | ``2m`` | How long an app must run without restarting after recovery before a past crash loop stops showing as current. Control plane. |
 | `APP_RERUN_CHAIN_MAX_DEPTH` | ``50`` | Longest chain of deploy reruns followed when counting attempts. Control plane. |
 | `APP_LB_TRAFFIC_WINDOW` | ``5m`` | Time window over which load balancer traffic is counted. Control plane. |
