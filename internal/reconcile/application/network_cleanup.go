@@ -102,9 +102,7 @@ func (c *NetworkCleanupController) Reconcile(ctx context.Context) (reconcile.Res
 	if err != nil {
 		return notReady("ListAppsFailed", err), fmt.Errorf("application/network-cleanup: list apps: %w", err)
 	}
-	// Agent nodes never label their networks; like ClassifyNetworks, an unlabeled one is
-	// only a candidate when this store has apps to tell its own leftovers apart.
-	observed = c.ownNetworks(observed, len(apps) > 0)
+	observed = c.ownNetworks(observed)
 	if len(observed) == 0 {
 		return ready("NothingToClean"), nil
 	}
@@ -148,16 +146,15 @@ func (c *NetworkCleanupController) Reconcile(ctx context.Context) (reconcile.Res
 	return ready("Converged"), nil
 }
 
-// ownNetworks keeps networks labeled with this instance, plus unlabeled ones when
-// allowUnlabeled: an empty store once deleted a sibling instance's live network,
-// so an unlabeled name match alone is never enough.
-func (c *NetworkCleanupController) ownNetworks(observed []docker.NetworkInfo, allowUnlabeled bool) []docker.NetworkInfo {
+// ownNetworks keeps only networks labeled with this instance: an unlabeled name
+// match can belong to a sibling instance on a shared daemon, so it is never collected.
+func (c *NetworkCleanupController) ownNetworks(observed []docker.NetworkInfo) []docker.NetworkInfo {
 	if c.instanceID == "" {
 		return observed
 	}
 	out := make([]docker.NetworkInfo, 0, len(observed))
 	for _, n := range observed {
-		if id, labeled := n.Labels[appspec.InstanceLabelKey]; (labeled && id == c.instanceID) || (!labeled && allowUnlabeled) {
+		if id, labeled := n.Labels[appspec.InstanceLabelKey]; labeled && id == c.instanceID {
 			out = append(out, n)
 		}
 	}

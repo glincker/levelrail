@@ -83,12 +83,13 @@ func TestDeleteFinalizer_RemoveAppNetworkEveryNode(t *testing.T) {
 
 func TestNetworkCleanupAgentNodeGC(t *testing.T) {
 	t.Setenv(EnvNetworkGCMaxRemovals, "2")
+	me := map[string]string{appspec.InstanceLabelKey: "me"}
 	rt := &agentNetRuntime{fakeRuntime: newFakeRuntime(0), inUse: map[string]bool{"p-app-busy": true}, nets: []docker.NetworkInfo{
-		{Name: "p-app-busy"},
-		{Name: "p-app-live"},
-		{Name: "p-app-gone1"},
-		{Name: "p-app-gone2"},
-		{Name: "p-app-gone3"},
+		{Name: "p-app-busy", Labels: me},
+		{Name: "p-app-live", Labels: me},
+		{Name: "p-app-gone1", Labels: me},
+		{Name: "p-app-gone2", Labels: me},
+		{Name: "p-app-gone3", Labels: me},
 		{Name: "p-app-theirs", Labels: map[string]string{appspec.InstanceLabelKey: "them"}},
 	}}
 	c := NewNetworkCleanupController(&fakeAppLister{apps: []store.App{{ID: "live"}}}, rt, "p", "me").ForNode("n2")
@@ -115,5 +116,28 @@ func TestNetworkCleanupAgentNodeGC(t *testing.T) {
 	}
 	if len(empty.calls) != 0 {
 		t.Fatalf("empty store removed unlabeled %v, want none", empty.calls)
+	}
+}
+
+// A shared daemon can hold another instance's unlabeled network; GC must leave it alone.
+func TestNetworkCleanupAgentNodeGC_UnlabeledSurvives(t *testing.T) {
+	mine := map[string]string{appspec.InstanceLabelKey: "me"}
+	rt := &agentNetRuntime{fakeRuntime: newFakeRuntime(0), nets: []docker.NetworkInfo{
+		{Name: "p-app-minecraft"},
+		{Name: "p-app-mine-gone", Labels: mine},
+		{Name: "p-app-theirs", Labels: map[string]string{appspec.InstanceLabelKey: "them"}},
+		{Name: "p-app-live", Labels: mine},
+	}}
+	c := NewNetworkCleanupController(&fakeAppLister{apps: []store.App{{ID: "live"}}}, rt, "p", "me").ForNode("n2")
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(rt.removed) != 1 || rt.removed[0] != "p-app-mine-gone" {
+		t.Fatalf("removed %v, want only the orphan labeled with this instance", rt.removed)
+	}
+	for _, n := range rt.calls {
+		if n == "p-app-minecraft" || n == "p-app-theirs" {
+			t.Fatalf("RemoveNetwork(%q) called, want unlabeled and foreign networks untouched", n)
+		}
 	}
 }
