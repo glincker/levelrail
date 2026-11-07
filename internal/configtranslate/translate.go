@@ -58,10 +58,25 @@ const (
 	DefaultNodePort = 3000
 )
 
-type options struct{ webPort, nodePort int }
+type options struct {
+	webPort, nodePort int
+	// deploy marks a translation run at deploy time: nothing outside the
+	// service map can be created, so databases and source hints are skipped.
+	deploy     bool
+	dockerfile bool
+}
 
 // Option tunes a translation without making the package read the environment.
 type Option func(*options)
+
+// ForDeploy switches the translation to deploy-time rules. dockerfile says
+// the repo ships a Dockerfile, so services build from it instead of Railpack.
+func ForDeploy(dockerfile bool) Option {
+	return func(o *options) {
+		o.deploy = true
+		o.dockerfile = dockerfile
+	}
+}
 
 // WithWebPort sets the port proposed for Heroku web and worker services.
 func WithWebPort(p int) Option {
@@ -102,7 +117,9 @@ func Translate(files map[string][]byte, opts ...Option) Result {
 		res.Findings = append(res.Findings, fs...)
 		res.Findings = append(res.Findings, res.Fragment.merge(part)...)
 	}
-	res.Findings = append(res.Findings, sourceFindings(res.Fragment)...)
+	if !o.deploy {
+		res.Findings = append(res.Findings, sourceFindings(res.Fragment)...)
+	}
 	return res
 }
 

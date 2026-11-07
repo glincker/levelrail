@@ -114,7 +114,7 @@ func translateHeroku(files map[string][]byte, o options) (Fragment, []Finding) {
 
 	fs = append(fs, herokuRelease(&frag, release)...)
 	fs = append(fs, herokuScripts(&frag, app)...)
-	dbFs := herokuAddons(&frag, app)
+	dbFs := herokuAddons(&frag, app, o)
 	fs = append(fs, dbFs...)
 	fs = append(fs, herokuEnv(&frag, app)...)
 	return frag, fs
@@ -257,7 +257,7 @@ var addonRules = map[string]addonRule{
 
 var builtinAddons = map[string]bool{"papertrail": true, "logentries": true, "loggly": true, "coralogix": true}
 
-func herokuAddons(frag *Fragment, app appJSON) []Finding {
+func herokuAddons(frag *Fragment, app appJSON, o options) []Finding {
 	var fs []Finding
 	for _, raw := range app.Addons {
 		plan, as := addonPlan(raw)
@@ -266,6 +266,11 @@ func herokuAddons(frag *Fragment, app appJSON) []Finding {
 		}
 		name := strings.SplitN(plan, ":", 2)[0]
 		switch {
+		case addonRules[name].engine != "" && o.deploy:
+			r := addonRules[name]
+			fs = append(fs, Finding{Code: "heroku.addon.deploy-manual", Severity: SeverityWarn, Source: fileAppJSON, Subject: plan,
+				Message: "a deploy does not create databases, add-on " + name + " is skipped and " + r.env + " is not set",
+				Fix:     "Create a " + r.engine + " database, link it to the app with databases link, then redeploy."})
 		case addonRules[name].engine != "":
 			r := addonRules[name]
 			fs = append(fs, attachDatabase(frag, r, plan, as)...)
