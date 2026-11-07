@@ -97,7 +97,7 @@ func (rt *Router) edgeStatus(ctx context.Context, app string) (edgeResource, err
 	rt.fillEdgeDeploy(ctx, app, &res)
 	rt.fillEdgeCache(domains, &res)
 	rt.fillEdgeDNS(ctx, domains, &res)
-	res.Purges = cdn.DefaultHistory().List(app, edgePurgeShown)
+	res.Purges = rt.cdnPurgeHistory(ctx).List(app, edgePurgeShown)
 	if len(res.Purges) > 0 {
 		res.LastPurge = &res.Purges[0]
 	}

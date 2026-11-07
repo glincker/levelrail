@@ -18,6 +18,7 @@ boot.rechecks
 bootstrap_scripts.max_bytes
 bootstrap_scripts.max_count
 builds.memory_limit_mb
+cdn.purge_history
 certificates.weekly_issue_warn
 cleanup.enabled
 cleanup.interval
@@ -33,6 +34,7 @@ databases.pooler_default
 databases.pooler_image
 deploy.ci_gate_max_waits_per_app
 deploy.drain_timeout
+deploy.explain_log_lines
 deploy.max_concurrent
 deploy.previous_release_hold
 deploy.receipt_approval_window
@@ -97,6 +99,10 @@ orgs.avatar_max_dimension
 orgs.provisioned_default_membership
 orgs.strict_isolation
 pipelines.oidc_listen_port
+previews.migrate_timeout
+previews.migrate_wait
+projects.clone_max_apps
+projects.clone_placeholder_domain
 projects.default_environment
 projects.default_environment_name
 registry.mirror_prefix
@@ -139,6 +145,7 @@ tokens.default_ttl_days
 tokens.expiry_warning_days
 tokens.system_rotation_lead_minutes
 tokens.unused_alert_days
+updates.offered_channels
 upgrade.verify_backup
 volumes.import_overwrite
 volumes.transfer_max_bytes

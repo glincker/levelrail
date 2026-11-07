@@ -136,7 +136,7 @@ func (rt *Router) previewPolicyFor(ctx context.Context, appName string) (preview
 		DatabaseStrategy: s.DatabaseStrategy, SeedDatabase: s.SeedDatabase, AllowForkSecrets: s.AllowForkSecrets,
 		GateBasicAuth: s.GateBasicAuth, GateUsername: s.GateUsername, GatePasswordSet: gateSet, AllowIndexing: s.AllowIndexing,
 		MigrateCommand: s.MigrateCommand, MigrateTimeoutSeconds: s.MigrateTimeoutSeconds,
-		EffectiveMigrateTimeoutSeconds: int(previewMigrateTimeout(s) / time.Second), ImageTagTemplate: s.ImageTagTemplate,
+		EffectiveMigrateTimeoutSeconds: int(previewMigrateTimeoutOr(s, rt.previewMigratePlatformTimeout(ctx)) / time.Second), ImageTagTemplate: s.ImageTagTemplate,
 	}, nil
 }
 

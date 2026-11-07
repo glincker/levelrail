@@ -53,10 +53,10 @@ func offeredUpdateChannels() []string {
 	return out
 }
 
-func toUpdateSettingsResource(s store.UpdateSettings) updateSettingsResponse {
+func (rt *Router) toUpdateSettingsResource(ctx context.Context, s store.UpdateSettings) updateSettingsResponse {
 	return updateSettingsResponse{
 		updateSettingsResource: updateSettingsResource{Channel: s.Channel, AutoUpdateEnabled: s.AutoUpdateEnabled},
-		OfferedChannels:        offeredUpdateChannels(),
+		OfferedChannels:        rt.offeredUpdateChannels(ctx),
 	}
 }
 
@@ -71,7 +71,7 @@ func (rt *Router) handleGetUpdateSettings(w http.ResponseWriter, r *http.Request
 		rt.internalError(w, "api: get update settings failed", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, toUpdateSettingsResource(settings))
+	writeJSON(w, http.StatusOK, rt.toUpdateSettingsResource(r.Context(), settings))
 }
 
 // handleUpdateSettings handles PUT /api/v1/updates/settings: sets the
@@ -94,5 +94,5 @@ func (rt *Router) handleUpdateSettings(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: update update settings failed", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, toUpdateSettingsResource(settings))
+	writeJSON(w, http.StatusOK, rt.toUpdateSettingsResource(r.Context(), settings))
 }

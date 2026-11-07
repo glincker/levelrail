@@ -124,7 +124,7 @@ func (rt *Router) purgeAppCacheFor(ctx context.Context, app, trigger string) err
 		if !rec.OK {
 			rec.Error = errors.Join(errs...).Error()
 		}
-		cdn.DefaultHistory().Add(app, rec)
+		rt.cdnPurgeHistory(ctx).Add(app, rec)
 	}
 	if len(errs) == 0 {
 		return nil

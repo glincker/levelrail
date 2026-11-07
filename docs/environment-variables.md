@@ -137,6 +137,10 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_JOBS_HTTP_TIMEOUT_SECONDS` | [`jobs.http_timeout_seconds`](/runtime-settings#deploys) | `30` |
 | `APP_NEXTJS_GENERATE_ACTIONS_KEY` | [`nextjs.generate_actions_key`](/runtime-settings#deploys) | `true` |
 | `APP_PLACEMENT_SCORE_MODE` | [`placement.score_mode`](/runtime-settings#deploys) | `spread` |
+| `APP_PREVIEW_MIGRATE_TIMEOUT` | [`previews.migrate_timeout`](/runtime-settings#deploys) | `10m` |
+| `APP_PREVIEW_MIGRATE_WAIT` | [`previews.migrate_wait`](/runtime-settings#deploys) | `2m` |
+| `APP_PROJECT_CLONE_MAX_APPS` | [`projects.clone_max_apps`](/runtime-settings#deploys) | `50` |
+| `APP_PROJECT_CLONE_PLACEHOLDER_DOMAIN` | [`projects.clone_placeholder_domain`](/runtime-settings#deploys) | `clone.invalid` |
 | `APP_PROJECTS_DEFAULT_ENVIRONMENT` | [`projects.default_environment`](/runtime-settings#deploys) | `false` |
 | `APP_PROJECTS_DEFAULT_ENVIRONMENT_NAME` | [`projects.default_environment_name`](/runtime-settings#deploys) | `production` |
 | `APP_REGISTRY_MIRROR_PREFIX` | [`registry.mirror_prefix`](/runtime-settings#deploys) | empty |
@@ -145,6 +149,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_VOLUMES_TRANSFER_MAX_CONCURRENT` | [`volumes.transfer_max_concurrent`](/runtime-settings#deploys) | `1` |
 | `APP_VOLUMES_TRANSFER_SPOOL_DIR` | [`volumes.transfer_spool_dir`](/runtime-settings#deploys) | `volume-transfer` |
 | `APP_VOLUMES_TRANSFER_TIMEOUT` | [`volumes.transfer_timeout`](/runtime-settings#deploys) | `30m` |
+| `APP_DEPLOY_EXPLAIN_LOG_LINES` | [`deploy.explain_log_lines`](/runtime-settings#observability) | `8` |
 | `APP_DISK_CRITICAL_FREE_MB` | [`disk.critical_free_mb`](/runtime-settings#observability) | `512` |
 | `APP_DISK_FORECAST_MIN_DAYS` | [`disk.forecast_min_days`](/runtime-settings#observability) | `7` |
 | `APP_DISK_FORECAST_WINDOW_DAYS` | [`disk.forecast_window_days`](/runtime-settings#observability) | `30` |
@@ -176,6 +181,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_VITALS_REPORT_TOP_ROUTES` | [`vitals.report_top_routes`](/runtime-settings#observability) | `50` |
 | `APP_ACCOUNT_PREFERENCES_MAX_BYTES` | [`account.preferences_max_bytes`](/runtime-settings#data-retention) | `8192` |
 | `APP_BACKUP_DEFAULT_RETENTION_HOURS` | [`backup.default_retention_hours`](/runtime-settings#data-retention) | `168` |
+| `APP_CDN_PURGE_HISTORY` | [`cdn.purge_history`](/runtime-settings#data-retention) | `20` |
 | `APP_CLEANUP_ENABLED` | [`cleanup.enabled`](/runtime-settings#data-retention) | `true` |
 | `APP_CLEANUP_INTERVAL` | [`cleanup.interval`](/runtime-settings#data-retention) | `6h` |
 | `APP_IMAGES_REMOVE_MAX_PER_REQUEST` | [`images.remove_max_per_request`](/runtime-settings#data-retention) | `200` |
@@ -198,6 +204,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_VITALS_RETENTION_DAYS` | [`vitals.retention_days`](/runtime-settings#data-retention) | `30` |
 | `APP_ONBOARDING_ENABLED` | [`onboarding.enabled`](/runtime-settings#experimental) | `true` |
 | `APP_ONBOARDING_RESTORE_REMINDER_DAYS` | [`onboarding.restore_reminder_days`](/runtime-settings#experimental) | `7` |
+| `APP_UPDATE_CHANNELS_OFFERED` | [`updates.offered_channels`](/runtime-settings#experimental) | `stable` |
 <!-- runtime-settings:end -->
 
 ## Sessions and cookies

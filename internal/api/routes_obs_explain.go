@@ -2,9 +2,6 @@ package api
 
 import (
 	"net/http"
-	"os"
-	"strconv"
-	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/deploytimeline"
 )
@@ -26,10 +23,7 @@ func (rt *Router) handleExplainDeploy(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	n := defaultDeployExplainLines
-	if v, err := strconv.Atoi(strings.TrimSpace(os.Getenv(envDeployExplainLines))); err == nil && v > 0 {
-		n = v
-	}
+	n := rt.deployExplainLines(r.Context())
 	w.Header().Set("Cache-Control", "no-store")
 	writeJSON(w, http.StatusOK, deploytimeline.Explain(rt.buildTimeline(r.Context(), a), n))
 }

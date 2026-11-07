@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"os"
 	"sort"
 	"strings"
 
@@ -136,7 +135,7 @@ func (rt *Router) buildProjectClonePlan(r *http.Request, src store.Project, req 
 	if len(svcs) == 0 {
 		return nil, http.StatusNotFound, "nothing to clone: no apps in the selected scope"
 	}
-	if limit := envIntDefault(envProjectCloneMaxApps, defaultProjectCloneMaxApps); len(svcs) > limit {
+	if limit := rt.cloneMaxApps(ctx); len(svcs) > limit {
 		return nil, http.StatusUnprocessableEntity, fmt.Sprintf("project has %d apps, the clone limit is %d", len(svcs), limit)
 	}
 	names := make([]string, len(svcs))
@@ -177,10 +176,7 @@ func (rt *Router) buildProjectClonePlan(r *http.Request, src store.Project, req 
 		}
 		rename[svcs[i].Name] = n
 	}
-	suffix := strings.TrimSpace(os.Getenv(envProjectClonePlaceholder))
-	if suffix == "" {
-		suffix = defaultCloneDomainSuffix
-	}
+	suffix := rt.clonePlaceholderSuffix(ctx)
 	for i := range svcs {
 		app, clone := cloneService(svcs[i], rename, req.Include, suffix, plan)
 		plan.Apps = append(plan.Apps, app)

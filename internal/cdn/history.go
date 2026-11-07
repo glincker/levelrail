@@ -53,6 +53,16 @@ func NewHistory(keep int) *History {
 	return &History{keep: keep, byID: map[string][]PurgeRecord{}}
 }
 
+// SetKeep changes the per-app cap live; n <= 0 is ignored. Existing rows are trimmed on the next Add.
+func (h *History) SetKeep(n int) {
+	if n <= 0 {
+		return
+	}
+	h.mu.Lock()
+	h.keep = n
+	h.mu.Unlock()
+}
+
 var defaultHistory = NewHistory(0)
 
 // DefaultHistory is the process-wide history the API writes and reads.

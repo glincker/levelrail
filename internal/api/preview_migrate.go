@@ -33,10 +33,14 @@ var previewImagePlaceholder = regexp.MustCompile(`\{(number|sha|short_sha|branch
 
 // previewMigrateTimeout is the app's own bound, else the platform default.
 func previewMigrateTimeout(s store.PreviewAppSettings) time.Duration {
+	return previewMigrateTimeoutOr(s, envDuration(envPreviewMigrateTimeout, defaultPreviewMigrateTimeout))
+}
+
+func previewMigrateTimeoutOr(s store.PreviewAppSettings, platform time.Duration) time.Duration {
 	if s.MigrateTimeoutSeconds > 0 {
 		return time.Duration(s.MigrateTimeoutSeconds) * time.Second
 	}
-	return envDuration(envPreviewMigrateTimeout, defaultPreviewMigrateTimeout)
+	return platform
 }
 
 // applyPreviewMigrateFields validates the migrate and image tag fields of a
@@ -122,12 +126,13 @@ func (rt *Router) runPreviewMigrate(ctx context.Context, previewName string, s s
 	}
 	target := application.ContainerName(svc.Name, application.NameImage(*svc), svc.RestartNonce)
 
-	containerID, err := waitPreviewContainer(ctx, runtime, target, envDuration(envPreviewMigrateWait, defaultPreviewMigrateWait))
+	containerID, err := waitPreviewContainer(ctx, runtime, target, rt.previewMigrateWait(ctx))
 	if err != nil {
 		return "", fmt.Errorf("migrate: %w", err)
 	}
 
-	execCtx, cancel := context.WithTimeout(ctx, previewMigrateTimeout(s))
+	migrateBound := previewMigrateTimeoutOr(s, rt.previewMigratePlatformTimeout(ctx))
+	execCtx, cancel := context.WithTimeout(ctx, migrateBound)
 	defer cancel()
 	rc, err := runtime.Exec(execCtx, containerID, []string{"sh", "-c", s.MigrateCommand})
 	if err != nil {
@@ -147,7 +152,7 @@ func (rt *Router) runPreviewMigrate(ctx context.Context, previewName string, s s
 		text += "\n" + execErr.Stderr
 		return "", fmt.Errorf("migration failed (exit %d): %s", execErr.ExitCode, tailMasked(text))
 	case errors.Is(execCtx.Err(), context.DeadlineExceeded):
-		return "", fmt.Errorf("migration timed out after %s: %s", previewMigrateTimeout(s), tailMasked(text))
+		return "", fmt.Errorf("migration timed out after %s: %s", migrateBound, tailMasked(text))
 	default:
 		return "", fmt.Errorf("migration output could not be read: %w", copyErr)
 	}
