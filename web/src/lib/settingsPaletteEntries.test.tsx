@@ -35,6 +35,7 @@ vi.mock('../hooks/useExperimental', () => ({
 // Top level settings route files that are deliberately not nav pages.
 const NOT_NAV_PAGES: Record<string, string> = {
   janitor: 'redirects to the Cleanup page',
+  certificates: 'redirects to the Domains certificates tab',
 }
 
 const allItems = settingsNavSections.flatMap((s) =>

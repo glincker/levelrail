@@ -68,9 +68,9 @@ describe('GlobalNav pins', () => {
   it('pins and unpins from the same button and persists', async () => {
     const user = userEvent.setup()
     renderNav()
-    await user.click(screen.getByRole('button', { name: 'Pin Nodes' }))
+    await user.click(screen.getByRole('button', { name: 'Pin Servers' }))
     expect(screen.getByText('Pinned')).toBeTruthy()
-    const pressed = screen.getAllByRole('button', { name: 'Pin Nodes' })
+    const pressed = screen.getAllByRole('button', { name: 'Pin Servers' })
     expect(pressed).toHaveLength(2)
     expect(pressed[0]).toHaveAttribute('aria-pressed', 'true')
     expect(window.localStorage.getItem(NAV_PINS_STORAGE_KEY)).toBe('["nodes"]')
@@ -81,6 +81,8 @@ describe('GlobalNav pins', () => {
   it('restores stored pins and drops unknown ids', () => {
     window.localStorage.setItem(NAV_PINS_STORAGE_KEY, '["nodes","gone"]')
     renderNav()
-    expect(screen.getAllByRole('button', { name: 'Pin Nodes' })).toHaveLength(2)
+    expect(screen.getAllByRole('button', { name: 'Pin Servers' })).toHaveLength(
+      2,
+    )
   })
 })

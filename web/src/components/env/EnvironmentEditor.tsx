@@ -3,6 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { ListGlassIcon, RefreshCwGlassIcon } from '@thesvg/ui-react'
 import type { AppDetail } from '../../types/appDetail'
 import { useRestartApp } from '../../queries/apps'
+import { useNavigate } from '@tanstack/react-router'
+import { useGitSource } from '../../queries/gitSources'
+import { useRebuildApp } from '../../queries/rebuildApp'
 import {
   EnvApiError,
   exportEnv,
@@ -47,7 +50,7 @@ import {
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Textarea } from '@/components/ui/textarea'
-import { toast } from '@/components/ui/toast'
+import { toast, toastAction } from '@/components/ui/toast'
 
 function download(name: string, text: string, json: boolean) {
   const blob = new Blob([text], {
@@ -69,6 +72,10 @@ export function EnvironmentEditor({ app }: { app: AppDetail }) {
   const updateSettings = useUpdateEnvSettings(app.name)
   const convert = useConvertToSecret(app.name)
   const restartApp = useRestartApp()
+  const rebuild = useRebuildApp(app.name)
+  const gitSource = useGitSource(app.name)
+  const navigate = useNavigate()
+  const [rebuildKeys, setRebuildKeys] = useState<string[]>([])
   const [mode, setMode] = useState<'table' | 'bulk'>('table')
   const [bulkText, setBulkText] = useState('')
   const [adding, setAdding] = useState<{ key?: string } | null>(null)
@@ -205,7 +212,7 @@ export function EnvironmentEditor({ app }: { app: AppDetail }) {
     setSaving(true)
     setSaveError(null)
     try {
-      await state.save()
+      setRebuildKeys(await state.save())
       setReviewOpen(false)
       toast.add({ title: t('saved'), type: 'success' })
     } catch (error) {
@@ -281,6 +288,56 @@ export function EnvironmentEditor({ app }: { app: AppDetail }) {
           onDiscard={state.discard}
         />
         <EnvPolicyNotice settings={policy} />
+        {rebuildKeys.length > 0 ? (
+          <Alert>
+            <RefreshCwGlassIcon size="1.4em" aria-hidden />
+            <AlertTitle>{t('buildTime.noticeTitle')}</AlertTitle>
+            <AlertDescription>
+              {t('buildTime.noticeDescription', {
+                keys: rebuildKeys.join(', '),
+              })}
+              {gitSource.isPending || gitSource.data
+                ? ''
+                : ` ${t('buildTime.noGitSource')}`}
+            </AlertDescription>
+            {gitSource.data ? (
+              <AlertAction>
+                <Button
+                  type="button"
+                  size="sm"
+                  writeAction
+                  disabled={rebuild.isPending}
+                  onClick={() => {
+                    rebuild.mutate(
+                      { noCache: false },
+                      {
+                        onSuccess: (result) => {
+                          setRebuildKeys([])
+                          const deployId = result.id
+                          toast.add({
+                            title: t('buildTime.started', { name: app.name }),
+                            type: 'success',
+                            actionProps: deployId
+                              ? toastAction(t('buildTime.view'), () => {
+                                  void navigate({
+                                    to: '/apps/$name/deploys/$deployId/logs',
+                                    params: { name: app.name, deployId },
+                                  })
+                                })
+                              : undefined,
+                          })
+                        },
+                        onError: showError,
+                      },
+                    )
+                  }}
+                >
+                  {t('buildTime.rebuild')}
+                </Button>
+              </AlertAction>
+            ) : null}
+          </Alert>
+        ) : null}
         {app.env_dirty ? (
           <Alert>
             <RefreshCwGlassIcon size="1.4em" aria-hidden />

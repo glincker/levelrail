@@ -12,7 +12,7 @@ import (
 
 // connectionFields are the database values an env var may reference; the
 // control plane resolves them at container create, so no value is ever read here.
-var connectionFields = map[string]bool{"url": true, "direct_url": true, "host": true, "port": true, "username": true, "password": true, "database": true}
+var connectionFields = map[string]bool{"url": true, "direct_url": true, "host": true, "port": true, "username": true, "password": true, "database": true, "tls_ca": true}
 
 const defaultConnectionField = "url"
 
@@ -47,7 +47,7 @@ func parseFromRef(n *yaml.Node, path string, s *issueSink) (string, bool) {
 		return "", false
 	}
 	if !connectionFields[field] {
-		s.at(path, "field %q is not one of url, host, port, username, password, database", field)
+		s.at(path, "field %q is not one of url, host, port, username, password, database, tls_ca", field)
 		return "", false
 	}
 	return db + "." + field, true

@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"regexp"
 	"strings"
@@ -90,6 +91,7 @@ func (rt *Router) beginManualBuild(ctx context.Context, existing store.DesiredSe
 func (rt *Router) runManualBuild(m manualBuildRun) {
 	ctx := rt.cancels.Bind(context.Background(), m.id) //nolint:gosec // deliberately not the request context: it ends when the handler returns, which would abort the build
 	buildReq, id, name := m.buildReq, m.id, m.name
+	buildReq.RefreshDesired = rt.keepStoredDomains
 	if m.buildType != spec.BuildImage {
 		rt.emitStep(id, "detecting", "running")
 		var sourceDir, commit string
@@ -148,4 +150,19 @@ func (rt *Router) runManualBuild(m manualBuildRun) {
 	}
 	rt.logger.Info("api: manual build triggered", slog.String("name", name), slog.String("repo_url", redactURLCredentials(m.repoURL)), slog.String("ref", m.ref), slog.String("build_type", m.buildType), slog.String("tag", tag))
 	rt.nudgeReconciler()
+}
+
+// keepStoredDomains swaps the domains snapshotted when the build was
+// triggered for the stored ones, so a domain attached while the build ran
+// (the first build can take minutes) survives the save that ends it.
+func (rt *Router) keepStoredDomains(ctx context.Context, desired *store.DesiredService) error {
+	cur, err := rt.apps.GetDesiredService(ctx, desired.Name)
+	if err != nil {
+		if errors.Is(err, store.ErrServiceNotFound) {
+			return nil
+		}
+		return err
+	}
+	desired.Domains = cur.Domains
+	return nil
 }

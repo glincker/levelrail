@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { ArrowLeftGlassIcon } from '@thesvg/ui-react'
+import { NAV_ROW_CLASS } from './CollapsibleSection'
 import { SidebarMenuButton, useSidebar } from '@/components/ui/sidebar'
 import { Sparkline, StatusPill, type Tone } from '@/components/kit'
 import { useApp } from '../../queries/apps'
@@ -28,13 +29,13 @@ export function AppNavHeader({ name }: { name: string }) {
       <SidebarMenuButton
         render={<Link to="/apps" activeOptions={{ exact: true }} />}
         tooltip="Back to Apps"
-        size="sm"
+        className={NAV_ROW_CLASS}
       >
         <ArrowLeftGlassIcon size="1.4em" />
         <span>All apps</span>
       </SidebarMenuButton>
       {rail ? null : (
-        <div className="flex flex-col gap-1.5 rounded-xl bg-sidebar-accent/40 px-3 py-2">
+        <div className="flex flex-col gap-1.5 rounded-xl border border-sidebar-border bg-sidebar-raised px-3 py-2">
           <div className="flex items-center justify-between gap-2">
             <span className="truncate text-sm font-semibold text-sidebar-foreground">
               {app.name}

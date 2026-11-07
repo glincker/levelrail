@@ -123,6 +123,8 @@ export interface AppDetail {
   hooks?: ServiceHooks | null
   strategy: DeployStrategy
   replicas: number
+  // Overrides app.yaml next.cache; omitted or empty defers to the spec.
+  next_cache?: 'none' | 'redis' | ''
   // Response-only on GET: why a template pinned the strategy, and whether the
   // memory limit is the template's recommendation.
   strategy_reason?: string
@@ -233,6 +235,9 @@ export interface AppDetail {
   // recreated, so the change is not live yet. No omitempty on the Go
   // side, same always-present shape as suspended.
   env_dirty: boolean
+  // Response-only on PUT: build-time env keys changed, a rebuild applies them.
+  rebuild_required?: boolean
+  rebuild_keys?: string[]
   // volumes carries `omitempty` on the Go side and is response-only
   // (internal/api/apps.go's appResource own doc comment): this app's
   // named Docker volumes, declared through app.yaml's volumes: field,

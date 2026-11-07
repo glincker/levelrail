@@ -84,6 +84,8 @@ func TestSupportsField(t *testing.T) {
 		{engine: store.EngineRedis, field: "username", want: false},
 		{engine: store.EngineRedis, field: "password", want: false},
 		{engine: store.EngineRedis, field: "database", want: false},
+		{engine: store.EngineRedis, field: "tls_ca", want: true},
+		{engine: store.EngineMariaDB, field: "tls_ca", want: false},
 
 		{engine: store.EngineMariaDB, field: "url", want: true},
 		{engine: store.EngineMariaDB, field: "username", want: true},

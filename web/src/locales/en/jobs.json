@@ -104,7 +104,15 @@
       "body": "Body",
       "bodyHint": "Optional. Sent as application/json.",
       "background": "Background job",
-      "backgroundHint": "The app can answer 202 at once and keep working. The control plane waits for the answer up to the background timeout and records the outcome, so nobody has to hold the request open."
+      "backgroundHint": "The app can answer 202 at once and keep working. The control plane waits for the answer up to the background timeout and records the outcome, so nobody has to hold the request open.",
+      "headers": "Headers",
+      "headersHint": "Optional. Each row sends a header whose value is read from one of the app's secrets when the job runs, so the secret is never stored in the job.",
+      "headerName": "Header name",
+      "headerSecret": "Secret name",
+      "headerSecretPlaceholder": "CRON_SECRET",
+      "headerPrefix": "Prefix",
+      "headerAdd": "Add header",
+      "headerRemove": "Remove header"
     },
     "timezone": "Time zone",
     "timezoneHint": "IANA name such as Europe/Berlin. The schedule is read in this zone, including daylight saving changes.",

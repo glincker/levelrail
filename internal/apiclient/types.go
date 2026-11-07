@@ -66,6 +66,10 @@ type AppResource struct {
 	// ImageDigest is the content Image is pinned to, empty for a legacy tag.
 	ImageDigest string `json:"image_digest,omitempty"`
 	Port        int    `json:"port"`
+	// NextCache is the saved Next.js cache mode: none, redis, or empty when the spec decides.
+	NextCache string `json:"next_cache,omitempty"`
+	// NextImageCache is the saved Next.js image cache mode: persistent, none, or empty when the spec decides.
+	NextImageCache string `json:"next_image_cache,omitempty"`
 	// HostPort mirrors internal/api's appResource.HostPort: nil means
 	// "let Docker assign one", a value pins the host-side port. Settable
 	// on create and update, like Port.
@@ -127,6 +131,10 @@ type AppResource struct {
 	// Env was saved since the running container was last recreated, so
 	// the change is not live yet. Clears on restart or redeploy.
 	EnvDirty bool `json:"env_dirty"`
+	// RebuildRequired and RebuildKeys are response-only on PUT: build-time
+	// env keys (NEXT_PUBLIC_, VITE_) changed, which need a rebuild to apply.
+	RebuildRequired bool     `json:"rebuild_required,omitempty"`
+	RebuildKeys     []string `json:"rebuild_keys,omitempty"`
 	// PreviousReleaseHeldUntil mirrors internal/api's GET app payload: when
 	// the kept previous release, an instant rollback target, is removed.
 	PreviousReleaseHeldUntil string `json:"previous_release_held_until,omitempty"`
@@ -170,6 +178,14 @@ type TagResource struct {
 	ID        string `json:"id"`
 	Name      string `json:"name"`
 	CreatedAt string `json:"created_at,omitempty"`
+	// Counts come back from the list route only.
+	AppCount      int `json:"app_count,omitempty"`
+	ResourceCount int `json:"resource_count,omitempty"`
+}
+
+// RenameTagRequest is the body of PATCH /api/v1/tags/{id}.
+type RenameTagRequest struct {
+	Name string `json:"name"`
 }
 
 // CreateTagRequest mirrors internal/api's tagResource decode shape for
@@ -2375,6 +2391,17 @@ type JobHTTP struct {
 	Path       string `json:"path"`
 	Body       string `json:"body,omitempty"`
 	Background bool   `json:"background,omitempty"`
+	// Headers hold names and secret references only, never secret values.
+	Headers []JobHeader `json:"headers,omitempty"`
+}
+
+// JobHeader is one http job request header: a literal Value or a SecretRef
+// naming an app env var, with Prefix (such as "Bearer ") before the secret.
+type JobHeader struct {
+	Name      string `json:"name"`
+	Value     string `json:"value,omitempty"`
+	SecretRef string `json:"secretRef,omitempty"`
+	Prefix    string `json:"prefix,omitempty"`
 }
 
 // FeatureFlagResource mirrors internal/api's featureFlagResource

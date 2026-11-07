@@ -304,5 +304,44 @@
   },
   "chain": {
     "position": "Attempt {{position}} of this chain"
+  },
+  "deployPhases": {
+    "label": "Deploy progress",
+    "phase": {
+      "upload": "Upload",
+      "install": "Install",
+      "build": "Build",
+      "export_image": "Export image",
+      "health_check": "Health check",
+      "cutover": "Cutover"
+    },
+    "status": {
+      "pending": "Waiting",
+      "running": "In progress",
+      "done": "Done",
+      "failed": "Failed",
+      "skipped": "Skipped"
+    },
+    "eta": "Usually takes about {{typical}} min, {{left}} min left",
+    "etaOver": "Usually takes about {{typical}} min, this one is taking longer",
+    "stillWorking": "Still working. No new log line for a while, which is normal during long steps.",
+    "stillWorkingExport": "Still working. Exporting the image can be quiet for several minutes, this is normal."
+  },
+  "buildReport": {
+    "title": "Build report",
+    "shared": "Shared first load",
+    "route": "Route",
+    "kind": "Type",
+    "size": "Size",
+    "firstLoad": "First load",
+    "noRoutes": "No routes found in the build output.",
+    "warnings": "Heads up",
+    "notStored": "Build logs are not stored, so there is no report for this deploy.",
+    "kinds": {
+      "static": "Static",
+      "isr": "ISR",
+      "dynamic": "Dynamic",
+      "unknown": "Unknown"
+    }
   }
 }

@@ -221,7 +221,25 @@
       "ready": "Ready",
       "afterConnect": "After you connect"
     },
-    "copyAll": "Copy all steps"
+    "copyAll": "Copy all steps",
+    "view": {
+      "label": "Command line tool view",
+      "clis_one": "{{count}} CLI",
+      "clis_other": "{{count}} CLIs"
+    },
+    "summary": {
+      "lastActivity": "Last activity {{when}}",
+      "mostRecent": "Most recent"
+    },
+    "card": {
+      "lastUsed": "Last used",
+      "from": "From",
+      "created": "Created",
+      "expires": "Expires",
+      "expiredAt": "Expired",
+      "unknown": "Not seen yet"
+    },
+    "connectedToast": "CLI connected"
   },
   "request": {
     "headline": "Approve this sign-in?",

@@ -143,3 +143,28 @@ func TestDoctorCheckBuildMemory_StoredSetting(t *testing.T) {
 		t.Errorf("saved above host RAM: %+v", c)
 	}
 }
+
+func TestDoctorCheckBuildMemory_LiveChangeAndReset(t *testing.T) {
+	rt, db := newDoctorTestRouter(t)
+	rt.doctorHostMemory = func() (int64, int64, error) { return 6 << 30, 6 << 30, nil }
+	svc := runtimesettings.New(db, func(string) (string, bool) { return "", false })
+	rt.runtimeSettings = svc
+	ctx := t.Context()
+
+	c := rt.doctorCheckBuildMemory(ctx)
+	if !strings.Contains(c.Message, "when the setting is auto") {
+		t.Fatalf("unset: %+v", c)
+	}
+	if _, err := svc.Set(ctx, runtimesettings.KeyBuildsMemoryLimitMB, json.RawMessage(`1024`), "test"); err != nil {
+		t.Fatal(err)
+	}
+	if c = rt.doctorCheckBuildMemory(ctx); !strings.Contains(c.Message, "capped at 1024 MiB by the builds.memory_limit_mb") {
+		t.Errorf("saved: %+v", c)
+	}
+	if _, err := svc.Set(ctx, runtimesettings.KeyBuildsMemoryLimitMB, json.RawMessage(`0`), "test"); err != nil {
+		t.Fatal(err)
+	}
+	if c = rt.doctorCheckBuildMemory(ctx); !strings.Contains(c.Message, "when the setting is auto") {
+		t.Errorf("saved 0 is auto again: %+v", c)
+	}
+}

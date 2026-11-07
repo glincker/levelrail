@@ -180,7 +180,7 @@ func loadOrGenerateMasterKey(dataDir string) (mk *secrets.MasterKey, keyPath str
 
 // Shared by the git webhook and the manual build trigger, so both use one BuildKit connection.
 // Returns an error rather than a partially wired builder; the caller treats it as non-fatal.
-func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemetryDB *telemetry.DB, secretsManager *secrets.Manager, agentRegistry *agent.Registry, supplyChain *supplychain.Service, guard dockerguard.Booted) (*deploy.Pipeline, *build.Limiter, func() error, error) {
+func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemetryDB *telemetry.DB, secretsManager *secrets.Manager, agentRegistry *agent.Registry, supplyChain *supplychain.Service, guard dockerguard.Booted, onClient func(*build.Client)) (*deploy.Pipeline, *build.Limiter, func() error, error) {
 	rawDockerCli, err := rawDockerClient(guard.Host)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("new docker client for buildkit: %w", err)
@@ -192,6 +192,10 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 	if err != nil {
 		_ = rawDockerCli.Close()
 		return nil, nil, nil, fmt.Errorf("connect to buildkit: %w", err)
+	}
+	// The per app build cache endpoints need the same BuildKit connection the builds use.
+	if onClient != nil {
+		onClient(buildClient)
 	}
 
 	closer := func() error {

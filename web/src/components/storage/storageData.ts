@@ -15,6 +15,16 @@ export interface PercentFloors {
   criticalPercent: number
 }
 
+// Live percent floors; null until the settings load. Critical never exceeds low.
+export function percentFloors(
+  settings: RuntimeSetting[] | undefined,
+): PercentFloors | null {
+  const low = settingNumber(settings, POLICY_KEYS.lowFreePercent)
+  const critical = settingNumber(settings, POLICY_KEYS.criticalFreePercent)
+  if (low === null || critical === null) return null
+  return { lowPercent: low, criticalPercent: Math.min(critical, low) }
+}
+
 function top(items: DiskTopItem[]): DiskTopItem[] {
   return items
     .filter((i) => i.bytes > 0)
@@ -30,9 +40,8 @@ export function diskHealth(input: {
   freeBytes: number
   totalBytes: number
   settings: RuntimeSetting[] | undefined
-  fallback: PercentFloors
 }): DiskHealth {
-  const { freeBytes, totalBytes, settings, fallback } = input
+  const { freeBytes, totalBytes, settings } = input
   const lowMb = settingNumber(settings, POLICY_KEYS.lowFreeMb)
   const criticalMb = settingNumber(settings, POLICY_KEYS.criticalFreeMb)
   if (lowMb !== null && criticalMb !== null) {
@@ -40,7 +49,8 @@ export function diskHealth(input: {
     if (freeBytes < lowMb * MB) return 'low'
     return 'healthy'
   }
-  if (totalBytes <= 0) return 'healthy'
+  const fallback = percentFloors(settings)
+  if (!fallback || totalBytes <= 0) return 'healthy'
   const pct = (freeBytes / totalBytes) * 100
   if (pct < fallback.criticalPercent) return 'critical'
   if (pct < fallback.lowPercent) return 'low'

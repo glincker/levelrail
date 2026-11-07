@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next'
 import { ShieldCheckGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Progress } from '@/components/ui/progress'
 import { cn } from '@/lib/utils'
@@ -98,7 +97,10 @@ function ThresholdForm({ warn, canEdit }: { warn: number; canEdit: boolean }) {
       >
         {chip}
       </span>
-      <span id="cert-warn-help" className="text-xs text-muted-foreground">
+      <span
+        id="cert-warn-help"
+        className={cn('text-xs text-muted-foreground', valid && 'sr-only')}
+      >
         {valid ? t('budget.thresholdHelp') : t('budget.invalid')}
       </span>
     </form>
@@ -112,62 +114,61 @@ export function CertBudgetCard({ canEdit = true }: { canEdit?: boolean }) {
   const level = b ? levelOf(b) : 'ok'
 
   return (
-    <Card>
-      <CardHeader className="flex-row items-center justify-between gap-3">
-        <CardTitle className="flex items-center gap-2">
-          <ShieldCheckGlassIcon size="1.1em" className="text-tone-success" />
-          {t('budget.title')}
-        </CardTitle>
-        {b ? (
-          <Badge variant={BADGE[level]}>{t(`budget.status.${level}`)}</Badge>
-        ) : null}
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {q.isPending ? (
-          <p role="status" className="text-sm text-muted-foreground">
-            …
+    <section
+      aria-label={t('budget.title')}
+      className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-border bg-card px-4 py-3"
+    >
+      <h2 className="flex items-center gap-2 text-sm font-semibold">
+        <ShieldCheckGlassIcon size="1.1em" className="text-tone-success" />
+        {t('budget.title')}
+      </h2>
+      {q.isPending ? (
+        <p role="status" className="text-sm text-muted-foreground">
+          …
+        </p>
+      ) : q.isError || !b ? (
+        <div className="flex flex-wrap items-center gap-3" role="alert">
+          <span className="text-sm text-tone-danger">
+            {t('budget.loadError')}
+          </span>
+          <Button size="sm" variant="outline" onClick={() => void q.refetch()}>
+            {t('budget.retry')}
+          </Button>
+        </div>
+      ) : (
+        <>
+          <Badge variant={BADGE[level]} title={t(`budget.body.${level}`)}>
+            {t(`budget.status.${level}`)}
+          </Badge>
+          <Progress
+            value={Math.min(b.issued, b.warn)}
+            max={b.warn}
+            aria-label={t('budget.meterLabel', { days: b.window_days })}
+            className={cn('w-32 gap-1.5', BAR[level])}
+          />
+          <p className="text-sm">
+            {t('budget.usage', {
+              issued: b.issued,
+              warn: b.warn,
+              days: b.window_days,
+            })}
           </p>
-        ) : q.isError || !b ? (
-          <div className="flex flex-wrap items-center gap-3" role="alert">
-            <span className="text-sm text-tone-danger">
-              {t('budget.loadError')}
-            </span>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => void q.refetch()}
-            >
-              {t('budget.retry')}
-            </Button>
-          </div>
-        ) : (
-          <>
-            <Progress
-              value={Math.min(b.issued, b.warn)}
-              max={b.warn}
-              aria-label={t('budget.meterLabel', { days: b.window_days })}
-              className={cn('gap-1.5', BAR[level])}
-            />
-            <p className="text-sm">
-              {t('budget.usage', {
-                issued: b.issued,
-                warn: b.warn,
-                days: b.window_days,
-              })}
-            </p>
-            <p className="text-sm text-muted-foreground">
+          {level === 'ok' ? null : (
+            <p className="basis-full text-xs text-muted-foreground">
               {t(`budget.body.${level}`)}
             </p>
+          )}
+          <div className="ml-auto flex flex-wrap items-center gap-x-4 gap-y-2">
             <ThresholdForm warn={b.warn} canEdit={canEdit} />
             <Link
               to="/settings/system-status"
-              className="inline-block text-sm text-brand underline-offset-4 hover:underline"
+              className="text-sm text-brand underline-offset-4 hover:underline"
             >
               {t('budget.doctor')}
             </Link>
-          </>
-        )}
-      </CardContent>
-    </Card>
+          </div>
+        </>
+      )}
+    </section>
   )
 }

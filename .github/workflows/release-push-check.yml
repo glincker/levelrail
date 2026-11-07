@@ -1,0 +1,93 @@
+name: Release push check
+
+# ci.yml has no push trigger for release/**: with an open PR its pull_request
+# run already covers the pushed commit, and running both doubled the matrix.
+# A push with no open PR (the release line before its PR exists) gets this
+# one cheap job instead: whole-module build and vet, plus the web build when
+# web/ changed. Not a required check; the release PR's CI is the gate.
+on:
+  push:
+    branches: ['release/**']
+    paths-ignore:
+      - '**/*.md'
+      - 'adr/**'
+      - 'LICENSE'
+
+concurrency:
+  group: release-push-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  check:
+    name: Release push (no open PR)
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 25
+    steps:
+      # Fails open: if the lookup errors, run the checks rather than skip them.
+      - name: Look for an open PR
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          OWNER: ${{ github.repository_owner }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          if count="$(gh api -X GET "repos/${REPO}/pulls" -f state=open -f head="${OWNER}:${BRANCH}" --jq length)" \
+            && [ "$count" -gt 0 ]; then
+            echo "open=true" >> "$GITHUB_OUTPUT"
+            echo "An open PR covers this push: its pull_request run is the check."
+          else
+            echo "open=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: steps.pr.outputs.open != 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed areas
+        id: detect
+        if: steps.pr.outputs.open != 'true'
+        run: |
+          base="$(git merge-base origin/main HEAD)"
+          scripts/ci-changes.sh "$base" HEAD 2>summary.txt >> "$GITHUB_OUTPUT"
+          { echo '### Changed areas'; echo '```'; cat summary.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Set up Go (cached)
+        if: steps.pr.outputs.open != 'true' && steps.detect.outputs.go == 'true'
+        uses: ./.github/actions/setup-go-cached
+        with:
+          remote-cache-bucket: ${{ vars.GOCACHE_BUCKET }}
+          remote-cache-region: ${{ vars.GOCACHE_REGION || 'us-east-1' }}
+          remote-cache-key-id: ${{ secrets.GOCACHE_KEY_ID }}
+          remote-cache-secret: ${{ secrets.GOCACHE_SECRET }}
+          remote-cache-endpoint: ${{ vars.GOCACHE_ENDPOINT }}
+          cache-prefix: go-build
+
+      - name: go build
+        if: steps.pr.outputs.open != 'true' && steps.detect.outputs.go == 'true'
+        run: go build ./...
+
+      - name: go vet
+        if: steps.pr.outputs.open != 'true' && steps.detect.outputs.go == 'true'
+        run: go vet ./...
+
+      - name: Set up Node
+        if: steps.pr.outputs.open != 'true' && steps.detect.outputs.web == 'full'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Web build (vite build && tsc -b)
+        if: steps.pr.outputs.open != 'true' && steps.detect.outputs.web == 'full'
+        working-directory: web
+        run: |
+          npm ci --ignore-scripts
+          npm run build

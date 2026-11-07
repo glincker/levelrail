@@ -8,6 +8,13 @@ import {
   PlatformSectionTabs,
 } from './SectionTabGroups'
 
+vi.mock('@/hooks/useExperimental', () => ({
+  useExperimentalFeatures: () => ['resource-advisor'],
+}))
+vi.mock('@/lib/routeAvailability', () => ({
+  useRouteAvailable: () => () => true,
+}))
+
 const router = vi.hoisted(() => ({ pathname: '/' }))
 
 vi.mock('@tanstack/react-router', () => ({
@@ -54,7 +61,7 @@ describe('section tab groups', () => {
 
   it.each([
     ['/usage', 'Usage'],
-    ['/costs', 'Cost explorer'],
+    ['/costs', 'Costs'],
   ])('cost strip marks the right tab on %s', (path, label) => {
     router.pathname = path
     render(

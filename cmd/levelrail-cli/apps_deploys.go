@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
@@ -56,6 +57,10 @@ func runAppsDeploys(prog string, args []string, stdout, stderr io.Writer, lookup
 	case "rollback-to", "rollback", "promote":
 		return runAppsDeploysRollbackTo(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	default:
+		// A bare app name means its history, matching how "logs <app>" works.
+		if !strings.HasPrefix(args[0], "-") {
+			return runAppsDeploysList(prog, args, stdout, stderr, lookupEnv)
+		}
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps deploys subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, appsDeploysUsage(prog))
 		return exitUsage
@@ -82,6 +87,7 @@ func appsDeploysUsage(prog string) string {
   %[1]s apps deploys promote <name> <deploy-id> [flags]           alias of rollback-to: make any past succeeded deploy the live one
   %[1]s apps deploys rollback <name> <deploy-id> [flags]          alias of rollback-to
 
+"%[1]s apps deploys <name>" is the same as "apps deploys list <name>".
 Run "%[1]s apps deploys <subcommand> -h" for a subcommand's own flags.
 `, prog)
 }
@@ -272,6 +278,14 @@ func runAppsDeploysLogsFollow(client *Client, name, deployID string, stdout, std
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	if !jsonOut {
+		// Best effort: an older control plane or a settled deploy just prints no estimate.
+		if ph, perr := client.GetDeployPhases(ctx, deployID); perr == nil {
+			if line := deployETALine(ph); line != "" {
+				_, _ = fmt.Fprintln(stderr, line)
+			}
+		}
+	}
 	err := client.StreamDeployLog(ctx, name, deployID, func(e logStreamEntry) error {
 		if jsonOut {
 			return writeJSONLine(stdout, e)

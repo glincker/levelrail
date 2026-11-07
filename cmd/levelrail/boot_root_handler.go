@@ -15,6 +15,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/archive"
 	"github.com/GLINCKER/levelrail/internal/backup"
 	"github.com/GLINCKER/levelrail/internal/brand"
+	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/cpbackup"
 	"github.com/GLINCKER/levelrail/internal/dbaccess"
 	"github.com/GLINCKER/levelrail/internal/deploy"
@@ -48,6 +49,7 @@ type rootDeps struct {
 	webhookHandler      http.Handler
 	client              *docker.Client
 	builder             *deploy.Pipeline
+	buildClient         *build.Client
 	deployRecorder      *deploylog.Recorder
 	logBroadcaster      *telemetry.LogBroadcaster
 	deployDispatcher    *alerting.DeployDispatcher
@@ -400,6 +402,9 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 	if builder != nil {
 		opts = append(opts, api.WithBuilder(builder))
 	}
+	if d.buildClient != nil {
+		opts = append(opts, api.WithAppBuildCache(d.buildClient))
+	}
 	if manifestCfg, err := loadGitHubAppManifestConfig(); err != nil {
 		logger.Error("load github app manifest config failed, using defaults", slog.String("error", err.Error()))
 	} else {
@@ -442,6 +447,8 @@ func composeMux(apiHandler http.Handler, webhookHandler http.Handler, webHandler
 	mux.Handle("/public/", apiHandler)
 	mux.Handle("/gate/", apiHandler)
 	mux.Handle("/mail/unsubscribe", apiHandler)
+	// The ingress catch-all dials this exact path; without it the SPA would answer 200.
+	mux.Handle(ingressdriver.DiagnosticPath, apiHandler)
 	if webhookHandler != nil {
 		mux.Handle("POST /webhook", webhookHandler)
 	}

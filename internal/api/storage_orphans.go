@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -277,6 +278,9 @@ func (rt *Router) appDeleteDataPlan(w http.ResponseWriter, r *http.Request, name
 		return false, nil, false
 	}
 	for _, v := range svc.Volumes {
+		if v.Name == deploy.NextImageCacheVolume(name) {
+			continue // removed by deleteApp, it is a cache
+		}
 		volumes = append(volumes, v.Name)
 	}
 	return purge, volumes, true

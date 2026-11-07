@@ -405,5 +405,34 @@
     "fixedIn": "Fixed in {{version}}",
     "reference": "Reference",
     "loadError": "Could not load advisories."
+  },
+  "imageScanning": {
+    "page": {
+      "title": "Image scanning",
+      "description": "The default scan policy for the whole instance."
+    },
+    "scan": {
+      "label": "Scan images for known vulnerabilities"
+    },
+    "gate": {
+      "label": "Deploy gate",
+      "options": {
+        "off": "Off",
+        "warn": "Warn only",
+        "block_on_critical": "Block on critical",
+        "block_on_high": "Block on high or critical"
+      },
+      "needsScan": "Turn scanning on to use a gate other than Off."
+    },
+    "save": {
+      "action": "Save policy",
+      "pending": "Saving",
+      "done": "Policy saved."
+    },
+    "inherit": "Apps without their own policy inherit this one.",
+    "serverOff": "Vulnerability scanning is switched off on this control plane, so the policy has no effect yet.",
+    "rootOnly": "Only a root account can change this policy.",
+    "loading": "Loading the policy",
+    "error": "Could not load the scan policy."
   }
 }

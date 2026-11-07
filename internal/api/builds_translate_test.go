@@ -124,3 +124,11 @@ func TestSpecServiceFromDesired_NoOptionalFields(t *testing.T) {
 		t.Errorf("Egress = %+v, want nil", got.Egress)
 	}
 }
+
+func TestSpecServiceFromDesiredKeepsScaleAndLinks(t *testing.T) {
+	svc := store.DesiredService{Name: "web", Replicas: 3, DatabaseEnv: map[string]store.DatabaseEnvRef{"REDIS_URL": {Database: "cache", Field: "url"}}}
+	got := specServiceFromDesired(svc, spec.Build{Type: spec.BuildRailpack})
+	if got.Replicas != 3 || got.Env["REDIS_URL"].From != "cache.url" {
+		t.Fatalf("replicas=%d env=%v", got.Replicas, got.Env)
+	}
+}

@@ -164,6 +164,9 @@ type domainCheckResponse struct {
 	FlushCommand string                 `json:"flush_command,omitempty"`
 	Hints        []domaindoctor.DNSHint `json:"hints,omitempty"`
 	Zone         string                 `json:"zone,omitempty"`
+	// Route is the HTTP status the domain's managed proxy route answered on
+	// its last stored verification; absent when no probe has run yet.
+	Route *routeStatusResource `json:"route,omitempty"`
 	// NameserverProvider is cloudflare, route53, other or unknown, read from the zone's NS hostnames.
 	NameserverProvider string `json:"nameserver_provider,omitempty"`
 }

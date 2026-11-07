@@ -13,6 +13,8 @@ const routeDir = join(__dirname, '../routes/apps/$name')
 const routeSlugs = readdirSync(routeDir)
   .map((f) => f.replace(/\.tsx$/, ''))
   .filter((f) => !['index', 'forms', 'deploys', 'pipelines'].includes(f))
+  // domains_.$domain is a detail page under the domains tab, not a tab
+  .filter((f) => !f.includes('_.'))
 
 const navSlugs = APP_NAV_SECTIONS.flatMap((s) => s.items.map((i) => i.slug))
 
@@ -38,17 +40,16 @@ describe('app tab groups', () => {
     for (const slug of routeSlugs) expect(navSlugs).toContain(slug)
   })
 
-  it('sends an unlisted tab to advanced', () => {
-    expect(groupForSlug('brand-new-tab')).toBe('advanced')
+  it('sends an unlisted tab to config', () => {
+    expect(groupForSlug('brand-new-tab')).toBe('config')
   })
 
-  it('keeps the basics order from the config', () => {
+  it('keeps the deploy order from the config', () => {
     const basics = groupTabs(navSlugs.map((slug) => ({ slug })))[0]
-    expect(basics?.items.map((i) => i.slug)).toEqual([
+    expect(basics?.items.map((i) => i.slug).slice(0, 3)).toEqual([
       'overview',
       'deploys',
-      'environment',
-      'logs',
+      'source',
     ])
   })
 
@@ -67,25 +68,20 @@ describe('narrow screen collapse', () => {
   const groups = APP_TAB_GROUPS.map((g) => ({ id: g.id }))
 
   it('keeps every group on wide screens', () => {
-    const r = splitForNarrow(groups, 'network', false)
-    expect(r.visible).toHaveLength(5)
+    const r = splitForNarrow(groups, 'traffic', false)
+    expect(r.visible).toHaveLength(4)
     expect(r.more).toEqual([])
   })
 
   it('keeps only the active group and moves the rest under More', () => {
     const r = splitForNarrow(groups, 'observe', true)
     expect(r.visible.map((g) => g.id)).toEqual(['observe'])
-    expect(r.more.map((g) => g.id)).toEqual([
-      'basics',
-      'network',
-      'data',
-      'advanced',
-    ])
+    expect(r.more.map((g) => g.id)).toEqual(['deploy', 'traffic', 'config'])
   })
 
   it('falls back to the first group when none is active', () => {
     expect(splitForNarrow(groups, undefined, true).visible[0]?.id).toBe(
-      'basics',
+      'deploy',
     )
   })
 })

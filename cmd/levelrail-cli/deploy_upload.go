@@ -81,6 +81,12 @@ func uploadMaxBytes(lookupEnv func(string) (string, bool)) (int64, error) {
 
 // runDeployUpload implements "deploy [path]": pack the directory, upload it, build it and follow the deploy.
 func runDeployUpload(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
+	return runDeployUploadLimited(prog, args, stdout, stderr, lookupEnv, stdin, 0)
+}
+
+// runDeployUploadLimited is runDeployUpload with a cap on the dry run file list
+// printed as text; 0 prints everything. JSON output is never capped.
+func runDeployUploadLimited(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader, listLimit int) int {
 	fs, tokenP, apiURLP, profileP, jsonOutP, outputP, queryP := apiFlagSet(prog, "deploy", "print the result as JSON to stdout and nothing else", stderr)
 	var appName, name, fromHash, timeoutStr string
 	var port int
@@ -91,12 +97,12 @@ func runDeployUpload(prog string, args []string, stdout, stderr io.Writer, looku
 	fs.StringVar(&name, "name", "", "same as --app")
 	fs.IntVar(&port, "port", 0, "container port (default: the app spec, the Dockerfile or the detected framework)")
 	fs.Var(env, "env", "runtime env var as KEY=VALUE, repeatable (stored on the app, visible in its env list)")
-	fs.Var(buildEnv, "build-env", "Dockerfile build argument as KEY=VALUE, repeatable")
+	fs.Var(buildEnv, "build-env", "Dockerfile build argument as KEY=VALUE, repeatable (other builds read --env at build time)")
 	fs.Func("include", "upload a path the ignore rules would skip, for example .env; repeatable", func(s string) error {
 		include = append(include, s)
 		return nil
 	})
-	fs.StringVar(&fromHash, "upload-hash", "", "rebuild an earlier upload that is still stored, without sending the directory again")
+	fs.StringVar(&fromHash, "upload-hash", "", "rebuild an earlier upload that is still stored: its digest or a unique prefix of 8 or more characters")
 	fs.StringVar(&timeoutStr, "timeout", defaultDeployUploadWait, "stop following the deploy after this long (the deploy itself keeps running)")
 	fs.BoolVar(&static, "static", false, "publish a folder or .zip as a static site: no build, no source control (implied by a .zip argument)")
 	fs.BoolVar(&waitURL, "wait-url", false, "after a healthy deploy, wait for the domain certificate to be issued (limit: "+envDeployCertWait+")")
@@ -142,6 +148,9 @@ func runDeployUpload(prog string, args []string, stdout, stderr io.Writer, looku
 	}
 
 	if staticDrop {
+		if len(buildEnv) > 0 {
+			return reportError(stdout, stderr, jsonOut, newValidationError("--build-env does not apply to a static site, there is no build"))
+		}
 		opts := staticOpts{appName: appName, fromHash: fromHash, include: include, timeout: timeout, maxBytes: maxBytes, dryRun: dryRun, yes: yes, urlWait: urlWait}
 		newClient := func() *Client { return apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv) }
 		return runDeployStatic(prog, dir, opts, newClient, stdout, stderr, of, jsonOut, func() bool {
@@ -156,6 +165,9 @@ func runDeployUpload(prog string, args []string, stdout, stderr io.Writer, looku
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 	if err := checkUploadBuildType(inf); err != nil {
+		return reportError(stdout, stderr, jsonOut, err)
+	}
+	if err := validateUploadFlags(prog, inf, buildEnv, fromHash); err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 	say := func(format string, a ...any) {
@@ -181,8 +193,15 @@ func runDeployUpload(prog string, args []string, stdout, stderr io.Writer, looku
 				res.FileList = append(res.FileList, f.Path)
 			}
 			return writeScheduledTaskResult(stdout, stderr, of, res, func() {
-				for _, p := range res.FileList {
+				shown := res.FileList
+				if listLimit > 0 && len(shown) > listLimit {
+					shown = shown[:listLimit]
+				}
+				for _, p := range shown {
 					_, _ = fmt.Fprintln(stdout, p)
+				}
+				if len(shown) < len(res.FileList) {
+					_, _ = fmt.Fprintf(stdout, "... and %d more (run %s deploy <dir> --dry-run for the full list)\n", len(res.FileList)-len(shown), prog)
 				}
 			})
 		}
@@ -192,26 +211,28 @@ func runDeployUpload(prog string, args []string, stdout, stderr io.Writer, looku
 		}
 		client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 		if err := ensureUploadApp(ctx, client, inf, env, &res, say); err != nil {
-			return reportError(stdout, stderr, jsonOut, err)
+			return reportError(stdout, stderr, jsonOut, createdAppNote(prog, &res, err))
 		}
 		hash, err := packAndUpload(ctx, client, inf.Flags.name, plan, maxBytes, &res, stderr, jsonOut)
 		if err != nil {
-			return reportError(stdout, stderr, jsonOut, err)
+			return reportError(stdout, stderr, jsonOut, createdAppNote(prog, &res, err))
 		}
 		fromHash = hash
 		return finishUploadDeploy(ctx, client, prog, inf, fromHash, buildEnv, timeout, urlWait, &res, stdout, stderr, of, jsonOut)
 	}
 
-	if !validUploadHash(fromHash) {
-		return reportError(stdout, stderr, jsonOut, newValidationError("--upload-hash must be a 64 character hex digest"))
-	}
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	if dryRun {
-		say("would rebuild upload %s for app %q", fromHash[:12], res.App)
+		say("would rebuild upload %s for app %q", shortHash(fromHash), res.App)
 		return writeScheduledTaskResult(stdout, stderr, of, res, func() {})
 	}
-	if err := ensureUploadApp(ctx, client, inf, env, &res, say); err != nil {
+	// Resolved before the app is touched, so an unknown prefix leaves nothing behind.
+	fromHash, err = resolveUploadHash(ctx, client, inf.Flags.name, fromHash)
+	if err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
+	}
+	if err := ensureUploadApp(ctx, client, inf, env, &res, say); err != nil {
+		return reportError(stdout, stderr, jsonOut, createdAppNote(prog, &res, err))
 	}
 	res.Hash = fromHash
 	return finishUploadDeploy(ctx, client, prog, inf, fromHash, buildEnv, timeout, urlWait, &res, stdout, stderr, of, jsonOut)
@@ -258,6 +279,13 @@ func printUploadPlan(w io.Writer, quiet bool, inf upInference, plan sourceupload
 	for _, f := range plan.Largest(uploadTopFiles) {
 		_, _ = fmt.Fprintf(w, "    %10s  %s\n", humanBytes(f.Size), f.Path)
 	}
+	if n, names := plan.EditorSkippedSummary(3); n > 0 {
+		more := ""
+		if n > len(names) {
+			more = fmt.Sprintf(", and %d more", n-len(names))
+		}
+		_, _ = fmt.Fprintf(w, "  skipped %d editor and agent config files (%s%s); --include PATH to send one\n", n, strings.Join(names, ", "), more)
+	}
 	if dryRun {
 		_, _ = fmt.Fprintln(w, "  dry run: nothing is sent, the full list follows on stdout")
 	}
@@ -269,7 +297,6 @@ func ensureUploadApp(ctx context.Context, client *Client, inf upInference, env m
 	if err != nil {
 		return fmt.Errorf("look up app %q: %w", name, err)
 	}
-	res.Created = !exists
 	if !exists {
 		body := appResource{Name: name, Image: pendingImageTag(name), Port: inf.Flags.port}
 		if len(env) > 0 {
@@ -278,6 +305,7 @@ func ensureUploadApp(ctx context.Context, client *Client, inf upInference, env m
 		if _, err := client.CreateApp(ctx, body); err != nil {
 			return fmt.Errorf("create app %q: %w", name, err)
 		}
+		res.Created = true
 		say("created app %q on port %d", name, inf.Flags.port)
 		return nil
 	}
@@ -350,7 +378,7 @@ func packAndUpload(ctx context.Context, client *Client, app string, plan sourceu
 		if up.Deduped {
 			note = ", identical to an earlier upload"
 		}
-		_, _ = fmt.Fprintf(stderr, "  uploaded %s as %s%s\n", humanBytes(size), up.Hash[:12], note)
+		_, _ = fmt.Fprintf(stderr, "  uploaded %s as %s%s\n  rebuild later with --upload-hash %s\n", humanBytes(size), up.Hash, note, up.Hash[:minUploadHashPrefix])
 	}
 	return up.Hash, nil
 }
@@ -365,19 +393,19 @@ func finishUploadDeploy(ctx context.Context, client *Client, prog string, inf up
 		ImageRepo:  name,
 		Build:      buildTriggerRequestBuild{Type: inf.Flags.buildType, Path: inf.Flags.dockerfile},
 	}
+	// Non-Dockerfile build args were already refused by validateUploadFlags, before any side effect.
 	if inf.Flags.buildType == spec.BuildDockerfile && len(buildEnv) > 0 {
 		req.Build.Args = map[string]string(buildEnv)
-	} else if len(buildEnv) > 0 {
-		return reportError(stdout, stderr, jsonOut, newValidationError("--build-env only applies to Dockerfile builds"))
 	}
 	if inf.Flags.buildType == spec.BuildRailpack {
 		req.Build.Path = ""
 	}
 	trig, err := client.TriggerBuild(ctx, name, req)
 	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("app %q is ready but the build did not start, re-run \"%s deploy --upload-hash %s --app %s\" to retry: %w", name, prog, hash, name, err))
+		return reportError(stdout, stderr, jsonOut, createdAppNote(prog, res, fmt.Errorf("app %q is ready but the build did not start, re-run \"%s deploy --upload-hash %s --app %s\" to retry: %w", name, prog, hash, name, err)))
 	}
 	res.DeployID = trig.ID
+	buildStart := time.Now()
 	var logDone chan struct{}
 	stopLog := func() {}
 	if !jsonOut {
@@ -395,7 +423,7 @@ func finishUploadDeploy(ctx context.Context, client *Client, prog string, inf up
 			defer close(logDone)
 			_ = client.StreamDeployLog(followCtx, name, trig.ID, func(e apiclient.LogStreamEntry) error {
 				touch()
-				_, _ = fmt.Fprintln(stderr, e.Line)
+				_, _ = fmt.Fprintln(stderr, stampTrace(e.Line, time.Since(buildStart)))
 				return nil
 			})
 		}()
@@ -411,7 +439,8 @@ func finishUploadDeploy(ctx context.Context, client *Client, prog string, inf up
 		<-logDone
 	}
 	if werr != nil && !errors.Is(werr, context.Canceled) {
-		return reportError(stdout, stderr, jsonOut, werr)
+		// The build is already queued server side, so say how to re-attach.
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("deploy %s is queued and keeps running, follow it with \"%s\": %w", trig.ID, followHint(prog, name, trig.ID), werr))
 	}
 	res.Status = wait.Deploy.Outcome
 	if !wait.Done {
@@ -446,6 +475,9 @@ func finishUploadDeploy(ctx context.Context, client *Client, prog string, inf up
 			}
 		}
 		_, _ = fmt.Fprintf(stderr, "deploy %s: %s\n", res.DeployID, res.Status)
+		if !wait.Done {
+			_, _ = fmt.Fprintf(stderr, "still running on the server, follow it with: %s\n", followHint(prog, name, res.DeployID))
+		}
 		printUploadFailure(stderr, res)
 	})
 	if code != exitOK {
@@ -486,9 +518,9 @@ Flags:
   --name string         same as --app
   --port int            container port (default: Dockerfile EXPOSE or detected framework)
   --env KEY=VALUE       runtime env var, repeatable
-  --build-env KEY=VALUE Dockerfile build argument, repeatable
+  --build-env KEY=VALUE Dockerfile build argument, repeatable (other builds: use --env, it is read at build time)
   --include PATH        upload a normally ignored path, repeatable
-  --upload-hash HASH    rebuild an earlier upload that is still stored (default retention 7 days)
+  --upload-hash HASH    rebuild an earlier upload that is still stored: the full digest or a unique prefix of 8+ characters (default retention 7 days)
   --timeout duration    stop following the deploy after this long (default %[2]s)
   --static              publish as a static site, no build (implied for a .zip)
   --wait-url            after a healthy deploy, wait for the domain certificate (limit %[4]s, default %[5]s)

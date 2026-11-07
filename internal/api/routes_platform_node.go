@@ -60,6 +60,7 @@ func (rt *Router) registerNodeRoutes(mux *http.ServeMux) {
 	// "/api/v1/nodes/provisions/{id}" and "/api/v1/nodes/{id}/health"
 	// would be two equally-specific wildcard patterns net/http's own
 	// ServeMux refuses to register together.
+	rt.registerBootstrapScriptRoutes(mux)
 	mux.HandleFunc("GET /api/v1/node-provisions", rt.requireAbility(AbilityRoot, rt.handleListNodeProvisions))
 	mux.HandleFunc("GET /api/v1/node-provisions/{id}", rt.requireAbility(AbilityRoot, rt.handleGetNodeProvision))
 	// SSH node provisioning: AbilityRoot like every node route (an SSH credential is as sensitive as a join token).

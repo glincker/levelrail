@@ -273,7 +273,7 @@ export const settingsNavSections: SettingsNavSection[] = [
       },
       {
         id: 'certificates',
-        to: '/settings/certificates',
+        to: '/domains/certificates',
         icon: ShieldCheckGlassIcon,
       },
       {

@@ -59,7 +59,7 @@ Everything in the directory except:
 - `.git`, `node_modules`, `.next`, `.nuxt`, `.turbo`, `.venv`, `venv`, `__pycache__`, `target`, `coverage`, `.terraform` and `.DS_Store`,
 - secret-looking files: `.env`, `.env.*` (except `.env.example`, `.env.sample` and `.env.template`), `*.pem`, `*.key`, `id_rsa*` and `id_ed25519*`.
 
-A `.gitignore` rule that starts with `!` cannot bring a secret file back. Symbolic links and special files are never uploaded. To send an ignored path on purpose, name it with `--include`, for example `--include .env`.
+A `.gitignore` rule that starts with `!` cannot bring a secret file back. Symbolic links and special files are never uploaded. To send an ignored path on purpose, name it with `--include`, for example `--include .env`. Editor and agent config (`.claude`, `.cursor`, `.idea`, `.windsurf`, `.codex`, `.fleet`, `.history`, `.aider*`, `.vscode/settings.json`, `*.local.json`, `*.local.yaml`, `settings.local.*`) is also skipped by default, and `--include` sends any of it.
 
 `--dry-run` lists the files that would be uploaded and changes nothing:
 
@@ -73,7 +73,7 @@ levelrail-cli deploy --dry-run
 levelrail-cli deploy --env LOG_LEVEL=info --build-env NODE_ENV=production
 ```
 
-`--env` sets runtime variables on the app and is repeatable. `--build-env` passes Dockerfile `ARG` values to the build and is repeatable. For secrets use `levelrail-cli apps secrets set`, not `--env`, because env values are visible in the app's env list.
+`--env` sets runtime variables on the app and is repeatable. `--build-env` passes Dockerfile `ARG` values to the build and is repeatable. It is refused up front, before anything is created or uploaded, for a build that has no Dockerfile; those builds read `--env` at build time (for example `NEXT_PUBLIC_*` values are inlined). For secrets use `levelrail-cli apps secrets set`, not `--env`, because env values are visible in the app's env list.
 
 ## Size limits and retention
 
@@ -96,10 +96,10 @@ Every build is tagged with its archive hash, so the normal rollback works:
 levelrail-cli rollback demo-app
 ```
 
-To rebuild an earlier upload from the stored archive without sending the directory again, pass its hash from the app overview or deploy history:
+To rebuild an earlier upload from the stored archive without sending the directory again, pass its digest, or a unique prefix of at least 8 characters (the full digest is printed after every upload):
 
 ```bash
-levelrail-cli deploy --app demo-app --upload-hash 3f9c1a0b52de...
+levelrail-cli deploy --app demo-app --upload-hash 3f9c1a0b
 ```
 
 This only works while the archive is still within the retention period; after that, deploy the directory again.

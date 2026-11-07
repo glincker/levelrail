@@ -6,9 +6,15 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
+import { NAV_ROW_CLASS } from './CollapsibleSection'
 import { useIsRoot } from '../../hooks/useIsRoot'
 import { firstAppProgress, showGuideEntryPoints } from '../../lib/setupGuide'
+import { cn } from '@/lib/utils'
+import { hueClasses } from './navHues'
 import { useSetupGuide } from '../../queries/setupGuide'
+
+// Quarter steps keep the fill a Tailwind class instead of an inline width.
+const FILL = ['w-0', 'w-1/4', 'w-1/2', 'w-3/4', 'w-full'] as const
 
 // Shown until the operator hides the guide or every step is settled.
 export function GetStartedNavItem() {
@@ -21,6 +27,11 @@ export function GetStartedNavItem() {
   const label = progress
     ? t('chip.firstApp', progress)
     : t('chip.label', { percent: guide?.ready_percent ?? 0 })
+  const fraction = progress
+    ? progress.total > 0
+      ? progress.done / progress.total
+      : 0
+    : (guide?.ready_percent ?? 0) / 100
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -28,21 +39,20 @@ export function GetStartedNavItem() {
           render={<Link to="/get-started" />}
           isActive={pathname === '/get-started'}
           tooltip={label}
+          className={cn(NAV_ROW_CLASS, hueClasses('overview')?.icon)}
         >
           <RocketGlassIcon size="1.4em" />
           <span>{t('nav.label')}</span>
-          <span className="ml-auto text-xs tabular-nums text-muted-foreground">
-            {progress ? (
-              <>
-                <span aria-hidden="true">
-                  {progress.done}/{progress.total}
-                </span>
-                <span className="sr-only">{label}</span>
-              </>
-            ) : (
-              `${guide?.ready_percent ?? 0}%`
-            )}
+          <span
+            aria-hidden="true"
+            data-testid="get-started-progress"
+            className="ml-auto h-1.5 w-12 shrink-0 overflow-hidden rounded-full bg-sidebar-foreground/20"
+          >
+            <span
+              className={`block h-full rounded-full bg-state-active-bar transition-[width] duration-300 ease-out motion-reduce:transition-none ${FILL[Math.round(Math.min(1, Math.max(0, fraction)) * 4)]}`}
+            />
           </span>
+          <span className="sr-only">{label}</span>
         </SidebarMenuButton>
       </SidebarMenuItem>
     </SidebarMenu>

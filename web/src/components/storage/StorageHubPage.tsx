@@ -39,12 +39,6 @@ import {
 } from './storageData'
 import { MIN_FORECAST_DAYS } from './trendModel'
 
-// Used only when the runtime disk floors cannot be read.
-const LOW_PERCENT = Number(import.meta.env.VITE_STORAGE_LOW_FREE_PERCENT ?? 15)
-const CRITICAL_PERCENT = Number(
-  import.meta.env.VITE_STORAGE_CRITICAL_FREE_PERCENT ?? 5,
-)
-
 interface Props {
   /** Raw `filter` search param; unknown values show everything. */
   filter?: string
@@ -184,10 +178,6 @@ export function StorageHubPage({
             freeBytes: free,
             totalBytes: total,
             settings: settings.data?.settings,
-            fallback: {
-              lowPercent: LOW_PERCENT,
-              criticalPercent: CRITICAL_PERCENT,
-            },
           })}
           safeReclaimableBytes={safeReclaimableBytes(categories)}
           forecastDays={forecastDays}

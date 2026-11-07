@@ -20,3 +20,26 @@ func TestMibRangeErrorNamesBothUnits(t *testing.T) {
 		t.Errorf("2048 MiB must be accepted: %v", err)
 	}
 }
+
+func TestStoragePercentSettingsRanges(t *testing.T) {
+	for key, c := range map[string]struct{ ok, bad string }{
+		KeyStorageLowFreePercent:      {"15", "51"},
+		KeyStorageCriticalFreePercent: {"5", "26"},
+	} {
+		var def Definition
+		for _, d := range Definitions() {
+			if d.Key == key {
+				def = d
+			}
+		}
+		if def.CheckValue == nil {
+			t.Fatalf("%s is not registered", key)
+		}
+		if err := def.CheckValue(c.ok); err != nil {
+			t.Errorf("%s rejects %s: %v", key, c.ok, err)
+		}
+		if def.CheckValue(c.bad) == nil {
+			t.Errorf("%s accepts %s", key, c.bad)
+		}
+	}
+}

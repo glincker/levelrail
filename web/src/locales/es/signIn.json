@@ -221,7 +221,25 @@
       "ready": "Lista",
       "afterConnect": "Tras conectar"
     },
-    "copyAll": "Copiar todos los pasos"
+    "copyAll": "Copiar todos los pasos",
+    "view": {
+      "label": "Vista de la herramienta de línea de comandos",
+      "clis_one": "{{count}} CLI",
+      "clis_other": "{{count}} CLIs"
+    },
+    "summary": {
+      "lastActivity": "Última actividad {{when}}",
+      "mostRecent": "Más reciente"
+    },
+    "card": {
+      "lastUsed": "Último uso",
+      "from": "Desde",
+      "created": "Creado",
+      "expires": "Caduca",
+      "expiredAt": "Caducó",
+      "unknown": "Aún no visto"
+    },
+    "connectedToast": "CLI conectado"
   },
   "request": {
     "headline": "¿Aprobar este inicio de sesión?",

@@ -5,6 +5,8 @@ export const POLICY_KEYS = {
   keepPerApp: 'images.keep_per_app',
   lowFreeMb: 'disk.low_free_mb',
   criticalFreeMb: 'disk.critical_free_mb',
+  lowFreePercent: 'storage.low_free_percent',
+  criticalFreePercent: 'storage.critical_free_percent',
 } as const
 
 const MB_PER_GB = 1024

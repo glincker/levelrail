@@ -1,4 +1,4 @@
-import { useEffect, useId, useState, type KeyboardEvent } from 'react'
+import { Fragment, useEffect, useId, useState, type KeyboardEvent } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
 import { PinGlassIcon } from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
@@ -19,12 +19,17 @@ import {
   type ExperimentalFeature,
 } from '@/lib/experimental'
 import { LockedFeatureMark } from './LockedFeatureMark'
-import { CollapsibleSection } from './CollapsibleSection'
+import { BetaBadge } from '../BetaBadge'
+import { CollapsibleSection, NAV_ROW_CLASS } from './CollapsibleSection'
 import { NavBadge } from './NavBadge'
+import { cn } from '@/lib/utils'
 import {
   chordFor,
   defaultGroupOpen,
   isGlobalItemActive,
+  isItemDisclosed,
+  itemBadgeCount,
+  FOLDED_GLOBAL_PAGES,
   linkTarget,
   pinnedGlobalItems,
   resolveOpen,
@@ -39,6 +44,7 @@ import { useNavCounts } from './useNavCounts'
 import { usePersistedToggles } from './usePersistedToggles'
 import { GetStartedNavItem } from './GetStartedNavItem'
 import { useNavPins } from './useNavPins'
+import { hueClasses, hueForGroup, hueForItem } from './navHues'
 
 const GLOBAL_NAV_STORAGE_KEY = 'shell.nav.global.open'
 
@@ -124,7 +130,7 @@ function LockedNavLinkItem({
         }
         tooltip={label}
         title={label}
-        className="text-muted-foreground"
+        className={cn(NAV_ROW_CLASS, 'text-sidebar-foreground/75')}
         data-locked="true"
       >
         {item.icon}
@@ -142,12 +148,16 @@ function NavLinkItem({
   counts,
   experimental,
   pin,
+  beta,
+  groupId,
 }: {
   item: GlobalNavItem
+  groupId?: string
   pathname: string
   counts: Record<string, number>
   experimental: readonly string[]
   pin?: PinControl
+  beta?: boolean
 }) {
   const { t } = useTranslation('traffic')
   const { t: tc } = useTranslation()
@@ -155,8 +165,9 @@ function NavLinkItem({
   if (isFeatureLocked(item.feature, experimental)) {
     return <LockedNavLinkItem item={item} feature={item.feature} pin={pin} />
   }
+  const hue = hueClasses(hueForItem(item.id, groupId))
   const chord = chordFor(item.to)
-  const count = item.badge ? (counts[item.badge] ?? 0) : 0
+  const count = itemBadgeCount(item, counts)
   const trafficKey =
     item.badge && item.badge in TRAFFIC_BADGE_KEYS
       ? TRAFFIC_BADGE_KEYS[item.badge as keyof typeof TRAFFIC_BADGE_KEYS]
@@ -179,6 +190,7 @@ function NavLinkItem({
           />
         }
         isActive={isGlobalItemActive(pathname, item)}
+        className={cn(NAV_ROW_CLASS, hue?.icon)}
         title={label}
         tooltip={{
           children: (
@@ -191,6 +203,9 @@ function NavLinkItem({
       >
         {item.icon}
         <span>{label}</span>
+        {beta ? (
+          <BetaBadge className="shrink-0 text-sidebar-foreground/85 group-data-[collapsible=icon]:hidden" />
+        ) : null}
         <NavBadge
           count={count}
           tone={
@@ -214,10 +229,7 @@ function GroupAttention({
   counts: Record<string, number>
 }) {
   const { t } = useTranslation()
-  const total = group.items.reduce(
-    (n, i) => n + (i.badge ? (counts[i.badge] ?? 0) : 0),
-    0,
-  )
+  const total = group.items.reduce((n, i) => n + itemBadgeCount(i, counts), 0)
   return total > 0 ? (
     <NavBadge
       count={total}
@@ -237,6 +249,7 @@ export function GlobalNav() {
   const experimental = useExperimentalFeatures()
   const routeAvailable = useRouteAvailable()
   const groups = visibleGlobalGroups(routeAvailable)
+  const projectsItem = FOLDED_GLOBAL_PAGES.find((i) => i.id === 'projects')
   const { pins, toggle, full, max } = useNavPins()
   const pinned = pinnedGlobalItems(groups, pins)
   const pinFor = (id: string): PinControl => ({
@@ -248,7 +261,7 @@ export function GlobalNav() {
 
   // Decided once on mount so navigating never flips a group the user did not touch.
   const [initialOpen] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(groups.map((gr) => [gr.id, defaultGroupOpen(gr)])),
+    Object.fromEntries(groups.map((gr) => [gr.id, defaultGroupOpen()])),
   )
 
   // Reveal the current page by opening its group, and keep it open.
@@ -262,8 +275,11 @@ export function GlobalNav() {
   }, [pathname, groups, stored, initialOpen, setOpen])
 
   return (
-    <>
-      <div className="flex flex-col gap-1 p-2">
+    <div className="flex max-h-full min-h-0 flex-col">
+      <div
+        data-sidebar-scroll=""
+        className="no-scrollbar flex min-h-0 flex-col gap-2 overflow-y-auto p-2"
+      >
         <GetStartedNavItem />
         {!rail && pinned.length > 0 ? (
           <CollapsibleSection
@@ -277,6 +293,7 @@ export function GlobalNav() {
                 <NavLinkItem
                   key={item.id}
                   item={item}
+                  groupId={groups.find((gr) => gr.items.includes(item))?.id}
                   pathname={pathname}
                   counts={counts}
                   experimental={experimental}
@@ -289,24 +306,26 @@ export function GlobalNav() {
         {groups.map((group) => {
           const menu = (
             <SidebarMenu>
-              {group.items.map((item) =>
-                item.id === 'projects' ? (
-                  <ProjectsNavItem
-                    key={item.id}
-                    item={item}
-                    pathname={pathname}
-                  />
-                ) : (
-                  <NavLinkItem
-                    key={item.id}
-                    item={item}
-                    pathname={pathname}
-                    counts={counts}
-                    experimental={experimental}
-                    pin={pinFor(item.id)}
-                  />
-                ),
-              )}
+              {group.items
+                .filter((item) => isItemDisclosed(item, counts, pathname))
+                .map((item) => (
+                  <Fragment key={item.id}>
+                    <NavLinkItem
+                      item={item}
+                      groupId={group.id}
+                      pathname={pathname}
+                      counts={counts}
+                      experimental={experimental}
+                      pin={pinFor(item.id)}
+                    />
+                    {item.id === 'apps' && projectsItem ? (
+                      <ProjectsNavItem
+                        item={projectsItem}
+                        pathname={pathname}
+                      />
+                    ) : null}
+                  </Fragment>
+                ))}
             </SidebarMenu>
           )
           if (rail || group.ungrouped) {
@@ -329,6 +348,8 @@ export function GlobalNav() {
               header={t(`shell.navGroup.${group.id}`, {
                 defaultValue: group.label,
               })}
+              active={group.items.some((i) => isGlobalItemActive(pathname, i))}
+              chevronClassName={hueClasses(hueForGroup(group.id))?.text}
               hint={<GroupAttention group={group} counts={counts} />}
             >
               {menu}
@@ -336,8 +357,9 @@ export function GlobalNav() {
           )
         })}
       </div>
-      <SidebarGroup className="mt-auto">
-        <SidebarGroupContent>
+      {/* The group list above scrolls on its own; this block never shrinks or clips. */}
+      <SidebarGroup className="shrink-0 px-2 pb-2 pt-2">
+        <SidebarGroupContent className="rounded-lg border border-sidebar-border bg-sidebar-raised p-1">
           <SidebarMenu>
             {visibleGlobalFooter().map((item) => (
               <NavLinkItem
@@ -346,11 +368,12 @@ export function GlobalNav() {
                 pathname={pathname}
                 counts={counts}
                 experimental={experimental}
+                beta={item.feature !== undefined}
               />
             ))}
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
-    </>
+    </div>
   )
 }

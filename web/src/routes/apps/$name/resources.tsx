@@ -8,6 +8,7 @@ import { AppAutoscaleCard } from '../../../components/AppAutoscaleCard'
 import { AppBudgetCard } from '../../../components/AppBudgetCard'
 import { AppScalePanel } from '../../../components/AppScalePanel'
 import { AppReplicaTable } from '../../../components/AppReplicaTable'
+import { AppNextCacheRow } from '../../../components/AppNextCacheRow'
 import { AppCostChip } from '../../../components/usage/AppCostChip'
 
 // Also home to the sleep, autoscale and budget cards, moved off the
@@ -32,6 +33,7 @@ function ResourcesSection() {
       <AppAutoscaleCard appName={name} />
       <AppSleepCard appName={name} />
       <AppBudgetCard appName={name} />
+      <AppNextCacheRow app={app} />
       <LabelsEditor app={app} />
     </div>
   )

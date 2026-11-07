@@ -3,6 +3,7 @@ import { ClockGlassIcon } from '@thesvg/ui-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { CardSkeleton } from '@/components/ui/card-skeleton'
 import { BuildSpeedAdvice } from './BuildSpeedAdvice'
+import { AppBuildCacheRow } from './AppBuildCacheRow'
 import { formatBuildSeconds } from '../lib/buildDuration'
 import { useBuildStats, type BuildRun } from '../queries/buildPerformance'
 
@@ -118,6 +119,7 @@ export function BuildTrendCard({ appName }: { appName: string }) {
             <BuildSpeedAdvice appName={appName} />
           </>
         ) : null}
+        <AppBuildCacheRow appName={appName} />
       </CardContent>
     </Card>
   )

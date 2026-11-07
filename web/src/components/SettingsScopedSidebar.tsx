@@ -2,18 +2,10 @@ import { useCallback, useId, useMemo, useState } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
 import {
   ArrowLeftGlassIcon,
-  ChevronDownGlassIcon,
-  FoldVerticalGlassIcon,
+  ChevronRightGlassIcon,
   PinGlassIcon,
   SearchGlassIcon,
-  SlidersHorizontalGlassIcon,
-  UnfoldVerticalGlassIcon,
 } from '@thesvg/ui-react'
-import {
-  Collapsible,
-  CollapsiblePanel,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible'
 import { Input } from '@/components/ui/input'
 import {
   SidebarGroup,
@@ -38,17 +30,9 @@ import {
 } from './settings/updates/SidebarUpgradeIndicator'
 import { LockedFeatureMark } from './shell/LockedFeatureMark'
 import { matchesPrefix } from './shell/navModel'
-import { isBoolRecord, readJson, writeJson } from './shell/persist'
 import { cn } from '@/lib/utils'
 
-const OPEN_GROUPS_STORAGE_KEY = 'settings-sidebar-open-groups:v2'
-
 const PINS_STORAGE_KEY = 'settings-sidebar-pins:v1'
-const ONE_AT_A_TIME_STORAGE_KEY = 'settings-sidebar-one-at-a-time:v1'
-
-function readStoredOpenGroups(): Record<string, boolean> {
-  return readJson(OPEN_GROUPS_STORAGE_KEY, {}, isBoolRecord)
-}
 
 function readStoredPins(): string[] {
   try {
@@ -56,25 +40,6 @@ function readStoredPins(): string[] {
   } catch {
     return []
   }
-}
-
-function readStoredOneAtATime(): boolean {
-  return readJson(
-    ONE_AT_A_TIME_STORAGE_KEY,
-    false,
-    (v): v is boolean => typeof v === 'boolean',
-  )
-}
-
-/** Groups start closed; only the one holding the current page opens by default. */
-function isGroupOpen(
-  stored: Record<string, boolean>,
-  section: { id: string; items: readonly { to: string }[] },
-  pathname: string,
-): boolean {
-  const remembered = stored[section.id]
-  if (remembered !== undefined) return remembered
-  return section.items.some((item) => matchesPrefix(pathname, item.to))
 }
 
 interface PinControl {
@@ -174,9 +139,6 @@ function SettingsNavLink({
   )
 }
 
-const TOOL_BUTTON =
-  'flex size-8 shrink-0 items-center justify-center rounded-md text-sidebar-foreground/70 ring-sidebar-ring outline-hidden transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 aria-pressed:bg-sidebar-accent aria-pressed:text-sidebar-accent-foreground'
-
 // Renders straight from settingsNavSections so this sidebar and the
 // hub page (routes/settings/index.tsx) can never drift out of sync.
 export function SettingsScopedSidebar() {
@@ -185,11 +147,10 @@ export function SettingsScopedSidebar() {
   const sections = useSettingsNav()
   const [query, setQuery] = useState('')
 
-  const [openGroups, setOpenGroups] =
-    useState<Record<string, boolean>>(readStoredOpenGroups)
+  // The group holding the current page starts open; a click overrides it.
+  const [toggled, setToggled] = useState<Record<string, boolean>>({})
 
   const [pins, setPins] = useState<string[]>(readStoredPins)
-  const [oneAtATime, setOneAtATime] = useState<boolean>(readStoredOneAtATime)
   const maxPins = maxNavPins()
 
   const togglePinned = useCallback((id: string) => {
@@ -204,32 +165,6 @@ export function SettingsScopedSidebar() {
     })
   }, [])
 
-  function toggleOneAtATime() {
-    const next = !oneAtATime
-    setOneAtATime(next)
-    writeJson(ONE_AT_A_TIME_STORAGE_KEY, next)
-  }
-
-  // Every group id is written so remembered state matches what the user sees.
-  function applyOpenGroups(next: Record<string, boolean>) {
-    setOpenGroups(next)
-    writeJson(OPEN_GROUPS_STORAGE_KEY, next)
-  }
-
-  function setGroupOpen(id: string, open: boolean) {
-    if (open && oneAtATime) {
-      applyOpenGroups(
-        Object.fromEntries(sections.map((s) => [s.id, s.id === id])),
-      )
-      return
-    }
-    applyOpenGroups({ ...openGroups, [id]: open })
-  }
-
-  function setAllOpen(open: boolean) {
-    applyOpenGroups(Object.fromEntries(sections.map((s) => [s.id, open])))
-  }
-
   const trimmedQuery = query.trim().toLowerCase()
   const isSearching = trimmedQuery.length > 0
 
@@ -237,6 +172,12 @@ export function SettingsScopedSidebar() {
     () => filterSettingsNav(sections, query),
     [sections, query],
   )
+
+  const pathArea =
+    sections.find((section) =>
+      section.items.some((item) => matchesPrefix(pathname, item.to)),
+    )?.id ?? null
+  const isOpen = (id: string) => toggled[id] ?? id === pathArea
 
   const pinFor = (id: string): PinControl => ({
     pinned: pins.includes(id),
@@ -256,11 +197,7 @@ export function SettingsScopedSidebar() {
     })
   }, [pins, sections])
 
-  const allOpen =
-    visibleSections.length > 0 &&
-    visibleSections.every((section) =>
-      isGroupOpen(openGroups, section, pathname),
-    )
+  const searchResults = visibleSections.flatMap((section) => section.items)
 
   return (
     <>
@@ -282,54 +219,27 @@ export function SettingsScopedSidebar() {
 
       <SidebarGroup className="py-0">
         <SidebarGroupContent>
-          <div className="flex items-center gap-1">
-            <div className="relative min-w-0 flex-1">
-              <SearchGlassIcon
-                className="pointer-events-none absolute top-1/2 left-2.5 size-5 -translate-y-1/2 text-muted-foreground"
-                aria-hidden="true"
-              />
-              <Input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder={t('nav.search')}
-                aria-label={t('nav.search')}
-                className="h-8 pl-9"
-              />
-            </div>
-            <button
-              type="button"
-              className={TOOL_BUTTON}
-              disabled={isSearching}
-              aria-label={t(allOpen ? 'nav.collapseAll' : 'nav.expandAll')}
-              title={t(allOpen ? 'nav.collapseAll' : 'nav.expandAll')}
-              onClick={() => setAllOpen(!allOpen)}
-            >
-              {allOpen ? (
-                <FoldVerticalGlassIcon size="1.4em" aria-hidden="true" />
-              ) : (
-                <UnfoldVerticalGlassIcon size="1.4em" aria-hidden="true" />
-              )}
-            </button>
-            <button
-              type="button"
-              className={TOOL_BUTTON}
-              aria-pressed={oneAtATime}
-              aria-label={t('nav.oneAtATime')}
-              title={t('nav.oneAtATime')}
-              onClick={toggleOneAtATime}
-            >
-              <SlidersHorizontalGlassIcon size="1.4em" aria-hidden="true" />
-            </button>
+          <div className="relative min-w-0">
+            <SearchGlassIcon
+              className="pointer-events-none absolute top-1/2 left-2.5 size-5 -translate-y-1/2 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <Input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={t('nav.search')}
+              aria-label={t('nav.search')}
+              className="h-8 pl-9"
+            />
           </div>
         </SidebarGroupContent>
       </SidebarGroup>
 
-      {!isSearching && pinnedItems.length > 0 ? (
+      {isSearching ? (
         <SidebarGroup className="py-1">
-          <SidebarGroupLabel>{t('nav.pins.group')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {pinnedItems.map((item) => (
+              {searchResults.map((item) => (
                 <SettingsNavLink
                   key={item.to}
                   item={item}
@@ -340,62 +250,87 @@ export function SettingsScopedSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-      ) : null}
-
-      {visibleSections.map((section) => {
-        // While searching, every matching group is forced open and the
-        // trigger is disabled so a stray click doesn't collapse a group the
-        // user will see restored once they clear the query.
-        const isOpen = isSearching
-          ? true
-          : isGroupOpen(openGroups, section, pathname)
-
-        return (
-          <SidebarGroup key={section.id} className="py-0.5">
-            <Collapsible
-              open={isOpen}
-              disabled={isSearching}
-              onOpenChange={(open) => setGroupOpen(section.id, open)}
-            >
-              <CollapsibleTrigger className="group/settings-section">
-                <SidebarGroupLabel className="h-8 cursor-pointer justify-between">
-                  <span className="flex min-w-0 items-baseline gap-1.5">
-                    <span className="truncate" title={section.title}>
-                      {section.title}
-                    </span>
-                    <span
-                      className="text-xs text-sidebar-foreground/45 tabular-nums"
-                      title={t('nav.groupCount', {
-                        count: section.items.length,
-                      })}
-                    >
-                      {section.items.length}
-                    </span>
-                  </span>
-                  <ChevronDownGlassIcon
-                    className="size-5 shrink-0 text-sidebar-foreground/50 transition-transform group-data-panel-open/settings-section:rotate-180"
-                    aria-hidden="true"
-                  />
-                </SidebarGroupLabel>
-              </CollapsibleTrigger>
-              <CollapsiblePanel className="mb-0 pb-1">
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    {section.items.map((item) => (
-                      <SettingsNavLink
-                        key={item.to}
-                        item={item}
-                        pathname={pathname}
-                        pin={pinFor(item.to)}
-                      />
-                    ))}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </CollapsiblePanel>
-            </Collapsible>
+      ) : (
+        <>
+          {pinnedItems.length > 0 ? (
+            <SidebarGroup className="py-1">
+              <SidebarGroupLabel>{t('nav.pins.group')}</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {pinnedItems.map((item) => (
+                    <SettingsNavLink
+                      key={item.to}
+                      item={item}
+                      pathname={pathname}
+                      pin={pinFor(item.to)}
+                    />
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          ) : null}
+          <SidebarGroup className="py-1">
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {sections.map((section) => {
+                  const open = isOpen(section.id)
+                  const listId = `settings-group-${section.id}`
+                  return (
+                    <SidebarMenuItem key={section.id}>
+                      <SidebarMenuButton
+                        aria-expanded={open}
+                        aria-controls={listId}
+                        onClick={() => {
+                          setToggled((prev) => ({
+                            ...prev,
+                            [section.id]: !open,
+                          }))
+                        }}
+                        tooltip={section.title}
+                        className={cn(open && 'font-medium')}
+                      >
+                        <ChevronRightGlassIcon
+                          className={cn(
+                            'size-5 shrink-0 text-sidebar-foreground/50 transition-transform motion-reduce:transition-none',
+                            open && 'rotate-90',
+                          )}
+                          aria-hidden="true"
+                        />
+                        <span className="truncate" title={section.title}>
+                          {section.title}
+                        </span>
+                        <span
+                          className="ml-auto text-xs text-sidebar-foreground/45 tabular-nums"
+                          title={t('nav.groupCount', {
+                            count: section.items.length,
+                          })}
+                        >
+                          {section.items.length}
+                        </span>
+                      </SidebarMenuButton>
+                      {open ? (
+                        <SidebarMenu
+                          id={listId}
+                          className="mt-0.5 mb-1 ml-4 border-l pl-1"
+                        >
+                          {section.items.map((item) => (
+                            <SettingsNavLink
+                              key={item.to}
+                              item={item}
+                              pathname={pathname}
+                              pin={pinFor(item.to)}
+                            />
+                          ))}
+                        </SidebarMenu>
+                      ) : null}
+                    </SidebarMenuItem>
+                  )
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
           </SidebarGroup>
-        )
-      })}
+        </>
+      )}
     </>
   )
 }

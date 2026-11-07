@@ -40,6 +40,8 @@ func runDomains(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runDomainsWatch(prog, args[1:], stdout, stderr, lookupEnv)
 	case "check":
 		return runDomainsCheck(prog, args[1:], stdout, stderr, lookupEnv)
+	case "check-all":
+		return runDomainsCheckAll(prog, args[1:], stdout, stderr, lookupEnv)
 	case "doctor":
 		return runDomainsDoctor(prog, args[1:], stdout, stderr, lookupEnv)
 	case "www-apply":
@@ -132,6 +134,7 @@ func domainsUsage(prog string) string {
   %[1]s domains wait <domain> [--timeout 10m]   wait until a new domain is live (DNS and certificate)
   %[1]s domains watch list [flags]              list the domains being followed in the background
   %[1]s domains www-apply <app> <domain> [--mode both|apex_only|www_only] [--canonical apex|www] [--replace] [--yes]   write apex and www DNS records
+  %[1]s domains check-all [--app <name>] [flags]  check every domain: DNS, certificate, site, next step
   %[1]s domains doctor <app> <domain> [flags]   run every domain check and print a prioritised fix list
   %[1]s domains www-plan <app> <domain> [--mode both|apex_only|www_only] [--canonical apex|www]   preview apex and www DNS records
   %[1]s domains diagnose <domain> [flags]       why isn't my domain working: every check with the exact fix, optionally applied with --fix

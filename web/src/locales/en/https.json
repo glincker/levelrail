@@ -106,7 +106,8 @@
     "proxyRenews": "Managed by your proxy, renews automatically.",
     "proxyUnknown": "Managed by your proxy. Not seen yet: verify the route on the proxy page.",
     "proxyLink": "Open the proxy page",
-    "getTrusted": "Get a trusted certificate"
+    "getTrusted": "Get a trusted certificate",
+    "useOwn": "Use my own certificate"
   },
   "domainCert": {
     "action": "Get a real certificate",

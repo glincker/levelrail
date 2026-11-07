@@ -24,6 +24,7 @@ var responseStructName = regexp.MustCompile(`(Resource|Response)$`)
 // deliberately serialized. Add an entry only with the reason it is safe (input-only request body, show-once
 // value at creation, a name or flag rather than a value).
 var sensitiveFieldAllowlist = map[string]string{ //nolint:gosec // field names and reasons, not credentials
+	"jobHeaderResource.SecretRef":                       "names an app env var, the value is never returned",
 	"statusWebhookSecretResource.SigningSecret":         "show-once signing secret returned at create and rotate, never listed",
 	"mcpTokenResponse.AccessToken":                      "OAuth token endpoint response per RFC 6749, issued once, no-store, short lived",
 	"mcpTokenResponse.RefreshToken":                     "OAuth token endpoint response per RFC 6749, rotates on every use, only its hash is stored",

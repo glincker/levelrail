@@ -186,7 +186,7 @@ func TestRun_AppsDeploys_Help(t *testing.T) {
 
 func TestRun_AppsDeploys_UnknownSubcommand(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	got := run("levelrail-cli-test", []string{"apps", "deploys", "bogus"}, &stdout, &stderr, envMap())
+	got := run("levelrail-cli-test", []string{"apps", "deploys", "--bogus"}, &stdout, &stderr, envMap())
 	if got != exitUsage {
 		t.Fatalf("exit = %d, want %d", got, exitUsage)
 	}

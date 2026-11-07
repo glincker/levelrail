@@ -9,6 +9,8 @@ import { DOMAIN_PATTERN } from '../lib/domainWizard'
 import { DomainEnvironmentTabs } from './DomainEnvironmentTabs'
 import { DomainRowTools } from './domains/DomainRowTools'
 import { DomainStepper } from './domains/DomainStepper'
+import { DomainMoreOptions } from './domains/DomainMoreOptions'
+import { DomainWwwCard } from './domains/DomainWwwCard'
 import type { AppDetail } from '../types/appDetail'
 import { useUpdateApp } from '../queries/apps'
 import { useCertificates } from '../queries/certificates'
@@ -227,6 +229,14 @@ export function DomainEditor({ app }: { app: AppDetail }) {
                                 )}
                               </div>
                               <ProxyDomainStatus
+                                appName={app.name}
+                                domain={domain}
+                              />
+                              <DomainWwwCard
+                                appName={app.name}
+                                domain={domain}
+                              />
+                              <DomainMoreOptions
                                 appName={app.name}
                                 domain={domain}
                               />

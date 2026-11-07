@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { ArrowUpGlassIcon } from '@thesvg/ui-react'
 import { TONE, type Tone } from '@/components/kit/tone'
 import { cn } from '@/lib/utils'
 import type { ShellStatus } from '@/lib/shellStatus'
@@ -32,10 +33,12 @@ export function VersionFooterView({
   // The update is its own line; the dot stays a health signal.
   const health = status === 'update' ? 'healthy' : status
   const version = current ? displayVersion(current) : null
-  const update =
-    updateAvailable && latest
+  // A missing latest version must not hide the update line.
+  const update = updateAvailable
+    ? latest
       ? t('shell.account.updateAvailable', { version: displayVersion(latest) })
-      : null
+      : t('shell.account.updateAvailableShort')
+    : null
   const healthLabel = t(`shell.logoStatus.${health}`)
   const name = [t('shell.account.controlPlane'), version]
     .filter(Boolean)
@@ -46,7 +49,7 @@ export function VersionFooterView({
       to="/settings/updates"
       aria-label={label}
       title={label}
-      className="flex items-center gap-2 truncate rounded-md px-2 py-1 text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none group-data-[collapsible=icon]:justify-center"
+      className="flex h-7 cursor-pointer items-center gap-2 truncate rounded-md px-2.5 text-xs text-sidebar-foreground/80 transition-colors duration-150 ease-out hover:bg-state-accent/10 hover:text-sidebar-foreground active:bg-state-accent/15 motion-reduce:transition-none focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none group-data-[collapsible=icon]:justify-center"
     >
       <span
         data-testid="health-dot"
@@ -58,19 +61,26 @@ export function VersionFooterView({
         )}
       />
       {version ? (
-        <span className="font-mono group-data-[collapsible=icon]:hidden">
+        <span className="shrink-0 font-mono group-data-[collapsible=icon]:hidden">
           {version}
         </span>
       ) : null}
       {update ? (
         <span
           data-testid="version-update"
-          className={cn(
-            'truncate group-data-[collapsible=icon]:hidden',
-            TONE.warning.text,
-          )}
+          className="flex min-w-0 flex-1 items-center gap-1 group-data-[collapsible=icon]:hidden"
         >
-          {update}
+          <ArrowUpGlassIcon
+            size="1.4em"
+            aria-hidden="true"
+            className={cn('size-3 shrink-0', TONE.warning.text)}
+          />
+          <span
+            title={update}
+            className="min-w-0 truncate underline-offset-2 hover:underline"
+          >
+            {update}
+          </span>
         </span>
       ) : null}
     </Link>

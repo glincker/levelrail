@@ -37,9 +37,9 @@ func printTagsTable(out io.Writer, tags []tagResource) {
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "ID\tNAME\tCREATED")
+	_, _ = fmt.Fprintln(tw, "ID\tNAME\tAPPS\tRESOURCES\tCREATED")
 	for _, t := range tags {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\n", t.ID, t.Name, t.CreatedAt)
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%d\t%d\t%s\n", t.ID, t.Name, t.AppCount, t.ResourceCount, t.CreatedAt)
 	}
 	_ = tw.Flush()
 }

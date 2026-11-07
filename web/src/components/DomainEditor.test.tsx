@@ -91,6 +91,12 @@ vi.mock('./DomainSearchVisibilityControl', () => ({
 }))
 vi.mock('./DomainTLSCertControl', () => ({ DomainTLSCertControl: () => null }))
 vi.mock('./DomainWafControl', () => ({ DomainWafControl: () => null }))
+vi.mock('./domains/DomainMoreOptions', () => ({
+  DomainMoreOptions: () => <div data-testid="more-options" />,
+}))
+vi.mock('./domains/DomainWwwCard', () => ({
+  DomainWwwCard: () => <div data-testid="www-card" />,
+}))
 vi.mock('./domains/DomainRowTools', () => ({
   DomainRowTools: () => <div data-testid="row-tools" />,
 }))
@@ -142,6 +148,8 @@ describe('DomainEditor', () => {
     })
     expect(screen.getByText('proxy tls')).toBeInTheDocument()
     expect(screen.getByTestId('row-tools')).toBeInTheDocument()
+    expect(screen.getByTestId('more-options')).toBeInTheDocument()
+    expect(screen.getByTestId('www-card')).toBeInTheDocument()
   })
 
   it('adds an empty row and removes a row', async () => {

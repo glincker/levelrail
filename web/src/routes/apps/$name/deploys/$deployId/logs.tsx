@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useDeployDetailT } from '../../../../../components/deployDetail/useDeployDetailT'
 import { useLogStream } from '../../../../../hooks/useLogStream'
@@ -38,9 +38,17 @@ import { DeployStatusCard } from '../../../../../components/deployDetail/DeployS
 import { DeployLiveStatus } from '../../../../../components/deployDetail/DeployLiveStatus'
 import { StreamDropBanner } from '../../../../../components/deployDetail/StreamDropBanner'
 import { BuildTab } from '../../../../../components/deployDetail/BuildTab'
+import { DeployPhases } from '../../../../../components/deployDetail/DeployPhases'
 import { RolloutTab } from '../../../../../components/deployDetail/RolloutTab'
 import { buildTimelineRows } from '../../../../../components/deployDetail/timelineRows'
 import { Skeleton } from '@/components/ui/skeleton'
+
+// Lazy so the report table stays out of the deploy detail chunk until the build tab opens.
+const BuildReportSection = lazy(() =>
+  import('../../../../../components/deployDetail/BuildReportSection').then(
+    (m) => ({ default: m.BuildReportSection }),
+  ),
+)
 
 // Sources whose deploy pulls an image as is: no build runs.
 const IMAGE_ONLY_SOURCES: ReadonlySet<string> = new Set([
@@ -247,6 +255,14 @@ function DeployLogsPage() {
           </div>
         </div>
 
+        <DeployPhases
+          deployId={deployId}
+          running={!attemptFinished}
+          lastEventAt={lastEventAt}
+          streamHealthy={transport === 'sse' && connectionState === 'open'}
+          latestLine={lines.at(-1)?.line ?? null}
+        />
+
         <StreamDropBanner
           transport={transport}
           connectionState={connectionState}
@@ -275,6 +291,11 @@ function DeployLogsPage() {
               pause={pause}
               resume={resume}
             />
+            {attemptFinished ? (
+              <Suspense fallback={null}>
+                <BuildReportSection appName={name} deployId={deployId} />
+              </Suspense>
+            ) : null}
           </div>
         ) : null}
 

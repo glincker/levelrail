@@ -1,6 +1,9 @@
 package api
 
-import "testing"
+import (
+	"context"
+	"testing"
+)
 
 func TestDefaultImageRepo(t *testing.T) {
 	const sha = "fe49a4b97c2100c26188d2845a386c58e9610350"
@@ -25,4 +28,44 @@ func TestDefaultImageRepo(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestManualBuild_KeepsDomainAttachedDuringBuild(t *testing.T) {
+	t.Parallel()
+	fb := newFakeBuilder("levelrail/web:abc123", nil)
+	fb.release = make(chan struct{})
+	fetch := newFakeFetch(t.TempDir(), nil)
+	db := openTestDB(t)
+	rt := NewRouter(nil, testBrand(), db, WithBuilder(fb))
+	rt.fetch = fetch.fetch
+	cookie := loginTestSession(t, rt, db)
+	seedWebApp(t, db)
+
+	_, resp := postTriggerBuildAccepted(t, rt, cookie, `{"repo_url":"https://example.com/web.git","ref":"main"}`)
+	req := <-fb.notify
+
+	stored, err := db.GetDesiredService(context.Background(), "web")
+	if err != nil {
+		t.Fatalf("GetDesiredService() error = %v", err)
+	}
+	cur := *stored
+	cur.Domains = []string{"web.example.com"}
+	if err := db.SaveDesiredService(context.Background(), cur); err != nil {
+		t.Fatalf("SaveDesiredService() error = %v", err)
+	}
+
+	// The pipeline saves from a snapshot taken at trigger time, with no domains.
+	snapshot := cur
+	snapshot.Domains = nil
+	if req.RefreshDesired == nil {
+		t.Fatal("RefreshDesired = nil, want a hook that keeps stored domains")
+	}
+	if err := req.RefreshDesired(context.Background(), &snapshot); err != nil {
+		t.Fatalf("RefreshDesired() error = %v", err)
+	}
+	if len(snapshot.Domains) != 1 || snapshot.Domains[0] != "web.example.com" {
+		t.Errorf("Domains = %v, want [web.example.com]", snapshot.Domains)
+	}
+	close(fb.release)
+	awaitDeployAttemptFinished(t, db, resp.ID)
 }

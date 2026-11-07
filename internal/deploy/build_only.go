@@ -40,7 +40,7 @@ func (p *Pipeline) BuildOnly(ctx context.Context, req BuildOnlyRequest, progress
 		}
 		res, err = p.builder.Build(ctx, build.Request{ContextDir: root, DockerfilePath: dockerfile, RootDir: req.SourceDir, Tag: req.Tag, BuildArgs: req.Args}, progress)
 	case "railpack":
-		res, err = p.builder.BuildRailpack(ctx, build.RailpackRequest{SourceDir: root, Tag: req.Tag}, progress)
+		res, err = p.builder.BuildRailpack(ctx, build.RailpackRequest{SourceDir: root, Tag: req.Tag, CacheID: build.SanitizeCacheID(build.AppFromTag(req.Tag), req.Tag)}, progress)
 		var unsupported *build.UnsupportedProviderError
 		if errors.As(err, &unsupported) {
 			return "", fmt.Errorf("deploy: build only: railpack detected unsupported provider %q", unsupported.Provider)

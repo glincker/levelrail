@@ -71,6 +71,10 @@ type RailpackRequest struct {
 	// Env is build-time env, as Railpack's own --env does. Callers pass only
 	// public-prefix literals; it reaches every build step as an env var.
 	Env map[string]string
+	// CacheID scopes Railpack cache mounts (.next/cache, package stores) to one app. Empty derives it from Tag.
+	CacheID string
+
+	perAppCache bool
 }
 
 // ErrRailpackSourceDirRequired and ErrRailpackTagRequired are returned by
@@ -222,6 +226,10 @@ func newRailpackSolveOpt(ctx context.Context, plan *rpplan.BuildPlan, req Railpa
 		return nil, nil, fmt.Errorf("build: railpack: invalid source dir %q: %w", req.SourceDir, err)
 	}
 
+	cacheID := req.CacheID
+	if !req.perAppCache {
+		cacheID = ""
+	}
 	platform, err := rpbuildkit.ParsePlatformWithDefaults("")
 	if err != nil {
 		return nil, nil, fmt.Errorf("build: railpack: resolve build platform: %w", err)
@@ -232,16 +240,20 @@ func newRailpackSolveOpt(ctx context.Context, plan *rpplan.BuildPlan, req Railpa
 	_, image, err := rpbuildkit.ConvertPlanToLLB(plan, rpbuildkit.ConvertPlanOptions{
 		BuildPlatform: platform,
 		SecretsHash:   railpackEnvHash(req.Env),
+		CacheKey:      cacheID,
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("build: railpack: convert plan to LLB: %w", err)
 	}
 
-	llbState, err := deployStateWithoutMerge(plan, platform, railpackEnvHash(req.Env))
+	llbState, err := deployStateWithoutMerge(plan, platform, railpackEnvHash(req.Env), cacheID)
 	if err != nil {
 		return nil, nil, fmt.Errorf("build: railpack: assemble deploy image: %w", err)
 	}
 
+	if _, userSet := req.Env["NODE_OPTIONS"]; req.NodeHeapMB > 0 && !userSet {
+		image.Config.Env = dropBuildHeapEnv(image.Config.Env, req.NodeHeapMB)
+	}
 	imageConfig, err := json.Marshal(image)
 	if err != nil {
 		return nil, nil, fmt.Errorf("build: railpack: marshal image config: %w", err)
@@ -292,7 +304,7 @@ func newRailpackSolveOpt(ctx context.Context, plan *rpplan.BuildPlan, req Railpa
 // only unblocking on context cancellation). ConvertPlanOptions has no
 // field to opt out, so this reimplements just that one step with the same
 // exported build_llb building blocks ConvertPlanToLLB itself uses.
-func deployStateWithoutMerge(plan *rpplan.BuildPlan, platform specs.Platform, secretsHash string) (*llb.State, error) {
+func deployStateWithoutMerge(plan *rpplan.BuildPlan, platform specs.Platform, secretsHash, cacheID string) (*llb.State, error) {
 	localOpts := []llb.LocalOption{
 		llb.SharedKeyHint("local"),
 		llb.WithCustomName("loading ."),
@@ -302,7 +314,7 @@ func deployStateWithoutMerge(plan *rpplan.BuildPlan, platform specs.Platform, se
 	}
 	localState := llb.Local("context", localOpts...)
 
-	graph, err := build_llb.NewBuildGraph(plan, &localState, build_llb.NewBuildKitCacheStore(""), secretsHash, &platform, "", false)
+	graph, err := build_llb.NewBuildGraph(plan, &localState, build_llb.NewBuildKitCacheStore(cacheID), secretsHash, &platform, "", false)
 	if err != nil {
 		return nil, fmt.Errorf("build: railpack: build graph: %w", err)
 	}
@@ -399,6 +411,14 @@ func (c *Client) solveRailpack(ctx context.Context, req RailpackRequest, out io.
 		return nil, err
 	}
 
+	req.perAppCache = perAppCacheEnabled(ctx)
+	if req.perAppCache {
+		req.CacheID = SanitizeCacheID(req.CacheID, req.Tag)
+		progress(ProgressEvent{Step: "build cache", Log: c.cacheLogLine(ctx, req.CacheID), Stream: "stdout"})
+	} else {
+		progress(ProgressEvent{Step: "build cache", Log: "build cache: per app cache id disabled, using the shared cache", Stream: "stdout"})
+	}
+
 	result, err := generateRailpackPlan(req)
 	if err != nil {
 		return nil, err
@@ -465,6 +485,18 @@ func railpackSession(env map[string]string) []session.Attachable {
 		m[k] = []byte(v)
 	}
 	return []session.Attachable{secretsprovider.FromMap(m)}
+}
+
+// dropBuildHeapEnv removes the build-time heap cap from the image env so it never limits the running app.
+func dropBuildHeapEnv(env []string, heapMB int) []string {
+	injected := fmt.Sprintf("NODE_OPTIONS=--max-old-space-size=%d", heapMB)
+	out := env[:0:0]
+	for _, e := range env {
+		if e != injected {
+			out = append(out, e)
+		}
+	}
+	return out
 }
 
 // applyNodeHeap sets NODE_OPTIONS on the install and build steps unless the plan already sets it, and returns the log line (keys only).

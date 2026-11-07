@@ -55,6 +55,14 @@ func toScheduledTask(j spec.Job) (store.ScheduledTask, error) {
 	if j.Mode == spec.JobModeExec {
 		t.Mode = store.ScheduledTaskModeExec
 	}
+	if j.HTTP != nil {
+		t.Mode = store.ScheduledTaskModeHTTP
+		h := store.ScheduledTaskHTTP{Method: j.HTTP.Method, Path: j.HTTP.Path, Body: j.HTTP.Body, Background: j.HTTP.Background}
+		for _, hd := range j.HTTP.Headers {
+			h.Headers = append(h.Headers, store.ScheduledTaskHeader{Name: hd.Name, Value: hd.Value, SecretRef: hd.SecretRef, Prefix: hd.Prefix})
+		}
+		t.SpecHTTP = &h
+	}
 	if j.Concurrency != "" {
 		t.ConcurrencyPolicy = j.Concurrency
 	}

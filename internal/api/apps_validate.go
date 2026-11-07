@@ -74,6 +74,13 @@ func validateAppResourceWith(a appResource, storedPortless bool) error {
 			return fmt.Errorf("bind_address: %w", err)
 		}
 	}
+	// Empty defers to the app.yaml next.cache value.
+	if a.NextCache != "" && a.NextCache != spec.NextCacheNone && a.NextCache != spec.NextCacheRedis {
+		return fmt.Errorf("next_cache must be %q or %q", spec.NextCacheNone, spec.NextCacheRedis)
+	}
+	if a.NextImageCache != "" && a.NextImageCache != spec.NextImageCacheNone && a.NextImageCache != spec.NextImageCachePersistent {
+		return fmt.Errorf("next_image_cache must be %q or %q", spec.NextImageCacheNone, spec.NextImageCachePersistent)
+	}
 	// Empty is valid (falls through to store.DefaultDeployStrategy), but
 	// a non-empty value that isn't one of the three known spec constants
 	// is almost certainly a typo, and worth rejecting loudly here rather

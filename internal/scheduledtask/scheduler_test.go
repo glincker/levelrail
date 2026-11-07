@@ -321,3 +321,14 @@ func TestScheduler_DisabledJobDoesNotRunAndReenableDoesNotBackfill(t *testing.T)
 		t.Fatalf("re-enabling backfilled %d missed rows, want 0", len(missed))
 	}
 }
+
+func TestUntilNextBoundaryAlignsToInterval(t *testing.T) {
+	now := time.Date(2026, 1, 1, 10, 0, 31, 0, time.UTC)
+	if got := untilNextBoundary(now, time.Minute); got != 29*time.Second {
+		t.Fatalf("wait = %s, want 29s", got)
+	}
+	on := time.Date(2026, 1, 1, 10, 1, 0, 0, time.UTC)
+	if got := untilNextBoundary(on, time.Minute); got != time.Minute {
+		t.Fatalf("on boundary wait = %s, want a full interval", got)
+	}
+}

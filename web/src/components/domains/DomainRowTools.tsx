@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
   ArrowRightGlassIcon,
@@ -8,14 +9,13 @@ import {
 } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import type { TargetKind } from '../../queries/parkedDomains'
-import { DomainDetailSheet } from './DomainDetailSheet'
 import {
   DeleteDomainDialog,
   MoveDomainDialog,
   ParkDomainDialog,
 } from './DomainLifecycleDialogs'
 
-type Tool = 'details' | 'park' | 'move' | 'delete'
+type Tool = 'park' | 'move' | 'delete'
 
 // Compact action row for one saved domain on the per-app page. In an
 // environment tab (environment set) only park and move apply, the row's own
@@ -46,9 +46,13 @@ export function DomainRowTools({
           type="button"
           size="sm"
           variant="outline"
-          onClick={() => {
-            setTool('details')
-          }}
+          render={
+            <Link
+              to="/apps/$name/domains/$domain"
+              params={{ name: appName, domain }}
+            />
+          }
+          nativeButton={false}
         >
           <SettingsGlassIcon size="1.4em" aria-hidden="true" />
           {t('page.row.details')}
@@ -89,14 +93,6 @@ export function DomainRowTools({
           {t('page.row.delete')}
         </Button>
       )}
-      {tool === 'details' ? (
-        <DomainDetailSheet
-          appName={appName}
-          domain={domain}
-          open
-          onOpenChange={close}
-        />
-      ) : null}
       {tool === 'park' ? (
         <ParkDomainDialog
           app={appName}

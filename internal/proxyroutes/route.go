@@ -104,6 +104,9 @@ type Route struct {
 	// and privkey.pem (nginx). Webroot, when set, serves ACME challenges.
 	CertDir string
 	Webroot string
+	// Redirect marks a domain with a configured redirect: plain http goes
+	// straight to the upstream so it answers with one hop, not two.
+	Redirect bool
 }
 
 // ValidateName checks an entrypoint or resolver name before it is written
@@ -189,9 +192,14 @@ func (n Namespace) Render(r Route) ([]byte, error) {
 	} else {
 		b.WriteString("      tls: {}\n")
 	}
-	fmt.Fprintf(&b, "    %s-http:\n      rule: Host(`%s`)\n      entryPoints: [%s]\n      middlewares: [%s-https]\n      service: %s\n      priority: %d\n",
-		obj, d, r.EntrypointHTTP, obj, obj, prio)
-	fmt.Fprintf(&b, "  middlewares:\n    %s-https:\n      redirectScheme:\n        scheme: https\n        permanent: true\n", obj)
+	if r.Redirect {
+		fmt.Fprintf(&b, "    %s-http:\n      rule: Host(`%s`)\n      entryPoints: [%s]\n      service: %s\n      priority: %d\n",
+			obj, d, r.EntrypointHTTP, obj, prio)
+	} else {
+		fmt.Fprintf(&b, "    %s-http:\n      rule: Host(`%s`)\n      entryPoints: [%s]\n      middlewares: [%s-https]\n      service: %s\n      priority: %d\n",
+			obj, d, r.EntrypointHTTP, obj, obj, prio)
+		fmt.Fprintf(&b, "  middlewares:\n    %s-https:\n      redirectScheme:\n        scheme: https\n        permanent: true\n", obj)
+	}
 	fmt.Fprintf(&b, "  services:\n    %s:\n      loadBalancer:\n        passHostHeader: true\n        servers:\n          - url: http://%s\n", obj, r.Upstream)
 	return b.Bytes(), nil
 }

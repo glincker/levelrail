@@ -42,6 +42,7 @@ import type tokensNotices from '../locales/en/tokensNotices.json'
 import type firstRun from '../locales/en/firstRun.json'
 import type newAppNoGit from '../locales/en/newAppNoGit.json'
 import type appOverview from '../locales/en/appOverview.json'
+import type webVitals from '../locales/en/webVitals.json'
 import type exposure from '../locales/en/exposure.json'
 import type appExposure from '../locales/en/appExposure.json'
 import type appAccess from '../locales/en/appAccess.json'
@@ -71,6 +72,7 @@ import type dns from '../locales/en/dns.json'
 import type domainPolicies from '../locales/en/domainPolicies.json'
 import type observability from '../locales/en/observability.json'
 import type trialApp from '../locales/en/trialApp.json'
+import type tags from '../locales/en/tags.json'
 import type previews from '../locales/en/previews.json'
 import type branchDeploys from '../locales/en/branchDeploys.json'
 import type deployContexts from '../locales/en/deployContexts.json'
@@ -89,6 +91,7 @@ import type eventWebhooks from '../locales/en/eventWebhooks.json'
 import type mcpConsent from '../locales/en/mcpConsent.json'
 import type trafficExport from '../locales/en/trafficExport.json'
 import type maintenance from '../locales/en/maintenance.json'
+import type appBuildCache from '../locales/en/appBuildCache.json'
 import type buildPerformance from '../locales/en/buildPerformance.json'
 import type janitor from '../locales/en/janitor.json'
 import type cleanup from '../locales/en/cleanup.json'
@@ -136,6 +139,7 @@ import type secretRotation from '../locales/en/secretRotation.json'
 import type encryptionKeys from '../locales/en/encryptionKeys.json'
 import type templates from '../locales/en/templates.json'
 import type models from '../locales/en/models.json'
+import type hubs from '../locales/en/hubs.json'
 import type aiAssistant from '../locales/en/aiAssistant.json'
 import type demo from '../locales/en/demo.json'
 import type secretScan from '../locales/en/secretScan.json'
@@ -179,6 +183,7 @@ declare module 'i18next' {
       firstRun: typeof firstRun
       newAppNoGit: typeof newAppNoGit
       appOverview: typeof appOverview
+      webVitals: typeof webVitals
       exposure: typeof exposure
       appExposure: typeof appExposure
       appAccess: typeof appAccess
@@ -264,18 +269,21 @@ declare module 'i18next' {
       secretRotation: typeof secretRotation
       encryptionKeys: typeof encryptionKeys
       models: typeof models
+      hubs: typeof hubs
       templates: typeof templates
       aiAssistant: typeof aiAssistant
       demo: typeof demo
       secretScan: typeof secretScan
       appFiles: typeof appFiles
       maintenance: typeof maintenance
+      appBuildCache: typeof appBuildCache
       buildPerformance: typeof buildPerformance
       janitor: typeof janitor
       cleanup: typeof cleanup
       sso: typeof sso
       cdn: typeof cdn
       trialApp: typeof trialApp
+      tags: typeof tags
       deployPolicies: typeof deployPolicies
       deployDetail: typeof deployDetail
       staticRoutes: typeof staticRoutes

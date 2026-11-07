@@ -71,6 +71,7 @@ func (rt *Router) teardownPreviewRecordReason(ctx context.Context, preview store
 		return http.StatusInternalServerError, "internal error\n"
 	}
 
+	rt.dropPreviewBuildCache(ctx, preview.PreviewAppID)
 	rt.notifyPreviewRemoved(ctx, preview, reason)
 
 	rt.logger.Info("api: preview torn down", slog.String("app_name", preview.AppName), slog.Int("pr_number", preview.PRNumber))

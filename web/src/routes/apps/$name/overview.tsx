@@ -30,6 +30,12 @@ const AppAnalysis = lazy(() =>
   })),
 )
 
+const NextStatusCard = lazy(() =>
+  import('../../../components/apps/NextStatusCard').then((m) => ({
+    default: m.NextStatusCard,
+  })),
+)
+
 // The loader primes deploy attempts (same query the Deploys tab uses); app
 // and conditions come from the cache the parent layout route already primed.
 export const Route = createFileRoute('/apps/$name/overview')({
@@ -51,6 +57,7 @@ function OverviewSection() {
       <OverviewPage app={app} conditions={conditions} attempts={attempts} />
       <Suspense fallback={null}>
         <AppResourceTree app={app} conditions={conditions} />
+        <NextStatusCard app={app} />
         <AppReleases appName={name} />
         <AppAnalysis appName={name} />
       </Suspense>

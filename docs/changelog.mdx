@@ -4,6 +4,218 @@ description: Every Levelrail release with highlights, fixes and upgrade notes.
 "og:url": "https://docs.levelrail.com/changelog"
 ---
 
+<Update label="0.9.2" description="2026-11-06">
+**Features**
+
+* a moved domain is recorded as a change and can be rolled back
+* a stable Server Actions key for Next.js apps with several replicas
+* abilities hook and role-gated controls for the storage page
+* add Next.js doctor fixes for build, key, memory and shared cache
+* apex and www DNS plan endpoint and CLI
+* appearance follows the user across browsers
+* apply image auto-updates only inside an optional cron window
+* apply the apex and www DNS plan
+* apply typed diagnosis fixes from the crashloop card
+* **apps:** read-only deploy plan for a repository
+* **apps:** sticky app header with one primary action and a single diagnosis card
+* assemble the new storage page with verdict, disk bar, trend, policy and cleanup drawer
+* attention items carry a tier and a group, fixes reach their doctor rows, and no warning ships without a next step
+* audit anchor webhook, secret masking, plain-language errors, settings navigation, arm64 data and store and form refactors
+* audit log investigation with filters, chain verification and export
+* backup rows say what is wrong and offer the fix, stale drill targets are not restore failures
+* badge any non-normal runtime setting risk level
+* bulk actions on the domains list and parked group
+* bulk domain actions in one request and apps handler cleanup
+* calm selected states, appearance settings, related links and plainer wording
+* cleanup plan drawer with per-item selection, preview, apply and run history
+* cleanup runs accept an item allowlist and record who started them
+* compact app overview with visitors card, domain park, move and delete
+* compact settings sidebar and account page
+* corner roundness, high contrast, code font and width control in appearance
+* create and plan install-scoped stacks through the API
+* daily disk history samples, forecast and system disk history API
+* **dashboard:** explain any doctor check from its row
+* **dashboard:** sidebar groups the long tail behind seven primary links
+* **dashboard:** version and health line in the sidebar footer
+* database volume lock on every volume delete path
+* default environment per project
+* deploy receipt approval window is a live runtime setting
+* deploy the pushed digest from GHCR and Docker Hub push events
+* derive template logos from @thesvg/react
+* **dns:** more providers, token verification, a background DNS watcher and a rollback health floor
+* doctor warns when no one can be notified
+* **domains:** explain every domain doctor check in plain words
+* **domains:** one status bar on the domains page
+* **domains:** provider record steps, token verification result and live DNS watcher chips
+* **domains:** show cause, evidence and fix steps in the domain doctor
+* download button for the visitors CSV export
+* downloadable deploy receipt with commit, digest, approver and gate timeline
+* eligible node sets and ordinal peers for per-node and ordered workloads
+* every status reason has a plain explanation and a drift test
+* existing secret references and typed placeholders for replicas, resources, domains, tolerations and labels
+* expired tokens are one quiet row and cleaned up, platform tokens rotate themselves
+* export domains and parked domains as CSV from the API and CLI
+* export one database or one node as code via database and node filters
+* export saved runtime settings as Setting documents
+* failing app rows show the reason and no zero apps flash
+* first run strip from install to a live app with an open link
+* first-run dashboard leads with one primary action
+* first-run onboarding shell with welcome, profile and preferences steps
+* flexible text size, custom accent and reduce motion in appearance
+* get started chip shows first app progress
+* get started stays reachable after dismiss
+* guided setup for using your own CI, and CI gate settings that explain unreadable sources
+* **iac:** configure existing node labels and taints from stack files
+* **iac:** declare and export app tolerations and affinity in stack files
+* image auto-update window controls
+* image keep count and scheduled prune are runtime settings
+* images page with working remove actions and a clearer layout
+* inject PR_NUMBER into preview env for compose apps
+* install-scoped stacks may own only Node and Setting documents
+* installer enables HTTPS after a healthy install and prints provider firewall rules
+* **jobs:** run now state, a history kept card and a clear never next run
+* keep the certificate attempt ledger across restarts
+* **login:** follow the SSO auto redirect setting with a password escape hatch
+* MCP read tools for deploy policies and monitors
+* migration dry run on a copy of the database
+* new app page leads with what works without a git provider
+* nextjs.memory_floor_mb runtime setting for the Next.js doctor
+* offer a one-click fix when an image demands an env var such as a licence acceptance
+* OIDC listener port setting, plain directory up and upload progress lines
+* **onboarding:** per-user onboarding API and CLI
+* one registry of pages for navigation, palette and breadcrumbs
+* optional automatic redirect to single sign-on
+* organization home page with profile and avatar
+* organization profile with avatar, slug and a home summary
+* palette and nav entries for the new settings pages
+* park keeps settings, parked and domain list state, persistent visitor history
+* park, move and attach for environment and static site domains
+* password policy settings with a strong default
+* per-environment values files for apply via --values
+* plain-language explanation and next step for every doctor check
+* plan apex and www records with a canonical host
+* posture checks for agent access, protected environments and audit anchors
+* posture copy for unencrypted offsite backups and an audit anchor status card
+* project export, certificate opt-out and budget, quiet sign-in
+* prove outside reachability with a staging HTTP-01 order
+* reachability card, alert kinds, parked cleanup strip, firewall commands and palette navigation
+* redesign the appearance settings page
+* redesign the database setup progress card
+* refuse Node plans that weaken protected taints without allow_weaken
+* register Next.js doctor fixes for detected Next.js apps
+* remove chosen or unmanaged unused images from the API and CLI
+* report an issue opens the matching template with details prefilled
+* richer Next.js detection in the new app wizard
+* roll back a domain change within a window
+* roll back a domain DNS change from the domain page
+* run storage commands from a terminal dialog with role-aware, copyable blocks
+* save appearance settings to the user's account
+* scheduled task run history cap is a runtime setting and unreachable cron schedules are rejected
+* **scheduler:** taints, tolerations, affinity and live bin-pack scoring
+* Setting kind declares runtime settings in stack files
+* settings audit rows show stack, revision and token for stack applies
+* setup guide milestones and secret file cleanup
+* shared tile grid and settings layout primitives
+* show a Project or Install scope badge on stacks
+* **spec:** reserve per-node and ordered workload fields
+* stack apply can weaken a setting only from a human root session
+* stack create --scope install and scope in stack list and show
+* stack lock covers runtime settings and fails closed on ledger errors
+* stack lock now covers node labels and taints routes
+* stack plan and apply take --allow-weaken for Setting documents
+* stack plan and apply take --values, plan values are capped and secret keys hidden
+* stack tokens get narrow node, setting and placement verbs
+* static site domain actions in the dashboard and scoped authorization for parked domains
+* static sites as IAM policy targets and parked domain test coverage
+* Status page keeps recommendations in a collapsed advisory block and silences work under both keys
+* storage 30 day disk trend chart with dashed fill forecast
+* storage inventory of volumes and stopped containers with a database volume lock
+* storage item list grouped by type or app with a reason column
+* storage policy strip with live cleanup and disk threshold chips
+* storage tunables are runtime settings that apply live
+* storage verdict line and interactive whole-disk bar
+* **store:** per-user onboarding state and the onboarding.enabled setting
+* **store:** track workload instances with generation fencing
+* strict organization isolation with a cross-organization test matrix
+* subtle modern active and selected states
+* the CI gate reads GitLab pipelines and gates every automatic deploy, waiting in the background
+* the command line tool guide is a terminal walkthrough personalised to the user and server
+* the domains page has a structured header, status strip and first-run steps
+* the Images page becomes a Storage hub with a disk breakdown and a node switcher
+* the mesh endpoint resolves a hostname advertise address by itself
+* the pre-upgrade backup is restored to a scratch copy and checked before the upgrade proceeds
+* token hygiene, project export and certificate budget in the dashboard
+* tokens page merges banners and flags unused tokens
+* translate the git source card and create-from-git networking fields
+* **updates:** list pending migrations and test them on a copy
+* upgrade plan lists the pending database migrations
+* v0.9.1
+* v0.9.2
+* visitors CSV export, domain alert rules, parked retention and the reachability check
+* warn inline when a stored app redeploy schedule will never run
+* **web:** edit node taints and app tolerations from the dashboard
+* **web:** export an app or database as code from its page
+* **web:** Import YAML diff preview on app, database and node pages
+* week-2 restore reminder card on the dashboard
+
+
+**Bug Fixes**
+
+* a partial router never breaks a page through the related links row
+* a refused domain move rollback keeps the change available
+* app pages no longer scroll sideways on phones, nav labels keep their full text and the mobile menu opens at the top
+* appearance option groups use the full width and take half the height
+* audit range verify reports whole-chain state, honest head labels and complete CSV export
+* audit verify catches deleted oldest rows, export truncation is exact and complete
+* Base UI triggers declare when they are not native buttons
+* canvas link shows locked instead of hidden
+* close CLI help flag gaps and make the coverage check follow shared usage funcs
+* compact overview header and no waiting-for-DNS badge on automatic addresses
+* compact recommended strip and collapsed failure card on the app overview
+* deploy receipt only names a bound approval and marks failed lookups
+* dialogs no longer overflow their popup when content has a long unbreakable string
+* disk pressure no longer prunes anonymous volumes unless orphan volume deletion is on
+* doctor call-to-action guard reads only package-level consts so it is deterministic
+* domains table test finds its deploy link by the link role
+* error text fallback matches the plainer server error wording
+* firewall guidance prints commands for the detected backend only when a port is blocked
+* first app status test counts its https links now that link buttons keep their role
+* give the stack drift token its own GET allowlist
+* harden agent posture checks and the CLI score floor
+* image prune schedule and password policy edge cases
+* list doctor cloud in the command tree and budget the settings registry's readers
+* logs tab says when there is no container
+* make the apex and www apply safe to fail and undo
+* mobile header fits one row at 390 pixels
+* Next.js standalone apps start with the standalone server and keep static and public files
+* Next.js standalone start and Server Actions key edge cases
+* **onboarding:** allow skipping for now before the flow has started
+* one Docker guard decision is one row and no state hides a real exposure
+* one replica restart never creates duplicate containers
+* pooler image is a pinned runtime setting with a verified default
+* preview database teardown removes its volumes and recreated databases are not purged
+* raise the settings registry fan-in budget to match its readers
+* release PR CI failures in orphan reclaim, route coverage, bare 500s and link buttons
+* restart policy sweep for containers created before the default
+* **scheduler:** document --toleration-exists and add the Spanish score mode text
+* schedules with no real next fire time are rejected at save and never fire in the schedulers
+* **schedules:** never run or fire a schedule with no next run, and validate every schedule at save
+* **schedules:** validate spec jobs, guard tickers and report stored schedules that never run
+* self-upgrade stall detection, cancel and recovery with a redesigned updates page
+* **stacks:** drift checker sees hand edits to owned node taints
+* status reason catalog covers hold and queue reasons, shrink deploy row
+* storage disk bar without inline styles, soft card tooltip
+* **store:** renumber workload instances migration to 3195
+* the appearance rail marks the last section at the page bottom
+* the appearance section rail stays in view, follows scrolling and shows icons
+* the audit export keeps paging against servers that send no truncation header
+* the image removal preview reports the bytes it will free
+* the page help button no longer overlaps the header action
+* the platform's own listeners are not exposure drift, and published ports are grouped per container
+* tighten who can grant stack verbs and which settings a token can write
+* top bar count badges no longer clip or overlap neighbours
+</Update>
+
 <Update label="0.9.0" description="2026-11-02">
 **Features**
 

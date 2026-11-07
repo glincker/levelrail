@@ -371,6 +371,7 @@ levelrail-cli apps resource-recommendation <name> [flags]
 levelrail-cli apps cost <name> [flags]
 levelrail-cli releases list <app> [flags]
 levelrail-cli apps health-score <name> [flags]
+levelrail-cli apps vitals <name> [flags]
 levelrail-cli apps log-drain get <name> [flags]
 levelrail-cli apps log-drain set <name> --type TYPE --target TARGET [flags]
 levelrail-cli apps log-drain clear <name> [flags]
@@ -392,6 +393,8 @@ levelrail-cli apps scheduled-tasks delete <app> <id> [flags]
 - `costs explore|budgets list|create|set|delete` is the cost explorer with forecast and top movers, and named budgets with alert thresholds and an optional pause or throttle at 100 percent, see [cost explorer](/cost-explorer).
 - `usage report|settings|budgets` shows cost showback and manages prices and budgets, see [usage and cost](/usage-and-cost). `usage report --csv` prints the export. `budget set|delete project|team ID` is an alias for `usage budgets`. `budget show|set|clear APP` manages a per-app egress and cost cap, see [spend caps](/spend-caps).
 - `advisor findings|summary|apply|dismiss|snooze|restore|enable|disable` drives the beta [resource advisor](/resource-advisor). `advisor apply ID` only previews; add `--yes` to apply.
+- `apps vitals` prints the 7 day p75 of LCP, INP, CLS, TTFB and FCP overall and per route.
+- `apps next-cache set NAME redis|none` sets where a Next.js app keeps its page cache. `redis` shares it across replicas through the linked Redis database and adds `LEVELRAIL_NEXT_CACHE_URL` on every path that saves the app, not only on a build deploy. Containers pick it up on the next restart or deploy.
 - `apps health-score` gives a synthesized pass, warn or fail readiness verdict across deploy health, security, resilience and observability.
 - `apps log-drain` forwards container logs to an external HTTP or syslog sink, in addition to the built-in node-local log store.
 - `apps scheduled-tasks` runs a command inside the app's running container on a cron schedule. The command is a real argv with no shell; put `--` before it when the command takes flags.

@@ -46,10 +46,14 @@ export function useCliTokens() {
   })
 }
 
-export function useCliTokenRows(enabled: boolean) {
+// While a pairing command waits to be run, poll fast so the new CLI shows up.
+const PAIRING_POLL_MS = Number(import.meta.env.VITE_CLI_PAIRING_POLL_MS ?? 3000)
+
+export function useCliTokenRows(enabled: boolean, waiting = false) {
   return useQuery({
     ...myCredentialsQueryOptions(),
     enabled,
+    refetchInterval: waiting ? PAIRING_POLL_MS : REFETCH_MS,
     select: (data) => {
       const now = Date.now()
       return listCliTokens(data.tokens).map((token) => ({

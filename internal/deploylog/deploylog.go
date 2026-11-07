@@ -78,6 +78,8 @@ type LogStore interface {
 type Event struct {
 	Line   string
 	Stream string
+	// At is when the line was recorded; zero for lines built outside Progress.
+	At time.Time
 }
 
 // StepEvent is one named, coarse-grained deploy-pipeline phase
@@ -174,7 +176,8 @@ func (r *Recorder) Progress(attemptID string) func(build.ProgressEvent) {
 		}
 		// Mask before the line is kept or fanned out: live viewers and replay read this copy, not the store's.
 		ev.Log = secretmask.Mask(untrusted.RedactTokens(ev.Log))
-		line := Event{Line: ev.Log, Stream: stream}
+		now := time.Now()
+		line := Event{Line: ev.Log, Stream: stream, At: now}
 
 		r.mu.Lock()
 		st, ok := r.active[attemptID]
@@ -184,7 +187,7 @@ func (r *Recorder) Progress(attemptID string) func(build.ProgressEvent) {
 		}
 		st.lines = append(st.lines, line)
 		st.buf = append(st.buf, telemetry.DeployLogEntry{
-			AttemptID: attemptID, Stream: stream, Timestamp: time.Now(), Message: ev.Log,
+			AttemptID: attemptID, Stream: stream, Timestamp: now, Message: ev.Log,
 		})
 		for _, ch := range st.subs {
 			select {

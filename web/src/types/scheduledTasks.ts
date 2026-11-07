@@ -25,11 +25,20 @@ export type JobHttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
 // The request an http job sends. A background job is awaited by the control
 // plane under a longer timeout; the caller of run-now gets 202 either way.
+export interface ScheduledTaskHttpHeader {
+  name: string
+  value?: string
+  secretRef?: string
+  prefix?: string
+}
+
 export interface ScheduledTaskHttp {
   method?: JobHttpMethod
   path: string
   body?: string
   background?: boolean
+  // Names and secret references only; the API never returns secret values.
+  headers?: ScheduledTaskHttpHeader[]
 }
 
 // What to do about occurrences missed while the control plane was down.

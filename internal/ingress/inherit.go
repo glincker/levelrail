@@ -120,18 +120,15 @@ func (s *InheritedSockets) listenAddrs() []string {
 // redirected to https; every other host (a bare IP before any domain exists)
 // gets a plain note, because a redirect there would end in a failed handshake.
 // With the redirect off the socket stays held so clients are not refused.
-func (s *InheritedSockets) redirectServer(redirect bool, hosts []string) *Server {
-	return certRedirectServer("fd/"+strconv.Itoa(s.HTTP), &AutoHTTPSConfig{Disabled: true}, redirect, hosts, s.HTTPSPort)
+func (s *InheritedSockets) redirectServer(redirect bool, hosts []string, h *Hardening) *Server {
+	return certRedirectServer("fd/"+strconv.Itoa(s.HTTP), &AutoHTTPSConfig{Disabled: true}, redirect, hosts, s.HTTPSPort, h)
 }
 
 // certRedirectServer is the port 80 server shared by the inherited and the
 // self-bound paths, so both redirect only hosts that hold a certificate.
-func certRedirectServer(listen string, auto *AutoHTTPSConfig, redirect bool, hosts []string, httpsPort int) *Server {
+func certRedirectServer(listen string, auto *AutoHTTPSConfig, redirect bool, hosts []string, httpsPort int, h *Hardening) *Server {
 	srv := &Server{AutomaticHTTPS: auto, Listen: []string{listen}}
-	if !redirect {
-		return srv
-	}
-	if len(hosts) > 0 {
+	if redirect && len(hosts) > 0 {
 		srv.Routes = append(srv.Routes, Route{
 			Match: []Matcher{{Host: hosts}},
 			Handle: []any{StaticResponseHandler{
@@ -141,12 +138,9 @@ func certRedirectServer(listen string, auto *AutoHTTPSConfig, redirect bool, hos
 			}},
 		})
 	}
-	srv.Routes = append(srv.Routes, Route{Handle: []any{StaticResponseHandler{
-		Handler:    "static_response",
-		StatusCode: 200,
-		Body:       NoCertificateNotice,
-		Headers:    map[string][]string{"Content-Type": {"text/plain; charset=utf-8"}},
-	}}})
+	// Hosts without a certificate get the diagnostic page over plain HTTP, so
+	// the show-state setting decides what a visitor learns, never a 200 notice.
+	srv.Routes = append(srv.Routes, plainHTTPDiagnostic(h))
 	return srv
 }
 
@@ -172,12 +166,6 @@ func listenPort(addr string) int {
 	}
 	return n
 }
-
-// NoCertificateNotice is what port 80 answers for a host with no certificate,
-// so the visitor is told the truth instead of hitting a TLS failure.
-const NoCertificateNotice = "No HTTPS certificate exists for this address yet, so it is not redirected to https.\n" +
-	"Open the dashboard on its own port (over an SSH tunnel if your firewall blocks it),\n" +
-	"then enable HTTPS from Domains or with: levelrail-cli settings ingress https enable\n"
 
 func withoutProtocol(protocols []string, drop string) []string {
 	out := make([]string, 0, len(protocols))

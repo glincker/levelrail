@@ -4,6 +4,8 @@ import { AllI18n } from '../test/allI18n'
 import { BuildTrendCard } from './BuildTrendCard'
 
 let state: { isPending: boolean; data?: unknown; error: Error | null }
+vi.mock('./AppBuildCacheRow', () => ({ AppBuildCacheRow: () => null }))
+
 vi.mock('../queries/buildPerformance', () => ({
   useBuildStats: () => state,
 }))

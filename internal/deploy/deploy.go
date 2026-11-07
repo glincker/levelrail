@@ -174,9 +174,21 @@ type Request struct {
 	Commit func() error
 	// NoCache disables BuildKit's layer cache for a dockerfile build.
 	NoCache bool
+	// RefreshDesired, when set, runs on the service just before it is saved so
+	// fields edited during a long build are not overwritten by the snapshot
+	// the request was built from.
+	RefreshDesired func(ctx context.Context, desired *store.DesiredService) error
 	// Preview marks a pull request preview build, which may not use
 	// build.secrets unless APP_PREVIEW_BUILD_SECRETS is true.
 	Preview bool
+
+	// nextDeploymentID is set by the Next.js build path and reaches the
+	// container env in finishDeploy.
+	nextDeploymentID string
+	// nextBuildID is set for Next.js apps on the shared Redis cache.
+	nextBuildID string
+	// nextImageCacheMount is set for Next.js source builds that opted into the image cache volume.
+	nextImageCacheMount string
 }
 
 // Pipeline builds a service (when its build type requires a build) and
@@ -317,8 +329,13 @@ func (p *Pipeline) deployDockerfile(ctx context.Context, req Request, progress f
 		}
 	}
 
+	if err := p.checkNextCache(ctx, buildRoot, req); err != nil {
+		return "", err
+	}
 	s3Cache, progress, cacheDone := p.prepareBuildCache(ctx, req.ServiceName, progress)
-	buildArgs := dockerfileBuildArgs(req.Service.Env, req.Service.Build.Args, dockerfilePathOrDefault(buildRoot, dockerfilePath), StaticBuildEnvPrefixes())
+	dfPath := dockerfilePathOrDefault(buildRoot, dockerfilePath)
+	buildArgs := dockerfileBuildArgs(req.Service.Env, req.Service.Build.Args, dfPath, StaticBuildEnvPrefixes())
+	buildArgs = addNextDockerfileArgs(ctx, &req, buildRoot, dfPath, buildArgs, progress)
 	emitBuildEnvKeys(progress, "dockerfile", buildArgs, len(req.Service.Env))
 	buildReq := build.Request{
 		ContextDir:     buildRoot,
@@ -374,12 +391,28 @@ func (p *Pipeline) deployRailpack(ctx context.Context, req Request, progress fun
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
 	}
 
+	if err := p.checkNextCache(ctx, buildRoot, req); err != nil {
+		return "", err
+	}
+	if note := build.NextCacheSuggestion(buildRoot, req.Service.Replicas, req.Service.Next.UsesRedisCache()); note != "" && progress != nil {
+		progress(build.ProgressEvent{Step: "next.js", Log: note, Stream: "stderr"})
+	}
 	buildEnv := staticBuildArgs(req.Service.Env, nil, StaticBuildEnvPrefixes())
+	req.nextImageCacheMount = nextImageCacheTarget(req, build.DetectNext(buildRoot))
+	if id := nextBuildID(buildRoot, deployIDFor(req), req.Service); id != "" {
+		buildEnv[nextBuildIDEnvVar] = id
+		req.nextBuildID = id
+	}
+	if id := nextDeploymentID(ctx, buildRoot, deployIDFor(req), req.Service.Env); id != "" {
+		buildEnv[nextDeploymentIDEnvVar] = id
+		req.nextDeploymentID = id
+	}
 	emitBuildEnvKeys(progress, "railpack", buildEnv, len(req.Service.Env))
 	res, err := p.builder.BuildRailpack(ctx, build.RailpackRequest{
 		SourceDir: buildRoot,
 		Tag:       tag,
 		Env:       buildEnv,
+		CacheID:   railpackCacheID(ctx, req, tag),
 	}, progress)
 	if err != nil {
 		var unsupported *build.UnsupportedProviderError
@@ -407,12 +440,30 @@ func (p *Pipeline) finishDeploy(ctx context.Context, req Request, res *build.Res
 	if err := checkVolumeOwners(ctx, p.store, desired); err != nil {
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
 	}
+	applyNextImageCache(&desired, req.ServiceName, req.nextImageCacheMount)
+	if req.nextDeploymentID != "" {
+		if desired.Env == nil {
+			desired.Env = map[string]string{}
+		}
+		desired.Env[nextDeploymentIDEnvVar] = req.nextDeploymentID
+	}
+	var prevDesired *store.DesiredService
+	if req.Service.Next.UsesRedisCache() {
+		prevDesired = p.nextCachePrev(ctx, req.ServiceName)
+	}
+	applyNextCache(&desired, req, prevDesired)
+	p.applyNextCacheCA(ctx, req, &desired)
+	markGeneratedEnv(&desired, req)
 	resolution := p.buildResolution(ctx, res.Tag, res.ExporterResponse)
 	resolution.apply(&desired)
 
+	prevID, prevImage := p.previousNextRelease(ctx, req)
 	held, err := p.saveDesired(ctx, req, desired)
 	if err != nil {
 		return "", fmt.Errorf("deploy: service %q: save desired state: %w", req.ServiceName, err)
+	}
+	if !held {
+		p.beginNextGrace(ctx, req, prevID, prevImage)
 	}
 	p.recordDigest(ctx, req, resolution)
 	if !held {
@@ -468,6 +519,7 @@ func (p *Pipeline) deployImage(ctx context.Context, req Request) (string, error)
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
 	}
 	resolution.apply(&desired)
+	p.applyStoredNextCache(ctx, req, &desired)
 	held, err := p.saveDesired(ctx, req, desired)
 	if err != nil {
 		return "", fmt.Errorf("deploy: service %q: save desired state: %w", req.ServiceName, err)

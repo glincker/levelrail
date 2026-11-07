@@ -1,10 +1,11 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { PlusGlassIcon, TerminalGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { FieldLabel } from '@/components/ui/typography'
 import {
   TerminalBlock,
@@ -61,6 +62,123 @@ function abilityChips(tok: TokenResource): AbilityKey[] {
 }
 
 type Pairing = ReturnType<typeof useCliPairing>
+
+function Fact({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="truncate text-sm">{value}</dd>
+    </div>
+  )
+}
+
+function CliCard({
+  tok,
+  status,
+  latest,
+  onRotate,
+  onRevoke,
+}: {
+  tok: TokenResource
+  status: CliStatus
+  latest: boolean
+  onRotate: (tok: TokenResource) => void
+  onRevoke: (tok: TokenResource) => void
+}) {
+  const { t } = useTranslation('signIn', { useSuspense: false })
+  const origin = cliOrigin(tok.name)
+  const expired = status === 'expired'
+  return (
+    <li
+      className={cn(
+        'flex min-w-0 flex-col gap-3 rounded-lg border bg-card p-3',
+        expired && 'opacity-70',
+      )}
+    >
+      <div className="flex min-w-0 items-start gap-2">
+        <TerminalGlassIcon aria-hidden="true" className="size-8 shrink-0" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium">{tok.name}</p>
+          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span
+              aria-hidden="true"
+              className={cn('size-2 shrink-0 rounded-full', STATUS_DOT[status])}
+            />
+            {t(`cliModal.manage.status.${status}`)}
+            {origin ? ` · ${t(`cliModal.manage.origin.${origin}`)}` : ''}
+          </p>
+        </div>
+        {latest ? (
+          <Badge variant="success">{t('cliModal.summary.mostRecent')}</Badge>
+        ) : null}
+      </div>
+      <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+        <Fact
+          label={t('cliModal.card.lastUsed')}
+          value={
+            tok.last_used_at
+              ? formatRelativeTime(tok.last_used_at)
+              : t('cliModal.manage.neverUsed')
+          }
+        />
+        <Fact
+          label={t('cliModal.card.from')}
+          value={tok.last_ip ?? t('cliModal.card.unknown')}
+        />
+        <Fact
+          label={t('cliModal.card.created')}
+          value={formatAbsoluteTime(tok.created_at)}
+        />
+        <Fact
+          label={t(
+            expired ? 'cliModal.card.expiredAt' : 'cliModal.card.expires',
+          )}
+          value={
+            tok.expires_at
+              ? formatAbsoluteTime(tok.expires_at)
+              : t('cliModal.manage.noExpiry')
+          }
+        />
+      </dl>
+      <ul
+        aria-label={t('cliModal.manage.abilities')}
+        className="flex flex-wrap gap-1"
+      >
+        {abilityChips(tok).map((c) => (
+          <li key={c}>
+            <Badge variant={c === 'abilityRoot' ? 'destructive' : 'outline'}>
+              {t(`cliModal.manage.${c}`)}
+            </Badge>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-auto flex gap-2">
+        <Button
+          type="button"
+          size="xs"
+          variant="outline"
+          aria-label={t('cliModal.manage.rotateLabel', { name: tok.name })}
+          onClick={() => {
+            onRotate(tok)
+          }}
+        >
+          {t('cliModal.manage.rotate')}
+        </Button>
+        <Button
+          type="button"
+          size="xs"
+          variant="outline"
+          aria-label={t('cliModal.manage.revokeLabel', { name: tok.name })}
+          onClick={() => {
+            onRevoke(tok)
+          }}
+        >
+          {t('cliModal.manage.revoke')}
+        </Button>
+      </div>
+    </li>
+  )
+}
 
 function Step({
   n,
@@ -186,11 +304,11 @@ export default function CliCommandCenter({
 }) {
   const { t } = useTranslation('signIn', { useSuspense: false })
   const qc = useQueryClient()
-  const { data: rows, isPending, isError } = useCliTokenRows(true)
+  const p = useCliPairing()
+  const { data: rows, isPending, isError } = useCliTokenRows(true, p.live)
   const apps = useAppListOptional()
   const brand = useBrand()
   const revoke = useRevokeToken()
-  const p = useCliPairing()
   const [target, setTarget] = useState<TokenResource | null>(null)
   const [rotateTarget, setRotateTarget] = useState<TokenResource | null>(null)
   const [setupOpen, setSetupOpen] = useState<boolean | null>(null)
@@ -198,6 +316,18 @@ export default function CliCommandCenter({
 
   const connected = (rows ?? []).filter((r) => r.status !== 'expired').length
   const hasRows = (rows?.length ?? 0) > 0
+  const seen = useRef<number | null>(null)
+  useEffect(() => {
+    if (isPending) {
+      return
+    }
+    // A count that grows while the modal is open means the pairing worked.
+    if (seen.current !== null && connected > seen.current) {
+      toast.add({ title: t('cliModal.connectedToast'), type: 'success' })
+      setSetupOpen(false)
+    }
+    seen.current = connected
+  }, [connected, isPending, t])
   // Connected: lead with the CLIs and fold install and connect away.
   const showSetup = setupOpen ?? connected === 0
   const app = apps.data?.[0]?.name ?? '<app>'
@@ -259,25 +389,26 @@ export default function CliCommandCenter({
     </Step>
   )
 
+  const newest = useMemo(() => {
+    const used = (rows ?? []).filter((r) => r.token.last_used_at)
+    used.sort((x, y) =>
+      (y.token.last_used_at ?? '').localeCompare(x.token.last_used_at ?? ''),
+    )
+    return used[0]?.token
+  }, [rows])
+
   const manage = (
     <section aria-labelledby="cli-manage-title" className="space-y-2">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
         <FieldLabel as="span" id="cli-manage-title" className="text-foreground">
           {t('cliModal.manage.title')}
         </FieldLabel>
-        {connected > 0 ? (
-          <Button
-            type="button"
-            size="xs"
-            variant="outline"
-            aria-expanded={showSetup}
-            onClick={() => {
-              setSetupOpen(!showSetup)
-            }}
-          >
-            <PlusGlassIcon size="1.4em" aria-hidden="true" />
-            {t('cliModal.manage.connectAnother')}
-          </Button>
+        {newest?.last_used_at ? (
+          <span className="text-xs text-muted-foreground">
+            {t('cliModal.summary.lastActivity', {
+              when: formatRelativeTime(newest.last_used_at),
+            })}
+          </span>
         ) : null}
       </div>
       {isError ? (
@@ -288,103 +419,18 @@ export default function CliCommandCenter({
       {hasRows ? (
         <ul
           aria-label={t('cliModal.manage.listLabel')}
-          className="divide-y rounded-lg border"
+          className="grid gap-2 sm:grid-cols-2"
         >
-          {rows?.map(({ token: tok, status }) => {
-            const origin = cliOrigin(tok.name)
-            const chips = abilityChips(tok)
-            return (
-              <li
-                key={tok.id}
-                className="flex flex-wrap items-center justify-between gap-3 px-3 py-2"
-              >
-                <div className="min-w-0 flex-1 space-y-1">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span
-                      aria-hidden="true"
-                      className={cn(
-                        'size-2 shrink-0 rounded-full',
-                        STATUS_DOT[status],
-                      )}
-                    />
-                    <p className="truncate text-sm font-medium">{tok.name}</p>
-                    <span className="shrink-0 text-xs text-muted-foreground">
-                      {t(`cliModal.manage.status.${status}`)}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {origin ? t(`cliModal.manage.origin.${origin}`) : ''}
-                    {' · '}
-                    {t('cliModal.manage.created', {
-                      when: formatAbsoluteTime(tok.created_at),
-                    })}
-                    {' · '}
-                    {tok.last_used_at
-                      ? t('cliModal.manage.lastUsed', {
-                          when: formatRelativeTime(tok.last_used_at),
-                        })
-                      : t('cliModal.manage.neverUsed')}
-                    {tok.last_ip
-                      ? ` · ${t('cliModal.manage.lastIp', { ip: tok.last_ip })}`
-                      : ''}
-                    {' · '}
-                    {tok.expires_at
-                      ? t(
-                          status === 'expired'
-                            ? 'cliModal.manage.expired'
-                            : 'cliModal.manage.expires',
-                          { when: formatAbsoluteTime(tok.expires_at) },
-                        )
-                      : t('cliModal.manage.noExpiry')}
-                  </p>
-                  <ul
-                    aria-label={t('cliModal.manage.abilities')}
-                    className="flex flex-wrap gap-1"
-                  >
-                    {chips.map((c) => (
-                      <li key={c}>
-                        <Badge
-                          variant={
-                            c === 'abilityRoot' ? 'destructive' : 'outline'
-                          }
-                        >
-                          {t(`cliModal.manage.${c}`)}
-                        </Badge>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="flex shrink-0 gap-2">
-                  <Button
-                    type="button"
-                    size="xs"
-                    variant="outline"
-                    aria-label={t('cliModal.manage.rotateLabel', {
-                      name: tok.name,
-                    })}
-                    onClick={() => {
-                      setRotateTarget(tok)
-                    }}
-                  >
-                    {t('cliModal.manage.rotate')}
-                  </Button>
-                  <Button
-                    type="button"
-                    size="xs"
-                    variant="outline"
-                    aria-label={t('cliModal.manage.revokeLabel', {
-                      name: tok.name,
-                    })}
-                    onClick={() => {
-                      setTarget(tok)
-                    }}
-                  >
-                    {t('cliModal.manage.revoke')}
-                  </Button>
-                </div>
-              </li>
-            )
-          })}
+          {rows?.map(({ token: tok, status }) => (
+            <CliCard
+              key={tok.id}
+              tok={tok}
+              status={status}
+              latest={rows.length > 1 && tok.id === newest?.id}
+              onRotate={setRotateTarget}
+              onRevoke={setTarget}
+            />
+          ))}
         </ul>
       ) : null}
     </section>
@@ -411,11 +457,29 @@ export default function CliCommandCenter({
       </DialogHeader>
 
       {connected > 0 ? (
-        <>
-          {manage}
-          {showSetup ? setup : null}
-          {tryIt}
-        </>
+        <Tabs
+          value={showSetup ? 'setup' : 'clis'}
+          onValueChange={(v) => {
+            setSetupOpen(v === 'setup')
+          }}
+        >
+          <TabsList aria-label={t('cliModal.view.label')}>
+            <TabsTrigger value="clis">
+              {t('cliModal.view.clis', { count: connected })}
+            </TabsTrigger>
+            <TabsTrigger value="setup">
+              <PlusGlassIcon size="1.4em" aria-hidden="true" />
+              {t('cliModal.manage.connectAnother')}
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="clis" className="space-y-4">
+            {manage}
+            {tryIt}
+          </TabsContent>
+          <TabsContent value="setup" className="space-y-4">
+            {setup}
+          </TabsContent>
+        </Tabs>
       ) : (
         <>
           {setup}

@@ -108,6 +108,8 @@ var restExemptions = restExemptionSet(map[string][]string{
 		"POST /api/v1/webhooks/discord/interactions",
 		"POST /api/v1/git/{repo}/git-receive-pack",
 		"POST /api/v1/otlp/v1/traces",
+		// High-volume per-app-key beacon, rate limited: auditing each hit would flood the log.
+		"POST /api/v1/vitals/{app}",
 		"POST /api/v1/sentry/api/{project}/envelope/",
 		"POST /api/v1/sentry/api/{project}/store/",
 		"POST /api/v1/forms/{app}/{name}",

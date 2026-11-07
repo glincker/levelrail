@@ -30,6 +30,12 @@ type StandaloneLister interface {
 	ListStandaloneDomains(ctx context.Context) ([]store.StandaloneDomain, error)
 }
 
+// RedirectLister is optional on SyncStore: domains with a redirect skip the
+// http to https hop so the visitor gets a single redirect.
+type RedirectLister interface {
+	ListDomainRedirects(ctx context.Context) ([]store.DomainRedirect, error)
+}
+
 // WithStandalone appends standalone domains not already listed, sorted.
 func WithStandalone(targets []Target, domains []store.StandaloneDomain) []Target {
 	seen := make(map[string]bool, len(targets))
@@ -83,6 +89,8 @@ type Target struct {
 	Domain string
 	Kind   string
 	App    string
+	// Redirect is set from the domain's redirect state on every plan.
+	Redirect bool
 }
 
 // Key is the target column stored per domain ("app:web" or "dashboard").
@@ -103,7 +111,10 @@ type Syncer struct {
 	Unit string
 	// RouterPriority 0 means DefaultRouterPriority.
 	RouterPriority int
-	Logger         *slog.Logger
+	// Unrouted reports whether the opt in catch-all file is wanted; nil is off.
+	Unrouted         func(context.Context) bool
+	UnroutedPriority int
+	Logger           *slog.Logger
 	// Exec validates and reloads a managed proxy that needs it (nginx); nil
 	// makes such a provider refuse to write anything.
 	Exec Exec
@@ -221,7 +232,18 @@ func (s *Syncer) PlanFor(ctx context.Context, settings store.ProxyIntegrationSet
 		}
 		targets = WithStandalone(targets, extra)
 	}
+	redirected := map[string]bool{}
+	if rl, ok := s.Store.(RedirectLister); ok {
+		rows, err := rl.ListDomainRedirects(ctx)
+		if err != nil {
+			return Plan{}, fmt.Errorf("proxyroutes: domain redirects: %w", err)
+		}
+		for _, r := range rows {
+			redirected[strings.ToLower(r.Domain)] = true
+		}
+	}
 	for _, t := range targets {
+		t.Redirect = redirected[strings.ToLower(t.Domain)]
 		p.Items = append(p.Items, s.render(prov, settings, path, t))
 	}
 	return p, nil
@@ -249,7 +271,7 @@ func (s *Syncer) renderPrio(prov Provider, settings store.ProxyIntegrationSettin
 	it.Content, it.Err = prov.Render(s.NS, Route{
 		Domain: t.Domain, EntrypointHTTP: settings.EntrypointHTTP, EntrypointHTTPS: settings.EntrypointHTTPS,
 		CertResolver: settings.CertResolver, Upstream: it.Upstream, Priority: prio,
-		CertDir: settings.CertDir, Webroot: settings.Webroot,
+		CertDir: settings.CertDir, Webroot: settings.Webroot, Redirect: t.Redirect,
 	})
 	return it
 }
@@ -324,6 +346,12 @@ func (s *Syncer) Sync(ctx context.Context) (Report, error) {
 		byName[it.File] = it
 		want = append(want, File{Domain: it.Domain, Name: it.File, Content: it.Content})
 	}
+	extra, hasExtra := s.unroutedFile(ctx, p)
+	if hasExtra {
+		want = append(want, extra)
+	} else if extra.Name != "" {
+		keep[extra.Name] = true
+	}
 	if p.Provider.Mode() != "" && p.Provider.Kind() != KindTraefik && s.Exec == nil {
 		msg := "cannot reach the proxy container: Docker is not available to this process"
 		for _, it := range p.Items {
@@ -345,7 +373,9 @@ func (s *Syncer) Sync(ctx context.Context) (Report, error) {
 		for _, o := range res.Files {
 			if o.Changed {
 				rep.Failed[o.Domain] = rejected.Error()
-				s.markFailed(ctx, byName[o.Name].Target, rejected.Error())
+				if _, ok := byName[o.Name]; ok {
+					s.markFailed(ctx, byName[o.Name].Target, rejected.Error())
+				}
 			}
 		}
 		for _, r := range res.Removed {
@@ -355,7 +385,13 @@ func (s *Syncer) Sync(ctx context.Context) (Report, error) {
 	}
 	now := time.Now()
 	for _, o := range res.Files {
-		it := byName[o.Name]
+		it, tracked := byName[o.Name]
+		if !tracked {
+			if hasExtra && o.Name == extra.Name && o.Changed && o.Err == nil && rejected == nil {
+				s.audit(ctx, store.AuditActionProxyRouteWrite, o.Domain)
+			}
+			continue
+		}
 		if rejected != nil && o.Changed {
 			continue
 		}

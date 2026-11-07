@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/envredact"
@@ -188,4 +189,40 @@ func (rt *Router) handleConvertEnvToSecret(w http.ResponseWriter, r *http.Reques
 	rt.recordAppEvent(r, store.AppEvent{AppName: name, Kind: store.AppEventSecretChange, Keys: []string{key}, Title: "Converted to secret: " + key})
 	rt.nudgeReconciler()
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// buildTimeEnvPrefixes are the framework prefixes whose values are inlined
+// into the client bundle at build, so a change needs a rebuild to show.
+var buildTimeEnvPrefixes = []string{"NEXT_PUBLIC_", "VITE_"}
+
+// buildTimeEnvChanges returns the sorted build-time keys added, removed or
+// changed between two env maps.
+func buildTimeEnvChanges(prev, next map[string]string) []string {
+	var keys []string
+	seen := map[string]bool{}
+	check := func(k string) {
+		if seen[k] {
+			return
+		}
+		seen[k] = true
+		pv, pok := prev[k]
+		nv, nok := next[k]
+		if pok == nok && pv == nv {
+			return
+		}
+		for _, p := range buildTimeEnvPrefixes {
+			if strings.HasPrefix(k, p) {
+				keys = append(keys, k)
+				return
+			}
+		}
+	}
+	for k := range prev {
+		check(k)
+	}
+	for k := range next {
+		check(k)
+	}
+	sort.Strings(keys)
+	return keys
 }

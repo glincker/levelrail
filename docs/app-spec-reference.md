@@ -117,6 +117,7 @@ A prebuilt image needs no build block: `image: ghcr.io/your-org/web:1.0` on the 
 | `egress` | `Egress` | no | open egress | Limits outbound traffic to an allowlist of host and port pairs. See [`Egress`](#egress). |
 | `loadbalancer` | `LoadBalancer` | no | none | Balances traffic across the service's replicas. See [Load balancing](/load-balancing). |
 | `budget` | `Budget` | no | none | Monthly egress and cost cap with alerts and an optional throttle or pause. See [`Budget`](#budget). |
+| `next` | `Next` | no | none | Next.js options. See [`Next`](#next). |
 | `autoscale` | `Autoscale` | no | none | Scales replicas on CPU, memory or request load between a minimum and maximum. Cannot be combined with `replicas`. See [`Autoscale`](#autoscale). |
 | `dependsOn` | list of string | no | none | Sibling `services:` keys this service waits on: the reconciler does not create this service's container until every named dependency has at least one running container. Start order only, real Docker Compose's own default `depends_on:` semantic (`service_started`), not a wait for the dependency's own readiness or health check. Each entry must name a real sibling service with a single running container (not `static` or `compose`), and a cycle between services fails validation. |
 | `tolerations` | list of `Toleration` | no | none | Lets the service land on nodes carrying matching taints. Each entry has `key`, `operator` (`Equal` or `Exists`), `value` and `effect` (`NoSchedule`, `PreferNoSchedule`, `NoExecute`). Without a matching entry a tainted node is skipped. |
@@ -287,6 +288,14 @@ Reserved, not yet scheduled. These fields validate, but nothing reads them yet: 
 | `partition` | integer | `0` | Ordinals below this keep the old release on update. At most `replicas`. |
 
 Refused for both kinds: `domains`, a `rollout.max_surge` above 0, `static` and `compose` builds, and a service name longer than 55 characters. A `per-node` service also refuses `replicas` and `strategy`.
+
+### `Next`
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `cache` | string | `none` | `none` or `redis`. `redis` shares the ISR and data cache across replicas. |
+
+With `cache: redis` the deploy needs a linked Redis database (`levelrail-cli databases create --name X --engine redis`, then `databases link`). Levelrail then sets `LEVELRAIL_NEXT_CACHE_URL` from that link and `NEXT_BUILD_ID` to the deploy id at build and runtime, never overriding values you set. The cache handler package is `kit/next-cache-handler`.
 
 ### `Autoscale`
 

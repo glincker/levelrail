@@ -157,6 +157,37 @@ func (rt *Router) enrichDomainCheck(ctx context.Context, resp *domainCheckRespon
 		resp.DNSProvider = ""
 	}
 	resp.ACMEFailure = acmeFailureIn(snap, resp.Domain)
+	resp.Route = rt.routeStatusFor(ctx, resp.Domain)
+}
+
+// routeStatusResource is the last stored route probe result for a domain.
+type routeStatusResource struct {
+	Status    int    `json:"status"`
+	OK        bool   `json:"ok"`
+	CheckedAt string `json:"checked_at"`
+}
+
+// routeStatusFor reads the verification the proxy integration already stored,
+// so a domain check never adds a network probe.
+func (rt *Router) routeStatusFor(ctx context.Context, domain string) *routeStatusResource {
+	if rt.proxyIntegration == nil || rt.proxyIntegration.store == nil {
+		return nil
+	}
+	rows, err := rt.proxyIntegration.store.ListProxyRouteStatus(ctx)
+	if err != nil {
+		return nil
+	}
+	for _, r := range rows {
+		if !strings.EqualFold(r.Domain, domain) || r.VerifiedAt.IsZero() || r.StatusCode == 0 {
+			continue
+		}
+		return &routeStatusResource{
+			Status:    r.StatusCode,
+			OK:        r.Reachable && r.StatusCode < http.StatusBadRequest,
+			CheckedAt: r.VerifiedAt.UTC().Format(time.RFC3339),
+		}
+	}
+	return nil
 }
 
 // connectivityPort is one TCP probe of this node's ingress ports.

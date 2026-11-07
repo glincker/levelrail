@@ -162,6 +162,8 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		if experimental.Enabled(experimental.AIModels) {
 			ingressOpts = append(ingressOpts, ingressreconcile.WithModelHosts(models.HostLister{Store: deps.db, Hosts: deps.models.hosts}))
 		}
+		_, skewIngress := nextSkewOptions(ctx, deps.db, deps.logger)
+		ingressOpts = append(ingressOpts, skewIngress)
 		if deps.dashboardDial != "" {
 			ingressOpts = append(ingressOpts, ingressreconcile.WithDashboardDial(deps.dashboardDial), ingressreconcile.WithGateSecret(deps.gateSecret))
 		}
@@ -298,6 +300,8 @@ func appOptionsFor(deps dynamicSourceDeps) []application.Option {
 	if reconcile.WorkersFromEnv(os.Getenv) > 1 {
 		appOpts = append(appOpts, application.WithReadinessRequeue(pendingReadiness(), application.ReadinessRequeueFromEnv(os.Getenv)))
 	}
+	skewHold, _ := nextSkewOptions(context.Background(), deps.db, deps.logger)
+	appOpts = append(appOpts, skewHold)
 	if deps.deployWindows != nil {
 		appOpts = append(appOpts, application.WithDeployWindows(deps.deployWindows))
 	}

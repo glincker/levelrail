@@ -975,8 +975,8 @@ func TestBuildRoutesConfig_SelfBoundRedirectOnlyCertifiedHosts(t *testing.T) {
 		t.Fatalf("redirect server = %+v, want one on :80", srv)
 	}
 	raw, _ := json.Marshal(srv)
-	if !strings.Contains(string(raw), "app.example.com") || !strings.Contains(string(raw), "No HTTPS certificate") {
-		t.Errorf("redirect server must redirect the certified host and explain the rest: %s", raw)
+	if !strings.Contains(string(raw), "app.example.com") || !strings.Contains(string(raw), "No app is serving this address") || strings.Contains(string(raw), "No HTTPS certificate") {
+		t.Errorf("redirect server must redirect the certified host and answer the rest with the diagnostic 404: %s", raw)
 	}
 	off, err := BuildRoutesConfig(RoutesOptions{ServerName: "ingress", ListenAddr: ":443", TLS: true, Routes: routes})
 	if err != nil {

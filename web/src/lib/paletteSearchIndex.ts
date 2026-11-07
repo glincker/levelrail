@@ -46,6 +46,11 @@ export const ITEM_KEYWORDS: Readonly<Record<string, string>> = {
   'nav-console': 'terminal shell cli ssh exec',
   'nav-help': 'docs documentation support guide',
   'nav-templates': 'template catalog one click marketplace store apps deploy',
+  'nav-variables': 'env shared secrets org project',
+  'nav-sources': 'git github gitlab bitbucket provider',
+  'nav-tags': 'tag label group filter env organize apps',
+  'nav-scanning': 'scan cve gate',
+  'nav-bootstrap': 'cloud init',
   'nav-storage':
     'storage disk space images docker container registry layers prune cache volumes',
   'nav-resources': 'resource cpu memory disk inventory all',

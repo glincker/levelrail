@@ -305,7 +305,7 @@ It is routed by the same ingress and gets the same TLS treatment as any other do
 - It appears on the app's **Network** tab, in `levelrail-cli apps network <name>`, in `levelrail-cli domains list` (source `automatic`) and in `GET /api/v1/domains` (`"automatic": true`).
 - It disappears the moment you add a real domain. A configured domain always wins.
 - It is generated each pass and never stored on the app, so per-domain features (basic auth, WAF, BYO certificate, maintenance mode) do not apply to it. Add a real domain for those.
-- Toggle it per server (not per app) with the **Automatic app hostnames** setting on the Domains page, or `levelrail-cli settings ingress set --fallback-domains=false`.
+- Toggle it per server (not per app) with the **Automatic app hostnames** setting on the Domains page, or `levelrail-cli settings ingress set --fallback-domains=false`. It is not a runtime setting, so `settings runtime set ingress.fallback_domains` answers unknown setting and points here.
 - It needs a public IPv4 address (detected or `APP_PUBLIC_HOST`). With a private address, a hostname, or detection turned off there is nothing to build, and the Network tab says so.
 
 The automatic hostname is a test address, and the dashboard labels it beta. Use your own domain for production.
@@ -318,6 +318,10 @@ Choose the wildcard-DNS provider under Settings, Domains (default for every app)
 Changing the provider re-derives the hostname and updates the route with no downtime. The old hostname stops working. **Test resolution** resolves a sample hostname and reports ok, wrong IP or not resolving, with a one-click switch to another provider or your own domain. From the CLI: `levelrail-cli domains provider get|set|test [--app <app>]`. Per-app hostnames on a free provider get the internal issuer or plain HTTP only, never a shared private key. The dashboard's own one-click HTTPS is different: see [Zero DNS setup](#zero-dns-setup-sslipio-hostnames-and-one-click-https).
 
 A request that matches no app, or an app with no healthy replica, gets a small "No app is serving this address" page (plain text for non-browser clients) with the original 404 or 503 status.
+
+This page is served on port 80 as well, without any certificate: a host that holds no certificate yet is not redirected, it gets the same page. With `ingress.diagnostic_show_state` off, every unknown or unserved host gets the generic 404. With it on, hosts the control plane knows get their state (not attached, building, stopped, starting, unhealthy) with a 503, and unknown hosts still get the generic 404.
+
+On port 443 a host with no certificate and no route cannot be answered at all: the TLS handshake fails before any page can be sent, so browsers show a certificate error instead of this page. Certificates are only requested for hosts you attach, so an unknown name never gets one. For a host that is attached but has no healthy app, the handshake succeeds and the page appears.
 
 ### HTTP redirects to HTTPS
 
@@ -965,7 +969,7 @@ If Traefik, nginx or Caddy owns 80 and 443 and forwards to this ingress, set the
 
 A request that cannot reach its container is retried for `APP_INGRESS_RETRY_WINDOW`. With two or more replicas a refused connection moves to another replica at once and the failed one is skipped for `APP_INGRESS_PASSIVE_FAIL_DURATION`, so a killed replica costs no requests. A single-replica app, or a pool with no live replica, answers a styled `503` with `Retry-After` and a page that reloads itself, not Caddy's bare `502`. A [custom error page](#custom-error-pages) for the domain replaces it.
 
-A domain whose app was routed in the last `APP_INGRESS_HOLD_WINDOW` (default `10m`) but has no ready container right now (a `recreate` deploy, a crash, a restart) keeps its route and its certificate and answers the same `503` instead of a TLS error or a dead connection. A domain that has never been routed since the control plane started is not held, so adding a domain before the first deploy does not start certificate issuance early.
+A domain whose app was routed in the last `APP_INGRESS_HOLD_WINDOW` (default `10m`) but has no ready container right now (a `recreate` deploy, a crash, a restart) keeps its route and its certificate and answers the same `503` instead of a TLS error or a dead connection. A domain that has never been routed since the control plane started is not held, so adding a domain before the first deploy does not start certificate issuance early. With `ingress.diagnostic_show_state` on, the held page says why: a stopped app answers `503` with "This app is stopped." and no auto-refresh or `Retry-After`; a deploy in progress or an unhealthy app keeps the self-refreshing page and `Retry-After`. With it off, every held host shows the same generic wording and nothing about its state.
 
 ### Surviving a control plane restart
 
@@ -1194,6 +1198,16 @@ How to confirm: check the DNS provider section of the Domains page, or run `leve
 Fix: connect a DNS provider (Cloudflare or Route53) on the Domains page and enable DNS-01 for wildcard domains. Then open the domain on the Domains page and check the certificate status.
 
 Still stuck? Run `levelrail-cli domains doctor <app> <domain>` and attach its full JSON output to an issue on [GitHub](https://github.com/glincker/levelrail/issues), or check the [ACME verification runbook](/acme-verification-runbook).
+
+### A detached domain shows a bare proxy 503
+
+When a domain is detached, Levelrail removes its route file. A front proxy such as Traefik then answers hosts nothing claims with its own bare `no available server` 503. To land those hosts on the Levelrail diagnostic page instead, turn on the runtime setting `proxy.unrouted_to_levelrail` (environment seed `LEVELRAIL_PROXY_UNROUTED_TO_LEVELRAIL`, default off). Levelrail then writes `levelrail-managed-unrouted.yaml` with a catch-all router at priority -500, above the proxy's own catch-all and below every host router, so it never overrides another router. It supports the Traefik provider only; other providers are skipped and logged once.
+
+Risk: the catch-all also receives hosts of other apps on the same front proxy, but only when they have no router at all. Hosts that have any router keep using it. Browsers that reach an unrouted host over HTTPS see the proxy's default certificate warning before the page.
+
+The diagnostic page names the real cause (unattached, building, stopped, starting, no healthy replica) with the exact CLI command to fix it, and only names the app when the visitor's host is already attached to it. The state comes from an in-memory snapshot of your apps, domains, deploys and containers. A background loop rebuilds it every `ingress.diagnostic_cache_ttl_seconds` seconds (default 5, applied live), so a visitor request never queries the database.
+
+How it is served: the ingress catch-all proxies to the control plane at `GET /internal/diagnostic`, adding the original host in a header the ingress sets itself and a per-process token. The endpoint answers 404 to anyone without the token, and ignores host or state headers a client sends. If the control plane cannot be reached, the ingress falls back to the static page baked into its config, which still shows the generic causes. The snapshot reports "starting" for a running container younger than `LEVELRAIL_INGRESS_DIAGNOSTIC_STARTING_SECONDS` (default 60).
 
 ## Next steps
 
