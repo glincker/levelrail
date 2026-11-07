@@ -6,6 +6,8 @@ description: Build with GitLab CI, CircleCI, Jenkins, Buildkite or any other CI,
 
 You do not need to build on Levelrail. Your CI builds and pushes an image to a registry, then tells Levelrail to deploy it and waits for the result. Levelrail only hosts.
 
+On a runner with Node, get the CLI with `npx levelrail-cli@<version> <command>` or `npm install --global levelrail-cli@<version>` ([details](/installing#use-the-cli-from-npm)). It is the client only, not the server.
+
 ```text
 your CI: build image, push to registry  ->  levelrail-cli apps deploy --image  ->  levelrail-cli apps wait
 ```

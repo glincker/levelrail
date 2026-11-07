@@ -474,7 +474,7 @@ Installs the CLI and shell completions on macOS or Linux.
 npm install -g levelrail-cli
 ```
 
-Pulls the binary for your platform (Linux, macOS or Windows, amd64 or arm64) as an optional dependency. Check it with `levelrail-cli help`.
+Pulls the binary for your platform (Linux, macOS or Windows, amd64 or arm64) as an optional dependency. Check it with `levelrail-cli help`. This installs the CLI client only, never the server. See [Use the CLI from npm](#use-the-cli-from-npm).
 </Tab>
 <Tab title="Windows">
 ```powershell
@@ -523,10 +523,27 @@ See the [CLI reference](/cli-reference) for every command.
 | --- | --- |
 | Homebrew (macOS and Linux) | `brew install glincker/tap/levelrail-cli` |
 | Scoop and winget (Windows) | Planned. Use the PowerShell installer above for now. |
+| npm, yarn or pnpm | `npx levelrail-cli <command>` or `npm install --global levelrail-cli` ([details](#use-the-cli-from-npm)) |
 | Go | `go install github.com/GLINCKER/levelrail/cmd/levelrail-cli@latest` |
 | Direct download | Pick `levelrail-cli-<os>-<arch>` (`linux`, `darwin`, or `windows`; `amd64` or `arm64`) from the [releases page](https://github.com/glincker/levelrail/releases). Windows files end in `.exe`. |
 
 Every release asset is listed in `checksums.txt`, which is signed with cosign and has a build provenance attestation. Windows binaries are published from the release after `v0.2.0-beta.15`; before that, run the install script from WSL.
+
+### Use the CLI from npm
+
+The CLI is published on npm as [`levelrail-cli`](https://www.npmjs.com/package/levelrail-cli). It installs only the client. The server needs Linux, systemd and root and is installed with `install.sh`.
+
+```bash
+npx levelrail-cli apps list              # run once, no install
+npm install --global levelrail-cli       # keep it on your PATH
+npx levelrail-cli@0.9.4 --help           # pin a version (CI and reproducible builds)
+```
+
+yarn and pnpm use the same registry: `yarn dlx levelrail-cli` and `pnpm dlx levelrail-cli`.
+
+- Platforms: Linux, macOS and Windows, on amd64 and arm64. The launcher package pulls the matching `levelrail-cli-<os>-<arch>` package as an optional dependency. There is no install script.
+- Provenance: packages are published from the release workflow with npm trusted publishing. Check them with `npm audit signatures` in a project that depends on `levelrail-cli`.
+- Pin the version to your server's version in CI so the client and the control plane stay in step.
 
 ## Verifying the install
 
