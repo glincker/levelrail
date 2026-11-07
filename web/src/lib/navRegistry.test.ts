@@ -2,6 +2,7 @@ import { readdirSync, statSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
+  FOLDED_GLOBAL_PAGES,
   GLOBAL_NAV_FOOTER,
   GLOBAL_NAV_GROUPS,
 } from '@/components/shell/navModel'
@@ -47,7 +48,6 @@ const ALLOWLIST: Record<string, string> = {
   '/oauth/complete': 'callback',
   '/oauth/consent': 'callback',
   '/dashboards': 'redirect',
-  '/images': 'redirect',
   '/databases/new': 'redirect',
   '/settings/janitor': 'redirect',
   '/dev/ui': 'test',
@@ -134,6 +134,7 @@ describe('nav registry', () => {
     }
     const listed = new Set<string>([
       ...sidebar.map((i) => i.to),
+      ...FOLDED_GLOBAL_PAGES.map((i) => i.to),
       ...settingsNavSections.flatMap((s) => s.items.map((i) => i.to)),
     ])
     const extra = NAV_REGISTRY.filter((e) => !listed.has(e.path)).map(

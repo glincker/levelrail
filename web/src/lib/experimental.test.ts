@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
+  allGlobalItems,
   visibleAppSections,
-  visibleGlobalFooter,
-  visibleGlobalGroups,
 } from '../components/shell/navModel'
 import { visibleSettingsSections } from './settingsNav'
 import { isRedirect } from '@tanstack/react-router'
@@ -33,20 +32,14 @@ describe('isFeatureVisible', () => {
 })
 
 describe('experimental navigation', () => {
-  const allItems = () => [
-    ...visibleGlobalGroups().flatMap((g) => g.items),
-    ...visibleGlobalFooter(),
-  ]
+  // Gated pages now live in folded tab strips, so search every global page.
+  const allItems = () => allGlobalItems()
 
   it.each(gatedGlobal)('keeps %s listed and locked until %s is on', (to, f) => {
     const item = allItems().find((i) => i.to === to)
     expect(item?.feature).toBe(f)
     expect(isFeatureLocked(item?.feature, [])).toBe(true)
     expect(isFeatureLocked(item?.feature, [f])).toBe(false)
-  })
-
-  it('keeps the AI group so its locked entries stay discoverable', () => {
-    expect(visibleGlobalGroups().map((g) => g.id)).toContain('ai')
   })
 
   it('lists the per-app load balancer entry for the renderer to lock', () => {

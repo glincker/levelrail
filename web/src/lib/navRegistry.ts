@@ -111,6 +111,17 @@ export const NAV_REGISTRY: readonly NavRegistryEntry[] = [
   },
   {
     id: 'registry',
+    path: '/images',
+    area: 'apps',
+    titleKey: 'shell.nav.registry',
+    icon: 'Package',
+    helpPath: null,
+    gated: null,
+    palette: false,
+    sidebar: true,
+  },
+  {
+    id: 'registry-settings',
     path: '/settings/registry',
     area: 'apps',
     titleKey: 'shell.nav.registry',
@@ -118,7 +129,7 @@ export const NAV_REGISTRY: readonly NavRegistryEntry[] = [
     helpPath: null,
     gated: null,
     palette: true,
-    sidebar: true,
+    sidebar: false,
     settingsArea: 'integrations',
   },
   {
