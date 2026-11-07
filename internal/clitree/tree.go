@@ -315,7 +315,7 @@ var Tree = map[string]*Node{
 	"deployments":  {Subs: map[string]*Node{"list": nil, "watch": nil, "summary": nil, "timeline": nil}},
 	"lb":           {Subs: map[string]*Node{"list": nil, "show": nil, "set": nil, "clear": nil, "status": nil, "check": nil, "history": nil, "upstream": nil, "export": nil, "import": nil}},
 	"certs":        {Subs: map[string]*Node{"budget": nil}},
-	"tags":         {Subs: map[string]*Node{"list": nil, "create": nil, "delete": nil, "apps": nil}},
+	"tags":         {Subs: map[string]*Node{"list": nil, "create": nil, "rename": nil, "delete": nil, "apps": nil}},
 	"nodes": {Subs: map[string]*Node{
 		"list": nil, "get": nil, "delete": nil, "join-token": nil, "join-tokens": nil, "revoke-join-token": nil,
 		"cordon": nil, "uncordon": nil, "drain": nil, "workloads": nil, "set-labels": nil,
@@ -456,6 +456,7 @@ var Tree = map[string]*Node{
 		"ddns":          {Subs: map[string]*Node{"show": nil, "set": nil, "enable": nil, "disable": nil, "status": nil}},
 		"dashboard-url": {Subs: map[string]*Node{"get": nil, "set": nil, "fix": nil}},
 		"runtime":       {Subs: map[string]*Node{"list": nil, "get": nil, "set": nil, "reset": nil, "apply": nil}},
+		"supply-chain":  {Subs: map[string]*Node{"get": nil, "set": nil}},
 		"ai-assistant": {Subs: map[string]*Node{"get": nil, "use": nil, "usage": nil,
 			"providers": {Subs: map[string]*Node{"list": nil, "set": nil, "test": nil, "remove": nil, "models": nil}},
 			"fallback":  {Subs: map[string]*Node{"set": nil}}}},
