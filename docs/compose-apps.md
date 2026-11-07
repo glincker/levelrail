@@ -193,6 +193,18 @@ Five templates ship in this format today: Uptime Kuma, Wiki.js, Redmine, One-Tim
 
 When a compose app has pull request previews on, every service in the preview gets `PR_NUMBER` and `PREVIEW_PR_NUMBER` (the pull request number), `PREVIEW_BRANCH`, and `PREVIEW_URL` (only on the service that carries the preview domain, and only when a domain was assigned). Use them in your own env or entrypoint, for example to name a preview database. A `PR_NUMBER` your app already defines is kept.
 
+
+## Env vars per service
+
+Every compose service is a member app named `<app>-<service>`, and its env belongs to that member only. A variable reaches exactly the services that declare it, and nothing is copied to siblings. To set a value for one service, address its member app:
+
+```bash
+levelrail-cli apps env set blog-db POSTGRES_USER=blog
+levelrail-cli apps env export blog-db
+```
+
+Effective env of one service, lowest to highest precedence: the `environment:` block in the compose file, then env set on the member app, then branch or pull request overrides on that member for previews. Generated secrets are encrypted per member and masked when listed. To give several services the same value, set it on each member.
+
 ## Troubleshooting
 
 ### Compose file was rejected as invalid
