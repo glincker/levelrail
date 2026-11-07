@@ -130,7 +130,7 @@ function LockedNavLinkItem({
         }
         tooltip={label}
         title={label}
-        className={cn(NAV_ROW_CLASS, 'text-muted-foreground')}
+        className={cn(NAV_ROW_CLASS, 'text-sidebar-foreground/75')}
         data-locked="true"
       >
         {item.icon}

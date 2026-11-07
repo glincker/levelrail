@@ -8,7 +8,10 @@ export function LockedFeatureMark({ id }: { id: string }) {
   const { t } = useTranslation()
   return (
     <>
-      <Badge variant="muted" className="ml-auto shrink-0 whitespace-nowrap">
+      <Badge
+        variant="muted"
+        className="ml-auto shrink-0 whitespace-nowrap text-sidebar-foreground/80"
+      >
         {t('shell.locked.badge')}
       </Badge>
       <span id={id} className="sr-only">
