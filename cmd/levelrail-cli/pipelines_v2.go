@@ -60,7 +60,7 @@ func streamArtifactToFile(ctx context.Context, client *Client, app, runID string
 	if err != nil {
 		return 0, fmt.Errorf("create %s: %w", out, err)
 	}
-	defer func() { _ = os.Remove(tmp.Name()) }()
+	defer func() { _ = os.Remove(tmp.Name()) }() //nolint:gosec // temp file we created
 	n, sum, err := client.DownloadPipelineArtifact(ctx, app, runID, a.ID, tmp)
 	if cerr := tmp.Close(); err == nil && cerr != nil {
 		err = cerr

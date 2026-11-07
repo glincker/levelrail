@@ -1639,6 +1639,14 @@
                 "none",
                 "redis"
               ]
+            },
+            "image_cache": {
+              "default": "none",
+              "description": "persistent keeps Next.js optimised images on a per app platform volume across deploys on the same node.",
+              "enum": [
+                "none",
+                "persistent"
+              ]
             }
           },
           "type": "object"

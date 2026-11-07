@@ -28,7 +28,7 @@ func TestDeployReceipt_StaleApprovalIsNotNamed(t *testing.T) {
 	setTimelineEnv(t)
 	h := newTimelineHarness(t)
 	started := time.Now().UTC().Add(-10 * time.Minute)
-	h.seedDeploy(t, "dep_s", started, store.DeployAttemptStatusSucceeded)
+	h.seedDeploy(t, "dep_s", started)
 	old := started.AddDate(0, -7, 0)
 	if err := h.db.SaveDeployApproval(context.Background(), store.DeployApproval{
 		ID: "apr_old", ServiceName: "web", Action: store.DeployApprovalActionDeploy, Image: "img:dep_s", Status: store.DeployApprovalStatusApproved,
@@ -49,7 +49,7 @@ func TestDeployReceipt_StaleApprovalIsNotNamed(t *testing.T) {
 func TestDeployReceipt_FailedLookupsAreIncomplete(t *testing.T) {
 	setTimelineEnv(t)
 	h := newTimelineHarness(t)
-	h.seedDeploy(t, "dep_f", time.Now().UTC().Add(-time.Minute), store.DeployAttemptStatusSucceeded)
+	h.seedDeploy(t, "dep_f", time.Now().UTC().Add(-time.Minute))
 	h.rt.deployApprovals = failingApprovals{h.rt.deployApprovals}
 	h.rt.deployGate = failingGate{h.rt.deployGate}
 	var got deployreceipt.Receipt

@@ -92,7 +92,7 @@ func TestAttentionFeed_PlatformTokenHiddenAndRotatedBeforeExpiry(t *testing.T) {
 	}
 	firstID := rt.stackDrift.id
 	items := fetchFeed(t, rt, authedRequest(t, admin, "GET", "/api/v1/attention/feed", ""))
-	for _, n := range subjectsOfKind(items, attention.KindTokenExpiring) {
+	for _, n := range subjectsOfKind(items) {
 		if n == stackDriftTokenName {
 			t.Fatalf("platform token listed as expiring: %v", n)
 		}
@@ -128,7 +128,7 @@ func TestAttentionFeed_PlatformTokenHiddenAndRotatedBeforeExpiry(t *testing.T) {
 	if err := db.QueryRowContext(ctx, `SELECT COUNT(*) FROM audit_log WHERE action = ?`, auditActionTokenRotated).Scan(&n); err != nil || n != 1 {
 		t.Errorf("rotation audit rows = %d (err %v), want 1", n, err)
 	}
-	if got := subjectsOfKind(fetchFeed(t, rt, authedRequest(t, admin, "GET", "/api/v1/attention/feed", "")), attention.KindTokenExpiring); len(got) != 1 || got[0] != "human-ci" {
+	if got := subjectsOfKind(fetchFeed(t, rt, authedRequest(t, admin, "GET", "/api/v1/attention/feed", ""))); len(got) != 1 || got[0] != "human-ci" {
 		t.Errorf("expiring names = %v, want only the human token", got)
 	}
 }
@@ -173,7 +173,7 @@ func TestAttentionFeed_HumanTokenWithSystemScopeStillShows(t *testing.T) {
 		t.Fatal(err)
 	}
 	items := fetchFeed(t, rt, authedRequest(t, admin, http.MethodGet, "/api/v1/attention/feed", ""))
-	if got := subjectsOfKind(items, attention.KindTokenExpiring); len(got) != 1 || got[0] != "sneaky" {
+	if got := subjectsOfKind(items); len(got) != 1 || got[0] != "sneaky" {
 		t.Errorf("expiring = %v, want the owned token despite its system scope", got)
 	}
 }

@@ -41,7 +41,7 @@ func (h timelineHarness) get(t *testing.T, target string) *httptest.ResponseReco
 	return serve(h.rt, authedRequest(t, h.cookie, http.MethodGet, target, ""))
 }
 
-func (h timelineHarness) seedDeploy(t *testing.T, id string, started time.Time, status string) {
+func (h timelineHarness) seedDeploy(t *testing.T, id string, started time.Time) {
 	t.Helper()
 	ctx := context.Background()
 	if err := h.db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "img:1", Port: 3000}); err != nil && !strings.Contains(err.Error(), "UNIQUE") {
@@ -53,7 +53,7 @@ func (h timelineHarness) seedDeploy(t *testing.T, id string, started time.Time, 
 	}); err != nil {
 		t.Fatal(err)
 	}
-	if err := h.db.FinishDeployAttempt(ctx, id, status, started.Add(40*time.Second), ""); err != nil {
+	if err := h.db.FinishDeployAttempt(ctx, id, store.DeployAttemptStatusSucceeded, started.Add(40*time.Second), ""); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -61,7 +61,7 @@ func (h timelineHarness) seedDeploy(t *testing.T, id string, started time.Time, 
 func (h timelineHarness) seedStory(t *testing.T, id string, started time.Time) {
 	t.Helper()
 	ctx := context.Background()
-	h.seedDeploy(t, id, started, store.DeployAttemptStatusSucceeded)
+	h.seedDeploy(t, id, started)
 	for _, s := range []store.DeployTraceStep{
 		{Step: "building", Status: "done", StartedAt: started.Add(time.Second), EndedAt: started.Add(20 * time.Second)},
 		{Step: "pushing", Status: "done", StartedAt: started.Add(20 * time.Second), EndedAt: started.Add(25 * time.Second)},
@@ -249,7 +249,7 @@ func TestDeployTimeline_Compare(t *testing.T) {
 	setTimelineEnv(t)
 	h := newTimelineHarness(t)
 	h.seedStory(t, "dep_1", time.Now().UTC().Add(-2*time.Hour))
-	h.seedDeploy(t, "dep_2", time.Now().UTC().Add(-time.Hour), store.DeployAttemptStatusSucceeded)
+	h.seedDeploy(t, "dep_2", time.Now().UTC().Add(-time.Hour))
 
 	rec := h.get(t, "/api/v1/deployments/dep_1/timeline/compare?with=dep_2")
 	if rec.Code != http.StatusOK {
