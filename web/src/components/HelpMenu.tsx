@@ -23,7 +23,7 @@ import {
 import { useBrand } from '../hooks/useBrand'
 import { useIsRoot } from '../hooks/useIsRoot'
 import { helpDocForPath } from './shell/contextHelp'
-import { ReportIssueDialog } from './ReportIssueDialog'
+import { LazyReportIssueDialog } from './LazyReportIssueDialog'
 import type { IssueSource } from '@/lib/issueReport'
 
 // Header-level help entry point, next to NotificationBell/ThemeToggle.
@@ -133,7 +133,7 @@ export function HelpMenu() {
           ) : null}
         </DropdownMenuContent>
       </DropdownMenu>
-      <ReportIssueDialog
+      <LazyReportIssueDialog
         open={report !== null}
         onOpenChange={(o) => {
           if (!o) setReport(null)
