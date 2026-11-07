@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/dataexport"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 )
 
 // handleScrapeMetrics serves the Prometheus text exposition at GET /metrics.
@@ -19,6 +20,10 @@ import (
 // unrestricted caller. Labels are limited to app, database, node and the
 // exporter's own destination name, so cardinality tracks what is deployed.
 func (rt *Router) handleScrapeMetrics(w http.ResponseWriter, r *http.Request) {
+	if rt.runtimeSettings != nil && !rt.runtimeSettings.Bool(r.Context(), runtimesettings.KeyMetricsScrapeEnabled) {
+		writeError(w, http.StatusNotFound, "the metrics scrape endpoint is turned off")
+		return
+	}
 	svc, ok := rt.dataExportOrNotImplemented(w)
 	if !ok {
 		return

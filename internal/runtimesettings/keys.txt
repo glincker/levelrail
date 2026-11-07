@@ -88,6 +88,7 @@ monitors.raw_retention
 nextjs.generate_actions_key
 nextjs.memory_floor_mb
 nodes.protected_taint_keys
+observability.metrics_scrape_enabled
 onboarding.enabled
 onboarding.restore_reminder_days
 orgs.admins_can_create
