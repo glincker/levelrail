@@ -174,6 +174,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runMetrics(prog, args[1:], stdout, stderr, lookupEnv)
 	case "backup-targets":
 		return runBackupTargets(prog, args[1:], stdout, stderr, lookupEnv)
+	case "bootstrap-script":
+		return runBootstrapScript(prog, args[1:], stdout, stderr, lookupEnv)
 	case "registry-credentials":
 		return runRegistryCredentials(prog, args[1:], stdout, stderr, lookupEnv)
 	case "network-shares":
@@ -474,6 +476,7 @@ Usage:
   %[1]s forms list|create|update|snippet|fields|test|delete|submissions|spam|unspam|remove|export <app> [flags]   form capture endpoints for static sites with spam trap, inbox and CSV export
   %[1]s builds list|show|cancel|retry|cache|prune [flags]   build queue and history, cancel and retry, BuildKit cache inventory and prune preview
   %[1]s images list|layers|gc|verify [flags] image inventory per node with size and owners, layer breakdown, retention GC that keeps rollback targets, signature check
+  %[1]s bootstrap-script list|show|create|delete [flags]   saved cloud-init scripts appended to new cloud nodes
   %[1]s registry-credentials list|get|create|update|delete [flags]   manage private container registry pull credentials
   %[1]s network-shares list|get|create|update|delete|test [flags]    manage NFS/CIFS network share mounts
   %[1]s private-networks list|map|create|set|delete|allow|deny|apply [flags]    private networks and app to app allow rules

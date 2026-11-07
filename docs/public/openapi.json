@@ -106731,7 +106731,7 @@
     },
     "/api/v1/node-provisions": {
       "get": {
-        "description": "A top-level sibling of /api/v1/nodes/{id}/..., not nested under it: \"/api/v1/nodes/provisions/{id}\" and \"/api/v1/nodes/{id}/health\" would be two equally-specific wildcard patterns net/http's own ServeMux refuses to register together.\n\nRequires the `root` ability.",
+        "description": "Requires the `root` ability.",
         "operationId": "handleListNodeProvisions",
         "responses": {
           "200": {
@@ -106790,7 +106790,7 @@
             ]
           }
         ],
-        "summary": "A top-level sibling of /api/v1/nodes/{id}/..., not nested under it: \"/api/v1/nodes/provisions/{id}\" and \"/api/v1/nodes/{id}/health\" would be two equally-specific wildcard patterns net/http's own ServeMux refuses to register together.",
+        "summary": "List Node Provisions",
         "tags": [
           "Other"
         ],
