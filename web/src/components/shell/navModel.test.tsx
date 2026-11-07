@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  activeGlobalItemId,
   APP_NAV_SECTIONS,
   visibleAppSections,
   visibleGlobalGroups,
@@ -332,5 +333,29 @@ describe('palette entries derived from the nav model', () => {
         .map((e) => e.to)
         .filter((to) => ROUTE_ENTRIES.some((r) => r.to === to)),
     ).toEqual([])
+  })
+})
+
+describe('activeGlobalItemId', () => {
+  const items = allGlobalItems()
+  it.each([
+    ['/apps', 'apps'],
+    ['/projects', 'projects'],
+    ['/projects/p1', 'projects'],
+    ['/templates', 'templates'],
+  ])('%s activates only %s', (path, id) => {
+    expect(activeGlobalItemId(path, items)).toBe(id)
+  })
+})
+
+describe('activeGlobalItemId', () => {
+  const items = allGlobalItems()
+  it.each([
+    ['/apps', 'apps'],
+    ['/projects', 'projects'],
+    ['/projects/p1', 'projects'],
+    ['/templates', 'templates'],
+  ])('%s activates only %s', (path, id) => {
+    expect(activeGlobalItemId(path, items)).toBe(id)
   })
 })
