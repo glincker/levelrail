@@ -82,3 +82,14 @@ func TestProcfileServicesSkipsDatabases(t *testing.T) {
 		t.Errorf("missing deploy-manual finding: %v", findings)
 	}
 }
+
+func TestProcfileServicesDockerfile(t *testing.T) {
+	dir := writeRepo(t, map[string]string{"Procfile": "web: serve\n", "Dockerfile": "FROM scratch\n"})
+	svcs, _, ok, err := ProcfileServices(dir)
+	if err != nil || !ok {
+		t.Fatalf("ok=%v err=%v", ok, err)
+	}
+	if svcs["web"].Build.Type != spec.BuildDockerfile || len(svcs["web"].Command) == 0 {
+		t.Errorf("web = %+v", svcs["web"])
+	}
+}

@@ -34,3 +34,31 @@ func TestProcfileReleaseWithoutWebAtDeploy(t *testing.T) {
 		t.Error("import mode keeps the no-web finding")
 	}
 }
+
+func TestProcfileDockerfileOverridesCommand(t *testing.T) {
+	files := map[string][]byte{
+		"Procfile": []byte("web: serve --port 80\nworker: run-jobs\n"),
+		"app.json": []byte(`{"buildpacks":[{"url":"https://example.com/custom"}]}`),
+	}
+	res := Translate(files, ForDeploy(true))
+	for _, name := range []string{"web", "worker"} {
+		svc := res.Fragment.Services[name]
+		if svc.Build.Type != "dockerfile" {
+			t.Errorf("%s build = %q", name, svc.Build.Type)
+		}
+		if len(svc.Command) != 3 || svc.Command[0] != "sh" {
+			t.Errorf("%s command = %v", name, svc.Command)
+		}
+	}
+	c := codes(res)
+	if !c["heroku.dockerfile.command"] || !c["heroku.buildpack.ignored"] || c["heroku.buildpack.unsupported"] {
+		t.Errorf("findings = %v", c)
+	}
+}
+
+func TestProcfileWithoutDockerfileUsesRailpack(t *testing.T) {
+	res := Translate(map[string][]byte{"Procfile": []byte("web: serve\n")}, ForDeploy(false))
+	if got := res.Fragment.Services["web"].Build.Type; got != "railpack" {
+		t.Errorf("build = %q", got)
+	}
+}

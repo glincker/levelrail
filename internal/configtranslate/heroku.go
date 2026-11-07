@@ -76,7 +76,7 @@ func translateHeroku(files map[string][]byte, o options) (Fragment, []Finding) {
 		}
 	}
 
-	build, bfs := herokuBuild(app)
+	build, bfs := herokuBuild(app, o)
 	fs = append(fs, bfs...)
 
 	for _, name := range sortedKeys(procs) {
@@ -149,8 +149,19 @@ func parseProcfile(files map[string][]byte) (map[string]string, string, string) 
 	return procs, release, bad
 }
 
-func herokuBuild(app appJSON) (Build, []Finding) {
+func herokuBuild(app appJSON, o options) (Build, []Finding) {
 	var fs []Finding
+	if o.dockerfile {
+		fs = append(fs, Finding{Code: "heroku.dockerfile.command", Severity: SeverityInfo, Source: fileProcfile,
+			Message: "the repo has a Dockerfile, so it is built as is and each Procfile command replaces the image's CMD for its service",
+			Fix:     "Remove the Procfile line for a service that should run the image's own CMD."})
+		if len(app.Buildpacks) > 0 {
+			fs = append(fs, Finding{Code: "heroku.buildpack.ignored", Severity: SeverityInfo, Source: fileAppJSON,
+				Message: "buildpacks are ignored because a Dockerfile is present",
+				Fix:     "Delete the buildpacks key once the Dockerfile covers the build."})
+		}
+		return Build{Type: "dockerfile"}, fs
+	}
 	if app.Stack == "container" {
 		fs = append(fs, Finding{Code: "heroku.stack.container", Severity: SeverityInfo, Source: fileAppJSON,
 			Message: "container stack builds from a Dockerfile, but Railpack is proposed because heroku.yml is not read",
