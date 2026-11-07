@@ -26,6 +26,8 @@ type TagStore interface {
 	GetTagByName(ctx context.Context, name string) (store.Tag, error)
 	ListTags(ctx context.Context) ([]store.Tag, error)
 	DeleteTag(ctx context.Context, id string) error
+	RenameTag(ctx context.Context, id, name string) (store.Tag, error)
+	CountTagUsage(ctx context.Context) (map[string]store.TagUsage, error)
 	AttachAppTag(ctx context.Context, tagID, appName string) error
 	DetachAppTag(ctx context.Context, tagID, appName string) error
 	ListTagsForApp(ctx context.Context, appName string) ([]store.Tag, error)
@@ -38,6 +40,9 @@ type tagResource struct {
 	ID        string    `json:"id"`
 	Name      string    `json:"name"`
 	CreatedAt time.Time `json:"created_at,omitempty"`
+	// Counts are set by the list route only.
+	AppCount      *int `json:"app_count,omitempty"`
+	ResourceCount *int `json:"resource_count,omitempty"`
 }
 
 func toTagResource(t store.Tag) tagResource {
@@ -171,11 +176,50 @@ func (rt *Router) handleListTags(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: list tags failed", err)
 		return
 	}
+	usage, err := rt.tags.CountTagUsage(r.Context())
+	if err != nil {
+		rt.internalError(w, "api: count tag usage failed", err)
+		return
+	}
 	out := make([]tagResource, 0, len(tags))
 	for _, t := range tags {
-		out = append(out, toTagResource(t))
+		res := toTagResource(t)
+		u := usage[t.ID]
+		res.AppCount, res.ResourceCount = &u.Apps, &u.Resources
+		out = append(out, res)
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+// handleRenameTag handles PATCH /api/v1/tags/{id}.
+func (rt *Router) handleRenameTag(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	var req struct {
+		Name string `json:"name"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	name, err := validateTagName(req.Name)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	tag, err := rt.tags.RenameTag(r.Context(), id, name)
+	if errors.Is(err, store.ErrTagNotFound) {
+		writeError(w, http.StatusNotFound, "tag not found")
+		return
+	}
+	if errors.Is(err, store.ErrTagNameTaken) {
+		writeError(w, http.StatusConflict, "a tag with this name already exists")
+		return
+	}
+	if err != nil {
+		rt.internalError(w, "api: rename tag failed", err, slog.String("id", id))
+		return
+	}
+	writeJSON(w, http.StatusOK, toTagResource(tag))
 }
 
 // handleDeleteTag handles DELETE /api/v1/tags/{id}.

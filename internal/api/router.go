@@ -441,6 +441,8 @@ type Router struct {
 	updateSettings UpdateSettingsStore
 	// deployURLSettings is the deploy URL copies mode; nil when the store lacks it.
 	deployURLSettings DeployURLSettingsStore
+	// bootstrapScripts is the saved node bootstrap script library; nil when the store lacks it.
+	bootstrapScripts BootstrapScriptStore
 	// upgradeFetchers is the beta/edge channel lookup, defaulted to
 	// upgrade.DefaultFetchers in NewRouter, overridable in tests the
 	// same way fetchLatestRelease is above.
@@ -1079,6 +1081,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		updatesCache:                newUpdatesCache(),
 		updateSettings:              s,
 		deployURLSettings:           deployURLSettingsOf(s),
+		bootstrapScripts:            bootstrapScriptStoreOf(s),
 		upgradeFetchers:             upgrade.DefaultFetchers(b.RepoSlug()),
 		channelUpdatesCache:         upgrade.NewCache(),
 		releaseHist:                 newReleaseHistorySource(b.RepoSlug()),

@@ -55,6 +55,7 @@ const ALLOWLIST: Record<string, string> = {
   '/deploy': 'deeplink',
   '/apps/new': 'wizard',
   '/builds': 'tab',
+  '/tags': 'tab',
   '/deploy-timeline': 'tab',
   '/costs': 'tab',
   '/cdn/caches': 'tab',

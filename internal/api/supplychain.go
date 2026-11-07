@@ -21,6 +21,8 @@ type SupplyChainService interface {
 	Settings(ctx context.Context, app string) (supplychain.Settings, error)
 	SaveSettings(ctx context.Context, app string, patch supplychain.SettingsPatch) (supplychain.Settings, error)
 	ArmOverride(ctx context.Context, app, reason string) (supplychain.Settings, error)
+	DefaultPolicy(ctx context.Context) (supplychain.DefaultPolicy, error)
+	SaveDefaultPolicy(ctx context.Context, patch supplychain.SettingsPatch, actor string) (supplychain.DefaultPolicy, error)
 	Get(ctx context.Context, app, attemptID string) (supplychain.Record, error)
 	OpenSBOM(ctx context.Context, app, attemptID string) ([]byte, supplychain.Record, error)
 	ScanNow(ctx context.Context, app, attemptID string) (supplychain.Record, error)

@@ -163,6 +163,8 @@ type Settings struct {
 	App     string
 	Enabled bool
 	Gate    GateMode
+	// Explicit is true when the app has its own stored policy; false means it inherits the instance default.
+	Explicit bool
 	// OverrideReason and OverrideArmedAt describe a one-shot gate override.
 	OverrideReason  string
 	OverrideArmedAt time.Time

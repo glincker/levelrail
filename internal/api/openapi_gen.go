@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1986 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1989 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -642,6 +642,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/settings/runtime/{key}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleSetRuntimeSetting", Description: "Settings gate security protections and can restart the process, so writes are AbilityRoot."},
 	{Method: "GET", Path: "/api/v1/settings/server-profile", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetServerProfile", Description: ""},
 	{Method: "PUT", Path: "/api/v1/settings/server-profile", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleSetServerProfile", Description: ""},
+	{Method: "GET", Path: "/api/v1/settings/supply-chain", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetSupplyChainDefault", Description: ""},
+	{Method: "PUT", Path: "/api/v1/settings/supply-chain", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePutSupplyChainDefault", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/traffic-export/sinks", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListTrafficExportSinks", Description: "Traffic export sinks: list and status are AbilityRead; every write and test is AbilityRoot. Credentials are write-only and come back as *_set booleans."},
 	{Method: "POST", Path: "/api/v1/settings/traffic-export/sinks", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleCreateTrafficExportSink", Description: "Root: stores credentials. A new sink exports no visitor identity unless its fields list opts in."},
 	{Method: "DELETE", Path: "/api/v1/settings/traffic-export/sinks/{id}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDeleteTrafficExportSink", Description: ""},
@@ -1485,7 +1487,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/node-providers/{provider}/regions", Ability: "AbilityRead", Group: "Other", Handler: "handleListNodeProviderRegions", Description: ""},
 	{Method: "GET", Path: "/api/v1/node-providers/{provider}/sizes", Ability: "AbilityRead", Group: "Other", Handler: "handleListNodeProviderSizes", Description: ""},
 	{Method: "POST", Path: "/api/v1/node-providers/{provider}/test", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleTestNodeProvider", Description: ""},
-	{Method: "GET", Path: "/api/v1/node-provisions", Ability: "AbilityRoot", Group: "Other", Handler: "handleListNodeProvisions", Description: "A top-level sibling of /api/v1/nodes/{id}/..., not nested under it: \"/api/v1/nodes/provisions/{id}\" and \"/api/v1/nodes/{id}/health\" would be two equally-specific wildcard patterns net/http's own ServeMux refuses to register together."},
+	{Method: "GET", Path: "/api/v1/node-provisions", Ability: "AbilityRoot", Group: "Other", Handler: "handleListNodeProvisions", Description: ""},
 	{Method: "GET", Path: "/api/v1/node-provisions/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetNodeProvision", Description: ""},
 	{Method: "GET", Path: "/api/v1/openapi.json", Ability: "AbilityRead", Group: "Other", Handler: "handleOpenAPISpec", Description: "Route metadata for the in-app API explorer (web/src/routes/settings/api-explorer.tsx): AbilityRead, same tier as system/status, since this is the API surface's own shape, not resource data."},
 	{Method: "POST", Path: "/api/v1/otlp/v1/traces", Ability: "Public", Group: "Other", Handler: "handleOTLPTraces", Description: "Log drain (apps_log_drain.go): forwards an app's container logs to an external HTTP or syslog sink, additive to the existing node-local store. AbilityWriteSensitive for write/clear, the same tier as storage above (both configure where data leaves this control plane to); AbilityRead for the GET."},
@@ -1690,6 +1692,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/tags", Ability: "AbilityRead", Group: "Other", Handler: "handleListTags", Description: ""},
 	{Method: "POST", Path: "/api/v1/tags", Ability: "AbilityWrite", Group: "Other", Handler: "handleCreateTag", Description: "Tags (tags.go): arbitrary operator-defined labels for organizing and filtering apps, independent of the project/environment hierarchy. The global collection lives flat under /api/v1/tags (create/list/delete, plus filter-by-tag); attach/detach is scoped under the app it applies to, the same nesting scheduled-tasks/flags above use for their own per-app child resources."},
 	{Method: "DELETE", Path: "/api/v1/tags/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteTag", Description: ""},
+	{Method: "PATCH", Path: "/api/v1/tags/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleRenameTag", Description: ""},
 	{Method: "GET", Path: "/api/v1/tags/{id}/apps", Ability: "AbilityRead", Group: "Other", Handler: "handleListAppsByTag", Description: ""},
 	{Method: "POST", Path: "/api/v1/team-invites/accept", Ability: "Public", Group: "Other", Handler: "handleAcceptTeamInvite", Description: ""},
 	{Method: "GET", Path: "/api/v1/team-invites/{token}", Ability: "Session", Group: "Other", Handler: "handlePreviewTeamInvite", Description: ""},

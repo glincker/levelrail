@@ -22,6 +22,8 @@ func runTags(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runTagsList(prog, args[1:], stdout, stderr, lookupEnv)
 	case "create":
 		return runTagsCreate(prog, args[1:], stdout, stderr, lookupEnv)
+	case "rename":
+		return runTagsRename(prog, args[1:], stdout, stderr, lookupEnv)
 	case "delete":
 		return runTagsDelete(prog, args[1:], stdout, stderr, lookupEnv)
 	case "apps":
@@ -37,6 +39,7 @@ func tagsUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s tags list [flags]              list every tag
   %[1]s tags create --name NAME [flags]   create a tag
+  %[1]s tags rename <old> <new> [flags]   rename a tag, keeping its attachments
   %[1]s tags delete <name> [flags]        delete a tag by name (detaches it from every app it was on)
   %[1]s tags apps <name> [flags]          list every app attached to a tag, by tag name
 

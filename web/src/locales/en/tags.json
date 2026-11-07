@@ -1,0 +1,49 @@
+{
+  "page": {
+    "title": "Tags",
+    "description": "Labels you attach to apps to group and filter them."
+  },
+  "create": {
+    "label": "New tag",
+    "placeholder": "env:prod",
+    "submit": "Create tag",
+    "pending": "Creating"
+  },
+  "table": {
+    "label": "Tags",
+    "name": "Name",
+    "apps": "Apps",
+    "resources": "Resources",
+    "created": "Created",
+    "actions": "Actions"
+  },
+  "row": {
+    "showApps": "Show apps tagged {{name}}",
+    "hideApps": "Hide apps tagged {{name}}"
+  },
+  "rename": {
+    "action": "Rename {{name}}",
+    "label": "New name for {{name}}",
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "delete": {
+    "action": "Delete {{name}}",
+    "title": "Delete tag {{name}}?",
+    "description": "The tag is removed from every app that uses it.",
+    "consequence": "Apps keep running; only the label goes away.",
+    "confirm": "Delete tag",
+    "pending": "Deleting"
+  },
+  "apps": {
+    "loading": "Loading apps",
+    "empty": "No apps use this tag yet.",
+    "error": "Could not load the apps for this tag.",
+    "list": "Apps tagged {{name}}"
+  },
+  "empty": {
+    "title": "No tags yet",
+    "description": "Create a tag above, or add one from an app's overview, to start grouping apps."
+  },
+  "error": "Could not load tags."
+}

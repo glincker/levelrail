@@ -174,6 +174,14 @@ type TagResource struct {
 	ID        string `json:"id"`
 	Name      string `json:"name"`
 	CreatedAt string `json:"created_at,omitempty"`
+	// Counts come back from the list route only.
+	AppCount      int `json:"app_count,omitempty"`
+	ResourceCount int `json:"resource_count,omitempty"`
+}
+
+// RenameTagRequest is the body of PATCH /api/v1/tags/{id}.
+type RenameTagRequest struct {
+	Name string `json:"name"`
 }
 
 // CreateTagRequest mirrors internal/api's tagResource decode shape for

@@ -630,6 +630,13 @@ func (c *Client) ListTags(ctx context.Context) ([]TagResource, error) {
 	return out, err
 }
 
+// RenameTag calls PATCH /api/v1/tags/{id}.
+func (c *Client) RenameTag(ctx context.Context, id, name string) (TagResource, error) {
+	var out TagResource
+	err := c.do(ctx, http.MethodPatch, "/api/v1/tags/"+PathEscape(id), RenameTagRequest{Name: name}, &out)
+	return out, err
+}
+
 // DeleteTag calls DELETE /api/v1/tags/{id}.
 func (c *Client) DeleteTag(ctx context.Context, id string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/tags/"+PathEscape(id), nil, nil)
