@@ -8,7 +8,7 @@ import { CLIENT_KIND_LABELS, type AuditLogEntry } from '../queries/auditLog'
 import { auditFriendlyLabel } from '../lib/auditLabels'
 
 // domainApp resolves a domain tag to its owning app, for a link to that
-// app's own domains page (settings/certificates.tsx and
+// app's own domains page (domains/certificates.tsx and
 // CertificateCenterTable.tsx already treat a domain owned by no current
 // app as an orphaned row to display plainly rather than link, the same
 // fallback DomainTag below applies).

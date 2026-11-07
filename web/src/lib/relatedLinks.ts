@@ -39,7 +39,7 @@ export const RELATED_LINKS: Readonly<Record<string, RelatedLinkEntry[]>> = {
     { to: '/settings/platform/https', labelKey: 'platformHttps' },
     { to: '/network', labelKey: 'network' },
   ],
-  '/settings/certificates': [
+  '/domains/certificates': [
     { to: '/domains', labelKey: 'domains' },
     { to: '/settings/platform/https', labelKey: 'platformHttps' },
   ],

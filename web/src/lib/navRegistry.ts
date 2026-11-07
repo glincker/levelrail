@@ -807,7 +807,7 @@ export const NAV_REGISTRY: readonly NavRegistryEntry[] = [
   },
   {
     id: 'settings-certificates',
-    path: '/settings/certificates',
+    path: '/domains/certificates',
     area: 'settings-domains',
     titleKey: 'settings:nav.items.certificates.title',
     icon: 'ShieldCheck',
