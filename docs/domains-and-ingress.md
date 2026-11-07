@@ -305,7 +305,7 @@ It is routed by the same ingress and gets the same TLS treatment as any other do
 - It appears on the app's **Network** tab, in `levelrail-cli apps network <name>`, in `levelrail-cli domains list` (source `automatic`) and in `GET /api/v1/domains` (`"automatic": true`).
 - It disappears the moment you add a real domain. A configured domain always wins.
 - It is generated each pass and never stored on the app, so per-domain features (basic auth, WAF, BYO certificate, maintenance mode) do not apply to it. Add a real domain for those.
-- Toggle it per server (not per app) with the **Automatic app hostnames** setting on the Domains page, or `levelrail-cli settings ingress set --fallback-domains=false`.
+- Toggle it per server (not per app) with the **Automatic app hostnames** setting on the Domains page, or `levelrail-cli settings ingress set --fallback-domains=false`. It is not a runtime setting, so `settings runtime set ingress.fallback_domains` answers unknown setting and points here.
 - It needs a public IPv4 address (detected or `APP_PUBLIC_HOST`). With a private address, a hostname, or detection turned off there is nothing to build, and the Network tab says so.
 
 The automatic hostname is a test address, and the dashboard labels it beta. Use your own domain for production.
