@@ -256,6 +256,7 @@ export const TEMPLATE_LOGO_LOADERS: Record<
   'mkdocs-material': () => import('@thesvg/react/material-for-mkdocs'),
   mlflow: () => import('@thesvg/react/mlflow'),
   'mongo-express': () => import('@thesvg/react/mongo-express'),
+  mongodb: () => import('@thesvg/react/mongodb'),
   monica: () => import('@thesvg/react/monica'),
   moodle: () => import('@thesvg/react/moodle'),
   mosquitto: () => import('@thesvg/react/eclipse-mosquitto'),
