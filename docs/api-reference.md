@@ -707,6 +707,8 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/next-advisor | AbilityRead | handleNextAdvisor |
 | GET | /api/v1/apps/{name}/rollout/state | AbilityRead | handleGetRolloutState |
 | POST | /api/v1/service-templates/validate | AbilityRead | handleValidateTemplateSubmission |
+| GET | /api/v1/apps/{name}/edge | AbilityRead | handleGetAppEdge |
+| POST | /api/v1/apps/{name}/cdn/setup | AbilityWriteSensitive | handleSetupAppCDN |
 
 </Accordion>
 

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1995 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1997 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -175,6 +175,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/cdn", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppCDN", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/cdn", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePutAppCDN", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/cdn/resync", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleResyncAppCDN", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/cdn/setup", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetupAppCDN", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/changes", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppChanges", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/ci/templates", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetCITemplates", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/ci/trusts", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListCITrusts", Description: ""},
@@ -230,6 +231,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/dns-provider", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppDNSProvider", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/dns-provider", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppDNSProvider", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/dns-provider/test", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleTestAppDNSProvider", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/edge", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppEdge", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/effective-config", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetEffectiveConfig", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/egress-policy", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleClearAppEgressPolicy", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/egress-policy", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppEgressPolicy", Description: "Outbound allowlist per app: AbilityWriteSensitive, it changes the exfiltration surface. GET has its own route since an unset policy is the common case."},

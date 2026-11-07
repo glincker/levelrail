@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/cdn"
 	"github.com/GLINCKER/levelrail/internal/release"
 	"log/slog"
 	"net/http"
@@ -81,7 +82,7 @@ type deployTriggerResult struct {
 	// DeployID is the attempt this trigger created, so a waiter follows it
 	// rather than whichever deploy is newest.
 	DeployID string `json:"deploy_id,omitempty"`
-	// CDNWarning is set when a static publish or rollback could not purge the
+	// CDNWarning is set when a publish, deploy or rollback could not purge the
 	// CDN cache. The publish itself succeeded.
 	CDNWarning string `json:"cdn_warning,omitempty"`
 }
@@ -268,7 +269,12 @@ func (rt *Router) applyDeploy(w http.ResponseWriter, r *http.Request, existing s
 		rt.recordOperatorRollback(r.Context(), name)
 	}
 	res := toAppResource(updated)
-	writeJSON(w, http.StatusAccepted, deployTriggerResult{appResource: &res, DeployID: attemptID})
+	trigger := cdn.TriggerDeploy
+	if rollbackTo != "" {
+		trigger = cdn.TriggerRollback
+	}
+	// Purged on accept so the edge stops serving the old release's pages as the swap starts.
+	writeJSON(w, http.StatusAccepted, deployTriggerResult{appResource: &res, DeployID: attemptID, CDNWarning: rt.purgeWarningFor(r.Context(), name, trigger)})
 }
 
 // recordOperatorRollback marks the newest attempt as an operator's choice so
