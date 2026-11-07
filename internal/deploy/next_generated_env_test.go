@@ -49,3 +49,17 @@ func TestUserSetIDSurvivesStrip(t *testing.T) {
 		t.Fatalf("user value lost: %q", got)
 	}
 }
+
+func TestEnsureNextCacheLink(t *testing.T) {
+	ref := store.DatabaseEnvRef{Database: "c", Field: "url"}
+	d := store.DesiredService{NextCache: spec.NextCacheRedis, DatabaseEnv: map[string]store.DatabaseEnvRef{"REDIS_URL": ref}}
+	EnsureNextCacheLink(&d)
+	if d.DatabaseEnv[nextCacheURLEnvVar] != ref {
+		t.Fatalf("link not set: %v", d.DatabaseEnv)
+	}
+	d.NextCache = spec.NextCacheNone
+	EnsureNextCacheLink(&d)
+	if _, ok := d.DatabaseEnv[nextCacheURLEnvVar]; ok {
+		t.Fatalf("link not dropped")
+	}
+}

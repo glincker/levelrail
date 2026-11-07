@@ -514,6 +514,7 @@ func (p *Pipeline) deployImage(ctx context.Context, req Request) (string, error)
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
 	}
 	resolution.apply(&desired)
+	p.applyStoredNextCache(ctx, req, &desired)
 	held, err := p.saveDesired(ctx, req, desired)
 	if err != nil {
 		return "", fmt.Errorf("deploy: service %q: save desired state: %w", req.ServiceName, err)

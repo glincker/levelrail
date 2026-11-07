@@ -66,6 +66,8 @@ type AppResource struct {
 	// ImageDigest is the content Image is pinned to, empty for a legacy tag.
 	ImageDigest string `json:"image_digest,omitempty"`
 	Port        int    `json:"port"`
+	// NextCache is the saved Next.js cache mode: none, redis, or empty when the spec decides.
+	NextCache string `json:"next_cache,omitempty"`
 	// HostPort mirrors internal/api's appResource.HostPort: nil means
 	// "let Docker assign one", a value pins the host-side port. Settable
 	// on create and update, like Port.
