@@ -120,6 +120,7 @@ export const NAMESPACES = [
   'models',
   'templates',
   'trialApp',
+  'tags',
   'deployPolicies',
   'deployDetail',
   'staticRoutes',

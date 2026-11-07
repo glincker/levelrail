@@ -99,6 +99,17 @@ export const NAV_REGISTRY: readonly NavRegistryEntry[] = [
     sidebar: true,
   },
   {
+    id: 'tags',
+    path: '/tags',
+    area: 'apps',
+    titleKey: 'shell.nav.tags',
+    icon: 'List',
+    helpPath: null,
+    gated: null,
+    palette: true,
+    sidebar: true,
+  },
+  {
     id: 'storage',
     path: '/storage',
     area: 'apps',
