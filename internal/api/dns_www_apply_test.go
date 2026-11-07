@@ -292,6 +292,26 @@ func TestWWWApplyRedirectFalseSkipsRedirect(t *testing.T) {
 	}
 }
 
+func TestWWWApplyServeBothClearsExistingRedirect(t *testing.T) {
+	rt, cookie := wwwApplyRouter(t, &fakeDNSManager{})
+	db := rt.auditLog.(*store.DB)
+	ctx := context.Background()
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "levelrail/web:1", Port: 3000, Domains: []string{"far.example.com", "www.far.example.com"}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SetDomainRedirect(ctx, "www.far.example.com", "https://far.example.com", store.DomainRedirectPermanent); err != nil {
+		t.Fatal(err)
+	}
+	code, out := wwwApplyCall(t, rt, cookie, `{"mode":"both","canonical":"apex","confirm":true,"redirect":false}`)
+	if code != http.StatusOK || !out.Applied {
+		t.Fatalf("status = %d out = %+v", code, out)
+	}
+	rows, err := db.ListDomainRedirects(ctx)
+	if err != nil || len(rows) != 0 {
+		t.Fatalf("redirects = %+v err = %v", rows, err)
+	}
+}
+
 func TestWWWApplyNonRootForbidden(t *testing.T) {
 	mgr := &fakeDNSManager{}
 	rt, _ := wwwApplyRouter(t, mgr)
