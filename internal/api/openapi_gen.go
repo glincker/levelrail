@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1976 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1977 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1684,6 +1684,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/tags", Ability: "AbilityRead", Group: "Other", Handler: "handleListTags", Description: ""},
 	{Method: "POST", Path: "/api/v1/tags", Ability: "AbilityWrite", Group: "Other", Handler: "handleCreateTag", Description: "Tags (tags.go): arbitrary operator-defined labels for organizing and filtering apps, independent of the project/environment hierarchy. The global collection lives flat under /api/v1/tags (create/list/delete, plus filter-by-tag); attach/detach is scoped under the app it applies to, the same nesting scheduled-tasks/flags above use for their own per-app child resources."},
 	{Method: "DELETE", Path: "/api/v1/tags/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteTag", Description: ""},
+	{Method: "PATCH", Path: "/api/v1/tags/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleRenameTag", Description: ""},
 	{Method: "GET", Path: "/api/v1/tags/{id}/apps", Ability: "AbilityRead", Group: "Other", Handler: "handleListAppsByTag", Description: ""},
 	{Method: "POST", Path: "/api/v1/team-invites/accept", Ability: "Public", Group: "Other", Handler: "handleAcceptTeamInvite", Description: ""},
 	{Method: "GET", Path: "/api/v1/team-invites/{token}", Ability: "Session", Group: "Other", Handler: "handlePreviewTeamInvite", Description: ""},

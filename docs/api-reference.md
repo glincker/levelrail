@@ -2201,6 +2201,7 @@ Routes that do not fit an existing group.
 | POST | /api/v1/images/remove | AbilityRoot | handleImageRemove |
 | GET | /api/v1/status-reasons | AbilityRead | handleListStatusReasons |
 | POST | /mcp | Public |  |
+| PATCH | /api/v1/tags/{id} | AbilityWrite | handleRenameTag |
 
 ## See also
 
