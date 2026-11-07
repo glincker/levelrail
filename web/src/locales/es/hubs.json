@@ -1,0 +1,64 @@
+{
+  "variables": {
+    "page": {
+      "title": "Variables",
+      "description": "Donde viven las variables compartidas. Solo nombres y cantidades, los valores nunca se muestran aquí."
+    },
+    "open": "Abrir",
+    "count": {
+      "vars_one": "{{count}} variable",
+      "vars_other": "{{count}} variables",
+      "unknown": "Contando"
+    },
+    "org": {
+      "title": "Organizaciones",
+      "empty": {
+        "title": "Sin organizaciones",
+        "description": "Crea una organización para compartir variables entre sus proyectos."
+      }
+    },
+    "project": {
+      "title": "Proyectos",
+      "environments": "Cada proyecto también lista sus entornos, que tienen sus propias variables.",
+      "empty": {
+        "title": "Sin proyectos",
+        "description": "Crea un proyecto para compartir variables entre sus apps."
+      }
+    },
+    "apps": {
+      "title": "Apps",
+      "note": "Las variables de una app se editan en Config, Entorno.",
+      "open": "Abrir apps"
+    }
+  },
+  "sources": {
+    "page": {
+      "title": "Fuentes",
+      "description": "Proveedores git conectados a esta instancia."
+    },
+    "loading": "Cargando proveedores",
+    "error": "No se pudieron cargar los proveedores git.",
+    "empty": {
+      "title": "Sin proveedores git",
+      "description": "Conecta un proveedor en Ajustes para desplegar desde un repositorio."
+    },
+    "provider": {
+      "github": "GitHub",
+      "gitlab": "GitLab",
+      "bitbucket": "Bitbucket",
+      "bitbucket_server": "Bitbucket Server",
+      "gitea": "Gitea",
+      "forgejo": "Forgejo"
+    },
+    "status": {
+      "notConnected": "No conectado",
+      "ok": "Conectado",
+      "needs_reauthorize": "Requiere reautorización",
+      "revoked": "Revocado",
+      "rate_limited": "Limitado por tasa"
+    },
+    "accounts_one": "{{count}} cuenta",
+    "accounts_other": "{{count}} cuentas",
+    "manage": "Gestionar"
+  }
+}

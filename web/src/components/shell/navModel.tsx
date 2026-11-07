@@ -74,6 +74,8 @@ export type GlobalTo =
   | '/projects'
   | '/templates'
   | '/tags'
+  | '/variables'
+  | '/sources'
   | '/databases'
   | '/backups'
   | '/assets'
@@ -350,6 +352,8 @@ export const FOLDED_GLOBAL_PAGES: GlobalNavItem[] = [
   folded('projects', 'Projects', '/projects', glass(FolderGlassIcon)),
   folded('templates', 'Templates', '/templates', glass(LayoutGridGlassIcon)),
   folded('tags', 'Tags', '/tags', glass(ListGlassIcon)),
+  folded('variables', 'Variables', '/variables', glass(BracesGlassIcon)),
+  folded('sources', 'Sources', '/sources', glass(GitBranchGlassIcon)),
   folded('approvals', 'Deploy approvals', '/approvals', glass(GavelGlassIcon)),
   folded('backups', 'Backups', '/backups', glass(UploadGlassIcon)),
   folded(

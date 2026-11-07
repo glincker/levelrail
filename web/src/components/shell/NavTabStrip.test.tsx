@@ -63,7 +63,14 @@ describe('NavTabStrip', () => {
 
   it('shows sibling pages and marks the current one', () => {
     renderAt('/projects')
-    expect(labels()).toEqual(['Apps', 'Projects', 'Templates', 'Tags'])
+    expect(labels()).toEqual([
+      'Apps',
+      'Projects',
+      'Templates',
+      'Tags',
+      'Variables',
+      'Sources',
+    ])
     expect(current()).toEqual(['Projects'])
   })
 

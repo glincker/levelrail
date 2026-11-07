@@ -1,0 +1,64 @@
+{
+  "variables": {
+    "page": {
+      "title": "Variables",
+      "description": "Where shared variables live. Names and counts only, values are never shown here."
+    },
+    "open": "Open",
+    "count": {
+      "vars_one": "{{count}} variable",
+      "vars_other": "{{count}} variables",
+      "unknown": "Counting"
+    },
+    "org": {
+      "title": "Organizations",
+      "empty": {
+        "title": "No organizations",
+        "description": "Create an organization to share variables across its projects."
+      }
+    },
+    "project": {
+      "title": "Projects",
+      "environments": "Each project page also lists its environments, which hold their own variables.",
+      "empty": {
+        "title": "No projects",
+        "description": "Create a project to share variables across its apps."
+      }
+    },
+    "apps": {
+      "title": "Apps",
+      "note": "Variables for one app are edited under Config, Environment.",
+      "open": "Open apps"
+    }
+  },
+  "sources": {
+    "page": {
+      "title": "Sources",
+      "description": "Git providers connected to this instance."
+    },
+    "loading": "Loading providers",
+    "error": "Could not load git providers.",
+    "empty": {
+      "title": "No git providers",
+      "description": "Connect a provider in Settings to deploy from a repository."
+    },
+    "provider": {
+      "github": "GitHub",
+      "gitlab": "GitLab",
+      "bitbucket": "Bitbucket",
+      "bitbucket_server": "Bitbucket Server",
+      "gitea": "Gitea",
+      "forgejo": "Forgejo"
+    },
+    "status": {
+      "notConnected": "Not connected",
+      "ok": "Connected",
+      "needs_reauthorize": "Needs reauthorization",
+      "revoked": "Revoked",
+      "rate_limited": "Rate limited"
+    },
+    "accounts_one": "{{count}} account",
+    "accounts_other": "{{count}} accounts",
+    "manage": "Manage"
+  }
+}

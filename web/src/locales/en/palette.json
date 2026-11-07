@@ -142,6 +142,8 @@
       "nav-approvals": "Deploys waiting for sign-off.",
       "nav-help": "Docs, shortcuts and support.",
       "nav-templates": "Catalog of ready-made services you can deploy in a few clicks.",
+      "nav-variables": "Where shared variables live: organizations, projects and apps, with counts.",
+      "nav-sources": "Connected git providers and their status.",
       "nav-tags": "Labels for grouping and filtering apps. Rename, delete or see what each tag covers.",
       "nav-scanning": "Default vulnerability scan policy and deploy gate for the instance.",
       "nav-bootstrap": "Scripts that run as root on newly provisioned cloud nodes.",

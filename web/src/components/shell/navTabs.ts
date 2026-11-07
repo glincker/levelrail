@@ -35,6 +35,8 @@ export type NavTabId =
   | 'security'
   | 'storage'
   | 'tags'
+  | 'variables'
+  | 'sources'
   | 'templates'
   | 'usage'
 
@@ -74,6 +76,8 @@ export const NAV_TAB_GROUPS: readonly NavTabGroup[] = [
       { id: 'projects', to: '/projects' },
       { id: 'templates', to: '/templates' },
       { id: 'tags', to: '/tags' },
+      { id: 'variables', to: '/variables' },
+      { id: 'sources', to: '/sources' },
     ],
   },
   {

@@ -139,6 +139,7 @@ import type secretRotation from '../locales/en/secretRotation.json'
 import type encryptionKeys from '../locales/en/encryptionKeys.json'
 import type templates from '../locales/en/templates.json'
 import type models from '../locales/en/models.json'
+import type hubs from '../locales/en/hubs.json'
 import type aiAssistant from '../locales/en/aiAssistant.json'
 import type demo from '../locales/en/demo.json'
 import type secretScan from '../locales/en/secretScan.json'
@@ -268,6 +269,7 @@ declare module 'i18next' {
       secretRotation: typeof secretRotation
       encryptionKeys: typeof encryptionKeys
       models: typeof models
+      hubs: typeof hubs
       templates: typeof templates
       aiAssistant: typeof aiAssistant
       demo: typeof demo
