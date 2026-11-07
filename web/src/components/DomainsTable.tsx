@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -18,6 +18,7 @@ import {
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { sortByCertAttention } from '../lib/certStatus'
 import { canParkOrMove } from '../lib/domainLifecycle'
+import { domainScope, isStandaloneDomain } from '../lib/standaloneDomain'
 import {
   resolveSelection,
   selectAllState,
@@ -62,6 +63,7 @@ export function DomainsTable({
 }) {
   const { t } = useTranslation('domains')
   useDomainsWatchRefresh()
+  const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set())
   const [batchAction, setBatchAction] = useState<BatchAction | null>(null)
@@ -95,7 +97,7 @@ export function DomainsTable({
   )
   const headerState = selectAllState(selected, selectable)
 
-  const columns = useMemo<ResponsiveColumn<Domain>[]>(
+  const allColumns = useMemo<ResponsiveColumn<Domain>[]>(
     () => [
       {
         id: 'select',
@@ -184,6 +186,15 @@ export function DomainsTable({
     [t, certByDomain, selected, selectable, headerState],
   )
 
+  // An all-dash column is noise, so it only shows when some row has a value.
+  const columns = useMemo(
+    () =>
+      domains.some((d) => d.environment)
+        ? allColumns
+        : allColumns.filter((c) => c.id !== 'environment'),
+    [allColumns, domains],
+  )
+
   if (domains.length === 0) {
     return appCount === 0 ? (
       <EmptyState
@@ -222,12 +233,12 @@ export function DomainsTable({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="relative w-full max-w-xs">
           <SearchGlassIcon
-            className="pointer-events-none absolute top-1/2 left-2.5 size-5 -translate-y-1/2 text-muted-foreground"
+            className="pointer-events-none absolute top-1/2 left-3 size-4.5 -translate-y-1/2 text-muted-foreground"
             aria-hidden="true"
           />
           <Input
             type="search"
-            className="pl-8"
+            className="pl-10"
             value={query}
             placeholder={t('page.search')}
             aria-label={t('page.search')}
@@ -290,6 +301,18 @@ export function DomainsTable({
           getRowId={(d) => `${d.service_name}/${d.domain}`}
           ariaLabel={t('page.tableLabel')}
           renderActions={(d) => <DomainRowActions domain={d} />}
+          onRowClick={(d) => {
+            void (isStandaloneDomain(d)
+              ? navigate({
+                  to: '/domains/$domain',
+                  params: { domain: d.domain },
+                  search: { app: domainScope(d) },
+                })
+              : navigate({
+                  to: '/apps/$name/domains/$domain',
+                  params: { name: domainScope(d), domain: d.domain },
+                }))
+          }}
           estimateRowHeight={60}
         />
       )}

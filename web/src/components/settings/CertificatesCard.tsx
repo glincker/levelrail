@@ -67,7 +67,7 @@ function CertificateRow({ cert }: { cert: CertificateStatus }) {
 }
 
 // CertificatesCard is a passive summary only: for renewing a certificate
-// now or uploading a custom one, this links to settings/certificates.tsx
+// now or uploading a custom one, this links to domains/certificates.tsx
 // (the certificate center), which owns those actions. This project
 // treats "a cert renewal fails silently at 3am" as its central risk;
 // this card is the glanceable surface that makes an at-risk certificate
@@ -97,7 +97,7 @@ export function CertificatesCard() {
             type="button"
             variant="outline"
             size="sm"
-            render={<Link to="/settings/certificates" />}
+            render={<Link to="/domains/certificates" />}
           >
             Manage
           </Button>

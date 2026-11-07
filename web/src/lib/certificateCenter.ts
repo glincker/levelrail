@@ -2,7 +2,7 @@ import type { CertificateStatus } from '../queries/certificates'
 import type { Domain } from '../queries/domains'
 import { effectiveDomainCert } from './certStatus'
 
-// One row of the certificate center (routes/settings/certificates.tsx):
+// One row of the certificate center (routes/domains/certificates.tsx):
 // a domain joined with its stored certificate, if any. appName is
 // undefined only for an orphaned certificate (a domain removed from its
 // app since issuance): neither renewal nor custom-cert upload is

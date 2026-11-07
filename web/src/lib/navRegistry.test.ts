@@ -50,6 +50,7 @@ const ALLOWLIST: Record<string, string> = {
   '/dashboards': 'redirect',
   '/databases/new': 'redirect',
   '/settings/janitor': 'redirect',
+  '/settings/certificates': 'redirect',
   '/dev/ui': 'test',
   '/deploy': 'deeplink',
   '/apps/new': 'wizard',

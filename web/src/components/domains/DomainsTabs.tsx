@@ -4,12 +4,16 @@ import { cn } from '@/lib/utils'
 
 // Domains, Certificates and DNS read as one area. Plain links, not a panel
 // switcher, because each tab is its own route.
-export function DomainsTabs() {
+export function DomainsTabs({
+  active = 'domains',
+}: {
+  active?: 'domains' | 'certificates' | 'dns'
+}) {
   const { t } = useTranslation('domains')
   const items = [
-    { to: '/domains', key: 'domains', current: true },
-    { to: '/settings/certificates', key: 'certificates', current: false },
-    { to: '/dns', key: 'dns', current: false },
+    { to: '/domains', key: 'domains' },
+    { to: '/domains/certificates', key: 'certificates' },
+    { to: '/dns', key: 'dns' },
   ] as const
   return (
     <nav aria-label={t('tabs.label')} className="border-b border-border">
@@ -18,10 +22,10 @@ export function DomainsTabs() {
           <li key={item.key}>
             <Link
               to={item.to}
-              aria-current={item.current ? 'page' : undefined}
+              aria-current={item.key === active ? 'page' : undefined}
               className={cn(
                 'inline-flex h-9 items-center border-b-2 px-3 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                item.current
+                item.key === active
                   ? 'border-primary text-foreground'
                   : 'border-transparent text-muted-foreground hover:text-foreground',
               )}

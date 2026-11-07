@@ -13,6 +13,8 @@ const routeDir = join(__dirname, '../routes/apps/$name')
 const routeSlugs = readdirSync(routeDir)
   .map((f) => f.replace(/\.tsx$/, ''))
   .filter((f) => !['index', 'forms', 'deploys', 'pipelines'].includes(f))
+  // domains_.$domain is a detail page under the domains tab, not a tab
+  .filter((f) => !f.includes('_.'))
 
 const navSlugs = APP_NAV_SECTIONS.flatMap((s) => s.items.map((i) => i.slug))
 

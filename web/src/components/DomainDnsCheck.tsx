@@ -14,7 +14,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useTranslation } from 'react-i18next'
 import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
 import {
-  useDomainCheck,
   type AcmeFailure,
   type DnsHint,
   type DnsProvider,
@@ -32,17 +31,13 @@ import {
   proxyCertTrusted,
   type DnsPillState,
 } from '../lib/dnsPill'
-import { findProxyDomain } from '../lib/proxyIntegration'
-import {
-  proxyIntegrationQueryOptions,
-  useVerifyProxyDomain,
-  type ProxyDomain,
-} from '../queries/proxyIntegration'
-import { useQuery } from '@tanstack/react-query'
+import type { ProxyDomain } from '../queries/proxyIntegration'
 import { AcmeFailureHint } from './AcmeFailureHint'
 import { DnsProviderBadge } from './DnsProviderBadge'
 import { ProxyManagedCertNote } from './ProxyManagedCertNote'
 import { DomainReadinessSteps } from './domains/DomainReadinessSteps'
+import { useDomainCheckState } from './domains/useDomainCheckState'
+import { dnsRecordOptions, type DnsRecordType } from '../lib/dnsRecordOptions'
 
 // The subset of a domain-check result DomainCheckPanel needs to render:
 // shared by domainCheck.ts's per-app DomainCheckResult and domains.ts's
@@ -53,6 +48,7 @@ export interface DomainCheckPanelData {
   expected_ipv4?: string[]
   expected_ipv6?: string[]
   host_inferred?: boolean
+  resolved_hosts?: string[]
   status: DomainCheckStatus
   expected_private?: boolean
   dns_provider?: DnsProvider
@@ -73,44 +69,18 @@ export interface DomainCheckPanelData {
   hints?: DnsHint[]
 }
 
-type DnsRecordType = 'A' | 'AAAA' | 'CNAME'
-
-function dnsRecordType(host: string): DnsRecordType {
-  if (host.includes(':')) return 'AAAA'
-  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host)) return 'A'
-  return 'CNAME'
-}
-
-interface DnsRecordOption {
-  type: DnsRecordType
-  value: string
-}
-
-// One option per record type the operator could actually add. A raw IP
-// APP_PUBLIC_HOST has exactly one: its own family, nothing to choose
-// between. A hostname APP_PUBLIC_HOST offers CNAME first (the simplest,
-// works even if the server's IP changes later) plus a direct A/AAAA
-// alternative for each family it resolves to, since some registrars
-// reject CNAME at the domain apex.
-function dnsRecordOptions(data: DomainCheckPanelData): DnsRecordOption[] {
-  const host = data.expected_host
-  if (!host) return []
-  const type = dnsRecordType(host)
-  if (type !== 'CNAME') return [{ type, value: host }]
-  const options: DnsRecordOption[] = [{ type: 'CNAME', value: host }]
-  if (data.expected_ipv4?.[0])
-    options.push({ type: 'A', value: data.expected_ipv4[0] })
-  if (data.expected_ipv6?.[0])
-    options.push({ type: 'AAAA', value: data.expected_ipv6[0] })
-  return options
-}
-
 // One row of the DNS record block below: a label, the value itself
 // (monospace, selectable), and its own copy button. Split out since the
 // record has two independently-copyable fields (Name and Value) and a
 // registrar's DNS form is two separate input boxes, not one string to
 // paste in one place.
-function DnsRecordRow({ label, value }: { label: string; value: string }) {
+export function DnsRecordRow({
+  label,
+  value,
+}: {
+  label: string
+  value: string
+}) {
   const { copied, copy } = useCopyToClipboard()
   return (
     <div className="flex items-center gap-2 rounded-md border border-input bg-background p-1.5">
@@ -556,22 +526,17 @@ export function DomainDnsCheck({
   appName: string
   domain: string
 }) {
-  const { data, isFetching, refetch } = useDomainCheck(appName, domain, {
-    poll: false,
-  })
-  const { data: proxy } = useQuery(proxyIntegrationQueryOptions())
-  const proxyRow = proxy ? findProxyDomain(proxy, domain) : undefined
-  const verify = useVerifyProxyDomain()
+  const { data, isFetching, onRefetch, proxyRow } = useDomainCheckState(
+    appName,
+    domain,
+  )
   return (
     <DomainCheckPanel
       proxyRow={proxyRow}
       domain={domain}
       data={data}
       isFetching={isFetching}
-      onRefetch={() => {
-        void refetch()
-        if (proxyRow) verify.mutate(domain)
-      }}
+      onRefetch={onRefetch}
     />
   )
 }
