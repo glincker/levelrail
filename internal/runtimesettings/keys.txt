@@ -146,6 +146,7 @@ tokens.default_ttl_days
 tokens.expiry_warning_days
 tokens.system_rotation_lead_minutes
 tokens.unused_alert_days
+ui.outbound_utm
 updates.offered_channels
 upgrade.verify_backup
 volumes.import_overwrite

@@ -173,6 +173,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_METRICS_RETENTION` | [`telemetry.metrics_retention`](/runtime-settings#observability) | `360h` |
 | `APP_VISITOR_HISTORY_RETENTION` | [`telemetry.visitor_history_retention`](/runtime-settings#observability) | `168h0m0s` |
 | `APP_VISITOR_SALT_ROTATION` | [`telemetry.visitor_salt_rotation`](/runtime-settings#observability) | `24h0m0s` |
+| `APP_UI_OUTBOUND_UTM` | [`ui.outbound_utm`](/runtime-settings#observability) | `true` |
 | `APP_VITALS_ENABLED` | [`vitals.enabled`](/runtime-settings#observability) | `false` |
 | `APP_VITALS_FLUSH_SECONDS` | [`vitals.flush_interval_seconds`](/runtime-settings#observability) | `10` |
 | `APP_VITALS_MAX_BODY_BYTES` | [`vitals.max_body_bytes`](/runtime-settings#observability) | `4096` |
