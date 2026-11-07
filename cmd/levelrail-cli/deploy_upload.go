@@ -211,11 +211,11 @@ func runDeployUploadLimited(prog string, args []string, stdout, stderr io.Writer
 		}
 		client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 		if err := ensureUploadApp(ctx, client, inf, env, &res, say); err != nil {
-			return reportError(stdout, stderr, jsonOut, createdAppNote(prog, &res, err))
+			return reportError(stdout, stderr, jsonOut, rollbackCreatedApp(ctx, client, prog, &res, err))
 		}
 		hash, err := packAndUpload(ctx, client, inf.Flags.name, plan, maxBytes, &res, stderr, jsonOut)
 		if err != nil {
-			return reportError(stdout, stderr, jsonOut, createdAppNote(prog, &res, err))
+			return reportError(stdout, stderr, jsonOut, rollbackCreatedApp(ctx, client, prog, &res, err))
 		}
 		fromHash = hash
 		return finishUploadDeploy(ctx, client, prog, inf, fromHash, buildEnv, timeout, urlWait, &res, stdout, stderr, of, jsonOut)
@@ -232,7 +232,7 @@ func runDeployUploadLimited(prog string, args []string, stdout, stderr io.Writer
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 	if err := ensureUploadApp(ctx, client, inf, env, &res, say); err != nil {
-		return reportError(stdout, stderr, jsonOut, createdAppNote(prog, &res, err))
+		return reportError(stdout, stderr, jsonOut, rollbackCreatedApp(ctx, client, prog, &res, err))
 	}
 	res.Hash = fromHash
 	return finishUploadDeploy(ctx, client, prog, inf, fromHash, buildEnv, timeout, urlWait, &res, stdout, stderr, of, jsonOut)
@@ -402,7 +402,7 @@ func finishUploadDeploy(ctx context.Context, client *Client, prog string, inf up
 	}
 	trig, err := client.TriggerBuild(ctx, name, req)
 	if err != nil {
-		return reportError(stdout, stderr, jsonOut, createdAppNote(prog, res, fmt.Errorf("app %q is ready but the build did not start, re-run \"%s deploy --upload-hash %s --app %s\" to retry: %w", name, prog, hash, name, err)))
+		return reportError(stdout, stderr, jsonOut, rollbackCreatedApp(ctx, client, prog, res, fmt.Errorf("app %q is ready but the build did not start, re-run \"%s deploy --upload-hash %s --app %s\" to retry: %w", name, prog, hash, name, err)))
 	}
 	res.DeployID = trig.ID
 	buildStart := time.Now()

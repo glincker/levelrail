@@ -79,6 +79,19 @@ func createdAppNote(prog string, res *deployUploadResult, err error) error {
 	return fmt.Errorf("%w\napp %q was created by this run and has no build yet; retry the deploy, or remove it with \"%s apps delete %s\"", err, res.App, prog, res.App)
 }
 
+// rollbackCreatedApp removes the empty app this run created when no build was queued, so a
+// rejected deploy leaves nothing behind. If removal fails it falls back to the manual note.
+func rollbackCreatedApp(ctx context.Context, client *Client, prog string, res *deployUploadResult, err error) error {
+	if err == nil || res == nil || !res.Created || res.DeployID != "" {
+		return err
+	}
+	if delErr := client.DeleteApp(ctx, res.App); delErr != nil {
+		return createdAppNote(prog, res, err)
+	}
+	res.Created = false
+	return fmt.Errorf("%w\nremoved app %q that this run had created, nothing was left behind", err, res.App)
+}
+
 // followHint is the command that re-attaches to a queued build.
 func followHint(prog, app, deployID string) string {
 	return fmt.Sprintf("%s apps deploys logs %s %s --follow", prog, app, deployID)
