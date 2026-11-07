@@ -143,6 +143,8 @@
       "nav-help": "Docs, shortcuts and support.",
       "nav-templates": "Catalog of ready-made services you can deploy in a few clicks.",
       "nav-tags": "Labels for grouping and filtering apps. Rename, delete or see what each tag covers.",
+      "nav-scanning": "Default vulnerability scan policy and deploy gate for the instance.",
+      "nav-bootstrap": "Scripts that run as root on newly provisioned cloud nodes.",
       "nav-storage": "Disk use on your nodes: images, containers, volumes and build cache, with cleanup.",
       "nav-resources": "Every resource across your instance in one list.",
       "nav-resource-advisor": "Right-sizing suggestions for CPU and memory.",

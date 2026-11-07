@@ -526,7 +526,12 @@
         "advisor": "Asesor de recursos",
         "resources": "Recursos",
         "security": "Centro de seguridad",
-        "iam": "Políticas IAM"
+        "iam": "Políticas IAM",
+        "imageScanning": "Escaneo de imágenes",
+        "bootstrapScripts": "Scripts de arranque",
+        "keys": "Claves y tokens",
+        "team": "Equipo",
+        "auditLog": "Registro de auditoría"
       }
     }
   },

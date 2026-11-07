@@ -57,6 +57,10 @@ import {
 import { GO_TARGETS } from '@/lib/shortcuts'
 import type { ExperimentalFeature } from '@/lib/experimental'
 
+const glass = (Icon: React.ComponentType<{ size: string }>) => (
+  <Icon size="1.4em" />
+)
+
 export type GlobalTo =
   | '/'
   | '/status'
@@ -97,6 +101,11 @@ export type GlobalTo =
   | '/settings'
   | '/settings/iam-policies'
   | '/security'
+  | '/security/image-scanning'
+  | '/nodes/bootstrap-scripts'
+  | '/settings/tokens'
+  | '/settings/users'
+  | '/settings/audit-log'
   | '/settings/registry'
   | '/settings/registry-credentials'
   | '/settings/network-shares'
@@ -182,7 +191,7 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         id: 'dashboard',
         label: 'Dashboard',
         to: '/',
-        icon: <GaugeGlassIcon size="1.4em" />,
+        icon: glass(GaugeGlassIcon),
         exact: true,
         // Status is reached from the dashboard status strip.
         alsoActive: ['/status'],
@@ -197,7 +206,7 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         id: 'apps',
         label: 'Apps',
         to: '/apps',
-        icon: <LayersGlassIcon size="1.4em" />,
+        icon: glass(LayersGlassIcon),
         badge: 'failing-apps',
         alsoActive: APPS_GROUP_PATHS,
       },
@@ -205,14 +214,14 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         id: 'deployments',
         label: 'Deployments',
         to: '/deployments',
-        icon: <RocketGlassIcon size="1.4em" />,
+        icon: glass(RocketGlassIcon),
         alsoActive: DEPLOYMENT_GROUP_PATHS,
       },
       {
         id: 'pipelines',
         label: 'Pipelines',
         to: '/pipelines',
-        icon: <BinaryTreeGlassIcon size="1.4em" />,
+        icon: glass(BinaryTreeGlassIcon),
         badge: 'approvals',
         alsoActive: PIPELINE_GROUP_PATHS,
       },
@@ -220,7 +229,7 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         id: 'functions',
         label: 'Functions',
         to: '/functions',
-        icon: <ZapGlassIcon size="1.4em" />,
+        icon: glass(ZapGlassIcon),
         showWhen: 'has-functions',
       },
     ],
@@ -233,14 +242,14 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         id: 'databases',
         label: 'Databases',
         to: '/databases',
-        icon: <DatabaseGlassIcon size="1.4em" />,
+        icon: glass(DatabaseGlassIcon),
         alsoActive: ['/backups'],
       },
       {
         id: 'storage',
         label: 'Storage',
         to: '/storage',
-        icon: <ArchiveGlassIcon size="1.4em" />,
+        icon: glass(ArchiveGlassIcon),
         alsoActive: ['/settings/network-shares', '/assets'],
       },
     ],
@@ -253,7 +262,7 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         id: 'domains',
         label: 'Domains',
         to: '/domains',
-        icon: <GlobeGlassIcon size="1.4em" />,
+        icon: glass(GlobeGlassIcon),
         badge: 'domains-attention',
         extraBadges: ['dns-attention'],
         alsoActive: DOMAIN_GROUP_PATHS,
@@ -262,7 +271,7 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         id: 'proxy',
         label: 'Traffic',
         to: '/network/proxy',
-        icon: <TrafficConeGlassIcon size="1.4em" />,
+        icon: glass(TrafficConeGlassIcon),
         badge: 'proxy-attention',
         alsoActive: TRAFFIC_GROUP_PATHS,
       },
@@ -270,7 +279,7 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         id: 'private-networks',
         label: 'Private network',
         to: '/network/private',
-        icon: <LockGlassIcon size="1.4em" />,
+        icon: glass(LockGlassIcon),
         // Topology is exactly /network; a prefix match would also light Traffic's pages.
         alsoExact: ['/network'],
       },
@@ -284,27 +293,27 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         id: 'nodes',
         label: 'Servers',
         to: '/nodes',
-        icon: <ServerGlassIcon size="1.4em" />,
+        icon: glass(ServerGlassIcon),
         alsoActive: ['/settings/node-providers'],
       },
       {
         id: 'alerts',
         label: 'Alerts',
         to: '/alerts',
-        icon: <BellGlassIcon size="1.4em" />,
+        icon: glass(BellGlassIcon),
       },
       {
         id: 'registry',
         label: 'Registry',
         to: '/images',
-        icon: <PackageGlassIcon size="1.4em" />,
+        icon: glass(PackageGlassIcon),
         alsoActive: REGISTRY_GROUP_PATHS,
       },
       {
         id: 'usage',
         label: 'Usage and cost',
         to: '/usage',
-        icon: <CoinsGlassIcon size="1.4em" />,
+        icon: glass(CoinsGlassIcon),
         alsoActive: COST_GROUP_PATHS,
       },
     ],
@@ -337,33 +346,23 @@ const folded = (
 // Destinations folded into a parent row's tab strip. No sidebar row, but they
 // stay in the command palette and light their parent through alsoActive.
 export const FOLDED_GLOBAL_PAGES: GlobalNavItem[] = [
-  folded('status', 'Status', '/status', <ActivityGlassIcon size="1.4em" />),
-  folded('projects', 'Projects', '/projects', <FolderGlassIcon size="1.4em" />),
-  folded(
-    'templates',
-    'Templates',
-    '/templates',
-    <LayoutGridGlassIcon size="1.4em" />,
-  ),
-  folded('tags', 'Tags', '/tags', <ListGlassIcon size="1.4em" />),
-  folded(
-    'approvals',
-    'Deploy approvals',
-    '/approvals',
-    <GavelGlassIcon size="1.4em" />,
-  ),
-  folded('backups', 'Backups', '/backups', <UploadGlassIcon size="1.4em" />),
+  folded('status', 'Status', '/status', glass(ActivityGlassIcon)),
+  folded('projects', 'Projects', '/projects', glass(FolderGlassIcon)),
+  folded('templates', 'Templates', '/templates', glass(LayoutGridGlassIcon)),
+  folded('tags', 'Tags', '/tags', glass(ListGlassIcon)),
+  folded('approvals', 'Deploy approvals', '/approvals', glass(GavelGlassIcon)),
+  folded('backups', 'Backups', '/backups', glass(UploadGlassIcon)),
   folded(
     'network-shares',
     'Network shares',
     '/settings/network-shares',
-    <FolderGlassIcon size="1.4em" />,
+    glass(FolderGlassIcon),
   ),
-  folded('assets', 'Assets', '/assets', <ImagesGlassIcon size="1.4em" />),
-  folded('dns', 'DNS', '/dns', <ListGlassIcon size="1.4em" />, {
+  folded('assets', 'Assets', '/assets', glass(ImagesGlassIcon)),
+  folded('dns', 'DNS', '/dns', glass(ListGlassIcon), {
     requiresRoute: true,
   }),
-  folded('mail', 'Mail', '/mail', <MailGlassIcon size="1.4em" />, {
+  folded('mail', 'Mail', '/mail', glass(MailGlassIcon), {
     feature: 'mail',
   }),
   folded(
@@ -376,68 +375,67 @@ export const FOLDED_GLOBAL_PAGES: GlobalNavItem[] = [
     'loadbalancers',
     'Load balancers',
     '/loadbalancers',
-    <SplitGlassIcon size="1.4em" />,
+    glass(SplitGlassIcon),
     { feature: 'load-balancer' },
   ),
-  folded('cdn', 'CDN and caches', '/cdn', <GlobeGlassIcon size="1.4em" />),
-  folded('network', 'Topology', '/network', <Share2GlassIcon size="1.4em" />, {
+  folded('cdn', 'CDN and caches', '/cdn', glass(GlobeGlassIcon)),
+  folded('network', 'Topology', '/network', glass(Share2GlassIcon), {
     exact: true,
   }),
   folded(
     'node-providers',
     'Cloud providers',
     '/settings/node-providers',
-    <CloudGlassIcon size="1.4em" />,
+    glass(CloudGlassIcon),
   ),
   folded(
     'registry-settings',
     'Registry settings',
     '/settings/registry',
-    <PackageGlassIcon size="1.4em" />,
+    glass(PackageGlassIcon),
   ),
   folded(
     'registry-credentials',
     'Registry credentials',
     '/settings/registry-credentials',
-    <KeyGlassIcon size="1.4em" />,
+    glass(KeyGlassIcon),
   ),
   folded(
     'resource-advisor',
     'Resource advisor',
     '/resource-advisor',
-    <LightbulbGlassIcon size="1.4em" />,
+    glass(LightbulbGlassIcon),
     { feature: 'resource-advisor' },
   ),
-  folded(
-    'resources',
-    'Resources',
-    '/resources',
-    <FileSearchGlassIcon size="1.4em" />,
-  ),
+  folded('resources', 'Resources', '/resources', glass(FileSearchGlassIcon)),
   folded(
     'iam-policies',
     'IAM policies',
     '/settings/iam-policies',
     <ShieldCheckGlassIcon className="text-tone-success" size="1.4em" />,
   ),
-  folded('inbox', 'Inbox', '/inbox', <InboxGlassIcon size="1.4em" />),
-  folded('models', 'AI models', '/models', <CpuGlassIcon size="1.4em" />, {
+  folded(
+    'scanning',
+    'Image scanning',
+    '/security/image-scanning',
+    glass(ShieldAlertGlassIcon),
+  ),
+  folded(
+    'bootstrap',
+    'Bootstrap scripts',
+    '/nodes/bootstrap-scripts',
+    glass(TerminalGlassIcon),
+  ),
+  folded('inbox', 'Inbox', '/inbox', glass(InboxGlassIcon)),
+  folded('models', 'AI models', '/models', glass(CpuGlassIcon), {
     feature: 'ai-models',
   }),
-  folded(
-    'assistant',
-    'AI assistant',
-    '/ai-assistant',
-    <BotGlassIcon size="1.4em" />,
-    { feature: 'ai-chat' },
-  ),
-  folded(
-    'console',
-    'Console',
-    '/terminal',
-    <TerminalGlassIcon size="1.4em" />,
-    { feature: 'cli-console' },
-  ),
+  folded('assistant', 'AI assistant', '/ai-assistant', glass(BotGlassIcon), {
+    feature: 'ai-chat',
+  }),
+  folded('console', 'Console', '/terminal', glass(TerminalGlassIcon), {
+    feature: 'cli-console',
+  }),
 ]
 
 export const GLOBAL_NAV_FOOTER: GlobalNavItem[] = [
@@ -445,13 +443,13 @@ export const GLOBAL_NAV_FOOTER: GlobalNavItem[] = [
     id: 'settings',
     label: 'Settings',
     to: '/settings',
-    icon: <SettingsGlassIcon size="1.4em" />,
+    icon: glass(SettingsGlassIcon),
   },
   {
     id: 'help',
     label: 'Help',
     to: '/help',
-    icon: <BookOpenGlassIcon size="1.4em" />,
+    icon: glass(BookOpenGlassIcon),
   },
 ]
 
@@ -608,94 +606,64 @@ export const APP_NAV_SECTIONS: AppNavSection[] = [
   {
     id: 'deploy',
     label: 'Deploy',
-    icon: <RocketGlassIcon size="1.4em" />,
+    icon: glass(RocketGlassIcon),
     items: [
       item(
         'overview',
         'Overview',
         '/apps/$name/overview',
-        <LayoutGridGlassIcon size="1.4em" />,
+        glass(LayoutGridGlassIcon),
       ),
       item(
         'deploys',
         'Deploys',
         '/apps/$name/deploys',
-        <RestoreGlassIcon size="1.4em" />,
+        glass(RestoreGlassIcon),
       ),
-      item(
-        'source',
-        'Source',
-        '/apps/$name/source',
-        <GitBranchGlassIcon size="1.4em" />,
-      ),
+      item('source', 'Source', '/apps/$name/source', glass(GitBranchGlassIcon)),
       item(
         'previews',
         'Previews',
         '/apps/$name/previews',
-        <GitPullRequestGlassIcon size="1.4em" />,
+        glass(GitPullRequestGlassIcon),
       ),
       item(
         'deploy-settings',
         'Deploy settings',
         '/apps/$name/deploy-settings',
-        <SlidersHorizontalGlassIcon size="1.4em" />,
+        glass(SlidersHorizontalGlassIcon),
       ),
       item(
         'pipelines',
         'Pipelines',
         '/apps/$name/pipelines',
-        <BinaryTreeGlassIcon size="1.4em" />,
+        glass(BinaryTreeGlassIcon),
       ),
     ],
   },
   {
     id: 'traffic',
     label: 'Traffic',
-    icon: <Share2GlassIcon size="1.4em" />,
+    icon: glass(Share2GlassIcon),
     items: [
-      item(
-        'go-live',
-        'Go live',
-        '/apps/$name/go-live',
-        <RocketGlassIcon size="1.4em" />,
-      ),
-      item(
-        'domains',
-        'Domains',
-        '/apps/$name/domains',
-        <GlobeGlassIcon size="1.4em" />,
-      ),
-      item(
-        'streams',
-        'Streams',
-        '/apps/$name/streams',
-        <PlugGlassIcon size="1.4em" />,
-      ),
+      item('go-live', 'Go live', '/apps/$name/go-live', glass(RocketGlassIcon)),
+      item('domains', 'Domains', '/apps/$name/domains', glass(GlobeGlassIcon)),
+      item('streams', 'Streams', '/apps/$name/streams', glass(PlugGlassIcon)),
       item(
         'loadbalancer',
         'Load balancer',
         '/apps/$name/loadbalancer',
-        <SplitGlassIcon size="1.4em" />,
+        glass(SplitGlassIcon),
         'load-balancer',
       ),
-      item(
-        'network',
-        'Network',
-        '/apps/$name/network',
-        <Share2GlassIcon size="1.4em" />,
-      ),
-      item(
-        'cache',
-        'Cache',
-        '/apps/$name/cache',
-        <ZapGlassIcon size="1.4em" />,
-      ),
+      item('network', 'Network', '/apps/$name/network', glass(Share2GlassIcon)),
+      item('cache', 'Cache', '/apps/$name/cache', glass(ZapGlassIcon)),
       {
         ...item(
           'forms',
           'Forms',
           '/apps/$name/forms',
-          <ClipboardListGlassIcon size="1.4em" />,
+          glass(ClipboardListGlassIcon),
         ),
         staticOnly: true,
         beta: true,
@@ -705,7 +673,7 @@ export const APP_NAV_SECTIONS: AppNavSection[] = [
           'static-routes',
           'Routing rules',
           '/apps/$name/static-routes',
-          <SignpostGlassIcon size="1.4em" />,
+          glass(SignpostGlassIcon),
         ),
         staticOnly: true,
       },
@@ -714,123 +682,93 @@ export const APP_NAV_SECTIONS: AppNavSection[] = [
   {
     id: 'config',
     label: 'Config',
-    icon: <WrenchGlassIcon size="1.4em" />,
+    icon: glass(WrenchGlassIcon),
     items: [
       item(
         'environment',
         'Environment',
         '/apps/$name/environment',
-        <BracesGlassIcon size="1.4em" />,
+        glass(BracesGlassIcon),
       ),
       item(
         'services',
         'Services',
         '/apps/$name/services',
-        <LayersGlassIcon size="1.4em" />,
+        glass(LayersGlassIcon),
       ),
       item(
         'resources',
         'Resources',
         '/apps/$name/resources',
-        <CpuGlassIcon size="1.4em" />,
+        glass(CpuGlassIcon),
       ),
-      item(
-        'volumes',
-        'Volumes',
-        '/apps/$name/volumes',
-        <ServerGlassIcon size="1.4em" />,
-      ),
-      item(
-        'health',
-        'Health',
-        '/apps/$name/health',
-        <ActivityGlassIcon size="1.4em" />,
-      ),
+      item('volumes', 'Volumes', '/apps/$name/volumes', glass(ServerGlassIcon)),
+      item('health', 'Health', '/apps/$name/health', glass(ActivityGlassIcon)),
       item(
         'scheduled-tasks',
         'Jobs',
         '/apps/$name/scheduled-tasks',
-        <CountdownGlassIcon size="1.4em" />,
+        glass(CountdownGlassIcon),
       ),
       item(
         'feature-flags',
         'Feature flags',
         '/apps/$name/feature-flags',
-        <FlagGlassIcon size="1.4em" />,
+        glass(FlagGlassIcon),
       ),
       item(
         'split-testing',
         'Split testing',
         '/apps/$name/split-testing',
-        <FlaskConicalGlassIcon size="1.4em" />,
+        glass(FlaskConicalGlassIcon),
       ),
       item(
         'integrations',
         'Integrations',
         '/apps/$name/integrations',
-        <PlugGlassIcon size="1.4em" />,
+        glass(PlugGlassIcon),
       ),
     ],
   },
   {
     id: 'observe',
     label: 'Observe',
-    icon: <EyeGlassIcon size="1.4em" />,
+    icon: glass(EyeGlassIcon),
     items: [
       item(
         'metrics',
         'Metrics',
         '/apps/$name/metrics',
-        <ActivityGlassIcon size="1.4em" />,
+        glass(ActivityGlassIcon),
       ),
-      item(
-        'logs',
-        'Logs',
-        '/apps/$name/logs',
-        <ScrollGlassIcon size="1.4em" />,
-      ),
+      item('logs', 'Logs', '/apps/$name/logs', glass(ScrollGlassIcon)),
       item(
         'log-pipeline',
         'Log pipeline',
         '/apps/$name/log-pipeline',
-        <FunnelGlassIcon size="1.4em" />,
+        glass(FunnelGlassIcon),
       ),
       item(
         'requests',
         'Requests',
         '/apps/$name/requests',
-        <FileSearchGlassIcon size="1.4em" />,
+        glass(FileSearchGlassIcon),
       ),
       item(
         'traffic',
         'Traffic',
         '/apps/$name/traffic',
-        <ChartLineGlassIcon size="1.4em" />,
+        glass(ChartLineGlassIcon),
       ),
       item(
         'traces',
         'Traces',
         '/apps/$name/traces',
-        <BinaryTreeGlassIcon size="1.4em" />,
+        glass(BinaryTreeGlassIcon),
       ),
-      item(
-        'errors',
-        'Errors',
-        '/apps/$name/errors',
-        <BugGlassIcon size="1.4em" />,
-      ),
-      item(
-        'alerts',
-        'Alerts',
-        '/apps/$name/alerts',
-        <BellGlassIcon size="1.4em" />,
-      ),
-      item(
-        'exec',
-        'Exec',
-        '/apps/$name/exec',
-        <TerminalGlassIcon size="1.4em" />,
-      ),
+      item('errors', 'Errors', '/apps/$name/errors', glass(BugGlassIcon)),
+      item('alerts', 'Alerts', '/apps/$name/alerts', glass(BellGlassIcon)),
+      item('exec', 'Exec', '/apps/$name/exec', glass(TerminalGlassIcon)),
     ],
   },
 ]

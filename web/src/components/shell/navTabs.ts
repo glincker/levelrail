@@ -16,6 +16,11 @@ export type NavTabId =
   | 'domains'
   | 'firewall'
   | 'iam'
+  | 'imageScanning'
+  | 'bootstrapScripts'
+  | 'keys'
+  | 'team'
+  | 'auditLog'
   | 'images'
   | 'loadBalancers'
   | 'mail'
@@ -115,6 +120,7 @@ export const NAV_TAB_GROUPS: readonly NavTabGroup[] = [
     tabs: [
       { id: 'nodes', to: '/nodes' },
       { id: 'providers', to: '/settings/node-providers' },
+      { id: 'bootstrapScripts', to: '/nodes/bootstrap-scripts' },
     ],
   },
   {
@@ -139,6 +145,10 @@ export const NAV_TAB_GROUPS: readonly NavTabGroup[] = [
     id: 'security',
     tabs: [
       { id: 'security', to: '/security' },
+      { id: 'keys', to: '/settings/tokens' },
+      { id: 'team', to: '/settings/users' },
+      { id: 'auditLog', to: '/settings/audit-log' },
+      { id: 'imageScanning', to: '/security/image-scanning' },
       { id: 'iam', to: '/settings/iam-policies' },
     ],
   },

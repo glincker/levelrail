@@ -862,5 +862,40 @@
     "nodePreferred": "node preferred",
     "together": "together with",
     "apart": "apart from"
+  },
+  "bootstrapScripts": {
+    "page": {
+      "title": "Bootstrap scripts",
+      "description": "Shell scripts you can run when a new cloud node is provisioned."
+    },
+    "runsAsRoot": "Scripts run as root on newly provisioned cloud nodes.",
+    "rootOnly": "Only a root account can create, edit or delete scripts.",
+    "new": "New script",
+    "edit": "Edit {{name}}",
+    "empty": "No bootstrap scripts yet.",
+    "loading": "Loading scripts",
+    "error": "Could not load bootstrap scripts.",
+    "loadScriptError": "Could not load that script.",
+    "table": {
+      "label": "Bootstrap scripts",
+      "name": "Name",
+      "size": "Size",
+      "updated": "Updated",
+      "actions": "Actions"
+    },
+    "editor": {
+      "name": "Name",
+      "body": "Script",
+      "size": "{{used}} of {{max}}",
+      "save": "Save script",
+      "saving": "Saving",
+      "cancel": "Cancel"
+    },
+    "delete": {
+      "action": "Delete {{name}}",
+      "title": "Delete {{name}}?",
+      "consequence": "Nodes that already ran it are not changed. New nodes can no longer use it.",
+      "confirm": "Delete script"
+    }
   }
 }
