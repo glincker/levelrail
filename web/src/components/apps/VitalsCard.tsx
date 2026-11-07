@@ -1,26 +1,19 @@
-import { CheckGlassIcon, CopyGlassIcon } from '@thesvg/ui-react'
+import { lazy, Suspense, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import { toast } from '@/components/ui/toast'
-import { useCopyToClipboard } from '../../hooks/useCopyToClipboard'
+import { SnippetBlock } from './VitalsSnippet'
 import {
   formatVitalValue,
   useAppVitals,
   useAppVitalsActions,
   type VitalsMetric,
   type VitalsStat,
-  VITALS_METRICS,
 } from '../../queries/appVitals'
+
+const VitalsRoutesDialog = lazy(() => import('./VitalsRoutesDialog'))
 
 const HEADLINE: VitalsMetric[] = ['LCP', 'INP', 'CLS']
 
@@ -55,46 +48,12 @@ function StatValue({
   )
 }
 
-function snippetFor(app: string, key: string): string {
-  const src = `${window.location.origin}/api/v1/vitals/snippet.js`
-  return `<script defer src="${src}" data-app="${app}" data-key="${key}"></script>`
-}
-
-function SnippetBlock({ app, publicKey }: { app: string; publicKey: string }) {
-  const { t } = useTranslation('webVitals')
-  const { copied, copy } = useCopyToClipboard()
-  const snippet = snippetFor(app, publicKey)
-  return (
-    <div className="space-y-1">
-      <p className="text-xs text-muted-foreground">{t('snippetHint')}</p>
-      <div className="flex items-center gap-2">
-        <code className="min-w-0 flex-1 overflow-x-auto rounded bg-muted px-2 py-1 font-mono text-xs whitespace-nowrap">
-          {snippet}
-        </code>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          aria-label={t('copySnippet')}
-          onClick={() => copy(snippet)}
-        >
-          {copied ? (
-            <CheckGlassIcon size="1em" />
-          ) : (
-            <CopyGlassIcon size="1em" />
-          )}
-          {copied ? t('copied') : t('copySnippet')}
-        </Button>
-      </div>
-    </div>
-  )
-}
-
 /** VitalsCard shows real user web vitals for an app and owns the collection switch and beacon key. */
 export function VitalsCard({ appName }: { appName: string }) {
   const { t } = useTranslation('webVitals')
   const { data, isPending, isError } = useAppVitals(appName)
   const { setEnabled, rotate } = useAppVitalsActions(appName)
+  const [routesOpen, setRoutesOpen] = useState(false)
 
   const fail = (error: Error) =>
     toast.add({
@@ -165,31 +124,29 @@ export function VitalsCard({ appName }: { appName: string }) {
               </div>
             ))}
           </dl>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('route')}</TableHead>
-                {VITALS_METRICS.map((m) => (
-                  <TableHead key={m}>{m}</TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.routes.map((r) => (
-                <TableRow key={r.route}>
-                  <TableCell className="font-mono text-xs">{r.route}</TableCell>
-                  {VITALS_METRICS.map((m) => (
-                    <TableCell key={m}>
-                      <StatValue metric={m} stat={r.metrics[m]} />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          <p className="text-xs text-muted-foreground">
-            {t('windowNote', { days: data.days })}
-          </p>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs text-muted-foreground">
+              {t('windowNote', { days: data.days })}
+            </p>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => setRoutesOpen(true)}
+            >
+              {t('viewAllRoutes', { count: data.routes.length })}
+            </Button>
+          </div>
+          {routesOpen ? (
+            <Suspense fallback={null}>
+              <VitalsRoutesDialog
+                appName={appName}
+                data={data}
+                open
+                onOpenChange={setRoutesOpen}
+              />
+            </Suspense>
+          ) : null}
         </>
       )}
     </section>

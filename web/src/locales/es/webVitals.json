@@ -11,5 +11,9 @@
   "emptyEnabled": "Aún no hay datos. Visita tu sitio con el fragmento instalado y los resultados aparecerán aquí.",
   "p75Label": "{{metric}} p75",
   "route": "Ruta",
-  "windowNote": "p75 de los últimos {{days}} días. Verde es bueno, ámbar necesita mejorar, rojo es deficiente."
+  "windowNote": "p75 de los últimos {{days}} días.",
+  "routesTitle": "Web vitals por ruta",
+  "viewAllRoutes": "Ver todas las rutas ({{count}})",
+  "samples": "Muestras",
+  "legend": "Verde es bueno, ámbar necesita mejorar, rojo es deficiente, según los umbrales estándar de Core Web Vitals."
 }
