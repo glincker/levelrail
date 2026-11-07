@@ -398,7 +398,7 @@ func (p *Pipeline) deployRailpack(ctx context.Context, req Request, progress fun
 		progress(build.ProgressEvent{Step: "next.js", Log: note, Stream: "stderr"})
 	}
 	buildEnv := staticBuildArgs(req.Service.Env, nil, StaticBuildEnvPrefixes())
-	req.nextImageCacheMount = nextImageCacheTarget(req, build.DetectNext(buildRoot))
+	req.nextImageCacheMount = nextImageCacheTarget(req, build.DetectNext(buildRoot), build.NextRunsStandalone(buildRoot))
 	if id := nextBuildID(buildRoot, deployIDFor(req), req.Service); id != "" {
 		buildEnv[nextBuildIDEnvVar] = id
 		req.nextBuildID = id

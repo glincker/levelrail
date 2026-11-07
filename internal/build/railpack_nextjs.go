@@ -40,6 +40,10 @@ func nextStandaloneConfig(sourceDir string) bool {
 	return false
 }
 
+// NextRunsStandalone reports whether the Railpack plan will start the standalone
+// server for this source, so callers can place the image cache where it writes.
+func NextRunsStandalone(sourceDir string) bool { return nextStandaloneConfig(sourceDir) }
+
 // applyNextStandalone makes the Railpack plan run the standalone server
 // with its static and public files in place. It returns a log line, or ""
 // when the app is not a standalone Next.js app.
