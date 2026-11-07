@@ -448,6 +448,7 @@ func (p *Pipeline) finishDeploy(ctx context.Context, req Request, res *build.Res
 		prevDesired = p.nextCachePrev(ctx, req.ServiceName)
 	}
 	applyNextCache(&desired, req, prevDesired)
+	p.applyNextCacheCA(ctx, req, &desired)
 	markGeneratedEnv(&desired, req)
 	resolution := p.buildResolution(ctx, res.Tag, res.ExporterResponse)
 	resolution.apply(&desired)

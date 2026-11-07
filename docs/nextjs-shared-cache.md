@@ -36,13 +36,9 @@ The handler reads the connection string from the first of `LEVELRAIL_NEXT_CACHE_
 
 ### TLS
 
-A managed Redis serves TLS only, with a self-signed certificate, so the link URL is `rediss://`. The handler verifies that certificate; it never turns verification off. Link the certificate as a second variable and the handler trusts it for this connection only:
+A managed Redis serves TLS only, with a self-signed certificate, so the link URL is `rediss://`. The handler verifies that certificate; it never turns verification off. With `next.cache: redis`, Levelrail links the database certificate to `LEVELRAIL_NEXT_CACHE_CA` (database field `tls_ca`) for you, next to `LEVELRAIL_NEXT_CACHE_URL`, and the handler trusts it for this connection only. No manual step is needed.
 
-```
-levelrail-cli databases link myapp-cache myapp --env-var LEVELRAIL_NEXT_CACHE_CA --field tls_ca
-```
-
-Restart the app after linking. The `tls_ca` field resolves to the database certificate in PEM form, which is its own trust anchor. In `app.yaml` the same reference is `LEVELRAIL_NEXT_CACHE_CA: { from: { database: myapp-cache, field: tls_ca } }`. The certificate is issued for the database container name, so use the same-node host the link provides. For a host with a different name, set `LEVELRAIL_NEXT_CACHE_CA_SERVERNAME` to the certificate name.
+The CA link is added only when the linked Redis has TLS on and supports the field, and it is removed when `next.cache` is set to `none`. If you set `LEVELRAIL_NEXT_CACHE_CA` yourself, your value wins. The certificate is issued for the database container name, so use the same-node host the link provides. For a host with a different name, set `LEVELRAIL_NEXT_CACHE_CA_SERVERNAME` to the certificate name. Restart the app after changing the database TLS setting. To link the field by hand (for example with a custom variable name), run `levelrail-cli databases link myapp-cache myapp --env-var LEVELRAIL_NEXT_CACHE_CA --field tls_ca`; in `app.yaml` the same reference is `LEVELRAIL_NEXT_CACHE_CA: { from: { database: myapp-cache, field: tls_ca } }`.
 
 Without the CA the handler logs a certificate error and falls back to per process caching. Do not disable TLS on the database to work around it. Run `levelrail-cli databases create --help` for the engine and version values your server offers.
 

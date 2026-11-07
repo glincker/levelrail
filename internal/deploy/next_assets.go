@@ -427,12 +427,13 @@ func EnsureNextCacheLink(desired *store.DesiredService) {
 		next[nextCacheURLEnvVar] = ref
 		desired.DatabaseEnv = next
 	case spec.NextCacheNone:
-		if !linked {
+		_, caLinked := desired.DatabaseEnv[nextCacheCAEnvVar]
+		if !linked && !caLinked {
 			return
 		}
 		next := make(map[string]store.DatabaseEnvRef, len(desired.DatabaseEnv))
 		for k, v := range desired.DatabaseEnv {
-			if k != nextCacheURLEnvVar {
+			if k != nextCacheURLEnvVar && k != nextCacheCAEnvVar {
 				next[k] = v
 			}
 		}
@@ -519,4 +520,5 @@ func (p *Pipeline) applyStoredNextCache(ctx context.Context, req Request, desire
 		req.Service.Next = &spec.Next{Cache: spec.NextCacheRedis}
 	}
 	applyNextCache(desired, req, p.nextCachePrev(ctx, req.ServiceName))
+	p.applyNextCacheCA(ctx, req, desired)
 }
