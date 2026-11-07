@@ -4,27 +4,20 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
 
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// Env seeds for the bootstrap script limits; a runtime setting overrides them.
-const (
-	envBootstrapScriptMaxBytes = "APP_BOOTSTRAP_SCRIPT_MAX_BYTES"
-	envBootstrapScriptMaxCount = "APP_BOOTSTRAP_SCRIPT_MAX_COUNT"
-
-	defaultBootstrapScriptMaxBytes int64 = 64 << 10
-	defaultBootstrapScriptMaxCount int64 = 50
-	maxBootstrapScriptNameLen            = 64
-)
+const maxBootstrapScriptNameLen = 64
 
 // BootstrapScriptStore is the store surface for saved bootstrap scripts.
 // *store.DB satisfies it; a store without it leaves the routes at 501.
@@ -35,8 +28,6 @@ type BootstrapScriptStore interface {
 	CountBootstrapScripts(ctx context.Context) (int64, error)
 	UpdateBootstrapScript(ctx context.Context, id, name, body string, now time.Time) error
 	DeleteBootstrapScript(ctx context.Context, id string) error
-	GetBootstrapScriptLimits(ctx context.Context) (store.BootstrapScriptLimits, error)
-	SetBootstrapScriptLimits(ctx context.Context, l store.BootstrapScriptLimits) error
 }
 
 func bootstrapScriptStoreOf(s any) BootstrapScriptStore {
@@ -64,7 +55,7 @@ type bootstrapScriptRequest struct {
 type bootstrapScriptLimitsResource struct {
 	MaxBytes int64 `json:"max_bytes"`
 	MaxCount int64 `json:"max_count"`
-	// Source is stored when either value is a runtime override, else env or default.
+	// Source is saved when either value is a runtime override, else env or default.
 	Source string `json:"source"`
 }
 
@@ -82,32 +73,28 @@ func bootstrapScriptView(s store.BootstrapScript, withBody bool) bootstrapScript
 	return res
 }
 
-func bootstrapEnvInt(key string, def int64) (int64, bool) {
-	if v, err := strconv.ParseInt(os.Getenv(key), 10, 64); err == nil && v > 0 {
-		return v, true
+// bootstrapLimit reads one registered limit; a non-positive value falls back to the default so a bad env seed never locks uploads.
+func (rt *Router) bootstrapLimit(ctx context.Context, key string, def int64) (int64, string) {
+	n := int64(rt.runtimeSettings.Int(ctx, key))
+	src := rt.runtimeSettings.Source(ctx, key)
+	if n <= 0 {
+		n = def
+		src = runtimesettings.SourceDefault
 	}
-	return def, false
+	return n, src
 }
 
-func (rt *Router) bootstrapScriptLimits(ctx context.Context) (bootstrapScriptLimitsResource, error) {
-	out := bootstrapScriptLimitsResource{Source: "default"}
-	var envB, envC bool
-	out.MaxBytes, envB = bootstrapEnvInt(envBootstrapScriptMaxBytes, defaultBootstrapScriptMaxBytes)
-	out.MaxCount, envC = bootstrapEnvInt(envBootstrapScriptMaxCount, defaultBootstrapScriptMaxCount)
-	if envB || envC {
-		out.Source = "env"
+func (rt *Router) bootstrapScriptLimits(ctx context.Context) bootstrapScriptLimitsResource {
+	out := bootstrapScriptLimitsResource{Source: runtimesettings.SourceDefault}
+	var bytesSrc, countSrc string
+	out.MaxBytes, bytesSrc = rt.bootstrapLimit(ctx, runtimesettings.KeyBootstrapScriptMaxBytes, runtimesettings.DefaultBootstrapScriptMaxBytes)
+	out.MaxCount, countSrc = rt.bootstrapLimit(ctx, runtimesettings.KeyBootstrapScriptMaxCount, runtimesettings.DefaultBootstrapScriptMaxCount)
+	for _, src := range []string{bytesSrc, countSrc} {
+		if src == runtimesettings.SourceSaved || (src == runtimesettings.SourceEnv && out.Source != runtimesettings.SourceSaved) {
+			out.Source = src
+		}
 	}
-	stored, err := rt.bootstrapScripts.GetBootstrapScriptLimits(ctx)
-	if err != nil {
-		return out, fmt.Errorf("api: bootstrap script limits: %w", err)
-	}
-	if stored.MaxBytes != nil {
-		out.MaxBytes, out.Source = *stored.MaxBytes, "stored"
-	}
-	if stored.MaxCount != nil {
-		out.MaxCount, out.Source = *stored.MaxCount, "stored"
-	}
-	return out, nil
+	return out
 }
 
 func validateBootstrapScript(req bootstrapScriptRequest, maxBytes int64) string {
@@ -181,11 +168,7 @@ func (rt *Router) handleCreateBootstrapScript(w http.ResponseWriter, r *http.Req
 	if !rt.bootstrapScriptsReady(w) {
 		return
 	}
-	limits, err := rt.bootstrapScriptLimits(r.Context())
-	if err != nil {
-		rt.internalError(w, "api: create bootstrap script: read limits failed", err)
-		return
-	}
+	limits := rt.bootstrapScriptLimits(r.Context())
 	var req bootstrapScriptRequest
 	if !decodeReqLimit(w, r, &req, limits.MaxBytes+4096) {
 		return
@@ -226,11 +209,7 @@ func (rt *Router) handleUpdateBootstrapScript(w http.ResponseWriter, r *http.Req
 	if !rt.bootstrapScriptsReady(w) {
 		return
 	}
-	limits, err := rt.bootstrapScriptLimits(r.Context())
-	if err != nil {
-		rt.internalError(w, "api: update bootstrap script: read limits failed", err)
-		return
-	}
+	limits := rt.bootstrapScriptLimits(r.Context())
 	var req bootstrapScriptRequest
 	if !decodeReqLimit(w, r, &req, limits.MaxBytes+4096) {
 		return
@@ -281,12 +260,7 @@ func (rt *Router) handleGetBootstrapScriptLimits(w http.ResponseWriter, r *http.
 	if !rt.bootstrapScriptsReady(w) {
 		return
 	}
-	res, err := rt.bootstrapScriptLimits(r.Context())
-	if err != nil {
-		rt.internalError(w, "api: get bootstrap script limits failed", err)
-		return
-	}
-	writeJSON(w, http.StatusOK, res)
+	writeJSON(w, http.StatusOK, rt.bootstrapScriptLimits(r.Context()))
 }
 
 // handlePutBootstrapScriptLimits handles PUT /api/v1/bootstrap-scripts/limits; root only.
@@ -294,26 +268,36 @@ func (rt *Router) handlePutBootstrapScriptLimits(w http.ResponseWriter, r *http.
 	if !rt.bootstrapScriptsReady(w) {
 		return
 	}
+	if rt.runtimeSettings == nil {
+		writeError(w, http.StatusNotImplemented, "runtime settings are not configured on this control plane")
+		return
+	}
 	var req bootstrapScriptLimitsUpdate
 	if !decodeReq(w, r, &req) {
 		return
 	}
-	for _, v := range []*int64{req.MaxBytes, req.MaxCount} {
-		if v != nil && *v <= 0 {
-			writeError(w, http.StatusBadRequest, "limits must be positive, or null to inherit the env default")
+	actor := rt.actorForRequest(r)
+	for key, v := range map[string]*int64{
+		runtimesettings.KeyBootstrapScriptMaxBytes: req.MaxBytes,
+		runtimesettings.KeyBootstrapScriptMaxCount: req.MaxCount,
+	} {
+		var err error
+		if v == nil {
+			_, err = rt.runtimeSettings.Reset(r.Context(), key)
+		} else {
+			_, err = rt.runtimeSettings.Set(r.Context(), key, json.RawMessage(strconv.FormatInt(*v, 10)), actor)
+		}
+		var verr *runtimesettings.ValidationError
+		if errors.As(err, &verr) {
+			writeError(w, http.StatusBadRequest, verr.Message)
+			return
+		}
+		if err != nil {
+			rt.internalError(w, "api: set bootstrap script limits failed", err)
 			return
 		}
 	}
-	if err := rt.bootstrapScripts.SetBootstrapScriptLimits(r.Context(), store.BootstrapScriptLimits{MaxBytes: req.MaxBytes, MaxCount: req.MaxCount}); err != nil {
-		rt.internalError(w, "api: set bootstrap script limits failed", err)
-		return
-	}
-	res, err := rt.bootstrapScriptLimits(r.Context())
-	if err != nil {
-		rt.internalError(w, "api: set bootstrap script limits: reload failed", err)
-		return
-	}
-	writeJSON(w, http.StatusOK, res)
+	writeJSON(w, http.StatusOK, rt.bootstrapScriptLimits(r.Context()))
 }
 
 // registerBootstrapScriptRoutes registers the saved bootstrap script routes. The literal /limits

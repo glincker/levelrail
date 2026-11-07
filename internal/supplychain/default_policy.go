@@ -2,15 +2,12 @@ package supplychain
 
 import (
 	"context"
-	"database/sql"
-	"encoding/json"
-	"errors"
 	"fmt"
+	"strconv"
 	"time"
-)
 
-// DefaultPolicyKey is the runtime_settings key holding the instance default policy.
-const DefaultPolicyKey = "supply_chain.default_policy"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+)
 
 // DefaultPolicy is the scan policy apps inherit when they have none of their own.
 type DefaultPolicy struct {
@@ -18,47 +15,59 @@ type DefaultPolicy struct {
 	Gate    GateMode `json:"gate"`
 }
 
-// GetDefaultPolicy returns the saved instance default; ok is false when none was saved.
-func (s *SQLStore) GetDefaultPolicy(ctx context.Context) (DefaultPolicy, bool, error) {
-	var raw string
-	err := s.db.QueryRowContext(ctx, `SELECT value FROM runtime_settings WHERE key = ?`, DefaultPolicyKey).Scan(&raw)
-	if errors.Is(err, sql.ErrNoRows) {
-		return DefaultPolicy{}, false, nil
-	}
-	if err != nil {
-		return DefaultPolicy{}, false, fmt.Errorf("store: get supply chain default policy: %w", err)
-	}
-	var p DefaultPolicy
-	if err := json.Unmarshal([]byte(raw), &p); err != nil {
-		return DefaultPolicy{}, false, fmt.Errorf("store: decode supply chain default policy: %w", err)
-	}
-	mode, perr := ParseGateMode(string(p.Gate))
-	if perr != nil {
-		mode = GateOff
-	}
-	p.Gate = mode
-	return p, true, nil
+// DefaultPolicySaved holds the saved halves of the instance default; nil means not saved.
+type DefaultPolicySaved struct {
+	Enabled *bool
+	Gate    *GateMode
 }
 
-// SaveDefaultPolicy stores the instance default in the runtime settings key-value table.
+// GetDefaultPolicy reads the saved halves from the registered runtime settings rows.
+func (s *SQLStore) GetDefaultPolicy(ctx context.Context) (DefaultPolicySaved, error) {
+	rows, err := s.db.ListRuntimeSettings(ctx)
+	if err != nil {
+		return DefaultPolicySaved{}, fmt.Errorf("store: get supply chain default policy: %w", err)
+	}
+	var out DefaultPolicySaved
+	for _, r := range rows {
+		switch r.Key {
+		case runtimesettings.KeyScanDefaultEnabled:
+			if v, perr := strconv.ParseBool(r.Value); perr == nil {
+				out.Enabled = &v
+			}
+		case runtimesettings.KeyScanDefaultGate:
+			if g, perr := ParseGateMode(r.Value); perr == nil {
+				out.Gate = &g
+			}
+		}
+	}
+	return out, nil
+}
+
+// SaveDefaultPolicy writes both halves under the registered keys so the settings API shows the same values.
 func (s *SQLStore) SaveDefaultPolicy(ctx context.Context, p DefaultPolicy, actor string, at time.Time) error {
-	raw, err := json.Marshal(p)
-	if err != nil {
-		return fmt.Errorf("store: encode supply chain default policy: %w", err)
+	if err := s.db.SetRuntimeSetting(ctx, runtimesettings.KeyScanDefaultEnabled, strconv.FormatBool(p.Enabled), actor, at); err != nil {
+		return fmt.Errorf("store: save supply chain default policy: %w", err)
 	}
-	return s.db.SetRuntimeSetting(ctx, DefaultPolicyKey, string(raw), actor, at)
+	if err := s.db.SetRuntimeSetting(ctx, runtimesettings.KeyScanDefaultGate, string(p.Gate), actor, at); err != nil {
+		return fmt.Errorf("store: save supply chain default policy: %w", err)
+	}
+	return nil
 }
 
-// DefaultPolicy returns the instance default: the saved value, else the env seed, else off.
+// DefaultPolicy returns the instance default: each saved half, else the env seed, else off.
 func (s *Service) DefaultPolicy(ctx context.Context) (DefaultPolicy, error) {
-	p, ok, err := s.deps.Store.GetDefaultPolicy(ctx)
+	saved, err := s.deps.Store.GetDefaultPolicy(ctx)
 	if err != nil {
 		return DefaultPolicy{}, err
 	}
-	if ok {
-		return p, nil
+	p := DefaultPolicy{Enabled: s.cfg.DefaultEnabled, Gate: s.cfg.DefaultGate}
+	if saved.Enabled != nil {
+		p.Enabled = *saved.Enabled
 	}
-	return DefaultPolicy{Enabled: s.cfg.DefaultEnabled, Gate: s.cfg.DefaultGate}, nil
+	if saved.Gate != nil {
+		p.Gate = *saved.Gate
+	}
+	return p, nil
 }
 
 // SaveDefaultPolicy applies patch to the instance default. A gate other than off requires scanning enabled.

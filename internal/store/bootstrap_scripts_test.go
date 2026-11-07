@@ -40,18 +40,3 @@ func TestBootstrapScriptCRUD(t *testing.T) {
 		t.Fatalf("get after delete err = %v", err)
 	}
 }
-
-func TestBootstrapScriptLimitsRoundTrip(t *testing.T) {
-	db := openTestDB(t)
-	ctx := context.Background()
-	if l, err := db.GetBootstrapScriptLimits(ctx); err != nil || l.MaxBytes != nil || l.MaxCount != nil {
-		t.Fatalf("fresh = %+v, %v", l, err)
-	}
-	n := int64(10)
-	if err := db.SetBootstrapScriptLimits(ctx, BootstrapScriptLimits{MaxBytes: &n}); err != nil {
-		t.Fatal(err)
-	}
-	if l, _ := db.GetBootstrapScriptLimits(ctx); l.MaxBytes == nil || *l.MaxBytes != 10 || l.MaxCount != nil {
-		t.Fatalf("got %+v", l)
-	}
-}

@@ -13,8 +13,8 @@ import (
 )
 
 func TestBootstrapScriptHandlers(t *testing.T) {
-	t.Setenv(envBootstrapScriptMaxBytes, "32")
-	t.Setenv(envBootstrapScriptMaxCount, "2")
+	t.Setenv("APP_BOOTSTRAP_SCRIPT_MAX_BYTES", "32")
+	t.Setenv("APP_BOOTSTRAP_SCRIPT_MAX_COUNT", "2")
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	do := func(method, path, body string) (int, bootstrapScriptResource) {
@@ -56,6 +56,31 @@ func TestBootstrapScriptHandlers(t *testing.T) {
 	}
 	if code, _ := do(http.MethodGet, "/api/v1/bootstrap-scripts/"+created.ID, ""); code != http.StatusNotFound {
 		t.Fatalf("get after delete = %d, want 404", code)
+	}
+}
+
+func TestBootstrapScriptLimitsThroughRegistry(t *testing.T) {
+	t.Setenv("APP_BOOTSTRAP_SCRIPT_MAX_COUNT", "7")
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	call := func(method, body string) (int, bootstrapScriptLimitsResource) {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, method, "/api/v1/bootstrap-scripts/limits", body))
+		var out bootstrapScriptLimitsResource
+		_ = json.Unmarshal(rec.Body.Bytes(), &out)
+		return rec.Code, out
+	}
+	if code, got := call(http.MethodGet, ""); code != http.StatusOK || got.MaxBytes != 64<<10 || got.MaxCount != 7 || got.Source != "env" {
+		t.Fatalf("seeded = %d %+v", code, got)
+	}
+	if code, got := call(http.MethodPut, `{"max_bytes":1024,"max_count":null}`); code != http.StatusOK || got.MaxBytes != 1024 || got.MaxCount != 7 || got.Source != "saved" {
+		t.Fatalf("put = %d %+v", code, got)
+	}
+	if code, _ := call(http.MethodPut, `{"max_bytes":0,"max_count":null}`); code != http.StatusBadRequest {
+		t.Fatalf("zero = %d, want 400", code)
+	}
+	if code, got := call(http.MethodPut, `{"max_bytes":null,"max_count":null}`); code != http.StatusOK || got.MaxBytes != 64<<10 || got.Source != "env" {
+		t.Fatalf("reset = %d %+v", code, got)
 	}
 }
 

@@ -65,6 +65,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_BUILD_NETWORK` | [`security.build_network`](/runtime-settings#security) | `open` |
 | `APP_WEBHOOK_REPLAY_PROTECTION` | [`security.webhook_replay_protection`](/runtime-settings#security) | `true` |
 | `APP_WEBHOOK_REPLAY_WINDOW` | [`security.webhook_replay_window`](/runtime-settings#security) | `10m` |
+| `APP_SCAN_DEFAULT_ENABLED` | [`supply_chain.default_enabled`](/runtime-settings#security) | `false` |
+| `APP_SCAN_DEFAULT_GATE` | [`supply_chain.default_gate`](/runtime-settings#security) | `off` |
 | `APP_ATTENTION_TOKEN_WINDOW` | [`tokens.expiry_warning_days`](/runtime-settings#security) | `7` |
 | `APP_API_MAX_BODY_BYTES` | [`api.max_body_bytes`](/runtime-settings#networking) | `16777216` |
 | `APP_ASSETS_UPLOAD_MAX_BYTES` | [`assets.upload_max_bytes`](/runtime-settings#networking) | `1073741824` |
@@ -107,6 +109,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_BACKUP_LOCAL_ROOT` | [`backup.local_root`](/runtime-settings#deploys) | empty |
 | `APP_BOOT_EVENT_RECHECK` | [`boot.event_recheck`](/runtime-settings#deploys) | `3s` |
 | `APP_BOOT_RECHECKS` | [`boot.rechecks`](/runtime-settings#deploys) | `3s:10s` |
+| `APP_BOOTSTRAP_SCRIPT_MAX_BYTES` | [`bootstrap_scripts.max_bytes`](/runtime-settings#deploys) | `65536` |
+| `APP_BOOTSTRAP_SCRIPT_MAX_COUNT` | [`bootstrap_scripts.max_count`](/runtime-settings#deploys) | `50` |
 | `APP_BUILD_CACHE_PER_APP` | [`build.cache_per_app`](/runtime-settings#deploys) | `true` |
 | `APP_BUILD_NEXT_MIN_FREE_MEMORY_MIB` | [`build.next_min_free_memory_mib`](/runtime-settings#deploys) | `2048` |
 | `APP_BUILD_MEMORY_MB` | [`builds.memory_limit_mb`](/runtime-settings#deploys) | `0` |

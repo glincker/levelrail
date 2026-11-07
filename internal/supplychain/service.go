@@ -16,8 +16,8 @@ import (
 // Store persists supply chain metadata; *SQLStore satisfies it.
 type Store interface {
 	GetSettings(ctx context.Context, app string) (Settings, error)
-	// GetDefaultPolicy returns the saved instance default; ok is false when none was saved.
-	GetDefaultPolicy(ctx context.Context) (DefaultPolicy, bool, error)
+	// GetDefaultPolicy returns the saved halves of the instance default; unsaved halves are nil.
+	GetDefaultPolicy(ctx context.Context) (DefaultPolicySaved, error)
 	SaveDefaultPolicy(ctx context.Context, p DefaultPolicy, actor string, at time.Time) error
 	// SaveSettings writes scan_enabled and scan_gate only and clears any override the new gate no longer allows.
 	SaveSettings(ctx context.Context, s Settings) error

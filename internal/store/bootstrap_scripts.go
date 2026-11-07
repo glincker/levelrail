@@ -27,12 +27,6 @@ var (
 	ErrBootstrapScriptNameTaken = errors.New("store: bootstrap script name already exists")
 )
 
-// BootstrapScriptLimits are the stored overrides; a nil field means the env seed applies.
-type BootstrapScriptLimits struct {
-	MaxBytes *int64
-	MaxCount *int64
-}
-
 const bootstrapScriptCols = `id, name, body, created_by, created_at, updated_at`
 
 // CreateBootstrapScript inserts a script; the caller mints the id.
@@ -109,36 +103,6 @@ func (db *DB) DeleteBootstrapScript(ctx context.Context, id string) error {
 		return fmt.Errorf("store: delete bootstrap script %q: %w", id, err)
 	}
 	return rowsAffectedOrNotFound(res, ErrBootstrapScriptNotFound, "delete bootstrap script %q", id)
-}
-
-// GetBootstrapScriptLimits returns the stored overrides.
-func (db *DB) GetBootstrapScriptLimits(ctx context.Context) (BootstrapScriptLimits, error) {
-	var b, c sql.NullInt64
-	if err := db.QueryRowContext(ctx, `SELECT max_bytes, max_count FROM bootstrap_script_limits WHERE id = 1`).Scan(&b, &c); err != nil {
-		return BootstrapScriptLimits{}, fmt.Errorf("store: get bootstrap script limits: %w", err)
-	}
-	var out BootstrapScriptLimits
-	if b.Valid {
-		out.MaxBytes = &b.Int64
-	}
-	if c.Valid {
-		out.MaxCount = &c.Int64
-	}
-	return out, nil
-}
-
-// SetBootstrapScriptLimits stores the overrides; a nil field clears it so the env seed applies again.
-func (db *DB) SetBootstrapScriptLimits(ctx context.Context, l BootstrapScriptLimits) error {
-	toNull := func(v *int64) sql.NullInt64 {
-		if v == nil {
-			return sql.NullInt64{}
-		}
-		return sql.NullInt64{Int64: *v, Valid: true}
-	}
-	if _, err := db.ExecContext(ctx, `UPDATE bootstrap_script_limits SET max_bytes = ?, max_count = ? WHERE id = 1`, toNull(l.MaxBytes), toNull(l.MaxCount)); err != nil {
-		return fmt.Errorf("store: set bootstrap script limits: %w", err)
-	}
-	return nil
 }
 
 func scanBootstrapScript(scan func(dest ...any) error) (BootstrapScript, error) {
