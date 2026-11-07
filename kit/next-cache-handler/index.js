@@ -298,6 +298,137 @@ class CacheHandler {
   resetRequestCache() {}
 }
 
+// Reads a stream of byte chunks into one Buffer.
+async function drain(stream) {
+  const reader = stream.getReader();
+  const parts = [];
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    parts.push(Buffer.from(value));
+  }
+  return Buffer.concat(parts);
+}
+
+function toStream(buf) {
+  return new ReadableStream({
+    start(controller) {
+      controller.enqueue(new Uint8Array(buf));
+      controller.close();
+    },
+  });
+}
+
+// Next 16 Cache Components handler ('use cache'). Shares the Redis client, fallback LRU,
+// key prefix and tag times with CacheHandler; entries live under their own "c:" keys.
+class ComponentsCacheHandler extends CacheHandler {
+  ckey(key) {
+    return this.prefix + 'c:' + key;
+  }
+
+  async get(cacheKey, softTags) {
+    const key = this.ckey(cacheKey);
+    const soft = Array.isArray(softTags) ? softTags : [];
+    const res = await this.run(async (c) => {
+      const raw = await c.get(key);
+      if (!raw) return null;
+      const entry = decode(raw);
+      const tags = [...new Set([...(entry.tags || []), ...soft])];
+      if (tags.length) {
+        const stamps = await c.hmGet(this.tagsKey, tags);
+        const times = {};
+        tags.forEach((t, i) => {
+          times[t] = stamps[i];
+        });
+        if (this.staleByTag(tags, entry.timestamp, times)) return null;
+      }
+      return entry;
+    });
+    let entry = res.ok ? res.value : null;
+    if (!res.ok) {
+      const e = this.lruGet(key);
+      if (!e) return undefined;
+      const tags = [...new Set([...(e.tags || []), ...soft])];
+      if (this.staleByTag(tags, e.timestamp, Object.fromEntries(this.localTags))) return undefined;
+      entry = e;
+    }
+    if (!entry) return undefined;
+    if (entry.expire > 0 && this.now() > entry.timestamp + entry.expire * 1000) return undefined;
+    return {
+      value: toStream(Buffer.from(entry.value)),
+      tags: entry.tags,
+      stale: entry.stale,
+      timestamp: entry.timestamp,
+      expire: entry.expire,
+      revalidate: entry.revalidate,
+    };
+  }
+
+  async set(cacheKey, pendingEntry) {
+    const key = this.ckey(cacheKey);
+    let entry;
+    let body;
+    try {
+      entry = await pendingEntry;
+      body = await drain(entry.value);
+    } catch (err) {
+      this.log(`cache component entry not readable, skipped: ${err && err.message}`);
+      return;
+    }
+    const tags = Array.isArray(entry.tags) ? entry.tags.filter((t) => typeof t === 'string') : [];
+    const stored = {
+      value: body,
+      tags,
+      stale: entry.stale,
+      timestamp: entry.timestamp,
+      expire: entry.expire,
+      revalidate: entry.revalidate,
+    };
+    const payload = encode({ ...stored, value: { __b64: body.toString('base64') } });
+    if (Buffer.byteLength(payload) > this.maxValueBytes) {
+      this.log('entry over LEVELRAIL_NEXT_CACHE_MAX_VALUE_BYTES, not cached');
+      return;
+    }
+    const ttl = entry.expire > 0 ? Math.ceil(entry.expire) : this.defaultTtl;
+    const res = await this.run((c) => (ttl > 0 ? c.set(key, payload, { EX: ttl }) : c.set(key, payload)));
+    if (!res.ok) this.lruSet(key, { ...stored, lastModified: entry.timestamp, expiresAt: this.now() + (ttl || this.defaultTtl) * 1000 });
+  }
+
+  // Reads happen in get, so there is no periodic sync to do.
+  async refreshTags() {}
+
+  async getExpiration(tags) {
+    const list = (Array.isArray(tags) ? tags : []).filter((t) => typeof t === 'string' && t);
+    if (!list.length) return 0;
+    const res = await this.run((c) => c.hmGet(this.tagsKey, list));
+    const stamps = res.ok ? res.value : list.map((t) => this.localTags.get(t));
+    return stamps.reduce((max, v) => {
+      const n = Number(v);
+      return Number.isFinite(n) && n > max ? n : max;
+    }, 0);
+  }
+
+  async updateTags(tags) {
+    return this.revalidateTag(tags);
+  }
+}
+
+// Next loads cacheHandlers entries as plain objects, so build one lazily (env is read on first use).
+function createComponentsHandler(options) {
+  let inner;
+  const h = () => inner || (inner = new ComponentsCacheHandler(options));
+  return {
+    get: (key, softTags) => h().get(key, softTags),
+    set: (key, pending) => h().set(key, pending),
+    refreshTags: () => h().refreshTags(),
+    getExpiration: (tags) => h().getExpiration(tags),
+    updateTags: (tags, durations) => h().updateTags(tags, durations),
+  };
+}
+
 module.exports = CacheHandler;
 module.exports.default = CacheHandler;
 module.exports.CacheHandler = CacheHandler;
+module.exports.ComponentsCacheHandler = ComponentsCacheHandler;
+module.exports.createComponentsHandler = createComponentsHandler;
+module.exports.componentsHandler = createComponentsHandler();

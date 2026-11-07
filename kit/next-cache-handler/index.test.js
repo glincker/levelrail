@@ -236,3 +236,114 @@ test('the database CA comes from an option, PEM env or file and verification sta
     delete process.env.LEVELRAIL_NEXT_CACHE_CA_FILE;
   }
 });
+
+// Cache Components (cacheHandlers) contract.
+const { ComponentsCacheHandler, componentsHandler } = CacheHandler;
+
+function streamOf(text) {
+  return new ReadableStream({
+    start(c) {
+      c.enqueue(new TextEncoder().encode(text));
+      c.close();
+    },
+  });
+}
+
+async function textOf(stream) {
+  const reader = stream.getReader();
+  let out = '';
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    out += Buffer.from(value).toString();
+  }
+  return out;
+}
+
+function makeCc(extra) {
+  const clock = { t: 1000000 };
+  const client = fakeRedis(clock);
+  const logs = [];
+  const h = new ComponentsCacheHandler({ client, buildId: 'b1', keyPrefix: 'app', now: () => clock.t, logger: (m) => logs.push(m), retryMs: 0, ...extra });
+  const entry = (text, over) => ({ value: streamOf(text), tags: ['posts'], stale: 30, timestamp: clock.t, expire: 600, revalidate: 60, ...over });
+  return { clock, client, logs, h, entry };
+}
+
+test('components: set reads the stream and get returns a fresh one', async () => {
+  const { h, entry } = makeCc();
+  await h.set('k', Promise.resolve(entry('hello')));
+  const a = await h.get('k', []);
+  assert.strictEqual(await textOf(a.value), 'hello');
+  assert.deepStrictEqual(a.tags, ['posts']);
+  assert.strictEqual(a.revalidate, 60);
+  assert.strictEqual(await textOf((await h.get('k', [])).value), 'hello');
+  assert.strictEqual(await h.get('missing', []), undefined);
+});
+
+test('components: keys share the prefix and build id, apart from classic keys', async () => {
+  const { h, client, entry } = makeCc();
+  await h.set('k', Promise.resolve(entry('x')));
+  assert.deepStrictEqual([...client.kv.keys()], ['app:b1:c:k']);
+  assert.strictEqual(client.kv.get('app:b1:c:k').ex, 600);
+});
+
+test('components: updateTags invalidates and getExpiration reports the newest time', async () => {
+  const { h, clock, entry } = makeCc();
+  await h.set('k', Promise.resolve(entry('x')));
+  assert.strictEqual(await h.getExpiration(['posts']), 0);
+  clock.t += 10;
+  await h.updateTags(['posts'], {});
+  assert.strictEqual(await h.get('k', []), undefined);
+  assert.strictEqual(await h.getExpiration(['posts', 'other']), clock.t);
+  await h.refreshTags();
+});
+
+test('components: soft tags and classic revalidateTag both invalidate', async () => {
+  const { h, clock, client, entry } = makeCc();
+  await h.set('k', Promise.resolve(entry('x', { tags: [] })));
+  clock.t += 5;
+  await h.updateTags(['_N_T_/a']);
+  assert.strictEqual(await h.get('k', ['_N_T_/a']), undefined);
+  const classic = new CacheHandler({ client, buildId: 'b1', keyPrefix: 'app', now: () => clock.t });
+  await h.set('j', Promise.resolve(entry('y')));
+  clock.t += 5;
+  await classic.revalidateTag('posts');
+  assert.strictEqual(await h.get('j', []), undefined);
+});
+
+test('components: expired entries are misses', async () => {
+  const { h, clock, entry } = makeCc();
+  await h.set('k', Promise.resolve(entry('x', { expire: 5 })));
+  clock.t += 6000;
+  assert.strictEqual(await h.get('k', []), undefined);
+});
+
+test('components: outage falls back to the LRU and replays tags', async () => {
+  const { h, clock, client, entry, logs } = makeCc();
+  client.broken = true;
+  await h.set('k', Promise.resolve(entry('local')));
+  assert.strictEqual(await textOf((await h.get('k', [])).value), 'local');
+  assert.ok(logs.length >= 1);
+  clock.t += 10;
+  await h.updateTags(['posts']);
+  assert.strictEqual(await h.get('k', []), undefined);
+  assert.strictEqual(await h.getExpiration(['posts']), clock.t);
+  client.broken = false;
+  clock.t += 10;
+  assert.strictEqual(await h.get('k', []), undefined);
+  assert.strictEqual(h.degraded, false);
+});
+
+test('components: oversize and unreadable entries are skipped, never thrown', async () => {
+  const { h, client, entry } = makeCc({ maxValueBytes: 20 });
+  await h.set('big', Promise.resolve(entry('x'.repeat(100))));
+  assert.strictEqual(client.kv.size, 0);
+  await h.set('bad', Promise.reject(new Error('render failed')));
+  assert.strictEqual(client.kv.size, 0);
+});
+
+test('components: exported plain object exposes the five hooks', () => {
+  for (const m of ['get', 'set', 'refreshTags', 'getExpiration', 'updateTags']) {
+    assert.strictEqual(typeof componentsHandler[m], 'function');
+  }
+});
