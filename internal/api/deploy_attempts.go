@@ -390,6 +390,8 @@ type cacheWarningSetter interface {
 type sseLogEvent struct {
 	Line   string `json:"line"`
 	Stream string `json:"stream"`
+	// At is additive and live-only; older consumers ignore it.
+	At string `json:"at,omitempty"`
 }
 
 // handleDeployLogStream handles
@@ -515,7 +517,7 @@ func (rt *Router) serveLiveDeployLog(w http.ResponseWriter, r *http.Request, dep
 	_, _ = fmt.Fprint(w, ": connected\n\n")
 	masked := newMaskedSSE(w)
 	for _, ev := range lines {
-		masked.Write(sseLogEvent{Line: ev.Line, Stream: ev.Stream})
+		masked.Write(sseLogEvent{Line: ev.Line, Stream: ev.Stream, At: eventAt(ev.At)})
 	}
 	sent := map[string]string{}
 	if rows := rt.traceRows(r.Context(), deployID); len(rows) > 0 {
@@ -554,7 +556,7 @@ func (rt *Router) serveLiveDeployLog(w http.ResponseWriter, r *http.Request, dep
 				<-r.Context().Done()
 				return
 			}
-			masked.Write(sseLogEvent{Line: ev.Line, Stream: ev.Stream})
+			masked.Write(sseLogEvent{Line: ev.Line, Stream: ev.Stream, At: eventAt(ev.At)})
 			flusher.Flush()
 		}
 	}
@@ -599,4 +601,11 @@ func writeSSEEvent(w http.ResponseWriter, ev sseLogEvent) {
 func deployErrorMessage(err error) string {
 	// Mask before Sanitize truncates so a secret cut at the limit leaves no fragment.
 	return untrusted.Sanitize(secretmask.Mask(err.Error()), failureOptions().MaxBytes)
+}
+
+func eventAt(t time.Time) string {
+	if t.IsZero() {
+		return ""
+	}
+	return t.UTC().Format(time.RFC3339Nano)
 }

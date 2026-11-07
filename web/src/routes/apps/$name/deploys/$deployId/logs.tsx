@@ -252,6 +252,8 @@ function DeployLogsPage() {
           deployId={deployId}
           running={!attemptFinished}
           lastEventAt={lastEventAt}
+          streamHealthy={transport === 'sse' && connectionState === 'open'}
+          latestLine={lines.length > 0 ? lines[lines.length - 1].line : null}
         />
 
         <StreamDropBanner

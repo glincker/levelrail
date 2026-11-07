@@ -267,3 +267,15 @@ func TestRecorder_ProgressRedactsCredentials(t *testing.T) {
 		t.Errorf("benign line altered: %q", got[2].Message)
 	}
 }
+
+func TestProgressStampsLiveLines(t *testing.T) {
+	r := NewRecorder(nil, nil)
+	r.Start("a1")
+	before := time.Now()
+	r.Progress("a1")(build.ProgressEvent{Log: "RUN npm ci"})
+	lines, _, unsub, ok := r.Snapshot("a1")
+	unsub()
+	if !ok || len(lines) != 1 || lines[0].At.Before(before) || lines[0].At.After(time.Now()) {
+		t.Fatalf("line not stamped: %+v", lines)
+	}
+}
