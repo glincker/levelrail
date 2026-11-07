@@ -11,7 +11,13 @@ import {
   useClearAppBuildCache,
 } from '../queries/appBuildCache'
 
-export function AppBuildCacheRow({ appName }: { appName: string }) {
+export function AppBuildCacheRow({
+  appName,
+  bare = false,
+}: {
+  appName: string
+  bare?: boolean
+}) {
   const { t } = useTranslation('appBuildCache')
   const [confirming, setConfirming] = useState(false)
   const { data, error } = useAppBuildCache(appName)
@@ -35,7 +41,9 @@ export function AppBuildCacheRow({ appName }: { appName: string }) {
   }
 
   return (
-    <section className="flex flex-wrap items-center justify-between gap-2 border-t pt-4">
+    <section
+      className={`flex flex-wrap items-center justify-between gap-2${bare ? '' : ' border-t pt-4'}`}
+    >
       <p className="flex items-center gap-2 text-sm">
         <DatabaseGlassIcon aria-hidden="true" className="size-5" />
         <span className="font-medium">{t('label')}</span>

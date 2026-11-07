@@ -183,5 +183,23 @@
     "noGit": "Redeploy from your git source to apply this; this app has none.",
     "started": "Redeploy started for {{name}}",
     "errorTitle": "Could not update the shared cache"
+  },
+  "nextStatus": {
+    "title": "Next.js",
+    "skew": "Skew protection",
+    "held": "Previous release held, removed",
+    "noneHeld": "No previous release held",
+    "cache": "Shared cache",
+    "redis": "Redis",
+    "off": "Off",
+    "configure": "Configure",
+    "vitals": "Web vitals",
+    "collecting": "Collecting",
+    "notCollecting": "Not collecting",
+    "cron": "Cron jobs",
+    "cronCount_one": "{{count}} job",
+    "cronCount_other": "{{count}} jobs",
+    "noCron": "None",
+    "manage": "Manage"
   }
 }
