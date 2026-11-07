@@ -74,7 +74,40 @@ Values that are not finite, round to zero, are negative or exceed the cap are re
 
 A key outside the table above does not stop the deploy, but it is never dropped silently. Every ignored key is reported as a warning that names the service, the key and what to do instead. `levelrail-cli apps deploy-compose` prints each one with the file path, `compose preview` and `apps validate` list them, and the deploy API returns them in `notices` (level `warning`).
 
-Common ones and their alternatives:
+The warning has one fixed shape, with `top-level` in place of the service name for a top-level key:
+
+```text
+service "web": env_file: is not supported and was ignored; move the values into environment: or the app's env vars; env_file is not read
+```
+
+A key with no specific advice gets `remove it, or bake the setting into the image; it has no effect on how this service runs`.
+
+### Supported subset
+
+These service keys are read. Everything else is ignored with a warning, or rejected (see below). The list comes from the parser in `internal/compose`.
+
+| Group | Keys |
+| --- | --- |
+| Run | `image`, `command`, `entrypoint`, `environment`, `restart`, `pull_policy`, `profiles`, `labels` |
+| Network and storage | `ports`, `volumes`, `networks` (reported only) |
+| Readiness and order | `healthcheck` (`test`, `interval`, `timeout`, `retries`, `start_period`), `depends_on` |
+| Resources | `mem_limit`, `cpus`, `shm_size`, `deploy` (`replicas`, `resources.limits`, `resources.reservations.devices`) |
+| Levelrail extensions | `x-levelrail-domains`, `x-levelrail-strategy`, `x-levelrail-strategy-reason`, `x-levelrail-healthcheck`, `x-levelrail-published-ports` |
+| Top level | `services`, `version`, `networks`, `volumes` (names only) |
+
+`build`, `secrets`, `configs` and the host access keys listed under "What is rejected" are parsed only so they can be refused or redirected with a clear message. They are not supported. `SERVICE_FQDN_*`, `SERVICE_URL_*` and `SERVICE_PASSWORD_*` style variables from imported templates are rewritten into literal values or generated secrets before the file is parsed.
+
+The five ignored keys people paste most, and the fix for each:
+
+| Key | Fix |
+| --- | --- |
+| `env_file` | Move the values into `environment:` or the app's env vars. The file is not read. |
+| `extends` | Inline the extended service's keys into the service. |
+| `container_name` | Delete it. Containers are named `<app>-<service>`. |
+| `user` | Set `USER` in the image, or wrap the start command with `entrypoint:`. |
+| `working_dir` | Set `WORKDIR` in the image, or `cd` inside `command:`. |
+
+More ignored keys and their alternatives:
 
 | Ignored key | Instead |
 | --- | --- |

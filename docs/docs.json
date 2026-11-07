@@ -252,6 +252,7 @@
               "multi-node",
               "multi-node-quickstart",
               "add-node-anywhere",
+              "add-node-over-ssh",
               "home-hardware",
               "resource-aware-placement",
               "node-scheduling",

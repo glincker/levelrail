@@ -25,7 +25,7 @@ levelrail-cli apps previews disable web
 - **Opened or reopened** deploys a preview. A new push to the pull request redeploys it.
 - **Closed or merged** tears it down, whether or not it merged.
 - **Teardown** removes the preview app, its containers, its disposable databases, and its env overrides.
-- **Stale sweep** tears down previews that have had no updates for their TTL. The default is 7 days. Set it per app with `--ttl-hours`, or for the whole control plane with `APP_PREVIEW_TTL` (a Go duration such as `168h`). The sweeper runs every hour by default, set by `APP_PREVIEW_SWEEP_INTERVAL`.
+- **Stale sweep** tears down previews that have had no updates for their TTL. The default is 7 days. Set it per app with `--ttl-hours`, or for the whole control plane with the runtime setting `deploy.preview_ttl_hours` (`levelrail-cli settings runtime set deploy.preview_ttl_hours 72`, applies on the next sweep; 0 keeps the startup default) or `APP_PREVIEW_TTL` (a Go duration such as `168h`). A per-app value wins. The sweeper runs every hour by default, set by `APP_PREVIEW_SWEEP_INTERVAL`.
 - A preview stuck in deploying longer than `APP_PREVIEW_STUCK_AFTER` (default 30 minutes) is marked failed by the startup sweep.
 
 Manual controls:
@@ -35,6 +35,8 @@ levelrail-cli apps previews teardown web 42
 levelrail-cli apps previews extend web 42 --hours 48
 levelrail-cli apps previews sweep
 ```
+
+`levelrail-cli apps previews open web 42` opens the preview's URL in your browser (`--print` prints it instead).
 
 `teardown` removes one pull request's preview now. `extend` keeps one preview past its TTL. `sweep` removes every stale preview across all apps.
 
@@ -155,5 +157,6 @@ Two optional settings per app, both off by default. They are set through `PUT /a
 ## Not yet
 
 - **Static site previews.** Static sites publish a preview under the name `<app>-pr-<number>`. This page does not yet cover their files, gate, or teardown in detail.
-- **Pull request comment commands.** The control plane accepts commands in pull request comments. They are not documented here yet.
+- **Pull request comment commands.** The control plane accepts commands in pull request comments (per-source `pr_comment_commands` and `pr_comment_commands_forks` switches). The command list is not documented here yet.
+- **Migration step with a database strategy.** `migrate_command` only works when the database strategy is `none`. With any other strategy the preview fails with a message saying so.
 - **Preview databases for branch deploys.** The branch deploy code path does not set up a database. Treat a branch deploy as app-only until this is confirmed.

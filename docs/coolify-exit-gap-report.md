@@ -41,7 +41,7 @@ Status words: **moves** means created on the new side, **reported** means the to
 | Scheduled tasks (cron) | moves | Was report-only. Enabled tasks become scheduled jobs that run `sh -c COMMAND` inside the app. Disabled tasks are skipped. Staged apps get their jobs disabled until cutover so a job never runs on both hosts |
 | Git webhook secrets (auto deploy) | reported | New. The git host still calls Coolify until you add a webhook pointing here |
 | HTTP health checks | moves | Path, interval, timeout and retries |
-| Command health checks | reported | Only HTTP probes exist here |
+| Command health checks | reported | Exec probes exist here (see the [app spec](/app-spec-reference)), but the import does not convert a Coolify command check. It adds a note to set an `exec` probe on the app by hand |
 | Memory and CPU limits | moves | Swap and reservations are not mapped |
 | Preview deployments | reported | Flag only. Previews are not recreated |
 | Projects and environments | partial | The project becomes a project. The environment name is recorded in the report but several environments of one project share it |
@@ -74,4 +74,4 @@ Status words: **moves** means created on the new side, **reported** means the to
 2. Import database backup schedules and S3 targets instead of listing them.
 3. Detect apps that depend on a custom Docker network.
 4. Per-server node placement for multi-server instances.
-5. Recreate git webhooks through the git provider integration.
+5. Recreate git webhooks through the git provider integration. GitHub, GitLab, Bitbucket, Gitea and Azure DevOps (`azure_devops`, access token plus service hook) are all supported git sources here, so every provider has a target.
