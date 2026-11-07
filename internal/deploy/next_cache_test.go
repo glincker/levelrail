@@ -1,8 +1,10 @@
 package deploy
 
 import (
+	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/spec"
@@ -73,5 +75,61 @@ func TestNextCacheLink(t *testing.T) {
 	}
 	if _, ok := nextCacheLink(map[string]spec.EnvVar{"REDIS_URL": {From: "redis.c.url"}}, nil); !ok {
 		t.Fatal("env REDIS_URL should count")
+	}
+}
+
+type linkStore struct {
+	ServiceStore
+	svc *store.DesiredService
+	dbs map[string]string
+}
+
+func (l linkStore) GetDesiredService(context.Context, string) (*store.DesiredService, error) {
+	return l.svc, nil
+}
+
+func (l linkStore) GetDesiredDatabase(_ context.Context, name string) (*store.DesiredDatabase, error) {
+	if e, ok := l.dbs[name]; ok {
+		return &store.DesiredDatabase{Name: name, Engine: e}, nil
+	}
+	return nil, store.ErrDatabaseNotFound
+}
+
+func TestNextCacheLinkSources(t *testing.T) {
+	url := store.DatabaseEnvRef{Database: "cache", Field: "url"}
+	redisDBs := map[string]string{"cache": "redis"}
+	userEnv := map[string]spec.EnvVar{"REDIS_URL": {Value: "redis://x"}}
+	cases := []struct {
+		name    string
+		svc     *store.DesiredService
+		dbs     map[string]string
+		env     map[string]spec.EnvVar
+		wantErr bool
+		wantRef bool
+	}{
+		{"current link only", &store.DesiredService{DatabaseEnv: map[string]store.DatabaseEnvRef{"REDIS_URL": url}}, redisDBs, nil, false, true},
+		{"custom var name on redis db", &store.DesiredService{DatabaseEnv: map[string]store.DatabaseEnvRef{"CACHE_URL": url}}, redisDBs, nil, false, true},
+		{"custom var on non redis db", &store.DesiredService{DatabaseEnv: map[string]store.DatabaseEnvRef{"DB_URL": {Database: "pg", Field: "url"}}}, map[string]string{"pg": "postgres"}, nil, true, false},
+		{"app yaml only", &store.DesiredService{}, nil, userEnv, false, false},
+		{"none", nil, nil, nil, true, false},
+		{"user value wins", &store.DesiredService{DatabaseEnv: map[string]store.DatabaseEnvRef{"REDIS_URL": url}}, redisDBs, map[string]spec.EnvVar{"LEVELRAIL_NEXT_CACHE_URL": {Value: "redis://u"}}, false, false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			p := &Pipeline{store: linkStore{svc: c.svc, dbs: c.dbs}}
+			req := Request{ServiceName: "web", Service: spec.Service{Next: &spec.Next{Cache: "redis"}, Env: c.env}}
+			err := p.checkNextCache(context.Background(), nextCacheSource(t), req)
+			if (err != nil) != c.wantErr {
+				t.Fatalf("err = %v, wantErr %v", err, c.wantErr)
+			}
+			if err != nil && !strings.Contains(err.Error(), "linked to web") {
+				t.Fatalf("error must name the app: %v", err)
+			}
+			d := store.DesiredService{}
+			applyNextCache(&d, req, p.nextCachePrev(context.Background(), "web"))
+			if got := d.DatabaseEnv["LEVELRAIL_NEXT_CACHE_URL"] == url; got != c.wantRef {
+				t.Fatalf("cache ref set = %v, want %v", got, c.wantRef)
+			}
+		})
 	}
 }

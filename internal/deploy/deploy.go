@@ -439,8 +439,8 @@ func (p *Pipeline) finishDeploy(ctx context.Context, req Request, res *build.Res
 		desired.Env[nextDeploymentIDEnvVar] = req.nextDeploymentID
 	}
 	var prevDesired *store.DesiredService
-	if g, ok := p.store.(desiredGetter); ok && req.Service.Next.UsesRedisCache() {
-		prevDesired, _ = g.GetDesiredService(ctx, req.ServiceName)
+	if req.Service.Next.UsesRedisCache() {
+		prevDesired = p.nextCachePrev(ctx, req.ServiceName)
 	}
 	applyNextCache(&desired, req, prevDesired)
 	resolution := p.buildResolution(ctx, res.Tag, res.ExporterResponse)
