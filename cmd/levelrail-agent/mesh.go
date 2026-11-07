@@ -110,5 +110,9 @@ func meshBrandShortName() string {
 	if b, err := brand.Load(path); err == nil {
 		return b.ShortName
 	}
+	// A remote host has no brand.yaml; the embedded copy keeps the interface name equal to the control plane's.
+	if b, err := brand.LoadEmbedded(); err == nil {
+		return b.ShortName
+	}
 	return os.Getenv("APP_BRAND_SHORT_NAME")
 }

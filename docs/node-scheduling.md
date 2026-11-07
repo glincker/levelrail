@@ -103,6 +103,7 @@ levelrail-cli settings runtime set placement.score_mode spread
 
 - `spread` (default) picks the node that keeps the most headroom.
 - `binpack` fills the fullest node that still fits, which leaves whole nodes free.
+- Failure-domain spread is applied before the score mode. When any node carries a zone label, a new replica goes to the zone with the fewest replicas first, and `binpack` only orders the nodes inside that zone. The decision output says so ("spread across failure domains"). Remove the zone labels to get pure bin-packing.
 - The setting is read on every placement and needs no restart. `APP_PLACEMENT_SCORE_MODE` only seeds the default. The dashboard has it under Settings, Runtime.
 
 ## See why a node was picked or skipped

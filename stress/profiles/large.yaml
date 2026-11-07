@@ -1,0 +1,22 @@
+# Budgets are starting points for a developer laptop in fake mode: tune them per host.
+name: large
+seed: 1
+apps: 2000
+databases: 400
+nodes: 50
+seeded_deploys: 40000
+envs_per_app: 5
+domains_per_app: 1
+deploys_per_minute: 120
+list_clients: 16
+watch_clients: 64
+log_lines_per_second: 2000
+duration: 10m
+thresholds:
+  p95_ms: 800
+  p99_ms: 2000
+  max_rss_mb: 1500
+  max_goroutines: 20000
+  max_sqlite_mb: 1000
+  max_reconcile_pass_ms: 40000
+  max_error_rate_pct: 1

@@ -98,6 +98,9 @@ Flags:
 			printPlacementDecision(stdout, fmt.Sprintf("recorded decision (%s, %s)", view.Recorded.Trigger, view.Recorded.DecidedAt.Format("2006-01-02 15:04")), view.Recorded.Decision)
 		}
 		printPlacementDecision(stdout, "if placed now", view.Preview)
+		for _, w := range view.Warnings {
+			_, _ = fmt.Fprintf(stdout, "warning: %s\n", w)
+		}
 	}); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)

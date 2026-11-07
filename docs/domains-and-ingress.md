@@ -319,7 +319,7 @@ Changing the provider re-derives the hostname and updates the route with no down
 
 A request that matches no app, or an app with no healthy replica, gets a small "No app is serving this address" page (plain text for non-browser clients) with the original 404 or 503 status.
 
-This page is served on port 80 as well, without any certificate: a host that holds no certificate yet is not redirected, it gets the same page. With `ingress.diagnostic_show_state` off, every unknown or unserved host gets the generic 404. With it on, hosts the control plane knows get their state (not attached, building, stopped, starting, unhealthy) with a 503, and unknown hosts still get the generic 404.
+This page is served on port 80 as well, without any certificate: an unknown or unserved host that holds no certificate is not redirected, it gets the same page. A host you attached is different: with the HTTP redirect on (below) it answers plain HTTP with `308` to HTTPS even before its certificate is issued, because issuance starts on the first HTTPS request. With `ingress.diagnostic_show_state` off, every unknown or unserved host gets the generic 404. With it on, hosts the control plane knows get their state (not attached, building, stopped, starting, unhealthy) with a 503, and unknown hosts still get the generic 404.
 
 On port 443 a host with no certificate and no route cannot be answered at all: the TLS handshake fails before any page can be sent, so browsers show a certificate error instead of this page. Certificates are only requested for hosts you attach, so an unknown name never gets one. For a host that is attached but has no healthy app, the handshake succeeds and the page appears.
 

@@ -25,7 +25,7 @@ Set the optional `Description` field on a Go template (manifest templates reuse 
 
 {/* BEGIN GENERATED CATALOG TABLE */}
 
-Generated from `internal/catalog.Templates` (450 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
+Generated from `internal/catalog.Templates` (445 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
 
 | Category | Templates |
 | --- | --- |
@@ -35,18 +35,18 @@ Generated from `internal/catalog.Templates` (450 entries as of this build). Run 
 | [Automation](#automation) | 8 |
 | [Communication](#communication) | 21 |
 | [Dashboard](#dashboard) | 8 |
-| [Database Tools](#database-tools) | 34 |
+| [Database Tools](#database-tools) | 31 |
 | [Developer Tools](#developer-tools) | 67 |
 | [Finance](#finance) | 11 |
 | [Games](#games) | 5 |
-| [Infrastructure](#infrastructure) | 20 |
+| [Infrastructure](#infrastructure) | 19 |
 | [IoT](#iot) | 3 |
 | [Media](#media) | 30 |
 | [Monitoring](#monitoring) | 36 |
 | [Productivity](#productivity) | 82 |
 | [Security](#security) | 19 |
 | [Starter Kits](#starter-kits) | 7 |
-| [Storage](#storage) | 17 |
+| [Storage](#storage) | 16 |
 | [Backups](#backups) | 1 |
 | [Mail](#mail) | 1 |
 
@@ -208,8 +208,6 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | Template | Slogan | ID | Notes |
 | --- | --- | --- | --- |
 | [Adminer](https://www.adminer.org) | A single-file database admin tool for MySQL, PostgreSQL, SQLite, and more. | `adminer` |  |
-| [Apache Cassandra](https://cassandra.apache.org/doc/latest/) | A single node Apache Cassandra wide-column database on the official image, with a persistent volume. It is not published on the host and starts without authentication, so reach it only from other services in this project at cassandra:9042. A node needs about 2 GB of memory. | `cassandra` |  |
-| [Apache Solr](https://solr.apache.org/guide/solr/latest/) | The Apache Solr search platform on the official image, with a persistent volume. The admin interface has no login, so keep it private or put it behind an authenticating proxy before adding a public domain. Other services in this project reach it at solr:8983. | `solr` |  |
 | [Baserow](https://baserow.io/docs/installation%2Finstall-with-docker) | A no-code database and spreadsheet hybrid you can build internal tools and apps on top of. | `baserow` |  |
 | [Bytebase](https://docs.bytebase.com/get-started/step-by-step/deploy-with-docker) | A database schema change and migration tool with review workflows built in. | `bytebase` |  |
 | [Chroma](https://docs.trychroma.com) | A developer-friendly embedding database for AI applications, served over a simple HTTP API. Open to anyone who can reach it, so reach it from other services in this project at chroma:8000, or attach a domain only behind Basic Auth. Not published on the host. | `chroma` |  |
@@ -223,7 +221,6 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Memcached](https://memcached.org/) | A fast in-memory cache for query results, sessions and rendered pages, reachable by other apps on host memcached. | `memcached` |  |
 | [Milvus](https://milvus.io/docs) | A cloud-native vector database built for billion-scale similarity search, run here as a single standalone node. Has no authentication, so reach it from other services in this project at milvus:19530, or attach a domain (it routes to port 19530 only) only behind Basic Auth. Not published on the host. | `milvus` |  |
 | [Mongo Express](https://github.com/mongo-express/mongo-express) | A web admin console for MongoDB, bundled with its own MongoDB 7 instance and basic auth. | `mongo-express` |  |
-| [MongoDB](https://www.mongodb.com/docs/manual/) | The MongoDB document database on the official image, with a persistent volume and a generated root user and password. It is not published on the host, so reach it from other services in this project at mongodb:27017. | `mongodb` |  |
 | [MySQL](https://dev.mysql.com/doc/refman/8.4/en/) | The MySQL Community database server on the official image, with a persistent volume, generated root and user passwords, and an application database. It is not published on the host, so reach it from other services in this project at mysql:3306. | `mysql` |  |
 | [Neo4j](https://neo4j.com/docs/) | A graph database with the Cypher query language, Community Edition, including the browser console. | `neo4j` |  |
 | [NocoDB](https://docs.nocodb.com) | Turn any database into a smart spreadsheet, with a real-time collaborative grid UI. | `nocodb` |  |
@@ -349,7 +346,6 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Cloudflare DDNS](https://github.com/favonia/cloudflare-ddns) | Keeps Cloudflare DNS records pointed at your current public IP address. | `cloudflare-ddns` |  |
 | [Consul](https://developer.hashicorp.com/consul/docs) | HashiCorp Consul in single-server mode with the web UI: service discovery, health checks and a key-value store. | `consul` |  |
 | [Elasticsearch](https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html) | A distributed, RESTful search and analytics engine for full-text search and log analytics. Security is off, so reach it from other services in this project at elasticsearch:9200, or attach a domain only behind Basic Auth. Not published on the host. | `elasticsearch` |  |
-| [EMQX](https://docs.emqx.com/en/emqx/v5.8/) | A scalable MQTT broker with a web dashboard, on the official image. The dashboard admin password is generated at install. The MQTT port is not published on the host and accepts anonymous clients, so reach it from other services in this project at emqx:1883 and add authentication in the dashboard before exposing it. | `emqx` |  |
 | [etcd](https://etcd.io/docs/) | A distributed key-value store for configuration and coordination, running as a single member. | `etcd` |  |
 | [Headscale](https://headscale.net/stable/) | Self-hosted Tailscale control server, configured entirely through environment variables. Embedded DERP and STUN are off (the platform has no UDP), so clients relay through the public Tailscale DERP map over HTTPS. Create users and pre-auth keys with the CLI in the container (headscale users create, headscale preauthkeys create). | `headscale` |  |
 | [imgproxy](https://docs.imgproxy.net/) | A fast image processing server that resizes, crops and converts images on the fly from signed URLs. Apache-2.0 licensed. A signing key and salt are generated for you, so only URLs signed with them are served. | `imgproxy` |  |
@@ -582,7 +578,6 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Duplicati](https://duplicati.readthedocs.io) | Scheduled, encrypted backups of your files to local storage, network shares, or cloud storage. | `duplicati` |  |
 | [File Browser](https://filebrowser.org) | A simple web UI for browsing, uploading, and sharing files from your own storage. | `filebrowser` |  |
 | [FileBrowser Quantum](https://github.com/gtsteffaniak/filebrowser/wiki) | A web file manager with a fast index, search, sharing links and per-user access. Apache-2.0 fork of FileBrowser. Runs in one container; the admin password is generated and shown in the service environment settings. | `filebrowser-quantum` |  |
-| [Gokapi](https://gokapi.readthedocs.io/) | A lightweight self-hosted file sharing server with expiring links and download limits. Runs in one container on a small data folder. The first-run setup page lets whoever opens it first create the admin login, so leave the domain empty until setup is finished. | `gokapi` |  |
 | [Kopia](https://kopia.io/docs/installation/#quick-setup-using-docker) | Fast, incremental, encrypted backups to a repository, driven from a web UI instead of a cron script. | `kopia` |  |
 | [MinIO](https://min.io/docs/minio/linux/index.html) | S3-compatible object storage you run yourself, with a built-in web console. | `minio` |  |
 | [ownCloud](https://doc.owncloud.com/server/) | The classic self-hosted file sync and share platform, with MariaDB and Redis for metadata and locking. | `owncloud` |  |

@@ -18,6 +18,6 @@ func init() {
 		TitleKey:       "runtimeSettings:items.placementScoreMode.title",
 		DescKey:        "runtimeSettings:items.placementScoreMode.description",
 		Title:          "Placement score mode",
-		Description:    "How new workloads pick a node: spread keeps the most headroom free on each node, binpack fills the fullest node that still fits. Read on every placement; the environment variable only seeds the default.",
+		Description:    "How new workloads pick a node: spread keeps the most headroom free on each node, binpack fills the fullest node that still fits. Failure-domain spread (zone labels) is applied first; the mode orders nodes inside a domain. Read on every placement; the environment variable only seeds the default.",
 	})
 }

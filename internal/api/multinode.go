@@ -284,6 +284,8 @@ type placementResource struct {
 	Rejected    []placement.Rejection  `json:"rejected"`
 	// DomainWarnings lists failure domains that hold every replica of the app.
 	DomainWarnings []placement.DomainRisk `json:"domain_warnings"`
+	// Warnings lists selector mismatches with the running node.
+	Warnings []string `json:"warnings,omitempty"`
 }
 
 // placementBody sets the selector and, for apps, the rules. Omitted rules stay
@@ -342,6 +344,7 @@ func (rt *Router) placementView(ctx context.Context, kind, name string) (placeme
 	if err != nil {
 		return placementResource{}, err
 	}
+	out.Warnings = selectorViolationWarnings(sel, cands, nodeID)
 	for _, c := range cands {
 		if e := placement.Evaluate(c, req); !e.Eligible {
 			out.Rejected = append(out.Rejected, placement.Rejection{NodeID: c.ID, Reason: e.Reason})
