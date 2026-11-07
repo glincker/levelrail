@@ -82,6 +82,13 @@ type Trigger struct {
 	CatchUp      bool
 }
 
+// SecretResolver reads decrypted app secrets at run time; the value must
+// never be logged or stored.
+type SecretResolver interface {
+	Exists(ctx context.Context, serviceName, envKey string) (bool, error)
+	Resolve(ctx context.Context, serviceName, envKey string) (string, error)
+}
+
 // RunPinger is told once per settled run; it must not block or fail the run.
 type RunPinger interface {
 	Notify(taskID, runID, status string)
@@ -103,6 +110,8 @@ type Runner struct {
 	Target      HTTPTarget
 	HTTPConfigs HTTPConfigStore
 	Client      *http.Client
+	// Secrets resolves secretRef headers backed by app secrets; nil means only plain env.
+	Secrets SecretResolver
 	// NamePrefix namespaces fresh job containers (the brand short name).
 	NamePrefix string
 	// Pinger gets the settled status of each run for the per-job heartbeat; nil disables it.
