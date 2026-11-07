@@ -94,5 +94,11 @@
       "forksDisabled": "Comandos en pull requests de forks desactivados.",
       "errorTitle": "No se pudieron actualizar los comandos en comentarios de pull request."
     }
+  },
+  "ttl": {
+    "label": "Duración de la vista previa (horas)",
+    "save": "Guardar",
+    "note": "Se aplica a todas las apps. 0 mantiene el valor de arranque. Un ajuste por app prevalece.",
+    "invalid": "Introduce un número entero de 0 a {{max}}."
   }
 }

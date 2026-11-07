@@ -146,5 +146,33 @@
     "rollbackLockHint": "Redeploy this release and hold every later build",
     "held": "Held, not live",
     "error": "Could not change the publish lock."
+  },
+  "rolloutState": {
+    "title": "Rollout state",
+    "traffic": {
+      "held": "Traffic held",
+      "flipped": "Traffic flipped",
+      "reverted": "Traffic reverted"
+    },
+    "holdLeft": "Hold ends in {{time}}",
+    "flipped": "Flipped",
+    "reverted": "Reverted",
+    "gateFailures_one": "{{count}} failed gate check",
+    "gateFailures_other": "{{count}} failed gate checks",
+    "canary": "Canary {{weight}}% (stage {{stage}} of {{total}})",
+    "settings": "Deploy safety settings"
+  },
+  "explain": {
+    "title": "Why did this fail",
+    "loading": "Loading the failure explanation",
+    "cause": "Cause:",
+    "hint": "Next step:",
+    "evidence": "Evidence",
+    "lastLogs": "Last log lines",
+    "rolledBack": "Rolled back",
+    "verdict": {
+      "failed": "Failed",
+      "rolled_back": "Rolled back"
+    }
   }
 }

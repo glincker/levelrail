@@ -94,5 +94,11 @@
       "forksDisabled": "Commands on fork pull requests disabled.",
       "errorTitle": "Could not update pull request comment commands."
     }
+  },
+  "ttl": {
+    "label": "Preview lifetime (hours)",
+    "save": "Save",
+    "note": "Applies to every app. 0 keeps the startup default. A per-app override still wins.",
+    "invalid": "Enter a whole number from 0 to {{max}}."
   }
 }

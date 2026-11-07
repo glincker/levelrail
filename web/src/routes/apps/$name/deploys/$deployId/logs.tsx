@@ -34,6 +34,7 @@ import { DeployQuickLinks } from '../../../../../components/DeployQuickLinks'
 import { useProbeAttempts } from '../../../../../queries/probeAttempts'
 import { SupplyChainSection } from '../../../../../components/SupplyChainSection'
 import { SecretScanSection } from '../../../../../components/SecretScanSection'
+import { DeployExplainPanel } from '../../../../../components/deployDetail/DeployExplainPanel'
 import { DeployStatusCard } from '../../../../../components/deployDetail/DeployStatusCard'
 import { DeployLiveStatus } from '../../../../../components/deployDetail/DeployLiveStatus'
 import { StreamDropBanner } from '../../../../../components/deployDetail/StreamDropBanner'
@@ -225,6 +226,10 @@ function DeployLogsPage() {
         onOpenBuild={() => {
           setPicked('build')
         }}
+      />
+      <DeployExplainPanel
+        deployId={deployId}
+        failed={attempt.status === 'failed'}
       />
       <DeployNewErrorTypes appName={name} startedAt={attempt.started_at} />
       <DeployFailureSummaryCard

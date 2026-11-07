@@ -146,5 +146,33 @@
     "rollbackLockHint": "Vuelve a desplegar esta versión y retiene todas las compilaciones posteriores",
     "held": "Retenida, no en vivo",
     "error": "No se pudo cambiar el bloqueo de publicación."
+  },
+  "rolloutState": {
+    "title": "Estado del despliegue",
+    "traffic": {
+      "held": "Tráfico retenido",
+      "flipped": "Tráfico cambiado",
+      "reverted": "Tráfico revertido"
+    },
+    "holdLeft": "La espera termina en {{time}}",
+    "flipped": "Cambiado",
+    "reverted": "Revertido",
+    "gateFailures_one": "{{count}} comprobación fallida",
+    "gateFailures_other": "{{count}} comprobaciones fallidas",
+    "canary": "Canario {{weight}}% (etapa {{stage}} de {{total}})",
+    "settings": "Ajustes de seguridad de despliegue"
+  },
+  "explain": {
+    "title": "Por qué falló",
+    "loading": "Cargando la explicación del fallo",
+    "cause": "Causa:",
+    "hint": "Siguiente paso:",
+    "evidence": "Evidencia",
+    "lastLogs": "Últimas líneas de registro",
+    "rolledBack": "Revertido",
+    "verdict": {
+      "failed": "Fallido",
+      "rolled_back": "Revertido"
+    }
   }
 }
