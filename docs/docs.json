@@ -253,6 +253,7 @@
               "add-node-anywhere",
               "home-hardware",
               "resource-aware-placement",
+              "node-scheduling",
               "autoscaling",
               "node-provisioning",
               "multi-cloud-provisioning",

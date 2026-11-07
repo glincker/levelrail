@@ -1121,9 +1121,9 @@ levelrail-cli apps clear-node <name> [--with-volumes] [flags]
 ## Not built yet
 
 <AccordionGroup>
-<Accordion title="Bin-packing and affinity rules">
+<Accordion title="One instance per matching node">
 
-Placement is resource-aware (see [Resource-aware placement](/resource-aware-placement)), but it is a fit check plus a spread. Bin-packing and affinity rules are a deliberate non-goal until a measured need appears.
+`workload: per-node` in `app.yaml` validates but is not scheduled yet. Taints, tolerations, affinity and bin-pack scoring are built: see [Node scheduling](/node-scheduling).
 
 </Accordion>
 <Accordion title="Agent self-update">
