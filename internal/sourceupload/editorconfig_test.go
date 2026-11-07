@@ -68,6 +68,9 @@ func TestScanSkipsEditorAndAgentConfig(t *testing.T) {
 	if n == 0 || len(roots) != 3 {
 		t.Errorf("summary n=%d roots=%v", n, roots)
 	}
+	if n3, names := plan.EditorSkippedSummary(100); n3 != len(names) || n3 != n {
+		t.Errorf("count %d must match listed files %v", n3, names)
+	}
 }
 
 func hasFile(p Plan, path string) bool {
