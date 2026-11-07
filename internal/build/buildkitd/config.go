@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/runtimesettings/registrymirror"
 )
 
 const (
@@ -101,6 +103,7 @@ func ConfigFromEnv(get func(string) string, rootless bool) (Config, error) {
 	if v := get("APP_BUILDKIT_IMAGE"); v != "" {
 		cfg.Image = v
 	}
+	cfg.Image = registrymirror.Apply(cfg.Image, get("APP_REGISTRY_MIRROR_PREFIX"))
 	if v := get("APP_BUILDKIT_SNAPSHOTTER"); v != "" {
 		switch v {
 		case "auto", "overlayfs", "fuse-overlayfs", "native":

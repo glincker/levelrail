@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings/registrymirror"
 	"github.com/GLINCKER/levelrail/internal/sshprovision"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/version"
@@ -247,7 +249,7 @@ func (rt *Router) handleCreateSSHNodeProvision(w http.ResponseWriter, r *http.Re
 		JoinToken:        token.plaintext,
 		CAFingerprint:    rt.agentCAFingerprint,
 		NodeName:         req.Name,
-		AgentImage:       sshProvisionAgentImage(rt.brand.AgentName()),
+		AgentImage:       registrymirror.Apply(sshProvisionAgentImage(rt.brand.AgentName()), rt.registryMirrorPrefix(r.Context())),
 		MeshEnabled:      rt.mesh != nil,
 	}
 	go rt.runSSHNodeProvision(id, creds, params) //nolint:gosec // deliberate: the request context is gone by the time this goroutine finishes, runSSHNodeProvision derives its own bounded context (sshNodeProvisionTimeout) instead
@@ -539,4 +541,9 @@ func randomSSHNodeProvisionID() (string, error) {
 		return "", fmt.Errorf("api: generate ssh node provision id: %w", err)
 	}
 	return "sshp_" + base64.RawURLEncoding.EncodeToString(buf), nil
+}
+
+// registryMirrorPrefix reads the live mirror setting, falling back to env then empty.
+func (rt *Router) registryMirrorPrefix(ctx context.Context) string {
+	return rt.imageSettings().String(ctx, runtimesettings.KeyRegistryMirrorPrefix)
 }
