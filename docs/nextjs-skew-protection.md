@@ -55,6 +55,9 @@ A held generation keeps its containers running for the whole window (default 30
 minutes): one extra copy of the app's memory and CPU. Lower
 `deploy.next_asset_grace_seconds` or set it to 0 to avoid that.
 
+By default only the immediately previous release is held: once the next cutover
+happens, requests for an older release's deployment id return 404.
+
 ## Still needs a real host
 
 - A real cutover on a Next.js app with `deploymentId` honored by the build: confirm an
