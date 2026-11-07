@@ -4,9 +4,11 @@
 <p><strong>Your own Vercel, on your own servers.</strong><br>
 Push to deploy with HTTPS, logs, metrics and one-step rollback. One Go binary, no Kubernetes. Apache 2.0.</p>
 <p>
+  <a href="https://github.com/glincker/levelrail/stargazers"><img src="https://img.shields.io/github/stars/glincker/levelrail?style=flat&logo=github" alt="GitHub stars"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/glincker/levelrail" alt="License: Apache 2.0"></a>
   <a href="https://github.com/glincker/levelrail/releases"><img src="https://img.shields.io/github/v/release/glincker/levelrail?include_prereleases&label=release" alt="Latest release"></a>
   <a href="https://github.com/glincker/levelrail/actions/workflows/ci.yml"><img src="https://github.com/glincker/levelrail/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
+  <a href="https://github.com/glincker/levelrail/commits/main"><img src="https://img.shields.io/github/last-commit/glincker/levelrail?style=flat" alt="Last commit"></a>
   <a href="docs/mcp.md"><img src="https://img.shields.io/badge/MCP-server-8A2BE2?style=flat" alt="MCP server"></a>
   <a href="https://discord.gg/Ar5pcaZB99"><img src="https://img.shields.io/discord/829168897080557579?style=flat&logo=discord&logoColor=white&label=discord&color=5865F2" alt="Discord"></a>
 </p>
@@ -26,6 +28,15 @@ Push to deploy with HTTPS, logs, metrics and one-step rollback. One Go binary, n
 </div>
 
 Turn any Linux server into a private cloud: Git deploys, HTTPS, databases with verified backups, metrics, logs and alerts, without Kubernetes and without a monitoring stack to bolt on. Pre-1.0: single-server is production ready, multi-node is beta ([Feature status](docs/feature-status.md)).
+
+<table>
+  <tr>
+    <td align="center"><h3>200 MB</h3><sub>idle RAM, 1.5% of one CPU<br><a href="docs/benchmarks.md">measured, method included</a></sub></td>
+    <td align="center"><h3>1 binary</h3><sub>Go control plane, Docker runtime<br>no Kubernetes</sub></td>
+    <td align="center"><h3>360</h3><sub>one-click service templates<br><a href="docs/templates-status.md">smoke-tested</a></sub></td>
+    <td align="center"><h3>240+</h3><sub>MCP tools for coding agents<br><a href="docs/mcp.md">scoped, read-only by default</a></sub></td>
+  </tr>
+</table>
 
 ## Install
 
@@ -61,14 +72,18 @@ Using a coding agent? `npx skills add https://github.com/glincker/levelrail --sk
 
 ## Why Levelrail
 
-| | |
-| --- | --- |
-| **Lightweight** | About 200 MB of RAM and 1.5% of one CPU idle on a 2 vCPU, 8 GB box ([method](docs/benchmarks.md)). |
-| **Safe deploys** | Readiness-gated rollouts, pinned images, canaries, approvals and one-step rollback. |
-| **Observability built in** | Metrics, searchable logs, traces and alerts. No Grafana stack to install. |
-| **Agents, not SSH** | Nodes dial out over mTLS. No inbound ports, no shelling out to `docker`. |
-| **Secure by default** | Hash-chained audit log, encrypted secrets, passkeys, 2FA, OIDC, IAM, signed releases. |
-| **Built for AI agents** | An MCP server with 240+ tools and a permission model. AI is never in the reconcile path. |
+<table>
+  <tr>
+    <td width="33%" valign="top"><b>Safe deploys</b><br>Readiness-gated rollouts, canaries, approvals, one-step rollback.</td>
+    <td width="33%" valign="top"><b>Observability built in</b><br>Metrics, logs, traces and alerts. No Grafana stack.</td>
+    <td width="33%" valign="top"><b>Agents, not SSH</b><br>Nodes dial out over mTLS. No inbound ports.</td>
+  </tr>
+  <tr>
+    <td width="33%" valign="top"><b>Verified backups</b><br>Every backup is re-downloaded and checksummed, with restore drills.</td>
+    <td width="33%" valign="top"><b>Secure by default</b><br>Hash-chained audit log, encrypted secrets, passkeys, signed releases.</td>
+    <td width="33%" valign="top"><b>Made for AI agents</b><br>MCP server plus a skill. AI is never in the reconcile path.</td>
+  </tr>
+</table>
 
 <table>
   <tr>
@@ -99,7 +114,14 @@ Positioning, not a ranking. Levelrail is the youngest project here, with fewer u
 
 ## Production ready, with receipts
 
-Every feature is labelled stable or beta with its evidence in [Feature status](docs/feature-status.md). Failure handling is in [Resilience](docs/resilience.md), measured numbers in [Benchmarks](docs/benchmarks.md), and what is not proven yet in [Known limits](docs/known-limits.md). Releases are signed with Sigstore and carry a provenance attestation.
+| Claim | Evidence |
+| --- | --- |
+| Every feature labelled stable or beta | [Feature status](docs/feature-status.md) |
+| Survives failures | [Resilience](docs/resilience.md): disk full, link loss, database damage, safe-mode boot |
+| Measured, not promised | [Benchmarks](docs/benchmarks.md) |
+| Tested against real containers | [CI](.github/workflows/ci.yml) and [`test/e2e`](test/e2e) |
+| Signed releases | Sigstore signature and provenance attestation, [verify them](docs/installing.md#verifying-release-binaries) |
+| Honest about gaps | [Known limits](docs/known-limits.md) |
 
 ## How it works
 
@@ -144,6 +166,8 @@ Maintain an open-source app? Add a one-click button: [Deploy button](docs/deploy
 ## Star the repo
 
 If Levelrail saves you a weekend, a [star](https://github.com/glincker/levelrail) helps other self-hosters find it.
+
+<a href="https://github.com/glincker/levelrail/graphs/contributors"><img src="https://contrib.rocks/image?repo=glincker/levelrail" alt="Levelrail contributors"></a>
 
 [![Star History Chart](https://api.star-history.com/svg?repos=glincker/levelrail&type=Date)](https://star-history.com/#glincker/levelrail&Date)
 
