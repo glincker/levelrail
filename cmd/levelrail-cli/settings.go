@@ -34,6 +34,8 @@ func runSettings(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runSettingsDashboardURL(prog, args[1:], stdout, stderr, lookupEnv)
 	case "ai-assistant":
 		return runSettingsAIAssistant(prog, args[1:], stdout, stderr, lookupEnv)
+	case "supply-chain":
+		return runSettingsSupplyChain(prog, args[1:], stdout, stderr, lookupEnv)
 	case "updates":
 		return runSettingsUpdates(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy-url-copies":
@@ -73,7 +75,8 @@ func settingsUsage(prog string) string {
   %[1]s settings ai-assistant clear [flags]               disable the AI assistant and forget the stored key
   %[1]s settings updates get [flags]                      show the current release channel and auto-update-check setting
   %[1]s settings updates set --channel CHANNEL [--auto-update] [flags]   configure the release channel and auto-update checking
-  %[1]s settings domain-automation get|set [flags]        the add-a-domain-and-go-live policy
+  %[1]s settings supply-chain get|set [flags]             instance-wide image scanning policy apps inherit
+  %[1]s settings domain-automation get|set [flags]      the add-a-domain-and-go-live policy
   %[1]s settings beta-features list|set <feature> on|off   gated features, switch one (saved at once)
   %[1]s settings profile get|set minimal|standard|suite   the server profile: which optional subsystems start
   %[1]s settings deploy-url-copies get|set <off|private|public|default>   retained deploy copies: kept, private or public

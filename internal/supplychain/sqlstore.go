@@ -47,6 +47,7 @@ func (s *SQLStore) GetSettings(ctx context.Context, app string) (Settings, error
 		out.Gate = mode
 	}
 	out.OverrideArmedAt = parseTime(armed)
+	out.Explicit = true
 	return out, nil
 }
 

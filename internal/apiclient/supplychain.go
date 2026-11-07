@@ -186,3 +186,26 @@ func (c *Client) ScanDeployment(ctx context.Context, name, id string) (VulnRepor
 	err := c.do(ctx, http.MethodPost, deploymentPath(name, id, "scan"), nil, &out)
 	return out, err
 }
+
+// SupplyChainDefault is GET /api/v1/settings/supply-chain's body: the policy apps inherit.
+type SupplyChainDefault struct {
+	ScanEnabled   bool   `json:"scan_enabled"`
+	ScanGate      string `json:"scan_gate"`
+	ServerEnabled bool   `json:"server_enabled"`
+}
+
+const supplyChainDefaultPath = "/api/v1/settings/supply-chain"
+
+// GetSupplyChainDefault calls GET /api/v1/settings/supply-chain.
+func (c *Client) GetSupplyChainDefault(ctx context.Context) (SupplyChainDefault, error) {
+	var out SupplyChainDefault
+	err := c.do(ctx, http.MethodGet, supplyChainDefaultPath, nil, &out)
+	return out, err
+}
+
+// SetSupplyChainDefault calls PUT /api/v1/settings/supply-chain.
+func (c *Client) SetSupplyChainDefault(ctx context.Context, req SupplyChainSettingsRequest) (SupplyChainDefault, error) {
+	var out SupplyChainDefault
+	err := c.do(ctx, http.MethodPut, supplyChainDefaultPath, req, &out)
+	return out, err
+}

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1976 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1978 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -637,6 +637,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/settings/runtime/{key}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleSetRuntimeSetting", Description: "Settings gate security protections and can restart the process, so writes are AbilityRoot."},
 	{Method: "GET", Path: "/api/v1/settings/server-profile", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetServerProfile", Description: ""},
 	{Method: "PUT", Path: "/api/v1/settings/server-profile", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleSetServerProfile", Description: ""},
+	{Method: "GET", Path: "/api/v1/settings/supply-chain", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetSupplyChainDefault", Description: ""},
+	{Method: "PUT", Path: "/api/v1/settings/supply-chain", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePutSupplyChainDefault", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/traffic-export/sinks", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListTrafficExportSinks", Description: "Traffic export sinks: list and status are AbilityRead; every write and test is AbilityRoot. Credentials are write-only and come back as *_set booleans."},
 	{Method: "POST", Path: "/api/v1/settings/traffic-export/sinks", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleCreateTrafficExportSink", Description: "Root: stores credentials. A new sink exports no visitor identity unless its fields list opts in."},
 	{Method: "DELETE", Path: "/api/v1/settings/traffic-export/sinks/{id}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDeleteTrafficExportSink", Description: ""},
