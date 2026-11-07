@@ -30,6 +30,12 @@ type StandaloneLister interface {
 	ListStandaloneDomains(ctx context.Context) ([]store.StandaloneDomain, error)
 }
 
+// RedirectLister is optional on SyncStore: domains with a redirect skip the
+// http to https hop so the visitor gets a single redirect.
+type RedirectLister interface {
+	ListDomainRedirects(ctx context.Context) ([]store.DomainRedirect, error)
+}
+
 // WithStandalone appends standalone domains not already listed, sorted.
 func WithStandalone(targets []Target, domains []store.StandaloneDomain) []Target {
 	seen := make(map[string]bool, len(targets))
@@ -83,6 +89,8 @@ type Target struct {
 	Domain string
 	Kind   string
 	App    string
+	// Redirect is set from the domain's redirect state on every plan.
+	Redirect bool
 }
 
 // Key is the target column stored per domain ("app:web" or "dashboard").
@@ -224,7 +232,18 @@ func (s *Syncer) PlanFor(ctx context.Context, settings store.ProxyIntegrationSet
 		}
 		targets = WithStandalone(targets, extra)
 	}
+	redirected := map[string]bool{}
+	if rl, ok := s.Store.(RedirectLister); ok {
+		rows, err := rl.ListDomainRedirects(ctx)
+		if err != nil {
+			return Plan{}, fmt.Errorf("proxyroutes: domain redirects: %w", err)
+		}
+		for _, r := range rows {
+			redirected[strings.ToLower(r.Domain)] = true
+		}
+	}
 	for _, t := range targets {
+		t.Redirect = redirected[strings.ToLower(t.Domain)]
 		p.Items = append(p.Items, s.render(prov, settings, path, t))
 	}
 	return p, nil
@@ -252,7 +271,7 @@ func (s *Syncer) renderPrio(prov Provider, settings store.ProxyIntegrationSettin
 	it.Content, it.Err = prov.Render(s.NS, Route{
 		Domain: t.Domain, EntrypointHTTP: settings.EntrypointHTTP, EntrypointHTTPS: settings.EntrypointHTTPS,
 		CertResolver: settings.CertResolver, Upstream: it.Upstream, Priority: prio,
-		CertDir: settings.CertDir, Webroot: settings.Webroot,
+		CertDir: settings.CertDir, Webroot: settings.Webroot, Redirect: t.Redirect,
 	})
 	return it
 }

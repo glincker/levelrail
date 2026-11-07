@@ -164,7 +164,11 @@ func (nginxProvider) Render(ns Namespace, r Route) ([]byte, error) {
 	if r.Webroot != "" {
 		fmt.Fprintf(&b, "\tlocation /.well-known/acme-challenge/ {\n\t\troot %s;\n\t}\n", r.Webroot)
 	}
-	b.WriteString("\tlocation / {\n\t\treturn 301 https://$host$request_uri;\n\t}\n}\n")
+	if r.Redirect {
+		fmt.Fprintf(&b, "\tlocation / {\n\t\tproxy_pass http://%s;\n\t\tproxy_set_header Host $host;\n\t}\n}\n", r.Upstream)
+	} else {
+		b.WriteString("\tlocation / {\n\t\treturn 301 https://$host$request_uri;\n\t}\n}\n")
+	}
 	fmt.Fprintf(&b, "server {\n\tlisten 443 ssl;\n\tlisten [::]:443 ssl;\n\tserver_name %s;\n", d)
 	fmt.Fprintf(&b, "\tssl_certificate %s/%s/fullchain.pem;\n\tssl_certificate_key %s/%s/privkey.pem;\n", certDir, d, certDir, d)
 	fmt.Fprintf(&b, "\tlocation / {\n\t\tset %s upgrade;\n\t\tif ($http_upgrade = \"\") {\n\t\t\tset %s \"\";\n\t\t}\n", conn, conn)
