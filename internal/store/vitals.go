@@ -163,6 +163,26 @@ func (db *DB) QueryVitals(ctx context.Context, app string, since time.Time, topR
 	return out, rows.Err()
 }
 
+// QueryVitalsOverall sums the counters since a time across every route, so the app-wide totals
+// are not skewed by the top-routes limit that QueryVitals applies. Route is left empty.
+func (db *DB) QueryVitalsOverall(ctx context.Context, app string, since time.Time) ([]VitalsBucketCount, error) {
+	rows, err := db.QueryContext(ctx, `SELECT metric, bucket, SUM(count) FROM web_vitals_rollup
+		WHERE app = ? AND hour >= ? GROUP BY metric, bucket`, app, since.UTC().Format(time.RFC3339))
+	if err != nil {
+		return nil, fmt.Errorf("store: query vitals overall: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	var out []VitalsBucketCount
+	for rows.Next() {
+		var c VitalsBucketCount
+		if err := rows.Scan(&c.Metric, &c.Bucket, &c.Count); err != nil {
+			return nil, fmt.Errorf("store: query vitals overall: %w", err)
+		}
+		out = append(out, c)
+	}
+	return out, rows.Err()
+}
+
 // PruneVitalsBatch deletes at most limit counters older than the cutoff so one call never holds the write lock long.
 func (db *DB) PruneVitalsBatch(ctx context.Context, before time.Time, limit int) (int64, error) {
 	res, err := db.ExecContext(ctx, `DELETE FROM web_vitals_rollup WHERE rowid IN (

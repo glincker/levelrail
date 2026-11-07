@@ -208,11 +208,12 @@ func TestVitalsLimiterEvictionKeepsActiveWindow(t *testing.T) {
 
 func TestVitalsReportRatings(t *testing.T) {
 	// LCP bucket 4 is <=2500 (good), bucket 7 is <=5000 (poor).
-	overall, routes := buildVitalsReport([]store.VitalsBucketCount{
+	rows := []store.VitalsBucketCount{
 		{Route: "/", Metric: "LCP", Bucket: 4, Count: 8},
 		{Route: "/", Metric: "LCP", Bucket: 7, Count: 2},
 		{Route: "/slow", Metric: "LCP", Bucket: 7, Count: 5},
-	})
+	}
+	overall, routes := buildVitalsReport(rows, rows)
 	if got := overall["LCP"]; got.Count != 15 || got.Rating != "poor" {
 		t.Fatalf("overall LCP = %+v", got)
 	}
@@ -259,5 +260,22 @@ func TestVitalsBeaconFlow(t *testing.T) {
 	rec := bearerGet(rt, "/api/v1/apps/"+app+"/vitals", "plain-vit-dep")
 	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"/p/:id"`) || !strings.Contains(rec.Body.String(), `"rating":"good"`) {
 		t.Fatalf("report = %d %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestVitalsDropAppClearsBufferedCounters(t *testing.T) {
+	rt, _ := newTestRouter(t)
+	db := rt.apps.(vitalsStore)
+	v := rt.vitalsRuntime()
+	v.buf.add(vitalsKey{app: "gone", route: "/", metric: "LCP", device: "desktop", hour: time.Now().UTC().Truncate(time.Hour)}, 3)
+	if err := v.dropApp(t.Context(), db, "gone"); err != nil {
+		t.Fatal(err)
+	}
+	if err := v.flush(t.Context(), db); err != nil {
+		t.Fatal(err)
+	}
+	rows, err := db.QueryVitalsOverall(t.Context(), "gone", time.Now().Add(-2*time.Hour))
+	if err != nil || len(rows) != 0 {
+		t.Fatalf("rows after drop = %v, %v", rows, err)
 	}
 }

@@ -62,6 +62,7 @@ type vitalsOriginEntry struct {
 type vitalsRuntime struct {
 	perApp, perIP *apiRateLimiter
 	buf           *vitalsBuffer
+	flushMu       sync.Mutex // serializes flush with dropApp so a delete cannot race an in-flight write
 	gate          *vitalsRouteGate
 	originMu      sync.Mutex
 	origins       map[string]vitalsOriginEntry
@@ -95,6 +96,8 @@ func (rt *Router) vitalsRuntime() *vitalsRuntime {
 
 // flush writes the aggregated counters; on failure they go back into the buffer for the next tick.
 func (v *vitalsRuntime) flush(ctx context.Context, db vitalsStore) error {
+	v.flushMu.Lock()
+	defer v.flushMu.Unlock()
 	pending := v.buf.drain()
 	if len(pending) == 0 {
 		return nil
@@ -110,6 +113,25 @@ func (v *vitalsRuntime) flush(ctx context.Context, db vitalsStore) error {
 		return err
 	}
 	return nil
+}
+
+// dropApp discards an app's buffered counters and then wipes its stored rows, waiting out any
+// in-flight flush first, so a later app with the same name inherits no samples.
+func (v *vitalsRuntime) dropApp(ctx context.Context, db vitalsStore, app string) error {
+	v.flushMu.Lock()
+	defer v.flushMu.Unlock()
+	v.buf.dropApp(app)
+	return db.DeleteAppVitals(ctx, app)
+}
+
+func (b *vitalsBuffer) dropApp(app string) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	for k := range b.m {
+		if k.app == app {
+			delete(b.m, k)
+		}
+	}
 }
 
 // pruneVitals deletes expired rows in short batches, pausing between them so beacon flushes are not starved.
