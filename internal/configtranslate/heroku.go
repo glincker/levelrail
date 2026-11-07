@@ -112,7 +112,7 @@ func translateHeroku(files map[string][]byte, o options) (Fragment, []Finding) {
 		frag.Services[name] = svc
 	}
 
-	fs = append(fs, herokuRelease(&frag, release)...)
+	fs = append(fs, herokuRelease(&frag, release, o)...)
 	fs = append(fs, herokuScripts(&frag, app)...)
 	dbFs := herokuAddons(&frag, app, o)
 	fs = append(fs, dbFs...)
@@ -198,21 +198,34 @@ func herokuFormation(svc *Service, name string, app appJSON) []Finding {
 	return fs
 }
 
-func herokuRelease(frag *Fragment, release string) []Finding {
+func herokuRelease(frag *Fragment, release string, o options) []Finding {
 	if release == "" {
 		return nil
 	}
-	web, ok := frag.Services["web"]
+	target := hookTarget(frag, o)
+	web, ok := frag.Services[target]
 	if !ok {
 		return []Finding{{Code: "heroku.release.no-web", Severity: SeverityWarn, Source: fileProcfile, Subject: "release",
 			Message: "release phase found but there is no web service to attach a pre-deploy command to",
 			Fix:     "Run '" + release + "' by hand before the first deploy."}}
 	}
 	web.Hooks = &Hooks{PreDeploy: release}
-	frag.Services["web"] = web
+	frag.Services[target] = web
 	return []Finding{{Code: "heroku.release.predeploy", Severity: SeverityWarn, Source: fileProcfile, Subject: "release",
 		Message: "release phase becomes hooks.preDeploy, run in the new web container before readiness, not in a one-off dyno",
 		Fix:     "Make sure the command is idempotent and needs nothing but the built image."}}
+}
+
+// hookTarget picks the service that carries deploy hooks: web, or at deploy
+// time the first process when the Procfile has no web line.
+func hookTarget(frag *Fragment, o options) string {
+	if _, ok := frag.Services["web"]; ok || !o.deploy {
+		return "web"
+	}
+	if keys := sortedKeys(frag.Services); len(keys) > 0 {
+		return keys[0]
+	}
+	return "web"
 }
 
 func herokuScripts(frag *Fragment, app appJSON) []Finding {
