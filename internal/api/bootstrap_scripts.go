@@ -320,10 +320,10 @@ func (rt *Router) handlePutBootstrapScriptLimits(w http.ResponseWriter, r *http.
 // path wins over {id} in net/http's mux.
 func (rt *Router) registerBootstrapScriptRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/bootstrap-scripts", rt.requireAbility(AbilityRead, rt.handleListBootstrapScripts))
-	mux.HandleFunc("POST /api/v1/bootstrap-scripts", rt.requireAbility(AbilityWrite, rt.handleCreateBootstrapScript))
+	mux.HandleFunc("POST /api/v1/bootstrap-scripts", rt.requireAbility(AbilityRoot, rt.handleCreateBootstrapScript))
 	mux.HandleFunc("GET /api/v1/bootstrap-scripts/limits", rt.requireAbility(AbilityRead, rt.handleGetBootstrapScriptLimits))
 	mux.HandleFunc("PUT /api/v1/bootstrap-scripts/limits", rt.requireAbility(AbilityRoot, rt.handlePutBootstrapScriptLimits))
-	mux.HandleFunc("GET /api/v1/bootstrap-scripts/{id}", rt.requireAbility(AbilityRead, rt.handleGetBootstrapScript))
-	mux.HandleFunc("PUT /api/v1/bootstrap-scripts/{id}", rt.requireAbility(AbilityWrite, rt.handleUpdateBootstrapScript))
-	mux.HandleFunc("DELETE /api/v1/bootstrap-scripts/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteBootstrapScript))
+	mux.HandleFunc("GET /api/v1/bootstrap-scripts/{id}", rt.requireAbility(AbilityRoot, rt.handleGetBootstrapScript))
+	mux.HandleFunc("PUT /api/v1/bootstrap-scripts/{id}", rt.requireAbility(AbilityRoot, rt.handleUpdateBootstrapScript))
+	mux.HandleFunc("DELETE /api/v1/bootstrap-scripts/{id}", rt.requireAbility(AbilityRoot, rt.handleDeleteBootstrapScript))
 }

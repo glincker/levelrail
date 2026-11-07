@@ -1,11 +1,15 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 func TestBootstrapScriptHandlers(t *testing.T) {
@@ -52,5 +56,39 @@ func TestBootstrapScriptHandlers(t *testing.T) {
 	}
 	if code, _ := do(http.MethodGet, "/api/v1/bootstrap-scripts/"+created.ID, ""); code != http.StatusNotFound {
 		t.Fatalf("get after delete = %d, want 404", code)
+	}
+}
+
+func TestBootstrapScriptRootOnly(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/bootstrap-scripts", `{"name":"base","body":"echo hi"}`))
+	var created bootstrapScriptResource
+	_ = json.Unmarshal(rec.Body.Bytes(), &created)
+	if rec.Code != http.StatusCreated || created.ID == "" {
+		t.Fatalf("root-session create = %d", rec.Code)
+	}
+	if err := db.SaveAPIToken(context.Background(), store.APIToken{
+		ID: "tok_w", Name: "w", TokenHash: hashToken("tok-w-plaintext"), Abilities: []string{AbilityWrite}, CreatedAt: time.Now(),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range []struct{ method, path, body string }{
+		{http.MethodPost, "/api/v1/bootstrap-scripts", `{"name":"evil","body":"id"}`},
+		{http.MethodGet, "/api/v1/bootstrap-scripts/" + created.ID, ""},
+		{http.MethodPut, "/api/v1/bootstrap-scripts/" + created.ID, `{"name":"base","body":"id"}`},
+		{http.MethodDelete, "/api/v1/bootstrap-scripts/" + created.ID, ""},
+	} {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, bearerRequest(c.method, c.path, c.body, "tok-w-plaintext"))
+		if rec.Code != http.StatusForbidden {
+			t.Errorf("write token %s %s = %d, want 403", c.method, c.path, rec.Code)
+		}
+	}
+	rec = httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/bootstrap-scripts/"+created.ID, ""))
+	if rec.Code != http.StatusOK {
+		t.Errorf("root get = %d", rec.Code)
 	}
 }
