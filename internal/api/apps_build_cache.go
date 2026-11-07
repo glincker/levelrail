@@ -80,15 +80,18 @@ func (m *appCacheMemo) drop(id string) {
 }
 
 // appCacheScope validates the app and returns its cache id and the other apps' ids.
-func (rt *Router) appCacheScope(w http.ResponseWriter, r *http.Request) (string, []string, bool) {
+// allowDeleted lets a read go on for an app that is gone but may still own cache records.
+func (rt *Router) appCacheScope(w http.ResponseWriter, r *http.Request, allowDeleted bool) (string, []string, bool) {
 	if rt.appBuildCache == nil {
 		writeError(w, http.StatusNotImplemented, "build cache management is not configured on this control plane")
 		return "", nil, false
 	}
 	name := r.PathValue("name")
 	if _, err := rt.apps.GetDesiredService(r.Context(), name); errors.Is(err, store.ErrServiceNotFound) {
-		writeError(w, http.StatusNotFound, "app not found")
-		return "", nil, false
+		if !allowDeleted {
+			writeError(w, http.StatusNotFound, "app not found")
+			return "", nil, false
+		}
 	} else if err != nil {
 		rt.internalError(w, "api: app build cache: load app", err, slog.String("name", name))
 		return "", nil, false
@@ -98,15 +101,25 @@ func (rt *Router) appCacheScope(w http.ResponseWriter, r *http.Request) (string,
 		writeError(w, http.StatusConflict, "this app has no usable cache id")
 		return "", nil, false
 	}
+	return id, rt.siblingCacheIDs(r.Context(), id), true
+}
+
+// siblingCacheIDs lists the other apps' cache ids so a prefix match never crosses apps.
+func (rt *Router) siblingCacheIDs(ctx context.Context, id string) []string {
 	var siblings []string
-	if all, err := rt.apps.ListDesiredServices(r.Context()); err == nil {
+	if all, err := rt.apps.ListDesiredServices(ctx); err == nil {
 		for _, s := range all {
 			if sid := build.SanitizeCacheID(s.Name, ""); sid != "" && sid != id {
 				siblings = append(siblings, sid)
 			}
 		}
 	}
-	return id, siblings, true
+	return siblings
+}
+
+func (rt *Router) appRowExists(ctx context.Context, name string) bool {
+	_, err := rt.apps.GetDesiredService(ctx, name)
+	return err == nil
 }
 
 func (rt *Router) appBuildRunning(ctx context.Context, name string) (bool, error) {
@@ -124,11 +137,11 @@ func (rt *Router) appBuildRunning(ctx context.Context, name string) (bool, error
 
 // handleGetAppBuildCache handles GET /api/v1/apps/{name}/build-cache.
 func (rt *Router) handleGetAppBuildCache(w http.ResponseWriter, r *http.Request) {
-	id, siblings, ok := rt.appCacheScope(w, r)
+	id, siblings, ok := rt.appCacheScope(w, r, true)
 	if !ok {
 		return
 	}
-	if res, hit := appCacheUsageMemo.get(id); hit {
+	if res, hit := appCacheUsageMemo.get(id); hit && res.RecordCount > 0 || hit && rt.appRowExists(r.Context(), r.PathValue("name")) {
 		writeJSON(w, http.StatusOK, res)
 		return
 	}
@@ -139,6 +152,10 @@ func (rt *Router) handleGetAppBuildCache(w http.ResponseWriter, r *http.Request)
 	}
 	if err != nil {
 		rt.internalError(w, "api: app build cache usage", err, slog.String("name", r.PathValue("name")))
+		return
+	}
+	if u.Records == 0 && !rt.appRowExists(r.Context(), r.PathValue("name")) {
+		writeError(w, http.StatusNotFound, "app not found")
 		return
 	}
 	res := appBuildCacheResource{CacheID: id, SizeBytes: u.Bytes, RecordCount: u.Records, InUse: u.InUse}
@@ -152,7 +169,7 @@ func (rt *Router) handleGetAppBuildCache(w http.ResponseWriter, r *http.Request)
 
 // handleClearAppBuildCache handles DELETE /api/v1/apps/{name}/build-cache.
 func (rt *Router) handleClearAppBuildCache(w http.ResponseWriter, r *http.Request) {
-	id, siblings, ok := rt.appCacheScope(w, r)
+	id, siblings, ok := rt.appCacheScope(w, r, true)
 	if !ok {
 		return
 	}
@@ -176,6 +193,10 @@ func (rt *Router) handleClearAppBuildCache(w http.ResponseWriter, r *http.Reques
 		return
 	case err != nil:
 		rt.internalError(w, "api: app build cache clear", err, slog.String("name", name))
+		return
+	}
+	if res.Removed == 0 && !rt.appRowExists(r.Context(), name) {
+		writeError(w, http.StatusNotFound, "app not found")
 		return
 	}
 	appCacheUsageMemo.drop(id)

@@ -221,6 +221,11 @@ func (c *Controller) retireStale(ctx context.Context, targets []string, desired 
 			cut = now
 		}
 		due, draining := c.drainFilter(all, targets, cut, cfg.DrainTimeout, now)
+		// The hold branch is skipped while draining, so publish the new window now.
+		if hold := c.effectiveHold(ctx, cfg); hold > 0 {
+			_, heldUntil := c.heldFilterFor(all, targets, now, hold)
+			c.recordHold(ctx, heldUntil)
+		}
 		if justDeployed && draining {
 			c.recordGate(ctx, desired, "", deploysafety.PhaseDrain, deploysafety.StatusStarted, "",
 				fmt.Sprintf("previous release keeps serving in-flight requests for %s", cfg.DrainTimeout))

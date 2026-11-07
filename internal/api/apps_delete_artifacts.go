@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -17,6 +18,7 @@ type rollbackPinDeleter interface {
 // pin tags, its locally built images and stored upload archives. Unused only
 // (Docker refuses to remove an image a container still runs); failures are logged.
 func (rt *Router) removeAppArtifacts(ctx context.Context, name, nodeID string) {
+	rt.clearDeletedAppBuildCache(ctx, name)
 	if st := rt.uploadStore(); st != nil {
 		if err := st.RemoveApp(name); err != nil {
 			rt.logger.Warn("api: delete app: remove uploads failed", slog.String("error", err.Error()), slog.String("name", name))
@@ -78,4 +80,23 @@ func imageRepoIs(tag, name string) bool {
 		repo = tag[:i]
 	}
 	return repo == name
+}
+
+// clearDeletedAppBuildCache drops the app's BuildKit cache mounts, which
+// otherwise outlive it and cannot be cleared by name. Best effort.
+func (rt *Router) clearDeletedAppBuildCache(ctx context.Context, name string) {
+	if rt.appBuildCache == nil {
+		return
+	}
+	id := build.SanitizeCacheID(name, "")
+	if id == "" {
+		return
+	}
+	res, err := rt.appBuildCache.PruneAppCache(ctx, id, rt.siblingCacheIDs(ctx, id))
+	if err != nil {
+		rt.logger.Warn("api: delete app: clear build cache failed", slog.String("error", err.Error()), slog.String("name", name))
+		return
+	}
+	appCacheUsageMemo.drop(id)
+	rt.logger.Info("api: delete app: build cache cleared", slog.String("name", name), slog.Int64("freed_bytes", res.FreedBytes))
 }

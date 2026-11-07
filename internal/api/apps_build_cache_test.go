@@ -72,7 +72,31 @@ func TestAppBuildCacheShowAndClear(t *testing.T) {
 	if len(fake.pruned) != 1 || fake.pruned[0] != "web" {
 		t.Fatalf("pruned %v", fake.pruned)
 	}
+	fake.res = build.AppCachePruneResult{}
+	fake.usage = build.AppCacheUsage{}
 	if rec := serve(rt, authedRequest(t, cookie, http.MethodDelete, "/api/v1/apps/nope/build-cache", "")); rec.Code != http.StatusNotFound {
 		t.Fatalf("unknown app = %d", rec.Code)
+	}
+}
+
+func TestDeletedAppCacheStillReadableAndClearedOnDelete(t *testing.T) {
+	rt, db, cookie := newSafetyRouter(t, stubResolver{})
+	fake := &fakeAppCacher{usage: build.AppCacheUsage{Bytes: 9, Records: 2}, res: build.AppCachePruneResult{FreedBytes: 9, Removed: 2}}
+	WithAppBuildCache(fake)(rt)
+	seedApp(t, db, "gone")
+	if rec := serve(rt, authedRequest(t, cookie, http.MethodDelete, "/api/v1/apps/gone", "")); rec.Code != http.StatusNoContent {
+		t.Fatalf("delete = %d", rec.Code)
+	}
+	if len(fake.pruned) != 1 || fake.pruned[0] != "gone" {
+		t.Fatalf("delete must clear the app cache, pruned %v", fake.pruned)
+	}
+	appCacheUsageMemo.drop("gone")
+	if rec := serve(rt, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/gone/build-cache", "")); rec.Code != http.StatusOK {
+		t.Fatalf("show for deleted app with records = %d", rec.Code)
+	}
+	fake.usage = build.AppCacheUsage{}
+	appCacheUsageMemo.drop("gone")
+	if rec := serve(rt, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/gone/build-cache", "")); rec.Code != http.StatusNotFound {
+		t.Fatalf("show for deleted app without records = %d", rec.Code)
 	}
 }
