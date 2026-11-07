@@ -81,6 +81,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 
 - [Troubleshooting](/troubleshooting): Fixes for the most common problems when deploying, logging in, or running Levelrail.
 - [Doctor](/doctor): One health check for the server, in the dashboard and the CLI, with a fix or a next step for every problem.
+- [Doctor and import from the command line](/doctor-and-import): Run the server checks, apply safe fixes, explain a failing check, and plan or create apps from a repository, an image, a config folder or a monorepo with levelrail-cli.
 - [Email notifications](/email-notifications): Choose an email provider for alert emails, password resets and invites, check your sender domain, send a test, and read the delivery log.
 - [Email templates and messages](/email-templates): Edit every email the platform sends, build audiences, and send announcements with opt-outs, scheduling and delivery history.
 - [Alert inbox](/alert-inbox): An in-app inbox of the alerts that reached you, with per-account read state, routing rules and an optional daily digest, plus the guardrails on mass actions.
@@ -137,7 +138,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Running Levelrail in Docker](/docker): Run Levelrail control plane and node agent as Docker containers.
 - [Zero-downtime deploys with Docker: readiness-gated cutover and rollback](/zero-downtime-deploys): How Levelrail ships without downtime: blue-green, rolling or recreate strategies gated on real readiness probes and digest-pinned images.
 - [Rollout control](/rollout-control): Tune rolling deploys with max_surge and max_unavailable, and protect running replicas with a min_available disruption budget.
-- [Preview environments per pull request on your own servers](/preview-environments): Levelrail deploys a preview environment for each pull request on GitHub, GitLab, Bitbucket and Gitea and tears it down when the pull request closes.
+- [Preview environments](/preview-environments): Run a copy of an app for each pull request, with its own URL, caps, optional database, and automatic teardown when the pull request closes.
 - [Deploy contexts: env and build settings per kind of deploy](/deploy-contexts): Set env vars and static build settings separately for pull request previews, branch deploys and specific branches, and see the effective config for any deploy.
 
 ### Networking and multi-node
@@ -177,6 +178,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 ### Databases and storage
 
 - [Managing databases](/managing-databases): Create and manage databases with backups, point-in-time restore, and lifecycle management.
+- [Managed databases from the command line](/managed-databases): Create a managed database, follow its provisioning steps, plan version upgrades, and rotate the owner password with levelrail-cli.
 - [Postgres connection pooler](/postgres-pooler): Run a pgbouncer style pooler next to a managed Postgres database in transaction pooling mode, so many app connections share a few server connections.
 - [Database upgrades](/database-upgrades): Schedule automatic database upgrades with security checks and automatic rollback on failure.
 - [Database version catalog](/database-version-catalog): Where the database versions, release channels and end-of-life dates offered at create and upgrade time come from: a published, signed catalog file.

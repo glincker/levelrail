@@ -145,7 +145,7 @@ Fixed in the wave N pass: `valkey` interpolated its password from the host shell
 
 Generated from the registry scan in `internal/catalog/platforms.json` (`scripts/scan-catalog-platforms`), not from the smoke run. A template is `yes` only when every image it uses lists `linux/arm64` in its manifest. `not checked` means unknown, not unsupported: the scan could not read a manifest or the image tag is set at install time.
 
-Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 34 not checked** of 442 templates.
+Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 42 not checked** of 450 templates.
 
 | Template | arm64 | Verified platforms |
 | --- | --- | --- |
@@ -188,6 +188,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 34 not checked** of 4
 | `calibre-web` | yes | linux/amd64, linux/arm64 |
 | `campfire` | yes | linux/amd64, linux/arm64 |
 | `cap-captcha` | yes | linux/amd64, linux/arm64 |
+| `cassandra` | not checked | - |
 | `castopod` | yes | linux/amd64, linux/arm64 |
 | `changedetection` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `chatwoot` | yes | linux/amd64, linux/arm64 |
@@ -234,6 +235,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 34 not checked** of 4
 | `element-web` | yes | linux/amd64, linux/arm64 |
 | `emby` | yes | linux/amd64, linux/arm64 |
 | `embystat` | yes | linux/amd64, linux/arm64 |
+| `emqx` | not checked | - |
 | `espocrm` | yes | linux/amd64, linux/arm64 |
 | `etcd` | yes | linux/amd64, linux/arm64, linux/ppc64le, linux/s390x |
 | `etherpad` | yes | linux/amd64, linux/arm64 |
@@ -273,6 +275,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 34 not checked** of 4
 | `glpi` | yes | linux/amd64, linux/arm64 |
 | `goatcounter` | yes | linux/amd64, linux/arm64 |
 | `gogs` | yes | linux/amd64, linux/arm, linux/arm64 |
+| `gokapi` | not checked | - |
 | `gotenberg` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
 | `gotify` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/riscv64 |
 | `grafana` | yes | linux/amd64, linux/arm, linux/arm64 |
@@ -318,6 +321,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 34 not checked** of 4
 | `jupyter-gpu` | amd64 only | linux/amd64 |
 | `jupyter-notebook` | yes | linux/amd64, linux/arm64 |
 | `jupyter-notebook-python` | yes | linux/amd64, linux/arm64 |
+| `kafka` | not checked | - |
 | `kanboard` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `karakeep` | yes | linux/amd64, linux/arm64 |
 | `kavita` | yes | linux/amd64, linux/arm, linux/arm64 |
@@ -386,6 +390,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 34 not checked** of 4
 | `mkdocs-material` | not checked | - |
 | `mlflow` | yes | linux/amd64, linux/arm64 |
 | `mongo-express` | yes | linux/amd64, linux/arm64 |
+| `mongodb` | not checked | - |
 | `monica` | yes | linux/amd64, linux/arm64, linux/ppc64le, linux/s390x |
 | `moodle` | yes | linux/amd64, linux/arm64 |
 | `mosquitto` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/s390x |
@@ -404,6 +409,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 34 not checked** of 4
 | `nextcloud` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/mips64le, linux/ppc64le, linux/s390x |
 | `nextjs-postgres-starter` | yes | linux/amd64, linux/arm, linux/arm64, linux/s390x |
 | `nexus` | yes | linux/amd64, linux/arm64 |
+| `nginx` | not checked | - |
 | `nginx-multi-backend-starter` | yes | linux/amd64, linux/arm, linux/arm64, linux/s390x |
 | `nginx-proxy-manager` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `nocobase` | yes | linux/amd64, linux/arm64 |
@@ -436,6 +442,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 34 not checked** of 4
 | `orangehrm` | amd64 only | linux/amd64 |
 | `organizr` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `osticket` | not checked | - |
+| `otel-lgtm` | not checked | - |
 | `outline` | yes | linux/amd64, linux/arm, linux/arm64, linux/ppc64le, linux/s390x |
 | `overseerr` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `owncast` | yes | linux/386, linux/amd64, linux/arm, linux/arm64 |
@@ -517,6 +524,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 34 not checked** of 4
 | `snapdrop` | not checked | - |
 | `snipe-it` | yes | linux/amd64, linux/arm64 |
 | `soketi` | yes | linux/amd64, linux/arm, linux/arm64 |
+| `solr` | not checked | - |
 | `sonarqube` | yes | linux/amd64, linux/arm64 |
 | `sonarr` | yes | linux/amd64, linux/arm64 |
 | `sparkyfitness` | yes | linux/amd64, linux/arm64 |

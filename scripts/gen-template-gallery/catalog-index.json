@@ -6324,6 +6324,142 @@
    }
   },
   {
+   "id": "cassandra",
+   "aliases": [],
+   "name": "Apache Cassandra",
+   "slogan": "A single node Apache Cassandra wide-column database on the official image, with a persistent volume. It is not published on the host and starts without authentication, so reach it only from other services in this project at cassandra:9042. A node needs about 2 GB of memory.",
+   "description": "A single node Apache Cassandra wide-column database on the official image, with a persistent volume. It is not published on the host and starts without authentication, so reach it only from other services in this project at cassandra:9042. A node needs about 2 GB of memory.",
+   "first_run": [
+    "The first start takes a few minutes. Connect from a service in the same project at cassandra:9042 with the CQL native protocol."
+   ],
+   "category": "Database Tools",
+   "status": "active",
+   "source_repo": "https://github.com/apache/cassandra",
+   "documentation_url": "https://cassandra.apache.org/doc/latest/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/apache/cassandra/blob/trunk/LICENSE.txt"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "cassandra",
+     "image": "cassandra",
+     "tag": "5.0.2",
+     "source_class": "official",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 2048,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "CASSANDRA_CLUSTER_NAME",
+      "label": "Cluster name",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "MAX_HEAP_SIZE",
+      "label": "Maximum heap",
+      "required": false,
+      "default_kind": "preset"
+     },
+     {
+      "key": "HEAP_NEWSIZE",
+      "label": "Young generation size",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "cassandra",
+     "image": "cassandra:5.0.2",
+     "ports": [
+      9042
+     ],
+     "volumes": [
+      "cassandra_data -> /var/lib/cassandra"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "cassandra",
+     "name": "CASSANDRA_CLUSTER_NAME",
+     "kind": "preset"
+    },
+    {
+     "service": "cassandra",
+     "name": "HEAP_NEWSIZE",
+     "kind": "preset"
+    },
+    {
+     "service": "cassandra",
+     "name": "MAX_HEAP_SIZE",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "cassandra"
+      ],
+      "detail": "cassandra_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "castopod",
    "aliases": [],
    "name": "Castopod",
@@ -13148,6 +13284,156 @@
    }
   },
   {
+   "id": "emqx",
+   "aliases": [],
+   "name": "EMQX",
+   "slogan": "A scalable MQTT broker with a web dashboard, on the official image. The dashboard admin password is generated at install. The MQTT port is not published on the host and accepts anonymous clients, so reach it from other services in this project at emqx:1883 and add authentication in the dashboard before exposing it.",
+   "description": "A scalable MQTT broker with a web dashboard, on the official image. The dashboard admin password is generated at install. The MQTT port is not published on the host and accepts anonymous clients, so reach it from other services in this project at emqx:1883 and add authentication in the dashboard before exposing it.",
+   "first_run": [
+    "Sign in to the dashboard as admin with the generated password from the app secrets.",
+    "Add an authentication method under Access Control before letting devices connect from outside the project."
+   ],
+   "category": "Infrastructure",
+   "status": "active",
+   "source_repo": "https://github.com/emqx/emqx",
+   "documentation_url": "https://docs.emqx.com/en/emqx/v5.8/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/emqx/emqx/blob/v5.8.0/APL.txt"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "emqx",
+     "image": "emqx/emqx",
+     "tag": "5.8.0",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TZ",
+      "label": "Time zone",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "emqx",
+     "image": "emqx/emqx:5.8.0",
+     "ports": [
+      18083,
+      1883
+     ],
+     "volumes": [
+      "emqx_data -> /opt/emqx/data",
+      "emqx_log -> /opt/emqx/log"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "emqx",
+     "name": "EMQX_DASHBOARD__DEFAULT_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "emqx",
+     "name": "EMQX_DASHBOARD__DEFAULT_USERNAME",
+     "kind": "preset"
+    },
+    {
+     "service": "emqx",
+     "name": "EMQX_NODE__COOKIE",
+     "kind": "generated"
+    },
+    {
+     "service": "emqx",
+     "name": "EMQX_NODE__NAME",
+     "kind": "preset"
+    },
+    {
+     "service": "emqx",
+     "name": "TZ",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "emqx"
+      ],
+      "detail": "EMQX_DASHBOARD__DEFAULT_PASSWORD, EMQX_NODE__COOKIE",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "emqx"
+      ],
+      "detail": "emqx_data, emqx_log",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "espocrm",
    "aliases": [],
    "name": "EspoCRM",
@@ -19333,6 +19619,121 @@
        "gogs"
       ],
       "detail": "data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "gokapi",
+   "aliases": [],
+   "name": "Gokapi",
+   "slogan": "A lightweight self-hosted file sharing server with expiring links and download limits. Runs in one container on a small data folder. On first open, the setup page asks you to create the admin login.",
+   "description": "A lightweight self-hosted file sharing server with expiring links and download limits. Runs in one container on a small data folder. On first open, the setup page asks you to create the admin login.",
+   "first_run": [
+    "Open the app and finish the setup page, choosing the admin login and the public address."
+   ],
+   "category": "Storage",
+   "status": "active",
+   "source_repo": "https://github.com/Forceu/Gokapi",
+   "documentation_url": "https://gokapi.readthedocs.io/",
+   "license": {
+    "spdx": "AGPL-3.0-only",
+    "class": "network-copyleft",
+    "url": "https://github.com/Forceu/Gokapi/blob/master/LICENSE"
+   },
+   "hosted_use": "unknown",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "gokapi",
+     "image": "ghcr.io/forceu/gokapi",
+     "tag": "v1.9.6",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 128,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TZ",
+      "label": "Time zone",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "gokapi",
+     "image": "ghcr.io/forceu/gokapi:v1.9.6",
+     "ports": [
+      53842
+     ],
+     "volumes": [
+      "gokapi_data -> /app/data",
+      "gokapi_config -> /app/config"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "gokapi",
+     "name": "TZ",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "gokapi"
+      ],
+      "detail": "gokapi_config, gokapi_data",
       "message": "Stores data in named volumes"
      }
     ],
@@ -26404,6 +26805,168 @@
      {
       "code": "secret_masking",
       "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "kafka",
+   "aliases": [],
+   "name": "Apache Kafka",
+   "slogan": "A single broker Apache Kafka in KRaft mode (no ZooKeeper) on the official image, with a persistent volume. It is not published on the host and speaks plaintext, so reach it only from other services in this project at kafka:9092.",
+   "description": "A single broker Apache Kafka in KRaft mode (no ZooKeeper) on the official image, with a persistent volume. It is not published on the host and speaks plaintext, so reach it only from other services in this project at kafka:9092.",
+   "first_run": [
+    "Point producers and consumers in the same project at kafka:9092. Topics are created on first use."
+   ],
+   "category": "Infrastructure",
+   "status": "active",
+   "source_repo": "https://github.com/apache/kafka",
+   "documentation_url": "https://kafka.apache.org/documentation/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/apache/kafka/blob/trunk/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "kafka",
+     "image": "apache/kafka",
+     "tag": "3.8.0",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 1024,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "kafka",
+     "image": "apache/kafka:3.8.0",
+     "ports": [
+      9092
+     ],
+     "volumes": [
+      "kafka_data -> /var/lib/kafka/data"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "kafka",
+     "name": "KAFKA_ADVERTISED_LISTENERS",
+     "kind": "preset"
+    },
+    {
+     "service": "kafka",
+     "name": "KAFKA_CONTROLLER_LISTENER_NAMES",
+     "kind": "preset"
+    },
+    {
+     "service": "kafka",
+     "name": "KAFKA_CONTROLLER_QUORUM_VOTERS",
+     "kind": "preset"
+    },
+    {
+     "service": "kafka",
+     "name": "KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS",
+     "kind": "preset"
+    },
+    {
+     "service": "kafka",
+     "name": "KAFKA_LISTENERS",
+     "kind": "preset"
+    },
+    {
+     "service": "kafka",
+     "name": "KAFKA_LISTENER_SECURITY_PROTOCOL_MAP",
+     "kind": "preset"
+    },
+    {
+     "service": "kafka",
+     "name": "KAFKA_LOG_DIRS",
+     "kind": "preset"
+    },
+    {
+     "service": "kafka",
+     "name": "KAFKA_NODE_ID",
+     "kind": "preset"
+    },
+    {
+     "service": "kafka",
+     "name": "KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR",
+     "kind": "preset"
+    },
+    {
+     "service": "kafka",
+     "name": "KAFKA_PROCESS_ROLES",
+     "kind": "preset"
+    },
+    {
+     "service": "kafka",
+     "name": "KAFKA_TRANSACTION_STATE_LOG_MIN_ISR",
+     "kind": "preset"
+    },
+    {
+     "service": "kafka",
+     "name": "KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "kafka"
+      ],
+      "detail": "kafka_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
      },
      {
       "code": "volume_backups",
@@ -37167,6 +37730,132 @@
    }
   },
   {
+   "id": "mongodb",
+   "aliases": [],
+   "name": "MongoDB",
+   "slogan": "The MongoDB document database on the official image, with a persistent volume and a generated root user and password. It is not published on the host, so reach it from other services in this project at mongodb:27017.",
+   "description": "The MongoDB document database on the official image, with a persistent volume and a generated root user and password. It is not published on the host, so reach it from other services in this project at mongodb:27017.",
+   "first_run": [
+    "Read the generated root user and password from the app secrets, then connect from a service in the same project with mongodb://USER:PASSWORD@mongodb:27017/?authSource=admin."
+   ],
+   "category": "Database Tools",
+   "status": "active",
+   "source_repo": "https://github.com/mongodb/mongo",
+   "documentation_url": "https://www.mongodb.com/docs/manual/",
+   "license": {
+    "spdx": "LicenseRef-SSPL-1.0",
+    "class": "source-available",
+    "url": "https://github.com/mongodb/mongo/blob/master/LICENSE-Community.txt"
+   },
+   "hosted_use": "restricted",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "mongodb",
+     "image": "mongo",
+     "tag": "7.0.14",
+     "source_class": "official",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 512,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "mongodb",
+     "image": "mongo:7.0.14",
+     "ports": [
+      27017
+     ],
+     "volumes": [
+      "mongodb_data -> /data/db",
+      "mongodb_config -> /data/configdb"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "mongodb",
+     "name": "MONGO_INITDB_ROOT_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "mongodb",
+     "name": "MONGO_INITDB_ROOT_USERNAME",
+     "kind": "generated"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "mongodb"
+      ],
+      "detail": "MONGO_INITDB_ROOT_PASSWORD, MONGO_INITDB_ROOT_USERNAME",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "mongodb"
+      ],
+      "detail": "mongodb_config, mongodb_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "monica",
    "aliases": [],
    "name": "Monica",
@@ -40188,6 +40877,120 @@
        "nexus"
       ],
       "detail": "nexus_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "nginx",
+   "aliases": [],
+   "name": "Nginx",
+   "slogan": "The Nginx web server on the official Alpine image, serving a persistent web root. It starts with the default welcome page; put your site files in the web root volume through the app's Files.",
+   "description": "The Nginx web server on the official Alpine image, serving a persistent web root. It starts with the default welcome page; put your site files in the web root volume through the app's Files.",
+   "first_run": [
+    "Open the address to see the welcome page, then replace the files in /usr/share/nginx/html with your site."
+   ],
+   "category": "Infrastructure",
+   "status": "active",
+   "source_repo": "https://github.com/nginx/nginx",
+   "documentation_url": "https://nginx.org/en/docs/",
+   "license": {
+    "spdx": "BSD-2-Clause",
+    "class": "permissive",
+    "url": "https://github.com/nginx/nginx/blob/master/docs/text/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "nginx",
+     "image": "nginx",
+     "tag": "1.27.2-alpine",
+     "source_class": "official",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 64,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TZ",
+      "label": "Time zone",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "nginx",
+     "image": "nginx:1.27.2-alpine",
+     "ports": [
+      80
+     ],
+     "volumes": [
+      "nginx_html -> /usr/share/nginx/html"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "nginx",
+     "name": "TZ",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "nginx"
+      ],
+      "detail": "nginx_html",
       "message": "Stores data in named volumes"
      }
     ],
@@ -44768,6 +45571,145 @@
        "osticket"
       ],
       "detail": "osticket_data, osticket_db_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "secret_masking",
+      "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "otel-lgtm",
+   "aliases": [],
+   "name": "Grafana OTel LGTM",
+   "slogan": "An all-in-one OpenTelemetry backend with an OTLP collector, Loki logs, Tempo traces, Prometheus metrics and Grafana in one container. The Grafana admin password is generated at install. OTLP ports are not published on the host, so send telemetry from other services in this project to otel-lgtm:4317 (gRPC) or otel-lgtm:4318 (HTTP).",
+   "description": "An all-in-one OpenTelemetry backend with an OTLP collector, Loki logs, Tempo traces, Prometheus metrics and Grafana in one container. The Grafana admin password is generated at install. OTLP ports are not published on the host, so send telemetry from other services in this project to otel-lgtm:4317 (gRPC) or otel-lgtm:4318 (HTTP).",
+   "first_run": [
+    "Sign in to Grafana as admin with the generated password from the app secrets."
+   ],
+   "category": "Monitoring",
+   "status": "active",
+   "source_repo": "https://github.com/grafana/docker-otel-lgtm",
+   "documentation_url": "https://grafana.com/docs/opentelemetry/docker-lgtm/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/grafana/docker-otel-lgtm/blob/main/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "otel-lgtm",
+     "image": "grafana/otel-lgtm",
+     "tag": "0.8.1",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 1024,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TZ",
+      "label": "Time zone",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "otel-lgtm",
+     "image": "grafana/otel-lgtm:0.8.1",
+     "ports": [
+      3000,
+      4317,
+      4318
+     ],
+     "volumes": [
+      "otel_lgtm_data -> /data"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "otel-lgtm",
+     "name": "GF_SECURITY_ADMIN_PASSWORD",
+     "kind": "generated"
+    },
+    {
+     "service": "otel-lgtm",
+     "name": "GF_SECURITY_ADMIN_USER",
+     "kind": "preset"
+    },
+    {
+     "service": "otel-lgtm",
+     "name": "TZ",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "generated_secrets",
+      "severity": "info",
+      "services": [
+       "otel-lgtm"
+      ],
+      "detail": "GF_SECURITY_ADMIN_PASSWORD",
+      "message": "Passwords and keys are generated at deploy time"
+     },
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "otel-lgtm"
+      ],
+      "detail": "otel_lgtm_data",
       "message": "Stores data in named volumes"
      }
     ],
@@ -57533,6 +58475,107 @@
      {
       "code": "secret_masking",
       "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "solr",
+   "aliases": [],
+   "name": "Apache Solr",
+   "slogan": "The Apache Solr search platform on the official image, with a persistent volume. The admin interface has no login, so keep it private or put it behind an authenticating proxy before adding a public domain. Other services in this project reach it at solr:8983.",
+   "description": "The Apache Solr search platform on the official image, with a persistent volume. The admin interface has no login, so keep it private or put it behind an authenticating proxy before adding a public domain. Other services in this project reach it at solr:8983.",
+   "first_run": [
+    "Open the admin interface and create a core, or run the solr create command in the container's console."
+   ],
+   "category": "Database Tools",
+   "status": "active",
+   "source_repo": "https://github.com/apache/solr",
+   "documentation_url": "https://solr.apache.org/guide/solr/latest/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/apache/solr/blob/main/LICENSE.txt"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "solr",
+     "image": "solr",
+     "tag": "9.7.0",
+     "source_class": "official",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 1024,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "solr",
+     "image": "solr:9.7.0",
+     "ports": [
+      8983
+     ],
+     "volumes": [
+      "solr_data -> /var/solr"
+     ]
+    }
+   ],
+   "env": [],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "solr"
+      ],
+      "detail": "solr_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
      },
      {
       "code": "health_gated_deploy",

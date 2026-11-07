@@ -2,14 +2,14 @@
   "generated_at": "2026-11-02T03:14:45Z",
   "note": "yes means every image manifest lists the architecture. It is a manifest fact, not a tested claim. unknown means no readable manifest or an install-time image tag.",
   "counts": {
-    "templates": 442,
-    "images": 486,
+    "templates": 450,
+    "images": 494,
     "arm64_yes": 393,
     "arm64_no": 15,
-    "arm64_unknown": 34,
+    "arm64_unknown": 42,
     "image_arm64_yes": 434,
     "image_arm64_no": 15,
-    "image_arm64_unknown": 37
+    "image_arm64_unknown": 45
   },
   "templates": [
     {
@@ -1025,6 +1025,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "cassandra",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "cassandra:5.0.2",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -2155,6 +2169,20 @@
       ]
     },
     {
+      "id": "emqx",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "emqx/emqx:5.8.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "espocrm",
       "amd64": "yes",
       "arm64": "yes",
@@ -3178,6 +3206,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "gokapi",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "ghcr.io/forceu/gokapi:v1.9.6",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -4357,6 +4399,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "kafka",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "apache/kafka:3.8.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -6003,6 +6059,20 @@
       ]
     },
     {
+      "id": "mongodb",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "mongo:7.0.14",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "monica",
       "amd64": "yes",
       "arm64": "yes",
@@ -6501,6 +6571,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "nginx",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "nginx:1.27.2-alpine",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },
@@ -7221,6 +7305,20 @@
         },
         {
           "ref": "tiredofit/osticket:1.18.2",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "otel-lgtm",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "grafana/otel-lgtm:0.8.1",
           "platforms": [],
           "amd64": "unknown",
           "arm64": "unknown",
@@ -9272,6 +9370,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "solr",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "solr:9.7.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },

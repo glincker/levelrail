@@ -4,7 +4,7 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 "og:url": "https://docs.levelrail.com/self-host"
 ---
 
-442 open-source apps you can run on your own server with a Levelrail template. Each page lists the services, ports, volumes and environment variables the template sets up, and how to deploy it. For how templates work, see the [service template catalog](/templates-and-registry).
+450 open-source apps you can run on your own server with a Levelrail template. Each page lists the services, ports, volumes and environment variables the template sets up, and how to deploy it. For how templates work, see the [service template catalog](/templates-and-registry).
 
 ## AI
 
@@ -154,6 +154,8 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 ## Database Tools
 
 - [Adminer](/self-host/adminer): A single-file database admin tool for MySQL, PostgreSQL, SQLite, and more.
+- [Apache Cassandra](/self-host/cassandra): A single node Apache Cassandra wide-column database on the official image, with a persistent volume. It is not published on the host and starts without authentication, so reach it only from other services in this project at cassandra:9042. A node needs about 2 GB of memory.
+- [Apache Solr](/self-host/solr): The Apache Solr search platform on the official image, with a persistent volume. The admin interface has no login, so keep it private or put it behind an authenticating proxy before adding a public domain. Other services in this project reach it at solr:8983.
 - [Baserow](/self-host/baserow): A no-code database and spreadsheet hybrid you can build internal tools and apps on top of.
 - [Bytebase](/self-host/bytebase): A database schema change and migration tool with review workflows built in.
 - [Chroma](/self-host/chroma): A developer-friendly embedding database for AI applications, served over a simple HTTP API. Open to anyone who can reach it, so reach it from other services in this project at chroma:8000, or attach a domain only behind Basic Auth. Not published on the host.
@@ -167,6 +169,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [Memcached](/self-host/memcached): A fast in-memory cache for query results, sessions and rendered pages, reachable by other apps on host memcached.
 - [Milvus](/self-host/milvus): A cloud-native vector database built for billion-scale similarity search, run here as a single standalone node. Has no authentication, so reach it from other services in this project at milvus:19530, or attach a domain (it routes to port 19530 only) only behind Basic Auth. Not published on the host.
 - [Mongo Express](/self-host/mongo-express): A web admin console for MongoDB, bundled with its own MongoDB 7 instance and basic auth.
+- [MongoDB](/self-host/mongodb): The MongoDB document database on the official image, with a persistent volume and a generated root user and password. It is not published on the host, so reach it from other services in this project at mongodb:27017.
 - [MySQL](/self-host/mysql): The MySQL Community database server on the official image, with a persistent volume, generated root and user passwords, and an application database. It is not published on the host, so reach it from other services in this project at mysql:3306.
 - [Neo4j](/self-host/neo4j): A graph database with the Cypher query language, Community Edition, including the browser console.
 - [NocoDB](/self-host/nocodb): Turn any database into a smart spreadsheet, with a real-time collaborative grid UI.
@@ -280,15 +283,18 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 ## Infrastructure
 
 - [AdGuard Home](/self-host/adguard-home): Network-wide ad and tracker blocking with a DNS server and a friendly admin dashboard.
+- [Apache Kafka](/self-host/kafka): A single broker Apache Kafka in KRaft mode (no ZooKeeper) on the official image, with a persistent volume. It is not published on the host and speaks plaintext, so reach it only from other services in this project at kafka:9092.
 - [Cloudflare DDNS](/self-host/cloudflare-ddns): Keeps Cloudflare DNS records pointed at your current public IP address.
 - [Consul](/self-host/consul): HashiCorp Consul in single-server mode with the web UI: service discovery, health checks and a key-value store.
 - [Elasticsearch](/self-host/elasticsearch): A distributed, RESTful search and analytics engine for full-text search and log analytics. Security is off, so reach it from other services in this project at elasticsearch:9200, or attach a domain only behind Basic Auth. Not published on the host.
+- [EMQX](/self-host/emqx): A scalable MQTT broker with a web dashboard, on the official image. The dashboard admin password is generated at install. The MQTT port is not published on the host and accepts anonymous clients, so reach it from other services in this project at emqx:1883 and add authentication in the dashboard before exposing it.
 - [etcd](/self-host/etcd): A distributed key-value store for configuration and coordination, running as a single member.
 - [Headscale](/self-host/headscale): Self-hosted Tailscale control server, configured entirely through environment variables. Embedded DERP and STUN are off (the platform has no UDP), so clients relay through the public Tailscale DERP map over HTTPS. Create users and pre-auth keys with the CLI in the container (headscale users create, headscale preauthkeys create).
 - [imgproxy](/self-host/imgproxy): A fast image processing server that resizes, crops and converts images on the fly from signed URLs. Apache-2.0 licensed. A signing key and salt are generated for you, so only URLs signed with them are served.
 - [MeshCentral](/self-host/meshcentral): A remote device management server with web-based desktop, terminal and file access, plus agents for Windows, Linux and macOS. Apache-2.0 licensed. The first account you register becomes the server admin, so register it before sharing the address. Set the host name to your public domain so agents can find the server.
 - [NATS](/self-host/nats): A lightweight messaging server for pub/sub, request/reply and durable streams, with JetStream persistence enabled.
 - [NetBox](/self-host/netbox): Source-of-truth IPAM and DCIM for tracking IP space, racks, devices, and cabling.
+- [Nginx](/self-host/nginx): The Nginx web server on the official Alpine image, serving a persistent web root. It starts with the default welcome page; put your site files in the web root volume through the app's Files.
 - [Nginx Proxy Manager](/self-host/nginx-proxy-manager): A web UI for managing Nginx reverse-proxy hosts, redirects, and Let's Encrypt certificates.
 - [Pi-hole](/self-host/pi-hole): Network-wide ad blocking that works as a DNS sinkhole for your whole network.
 - [Portainer](/self-host/portainer): A web UI for managing containers, images, volumes, and networks.
@@ -357,6 +363,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [Grafana (Postgres)](/self-host/grafana-postgres): Grafana backed by Postgres instead of its default embedded SQLite, for multi-instance or external-DB setups.
 - [Grafana Alloy](/self-host/grafana-alloy): A telemetry collector that scrapes metrics and ships them to Prometheus-compatible, Loki or Tempo backends. This starts with a small pipeline that scrapes its own metrics and logs them; edit the config to forward data elsewhere.
 - [Grafana Loki](/self-host/loki): A horizontally scalable log aggregation system that indexes labels, not full text, to keep storage cheap.
+- [Grafana OTel LGTM](/self-host/otel-lgtm): An all-in-one OpenTelemetry backend with an OTLP collector, Loki logs, Tempo traces, Prometheus metrics and Grafana in one container. The Grafana admin password is generated at install. OTLP ports are not published on the host, so send telemetry from other services in this project to otel-lgtm:4317 (gRPC) or otel-lgtm:4318 (HTTP).
 - [Healthchecks](/self-host/healthchecks): Cron job and scheduled task monitoring: get alerted the moment a periodic job stops checking in.
 - [HyperDX](/self-host/hyperdx): An observability platform that brings logs, traces, metrics and session replays together in one search UI. MIT licensed. Runs the all-in-one image with its bundled ClickHouse, MongoDB and OpenTelemetry collector, so it needs about 2 GB of memory. On first open, the setup page asks you to create the admin login.
 - [Jaeger](/self-host/jaeger): Distributed tracing with an OTLP collector and query UI in one container, storing traces in memory.
@@ -503,6 +510,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [Duplicati](/self-host/duplicati): Scheduled, encrypted backups of your files to local storage, network shares, or cloud storage.
 - [File Browser](/self-host/filebrowser): A simple web UI for browsing, uploading, and sharing files from your own storage.
 - [FileBrowser Quantum](/self-host/filebrowser-quantum): A web file manager with a fast index, search, sharing links and per-user access. Apache-2.0 fork of FileBrowser. Runs in one container; the admin password is generated and shown in the service environment settings.
+- [Gokapi](/self-host/gokapi): A lightweight self-hosted file sharing server with expiring links and download limits. Runs in one container on a small data folder. On first open, the setup page asks you to create the admin login.
 - [Kopia](/self-host/kopia): Fast, incremental, encrypted backups to a repository, driven from a web UI instead of a cron script.
 - [MinIO](/self-host/minio): S3-compatible object storage you run yourself, with a built-in web console.
 - [ownCloud](/self-host/owncloud): The classic self-hosted file sync and share platform, with MariaDB and Redis for metadata and locking.

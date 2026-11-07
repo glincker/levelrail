@@ -1,0 +1,71 @@
+---
+title: "Self-host EMQX with Docker"
+sidebarTitle: "EMQX"
+description: "A scalable MQTT broker with a web dashboard, on the official image. The dashboard admin password is generated at install. The MQTT port is not published on the host and accepts anonymous clients, so reach it from other services in this project at emqx:1883 and add authentication in the dashboard before exposing it."
+"og:url": "https://docs.levelrail.com/self-host/emqx"
+---
+
+A scalable MQTT broker with a web dashboard, on the official image. The dashboard admin password is generated at install. The MQTT port is not published on the host and accepts anonymous clients, so reach it from other services in this project at emqx:1883 and add authentication in the dashboard before exposing it.
+
+This page describes the Levelrail template for EMQX (Infrastructure). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.emqx.com/en/emqx/v5.8/.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `emqx` | `emqx/emqx:5.8.0` | 18083, 1883 | `emqx_data -&#62; /opt/emqx/data`<br />`emqx_log -&#62; /opt/emqx/log` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `emqx` | `EMQX_DASHBOARD__DEFAULT_PASSWORD` | Generated at deploy |
+| `emqx` | `EMQX_DASHBOARD__DEFAULT_USERNAME` | Preset in the template |
+| `emqx` | `EMQX_NODE__COOKIE` | Generated at deploy |
+| `emqx` | `EMQX_NODE__NAME` | Preset in the template |
+| `emqx` | `TZ` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Passwords and keys are generated at deploy time (`emqx`): EMQX_DASHBOARD__DEFAULT_PASSWORD, EMQX_NODE__COOKIE.
+- Stores data in named volumes (`emqx`): emqx_data, emqx_log.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy EMQX with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select EMQX. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy emqx --name my-emqx
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Infrastructure templates
+
+- [AdGuard Home](/self-host/adguard-home)
+- [Cloudflare DDNS](/self-host/cloudflare-ddns)
+- [Consul](/self-host/consul)
+- [Elasticsearch](/self-host/elasticsearch)
+- [etcd](/self-host/etcd)
+
+All templates are listed in the [self-host gallery](/self-host).
