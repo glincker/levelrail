@@ -127,7 +127,7 @@ func serverRolloutOutcome(attempt deployAttemptResource) (rolloutOutcome, bool) 
 		return rolloutOutcome{state: "succeeded", reason: attempt.OutcomeReason}, true
 	case apiclient.DeployOutcomeInProgress:
 		return rolloutOutcome{state: "pending", reason: attempt.OutcomeReason}, true
-	case "failed", "canceled", "superseded", "blocked":
+	case "failed", "canceled", "superseded", "blocked", apiclient.DeployOutcomeStopped:
 		return rolloutOutcome{state: "failed", reason: attempt.OutcomeReason}, true
 	}
 	return rolloutOutcome{}, false

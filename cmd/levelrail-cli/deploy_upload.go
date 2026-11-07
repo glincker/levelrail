@@ -478,6 +478,9 @@ func finishUploadDeploy(ctx context.Context, client *Client, prog string, inf up
 		if !wait.Done {
 			_, _ = fmt.Fprintf(stderr, "still running on the server, follow it with: %s\n", followHint(prog, name, res.DeployID))
 		}
+		if res.Status == apiclient.DeployOutcomeStopped {
+			_, _ = fmt.Fprintf(stderr, "%q is stopped, so this deploy was built but is not live. Start it with: %s apps start %s\n", name, prog, name)
+		}
 		printUploadFailure(stderr, res)
 	})
 	if code != exitOK {
