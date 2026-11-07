@@ -40,6 +40,7 @@ type Build struct {
 // Health holds the readiness probe proposal.
 type Health struct {
 	Readiness *Probe `yaml:"readiness,omitempty" json:"readiness,omitempty"`
+	Liveness  *Probe `yaml:"liveness,omitempty" json:"liveness,omitempty"`
 }
 
 // Probe is an HTTP readiness check path.

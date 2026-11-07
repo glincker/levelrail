@@ -62,3 +62,48 @@ func TestProcfileWithoutDockerfileUsesRailpack(t *testing.T) {
 		t.Errorf("build = %q", got)
 	}
 }
+
+func TestProcfileAppJSONKeys(t *testing.T) {
+	files := map[string][]byte{
+		"Procfile": []byte("web: serve\nworker: run\nrelease: migrate\n"),
+		"app.json": []byte(`{
+  "healthchecks": {"web": [{"type": "startup", "path": "/up", "attempts": 3}, {"type": "liveness", "path": "/live"}], "ghost": [{"path": "/x"}]},
+  "cron": [{"command": "rake tidy", "schedule": "0 3 * * *"}, {"command": "", "schedule": "* * * * *"}],
+  "scripts": {"dokku": {"predeploy": "prep", "postdeploy": "warm", "other": "x"}},
+  "formation": {"web": {"quantity": 3}, "ghost": {"quantity": 1}},
+  "environments": {"test": {}}
+}`),
+	}
+	res := Translate(files, ForDeploy(false))
+	web := res.Fragment.Services["web"]
+	if web.Health == nil || web.Health.Readiness.Path != "/up" || web.Health.Liveness.Path != "/live" {
+		t.Errorf("health = %+v", web.Health)
+	}
+	if web.Replicas != 3 {
+		t.Errorf("replicas = %d", web.Replicas)
+	}
+	if web.Hooks == nil || web.Hooks.PreDeploy != "migrate && prep" || web.Hooks.PostDeploy != "warm" {
+		t.Errorf("hooks = %+v", web.Hooks)
+	}
+	if len(web.Jobs) != 1 || web.Jobs[0].Schedule != "0 3 * * *" {
+		t.Errorf("jobs = %+v", web.Jobs)
+	}
+	c := codes(res)
+	for _, want := range []string{
+		"heroku.healthcheck.option", "heroku.healthcheck.unknown", "heroku.formation.unknown",
+		"heroku.cron.invalid", "heroku.cron.job", "heroku.appjson.key.unsupported", "heroku.script.dokku.predeploy",
+		"heroku.script.unsupported",
+	} {
+		if !c[want] {
+			t.Errorf("missing finding %s in %v", want, c)
+		}
+	}
+}
+
+func TestProcfileCronParsesAsSpec(t *testing.T) {
+	files := map[string][]byte{"Procfile": []byte("web: serve\n"), "app.json": []byte(`{"cron":[{"command":"x","schedule":"*/5 * * * *"}]}`)}
+	res := Translate(files, ForDeploy(false))
+	if _, err := res.Fragment.YAML(); err != nil {
+		t.Fatal(err)
+	}
+}

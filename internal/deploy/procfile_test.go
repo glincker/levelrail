@@ -93,3 +93,21 @@ func TestProcfileServicesDockerfile(t *testing.T) {
 		t.Errorf("web = %+v", svcs["web"])
 	}
 }
+
+func TestProcfileServicesAppJSONParsesAsSpec(t *testing.T) {
+	dir := writeRepo(t, map[string]string{
+		"Procfile": "web: serve\nrelease: migrate\n",
+		"app.json": `{"healthchecks":{"web":[{"type":"startup","path":"/up"}]},"cron":[{"command":"tidy","schedule":"0 3 * * *"}],"formation":{"web":{"quantity":2}},"scripts":{"dokku":{"postdeploy":"warm"}}}`,
+	})
+	svcs, _, ok, err := ProcfileServices(dir)
+	if err != nil || !ok {
+		t.Fatalf("ok=%v err=%v", ok, err)
+	}
+	web := svcs["web"]
+	if web.Replicas != 2 || len(web.Jobs) != 1 || web.Hooks == nil || web.Hooks.PreDeploy != "migrate" || web.Hooks.PostDeploy != "warm" {
+		t.Errorf("web = %+v", web)
+	}
+	if web.Health == nil || web.Health.Readiness == nil || web.Health.Readiness.Path != "/up" {
+		t.Errorf("health = %+v", web.Health)
+	}
+}
