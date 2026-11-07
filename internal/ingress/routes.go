@@ -704,7 +704,7 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 				Handler: "subroute",
 				Routes: []Route{
 					{Match: []Matcher{{Path: staticAssetPaths}}, Handle: []any{NewAssetUnavailableHandler(hold.retryAfter())}},
-					{Handle: []any{hold.UnavailableResponse("Updating", "This site is being updated or was just stopped. If it is deploying it will be back in a moment. This page will retry on its own.")}},
+					{Handle: []any{hold.HoldResponse(r.Reason)}},
 				},
 			}},
 		})
