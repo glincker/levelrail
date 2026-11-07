@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -131,5 +132,43 @@ func TestNextCacheLinkSources(t *testing.T) {
 				t.Fatalf("cache ref set = %v, want %v", got, c.wantRef)
 			}
 		})
+	}
+}
+
+func TestAddNextDockerfileArgs(t *testing.T) {
+	dir := nextCacheSource(t)
+	write := func(body string) string {
+		p := filepath.Join(dir, "Dockerfile")
+		if err := os.WriteFile(p, []byte(body), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		return p
+	}
+	req := Request{AttemptID: "att1", Service: spec.Service{Next: &spec.Next{Cache: "redis"}}}
+
+	var logs []string
+	progress := func(e build.ProgressEvent) { logs = append(logs, e.Log) }
+
+	declared := write("FROM node\nARG NEXT_DEPLOYMENT_ID\nARG NEXT_BUILD_ID\n")
+	r := req
+	got := addNextDockerfileArgs(context.Background(), &r, dir, declared, map[string]string{"A": "b"}, progress)
+	if got["NEXT_DEPLOYMENT_ID"] == "" || got["NEXT_BUILD_ID"] == "" || got["A"] != "b" || r.nextDeploymentID == "" {
+		t.Fatalf("declared ARGs must be injected: %+v", got)
+	}
+
+	logs = nil
+	missing := write("FROM node\n")
+	r = req
+	got = addNextDockerfileArgs(context.Background(), &r, dir, missing, nil, progress)
+	if len(got) != 0 || r.nextDeploymentID != "" || len(logs) < 1 || !strings.Contains(logs[0], "ARG NEXT_DEPLOYMENT_ID") {
+		t.Fatalf("undeclared ARG must log a hint and inject nothing: %+v %v", got, logs)
+	}
+
+	// Runtime cache env is shared with the Dockerfile path through finishDeploy.
+	d := store.DesiredService{}
+	ref := store.DatabaseEnvRef{Database: "cache", Field: "url"}
+	applyNextCache(&d, req, &store.DesiredService{DatabaseEnv: map[string]store.DatabaseEnvRef{"REDIS_URL": ref}})
+	if d.DatabaseEnv["LEVELRAIL_NEXT_CACHE_URL"] != ref {
+		t.Fatalf("redis cache env not applied: %+v", d)
 	}
 }

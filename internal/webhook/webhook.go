@@ -131,6 +131,12 @@ type AttemptStore interface {
 	FinishDeployAttempt(ctx context.Context, id, status string, finishedAt time.Time, errMsg string) error
 }
 
+// DesiredLookup reads the stored service so a push deploy honours settings saved
+// after the spec file was written. *store.DB satisfies this structurally.
+type DesiredLookup interface {
+	GetDesiredService(ctx context.Context, name string) (*store.DesiredService, error)
+}
+
 // DeployNotifier is the narrow surface Handler needs to fire a
 // deploy-outcome notification (Slack/Discord/Telegram/generic-webhook/
 // email, wave-2 roadmap item #5) once a push-triggered deploy reaches a
@@ -243,9 +249,11 @@ type Handler struct {
 	// instead, the same "optional signal, absence is not an error" shape
 	// notifier above has.
 	nudger ReconcileNudger
-	log    *slog.Logger
-	fetch  fetchFunc
-	cache  *sourcecache.Cache
+	// desired is optional; set when attempts also reads stored services.
+	desired DesiredLookup
+	log     *slog.Logger
+	fetch   fetchFunc
+	cache   *sourcecache.Cache
 }
 
 // New builds a Handler. attempts and recorder may both be nil (see
@@ -257,7 +265,22 @@ func New(cfg Config, deployer Deployer, attempts AttemptStore, recorder *deployl
 	}
 	h := &Handler{cfg: cfg, deployer: deployer, attempts: attempts, recorder: recorder, notifier: notifier, nudger: nudger, log: log, cache: sourcecache.New(sourcecache.ConfigFromEnv(""), log)}
 	h.fetch = h.cloneAndCheckout
+	h.desired, _ = attempts.(DesiredLookup)
 	return h
+}
+
+// storedService layers the app's saved next_cache over the spec service, the same
+// helper the API deploy path uses, so both triggers agree.
+func (h *Handler) storedService(ctx context.Context) spec.Service {
+	svc := h.cfg.Service
+	if h.desired == nil {
+		return svc
+	}
+	stored, err := h.desired.GetDesiredService(ctx, h.cfg.ServiceName)
+	if err != nil || stored == nil {
+		return svc
+	}
+	return svc.WithNextCache(stored.NextCache)
 }
 
 // nudgeReconciler calls h.nudger.Nudge() if one is configured, mirroring
@@ -590,7 +613,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	req := deploy.Request{
 		ServiceName: h.cfg.ServiceName,
-		Service:     h.cfg.Service,
+		Service:     h.storedService(r.Context()),
 		CommitSHA:   ev.After,
 		ImageRepo:   h.cfg.ImageRepo,
 	}

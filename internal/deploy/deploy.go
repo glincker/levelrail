@@ -327,8 +327,13 @@ func (p *Pipeline) deployDockerfile(ctx context.Context, req Request, progress f
 		}
 	}
 
+	if err := p.checkNextCache(ctx, buildRoot, req); err != nil {
+		return "", err
+	}
 	s3Cache, progress, cacheDone := p.prepareBuildCache(ctx, req.ServiceName, progress)
-	buildArgs := dockerfileBuildArgs(req.Service.Env, req.Service.Build.Args, dockerfilePathOrDefault(buildRoot, dockerfilePath), StaticBuildEnvPrefixes())
+	dfPath := dockerfilePathOrDefault(buildRoot, dockerfilePath)
+	buildArgs := dockerfileBuildArgs(req.Service.Env, req.Service.Build.Args, dfPath, StaticBuildEnvPrefixes())
+	buildArgs = addNextDockerfileArgs(ctx, &req, buildRoot, dfPath, buildArgs, progress)
 	emitBuildEnvKeys(progress, "dockerfile", buildArgs, len(req.Service.Env))
 	buildReq := build.Request{
 		ContextDir:     buildRoot,

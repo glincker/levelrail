@@ -536,10 +536,7 @@ func specServiceFromDesired(svc store.DesiredService, buildCfg spec.Build) spec.
 		out.Egress = specEgressFromStore(*svc.Egress)
 	}
 	out.Tolerations, out.Affinity = placement.DecodeRules(svc.Tolerations, svc.Affinity)
-	if svc.NextCache != "" {
-		out.Next = &spec.Next{Cache: svc.NextCache}
-	}
-	return out
+	return out.WithNextCache(svc.NextCache)
 }
 
 // specEgressFromStore reverses internal/deploy's own toServiceEgressPolicy
