@@ -3,7 +3,6 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { GlobeGlassIcon } from '@thesvg/ui-react'
 import { Banner } from '@/components/ui/banner'
-import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { AutoHostList } from '../../components/certificates/AutoHostList'
 import { CertBudgetCard } from '../../components/certificates/CertBudgetCard'
 import { CertificateCenterTable } from '../../components/CertificateCenterTable'
@@ -26,7 +25,6 @@ export const Route = createFileRoute('/domains/certificates')({
       queryClient.ensureQueryData(domainsQueryOptions()),
     ]),
   component: CertificatesTab,
-  pendingComponent: CertificatesPending,
 })
 
 function DomainsHeader({ children }: { children: React.ReactNode }) {
@@ -84,14 +82,6 @@ function CertificatesTab() {
       <CertBudgetCard />
       <CertificateCenterTable rows={rows} />
       <AutoHostList />
-    </DomainsHeader>
-  )
-}
-
-function CertificatesPending() {
-  return (
-    <DomainsHeader>
-      <TableSkeleton columnCount={4} />
     </DomainsHeader>
   )
 }

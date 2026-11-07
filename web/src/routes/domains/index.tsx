@@ -1,12 +1,9 @@
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
-import type { ErrorComponentProps } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CircleAlertGlassIcon, GlobeGlassIcon } from '@thesvg/ui-react'
-import { routeErrorMessage } from '@/lib/apiError'
+import { GlobeGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
-import { EmptyState } from '@/components/ui/empty-state'
 import { appListQueryOptions } from '../../queries/apps'
 import { certificatesQueryOptions } from '../../queries/certificates'
 import {
@@ -15,10 +12,7 @@ import {
 } from '../../queries/domains'
 import { dashboardUrlQueryOptions } from '../../queries/dashboardUrl'
 import { AddDomainsDialog } from '../../components/AddDomainsDialog'
-import {
-  DomainsTable,
-  DomainsTableSkeleton,
-} from '../../components/DomainsTable'
+import { DomainsTable } from '../../components/DomainsTable'
 import { ParkedDomainsGroup } from '../../components/domains/ParkedDomainsGroup'
 import { DomainsFirstRun } from '../../components/domains/DomainsFirstRun'
 import { DomainsTabs } from '../../components/domains/DomainsTabs'
@@ -56,8 +50,6 @@ export const Route = createFileRoute('/domains/')({
       queryClient.prefetchQuery(serverAddressQueryOptions()),
     ]),
   component: DomainsPage,
-  pendingComponent: DomainsPending,
-  errorComponent: DomainsError,
 })
 
 function DomainsPage() {
@@ -168,33 +160,6 @@ function DomainsPage() {
         onOpenChange={setAddOpen}
         apps={appChoices}
         claimedBy={claimedBy}
-      />
-    </PageTemplate>
-  )
-}
-
-function DomainsPending() {
-  const { t } = useTranslation('domains')
-  return (
-    <PageTemplate title={t('page.title')}>
-      <DomainsTableSkeleton />
-    </PageTemplate>
-  )
-}
-
-function DomainsError({ error, reset }: ErrorComponentProps) {
-  const { t } = useTranslation('domains')
-  return (
-    <PageTemplate title={t('page.title')}>
-      <EmptyState
-        icon={<CircleAlertGlassIcon className="size-6 text-tone-danger" />}
-        title={t('page.error.title')}
-        description={routeErrorMessage(error)}
-        action={
-          <Button size="sm" onClick={reset}>
-            {t('page.error.retry')}
-          </Button>
-        }
       />
     </PageTemplate>
   )
