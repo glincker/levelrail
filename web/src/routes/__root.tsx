@@ -37,6 +37,12 @@ const StageOverlay = React.lazy(() =>
     default: m.StageOverlay,
   })),
 )
+// The tab strip only renders on a few routes, so keep it out of first load.
+const NavTabStrip = React.lazy(() =>
+  import('../components/shell/NavTabStrip').then((m) => ({
+    default: m.NavTabStrip,
+  })),
+)
 const DockPanel = React.lazy(() => import('../components/dock/DockPanel'))
 // Palette code is deferred until first use to keep it out of the first-load budget.
 const CommandPalette = React.lazy(() =>
@@ -205,6 +211,11 @@ function AppShell() {
         >
           <div className="mx-auto w-full min-w-0 max-w-(--glinr-content-max) has-[[data-page-width=full]]:max-w-none has-[[data-page-width=wide]]:max-w-(--glinr-content-max-wide)">
             <div className="mb-4 empty:hidden"></div>
+            <div className="mb-4 border-b border-border empty:hidden">
+              <React.Suspense fallback={null}>
+                <NavTabStrip />
+              </React.Suspense>
+            </div>
             <React.Suspense fallback={<DelayedFallback />}>
               <Outlet />
             </React.Suspense>

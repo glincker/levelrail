@@ -482,7 +482,51 @@
       "issues_one": "{{count}} problema requiere atención",
       "issues_other": "{{count}} problemas requieren atención"
     },
-    "headerMore": "Más controles de la cabecera"
+    "headerMore": "Más controles de la cabecera",
+    "navTabs": {
+      "group": {
+        "apps": "Secciones de apps",
+        "pipelines": "Secciones de pipelines",
+        "databases": "Secciones de bases de datos",
+        "storage": "Secciones de almacenamiento",
+        "domains": "Secciones de dominios",
+        "traffic": "Secciones de tráfico",
+        "servers": "Secciones de servidores",
+        "registry": "Secciones del registro",
+        "cost": "Secciones de uso y coste",
+        "security": "Secciones de seguridad"
+      },
+      "tab": {
+        "apps": "Apps",
+        "projects": "Proyectos",
+        "templates": "Plantillas",
+        "pipelines": "Pipelines",
+        "approvals": "Aprobaciones",
+        "databases": "Bases de datos",
+        "backups": "Copias de seguridad",
+        "storage": "Resumen",
+        "assets": "Recursos",
+        "networkShares": "Recursos de red",
+        "domains": "Dominios",
+        "dns": "DNS",
+        "mail": "Correo",
+        "proxy": "Proxy",
+        "loadBalancers": "Balanceadores de carga",
+        "cdn": "CDN",
+        "firewall": "Cortafuegos",
+        "nodes": "Nodos",
+        "providers": "Proveedores cloud",
+        "images": "Imágenes",
+        "registry": "Registro",
+        "credentials": "Credenciales",
+        "usage": "Uso",
+        "costs": "Costes",
+        "advisor": "Asesor de recursos",
+        "resources": "Recursos",
+        "security": "Centro de seguridad",
+        "iam": "Políticas IAM"
+      }
+    }
   },
   "login": {
     "signInTitle": "Iniciar sesión",
@@ -930,12 +974,13 @@
   },
   "appTabs": {
     "groups": {
-      "advanced": "Avanzado",
-      "basics": "Básicos",
-      "data": "Datos",
-      "network": "Red",
-      "observe": "Observar"
+      "config": "Configuración",
+      "deploy": "Despliegue",
+      "observe": "Observar",
+      "traffic": "Tráfico"
     },
+    "more": "Más",
+    "overview": "Resumen",
     "pages": "Páginas de {{section}}",
     "sections": "Secciones de la aplicación",
     "showAll": "Mostrar todas las pestañas ({{count}} ocultas)",

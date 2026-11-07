@@ -11,7 +11,6 @@ import { useTranslation } from 'react-i18next'
 import {
   ActivityGlassIcon,
   ChevronDownIcon,
-  DatabaseGlassIcon,
   GlobeGlassIcon,
   RocketGlassIcon,
   SlidersHorizontalGlassIcon,
@@ -32,11 +31,10 @@ import { useAppTabs } from './useAppTabs'
 type GroupIcon = ComponentType<SVGProps<SVGSVGElement> & { size?: number }>
 
 const GROUP_ICONS: Record<AppTabGroupId, GroupIcon> = {
-  basics: RocketGlassIcon,
-  network: GlobeGlassIcon,
-  data: DatabaseGlassIcon,
+  deploy: RocketGlassIcon,
+  traffic: GlobeGlassIcon,
+  config: SlidersHorizontalGlassIcon,
   observe: ActivityGlassIcon,
-  advanced: SlidersHorizontalGlassIcon,
 }
 
 const FOCUS =

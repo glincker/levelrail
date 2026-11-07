@@ -1,4 +1,4 @@
-import { useEffect, useId, useState, type KeyboardEvent } from 'react'
+import { Fragment, useEffect, useId, useState, type KeyboardEvent } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
 import { PinGlassIcon } from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
@@ -27,6 +27,9 @@ import {
   chordFor,
   defaultGroupOpen,
   isGlobalItemActive,
+  isItemDisclosed,
+  itemBadgeCount,
+  FOLDED_GLOBAL_PAGES,
   linkTarget,
   pinnedGlobalItems,
   resolveOpen,
@@ -164,7 +167,7 @@ function NavLinkItem({
   }
   const hue = hueClasses(hueForItem(item.id, groupId))
   const chord = chordFor(item.to)
-  const count = item.badge ? (counts[item.badge] ?? 0) : 0
+  const count = itemBadgeCount(item, counts)
   const trafficKey =
     item.badge && item.badge in TRAFFIC_BADGE_KEYS
       ? TRAFFIC_BADGE_KEYS[item.badge as keyof typeof TRAFFIC_BADGE_KEYS]
@@ -226,10 +229,7 @@ function GroupAttention({
   counts: Record<string, number>
 }) {
   const { t } = useTranslation()
-  const total = group.items.reduce(
-    (n, i) => n + (i.badge ? (counts[i.badge] ?? 0) : 0),
-    0,
-  )
+  const total = group.items.reduce((n, i) => n + itemBadgeCount(i, counts), 0)
   return total > 0 ? (
     <NavBadge
       count={total}
@@ -249,6 +249,7 @@ export function GlobalNav() {
   const experimental = useExperimentalFeatures()
   const routeAvailable = useRouteAvailable()
   const groups = visibleGlobalGroups(routeAvailable)
+  const projectsItem = FOLDED_GLOBAL_PAGES.find((i) => i.id === 'projects')
   const { pins, toggle, full, max } = useNavPins()
   const pinned = pinnedGlobalItems(groups, pins)
   const pinFor = (id: string): PinControl => ({
@@ -260,7 +261,7 @@ export function GlobalNav() {
 
   // Decided once on mount so navigating never flips a group the user did not touch.
   const [initialOpen] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(groups.map((gr) => [gr.id, defaultGroupOpen(gr)])),
+    Object.fromEntries(groups.map((gr) => [gr.id, defaultGroupOpen()])),
   )
 
   // Reveal the current page by opening its group, and keep it open.
@@ -305,25 +306,26 @@ export function GlobalNav() {
         {groups.map((group) => {
           const menu = (
             <SidebarMenu>
-              {group.items.map((item) =>
-                item.id === 'projects' ? (
-                  <ProjectsNavItem
-                    key={item.id}
-                    item={item}
-                    pathname={pathname}
-                  />
-                ) : (
-                  <NavLinkItem
-                    key={item.id}
-                    item={item}
-                    groupId={group.id}
-                    pathname={pathname}
-                    counts={counts}
-                    experimental={experimental}
-                    pin={pinFor(item.id)}
-                  />
-                ),
-              )}
+              {group.items
+                .filter((item) => isItemDisclosed(item, counts, pathname))
+                .map((item) => (
+                  <Fragment key={item.id}>
+                    <NavLinkItem
+                      item={item}
+                      groupId={group.id}
+                      pathname={pathname}
+                      counts={counts}
+                      experimental={experimental}
+                      pin={pinFor(item.id)}
+                    />
+                    {item.id === 'apps' && projectsItem ? (
+                      <ProjectsNavItem
+                        item={projectsItem}
+                        pathname={pathname}
+                      />
+                    ) : null}
+                  </Fragment>
+                ))}
             </SidebarMenu>
           )
           if (rail || group.ungrouped) {
