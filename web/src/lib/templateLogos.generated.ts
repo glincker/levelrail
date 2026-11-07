@@ -500,7 +500,6 @@ export const MISSING_TEMPLATE_LOGOS: readonly string[] = [
   'ombi',
   'once-campfire',
   'opengist',
-  'otel-lgtm',
   'palworld',
   'pgweb',
   'pigallery2',

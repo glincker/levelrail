@@ -4,7 +4,7 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 "og:url": "https://docs.levelrail.com/self-host"
 ---
 
-445 open-source apps you can run on your own server with a Levelrail template. Each page lists the services, ports, volumes and environment variables the template sets up, and how to deploy it. For how templates work, see the [service template catalog](/templates-and-registry).
+444 open-source apps you can run on your own server with a Levelrail template. Each page lists the services, ports, volumes and environment variables the template sets up, and how to deploy it. For how templates work, see the [service template catalog](/templates-and-registry).
 
 ## AI
 
@@ -359,7 +359,6 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [Grafana (Postgres)](/self-host/grafana-postgres): Grafana backed by Postgres instead of its default embedded SQLite, for multi-instance or external-DB setups.
 - [Grafana Alloy](/self-host/grafana-alloy): A telemetry collector that scrapes metrics and ships them to Prometheus-compatible, Loki or Tempo backends. This starts with a small pipeline that scrapes its own metrics and logs them; edit the config to forward data elsewhere.
 - [Grafana Loki](/self-host/loki): A horizontally scalable log aggregation system that indexes labels, not full text, to keep storage cheap.
-- [Grafana OTel LGTM](/self-host/otel-lgtm): An all-in-one OpenTelemetry backend with an OTLP collector, Loki logs, Tempo traces, Prometheus metrics and Grafana in one container. The Grafana admin password is generated at install. OTLP ports are not published on the host, so send telemetry from other services in this project to otel-lgtm:4317 (gRPC) or otel-lgtm:4318 (HTTP).
 - [Healthchecks](/self-host/healthchecks): Cron job and scheduled task monitoring: get alerted the moment a periodic job stops checking in.
 - [HyperDX](/self-host/hyperdx): An observability platform that brings logs, traces, metrics and session replays together in one search UI. MIT licensed. Runs the all-in-one image with its bundled ClickHouse, MongoDB and OpenTelemetry collector, so it needs about 2 GB of memory. On first open, the setup page asks you to create the admin login.
 - [Jaeger](/self-host/jaeger): Distributed tracing with an OTLP collector and query UI in one container, storing traces in memory.

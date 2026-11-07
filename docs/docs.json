@@ -928,7 +928,6 @@
               "self-host/grafana-postgres",
               "self-host/grafana-alloy",
               "self-host/loki",
-              "self-host/otel-lgtm",
               "self-host/healthchecks",
               "self-host/hyperdx",
               "self-host/jaeger",

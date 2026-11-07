@@ -2,14 +2,14 @@
   "generated_at": "2026-11-02T03:14:45Z",
   "note": "yes means every image manifest lists the architecture. It is a manifest fact, not a tested claim. unknown means no readable manifest or an install-time image tag.",
   "counts": {
-    "templates": 445,
-    "images": 489,
+    "templates": 444,
+    "images": 488,
     "arm64_yes": 393,
     "arm64_no": 15,
-    "arm64_unknown": 37,
+    "arm64_unknown": 36,
     "image_arm64_yes": 434,
     "image_arm64_no": 15,
-    "image_arm64_unknown": 40
+    "image_arm64_unknown": 39
   },
   "templates": [
     {
@@ -7249,20 +7249,6 @@
         },
         {
           "ref": "tiredofit/osticket:1.18.2",
-          "platforms": [],
-          "amd64": "unknown",
-          "arm64": "unknown",
-          "source": "unknown"
-        }
-      ]
-    },
-    {
-      "id": "otel-lgtm",
-      "amd64": "unknown",
-      "arm64": "unknown",
-      "images": [
-        {
-          "ref": "grafana/otel-lgtm:0.8.1",
           "platforms": [],
           "amd64": "unknown",
           "arm64": "unknown",

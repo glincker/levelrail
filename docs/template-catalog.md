@@ -25,7 +25,7 @@ Set the optional `Description` field on a Go template (manifest templates reuse 
 
 {/* BEGIN GENERATED CATALOG TABLE */}
 
-Generated from `internal/catalog.Templates` (445 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
+Generated from `internal/catalog.Templates` (444 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
 
 | Category | Templates |
 | --- | --- |
@@ -42,7 +42,7 @@ Generated from `internal/catalog.Templates` (445 entries as of this build). Run 
 | [Infrastructure](#infrastructure) | 19 |
 | [IoT](#iot) | 3 |
 | [Media](#media) | 30 |
-| [Monitoring](#monitoring) | 36 |
+| [Monitoring](#monitoring) | 35 |
 | [Productivity](#productivity) | 82 |
 | [Security](#security) | 19 |
 | [Starter Kits](#starter-kits) | 7 |
@@ -423,7 +423,6 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [Grafana (Postgres)](https://grafana.com/docs/grafana/latest/) | Grafana backed by Postgres instead of its default embedded SQLite, for multi-instance or external-DB setups. | `grafana-postgres` |  |
 | [Grafana Alloy](https://grafana.com/docs/alloy/latest/) | A telemetry collector that scrapes metrics and ships them to Prometheus-compatible, Loki or Tempo backends. This starts with a small pipeline that scrapes its own metrics and logs them; edit the config to forward data elsewhere. | `grafana-alloy` |  |
 | [Grafana Loki](https://grafana.com/docs/loki/latest) | A horizontally scalable log aggregation system that indexes labels, not full text, to keep storage cheap. | `loki` |  |
-| [Grafana OTel LGTM](https://grafana.com/docs/opentelemetry/docker-lgtm/) | An all-in-one OpenTelemetry backend with an OTLP collector, Loki logs, Tempo traces, Prometheus metrics and Grafana in one container. The Grafana admin password is generated at install. OTLP ports are not published on the host, so send telemetry from other services in this project to otel-lgtm:4317 (gRPC) or otel-lgtm:4318 (HTTP). | `otel-lgtm` |  |
 | [Healthchecks](https://healthchecks.io/docs/self_hosted/) | Cron job and scheduled task monitoring: get alerted the moment a periodic job stops checking in. | `healthchecks` |  |
 | [HyperDX](https://clickhouse.com/docs/use-cases/observability/clickstack) | An observability platform that brings logs, traces, metrics and session replays together in one search UI. MIT licensed. Runs the all-in-one image with its bundled ClickHouse, MongoDB and OpenTelemetry collector, so it needs about 2 GB of memory. On first open, the setup page asks you to create the admin login. | `hyperdx` |  |
 | [Jaeger](https://www.jaegertracing.io/docs/) | Distributed tracing with an OTLP collector and query UI in one container, storing traces in memory. | `jaeger` |  |

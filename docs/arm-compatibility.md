@@ -22,7 +22,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 
 ## Results by template
 
-393 listed, 15 amd64 only, 37 unknown, of 445 templates.
+393 listed, 15 amd64 only, 36 unknown, of 444 templates.
 
 | Template | arm64 in manifest | Smoke run on Arm host |
 | --- | --- | --- |
@@ -315,7 +315,6 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `orangehrm` | amd64 only | not tested |
 | `organizr` | listed | not tested |
 | `osticket` | unknown | not tested |
-| `otel-lgtm` | unknown | not tested |
 | `outline` | listed | pass |
 | `overseerr` | listed | not tested |
 | `owncast` | listed | not tested |
