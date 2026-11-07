@@ -77,3 +77,65 @@ func TestImportVercelDryRunUploadListIsShort(t *testing.T) {
 		t.Errorf("missing trailing hint:\n%s", got)
 	}
 }
+
+func runVercelDry(t *testing.T, vercel, pkg string) (string, string, int) {
+	t.Helper()
+	dir := t.TempDir()
+	if vercel != "" {
+		if err := os.WriteFile(filepath.Join(dir, "vercel.json"), []byte(vercel), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(dir, "package.json"), []byte(pkg), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	var out, errb bytes.Buffer
+	code := runImportVercel("levelrail-cli", []string{"--dry-run", dir}, strings.NewReader(""), &out, &errb, func(string) (string, bool) { return "", false })
+	return out.String(), errb.String(), code
+}
+
+const nextPkg = `{"scripts":{"build":"next build"},"dependencies":{"next":"15"}}`
+
+func TestImportVercelCronsOnly(t *testing.T) {
+	out, errs, code := runVercelDry(t, `{"crons":[{"path":"/api/cron/daily?x=1","schedule":"0 5 * * *"},{"path":"/api/cron/daily","schedule":"*/10 * * * *"}]}`, nextPkg)
+	if code != exitOK {
+		t.Fatalf("code %d %s", code, errs)
+	}
+	for _, want := range []string{"would create cron job api-cron-daily: 0 5 * * * GET /api/cron/daily?x=1", "api-cron-daily-2", "Bearer from CRON_SECRET", "Set CRON_SECRET"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q:\n%s", want, out)
+		}
+	}
+}
+
+func TestImportVercelMixedNextAndStaticNotes(t *testing.T) {
+	cfg := `{"regions":["iad1"],"functions":{"api/*.js":{"maxDuration":30}},"headers":[{"source":"/(.*)","headers":[{"key":"X-Frame-Options","value":"DENY"}]}],"rewrites":[{"source":"/a","destination":"/b"}]}`
+	out, _, code := runVercelDry(t, cfg, nextPkg)
+	if code != exitOK {
+		t.Fatalf("code %d", code)
+	}
+	for _, want := range []string{"Next.js project", "regions (iad1): not applicable", "functions (1 entries)"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("next output missing %q:\n%s", want, out)
+		}
+	}
+	out, _, _ = runVercelDry(t, cfg, `{"scripts":{"build":"vite build"},"dependencies":{"vite":"5"}}`)
+	for _, want := range []string{"not carried over: 2", "header: /(.*) sets X-Frame-Options", "rewrite: /a -> /b"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("static output missing %q:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "DENY") {
+		t.Error("header values should not be printed")
+	}
+}
+
+func TestImportVercelMalformedAndMissingJSON(t *testing.T) {
+	_, errs, code := runVercelDry(t, `{"crons": [`, nextPkg)
+	if code != exitUsage || !strings.Contains(errs, "vercel.json is not valid JSON") {
+		t.Fatalf("code %d err %s", code, errs)
+	}
+	if _, errs, code = runVercelDry(t, "", nextPkg); code != exitOK {
+		t.Fatalf("missing vercel.json: code %d err %s", code, errs)
+	}
+}

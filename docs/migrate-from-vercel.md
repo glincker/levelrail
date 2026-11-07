@@ -18,7 +18,7 @@ Run with `--dry-run` first: every step is printed and nothing is changed.
 3. Deploy the directory with the same path as `levelrail-cli deploy`.
 4. Attach each `--domain`: apex and `www` are both attached, `www` redirects to the apex. No DNS records are written.
 5. Run the domain cutover check and print the exact DNS records to set.
-6. Translate redirects and headers where supported and list the rest.
+6. Translate redirects and headers where supported and list the rest. Each `crons` entry becomes an HTTP job on the app (a GET sending `Authorization: Bearer` from the `CRON_SECRET` app env var; the value is never printed). Existing jobs with the same name are kept. For Next.js projects, redirects, rewrites and headers are left to `next.config`; for other projects each rule is listed as not carried over. `regions` and `functions` are reported as not applicable on a self-hosted server.
 7. Print the final checklist.
 
 ## After the command
