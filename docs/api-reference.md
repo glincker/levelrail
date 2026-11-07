@@ -2217,6 +2217,7 @@ Routes that do not fit an existing group.
 | GET | /internal/diagnostic | Public | handleInternalDiagnostic |
 | PATCH | /api/v1/tags/{id} | AbilityWrite | handleRenameTag |
 | POST | /mcp | Public |  |
+| GET | /api/v1/deployments/{id}/explain | AbilityRead | handleExplainDeploy |
 
 ## See also
 

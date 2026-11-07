@@ -1103,6 +1103,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/deployments/stream", Ability: "AbilityRead", Group: "Other", Handler: "handleDeploymentsStream", Description: ""},
 	{Method: "GET", Path: "/api/v1/deployments/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleDeploymentsSummary", Description: ""},
 	{Method: "GET", Path: "/api/v1/deployments/timeline", Ability: "AbilityRead", Group: "Other", Handler: "handleDeploymentsTimeline", Description: ""},
+	{Method: "GET", Path: "/api/v1/deployments/{id}/explain", Ability: "AbilityRead", Group: "Other", Handler: "handleExplainDeploy", Description: ""},
 	{Method: "GET", Path: "/api/v1/deployments/{id}/phases", Ability: "AbilityRead", Group: "Other", Handler: "handleGetDeployPhases", Description: "Deploy phases (deploy_phases.go): stages with status, timing and ETA, derived from stored trace rows and the build log. AbilityRead."},
 	{Method: "GET", Path: "/api/v1/deployments/{id}/timeline", Ability: "AbilityRead", Group: "Other", Handler: "handleGetDeployTimeline", Description: "Per-deploy event timeline (deploy_timeline.go): the whole story of one deploy as ordered events, a live SSE view that ends when the deploy settles, and a two-deploy comparison. Settled timelines are frozen for replay until APP_DEPLOY_TIMELINE_RETENTION. AbilityRead, filtered to the apps the caller can read."},
 	{Method: "GET", Path: "/api/v1/deployments/{id}/timeline/compare", Ability: "AbilityRead", Group: "Other", Handler: "handleCompareDeployTimelines", Description: ""},
