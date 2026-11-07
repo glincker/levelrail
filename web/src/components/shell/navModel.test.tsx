@@ -51,6 +51,8 @@ const EXPECTED_GLOBAL = [
   '/settings/node-providers',
   '/settings/iam-policies',
   '/security',
+  '/security/image-scanning',
+  '/nodes/bootstrap-scripts',
   '/models',
   '/pipelines',
   '/approvals',

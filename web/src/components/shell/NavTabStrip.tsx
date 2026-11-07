@@ -18,7 +18,12 @@ function GroupStrip({ group }: { group: NavTabGroup }) {
     .map((tab) => ({
       to: tab.to,
       label: t(`shell.navTabs.tab.${tab.id}`),
-      active: matchesPrefix(pathname, tab.to),
+      // The longest matching tab wins so /nodes does not light on a sub-page tab.
+      active:
+        matchesPrefix(pathname, tab.to) &&
+        !group.tabs.some(
+          (o) => o.to.length > tab.to.length && matchesPrefix(pathname, o.to),
+        ),
     }))
   if (items.length < 2) return null
   return (

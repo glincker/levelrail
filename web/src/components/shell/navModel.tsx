@@ -97,6 +97,11 @@ export type GlobalTo =
   | '/settings'
   | '/settings/iam-policies'
   | '/security'
+  | '/security/image-scanning'
+  | '/nodes/bootstrap-scripts'
+  | '/settings/tokens'
+  | '/settings/users'
+  | '/settings/audit-log'
   | '/settings/registry'
   | '/settings/registry-credentials'
   | '/settings/network-shares'
@@ -419,6 +424,18 @@ export const FOLDED_GLOBAL_PAGES: GlobalNavItem[] = [
     'IAM policies',
     '/settings/iam-policies',
     <ShieldCheckGlassIcon className="text-tone-success" size="1.4em" />,
+  ),
+  folded(
+    'scanning',
+    'Image scanning',
+    '/security/image-scanning',
+    <ShieldAlertGlassIcon size="1.4em" />,
+  ),
+  folded(
+    'bootstrap',
+    'Bootstrap scripts',
+    '/nodes/bootstrap-scripts',
+    <TerminalGlassIcon size="1.4em" />,
   ),
   folded('inbox', 'Inbox', '/inbox', <InboxGlassIcon size="1.4em" />),
   folded('models', 'AI models', '/models', <CpuGlassIcon size="1.4em" />, {

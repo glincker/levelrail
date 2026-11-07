@@ -394,7 +394,12 @@
         "advisor": "Resource advisor",
         "resources": "Resources",
         "security": "Security center",
-        "iam": "IAM policies"
+        "iam": "IAM policies",
+        "imageScanning": "Image scanning",
+        "bootstrapScripts": "Bootstrap scripts",
+        "keys": "Keys and tokens",
+        "team": "Team",
+        "auditLog": "Audit log"
       }
     },
     "pins": {

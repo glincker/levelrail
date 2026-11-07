@@ -90,6 +90,28 @@ describe('NavTabStrip', () => {
     expect(labels()).toEqual(['Domains', 'DNS', 'Mail'])
   })
 
+  it('lists the security pages and marks only the longest match', () => {
+    renderAt('/security/image-scanning')
+    expect(labels()).toEqual([
+      'Security center',
+      'Keys and tokens',
+      'Team',
+      'Audit log',
+      'Image scanning',
+      'IAM policies',
+    ])
+    expect(current()).toEqual(['Image scanning'])
+    cleanup()
+    renderAt('/settings/audit-log')
+    expect(current()).toEqual(['Audit log'])
+  })
+
+  it('adds bootstrap scripts to the server tabs', () => {
+    renderAt('/nodes/bootstrap-scripts')
+    expect(labels()).toEqual(['Nodes', 'Cloud providers', 'Bootstrap scripts'])
+    expect(current()).toEqual(['Bootstrap scripts'])
+  })
+
   it('leaves usage and costs to their own header strip', () => {
     renderAt('/usage')
     expect(labels()).toEqual([])
