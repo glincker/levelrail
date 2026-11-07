@@ -123,6 +123,9 @@ retention.status_incident_days
 retention.usage_cost_days
 retention.webhook_delivery_days
 scheduled_tasks.history_keep
+secrets.provider_cache_ttl_seconds
+secrets.provider_max_response_kib
+secrets.provider_timeout_seconds
 security.audit_sensitive_reads
 security.bind_allowed_roots
 security.bind_block_credential_dirs

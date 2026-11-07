@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1998 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2002 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -646,6 +646,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/settings/runtime/{key}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleResetRuntimeSetting", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/runtime/{key}", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetRuntimeSetting", Description: ""},
 	{Method: "PUT", Path: "/api/v1/settings/runtime/{key}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleSetRuntimeSetting", Description: "Settings gate security protections and can restart the process, so writes are AbilityRoot."},
+	{Method: "GET", Path: "/api/v1/settings/secret-providers", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListSecretProviders", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/settings/secret-providers/{name}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDeleteSecretProvider", Description: ""},
+	{Method: "PUT", Path: "/api/v1/settings/secret-providers/{name}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePutSecretProvider", Description: ""},
+	{Method: "POST", Path: "/api/v1/settings/secret-providers/{name}/test", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleTestSecretProvider", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/server-profile", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetServerProfile", Description: ""},
 	{Method: "PUT", Path: "/api/v1/settings/server-profile", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleSetServerProfile", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/supply-chain", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetSupplyChainDefault", Description: ""},

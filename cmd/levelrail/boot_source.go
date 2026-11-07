@@ -36,6 +36,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/reconcile/nodehealth"
 	proxyroutesreconcile "github.com/GLINCKER/levelrail/internal/reconcile/proxyroutes"
 	registryreconcile "github.com/GLINCKER/levelrail/internal/reconcile/registry"
+	"github.com/GLINCKER/levelrail/internal/secretprovider"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/sharedenv"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -322,7 +323,13 @@ func appOptionsFor(deps dynamicSourceDeps) []application.Option {
 	}
 	if deps.secretsManager != nil {
 		// A retained deploy URL runs its app's config, so it reads the app's secrets.
-		appOpts = append(appOpts, application.WithSecretResolver(deployurls.ParentSecrets{Inner: deps.secretsManager, Apps: deps.db}))
+		// A secret holding a doppler:// or infisical:// reference resolves live at container create.
+		appOpts = append(appOpts, application.WithSecretResolver(secretprovider.EnvResolver{
+			Inner:     deployurls.ParentSecrets{Inner: deps.secretsManager, Apps: deps.db},
+			Providers: secretprovider.Store{Secrets: deps.secretsManager},
+			Resolver:  secretprovider.Default(),
+			Tunables:  secretprovider.TunablesFrom(deps.settingsService()),
+		}))
 	}
 	if deps.meshDNSAddr != "" {
 		appOpts = append(appOpts, application.WithMeshDNSAddr(deps.meshDNSAddr))

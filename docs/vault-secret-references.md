@@ -13,6 +13,8 @@ An env var can point at a secret in an external Vault instead of holding a value
 | Built in encrypted store | Supported | The default. Use `{ secret: true }` or the **Secret** type. See [Environment variables and secrets](/environment-and-secrets). |
 | HashiCorp Vault | Supported | KV v2 engine, token or AppRole login. |
 | OpenBao | Not tested | OpenBao serves the same KV v2 HTTP API, so the same settings should work. Levelrail has no OpenBao specific test for app references. Try it on a non production app first. |
+| Doppler | Beta | Read only. Service token, one project and config per provider. See [Doppler and Infisical](#doppler-and-infisical). |
+| Infisical | Beta | Read only. Access token, one workspace and environment per provider. Cloud or self-hosted. |
 | 1Password | Not supported yet | There is no 1Password backend. |
 
 The Vault Transit engine (Vault or OpenBao) can also wrap the master key. That is a separate feature, set with the `APP_VAULT_*` variables in [Environment variables](/environment-variables). It does not enable app references.
@@ -101,3 +103,39 @@ vault kv get -mount=secret myapp/config
 ```
 
 The second command uses the Vault CLI with the same token, to confirm the path and field exist.
+
+## Doppler and Infisical
+
+Doppler and Infisical are read only providers. Levelrail never writes to them. Connect one or more providers by name:
+
+```bash
+levelrail-cli secrets provider add prod --type doppler --project web --environment prd --provider-token-file ./doppler-token
+levelrail-cli secrets provider add infra --type infisical --project WORKSPACE_ID --environment prod --provider-token-file -
+levelrail-cli secrets provider add lab --type infisical --project WORKSPACE_ID --environment dev --base-url https://infisical.internal --provider-token-file ./token
+levelrail-cli secrets provider list
+levelrail-cli secrets provider test prod
+levelrail-cli secrets provider remove prod
+```
+
+`--type vault` on `add` and `remove` uses the Vault settings above. The token is stored encrypted, is write-only, and is never returned by the API or the CLI. Saving a new token keeps the old one working for the rotation grace window. Adding and removing providers and the connection test need the root or admin role and are audited. The API is `GET /api/v1/settings/secret-providers`, `PUT` and `DELETE /api/v1/settings/secret-providers/{name}`, and `POST /api/v1/settings/secret-providers/{name}/test`.
+
+To use a value, store a reference as an app secret:
+
+```bash
+levelrail-cli apps secrets set web API_KEY doppler://prod/API_KEY
+levelrail-cli apps secrets set web STRIPE_KEY infisical://infra/billing/STRIPE_KEY
+```
+
+The Infisical form is `infisical://PROVIDER/[folder/...]/NAME`. Without a folder the provider's `--path` is used, `/` by default.
+
+The value is read when the container is created and kept only in memory for the cache time. It is masked in build and deploy logs. A deploy fails, and never starts with an empty value, when the provider is missing, rejects the token, does not answer in time, does not have the secret, or returns an empty value. The error names the variable and the reference.
+
+Network rules: Levelrail calls only `api.doppler.com` or `app.infisical.com`, or the `--base-url` an admin set for self-hosted Infisical. Private and loopback addresses are refused unless they come from that explicit base URL. Link-local addresses such as cloud metadata are always refused. A redirect to another host is refused.
+
+| Runtime setting | Default | Meaning |
+| --- | --- | --- |
+| `secrets.provider_timeout_seconds` | 10 | Time limit for one provider read. |
+| `secrets.provider_cache_ttl_seconds` | 60 | Seconds a read value is reused. 0 reads on every container start. |
+| `secrets.provider_max_response_kib` | 1024 | Largest provider response read. |
+
+Infisical machine identity login (client ID and secret) is not supported yet. Use an access token.

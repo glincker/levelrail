@@ -59,6 +59,9 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_ORGS_AVATAR_MAX_BYTES` | [`orgs.avatar_max_bytes`](/runtime-settings#security) | `262144` |
 | `APP_ORGS_AVATAR_MAX_DIMENSION` | [`orgs.avatar_max_dimension`](/runtime-settings#security) | `1024` |
 | `APP_ORGS_STRICT_ISOLATION` | [`orgs.strict_isolation`](/runtime-settings#security) | `false` |
+| `APP_SECRET_PROVIDER_CACHE_TTL_SECONDS` | [`secrets.provider_cache_ttl_seconds`](/runtime-settings#security) | `60` |
+| `APP_SECRET_PROVIDER_MAX_RESPONSE_KIB` | [`secrets.provider_max_response_kib`](/runtime-settings#security) | `1024` |
+| `APP_SECRET_PROVIDER_TIMEOUT_SECONDS` | [`secrets.provider_timeout_seconds`](/runtime-settings#security) | `10` |
 | `APP_AUDIT_SENSITIVE_READS` | [`security.audit_sensitive_reads`](/runtime-settings#security) | `true` |
 | `APP_BIND_ALLOWED_ROOTS` | [`security.bind_allowed_roots`](/runtime-settings#security) | empty |
 | `APP_BIND_BLOCK_CREDENTIAL_DIRS` | [`security.bind_block_credential_dirs`](/runtime-settings#security) | `true` |
