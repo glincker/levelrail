@@ -1,0 +1,96 @@
+export interface CacheHandlerOptions {
+  /** Redis client compatible with node-redis v4 or v5. Defaults to a lazily created client from env. */
+  client?: RedisLike;
+  /** PEM of the CA to trust for a rediss:// URL. Defaults to LEVELRAIL_NEXT_CACHE_CA or LEVELRAIL_NEXT_CACHE_CA_FILE. */
+  ca?: string;
+  /** TLS server name to verify when the host differs from the certificate name. */
+  servername?: string;
+  /** Shares fallback state between instances; instances with a created client share by prefix and URL. */
+  stateKey?: string;
+  redisUrl?: string;
+  /** Key namespace per app. Env LEVELRAIL_NEXT_CACHE_PREFIX, default "next". */
+  keyPrefix?: string;
+  /** Build id folded into every key. Env NEXT_BUILD_ID. */
+  buildId?: string;
+  timeoutMs?: number;
+  maxValueBytes?: number;
+  lruEntries?: number;
+  graceSeconds?: number;
+  defaultTtlSeconds?: number;
+  retryMs?: number;
+  logger?: (message: string) => void;
+  now?: () => number;
+}
+
+export interface RedisLike {
+  get(key: string): Promise<string | null>;
+  set(key: string, value: string, options?: { EX?: number }): Promise<unknown>;
+  del(key: string): Promise<unknown>;
+  hSet(key: string, fields: Record<string, string>): Promise<unknown>;
+  hmGet(key: string, fields: string[]): Promise<Array<string | null>>;
+  connect?(): Promise<unknown>;
+  on?(event: string, listener: (err: Error) => void): unknown;
+}
+
+export interface CacheGetContext {
+  tags?: string[];
+  softTags?: string[];
+  kind?: string;
+  kindHint?: string;
+}
+
+export interface CacheSetContext {
+  revalidate?: number | false;
+  tags?: string[];
+  fetchCache?: boolean;
+  fetchUrl?: string;
+  fetchIdx?: number;
+}
+
+export interface CacheEntry {
+  value: unknown;
+  lastModified: number;
+}
+
+export class CacheHandler {
+  constructor(options?: CacheHandlerOptions);
+  get(key: string, ctx?: CacheGetContext): Promise<CacheEntry | null>;
+  set(key: string, data: unknown, ctx?: CacheSetContext): Promise<void>;
+  revalidateTag(tags: string | string[], durations?: unknown): Promise<void>;
+  updateTags(tags: string | string[], durations?: unknown): Promise<void>;
+  resetRequestCache(): void;
+}
+
+export interface ComponentsCacheEntry {
+  value: ReadableStream<Uint8Array>;
+  tags: string[];
+  stale: number;
+  timestamp: number;
+  expire: number;
+  revalidate: number;
+}
+
+/** The object shape Next 16 expects for each entry of the cacheHandlers config. */
+export interface ComponentsHandler {
+  get(cacheKey: string, softTags: string[]): Promise<ComponentsCacheEntry | undefined>;
+  set(cacheKey: string, pendingEntry: Promise<ComponentsCacheEntry>): Promise<void>;
+  refreshTags(): Promise<void>;
+  getExpiration(tags: string[]): Promise<number>;
+  updateTags(tags: string[], durations?: unknown): Promise<void>;
+}
+
+export class ComponentsCacheHandler {
+  constructor(options?: CacheHandlerOptions);
+  get(cacheKey: string, softTags?: string[]): Promise<ComponentsCacheEntry | undefined>;
+  set(cacheKey: string, pendingEntry: Promise<ComponentsCacheEntry>): Promise<void>;
+  refreshTags(): Promise<void>;
+  getExpiration(tags: string[]): Promise<number>;
+  updateTags(tags: string[], durations?: unknown): Promise<void>;
+}
+
+export function createComponentsHandler(options?: CacheHandlerOptions): ComponentsHandler;
+
+/** Ready to use handler for `cacheHandlers`, configured from env. */
+export const componentsHandler: ComponentsHandler;
+
+export default CacheHandler;

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   CheckGlassIcon,
-  CircleAlertGlassIcon,
+  ClockGlassIcon,
   CopyGlassIcon,
   EllipsisGlassIcon,
   ExternalLinkGlassIcon,
@@ -45,10 +45,7 @@ import {
 import { cn } from '../lib/utils'
 import { TLS_TONE_CLASS, tlsDaysText, tlsTone } from '../lib/domainTls'
 import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
-import { certTruth } from '../lib/certTruth'
 import { CertTruthBadge } from './CertTruthBadge'
-import { GoLiveBadge } from './golive/GoLiveBadge'
-import { GetCertificateButton } from './GetCertificateButton'
 import type { CertificateStatus } from '../queries/certificates'
 import { domainCheckQueryOptions } from '../queries/domainCheck'
 import type { DomainCheckResult } from '../queries/domainCheck'
@@ -62,7 +59,6 @@ import {
   type Domain,
 } from '../queries/domains'
 import { canParkOrMove, isPrimaryDomain } from '../lib/domainLifecycle'
-import { DomainDetailSheet } from './domains/DomainDetailSheet'
 import {
   DeleteDomainDialog,
   MoveDomainDialog,
@@ -202,36 +198,21 @@ function CertCell({
   if (!cert && domain.tls_owner === 'proxy') {
     return <Badge variant="info">{t('proxyManaged.badge')}</Badge>
   }
-  const truth = certTruth(cert)
   const renewal = cert ? certRenewalBadge(cert) : null
-  return (
-    <span className="flex min-w-0 flex-col items-start gap-1">
-      {!cert ? (
-        domain.acme_failure ? (
-          <Badge variant="destructive">{t('page.cert.failed')}</Badge>
-        ) : (
-          <span className="text-xs text-muted-foreground/70">
-            {t('page.cert.none')}
-          </span>
-        )
-      ) : (
-        <CertTruthBadge cert={cert} />
-      )}
-      {renewal ? (
-        <Badge variant="destructive" title={renewal.hint}>
-          {renewal.label}
-        </Badge>
-      ) : null}
-      {truth.wantsRealCert && domain.tls_owner !== 'proxy' ? (
-        <GetCertificateButton domain={domain.domain} />
-      ) : null}
-      {isStandaloneDomain(domain) ? null : (
-        <GoLiveBadge
-          app={domain.service_name}
-          domain={domain.domain}
-          automatic={domain.automatic}
-        />
-      )}
+  // One chip per row; fixing the certificate lives on the domain page.
+  if (renewal) {
+    return (
+      <Badge variant="destructive" title={renewal.hint}>
+        {renewal.label}
+      </Badge>
+    )
+  }
+  if (cert) return <CertTruthBadge cert={cert} />
+  return domain.acme_failure ? (
+    <Badge variant="destructive">{t('page.cert.failed')}</Badge>
+  ) : (
+    <span className="text-xs text-muted-foreground/70">
+      {t('page.cert.none')}
     </span>
   )
 }
@@ -263,11 +244,7 @@ function ExpiryCell({
   }
   if (!cert) return <span className="text-xs text-muted-foreground/60">-</span>
   if (isInternalCert(cert)) {
-    return (
-      <span className="text-xs text-muted-foreground">
-        {t('page.cert.internal')}
-      </span>
-    )
+    return <span className="text-xs text-muted-foreground/60">-</span>
   }
   const renews =
     cert.source === 'custom'
@@ -293,7 +270,7 @@ function ExpiryCell({
   )
 }
 
-type Lifecycle = 'details' | 'park' | 'move' | 'delete'
+type Lifecycle = 'park' | 'move' | 'delete'
 
 function RowActions({
   domain,
@@ -331,9 +308,12 @@ function RowActions({
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuItem
-          onClick={() => {
-            onLifecycle('details')
-          }}
+          render={
+            <Link
+              to="/apps/$name/domains/$domain"
+              params={{ name: domainScope(domain), domain: domain.domain }}
+            />
+          }
         >
           <SettingsGlassIcon size="1.4em" />
           {t('page.row.details')}
@@ -425,6 +405,9 @@ function useDomainDns(domain: Domain) {
   })
 }
 
+const NAME_LINK =
+  'min-w-0 truncate font-mono text-sm font-medium text-foreground hover:underline'
+
 export function DomainNameCell({
   domain,
   cert: storedCert,
@@ -443,15 +426,26 @@ export function DomainNameCell({
   return (
     <div className="min-w-0">
       <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-        <Link
-          to="/domains/$domain"
-          params={{ domain: domain.domain }}
-          search={{ app: domainScope(domain) }}
-          title={domain.domain}
-          className="min-w-0 truncate font-mono text-sm font-medium text-foreground hover:underline"
-        >
-          {domain.domain}
-        </Link>
+        {isStandaloneDomain(domain) ? (
+          <Link
+            to="/domains/$domain"
+            params={{ domain: domain.domain }}
+            search={{ app: domainScope(domain) }}
+            title={domain.domain}
+            className={NAME_LINK}
+          >
+            {domain.domain}
+          </Link>
+        ) : (
+          <Link
+            to="/apps/$name/domains/$domain"
+            params={{ name: domainScope(domain), domain: domain.domain }}
+            title={domain.domain}
+            className={NAME_LINK}
+          >
+            {domain.domain}
+          </Link>
+        )}
         <a
           href={`https://${domain.domain.replace(/^\*\./, '')}`}
           target="_blank"
@@ -495,11 +489,11 @@ export function DomainNameCell({
       </div>
       {warning ? (
         <p
-          className="mt-0.5 flex min-w-0 items-start gap-1 text-xs text-amber-700 dark:text-amber-400"
+          className="mt-0.5 flex min-w-0 items-start gap-1 text-xs text-muted-foreground"
           title={warning.title}
         >
-          <CircleAlertGlassIcon
-            className="mt-0.5 size-5 shrink-0 text-tone-danger"
+          <ClockGlassIcon
+            className="mt-0.5 size-4.5 shrink-0 text-tone-warning"
             aria-hidden="true"
           />
           <span>{warning.text}</span>
@@ -610,14 +604,6 @@ export function DomainRowActions({ domain }: { domain: Domain }) {
           onLifecycle={setLifecycle}
         />
       )}
-      {lifecycle === 'details' ? (
-        <DomainDetailSheet
-          appName={domainScope(domain)}
-          domain={domain.domain}
-          open
-          onOpenChange={closeLifecycle}
-        />
-      ) : null}
       {lifecycle === 'park' ? (
         <ParkDomainDialog
           app={domain.service_name}

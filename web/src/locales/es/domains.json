@@ -1323,7 +1323,68 @@
     "security": "Seguridad",
     "pages": "Páginas",
     "seo": "SEO",
-    "tls": "TLS"
+    "tls": "TLS",
+    "breadcrumb": "Ruta de navegación",
+    "back": "Dominios",
+    "openDomain": "Abrir la página de {{domain}}",
+    "state": {
+      "live": "En vivo",
+      "waitingDns": "Esperando al DNS",
+      "wrongDns": "El DNS apunta a otro lugar",
+      "certFailed": "El certificado necesita atención",
+      "issuing": "Emitiendo certificado",
+      "starting": "Casi en vivo"
+    },
+    "resolvers": {
+      "label": "Respuestas del DNS por servidor",
+      "authoritative": "Tu proveedor de DNS",
+      "state": {
+        "ok": "correcto",
+        "pending": "sin respuesta todavía",
+        "wrong": "valor incorrecto"
+      }
+    },
+    "provider": {
+      "generic": "Añade este registro donde gestionas el DNS de tu dominio, normalmente tu registrador o proveedor de hosting.",
+      "cloudflare": "Tu DNS parece estar en Cloudflare. Añade el registro allí y apaga la nube naranja hasta que se emita el certificado.",
+      "route53": "Tu DNS parece estar en Amazon Route 53. Añade el registro en la zona alojada de este dominio.",
+      "godaddy": "Tu DNS parece estar en GoDaddy. Añade el registro en los registros DNS de este dominio.",
+      "namecheap": "Tu DNS parece estar en Namecheap. Añade el registro en Advanced DNS.",
+      "google": "Tu DNS parece estar en Google Cloud DNS. Añade el registro en la zona de este dominio.",
+      "open": "Abrir el DNS de {{name}}",
+      "name": {
+        "cloudflare": "Cloudflare",
+        "route53": "Route 53",
+        "godaddy": "GoDaddy",
+        "namecheap": "Namecheap",
+        "google": "Google"
+      }
+    },
+    "recordType": "Tipo de registro",
+    "field": {
+      "type": "Tipo",
+      "name": "Nombre",
+      "value": "Valor"
+    },
+    "wrongValue": "Apunta a {{found}}, debería apuntar a {{should}}.",
+    "sendAdmin": "Enviar a tu administrador de DNS",
+    "adminCopied": "Mensaje copiado",
+    "adminMessage": "Hola, por favor añade este registro DNS para que {{domain}} llegue a nuestro servidor.\n\nTipo: {{type}}\nNombre: {{domain}}\nValor: {{value}}\n\nPuede tardar unos minutos en aparecer. Gracias.",
+    "timeline": {
+      "label": "Progreso del certificado",
+      "dns": "El DNS apunta aquí",
+      "requested": "Certificado solicitado",
+      "issued": "Certificado emitido",
+      "expires": "Caduca",
+      "done": "Hecho",
+      "todo": "Todavía no"
+    },
+    "testIt": "Pruébalo",
+    "redirect": "Redirección y www",
+    "danger": {
+      "title": "Zona de peligro",
+      "body": "Mueve este dominio a otra app, aparca el dominio o elimínalo. Los visitantes pierden esta dirección mientras no esté."
+    }
   },
   "waf": {
     "add": "Añadir WAF / límite de tasa",
@@ -1536,5 +1597,197 @@
     "domains": "Dominios",
     "certificates": "Certificados",
     "dns": "DNS"
+  },
+  "www": {
+    "title": "Dirección www",
+    "help": "Haz que {{domain}} y www.{{domain}} funcionen, con una sola redirección.",
+    "choiceLabel": "Qué debe pasar",
+    "choice": {
+      "apex": "Enviar a los visitantes de www a {{domain}}",
+      "www": "Enviar a los visitantes de {{domain}} a www.{{domain}}",
+      "both": "Servir ambas, sin redirección",
+      "apexOnly": "Solo la dirección principal"
+    },
+    "loading": "Leyendo tus registros DNS",
+    "error": "No pudimos leer el plan DNS: {{message}}",
+    "retry": "Comprobar de nuevo",
+    "records": "Registros DNS",
+    "col": {
+      "type": "Tipo",
+      "name": "Nombre",
+      "value": "Valor",
+      "now": "Ahora"
+    },
+    "outcome": {
+      "created": "Se añadirá",
+      "updated": "Se cambiará",
+      "unchanged": "Ya es correcto",
+      "conflict": "Existe otro registro"
+    },
+    "copy": "Copiar {{value}}",
+    "copied": "Copiado",
+    "redirect": "{{from}} redirigirá a {{to}}.",
+    "noProvider": "No hay proveedor DNS conectado para este dominio. Añade estos registros donde gestionas el DNS y comprueba de nuevo.",
+    "replaceWarning": "Ya existe otro registro. Aplicar lo reemplazará.",
+    "apply": "Aplicar por mi",
+    "applyReplace": "Reemplazar y aplicar",
+    "applying": "Aplicando",
+    "applyError": "No se pudo aplicar: {{message}}",
+    "applied": "Listo. Ambas direcciones están configuradas.",
+    "partial": "Algunos registros no se aplicaron.",
+    "result": {
+      "created": "Añadido",
+      "updated": "Cambiado",
+      "unchanged": "Ya era correcto",
+      "conflict": "Sin cambios",
+      "failed": "Falló",
+      "not_attempted": "No intentado"
+    },
+    "redirectApplied": "La redirección está activa.",
+    "connectTitle": "Conecta www a esta app",
+    "connectPointsHere": "www.{{domain}} ya apunta a este servidor pero no está conectado a esta app. Conéctalo y envía a los visitantes de www a {{domain}}.",
+    "connectNeedsDns": "www.{{domain}} aún no está conectado a esta app. Añade este CNAME donde gestionas el DNS y vuelve a comprobar.",
+    "connectButton": "Conectar www y redirigir",
+    "connecting": "Conectando",
+    "otherOptions": "Elegir otra opción",
+    "connectedRedirect": "www redirige a {{domain}}",
+    "connectedNoRedirect": "www está conectado a esta app",
+    "connectDone": "www está conectado a esta app.",
+    "state": {
+      "already_correct": "Ya configurado",
+      "missing": "Sin configurar"
+    }
+  },
+  "readiness": {
+    "title": "Estado del dominio",
+    "checkNow": "Comprobar ahora",
+    "countdown": "Se comprobará de nuevo en {{seconds}}s",
+    "allDone": "Todo listo, no hacen falta más comprobaciones.",
+    "step": {
+      "dns": "El DNS apunta aquí",
+      "cert": "Certificado emitido",
+      "site": "El sitio responde"
+    },
+    "say": {
+      "dns": {
+        "done": "Tu dominio apunta a este servidor.",
+        "progress": "Esperando al DNS. Agrega el registro de arriba.",
+        "blocked": "El dominio apunta a otro lugar. Corrige el registro de arriba.",
+        "waiting": "Esperando al DNS."
+      },
+      "cert": {
+        "done": "Tu certificado está listo.",
+        "progress": "Emitiendo tu certificado, normalmente en menos de un minuto.",
+        "blocked": "No se pudo emitir. Mira la solución de abajo.",
+        "waiting": "Empieza cuando el DNS apunte aquí."
+      },
+      "site": {
+        "done": "Tu sitio responde por HTTPS.",
+        "progress": "Esperando a que el sitio responda.",
+        "blocked": "El sitio no responde. Mira más abajo.",
+        "waiting": "Empieza cuando el certificado esté listo."
+      }
+    },
+    "ttl": "Los cambios de DNS pueden tardar hasta {{time}} en llegar a todos.",
+    "unit": {
+      "s_one": "{{count}} segundo",
+      "s_other": "{{count}} segundos",
+      "m_one": "{{count}} minuto",
+      "m_other": "{{count}} minutos",
+      "h_one": "{{count}} hora",
+      "h_other": "{{count}} horas"
+    },
+    "localLag": "El DNS público ya es correcto. El resolvedor de este servidor puede tardar un poco, y eso no afecta a tu sitio.",
+    "issuing": "Emitiendo tu certificado. Esta página se actualiza sola.",
+    "issueFailed": "No se pudo emitir el certificado. Comprueba que el registro apunta aquí y que el puerto 80 está abierto, y pulsa Comprobar ahora.",
+    "route": {
+      "404": "La ruta responde 404: el servidor es accesible, pero aún no conoce este dominio.",
+      "503": "La ruta responde 503: el servidor es accesible, pero la app que hay detrás no está lista o no está asociada a este dominio.",
+      "5xx": "La ruta responde con un error del servidor: el servidor es accesible pero la aplicación detrás falla. Revisa los registros de la aplicación."
+    },
+    "diagnose": "¿Por qué no responde?"
+  },
+  "moreOptions": {
+    "title": "Más opciones",
+    "activeLabel": "Opciones activadas",
+    "access": "Acceso",
+    "routing": "Enrutamiento",
+    "protection": "Protección y detalles",
+    "chip": {
+      "basicAuth": "Autenticación básica",
+      "authGate": "Acceso con inicio de sesión",
+      "redirect": "Redirección",
+      "maintenance": "Mantenimiento",
+      "waf": "WAF / límite de peticiones",
+      "errorPages": "Páginas de error propias",
+      "hidden": "Oculto a buscadores",
+      "ownCert": "Certificado propio"
+    },
+    "links": {
+      "allSettings": "Todos los ajustes",
+      "diagnose": "Diagnosticar",
+      "deploys": "La app no está en marcha, ver despliegues"
+    }
+  },
+  "addWizard": {
+    "progress": "Paso {{current}} de {{total}}",
+    "stepNames": {
+      "1": "Dominio",
+      "2": "Apúntalo aquí",
+      "3": "Puesta en marcha"
+    },
+    "back": "Atrás",
+    "next": "Continuar",
+    "advanced": "Avanzado: añadir varios dominios a la vez",
+    "backToWizard": "Volver a la configuración guiada",
+    "step1": {
+      "title": "¿Qué dominio y qué aplicación?",
+      "domainLabel": "Tu dominio",
+      "domainPlaceholder": "ejemplo.com",
+      "appLabel": "Aplicación",
+      "appPlaceholder": "Elige una aplicación",
+      "kindApex": "Es un dominio principal. En el último paso te sugeriremos conectar también www.",
+      "kindSubdomain": "Es un subdominio, necesita un solo registro.",
+      "kindWww": "Es una dirección con www.",
+      "adding": "Añadiendo..."
+    },
+    "errors": {
+      "empty": "Escribe el dominio que compraste, por ejemplo ejemplo.com.",
+      "invalid": "Eso no parece un dominio. Usa letras, números y puntos, por ejemplo ejemplo.com.",
+      "wildcard": "Un comodín como *.ejemplo.com necesita el formulario avanzado. Usa el enlace de abajo o escribe un solo dominio.",
+      "claimedHere": "Esta aplicación ya usa ese dominio. Elige otro dominio o ábrelo desde la lista.",
+      "claimedOther": "La aplicación {{app}} ya usa ese dominio. Quítalo allí primero o elige otro dominio.",
+      "noApp": "Elige la aplicación que debe abrir este dominio.",
+      "addFailed": "No pudimos añadir el dominio: {{message}}. Revisa el nombre e inténtalo de nuevo."
+    },
+    "step2": {
+      "title": "Apunta tu dominio aquí",
+      "intro": "Añade este registro donde compraste {{domain}}. Le indica a internet que envíe a los visitantes a tu servidor.",
+      "type": "Tipo",
+      "name": "Nombre",
+      "value": "Valor",
+      "copy": "Copiar {{label}}",
+      "copied": "{{label}} copiado",
+      "loading": "Buscando la dirección de tu servidor...",
+      "noRecords": "No encontramos la dirección pública de este servidor. Abre los ajustes de Dominios, define la dirección del servidor y vuelve.",
+      "providerOn": "Hay un proveedor de DNS conectado, así que podemos añadir este registro por ti.",
+      "providerOff": "No hay un proveedor de DNS conectado. Añade el registro a mano en tu registrador, solo hay que copiarlo, y continúa. No cambiamos nada por ti.",
+      "apply": "Añadir el registro por mí",
+      "applying": "Añadiendo...",
+      "applied": "Registro añadido. Puede tardar unos minutos en propagarse.",
+      "applyFailed": "No pudimos añadir el registro: {{message}}. Añádelo a mano con los valores de arriba o revisa la conexión del proveedor.",
+      "continue": "Ya lo añadí, continuar"
+    },
+    "step3": {
+      "title": "Puesta en marcha",
+      "waiting": "Volvemos a comprobar solos. Puedes dejar esto abierto.",
+      "doneTitle": "{{domain}} está en línea",
+      "doneBody": "Los visitantes ya pueden abrir tu sitio por HTTPS.",
+      "open": "Abrir https://{{domain}}",
+      "addAnother": "Añadir otro",
+      "finishLater": "Terminar después",
+      "wwwTitle": "Conecta también www",
+      "wwwBody": "Mucha gente escribe www. Con un clic lo conectamos y lo enviamos a {{domain}}."
+    }
   }
 }

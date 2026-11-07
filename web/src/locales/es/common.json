@@ -338,7 +338,8 @@
     "account": {
       "controlPlane": "Plano de control",
       "signOut": "Cerrar sesión",
-      "updateAvailable": "Actualización disponible: {{version}}"
+      "updateAvailable": "Actualización disponible: {{version}}",
+      "updateAvailableShort": "Actualización disponible"
     },
     "breadcrumb": {
       "label": "Ruta de navegación",
@@ -361,6 +362,7 @@
       "deployments": "Despliegues",
       "projects": "Proyectos",
       "templates": "Plantillas",
+      "tags": "Etiquetas",
       "get-started": "Primeros pasos",
       "welcome": "Configuración inicial",
       "migrate": "Migrar",
@@ -427,7 +429,39 @@
       "title": "Novedades",
       "unread": "Novedades: {{count}} sin leer",
       "allCaughtUp": "Novedades: todo al día",
-      "empty": "Aún no hay notas de versión disponibles."
+      "empty": "Aún no hay notas de versión disponibles.",
+      "loading": "Cargando notas de versión...",
+      "error": "No se pudieron cargar las notas de versión.",
+      "retry": "Reintentar",
+      "markSeen": "Marcar todo como visto",
+      "updateAvailable": "Actualización disponible: {{version}}",
+      "onLatest": "Tienes la última versión",
+      "versionUnknown": "Estado de la versión desconocido",
+      "allChangesGrouped": "Todos los cambios",
+      "openFullNotes": "Abrir las notas completas de la versión",
+      "update": "Actualizar ahora",
+      "releaseNotes": "Notas de versión",
+      "highlights": "Destacados",
+      "allChanges": "Todos los cambios ({{count}})",
+      "toast": {
+        "title": "Actualizado a {{version}}",
+        "body": "Mira las novedades",
+        "open": "Ver novedades"
+      },
+      "groups": {
+        "apps": "Apps",
+        "domains": "Dominios",
+        "storage": "Almacenamiento",
+        "nextjs": "Next.js",
+        "other": "Otros"
+      },
+      "cta": {
+        "domains": "Abrir Dominios",
+        "storage": "Abrir Almacenamiento",
+        "apps": "Abrir Apps",
+        "deployments": "Abrir Despliegues",
+        "settings": "Abrir Ajustes"
+      }
     },
     "navAttention": "{{count}} requieren atención",
     "logoStatus": {
@@ -449,7 +483,59 @@
       "issues_one": "{{count}} problema requiere atención",
       "issues_other": "{{count}} problemas requieren atención"
     },
-    "headerMore": "Más controles de la cabecera"
+    "headerMore": "Más controles de la cabecera",
+    "navTabs": {
+      "group": {
+        "apps": "Secciones de apps",
+        "pipelines": "Secciones de pipelines",
+        "databases": "Secciones de bases de datos",
+        "storage": "Secciones de almacenamiento",
+        "domains": "Secciones de dominios",
+        "traffic": "Secciones de tráfico",
+        "servers": "Secciones de servidores",
+        "registry": "Secciones del registro",
+        "cost": "Secciones de uso y coste",
+        "security": "Secciones de seguridad"
+      },
+      "tab": {
+        "apps": "Apps",
+        "projects": "Proyectos",
+        "templates": "Plantillas",
+        "tags": "Etiquetas",
+        "variables": "Variables",
+        "sources": "Fuentes",
+        "pipelines": "Pipelines",
+        "approvals": "Aprobaciones",
+        "databases": "Bases de datos",
+        "backups": "Copias de seguridad",
+        "storage": "Resumen",
+        "assets": "Recursos",
+        "networkShares": "Recursos de red",
+        "domains": "Dominios",
+        "dns": "DNS",
+        "mail": "Correo",
+        "proxy": "Proxy",
+        "loadBalancers": "Balanceadores de carga",
+        "cdn": "CDN",
+        "firewall": "Cortafuegos",
+        "nodes": "Nodos",
+        "providers": "Proveedores cloud",
+        "images": "Imágenes",
+        "registry": "Registro",
+        "credentials": "Credenciales",
+        "usage": "Uso",
+        "costs": "Costes",
+        "advisor": "Asesor de recursos",
+        "resources": "Recursos",
+        "security": "Centro de seguridad",
+        "iam": "Políticas IAM",
+        "imageScanning": "Escaneo de imágenes",
+        "bootstrapScripts": "Scripts de arranque",
+        "keys": "Claves y tokens",
+        "team": "Equipo",
+        "auditLog": "Registro de auditoría"
+      }
+    }
   },
   "login": {
     "signInTitle": "Iniciar sesión",
@@ -897,12 +983,13 @@
   },
   "appTabs": {
     "groups": {
-      "advanced": "Avanzado",
-      "basics": "Básicos",
-      "data": "Datos",
-      "network": "Red",
-      "observe": "Observar"
+      "config": "Configuración",
+      "deploy": "Despliegue",
+      "observe": "Observar",
+      "traffic": "Tráfico"
     },
+    "more": "Más",
+    "overview": "Resumen",
     "pages": "Páginas de {{section}}",
     "sections": "Secciones de la aplicación",
     "showAll": "Mostrar todas las pestañas ({{count}} ocultas)",

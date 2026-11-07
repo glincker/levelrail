@@ -166,5 +166,51 @@
       "disabled": "Disabled",
       "unknown": "Unknown"
     }
+  },
+  "nextCache": {
+    "title": "Shared cache (Next.js)",
+    "hint": "Keep the ISR and data cache in Redis so every replica serves the same pages.",
+    "toggle": "Share ISR and data cache across replicas",
+    "linked": "Redis database linked: {{name}}",
+    "notLinked": "No Redis database is linked to this app. The deploy stops until one is linked.",
+    "linkExisting": "Link {{name}}",
+    "create": "Create Redis",
+    "linkedToast": "Linked {{name}}",
+    "saved": "Shared cache saved",
+    "autoNote": "NEXT_BUILD_ID and the cache URL are set automatically at the next deploy.",
+    "suggest": "This app runs {{count}} replicas without a shared cache. Turn it on so they agree on cached pages.",
+    "redeploy": "Redeploy to apply",
+    "noGit": "Redeploy from your git source to apply this; this app has none.",
+    "started": "Redeploy started for {{name}}",
+    "errorTitle": "Could not update the shared cache"
+  },
+  "nextStatus": {
+    "title": "Next.js",
+    "skew": "Skew protection",
+    "held": "Previous release held, removed",
+    "noneHeld": "No previous release held",
+    "cache": "Shared cache",
+    "redis": "Redis",
+    "off": "Off",
+    "configure": "Configure",
+    "vitals": "Web vitals",
+    "collecting": "Collecting",
+    "notCollecting": "Not collecting",
+    "cron": "Cron jobs",
+    "cronCount_one": "{{count}} job",
+    "cronCount_other": "{{count}} jobs",
+    "noCron": "None",
+    "manage": "Manage",
+    "advisor": {
+      "title": "Advisor",
+      "empty": "No issues found",
+      "copy": "Copy command",
+      "copyFailed": "Could not copy",
+      "severity": {
+        "info": "Info",
+        "warn": "Warning",
+        "error": "Error"
+      }
+    }
   }
 }

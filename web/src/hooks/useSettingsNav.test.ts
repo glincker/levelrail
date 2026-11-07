@@ -30,7 +30,7 @@ const sections: LabelledSettingsSection[] = [
     items: [
       {
         id: 'certificates',
-        to: '/settings/certificates',
+        to: '/domains/certificates',
         icon: () => null,
         locked: false,
         title: 'TLS certificates',

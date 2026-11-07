@@ -104,7 +104,15 @@
       "body": "Cuerpo",
       "bodyHint": "Opcional. Se envía como application/json.",
       "background": "Tarea en segundo plano",
-      "backgroundHint": "La aplicación puede responder 202 de inmediato y seguir trabajando. El plano de control espera la respuesta hasta el tiempo límite de segundo plano y registra el resultado, así nadie tiene que mantener la solicitud abierta."
+      "backgroundHint": "La aplicación puede responder 202 de inmediato y seguir trabajando. El plano de control espera la respuesta hasta el tiempo límite de segundo plano y registra el resultado, así nadie tiene que mantener la solicitud abierta.",
+      "headers": "Cabeceras",
+      "headersHint": "Opcional. Cada fila envía una cabecera cuyo valor se lee de uno de los secretos de la app al ejecutar el trabajo, así el secreto nunca se guarda en el trabajo.",
+      "headerName": "Nombre de la cabecera",
+      "headerSecret": "Nombre del secreto",
+      "headerSecretPlaceholder": "CRON_SECRET",
+      "headerPrefix": "Prefijo",
+      "headerAdd": "Añadir cabecera",
+      "headerRemove": "Quitar cabecera"
     },
     "timezone": "Zona horaria",
     "timezoneHint": "Nombre IANA como Europe/Berlin. La programación se interpreta en esta zona, incluidos los cambios de horario de verano.",

@@ -133,8 +133,8 @@ func TestRedirectServer_NoCertificateNoRedirect(t *testing.T) {
 	if strings.Contains(raw, "308") || strings.Contains(raw, "Location") {
 		t.Errorf("no host holds a certificate, port 80 must not redirect: %s", raw)
 	}
-	if !strings.Contains(raw, "No HTTPS certificate") {
-		t.Errorf("port 80 should explain itself: %s", raw)
+	if strings.Contains(raw, "No HTTPS certificate") || strings.Contains(raw, `"status_code":200`) || !strings.Contains(raw, `"status_code":404`) {
+		t.Errorf("port 80 must answer the generic 404, not a 200 notice: %s", raw)
 	}
 }
 

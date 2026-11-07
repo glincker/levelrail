@@ -22,6 +22,7 @@ import { PinnedDigestBadge } from './PinnedDigestBadge'
 import { digestOfImage, unpinnedImage } from '../lib/imageDigest'
 import { GameStatusCard } from './apps/GameStatusCard'
 import { TunnelHint } from './apps/TunnelHint'
+import { VitalsCard } from './apps/VitalsCard'
 
 // Maps the three backend strategy constants to i18n keys.
 const STRATEGY_KEYS = {
@@ -177,6 +178,7 @@ export function AppOverview({ app }: { app: AppDetail }) {
           />
         </div>
         <GameStatusCard appName={app.name} />
+        <VitalsCard appName={app.name} />
         <TunnelHint
           appName={app.name}
           port={app.port}

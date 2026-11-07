@@ -54,6 +54,10 @@ type Hardening struct {
 	// backendless apps; both come from the brand layer.
 	BrandName string
 	DocsURL   string
+	// DiagnosticDial and DiagnosticToken send the catch-all to the control
+	// plane for the live-state page; empty keeps the static page.
+	DiagnosticDial  string
+	DiagnosticToken string
 }
 
 // DefaultHardening returns defaults that are safe for general web apps: no
@@ -345,4 +349,6 @@ func (h Hardening) unavailableRoutes() []Route {
 // automation set so the handshake still succeeds.
 type HoldRoute struct {
 	Hosts []string
+	// Reason picks the page wording and status; empty keeps the generic page.
+	Reason HoldReason
 }

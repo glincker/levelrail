@@ -114,10 +114,12 @@ export function useEnvEditorState(app: AppDetail) {
     setDraft(null)
   }, [])
 
-  const save = useCallback(async () => {
+  const save = useCallback(async (): Promise<string[]> => {
+    let rebuildKeys: string[] = []
     const plan = buildSavePlan(rows)
     if (plan.envChanged) {
       const saved = await updateApp({ ...app, env: plan.env })
+      rebuildKeys = saved.rebuild_keys ?? []
       queryClient.setQueryData(
         appKeys.detail(app.name),
         (prev: AppDetail | undefined) =>
@@ -155,6 +157,7 @@ export function useEnvEditorState(app: AppDetail) {
       }),
     ])
     setDraft(null)
+    return rebuildKeys
   }, [rows, app, queryClient])
 
   return {

@@ -14,6 +14,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/agent"
 	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/backup"
+	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deployurls"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/experimental"
@@ -111,7 +112,7 @@ func (s *bootState) startBuildAndIngress() {
 	telemetryDB := s.telemetryDB
 	supplyChainSvc := newSupplyChainService(ctx, logger, db, client, agentDataDir, b.ShortName)
 
-	builder, buildLimiter, closeBuilder, err := loadBuilder(ctx, logger, db, telemetryDB, secretsManager, agentRegistry, supplyChainSvc, guard)
+	builder, buildLimiter, closeBuilder, err := loadBuilder(ctx, logger, db, telemetryDB, secretsManager, agentRegistry, supplyChainSvc, guard, func(c *build.Client) { s.buildClient = c })
 	if err != nil {
 		// Non-fatal: the control plane still starts, with build-dependent paths unavailable.
 		logger.Warn("builder not configured: git webhook deploys and manual build trigger are both unavailable", slog.String("error", err.Error()))
@@ -187,7 +188,7 @@ func (s *bootState) wireRouter() {
 	apiHandler, apiRouter := rootHandler(rootDeps{
 		logger: logger, b: b, db: db, telemetryDB: telemetryDB, alertingDB: alertingDB,
 		secretsManager: secretsManager, masterKeyFilePath: masterKeyFilePath, webhookHandler: webhookHandler,
-		client: client, builder: builder, deployRecorder: deployRecorder, logBroadcaster: logBroadcaster,
+		client: client, builder: builder, buildClient: s.buildClient, deployRecorder: deployRecorder, logBroadcaster: logBroadcaster,
 		deployDispatcher: deployDispatcher, backupRunner: backupRunner, backupVerifyRunner: backupVerifyRunner,
 		agentRegistry: agentRegistry, agentCAFingerprint: agentCA.Fingerprint(), emailSender: emailSender,
 		scheduledTaskRunner: scheduledTaskRunner, functionQueue: s.functionQueue, engine: engine, ingressDriver: ingressDriver,
@@ -319,6 +320,7 @@ func (s *bootState) startMesh() error {
 	}
 	edgeInfo := edge.doctorInfo()
 	edgeInfo.Snapshot = setupIngressSnapshot(ctx, logger, ingressDriver, db, secretsManager, edge)
+	edgeInfo.LiveMaxBodyBytes = edge.liveMaxBodyBytes(db, logger, apiRouter.RuntimeSettings)
 	apiRouter.SetDoctorIngressEdge(edgeInfo)
 	apiRouter.SetIngressResilience(api.IngressResilience{
 		Status:  ingressDriver.SnapshotStatus,
@@ -333,6 +335,7 @@ func (s *bootState) startMesh() error {
 	apiRouter.SetProxyIntegration(proxySyncer, db, proxyVerifyTimeout(logger))
 	routeCheck := newRouteCheck(logger)
 	apiRouter.SetProxyRouteCheck(routeCheck)
+	wireDiagnostic(ctx, apiRouter, edge.hardening, proxySyncer, logger)
 	apiRouter.ResumeCutoverRuns(ctx)
 	go apiRouter.ResumeTakeover(ctx)
 	s.lbRegistry = lbRegistry

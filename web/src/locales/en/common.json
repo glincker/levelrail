@@ -296,12 +296,13 @@
     "showAll": "Show all tabs ({{count}} hidden)",
     "showLess": "Hide tabs that do not apply",
     "groups": {
-      "basics": "Basics",
-      "network": "Network",
-      "data": "Data",
-      "observe": "Observe",
-      "advanced": "Advanced"
-    }
+      "deploy": "Deploy",
+      "traffic": "Traffic",
+      "config": "Config",
+      "observe": "Observe"
+    },
+    "more": "More",
+    "overview": "Overview"
   },
   "recommended": {
     "title": "Recommended next",
@@ -349,6 +350,58 @@
         "label": "Usage and cost sections",
         "usage": "Usage",
         "costs": "Cost explorer"
+      }
+    },
+    "navTabs": {
+      "group": {
+        "apps": "Apps sections",
+        "pipelines": "Pipeline sections",
+        "databases": "Database sections",
+        "storage": "Storage sections",
+        "domains": "Domain sections",
+        "traffic": "Traffic sections",
+        "servers": "Server sections",
+        "registry": "Registry sections",
+        "cost": "Usage and cost sections",
+        "security": "Security sections"
+      },
+      "tab": {
+        "apps": "Apps",
+        "projects": "Projects",
+        "templates": "Templates",
+        "tags": "Tags",
+        "variables": "Variables",
+        "sources": "Sources",
+        "pipelines": "Pipelines",
+        "approvals": "Approvals",
+        "databases": "Databases",
+        "backups": "Backups",
+        "storage": "Overview",
+        "assets": "Assets",
+        "networkShares": "Network shares",
+        "domains": "Domains",
+        "dns": "DNS",
+        "mail": "Mail",
+        "proxy": "Proxy",
+        "loadBalancers": "Load balancers",
+        "cdn": "CDN",
+        "firewall": "Firewall",
+        "nodes": "Nodes",
+        "providers": "Cloud providers",
+        "images": "Images",
+        "registry": "Registry",
+        "credentials": "Credentials",
+        "usage": "Usage",
+        "costs": "Costs",
+        "advisor": "Resource advisor",
+        "resources": "Resources",
+        "security": "Security center",
+        "iam": "IAM policies",
+        "imageScanning": "Image scanning",
+        "bootstrapScripts": "Bootstrap scripts",
+        "keys": "Keys and tokens",
+        "team": "Team",
+        "auditLog": "Audit log"
       }
     },
     "pins": {
@@ -410,6 +463,7 @@
     "account": {
       "controlPlane": "Control plane",
       "updateAvailable": "Update available: {{version}}",
+      "updateAvailableShort": "Update available",
       "signOut": "Sign out"
     },
     "breadcrumb": {
@@ -419,10 +473,10 @@
     "navGroup": {
       "home": "Home",
       "primary": "Home",
-      "build": "Build and run",
+      "build": "Build",
       "data": "Data",
       "traffic": "Network",
-      "infrastructure": "Fleet and cost",
+      "infrastructure": "Infrastructure",
       "access": "Security",
       "ai": "AI"
     },
@@ -433,6 +487,7 @@
       "deployments": "Deployments",
       "projects": "Projects",
       "templates": "Templates",
+      "tags": "Tags",
       "get-started": "Get started",
       "welcome": "First-run setup",
       "migrate": "Migrate",
@@ -440,14 +495,14 @@
       "backups": "Backups",
       "domains": "Domains",
       "dns": "DNS",
-      "proxy": "Proxy",
+      "proxy": "Traffic",
       "loadbalancers": "Load balancers",
       "firewall": "Firewall",
-      "private-networks": "Private networks",
-      "nodes": "Nodes",
+      "private-networks": "Private network",
+      "nodes": "Servers",
       "network": "Topology",
       "cdn": "CDN and caches",
-      "registry": "Container registry",
+      "registry": "Registry",
       "registry-credentials": "Credentials",
       "network-shares": "Network shares",
       "node-providers": "Cloud providers",
@@ -467,7 +522,7 @@
       "resource-advisor": "Resource advisor",
       "usage": "Usage and cost",
       "resources": "Resources",
-      "security": "Security center",
+      "security": "Security",
       "console": "Console"
     },
     "quickNav": {
@@ -518,7 +573,39 @@
       "title": "What's new",
       "unread": "What's new: {{count}} unread",
       "allCaughtUp": "What's new: all caught up",
-      "empty": "No release notes available yet."
+      "empty": "No release notes available yet.",
+      "loading": "Loading release notes...",
+      "error": "Could not load release notes.",
+      "retry": "Try again",
+      "markSeen": "Mark all as seen",
+      "updateAvailable": "Update available: {{version}}",
+      "onLatest": "You are on the latest version",
+      "versionUnknown": "Version status unknown",
+      "allChangesGrouped": "All changes",
+      "openFullNotes": "Open the full release notes",
+      "update": "Update now",
+      "releaseNotes": "Release notes",
+      "highlights": "Highlights",
+      "allChanges": "All changes ({{count}})",
+      "toast": {
+        "title": "Updated to {{version}}",
+        "body": "See what is new",
+        "open": "See what is new"
+      },
+      "groups": {
+        "apps": "Apps",
+        "domains": "Domains",
+        "storage": "Storage",
+        "nextjs": "Next.js",
+        "other": "Other"
+      },
+      "cta": {
+        "domains": "Open Domains",
+        "storage": "Open Storage",
+        "apps": "Open Apps",
+        "deployments": "Open Deployments",
+        "settings": "Open Settings"
+      }
     },
     "navAttention": "{{count}} need attention",
     "headerMore": "More header controls"

@@ -49,6 +49,7 @@ import { DomainCheckPanel } from './DomainDnsCheck'
 import { DomainDnsStatusBadge } from './DomainDnsStatusBadge'
 import { GoLivePanel } from './GoLivePanel'
 import { ServerAddressLine } from './domains/ServerAddressCard'
+import { AddDomainWizard } from './domains/AddDomainWizard'
 import { StandaloneAddBody } from './domains/StandaloneAddBody'
 
 const DomainDiagnosePanel = lazy(() =>
@@ -494,6 +495,15 @@ function ModeSwitch({
   )
 }
 
+function BackToGuided({ onBack }: { onBack: () => void }) {
+  const { t } = useTranslation('domains')
+  return (
+    <Button type="button" variant="link" size="sm" onClick={onBack}>
+      {t('addWizard.backToWizard')}
+    </Button>
+  )
+}
+
 function AddDomainsModes({
   apps,
   claimedBy,
@@ -508,11 +518,31 @@ function AddDomainsModes({
   const [mode, setMode] = useState<AddMode>(
     apps.length === 0 && !initialApp ? 'proxy' : 'app',
   )
+  const [advanced, setAdvanced] = useState(false)
+  const guided = mode === 'app' && !advanced && (apps.length > 0 || initialApp)
   return (
     <>
       {initialApp ? null : <ModeSwitch mode={mode} onMode={setMode} />}
-      <ServerAddressLine />
-      {mode === 'proxy' ? (
+      {guided ? (
+        <AddDomainWizard
+          apps={initialApp && apps.length === 0 ? [{ name: initialApp }] : apps}
+          claimedBy={claimedBy}
+          initialApp={initialApp}
+          onClose={onClose}
+          onAdvanced={() => {
+            setAdvanced(true)
+          }}
+        />
+      ) : null}
+      {guided ? null : <ServerAddressLine />}
+      {mode === 'app' && advanced ? (
+        <BackToGuided
+          onBack={() => {
+            setAdvanced(false)
+          }}
+        />
+      ) : null}
+      {guided ? null : mode === 'proxy' ? (
         <StandaloneAddBody onClose={onClose} />
       ) : (
         <AddDomainsBody

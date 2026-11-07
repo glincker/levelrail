@@ -3,6 +3,9 @@ package build
 import (
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -285,4 +288,66 @@ func (c cgroupSpy) Build(_ context.Context, r Request, _ func(ProgressEvent)) (*
 
 func (c cgroupSpy) BuildRailpack(context.Context, RailpackRequest, func(ProgressEvent)) (*Result, error) {
 	return nil, c.err
+}
+
+func TestNextBuildNotes(t *testing.T) {
+	next := t.TempDir()
+	if err := os.WriteFile(filepath.Join(next, "package.json"), []byte(`{"dependencies":{"next":"15.0.0"}}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	plain := t.TempDir()
+	cases := []struct {
+		name         string
+		dir          string
+		host, minMiB int
+		wantLines    int
+		wantWarn     bool
+	}{
+		{"not next", plain, 512, 2048, 0, false},
+		{"next with enough memory", next, 8192, 2048, 1, false},
+		{"next low memory", next, 1024, 2048, 2, true},
+		{"warning disabled", next, 1024, 0, 1, false},
+		{"unknown host memory", next, 0, 2048, 1, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := NextBuildNotes(tc.dir, tc.host, tc.minMiB)
+			if len(got) != tc.wantLines {
+				t.Fatalf("lines = %v, want %d", got, tc.wantLines)
+			}
+			if tc.wantLines > 0 && !strings.HasPrefix(got[0], "next.js 15 detected (standalone: no, app router: no)") {
+				t.Fatalf("detect line = %q", got[0])
+			}
+			if tc.wantWarn != (len(got) == 2 && strings.Contains(got[1], "(1024 MiB free). Add swap")) {
+				t.Fatalf("warning = %v", got)
+			}
+		})
+	}
+}
+
+func TestNextCacheSuggestion(t *testing.T) {
+	next := t.TempDir()
+	if err := os.WriteFile(filepath.Join(next, "package.json"), []byte(`{"dependencies":{"next":"15.0.0"}}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	plain := t.TempDir()
+	cases := []struct {
+		name     string
+		dir      string
+		replicas int
+		redis    bool
+		want     bool
+	}{
+		{"multi replica next", next, 3, false, true},
+		{"single replica", next, 1, false, false},
+		{"redis already", next, 3, true, false},
+		{"not next", plain, 3, false, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := NextCacheSuggestion(tc.dir, tc.replicas, tc.redis) != ""; got != tc.want {
+				t.Fatalf("got %v want %v", got, tc.want)
+			}
+		})
+	}
 }

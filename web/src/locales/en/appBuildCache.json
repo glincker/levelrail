@@ -1,0 +1,11 @@
+{
+  "label": "Build cache:",
+  "summary": "{{size}}, used {{used}}",
+  "empty": "No cache yet, the first build fills it",
+  "neverUsed": "never",
+  "clear": "Clear cache",
+  "clearing": "Clearing",
+  "cleared": "Build cache cleared, {{size}} freed",
+  "confirmTitle": "Clear this app's build cache?",
+  "confirmBody": "The next build starts cold and takes longer, then refills the cache. Other apps and the shared cache are not touched."
+}

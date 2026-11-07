@@ -19,6 +19,14 @@ export const jobSchema = z
     httpPath: z.string().trim(),
     httpBody: z.string(),
     httpBackground: z.boolean(),
+    httpHeaders: z.array(
+      z.object({
+        name: z.string().trim(),
+        secretRef: z.string().trim(),
+        value: z.string().trim(),
+        prefix: z.string(),
+      }),
+    ),
     timezone: z.string().trim().min(1, 'required'),
     frequency: z.enum(['daily', 'weekly', 'custom']),
     time: z.string().trim(),
@@ -56,6 +64,7 @@ export const DEFAULT_JOB_VALUES: JobFormValues = {
   httpPath: '',
   httpBody: '',
   httpBackground: false,
+  httpHeaders: [],
   timezone: 'UTC',
   enabled: true,
   concurrencyPolicy: 'forbid',
@@ -100,6 +109,12 @@ export function toFormValues(task: ScheduledTask): JobFormValues {
     httpPath: task.http?.path ?? '',
     httpBody: task.http?.body ?? '',
     httpBackground: task.http?.background ?? false,
+    httpHeaders: (task.http?.headers ?? []).map((h) => ({
+      name: h.name,
+      secretRef: h.secretRef ?? '',
+      value: h.value ?? '',
+      prefix: h.prefix ?? '',
+    })),
     timezone: task.timezone || 'UTC',
     enabled: task.enabled,
     concurrencyPolicy: task.concurrency_policy,
@@ -127,6 +142,14 @@ export function toRequest(values: JobFormValues): ScheduledTaskRequest {
             path: values.httpPath,
             body: values.httpBody || undefined,
             background: values.httpBackground,
+            headers: values.httpHeaders
+              .filter((h) => h.name !== '')
+              .map((h) => ({
+                name: h.name,
+                secretRef: h.secretRef || undefined,
+                value: h.secretRef ? undefined : h.value,
+                prefix: h.secretRef && h.prefix ? h.prefix : undefined,
+              })),
           }
         : undefined,
     schedule: toCron(values),

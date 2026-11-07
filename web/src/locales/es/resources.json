@@ -166,5 +166,51 @@
       "disabled": "Deshabilitada",
       "unknown": "Desconocido"
     }
+  },
+  "nextCache": {
+    "title": "Caché compartida (Next.js)",
+    "hint": "Guarda la caché ISR y de datos en Redis para que todas las réplicas sirvan las mismas páginas.",
+    "toggle": "Compartir la caché ISR y de datos entre réplicas",
+    "linked": "Base de datos Redis vinculada: {{name}}",
+    "notLinked": "Ninguna base de datos Redis está vinculada a esta app. El despliegue se detiene hasta vincular una.",
+    "linkExisting": "Vincular {{name}}",
+    "create": "Crear Redis",
+    "linkedToast": "{{name}} vinculada",
+    "saved": "Caché compartida guardada",
+    "autoNote": "NEXT_BUILD_ID y la URL de la caché se configuran solas en el próximo despliegue.",
+    "suggest": "Esta app ejecuta {{count}} réplicas sin caché compartida. Actívala para que coincidan en las páginas en caché.",
+    "redeploy": "Redesplegar para aplicar",
+    "noGit": "Redespliega desde tu origen git para aplicar esto; esta app no tiene uno.",
+    "started": "Redespliegue iniciado para {{name}}",
+    "errorTitle": "No se pudo actualizar la caché compartida"
+  },
+  "nextStatus": {
+    "title": "Next.js",
+    "skew": "Protección contra desajuste de versiones",
+    "held": "Versión anterior retenida, se elimina",
+    "noneHeld": "Sin versión anterior retenida",
+    "cache": "Caché compartida",
+    "redis": "Redis",
+    "off": "Desactivada",
+    "configure": "Configurar",
+    "vitals": "Web vitals",
+    "collecting": "Recopilando",
+    "notCollecting": "Sin recopilar",
+    "cron": "Tareas cron",
+    "cronCount_one": "{{count}} tarea",
+    "cronCount_other": "{{count}} tareas",
+    "noCron": "Ninguna",
+    "manage": "Gestionar",
+    "advisor": {
+      "title": "Asesor",
+      "empty": "No se encontraron problemas",
+      "copy": "Copiar comando",
+      "copyFailed": "No se pudo copiar",
+      "severity": {
+        "info": "Info",
+        "warn": "Aviso",
+        "error": "Error"
+      }
+    }
   }
 }

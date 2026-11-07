@@ -3,9 +3,8 @@ import { useTranslation } from 'react-i18next'
 import {
   EyeGlassIcon,
   RocketGlassIcon,
-  ServerGlassIcon,
   Share2GlassIcon,
-  WrenchGlassIcon,
+  SlidersHorizontalGlassIcon,
 } from '@thesvg/ui-react'
 import { Link } from '@tanstack/react-router'
 import {
@@ -33,16 +32,15 @@ import {
   type AppNavSection,
 } from './navModel'
 import { useAppTabs } from '../apps/useAppTabs'
-import type { AppTabGroupId } from '@/lib/appTabGroups'
+import { CONFIG_MORE_SLUGS, type AppTabGroupId } from '@/lib/appTabGroups'
 import { useExperimentalFeatures } from '@/hooks/useExperimental'
 import { usePersistedToggles } from './usePersistedToggles'
 
 const GROUP_ICONS: Record<AppTabGroupId, React.ReactNode> = {
-  basics: <RocketGlassIcon size="1.4em" />,
-  network: <Share2GlassIcon size="1.4em" />,
-  data: <ServerGlassIcon size="1.4em" />,
+  deploy: <RocketGlassIcon size="1.4em" />,
+  traffic: <Share2GlassIcon size="1.4em" />,
+  config: <SlidersHorizontalGlassIcon size="1.4em" />,
   observe: <EyeGlassIcon size="1.4em" />,
-  advanced: <WrenchGlassIcon size="1.4em" />,
 }
 
 const APP_NAV_STORAGE_KEY = 'shell.nav.app.open'
@@ -77,10 +75,13 @@ function ItemLink({
           tooltip={label ?? item.label}
           title={label ?? item.label}
           data-locked="true"
-          className={cn('text-muted-foreground', sub && 'h-7 pl-6 text-[13px]')}
+          className={cn(
+            'text-sidebar-foreground/75',
+            sub && 'h-7 pl-6 text-[13px]',
+          )}
         >
           {item.icon}
-          <span>{item.label}</span>
+          <span>{label ?? item.label}</span>
           <LockedFeatureMark id={describedBy} />
         </SidebarMenuButton>
       </SidebarMenuItem>
@@ -96,8 +97,10 @@ function ItemLink({
         className={cn(sub && 'h-7 pl-6 text-[13px]')}
       >
         {item.icon}
-        <span>{item.label}</span>
-        {item.beta && <BetaBadge className="ml-auto" />}
+        <span>{label ?? item.label}</span>
+        {item.beta && (
+          <BetaBadge className="ml-auto text-sidebar-foreground/85" />
+        )}
       </SidebarMenuButton>
     </SidebarMenuItem>
   )
@@ -139,12 +142,18 @@ export function AppNav({ name }: { name: string }) {
   const { t } = useTranslation('common')
   const experimental = useExperimentalFeatures()
   const tabs = useAppTabs(name)
-  const sections: AppNavSection[] = tabs.groups.map((g) => ({
-    id: g.id,
-    label: t(`appTabs.groups.${g.id}`),
-    icon: GROUP_ICONS[g.id],
-    items: g.items,
-  }))
+  // Overview is a single row above the sections, so it never sits in Deploy.
+  const overview = tabs.groups
+    .flatMap((g) => g.items)
+    .find((i) => i.slug === 'overview')
+  const sections: AppNavSection[] = tabs.groups
+    .map((g) => ({
+      id: g.id,
+      label: t(`appTabs.groups.${g.id}`),
+      icon: GROUP_ICONS[g.id],
+      items: g.items.filter((i) => i.slug !== 'overview'),
+    }))
+    .filter((g) => g.items.length > 0)
   const activeSectionId = tabs.activeGroup
   const active = {
     section: { id: activeSectionId },
@@ -166,6 +175,15 @@ export function AppNav({ name }: { name: string }) {
       <SidebarGroup>
         <SidebarGroupContent>
           <SidebarMenu>
+            {overview ? (
+              <ItemLink
+                name={name}
+                item={overview}
+                activeId={active.item.id}
+                label={t('appTabs.overview')}
+                experimental={experimental}
+              />
+            ) : null}
             {sections.map((section) => {
               const only = section.items[0]
               if (only && isSingleSection(section) && !rail) {
@@ -174,7 +192,7 @@ export function AppNav({ name }: { name: string }) {
                     key={section.id}
                     name={name}
                     item={only}
-                    activeId={active?.item.id}
+                    activeId={active.item.id}
                     experimental={experimental}
                   />
                 )
@@ -185,12 +203,16 @@ export function AppNav({ name }: { name: string }) {
                     key={section.id}
                     name={name}
                     section={section}
-                    activeSectionId={active?.section.id}
+                    activeSectionId={active.section.id}
                     experimental={experimental}
                   />
                 )
               }
-              const containsActive = active?.section.id === section.id
+              const containsActive = active.section.id === section.id
+              const isMore = (i: AppNavItem) =>
+                section.id === 'config' && CONFIG_MORE_SLUGS.includes(i.slug)
+              const main = section.items.filter((i) => !isMore(i))
+              const more = section.items.filter(isMore)
               return (
                 <li key={section.id} className="list-none">
                   <CollapsibleSection
@@ -210,16 +232,49 @@ export function AppNav({ name }: { name: string }) {
                     }
                   >
                     <SidebarMenu>
-                      {section.items.map((item) => (
+                      {main.map((item) => (
                         <ItemLink
                           key={item.id}
                           name={name}
                           item={item}
-                          activeId={active?.item.id}
+                          activeId={active.item.id}
                           sub
                           experimental={experimental}
                         />
                       ))}
+                      {more.length > 0 ? (
+                        <li className="list-none">
+                          <CollapsibleSection
+                            id={`app-${section.id}-more`}
+                            open={resolveOpen(
+                              stored,
+                              `${section.id}-more`,
+                              more.some((i) => i.id === active.item.id),
+                            )}
+                            onOpenChange={(open) =>
+                              setOpen(`${section.id}-more`, open)
+                            }
+                            header={
+                              <span className="flex items-center gap-2 pl-2 text-[13px] text-sidebar-foreground/70">
+                                {t('appTabs.more')}
+                              </span>
+                            }
+                          >
+                            <SidebarMenu>
+                              {more.map((item) => (
+                                <ItemLink
+                                  key={item.id}
+                                  name={name}
+                                  item={item}
+                                  activeId={active.item.id}
+                                  sub
+                                  experimental={experimental}
+                                />
+                              ))}
+                            </SidebarMenu>
+                          </CollapsibleSection>
+                        </li>
+                      ) : null}
                     </SidebarMenu>
                   </CollapsibleSection>
                 </li>

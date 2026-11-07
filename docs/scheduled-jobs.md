@@ -234,3 +234,29 @@ levelrail-cli jobs create web weekly-report --schedule "0 8 * * 1" \
 - [app.yaml reference](/app-spec-reference)
 - [Observability and alerts](/observability)
 - [Scheduled deploys](/scheduled-deploys)
+
+## HTTP jobs
+
+A job can call a path on its own app instead of running a command. This is the
+replacement for `vercel.json` crons. The control plane calls the app's internal
+address, so there is no public round trip, and the app is woken first if it
+sleeps.
+
+```yaml
+jobs:
+  - name: cleanup
+    schedule: "*/15 * * * *"
+    http:
+      path: /api/cron/cleanup
+      method: GET          # GET (default) or POST
+      headers:
+        - name: Authorization
+          secretRef: CRON_SECRET   # an app secret, read at run time
+          prefix: "Bearer "
+```
+
+`path` must start with `/`. A header takes either a literal `value` or a
+`secretRef`, never secret text in the file. The run history records the status
+code, duration and a truncated response body. The request timeout comes from
+the runtime setting `jobs.http_timeout_seconds` unless the job sets `timeout`.
+The dashboard Jobs tab edits the same fields, headers included.

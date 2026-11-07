@@ -84,6 +84,13 @@ export interface ProxyCertificate {
   status: 'healthy' | 'expiring_soon' | 'expired'
 }
 
+// The HTTP status the domain's route answered on its last stored probe.
+export interface DomainRouteStatus {
+  status: number
+  ok: boolean
+  checked_at: string
+}
+
 // Mirrors internal/api/domain_check.go's domainCheckResponse wire shape
 // exactly.
 export interface DomainCheckResult {
@@ -114,6 +121,7 @@ export interface DomainCheckResult {
   hints?: DnsHint[]
   zone?: string
   nameserver_provider?: NameserverProvider
+  route?: DomainRouteStatus
 }
 
 export const domainCheckKeys = {
@@ -167,11 +175,19 @@ export function domainCheckQueryOptions(appName: string, domain: string) {
   })
 }
 
-export function useDomainCheck(appName: string, domain: string) {
+// poll: false hands rechecking to the readiness countdown once a result
+// exists, so two timers never restart each other.
+export function useDomainCheck(
+  appName: string,
+  domain: string,
+  options: { poll?: boolean } = {},
+) {
+  const poll = options.poll ?? true
   return useQuery({
     ...domainCheckQueryOptions(appName, domain),
     refetchInterval: (query) => {
       if (query.state.data?.status === 'connected') return false
+      if (!poll && query.state.data) return false
       return pollIntervalMs(query.state.dataUpdateCount)
     },
   })

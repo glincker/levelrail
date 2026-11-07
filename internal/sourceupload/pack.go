@@ -37,6 +37,18 @@ type Plan struct {
 	Root  string
 	Files []File
 	Total int64
+	// EditorSkipped lists files left out as editor or agent config.
+	EditorSkipped []string
+}
+
+// EditorSkippedSummary returns the skipped count and up to limit file paths,
+// so the message names real files rather than a misleading top directory.
+func (p Plan) EditorSkippedSummary(limit int) (int, []string) {
+	n := len(p.EditorSkipped)
+	if limit > n {
+		limit = n
+	}
+	return n, append([]string(nil), p.EditorSkipped[:limit]...)
 }
 
 // Largest returns up to n files, biggest first.
@@ -84,6 +96,10 @@ func Scan(ctx context.Context, root string, opts Options) (Plan, error) {
 			return nil
 		}
 		if !d.Type().IsRegular() {
+			return nil
+		}
+		if set.editorSkipped(rel) {
+			plan.EditorSkipped = append(plan.EditorSkipped, rel)
 			return nil
 		}
 		info, ierr := d.Info()

@@ -502,7 +502,8 @@ func specServiceFromDesired(svc store.DesiredService, buildCfg spec.Build) spec.
 	}
 	if len(svc.Env) > 0 || len(svc.SecretEnv) > 0 || len(svc.VaultEnv) > 0 {
 		out.Env = make(map[string]spec.EnvVar, len(svc.Env)+len(svc.SecretEnv)+len(svc.VaultEnv))
-		for k, v := range svc.Env {
+		// Ids Levelrail generated last deploy are dropped so this deploy mints fresh ones.
+		for k, v := range deploy.StripGeneratedEnv(svc.Env) {
 			out.Env[k] = spec.EnvVar{Value: v}
 		}
 		// Required carries through from store.DesiredService.SecretEnv
@@ -521,6 +522,14 @@ func specServiceFromDesired(svc store.DesiredService, buildCfg spec.Build) spec.
 			out.Env[k] = spec.EnvVar{Vault: &spec.VaultRef{Path: ref.Path, Key: ref.Key}}
 		}
 	}
+	// A rebuild must keep the app's scale and database links, not reset them to defaults.
+	out.Replicas = svc.Replicas
+	for k, ref := range svc.DatabaseEnv {
+		if out.Env == nil {
+			out.Env = map[string]spec.EnvVar{}
+		}
+		out.Env[k] = spec.EnvVar{From: ref.Database + "." + ref.Field}
+	}
 	if svc.Resources != nil {
 		out.Resources = specResourcesFromStore(*svc.Resources)
 	}
@@ -536,7 +545,7 @@ func specServiceFromDesired(svc store.DesiredService, buildCfg spec.Build) spec.
 		out.Egress = specEgressFromStore(*svc.Egress)
 	}
 	out.Tolerations, out.Affinity = placement.DecodeRules(svc.Tolerations, svc.Affinity)
-	return out
+	return out.WithNextCache(svc.NextCache).WithNextImageCache(svc.NextImageCache)
 }
 
 // specEgressFromStore reverses internal/deploy's own toServiceEgressPolicy

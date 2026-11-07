@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -121,4 +122,20 @@ func warmingImageID(svc store.DesiredService, state *docker.ContainerState) stri
 		return state.ImageID
 	}
 	return svc.LocalImageID()
+}
+
+// holdReason derives why svc has no backend from its desired and observed
+// state: stopped by the user, mid-deploy, or otherwise unhealthy.
+func (c *Controller) holdReason(ctx context.Context, svc store.DesiredService) ingress.HoldReason {
+	if svc.Suspended || svc.Replicas == 0 {
+		return ingress.HoldReasonStopped
+	}
+	attempts, _ := c.deployAttempts(ctx, svc.Name)
+	for _, a := range attempts {
+		switch a.Status {
+		case store.DeployAttemptStatusQueued, store.DeployAttemptStatusRunning, store.DeployAttemptStatusPending:
+			return ingress.HoldReasonDeploying
+		}
+	}
+	return ingress.HoldReasonUnhealthy
 }

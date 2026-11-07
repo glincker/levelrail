@@ -15,7 +15,9 @@ import (
 func TestRun_AppsDeploysShow(t *testing.T) {
 	var gotPath string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotPath = r.URL.Path
+		if !strings.HasSuffix(r.URL.Path, "/phases") {
+			gotPath = r.URL.Path
+		}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(deployAttemptResource{
 			ID: "dep_2", ServiceName: "web", Status: "failed", Image: "web:2", StartedAt: time.Now(),
@@ -57,6 +59,44 @@ func TestPrintDeployCompareExtras(t *testing.T) {
 	for _, want := range []string{"digest: sha256:1 -> sha256:2", "added    API_URL", "abcdef1 fix: x"} {
 		if !strings.Contains(buf.String(), want) {
 			t.Errorf("output missing %q:\n%s", want, buf.String())
+		}
+	}
+}
+
+func TestRun_AppsDeploysShowPhases(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if strings.HasSuffix(r.URL.Path, "/phases") {
+			_, _ = w.Write([]byte(`{"deploy_id":"dep_3","phases":[{"phase":"build","status":"running","duration_ms":61000}],"eta_ms":180000}`))
+			return
+		}
+		_ = json.NewEncoder(w).Encode(deployAttemptResource{ID: "dep_3", ServiceName: "web", Status: "running", Image: "web:3", StartedAt: time.Now()})
+	}))
+	defer srv.Close()
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "deploys", "show", "web", "--api-url", srv.URL})
+	for _, want := range []string{"phases:", "build", "running", "1m1s", "3m0s left"} {
+		if !strings.Contains(stdout, want) {
+			t.Errorf("stdout missing %q: %s", want, stdout)
+		}
+	}
+}
+
+func TestDeployETALine(t *testing.T) {
+	secs := func(v int64) *int64 { return &v }
+	cases := []struct {
+		name string
+		ph   apiclient.DeployPhases
+		want string
+	}{
+		{"app", apiclient.DeployPhases{ETASeconds: secs(100), ETABasis: "app_history", Samples: 5}, "about 1m40s left, based on your last 5 deploys"},
+		{"whole minute", apiclient.DeployPhases{ETASeconds: secs(60), ETABasis: "app_history", Samples: 3}, "about 1m left, based on your last 3 deploys"},
+		{"platform", apiclient.DeployPhases{ETASeconds: secs(45), ETABasis: "platform_history", Samples: 4}, "about 45s left, based on the last 4 deploys on this server"},
+		{"none", apiclient.DeployPhases{ETABasis: "none"}, ""},
+		{"legacy", apiclient.DeployPhases{ETAMS: secs(180000)}, "about 3m0s left"},
+	}
+	for _, c := range cases {
+		if got := deployETALine(c.ph); got != c.want {
+			t.Errorf("%s: got %q, want %q", c.name, got, c.want)
 		}
 	}
 }

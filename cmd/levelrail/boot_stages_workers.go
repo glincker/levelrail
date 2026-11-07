@@ -427,6 +427,8 @@ func (s *bootState) startSchedulers() {
 		}
 	}()
 
+	go func() { _ = apiRouter.RunVitalsWorker(ctx) }() // flushes buffered web vitals counters and prunes old rows
+
 	// Follows new domains until DNS and the certificate are ready; the set is persisted so a restart resumes it.
 	go func() {
 		if err := apiRouter.RunDNSWatcher(ctx); err != nil && !errors.Is(err, context.Canceled) {

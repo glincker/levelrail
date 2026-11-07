@@ -132,6 +132,7 @@ func (rt *Router) deleteApp(ctx context.Context, name string) (teardownErr, err 
 			rt.logger.Error("api: delete app: teardown pending", slog.String("error", teardownErr.Error()), slog.String("name", name))
 		}
 	}
+	rt.removeAppArtifacts(ctx, name, existing.NodeID)
 	if rt.canaries != nil && !store.IsCanaryService(name) {
 		if _, ok, err := rt.canaries.GetCanaryRelease(ctx, name); err == nil && ok {
 			if err := rt.removeCanary(ctx, name); err != nil {

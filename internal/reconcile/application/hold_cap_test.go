@@ -177,3 +177,25 @@ func (f *fakeApplied) last() store.AppliedConfig {
 	}
 	return f.saved[len(f.saved)-1]
 }
+
+func TestHeldFilterExtendsToNextGraceUntil(t *testing.T) {
+	now := time.Now()
+	grace := now.Add(20 * time.Minute)
+	c := New("web", &fakeStore{}, newFakeRuntime(0), WithPreviousReleaseHold(time.Minute),
+		WithNextGraceHold(func(string, time.Time) time.Time { return grace }))
+	cur := ContainerName("web", "img:v2", "")
+	prev := ContainerName("web", "img:v1", "")
+	all := []docker.ContainerState{
+		{ID: "c", Name: cur, Running: true, Created: now.Add(-10 * time.Minute)},
+		{ID: "p", Name: prev, Running: true, Created: now.Add(-20 * time.Minute)},
+	}
+	due, until := c.heldFilterFor(all, []string{cur}, now, time.Minute)
+	if len(due) != 0 || !until.Equal(grace) {
+		t.Fatalf("due=%v until=%v want held until %v", due, until, grace)
+	}
+	// After the window the previous release is due again.
+	due, _ = c.heldFilterFor(all, []string{cur}, grace.Add(time.Second), time.Minute)
+	if len(due) != 1 || due[0].ID != "p" {
+		t.Fatalf("after grace due = %v", due)
+	}
+}

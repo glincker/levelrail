@@ -1323,7 +1323,68 @@
     "security": "Security",
     "pages": "Pages",
     "seo": "SEO",
-    "tls": "TLS"
+    "tls": "TLS",
+    "breadcrumb": "Breadcrumb",
+    "back": "Domains",
+    "openDomain": "Open the page for {{domain}}",
+    "state": {
+      "live": "Live",
+      "waitingDns": "Waiting for DNS",
+      "wrongDns": "DNS points somewhere else",
+      "certFailed": "Certificate needs attention",
+      "issuing": "Issuing certificate",
+      "starting": "Almost live"
+    },
+    "resolvers": {
+      "label": "DNS answers by server",
+      "authoritative": "Your DNS host",
+      "state": {
+        "ok": "correct",
+        "pending": "no answer yet",
+        "wrong": "wrong value"
+      }
+    },
+    "provider": {
+      "generic": "Add this record where you manage your domain's DNS, usually your registrar or hosting provider.",
+      "cloudflare": "Your DNS looks like it is on Cloudflare. Add the record there and turn the orange cloud off until the certificate is issued.",
+      "route53": "Your DNS looks like it is on Amazon Route 53. Add the record in the hosted zone for this domain.",
+      "godaddy": "Your DNS looks like it is on GoDaddy. Add the record under DNS records for this domain.",
+      "namecheap": "Your DNS looks like it is on Namecheap. Add the record under Advanced DNS.",
+      "google": "Your DNS looks like it is on Google Cloud DNS. Add the record in this domain's zone.",
+      "open": "Open {{name}} DNS",
+      "name": {
+        "cloudflare": "Cloudflare",
+        "route53": "Route 53",
+        "godaddy": "GoDaddy",
+        "namecheap": "Namecheap",
+        "google": "Google"
+      }
+    },
+    "recordType": "Record type",
+    "field": {
+      "type": "Type",
+      "name": "Name",
+      "value": "Value"
+    },
+    "wrongValue": "Points to {{found}}, should be {{should}}.",
+    "sendAdmin": "Send to your DNS admin",
+    "adminCopied": "Message copied",
+    "adminMessage": "Hi, please add this DNS record so {{domain}} reaches our server.\n\nType: {{type}}\nName: {{domain}}\nValue: {{value}}\n\nIt can take a few minutes to show up. Thank you.",
+    "timeline": {
+      "label": "Certificate progress",
+      "dns": "DNS points here",
+      "requested": "Certificate requested",
+      "issued": "Certificate issued",
+      "expires": "Expires",
+      "done": "Done",
+      "todo": "Not yet"
+    },
+    "testIt": "Test it",
+    "redirect": "Redirect and www",
+    "danger": {
+      "title": "Danger zone",
+      "body": "Move this domain to another app, park it, or remove it. Visitors lose this address while it is away."
+    }
   },
   "waf": {
     "add": "Add WAF / rate limit",
@@ -1536,5 +1597,197 @@
     "domains": "Domains",
     "certificates": "Certificates",
     "dns": "DNS"
+  },
+  "www": {
+    "title": "www address",
+    "help": "Make {{domain}} and www.{{domain}} both work, with one redirect.",
+    "choiceLabel": "What should happen",
+    "choice": {
+      "apex": "Send www visitors to {{domain}}",
+      "www": "Send {{domain}} visitors to www.{{domain}}",
+      "both": "Serve both, no redirect",
+      "apexOnly": "Only the main address"
+    },
+    "loading": "Reading your DNS records",
+    "error": "We could not read the DNS plan: {{message}}",
+    "retry": "Check again",
+    "records": "DNS records",
+    "col": {
+      "type": "Type",
+      "name": "Name",
+      "value": "Value",
+      "now": "Now"
+    },
+    "outcome": {
+      "created": "Will add",
+      "updated": "Will change",
+      "unchanged": "Already correct",
+      "conflict": "Different record exists"
+    },
+    "copy": "Copy {{value}}",
+    "copied": "Copied",
+    "redirect": "{{from}} will redirect to {{to}}.",
+    "noProvider": "No DNS provider is connected for this domain. Add these records where you manage DNS, then check again.",
+    "replaceWarning": "A different record already exists. Applying will replace it.",
+    "apply": "Apply for me",
+    "applyReplace": "Replace and apply",
+    "applying": "Applying",
+    "applyError": "Could not apply: {{message}}",
+    "applied": "Done. Both addresses are set up.",
+    "partial": "Some records were not applied.",
+    "result": {
+      "created": "Added",
+      "updated": "Changed",
+      "unchanged": "Already correct",
+      "conflict": "Left alone",
+      "failed": "Failed",
+      "not_attempted": "Not tried"
+    },
+    "redirectApplied": "The redirect is active.",
+    "connectTitle": "Connect www to this app",
+    "connectPointsHere": "www.{{domain}} already points to this server but is not connected to this app. Connect it and send www visitors to {{domain}}.",
+    "connectNeedsDns": "www.{{domain}} is not connected to this app yet. Add this CNAME where you manage DNS, then check again.",
+    "connectButton": "Connect www and redirect",
+    "connecting": "Connecting",
+    "otherOptions": "Choose another option",
+    "connectedRedirect": "www redirects to {{domain}}",
+    "connectedNoRedirect": "www is connected to this app",
+    "connectDone": "www is connected to this app.",
+    "state": {
+      "already_correct": "Already set",
+      "missing": "Not set"
+    }
+  },
+  "moreOptions": {
+    "title": "More options",
+    "activeLabel": "Options that are on",
+    "access": "Access",
+    "routing": "Routing",
+    "protection": "Protection and polish",
+    "chip": {
+      "basicAuth": "Basic auth",
+      "authGate": "Sign-in gate",
+      "redirect": "Redirect",
+      "maintenance": "Maintenance",
+      "waf": "WAF / rate limit",
+      "errorPages": "Custom error pages",
+      "hidden": "Hidden from search",
+      "ownCert": "Own certificate"
+    },
+    "links": {
+      "allSettings": "All settings",
+      "diagnose": "Diagnose",
+      "deploys": "App is not running, see deploys"
+    }
+  },
+  "readiness": {
+    "title": "Domain readiness",
+    "checkNow": "Check now",
+    "countdown": "Checking again in {{seconds}}s",
+    "allDone": "All set, no more checks needed.",
+    "step": {
+      "dns": "DNS points here",
+      "cert": "Certificate issued",
+      "site": "Site answering"
+    },
+    "say": {
+      "dns": {
+        "done": "Your domain points at this server.",
+        "progress": "Waiting for DNS. Add the record shown above.",
+        "blocked": "The domain points somewhere else. Fix the record shown above.",
+        "waiting": "Waiting for DNS."
+      },
+      "cert": {
+        "done": "Your certificate is ready.",
+        "progress": "Issuing your certificate, usually under a minute.",
+        "blocked": "Issuing failed. See the fix below.",
+        "waiting": "Starts once DNS points here."
+      },
+      "site": {
+        "done": "Your site is answering over HTTPS.",
+        "progress": "Waiting for the site to answer.",
+        "blocked": "The site is not answering. See below.",
+        "waiting": "Starts once the certificate is ready."
+      }
+    },
+    "ttl": "DNS changes can take up to {{time}} to reach everyone.",
+    "unit": {
+      "s_one": "{{count}} second",
+      "s_other": "{{count}} seconds",
+      "m_one": "{{count}} minute",
+      "m_other": "{{count}} minutes",
+      "h_one": "{{count}} hour",
+      "h_other": "{{count}} hours"
+    },
+    "localLag": "Public DNS is already right. This server's own resolver may lag a little, which does not stop your site.",
+    "issuing": "Issuing your certificate. This page updates by itself.",
+    "issueFailed": "The certificate could not be issued. Check that the record points here and port 80 is open, then press Check now.",
+    "route": {
+      "404": "The route answers 404, which means the server is reachable but does not know this domain yet.",
+      "503": "The route answers 503, which means the server is reachable but the app behind it is not ready or not attached to this domain.",
+      "5xx": "The route answers a server error, which means the server is reachable but the app behind it is failing. Check the app logs."
+    },
+    "diagnose": "Why is it not answering?"
+  },
+  "addWizard": {
+    "progress": "Step {{current}} of {{total}}",
+    "stepNames": {
+      "1": "Domain",
+      "2": "Point it here",
+      "3": "Going live"
+    },
+    "back": "Back",
+    "next": "Continue",
+    "advanced": "Advanced: add several domains at once",
+    "backToWizard": "Back to the guided setup",
+    "step1": {
+      "title": "Which domain and which app?",
+      "domainLabel": "Your domain",
+      "domainPlaceholder": "example.com",
+      "appLabel": "App",
+      "appPlaceholder": "Choose an app",
+      "kindApex": "This is a main domain. We will suggest connecting www too in the last step.",
+      "kindSubdomain": "This is a subdomain, it needs one record.",
+      "kindWww": "This is a www address.",
+      "adding": "Adding..."
+    },
+    "errors": {
+      "empty": "Type the domain you bought, for example example.com.",
+      "invalid": "That does not look like a domain. Use letters, numbers and dots, for example example.com.",
+      "wildcard": "A wildcard like *.example.com needs the advanced form. Use the link below, or type a single domain.",
+      "claimedHere": "This app already uses that domain. Pick another domain or open it from the list.",
+      "claimedOther": "The app {{app}} already uses that domain. Remove it there first, or pick another domain.",
+      "noApp": "Choose the app this domain should open.",
+      "addFailed": "We could not add the domain: {{message}}. Check the name and try again."
+    },
+    "step2": {
+      "title": "Point your domain here",
+      "intro": "Add this record where you bought {{domain}}. It tells the internet to send visitors to your server.",
+      "type": "Type",
+      "name": "Name",
+      "value": "Value",
+      "copy": "Copy {{label}}",
+      "copied": "{{label}} copied",
+      "loading": "Looking up your server address...",
+      "noRecords": "We could not find this server's public address. Open Domains settings and set the server address, then come back.",
+      "providerOn": "A DNS provider is connected, so we can add this record for you.",
+      "providerOff": "No DNS provider is connected. Add the record by hand at your registrar, it takes a minute to copy, then continue. Nothing is changed for you.",
+      "apply": "Add the record for me",
+      "applying": "Adding...",
+      "applied": "Record added. It can take a few minutes to spread.",
+      "applyFailed": "We could not add the record: {{message}}. Add it by hand with the values above, or check the provider connection.",
+      "continue": "I added it, continue"
+    },
+    "step3": {
+      "title": "Going live",
+      "waiting": "We check again by ourselves. You can leave this open.",
+      "doneTitle": "{{domain}} is live",
+      "doneBody": "Visitors can open your site over HTTPS.",
+      "open": "Open https://{{domain}}",
+      "addAnother": "Add another",
+      "finishLater": "Finish later",
+      "wwwTitle": "Also connect www",
+      "wwwBody": "Visitors often type www. One click connects it and sends them to {{domain}}."
+    }
   }
 }

@@ -24,6 +24,9 @@ export interface Tag {
   id: string
   name: string
   created_at?: string
+  // Only the list route sets these.
+  app_count?: number
+  resource_count?: number
 }
 
 export async function fetchTags(): Promise<Tag[]> {

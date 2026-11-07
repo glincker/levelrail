@@ -68,4 +68,16 @@ describe('VersionFooterView', () => {
       'healthy',
     )
   })
+
+  it('still says an update is available when the latest version is unknown', () => {
+    show({
+      current: '0.8.0',
+      latest: null,
+      updateAvailable: true,
+      status: 'healthy',
+    })
+    expect(screen.getByTestId('version-update').textContent).toContain(
+      'Update available',
+    )
+  })
 })

@@ -405,5 +405,34 @@
     "fixedIn": "Corregido en {{version}}",
     "reference": "Referencia",
     "loadError": "No se pudieron cargar los avisos."
+  },
+  "imageScanning": {
+    "page": {
+      "title": "Escaneo de imágenes",
+      "description": "La política de escaneo predeterminada de toda la instancia."
+    },
+    "scan": {
+      "label": "Escanear imágenes en busca de vulnerabilidades conocidas"
+    },
+    "gate": {
+      "label": "Bloqueo de despliegue",
+      "options": {
+        "off": "Desactivado",
+        "warn": "Solo avisar",
+        "block_on_critical": "Bloquear si hay críticas",
+        "block_on_high": "Bloquear si hay altas o críticas"
+      },
+      "needsScan": "Activa el escaneo para usar un bloqueo distinto de Desactivado."
+    },
+    "save": {
+      "action": "Guardar política",
+      "pending": "Guardando",
+      "done": "Política guardada."
+    },
+    "inherit": "Las apps sin política propia heredan esta.",
+    "serverOff": "El escaneo de vulnerabilidades está desactivado en este plano de control, así que la política aún no tiene efecto.",
+    "rootOnly": "Solo una cuenta root puede cambiar esta política.",
+    "loading": "Cargando la política",
+    "error": "No se pudo cargar la política de escaneo."
   }
 }

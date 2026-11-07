@@ -6,10 +6,16 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/deploysafety"
 	"github.com/GLINCKER/levelrail/internal/diagnose"
+	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/repolayout"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -193,5 +199,50 @@ func TestBuildSourceFactsScopedCallerGetsNoAppToken(t *testing.T) {
 	}
 	if gitHubAppTokenAllowed(ctx) {
 		t.Error("scoped caller allowed an app token")
+	}
+}
+
+func TestDeleteAppRemovesRollbackImagesAndUploads(t *testing.T) {
+	t.Parallel()
+	db := openTestDB(t)
+	inv := &fakeImageInventory{records: []docker.ImageRecord{
+		{ID: "sha256:a", Tags: []string{"site:dep1"}},
+		{ID: "sha256:b", Tags: []string{"registry.test/other/site:v1"}},
+		{ID: "sha256:c", Tags: []string{"site:running"}, Containers: 1},
+	}}
+	dataDir := t.TempDir()
+	logger := slog.New(slog.NewTextHandler(discardWriter{}, nil))
+	rt := NewRouter(logger, testBrand(), db, WithDataDir(dataDir), WithDeployGate(db, deploysafety.Effective{}),
+		WithImageInventory(func(string) (docker.ImageInventory, error) { return inv, nil }))
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+
+	seedApp(t, db, "site")
+	pin := store.RollbackPin{ServiceName: "site", DeployAttemptID: "att1", Image: "site:dep0", ImageID: "sha256:z", PinRef: "levelrail-rollback/site:att1"}
+	if err := db.SaveRollbackPin(ctx, pin); err != nil {
+		t.Fatalf("save pin: %v", err)
+	}
+	upDir := filepath.Join(dataDir, "uploads", "site")
+	if err := os.MkdirAll(upDir, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(upDir, "x.tar.gz"), []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodDelete, "/api/v1/apps/site", ""))
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("delete status = %d", rec.Code)
+	}
+	if _, err := os.Stat(upDir); !os.IsNotExist(err) {
+		t.Errorf("uploads dir still present: %v", err)
+	}
+	if pins, err := db.ListRollbackPins(ctx, "site"); err != nil || len(pins) != 0 {
+		t.Errorf("pins = %v, err = %v", pins, err)
+	}
+	sort.Strings(inv.removed)
+	if got := strings.Join(inv.removed, ","); got != "levelrail-rollback/site:att1,site:dep1" {
+		t.Errorf("removed = %q, want the pin tag and the unused local build only", got)
 	}
 }

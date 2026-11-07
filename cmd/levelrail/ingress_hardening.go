@@ -134,6 +134,9 @@ func (e ingressEdge) layeredHardening(ctx context.Context, db edgeOverrideStore,
 
 func (e ingressEdge) options(ctx context.Context, db edgeOverrideStore, logger *slog.Logger, rs *runtimesettings.Service) []ingressreconcile.Option {
 	opts := []ingressreconcile.Option{ingressreconcile.WithHoldTracker(e.holds)}
+	if rs != nil {
+		opts = append(opts, ingressreconcile.WithHoldReasonGate(api.DiagnosticShowState(rs)))
+	}
 	if e.fallbackLifetime > 0 {
 		opts = append(opts, ingressreconcile.WithFallbackCertLifetime(e.fallbackLifetime))
 	}
@@ -144,6 +147,17 @@ func (e ingressEdge) options(ctx context.Context, db edgeOverrideStore, logger *
 		opts = append(opts, ingressreconcile.WithHardening(*h))
 	}
 	return opts
+}
+
+// liveMaxBodyBytes resolves the request body cap through the same layering the edge applies each pass.
+func (e ingressEdge) liveMaxBodyBytes(db edgeOverrideStore, logger *slog.Logger, rs func() *runtimesettings.Service) func(context.Context) int64 {
+	return func(ctx context.Context) int64 {
+		h := e.effectiveHardening(ctx, db, logger, rs())
+		if h == nil {
+			return 0
+		}
+		return h.MaxBodyBytes
+	}
 }
 
 func (e ingressEdge) doctorInfo() api.DoctorIngressEdge {

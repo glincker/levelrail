@@ -304,5 +304,44 @@
   },
   "chain": {
     "position": "Intento {{position}} de esta cadena"
+  },
+  "deployPhases": {
+    "label": "Progreso del despliegue",
+    "phase": {
+      "upload": "Subida",
+      "install": "Instalación",
+      "build": "Compilación",
+      "export_image": "Exportar imagen",
+      "health_check": "Comprobación de salud",
+      "cutover": "Cambio de tráfico"
+    },
+    "status": {
+      "pending": "En espera",
+      "running": "En curso",
+      "done": "Listo",
+      "failed": "Fallido",
+      "skipped": "Omitido"
+    },
+    "eta": "Suele tardar unos {{typical}} min, faltan {{left}} min",
+    "etaOver": "Suele tardar unos {{typical}} min, este está tardando más",
+    "stillWorking": "Sigue trabajando. No hay líneas nuevas desde hace un rato, es normal en pasos largos.",
+    "stillWorkingExport": "Sigue trabajando. Exportar la imagen puede estar en silencio varios minutos, es normal."
+  },
+  "buildReport": {
+    "title": "Informe de build",
+    "shared": "Primera carga compartida",
+    "route": "Ruta",
+    "kind": "Tipo",
+    "size": "Tamaño",
+    "firstLoad": "Primera carga",
+    "noRoutes": "No se encontraron rutas en la salida del build.",
+    "warnings": "Aviso",
+    "notStored": "Los logs del build no se guardan, así que no hay informe para este despliegue.",
+    "kinds": {
+      "static": "Estática",
+      "isr": "ISR",
+      "dynamic": "Dinámica",
+      "unknown": "Desconocida"
+    }
   }
 }

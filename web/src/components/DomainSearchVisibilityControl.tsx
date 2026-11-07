@@ -8,6 +8,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { cn } from '@/lib/utils'
+import { useCompactSettings } from './domains/compactSettings'
 import {
   useDomainSearchVisibility,
   useSetDomainSearchVisibility,
@@ -23,6 +25,7 @@ export function DomainSearchVisibilityControl({
   const { t } = useTranslation('domains')
   const { data, isLoading } = useDomainSearchVisibility(appName, domain)
   const set = useSetDomainSearchVisibility(appName, domain)
+  const compact = useCompactSettings()
 
   if (isLoading) {
     return (
@@ -37,8 +40,19 @@ export function DomainSearchVisibilityControl({
   }
 
   const hidden = data?.hidden ?? false
+  const help = hidden
+    ? t('searchVisibility.hiddenHelp', { domain })
+    : t('searchVisibility.visibleHelp')
   return (
-    <div className="rounded-md border border-border bg-muted/30 p-3 text-sm">
+    <div
+      title={compact ? help : undefined}
+      className={cn(
+        'text-sm',
+        compact
+          ? 'py-1.5 [&_[data-slot=badge]]:border-0 [&_[data-slot=badge]]:bg-transparent [&_[data-slot=badge]]:px-0'
+          : 'rounded-md border border-border bg-muted/30 p-3',
+      )}
+    >
       <div className="flex items-center justify-between gap-2">
         {hidden ? (
           <Badge variant="warning" className="shrink-0">
@@ -54,7 +68,8 @@ export function DomainSearchVisibilityControl({
         <Button
           type="button"
           size="sm"
-          variant="outline"
+          variant={compact ? 'link' : 'outline'}
+          className={compact ? 'h-6 px-1' : undefined}
           disabled={set.isPending}
           onClick={() => {
             set.mutate(!hidden)
@@ -63,11 +78,9 @@ export function DomainSearchVisibilityControl({
           {hidden ? t('searchVisibility.show') : t('searchVisibility.hide')}
         </Button>
       </div>
-      <p className="mt-2 text-xs text-muted-foreground">
-        {hidden
-          ? t('searchVisibility.hiddenHelp', { domain })
-          : t('searchVisibility.visibleHelp')}
-      </p>
+      {compact ? null : (
+        <p className="mt-2 text-xs text-muted-foreground">{help}</p>
+      )}
       {set.isError ? (
         <Alert variant="destructive" className="mt-2">
           <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />

@@ -53,18 +53,13 @@ describe('ProxyDomainStatus recheck', () => {
     vi.unstubAllGlobals()
   })
 
-  it('offers Recheck DNS only when the app is known', async () => {
+  it('has no duplicate Recheck DNS button, Check now lives in the DNS card', async () => {
     const data = proxyIntegration({ domains: [proxyDomain()] })
     stubFetch({ [`GET ${BASE}`]: () => jsonResponse(data) })
-    const view = renderWithProviders(
+    renderWithProviders(
       <ProxyDomainStatus domain="app.example.com" appName="web" />,
     )
-    expect(
-      await screen.findByRole('button', { name: 'Recheck DNS' }),
-    ).toBeInTheDocument()
-    view.unmount()
-    renderWithProviders(<ProxyDomainStatus domain="app.example.com" />)
-    await screen.findByText(/Check|Verify/i)
+    await new Promise((r) => setTimeout(r, 50))
     expect(
       screen.queryByRole('button', { name: 'Recheck DNS' }),
     ).not.toBeInTheDocument()

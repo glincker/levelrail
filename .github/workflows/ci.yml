@@ -8,10 +8,12 @@ name: CI
 # failure: each runs (and fails) whenever an upstream job failed, and skips
 # only when its area has no work, which GitHub reports as success.
 on:
+  # A push to release/** is not listed: with an open PR the pull_request run
+  # covers the same commit, and without one release-push-check.yml runs a
+  # cheap build check. Listing it ran the whole matrix twice per push.
   push:
     branches:
       - main
-      - 'release/**'
     paths-ignore:
       - '**/*.md'
       - 'adr/**'
@@ -23,14 +25,20 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
   merge_group:
 
-# PR runs and release-branch pushes cancel superseded runs (a burst of pushes
-# keeps only the newest); main and merge queue runs never cancel.
+# PR runs cancel superseded runs (a burst of pushes keeps only the newest);
+# main and merge queue runs never cancel.
 concurrency:
-  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || (startsWith(github.ref, 'refs/heads/release/') && github.ref) || github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/')) }}
+  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
+
+# PR runs read caches from main and from their own ref only, never from a
+# branch push, so the release PR saves its own (once per day per cache key).
+# Set the repo variable CI_PR_CACHE_SAVE=false to fall back to push-only saves.
+env:
+  CI_SAVE_CACHE: ${{ github.event_name == 'push' || (github.event_name == 'pull_request' && vars.CI_PR_CACHE_SAVE != 'false' && startsWith(github.head_ref, 'release/') && github.event.pull_request.head.repo.full_name == github.repository) }}
 
 jobs:
   changes:
@@ -67,7 +75,6 @@ jobs:
           EVENT: ${{ github.event_name }}
           MERGE_GROUP_BASE: ${{ github.event.merge_group.base_sha }}
           BEFORE: ${{ github.event.before }}
-          REF: ${{ github.ref }}
         run: |
           # A PR checkout is the test merge commit: its first parent is the
           # exact base the diff should be against.
@@ -76,19 +83,13 @@ jobs:
             merge_group) base="$MERGE_GROUP_BASE" ;;
             *) base="$BEFORE" ;;
           esac
-          # A cancelled release run never reports its commit, so a diff against
-          # the previous push would skip its areas. Use the cumulative diff from
-          # main, and the same fallback when `before` is zero or unreachable.
+          # A zero or unreachable `before` (a force push) falls back to the
+          # merge-base with main.
           zero=0000000000000000000000000000000000000000
           if [ "$EVENT" = push ]; then
-            case "$REF" in
-              refs/heads/release/*) base="$(git merge-base origin/main HEAD 2>/dev/null || true)" ;;
-              *)
-                if [ -z "$base" ] || [ "$base" = "$zero" ] || ! git cat-file -e "$base" 2>/dev/null; then
-                  base="$(git merge-base origin/main HEAD 2>/dev/null || true)"
-                fi
-                ;;
-            esac
+            if [ -z "$base" ] || [ "$base" = "$zero" ] || ! git cat-file -e "$base" 2>/dev/null; then
+              base="$(git merge-base origin/main HEAD 2>/dev/null || true)"
+            fi
           fi
           echo "base=$base" >> "$GITHUB_OUTPUT"
           if [ "$EVENT" = pull_request ] || [ "$EVENT" = merge_group ]; then
@@ -154,15 +155,14 @@ jobs:
       - name: Check for duplicate migration versions
         run: scripts/check-migration-versions.sh
 
-      - name: Set up Go (cached)
-        uses: ./.github/actions/setup-go-cached
+      # Plain setup-go: the plan only runs `go list`, which needs module
+      # sources, not the multi-GB build cache. Restoring that cache cost 86 s
+      # on the critical path against about 20 s of module download.
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          remote-cache-bucket: ${{ vars.GOCACHE_BUCKET }}
-          remote-cache-region: ${{ vars.GOCACHE_REGION || 'us-east-1' }}
-          remote-cache-key-id: ${{ secrets.GOCACHE_KEY_ID }}
-          remote-cache-secret: ${{ secrets.GOCACHE_SECRET }}
-          remote-cache-endpoint: ${{ vars.GOCACHE_ENDPOINT }}
-          cache-prefix: go-build
+          go-version-file: go.mod
+          cache: false
 
       # A re-run replays the original event payload, so the label is read
       # live: add ci:live to the PR, then re-run all jobs.
@@ -222,7 +222,7 @@ jobs:
           remote-cache-secret: ${{ secrets.GOCACHE_SECRET }}
           remote-cache-endpoint: ${{ vars.GOCACHE_ENDPOINT }}
           cache-prefix: go-build
-          save: ${{ github.event_name == 'push' }}
+          save: ${{ env.CI_SAVE_CACHE == 'true' }}
 
       - name: Planner table tests
         if: needs.plan.outputs.scope != 'none' || needs.changes.outputs.planner == 'true'
@@ -309,7 +309,7 @@ jobs:
           remote-cache-secret: ${{ secrets.GOCACHE_SECRET }}
           remote-cache-endpoint: ${{ vars.GOCACHE_ENDPOINT }}
           cache-prefix: go-test-${{ matrix.cache }}
-          save: ${{ github.event_name == 'push' && matrix.save_cache }}
+          save: ${{ env.CI_SAVE_CACHE == 'true' && matrix.save_cache }}
 
       # Version and checksums locked by tools/go.mod and tools/go.sum.
       - name: Install gotestsum
@@ -532,8 +532,7 @@ jobs:
       # Advisory: runs after the gates, and an upload failure never fails CI.
       - name: Upload coverage to Codecov
         if: >-
-          env.CODECOV_TOKEN != '' && github.event_name == 'push'
-          && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/'))
+          env.CODECOV_TOKEN != '' && github.event_name == 'push' && github.ref == 'refs/heads/main'
         continue-on-error: true
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
@@ -601,7 +600,7 @@ jobs:
           remote-cache-secret: ${{ secrets.GOCACHE_SECRET }}
           remote-cache-endpoint: ${{ vars.GOCACHE_ENDPOINT }}
           cache-prefix: go-lint
-          save: ${{ github.event_name == 'push' }}
+          save: ${{ env.CI_SAVE_CACHE == 'true' }}
 
       # changed: only the packages holding a changed .go file, and only
       # issues on lines this diff touched. all: go.mod, .golangci.yml or
@@ -612,7 +611,7 @@ jobs:
         with:
           version: v2.12
           args: ${{ env.LINT == 'changed' && format('--new-from-rev={0} {1}', needs.changes.outputs.base, needs.changes.outputs.lint_dirs) || '' }}
-          skip-save-cache: ${{ github.event_name != 'push' }}
+          skip-save-cache: ${{ env.CI_SAVE_CACHE != 'true' }}
 
   # kit/ is its own module, so none of the root package lists reach it.
   # Root packages that import a changed kit package are re-tested through
@@ -647,7 +646,7 @@ jobs:
           remote-cache-secret: ${{ secrets.GOCACHE_SECRET }}
           remote-cache-endpoint: ${{ vars.GOCACHE_ENDPOINT }}
           cache-prefix: go-kit
-          save: ${{ github.event_name == 'push' }}
+          save: ${{ env.CI_SAVE_CACHE == 'true' }}
 
       - name: No product name in kit source
         run: scripts/check-brand-strings.sh
@@ -660,10 +659,14 @@ jobs:
         with:
           version: v2.12
           working-directory: kit
-          skip-save-cache: ${{ github.event_name != 'push' }}
+          skip-save-cache: ${{ env.CI_SAVE_CACHE != 'true' }}
 
       - name: go test
         run: go -C kit test -short -timeout=5m -coverprofile="$GITHUB_WORKSPACE/kit-coverage.out" ./...
+
+      - name: next-cache-handler tests
+        run: node --test
+        working-directory: kit/next-cache-handler
 
       # Coverage never blocks a PR: kit gates report on push only.
       - name: Coverage gate (70% for kit/)
@@ -703,7 +706,7 @@ jobs:
           remote-cache-secret: ${{ secrets.GOCACHE_SECRET }}
           remote-cache-endpoint: ${{ vars.GOCACHE_ENDPOINT }}
           cache-prefix: go-tfprovider
-          save: ${{ github.event_name == 'push' }}
+          save: ${{ env.CI_SAVE_CACHE == 'true' }}
 
       - name: No product name in provider source
         run: scripts/check-brand-strings.sh
@@ -812,7 +815,7 @@ jobs:
           npm exec --no -- vitest related --run --passWithNoTests "${sources[@]}"
 
       - name: Save tsc build info
-        if: github.event_name == 'push' && env.WEB == 'full' && steps.tsbuild.outputs.cache-hit != 'true'
+        if: env.CI_SAVE_CACHE == 'true' && env.WEB == 'full' && steps.tsbuild.outputs.cache-hit != 'true'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: web/node_modules/.tmp

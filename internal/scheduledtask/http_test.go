@@ -215,3 +215,27 @@ func TestJoinTarget(t *testing.T) {
 		}
 	}
 }
+
+func TestRunner_HTTPHeadersFromSecretRef(t *testing.T) {
+	var got string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		got = r.Header.Get("Authorization")
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+	cfg := store.ScheduledTaskHTTP{Method: "GET", Path: "/api/cron/cleanup", Headers: []store.ScheduledTaskHeader{
+		{Name: "Authorization", SecretRef: "CRON_SECRET", Prefix: "Bearer "},
+	}}
+	r := httpRunner(&fakeTarget{base: srv.URL}, cfg)
+	r.Apps = &fakeAppStore{svc: store.DesiredService{Name: "web", Env: map[string]string{"CRON_SECRET": "s3cret"}}}
+	res := r.attemptHTTP(context.Background(), store.ScheduledTask{ID: "t", ServiceName: "web", Name: "cleanup"}, "run1")
+	if res.status != store.ScheduledTaskStatusSuccess || got != "Bearer s3cret" {
+		t.Fatalf("status %q header %q", res.status, got)
+	}
+
+	r.Apps = &fakeAppStore{svc: store.DesiredService{Name: "web"}}
+	res = r.attemptHTTP(context.Background(), store.ScheduledTask{ID: "t", ServiceName: "web", Name: "cleanup"}, "run2")
+	if res.status != store.ScheduledTaskStatusFailed || !strings.Contains(res.output, "CRON_SECRET") {
+		t.Fatalf("missing secret: %q %q", res.status, res.output)
+	}
+}

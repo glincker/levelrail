@@ -195,7 +195,7 @@ describe('CliModal', () => {
     expect(await screen.findByText('device: laptop')).toBeInTheDocument()
     expect(screen.queryByText(cmdLine(CLI_INSTALL_COMMAND))).toBeNull()
     expect(screen.getByText(cmdLine('testcli status'))).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Connect another CLI' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Connect another CLI' }))
     expect(
       await screen.findByText(cmdLine(CLI_INSTALL_COMMAND)),
     ).toBeInTheDocument()
@@ -370,5 +370,39 @@ describe('CliModal', () => {
       await screen.findByText(cmdLine('testcli apps logs <app> --follow')),
     ).toBeInTheDocument()
     expect(screen.getByText(cmdLine('testcli status'))).toBeInTheDocument()
+  })
+
+  it('shows each CLI as a card with facts and marks the most recent one', async () => {
+    stubFetch({
+      [CREDS]: {
+        body: {
+          sessions: [],
+          tokens: [
+            {
+              id: 'tok-1',
+              name: 'cli-pairing laptop',
+              created_at: '2026-01-01T00:00:00Z',
+              last_used_at: '2026-01-02T00:00:00Z',
+              last_ip: '203.0.113.9',
+              expires_at: '2099-01-01T00:00:00Z',
+            },
+            {
+              id: 'tok-2',
+              name: 'cli-pairing desktop',
+              created_at: '2026-01-01T00:00:00Z',
+              last_used_at: '2026-02-02T00:00:00Z',
+              expires_at: '2099-01-01T00:00:00Z',
+            },
+          ],
+        },
+      },
+    })
+    renderCli(<CliModal />)
+    open()
+    expect(await screen.findByText('cli-pairing laptop')).toBeInTheDocument()
+    expect(screen.getAllByText('Most recent')).toHaveLength(1)
+    expect(screen.getByText('Not seen yet')).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: '2 CLIs' })).toBeInTheDocument()
+    expect(screen.getByText(/Last activity/)).toBeInTheDocument()
   })
 })

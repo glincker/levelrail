@@ -163,6 +163,9 @@ func SupportsField(engine, field string) bool {
 	case "password":
 		_, ok := PasswordSecretKey(engine)
 		return ok
+	case "tls_ca":
+		// The server certificate is self-signed, so it is its own trust anchor.
+		return SupportsTLS(engine)
 	case "direct_url":
 		// Always bypasses the pooler, for migrations and session features.
 		return engine == store.EnginePostgres

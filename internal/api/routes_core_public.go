@@ -7,6 +7,8 @@ func (rt *Router) registerPublicRoutes(mux *http.ServeMux) {
 	// Public: the frontend needs branding before a session exists (e.g.
 	// on the login screen itself).
 	mux.HandleFunc("GET /api/v1/brand", rt.handleBrand)
+	// Token gated by the ingress; see TrustedDiagnosticHandler.
+	mux.HandleFunc("GET /internal/diagnostic", rt.handleInternalDiagnostic)
 	mux.HandleFunc("GET /api/v1/dev-mode", rt.handleDevMode)
 	mux.HandleFunc("GET /api/v1/demo", rt.handleDemoInfo)
 	mux.HandleFunc("POST /api/v1/demo/session", rt.handleDemoSession)

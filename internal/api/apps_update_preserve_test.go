@@ -134,3 +134,39 @@ func TestAppsPutUnicodeFoldedKeysCountAsSent(t *testing.T) {
 		t.Fatalf("hooks = %+v, want pre_deploy other", got.Hooks)
 	}
 }
+
+func TestAppsPutNextCache(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name   string
+		body   string
+		status int
+		want   string
+	}{
+		{"invalid rejected", `{"next_cache":"memcached"}`, http.StatusBadRequest, "redis"},
+		{"redis accepted without a linked database", `{"next_cache":"redis"}`, http.StatusOK, "redis"},
+		{"none overrides", `{"next_cache":"none"}`, http.StatusOK, "none"},
+		{"omitted keeps stored value", `{"env":{"MODE":"dev"}}`, http.StatusOK, "none"},
+	}
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	seedFullApp(t, db)
+	// Subtests share one stored app and run in order: each starts from the previous result.
+	for _, tc := range cases {
+		if tc.name == "invalid rejected" {
+			putFullApp(t, rt, cookie, `{"next_cache":"redis"}`)
+		}
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/apps/full", tc.body))
+		if rec.Code != tc.status {
+			t.Fatalf("%s: status = %d body = %s", tc.name, rec.Code, rec.Body.String())
+		}
+		got, err := db.GetDesiredService(t.Context(), "full")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got.NextCache != tc.want {
+			t.Fatalf("%s: stored next_cache = %q, want %q", tc.name, got.NextCache, tc.want)
+		}
+	}
+}

@@ -93,6 +93,8 @@ type ProxyRoute struct {
 	// Maintenance, if non-nil, serves the maintenance page to every request
 	// outside its bypass list, ahead of every other control.
 	Maintenance *MaintenanceGate
+	// NextSkew, if non-nil, routes old Next.js asset requests to the held previous release.
+	NextSkew *NextSkewRoute
 }
 
 // ErrorPage is one status-code-to-body mapping for a domain
@@ -644,6 +646,10 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		if opts.RequestStats {
 			handle = append([]any{NewRequestStatsHandler(r.Hosts[0])}, handle...)
 		}
+		// Before the host route: Caddy takes the first match.
+		if skew, ok := r.NextSkew.route(r.Hosts, opts.Hardening); ok {
+			routes = append(routes, skew)
+		}
 		routes = append(routes, Route{
 			Match:  []Matcher{{Host: r.Hosts}},
 			Handle: handle,
@@ -698,7 +704,7 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 				Handler: "subroute",
 				Routes: []Route{
 					{Match: []Matcher{{Path: staticAssetPaths}}, Handle: []any{NewAssetUnavailableHandler(hold.retryAfter())}},
-					{Handle: []any{hold.UnavailableResponse("Updating", "This site is being updated and will be back in a moment. This page will retry on its own.")}},
+					{Handle: []any{hold.HoldResponse(r.Reason)}},
 				},
 			}},
 		})
@@ -771,7 +777,7 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 	}
 	if opts.Inherited.Active() {
 		if opts.Inherited.HTTP != 0 {
-			cfg.Apps.HTTP.Servers[opts.ServerName+"-http"] = opts.Inherited.redirectServer(opts.HTTPRedirect, tlsHosts)
+			cfg.Apps.HTTP.Servers[opts.ServerName+"-http"] = opts.Inherited.redirectServer(opts.HTTPRedirect, tlsHosts, opts.Hardening)
 		}
 		cfg.ownedPorts = []int{opts.Inherited.HTTPSPort, opts.Inherited.HTTPPort}
 	}
@@ -802,7 +808,7 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 			if port == 0 {
 				port = 80
 			}
-			cfg.Apps.HTTP.Servers[opts.ServerName+"-http"] = certRedirectServer(":"+strconv.Itoa(port), &AutoHTTPSConfig{DisableRedir: true}, true, tlsHosts, listenPort(opts.ListenAddr))
+			cfg.Apps.HTTP.Servers[opts.ServerName+"-http"] = certRedirectServer(":"+strconv.Itoa(port), &AutoHTTPSConfig{DisableRedir: true}, true, tlsHosts, listenPort(opts.ListenAddr), opts.Hardening)
 		}
 		wildcardHosts, regularHosts := splitWildcardHosts(allHosts)
 		switch {

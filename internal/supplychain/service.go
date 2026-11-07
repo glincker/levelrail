@@ -16,6 +16,9 @@ import (
 // Store persists supply chain metadata; *SQLStore satisfies it.
 type Store interface {
 	GetSettings(ctx context.Context, app string) (Settings, error)
+	// GetDefaultPolicy returns the saved halves of the instance default; unsaved halves are nil.
+	GetDefaultPolicy(ctx context.Context) (DefaultPolicySaved, error)
+	SaveDefaultPolicy(ctx context.Context, p DefaultPolicy, actor string, at time.Time) error
 	// SaveSettings writes scan_enabled and scan_gate only and clears any override the new gate no longer allows.
 	SaveSettings(ctx context.Context, s Settings) error
 	// ArmOverride arms an override only while the stored gate is a blocking one with scanning on.
@@ -95,7 +98,7 @@ var ErrNotEnabled = errors.New("supplychain: scanning is not enabled for this ap
 
 // Settings returns the app's settings, or the default (off) when none exist.
 func (s *Service) Settings(ctx context.Context, app string) (Settings, error) {
-	return s.deps.Store.GetSettings(ctx, app)
+	return s.effectiveSettings(ctx, app)
 }
 
 // SettingsPatch changes the fields that are non-nil.
@@ -108,7 +111,7 @@ type SettingsPatch struct {
 func (s *Service) SaveSettings(ctx context.Context, app string, patch SettingsPatch) (Settings, error) {
 	s.settingsMu.Lock()
 	defer s.settingsMu.Unlock()
-	cur, err := s.deps.Store.GetSettings(ctx, app)
+	cur, err := s.effectiveSettings(ctx, app)
 	if err != nil {
 		return Settings{}, err
 	}
@@ -170,7 +173,7 @@ func (s *Service) AfterBuild(ctx context.Context, app, attemptID string, att bui
 			rec = stored
 		}
 	}
-	settings, err := s.deps.Store.GetSettings(ctx, app)
+	settings, err := s.effectiveSettings(ctx, app)
 	if err != nil {
 		s.log.Warn("supplychain: load settings failed", slog.String("app", app), slog.String("error", err.Error()))
 		return nil
@@ -270,7 +273,7 @@ func (s *Service) ScanNow(ctx context.Context, app, attemptID string) (Record, e
 	if !s.cfg.Enabled {
 		return Record{}, ErrDisabled
 	}
-	settings, err := s.deps.Store.GetSettings(ctx, app)
+	settings, err := s.effectiveSettings(ctx, app)
 	if err != nil {
 		return Record{}, err
 	}

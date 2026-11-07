@@ -252,3 +252,15 @@ func (s *Store) Cleanup(retention time.Duration) (int, error) {
 	}
 	return removed, nil
 }
+
+// RemoveApp deletes every stored upload of app, used when the app is deleted.
+func (s *Store) RemoveApp(app string) error {
+	dir, err := s.appDir(app)
+	if err != nil {
+		return err
+	}
+	if err := os.RemoveAll(dir); err != nil {
+		return fmt.Errorf("sourceupload: remove %q: %w", dir, err)
+	}
+	return nil
+}

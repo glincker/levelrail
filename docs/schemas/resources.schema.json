@@ -653,7 +653,8 @@
                     "port",
                     "username",
                     "password",
-                    "database"
+                    "database",
+                    "tls_ca"
                   ]
                 }
               },
@@ -831,6 +832,68 @@
           "description": "Whether the job is scheduled.",
           "type": "boolean"
         },
+        "http": {
+          "additionalProperties": false,
+          "description": "Call a path on the app over its internal address instead of running a command.",
+          "properties": {
+            "background": {
+              "description": "Await the call under the longer background timeout.",
+              "type": "boolean"
+            },
+            "body": {
+              "description": "Request body for POST.",
+              "type": "string"
+            },
+            "headers": {
+              "description": "Request headers. Use secretRef for secrets, never the secret text.",
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "prefix": {
+                    "description": "Text put before the secret, such as \"Bearer \".",
+                    "type": "string"
+                  },
+                  "secretRef": {
+                    "description": "Name of an app env secret read at run time.",
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "value": {
+                    "description": "Literal, non-secret value.",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "method": {
+              "description": "GET (default) or POST.",
+              "enum": [
+                "GET",
+                "POST",
+                "get",
+                "post"
+              ]
+            },
+            "path": {
+              "description": "Request path, starting with /.",
+              "pattern": "^/",
+              "type": "string"
+            }
+          },
+          "required": [
+            "path"
+          ],
+          "type": "object"
+        },
         "memory": {
           "description": "Memory limit for the job container, such as 512Mi.",
           "pattern": "^[0-9]+(Mi|Gi)$",
@@ -882,8 +945,7 @@
       },
       "required": [
         "name",
-        "schedule",
-        "command"
+        "schedule"
       ],
       "type": "object"
     },
@@ -1565,6 +1627,21 @@
         "loadbalancer": {
           "$ref": "#/$defs/loadbalancer",
           "description": "Load balancing, health and timeout settings across replicas."
+        },
+        "next": {
+          "additionalProperties": false,
+          "description": "Next.js options.",
+          "properties": {
+            "cache": {
+              "default": "none",
+              "description": "Shared ISR and data cache store. redis needs a linked Redis database.",
+              "enum": [
+                "none",
+                "redis"
+              ]
+            }
+          },
+          "type": "object"
         },
         "ordered": {
           "additionalProperties": false,

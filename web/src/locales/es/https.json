@@ -106,7 +106,8 @@
     "proxyRenews": "Lo administra tu proxy, se renueva automáticamente.",
     "proxyUnknown": "Lo administra tu proxy. Aún no se ha visto: verifica la ruta en la página del proxy.",
     "proxyLink": "Abrir la página del proxy",
-    "getTrusted": "Obtener un certificado de confianza"
+    "getTrusted": "Obtener un certificado de confianza",
+    "useOwn": "Usar mi propio certificado"
   },
   "domainCert": {
     "action": "Obtener un certificado real",

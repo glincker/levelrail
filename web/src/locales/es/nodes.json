@@ -862,5 +862,40 @@
     "nodePreferred": "nodo preferido",
     "together": "junto con",
     "apart": "separado de"
+  },
+  "bootstrapScripts": {
+    "page": {
+      "title": "Scripts de arranque",
+      "description": "Scripts de shell que puedes ejecutar al aprovisionar un nodo en la nube."
+    },
+    "runsAsRoot": "Los scripts se ejecutan como root en los nodos de nube recién aprovisionados.",
+    "rootOnly": "Solo una cuenta root puede crear, editar o borrar scripts.",
+    "new": "Nuevo script",
+    "edit": "Editar {{name}}",
+    "empty": "Aún no hay scripts de arranque.",
+    "loading": "Cargando scripts",
+    "error": "No se pudieron cargar los scripts de arranque.",
+    "loadScriptError": "No se pudo cargar ese script.",
+    "table": {
+      "label": "Scripts de arranque",
+      "name": "Nombre",
+      "size": "Tamaño",
+      "updated": "Actualizado",
+      "actions": "Acciones"
+    },
+    "editor": {
+      "name": "Nombre",
+      "body": "Script",
+      "size": "{{used}} de {{max}}",
+      "save": "Guardar script",
+      "saving": "Guardando",
+      "cancel": "Cancelar"
+    },
+    "delete": {
+      "action": "Borrar {{name}}",
+      "title": "¿Borrar {{name}}?",
+      "consequence": "Los nodos que ya lo ejecutaron no cambian. Los nodos nuevos ya no podrán usarlo.",
+      "confirm": "Borrar script"
+    }
   }
 }

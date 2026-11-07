@@ -317,6 +317,8 @@ Endpoints for:
 | GET | /api/v1/settings/ddns/status | AbilityRoot | handleDDNSStatus |
 | GET | /api/v1/settings/deploy-url-copies | AbilityRead | handleGetDeployURLCopies |
 | PUT | /api/v1/settings/deploy-url-copies | AbilityRoot | handlePutDeployURLCopies |
+| GET | /api/v1/settings/supply-chain | AbilityRead | handleGetSupplyChainDefault |
+| PUT | /api/v1/settings/supply-chain | AbilityRoot | handlePutSupplyChainDefault |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -695,6 +697,13 @@ Endpoints for:
 | POST | /api/v1/apps/repo-plan | AbilityWrite | handleRepoPlan |
 | GET | /api/v1/apps/{name}/ci/templates | AbilityRead | handleGetCITemplates |
 | GET | /api/v1/apps/{name}/deployments/{id}/receipt | AbilityRead | handleGetDeployReceipt |
+| GET | /api/v1/apps/{name}/build-cache | AbilityRead | handleGetAppBuildCache |
+| DELETE | /api/v1/apps/{name}/build-cache | AbilityDeploy | handleClearAppBuildCache |
+| GET | /api/v1/apps/{name}/vitals | AbilityRead | handleGetVitals |
+| PUT | /api/v1/apps/{name}/vitals | AbilityDeploy | handleSetVitals |
+| POST | /api/v1/apps/{name}/vitals/rotate-key | AbilityDeploy | handleRotateVitalsKey |
+| GET | /api/v1/apps/{name}/deploys/{deployId}/build-report | AbilityRead | handleNextBuildReport |
+| GET | /api/v1/apps/{name}/next-advisor | AbilityRead | handleNextAdvisor |
 
 </Accordion>
 
@@ -2200,6 +2209,12 @@ Routes that do not fit an existing group.
 | DELETE | /api/v1/me/preferences/appearance | Public | handleDeleteMePreferenceAppearance |
 | POST | /api/v1/images/remove | AbilityRoot | handleImageRemove |
 | GET | /api/v1/status-reasons | AbilityRead | handleListStatusReasons |
+| GET | /api/v1/deployments/{id}/phases | AbilityRead | handleGetDeployPhases |
+| GET | /api/v1/vitals/snippet.js | Public | handleVitalsSnippet |
+| POST | /api/v1/vitals/{app} | Public | handleVitalsBeacon |
+| OPTIONS | /api/v1/vitals/{app} | Public | handleVitalsPreflight |
+| GET | /internal/diagnostic | Public | handleInternalDiagnostic |
+| PATCH | /api/v1/tags/{id} | AbilityWrite | handleRenameTag |
 | POST | /mcp | Public |  |
 
 ## See also

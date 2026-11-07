@@ -173,6 +173,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsSBOM(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "scan":
 		return runAppsScan(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "cache":
+		return runAppsCache(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "build-cache":
 		return runAppsBuildCache(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "build-stats":
@@ -273,6 +275,14 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsHealth(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "health-score":
 		return runAppsHealthScore(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "skew":
+		return runAppsSkew(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "next-cache":
+		return runAppsNextCache(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "next-image-cache":
+		return runAppsNextImageCache(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "vitals":
+		return runAppsVitals(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "volumes":
 		return runAppsVolumes(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "integrations":
@@ -289,6 +299,7 @@ func appsUsage(prog string) string {
   %[1]s apps create [flags]         create an app (existing image, git build, --file, or --interactive)
   %[1]s apps list [flags]             list apps
   %[1]s apps get <name> [flags]       show one app
+  %[1]s apps skew <name> [flags]      show skew protection and the held previous release
   %[1]s apps deploy <name> [flags]   deploy an image to an existing app
   %[1]s apps ci token|trust <name> [flags]   deploy from any CI with OIDC: mint a deploy token, manage which pipelines are trusted
   %[1]s apps github-actions get|set|start|finish <name> [flags]   what the GitHub Actions deploy action reports back (deployment, check run)
@@ -371,6 +382,7 @@ func appsUsage(prog string) string {
   %[1]s apps scheduled-tasks <verb> [flags]   manage cron-scheduled commands run inside the app's container
   %[1]s apps sbom <app> [deploy-id] [--download]   show a deploy's software bill of materials
   %[1]s apps scan <verb> <app> [flags]    enable/disable/status/run/gate/override vulnerability scanning
+  %[1]s apps cache <show|clear> <name>    show or clear one app's BuildKit build cache on the builder
   %[1]s apps build-cache <verb> [flags]   show/set/clear/remove the BuildKit remote cache on a storage destination
   %[1]s apps build-stats <name> [--limit N]   build duration trend (p50, p95) and cache hits
   %[1]s apps build-speed <name> [--fix]   time saved by build cache and speedup suggestions
@@ -417,6 +429,7 @@ func appsUsage(prog string) string {
   %[1]s apps egress <verb> [flags]        get/set/clear an app's outbound network allowlist
   %[1]s apps health <verb> [flags]        get/set/clear an app's readiness and liveness probes
   %[1]s apps health-score <name> [flags]  pass/warn/fail readiness verdict: deploy, security, resilience, observability
+  %[1]s apps vitals <name> [flags]        p75 web vitals (LCP, INP, CLS, TTFB, FCP) overall and per route
   %[1]s apps volumes <verb> [flags]       get/attach/detach a named Docker volume outside a redeploy
 
 Run "%[1]s apps <subcommand> -h" for a subcommand's own flags.

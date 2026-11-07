@@ -41,8 +41,15 @@ func (svc *Service) validateJobs(name string) error {
 			return fmt.Errorf("%s: duplicate job name %q", where, j.Name)
 		}
 		seen[j.Name] = struct{}{}
-		if len(j.Command) == 0 {
-			return fmt.Errorf("%s (%s): command is required", where, j.Name)
+		if j.HTTP != nil {
+			if len(j.Command) > 0 {
+				return fmt.Errorf("%s (%s): set either command or http, not both", where, j.Name)
+			}
+			if err := validateJobHTTP(j.HTTP); err != nil {
+				return fmt.Errorf("%s (%s): http: %w", where, j.Name, err)
+			}
+		} else if len(j.Command) == 0 {
+			return fmt.Errorf("%s (%s): command or http is required", where, j.Name)
 		}
 		for _, part := range j.Command {
 			if strings.TrimSpace(part) == "" {
@@ -77,3 +84,32 @@ func (svc *Service) validateJobs(name string) error {
 	}
 	return nil
 }
+
+// validateJobHTTP checks an http job's request. Secret values never live in
+// the spec, so a header carries either a literal or a secretRef.
+func validateJobHTTP(h *JobHTTP) error {
+	if !strings.HasPrefix(h.Path, "/") || strings.HasPrefix(h.Path, "//") {
+		return fmt.Errorf("path %q must start with a single /", h.Path)
+	}
+	h.Method = strings.ToUpper(strings.TrimSpace(h.Method))
+	if h.Method == "" {
+		h.Method = "GET"
+	}
+	if h.Method != "GET" && h.Method != "POST" {
+		return fmt.Errorf("method %q must be GET or POST", h.Method)
+	}
+	for i, hd := range h.Headers {
+		if !headerNameLike.MatchString(hd.Name) {
+			return fmt.Errorf("headers[%d]: name %q is not a valid header name", i, hd.Name)
+		}
+		if (hd.Value == "") == (hd.SecretRef == "") {
+			return fmt.Errorf("headers[%d] (%s): set exactly one of value or secretRef", i, hd.Name)
+		}
+		if hd.Prefix != "" && hd.SecretRef == "" {
+			return fmt.Errorf("headers[%d] (%s): prefix only applies with secretRef", i, hd.Name)
+		}
+	}
+	return nil
+}
+
+var headerNameLike = regexp.MustCompile(`^[A-Za-z0-9-]{1,64}$`)

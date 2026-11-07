@@ -533,3 +533,14 @@ func TestGenerateRailpackPlan_RubyPHPStartCommands(t *testing.T) {
 		})
 	}
 }
+
+func TestDropBuildHeapEnv(t *testing.T) {
+	got := dropBuildHeapEnv([]string{"A=1", "NODE_OPTIONS=--max-old-space-size=2655"}, 2655)
+	if len(got) != 1 || got[0] != "A=1" {
+		t.Fatalf("got %v", got)
+	}
+	keep := dropBuildHeapEnv([]string{"NODE_OPTIONS=--max-old-space-size=100"}, 2655)
+	if len(keep) != 1 {
+		t.Fatalf("other value must stay: %v", keep)
+	}
+}
