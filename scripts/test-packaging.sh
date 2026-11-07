@@ -53,6 +53,23 @@ for (const [d, name] of Object.entries(want)) {
   if (p.scripts) { console.error("scripts not allowed", d); process.exit(1); }
 }
 ' "$work/npm" || fail "forwarder package.json"
+for d in "$work"/npm/*/; do
+	node -e '
+const fs = require("fs");
+const dir = process.argv[1];
+const p = JSON.parse(fs.readFileSync(dir + "package.json"));
+const need = ["levelrail", "deploy", "paas", "self-hosted", "cli", "docker", "nextjs", "coolify-alternative", "vercel-alternative", "mcp", "devops"];
+for (const k of need) if (!(p.keywords || []).includes(k)) { console.error("missing keyword", k, p.name); process.exit(1); }
+if (!p.bugs || !p.bugs.url) { console.error("bugs.url", p.name); process.exit(1); }
+if (!p.repository || !p.repository.directory) { console.error("repository.directory", p.name); process.exit(1); }
+if (!p.author || !p.author.name) { console.error("author", p.name); process.exit(1); }
+if (!p.publishConfig || p.publishConfig.access !== "public" || p.publishConfig.provenance !== true) { console.error("publishConfig", p.name); process.exit(1); }
+if (!p.description) { console.error("description", p.name); process.exit(1); }
+for (const f of ["README.md", "LICENSE"]) if (!fs.existsSync(dir + f)) { console.error("missing", f, p.name); process.exit(1); }
+' "$d" || fail "metadata in $d"
+done
+descs="$(for d in "$work"/npm/levelrail-cli-*/; do node -p 'require(process.argv[1]+"package.json").description' "$d"; done | sort | uniq -d)"
+[ -z "$descs" ] || fail "duplicate package descriptions: $descs"
 for d in "$work"/npm/*/; do (cd "$d" && npm pack --dry-run --silent >/dev/null 2>&1) || fail "npm pack failed for $d"; done
 
 echo "== launcher resolves the platform package"

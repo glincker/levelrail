@@ -314,7 +314,7 @@ failing.
 | SonarCloud | `sonar.yml` | Push to `main` and `release/**`, Mondays, dispatch. Never on a PR | SonarCloud dashboard. Needs `SONAR_TOKEN`. Go coverage (`go test -short ./internal/...`) is imported everywhere except release branch pushes |
 | Codecov | `ci.yml`, `Coverage gate` | Push to `main` only (`ci.yml` has no `release/**` push trigger, the guard also covers it) | Informational statuses, no PR comment. Needs `CODECOV_TOKEN`. Config in `codecov.yml` |
 | govulncheck | `security-scheduled.yml` | Mondays, release tags, dispatch | Reachable findings in the job summary, SARIF to code scanning |
-| OpenSSF Scorecard | `security-scheduled.yml` | Mondays, dispatch | SARIF to code scanning |
+| OpenSSF Scorecard | `security-scheduled.yml` | Mondays, dispatch | SARIF to code scanning. Results are published to the OpenSSF API, and the badge lives at `https://api.scorecard.dev/projects/github.com/glincker/levelrail/badge` |
 | OSV-Scanner | `security-scheduled.yml` | Mondays, dispatch | SARIF to code scanning (Go and npm lockfiles) |
 | CodeQL | `codeql.yml` | Wednesdays, release tags, dispatch | Security tab |
 | zizmor | `pr-security.yml` | PRs touching `.github/` | Job log. actionlint stays in `Lint` and is the gate |
