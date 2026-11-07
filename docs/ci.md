@@ -393,6 +393,8 @@ The formula template is `deploy/packaging/homebrew/levelrail-cli.rb.tmpl`, and `
 
 `publish-npm` publishes `levelrail-cli` plus six platform packages (`levelrail-cli-<os>-<arch>`) using npm trusted publishing, so no npm token is involved. Stable releases take the `latest` dist-tag and prereleases use `beta`. A version already on the registry is skipped, so re-running a partly failed release finishes the rest. The job only runs when the `NPM_PUBLISH_ENABLED` repo variable is `true`.
 
+`verify-npm` then installs `levelrail-cli` from the registry in a clean directory on Linux (amd64 and arm64), macOS and Windows runners, waits with bounded backoff for the version to appear, checks that `levelrail-cli version` prints the release version, and runs `npm audit signatures`. It is non-blocking, because the registry can lag behind a publish, and it writes the package URL to the job summary.
+
 One-time setup. npm configures a trusted publisher on a package that already exists, so each package is published once by hand first. The script does the whole thing under your own npm login:
 
 ```bash
