@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
@@ -152,7 +153,27 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 	if rt.deployRecorder != nil {
 		inner = rt.deployRecorder.Progress(id)
 	}
-	return id, rt.recordCacheWarning(id, inner), finish, setCommit
+	return id, rt.recordDetectedFramework(id, rt.recordCacheWarning(id, inner)), finish, setCommit
+}
+
+// recordDetectedFramework persists Next.js on the attempt the first time the
+// build log says it was detected, so upload and git deploys feed the advisor.
+func (rt *Router) recordDetectedFramework(id string, next func(build.ProgressEvent)) func(build.ProgressEvent) {
+	setter, ok := rt.deployAttempts.(detectedFrameworkSetter)
+	if !ok {
+		return next
+	}
+	var once sync.Once
+	return func(ev build.ProgressEvent) {
+		if ev.Log != "" && build.IsNextDetectedLine(ev.Log) {
+			once.Do(func() {
+				if err := setter.SetDeployAttemptDetectedFramework(context.Background(), id, "Next.js"); err != nil {
+					rt.logger.Warn("api: record detected framework failed", slog.String("attempt_id", id), slog.String("error", err.Error()))
+				}
+			})
+		}
+		next(ev)
+	}
 }
 
 // recordCacheWarning stores a build cache warning on the attempt row while
@@ -376,6 +397,10 @@ func (rt *Router) handleListDeployAttempts(w http.ResponseWriter, r *http.Reques
 // capabilities, so stores that predate build cache warnings keep working.
 type cacheWarningLister interface {
 	ListDeployAttemptCacheWarnings(ctx context.Context, serviceName string) (map[string]string, error)
+}
+
+type detectedFrameworkSetter interface {
+	SetDeployAttemptDetectedFramework(ctx context.Context, id, framework string) error
 }
 
 type cacheWarningSetter interface {

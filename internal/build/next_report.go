@@ -41,12 +41,13 @@ var (
 	nextANSI       = regexp.MustCompile(`\x1b\[[0-9;?]*[ -/]*[@-~]`)
 	nextBuildxPre  = regexp.MustCompile(`^#\d+\s+\d+(?:\.\d+)?\s`)
 	nextHeader     = regexp.MustCompile(`^Route \((?:app|pages)\)`)
-	nextRow        = regexp.MustCompile(`^[┌├└]\s+([^\s\w/\[┌├└│─])\s+(/\S*)\s*(.*)$`)
+	nextRow        = regexp.MustCompile(`^[┌├└─]\s+([^\s\w/\[┌├└│─])\s+(/\S*)\s*(.*)$`)
 	nextSize       = regexp.MustCompile(`(\d+(?:\.\d+)?)\s*(B|kB|KB|MB)\b`)
 	nextRevalidate = regexp.MustCompile(`(?:^|\s)\d+[smhdwy](?:\s|$)`)
 	nextShared     = regexp.MustCompile(`First Load JS shared by all\s+(\d+(?:\.\d+)?)\s*(B|kB|KB|MB)`)
 	nextLegend     = regexp.MustCompile(`^([^\s\w])\s+\(([^)]+)\)`)
 	nextBanner     = regexp.MustCompile(`Next\.js \d+\.\d+`)
+	nextDetectedLn = regexp.MustCompile(`^next\.js \d+ detected\b`)
 	nextWarn       = regexp.MustCompile(`(?i)^(?:⚠\s*|warn(?:ing)?[:\s]\s*)|\bWarning:`)
 )
 
@@ -186,4 +187,10 @@ func nextWarning(ln string) (string, bool) {
 		w = w[:nextReportMaxWarnLen]
 	}
 	return w, w != ""
+}
+
+// IsNextDetectedLine reports whether a build log line is the platform's own
+// "next.js N detected" note, so callers can record the framework server side.
+func IsNextDetectedLine(line string) bool {
+	return nextDetectedLn.MatchString(strings.ToLower(cleanNextLine(line)))
 }

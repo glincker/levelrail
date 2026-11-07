@@ -56,6 +56,47 @@ Route (app)
 ƒ  (Dynamic)  server-rendered on demand
 `
 
+const next16BothLog = `   ▲ Next.js 16.4.5 (Turbopack)
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /api/cron
+└ ƒ /skew
+
+Route (pages)
+─ ƒ /pg
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+`
+
+const next15PagesTwoLog = `Route (app)                              Size  First Load JS
+┌ ○ /                                    130 B         102 kB
+└ ○ /about                               130 B         102 kB
+
+Route (pages)                            Size  First Load JS
+┌ ƒ /pg                                  310 B         100 kB
+└ ○ /legacy                              300 B         100 kB
++ First Load JS shared by all            100 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+`
+
+func TestIsNextDetectedLine(t *testing.T) {
+	for line, want := range map[string]bool{
+		"next.js 16 detected (standalone: yes, app router: yes)":      true,
+		"\x1b[2mnext.js 15 detected (standalone: no, app router: no)": true,
+		"next.js builds can run out of memory on this host":           false,
+		"": false,
+	} {
+		if got := IsNextDetectedLine(line); got != want {
+			t.Errorf("IsNextDetectedLine(%q) = %v, want %v", line, got, want)
+		}
+	}
+}
+
 func TestParseNextReport(t *testing.T) {
 	ansi := "\x1b[1mRoute (app)\x1b[22m   Size\n\x1b[32m┌ ○ /\x1b[39m   5 kB   90 kB\n"
 	prefixed := "#14 62.43 Route (app)   Size  First Load JS\n#14 62.43 ┌ ○ /   5.4 kB   92.5 kB\n#14 62.43 + First Load JS shared by all   87.1 kB\n"
@@ -88,6 +129,19 @@ func TestParseNextReport(t *testing.T) {
 			{"/shop", NextKindUnknown, 0, 0},
 			{"/api/items", NextKindDynamic, 0, 0},
 		}, nil, 0},
+		{"next16 app and single pages row", next16BothLog, true, []NextRoute{
+			{"/", NextKindStatic, 0, 0},
+			{"/_not-found", NextKindStatic, 0, 0},
+			{"/api/cron", NextKindDynamic, 0, 0},
+			{"/skew", NextKindDynamic, 0, 0},
+			{"/pg", NextKindDynamic, 0, 0},
+		}, nil, 0},
+		{"next15 app and two row pages", next15PagesTwoLog, true, []NextRoute{
+			{"/", NextKindStatic, 0.13, 102},
+			{"/about", NextKindStatic, 0.13, 102},
+			{"/pg", NextKindDynamic, 0.31, 100},
+			{"/legacy", NextKindStatic, 0.3, 100},
+		}, f(100), 0},
 		{"ansi stripped", ansi, true, []NextRoute{{"/", NextKindStatic, 5, 90}}, nil, 0},
 		{"buildkit prefix", prefixed, true, []NextRoute{{"/", NextKindStatic, 5.4, 92.5}}, f(87.1), 0},
 		{"not next", "go build ./...\nok\n", false, []NextRoute{}, nil, 0},
