@@ -69,6 +69,7 @@ export type GlobalTo =
   | '/builds'
   | '/projects'
   | '/templates'
+  | '/tags'
   | '/databases'
   | '/backups'
   | '/assets'
@@ -156,7 +157,7 @@ export const COST_GROUP_PATHS = [
   '/resources',
 ] as const
 
-export const APPS_GROUP_PATHS = ['/projects', '/templates'] as const
+export const APPS_GROUP_PATHS = ['/projects', '/templates', '/tags'] as const
 export const PIPELINE_GROUP_PATHS = ['/pipelines', '/approvals'] as const
 export const DOMAIN_GROUP_PATHS = ['/domains', '/dns', '/mail'] as const
 export const TRAFFIC_GROUP_PATHS = [
@@ -344,6 +345,7 @@ export const FOLDED_GLOBAL_PAGES: GlobalNavItem[] = [
     '/templates',
     <LayoutGridGlassIcon size="1.4em" />,
   ),
+  folded('tags', 'Tags', '/tags', <ListGlassIcon size="1.4em" />),
   folded(
     'approvals',
     'Deploy approvals',

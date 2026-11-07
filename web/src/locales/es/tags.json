@@ -1,0 +1,49 @@
+{
+  "page": {
+    "title": "Etiquetas",
+    "description": "Etiquetas que adjuntas a las apps para agruparlas y filtrarlas."
+  },
+  "create": {
+    "label": "Nueva etiqueta",
+    "placeholder": "env:prod",
+    "submit": "Crear etiqueta",
+    "pending": "Creando"
+  },
+  "table": {
+    "label": "Etiquetas",
+    "name": "Nombre",
+    "apps": "Apps",
+    "resources": "Recursos",
+    "created": "Creada",
+    "actions": "Acciones"
+  },
+  "row": {
+    "showApps": "Mostrar las apps con la etiqueta {{name}}",
+    "hideApps": "Ocultar las apps con la etiqueta {{name}}"
+  },
+  "rename": {
+    "action": "Renombrar {{name}}",
+    "label": "Nuevo nombre para {{name}}",
+    "save": "Guardar",
+    "cancel": "Cancelar"
+  },
+  "delete": {
+    "action": "Eliminar {{name}}",
+    "title": "¿Eliminar la etiqueta {{name}}?",
+    "description": "La etiqueta se quita de todas las apps que la usan.",
+    "consequence": "Las apps siguen funcionando; solo desaparece la etiqueta.",
+    "confirm": "Eliminar etiqueta",
+    "pending": "Eliminando"
+  },
+  "apps": {
+    "loading": "Cargando apps",
+    "empty": "Ninguna app usa esta etiqueta todavía.",
+    "error": "No se pudieron cargar las apps de esta etiqueta.",
+    "list": "Apps con la etiqueta {{name}}"
+  },
+  "empty": {
+    "title": "Aún no hay etiquetas",
+    "description": "Crea una etiqueta arriba, o añade una desde la vista general de una app, para empezar a agrupar apps."
+  },
+  "error": "No se pudieron cargar las etiquetas."
+}
