@@ -43,6 +43,7 @@ type deployPhase struct {
 	FinishedAt *time.Time `json:"finished_at"`
 	DurationMS *int64     `json:"duration_ms"`
 	TypicalMS  *int64     `json:"typical_ms"`
+	ETASeconds *int64     `json:"eta_seconds"`
 }
 
 type deployPhasesResponse struct {
@@ -56,6 +57,8 @@ type deployPhasesResponse struct {
 	ETAMS          *int64        `json:"eta_ms"`
 	TypicalTotalMS *int64        `json:"typical_total_ms"`
 	Samples        int           `json:"samples"`
+	ETASeconds     *int64        `json:"eta_seconds"`
+	ETABasis       string        `json:"eta_basis"`
 }
 
 // phaseEvidence is what the stored trace rows and build log say about one phase.
@@ -208,55 +211,6 @@ func derivePhases(a store.DeployAttempt, trace []store.DeployTraceStep, logs []t
 	return out
 }
 
-func medianMS(v []int64) int64 {
-	s := slices.Clone(v)
-	slices.Sort(s)
-	if len(s)%2 == 1 {
-		return s[len(s)/2]
-	}
-	return (s[len(s)/2-1] + s[len(s)/2]) / 2
-}
-
-// phaseBaselines takes the median total and per-phase duration over the app's
-// last successful attempts. ok is false below two samples.
-func (rt *Router) phaseBaselines(ctx context.Context, a store.DeployAttempt) (total int64, perPhase map[string]int64, n int, ok bool) {
-	attempts, err := rt.deployAttempts.ListDeployAttempts(ctx, a.ServiceName)
-	if err != nil {
-		return 0, nil, 0, false
-	}
-	limit := rt.phaseSampleCount(ctx)
-	var totals []int64
-	byPhase := map[string][]int64{}
-	for _, s := range attempts {
-		if len(totals) >= limit {
-			break
-		}
-		if s.ID == a.ID || s.Status != store.DeployAttemptStatusSucceeded || s.FinishedAt == nil {
-			continue
-		}
-		totals = append(totals, s.FinishedAt.Sub(s.StartedAt).Milliseconds())
-		var logs []telemetry.DeployLogEntry
-		if rt.deployLogStore != nil {
-			logs, _ = rt.deployLogStore.QueryDeployLog(ctx, s.ID)
-		}
-		for _, p := range derivePhases(s, rt.traceRows(ctx, s.ID), logs, *s.FinishedAt) {
-			if p.DurationMS != nil && *p.DurationMS > 0 {
-				byPhase[p.Phase] = append(byPhase[p.Phase], *p.DurationMS)
-			}
-		}
-	}
-	if len(totals) < 2 {
-		return 0, nil, len(totals), false
-	}
-	perPhase = map[string]int64{}
-	for k, v := range byPhase {
-		if len(v) >= 2 {
-			perPhase[k] = medianMS(v)
-		}
-	}
-	return medianMS(totals), perPhase, len(totals), true
-}
-
 // handleGetDeployPhases handles GET /api/v1/deployments/{id}/phases: the
 // stages of one deploy with status, timing and an ETA while it runs. It is
 // derived from stored trace rows and the build log; nothing new is written.
@@ -277,18 +231,7 @@ func (rt *Router) handleGetDeployPhases(w http.ResponseWriter, r *http.Request) 
 		DeployID: a.ID, App: a.ServiceName, Status: a.Status, StartedAt: a.StartedAt, FinishedAt: a.FinishedAt,
 		ElapsedMS: max(end.Sub(a.StartedAt).Milliseconds(), 0), Phases: phases,
 	}
-	if total, per, n, ok := rt.phaseBaselines(r.Context(), a); ok {
-		resp.Samples, resp.TypicalTotalMS = n, &total
-		for i := range resp.Phases {
-			if v, has := per[resp.Phases[i].Phase]; has {
-				resp.Phases[i].TypicalMS = &v
-			}
-		}
-		if a.FinishedAt == nil {
-			eta := max(total-resp.ElapsedMS, 0)
-			resp.ETAMS = &eta
-		}
-	}
+	rt.applyETA(r.Context(), a, &resp)
 	w.Header().Set("Cache-Control", "no-store")
 	writeJSON(w, http.StatusOK, resp)
 }

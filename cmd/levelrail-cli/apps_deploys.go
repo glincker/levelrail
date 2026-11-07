@@ -278,6 +278,14 @@ func runAppsDeploysLogsFollow(client *Client, name, deployID string, stdout, std
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	if !jsonOut {
+		// Best effort: an older control plane or a settled deploy just prints no estimate.
+		if ph, perr := client.GetDeployPhases(ctx, deployID); perr == nil {
+			if line := deployETALine(ph); line != "" {
+				_, _ = fmt.Fprintln(stderr, line)
+			}
+		}
+	}
 	err := client.StreamDeployLog(ctx, name, deployID, func(e logStreamEntry) error {
 		if jsonOut {
 			return writeJSONLine(stdout, e)
