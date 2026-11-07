@@ -437,3 +437,12 @@ func NextBuildNotes(srcDir string, hostMiB, minFreeMiB int) []string {
 	}
 	return notes
 }
+
+// NextCacheSuggestion returns one log line for a multi replica Next.js app that
+// keeps its ISR cache per replica, or "" otherwise. It never blocks a build.
+func NextCacheSuggestion(srcDir string, replicas int, redisCache bool) string {
+	if replicas <= 1 || redisCache || !DetectNext(srcDir).Detected {
+		return ""
+	}
+	return "next.js runs on several replicas with a per replica cache. Set next: {cache: redis} in app.yaml to share the ISR and data cache."
+}

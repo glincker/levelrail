@@ -185,6 +185,8 @@ type Request struct {
 	// nextDeploymentID is set by the Next.js build path and reaches the
 	// container env in finishDeploy.
 	nextDeploymentID string
+	// nextBuildID is set for Next.js apps on the shared Redis cache.
+	nextBuildID string
 }
 
 // Pipeline builds a service (when its build type requires a build) and
@@ -382,7 +384,17 @@ func (p *Pipeline) deployRailpack(ctx context.Context, req Request, progress fun
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
 	}
 
+	if err := p.checkNextCache(ctx, buildRoot, req); err != nil {
+		return "", err
+	}
+	if note := build.NextCacheSuggestion(buildRoot, req.Service.Replicas, req.Service.Next.UsesRedisCache()); note != "" && progress != nil {
+		progress(build.ProgressEvent{Step: "next.js", Log: note, Stream: "stderr"})
+	}
 	buildEnv := staticBuildArgs(req.Service.Env, nil, StaticBuildEnvPrefixes())
+	if id := nextBuildID(buildRoot, deployIDFor(req), req.Service); id != "" {
+		buildEnv[nextBuildIDEnvVar] = id
+		req.nextBuildID = id
+	}
 	if id := nextDeploymentID(ctx, buildRoot, deployIDFor(req), req.Service.Env); id != "" {
 		buildEnv[nextDeploymentIDEnvVar] = id
 		req.nextDeploymentID = id
@@ -426,6 +438,11 @@ func (p *Pipeline) finishDeploy(ctx context.Context, req Request, res *build.Res
 		}
 		desired.Env[nextDeploymentIDEnvVar] = req.nextDeploymentID
 	}
+	var prevDesired *store.DesiredService
+	if g, ok := p.store.(desiredGetter); ok && req.Service.Next.UsesRedisCache() {
+		prevDesired, _ = g.GetDesiredService(ctx, req.ServiceName)
+	}
+	applyNextCache(&desired, req, prevDesired)
 	resolution := p.buildResolution(ctx, res.Tag, res.ExporterResponse)
 	resolution.apply(&desired)
 

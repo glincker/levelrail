@@ -324,3 +324,30 @@ func TestNextBuildNotes(t *testing.T) {
 		})
 	}
 }
+
+func TestNextCacheSuggestion(t *testing.T) {
+	next := t.TempDir()
+	if err := os.WriteFile(filepath.Join(next, "package.json"), []byte(`{"dependencies":{"next":"15.0.0"}}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	plain := t.TempDir()
+	cases := []struct {
+		name     string
+		dir      string
+		replicas int
+		redis    bool
+		want     bool
+	}{
+		{"multi replica next", next, 3, false, true},
+		{"single replica", next, 1, false, false},
+		{"redis already", next, 3, true, false},
+		{"not next", plain, 3, false, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := NextCacheSuggestion(tc.dir, tc.replicas, tc.redis) != ""; got != tc.want {
+				t.Fatalf("got %v want %v", got, tc.want)
+			}
+		})
+	}
+}

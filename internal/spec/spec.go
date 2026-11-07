@@ -124,6 +124,8 @@ type Service struct {
 	// Autoscale owns this service's replica count within min and max. Nil
 	// leaves any policy set from the dashboard or CLI alone.
 	Autoscale *Autoscale `yaml:"autoscale,omitempty"`
+	// Next tunes Next.js apps, such as the shared Redis cache.
+	Next *Next `yaml:"next,omitempty"`
 	// Canary tunes staged canary releases (strategy: canary). Nil uses the
 	// APP_CANARY_* defaults.
 	Canary *Canary `yaml:"canary,omitempty"`

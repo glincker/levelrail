@@ -135,6 +135,14 @@
         "loadbalancer": { "description": "Load balancing, health and timeout settings across replicas.", "$ref": "#/$defs/loadbalancer" },
         "budget": { "description": "Egress and cost limits with an action when crossed.", "$ref": "#/$defs/budget" },
         "autoscale": { "description": "Autoscaling of replicas on a metric target.", "$ref": "#/$defs/autoscale" },
+        "next": {
+          "description": "Next.js options.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "cache": { "description": "Shared ISR and data cache store. redis needs a linked Redis database.", "default": "none", "enum": ["none", "redis"] }
+          }
+        },
         "dependsOn": {
           "description": "Sibling services that must have a running container before this one starts.",
           "type": "array",
