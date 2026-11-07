@@ -111,6 +111,7 @@ export const NAMESPACES = [
   'secretScan',
   'appFiles',
   'maintenance',
+  'appBuildCache',
   'buildPerformance',
   'janitor',
   'cleanup',
@@ -151,6 +152,7 @@ export const NAMESPACES = [
   'firstRun',
   'newAppNoGit',
   'appOverview',
+  'webVitals',
 ] as const
 
 // New language: add its code here and a locales/<code>/ folder; untranslated namespaces and keys fall back to en.

@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { ArrowUpGlassIcon } from '@thesvg/ui-react'
 import { TONE, type Tone } from '@/components/kit/tone'
 import { cn } from '@/lib/utils'
 import type { ShellStatus } from '@/lib/shellStatus'
@@ -46,7 +47,7 @@ export function VersionFooterView({
       to="/settings/updates"
       aria-label={label}
       title={label}
-      className="flex items-center gap-2 truncate rounded-md px-2 py-1 text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none group-data-[collapsible=icon]:justify-center"
+      className="flex h-7 cursor-pointer items-center gap-2 truncate rounded-md px-2.5 text-xs text-sidebar-foreground/60 transition-colors duration-150 ease-out hover:bg-sidebar-accent/70 hover:text-sidebar-foreground active:bg-sidebar-accent motion-reduce:transition-none focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none group-data-[collapsible=icon]:justify-center"
     >
       <span
         data-testid="health-dot"
@@ -65,12 +66,16 @@ export function VersionFooterView({
       {update ? (
         <span
           data-testid="version-update"
-          className={cn(
-            'truncate group-data-[collapsible=icon]:hidden',
-            TONE.warning.text,
-          )}
+          className="flex min-w-0 items-center gap-1 group-data-[collapsible=icon]:hidden"
         >
-          {update}
+          <ArrowUpGlassIcon
+            size="1.4em"
+            aria-hidden="true"
+            className={cn('size-3 shrink-0', TONE.warning.text)}
+          />
+          <span className="truncate underline-offset-2 hover:underline">
+            {update}
+          </span>
         </span>
       ) : null}
     </Link>

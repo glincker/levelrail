@@ -330,6 +330,9 @@ func (db *DB) SyncSpecScheduledTasks(ctx context.Context, serviceName string, jo
 			if err := db.UpdateScheduledTaskConfig(ctx, j, now); err != nil {
 				return err
 			}
+			if err := db.syncSpecHTTP(ctx, j); err != nil {
+				return err
+			}
 			continue
 		}
 		id, err := newID()
@@ -338,6 +341,9 @@ func (db *DB) SyncSpecScheduledTasks(ctx context.Context, serviceName string, jo
 		}
 		j.ID, j.CreatedAt, j.UpdatedAt = id, now, now
 		if err := db.SaveScheduledTask(ctx, j); err != nil {
+			return err
+		}
+		if err := db.syncSpecHTTP(ctx, j); err != nil {
 			return err
 		}
 	}
@@ -353,6 +359,17 @@ func (db *DB) SyncSpecScheduledTasks(ctx context.Context, serviceName string, jo
 		}
 	}
 	return nil
+}
+
+// syncSpecHTTP keeps a spec job's http request in step with the spec: set for
+// an http job, removed when the job no longer has one.
+func (db *DB) syncSpecHTTP(ctx context.Context, j ScheduledTask) error {
+	if j.SpecHTTP == nil {
+		return db.DeleteScheduledTaskHTTP(ctx, j.ID)
+	}
+	h := *j.SpecHTTP
+	h.TaskID = j.ID
+	return db.SetScheduledTaskHTTP(ctx, h)
 }
 
 func runArgs(r ScheduledTaskRun) []any {

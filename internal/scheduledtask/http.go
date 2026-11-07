@@ -35,7 +35,13 @@ const (
 // httpTimeout picks the attempt timeout: an explicit per-job value wins, then
 // the longer background timeout for background jobs, then the default.
 func (r *Runner) httpTimeout(task store.ScheduledTask, cfg store.ScheduledTaskHTTP) time.Duration {
-	if r.Timeout > 0 || task.TimeoutSeconds > 0 || !cfg.Background {
+	if r.Timeout > 0 || task.TimeoutSeconds > 0 {
+		return r.attemptTimeout(task)
+	}
+	if !cfg.Background {
+		if d := runtimeHTTPTimeout(); d > 0 {
+			return d
+		}
 		return r.attemptTimeout(task)
 	}
 	return r.limits().BackgroundTimeout
@@ -82,6 +88,10 @@ func (r *Runner) attemptHTTP(runCtx context.Context, task store.ScheduledTask, r
 	req, err := http.NewRequestWithContext(execCtx, orMethod(cfg.Method), target, body)
 	if err != nil {
 		res.status, res.output = store.ScheduledTaskStatusFailed, "build request: "+err.Error()
+		return res
+	}
+	if err := applyJobHeaders(req, cfg.Headers, svc.Env); err != nil {
+		res.status, res.output = store.ScheduledTaskStatusFailed, err.Error()
 		return res
 	}
 	req.Header.Set(HeaderJobRun, runID)
@@ -168,4 +178,22 @@ func joinTarget(base, path string) (string, error) {
 		return "", fmt.Errorf("path %q is not a plain path", path)
 	}
 	return u.ResolveReference(ref).String(), nil
+}
+
+// applyJobHeaders sets the configured headers. A secretRef is read from the
+// app's env now, so the value is never stored, and a missing one fails the run
+// naming only the variable, never a value.
+func applyJobHeaders(req *http.Request, headers []store.ScheduledTaskHeader, env map[string]string) error {
+	for _, h := range headers {
+		if h.SecretRef == "" {
+			req.Header.Set(h.Name, h.Value)
+			continue
+		}
+		v, ok := env[h.SecretRef]
+		if !ok || v == "" {
+			return fmt.Errorf("header %s: secret %s is not set on the app", h.Name, h.SecretRef)
+		}
+		req.Header.Set(h.Name, h.Prefix+v)
+	}
+	return nil
 }

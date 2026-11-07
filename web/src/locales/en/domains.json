@@ -1667,5 +1667,66 @@
       "5xx": "The route answers a server error, which means the server is reachable but the app behind it is failing. Check the app logs."
     },
     "diagnose": "Why is it not answering?"
+  },
+  "addWizard": {
+    "progress": "Step {{current}} of {{total}}",
+    "stepNames": {
+      "1": "Domain",
+      "2": "Point it here",
+      "3": "Going live"
+    },
+    "back": "Back",
+    "next": "Continue",
+    "advanced": "Advanced: add several domains at once",
+    "backToWizard": "Back to the guided setup",
+    "step1": {
+      "title": "Which domain and which app?",
+      "domainLabel": "Your domain",
+      "domainPlaceholder": "example.com",
+      "appLabel": "App",
+      "appPlaceholder": "Choose an app",
+      "kindApex": "This is a main domain. We will suggest connecting www too in the last step.",
+      "kindSubdomain": "This is a subdomain, it needs one record.",
+      "kindWww": "This is a www address.",
+      "adding": "Adding..."
+    },
+    "errors": {
+      "empty": "Type the domain you bought, for example example.com.",
+      "invalid": "That does not look like a domain. Use letters, numbers and dots, for example example.com.",
+      "wildcard": "A wildcard like *.example.com needs the advanced form. Use the link below, or type a single domain.",
+      "claimedHere": "This app already uses that domain. Pick another domain or open it from the list.",
+      "claimedOther": "The app {{app}} already uses that domain. Remove it there first, or pick another domain.",
+      "noApp": "Choose the app this domain should open.",
+      "addFailed": "We could not add the domain: {{message}}. Check the name and try again."
+    },
+    "step2": {
+      "title": "Point your domain here",
+      "intro": "Add this record where you bought {{domain}}. It tells the internet to send visitors to your server.",
+      "type": "Type",
+      "name": "Name",
+      "value": "Value",
+      "copy": "Copy {{label}}",
+      "copied": "{{label}} copied",
+      "loading": "Looking up your server address...",
+      "noRecords": "We could not find this server's public address. Open Domains settings and set the server address, then come back.",
+      "providerOn": "A DNS provider is connected, so we can add this record for you.",
+      "providerOff": "No DNS provider is connected. Add the record by hand at your registrar, it takes a minute to copy, then continue. Nothing is changed for you.",
+      "apply": "Add the record for me",
+      "applying": "Adding...",
+      "applied": "Record added. It can take a few minutes to spread.",
+      "applyFailed": "We could not add the record: {{message}}. Add it by hand with the values above, or check the provider connection.",
+      "continue": "I added it, continue"
+    },
+    "step3": {
+      "title": "Going live",
+      "waiting": "We check again by ourselves. You can leave this open.",
+      "doneTitle": "{{domain}} is live",
+      "doneBody": "Visitors can open your site over HTTPS.",
+      "open": "Open https://{{domain}}",
+      "addAnother": "Add another",
+      "finishLater": "Finish later",
+      "wwwTitle": "Also connect www",
+      "wwwBody": "Visitors often type www. One click connects it and sends them to {{domain}}."
+    }
   }
 }

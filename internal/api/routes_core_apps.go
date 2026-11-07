@@ -156,6 +156,12 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/build-hooks/{id}", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleRevokeBuildHook))
 	mux.HandleFunc("POST /api/v1/hooks/deploy/{id}/{token}", rt.handleBuildHookTrigger)
 	mux.HandleFunc("POST /api/v1/hooks/image-update/{name}/{token}", rt.handleImageUpdateWebhook)
+	mux.HandleFunc("GET /api/v1/vitals/snippet.js", rt.handleVitalsSnippet)
+	mux.HandleFunc("POST /api/v1/vitals/{app}", rt.handleVitalsBeacon)
+	mux.HandleFunc("OPTIONS /api/v1/vitals/{app}", rt.handleVitalsPreflight)
+	mux.HandleFunc("GET /api/v1/apps/{name}/vitals", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetVitals))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/vitals", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetVitals))
+	mux.HandleFunc("POST /api/v1/apps/{name}/vitals/rotate-key", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleRotateVitalsKey))
 	mux.HandleFunc("POST /api/v1/forms/{app}/{name}", rt.handleFormSubmit)
 	mux.HandleFunc("OPTIONS /api/v1/forms/{app}/{name}", rt.handleFormPreflight)
 	mux.HandleFunc("GET /api/v1/apps/{name}/forms", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListForms))
@@ -237,6 +243,8 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/deployments/{id}/timeline", rt.requireAbility(AbilityRead, rt.handleGetDeployTimeline))
 	mux.HandleFunc("GET /api/v1/deployments/{id}/timeline/stream", rt.requireAbility(AbilityRead, rt.withStreamReauth(timelineStreamResource, rt.handleDeployTimelineStream)))
 	mux.HandleFunc("GET /api/v1/deployments/{id}/timeline/compare", rt.requireAbility(AbilityRead, rt.handleCompareDeployTimelines))
+	// Deploy phases (deploy_phases.go): stages with status, timing and ETA, derived from stored trace rows and the build log. AbilityRead.
+	mux.HandleFunc("GET /api/v1/deployments/{id}/phases", rt.requireAbility(AbilityRead, rt.handleGetDeployPhases))
 
 	// Deploy comparison (deploy_compare.go): a before/after diff between
 	// two attempts, or one attempt against the app's current live state
@@ -334,6 +342,8 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	// receiver uses, for an operator with no working git webhook
 	// configured. AbilityDeploy, the same boundary as the image-tag
 	// trigger above: this also ultimately writes desired state.
+	mux.HandleFunc("GET /api/v1/apps/{name}/build-cache", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppBuildCache))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/build-cache", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleClearAppBuildCache))
 	mux.HandleFunc("POST /api/v1/apps/{name}/builds", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleTriggerBuild))
 	mux.HandleFunc("POST /api/v1/apps/{name}/uploads", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleUploadSource))
 	mux.HandleFunc("GET /api/v1/apps/{name}/uploads", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListUploads))

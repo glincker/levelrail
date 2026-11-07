@@ -38,6 +38,7 @@ import { DeployStatusCard } from '../../../../../components/deployDetail/DeployS
 import { DeployLiveStatus } from '../../../../../components/deployDetail/DeployLiveStatus'
 import { StreamDropBanner } from '../../../../../components/deployDetail/StreamDropBanner'
 import { BuildTab } from '../../../../../components/deployDetail/BuildTab'
+import { DeployPhases } from '../../../../../components/deployDetail/DeployPhases'
 import { RolloutTab } from '../../../../../components/deployDetail/RolloutTab'
 import { buildTimelineRows } from '../../../../../components/deployDetail/timelineRows'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -246,6 +247,12 @@ function DeployLogsPage() {
             />
           </div>
         </div>
+
+        <DeployPhases
+          deployId={deployId}
+          running={!attemptFinished}
+          lastEventAt={lastEventAt}
+        />
 
         <StreamDropBanner
           transport={transport}

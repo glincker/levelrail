@@ -181,6 +181,10 @@ type Request struct {
 	// Preview marks a pull request preview build, which may not use
 	// build.secrets unless APP_PREVIEW_BUILD_SECRETS is true.
 	Preview bool
+
+	// nextDeploymentID is set by the Next.js build path and reaches the
+	// container env in finishDeploy.
+	nextDeploymentID string
 }
 
 // Pipeline builds a service (when its build type requires a build) and
@@ -379,6 +383,10 @@ func (p *Pipeline) deployRailpack(ctx context.Context, req Request, progress fun
 	}
 
 	buildEnv := staticBuildArgs(req.Service.Env, nil, StaticBuildEnvPrefixes())
+	if id := nextDeploymentID(ctx, buildRoot, deployIDFor(req), req.Service.Env); id != "" {
+		buildEnv[nextDeploymentIDEnvVar] = id
+		req.nextDeploymentID = id
+	}
 	emitBuildEnvKeys(progress, "railpack", buildEnv, len(req.Service.Env))
 	res, err := p.builder.BuildRailpack(ctx, build.RailpackRequest{
 		SourceDir: buildRoot,
@@ -412,12 +420,22 @@ func (p *Pipeline) finishDeploy(ctx context.Context, req Request, res *build.Res
 	if err := checkVolumeOwners(ctx, p.store, desired); err != nil {
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
 	}
+	if req.nextDeploymentID != "" {
+		if desired.Env == nil {
+			desired.Env = map[string]string{}
+		}
+		desired.Env[nextDeploymentIDEnvVar] = req.nextDeploymentID
+	}
 	resolution := p.buildResolution(ctx, res.Tag, res.ExporterResponse)
 	resolution.apply(&desired)
 
+	prevID, prevImage := p.previousNextRelease(ctx, req)
 	held, err := p.saveDesired(ctx, req, desired)
 	if err != nil {
 		return "", fmt.Errorf("deploy: service %q: save desired state: %w", req.ServiceName, err)
+	}
+	if !held {
+		p.beginNextGrace(ctx, req, prevID, prevImage)
 	}
 	p.recordDigest(ctx, req, resolution)
 	if !held {

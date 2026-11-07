@@ -92,6 +92,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CLOUDFLARE_IPS_MIN_RANGES` | [`ingress.cloudflare_ips_min_ranges`](/runtime-settings#networking) | `10` |
 | `APP_CLOUDFLARE_IPS_REFRESH` | [`ingress.cloudflare_ips_refresh`](/runtime-settings#networking) | `24h` |
 | `APP_CLOUDFLARE_IPS_TIMEOUT` | [`ingress.cloudflare_ips_timeout`](/runtime-settings#networking) | `15s` |
+| `LEVELRAIL_INGRESS_DIAGNOSTIC_CACHE_TTL_SECONDS` | [`ingress.diagnostic_cache_ttl_seconds`](/runtime-settings#networking) | `5` |
+| `LEVELRAIL_INGRESS_DIAGNOSTIC_SHOW_STATE` | [`ingress.diagnostic_show_state`](/runtime-settings#networking) | `false` |
 | `APP_INGRESS_DNS01_ALL_HOSTS` | [`ingress.dns01_all_hosts`](/runtime-settings#networking) | `false` |
 | `APP_INGRESS_FALLBACK_CERTS` | [`ingress.fallback_certs`](/runtime-settings#networking) | `eager` |
 | `APP_INGRESS_MAX_BODY_BYTES` | [`ingress.max_body_bytes`](/runtime-settings#networking) | `1073741824` |
@@ -100,6 +102,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_MESH_HUB_RESOLVE_TTL` | [`mesh.hub_resolve_ttl`](/runtime-settings#networking) | `5m` |
 | `APP_MESH_HUB_STALE_MAX` | [`mesh.hub_stale_max`](/runtime-settings#networking) | `24h` |
 | `APP_OIDC_LISTEN_PORT` | [`pipelines.oidc_listen_port`](/runtime-settings#networking) | `9095` |
+| `LEVELRAIL_PROXY_UNROUTED_TO_LEVELRAIL` | [`proxy.unrouted_to_levelrail`](/runtime-settings#networking) | `false` |
 | `APP_TRUST_LOOPBACK_FORWARDED` | [`security.trust_loopback_forwarded_headers`](/runtime-settings#networking) | `true` |
 | `APP_BACKUP_LOCAL_ROOT` | [`backup.local_root`](/runtime-settings#deploys) | empty |
 | `APP_BOOT_EVENT_RECHECK` | [`boot.event_recheck`](/runtime-settings#deploys) | `3s` |
@@ -114,6 +117,9 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CI_GATE_MAX_WAITS_PER_APP` | [`deploy.ci_gate_max_waits_per_app`](/runtime-settings#deploys) | `4` |
 | `APP_DEPLOY_DRAIN_TIMEOUT` | [`deploy.drain_timeout`](/runtime-settings#deploys) | `15s` |
 | `APP_DEPLOY_MAX_CONCURRENT` | [`deploy.max_concurrent`](/runtime-settings#deploys) | `0` |
+| `APP_DEPLOY_NEXT_ASSET_GRACE_MAX_HELD` | [`deploy.next_asset_grace_max_held`](/runtime-settings#deploys) | `1` |
+| `APP_DEPLOY_NEXT_ASSET_GRACE_SECONDS` | [`deploy.next_asset_grace_seconds`](/runtime-settings#deploys) | `1800` |
+| `APP_DEPLOY_NEXT_DEPLOYMENT_ID` | [`deploy.next_deployment_id`](/runtime-settings#deploys) | `true` |
 | `APP_DEPLOY_PREVIOUS_RELEASE_HOLD` | [`deploy.previous_release_hold`](/runtime-settings#deploys) | `3m` |
 | `APP_DEPLOY_RECEIPT_APPROVAL_WINDOW` | [`deploy.receipt_approval_window`](/runtime-settings#deploys) | `15m` |
 | `APP_DEPLOY_STABLE_WINDOW` | [`deploy.stable_window`](/runtime-settings#deploys) | `10s` |
@@ -122,6 +128,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_REGISTRY_PUSH_MAX_BODY_BYTES` | [`deploys.registry_push_max_body_bytes`](/runtime-settings#deploys) | `262144` |
 | `APP_REGISTRY_PUSH_TIMEOUT` | [`deploys.registry_push_timeout`](/runtime-settings#deploys) | `5m` |
 | `APP_IMAGE_KEEP_PER_APP` | [`images.keep_per_app`](/runtime-settings#deploys) | `3` |
+| `APP_JOBS_HTTP_TIMEOUT_SECONDS` | [`jobs.http_timeout_seconds`](/runtime-settings#deploys) | `30` |
 | `APP_NEXTJS_GENERATE_ACTIONS_KEY` | [`nextjs.generate_actions_key`](/runtime-settings#deploys) | `true` |
 | `APP_PLACEMENT_SCORE_MODE` | [`placement.score_mode`](/runtime-settings#deploys) | `spread` |
 | `APP_PROJECTS_DEFAULT_ENVIRONMENT` | [`projects.default_environment`](/runtime-settings#deploys) | `false` |
@@ -152,6 +159,13 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_METRICS_RETENTION` | [`telemetry.metrics_retention`](/runtime-settings#observability) | `360h` |
 | `APP_VISITOR_HISTORY_RETENTION` | [`telemetry.visitor_history_retention`](/runtime-settings#observability) | `168h0m0s` |
 | `APP_VISITOR_SALT_ROTATION` | [`telemetry.visitor_salt_rotation`](/runtime-settings#observability) | `24h0m0s` |
+| `APP_VITALS_ENABLED` | [`vitals.enabled`](/runtime-settings#observability) | `false` |
+| `APP_VITALS_FLUSH_SECONDS` | [`vitals.flush_interval_seconds`](/runtime-settings#observability) | `10` |
+| `APP_VITALS_MAX_BODY_BYTES` | [`vitals.max_body_bytes`](/runtime-settings#observability) | `4096` |
+| `APP_VITALS_MAX_ROUTES` | [`vitals.max_routes_per_app`](/runtime-settings#observability) | `200` |
+| `APP_VITALS_RATE_PER_IP` | [`vitals.rate_limit_per_ip_per_minute`](/runtime-settings#observability) | `120` |
+| `APP_VITALS_RATE_PER_MIN` | [`vitals.rate_limit_per_minute`](/runtime-settings#observability) | `600` |
+| `APP_VITALS_REPORT_TOP_ROUTES` | [`vitals.report_top_routes`](/runtime-settings#observability) | `50` |
 | `APP_ACCOUNT_PREFERENCES_MAX_BYTES` | [`account.preferences_max_bytes`](/runtime-settings#data-retention) | `8192` |
 | `APP_BACKUP_DEFAULT_RETENTION_HOURS` | [`backup.default_retention_hours`](/runtime-settings#data-retention) | `168` |
 | `APP_CLEANUP_ENABLED` | [`cleanup.enabled`](/runtime-settings#data-retention) | `true` |
@@ -173,6 +187,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_RETENTION_USAGE_COST_DAYS` | [`retention.usage_cost_days`](/runtime-settings#data-retention) | `90` |
 | `APP_WEBHOOK_DELIVERY_RETENTION_DAYS` | [`retention.webhook_delivery_days`](/runtime-settings#data-retention) | `30` |
 | `APP_JOBS_HISTORY_KEEP` | [`scheduled_tasks.history_keep`](/runtime-settings#data-retention) | `200` |
+| `APP_VITALS_RETENTION_DAYS` | [`vitals.retention_days`](/runtime-settings#data-retention) | `30` |
 | `APP_ONBOARDING_ENABLED` | [`onboarding.enabled`](/runtime-settings#experimental) | `true` |
 | `APP_ONBOARDING_RESTORE_REMINDER_DAYS` | [`onboarding.restore_reminder_days`](/runtime-settings#experimental) | `7` |
 <!-- runtime-settings:end -->

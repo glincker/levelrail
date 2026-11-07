@@ -78,6 +78,7 @@ type bootState struct {
 	supplyChainSvc      *supplychain.Service
 	builder             *deploy.Pipeline
 	buildLimiter        *build.Limiter
+	buildClient         *build.Client
 	engine              *reconcile.Engine
 	webhookHandler      http.Handler
 	ingressDriver       *ingressdriver.Driver

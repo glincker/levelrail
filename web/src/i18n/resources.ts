@@ -42,6 +42,7 @@ import type tokensNotices from '../locales/en/tokensNotices.json'
 import type firstRun from '../locales/en/firstRun.json'
 import type newAppNoGit from '../locales/en/newAppNoGit.json'
 import type appOverview from '../locales/en/appOverview.json'
+import type webVitals from '../locales/en/webVitals.json'
 import type exposure from '../locales/en/exposure.json'
 import type appExposure from '../locales/en/appExposure.json'
 import type appAccess from '../locales/en/appAccess.json'
@@ -89,6 +90,7 @@ import type eventWebhooks from '../locales/en/eventWebhooks.json'
 import type mcpConsent from '../locales/en/mcpConsent.json'
 import type trafficExport from '../locales/en/trafficExport.json'
 import type maintenance from '../locales/en/maintenance.json'
+import type appBuildCache from '../locales/en/appBuildCache.json'
 import type buildPerformance from '../locales/en/buildPerformance.json'
 import type janitor from '../locales/en/janitor.json'
 import type cleanup from '../locales/en/cleanup.json'
@@ -179,6 +181,7 @@ declare module 'i18next' {
       firstRun: typeof firstRun
       newAppNoGit: typeof newAppNoGit
       appOverview: typeof appOverview
+      webVitals: typeof webVitals
       exposure: typeof exposure
       appExposure: typeof appExposure
       appAccess: typeof appAccess
@@ -270,6 +273,7 @@ declare module 'i18next' {
       secretScan: typeof secretScan
       appFiles: typeof appFiles
       maintenance: typeof maintenance
+      appBuildCache: typeof appBuildCache
       buildPerformance: typeof buildPerformance
       janitor: typeof janitor
       cleanup: typeof cleanup

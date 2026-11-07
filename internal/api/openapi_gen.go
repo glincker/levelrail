@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1976 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1986 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -147,6 +147,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/budget/dry-run", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppSpendDryRun", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/budget/history", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSpendCapHistory", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/budget/override", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSpendOverride", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/build-cache", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleClearAppBuildCache", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/build-cache", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppBuildCache", Description: "Manual build trigger (see Builder/WithBuilder above and handleTriggerBuild's own doc comment): builds an image from a git source through the same internal/deploy.Pipeline the webhook receiver uses, for an operator with no working git webhook configured. AbilityDeploy, the same boundary as the image-tag trigger above: this also ultimately writes desired state."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/build-hooks", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListBuildHooks", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/build-hooks", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCreateBuildHook", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/build-hooks/{id}", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRevokeBuildHook", Description: ""},
@@ -156,7 +158,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/apps/{name}/build-limits", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppBuildLimits", Description: "An app's CPU and memory cap decides how much of the host its builds can take, so root only."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/build-speed", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleBuildSpeed", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/build-stats", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleBuildStats", Description: ""},
-	{Method: "POST", Path: "/api/v1/apps/{name}/builds", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleTriggerBuild", Description: "Manual build trigger (see Builder/WithBuilder above and handleTriggerBuild's own doc comment): builds an image from a git source through the same internal/deploy.Pipeline the webhook receiver uses, for an operator with no working git webhook configured. AbilityDeploy, the same boundary as the image-tag trigger above: this also ultimately writes desired state."},
+	{Method: "POST", Path: "/api/v1/apps/{name}/builds", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleTriggerBuild", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/builds/{id}/cancel", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCancelBuild", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/builds/{id}/retry", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRetryBuild", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/cache", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppCache", Description: "App-level cache view, purge across the app's domains, purge history and the one-click static assets preset; instance cache and CDN overview."},
@@ -437,6 +439,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/validate-spec", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleValidateSpec", Description: "Live app.yaml validation (apps_validate_spec.go): read-only, same AbilityRead/POST shape as preflight above. Never saves or deploys anything, only runs the submitted body through internal/spec's own Parse-time checks for an editor's earlier, friendlier feedback."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/visitors", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppVisitors", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/visitors/export", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppVisitorsExport", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/vitals", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetVitals", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/vitals", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetVitals", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/vitals/rotate-key", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRotateVitalsKey", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/watch", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppWatch", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/watch/stop", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleStopAppWatch", Description: ""},
 	{Method: "GET", Path: "/api/v1/deploys/failed", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListFailedDeploys", Description: ""},
@@ -1093,6 +1098,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/deployments/stream", Ability: "AbilityRead", Group: "Other", Handler: "handleDeploymentsStream", Description: ""},
 	{Method: "GET", Path: "/api/v1/deployments/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleDeploymentsSummary", Description: ""},
 	{Method: "GET", Path: "/api/v1/deployments/timeline", Ability: "AbilityRead", Group: "Other", Handler: "handleDeploymentsTimeline", Description: ""},
+	{Method: "GET", Path: "/api/v1/deployments/{id}/phases", Ability: "AbilityRead", Group: "Other", Handler: "handleGetDeployPhases", Description: "Deploy phases (deploy_phases.go): stages with status, timing and ETA, derived from stored trace rows and the build log. AbilityRead."},
 	{Method: "GET", Path: "/api/v1/deployments/{id}/timeline", Ability: "AbilityRead", Group: "Other", Handler: "handleGetDeployTimeline", Description: "Per-deploy event timeline (deploy_timeline.go): the whole story of one deploy as ordered events, a live SSE view that ends when the deploy settles, and a two-deploy comparison. Settled timelines are frozen for replay until APP_DEPLOY_TIMELINE_RETENTION. AbilityRead, filtered to the apps the caller can read."},
 	{Method: "GET", Path: "/api/v1/deployments/{id}/timeline/compare", Ability: "AbilityRead", Group: "Other", Handler: "handleCompareDeployTimelines", Description: ""},
 	{Method: "GET", Path: "/api/v1/deployments/{id}/timeline/stream", Ability: "AbilityRead", Group: "Other", Handler: "handleDeployTimelineStream", Description: ""},
@@ -1716,6 +1722,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/usage/settings", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetUsageSettings", Description: ""},
 	{Method: "PUT", Path: "/api/v1/usage/settings", Ability: "AbilityRoot", Group: "Other", Handler: "handlePutUsageSettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/usage/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleUsageSummary", Description: ""},
+	{Method: "GET", Path: "/api/v1/vitals/snippet.js", Ability: "Public", Group: "Other", Handler: "handleVitalsSnippet", Description: ""},
+	{Method: "OPTIONS", Path: "/api/v1/vitals/{app}", Ability: "Public", Group: "Other", Handler: "handleVitalsPreflight", Description: ""},
+	{Method: "POST", Path: "/api/v1/vitals/{app}", Ability: "Public", Group: "Other", Handler: "handleVitalsBeacon", Description: ""},
 	{Method: "GET", Path: "/api/v2/apps", Ability: "AbilityRead", Group: "Other", Handler: "handleList", Description: ""},
 	{Method: "GET", Path: "/api/v2/apps/{name}", Ability: "AbilityRead", Group: "Other", Handler: "handleGet", Description: ""},
 	{Method: "PATCH", Path: "/api/v2/apps/{name}", Ability: "AbilityWrite", Group: "Other", Handler: "handleApply", Description: ""},
@@ -1726,6 +1735,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v2/nodes/{name}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGet", Description: ""},
 	{Method: "PATCH", Path: "/api/v2/{kind}/{name}", Ability: "AbilityWrite", Group: "Other", Handler: "handleApplyUnsupported", Description: ""},
 	{Method: "GET", Path: "/gate/login", Ability: "Public", Group: "Other", Handler: "handleGateLogin", Description: ""},
+	{Method: "GET", Path: "/internal/diagnostic", Ability: "Public", Group: "Other", Handler: "handleInternalDiagnostic", Description: "Token gated by the ingress; see TrustedDiagnosticHandler."},
 	{Method: "POST", Path: "/mcp", Ability: "Public", Group: "Other", Handler: "", Description: "Unauthenticated at the mux: serve checks the bearer token itself, plus flag, Origin and limits."},
 	{Method: "GET", Path: "/metrics", Ability: "AbilityRead", Group: "Other", Handler: "handleScrapeMetrics", Description: ""},
 	{Method: "GET", Path: "/oauth/authorize", Ability: "Public", Group: "Other", Handler: "handleMCPAuthorize", Description: ""},

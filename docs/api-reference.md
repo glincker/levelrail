@@ -695,6 +695,11 @@ Endpoints for:
 | POST | /api/v1/apps/repo-plan | AbilityWrite | handleRepoPlan |
 | GET | /api/v1/apps/{name}/ci/templates | AbilityRead | handleGetCITemplates |
 | GET | /api/v1/apps/{name}/deployments/{id}/receipt | AbilityRead | handleGetDeployReceipt |
+| GET | /api/v1/apps/{name}/build-cache | AbilityRead | handleGetAppBuildCache |
+| DELETE | /api/v1/apps/{name}/build-cache | AbilityDeploy | handleClearAppBuildCache |
+| GET | /api/v1/apps/{name}/vitals | AbilityRead | handleGetVitals |
+| PUT | /api/v1/apps/{name}/vitals | AbilityDeploy | handleSetVitals |
+| POST | /api/v1/apps/{name}/vitals/rotate-key | AbilityDeploy | handleRotateVitalsKey |
 
 </Accordion>
 
@@ -2200,6 +2205,11 @@ Routes that do not fit an existing group.
 | DELETE | /api/v1/me/preferences/appearance | Public | handleDeleteMePreferenceAppearance |
 | POST | /api/v1/images/remove | AbilityRoot | handleImageRemove |
 | GET | /api/v1/status-reasons | AbilityRead | handleListStatusReasons |
+| GET | /api/v1/deployments/{id}/phases | AbilityRead | handleGetDeployPhases |
+| GET | /api/v1/vitals/snippet.js | Public | handleVitalsSnippet |
+| POST | /api/v1/vitals/{app} | Public | handleVitalsBeacon |
+| OPTIONS | /api/v1/vitals/{app} | Public | handleVitalsPreflight |
+| GET | /internal/diagnostic | Public | handleInternalDiagnostic |
 | POST | /mcp | Public |  |
 
 ## See also

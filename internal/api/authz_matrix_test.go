@@ -42,6 +42,7 @@ var libraryOnlyRoutes = map[string]string{
 var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credentials
 	"GET /healthz":                                   "liveness probe for systemd and load balancers",
 	"GET /readyz":                                    "readiness probe, no data beyond ready/not ready",
+	"GET /internal/diagnostic":                       "ingress-only hop gated by a per-process token, answers 404 without it",
 	"GET /api/v1/brand":                              "login screen needs branding before a session exists",
 	"GET /api/v1/instance":                           "CLI verifies which server it reached before sending a token; id and HMAC fingerprint only, rate limited",
 	"GET /api/v1/demo":                               "demo banner, boolean only on a real instance",
@@ -99,6 +100,9 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 	"OPTIONS /api/v1/sentry/api/{project}/store/":    "CORS preflight for browser Sentry SDKs, answers headers only",
 	"POST /api/v1/forms/{app}/{name}":                "public form capture for static sites: write-only, per-IP and per-form rate limited, size capped, unknown forms answer 404, never returns stored data",
 	"OPTIONS /api/v1/forms/{app}/{name}":             "CORS preflight for browser form posts, answers headers only",
+	"GET /api/v1/vitals/snippet.js":                  "static browser script for web vitals collection, no data, cacheable",
+	"POST /api/v1/vitals/{app}":                      "web vitals beacon authenticated by the per-app public key in the body, rate limited per client address and, after the key check, per app, size capped, uniform 404 on any mismatch, stores only histogram counters",
+	"OPTIONS /api/v1/vitals/{app}":                   "CORS preflight for browser vitals beacons, answers headers only",
 	"GET /api/v1/hooks/wake":                         "called by the ingress wake route with a per-process secret header; any mismatch answers 404",
 	"POST /api/v1/webhooks/slack/interactions":       "authenticated by the X-Slack-Signature HMAC of the channel's own interactive secret",
 	"POST /api/v1/webhooks/discord/interactions":     "authenticated by the Ed25519 signature of the channel's own Discord application public key",

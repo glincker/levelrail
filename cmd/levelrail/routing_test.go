@@ -1,9 +1,13 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+
+	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 )
 
 func TestComposeMux_HealthzReachesAPIHandlerNotSPAFallback(t *testing.T) {
@@ -118,7 +122,7 @@ func TestComposeMux_WebhookHandlerConfigured_ReceivesPost(t *testing.T) {
 }
 
 func TestComposeMux_RootAPIPathsReachAPIHandler(t *testing.T) {
-	for _, path := range []string{"/metrics", "/.well-known/jwks.json"} {
+	for _, path := range []string{"/metrics", "/.well-known/jwks.json", ingressdriver.DiagnosticPath} {
 		t.Run(path, func(t *testing.T) {
 			var got string
 			apiHandler := http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
@@ -132,5 +136,34 @@ func TestComposeMux_RootAPIPathsReachAPIHandler(t *testing.T) {
 				t.Errorf("apiHandler saw %q, want %q", got, path)
 			}
 		})
+	}
+}
+
+// The ingress hop must reach the trusted handler, not the SPA index.
+func TestComposeMux_DiagnosticEndToEnd(t *testing.T) {
+	lookup := func(context.Context, string) ingressdriver.HostInfo {
+		return ingressdriver.HostInfo{State: ingressdriver.StateBuilding}
+	}
+	api := ingressdriver.TrustedDiagnosticHandler("tok",
+		ingressdriver.DiagnosticHandler(lookup, func(context.Context) bool { return true }, "B", "https://d"), "B", "https://d")
+	web := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("SPA-INDEX")) })
+	mux := composeMux(api, nil, web)
+
+	req := httptest.NewRequest(http.MethodGet, ingressdriver.DiagnosticPath, nil)
+	req.Header.Set("Accept", "text/html")
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+	if rec.Code != http.StatusNotFound || strings.Contains(rec.Body.String(), "SPA-INDEX") {
+		t.Fatalf("tokenless request: %d %q", rec.Code, rec.Body.String())
+	}
+
+	req = httptest.NewRequest(http.MethodGet, ingressdriver.DiagnosticPath, nil)
+	req.Header.Set("Accept", "text/html")
+	req.Header.Set(ingressdriver.DiagnosticTokenHeader, "tok")
+	req.Header.Set(ingressdriver.DiagnosticHostHeader, "app.example.com")
+	rec = httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+	if rec.Code != http.StatusServiceUnavailable || !strings.Contains(rec.Body.String(), "still building") {
+		t.Fatalf("tokened request: %d %q", rec.Code, rec.Body.String())
 	}
 }

@@ -1,0 +1,11 @@
+{
+  "label": "Caché de compilación:",
+  "summary": "{{size}}, usada {{used}}",
+  "empty": "Aún no hay caché, la primera compilación la llena",
+  "neverUsed": "nunca",
+  "clear": "Borrar caché",
+  "clearing": "Borrando",
+  "cleared": "Caché de compilación borrada, {{size}} liberados",
+  "confirmTitle": "¿Borrar la caché de compilación de esta aplicación?",
+  "confirmBody": "La próxima compilación empieza en frío y tarda más, y luego vuelve a llenar la caché. Las demás aplicaciones y la caché compartida no se tocan."
+}

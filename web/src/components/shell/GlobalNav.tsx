@@ -19,8 +19,10 @@ import {
   type ExperimentalFeature,
 } from '@/lib/experimental'
 import { LockedFeatureMark } from './LockedFeatureMark'
-import { CollapsibleSection } from './CollapsibleSection'
+import { BetaBadge } from '../BetaBadge'
+import { CollapsibleSection, NAV_ROW_CLASS } from './CollapsibleSection'
 import { NavBadge } from './NavBadge'
+import { cn } from '@/lib/utils'
 import {
   chordFor,
   defaultGroupOpen,
@@ -124,7 +126,7 @@ function LockedNavLinkItem({
         }
         tooltip={label}
         title={label}
-        className="text-muted-foreground"
+        className={cn(NAV_ROW_CLASS, 'text-muted-foreground')}
         data-locked="true"
       >
         {item.icon}
@@ -142,12 +144,14 @@ function NavLinkItem({
   counts,
   experimental,
   pin,
+  beta,
 }: {
   item: GlobalNavItem
   pathname: string
   counts: Record<string, number>
   experimental: readonly string[]
   pin?: PinControl
+  beta?: boolean
 }) {
   const { t } = useTranslation('traffic')
   const { t: tc } = useTranslation()
@@ -179,6 +183,7 @@ function NavLinkItem({
           />
         }
         isActive={isGlobalItemActive(pathname, item)}
+        className={NAV_ROW_CLASS}
         title={label}
         tooltip={{
           children: (
@@ -191,6 +196,9 @@ function NavLinkItem({
       >
         {item.icon}
         <span>{label}</span>
+        {beta ? (
+          <BetaBadge className="shrink-0 group-data-[collapsible=icon]:hidden" />
+        ) : null}
         <NavBadge
           count={count}
           tone={
@@ -263,7 +271,7 @@ export function GlobalNav() {
 
   return (
     <>
-      <div className="flex flex-col gap-1 p-2">
+      <div className="flex flex-col gap-2 p-2">
         <GetStartedNavItem />
         {!rail && pinned.length > 0 ? (
           <CollapsibleSection
@@ -329,6 +337,7 @@ export function GlobalNav() {
               header={t(`shell.navGroup.${group.id}`, {
                 defaultValue: group.label,
               })}
+              active={group.items.some((i) => isGlobalItemActive(pathname, i))}
               hint={<GroupAttention group={group} counts={counts} />}
             >
               {menu}
@@ -336,8 +345,9 @@ export function GlobalNav() {
           )
         })}
       </div>
-      <SidebarGroup className="mt-auto">
-        <SidebarGroupContent>
+      {/* mt-auto pins the block to the bottom only when there is spare height. */}
+      <SidebarGroup className="mt-auto px-2 pb-2 pt-0">
+        <SidebarGroupContent className="border-t border-sidebar-border pt-2">
           <SidebarMenu>
             {visibleGlobalFooter().map((item) => (
               <NavLinkItem
@@ -346,6 +356,7 @@ export function GlobalNav() {
                 pathname={pathname}
                 counts={counts}
                 experimental={experimental}
+                beta={item.feature !== undefined}
               />
             ))}
           </SidebarMenu>

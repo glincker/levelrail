@@ -2,6 +2,10 @@ import * as React from 'react'
 import { ChevronRightGlassIcon } from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
 
+// One row system for every sidebar link: same height, icon column and states as group headers.
+export const NAV_ROW_CLASS =
+  'h-9 cursor-pointer gap-2.5 rounded-md px-2.5 text-sm text-sidebar-foreground/80 transition-colors duration-150 ease-out motion-reduce:transition-none hover:bg-sidebar-accent/70 hover:text-sidebar-foreground active:bg-sidebar-accent data-active:text-sidebar-active-foreground [&_svg]:text-sidebar-foreground/70 hover:[&_svg]:text-sidebar-foreground'
+
 export function NavChevron({
   open,
   className,
@@ -13,7 +17,7 @@ export function NavChevron({
     <ChevronRightGlassIcon
       aria-hidden="true"
       className={cn(
-        'size-4.5 transition-transform duration-200 ease-out motion-reduce:transition-none',
+        'size-4 transition-[transform,color] duration-150 ease-out motion-reduce:transition-none',
         open && 'rotate-90',
         className,
       )}
@@ -56,6 +60,7 @@ export function CollapsibleSection({
   hint,
   children,
   className,
+  active = false,
 }: {
   id: string
   open: boolean
@@ -65,6 +70,8 @@ export function CollapsibleSection({
   hint?: React.ReactNode
   children: React.ReactNode
   className?: string
+  // Marks a collapsed group that holds the current page.
+  active?: boolean
 }) {
   const panelId = `nav-panel-${id}`
   return (
@@ -73,12 +80,23 @@ export function CollapsibleSection({
         type="button"
         aria-expanded={open}
         aria-controls={panelId}
+        title={typeof header === 'string' ? header : undefined}
+        data-contains-active={active && !open ? 'true' : undefined}
         onClick={() => onOpenChange(!open)}
-        className="flex h-7 w-full items-center gap-1 rounded-md px-2 text-xs font-medium text-sidebar-foreground/70 outline-hidden transition-colors hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+        className="group/header flex h-9 w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 text-sm font-medium text-sidebar-foreground/70 outline-hidden transition-colors duration-150 ease-out hover:bg-sidebar-accent/70 hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring active:bg-sidebar-accent motion-reduce:transition-none data-[contains-active=true]:text-sidebar-active-foreground"
       >
-        <span className="flex-1 text-left">{header}</span>
+        <span className="grid size-5 shrink-0 place-items-center">
+          <NavChevron open={open} />
+        </span>
+        <span className="min-w-0 flex-1 truncate text-left">{header}</span>
+        {active && !open ? (
+          <span
+            data-testid="group-active-dot"
+            aria-hidden="true"
+            className="size-1.5 shrink-0 rounded-full bg-state-active-bar"
+          />
+        ) : null}
         {open ? null : hint}
-        <NavChevron open={open} />
       </button>
       <NavCollapsePanel id={panelId} open={open}>
         {children}

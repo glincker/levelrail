@@ -1667,5 +1667,66 @@
       "diagnose": "Diagnosticar",
       "deploys": "La app no está en marcha, ver despliegues"
     }
+  },
+  "addWizard": {
+    "progress": "Paso {{current}} de {{total}}",
+    "stepNames": {
+      "1": "Dominio",
+      "2": "Apúntalo aquí",
+      "3": "Puesta en marcha"
+    },
+    "back": "Atrás",
+    "next": "Continuar",
+    "advanced": "Avanzado: añadir varios dominios a la vez",
+    "backToWizard": "Volver a la configuración guiada",
+    "step1": {
+      "title": "¿Qué dominio y qué aplicación?",
+      "domainLabel": "Tu dominio",
+      "domainPlaceholder": "ejemplo.com",
+      "appLabel": "Aplicación",
+      "appPlaceholder": "Elige una aplicación",
+      "kindApex": "Es un dominio principal. En el último paso te sugeriremos conectar también www.",
+      "kindSubdomain": "Es un subdominio, necesita un solo registro.",
+      "kindWww": "Es una dirección con www.",
+      "adding": "Añadiendo..."
+    },
+    "errors": {
+      "empty": "Escribe el dominio que compraste, por ejemplo ejemplo.com.",
+      "invalid": "Eso no parece un dominio. Usa letras, números y puntos, por ejemplo ejemplo.com.",
+      "wildcard": "Un comodín como *.ejemplo.com necesita el formulario avanzado. Usa el enlace de abajo o escribe un solo dominio.",
+      "claimedHere": "Esta aplicación ya usa ese dominio. Elige otro dominio o ábrelo desde la lista.",
+      "claimedOther": "La aplicación {{app}} ya usa ese dominio. Quítalo allí primero o elige otro dominio.",
+      "noApp": "Elige la aplicación que debe abrir este dominio.",
+      "addFailed": "No pudimos añadir el dominio: {{message}}. Revisa el nombre e inténtalo de nuevo."
+    },
+    "step2": {
+      "title": "Apunta tu dominio aquí",
+      "intro": "Añade este registro donde compraste {{domain}}. Le indica a internet que envíe a los visitantes a tu servidor.",
+      "type": "Tipo",
+      "name": "Nombre",
+      "value": "Valor",
+      "copy": "Copiar {{label}}",
+      "copied": "{{label}} copiado",
+      "loading": "Buscando la dirección de tu servidor...",
+      "noRecords": "No encontramos la dirección pública de este servidor. Abre los ajustes de Dominios, define la dirección del servidor y vuelve.",
+      "providerOn": "Hay un proveedor de DNS conectado, así que podemos añadir este registro por ti.",
+      "providerOff": "No hay un proveedor de DNS conectado. Añade el registro a mano en tu registrador, solo hay que copiarlo, y continúa. No cambiamos nada por ti.",
+      "apply": "Añadir el registro por mí",
+      "applying": "Añadiendo...",
+      "applied": "Registro añadido. Puede tardar unos minutos en propagarse.",
+      "applyFailed": "No pudimos añadir el registro: {{message}}. Añádelo a mano con los valores de arriba o revisa la conexión del proveedor.",
+      "continue": "Ya lo añadí, continuar"
+    },
+    "step3": {
+      "title": "Puesta en marcha",
+      "waiting": "Volvemos a comprobar solos. Puedes dejar esto abierto.",
+      "doneTitle": "{{domain}} está en línea",
+      "doneBody": "Los visitantes ya pueden abrir tu sitio por HTTPS.",
+      "open": "Abrir https://{{domain}}",
+      "addAnother": "Añadir otro",
+      "finishLater": "Terminar después",
+      "wwwTitle": "Conecta también www",
+      "wwwBody": "Mucha gente escribe www. Con un clic lo conectamos y lo enviamos a {{domain}}."
+    }
   }
 }
