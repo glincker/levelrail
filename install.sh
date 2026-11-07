@@ -80,7 +80,15 @@
 #                            off still overrides it, with a warning.
 #   LEVELRAIL_RELEASE_BASE_URL  download release assets from this https mirror
 #                            directory instead of GitHub (LEVELRAIL_INSECURE_MIRROR=1
-#                            permits http, for tests only)
+#                            permits http, for tests only). With no
+#                            LEVELRAIL_VERSION set, the newest tag is read from
+#                            <base>/latest (plain text) instead of api.github.com.
+#                            Checksum and cosign checks still run.
+#   LEVELRAIL_DOCKER_MIRROR  Aliyun or AzureChinaCloud: passed as --mirror to the
+#                            get.docker.com script when Docker must be installed
+#   LEVELRAIL_REGISTRY_MIRROR  registry host[/path] prefix, e.g. m.daocloud.io.
+#                            Seeds the registry.mirror_prefix runtime setting
+#                            through APP_REGISTRY_MIRROR_PREFIX in the drop-in
 #   LEVELRAIL_INSTALL_CLI    0 skips installing levelrail-cli to /usr/local/bin
 #                            (default: installed from the same release)
 #   LEVELRAIL_PUBLIC_IP      skip public IP discovery
@@ -159,6 +167,10 @@ PUBLIC_HOST_PINNED=0
 SERVER_PROFILE="${LEVELRAIL_PROFILE:-}"
 PROFILE_PINNED=0
 [ -z "$SERVER_PROFILE" ] || PROFILE_PINNED=1
+REGISTRY_MIRROR="${LEVELRAIL_REGISTRY_MIRROR:-}"
+REGISTRY_MIRROR_PINNED=0
+[ -z "$REGISTRY_MIRROR" ] || REGISTRY_MIRROR_PINNED=1
+DOCKER_MIRROR="${LEVELRAIL_DOCKER_MIRROR:-}"
 LOW_RAM_MB="${LEVELRAIL_LOW_RAM_MB:-2048}"
 RUNTIME_CHOICE="${LEVELRAIL_RUNTIME:-auto}"
 RUNTIME_PINNED=0
@@ -328,6 +340,16 @@ safe_port LEVELRAIL_COEXIST_HTTPS_PORT "$COEXIST_HTTPS_PORT"
 safe_host APP_PUBLIC_HOST "$PUBLIC_HOST"
 safe_host --domain "$DOMAIN_HINT"
 case "$EMAIL_HINT" in *[!A-Za-z0-9._%+@-]*) fatal "--email has characters an address cannot contain" ;; esac
+# Allow list: the value reaches a piped shell script, so no free text.
+case "$DOCKER_MIRROR" in
+'' | Aliyun | AzureChinaCloud) ;;
+*) fatal "LEVELRAIL_DOCKER_MIRROR must be Aliyun or AzureChinaCloud, got: $DOCKER_MIRROR" ;;
+esac
+# host[/path] only: it is written into a systemd unit and used as an image prefix.
+case "$REGISTRY_MIRROR" in
+'') ;;
+*[!A-Za-z0-9._/:-]* | */ | /* | *//* | *:*:* | *..*) fatal "LEVELRAIL_REGISTRY_MIRROR must be a registry host with an optional path, no scheme or spaces: $REGISTRY_MIRROR" ;;
+esac
 case "$SERVER_PROFILE" in
 '' | minimal | standard | suite) ;;
 *) fatal "--profile must be minimal, standard or suite, got: $SERVER_PROFILE" ;;
@@ -365,6 +387,26 @@ list_releases() {
 		END { if (tag != "" && index(tag, "/") == 0) print tag, pre, has, created }' | sort -k4,4r
 }
 
+# resolve_version_from_mirror reads the newest tag from <base>/latest so a
+# mirror host never needs api.github.com. Downloads are still verified later.
+resolve_version_from_mirror() {
+	mirror_base="${LEVELRAIL_RELEASE_BASE_URL%/}"
+	mirror_proto="$HTTPS_ONLY"
+	case "$mirror_base" in
+	https://*) ;;
+	http://*)
+		[ "${LEVELRAIL_INSECURE_MIRROR:-}" = "1" ] || fatal "LEVELRAIL_RELEASE_BASE_URL must be https (LEVELRAIL_INSECURE_MIRROR=1 allows http for tests)"
+		mirror_proto="=http"
+		;;
+	*) fatal "LEVELRAIL_RELEASE_BASE_URL must start with https://" ;;
+	esac
+	VERSION="$(curl -fsSL --proto "$mirror_proto" --tlsv1.2 --connect-timeout 10 --max-time 30 "${mirror_base}/latest" 2>/dev/null | head -n 1 | tr -d ' \t\r' || true)"
+	[ -n "$VERSION" ] || fatal "could not read the latest version from ${mirror_base}/latest. Set LEVELRAIL_VERSION=vX.Y.Z to pin one."
+	case "$VERSION" in
+	*[!A-Za-z0-9._+-]*) fatal "${mirror_base}/latest returned something that is not a version tag" ;;
+	esac
+}
+
 # resolve_version picks the newest release on the channel that actually
 # ships a binary for this architecture, skipping releases with no assets.
 resolve_version() {
@@ -377,6 +419,10 @@ resolve_version() {
 	"" | stable | beta) ;;
 	*) fatal "LEVELRAIL_CHANNEL must be stable or beta, got: $channel" ;;
 	esac
+	if [ -n "${LEVELRAIL_RELEASE_BASE_URL:-}" ]; then
+		resolve_version_from_mirror
+		return
+	fi
 	asset="levelrail-linux-${GOARCH}"
 	releases="$(list_releases "$asset" || true)"
 	[ -n "$releases" ] || fatal "could not list releases from GitHub. Set LEVELRAIL_VERSION=vX.Y.Z to pin one."
@@ -513,6 +559,13 @@ load_settings() {
 		v="$(setting APP_SERVER_PROFILE)"
 		case "$v" in
 		minimal | standard | suite) SERVER_PROFILE="$v" ;;
+		esac
+	fi
+	if [ "$REGISTRY_MIRROR_PINNED" -eq 0 ]; then
+		v="$(setting APP_REGISTRY_MIRROR_PREFIX)"
+		case "$v" in
+		*[!A-Za-z0-9._/:-]*) ;;
+		*) REGISTRY_MIRROR="$v" ;;
 		esac
 	fi
 	# An earlier Podman install keeps its runtime across upgrades.
@@ -873,7 +926,7 @@ ensure_runtime() {
 ensure_docker() {
 	if ! command -v docker >/dev/null 2>&1; then
 		log "Installing Docker via get.docker.com..."
-		curl -fsSL --proto "$HTTPS_ONLY" --tlsv1.2 --connect-timeout 10 --max-time 120 https://get.docker.com | sh
+		curl -fsSL --proto "$HTTPS_ONLY" --tlsv1.2 --connect-timeout 10 --max-time 120 https://get.docker.com | sh -s -- ${DOCKER_MIRROR:+--mirror "$DOCKER_MIRROR"}
 	fi
 	systemctl enable --now docker
 }
@@ -1247,6 +1300,7 @@ write_dropin() {
 			"Environment=APP_INGRESS_HTTPS_ADDR=:${HTTPS_PORT}"
 		[ -z "$PUBLIC_HOST" ] || printf 'Environment=APP_PUBLIC_HOST=%s\n' "$PUBLIC_HOST"
 		[ -z "$SERVER_PROFILE" ] || printf 'Environment=APP_SERVER_PROFILE=%s\n' "$SERVER_PROFILE"
+		[ -z "$REGISTRY_MIRROR" ] || printf 'Environment=APP_REGISTRY_MIRROR_PREFIX=%s\n' "$REGISTRY_MIRROR"
 		[ "$RUNTIME" != "podman" ] || printf 'Environment=APP_CONTAINER_RUNTIME_SOCKET=%s\n' "$PODMAN_SOCKET"
 	} >"$DROPIN_PATH"
 }
@@ -1256,7 +1310,8 @@ write_dropin() {
 ensure_dropin() {
 	if [ -f "$DROPIN_PATH" ] && [ "$HTTP_PORT_PINNED" -eq 0 ] && [ "$HTTPS_PORT_PINNED" -eq 0 ] &&
 		[ "$DASHBOARD_PORT_PINNED" -eq 0 ] && [ "$PUBLIC_HOST_PINNED" -eq 0 ] && [ "$COEXIST" -eq 0 ] &&
-		[ "$PROFILE_PINNED" -eq 0 ] && [ "$SETTINGS_CHANGED" -eq 0 ] && [ "$RUNTIME_PINNED" -eq 0 ]; then
+		[ "$PROFILE_PINNED" -eq 0 ] && [ "$SETTINGS_CHANGED" -eq 0 ] && [ "$RUNTIME_PINNED" -eq 0 ] &&
+		[ "$REGISTRY_MIRROR_PINNED" -eq 0 ]; then
 		return 0
 	fi
 	write_dropin

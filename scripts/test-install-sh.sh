@@ -216,6 +216,24 @@ out="$(mirror_upgrade good)"
 echo "$out" | grep -q "Checksum verified" || { echo "good checksum was not accepted in auto mode: $out"; exit 1; }
 echo "$out" | grep -q "cosign not found" || { echo "auto mode should say the signature was not checked: $out"; exit 1; }
 
+echo "== mirror base reads /latest, verification still runs"
+in_ct 'echo v9.9.9 > /srv/rel/v9.9.9/good/latest; echo v9.9.9 > /srv/rel/v9.9.9/tampered/latest'
+out="$(mirror_upgrade good LEVELRAIL_VERSION=)"
+echo "$out" | grep -q "Checksum verified" || { echo "mirror /latest version was not resolved and verified: $out"; exit 1; }
+echo "$out" | grep -q "api.github.com" && { echo "mirror install must not touch the GitHub API: $out"; exit 1; }
+out="$(mirror_upgrade tampered LEVELRAIL_VERSION=)"
+echo "$out" | grep -q "checksum mismatch" || { echo "tampered mirror was not rejected after /latest: $out"; exit 1; }
+out="$(mirror_upgrade good LEVELRAIL_VERSION= APP_INSTALL_VERIFY=require)"
+echo "$out" | grep -q "APP_INSTALL_VERIFY=require but cosign is not installed" || { echo "require mode skipped for a mirror: $out"; exit 1; }
+
+echo "== mirror values are validated"
+for bad in "x y" "https://m.daocloud.io" 'm.daocloud.io;id' 'a//b' '/abs' 'host/'; do
+	out="$(mirror_upgrade good LEVELRAIL_REGISTRY_MIRROR="$bad")"
+	echo "$out" | grep -q "LEVELRAIL_REGISTRY_MIRROR must be" || { echo "bad registry mirror accepted: $bad: $out"; exit 1; }
+done
+out="$(mirror_upgrade good LEVELRAIL_DOCKER_MIRROR=evil)"
+echo "$out" | grep -q "LEVELRAIL_DOCKER_MIRROR must be" || { echo "bad docker mirror accepted: $out"; exit 1; }
+
 out="$(mirror_upgrade good APP_INSTALL_VERIFY=bogus)"
 echo "$out" | grep -q "APP_INSTALL_VERIFY must be" || { echo "invalid APP_INSTALL_VERIFY accepted: $out"; exit 1; }
 
