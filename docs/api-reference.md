@@ -1044,6 +1044,9 @@ Endpoints for:
 | GET | /api/v1/nodes/{id}/onboarding | AbilityRoot | handleGetNodeOnboarding |
 | GET | /api/v1/nodes/{id}/taints | AbilityRoot | handleGetNodeTaints |
 | PUT | /api/v1/nodes/{id}/taints | AbilityRoot | handleSetNodeTaints |
+| POST | /api/v1/nodes/{id}/patch/preview | AbilityRoot | handleNodePatchPreview |
+| POST | /api/v1/nodes/{id}/patch/apply | AbilityRoot | handleNodePatchApply |
+| GET | /api/v1/nodes/{id}/patch/runs | AbilityRoot | handleListNodePatchRuns |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 

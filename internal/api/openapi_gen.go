@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2006 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2009 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -966,6 +966,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/nodes/{id}/metrics", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleQueryNodeMetrics", Description: "Node-level metrics (sum of per-container samples for everything placed on this node, see handleQueryNodeMetrics's own doc comment for exactly what that does and doesn't mean): same AbilityRoot boundary and nil-telemetry 501 shape as every route above, and the same query-param contract as GET /apps/{name}/metrics above it."},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/onboarding", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleGetNodeOnboarding", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/patch-status", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleGetNodePatchStatus", Description: "Latest OS-patch reading (internal/telemetry/hostpatch.go's HostPatchCollector), a single current fact rather than a time series, same AbilityRoot boundary as every other node route."},
+	{Method: "POST", Path: "/api/v1/nodes/{id}/patch/apply", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleNodePatchApply", Description: ""},
+	{Method: "POST", Path: "/api/v1/nodes/{id}/patch/preview", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleNodePatchPreview", Description: ""},
+	{Method: "GET", Path: "/api/v1/nodes/{id}/patch/runs", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleListNodePatchRuns", Description: ""},
 	{Method: "POST", Path: "/api/v1/nodes/{id}/reenroll-token", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleCreateNodeReenrollToken", Description: "Agent certificate lifecycle (node_cert.go, ADR 021)."},
 	{Method: "PUT", Path: "/api/v1/nodes/{id}/region", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleSetNodeRegion", Description: ""},
 	{Method: "POST", Path: "/api/v1/nodes/{id}/revoke-cert", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleRevokeNodeCert", Description: ""},

@@ -55,6 +55,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_DESKTOP_SESSION_TTL` | [`desktop.session_ttl`](/runtime-settings#security) | `12h` |
 | `APP_FIREWALL_CONFIRM_WINDOW` | [`firewall.confirm_window`](/runtime-settings#security) | `60s` |
 | `APP_MCP_DEFAULT_TOKEN_SCOPE` | [`mcp.default_token_scope`](/runtime-settings#security) | `read_only` |
+| `APP_NODES_PATCH_APPLY_TIMEOUT` | [`nodes.patch_apply_timeout`](/runtime-settings#security) | `30m` |
+| `APP_NODES_PATCH_PREVIEW_TTL` | [`nodes.patch_preview_ttl`](/runtime-settings#security) | `10m` |
 | `APP_NODES_PROTECTED_TAINT_KEYS` | [`nodes.protected_taint_keys`](/runtime-settings#security) | empty |
 | `APP_ORGS_AVATAR_MAX_BYTES` | [`orgs.avatar_max_bytes`](/runtime-settings#security) | `262144` |
 | `APP_ORGS_AVATAR_MAX_DIMENSION` | [`orgs.avatar_max_dimension`](/runtime-settings#security) | `1024` |
@@ -167,6 +169,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_HEARTBEAT_JOB_MAX_ATTEMPTS` | [`heartbeat.job_max_attempts`](/runtime-settings#observability) | `3` |
 | `APP_HEARTBEAT_JOB_QUEUE` | [`heartbeat.job_queue`](/runtime-settings#observability) | `64` |
 | `APP_MONITOR_RAW_RETENTION` | [`monitors.raw_retention`](/runtime-settings#observability) | `48h` |
+| `APP_NODES_PATCH_OUTPUT_TAIL_LINES` | [`nodes.patch_output_tail_lines`](/runtime-settings#observability) | `200` |
+| `APP_NODES_PATCH_POLL_INTERVAL` | [`nodes.patch_poll_interval`](/runtime-settings#observability) | `2s` |
 | `APP_METRICS_SCRAPE_ENABLED` | [`observability.metrics_scrape_enabled`](/runtime-settings#observability) | `true` |
 | `APP_STORAGE_CRITICAL_FREE_PERCENT` | [`storage.critical_free_percent`](/runtime-settings#observability) | `5` |
 | `APP_STORAGE_LARGE_UNMANAGED_IMAGE_MB` | [`storage.large_unmanaged_image_mb`](/runtime-settings#observability) | `500` |
@@ -191,6 +195,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CLEANUP_ENABLED` | [`cleanup.enabled`](/runtime-settings#data-retention) | `true` |
 | `APP_CLEANUP_INTERVAL` | [`cleanup.interval`](/runtime-settings#data-retention) | `6h` |
 | `APP_IMAGES_REMOVE_MAX_PER_REQUEST` | [`images.remove_max_per_request`](/runtime-settings#data-retention) | `200` |
+| `APP_NODES_PATCH_RUN_HISTORY` | [`nodes.patch_run_history`](/runtime-settings#data-retention) | `20` |
 | `APP_RETENTION_AI_HISTORY_DAYS` | [`retention.ai_history_days`](/runtime-settings#data-retention) | `90` |
 | `APP_ALERT_HISTORY_RETENTION` | [`retention.alert_history_days`](/runtime-settings#data-retention) | `30` |
 | `APP_RETENTION_APP_HISTORY_DAYS` | [`retention.app_history_days`](/runtime-settings#data-retention) | `90` |

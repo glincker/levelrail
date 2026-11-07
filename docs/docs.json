@@ -250,6 +250,7 @@
               "firewall",
               "acme-verification-runbook",
               "multi-node",
+              "server-patching",
               "multi-node-quickstart",
               "add-node-anywhere",
               "add-node-over-ssh",

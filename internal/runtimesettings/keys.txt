@@ -91,6 +91,11 @@ monitors.raw_retention
 network.gc_max_removals
 nextjs.generate_actions_key
 nextjs.memory_floor_mb
+nodes.patch_apply_timeout
+nodes.patch_output_tail_lines
+nodes.patch_poll_interval
+nodes.patch_preview_ttl
+nodes.patch_run_history
 nodes.protected_taint_keys
 observability.metrics_scrape_enabled
 onboarding.enabled

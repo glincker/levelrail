@@ -86,6 +86,9 @@ func (rt *Router) registerNodeRoutes(mux *http.ServeMux) {
 	// HostPatchCollector), a single current fact rather than a time
 	// series, same AbilityRoot boundary as every other node route.
 	mux.HandleFunc("GET /api/v1/nodes/{id}/patch-status", rt.requireAbility(AbilityRoot, rt.handleGetNodePatchStatus))
+	mux.HandleFunc("POST /api/v1/nodes/{id}/patch/preview", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleNodePatchPreview))
+	mux.HandleFunc("POST /api/v1/nodes/{id}/patch/apply", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleNodePatchApply))
+	mux.HandleFunc("GET /api/v1/nodes/{id}/patch/runs", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleListNodePatchRuns))
 	mux.HandleFunc("GET /api/v1/nodes/{id}/events", rt.requireAbility(AbilityRoot, rt.handleListNodeEvents))
 	// Rough disk/memory exhaustion projection (node_capacity_forecast.go),
 	// a read-and-suggest layer over the same host samples
