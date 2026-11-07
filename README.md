@@ -29,6 +29,8 @@ Push to deploy with HTTPS, logs, metrics and one-step rollback. One Go binary, n
 
 Turn any Linux server into a private cloud: Git deploys, HTTPS, databases with verified backups, metrics, logs and alerts, without Kubernetes and without a monitoring stack to bolt on. Pre-1.0: single-server is production ready, multi-node is beta ([Feature status](docs/feature-status.md)).
 
+<p align="center"><img src="docs/assets/demos/product-tour.gif" alt="Levelrail dashboard tour: fleet overview, apps list, deploy history and built-in metrics" width="880"></p>
+
 <table>
   <tr>
     <td align="center"><h3>200 MB</h3><sub>idle RAM, 1.5% of one CPU<br><a href="docs/benchmarks.md">measured, method included</a></sub></td>
@@ -88,13 +90,13 @@ Using a coding agent? `npx skills add https://github.com/glincker/levelrail --sk
 <table>
   <tr>
     <td width="33%" valign="top"><a href="docs/product-tour.mdx"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/dashboard-home.png"><img src="docs/assets/screenshots/dashboard-home-light.png" alt="Levelrail dashboard home: fleet health, requests and recent deploys" loading="lazy"></picture></a><br><sub><b>The control plane at a glance</b></sub></td>
-    <td width="33%" valign="top"><a href="docs/frameworks.md"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/framework-preset-picker.png"><img src="docs/assets/screenshots/framework-preset-picker-light.png" alt="Levelrail new app page with the framework preset picker" loading="lazy"></picture></a><br><sub><b>Pick a framework preset and the build settings fill in</b></sub></td>
-    <td width="33%" valign="top"><a href="docs/template-catalog.md"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/templates-catalog.png"><img src="docs/assets/screenshots/templates-catalog-light.png" alt="Levelrail service template catalog" loading="lazy"></picture></a><br><sub><b>Install a known service from the template catalog</b></sub></td>
+    <td width="33%" valign="top"><a href="docs/deploying-apps.md"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/apps-list.png"><img src="docs/assets/screenshots/apps-list-light.png" alt="Levelrail apps list with status, traffic and last deploy" loading="lazy"></picture></a><br><sub><b>Every app, its health and its last deploy</b></sub></td>
+    <td width="33%" valign="top"><a href="docs/deploying-apps.md"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/deploy-history.png"><img src="docs/assets/screenshots/deploy-history-light.png" alt="Levelrail deploy history with promote and logs" loading="lazy"></picture></a><br><sub><b>Deploy history, promote and rollback</b></sub></td>
   </tr>
   <tr>
-    <td width="33%" valign="top"><a href="docs/deploying-apps.md"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/deploy-live-log.png"><img src="docs/assets/screenshots/deploy-live-log-light.png" alt="Levelrail live deploy log" loading="lazy"></picture></a><br><sub><b>Live deploys</b></sub></td>
-    <td width="33%" valign="top"><a href="docs/load-balancing.md"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/load-balancer.png"><img src="docs/assets/screenshots/load-balancer-light.png" alt="Levelrail load balancer upstreams and health checks" loading="lazy"></picture></a><br><sub><b>Load balance across replicas with health checks</b></sub></td>
-    <td width="33%" valign="top"><a href="docs/deploying-apps.md"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/apps-list.png"><img src="docs/assets/screenshots/apps-list-light.png" alt="Levelrail apps list with status and last deploy" loading="lazy"></picture></a><br><sub><b>Every app, its health, and its last deploy</b></sub></td>
+    <td width="33%" valign="top"><a href="docs/product-tour.mdx"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/app-overview.png"><img src="docs/assets/screenshots/app-overview-light.png" alt="Levelrail app metrics: CPU, memory and deploy markers" loading="lazy"></picture></a><br><sub><b>Metrics and logs, no Grafana stack</b></sub></td>
+    <td width="33%" valign="top"><a href="docs/multi-node.md"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/nodes.png"><img src="docs/assets/screenshots/nodes-light.png" alt="Levelrail nodes list with health and capacity" loading="lazy"></picture></a><br><sub><b>Nodes and their capacity</b></sub></td>
+    <td width="33%" valign="top"><a href="docs/product-tour.mdx"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/alerts.png"><img src="docs/assets/screenshots/alerts-light.png" alt="Levelrail alerts inbox" loading="lazy"></picture></a><br><sub><b>Alerts in one inbox</b></sub></td>
   </tr>
 </table>
 
