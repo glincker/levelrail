@@ -200,6 +200,17 @@
     "cronCount_one": "{{count}} job",
     "cronCount_other": "{{count}} jobs",
     "noCron": "None",
-    "manage": "Manage"
+    "manage": "Manage",
+    "advisor": {
+      "title": "Advisor",
+      "empty": "No issues found",
+      "copy": "Copy command",
+      "copyFailed": "Could not copy",
+      "severity": {
+        "info": "Info",
+        "warn": "Warning",
+        "error": "Error"
+      }
+    }
   }
 }
