@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -95,4 +96,51 @@ func (rt *Router) doctorCheckOneRegistry(ctx context.Context, host string) docto
 	}
 	_ = conn.Close()
 	return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: fmt.Sprintf("%s is reachable", addr)}
+}
+
+// doctorMirrorProbeHosts are the three hosts a default install fetches
+// releases and images from; they are fixed by where the project publishes.
+var doctorMirrorProbeHosts = []string{"github.com", "ghcr.io", "registry-1.docker.io"}
+
+// doctorCheckMirrorReachability dials the default release and image hosts
+// with a short timeout and, when any fails, points to the mirror setup page.
+// Warn only: a host behind a working mirror or proxy is still fine.
+func (rt *Router) doctorCheckMirrorReachability(ctx context.Context) doctorCheckResource {
+	const code = "registry_mirror_reachability"
+	const name = "Release and image host reachability"
+	ctx, cancel := context.WithTimeout(ctx, rt.doctorNetworkTimeoutOrDefault())
+	defer cancel()
+
+	failed := make([]string, len(doctorMirrorProbeHosts))
+	var wg sync.WaitGroup
+	for i, host := range doctorMirrorProbeHosts {
+		wg.Add(1)
+		go func(i int, host string) {
+			defer wg.Done()
+			addr := net.JoinHostPort(host, strconv.Itoa(defaultDoctorRegistryPort))
+			conn, err := rt.doctorDialContextOrDefault()(ctx, "tcp", addr)
+			if err != nil {
+				failed[i] = host
+				return
+			}
+			_ = conn.Close()
+		}(i, host)
+	}
+	wg.Wait()
+
+	var bad []string
+	for _, h := range failed {
+		if h != "" {
+			bad = append(bad, h)
+		}
+	}
+	if len(bad) == 0 {
+		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: "github.com, ghcr.io and Docker Hub are reachable"}
+	}
+	return doctorCheckResource{
+		Code: code, Name: name, Status: doctorStatusWarn,
+		Message:  fmt.Sprintf("could not reach %s from this host", strings.Join(bad, ", ")),
+		Fix:      "If this network restricts these hosts (for example mainland China), set a registry mirror: the registry.mirror_prefix setting and the Docker daemon registry-mirrors option. Setup steps are on the install-from-china page.",
+		DocsPath: "/install-from-china",
+	}
 }
