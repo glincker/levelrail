@@ -202,6 +202,57 @@ test('revalidation made during an outage is applied to redis on reconnect', asyn
   assert.strictEqual(h.localTags.size, 0);
 });
 
+test('fallback reads honor request soft tags revalidated during the outage', async () => {
+  const { h, client, clock } = make();
+  client.broken = true;
+  await h.set('/a', { kind: 'FETCH', data: 1 }, {});
+  clock.t += 5;
+  await h.revalidateTag(['_N_T_/a']);
+  assert.strictEqual(await h.get('/a', { softTags: ['_N_T_/a'] }), null);
+  assert.ok(await h.get('/a', { softTags: [] }));
+});
+
+test('a revalidation stored while recovery is in flight still reaches redis', async () => {
+  const { h, client, clock } = make();
+  client.broken = true;
+  await h.revalidateTag('old');
+  client.broken = false;
+  clock.t += 5;
+  let release;
+  const gate = new Promise((r) => {
+    release = r;
+  });
+  let reached;
+  const inGet = new Promise((r) => {
+    reached = r;
+  });
+  const realGet = client.get.bind(client);
+  client.get = async (k) => {
+    reached();
+    await gate;
+    return realGet(k);
+  };
+  const first = h.get('/x');
+  await inGet;
+  const realHSet = client.hSet.bind(client);
+  client.hSet = async () => {
+    throw new Error('ECONNRESET');
+  };
+  clock.t += 5;
+  await h.revalidateTag('fresh');
+  client.hSet = realHSet;
+  client.get = realGet;
+  release();
+  await first;
+  assert.ok(h.localTags.has('fresh'));
+  assert.strictEqual(h.degraded, true);
+  await h.get('/y');
+  const stored = await client.hmGet('app:b1:tags', ['old', 'fresh']);
+  assert.ok(stored[0] && stored[1]);
+  assert.strictEqual(h.localTags.size, 0);
+  assert.strictEqual(h.degraded, false);
+});
+
 test('replay keeps a newer tag time already stored', async () => {
   const { h, client, clock } = make();
   client.broken = true;
