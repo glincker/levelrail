@@ -30,7 +30,7 @@ curl -fsSL https://levelrail.com/install.sh | sudo sh
 
 ## Where the trade-offs are
 
-Vercel is a managed cloud with a global edge network. Levelrail is the other model: your servers, your data, your bill.
+Vercel is a managed cloud with a global edge network. Levelrail is the other model: your servers, your data, your bill. It manages the pipeline from git to cache, and it connects to a CDN for global reach instead of running one.
 
 | | Vercel | Levelrail |
 | --- | --- | --- |
@@ -40,11 +40,12 @@ Vercel is a managed cloud with a global edge network. Levelrail is the other mod
 | Data | Handled by the vendor | Secrets, metrics and logs stay on your nodes unless you configure an export or drain |
 | Zero-downtime deploys | Atomic deployments | Cutover only after the readiness probe passes. Live-tested with zero failed requests on a single node; multi-node is beta and not measured |
 | Env vars per environment | Production, Preview and Development | One env set per app, with preview and branch overrides. Instance-wide environments need the experimental `global-environments` flag |
-| Functions | Serverless and edge functions | [Functions](/functions): container apps that sleep when idle and wake on the first request. Cold start is a container start. Not an edge runtime |
-| Edge network | Global edge network | Not provided: bring your own CDN if you need one |
-| Edge runtime | Edge and middleware runtime | Not offered |
-| ISR revalidation | Incremental static regeneration | Runs inside your Next.js app. The Next.js preset mounts a `next-cache` volume at `/app/.next/cache`, so ISR pages survive redeploys. Replicas do not share that cache |
-| Image optimization | Built-in resizing | Served by your app: `next/image` runs in your container, with no global image CDN. It uses your node's CPU and memory |
+| Functions | Serverless and edge functions | [Functions](/functions): container apps with triggers, a key-value store, versions, replay and local dev. They sleep when idle (scale to zero) and wake on the first request, or you can keep a container running. Cold start is a container start, and they run on your servers |
+| Edge cache | Global edge network | One response cache in the ingress with rules and purge by URL, prefix, tag or all. See [CDN and caching](/cdn-and-caching). It is a single cache, not multi-region |
+| CDN in front | Built in | Levelrail connects to Cloudflare as the DNS provider, with a per-app proxy switch and automatic cache purge on deploy and rollback, so git, build, deploy, DNS, cache and purge are managed from one place: `levelrail-cli apps cdn set <app> --proxied on`. See [Cloudflare in front](/cloudflare-in-front). Not yet verified on a live proxied record. Other CDNs can sit in front, and you purge them with their own tools |
+| Edge runtime | Edge and middleware runtime | Not offered. Code runs as containers on your servers |
+| ISR revalidation | Incremental static regeneration | Runs inside your Next.js app. The Next.js preset mounts a `next-cache` volume at `/app/.next/cache`, so ISR pages survive redeploys. Replicas can share it through the [Redis cache handler](/nextjs-shared-cache). Scheduled revalidation outside the app is not yet offered |
+| Image optimization | Built-in resizing | Served by your app: `next/image` runs in your container and uses your node's CPU and memory. A [persistent image cache](/nextjs-image-cache) keeps results across deploys. Put a CDN in front for global delivery |
 | Visitor analytics | Web Analytics | Not offered. Request rate, errors and latency percentiles per app are built in |
 | Blob and KV storage | Blob, KV | Not offered. Managed Postgres and Redis, and S3-compatible storage for backups |
 
@@ -71,13 +72,13 @@ Vercel is a managed cloud with a global edge network. Levelrail is the other mod
     Yes, as a container built from your Dockerfile. Build-time variables such as NEXT_PUBLIC_* are inlined at build, which the migration runbook covers.
   </Accordion>
   <Accordion title="Does it have serverless functions or an edge network?">
-    Functions, yes in a limited form: `levelrail-cli functions` deploys a handler as a container app that sleeps when idle and answers the first request after a cold start (one URL per function, no per-request concurrency control). See [Functions](/functions). There is no edge runtime and no edge network. If you need a global edge network, put a CDN in front.
+    Functions, yes: `levelrail-cli functions` deploys a handler as a container app that sleeps when idle and answers the first request after a cold start (one URL per function, no per-request concurrency control). See [Functions](/functions). There is no edge runtime, since code runs on your servers. For a global edge network, connect Cloudflare: Levelrail manages its DNS records, the per-app proxy and cache purge. See [Cloudflare in front](/cloudflare-in-front) and [CDN and caching](/cdn-and-caching).
   </Accordion>
   <Accordion title="Is there an importer for Vercel?">
     Yes, an offline one. `levelrail-cli import config` reads `vercel.json` (with a `Procfile` or `app.json` if present) and prints a proposed `app.yaml` with findings for what has no equivalent. It needs no token and changes nothing. The runbook maps each Vercel concept to its Levelrail equivalent and lists the gaps.
   </Accordion>
   <Accordion title="What does it cost?">
-    The software is free under Apache 2.0. Your cost is the servers you run it on.
+    The software is free under Apache 2.0. Your cost is the servers you run it on, rather than usage and seat pricing.
   </Accordion>
   <Accordion title="Does Levelrail support SSO, SAML and SCIM?">
     Levelrail has password, passkey and TOTP sign-in, OAuth sign-in with 20 providers and generic OpenID Connect, IAM policies, teams and a hash-chained audit log, all in the one free edition. SAML single sign-on and SCIM provisioning exist but are beta: they sit behind the `saml-scim` feature toggle, are off by default, and are tested against a test identity provider rather than a live Okta or Entra ID tenant. See [SAML and SCIM](/sso-saml).
@@ -88,6 +89,7 @@ Vercel is a managed cloud with a global edge network. Levelrail is the other mod
 
 - [Migrating from Vercel](/migrating-from-vercel)
 - [Cloud Run alternative](/cloud-run-alternative)
+- [Self-host Next.js](/self-host-nextjs)
 
 ## Own your deploy pipeline
 
