@@ -502,7 +502,8 @@ func specServiceFromDesired(svc store.DesiredService, buildCfg spec.Build) spec.
 	}
 	if len(svc.Env) > 0 || len(svc.SecretEnv) > 0 || len(svc.VaultEnv) > 0 {
 		out.Env = make(map[string]spec.EnvVar, len(svc.Env)+len(svc.SecretEnv)+len(svc.VaultEnv))
-		for k, v := range svc.Env {
+		// Ids Levelrail generated last deploy are dropped so this deploy mints fresh ones.
+		for k, v := range deploy.StripGeneratedEnv(svc.Env) {
 			out.Env[k] = spec.EnvVar{Value: v}
 		}
 		// Required carries through from store.DesiredService.SecretEnv

@@ -365,6 +365,48 @@ func applyNextCache(desired *store.DesiredService, req Request, prev *store.Desi
 	desired.DatabaseEnv[nextCacheURLEnvVar] = *ref
 }
 
+// generatedEnvMarker lists the env values Levelrail minted itself (key=value pairs),
+// so a later deploy can tell them from values the user set.
+const generatedEnvMarker = "LEVELRAIL_GENERATED_ENV"
+
+func markGeneratedEnv(desired *store.DesiredService, req Request) {
+	var pairs []string
+	if req.nextDeploymentID != "" {
+		pairs = append(pairs, nextDeploymentIDEnvVar+"="+req.nextDeploymentID)
+	}
+	if req.nextBuildID != "" {
+		pairs = append(pairs, nextBuildIDEnvVar+"="+req.nextBuildID)
+	}
+	if len(pairs) == 0 {
+		return
+	}
+	if desired.Env == nil {
+		desired.Env = map[string]string{}
+	}
+	desired.Env[generatedEnvMarker] = strings.Join(pairs, ",")
+}
+
+// StripGeneratedEnv returns env without the values Levelrail generated on an earlier
+// deploy, so rebuilding from the stored app regenerates them. A value the user changed since stays.
+func StripGeneratedEnv(env map[string]string) map[string]string {
+	marker, ok := env[generatedEnvMarker]
+	if !ok {
+		return env
+	}
+	out := make(map[string]string, len(env))
+	for k, v := range env {
+		out[k] = v
+	}
+	delete(out, generatedEnvMarker)
+	for _, pair := range strings.Split(marker, ",") {
+		k, v, found := strings.Cut(pair, "=")
+		if found && out[k] == v {
+			delete(out, k)
+		}
+	}
+	return out
+}
+
 const nextCachePrefixEnvVar = "LEVELRAIL_NEXT_CACHE_PREFIX"
 
 // applyNextCachePrefix gives a preview its own Redis key namespace so it never
