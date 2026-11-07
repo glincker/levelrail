@@ -704,6 +704,7 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/vitals/rotate-key | AbilityDeploy | handleRotateVitalsKey |
 | GET | /api/v1/apps/{name}/deploys/{deployId}/build-report | AbilityRead | handleNextBuildReport |
 | GET | /api/v1/apps/{name}/next-advisor | AbilityRead | handleNextAdvisor |
+| GET | /api/v1/apps/{name}/rollout/state | AbilityRead | handleGetRolloutState |
 
 </Accordion>
 
