@@ -1,0 +1,27 @@
+{
+  "name": "@levelrail/next-cache-handler",
+  "version": "0.1.0",
+  "description": "Redis backed Next.js cacheHandler so ISR and the data cache are shared across replicas.",
+  "license": "MIT",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "files": [
+    "index.js",
+    "index.d.ts"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "peerDependencies": {
+    "next": ">=14 <17",
+    "redis": ">=4 <6"
+  },
+  "peerDependenciesMeta": {
+    "redis": {
+      "optional": false
+    }
+  }
+}
