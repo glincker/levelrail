@@ -216,6 +216,9 @@ curl -fsSL https://levelrail.com/install.sh \
 | `LEVELRAIL_BINARY_FILE` | unset | Install a local binary instead of downloading one |
 | `LEVELRAIL_BINARY_URL` | unset | Download the binary from this URL instead (no checksum verification) |
 | `LEVELRAIL_SKIP_CHECKSUM` | unset | Set to `1` to install even when the release publishes no `checksums.txt` (or omits the binary from it) |
+| `LEVELRAIL_RELEASE_BASE_URL` | `https://github.com/glincker/levelrail/releases/download` | Download release files from `<base>/<tag>/<asset>` instead. https only, checksums and signatures are still verified. See [Install from mainland China](/install-from-china) |
+| `LEVELRAIL_DOCKER_MIRROR` | unset | `Aliyun` or `AzureChinaCloud`, from v0.9.4. Passed to get.docker.com `--mirror` when Docker is installed for you |
+| `LEVELRAIL_REGISTRY_MIRROR` | unset | From v0.9.4. Seeds the runtime setting `registry.mirror_prefix`, a prefix for images the control plane pulls (node agent, BuildKit). Change it later without a restart |
 | `LEVELRAIL_PUBLIC_IP` | discovered | Public IP used for the reachability test and summary |
 | `LEVELRAIL_SKIP_REACHABILITY` | unset | Set to `1` to skip the port 80/443 test |
 | `LEVELRAIL_MIN_RAM_MB` / `LEVELRAIL_MIN_DISK_GB` / `LEVELRAIL_MIN_DOCKER_MAJOR` | `1024` / `10` / `24` | Preflight thresholds |
