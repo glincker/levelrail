@@ -47,6 +47,7 @@ type NetworkCleanupController struct {
 	nodeID     string
 	grace      time.Duration
 	maxPerPass int
+	maxLive    func(context.Context) int
 	logger     *slog.Logger
 	now        func() time.Time
 }
@@ -56,6 +57,21 @@ type NetworkCleanupController struct {
 func (c *NetworkCleanupController) ForNode(nodeID string) *NetworkCleanupController {
 	c.nodeID = nodeID
 	return c
+}
+
+// WithMaxRemovals reads the per-pass removal cap live on every pass; a non-positive value keeps the seed.
+func (c *NetworkCleanupController) WithMaxRemovals(f func(context.Context) int) *NetworkCleanupController {
+	c.maxLive = f
+	return c
+}
+
+func (c *NetworkCleanupController) passLimit(ctx context.Context) int {
+	if c.maxLive != nil {
+		if n := c.maxLive(ctx); n > 0 {
+			return n
+		}
+	}
+	return c.maxPerPass
 }
 
 // NewNetworkCleanupController builds a NetworkCleanupController. prefix
@@ -112,13 +128,13 @@ func (c *NetworkCleanupController) Reconcile(ctx context.Context) (reconcile.Res
 	}
 
 	var firstErr error
-	removed := 0
+	removed, limit := 0, c.passLimit(ctx)
 	for _, n := range observed {
 		if wanted[n.Name] {
 			continue
 		}
-		if removed >= c.maxPerPass {
-			c.logger.Info("application: network GC pass limit reached", slog.String("node_id", c.nodeID), slog.Int("limit", c.maxPerPass))
+		if removed >= limit {
+			c.logger.Info("application: network GC pass limit reached", slog.String("node_id", c.nodeID), slog.Int("limit", limit))
 			break
 		}
 		if err := c.runtime.RemoveNetwork(ctx, n.Name); err != nil {
@@ -146,15 +162,15 @@ func (c *NetworkCleanupController) Reconcile(ctx context.Context) (reconcile.Res
 	return ready("Converged"), nil
 }
 
-// ownNetworks keeps only networks labeled with this instance: an unlabeled name
-// match can belong to a sibling instance on a shared daemon, so it is never collected.
+// ownNetworks keeps only networks labeled with this instance. Unlabeled ones (older
+// agents, hand-made, or a sibling instance's on a shared daemon) are never collected.
 func (c *NetworkCleanupController) ownNetworks(observed []docker.NetworkInfo) []docker.NetworkInfo {
 	if c.instanceID == "" {
 		return observed
 	}
 	out := make([]docker.NetworkInfo, 0, len(observed))
 	for _, n := range observed {
-		if id, labeled := n.Labels[appspec.InstanceLabelKey]; labeled && id == c.instanceID {
+		if n.Labels[appspec.InstanceLabelKey] == c.instanceID {
 			out = append(out, n)
 		}
 	}
@@ -176,13 +192,13 @@ func (c *NetworkCleanupController) reconcileWithAdmin(ctx context.Context, admin
 		return ready("NothingToClean"), nil
 	}
 	var firstErr error
-	removed := 0
+	removed, limit := 0, c.passLimit(ctx)
 	for _, v := range ClassifyNetworks(prefix, c.instanceID, details, apps, c.now(), c.grace) {
 		if !v.Removable {
 			continue
 		}
-		if removed >= c.maxPerPass {
-			c.logger.Info("application: network GC pass limit reached", slog.String("node_id", c.nodeID), slog.Int("limit", c.maxPerPass))
+		if removed >= limit {
+			c.logger.Info("application: network GC pass limit reached", slog.String("node_id", c.nodeID), slog.Int("limit", limit))
 			break
 		}
 		ok, err := admin.RemoveNetworkIfEmpty(ctx, v.Name)
@@ -224,7 +240,6 @@ func (c *NetworkCleanupController) describeNetworks(ctx context.Context, admin d
 		if wanted[name] {
 			return false
 		}
-		owner, labeled := labels[appspec.InstanceLabelKey]
-		return c.instanceID == "" || !labeled || owner == c.instanceID
+		return c.instanceID == "" || labels[appspec.InstanceLabelKey] == c.instanceID
 	})
 }

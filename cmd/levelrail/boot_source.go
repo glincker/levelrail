@@ -204,13 +204,19 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		// Local runtime unconditionally, same reasoning as the ingress
 		// controller above: per-app networks are single-node scope until
 		// the WireGuard mesh exists.
-		controllers = append(controllers, application.NewNetworkCleanupController(deps.db, deps.runtime, deps.networkPrefix, deps.instanceID))
+		gcMax := func(ctx context.Context) int {
+			if s := deps.settingsService(); s != nil {
+				return s.Int(ctx, runtimesettings.KeyNetworkGCMaxRemovals)
+			}
+			return 0
+		}
+		controllers = append(controllers, application.NewNetworkCleanupController(deps.db, deps.runtime, deps.networkPrefix, deps.instanceID).WithMaxRemovals(gcMax))
 		for _, n := range nodes {
 			if runtimeNodeID(deps, n.ID) == "" {
 				continue
 			}
 			if nodeRuntime, err := resolveNodeTransport(deps.runtime, deps.agentRegistry, n.ID); err == nil {
-				controllers = append(controllers, application.NewNetworkCleanupController(deps.db, nodeRuntime, deps.networkPrefix, deps.instanceID).ForNode(n.ID))
+				controllers = append(controllers, application.NewNetworkCleanupController(deps.db, nodeRuntime, deps.networkPrefix, deps.instanceID).ForNode(n.ID).WithMaxRemovals(gcMax))
 			}
 		}
 		controllers = append(controllers, privnet.NewController(deps.db, deps.runtime, deps.networkPrefix, deps.instanceID))

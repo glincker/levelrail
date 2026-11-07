@@ -1339,6 +1339,12 @@ func (c *Controller) ensureAppNetwork(ctx context.Context, desired *store.Desire
 		return nil
 	}
 	networkName := NetworkName(c.networkPrefix, desired.AppID)
+	if le, ok := c.runtime.(docker.LabeledNetworkEnsurer); ok && c.instanceID != "" {
+		if _, err := le.EnsureLabeledNetwork(ctx, networkName, map[string]string{appspec.InstanceLabelKey: c.instanceID}); err != nil {
+			return fmt.Errorf("ensure network %q: %w", networkName, err)
+		}
+		return nil
+	}
 	if _, err := c.runtime.EnsureNetwork(ctx, networkName); err != nil {
 		return fmt.Errorf("ensure network %q: %w", networkName, err)
 	}

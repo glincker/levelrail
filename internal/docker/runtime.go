@@ -586,3 +586,9 @@ type ExecSession interface {
 type TTYRuntime interface {
 	ExecTTY(ctx context.Context, containerID string, opts ExecTTYOptions) (ExecSession, error)
 }
+
+// LabeledNetworkEnsurer is EnsureNetwork with extra labels set on create, so a
+// caller's instance label survives a runtime that is not instance-scoped itself.
+type LabeledNetworkEnsurer interface {
+	EnsureLabeledNetwork(ctx context.Context, name string, labels map[string]string) (id string, err error)
+}

@@ -616,6 +616,8 @@ message NetworkInfo {
 
 message EnsureNetworkRequest {
   string name = 1;
+  // labels are set on create only; older agents ignore them and create unlabeled networks.
+  map<string, string> labels = 2;
 }
 message EnsureNetworkResponse {
   string id = 1;

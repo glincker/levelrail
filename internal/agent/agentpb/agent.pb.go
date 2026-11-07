@@ -4569,8 +4569,10 @@ func (x *NetworkInfo) GetName() string {
 }
 
 type EnsureNetworkRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Name  string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// labels are set on create only; older agents ignore them and create unlabeled networks.
+	Labels        map[string]string `protobuf:"bytes,2,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4610,6 +4612,13 @@ func (x *EnsureNetworkRequest) GetName() string {
 		return x.Name
 	}
 	return ""
+}
+
+func (x *EnsureNetworkRequest) GetLabels() map[string]string {
+	if x != nil {
+		return x.Labels
+	}
+	return nil
 }
 
 type EnsureNetworkResponse struct {
@@ -7904,9 +7913,13 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tR\x04name\"1\n" +
 	"\vNetworkInfo\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\"*\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\"\xb3\x01\n" +
 	"\x14EnsureNetworkRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\"'\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12L\n" +
+	"\x06labels\x18\x02 \x03(\v24.levelrail.agent.v1.EnsureNetworkRequest.LabelsEntryR\x06labels\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"'\n" +
 	"\x15EnsureNetworkResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"*\n" +
 	"\x14RemoveNetworkRequest\x12\x12\n" +
@@ -8154,7 +8167,7 @@ func file_proto_agent_v1_agent_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_agent_v1_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_proto_agent_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 104)
+var file_proto_agent_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 105)
 var file_proto_agent_v1_agent_proto_goTypes = []any{
 	(BuildKind)(0),                       // 0: levelrail.agent.v1.BuildKind
 	(VolumeFileOp_Kind)(0),               // 1: levelrail.agent.v1.VolumeFileOp.Kind
@@ -8261,16 +8274,17 @@ var file_proto_agent_v1_agent_proto_goTypes = []any{
 	nil,                                  // 102: levelrail.agent.v1.ContainerSpec.EnvEntry
 	nil,                                  // 103: levelrail.agent.v1.ContainerSpec.LabelsEntry
 	nil,                                  // 104: levelrail.agent.v1.ContainerState.LabelsEntry
-	nil,                                  // 105: levelrail.agent.v1.BuildRequest.BuildArgsEntry
-	nil,                                  // 106: levelrail.agent.v1.BuildDone.ExporterResponseEntry
-	(*timestamppb.Timestamp)(nil),        // 107: google.protobuf.Timestamp
+	nil,                                  // 105: levelrail.agent.v1.EnsureNetworkRequest.LabelsEntry
+	nil,                                  // 106: levelrail.agent.v1.BuildRequest.BuildArgsEntry
+	nil,                                  // 107: levelrail.agent.v1.BuildDone.ExporterResponseEntry
+	(*timestamppb.Timestamp)(nil),        // 108: google.protobuf.Timestamp
 }
 var file_proto_agent_v1_agent_proto_depIdxs = []int32{
 	5,   // 0: levelrail.agent.v1.EnrollRequest.agent:type_name -> levelrail.agent.v1.AgentInfo
-	107, // 1: levelrail.agent.v1.EnrollResponse.not_after:type_name -> google.protobuf.Timestamp
-	107, // 2: levelrail.agent.v1.RenewResponse.not_after:type_name -> google.protobuf.Timestamp
+	108, // 1: levelrail.agent.v1.EnrollResponse.not_after:type_name -> google.protobuf.Timestamp
+	108, // 2: levelrail.agent.v1.RenewResponse.not_after:type_name -> google.protobuf.Timestamp
 	5,   // 3: levelrail.agent.v1.ReenrollRequest.agent:type_name -> levelrail.agent.v1.AgentInfo
-	107, // 4: levelrail.agent.v1.ReenrollResponse.not_after:type_name -> google.protobuf.Timestamp
+	108, // 4: levelrail.agent.v1.ReenrollResponse.not_after:type_name -> google.protobuf.Timestamp
 	20,  // 5: levelrail.agent.v1.AgentMessage.response:type_name -> levelrail.agent.v1.AgentResponse
 	40,  // 6: levelrail.agent.v1.AgentMessage.event:type_name -> levelrail.agent.v1.ProxiedEvent
 	76,  // 7: levelrail.agent.v1.AgentMessage.exec_output:type_name -> levelrail.agent.v1.ExecOutput
@@ -8283,9 +8297,9 @@ var file_proto_agent_v1_agent_proto_depIdxs = []int32{
 	37,  // 14: levelrail.agent.v1.AgentMessage.host_report:type_name -> levelrail.agent.v1.HostReport
 	14,  // 15: levelrail.agent.v1.AgentMessage.renewal:type_name -> levelrail.agent.v1.RenewalReport
 	13,  // 16: levelrail.agent.v1.AgentMessage.onboarding:type_name -> levelrail.agent.v1.OnboardingReport
-	107, // 17: levelrail.agent.v1.RenewalReport.next_renew_at:type_name -> google.protobuf.Timestamp
-	107, // 18: levelrail.agent.v1.RenewalReport.last_failed_at:type_name -> google.protobuf.Timestamp
-	107, // 19: levelrail.agent.v1.RenewalReport.next_retry_at:type_name -> google.protobuf.Timestamp
+	108, // 17: levelrail.agent.v1.RenewalReport.next_renew_at:type_name -> google.protobuf.Timestamp
+	108, // 18: levelrail.agent.v1.RenewalReport.last_failed_at:type_name -> google.protobuf.Timestamp
+	108, // 19: levelrail.agent.v1.RenewalReport.next_retry_at:type_name -> google.protobuf.Timestamp
 	19,  // 20: levelrail.agent.v1.ControlMessage.request:type_name -> levelrail.agent.v1.AgentRequest
 	73,  // 21: levelrail.agent.v1.ControlMessage.exec_input:type_name -> levelrail.agent.v1.ExecInput
 	74,  // 22: levelrail.agent.v1.ControlMessage.exec_cancel:type_name -> levelrail.agent.v1.ExecCancel
@@ -8348,54 +8362,55 @@ var file_proto_agent_v1_agent_proto_depIdxs = []int32{
 	36,  // 79: levelrail.agent.v1.HostReport.other_containers:type_name -> levelrail.agent.v1.UnmanagedContainer
 	27,  // 80: levelrail.agent.v1.ContainerState.ports:type_name -> levelrail.agent.v1.PortBinding
 	104, // 81: levelrail.agent.v1.ContainerState.labels:type_name -> levelrail.agent.v1.ContainerState.LabelsEntry
-	107, // 82: levelrail.agent.v1.ContainerState.created:type_name -> google.protobuf.Timestamp
-	107, // 83: levelrail.agent.v1.ImageInfo.created_at:type_name -> google.protobuf.Timestamp
-	107, // 84: levelrail.agent.v1.ProxiedEvent.time:type_name -> google.protobuf.Timestamp
+	108, // 82: levelrail.agent.v1.ContainerState.created:type_name -> google.protobuf.Timestamp
+	108, // 83: levelrail.agent.v1.ImageInfo.created_at:type_name -> google.protobuf.Timestamp
+	108, // 84: levelrail.agent.v1.ProxiedEvent.time:type_name -> google.protobuf.Timestamp
 	38,  // 85: levelrail.agent.v1.InspectByNameResponse.state:type_name -> levelrail.agent.v1.ContainerState
 	30,  // 86: levelrail.agent.v1.CreateRequest.spec:type_name -> levelrail.agent.v1.ContainerSpec
 	28,  // 87: levelrail.agent.v1.UpdateResourcesRequest.resources:type_name -> levelrail.agent.v1.Resources
 	39,  // 88: levelrail.agent.v1.ListImagesResponse.images:type_name -> levelrail.agent.v1.ImageInfo
 	38,  // 89: levelrail.agent.v1.ListByPrefixResponse.containers:type_name -> levelrail.agent.v1.ContainerState
-	54,  // 90: levelrail.agent.v1.ListNetworksByPrefixResponse.networks:type_name -> levelrail.agent.v1.NetworkInfo
-	62,  // 91: levelrail.agent.v1.ContainerStats.cpu_raw:type_name -> levelrail.agent.v1.CPUStatsRaw
-	63,  // 92: levelrail.agent.v1.StatsResponse.stats:type_name -> levelrail.agent.v1.ContainerStats
-	71,  // 93: levelrail.agent.v1.ExecRequest.tty_size:type_name -> levelrail.agent.v1.ExecTTYSize
-	69,  // 94: levelrail.agent.v1.ExecRequest.archive:type_name -> levelrail.agent.v1.ArchiveOp
-	68,  // 95: levelrail.agent.v1.ExecRequest.file:type_name -> levelrail.agent.v1.FileOp
-	67,  // 96: levelrail.agent.v1.ExecRequest.volume_file:type_name -> levelrail.agent.v1.VolumeFileOp
-	1,   // 97: levelrail.agent.v1.VolumeFileOp.kind:type_name -> levelrail.agent.v1.VolumeFileOp.Kind
-	2,   // 98: levelrail.agent.v1.FileOp.kind:type_name -> levelrail.agent.v1.FileOp.Kind
-	77,  // 99: levelrail.agent.v1.ExecOutput.failure:type_name -> levelrail.agent.v1.ExecFailure
-	78,  // 100: levelrail.agent.v1.ExecFailure.exit:type_name -> levelrail.agent.v1.ExecExit
-	0,   // 101: levelrail.agent.v1.BuildRequest.kind:type_name -> levelrail.agent.v1.BuildKind
-	105, // 102: levelrail.agent.v1.BuildRequest.build_args:type_name -> levelrail.agent.v1.BuildRequest.BuildArgsEntry
-	80,  // 103: levelrail.agent.v1.BuildRequest.cache:type_name -> levelrail.agent.v1.BuildCache
-	85,  // 104: levelrail.agent.v1.BuildOutput.progress:type_name -> levelrail.agent.v1.BuildProgress
-	86,  // 105: levelrail.agent.v1.BuildOutput.done:type_name -> levelrail.agent.v1.BuildDone
-	87,  // 106: levelrail.agent.v1.BuildOutput.failure:type_name -> levelrail.agent.v1.BuildFailure
-	106, // 107: levelrail.agent.v1.BuildDone.exporter_response:type_name -> levelrail.agent.v1.BuildDone.ExporterResponseEntry
-	107, // 108: levelrail.agent.v1.ExitState.started_at:type_name -> google.protobuf.Timestamp
-	107, // 109: levelrail.agent.v1.ExitState.finished_at:type_name -> google.protobuf.Timestamp
-	89,  // 110: levelrail.agent.v1.InspectExitStateResponse.state:type_name -> levelrail.agent.v1.ExitState
-	92,  // 111: levelrail.agent.v1.DeviceConfig.peers:type_name -> levelrail.agent.v1.PeerConfig
-	93,  // 112: levelrail.agent.v1.ApplyMeshRequest.config:type_name -> levelrail.agent.v1.DeviceConfig
-	94,  // 113: levelrail.agent.v1.ApplyMeshResponse.identity:type_name -> levelrail.agent.v1.NodeIdentity
-	99,  // 114: levelrail.agent.v1.MeshStatusResponse.peers:type_name -> levelrail.agent.v1.MeshPeerStatus
-	3,   // 115: levelrail.agent.v1.AgentService.Enroll:input_type -> levelrail.agent.v1.EnrollRequest
-	12,  // 116: levelrail.agent.v1.AgentService.Session:input_type -> levelrail.agent.v1.AgentMessage
-	6,   // 117: levelrail.agent.v1.AgentService.Renew:input_type -> levelrail.agent.v1.RenewRequest
-	8,   // 118: levelrail.agent.v1.AgentService.Reenroll:input_type -> levelrail.agent.v1.ReenrollRequest
-	10,  // 119: levelrail.agent.v1.AgentService.CheckIdentity:input_type -> levelrail.agent.v1.CheckIdentityRequest
-	4,   // 120: levelrail.agent.v1.AgentService.Enroll:output_type -> levelrail.agent.v1.EnrollResponse
-	17,  // 121: levelrail.agent.v1.AgentService.Session:output_type -> levelrail.agent.v1.ControlMessage
-	7,   // 122: levelrail.agent.v1.AgentService.Renew:output_type -> levelrail.agent.v1.RenewResponse
-	9,   // 123: levelrail.agent.v1.AgentService.Reenroll:output_type -> levelrail.agent.v1.ReenrollResponse
-	11,  // 124: levelrail.agent.v1.AgentService.CheckIdentity:output_type -> levelrail.agent.v1.CheckIdentityResponse
-	120, // [120:125] is the sub-list for method output_type
-	115, // [115:120] is the sub-list for method input_type
-	115, // [115:115] is the sub-list for extension type_name
-	115, // [115:115] is the sub-list for extension extendee
-	0,   // [0:115] is the sub-list for field type_name
+	105, // 90: levelrail.agent.v1.EnsureNetworkRequest.labels:type_name -> levelrail.agent.v1.EnsureNetworkRequest.LabelsEntry
+	54,  // 91: levelrail.agent.v1.ListNetworksByPrefixResponse.networks:type_name -> levelrail.agent.v1.NetworkInfo
+	62,  // 92: levelrail.agent.v1.ContainerStats.cpu_raw:type_name -> levelrail.agent.v1.CPUStatsRaw
+	63,  // 93: levelrail.agent.v1.StatsResponse.stats:type_name -> levelrail.agent.v1.ContainerStats
+	71,  // 94: levelrail.agent.v1.ExecRequest.tty_size:type_name -> levelrail.agent.v1.ExecTTYSize
+	69,  // 95: levelrail.agent.v1.ExecRequest.archive:type_name -> levelrail.agent.v1.ArchiveOp
+	68,  // 96: levelrail.agent.v1.ExecRequest.file:type_name -> levelrail.agent.v1.FileOp
+	67,  // 97: levelrail.agent.v1.ExecRequest.volume_file:type_name -> levelrail.agent.v1.VolumeFileOp
+	1,   // 98: levelrail.agent.v1.VolumeFileOp.kind:type_name -> levelrail.agent.v1.VolumeFileOp.Kind
+	2,   // 99: levelrail.agent.v1.FileOp.kind:type_name -> levelrail.agent.v1.FileOp.Kind
+	77,  // 100: levelrail.agent.v1.ExecOutput.failure:type_name -> levelrail.agent.v1.ExecFailure
+	78,  // 101: levelrail.agent.v1.ExecFailure.exit:type_name -> levelrail.agent.v1.ExecExit
+	0,   // 102: levelrail.agent.v1.BuildRequest.kind:type_name -> levelrail.agent.v1.BuildKind
+	106, // 103: levelrail.agent.v1.BuildRequest.build_args:type_name -> levelrail.agent.v1.BuildRequest.BuildArgsEntry
+	80,  // 104: levelrail.agent.v1.BuildRequest.cache:type_name -> levelrail.agent.v1.BuildCache
+	85,  // 105: levelrail.agent.v1.BuildOutput.progress:type_name -> levelrail.agent.v1.BuildProgress
+	86,  // 106: levelrail.agent.v1.BuildOutput.done:type_name -> levelrail.agent.v1.BuildDone
+	87,  // 107: levelrail.agent.v1.BuildOutput.failure:type_name -> levelrail.agent.v1.BuildFailure
+	107, // 108: levelrail.agent.v1.BuildDone.exporter_response:type_name -> levelrail.agent.v1.BuildDone.ExporterResponseEntry
+	108, // 109: levelrail.agent.v1.ExitState.started_at:type_name -> google.protobuf.Timestamp
+	108, // 110: levelrail.agent.v1.ExitState.finished_at:type_name -> google.protobuf.Timestamp
+	89,  // 111: levelrail.agent.v1.InspectExitStateResponse.state:type_name -> levelrail.agent.v1.ExitState
+	92,  // 112: levelrail.agent.v1.DeviceConfig.peers:type_name -> levelrail.agent.v1.PeerConfig
+	93,  // 113: levelrail.agent.v1.ApplyMeshRequest.config:type_name -> levelrail.agent.v1.DeviceConfig
+	94,  // 114: levelrail.agent.v1.ApplyMeshResponse.identity:type_name -> levelrail.agent.v1.NodeIdentity
+	99,  // 115: levelrail.agent.v1.MeshStatusResponse.peers:type_name -> levelrail.agent.v1.MeshPeerStatus
+	3,   // 116: levelrail.agent.v1.AgentService.Enroll:input_type -> levelrail.agent.v1.EnrollRequest
+	12,  // 117: levelrail.agent.v1.AgentService.Session:input_type -> levelrail.agent.v1.AgentMessage
+	6,   // 118: levelrail.agent.v1.AgentService.Renew:input_type -> levelrail.agent.v1.RenewRequest
+	8,   // 119: levelrail.agent.v1.AgentService.Reenroll:input_type -> levelrail.agent.v1.ReenrollRequest
+	10,  // 120: levelrail.agent.v1.AgentService.CheckIdentity:input_type -> levelrail.agent.v1.CheckIdentityRequest
+	4,   // 121: levelrail.agent.v1.AgentService.Enroll:output_type -> levelrail.agent.v1.EnrollResponse
+	17,  // 122: levelrail.agent.v1.AgentService.Session:output_type -> levelrail.agent.v1.ControlMessage
+	7,   // 123: levelrail.agent.v1.AgentService.Renew:output_type -> levelrail.agent.v1.RenewResponse
+	9,   // 124: levelrail.agent.v1.AgentService.Reenroll:output_type -> levelrail.agent.v1.ReenrollResponse
+	11,  // 125: levelrail.agent.v1.AgentService.CheckIdentity:output_type -> levelrail.agent.v1.CheckIdentityResponse
+	121, // [121:126] is the sub-list for method output_type
+	116, // [116:121] is the sub-list for method input_type
+	116, // [116:116] is the sub-list for extension type_name
+	116, // [116:116] is the sub-list for extension extendee
+	0,   // [0:116] is the sub-list for field type_name
 }
 
 func init() { file_proto_agent_v1_agent_proto_init() }
@@ -8484,7 +8499,7 @@ func file_proto_agent_v1_agent_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_agent_v1_agent_proto_rawDesc), len(file_proto_agent_v1_agent_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   104,
+			NumMessages:   105,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

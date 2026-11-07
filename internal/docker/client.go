@@ -495,6 +495,11 @@ func toNetworkingConfig(n *NetworkAttachment) *dockernetwork.NetworkingConfig {
 
 // EnsureNetwork implements Runtime.
 func (c *Client) EnsureNetwork(ctx context.Context, name string) (string, error) {
+	return c.EnsureLabeledNetwork(ctx, name, nil)
+}
+
+// EnsureLabeledNetwork implements LabeledNetworkEnsurer; an existing network keeps its labels.
+func (c *Client) EnsureLabeledNetwork(ctx context.Context, name string, extra map[string]string) (string, error) {
 	inspect, err := c.cli.NetworkInspect(ctx, name, dockernetwork.InspectOptions{})
 	if err == nil {
 		return inspect.ID, nil
@@ -503,7 +508,7 @@ func (c *Client) EnsureNetwork(ctx context.Context, name string) (string, error)
 		return "", fmt.Errorf("docker: inspect network %q: %w", name, err)
 	}
 
-	labels := c.networkLabels(name)
+	labels := mergeNetworkLabels(c.networkLabels(name), extra)
 	if c.pool != nil {
 		id, err := c.alloc.create(ctx, c.cli, *c.pool, name, labels)
 		if err != nil {
@@ -519,6 +524,21 @@ func (c *Client) EnsureNetwork(ctx context.Context, name string) (string, error)
 		return "", fmt.Errorf("docker: create network %q: %w", name, err)
 	}
 	return resp.ID, nil
+}
+
+// mergeNetworkLabels lets a caller add labels while this Client's own instance labels still win.
+func mergeNetworkLabels(own, extra map[string]string) map[string]string {
+	if len(extra) == 0 {
+		return own
+	}
+	out := make(map[string]string, len(own)+len(extra))
+	for k, v := range extra {
+		out[k] = v
+	}
+	for k, v := range own {
+		out[k] = v
+	}
+	return out
 }
 
 func (c *Client) countNetworks(ctx context.Context) int {

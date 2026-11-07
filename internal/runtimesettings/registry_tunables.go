@@ -16,11 +16,18 @@ const (
 	KeyCDNPurgeHistory               = "cdn.purge_history"
 	KeyDeployExplainLogLines         = "deploy.explain_log_lines"
 	KeyUpdateOfferedChannels         = "updates.offered_channels"
+	KeyNetworkGCMaxRemovals          = "network.gc_max_removals"
 )
 
 var releaseChannels = []string{"stable", "beta", "edge"}
 
 func init() {
+	Register(Definition{
+		Key: KeyNetworkGCMaxRemovals, Category: CategoryNetworking, Kind: KindInt, Default: "20",
+		Env: "APP_NETWORK_GC_MAX_REMOVALS", Apply: ApplyLive, CheckValue: intRangeCheck(1, 1000),
+		Title:       "Network cleanup removals per pass",
+		Description: "The most orphaned app networks one cleanup pass removes on a node, from 1 to 1000. Only networks labeled with this control plane are ever removed. The next pass uses a changed value.",
+	})
 	Register(Definition{
 		Key: KeyProjectCloneMaxApps, Category: CategoryDeploys, Kind: KindInt, Default: "50",
 		Env: "APP_PROJECT_CLONE_MAX_APPS", Apply: ApplyLive, CheckValue: intRangeCheck(1, 1000),

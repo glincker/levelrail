@@ -110,14 +110,14 @@ func (f *DeleteFinalizer) RemoveAppNetwork(ctx context.Context, appID, nodeID st
 	}
 	var errs []error
 	for _, id := range nodes {
-		if err := f.removeAppNetworkOn(ctx, appID, id); err != nil {
+		if err := f.removeAppNetworkOn(ctx, appID, id, id == nodeID); err != nil {
 			errs = append(errs, fmt.Errorf("node %q: %w", id, err))
 		}
 	}
 	return errors.Join(errs...)
 }
 
-func (f *DeleteFinalizer) removeAppNetworkOn(ctx context.Context, appID, nodeID string) error {
+func (f *DeleteFinalizer) removeAppNetworkOn(ctx context.Context, appID, nodeID string, ranService bool) error {
 	runtime, err := f.resolve(nodeID)
 	if err != nil {
 		return fmt.Errorf("resolve node %q runtime: %w", nodeID, err)
@@ -143,8 +143,9 @@ func (f *DeleteFinalizer) removeAppNetworkOn(ctx context.Context, appID, nodeID 
 		}
 		return nil
 	}
-	// Agent nodes create unlabeled networks, so only another instance's label blocks removal;
-	// the agent's RemoveNetwork itself refuses while an unmanaged container is attached.
+	// Older agents create unlabeled networks. Those go only on the node that ran this app's
+	// service, by exact name; residual risk: a sibling's same-named unlabeled network there.
+	// The agent's RemoveNetwork itself refuses while an unmanaged container is attached.
 	observed, err := runtime.ListNetworksByPrefix(ctx, name)
 	if err != nil {
 		return fmt.Errorf("list network %q: %w", name, err)
@@ -153,7 +154,8 @@ func (f *DeleteFinalizer) removeAppNetworkOn(ctx context.Context, appID, nodeID 
 		if n.Name != name {
 			continue
 		}
-		if owner, labeled := n.Labels[appspec.InstanceLabelKey]; labeled && ctrl.instanceID != "" && owner != ctrl.instanceID {
+		owner, labeled := n.Labels[appspec.InstanceLabelKey]
+		if ctrl.instanceID != "" && ((labeled && owner != ctrl.instanceID) || (!labeled && !ranService)) {
 			continue
 		}
 		if err := runtime.RemoveNetwork(ctx, name); err != nil {

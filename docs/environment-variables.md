@@ -103,6 +103,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_INGRESS_TRUSTED_PROXY_PRESET` | [`ingress.trusted_proxy_preset`](/runtime-settings#networking) | `none` |
 | `APP_MESH_HUB_RESOLVE_TTL` | [`mesh.hub_resolve_ttl`](/runtime-settings#networking) | `5m` |
 | `APP_MESH_HUB_STALE_MAX` | [`mesh.hub_stale_max`](/runtime-settings#networking) | `24h` |
+| `APP_NETWORK_GC_MAX_REMOVALS` | [`network.gc_max_removals`](/runtime-settings#networking) | `20` |
 | `APP_OIDC_LISTEN_PORT` | [`pipelines.oidc_listen_port`](/runtime-settings#networking) | `9095` |
 | `LEVELRAIL_PROXY_UNROUTED_TO_LEVELRAIL` | [`proxy.unrouted_to_levelrail`](/runtime-settings#networking) | `false` |
 | `APP_TRUST_LOOPBACK_FORWARDED` | [`security.trust_loopback_forwarded_headers`](/runtime-settings#networking) | `true` |

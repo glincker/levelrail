@@ -115,7 +115,7 @@ func Execute(ctx context.Context, rt docker.Runtime, req *agentpb.AgentRequest, 
 		resp.Result = emptyResult()
 
 	case *agentpb.AgentRequest_EnsureNetwork:
-		id, err := rt.EnsureNetwork(ctx, op.EnsureNetwork.GetName())
+		id, err := ensureNetwork(ctx, rt, op.EnsureNetwork.GetName(), op.EnsureNetwork.GetLabels())
 		if err != nil {
 			resp.Error = err.Error()
 			return resp
@@ -261,4 +261,12 @@ func relayEvents(ctx context.Context, rt docker.Runtime, watchID string, emitEve
 			return
 		}
 	}
+}
+
+// ensureNetwork applies the control plane's labels so its GC can later prove ownership.
+func ensureNetwork(ctx context.Context, rt docker.Runtime, name string, labels map[string]string) (string, error) {
+	if le, ok := rt.(docker.LabeledNetworkEnsurer); ok && len(labels) > 0 {
+		return le.EnsureLabeledNetwork(ctx, name, labels)
+	}
+	return rt.EnsureNetwork(ctx, name)
 }
