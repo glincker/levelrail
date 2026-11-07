@@ -200,6 +200,17 @@
     "cronCount_one": "{{count}} tarea",
     "cronCount_other": "{{count}} tareas",
     "noCron": "Ninguna",
-    "manage": "Gestionar"
+    "manage": "Gestionar",
+    "advisor": {
+      "title": "Asesor",
+      "empty": "No se encontraron problemas",
+      "copy": "Copiar comando",
+      "copyFailed": "No se pudo copiar",
+      "severity": {
+        "info": "Info",
+        "warn": "Aviso",
+        "error": "Error"
+      }
+    }
   }
 }

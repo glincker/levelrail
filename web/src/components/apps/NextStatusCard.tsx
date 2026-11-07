@@ -7,6 +7,7 @@ import { useScheduledTasks } from '../../queries/scheduledTasks'
 import type { AppDetail } from '../../types/appDetail'
 import { AppBuildCacheRow } from '../AppBuildCacheRow'
 import { RelativeTime } from '../kit/RelativeTime'
+import { NextAdvisor } from './NextAdvisor'
 
 function Row({
   label,
@@ -89,6 +90,7 @@ export function NextStatusCard({ app }: { app: AppDetail }) {
             </Link>
           </Row>
         ) : null}
+        <NextAdvisor appName={app.name} />
       </ul>
     </section>
   )

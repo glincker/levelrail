@@ -326,5 +326,22 @@
     "etaOver": "Suele tardar unos {{typical}} min, este está tardando más",
     "stillWorking": "Sigue trabajando. No hay líneas nuevas desde hace un rato, es normal en pasos largos.",
     "stillWorkingExport": "Sigue trabajando. Exportar la imagen puede estar en silencio varios minutos, es normal."
+  },
+  "buildReport": {
+    "title": "Informe de build",
+    "shared": "Primera carga compartida",
+    "route": "Ruta",
+    "kind": "Tipo",
+    "size": "Tamaño",
+    "firstLoad": "Primera carga",
+    "noRoutes": "No se encontraron rutas en la salida del build.",
+    "warnings": "Aviso",
+    "notStored": "Los logs del build no se guardan, así que no hay informe para este despliegue.",
+    "kinds": {
+      "static": "Estática",
+      "isr": "ISR",
+      "dynamic": "Dinámica",
+      "unknown": "Desconocida"
+    }
   }
 }
