@@ -161,7 +161,8 @@ describe('PreviewPolicyCard', () => {
     })
     await user.clear(input)
     await user.type(input, '12')
-    await user.click(screen.getAllByRole('button', { name: 'Save' })[0])
+    const [saveButton] = screen.getAllByRole('button', { name: 'Save' })
+    await user.click(saveButton as HTMLElement)
 
     await waitFor(() => {
       expect(puts).toEqual([{ ttl_hours: 12 }])
