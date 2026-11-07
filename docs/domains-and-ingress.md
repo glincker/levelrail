@@ -319,6 +319,10 @@ Changing the provider re-derives the hostname and updates the route with no down
 
 A request that matches no app, or an app with no healthy replica, gets a small "No app is serving this address" page (plain text for non-browser clients) with the original 404 or 503 status.
 
+This page is served on port 80 as well, without any certificate: a host that holds no certificate yet is not redirected, it gets the same page. With `ingress.diagnostic_show_state` off, every unknown or unserved host gets the generic 404. With it on, hosts the control plane knows get their state (not attached, building, stopped, starting, unhealthy) with a 503, and unknown hosts still get the generic 404.
+
+On port 443 a host with no certificate and no route cannot be answered at all: the TLS handshake fails before any page can be sent, so browsers show a certificate error instead of this page. Certificates are only requested for hosts you attach, so an unknown name never gets one. For a host that is attached but has no healthy app, the handshake succeeds and the page appears.
+
 ### HTTP redirects to HTTPS
 
 When the control plane can bind the HTTP ingress port (port 80 as root, the installer's default), every routed host answers plain HTTP with a `308` redirect to the same URL over HTTPS, and Let's Encrypt's HTTP-01 challenge is served on the same listener. A non-root development run that cannot bind port 80 skips the redirect and logs why. `APP_INGRESS_HTTP_REDIRECT=true|false` forces the choice instead of auto detecting.
