@@ -161,6 +161,8 @@ levelrail-cli import config ./my-app --emit stack --out ./review --db-version po
 - `--json` prints `detected`, `spec` and `findings` as JSON.
 - `--emit stack --out DIR` writes Stack, Project, Database, App and Domain documents, a `SECRETS.md` listing secret names only, and a `MIGRATION.md`. Review them in a pull request. `--force` overwrites existing files.
 
+The same translation runs at deploy time for a repo that has a `Procfile` and no app spec: one service per process type, `release:` as a pre-deploy hook, a `Dockerfile` build when one exists, and `app.json` healthchecks, cron, scripts and formation mapped to health, jobs, hooks and replicas. Unsupported keys come back as findings in the deploy log. See the Procfile and app.json section of the app spec reference.
+
 ### Monorepo packages
 
 ```bash

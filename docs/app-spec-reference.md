@@ -415,6 +415,23 @@ If Vault is unreachable, not configured, or the secret/field doesn't exist, the 
 | `schedule` | string | yes | none | A cron expression, for example `"0 3 * * *"`. |
 | `retain` | integer | no | none | Minimum 1 if set. |
 
+### Procfile and app.json at deploy
+
+A repo with a `Procfile` and no app spec (`app.yaml`, `app.yml`, `deploy.yaml`, `deploy.yml`) is translated at deploy time. A repo that has an app spec is never touched. The offline `import config` command uses the same rules, so you can preview the result first.
+
+```text
+web: bundle exec puma
+worker: bundle exec sidekiq
+release: bundle exec rake db:migrate
+```
+
+- One service per process type. `web` gets the port (default 8080, seeded by `LEVELRAIL_PROCFILE_PORT`) and `PORT` set to match. Other types are workers; the port the spec requires on every service is set but nothing needs to listen on it.
+- `release:` becomes `hooks.preDeploy` on `web`, or on the first process when there is no `web` line.
+- With a `Dockerfile` in the repo, services build from it and each Procfile command replaces the image `CMD` for that service. Without one, Railpack builds the app.
+- `app.json` keys: `healthchecks` map to `health` (`startup` and `readiness` to readiness, `liveness` to liveness), `cron` entries to `jobs`, `scripts.dokku.predeploy` and `postdeploy` (and `scripts.postdeploy`) to hooks, `formation.<type>.quantity` to `replicas`, `env` values to service env.
+- Add-on databases are not created at deploy. Each one produces a finding telling you to create and link the database.
+- Anything else, such as `environments`, other scripts or healthcheck command checks, produces a finding. Findings appear as log lines in the deploy output and as warnings on the deploy result; nothing is dropped silently.
+
 ## Bind addresses and exposure
 
 Every published port (a service's `port`/`host_port`, and a managed database's public-access port; see [managing databases](/managing-databases)) binds to `bind_address`, resolved by `internal/bindaddr.Resolve`:
