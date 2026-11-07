@@ -320,6 +320,7 @@ func (s *bootState) startMesh() error {
 	}
 	edgeInfo := edge.doctorInfo()
 	edgeInfo.Snapshot = setupIngressSnapshot(ctx, logger, ingressDriver, db, secretsManager, edge)
+	edgeInfo.LiveMaxBodyBytes = edge.liveMaxBodyBytes(db, logger, apiRouter.RuntimeSettings)
 	apiRouter.SetDoctorIngressEdge(edgeInfo)
 	apiRouter.SetIngressResilience(api.IngressResilience{
 		Status:  ingressDriver.SnapshotStatus,

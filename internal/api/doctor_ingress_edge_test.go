@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -49,5 +50,19 @@ func TestDoctorCheckIngressEdge_StoredBodyCap(t *testing.T) {
 	got := rt.doctorCheckIngressEdge(t.Context())
 	if len(got) != 1 || !strings.Contains(got[0].Message, "capped at 1048576 bytes") {
 		t.Errorf("got %+v", got)
+	}
+}
+
+func TestDoctorCheckIngressEdge_LiveBodyCap(t *testing.T) {
+	limit := int64(2 << 20)
+	rt := &Router{doctorEdge: &DoctorIngressEdge{Hardening: true, MaxBodyBytes: 1 << 30, LiveMaxBodyBytes: func(context.Context) int64 { return limit }}}
+	got := rt.doctorCheckIngressEdge(t.Context())
+	if len(got) != 1 || !strings.Contains(got[0].Message, "capped at 2097152 bytes") {
+		t.Fatalf("got %+v", got)
+	}
+	limit = 4 << 20
+	got = rt.doctorCheckIngressEdge(t.Context())
+	if len(got) != 1 || !strings.Contains(got[0].Message, "capped at 4194304 bytes") {
+		t.Errorf("a later change must show without a restart: %+v", got)
 	}
 }

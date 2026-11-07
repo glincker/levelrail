@@ -16,6 +16,8 @@ type DoctorIngressEdge struct {
 	Hardening        bool
 	TrustedProxies   int
 	MaxBodyBytes     int64
+	// LiveMaxBodyBytes resolves the cap now (saved setting, dashboard overrides, env), so doctor never shows the boot figure after a change.
+	LiveMaxBodyBytes func(ctx context.Context) int64
 	RetryWindow      time.Duration
 	// Snapshot reports the ingress route snapshot; nil means the control plane has none.
 	Snapshot func() ingressdriver.SnapshotStatus
@@ -37,7 +39,9 @@ func (rt *Router) doctorCheckIngressEdge(ctx context.Context) []doctorCheckResou
 	parts := []string{fmt.Sprintf("failover retry window %s", e.RetryWindow)}
 	maxBody := e.MaxBodyBytes
 	// A saved value wins over the boot-time figure, which goes stale after a live change.
-	if rs := rt.runtimeSettings; rs != nil && rs.Source(ctx, runtimesettings.KeyIngressMaxBodyBytes) == runtimesettings.SourceSaved {
+	if e.LiveMaxBodyBytes != nil {
+		maxBody = e.LiveMaxBodyBytes(ctx)
+	} else if rs := rt.runtimeSettings; rs != nil && rs.Source(ctx, runtimesettings.KeyIngressMaxBodyBytes) == runtimesettings.SourceSaved {
 		maxBody = int64(rs.Limit(ctx, runtimesettings.KeyIngressMaxBodyBytes))
 	}
 	if maxBody > 0 {
