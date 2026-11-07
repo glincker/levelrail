@@ -115,6 +115,7 @@ func (rt *Router) registerAppRuntimeRoutes(mux *http.ServeMux) {
 	// above use for their own per-app child resources.
 	mux.HandleFunc("POST /api/v1/tags", rt.requireAbility(AbilityWrite, rt.handleCreateTag))
 	mux.HandleFunc("GET /api/v1/tags", rt.requireAbility(AbilityRead, rt.handleListTags))
+	mux.HandleFunc("PATCH /api/v1/tags/{id}", rt.requireAbility(AbilityWrite, rt.handleRenameTag))
 	mux.HandleFunc("DELETE /api/v1/tags/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteTag))
 	mux.HandleFunc("GET /api/v1/tags/{id}/apps", rt.requireAbility(AbilityRead, rt.handleListAppsByTag))
 	mux.HandleFunc("GET /api/v1/apps/{name}/tags", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListAppTags))

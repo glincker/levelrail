@@ -22,6 +22,9 @@ const (
 	EnvKeepPerApp    = "APP_SBOM_KEEP_PER_APP"
 	EnvSweepInterval = "APP_SCAN_SWEEP_INTERVAL"
 	EnvFailClosed    = "APP_SUPPLYCHAIN_FAIL_CLOSED"
+	// EnvScanDefaultEnabled and EnvScanDefaultGate only seed the instance default; a saved value wins.
+	EnvScanDefaultEnabled = "APP_SCAN_DEFAULT_ENABLED"
+	EnvScanDefaultGate    = "APP_SCAN_DEFAULT_GATE"
 )
 
 // Default scanner images. Pinned tags, override with APP_SCANNER_IMAGE.
@@ -48,6 +51,9 @@ type Config struct {
 	SweepInterval time.Duration
 	// FailClosed denies blocking-mode releases when the scan is missing.
 	FailClosed bool
+	// DefaultEnabled and DefaultGate seed the instance default policy for apps without their own.
+	DefaultEnabled bool
+	DefaultGate    GateMode
 }
 
 // ConfigFromEnv reads Config from lookup (os.LookupEnv in production).
@@ -67,19 +73,27 @@ func ConfigFromEnv(lookup func(string) (string, bool), logger *slog.Logger) Conf
 		logger.Warn("supplychain: unknown scanner, using trivy", slog.String("env", EnvScanner), slog.String("value", scanner))
 		scanner = ScannerTrivy
 	}
+	rawGate, _ := r.raw(EnvScanDefaultGate)
+	defGate, gateErr := ParseGateMode(rawGate)
+	if gateErr != nil {
+		r.bad(EnvScanDefaultGate, rawGate)
+		defGate = GateOff
+	}
 	return Config{
-		BuildAttest:   r.boolean(build.EnvAttest, false),
-		Enabled:       r.boolean(EnvScanEnabled, true),
-		Scanner:       scanner,
-		Image:         r.str(EnvScannerImage, image),
-		Timeout:       r.duration(EnvScanTimeout, 5*time.Minute),
-		PullTimeout:   r.duration(EnvPullTimeout, 10*time.Minute),
-		MemoryMB:      int64(r.integer(EnvScanMemoryMB, 1024)),
-		CPUs:          r.float(EnvScanCPUs, 1.0),
-		OverrideTTL:   r.duration(EnvOverrideTTL, time.Hour),
-		KeepPerApp:    r.integer(EnvKeepPerApp, 20),
-		SweepInterval: r.duration(EnvSweepInterval, time.Hour),
-		FailClosed:    r.boolean(EnvFailClosed, false),
+		DefaultEnabled: r.boolean(EnvScanDefaultEnabled, false),
+		DefaultGate:    defGate,
+		BuildAttest:    r.boolean(build.EnvAttest, false),
+		Enabled:        r.boolean(EnvScanEnabled, true),
+		Scanner:        scanner,
+		Image:          r.str(EnvScannerImage, image),
+		Timeout:        r.duration(EnvScanTimeout, 5*time.Minute),
+		PullTimeout:    r.duration(EnvPullTimeout, 10*time.Minute),
+		MemoryMB:       int64(r.integer(EnvScanMemoryMB, 1024)),
+		CPUs:           r.float(EnvScanCPUs, 1.0),
+		OverrideTTL:    r.duration(EnvOverrideTTL, time.Hour),
+		KeepPerApp:     r.integer(EnvKeepPerApp, 20),
+		SweepInterval:  r.duration(EnvSweepInterval, time.Hour),
+		FailClosed:     r.boolean(EnvFailClosed, false),
 	}
 }
 

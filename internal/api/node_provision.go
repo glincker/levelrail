@@ -343,6 +343,8 @@ type createNodeProvisionRequest struct {
 	// AllowSSHInbound is aws-only (provision.CreateOpts.AllowSSHInbound):
 	// other providers ignore it. Off by default.
 	AllowSSHInbound bool `json:"allow_ssh_inbound,omitempty"`
+	// BootstrapScriptID optionally names a saved bootstrap script run after the built-in bootstrap.
+	BootstrapScriptID string `json:"bootstrap_script_id,omitempty"`
 }
 
 // handleCreateNodeProvision handles POST /api/v1/nodes/provision: mints
@@ -392,6 +394,24 @@ func (rt *Router) handleCreateNodeProvision(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	var bootstrapBody string
+	if req.BootstrapScriptID != "" {
+		if rt.bootstrapScripts == nil {
+			writeError(w, http.StatusNotImplemented, "bootstrap scripts are not configured on this control plane")
+			return
+		}
+		bs, err := rt.bootstrapScripts.GetBootstrapScript(r.Context(), req.BootstrapScriptID)
+		if errors.Is(err, store.ErrBootstrapScriptNotFound) {
+			writeError(w, http.StatusBadRequest, "bootstrap_script_id does not match a saved bootstrap script")
+			return
+		}
+		if err != nil {
+			rt.internalError(w, "api: node provision: load bootstrap script failed", err)
+			return
+		}
+		bootstrapBody = bs.Body
+	}
+
 	token, err := rt.mintNodeJoinToken(r.Context(), nodeProvisionJoinTokenTTL)
 	if err != nil {
 		rt.internalError(w, "api: node provision: mint join token failed", err)
@@ -410,6 +430,11 @@ func (rt *Router) handleCreateNodeProvision(w http.ResponseWriter, r *http.Reque
 	})
 	if err != nil {
 		rt.internalError(w, "api: node provision: render cloud-init failed", err)
+		return
+	}
+	userData, err = provision.AppendBootstrapScript(userData, rt.brand.AgentName(), bootstrapBody)
+	if err != nil {
+		rt.internalError(w, "api: node provision: append bootstrap script failed", err)
 		return
 	}
 

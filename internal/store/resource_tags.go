@@ -95,6 +95,44 @@ func (db *DB) ListAllResourceTags(ctx context.Context) (map[string][]Tag, error)
 	return out, nil
 }
 
+// TagUsage counts what one tag is attached to: apps via app_tags, every other
+// kind via resource_tags.
+type TagUsage struct {
+	Apps      int
+	Resources int
+}
+
+// CountTagUsage returns attachment counts per tag id; a tag with none has no key.
+func (db *DB) CountTagUsage(ctx context.Context) (map[string]TagUsage, error) {
+	out := map[string]TagUsage{}
+	rows, err := db.QueryContext(ctx, `
+		SELECT tag_id, 1, COUNT(*) FROM app_tags GROUP BY tag_id
+		UNION ALL
+		SELECT tag_id, 0, COUNT(*) FROM resource_tags GROUP BY tag_id`)
+	if err != nil {
+		return nil, fmt.Errorf("store: count tag usage: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	for rows.Next() {
+		var id string
+		var isApp, n int
+		if err := rows.Scan(&id, &isApp, &n); err != nil {
+			return nil, fmt.Errorf("store: scan tag usage: %w", err)
+		}
+		u := out[id]
+		if isApp == 1 {
+			u.Apps = n
+		} else {
+			u.Resources = n
+		}
+		out[id] = u
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: iterate tag usage: %w", err)
+	}
+	return out, nil
+}
+
 // SaveResourceView creates or replaces the owner's view with the same name.
 func (db *DB) SaveResourceView(ctx context.Context, v ResourceView) error {
 	_, err := db.ExecContext(ctx, `

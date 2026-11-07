@@ -317,6 +317,8 @@ Endpoints for:
 | GET | /api/v1/settings/ddns/status | AbilityRoot | handleDDNSStatus |
 | GET | /api/v1/settings/deploy-url-copies | AbilityRead | handleGetDeployURLCopies |
 | PUT | /api/v1/settings/deploy-url-copies | AbilityRoot | handlePutDeployURLCopies |
+| GET | /api/v1/settings/supply-chain | AbilityRead | handleGetSupplyChainDefault |
+| PUT | /api/v1/settings/supply-chain | AbilityRoot | handlePutSupplyChainDefault |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -2210,6 +2212,7 @@ Routes that do not fit an existing group.
 | POST | /api/v1/vitals/{app} | Public | handleVitalsBeacon |
 | OPTIONS | /api/v1/vitals/{app} | Public | handleVitalsPreflight |
 | GET | /internal/diagnostic | Public | handleInternalDiagnostic |
+| PATCH | /api/v1/tags/{id} | AbilityWrite | handleRenameTag |
 | POST | /mcp | Public |  |
 
 ## See also

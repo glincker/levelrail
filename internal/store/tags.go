@@ -45,6 +45,31 @@ func (db *DB) SaveTag(ctx context.Context, t Tag) error {
 	return fmt.Errorf("store: save tag %q: %w", t.ID, err)
 }
 
+// RenameTag changes a tag's name, normalized like attach-by-name does
+// (trimmed, lowercased). It returns ErrTagNotFound for an unknown id and
+// ErrTagNameTaken when another tag already holds the name.
+func (db *DB) RenameTag(ctx context.Context, id, name string) (Tag, error) {
+	name = strings.ToLower(strings.TrimSpace(name))
+	existing, err := db.GetTagByName(ctx, name)
+	if err == nil && existing.ID != id {
+		return Tag{}, ErrTagNameTaken
+	}
+	if err != nil && !errors.Is(err, ErrTagNotFound) {
+		return Tag{}, err
+	}
+	res, err := db.ExecContext(ctx, `UPDATE tags SET name = ? WHERE id = ?`, name, id)
+	if err != nil {
+		if other, getErr := db.GetTagByName(ctx, name); getErr == nil && other.ID != id {
+			return Tag{}, ErrTagNameTaken
+		}
+		return Tag{}, fmt.Errorf("store: rename tag %q: %w", id, err)
+	}
+	if err := rowsAffectedOrNotFound(res, ErrTagNotFound, "rename tag %q", id); err != nil {
+		return Tag{}, err
+	}
+	return db.GetTag(ctx, id)
+}
+
 // GetTag returns the tag with this ID, or ErrTagNotFound.
 func (db *DB) GetTag(ctx context.Context, id string) (Tag, error) {
 	row := db.QueryRowContext(ctx, `SELECT id, name, created_at FROM tags WHERE id = ?`, id)

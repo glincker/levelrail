@@ -3,6 +3,8 @@ package api
 import "net/http"
 
 func (rt *Router) registerSupplyChainRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("GET /api/v1/settings/supply-chain", rt.requireAbility(AbilityRead, rt.handleGetSupplyChainDefault))
+	mux.HandleFunc("PUT /api/v1/settings/supply-chain", rt.requireAbility(AbilityRoot, rt.handlePutSupplyChainDefault))
 	mux.HandleFunc("GET /api/v1/apps/{name}/supply-chain", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetSupplyChain))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/supply-chain", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handlePutSupplyChain))
 	mux.HandleFunc("POST /api/v1/apps/{name}/supply-chain/override", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleSupplyChainOverride))

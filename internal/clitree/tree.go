@@ -299,6 +299,7 @@ var Tree = map[string]*Node{
 		"buckets":      {Subs: map[string]*Node{"list": nil, "create": nil, "update": nil, "delete": nil, "bind": nil, "unbind": nil, "usage": nil, "ls": nil, "put": nil, "get": nil, "rm": nil, "presign": nil, "sweep": nil}}}},
 	"logs":                 {Subs: map[string]*Node{"usage": nil, "archive": {Subs: map[string]*Node{"set": nil, "status": nil, "remove": nil}}, "dump": nil, "ls": nil, "fetch": nil, "query": nil, "search": nil, "failure": nil, "signatures": nil, "alert-from": nil, "saved": {Subs: map[string]*Node{"list": nil, "create": nil, "run": nil, "delete": nil}}}},
 	"metrics":              {Subs: map[string]*Node{"query": nil, "top": nil, "investigate": nil}},
+	"bootstrap-script":     {Subs: map[string]*Node{"list": nil, "show": nil, "create": nil, "delete": nil}},
 	"registry-credentials": {Subs: map[string]*Node{"list": nil, "get": nil, "create": nil, "update": nil, "delete": nil, "test": nil, "repositories": nil, "tags": nil}},
 	"private-networks":     {Subs: map[string]*Node{"list": nil, "map": nil, "create": nil, "set": nil, "delete": nil, "allow": nil, "deny": nil, "apply": nil}},
 	"network-shares":       {Subs: map[string]*Node{"list": nil, "get": nil, "create": nil, "update": nil, "delete": nil, "test": nil}},
