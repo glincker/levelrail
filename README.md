@@ -74,16 +74,18 @@ Using a coding agent? `npx skills add https://github.com/glincker/levelrail --sk
 
 ## Why Levelrail
 
+**Deploys that do not surprise you. Servers that explain themselves. Agents that stay in their lane.**
+
 <table>
   <tr>
-    <td width="33%" valign="top"><b>Safe deploys</b><br>Readiness-gated rollouts, canaries, approvals, one-step rollback.</td>
-    <td width="33%" valign="top"><b>Observability built in</b><br>Metrics, logs, traces and alerts. No Grafana stack.</td>
-    <td width="33%" valign="top"><b>Agents, not SSH</b><br>Nodes dial out over mTLS. No inbound ports.</td>
+    <td width="33%" valign="top"><b>Safe deploys</b><br><i>Ship on a Friday.</i><br>Readiness-gated rollouts, canaries, approvals, one-step rollback.</td>
+    <td width="33%" valign="top"><b>Observability built in</b><br><i>See everything. Install nothing.</i><br>Metrics, logs, traces and alerts. No Grafana stack.</td>
+    <td width="33%" valign="top"><b>Agents, not SSH</b><br><i>No inbound ports to defend.</i><br>Nodes dial out over mTLS. No shelling out to <code>docker</code>.</td>
   </tr>
   <tr>
-    <td width="33%" valign="top"><b>Verified backups</b><br>Every backup is re-downloaded and checksummed, with restore drills.</td>
-    <td width="33%" valign="top"><b>Secure by default</b><br>Hash-chained audit log, encrypted secrets, passkeys, signed releases.</td>
-    <td width="33%" valign="top"><b>Made for AI agents</b><br>MCP server plus a skill. AI is never in the reconcile path.</td>
+    <td width="33%" valign="top"><b>Verified backups</b><br><i>A backup you never restored is a hope.</i><br>Every backup is re-downloaded and checksummed, with restore drills.</td>
+    <td width="33%" valign="top"><b>Secure by default</b><br><i>Secure before you configure.</i><br>Hash-chained audit log, encrypted secrets, passkeys, signed releases.</td>
+    <td width="33%" valign="top"><b>Made for AI agents</b><br><i>Let agents deploy. Keep the keys.</i><br>MCP server plus a skill. AI is never in the reconcile path.</td>
   </tr>
 </table>
 
@@ -102,17 +104,48 @@ Using a coding agent? `npx skills add https://github.com/glincker/levelrail --sk
 
 All screenshots are captured from a real running control plane. More in the [Product tour](https://docs.levelrail.com/product-tour).
 
+## Who it is for
+
+**Whoever you are, you start with one line.**
+
+| You are | You get | Start |
+| --- | --- | --- |
+| A solo developer with one VPS | Git deploys, HTTPS in one click and about 200 MB idle, no Kubernetes | `curl -fsSL https://levelrail.com/install.sh \| sudo sh` |
+| Building with Claude Code, Cursor or another coding agent | An MCP server that deploys, waits, diagnoses and rolls back inside the token's limits | `npx skills add https://github.com/glincker/levelrail --skill levelrail` |
+| An agency or team | Approvals, deploy freezes, IAM policies, a verifiable audit log, OIDC sign-in | [Identity and access](docs/identity-and-access.md) |
+| On Coolify, Dokploy, CapRover or Dokku today | A dry run first, and the old server keeps serving | `levelrail-cli import platform coolify --dry-run` |
+| Running a homelab or a free Arm VM | arm64 builds and a minimal profile | [Server profiles](docs/profiles.md), [Arm VM](docs/install-on-oracle-cloud.md) |
+
+## Built for coding agents
+
+**Let your agent ship. You keep the keys.**
+
+```text
+Deploy this repo to my Levelrail and tell me when it is live.
+```
+
+- **Inside the token's limits.** The tool list follows the abilities of the token: a read token never sees a deploy tool, and `--readonly` refuses to start with a write token.
+- **Writes need a confirmation.** Mutations are confirm-gated and off until you pass `--allow-write`.
+- **Cheap to load.** About 2.4k tokens of tools by default, 240+ on demand in toolsets ([tool surface](docs/mcp-tool-surface.md)).
+- **Audited.** Every call is recorded with the caller surface (CLI, dashboard, MCP or API).
+- **Not in the control loop.** AI never sits in the reconcile path, so a wrong guess cannot wedge your servers.
+- **A skill, not just tools.** It deploys, waits for the rollout to converge, reads the failure and rolls back ([skill](skills/levelrail/SKILL.md), [MCP](docs/mcp.md), [threat model](docs/mcp.md#threat-model)).
+
 ## vs Coolify, Dokploy, CapRover and Dokku
+
+**Same job, fewer moving parts, more proof.**
 
 | | Levelrail | Coolify | Dokploy | CapRover | Dokku |
 | --- | --- | --- | --- | --- | --- |
+| **Agent access (MCP)** | Read and write, ability-scoped, confirm-gated, audited | Official server, read-only | MCP server repo exists | Not documented | Not documented |
+| **Switching in** | Dry-run importers for all four, old server keeps serving | n/a | n/a | n/a | n/a |
 | Node control | Reverse-dialed agent | SSH + CLI | SSH + Engine API | Swarm API | Local bash |
 | Built-in metrics and logs | Yes | Opt-in add-on | Separate binary | No | No |
-| Rollback | Pinned images, readiness-gated | Health check off by default | Swarm rollback | Manual | Default scheduler: none |
+| Rollback | Pinned images, readiness-gated | Retained images | Swarm rollback | Manual | Default scheduler: none |
 | Backup verification | Automatic | Non-empty check | None | None | No backups |
-| Audit log | Hash-chained, verifiable | See their docs | See their docs | See their docs | See their docs |
+| Audit log | Hash-chained, verifiable | Not documented | Not documented | Not documented | Not documented |
 
-Positioning, not a ranking. Levelrail is the youngest project here, with fewer users and less production mileage. Sourced details: [Comparison](docs/comparison.md).
+Cells state only what each project's public docs say (last checked 2026-11-07), and "Not documented" means we found nothing, not that it is missing. Coolify's MCP: [their docs](https://coolify.io/docs/integrations/mcp). This is positioning, not a ranking. Levelrail is the youngest project here, with fewer users and less production mileage. Sourced details: [Comparison](docs/comparison.md).
 
 ## Production ready, with receipts
 

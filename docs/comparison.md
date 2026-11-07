@@ -48,7 +48,7 @@ Kamal is deliberately minimal: no control plane, no database, no agent. It runs 
 - Observability in the core. Each node keeps its own metrics and logs (15 second resolution metrics, full-text log search), queried through the control plane. Alerting, crashloop detection with the last log lines, and a Prometheus remote-read endpoint are built in. See [Observability](/observability).
 - A small footprint. SQLite in WAL mode, an embedded Caddy, and an embedded dashboard mean a single binary on a single node. See [Performance](/performance) for measured numbers.
 - Rollback that survives cleanup. Prior images are pinned so garbage collection cannot remove a rollback target.
-- AI-ready, not AI-driven. An MCP server exposes the same API and permission model to agents. AI is never in the reconcile path.
+- AI-ready, not AI-driven. An MCP server exposes the same API and permission model to agents, the tool list follows the token's abilities, writes are confirm-gated behind `--allow-write`, and AI is never in the reconcile path. For comparison, Coolify documents an official MCP server that is read-only (see [their MCP page](https://coolify.io/docs/integrations/mcp)), and Dokploy has an MCP server repository under its organization (check its README for the current tool list). We found no MCP support in the public docs of CapRover or Dokku. Checked 2026-11-07.
 
 ## SSO, audit, IAM and backups are not paywalled
 
