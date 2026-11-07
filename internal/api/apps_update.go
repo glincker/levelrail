@@ -93,6 +93,7 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	desired.Egress = existing.Egress
 	preserveUnsentAppFields(&desired, *existing, req, imageChanged)
 	deploy.EnsureNextCacheLink(&desired)
+	deploy.EnsureNextCacheCALink(r.Context(), &desired, rt.databases)
 	if imageChanged {
 		desired.EnvDirty = false
 	} else {
