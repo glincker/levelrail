@@ -708,6 +708,8 @@
             "group": "Database Tools",
             "pages": [
               "self-host/adminer",
+              "self-host/cassandra",
+              "self-host/solr",
               "self-host/baserow",
               "self-host/bytebase",
               "self-host/chroma",
@@ -721,6 +723,7 @@
               "self-host/memcached",
               "self-host/milvus",
               "self-host/mongo-express",
+              "self-host/mongodb",
               "self-host/mysql",
               "self-host/neo4j",
               "self-host/nocodb",
