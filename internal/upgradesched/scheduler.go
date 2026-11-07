@@ -186,6 +186,8 @@ type Scheduler struct {
 	Audit func(ctx context.Context, detail string)
 	// NewID returns a schedule id.
 	NewID func() string
+	// Defaults is the policy an install runs until an operator saves one; zero keeps unsaved installs off.
+	Defaults Defaults
 
 	mu sync.Mutex
 }
@@ -238,6 +240,16 @@ func (s *Scheduler) Tick(ctx context.Context) error {
 	default:
 		return s.maybeFire(ctx, *active)
 	}
+}
+
+// policyRow loads the policy in force, with the defaults applied to an unsaved row.
+func (s *Scheduler) policyRow(ctx context.Context) (store.UpgradePolicy, error) {
+	row, err := s.Store.GetUpgradePolicy(ctx)
+	if err != nil {
+		return store.UpgradePolicy{}, fmt.Errorf("upgradesched: load policy: %w", err)
+	}
+	row, _ = s.Defaults.Resolve(row)
+	return row, nil
 }
 
 func (s *Scheduler) channelIDs(raw string) []string {
@@ -319,9 +331,9 @@ func (s *Scheduler) maybeFire(ctx context.Context, sc store.UpgradeSchedule) err
 
 	var pol Policy
 	if sc.Source == store.UpgradeSourceAuto {
-		row, err := s.Store.GetUpgradePolicy(ctx)
+		row, err := s.policyRow(ctx)
 		if err != nil {
-			return fmt.Errorf("upgradesched: load policy: %w", err)
+			return err
 		}
 		pol = PolicyFromStore(row, s.channelIDs(row.NotifyChannelIDs))
 		if !pol.Active() {

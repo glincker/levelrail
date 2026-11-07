@@ -122,6 +122,7 @@ System endpoints for:
 | POST | /api/v1/updates/migration-dry-run | AbilityWrite | handleMigrationDryRun |
 | GET | /api/v1/system/storage/inventory | AbilityRead | handleStorageInventory |
 | GET | /api/v1/system/disk/history | AbilityRead | handleDiskHistory |
+| POST | /api/v1/updates/auto/notice/dismiss | AbilityRoot | handleDismissUpgradeNotice |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 

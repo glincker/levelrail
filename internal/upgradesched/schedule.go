@@ -144,7 +144,7 @@ func (s *Scheduler) resolveTime(ctx context.Context, req Request, now time.Time)
 // and the enabled alert maintenance windows that cover everything.
 func (s *Scheduler) NextWindow(ctx context.Context, now time.Time) (Span, bool, error) {
 	var spans []Span
-	if row, err := s.Store.GetUpgradePolicy(ctx); err == nil && row.WindowCron != "" {
+	if row, err := s.policyRow(ctx); err == nil && row.WindowCron != "" {
 		w := Window{Cron: row.WindowCron, Duration: time.Duration(row.WindowDurationSeconds) * time.Second, Timezone: row.WindowTimezone}
 		if sp, ok, err := w.Next(now); err == nil && ok {
 			spans = append(spans, sp)
@@ -217,9 +217,9 @@ func (s *Scheduler) cancelActiveLocked(ctx context.Context, actor, reason string
 // release qualifies. Every verdict is recorded so the dashboard can say why a
 // release is being held.
 func (s *Scheduler) considerAuto(ctx context.Context) error {
-	row, err := s.Store.GetUpgradePolicy(ctx)
+	row, err := s.policyRow(ctx)
 	if err != nil {
-		return fmt.Errorf("upgradesched: load policy: %w", err)
+		return err
 	}
 	pol := PolicyFromStore(row, s.channelIDs(row.NotifyChannelIDs))
 	if pol.Mode == ModeOff {

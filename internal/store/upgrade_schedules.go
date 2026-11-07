@@ -190,6 +190,10 @@ type UpgradePolicy struct {
 	DecisionTag           string
 	Decision              string
 	DecisionAt            string
+	// PausedUntil is an RFC3339 time before which no automatic upgrade starts; empty means no timed pause.
+	PausedUntil         string
+	NoticeDismissedAt   string
+	HealthWindowSeconds int
 }
 
 // GetUpgradePolicy returns the single policy row, always present.
@@ -197,9 +201,11 @@ func (db *DB) GetUpgradePolicy(ctx context.Context) (UpgradePolicy, error) {
 	var p UpgradePolicy
 	var paused int
 	err := db.QueryRowContext(ctx, `SELECT mode, window_cron, window_duration_seconds, window_timezone,
-		min_release_age_days, notify_channel_ids, paused, updated_by, updated_at, decision_tag, decision, decision_at
+		min_release_age_days, notify_channel_ids, paused, updated_by, updated_at, decision_tag, decision, decision_at,
+		paused_until, notice_dismissed_at, health_window_seconds
 		FROM upgrade_policy WHERE id = 1`).Scan(&p.Mode, &p.WindowCron, &p.WindowDurationSeconds, &p.WindowTimezone,
-		&p.MinReleaseAgeDays, &p.NotifyChannelIDs, &paused, &p.UpdatedBy, &p.UpdatedAt, &p.DecisionTag, &p.Decision, &p.DecisionAt)
+		&p.MinReleaseAgeDays, &p.NotifyChannelIDs, &paused, &p.UpdatedBy, &p.UpdatedAt, &p.DecisionTag, &p.Decision, &p.DecisionAt,
+		&p.PausedUntil, &p.NoticeDismissedAt, &p.HealthWindowSeconds)
 	if err != nil {
 		return UpgradePolicy{}, fmt.Errorf("store: get upgrade policy: %w", err)
 	}
@@ -218,11 +224,20 @@ func (db *DB) UpdateUpgradePolicy(ctx context.Context, p UpgradePolicy) error {
 		p.NotifyChannelIDs = "[]"
 	}
 	_, err := db.ExecContext(ctx, `UPDATE upgrade_policy SET mode = ?, window_cron = ?, window_duration_seconds = ?,
-		window_timezone = ?, min_release_age_days = ?, notify_channel_ids = ?, paused = ?, updated_by = ?, updated_at = ?
+		window_timezone = ?, min_release_age_days = ?, notify_channel_ids = ?, paused = ?, updated_by = ?, updated_at = ?,
+		paused_until = ?, health_window_seconds = ?
 		WHERE id = 1`, p.Mode, p.WindowCron, p.WindowDurationSeconds, p.WindowTimezone, p.MinReleaseAgeDays,
-		p.NotifyChannelIDs, paused, p.UpdatedBy, p.UpdatedAt)
+		p.NotifyChannelIDs, paused, p.UpdatedBy, p.UpdatedAt, p.PausedUntil, p.HealthWindowSeconds)
 	if err != nil {
 		return fmt.Errorf("store: update upgrade policy: %w", err)
+	}
+	return nil
+}
+
+// DismissUpgradeNotice records that an operator dismissed the automatic upgrade notice.
+func (db *DB) DismissUpgradeNotice(ctx context.Context, at string) error {
+	if _, err := db.ExecContext(ctx, `UPDATE upgrade_policy SET notice_dismissed_at = ? WHERE id = 1`, at); err != nil {
+		return fmt.Errorf("store: dismiss upgrade notice: %w", err)
 	}
 	return nil
 }

@@ -13,6 +13,9 @@ func runUpdates(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 	if len(args) > 0 && args[0] == "restore-points" {
 		return runRestorePoints(prog, args[1:], stdout, stderr, lookupEnv)
 	}
+	if code, handled := runUpdatesAuto(prog, args, stdout, stderr, lookupEnv); handled {
+		return code
+	}
 	return runUpgrade(prog, args, stdout, stderr, lookupEnv)
 }
 

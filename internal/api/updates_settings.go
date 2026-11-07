@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/kit/upgrade"
@@ -25,8 +27,37 @@ type updateSettingsResource struct {
 	AutoUpdateEnabled bool   `json:"auto_update_enabled"`
 }
 
-func toUpdateSettingsResource(s store.UpdateSettings) updateSettingsResource {
-	return updateSettingsResource{Channel: s.Channel, AutoUpdateEnabled: s.AutoUpdateEnabled}
+// updateSettingsResponse adds the channels the dashboard offers; others stay valid for the API but hidden.
+type updateSettingsResponse struct {
+	updateSettingsResource
+	OfferedChannels []string `json:"offered_channels"`
+}
+
+// envOfferedChannels seeds which channels are offered for selection; only stable until 1.0.
+const envOfferedChannels = "APP_UPDATE_CHANNELS_OFFERED"
+
+func offeredUpdateChannels() []string {
+	raw, ok := os.LookupEnv(envOfferedChannels)
+	if !ok || strings.TrimSpace(raw) == "" {
+		return []string{upgrade.ChannelStable}
+	}
+	out := []string{}
+	for _, c := range strings.Split(raw, ",") {
+		if c = strings.TrimSpace(c); upgrade.ValidChannel(c) {
+			out = append(out, c)
+		}
+	}
+	if len(out) == 0 {
+		return []string{upgrade.ChannelStable}
+	}
+	return out
+}
+
+func toUpdateSettingsResource(s store.UpdateSettings) updateSettingsResponse {
+	return updateSettingsResponse{
+		updateSettingsResource: updateSettingsResource{Channel: s.Channel, AutoUpdateEnabled: s.AutoUpdateEnabled},
+		OfferedChannels:        offeredUpdateChannels(),
+	}
 }
 
 // handleGetUpdateSettings handles GET /api/v1/updates/settings: the

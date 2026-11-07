@@ -228,6 +228,15 @@ func printUpgradePolicy(out io.Writer, p apiclient.UpgradePolicy) {
 		_, _ = fmt.Fprintf(out, "window: %q for %dm in %s\n", p.WindowCron, p.WindowDurationMinutes, p.Timezone)
 	}
 	_, _ = fmt.Fprintf(out, "minimum release age: %d days\n", p.MinReleaseAgeDays)
+	if p.DefaultApplied {
+		_, _ = fmt.Fprintln(out, "source: default (no policy saved yet)")
+	}
+	if p.PausedUntil != "" {
+		_, _ = fmt.Fprintf(out, "paused until: %s\n", p.PausedUntil)
+	}
+	if p.HealthWindowSeconds > 0 {
+		_, _ = fmt.Fprintf(out, "health window before rollback: %ds\n", p.HealthWindowSeconds)
+	}
 	if len(p.NotifyChannelIDs) > 0 {
 		_, _ = fmt.Fprintf(out, "notify: %s\n", strings.Join(p.NotifyChannelIDs, ", "))
 	}

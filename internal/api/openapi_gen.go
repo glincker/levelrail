@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1994 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1995 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1981,6 +1981,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/updates", Ability: "AbilityRead", Group: "System", Handler: "handleGetUpdates", Description: "Updates (Settings > Updates page): running version vs. GitHub's latest published release, AbilityRead like system/status above."},
 	{Method: "GET", Path: "/api/v1/updates/auto", Ability: "AbilityRoot", Group: "System", Handler: "handleGetUpgradePolicy", Description: ""},
 	{Method: "PUT", Path: "/api/v1/updates/auto", Ability: "AbilityRoot", Group: "System", Handler: "handleUpdateUpgradePolicy", Description: ""},
+	{Method: "POST", Path: "/api/v1/updates/auto/notice/dismiss", Ability: "AbilityRoot", Group: "System", Handler: "handleDismissUpgradeNotice", Description: ""},
 	{Method: "POST", Path: "/api/v1/updates/backup-now", Ability: "AbilityRoot", Group: "System", Handler: "handleUpgradeBackupNow", Description: ""},
 	{Method: "GET", Path: "/api/v1/updates/history", Ability: "AbilityRead", Group: "System", Handler: "handleUpgradeHistory", Description: ""},
 	{Method: "POST", Path: "/api/v1/updates/history/{id}/ack", Ability: "AbilityWrite", Group: "System", Handler: "handleAckUpgrade", Description: ""},
