@@ -702,6 +702,7 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/vitals | AbilityRead | handleGetVitals |
 | PUT | /api/v1/apps/{name}/vitals | AbilityDeploy | handleSetVitals |
 | POST | /api/v1/apps/{name}/vitals/rotate-key | AbilityDeploy | handleRotateVitalsKey |
+| GET | /api/v1/apps/{name}/deploys/{deployId}/build-report | AbilityRead | handleNextBuildReport |
 
 </Accordion>
 

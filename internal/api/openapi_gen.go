@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1989 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1990 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -216,6 +216,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/deploys/from-cache", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeployFromCache", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/deploys/release-notes", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleReleaseNotes", Description: "Release notes (release_notes.go): the commits between two deploys, grouped by conventional-commit type, plus a markdown rendering."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/deploys/{deployId}", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetDeploy", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/deploys/{deployId}/build-report", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleNextBuildReport", Description: "Next.js route table and warnings parsed from one deploy attempt's stored build log."},
 	{Method: "POST", Path: "/api/v1/apps/{name}/deploys/{deployId}/cancel", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCancelDeploy", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/deploys/{deployId}/gate", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetDeployGate", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/deploys/{deployId}/logs", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeployLogStream", Description: "Deploy-attempt build/log stream (deploy_attempts.go): SSE, serving either a live tail (attempt still running) or a full persisted replay (attempt already finished), the exact contract web/src/hooks/useDeployLogStream.ts was built against. AbilityRead: this is a read of one attempt's own output, the same sensitivity as the deploy-attempts list above."},
