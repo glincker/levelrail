@@ -275,6 +275,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsHealth(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "health-score":
 		return runAppsHealthScore(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "skew":
+		return runAppsSkew(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "next-cache":
 		return runAppsNextCache(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "vitals":
@@ -295,6 +297,7 @@ func appsUsage(prog string) string {
   %[1]s apps create [flags]         create an app (existing image, git build, --file, or --interactive)
   %[1]s apps list [flags]             list apps
   %[1]s apps get <name> [flags]       show one app
+  %[1]s apps skew <name> [flags]      show skew protection and the held previous release
   %[1]s apps deploy <name> [flags]   deploy an image to an existing app
   %[1]s apps ci token|trust <name> [flags]   deploy from any CI with OIDC: mint a deploy token, manage which pipelines are trusted
   %[1]s apps github-actions get|set|start|finish <name> [flags]   what the GitHub Actions deploy action reports back (deployment, check run)

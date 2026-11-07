@@ -78,6 +78,8 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runUp(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	case "dev":
 		return runDev(prog, args[1:], stdout, stderr, lookupEnv)
+	case "next":
+		return runNext(prog, args[1:], stdout, stderr, lookupEnv)
 	case "vm":
 		return runVM(prog, args[1:], stdout, stderr, lookupEnv)
 	case "open":
