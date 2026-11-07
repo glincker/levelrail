@@ -81,6 +81,9 @@ func runAppsPreviewsSettings(prog string, args []string, stdout, stderr io.Write
 	gateUser := fs.String("gate-username", "", "basic auth username for previews")
 	gatePass := fs.String("gate-password", "", "basic auth password for previews (write-only)")
 	indexing := fs.Bool("allow-indexing", false, "let search engines index preview URLs (hidden by default)")
+	migrateCmd := fs.String("migrate-command", "", "command run once in the preview before it goes live, for example \"npm run migrate\" (empty clears it)")
+	migrateTimeout := fs.Int("migrate-timeout", 0, "seconds the migrate command may run (0 uses the platform default)")
+	imageTag := fs.String("image-tag-template", "", "deploy a prebuilt image per pull request, for example ghcr.io/org/app:pr-{number} (empty clears it)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsPreviewsSettingsUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -123,6 +126,12 @@ func runAppsPreviewsSettings(prog string, args []string, stdout, stderr io.Write
 			req.GatePassword = gatePass
 		case "allow-indexing":
 			req.AllowIndexing = indexing
+		case "migrate-command":
+			req.MigrateCommand = migrateCmd
+		case "migrate-timeout":
+			req.MigrateTimeoutSeconds = migrateTimeout
+		case "image-tag-template":
+			req.ImageTagTemplate = imageTag
 		}
 	})
 
@@ -160,6 +169,12 @@ func printPreviewSettings(out io.Writer, appName string, p apiclient.PreviewPoli
 	_, _ = fmt.Fprintf(tw, "fork previews get secrets\t%s\n", yes[p.AllowForkSecrets])
 	_, _ = fmt.Fprintf(tw, "basic auth gate\t%s\n", yes[p.GateBasicAuth])
 	_, _ = fmt.Fprintf(tw, "indexed by search engines\t%s\n", yes[p.AllowIndexing])
+	if p.MigrateCommand != "" {
+		_, _ = fmt.Fprintf(tw, "migrate command\t%s (timeout %ds)\n", p.MigrateCommand, p.EffectiveMigrateTimeoutSeconds)
+	}
+	if p.ImageTagTemplate != "" {
+		_, _ = fmt.Fprintf(tw, "prebuilt image\t%s\n", p.ImageTagTemplate)
+	}
 	_ = tw.Flush()
 }
 
@@ -186,6 +201,9 @@ Flags:
   --gate-username string     basic auth username
   --gate-password string     basic auth password (write-only)
   --allow-indexing           let search engines index preview URLs
+  --migrate-command string   command run once in the preview before it goes live (needs database strategy none)
+  --migrate-timeout int      seconds the migrate command may run (0 uses the platform default)
+  --image-tag-template str   prebuilt image per pull request, placeholders {number} {sha} {short_sha} {branch}
   --token string             API token (default: %[2]s env var, then the credentials file)
   --api-url string          control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string          named credentials profile to read (overrides APP_PROFILE, default "default")

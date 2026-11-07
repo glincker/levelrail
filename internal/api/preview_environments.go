@@ -224,7 +224,7 @@ func (rt *Router) deployPreviewEnvironmentInner(ctx context.Context, appName str
 		notes = rt.finishPreviewExposure(ctx, appName, previewName, usedDomain, policy)
 		notes = append(notes, seedNotes...)
 		notes = append(notes, rt.applyPreviewDatabaseStrategy(ctx, preview, appName, previewName, gs, policy)...)
-		migrateNote, migrateErr := rt.runPreviewMigrate(ctx, previewName, policy)
+		migrateNote, migrateErr := rt.runPreviewMigrate(ctx, previewName, policy, len(gs.Databases) > 0)
 		if migrateErr != nil {
 			rt.logger.Error("api: pull request webhook: preview migrate failed", slog.String("error", migrateErr.Error()), slog.String("app_name", appName), slog.Int("pr_number", ev.Number))
 			rt.finishPreviewFailed(ctx, gs, preview, migrateErr.Error())

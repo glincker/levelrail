@@ -102,9 +102,12 @@ func sanitizeImageTagPart(s string) string {
 // container, which already carries the preview env and database. It returns a
 // note on success and an error carrying the masked output on failure; no
 // command configured is a quiet no-op.
-func (rt *Router) runPreviewMigrate(ctx context.Context, previewName string, s store.PreviewAppSettings) (string, error) {
+func (rt *Router) runPreviewMigrate(ctx context.Context, previewName string, s store.PreviewAppSettings, appYAMLDatabases bool) (string, error) {
 	if s.MigrateCommand == "" {
 		return "", nil
+	}
+	if err := previewMigrateDatabaseGuard(s, appYAMLDatabases); err != nil {
+		return "", err
 	}
 	if rt.execRuntime == nil {
 		return "", errors.New("migrate: this control plane cannot run commands in containers")
@@ -148,6 +151,16 @@ func (rt *Router) runPreviewMigrate(ctx context.Context, previewName string, s s
 	default:
 		return "", fmt.Errorf("migration output could not be read: %w", copyErr)
 	}
+}
+
+// previewMigrateDatabaseGuard refuses to run a migration against a preview
+// whose database is attached asynchronously. The runtime state exposes neither
+// the container env nor a seed-finished status, so readiness cannot be proven.
+func previewMigrateDatabaseGuard(s store.PreviewAppSettings, appYAMLDatabases bool) error {
+	if s.DatabaseStrategy != store.PreviewDatabaseStrategyNone || appYAMLDatabases {
+		return fmt.Errorf("migration skipped: the preview database (%s strategy) is attached and seeded asynchronously and this control plane cannot yet verify that the running container has the database env or that a seed restore finished; set the database strategy to none or run the migration from your app start command", s.DatabaseStrategy)
+	}
+	return nil
 }
 
 // waitPreviewContainer polls until the named container runs, since the

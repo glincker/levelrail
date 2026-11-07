@@ -45,6 +45,11 @@ type PreviewPolicyResource struct {
 	GateUsername              string  `json:"gate_username"`
 	GatePasswordSet           bool    `json:"gate_password_set"`
 	AllowIndexing             bool    `json:"allow_indexing"`
+
+	MigrateCommand                 string `json:"migrate_command"`
+	MigrateTimeoutSeconds          int    `json:"migrate_timeout_seconds"`
+	EffectiveMigrateTimeoutSeconds int    `json:"effective_migrate_timeout_seconds"`
+	ImageTagTemplate               string `json:"image_tag_template"`
 }
 
 // SetPreviewPolicyRequest is PUT .../preview-policy's body; nil fields are left unchanged.
@@ -64,6 +69,10 @@ type SetPreviewPolicyRequest struct {
 	GateUsername     *string  `json:"gate_username,omitempty"`
 	GatePassword     *string  `json:"gate_password,omitempty"`
 	AllowIndexing    *bool    `json:"allow_indexing,omitempty"`
+
+	MigrateCommand        *string `json:"migrate_command,omitempty"`
+	MigrateTimeoutSeconds *int    `json:"migrate_timeout_seconds,omitempty"`
+	ImageTagTemplate      *string `json:"image_tag_template,omitempty"`
 }
 
 type approvePreviewRequest struct {
