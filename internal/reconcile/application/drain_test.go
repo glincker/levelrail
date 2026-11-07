@@ -238,3 +238,27 @@ func TestDrain_StoppedFailedReleaseKeepsServingDrain(t *testing.T) {
 		t.Errorf("serving release %s = %+v, want it still draining", serving, cs)
 	}
 }
+
+// A cutover inside the drain window must publish the new hold at once, not on
+// a later pass.
+func TestDrain_PublishesHoldDuringDrainWindow(t *testing.T) {
+	srv := alwaysHealthy()
+	defer srv.Close()
+	rt := newDigestRuntime(map[string]string{})
+	rt.fakeRuntime = newFakeRuntime(serverPort(t, srv))
+	rt.now = time.Now()
+	rt.seedRunning(ContainerName("web", "img:v1", ""), "", rt.now.Add(-time.Hour))
+	desired := gateDesired()
+	rt.setExitState(ContainerName("web", desired.Image, ""), &docker.ExitState{Running: true})
+	applied := &fakeApplied{}
+	opts := append(gateOptions(&fakeGateRecorder{}, 1, 0, time.Hour),
+		WithDrainTracker(NewDrainTracker()), WithPreviousReleaseHold(3*time.Minute), WithAppliedConfigRecorder(applied))
+
+	c := New("web", &fakeStore{svc: desired}, rt, opts...)
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if applied.heldUntil().IsZero() {
+		t.Fatal("hold window not published while the drain window was open")
+	}
+}
