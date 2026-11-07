@@ -3,6 +3,7 @@ package docker
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -528,13 +529,56 @@ func (c *Client) countNetworks(ctx context.Context) int {
 	return len(nets)
 }
 
-// RemoveNetwork implements Runtime. Force-disconnects every still-attached
-// container first: the Engine API refuses to remove a network with live
-// endpoints, and a database container this codebase itself connected
-// (internal/reconcile/application's connectReferencedDatabases) has no
-// other path to get detached once the app that referenced it is gone.
+// ErrNetworkInUse means a network was kept because a container this
+// platform does not manage is still attached to it.
+var ErrNetworkInUse = errors.New("network has containers attached that this platform does not manage")
+
+// IsNetworkInUse reports whether err is ErrNetworkInUse, also after the
+// agent transport flattened it to a string.
+func IsNetworkInUse(err error) bool {
+	return err != nil && (errors.Is(err, ErrNetworkInUse) || strings.Contains(err.Error(), ErrNetworkInUse.Error()))
+}
+
+// RemoveNetwork implements Runtime. It force-disconnects only containers this
+// platform manages (a referenced database has no other way to get detached)
+// and keeps the network with ErrNetworkInUse when any other container is attached.
 func (c *Client) RemoveNetwork(ctx context.Context, name string) error {
+	return c.removeNetwork(ctx, name, true)
+}
+
+// managedEndpoint reports whether a container attached to a network belongs to
+// this platform (and to this instance, when instance labels are configured).
+func (c *Client) managedEndpoint(ctx context.Context, containerID string) (managed, gone bool, err error) {
+	resp, err := c.cli.ContainerInspect(ctx, containerID)
+	if err != nil {
+		if cerrdefs.IsNotFound(err) {
+			return false, true, nil
+		}
+		return false, false, fmt.Errorf("docker: inspect container %q attached to network: %w", containerID, err)
+	}
+	var labels map[string]string
+	if resp.Config != nil {
+		labels = resp.Config.Labels
+	}
+	if c.hasInstanceLabel() {
+		return labels[c.instanceLabelKey] == c.instanceLabelValue, false, nil
+	}
+	return labels[containerAppLabel] != "", false, nil
+}
+
+func (c *Client) removeNetwork(ctx context.Context, name string, onlyManaged bool) error {
 	inspect, err := c.cli.NetworkInspect(ctx, name, dockernetwork.InspectOptions{})
+	if err == nil && onlyManaged {
+		for containerID := range inspect.Containers {
+			managed, gone, mErr := c.managedEndpoint(ctx, containerID)
+			if mErr != nil {
+				return mErr
+			}
+			if !managed && !gone {
+				return fmt.Errorf("docker: keep network %q (container %q attached): %w", name, containerID, ErrNetworkInUse)
+			}
+		}
+	}
 	if err == nil {
 		for containerID := range inspect.Containers {
 			if dErr := c.cli.NetworkDisconnect(ctx, name, containerID, true); dErr != nil && !cerrdefs.IsNotFound(dErr) {

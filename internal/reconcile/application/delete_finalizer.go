@@ -84,34 +84,86 @@ func (f *DeleteFinalizer) teardown(ctx context.Context, name, nodeID string) err
 	return nil
 }
 
-// RemoveAppNetwork drops appID's per-app network on nodeID once its last
-// service is gone, instead of leaving it to the grace-period GC. It never
-// disconnects containers and skips a network this instance does not own.
+// nodeLister is satisfied by *store.DB; app services can span nodes, so the
+// network is removed on every enrolled node, not only the deleted service's.
+type nodeLister interface {
+	ListNodes(ctx context.Context) ([]store.Node, error)
+}
+
+// RemoveAppNetwork drops appID's per-app network on nodeID and on every other
+// enrolled node once the app is gone. It keeps networks owned by another
+// instance or with unmanaged containers attached, and tolerates not-found.
 func (f *DeleteFinalizer) RemoveAppNetwork(ctx context.Context, appID, nodeID string) error {
+	nodes := []string{nodeID}
+	seen := map[string]bool{nodeID: true}
+	if nl, ok := f.store.(nodeLister); ok {
+		list, err := nl.ListNodes(ctx)
+		if err != nil {
+			return fmt.Errorf("list nodes: %w", err)
+		}
+		for _, n := range list {
+			if !seen[n.ID] {
+				seen[n.ID] = true
+				nodes = append(nodes, n.ID)
+			}
+		}
+	}
+	var errs []error
+	for _, id := range nodes {
+		if err := f.removeAppNetworkOn(ctx, appID, id); err != nil {
+			errs = append(errs, fmt.Errorf("node %q: %w", id, err))
+		}
+	}
+	return errors.Join(errs...)
+}
+
+func (f *DeleteFinalizer) removeAppNetworkOn(ctx context.Context, appID, nodeID string) error {
 	runtime, err := f.resolve(nodeID)
 	if err != nil {
 		return fmt.Errorf("resolve node %q runtime: %w", nodeID, err)
 	}
-	admin, ok := runtime.(docker.NetworkAdmin)
-	if !ok {
-		return nil
-	}
 	ctrl := New("", f.store, runtime, f.opts...)
 	name := NetworkName(ctrl.networkPrefix, appID)
-	details, err := admin.DescribeNetworks(ctx, name)
-	if err != nil {
-		return fmt.Errorf("describe network %q: %w", name, err)
+	if admin, ok := runtime.(docker.NetworkAdmin); ok {
+		details, err := admin.DescribeNetworks(ctx, name)
+		if err != nil {
+			return fmt.Errorf("describe network %q: %w", name, err)
+		}
+		for _, d := range details {
+			if d.Name != name || d.Attached > 0 {
+				continue
+			}
+			if owner, labeled := d.Labels[appspec.InstanceLabelKey]; ctrl.instanceID != "" && (!labeled || owner != ctrl.instanceID) {
+				continue
+			}
+			if _, err := admin.RemoveNetworkIfEmpty(ctx, name); err != nil {
+				return fmt.Errorf("remove network %q: %w", name, err)
+			}
+			f.logger.Info("application: removed app network", slog.String("app_id", appID), slog.String("node_id", nodeID), slog.String("network", name), slog.String("network_id", d.ID))
+		}
+		return nil
 	}
-	for _, d := range details {
-		if d.Name != name || d.Attached > 0 {
+	// Agent nodes create unlabeled networks, so only another instance's label blocks removal;
+	// the agent's RemoveNetwork itself refuses while an unmanaged container is attached.
+	observed, err := runtime.ListNetworksByPrefix(ctx, name)
+	if err != nil {
+		return fmt.Errorf("list network %q: %w", name, err)
+	}
+	for _, n := range observed {
+		if n.Name != name {
 			continue
 		}
-		if owner, labeled := d.Labels[appspec.InstanceLabelKey]; ctrl.instanceID != "" && (!labeled || owner != ctrl.instanceID) {
+		if owner, labeled := n.Labels[appspec.InstanceLabelKey]; labeled && ctrl.instanceID != "" && owner != ctrl.instanceID {
 			continue
 		}
-		if _, err := admin.RemoveNetworkIfEmpty(ctx, name); err != nil {
+		if err := runtime.RemoveNetwork(ctx, name); err != nil {
+			if docker.IsNetworkInUse(err) {
+				f.logger.Warn("application: app network kept, unmanaged container attached", slog.String("app_id", appID), slog.String("node_id", nodeID), slog.String("network", name))
+				continue
+			}
 			return fmt.Errorf("remove network %q: %w", name, err)
 		}
+		f.logger.Info("application: removed app network", slog.String("app_id", appID), slog.String("node_id", nodeID), slog.String("network", name), slog.String("network_id", n.ID))
 	}
 	return nil
 }
