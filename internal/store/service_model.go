@@ -119,6 +119,8 @@ type DesiredService struct {
 	// They are kept as JSON so this package stays free of placement types.
 	Tolerations json.RawMessage
 	Affinity    json.RawMessage
+	// NextCache overrides the app.yaml next.cache (none or redis); empty defers to the spec and a save never clears it.
+	NextCache string
 
 	// Volumes are named Docker volumes this service's container mounts
 	// (migrations/0041_service_volumes.sql), previously a

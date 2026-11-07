@@ -166,5 +166,22 @@
       "disabled": "Disabled",
       "unknown": "Unknown"
     }
+  },
+  "nextCache": {
+    "title": "Shared cache (Next.js)",
+    "hint": "Keep the ISR and data cache in Redis so every replica serves the same pages.",
+    "toggle": "Share ISR and data cache across replicas",
+    "linked": "Redis database linked: {{name}}",
+    "notLinked": "No Redis database is linked to this app. The deploy stops until one is linked.",
+    "linkExisting": "Link {{name}}",
+    "create": "Create Redis",
+    "linkedToast": "Linked {{name}}",
+    "saved": "Shared cache saved",
+    "autoNote": "NEXT_BUILD_ID and the cache URL are set automatically at the next deploy.",
+    "suggest": "This app runs {{count}} replicas without a shared cache. Turn it on so they agree on cached pages.",
+    "redeploy": "Redeploy to apply",
+    "noGit": "Redeploy from your git source to apply this; this app has none.",
+    "started": "Redeploy started for {{name}}",
+    "errorTitle": "Could not update the shared cache"
   }
 }

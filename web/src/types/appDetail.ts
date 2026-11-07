@@ -123,6 +123,8 @@ export interface AppDetail {
   hooks?: ServiceHooks | null
   strategy: DeployStrategy
   replicas: number
+  // Overrides app.yaml next.cache; omitted or empty defers to the spec.
+  next_cache?: 'none' | 'redis' | ''
   // Response-only on GET: why a template pinned the strategy, and whether the
   // memory limit is the template's recommendation.
   strategy_reason?: string

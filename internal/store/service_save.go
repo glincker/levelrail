@@ -156,8 +156,8 @@ func (db *DB) saveDesiredService(ctx context.Context, svc DesiredService, inTx f
 	}
 
 	_, err = tx.ExecContext(ctx, `
-		INSERT INTO desired_services (name, image, port, host_port, bind_address, domains, env, command, entrypoint, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, egress_policy, node_id, strategy, replicas, labels, volumes, bind_mounts, registry_credential_id, project_id, environment_id, app_id, is_trial, template_id, pull_policy, image_id, image_id_ref, depends_on, depends_on_healthy, published_ports, files, incarnation, tolerations, affinity, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+		INSERT INTO desired_services (name, image, port, host_port, bind_address, domains, env, command, entrypoint, secret_env, env_dirty, database_env, vault_env, resources, health, hooks, egress_policy, node_id, strategy, replicas, labels, volumes, bind_mounts, registry_credential_id, project_id, environment_id, app_id, is_trial, template_id, pull_policy, image_id, image_id_ref, depends_on, depends_on_healthy, published_ports, files, incarnation, tolerations, affinity, next_cache, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 		ON CONFLICT (name) DO UPDATE SET
 			image = excluded.image,
 			port = excluded.port,
@@ -189,9 +189,10 @@ func (db *DB) saveDesiredService(ctx context.Context, svc DesiredService, inTx f
 			published_ports = excluded.published_ports,
 			tolerations = excluded.tolerations,
 			affinity = excluded.affinity,
+			next_cache = CASE WHEN excluded.next_cache <> '' THEN excluded.next_cache ELSE desired_services.next_cache END,
 			files = CASE WHEN ? THEN excluded.files ELSE desired_services.files END,
 			updated_at = excluded.updated_at
-	`, svc.Name, svc.Image, svc.Port, hostPortToNull(svc.HostPort), bindAddress, string(domainsJSON), string(envJSON), string(commandJSON), string(entrypointJSON), string(secretEnvJSON), svc.EnvDirty, string(databaseEnvJSON), string(vaultEnvJSON), string(resourcesJSON), string(healthJSON), string(hooksJSON), string(egressJSON), strategy, replicas, string(labelsJSON), string(volumesJSON), string(bindMountsJSON), svc.RegistryCredentialID, sql.NullString{String: svc.AppID, Valid: svc.AppID != ""}, svc.IsTrial, svc.TemplateID, svc.PullPolicy, svc.ImageID, svc.ImageIDRef, string(dependsOnJSON), string(dependsOnHealthyJSON), string(publishedPortsJSON), string(filesJSON), incarnation, string(tolerationsJSON), string(affinityJSON), svc.Files != nil)
+	`, svc.Name, svc.Image, svc.Port, hostPortToNull(svc.HostPort), bindAddress, string(domainsJSON), string(envJSON), string(commandJSON), string(entrypointJSON), string(secretEnvJSON), svc.EnvDirty, string(databaseEnvJSON), string(vaultEnvJSON), string(resourcesJSON), string(healthJSON), string(hooksJSON), string(egressJSON), strategy, replicas, string(labelsJSON), string(volumesJSON), string(bindMountsJSON), svc.RegistryCredentialID, sql.NullString{String: svc.AppID, Valid: svc.AppID != ""}, svc.IsTrial, svc.TemplateID, svc.PullPolicy, svc.ImageID, svc.ImageIDRef, string(dependsOnJSON), string(dependsOnHealthyJSON), string(publishedPortsJSON), string(filesJSON), incarnation, string(tolerationsJSON), string(affinityJSON), svc.NextCache, svc.Files != nil)
 	if err != nil {
 		return fmt.Errorf("store: save desired service %q: %w", svc.Name, err)
 	}
