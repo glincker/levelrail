@@ -102,14 +102,14 @@ func (e *vmEnv) export(ctx context.Context, out, recipient string, stdout io.Wri
 	defer func() {
 		if err != nil {
 			_ = f.Close()
-			_ = os.Remove(out)
+			_ = os.Remove(out) //nolint:gosec // operator-supplied output path
 		}
 	}()
 	tmp, err := os.CreateTemp(filepath.Dir(out), ".vm-export-*.tmp")
 	if err != nil {
 		return err
 	}
-	defer func() { _ = tmp.Close(); _ = os.Remove(tmp.Name()) }()
+	defer func() { _ = tmp.Close(); _ = os.Remove(tmp.Name()) }() //nolint:gosec // temp file we created
 	if err = e.tarGuestData(ctx, tmp); err != nil {
 		return err
 	}

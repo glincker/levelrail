@@ -16,7 +16,7 @@ func TestDeployReceipt_NamesRequesterAndApprover(t *testing.T) {
 	setTimelineEnv(t)
 	h := newTimelineHarness(t)
 	started := time.Now().UTC().Add(-10 * time.Minute)
-	h.seedDeploy(t, "dep_r", started, store.DeployAttemptStatusSucceeded)
+	h.seedDeploy(t, "dep_r", started)
 	ap := store.DeployApproval{
 		ID: "apr_r", ServiceName: "web", Action: store.DeployApprovalActionDeploy, Image: "img:dep_r", Status: store.DeployApprovalStatusApproved,
 		RequestedByType: "user", RequestedBy: "u1", RequestedByName: "Ana",

@@ -41,10 +41,10 @@ func mintExpiringToken(t *testing.T, rt *Router, cookie *http.Cookie, name strin
 }
 
 // subjectsOfKind returns the token names inside the grouped row of a kind.
-func subjectsOfKind(items []attention.Item, kind string) []string {
+func subjectsOfKind(items []attention.Item) []string {
 	var out []string
 	for _, it := range items {
-		if it.Kind == kind && it.Params["names"] != "" {
+		if it.Kind == attention.KindTokenExpiring && it.Params["names"] != "" {
 			out = append(out, strings.Split(it.Params["names"], ",")...)
 		}
 	}
@@ -73,7 +73,7 @@ func TestAttentionFeed_TokenVisibility(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := subjectsOfKind(fetchFeed(t, rt, tt.req), attention.KindTokenExpiring)
+			got := subjectsOfKind(fetchFeed(t, rt, tt.req))
 			if len(got) != len(tt.want) {
 				t.Fatalf("expiring tokens = %v, want %v", got, tt.want)
 			}
