@@ -171,8 +171,51 @@ export const REGISTRY_GROUP_PATHS = [
   '/settings/registry-credentials',
 ] as const
 
+// Literal ids keep the shell.navTabs i18n keys type-checked.
+export type NavTabId =
+  | 'advisor'
+  | 'approvals'
+  | 'apps'
+  | 'assets'
+  | 'backups'
+  | 'cdn'
+  | 'costs'
+  | 'credentials'
+  | 'databases'
+  | 'dns'
+  | 'domains'
+  | 'firewall'
+  | 'iam'
+  | 'images'
+  | 'loadBalancers'
+  | 'mail'
+  | 'networkShares'
+  | 'nodes'
+  | 'pipelines'
+  | 'projects'
+  | 'providers'
+  | 'proxy'
+  | 'registry'
+  | 'resources'
+  | 'security'
+  | 'storage'
+  | 'templates'
+  | 'usage'
+
+export type NavTabGroupId =
+  | 'apps'
+  | 'pipelines'
+  | 'databases'
+  | 'storage'
+  | 'domains'
+  | 'traffic'
+  | 'servers'
+  | 'cost'
+  | 'registry'
+  | 'security'
+
 export interface NavTab {
-  id: string
+  id: NavTabId
   to: GlobalTo
   feature?: ExperimentalFeature
   // Hidden until the router has the route (DNS lands in another change).
@@ -180,7 +223,7 @@ export interface NavTab {
 }
 
 export interface NavTabGroup {
-  id: string
+  id: NavTabGroupId
   tabs: readonly NavTab[]
   // Paths whose page already mounts this strip in its own header.
   inPagePaths?: readonly string[]
