@@ -33,6 +33,7 @@ var Tree = map[string]*Node{
 		"upgrade":                 nil,
 		"freeze":                  {Subs: map[string]*Node{"set": nil, "show": nil, "clear": nil}},
 		"lock":                    nil,
+		"next-cache":              {Subs: map[string]*Node{"set": nil}},
 		"unlock":                  nil,
 		"publish":                 nil,
 		"sbom":                    nil,

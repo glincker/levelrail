@@ -305,7 +305,7 @@ It is routed by the same ingress and gets the same TLS treatment as any other do
 - It appears on the app's **Network** tab, in `levelrail-cli apps network <name>`, in `levelrail-cli domains list` (source `automatic`) and in `GET /api/v1/domains` (`"automatic": true`).
 - It disappears the moment you add a real domain. A configured domain always wins.
 - It is generated each pass and never stored on the app, so per-domain features (basic auth, WAF, BYO certificate, maintenance mode) do not apply to it. Add a real domain for those.
-- Toggle it per server (not per app) with the **Automatic app hostnames** setting on the Domains page, or `levelrail-cli settings ingress set --fallback-domains=false`.
+- Toggle it per server (not per app) with the **Automatic app hostnames** setting on the Domains page, or `levelrail-cli settings ingress set --fallback-domains=false`. It is not a runtime setting, so `settings runtime set ingress.fallback_domains` answers unknown setting and points here.
 - It needs a public IPv4 address (detected or `APP_PUBLIC_HOST`). With a private address, a hostname, or detection turned off there is nothing to build, and the Network tab says so.
 
 The automatic hostname is a test address, and the dashboard labels it beta. Use your own domain for production.
@@ -318,6 +318,10 @@ Choose the wildcard-DNS provider under Settings, Domains (default for every app)
 Changing the provider re-derives the hostname and updates the route with no downtime. The old hostname stops working. **Test resolution** resolves a sample hostname and reports ok, wrong IP or not resolving, with a one-click switch to another provider or your own domain. From the CLI: `levelrail-cli domains provider get|set|test [--app <app>]`. Per-app hostnames on a free provider get the internal issuer or plain HTTP only, never a shared private key. The dashboard's own one-click HTTPS is different: see [Zero DNS setup](#zero-dns-setup-sslipio-hostnames-and-one-click-https).
 
 A request that matches no app, or an app with no healthy replica, gets a small "No app is serving this address" page (plain text for non-browser clients) with the original 404 or 503 status.
+
+This page is served on port 80 as well, without any certificate: a host that holds no certificate yet is not redirected, it gets the same page. With `ingress.diagnostic_show_state` off, every unknown or unserved host gets the generic 404. With it on, hosts the control plane knows get their state (not attached, building, stopped, starting, unhealthy) with a 503, and unknown hosts still get the generic 404.
+
+On port 443 a host with no certificate and no route cannot be answered at all: the TLS handshake fails before any page can be sent, so browsers show a certificate error instead of this page. Certificates are only requested for hosts you attach, so an unknown name never gets one. For a host that is attached but has no healthy app, the handshake succeeds and the page appears.
 
 ### HTTP redirects to HTTPS
 

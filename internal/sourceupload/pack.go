@@ -41,22 +41,14 @@ type Plan struct {
 	EditorSkipped []string
 }
 
-// EditorSkippedSummary returns the skipped count and up to limit distinct roots
-// (the top directory, or the file name for a top-level file).
+// EditorSkippedSummary returns the skipped count and up to limit file paths,
+// so the message names real files rather than a misleading top directory.
 func (p Plan) EditorSkippedSummary(limit int) (int, []string) {
-	var roots []string
-	seen := map[string]bool{}
-	for _, f := range p.EditorSkipped {
-		r := f
-		if i := strings.Index(f, "/"); i >= 0 {
-			r = f[:i]
-		}
-		if !seen[r] && len(roots) < limit {
-			seen[r] = true
-			roots = append(roots, r)
-		}
+	n := len(p.EditorSkipped)
+	if limit > n {
+		limit = n
 	}
-	return len(p.EditorSkipped), roots
+	return n, append([]string(nil), p.EditorSkipped[:limit]...)
 }
 
 // Largest returns up to n files, biggest first.

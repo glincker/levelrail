@@ -365,6 +365,81 @@ func applyNextCache(desired *store.DesiredService, req Request, prev *store.Desi
 	desired.DatabaseEnv[nextCacheURLEnvVar] = *ref
 }
 
+// generatedEnvMarker lists the env values Levelrail minted itself (key=value pairs),
+// so a later deploy can tell them from values the user set.
+const generatedEnvMarker = "LEVELRAIL_GENERATED_ENV"
+
+func markGeneratedEnv(desired *store.DesiredService, req Request) {
+	var pairs []string
+	if req.nextDeploymentID != "" {
+		pairs = append(pairs, nextDeploymentIDEnvVar+"="+req.nextDeploymentID)
+	}
+	if req.nextBuildID != "" {
+		pairs = append(pairs, nextBuildIDEnvVar+"="+req.nextBuildID)
+	}
+	if len(pairs) == 0 {
+		return
+	}
+	if desired.Env == nil {
+		desired.Env = map[string]string{}
+	}
+	desired.Env[generatedEnvMarker] = strings.Join(pairs, ",")
+}
+
+// StripGeneratedEnv returns env without the values Levelrail generated on an earlier
+// deploy, so rebuilding from the stored app regenerates them. A value the user changed since stays.
+func StripGeneratedEnv(env map[string]string) map[string]string {
+	marker, ok := env[generatedEnvMarker]
+	if !ok {
+		return env
+	}
+	out := make(map[string]string, len(env))
+	for k, v := range env {
+		out[k] = v
+	}
+	delete(out, generatedEnvMarker)
+	for _, pair := range strings.Split(marker, ",") {
+		k, v, found := strings.Cut(pair, "=")
+		if found && out[k] == v {
+			delete(out, k)
+		}
+	}
+	return out
+}
+
+// EnsureNextCacheLink points LEVELRAIL_NEXT_CACHE_URL at the app's Redis link when next.cache
+// is redis, and drops it when the cache is off, on any path that saves an app's containers.
+func EnsureNextCacheLink(desired *store.DesiredService) {
+	_, linked := desired.DatabaseEnv[nextCacheURLEnvVar]
+	switch desired.NextCache {
+	case spec.NextCacheRedis:
+		ref, ok := desired.DatabaseEnv[nextCacheRedisEnvVar]
+		if linked || !ok {
+			return
+		}
+		if _, own := desired.Env[nextCacheURLEnvVar]; own {
+			return
+		}
+		next := make(map[string]store.DatabaseEnvRef, len(desired.DatabaseEnv)+1)
+		for k, v := range desired.DatabaseEnv {
+			next[k] = v
+		}
+		next[nextCacheURLEnvVar] = ref
+		desired.DatabaseEnv = next
+	case spec.NextCacheNone:
+		if !linked {
+			return
+		}
+		next := make(map[string]store.DatabaseEnvRef, len(desired.DatabaseEnv))
+		for k, v := range desired.DatabaseEnv {
+			if k != nextCacheURLEnvVar {
+				next[k] = v
+			}
+		}
+		desired.DatabaseEnv = next
+	}
+}
+
 const nextCachePrefixEnvVar = "LEVELRAIL_NEXT_CACHE_PREFIX"
 
 // applyNextCachePrefix gives a preview its own Redis key namespace so it never
@@ -427,4 +502,21 @@ func addNextDockerfileArgs(ctx context.Context, req *Request, buildRoot, dockerf
 		progress(build.ProgressEvent{Step: "next.js", Log: note, Stream: "stderr"})
 	}
 	return out
+}
+
+// applyStoredNextCache wires the shared cache env for an image deploy, which carries
+// no next block of its own: the app's saved next.cache decides.
+func (p *Pipeline) applyStoredNextCache(ctx context.Context, req Request, desired *store.DesiredService) {
+	if !req.Service.Next.UsesRedisCache() {
+		g, ok := p.store.(desiredGetter)
+		if !ok {
+			return
+		}
+		cur, err := g.GetDesiredService(ctx, req.ServiceName)
+		if err != nil || cur == nil || cur.NextCache != spec.NextCacheRedis {
+			return
+		}
+		req.Service.Next = &spec.Next{Cache: spec.NextCacheRedis}
+	}
+	applyNextCache(desired, req, p.nextCachePrev(ctx, req.ServiceName))
 }

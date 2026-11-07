@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -321,5 +322,16 @@ func TestParseRuntimeSettingValue_String(t *testing.T) {
 	}
 	if got, err := parseRuntimeSettingValue("string", "free", nil); err != nil || got != "free" {
 		t.Errorf("unrestricted string = %v, %v", got, err)
+	}
+}
+
+func TestRuntimeSettingErrorPointsToIngressCommand(t *testing.T) {
+	err := runtimeSettingError("levelrail-cli", "set", "ingress.fallback_domains", errors.New("unknown setting"))
+	if !strings.Contains(err.Error(), "settings ingress set --fallback-domains") {
+		t.Fatalf("hint missing: %v", err)
+	}
+	plain := runtimeSettingError("levelrail-cli", "get", "deploy.x", errors.New("unknown setting"))
+	if strings.Contains(plain.Error(), "ingress") {
+		t.Fatalf("unexpected hint: %v", plain)
 	}
 }

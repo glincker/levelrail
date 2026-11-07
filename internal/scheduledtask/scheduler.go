@@ -299,6 +299,13 @@ func orDefaultPolicy(p string) string {
 	return p
 }
 
+// untilNextBoundary returns the wait until the next multiple of interval on the
+// wall clock, never zero.
+func untilNextBoundary(now time.Time, interval time.Duration) time.Duration {
+	next := now.Truncate(interval).Add(interval)
+	return next.Sub(now)
+}
+
 // Run recovers interrupted runs, ticks once immediately (so a restart
 // catches up without waiting a full interval), then ticks every interval
 // until ctx is done.
@@ -318,15 +325,18 @@ func (s *Scheduler) Run(ctx context.Context, interval time.Duration) error {
 	if err := s.Tick(ctx); err != nil {
 		s.log().Warn("scheduledtask: scheduler tick had errors", slog.String("error", err.Error()))
 	}
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
+	// Ticks land on wall-clock multiples of the interval so a minute cron
+	// starts at the minute, not at the phase of the process start.
+	timer := time.NewTimer(untilNextBoundary(time.Now(), interval))
+	defer timer.Stop()
 	loop := footprint.Track("scheduledtask", interval)
 	defer loop.Active()()
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case <-ticker.C:
+		case <-timer.C:
+			timer.Reset(untilNextBoundary(time.Now(), interval))
 			start := time.Now()
 			err := s.Tick(ctx)
 			loop.Observe(start, err)

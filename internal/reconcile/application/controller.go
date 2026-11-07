@@ -1927,6 +1927,11 @@ func (c *Controller) resolveDatabaseField(ctx context.Context, appNodeID, dbName
 			return strconv.Itoa(poolerPort), nil
 		}
 		return strconv.Itoa(port), nil
+	case "tls_ca":
+		if !tlsEnabled {
+			return "", nil
+		}
+		return c.secretResolver.Resolve(ctx, dbName, database.TLSCertEnvKey)
 	case "direct_url":
 		return c.resolveDatabaseURL(ctx, dbName, desiredDB.Engine, host, port, tlsEnabled)
 	case "database":

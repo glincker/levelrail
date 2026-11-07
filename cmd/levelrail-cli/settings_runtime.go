@@ -105,7 +105,7 @@ func runSettingsRuntimeGet(prog string, args []string, stdout, stderr io.Writer,
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	setting, err := client.GetRuntimeSetting(context.Background(), rest[0])
 	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get runtime setting %s: %w", rest[0], err))
+		return reportError(stdout, stderr, jsonOut, runtimeSettingError(prog, "get", rest[0], err))
 	}
 	return writeScheduledTaskResult(stdout, stderr, of, setting, func() { printRuntimeSettingHuman(stdout, setting) })
 }
@@ -134,7 +134,7 @@ func runSettingsRuntimeSet(prog string, args []string, stdout, stderr io.Writer,
 
 	current, err := api.GetRuntimeSetting(ctx, key)
 	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get runtime setting %s: %w", key, err))
+		return reportError(stdout, stderr, jsonOut, runtimeSettingError(prog, "get", key, err))
 	}
 	weakening := current.Risk == runtimeRiskWeakensSecurity
 	if weakening && !confirmWeakening {
@@ -150,7 +150,7 @@ func runSettingsRuntimeSet(prog string, args []string, stdout, stderr io.Writer,
 
 	updated, err := api.PutRuntimeSetting(ctx, key, runtimeSettingWrite{Value: value, ConfirmWeakening: weakening})
 	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("set runtime setting %s: %w", key, err))
+		return reportError(stdout, stderr, jsonOut, runtimeSettingError(prog, "set", key, err))
 	}
 	return writeScheduledTaskResult(stdout, stderr, of, updated, func() { printRuntimeSettingHuman(stdout, updated) })
 }
@@ -312,4 +312,23 @@ func runtimeYesNo(b bool) string {
 		return "yes"
 	}
 	return "no"
+}
+
+// runtimeSettingHints maps keys that look like runtime settings but live under
+// their own settings command, so a 404 can say where they really are.
+var runtimeSettingHints = map[string]string{
+	"ingress.fallback_domains": "settings ingress set --fallback-domains=false (or =true)",
+}
+
+// runtimeSettingError adds a pointer to the right command when a key is not a
+// runtime setting but is known elsewhere.
+func runtimeSettingError(prog, verb, key string, err error) error {
+	base := fmt.Errorf("%s runtime setting %s: %w", verb, key, err)
+	if hint, ok := runtimeSettingHints[key]; ok {
+		return fmt.Errorf("%w; %s is not a runtime setting, use: %s %s", base, key, prog, hint)
+	}
+	if strings.HasPrefix(key, "ingress.") {
+		return fmt.Errorf("%w; ingress options are set with: %s settings ingress set --help", base, prog)
+	}
+	return base
 }

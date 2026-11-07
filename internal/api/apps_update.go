@@ -6,6 +6,7 @@ import (
 	"maps"
 	"net/http"
 
+	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -91,6 +92,7 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	// always writes this column.
 	desired.Egress = existing.Egress
 	preserveUnsentAppFields(&desired, *existing, req, imageChanged)
+	deploy.EnsureNextCacheLink(&desired)
 	if imageChanged {
 		desired.EnvDirty = false
 	} else {

@@ -279,8 +279,12 @@ func printUploadPlan(w io.Writer, quiet bool, inf upInference, plan sourceupload
 	for _, f := range plan.Largest(uploadTopFiles) {
 		_, _ = fmt.Fprintf(w, "    %10s  %s\n", humanBytes(f.Size), f.Path)
 	}
-	if n, roots := plan.EditorSkippedSummary(3); n > 0 {
-		_, _ = fmt.Fprintf(w, "  skipped %d editor and agent config files (%s, ...); --include PATH to send one\n", n, strings.Join(roots, ", "))
+	if n, names := plan.EditorSkippedSummary(3); n > 0 {
+		more := ""
+		if n > len(names) {
+			more = fmt.Sprintf(", and %d more", n-len(names))
+		}
+		_, _ = fmt.Fprintf(w, "  skipped %d editor and agent config files (%s%s); --include PATH to send one\n", n, strings.Join(names, ", "), more)
 	}
 	if dryRun {
 		_, _ = fmt.Fprintln(w, "  dry run: nothing is sent, the full list follows on stdout")

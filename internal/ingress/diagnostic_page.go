@@ -105,3 +105,13 @@ func diagnostic503Route(h Hardening) Route {
 		Handle: []any{SubrouteHandler{Handler: "subroute", Routes: diagnosticRoutes(503, h.BrandName, h.DocsURL)}},
 	}
 }
+
+// plainHTTPDiagnostic is the port 80 fallback: it needs no certificate, and
+// the control plane hop (when wired) applies the show-state setting.
+func plainHTTPDiagnostic(h *Hardening) Route {
+	if h == nil {
+		d := DefaultHardening()
+		h = &d
+	}
+	return diagnosticCatchAll(h)
+}

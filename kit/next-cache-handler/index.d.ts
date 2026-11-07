@@ -1,6 +1,12 @@
 export interface CacheHandlerOptions {
   /** Redis client compatible with node-redis v4 or v5. Defaults to a lazily created client from env. */
   client?: RedisLike;
+  /** PEM of the CA to trust for a rediss:// URL. Defaults to LEVELRAIL_NEXT_CACHE_CA or LEVELRAIL_NEXT_CACHE_CA_FILE. */
+  ca?: string;
+  /** TLS server name to verify when the host differs from the certificate name. */
+  servername?: string;
+  /** Shares fallback state between instances; instances with a created client share by prefix and URL. */
+  stateKey?: string;
   redisUrl?: string;
   /** Key namespace per app. Env LEVELRAIL_NEXT_CACHE_PREFIX, default "next". */
   keyPrefix?: string;
