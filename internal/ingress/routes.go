@@ -93,8 +93,8 @@ type ProxyRoute struct {
 	// Maintenance, if non-nil, serves the maintenance page to every request
 	// outside its bypass list, ahead of every other control.
 	Maintenance *MaintenanceGate
-	// NextSkew, if non-nil, routes old Next.js asset requests to the held previous release.
-	NextSkew *NextSkewRoute
+	// NextSkew routes old Next.js asset requests to held previous releases, one entry per release.
+	NextSkew []NextSkewRoute
 }
 
 // ErrorPage is one status-code-to-body mapping for a domain
@@ -646,9 +646,12 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		if opts.RequestStats {
 			handle = append([]any{NewRequestStatsHandler(r.Hosts[0])}, handle...)
 		}
-		// Before the host route: Caddy takes the first match.
-		if skew, ok := r.NextSkew.route(r.Hosts, opts.Hardening); ok {
-			routes = append(routes, skew)
+		// Before the host route (Caddy takes the first match), but carrying the
+		// host's whole chain so old-build requests are authenticated and filtered too.
+		for i := range r.NextSkew {
+			if skew, ok := r.NextSkew[i].route(r.Hosts, handle); ok {
+				routes = append(routes, skew)
+			}
 		}
 		routes = append(routes, Route{
 			Match:  []Matcher{{Host: r.Hosts}},
