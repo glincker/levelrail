@@ -11,20 +11,23 @@
 # v0.9.0: the gen-runtime-settings-docs tool imports internal/api for its init-time settings registry, adding one dependent to internal/changes.
 # v0.9.1: kit/ticker.Safe guards every schedule loop against a zero or negative interval, so the schedule packages depend on it (27 dependents).
 # v0.9.2: internal/spec imports internal/placement for the tolerations and affinity fields, so every dependent of spec depends on it.
+# v0.9.4: registrymirror is imported by runtimesettings (registry-mirror keys), build/buildkitd, provision and the API, so it inherits the runtimesettings readers.
+# v0.9.4: deploysafety is imported by the API rollout state routes, the application reconciler, cmd/levelrail, failure, deploywatch, chaos/live, scheduledtask and the CLI.
+# v0.9.4: deploytrace is read by the API explain routes, the application reconciler, deploy and deploytimeline; changes by the API, alerting, investigate and deploywatch.
 # v0.9.1: internal/runtimesettings is the shared live settings registry that every feature registers keys in, so 51 packages read it by design (stack Setting kind, token verbs, node settings).
 internal/autoscale 162
 internal/bindaddr 162
 internal/bindmount 164
 internal/build 34
 internal/canarypolicy 162
-internal/changes 21
+internal/changes 26
 internal/chaos 156
 internal/compose 57
 internal/costbudget 156
 internal/dbprovision 42
 internal/deploy 25
-internal/deploysafety 37
-internal/deploytrace 35
+internal/deploysafety 50
+internal/deploytrace 48
 internal/dnszones 24
 internal/docker 174
 internal/dockerguard 59
@@ -62,3 +65,4 @@ kit/semver 30
 kit/ticker 32
 kit/timeutil 156
 kit/upgrade 25
+internal/runtimesettings/registrymirror 67
