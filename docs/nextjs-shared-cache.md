@@ -65,6 +65,10 @@ The handler implements the `get`, `set`, `revalidateTag` and `resetRequestCache`
 3. Call a route that runs `revalidateTag('demo')`. Request again several times: every replica must show the new timestamp once.
 4. Stop Redis. Pages keep rendering; each replica may now differ and one warning per minute appears in the logs. Start Redis again and the replicas converge.
 
+## Previews
+
+A pull request preview of a `next.cache: redis` app gets `LEVELRAIL_NEXT_CACHE_PREFIX` set to its own service name (for example `web-pr-12`), so it never reads or writes production keys. A value you set yourself wins. Preview keys are not deleted when the preview is removed: they expire by TTL, or you can flush them by prefix with `redis-cli --scan --pattern 'web-pr-12:*'`.
+
 ## Limits
 
 - Node runtime only, not the edge runtime.

@@ -404,7 +404,7 @@ func (p *Pipeline) deployRailpack(ctx context.Context, req Request, progress fun
 		SourceDir: buildRoot,
 		Tag:       tag,
 		Env:       buildEnv,
-		CacheID:   build.SanitizeCacheID(req.ServiceName, tag),
+		CacheID:   railpackCacheID(ctx, req, tag),
 	}, progress)
 	if err != nil {
 		var unsupported *build.UnsupportedProviderError

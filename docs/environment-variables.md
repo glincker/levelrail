@@ -121,6 +121,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_DEPLOY_NEXT_ASSET_GRACE_SECONDS` | [`deploy.next_asset_grace_seconds`](/runtime-settings#deploys) | `1800` |
 | `APP_DEPLOY_NEXT_DEPLOYMENT_ID` | [`deploy.next_deployment_id`](/runtime-settings#deploys) | `true` |
 | `APP_DEPLOY_PHASES_SAMPLES` | [`deploy.phases_samples`](/runtime-settings#deploys) | `5` |
+| `APP_DEPLOY_PREVIEW_CACHE_MODE` | [`deploy.preview_cache_mode`](/runtime-settings#deploys) | `isolated` |
 | `APP_DEPLOY_PREVIOUS_RELEASE_HOLD` | [`deploy.previous_release_hold`](/runtime-settings#deploys) | `3m` |
 | `APP_DEPLOY_RECEIPT_APPROVAL_WINDOW` | [`deploy.receipt_approval_window`](/runtime-settings#deploys) | `15m` |
 | `APP_DEPLOY_STABLE_WINDOW` | [`deploy.stable_window`](/runtime-settings#deploys) | `10s` |

@@ -343,6 +343,7 @@ func applyNextCache(desired *store.DesiredService, req Request, prev *store.Desi
 	if !req.Service.Next.UsesRedisCache() {
 		return
 	}
+	applyNextCachePrefix(desired, req)
 	if _, set := req.Service.Env[nextCacheURLEnvVar]; set {
 		return
 	}
@@ -362,4 +363,30 @@ func applyNextCache(desired *store.DesiredService, req Request, prev *store.Desi
 		desired.DatabaseEnv = map[string]store.DatabaseEnvRef{}
 	}
 	desired.DatabaseEnv[nextCacheURLEnvVar] = *ref
+}
+
+const nextCachePrefixEnvVar = "LEVELRAIL_NEXT_CACHE_PREFIX"
+
+// applyNextCachePrefix gives a preview its own Redis key namespace so it never
+// reads or writes production pages. A value the app sets itself wins.
+func applyNextCachePrefix(desired *store.DesiredService, req Request) {
+	if !req.Preview {
+		return
+	}
+	if _, set := req.Service.Env[nextCachePrefixEnvVar]; set {
+		return
+	}
+	if desired.Env == nil {
+		desired.Env = map[string]string{}
+	}
+	desired.Env[nextCachePrefixEnvVar] = req.ServiceName
+}
+
+// railpackCacheID keeps production on the per app id and gives previews the
+// id the preview cache mode asks for.
+func railpackCacheID(ctx context.Context, req Request, tag string) string {
+	if !req.Preview {
+		return build.SanitizeCacheID(req.ServiceName, tag)
+	}
+	return build.PreviewCacheID(build.PreviewCacheMode(ctx), req.ServiceName, tag)
 }

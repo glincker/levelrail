@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 )
@@ -38,6 +39,7 @@ func wireNextSkewSettings(svc *runtimesettings.Service) {
 		DeploymentIDOn: func(ctx context.Context) bool { return svc.Bool(ctx, deploy.KeyNextDeploymentID) },
 		GraceSeconds:   func(ctx context.Context) int { return svc.Int(ctx, deploy.KeyNextAssetGraceSecs) },
 	})
+	build.SetPreviewCacheModeResolver(func(ctx context.Context) string { return svc.String(ctx, build.KeyPreviewCacheMode) })
 	deploy.SetNextGraceMaxHeld(func(ctx context.Context) int { return svc.Int(ctx, deploy.KeyNextAssetGraceMaxHeld) })
 }
 
