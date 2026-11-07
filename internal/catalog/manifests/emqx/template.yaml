@@ -1,0 +1,31 @@
+id: emqx
+name: EMQX
+description: A scalable MQTT broker with a web dashboard, on the official image. The dashboard admin password is generated at install. The MQTT port is not published on the host and accepts anonymous clients, so reach it from other services in this project at emqx:1883 and add authentication in the dashboard before exposing it.
+icon: plug
+category: Infrastructure
+documentation_url: https://docs.emqx.com/en/emqx/v5.8/
+source_repo: https://github.com/emqx/emqx
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/emqx/emqx/blob/v5.8.0/APL.txt
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 536870912
+first_run:
+  - Sign in to the dashboard as admin with the generated password from the app secrets.
+  - Add an authentication method under Access Control before letting devices connect from outside the project.
+env:
+  - key: TZ
+    label: Time zone
+    description: IANA time zone for dates and logs.
+    default: Etc/UTC
+domains:
+  - service: emqx
+    port: 18083
+    description: Public address of the EMQX dashboard.
+healthcheck:
+  service: emqx
+  port: 18083
+  path: /status

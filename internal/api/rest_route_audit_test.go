@@ -207,6 +207,7 @@ var restExemptions = restExemptionSet(map[string][]string{
 		"POST /api/v1/pipelines/filters",
 		"POST /api/v1/pipelines/validate",
 		"POST /api/v1/project-templates/{id}/render",
+		"POST /api/v1/service-templates/validate",
 		"POST /api/v1/prometheus/read",
 		"POST /api/v1/stacks/{name}/plan",
 		"POST /api/v1/system/doctor/checks/{id}/run",

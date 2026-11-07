@@ -1,0 +1,25 @@
+id: kafka
+name: Apache Kafka
+description: A single broker Apache Kafka in KRaft mode (no ZooKeeper) on the official image, with a persistent volume. It is not published on the host and speaks plaintext, so reach it only from other services in this project at kafka:9092.
+icon: network
+category: Infrastructure
+documentation_url: https://kafka.apache.org/documentation/
+source_repo: https://github.com/apache/kafka
+license: Apache-2.0
+license_class: permissive
+license_url: https://github.com/apache/kafka/blob/trunk/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 1073741824
+first_run:
+  - Point producers and consumers in the same project at kafka:9092. Topics are created on first use.
+domains:
+  - service: kafka
+    port: 9092
+    description: This is a TCP broker with no web page, so leave it empty and connect over the project network.
+healthcheck:
+  service: kafka
+  port: 9092
+  kind: tcp

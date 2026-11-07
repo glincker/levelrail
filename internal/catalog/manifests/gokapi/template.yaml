@@ -1,0 +1,30 @@
+id: gokapi
+name: Gokapi
+description: A lightweight self-hosted file sharing server with expiring links and download limits. Runs in one container on a small data folder. On first open, the setup page asks you to create the admin login.
+icon: share
+category: Storage
+documentation_url: https://gokapi.readthedocs.io/
+source_repo: https://github.com/Forceu/Gokapi
+license: AGPL-3.0-only
+license_class: network-copyleft
+license_url: https://github.com/Forceu/Gokapi/blob/master/LICENSE
+hosted_use: unknown
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 134217728
+first_run:
+  - Open the app and finish the setup page, choosing the admin login and the public address.
+env:
+  - key: TZ
+    label: Time zone
+    description: IANA time zone for dates and logs.
+    default: Etc/UTC
+domains:
+  - service: gokapi
+    port: 53842
+    description: Public address of Gokapi.
+healthcheck:
+  service: gokapi
+  port: 53842
+  path: /

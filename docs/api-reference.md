@@ -705,6 +705,7 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/deploys/{deployId}/build-report | AbilityRead | handleNextBuildReport |
 | GET | /api/v1/apps/{name}/next-advisor | AbilityRead | handleNextAdvisor |
 | GET | /api/v1/apps/{name}/rollout/state | AbilityRead | handleGetRolloutState |
+| POST | /api/v1/service-templates/validate | AbilityRead | handleValidateTemplateSubmission |
 
 </Accordion>
 
@@ -2216,8 +2217,8 @@ Routes that do not fit an existing group.
 | OPTIONS | /api/v1/vitals/{app} | Public | handleVitalsPreflight |
 | GET | /internal/diagnostic | Public | handleInternalDiagnostic |
 | PATCH | /api/v1/tags/{id} | AbilityWrite | handleRenameTag |
-| POST | /mcp | Public |  |
 | GET | /api/v1/deployments/{id}/explain | AbilityRead | handleExplainDeploy |
+| POST | /mcp | Public |  |
 
 ## See also
 

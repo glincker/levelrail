@@ -1,0 +1,19 @@
+services:
+  emqx:
+    image: emqx/emqx:5.8.0
+    ports: ["18083", "1883"]
+    environment:
+      TZ: ${TZ}
+      EMQX_NODE__NAME: emqx@127.0.0.1
+      EMQX_NODE__COOKIE: $SERVICE_PASSWORD_EMQXCOOKIE
+      EMQX_DASHBOARD__DEFAULT_USERNAME: admin
+      EMQX_DASHBOARD__DEFAULT_PASSWORD: $SERVICE_PASSWORD_EMQXADMIN
+    volumes:
+      - emqx_data:/opt/emqx/data
+      - emqx_log:/opt/emqx/log
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/emqx/bin/emqx ctl status"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
