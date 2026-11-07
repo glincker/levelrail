@@ -72,8 +72,15 @@
   --chart-danger: oklch(0.577 0.245 27.325);
   --chart-muted: oklch(0.62 0.01 250);
   --radius: var(--glinr-radius);
-  --sidebar: oklch(0.965 0 0);
-  --sidebar-raised: color-mix(in oklab, var(--background) 60%, var(--sidebar));
+  --sidebar: color-mix(in oklab, var(--brand-accent) 4%, oklch(0.965 0 0));
+  --sidebar-raised: color-mix(in oklab, var(--background) 70%, var(--sidebar));
+  --sidebar-hue-overview: oklch(0.5 0.09 220);
+  --sidebar-hue-build: oklch(0.52 0.1 255);
+  --sidebar-hue-data: oklch(0.5 0.09 150);
+  --sidebar-hue-network: oklch(0.52 0.1 295);
+  --sidebar-hue-fleet: oklch(0.5 0.08 70);
+  --sidebar-hue-security: oklch(0.52 0.1 12);
+  --sidebar-hue-ai: oklch(0.5 0.08 190);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
   --sidebar-primary-foreground: oklch(0.985 0 0);
@@ -133,6 +140,13 @@ body {
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar: var(--sidebar);
   --color-sidebar-raised: var(--sidebar-raised);
+  --color-sidebar-hue-overview: var(--sidebar-hue-overview);
+  --color-sidebar-hue-build: var(--sidebar-hue-build);
+  --color-sidebar-hue-data: var(--sidebar-hue-data);
+  --color-sidebar-hue-network: var(--sidebar-hue-network);
+  --color-sidebar-hue-fleet: var(--sidebar-hue-fleet);
+  --color-sidebar-hue-security: var(--sidebar-hue-security);
+  --color-sidebar-hue-ai: var(--sidebar-hue-ai);
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);
   --color-chart-3: var(--chart-3);
@@ -201,12 +215,19 @@ body {
   --chart-series-6: oklch(0.74 0.1 45);
   --chart-danger: oklch(0.704 0.191 22.216);
   --chart-muted: oklch(0.65 0.01 250);
-  --sidebar: oklch(0.205 0 0);
+  --sidebar: color-mix(in oklab, var(--brand-accent-dark) 4%, oklch(0.205 0 0));
   --sidebar-raised: color-mix(
     in oklab,
-    var(--sidebar-foreground) 4%,
+    var(--sidebar-foreground) 6%,
     var(--sidebar)
   );
+  --sidebar-hue-overview: oklch(0.78 0.09 220);
+  --sidebar-hue-build: oklch(0.76 0.1 255);
+  --sidebar-hue-data: oklch(0.78 0.09 150);
+  --sidebar-hue-network: oklch(0.76 0.1 295);
+  --sidebar-hue-fleet: oklch(0.8 0.09 75);
+  --sidebar-hue-security: oklch(0.76 0.1 12);
+  --sidebar-hue-ai: oklch(0.8 0.08 190);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: var(--brand-accent-dark);
   --sidebar-primary-foreground: oklch(0.985 0 0);
@@ -799,7 +820,7 @@ body {
   --secondary-foreground: oklch(0.95 0.004 260);
   --accent-foreground: oklch(0.95 0.004 260);
   --muted-foreground: oklch(0.72 0.01 260);
-  --sidebar: oklch(0.16 0.006 260);
+  --sidebar: color-mix(in oklab, var(--state-accent) 4%, oklch(0.16 0.006 260));
   --sidebar-foreground: oklch(0.95 0.004 260);
   --sidebar-accent: oklch(0.255 0.007 260);
   --sidebar-accent-foreground: oklch(0.95 0.004 260);
@@ -820,7 +841,7 @@ body {
   --secondary-foreground: oklch(0.96 0 0);
   --accent-foreground: oklch(0.96 0 0);
   --muted-foreground: oklch(0.7 0 0);
-  --sidebar: oklch(0.15 0 0);
+  --sidebar: color-mix(in oklab, var(--state-accent) 4%, oklch(0.15 0 0));
   --sidebar-foreground: oklch(0.96 0 0);
   --sidebar-accent: oklch(0.21 0 0);
   --sidebar-accent-foreground: oklch(0.96 0 0);
@@ -841,7 +862,11 @@ body {
   --secondary-foreground: oklch(0.95 0.004 250);
   --accent-foreground: oklch(0.95 0.004 250);
   --muted-foreground: oklch(0.76 0.008 250);
-  --sidebar: oklch(0.195 0.004 250);
+  --sidebar: color-mix(
+    in oklab,
+    var(--state-accent) 4%,
+    oklch(0.195 0.004 250)
+  );
   --sidebar-foreground: oklch(0.95 0.004 250);
   --sidebar-accent: oklch(0.295 0.006 250);
   --sidebar-accent-foreground: oklch(0.95 0.004 250);
@@ -862,7 +887,7 @@ body {
   --secondary-foreground: oklch(0.95 0.008 265);
   --accent-foreground: oklch(0.95 0.008 265);
   --muted-foreground: oklch(0.73 0.02 265);
-  --sidebar: oklch(0.14 0.025 265);
+  --sidebar: color-mix(in oklab, var(--state-accent) 4%, oklch(0.14 0.025 265));
   --sidebar-foreground: oklch(0.95 0.008 265);
   --sidebar-accent: oklch(0.245 0.028 265);
   --sidebar-accent-foreground: oklch(0.95 0.008 265);
@@ -885,7 +910,11 @@ body {
   --secondary-foreground: oklch(0.21 0.01 250);
   --accent-foreground: oklch(0.21 0.01 250);
   --muted-foreground: oklch(0.5 0.01 250);
-  --sidebar: oklch(0.945 0.004 250);
+  --sidebar: color-mix(
+    in oklab,
+    var(--state-accent) 4%,
+    oklch(0.945 0.004 250)
+  );
   --sidebar-foreground: oklch(0.21 0.01 250);
   --sidebar-accent: oklch(0.94 0.004 250);
   --sidebar-accent-foreground: oklch(0.21 0.01 250);
@@ -906,7 +935,7 @@ body {
   --secondary-foreground: oklch(0.24 0.02 70);
   --accent-foreground: oklch(0.24 0.02 70);
   --muted-foreground: oklch(0.5 0.02 75);
-  --sidebar: oklch(0.955 0.014 85);
+  --sidebar: color-mix(in oklab, var(--state-accent) 4%, oklch(0.955 0.014 85));
   --sidebar-foreground: oklch(0.24 0.02 70);
   --sidebar-accent: oklch(0.95 0.014 85);
   --sidebar-accent-foreground: oklch(0.24 0.02 70);
@@ -927,7 +956,7 @@ body {
   --secondary-foreground: oklch(0.22 0.02 255);
   --accent-foreground: oklch(0.22 0.02 255);
   --muted-foreground: oklch(0.5 0.02 255);
-  --sidebar: oklch(0.95 0.008 250);
+  --sidebar: color-mix(in oklab, var(--state-accent) 4%, oklch(0.95 0.008 250));
   --sidebar-foreground: oklch(0.22 0.02 255);
   --sidebar-accent: oklch(0.945 0.008 250);
   --sidebar-accent-foreground: oklch(0.22 0.02 255);

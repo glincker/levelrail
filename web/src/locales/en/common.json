@@ -410,6 +410,7 @@
     "account": {
       "controlPlane": "Control plane",
       "updateAvailable": "Update available: {{version}}",
+      "updateAvailableShort": "Update available",
       "signOut": "Sign out"
     },
     "breadcrumb": {
