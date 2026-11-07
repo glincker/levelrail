@@ -80,3 +80,23 @@ func TestRun_AppsDeploysShowPhases(t *testing.T) {
 		}
 	}
 }
+
+func TestDeployETALine(t *testing.T) {
+	secs := func(v int64) *int64 { return &v }
+	cases := []struct {
+		name string
+		ph   apiclient.DeployPhases
+		want string
+	}{
+		{"app", apiclient.DeployPhases{ETASeconds: secs(100), ETABasis: "app_history", Samples: 5}, "about 1m40s left, based on your last 5 deploys"},
+		{"whole minute", apiclient.DeployPhases{ETASeconds: secs(60), ETABasis: "app_history", Samples: 3}, "about 1m left, based on your last 3 deploys"},
+		{"platform", apiclient.DeployPhases{ETASeconds: secs(45), ETABasis: "platform_history", Samples: 4}, "about 45s left, based on the last 4 deploys on this server"},
+		{"none", apiclient.DeployPhases{ETABasis: "none"}, ""},
+		{"legacy", apiclient.DeployPhases{ETAMS: secs(180000)}, "about 3m0s left"},
+	}
+	for _, c := range cases {
+		if got := deployETALine(c.ph); got != c.want {
+			t.Errorf("%s: got %q, want %q", c.name, got, c.want)
+		}
+	}
+}

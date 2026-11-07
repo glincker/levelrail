@@ -14,6 +14,7 @@ type DeployPhase struct {
 	FinishedAt *time.Time `json:"finished_at"`
 	DurationMS *int64     `json:"duration_ms"`
 	TypicalMS  *int64     `json:"typical_ms"`
+	ETASeconds *int64     `json:"eta_seconds"`
 }
 
 // DeployPhases is the GET /api/v1/deployments/{id}/phases response.
@@ -26,6 +27,8 @@ type DeployPhases struct {
 	ETAMS          *int64        `json:"eta_ms"`
 	TypicalTotalMS *int64        `json:"typical_total_ms"`
 	Samples        int           `json:"samples"`
+	ETASeconds     *int64        `json:"eta_seconds"`
+	ETABasis       string        `json:"eta_basis"`
 }
 
 // GetDeployPhases calls GET /api/v1/deployments/{id}/phases.

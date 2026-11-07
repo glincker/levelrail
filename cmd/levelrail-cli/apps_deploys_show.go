@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
@@ -55,9 +56,37 @@ func printDeployPhases(w io.Writer, ph apiclient.DeployPhases) {
 		}
 		_, _ = fmt.Fprintln(w, line)
 	}
-	if ph.ETAMS != nil {
-		_, _ = fmt.Fprintf(w, "  about %s left\n", (time.Duration(*ph.ETAMS) * time.Millisecond).Round(time.Second))
+	if line := deployETALine(ph); line != "" {
+		_, _ = fmt.Fprintf(w, "  %s\n", line)
 	}
+}
+
+// deployETALine is the single short ETA sentence, empty when there is no estimate.
+func deployETALine(ph apiclient.DeployPhases) string {
+	if ph.ETASeconds == nil && ph.ETAMS != nil && ph.ETABasis == "" {
+		// Older control plane: only the millisecond estimate exists.
+		return fmt.Sprintf("about %s left", (time.Duration(*ph.ETAMS) * time.Millisecond).Round(time.Second))
+	}
+	if ph.ETASeconds == nil || ph.ETABasis == "" || ph.ETABasis == "none" {
+		return ""
+	}
+	left := (time.Duration(*ph.ETASeconds) * time.Second).String()
+	if *ph.ETASeconds == 0 {
+		left = "a moment"
+	}
+	basis := fmt.Sprintf("your last %d deploys", ph.Samples)
+	if ph.ETABasis == "platform_history" {
+		basis = fmt.Sprintf("the last %d deploys on this server", ph.Samples)
+	}
+	return fmt.Sprintf("about %s left, based on %s", trimDurationZeros(left), basis)
+}
+
+// trimDurationZeros turns Go's "1m0s" into "1m"; other durations are unchanged.
+func trimDurationZeros(d string) string {
+	if strings.HasSuffix(d, "m0s") {
+		return strings.TrimSuffix(d, "0s")
+	}
+	return d
 }
 
 func printDeployAttemptDetail(w io.Writer, a deployAttemptResource) {

@@ -140,7 +140,8 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "cache": { "description": "Shared ISR and data cache store. redis needs a linked Redis database.", "default": "none", "enum": ["none", "redis"] }
+            "cache": { "description": "Shared ISR and data cache store. redis needs a linked Redis database.", "default": "none", "enum": ["none", "redis"] },
+            "image_cache": { "description": "persistent keeps Next.js optimised images on a per app platform volume across deploys on the same node.", "default": "none", "enum": ["none", "persistent"] }
           }
         },
         "dependsOn": {

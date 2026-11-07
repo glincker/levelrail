@@ -36,6 +36,7 @@ var Tree = map[string]*Node{
 		"lock":                    nil,
 		"skew":                    nil,
 		"next-cache":              {Subs: map[string]*Node{"set": nil}},
+		"next-image-cache":        {Subs: map[string]*Node{"set": nil}},
 		"unlock":                  nil,
 		"publish":                 nil,
 		"sbom":                    nil,

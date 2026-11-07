@@ -121,6 +121,8 @@ type DesiredService struct {
 	Affinity    json.RawMessage
 	// NextCache overrides the app.yaml next.cache (none or redis); empty defers to the spec and a save never clears it.
 	NextCache string
+	// NextImageCache overrides next.image_cache (persistent or none); empty defers to the spec and a save never clears it.
+	NextImageCache string
 
 	// Volumes are named Docker volumes this service's container mounts
 	// (migrations/0041_service_volumes.sql), previously a
