@@ -18,7 +18,7 @@
 internal/autoscale 162
 internal/bindaddr 162
 internal/bindmount 164
-internal/build 34
+internal/build 36
 internal/canarypolicy 162
 internal/changes 26
 internal/chaos 156
@@ -55,9 +55,9 @@ internal/spendcap 164
 internal/store 153
 internal/telemetry 54
 internal/usagecost 155
-internal/version 31
+internal/version 33
 kit/cronexpr 162
-kit/diskspace 40
+kit/diskspace 43
 kit/ids 76
 kit/netguard 178
 kit/probe 162
