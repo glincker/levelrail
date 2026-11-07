@@ -38,3 +38,22 @@ func TestNextCacheParsesFromYAML(t *testing.T) {
 		t.Fatal("schema should reject unknown next.cache")
 	}
 }
+
+func TestNextImageCacheParsesAndValidates(t *testing.T) {
+	doc := "version: 1\nservices:\n  web:\n    image: nginx:1\n    port: 80\n    next:\n      image_cache: persistent\n"
+	s, err := Parse([]byte(doc))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !s.Services["web"].Next.UsesPersistentImageCache() {
+		t.Fatal("next.image_cache persistent not parsed")
+	}
+	bad := "version: 1\nservices:\n  web:\n    image: nginx:1\n    port: 80\n    next:\n      image_cache: bogus\n"
+	if _, err := Parse([]byte(bad)); err == nil {
+		t.Fatal("schema should reject unknown next.image_cache")
+	}
+	svc := Service{}.WithNextImageCache("persistent")
+	if !svc.Next.UsesPersistentImageCache() {
+		t.Fatal("stored override not applied")
+	}
+}

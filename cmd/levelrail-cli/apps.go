@@ -277,6 +277,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsHealthScore(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "next-cache":
 		return runAppsNextCache(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "next-image-cache":
+		return runAppsNextImageCache(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "vitals":
 		return runAppsVitals(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "volumes":

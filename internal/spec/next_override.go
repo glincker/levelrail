@@ -14,3 +14,17 @@ func (svc Service) WithNextCache(cache string) Service {
 	svc.Next = &next
 	return svc
 }
+
+// WithNextImageCache applies a stored next_image_cache setting over the spec value; empty keeps the spec.
+func (svc Service) WithNextImageCache(mode string) Service {
+	if mode == "" {
+		return svc
+	}
+	next := Next{}
+	if svc.Next != nil {
+		next = *svc.Next
+	}
+	next.ImageCache = mode
+	svc.Next = &next
+	return svc
+}

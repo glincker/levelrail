@@ -86,6 +86,8 @@ type appResource struct {
 	Replicas int    `json:"replicas"`
 	// NextCache overrides app.yaml next.cache: none, redis, or empty to use the spec value.
 	NextCache string `json:"next_cache,omitempty"`
+	// NextImageCache overrides app.yaml next.image_cache: persistent, none, or empty to use the spec value.
+	NextImageCache string `json:"next_image_cache,omitempty"`
 	// Labels are arbitrary operator-supplied Docker labels applied to
 	// the app's container at create time (internal/spec.Service.Labels'
 	// wire counterpart), exposed on the general create/update endpoints
@@ -291,6 +293,7 @@ func toAppResourceRaw(svc store.DesiredService) appResource {
 		Strategy:            svc.Strategy,
 		Replicas:            svc.Replicas,
 		NextCache:           svc.NextCache,
+		NextImageCache:      svc.NextImageCache,
 		Labels:              svc.Labels,
 		NodeID:              svc.NodeID,
 		ProjectID:           svc.ProjectID,
@@ -329,6 +332,7 @@ func (a appResource) toDesiredService() store.DesiredService {
 		Strategy:       a.Strategy,
 		Replicas:       a.Replicas,
 		NextCache:      a.NextCache,
+		NextImageCache: a.NextImageCache,
 		Labels:         a.Labels,
 		Command:        a.Command,
 		PublishedPorts: a.PublishedPorts,

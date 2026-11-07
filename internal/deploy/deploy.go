@@ -187,6 +187,8 @@ type Request struct {
 	nextDeploymentID string
 	// nextBuildID is set for Next.js apps on the shared Redis cache.
 	nextBuildID string
+	// nextImageCacheMount is set for Next.js source builds that opted into the image cache volume.
+	nextImageCacheMount string
 }
 
 // Pipeline builds a service (when its build type requires a build) and
@@ -396,6 +398,7 @@ func (p *Pipeline) deployRailpack(ctx context.Context, req Request, progress fun
 		progress(build.ProgressEvent{Step: "next.js", Log: note, Stream: "stderr"})
 	}
 	buildEnv := staticBuildArgs(req.Service.Env, nil, StaticBuildEnvPrefixes())
+	req.nextImageCacheMount = nextImageCacheTarget(req, build.DetectNext(buildRoot))
 	if id := nextBuildID(buildRoot, deployIDFor(req), req.Service); id != "" {
 		buildEnv[nextBuildIDEnvVar] = id
 		req.nextBuildID = id
@@ -437,6 +440,7 @@ func (p *Pipeline) finishDeploy(ctx context.Context, req Request, res *build.Res
 	if err := checkVolumeOwners(ctx, p.store, desired); err != nil {
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
 	}
+	applyNextImageCache(&desired, req.ServiceName, req.nextImageCacheMount)
 	if req.nextDeploymentID != "" {
 		if desired.Env == nil {
 			desired.Env = map[string]string{}

@@ -280,7 +280,7 @@ func (h *Handler) storedService(ctx context.Context) spec.Service {
 	if err != nil || stored == nil {
 		return svc
 	}
-	return svc.WithNextCache(stored.NextCache)
+	return svc.WithNextCache(stored.NextCache).WithNextImageCache(stored.NextImageCache)
 }
 
 // nudgeReconciler calls h.nudger.Nudge() if one is configured, mirroring

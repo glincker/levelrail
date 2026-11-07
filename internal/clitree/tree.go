@@ -34,6 +34,7 @@ var Tree = map[string]*Node{
 		"freeze":                  {Subs: map[string]*Node{"set": nil, "show": nil, "clear": nil}},
 		"lock":                    nil,
 		"next-cache":              {Subs: map[string]*Node{"set": nil}},
+		"next-image-cache":        {Subs: map[string]*Node{"set": nil}},
 		"unlock":                  nil,
 		"publish":                 nil,
 		"sbom":                    nil,

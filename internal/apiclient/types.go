@@ -68,6 +68,8 @@ type AppResource struct {
 	Port        int    `json:"port"`
 	// NextCache is the saved Next.js cache mode: none, redis, or empty when the spec decides.
 	NextCache string `json:"next_cache,omitempty"`
+	// NextImageCache is the saved Next.js image cache mode: persistent, none, or empty when the spec decides.
+	NextImageCache string `json:"next_image_cache,omitempty"`
 	// HostPort mirrors internal/api's appResource.HostPort: nil means
 	// "let Docker assign one", a value pins the host-side port. Settable
 	// on create and update, like Port.

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -19,6 +20,7 @@ type rollbackPinDeleter interface {
 // (Docker refuses to remove an image a container still runs); failures are logged.
 func (rt *Router) removeAppArtifacts(ctx context.Context, name, nodeID string) {
 	rt.clearDeletedAppBuildCache(ctx, name)
+	rt.removeNextImageCacheVolume(ctx, name, nodeID)
 	if st := rt.uploadStore(); st != nil {
 		if err := st.RemoveApp(name); err != nil {
 			rt.logger.Warn("api: delete app: remove uploads failed", slog.String("error", err.Error()), slog.String("name", name))
@@ -99,4 +101,16 @@ func (rt *Router) clearDeletedAppBuildCache(ctx context.Context, name string) {
 	}
 	appCacheUsageMemo.drop(id)
 	rt.logger.Info("api: delete app: build cache cleared", slog.String("name", name), slog.Int64("freed_bytes", res.FreedBytes))
+}
+
+// removeNextImageCacheVolume drops the app's Next.js image cache volume. It is a pure
+// cache, so no delete_data confirmation applies; only the control plane's own node is reachable.
+func (rt *Router) removeNextImageCacheVolume(ctx context.Context, name, nodeID string) {
+	if rt.orphanedVolumes == nil || !rt.isLocalNode(nodeID) {
+		return
+	}
+	vol := deploy.NextImageCacheVolume(name)
+	if err := rt.orphanedVolumes.RemoveVolume(ctx, vol); err != nil {
+		rt.logger.Debug("api: delete app: next image cache volume not removed", slog.String("error", err.Error()), slog.String("volume", vol))
+	}
 }
