@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useCallback, useId, useMemo, useState } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
 import {
   ArrowLeftGlassIcon,
@@ -147,13 +147,8 @@ export function SettingsScopedSidebar() {
   const sections = useSettingsNav()
   const [query, setQuery] = useState('')
 
-  // The area comes from the URL; a click only overrides it for this path.
-  const [picked, setPicked] = useState<{
-    path: string
-    area: string | null
-  } | null>(null)
-  const backRef = useRef<HTMLButtonElement>(null)
-  const focusBack = useRef(false)
+  // The group holding the current page starts open; a click overrides it.
+  const [toggled, setToggled] = useState<Record<string, boolean>>({})
 
   const [pins, setPins] = useState<string[]>(readStoredPins)
   const maxPins = maxNavPins()
@@ -182,24 +177,7 @@ export function SettingsScopedSidebar() {
     sections.find((section) =>
       section.items.some((item) => matchesPrefix(pathname, item.to)),
     )?.id ?? null
-  const areaId = picked?.path === pathname ? picked.area : pathArea
-  const area = sections.find((section) => section.id === areaId) ?? null
-
-  useEffect(() => {
-    if (area && focusBack.current) {
-      focusBack.current = false
-      backRef.current?.focus()
-    }
-  }, [area])
-
-  function drillIn(id: string) {
-    focusBack.current = true
-    setPicked({ path: pathname, area: id })
-  }
-
-  function drillOut() {
-    setPicked({ path: pathname, area: null })
-  }
+  const isOpen = (id: string) => toggled[id] ?? id === pathArea
 
   const pinFor = (id: string): PinControl => ({
     pinned: pins.includes(id),
@@ -272,37 +250,6 @@ export function SettingsScopedSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-      ) : area ? (
-        <SidebarGroup className="py-1">
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  ref={backRef}
-                  onClick={drillOut}
-                  tooltip={t('nav.areaBack')}
-                  aria-label={t('nav.areaBack')}
-                >
-                  <ArrowLeftGlassIcon size="1.4em" aria-hidden="true" />
-                  <span>{t('nav.settingsRoot')}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-          <SidebarGroupLabel>{area.title}</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {area.items.map((item) => (
-                <SettingsNavLink
-                  key={item.to}
-                  item={item}
-                  pathname={pathname}
-                  pin={pinFor(item.to)}
-                />
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
       ) : (
         <>
           {pinnedItems.length > 0 ? (
@@ -325,30 +272,60 @@ export function SettingsScopedSidebar() {
           <SidebarGroup className="py-1">
             <SidebarGroupContent>
               <SidebarMenu>
-                {sections.map((section) => (
-                  <SidebarMenuItem key={section.id}>
-                    <SidebarMenuButton
-                      onClick={() => drillIn(section.id)}
-                      tooltip={section.title}
-                    >
-                      <span className="truncate" title={section.title}>
-                        {section.title}
-                      </span>
-                      <span
-                        className="ml-auto text-xs text-sidebar-foreground/45 tabular-nums"
-                        title={t('nav.groupCount', {
-                          count: section.items.length,
-                        })}
+                {sections.map((section) => {
+                  const open = isOpen(section.id)
+                  const listId = `settings-group-${section.id}`
+                  return (
+                    <SidebarMenuItem key={section.id}>
+                      <SidebarMenuButton
+                        aria-expanded={open}
+                        aria-controls={listId}
+                        onClick={() => {
+                          setToggled((prev) => ({
+                            ...prev,
+                            [section.id]: !open,
+                          }))
+                        }}
+                        tooltip={section.title}
+                        className={cn(open && 'font-medium')}
                       >
-                        {section.items.length}
-                      </span>
-                      <ChevronRightGlassIcon
-                        className="size-5 shrink-0 text-sidebar-foreground/50"
-                        aria-hidden="true"
-                      />
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
+                        <ChevronRightGlassIcon
+                          className={cn(
+                            'size-5 shrink-0 text-sidebar-foreground/50 transition-transform motion-reduce:transition-none',
+                            open && 'rotate-90',
+                          )}
+                          aria-hidden="true"
+                        />
+                        <span className="truncate" title={section.title}>
+                          {section.title}
+                        </span>
+                        <span
+                          className="ml-auto text-xs text-sidebar-foreground/45 tabular-nums"
+                          title={t('nav.groupCount', {
+                            count: section.items.length,
+                          })}
+                        >
+                          {section.items.length}
+                        </span>
+                      </SidebarMenuButton>
+                      {open ? (
+                        <SidebarMenu
+                          id={listId}
+                          className="mt-0.5 mb-1 ml-4 border-l pl-1"
+                        >
+                          {section.items.map((item) => (
+                            <SettingsNavLink
+                              key={item.to}
+                              item={item}
+                              pathname={pathname}
+                              pin={pinFor(item.to)}
+                            />
+                          ))}
+                        </SidebarMenu>
+                      ) : null}
+                    </SidebarMenuItem>
+                  )
+                })}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

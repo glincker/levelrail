@@ -330,8 +330,6 @@
     },
     "search": "Buscar en la configuración",
     "back": "Volver",
-    "settingsRoot": "Configuración",
-    "areaBack": "Volver a todas las áreas de configuración",
     "pins": {
       "group": "Fijados",
       "pin": "Fijar {{label}}",

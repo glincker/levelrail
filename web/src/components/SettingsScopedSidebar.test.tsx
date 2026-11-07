@@ -79,33 +79,35 @@ describe('SettingsScopedSidebar', () => {
     vi.restoreAllMocks()
   })
 
-  it('drills into the area holding the current page', () => {
+  it('opens the group holding the current page and keeps the rest closed', () => {
     renderSidebar()
 
+    expect(screen.getByRole('button', { name: /Workspace/ })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    )
     expect(
-      screen.getByRole('button', { name: 'Back to all settings areas' }),
-    ).toBeInTheDocument()
-    expect(screen.queryByText('People and access')).not.toBeInTheDocument()
+      screen.getByRole('button', { name: /People and access/ }),
+    ).toHaveAttribute('aria-expanded', 'false')
     expect(screen.queryByText('Vault')).not.toBeInTheDocument()
   })
 
-  it('goes back to the areas list and drills into another area', async () => {
+  it('expands another group in place without losing the open one', async () => {
     const user = userEvent.setup()
     renderSidebar()
 
-    await user.click(
-      screen.getByRole('button', { name: 'Back to all settings areas' }),
-    )
-    expect(screen.getByText('People and access')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /^Security/ }))
 
-    await user.click(screen.getByText('Security'))
     expect(screen.getByText('Vault')).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Back to all settings areas' }),
-    ).toHaveFocus()
+    expect(screen.getByRole('button', { name: /Workspace/ })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    )
+    await user.click(screen.getByRole('button', { name: /^Security/ }))
+    expect(screen.queryByText('Vault')).not.toBeInTheDocument()
   })
 
-  it('shows areas, not pages, on the settings hub', () => {
+  it('lists every group closed on the settings hub', () => {
     currentPathname = '/settings'
     renderSidebar()
 
@@ -135,9 +137,6 @@ describe('SettingsScopedSidebar', () => {
 
     expect(screen.getByRole('link', { name: 'Platform' })).toBeInTheDocument()
     expect(screen.queryByText('Users')).not.toBeInTheDocument()
-    await user.click(
-      screen.getByRole('button', { name: 'Back to all settings areas' }),
-    )
     await user.click(screen.getByText('People and access'))
     expect(screen.getByText('Users')).toBeInTheDocument()
   })
@@ -171,16 +170,10 @@ describe('SettingsScopedSidebar', () => {
 
     expect(screen.queryByText('Pinned')).not.toBeInTheDocument()
 
-    await user.click(
-      screen.getByRole('button', { name: 'Back to all settings areas' }),
-    )
     await user.click(screen.getByText('People and access'))
     const pin = screen.getByRole('button', { name: 'Pin Users' })
     expect(pin).toHaveAttribute('aria-pressed', 'false')
     await user.click(pin)
-    await user.click(
-      screen.getByRole('button', { name: 'Back to all settings areas' }),
-    )
 
     expect(screen.getByText('Pinned')).toBeInTheDocument()
     expect(

@@ -720,8 +720,6 @@
     },
     "search": "Search settings",
     "back": "Back",
-    "settingsRoot": "Settings",
-    "areaBack": "Back to all settings areas",
     "pins": {
       "group": "Pinned",
       "pin": "Pin {{label}}",
