@@ -25,6 +25,7 @@ import {
 } from '../../../components/DatabaseRow'
 import { Breadcrumbs } from '../../../components/Breadcrumbs'
 import { DeleteProjectDialog } from '../../../components/DeleteProjectDialog'
+import { CloneProjectDialog } from '../../../components/projects/CloneProjectDialog'
 import { ExportProjectDialog } from '../../../components/projects/ExportProjectDialog'
 import { PauseResumeProjectButton } from '../../../components/PauseResumeProjectButton'
 import { MoveToOrganizationDialog } from '../../../components/MoveToOrganizationDialog'
@@ -114,6 +115,10 @@ function ProjectDetailPage() {
             {isEmpty ? null : (
               <PauseResumeProjectButton id={project.id} name={project.name} />
             )}
+            <CloneProjectDialog
+              projectId={project.id}
+              projectName={project.name}
+            />
             <ExportProjectDialog
               projectId={project.id}
               projectName={project.name}

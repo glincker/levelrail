@@ -93,6 +93,10 @@ export interface PreviewPolicy {
   gate_username: string
   gate_password_set: boolean
   allow_indexing: boolean
+  migrate_command: string
+  migrate_timeout_seconds: number
+  effective_migrate_timeout_seconds: number
+  image_tag_template: string
 }
 
 export type PreviewDatabaseStrategy = 'none' | 'shared' | 'fresh' | 'seed'
@@ -112,4 +116,7 @@ export interface PreviewPolicyUpdate {
   gate_username?: string
   gate_password?: string
   allow_indexing?: boolean
+  migrate_command?: string
+  migrate_timeout_seconds?: number
+  image_tag_template?: string
 }

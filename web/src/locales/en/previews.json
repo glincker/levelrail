@@ -101,5 +101,20 @@
     "note": "Applies to every app. 0 keeps the startup default. A per-app override still wins.",
     "invalid": "Enter a whole number from 0 to {{max}}."
   },
+  "migrate": {
+    "command": "Migrate command",
+    "commandPlaceholder": "npm run migrate",
+    "commandHint": "Runs once before each preview starts. Empty clears it. Works only when the preview database strategy is none for now.",
+    "strategyBlocked": "Not available while the preview database strategy is {{strategy}}. Set it to none to use a migrate command.",
+    "timeout": "Migrate timeout (seconds)",
+    "timeoutDefault": "0 uses the default of {{seconds}} seconds.",
+    "imageTag": "Image tag template",
+    "imageTagHint": "Use at least one of {{placeholders}}. Empty clears it.",
+    "imageTagInvalid": "Add at least one placeholder so each pull request gets its own tag.",
+    "imageTagExample": "For PR #{{number}}: {{tag}}",
+    "save": "Save",
+    "saved": "Preview settings saved.",
+    "error": "Could not update preview settings."
+  },
   "pushOnlyProvider": "This repository comes from Azure DevOps, which deploys on push only. Pull request previews are not available."
 }

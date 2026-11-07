@@ -101,5 +101,20 @@
     "note": "Se aplica a todas las apps. 0 mantiene el valor de arranque. Un ajuste por app prevalece.",
     "invalid": "Introduce un número entero de 0 a {{max}}."
   },
+  "migrate": {
+    "command": "Comando de migración",
+    "commandPlaceholder": "npm run migrate",
+    "commandHint": "Se ejecuta una vez antes de iniciar cada vista previa. Vacío lo borra. Por ahora solo funciona con la estrategia de base de datos none.",
+    "strategyBlocked": "No disponible con la estrategia de base de datos {{strategy}}. Usa none para un comando de migración.",
+    "timeout": "Tiempo límite de migración (segundos)",
+    "timeoutDefault": "0 usa el valor por defecto de {{seconds}} segundos.",
+    "imageTag": "Plantilla de etiqueta de imagen",
+    "imageTagHint": "Usa al menos uno de {{placeholders}}. Vacío la borra.",
+    "imageTagInvalid": "Agrega al menos un marcador para que cada pull request tenga su etiqueta.",
+    "imageTagExample": "Para el PR #{{number}}: {{tag}}",
+    "save": "Guardar",
+    "saved": "Ajustes de vista previa guardados.",
+    "error": "No se pudieron actualizar los ajustes de vista previa."
+  },
   "pushOnlyProvider": "Este repositorio viene de Azure DevOps, que solo despliega con cada push. Las vistas previas de pull requests no están disponibles."
 }

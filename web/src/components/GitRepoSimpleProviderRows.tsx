@@ -161,3 +161,18 @@ export function GiteaProviderRow(props: ProviderRowProps) {
     />
   )
 }
+
+export function AzureDevOpsProviderRow(props: ProviderRowProps) {
+  return (
+    <ConnectedProviderRow
+      {...props}
+      providerKey="azure_devops"
+      displayName="Azure DevOps"
+      settingsPath="/settings/azure-devops-app"
+      useBranches={useGitConnectionBranches}
+      branchArgsFrom={(ref) =>
+        ref.kind === 'azure_devops' ? [ref.connectionId, ref.repo] : ['', '']
+      }
+    />
+  )
+}

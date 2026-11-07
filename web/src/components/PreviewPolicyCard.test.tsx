@@ -88,6 +88,10 @@ describe('PreviewPolicyCard', () => {
       gate_username: '',
       gate_password_set: false,
       allow_indexing: false,
+      migrate_command: '',
+      migrate_timeout_seconds: 0,
+      effective_migrate_timeout_seconds: 600,
+      image_tag_template: '',
     }
     vi.stubGlobal(
       'fetch',
@@ -152,10 +156,12 @@ describe('PreviewPolicyCard', () => {
     renderWithClient(<PreviewPolicyCard appName="web" />)
 
     await screen.findByText('3 live of 10')
-    const input = screen.getByRole('textbox')
+    const input = screen.getByRole('textbox', {
+      name: /Remove idle previews after/,
+    })
     await user.clear(input)
     await user.type(input, '12')
-    await user.click(screen.getByRole('button', { name: 'Save' }))
+    await user.click(screen.getAllByRole('button', { name: 'Save' })[0])
 
     await waitFor(() => {
       expect(puts).toEqual([{ ttl_hours: 12 }])

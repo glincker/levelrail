@@ -11,6 +11,7 @@ import type account from '../locales/en/account.json'
 import type palette from '../locales/en/palette.json'
 import type paletteSettings from '../locales/en/paletteSettings.json'
 import type projectExport from '../locales/en/projectExport.json'
+import type projectClone from '../locales/en/projectClone.json'
 import type rules from '../locales/en/rules.json'
 import type deploys from '../locales/en/deploys.json'
 import type settings from '../locales/en/settings.json'
@@ -300,6 +301,7 @@ declare module 'i18next' {
       paletteSettings: typeof paletteSettings
       gitSource: typeof gitSource
       projectExport: typeof projectExport
+      projectClone: typeof projectClone
     }
   }
 }

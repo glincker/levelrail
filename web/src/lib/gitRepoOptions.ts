@@ -79,6 +79,8 @@ export function fromGitRepoItem(
       }
     case 'bitbucket':
     case 'gitea':
+    case 'azure_devops':
+      // Azure DevOps full names read PROJECT/repo, which is the label shown.
       return {
         ...base,
         providerRef: { kind: provider, connectionId, repo: item.full_name },
