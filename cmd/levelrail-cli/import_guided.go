@@ -134,13 +134,14 @@ func (g *guidedRun) stepRead() int {
 		g.say("  No vercel.json or package.json in %s.", g.dir)
 		return exitUsage
 	}
+	if _, err := parseVercelExtras(g.files["vercel.json"]); err != nil {
+		_, _ = fmt.Fprintf(g.errw, "%s: %v\n", g.prog, err)
+		return exitUsage
+	}
 	s := configtranslate.SummarizeVercel(g.files)
 	g.say("  Framework: %s", orDefault(s.Framework, "not detected"))
 	g.say("  Build command: %s, output directory: %s", orDefault(s.Build, "default"), orDefault(s.Output, "default"))
 	g.say("  Rewrites: %d, redirects: %d, headers: %d, crons: %d", s.Rewrites, s.Redirects, s.Headers, s.Crons)
-	if len(s.Regions) > 0 {
-		g.say("  Regions %s are ignored: Levelrail runs where your server runs.", strings.Join(s.Regions, ", "))
-	}
 	return exitOK
 }
 
@@ -287,7 +288,7 @@ func (g *guidedRun) stepCutover(c *Client, apexes []string) {
 }
 
 func (g *guidedRun) stepTranslate() {
-	g.header("Redirects and headers")
+	g.header("Redirects, headers and crons")
 	res := configtranslate.Translate(g.files)
 	routes, headers := res.RoutingRules()
 	for _, r := range routes {
@@ -306,6 +307,7 @@ func (g *guidedRun) stepTranslate() {
 	if len(routes)+len(headers)+len(left) == 0 {
 		g.say("  Nothing to translate.")
 	}
+	g.stepExtras()
 }
 
 func (g *guidedRun) stepChecklist(app string, apexes []string) {

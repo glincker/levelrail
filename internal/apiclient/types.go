@@ -2389,6 +2389,17 @@ type JobHTTP struct {
 	Path       string `json:"path"`
 	Body       string `json:"body,omitempty"`
 	Background bool   `json:"background,omitempty"`
+	// Headers hold names and secret references only, never secret values.
+	Headers []JobHeader `json:"headers,omitempty"`
+}
+
+// JobHeader is one http job request header: a literal Value or a SecretRef
+// naming an app env var, with Prefix (such as "Bearer ") before the secret.
+type JobHeader struct {
+	Name      string `json:"name"`
+	Value     string `json:"value,omitempty"`
+	SecretRef string `json:"secretRef,omitempty"`
+	Prefix    string `json:"prefix,omitempty"`
 }
 
 // FeatureFlagResource mirrors internal/api's featureFlagResource
