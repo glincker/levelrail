@@ -664,6 +664,10 @@ jobs:
       - name: go test
         run: go -C kit test -short -timeout=5m -coverprofile="$GITHUB_WORKSPACE/kit-coverage.out" ./...
 
+      - name: next-cache-handler tests
+        run: node --test
+        working-directory: kit/next-cache-handler
+
       # Coverage never blocks a PR: kit gates report on push only.
       - name: Coverage gate (70% for kit/)
         if: github.event_name == 'push'
