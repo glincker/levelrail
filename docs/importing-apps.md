@@ -58,6 +58,15 @@ Railpack builds Ruby and PHP projects, and the import plan fills in what its sta
 
 Laravel runs `php artisan migrate --force` on every start. Set `RAILPACK_SKIP_MIGRATIONS=true` if the app has no database yet.
 
+## Buildpack apps
+
+An app written for a buildpack platform, with a `Procfile` and no Dockerfile, is built with Railpack. Levelrail does not run Heroku buildpacks, does not read `.buildpacks` or `project.toml`, and has no buildpack layer to select.
+
+- **Supported:** a Dockerfile at the repository root (built with BuildKit), or a stack Railpack detects from files such as `package.json`, `go.mod`, `requirements.txt`, `Gemfile` or `composer.json`. See [Ruby and PHP](#ruby-and-php) for the defaults the plan fills in.
+- **Procfile:** the `web:` line is used only to guess the port. Other process types (`worker`, `release`) are not run at deploy time. Describe them as services and hooks in `app.yaml`, or run `levelrail-cli import config` in the repository to get a first draft from the `Procfile` and `app.json`.
+- **Dockerfile or Railpack:** if the repository has a Dockerfile it wins, and the Dockerfile's `CMD` or `ENTRYPOINT` is what runs. The `Procfile` does not override it. If you want Railpack, remove the Dockerfile or build from a subdirectory.
+- **Not supported:** custom buildpacks, buildpack-specific env such as `BUILDPACK_URL`, and languages Railpack does not detect. Add a Dockerfile for those.
+
 ## Environment variables
 
 For repos the plan scans `.env.example`, `.env.sample`, `.env.template`, `env.example`, `.env.dist`, compose `environment:` sections and Dockerfile `ENV`. Each variable is reported as:

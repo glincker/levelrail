@@ -40,7 +40,7 @@ Dokku has almost no idle footprint and is hard to beat for simplicity on one ser
 | Runs as | A set of scripts on the host, no separate web service | One Go binary with an embedded dashboard |
 | Observability | Add your own stack | Metrics and log search in the core |
 
-[Read the full comparison](/comparison)
+[Read the full comparison](/comparison) or see the [Dokku command map](/migrate-from-dokku#dokku-command-map)
 
 ## Getting started
 
@@ -60,7 +60,7 @@ Dokku has almost no idle footprint and is hard to beat for simplicity on one ser
 
 <AccordionGroup>
   <Accordion title="Is there an importer for Dokku?">
-    Partly. There is no live importer for a Dokku host. You can import an app's `dokku config:export` env dump or a `docker inspect` snapshot, and deploy the same repositories. See [Migrate from Dokku](/migrate-from-dokku).
+    Yes, read only over SSH. A Dokku host is a Docker host, so Levelrail can read its containers, images and volumes with only an SSH login. An app's `dokku config:export` env dump still works as a fallback. See [Migrate from Dokku](/migrate-from-dokku), which also has a table mapping Dokku commands to Levelrail commands.
   </Accordion>
   <Accordion title="Does Levelrail use buildpacks?">
     Not Heroku buildpacks. Levelrail builds a Dockerfile with BuildKit, and when there is none it detects the stack from files such as `package.json` or `go.mod` and builds it with Railpack. See [Importing apps](/importing-apps) for the detection order.

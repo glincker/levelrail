@@ -24,6 +24,8 @@ levelrail-cli jobs run web --command "node scripts/backfill.js" \
 | `--timeout D` | Timeout of each attempt. |
 | `--wait` | Block until the job settles. The exit code is 5 when it failed. |
 
+`jobs run` is the way to run a one-off command today, for example a migration or a console task. A shorter `apps run APP -- COMMAND` form that streams the output and exits with the command's code is **from v0.9.5**.
+
 A failed attempt is retried after an exponentially growing delay (first delay `APP_JOBS_RETRY_BACKOFF`, capped by `APP_JOBS_RETRY_BACKOFF_MAX`). Every attempt is a normal run: it appears in `jobs history <app>` with its output and exit code. An attempt that has to wait because the app already has `APP_JOBS_MAX_CONCURRENT_PER_APP` jobs running is not a failure and spends none of the backoff budget.
 
 The job ends `Succeeded` when all completions succeeded, or `Failed` once more than `backoff-limit` attempts have failed. The status carries the counts: completions succeeded, failed attempts, runs in flight and the IDs of the runs.
