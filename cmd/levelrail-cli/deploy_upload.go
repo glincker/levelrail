@@ -81,6 +81,12 @@ func uploadMaxBytes(lookupEnv func(string) (string, bool)) (int64, error) {
 
 // runDeployUpload implements "deploy [path]": pack the directory, upload it, build it and follow the deploy.
 func runDeployUpload(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
+	return runDeployUploadLimited(prog, args, stdout, stderr, lookupEnv, stdin, 0)
+}
+
+// runDeployUploadLimited is runDeployUpload with a cap on the dry run file list
+// printed as text; 0 prints everything. JSON output is never capped.
+func runDeployUploadLimited(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader, listLimit int) int {
 	fs, tokenP, apiURLP, profileP, jsonOutP, outputP, queryP := apiFlagSet(prog, "deploy", "print the result as JSON to stdout and nothing else", stderr)
 	var appName, name, fromHash, timeoutStr string
 	var port int
@@ -187,8 +193,15 @@ func runDeployUpload(prog string, args []string, stdout, stderr io.Writer, looku
 				res.FileList = append(res.FileList, f.Path)
 			}
 			return writeScheduledTaskResult(stdout, stderr, of, res, func() {
-				for _, p := range res.FileList {
+				shown := res.FileList
+				if listLimit > 0 && len(shown) > listLimit {
+					shown = shown[:listLimit]
+				}
+				for _, p := range shown {
 					_, _ = fmt.Fprintln(stdout, p)
+				}
+				if len(shown) < len(res.FileList) {
+					_, _ = fmt.Fprintf(stdout, "... and %d more (run %s deploy <dir> --dry-run for the full list)\n", len(res.FileList)-len(shown), prog)
 				}
 			})
 		}
@@ -265,6 +278,9 @@ func printUploadPlan(w io.Writer, quiet bool, inf upInference, plan sourceupload
 	_, _ = fmt.Fprintln(w, "  largest files:")
 	for _, f := range plan.Largest(uploadTopFiles) {
 		_, _ = fmt.Fprintf(w, "    %10s  %s\n", humanBytes(f.Size), f.Path)
+	}
+	if n, roots := plan.EditorSkippedSummary(3); n > 0 {
+		_, _ = fmt.Fprintf(w, "  skipped %d editor and agent config files (%s, ...); --include PATH to send one\n", n, strings.Join(roots, ", "))
 	}
 	if dryRun {
 		_, _ = fmt.Fprintln(w, "  dry run: nothing is sent, the full list follows on stdout")

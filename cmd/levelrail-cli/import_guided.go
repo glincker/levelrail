@@ -219,8 +219,11 @@ func (g *guidedRun) stepDeploy() int {
 		g.say("  Stopped before the deploy.")
 		return exitUsage
 	}
-	return runDeployUpload(g.prog, append(args, g.dir), g.out, g.errw, g.lookupEnv, g.in)
+	return runDeployUploadLimited(g.prog, append(args, g.dir), g.out, g.errw, g.lookupEnv, g.in, guidedListLimit)
 }
+
+// guidedListLimit keeps the guided dry run readable on large projects.
+const guidedListLimit = 10
 
 // apexes returns the hosts the user asked for, without a www prefix.
 func (g *guidedRun) apexes() []string {

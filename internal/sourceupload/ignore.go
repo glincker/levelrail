@@ -18,6 +18,48 @@ var DefaultIgnores = []string{
 	".env", ".env.*", "*.pem", "*.key", "id_rsa*", "id_ed25519*",
 }
 
+// EditorConfigDirs are directory names holding personal editor or agent
+// settings. Files below them are skipped unless named in Options.Include.
+var EditorConfigDirs = []string{".claude", ".cursor", ".windsurf", ".codex", ".idea", ".fleet", ".history"}
+
+// EditorConfigFiles are file names, and EditorConfigGlobs base name patterns,
+// that are machine-local and never needed by a build.
+var (
+	EditorConfigFiles = []string{".DS_Store", "Thumbs.db"}
+	EditorConfigGlobs = []string{"*.local.json", "*.local.yaml", "*.local.yml", "settings.local.*"}
+)
+
+// editorConfig reports whether a file path is personal editor or agent config.
+// Dot-aider entries are matched by prefix, .vscode only for settings and workspaces.
+func editorConfig(rel string) bool {
+	parts := strings.Split(rel, "/")
+	base := parts[len(parts)-1]
+	for i, c := range parts {
+		for _, d := range EditorConfigDirs {
+			if c == d {
+				return true
+			}
+		}
+		if strings.HasPrefix(c, ".aider") {
+			return true
+		}
+		if c == ".vscode" && i == len(parts)-2 && (base == "settings.json" || strings.HasSuffix(base, ".code-workspace")) {
+			return true
+		}
+	}
+	for _, f := range EditorConfigFiles {
+		if base == f {
+			return true
+		}
+	}
+	for _, g := range EditorConfigGlobs {
+		if ok, _ := path.Match(g, base); ok {
+			return true
+		}
+	}
+	return false
+}
+
 // envTemplates are .env.* files that carry no secrets by convention.
 var envTemplates = []string{".env.example", ".env.sample", ".env.template"}
 
@@ -91,4 +133,9 @@ func (s *ignoreSet) excluded(rel string, isDir bool) bool {
 		}
 	}
 	return s.defaults.Match(parts, isDir)
+}
+
+// editorSkipped reports a file left out as editor or agent config; an include wins.
+func (s *ignoreSet) editorSkipped(rel string) bool {
+	return !s.included(rel) && editorConfig(rel)
 }

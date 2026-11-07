@@ -53,3 +53,27 @@ func TestImportVercelRefusesSecretStorePath(t *testing.T) {
 		t.Fatalf("code %d err %s", code, errb.String())
 	}
 }
+
+func TestImportVercelDryRunUploadListIsShort(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{"scripts":{"build":"next build"},"dependencies":{"next":"15"}}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 25; i++ {
+		if err := os.WriteFile(filepath.Join(dir, "f"+strings.Repeat("a", i)+".txt"), []byte("x"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var out, errb bytes.Buffer
+	code := runImportVercel("levelrail-cli", []string{"--dry-run", dir}, strings.NewReader(""), &out, &errb, func(string) (string, bool) { return "", false })
+	if code != exitOK {
+		t.Fatalf("code %d stderr %s", code, errb.String())
+	}
+	got := out.String()
+	if n := strings.Count(got, ".txt\n"); n > 10 {
+		t.Errorf("%d file lines, want at most 10:\n%s", n, got)
+	}
+	if !strings.Contains(got, "... and 16 more (run levelrail-cli deploy <dir> --dry-run for the full list)") {
+		t.Errorf("missing trailing hint:\n%s", got)
+	}
+}
