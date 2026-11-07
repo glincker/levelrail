@@ -349,4 +349,6 @@ func (h Hardening) unavailableRoutes() []Route {
 // automation set so the handshake still succeeds.
 type HoldRoute struct {
 	Hosts []string
+	// Reason picks the page wording and status; empty keeps the generic page.
+	Reason HoldReason
 }

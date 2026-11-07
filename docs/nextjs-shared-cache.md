@@ -67,7 +67,29 @@ Without the CA the handler logs a certificate error and falls back to per proces
 
 ## Next.js versions
 
-The handler implements the `get`, `set`, `revalidateTag` and `resetRequestCache` shape used by Next 14 and 15, and also exposes `updateTags` for the Next 16 name. Differences handled: Next 14 passes tags in the entry or in the `x-next-cache-tags` header, Next 15 passes `ctx.tags`; extra `revalidateTag` arguments (Next 16 profiles) are ignored. Next 16 Cache Components (`'use cache'`) use a different interface (`cacheHandlers`) and are not covered by this package.
+The handler implements the `get`, `set`, `revalidateTag` and `resetRequestCache` shape used by Next 14 and 15, and also exposes `updateTags` for the Next 16 name. Differences handled: Next 14 passes tags in the entry or in the `x-next-cache-tags` header, Next 15 passes `ctx.tags`; extra `revalidateTag` arguments (Next 16 profiles) are ignored. Next 16 Cache Components (`'use cache'`) use a different interface (`cacheHandlers`), covered by the second export below.
+
+## Cache Components (`'use cache'`, Next 16)
+
+Add `cache-components-handler.js` next to `next.config.js` and register it for the `default` and, if you use `'use cache: remote'`, `remote` cache kinds:
+
+```js
+// cache-components-handler.js
+module.exports = require('@levelrail/next-cache-handler').componentsHandler;
+```
+
+```js
+// next.config.js (next to the cacheHandler settings above, which still serve ISR and fetch)
+module.exports = {
+  cacheComponents: true,
+  cacheHandlers: {
+    default: require.resolve('./cache-components-handler.js'),
+    remote: require.resolve('./cache-components-handler.js'),
+  },
+};
+```
+
+It implements `get`, `set`, `refreshTags`, `getExpiration` and `updateTags` on the same Redis client, key prefix (`LEVELRAIL_NEXT_CACHE_PREFIX`, `NEXT_BUILD_ID`), TLS/CA settings, size limit, in-process fallback and outage replay as the classic handler, and the same tag hash, so `revalidateTag` and `updateTag` reach both. Entries are stored as `<prefix>:<buildId>:c:<key>`. The value stream is read fully in `set` and stored as one base64 payload (subject to `LEVELRAIL_NEXT_CACHE_MAX_VALUE_BYTES`), and `get` returns a fresh stream each time. The Redis TTL is the entry's `expire`. Entries are checked against the entry tags and the request's soft tags on every `get`, so `refreshTags` has nothing to sync and `getExpiration` returns the newest revalidation time of the tags it is given (0 if none).
 
 ## Replica test recipe
 
@@ -84,4 +106,5 @@ A pull request preview of a `next.cache: redis` app gets `LEVELRAIL_NEXT_CACHE_P
 
 - Node runtime only, not the edge runtime.
 - One Redis in one region; no cross region replication or multi region invalidation.
+- The Cache Components handler follows the `cacheHandlers` contract in the Next 16 docs but has not run under a real Next 16 `next start` or against a real Redis; verify streams and invalidation on the first deployment.
 - Not verified against a real multi replica Next.js run. The unit tests use an in-memory fake of the Redis client; the interface shape follows the documented Next 14 and 15 `cacheHandler` contract and has not been exercised by a real `next start` yet. Treat the first deployment as the test.

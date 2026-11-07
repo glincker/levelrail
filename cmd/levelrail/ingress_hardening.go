@@ -134,6 +134,9 @@ func (e ingressEdge) layeredHardening(ctx context.Context, db edgeOverrideStore,
 
 func (e ingressEdge) options(ctx context.Context, db edgeOverrideStore, logger *slog.Logger, rs *runtimesettings.Service) []ingressreconcile.Option {
 	opts := []ingressreconcile.Option{ingressreconcile.WithHoldTracker(e.holds)}
+	if rs != nil {
+		opts = append(opts, ingressreconcile.WithHoldReasonGate(api.DiagnosticShowState(rs)))
+	}
 	if e.fallbackLifetime > 0 {
 		opts = append(opts, ingressreconcile.WithFallbackCertLifetime(e.fallbackLifetime))
 	}

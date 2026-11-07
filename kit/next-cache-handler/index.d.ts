@@ -61,4 +61,36 @@ export class CacheHandler {
   resetRequestCache(): void;
 }
 
+export interface ComponentsCacheEntry {
+  value: ReadableStream<Uint8Array>;
+  tags: string[];
+  stale: number;
+  timestamp: number;
+  expire: number;
+  revalidate: number;
+}
+
+/** The object shape Next 16 expects for each entry of the cacheHandlers config. */
+export interface ComponentsHandler {
+  get(cacheKey: string, softTags: string[]): Promise<ComponentsCacheEntry | undefined>;
+  set(cacheKey: string, pendingEntry: Promise<ComponentsCacheEntry>): Promise<void>;
+  refreshTags(): Promise<void>;
+  getExpiration(tags: string[]): Promise<number>;
+  updateTags(tags: string[], durations?: unknown): Promise<void>;
+}
+
+export class ComponentsCacheHandler {
+  constructor(options?: CacheHandlerOptions);
+  get(cacheKey: string, softTags?: string[]): Promise<ComponentsCacheEntry | undefined>;
+  set(cacheKey: string, pendingEntry: Promise<ComponentsCacheEntry>): Promise<void>;
+  refreshTags(): Promise<void>;
+  getExpiration(tags: string[]): Promise<number>;
+  updateTags(tags: string[], durations?: unknown): Promise<void>;
+}
+
+export function createComponentsHandler(options?: CacheHandlerOptions): ComponentsHandler;
+
+/** Ready to use handler for `cacheHandlers`, configured from env. */
+export const componentsHandler: ComponentsHandler;
+
 export default CacheHandler;

@@ -310,6 +310,8 @@ type Controller struct {
 	abuseApplied abuseApplied
 	inherited    *ingress.InheritedSockets
 	holds        *ingress.HoldTracker
+	// holdReasonGate reports whether hold pages may reveal the host's state.
+	holdReasonGate func(context.Context) bool
 
 	modelHosts ModelHostSource // nil is valid: no model routes, see WithModelHosts
 
@@ -452,6 +454,12 @@ func WithHardening(h ingress.Hardening) Option {
 // WithInheritedSockets serves ingress from systemd passed listeners.
 func WithInheritedSockets(s *ingress.InheritedSockets) Option {
 	return func(c *Controller) { c.inherited = s }
+}
+
+// WithHoldReasonGate lets the hold page state why a host is down, only while
+// the gate reports true (ingress.diagnostic_show_state); unset keeps it generic.
+func WithHoldReasonGate(g func(context.Context) bool) Option {
+	return func(c *Controller) { c.holdReasonGate = g }
 }
 
 // WithHoldTracker keeps a host answering a friendly 503 for the tracker's
@@ -877,6 +885,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	var holdRoutes []ingress.HoldRoute
 	var wakeRoutes []ingress.WakeRoute
 	sleeping := c.sleepingApps(ctx)
+	showHoldReason := c.holdReasonGate != nil && c.holdReasonGate(ctx)
 	claimedHosts := make(map[string]string, len(services)+len(staticSites)) // host -> owning service/static site, this pass only
 	canaries := c.activeCanaries(ctx, services)
 	envDomainSets := c.environmentDomainSets(ctx)
@@ -1027,7 +1036,11 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 					}
 				}
 				if len(held) > 0 {
-					holdRoutes = append(holdRoutes, ingress.HoldRoute{Hosts: held})
+					var reason ingress.HoldReason
+					if showHoldReason {
+						reason = c.holdReason(ctx, svc)
+					}
+					holdRoutes = append(holdRoutes, ingress.HoldRoute{Hosts: held, Reason: reason})
 				}
 			}
 			continue

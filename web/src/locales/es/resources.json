@@ -183,5 +183,23 @@
     "noGit": "Redespliega desde tu origen git para aplicar esto; esta app no tiene uno.",
     "started": "Redespliegue iniciado para {{name}}",
     "errorTitle": "No se pudo actualizar la caché compartida"
+  },
+  "nextStatus": {
+    "title": "Next.js",
+    "skew": "Protección contra desajuste de versiones",
+    "held": "Versión anterior retenida, se elimina",
+    "noneHeld": "Sin versión anterior retenida",
+    "cache": "Caché compartida",
+    "redis": "Redis",
+    "off": "Desactivada",
+    "configure": "Configurar",
+    "vitals": "Web vitals",
+    "collecting": "Recopilando",
+    "notCollecting": "Sin recopilar",
+    "cron": "Tareas cron",
+    "cronCount_one": "{{count}} tarea",
+    "cronCount_other": "{{count}} tareas",
+    "noCron": "Ninguna",
+    "manage": "Gestionar"
   }
 }
