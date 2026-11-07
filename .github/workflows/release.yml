@@ -491,7 +491,8 @@ jobs:
               [ "$has_stable" = "true" ] && dist_tag=beta
               ;;
           esac
-          for dir in npm-out/levelrail-cli-*/ npm-out/levelrail-cli/; do
+          # Order matters: the forwarders depend on levelrail-cli.
+          for dir in npm-out/levelrail-cli-*/ npm-out/levelrail-cli/ npm-out/levelrail/ npm-out/levelrail-scoped/; do
             name=$(node -p "require('./${dir}package.json').name")
             version=$(node -p "require('./${dir}package.json').version")
             if npm view "${name}@${version}" version >/dev/null 2>&1; then
@@ -554,6 +555,20 @@ jobs:
             exit 1
           }
           npm audit signatures
+          fwd=$(mktemp -d)
+          cd "$fwd"
+          npm init -y >/dev/null
+          npm install "levelrail@${version}" "@levelrail/cli@${version}"
+          out=$(npx --no-install levelrail version)
+          printf '%s\n' "$out" | grep -F -- "$version" >/dev/null || {
+            echo "levelrail forwarder printed no ${version}" >&2
+            exit 1
+          }
+          out=$(npx --no-install levelrail-scoped version)
+          printf '%s\n' "$out" | grep -F -- "$version" >/dev/null || {
+            echo "@levelrail/cli forwarder printed no ${version}" >&2
+            exit 1
+          }
           {
             echo "### npm install verified on ${{ matrix.os }}"
             echo "https://www.npmjs.com/package/levelrail-cli/v/${version}"

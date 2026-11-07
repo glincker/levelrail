@@ -40,6 +40,19 @@ if (deps.length !== 6) { console.error("want 6 platform deps, got", deps.length)
 if (p.version !== "9.9.9-test.1") { console.error("version", p.version); process.exit(1); }
 if (!deps.includes("levelrail-cli-win32-x64") && !deps.includes("levelrail-cli-windows-amd64")) process.exit(1);
 ' "$work/npm/levelrail-cli/package.json" || fail "main package.json"
+[ "$(ls -d "$work"/npm/*/ | wc -l | tr -d ' ')" = 9 ] || fail "want 9 npm packages"
+node -e '
+const dir = process.argv[1];
+const v = "9.9.9-test.1";
+const want = { levelrail: "levelrail", "levelrail-scoped": "@levelrail/cli" };
+for (const [d, name] of Object.entries(want)) {
+  const p = require(dir + "/" + d + "/package.json");
+  if (p.name !== name || p.version !== v) { console.error("bad forwarder", d, p.name, p.version); process.exit(1); }
+  const deps = Object.entries(p.dependencies || {});
+  if (deps.length !== 1 || deps[0][0] !== "levelrail-cli" || deps[0][1] !== v) { console.error("bad pin", d); process.exit(1); }
+  if (p.scripts) { console.error("scripts not allowed", d); process.exit(1); }
+}
+' "$work/npm" || fail "forwarder package.json"
 for d in "$work"/npm/*/; do (cd "$d" && npm pack --dry-run --silent >/dev/null 2>&1) || fail "npm pack failed for $d"; done
 
 echo "== launcher resolves the platform package"
@@ -54,5 +67,15 @@ node "$work/proj/node_modules/levelrail-cli/bin/levelrail-cli.js" no-such-comman
 rm -rf "$work/proj/node_modules/levelrail-cli-$goos-$goarch"
 missing="$(node "$work/proj/node_modules/levelrail-cli/bin/levelrail-cli.js" help 2>&1 || true)"
 echo "$missing" | grep -q "package is missing" || fail "missing-platform message: $missing"
+
+echo "== forwarders reach the launcher"
+cp -R "$work/npm/levelrail-cli-$goos-$goarch" "$work/proj/node_modules/levelrail-cli-$goos-$goarch"
+cp -R "$work/npm/levelrail" "$work/proj/node_modules/levelrail"
+cp -R "$work/npm/levelrail-scoped" "$work/proj/node_modules/levelrail-scoped"
+for f in levelrail levelrail-scoped; do
+	out="$(node "$work/proj/node_modules/$f/bin/forward.js" help)" || fail "$f forwarder exited non-zero"
+	echo "$out" | grep -q "deploy and run apps on your servers" || fail "$f forwarder output: $out"
+	node "$work/proj/node_modules/$f/bin/forward.js" no-such-command >/dev/null 2>&1 && fail "$f exit code not propagated"
+done
 
 echo "OK"
