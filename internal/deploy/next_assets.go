@@ -2,15 +2,19 @@ package deploy
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
 	"slices"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -227,4 +231,135 @@ func (p *Pipeline) beginNextGrace(ctx context.Context, req Request, oldID, oldIm
 		return
 	}
 	DefaultNextGraceBook().Begin(ctx, req.ServiceName, oldID, oldImage, time.Now())
+}
+
+const (
+	nextBuildIDEnvVar    = "NEXT_BUILD_ID"
+	nextCacheURLEnvVar   = "LEVELRAIL_NEXT_CACHE_URL"
+	nextCacheRedisEnvVar = "REDIS_URL"
+	nextCacheLinkField   = "url"
+)
+
+// nextBuildID returns the stable build id for a Next.js app on the shared Redis
+// cache, or "" otherwise. It reuses the deployment id source and never replaces a user value.
+func nextBuildID(sourceDir, deployID string, svc spec.Service) string {
+	if deployID == "" || !svc.Next.UsesRedisCache() {
+		return ""
+	}
+	if _, set := svc.Env[nextBuildIDEnvVar]; set {
+		return ""
+	}
+	if !build.DetectNext(sourceDir).Detected {
+		return ""
+	}
+	return deployID
+}
+
+// nextCacheLink finds the Redis connection for the shared cache: an app.yaml env
+// var, or a database link saved on the previous release. ok is false when none exists.
+func nextCacheLink(env map[string]spec.EnvVar, prev *store.DesiredService) (ref *store.DatabaseEnvRef, ok bool) {
+	for _, k := range []string{nextCacheURLEnvVar, nextCacheRedisEnvVar} {
+		if _, set := env[k]; set {
+			return nil, true
+		}
+	}
+	if prev == nil {
+		return nil, false
+	}
+	for _, k := range []string{nextCacheURLEnvVar, nextCacheRedisEnvVar} {
+		if r, set := prev.DatabaseEnv[k]; set {
+			return &r, true
+		}
+	}
+	return nil, false
+}
+
+type databaseGetter interface {
+	GetDesiredDatabase(ctx context.Context, name string) (*store.DesiredDatabase, error)
+}
+
+// nextCachePrev reads the app's saved state, which holds links made with
+// databases link before any release exists. A Redis link under a custom env var
+// name is exposed as REDIS_URL on a copy, so nextCacheLink finds it.
+func (p *Pipeline) nextCachePrev(ctx context.Context, name string) *store.DesiredService {
+	g, ok := p.store.(desiredGetter)
+	if !ok {
+		return nil
+	}
+	prev, err := g.GetDesiredService(ctx, name)
+	if err != nil || prev == nil {
+		return nil
+	}
+	if _, found := nextCacheLink(nil, prev); found {
+		return prev
+	}
+	dg, ok := p.store.(databaseGetter)
+	if !ok {
+		return prev
+	}
+	for _, k := range sortedRefKeys(prev.DatabaseEnv) {
+		ref := prev.DatabaseEnv[k]
+		if ref.Field != nextCacheLinkField {
+			continue
+		}
+		if db, err := dg.GetDesiredDatabase(ctx, ref.Database); err == nil && db != nil && db.Engine == "redis" {
+			cp := *prev
+			cp.DatabaseEnv = map[string]store.DatabaseEnvRef{nextCacheRedisEnvVar: ref}
+			return &cp
+		}
+	}
+	return prev
+}
+
+func sortedRefKeys(m map[string]store.DatabaseEnvRef) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+// checkNextCache fails a Next.js deploy that asked for the Redis cache without a Redis link.
+func (p *Pipeline) checkNextCache(ctx context.Context, sourceDir string, req Request) error {
+	if !req.Service.Next.UsesRedisCache() || !build.DetectNext(sourceDir).Detected {
+		return nil
+	}
+	prev := p.nextCachePrev(ctx, req.ServiceName)
+	if _, ok := nextCacheLink(req.Service.Env, prev); ok {
+		return nil
+	}
+	return fmt.Errorf("deploy: service %q: next.cache is redis but no Redis database is linked to %s. Run: levelrail-cli databases create --name <name> --engine redis, then levelrail-cli databases link <name> --app %s --env REDIS_URL, or set REDIS_URL from a databases entry in app.yaml", req.ServiceName, req.ServiceName, req.ServiceName)
+}
+
+// applyNextCache sets the runtime env for the shared cache on the desired state.
+func applyNextCache(desired *store.DesiredService, req Request, prev *store.DesiredService) {
+	if req.nextBuildID != "" {
+		if desired.Env == nil {
+			desired.Env = map[string]string{}
+		}
+		desired.Env[nextBuildIDEnvVar] = req.nextBuildID
+	}
+	if !req.Service.Next.UsesRedisCache() {
+		return
+	}
+	if _, set := req.Service.Env[nextCacheURLEnvVar]; set {
+		return
+	}
+	ref, ok := nextCacheLink(req.Service.Env, prev)
+	if !ok {
+		return
+	}
+	if ref == nil {
+		if r, set := desired.DatabaseEnv[nextCacheRedisEnvVar]; set {
+			ref = &r
+		}
+	}
+	if ref == nil {
+		return
+	}
+	if desired.DatabaseEnv == nil {
+		desired.DatabaseEnv = map[string]store.DatabaseEnvRef{}
+	}
+	desired.DatabaseEnv[nextCacheURLEnvVar] = *ref
 }

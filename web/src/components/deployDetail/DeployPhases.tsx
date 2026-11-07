@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useRef } from 'react'
 import {
   CheckGlassIcon,
   CircleDashedGlassIcon,
@@ -9,7 +10,9 @@ import {
 import { useNowTick } from '../../hooks/useNowTick'
 import { formatDurationMs } from '../../lib/deployDuration'
 import {
+  deployPhasesKeys,
   deployPhasesQueryOptions,
+  phaseMarkerStage,
   type DeployPhase,
   type DeployPhaseStatus,
 } from '../../queries/deployPhases'
@@ -57,13 +60,32 @@ export function DeployPhases({
   deployId,
   running,
   lastEventAt,
+  streamHealthy = false,
+  latestLine = null,
 }: {
   deployId: string
   running: boolean
   lastEventAt: number | null
+  streamHealthy?: boolean
+  latestLine?: string | null
 }) {
   const { t } = useDeployDetailT()
-  const { data } = useQuery(deployPhasesQueryOptions(deployId, running))
+  const queryClient = useQueryClient()
+  const { data } = useQuery(
+    deployPhasesQueryOptions(deployId, running, streamHealthy),
+  )
+  // A log line that moves the build to a later stage refetches at once instead of waiting for a poll.
+  const stage = useRef(0)
+  useEffect(() => {
+    if (!running || !streamHealthy || latestLine === null) return
+    const next = phaseMarkerStage(latestLine)
+    if (next > stage.current) {
+      stage.current = next
+      void queryClient.invalidateQueries({
+        queryKey: deployPhasesKeys.one(deployId),
+      })
+    }
+  }, [latestLine, running, streamHealthy, deployId, queryClient])
   const now = useNowTick(running)
   if (!data || data.phases.length === 0) return null
 

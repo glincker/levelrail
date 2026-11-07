@@ -45,7 +45,7 @@ export function SidebarVersionLinkView({
       to="/settings/updates"
       aria-label={full}
       title={full}
-      className="flex h-6 cursor-pointer items-center gap-1.5 truncate rounded-md px-2 text-xs text-sidebar-foreground/60 transition-colors duration-150 ease-out hover:bg-sidebar-accent/70 hover:text-sidebar-foreground active:bg-sidebar-accent motion-reduce:transition-none focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none group-data-[collapsible=icon]:hidden"
+      className="flex h-6 cursor-pointer items-center gap-1.5 truncate rounded-md px-2 text-xs text-sidebar-foreground/80 transition-colors duration-150 ease-out hover:bg-state-accent/10 hover:text-sidebar-foreground active:bg-state-accent/15 motion-reduce:transition-none focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none group-data-[collapsible=icon]:hidden"
     >
       {health ? (
         <span

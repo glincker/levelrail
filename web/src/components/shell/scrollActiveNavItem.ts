@@ -7,7 +7,9 @@ const RETRY_DELAYS_MS = [0, 120, 300, 700]
 /** Scrolls the sidebar's own scroller so the active row is fully visible; no-op when it already is. */
 export function scrollActiveNavItemIntoView(root: ParentNode = document): void {
   const el = root.querySelector<HTMLElement>(ACTIVE_SELECTOR)
-  const scroller = el?.closest<HTMLElement>('[data-slot="sidebar-content"]')
+  const scroller = el?.closest<HTMLElement>(
+    '[data-sidebar-scroll], [data-slot="sidebar-content"]',
+  )
   if (!el || !scroller) return
   const box = scroller.getBoundingClientRect()
   const row = el.getBoundingClientRect()

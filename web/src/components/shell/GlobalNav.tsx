@@ -41,6 +41,7 @@ import { useNavCounts } from './useNavCounts'
 import { usePersistedToggles } from './usePersistedToggles'
 import { GetStartedNavItem } from './GetStartedNavItem'
 import { useNavPins } from './useNavPins'
+import { hueClasses, hueForGroup, hueForItem } from './navHues'
 
 const GLOBAL_NAV_STORAGE_KEY = 'shell.nav.global.open'
 
@@ -145,8 +146,10 @@ function NavLinkItem({
   experimental,
   pin,
   beta,
+  groupId,
 }: {
   item: GlobalNavItem
+  groupId?: string
   pathname: string
   counts: Record<string, number>
   experimental: readonly string[]
@@ -159,6 +162,7 @@ function NavLinkItem({
   if (isFeatureLocked(item.feature, experimental)) {
     return <LockedNavLinkItem item={item} feature={item.feature} pin={pin} />
   }
+  const hue = hueClasses(hueForItem(item.id, groupId))
   const chord = chordFor(item.to)
   const count = item.badge ? (counts[item.badge] ?? 0) : 0
   const trafficKey =
@@ -183,7 +187,7 @@ function NavLinkItem({
           />
         }
         isActive={isGlobalItemActive(pathname, item)}
-        className={NAV_ROW_CLASS}
+        className={cn(NAV_ROW_CLASS, hue?.icon)}
         title={label}
         tooltip={{
           children: (
@@ -197,7 +201,7 @@ function NavLinkItem({
         {item.icon}
         <span>{label}</span>
         {beta ? (
-          <BetaBadge className="shrink-0 group-data-[collapsible=icon]:hidden" />
+          <BetaBadge className="shrink-0 text-sidebar-foreground/85 group-data-[collapsible=icon]:hidden" />
         ) : null}
         <NavBadge
           count={count}
@@ -270,8 +274,11 @@ export function GlobalNav() {
   }, [pathname, groups, stored, initialOpen, setOpen])
 
   return (
-    <>
-      <div className="flex flex-col gap-2 p-2">
+    <div className="flex max-h-full min-h-0 flex-col">
+      <div
+        data-sidebar-scroll=""
+        className="no-scrollbar flex min-h-0 flex-col gap-2 overflow-y-auto p-2"
+      >
         <GetStartedNavItem />
         {!rail && pinned.length > 0 ? (
           <CollapsibleSection
@@ -285,6 +292,7 @@ export function GlobalNav() {
                 <NavLinkItem
                   key={item.id}
                   item={item}
+                  groupId={groups.find((gr) => gr.items.includes(item))?.id}
                   pathname={pathname}
                   counts={counts}
                   experimental={experimental}
@@ -308,6 +316,7 @@ export function GlobalNav() {
                   <NavLinkItem
                     key={item.id}
                     item={item}
+                    groupId={group.id}
                     pathname={pathname}
                     counts={counts}
                     experimental={experimental}
@@ -338,6 +347,7 @@ export function GlobalNav() {
                 defaultValue: group.label,
               })}
               active={group.items.some((i) => isGlobalItemActive(pathname, i))}
+              chevronClassName={hueClasses(hueForGroup(group.id))?.text}
               hint={<GroupAttention group={group} counts={counts} />}
             >
               {menu}
@@ -345,9 +355,9 @@ export function GlobalNav() {
           )
         })}
       </div>
-      {/* mt-auto pins the block to the bottom only when there is spare height. */}
-      <SidebarGroup className="mt-auto px-2 pb-2 pt-0">
-        <SidebarGroupContent className="border-t border-sidebar-border pt-2">
+      {/* The group list above scrolls on its own; this block never shrinks or clips. */}
+      <SidebarGroup className="shrink-0 px-2 pb-2 pt-2">
+        <SidebarGroupContent className="rounded-lg border border-sidebar-border bg-sidebar-raised p-1">
           <SidebarMenu>
             {visibleGlobalFooter().map((item) => (
               <NavLinkItem
@@ -362,6 +372,6 @@ export function GlobalNav() {
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
-    </>
+    </div>
   )
 }

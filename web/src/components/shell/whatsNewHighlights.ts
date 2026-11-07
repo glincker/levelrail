@@ -171,3 +171,42 @@ export function groupBullets(
     items: items.filter((b) => b.group === group),
   })).filter((g) => g.items.length > 0)
 }
+
+function envInt(raw: unknown, fallback: number, min: number): number {
+  const n = Number(raw ?? fallback)
+  return Number.isFinite(n) ? Math.max(min, Math.floor(n)) : fallback
+}
+
+// A squash release can carry hundreds of bullets; above this the panel groups them.
+export function maxListSize(): number {
+  return envInt(import.meta.env.VITE_WHATSNEW_MAX_LIST, 40, 1)
+}
+
+export function maxScopeGroups(): number {
+  return envInt(import.meta.env.VITE_WHATSNEW_MAX_GROUPS, 8, 1)
+}
+
+// Hard ceiling on rendered rows so a huge release never floods the DOM.
+export const MAX_ROWS = 200
+
+export interface ScopeGroup {
+  scope: string
+  items: ParsedBullet[]
+}
+
+// Groups by bullet scope (empty scope is one "other" bucket), biggest first, top N only.
+export function scopeGroups(
+  items: ParsedBullet[],
+  top: number = maxScopeGroups(),
+): ScopeGroup[] {
+  const map = new Map<string, ParsedBullet[]>()
+  for (const b of items) {
+    const list = map.get(b.scope) ?? []
+    list.push(b)
+    map.set(b.scope, list)
+  }
+  return [...map.entries()]
+    .map(([scope, list]) => ({ scope, items: list }))
+    .sort((a, b) => b.items.length - a.items.length)
+    .slice(0, top)
+}

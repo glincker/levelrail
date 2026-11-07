@@ -97,7 +97,9 @@ function ItemLink({
       >
         {item.icon}
         <span>{item.label}</span>
-        {item.beta && <BetaBadge className="ml-auto" />}
+        {item.beta && (
+          <BetaBadge className="ml-auto text-sidebar-foreground/85" />
+        )}
       </SidebarMenuButton>
     </SidebarMenuItem>
   )

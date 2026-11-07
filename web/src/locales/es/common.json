@@ -338,7 +338,8 @@
     "account": {
       "controlPlane": "Plano de control",
       "signOut": "Cerrar sesión",
-      "updateAvailable": "Actualización disponible: {{version}}"
+      "updateAvailable": "Actualización disponible: {{version}}",
+      "updateAvailableShort": "Actualización disponible"
     },
     "breadcrumb": {
       "label": "Ruta de navegación",
@@ -434,6 +435,9 @@
       "markSeen": "Marcar todo como visto",
       "updateAvailable": "Actualización disponible: {{version}}",
       "onLatest": "Tienes la última versión",
+      "versionUnknown": "Estado de la versión desconocido",
+      "allChangesGrouped": "Todos los cambios",
+      "openFullNotes": "Abrir las notas completas de la versión",
       "update": "Actualizar ahora",
       "releaseNotes": "Notas de versión",
       "highlights": "Destacados",

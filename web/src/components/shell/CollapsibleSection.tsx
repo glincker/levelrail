@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 
 // One row system for every sidebar link: same height, icon column and states as group headers.
 export const NAV_ROW_CLASS =
-  'h-9 cursor-pointer gap-2.5 rounded-md px-2.5 text-sm text-sidebar-foreground/80 transition-colors duration-150 ease-out motion-reduce:transition-none hover:bg-sidebar-accent/70 hover:text-sidebar-foreground active:bg-sidebar-accent data-active:text-sidebar-active-foreground [&_svg]:text-sidebar-foreground/70 hover:[&_svg]:text-sidebar-foreground'
+  'h-9 cursor-pointer gap-2.5 rounded-md px-2.5 text-sm text-sidebar-foreground/85 outline-hidden transition-colors duration-150 ease-out motion-reduce:transition-none hover:bg-state-accent/10 hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring active:bg-state-accent/15 data-active:bg-sidebar-active data-active:font-medium data-active:text-sidebar-active-foreground [&_svg]:text-sidebar-foreground/80 hover:[&_svg]:text-sidebar-foreground data-active:[&_svg]:text-state-accent'
 
 export function NavChevron({
   open,
@@ -61,6 +61,7 @@ export function CollapsibleSection({
   children,
   className,
   active = false,
+  chevronClassName,
 }: {
   id: string
   open: boolean
@@ -72,6 +73,8 @@ export function CollapsibleSection({
   className?: string
   // Marks a collapsed group that holds the current page.
   active?: boolean
+  // Tints the chevron by the group's section hue.
+  chevronClassName?: string
 }) {
   const panelId = `nav-panel-${id}`
   return (
@@ -83,10 +86,10 @@ export function CollapsibleSection({
         title={typeof header === 'string' ? header : undefined}
         data-contains-active={active && !open ? 'true' : undefined}
         onClick={() => onOpenChange(!open)}
-        className="group/header flex h-9 w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 text-sm font-medium text-sidebar-foreground/70 outline-hidden transition-colors duration-150 ease-out hover:bg-sidebar-accent/70 hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring active:bg-sidebar-accent motion-reduce:transition-none data-[contains-active=true]:text-sidebar-active-foreground"
+        className="group/header flex h-9 w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 text-sm font-medium text-sidebar-foreground/85 outline-hidden transition-colors duration-150 ease-out hover:bg-state-accent/10 hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring active:bg-state-accent/15 motion-reduce:transition-none data-[contains-active=true]:text-sidebar-active-foreground"
       >
         <span className="grid size-5 shrink-0 place-items-center">
-          <NavChevron open={open} />
+          <NavChevron open={open} className={chevronClassName} />
         </span>
         <span className="min-w-0 flex-1 truncate text-left">{header}</span>
         {active && !open ? (

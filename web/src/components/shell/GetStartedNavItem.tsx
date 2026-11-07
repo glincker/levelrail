@@ -9,6 +9,8 @@ import {
 import { NAV_ROW_CLASS } from './CollapsibleSection'
 import { useIsRoot } from '../../hooks/useIsRoot'
 import { firstAppProgress, showGuideEntryPoints } from '../../lib/setupGuide'
+import { cn } from '@/lib/utils'
+import { hueClasses } from './navHues'
 import { useSetupGuide } from '../../queries/setupGuide'
 
 // Quarter steps keep the fill a Tailwind class instead of an inline width.
@@ -37,14 +39,14 @@ export function GetStartedNavItem() {
           render={<Link to="/get-started" />}
           isActive={pathname === '/get-started'}
           tooltip={label}
-          className={NAV_ROW_CLASS}
+          className={cn(NAV_ROW_CLASS, hueClasses('overview')?.icon)}
         >
           <RocketGlassIcon size="1.4em" />
           <span>{t('nav.label')}</span>
           <span
             aria-hidden="true"
             data-testid="get-started-progress"
-            className="ml-auto h-1 w-10 shrink-0 overflow-hidden rounded-full bg-sidebar-border"
+            className="ml-auto h-1.5 w-12 shrink-0 overflow-hidden rounded-full bg-sidebar-foreground/20"
           >
             <span
               className={`block h-full rounded-full bg-state-active-bar transition-[width] duration-300 ease-out motion-reduce:transition-none ${FILL[Math.round(Math.min(1, Math.max(0, fraction)) * 4)]}`}

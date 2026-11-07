@@ -410,6 +410,7 @@
     "account": {
       "controlPlane": "Control plane",
       "updateAvailable": "Update available: {{version}}",
+      "updateAvailableShort": "Update available",
       "signOut": "Sign out"
     },
     "breadcrumb": {
@@ -525,6 +526,9 @@
       "markSeen": "Mark all as seen",
       "updateAvailable": "Update available: {{version}}",
       "onLatest": "You are on the latest version",
+      "versionUnknown": "Version status unknown",
+      "allChangesGrouped": "All changes",
+      "openFullNotes": "Open the full release notes",
       "update": "Update now",
       "releaseNotes": "Release notes",
       "highlights": "Highlights",
