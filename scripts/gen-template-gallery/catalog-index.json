@@ -19654,10 +19654,10 @@
    "id": "gokapi",
    "aliases": [],
    "name": "Gokapi",
-   "slogan": "A lightweight self-hosted file sharing server with expiring links and download limits. Runs in one container on a small data folder. On first open, the setup page asks you to create the admin login.",
-   "description": "A lightweight self-hosted file sharing server with expiring links and download limits. Runs in one container on a small data folder. On first open, the setup page asks you to create the admin login.",
+   "slogan": "A lightweight self-hosted file sharing server with expiring links and download limits. Runs in one container on a small data folder. The first-run setup page lets whoever opens it first create the admin login, so leave the domain empty until setup is finished.",
+   "description": "A lightweight self-hosted file sharing server with expiring links and download limits. Runs in one container on a small data folder. The first-run setup page lets whoever opens it first create the admin login, so leave the domain empty until setup is finished.",
    "first_run": [
-    "Open the app and finish the setup page, choosing the admin login and the public address."
+    "Finish the setup page first, choosing the admin login, and only then add the public domain."
    ],
    "category": "Storage",
    "status": "active",

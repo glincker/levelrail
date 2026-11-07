@@ -402,7 +402,7 @@ func finishUploadDeploy(ctx context.Context, client *Client, prog string, inf up
 	}
 	trig, err := client.TriggerBuild(ctx, name, req)
 	if err != nil {
-		return reportError(stdout, stderr, jsonOut, rollbackCreatedApp(ctx, client, prog, res, fmt.Errorf("app %q is ready but the build did not start, re-run \"%s deploy --upload-hash %s --app %s\" to retry: %w", name, prog, hash, name, err)))
+		return reportError(stdout, stderr, jsonOut, createdAppNote(prog, res, fmt.Errorf("app %q is ready but the build may not have started, re-run \"%s deploy --upload-hash %s --app %s\" to retry: %w", name, prog, hash, name, err)))
 	}
 	res.DeployID = trig.ID
 	buildStart := time.Now()

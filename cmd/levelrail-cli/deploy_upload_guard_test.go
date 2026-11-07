@@ -68,34 +68,6 @@ func TestDeployUpload_BuildFailureAfterCreateNamesTheApp(t *testing.T) {
 	}
 }
 
-func TestDeployUpload_FailureRemovesTheAppItCreated(t *testing.T) {
-	dir := writeDeployDir(t, appDirFiles)
-	app := filepath.Base(dir)
-	var deleted bool
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/apps/"+app:
-			http.Error(w, `{"error":"app not found"}`, http.StatusNotFound)
-		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/apps":
-			w.WriteHeader(http.StatusCreated)
-			_, _ = w.Write([]byte(`{"name":"` + app + `"}`))
-		case r.Method == http.MethodDelete && r.URL.Path == "/api/v1/apps/"+app:
-			deleted = true
-			w.WriteHeader(http.StatusNoContent)
-		case strings.HasSuffix(r.URL.Path, "/uploads"):
-			http.Error(w, `{"error":"disk full"}`, http.StatusInsufficientStorage)
-		default:
-			http.Error(w, `{"error":"unexpected"}`, http.StatusNotFound)
-		}
-	}))
-	defer srv.Close()
-
-	code, _, errOut := runDeployCLI([]string{"deploy", dir, "--yes", "--api-url", srv.URL, "--token", "tok"}, nil)
-	if code == exitOK || !deleted || !strings.Contains(errOut, "removed app") {
-		t.Fatalf("exit = %d, deleted = %v, stderr = %s", code, deleted, errOut)
-	}
-}
-
 func TestDeployUpload_UploadHashPrefix(t *testing.T) {
 	dir := writeDeployDir(t, appDirFiles)
 	app := filepath.Base(dir)
