@@ -169,7 +169,7 @@ export function DnsRecordCard({
           ))}
         </div>
       ) : null}
-      <div className="grid gap-1.5 lg:grid-cols-[6rem_minmax(0,1fr)_minmax(0,1.4fr)]">
+      <div className="grid gap-1.5">
         <DnsRecordRow label={t('detail.field.type')} value={active.type} />
         <DnsRecordRow label={t('detail.field.name')} value={domain} />
         <DnsRecordRow label={t('detail.field.value')} value={active.value} />
