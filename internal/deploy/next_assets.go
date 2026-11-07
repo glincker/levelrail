@@ -390,3 +390,41 @@ func railpackCacheID(ctx context.Context, req Request, tag string) string {
 	}
 	return build.PreviewCacheID(build.PreviewCacheMode(ctx), req.ServiceName, tag)
 }
+
+// addNextDockerfileArgs injects NEXT_DEPLOYMENT_ID and NEXT_BUILD_ID into a Dockerfile
+// build only when the Dockerfile declares the ARG; otherwise it logs a hint and never fails.
+func addNextDockerfileArgs(ctx context.Context, req *Request, buildRoot, dockerfile string, args map[string]string, progress func(build.ProgressEvent)) map[string]string {
+	if !build.DetectNext(buildRoot).Detected {
+		return args
+	}
+	declared := dockerfileArgNames(dockerfile)
+	out := make(map[string]string, len(args)+2)
+	for k, v := range args {
+		out[k] = v
+	}
+	hint := func(name, why string) {
+		if progress != nil {
+			progress(build.ProgressEvent{Step: "next.js", Log: "next.js: add `ARG " + name + "` to your Dockerfile (before the build step) so " + why, Stream: "stderr"})
+		}
+	}
+	if id := nextDeploymentID(ctx, buildRoot, deployIDFor(*req), req.Service.Env); id != "" {
+		if declared[nextDeploymentIDEnvVar] {
+			out[nextDeploymentIDEnvVar] = id
+			req.nextDeploymentID = id
+		} else {
+			hint(nextDeploymentIDEnvVar, "skew protection can match old browser tabs to their build")
+		}
+	}
+	if id := nextBuildID(buildRoot, deployIDFor(*req), req.Service); id != "" {
+		if declared[nextBuildIDEnvVar] {
+			out[nextBuildIDEnvVar] = id
+			req.nextBuildID = id
+		} else {
+			hint(nextBuildIDEnvVar, "replicas share one build id on the shared next.cache")
+		}
+	}
+	if note := build.NextCacheSuggestion(buildRoot, req.Service.Replicas, req.Service.Next.UsesRedisCache()); note != "" && progress != nil {
+		progress(build.ProgressEvent{Step: "next.js", Log: note, Stream: "stderr"})
+	}
+	return out
+}
