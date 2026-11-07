@@ -163,6 +163,7 @@
             "pages": [
               "troubleshooting",
               "doctor",
+              "doctor-and-import",
               "email-notifications",
               "email-templates",
               "alert-inbox",
@@ -267,6 +268,7 @@
             "group": "Databases and storage",
             "pages": [
               "managing-databases",
+              "managed-databases",
               "postgres-pooler",
               "database-upgrades",
               "database-version-catalog",

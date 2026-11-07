@@ -781,6 +781,15 @@ Both run synchronously with a 10-second timeout. Only the existing-channel varia
 Deleting a channel still attached to a rule or deploy-notify target succeeds. The foreign key's `ON DELETE SET NULL` clears the reference instead of failing (unlike deleting a backup target).
 </Note>
 
+## Secrets in alert output
+
+Alert history error text and every notification delivery error pass through the same output masker as logs. A stored secret that a failing webhook or rejected request echoes back shows as `[redacted]` in `levelrail-cli alerts history` and in the channel's delivery history. Deploy notifications that quote log lines are masked the same way. Channel credentials are sealed separately, see [Notification channels](#notification-channels). The masking rules are in [Output masking](/environment-and-secrets#output-masking).
+
+```bash
+levelrail-cli alerts history --app my-app --limit 20
+levelrail-cli channels deliveries <id> --limit 20
+```
+
 ## Why node-local, not a central store
 
 Most platforms in this category, and hosted observability vendors, centralize: they ship every metric and log line to one place, index it there, and query it there. Every container on every node then writes to that store, and the central index keeps growing whether or not anyone queries it.

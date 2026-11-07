@@ -1,137 +1,152 @@
 ---
-title: "Preview environments per pull request on your own servers"
-description: "Levelrail deploys a preview environment for each pull request on GitHub, GitLab, Bitbucket and Gitea and tears it down when the pull request closes."
+title: "Preview environments"
+description: Run a copy of an app for each pull request, with its own URL, caps, optional database, and automatic teardown when the pull request closes.
 "og:url": "https://docs.levelrail.com/preview-environments"
 ---
 
-**Every pull request gets its own running copy**
+A preview environment is a running copy of an app for one pull request. Levelrail deploys it when the pull request opens or gets new commits, and tears it down when the pull request closes or merges.
 
-Open or update a pull request and Levelrail deploys a preview. Close it and the preview is torn down, whether or not it merged.
+Previews are off until you turn them on for an app. Each app opts in on its own.
 
-[Set up git integrations](/git-integrations) | [View on GitHub](https://github.com/glincker/levelrail)
+## Turn it on
 
-```bash
-curl -fsSL https://levelrail.com/install.sh | sudo sh
+Connect the app to a git repository first (see [git integrations](/git-integrations)). Then:
+
+```sh
+levelrail-cli apps previews enable web
+levelrail-cli apps previews list web
+levelrail-cli apps previews disable web
 ```
 
-## How previews work
+`list` with no app name shows previews across every app you can read.
 
-<CardGroup cols={3}>
-  <Card title="Opened or updated">
-    A new pull request or a new push to it deploys or redeploys a preview copy automatically.
-  </Card>
-  <Card title="Closed">
-    Closing a pull request tears the preview down regardless of whether it merged.
-  </Card>
-  <Card title="Status back to your git host">
-    Each preview gets a commit status and an updated pull request comment. On a GitHub source with status reporting on (the default, off with `APP_GIT_STATUS_ENABLED=false` or the app's `report_status` setting), it also shows as a deployment in the `preview` environment.
-  </Card>
-  <Card title="Disposable databases">
-    An app can provision a full, disposable database for every pull request preview that is destroyed with the preview.
-  </Card>
-  <Card title="Multi-service previews">
-    A multi-service app fans a preview out the same way a real deploy does, never through a second, drifted code path.
-  </Card>
-  <Card title="Four git providers">
-    GitHub, GitLab, Bitbucket and Gitea sources all support previews.
-  </Card>
-</CardGroup>
+## Lifecycle
 
-## The pull request comment
+- **Opened or reopened** deploys a preview. A new push to the pull request redeploys it.
+- **Closed or merged** tears it down, whether or not it merged.
+- **Teardown** removes the preview app, its containers, its disposable databases, and its env overrides.
+- **Stale sweep** tears down previews that have had no updates for their TTL. The default is 7 days. Set it per app with `--ttl-hours`, or for the whole control plane with `APP_PREVIEW_TTL` (a Go duration such as `168h`). The sweeper runs every hour by default, set by `APP_PREVIEW_SWEEP_INTERVAL`.
+- A preview stuck in deploying longer than `APP_PREVIEW_STUCK_AFTER` (default 30 minutes) is marked failed by the startup sweep.
 
-Each preview keeps one comment on its pull request, edited in place as the preview moves from building to ready, failed or removed. It shows:
+Manual controls:
 
-- **Status**, and the preview **URL** once it is ready.
-- The **commit** it was built from and the time it was **last updated**.
-- A **build logs** link to the dashboard, and the **deploy time** of the last build.
-- The **cleanup** time if nothing changes, and how many **env overrides** apply.
+```sh
+levelrail-cli apps previews teardown web 42
+levelrail-cli apps previews extend web 42 --hours 48
+levelrail-cli apps previews sweep
+```
 
-The comment never contains an env var name or value, so secrets set for a pull request cannot leak into it.
+`teardown` removes one pull request's preview now. `extend` keeps one preview past its TTL. `sweep` removes every stale preview across all apps.
 
-## Static sites
+## Limits
 
-If the app is a static site (`build.type: static`), the preview publishes the pull request's head commit as its own static site named `<app>-pr-<number>`, with no container. It is built the same way as a production deploy and served on the same preview URL a container preview would get. The live site, its domain and its rollback history are not touched, and the same status checks and pull request comment are posted.
+Two caps bound how many previews run at once:
 
-- Closing or merging the pull request, the stale sweep and a manual **Tear down** remove the preview's files, route and site record. Only that preview's own directory is deleted.
-- Without a base domain or primary domain the preview has no host name, so it is built but not reachable.
-- The basic auth gate is not applied to static previews, and the preview is not given a no-index header. The preview comment notes it when the gate is on. Do not put private content in a static preview.
-- Database strategies, disposable databases and idle sleep do not apply, since a static site has no runtime.
+- `APP_PREVIEW_ENV_MAX_PER_APP` (default 10) caps live previews per app.
+- `APP_PREVIEW_ENV_MAX_TOTAL` (default 50) caps live previews on the control plane.
 
-## Env overrides for one pull request
+A value of 0 turns that cap off. An app can set its own per-app cap with `--max-previews`, where 0 means the platform cap applies.
 
-Besides the app-wide `preview-env`, branch-pattern `branch-env` and per-context [deploy contexts](/deploy-contexts) overrides, you can set values for a single pull request, for example to point one preview at a staging API. They win over every other source for that pull request and apply on its next deploy, so push a commit after setting them.
+When a cap is full, the app's `on_limit` decides what happens:
 
-<Tabs>
-<Tab title="UI">
+```sh
+levelrail-cli apps previews limits web --on-limit evict_oldest   # default: remove the oldest live preview
+levelrail-cli apps previews limits web --on-limit reject         # refuse the new preview
+levelrail-cli apps previews limits                               # platform-wide usage and caps
+```
 
-Open the app, then **Previews**, and use **Env overrides** on the pull request's row. Tick **Store encrypted** for a secret.
+A preview that the cap rejects is recorded with the status `limit_reached` and the reason.
 
-</Tab>
-<Tab title="CLI">
+## Fork pull requests
 
-```bash
+By default a pull request from a fork is held. It does not deploy until someone approves it. Approve a held pull request once with:
+
+```sh
+levelrail-cli apps previews approve web 42 --yes
+```
+
+Add `--share-secrets` to give that one deploy the app's environment variables and secrets. Without it, a fork preview gets no app environment.
+
+To skip the hold for forks, set `--allow-forks`. Forks then deploy without approval but still get no app environment. Only `--fork-secrets` gives fork previews the app's environment and secrets, so turn it on only if you accept that a fork's code runs with them:
+
+```sh
+levelrail-cli apps previews settings web --allow-forks
+levelrail-cli apps previews settings web --fork-secrets
+```
+
+## Database strategy
+
+Each preview can get a database. The default is `none`, which gives the preview no database.
+
+```sh
+levelrail-cli apps previews settings web --database fresh
+levelrail-cli apps previews settings web --database seed --seed-database web-db
+```
+
+| Strategy | What the preview gets |
+| --- | --- |
+| `none` | No database. This is the default. |
+| `shared` | The app's production database. Writes from the preview land in production, so use this only when that is what you want. |
+| `fresh` | An empty database of the same engine and version, created for this preview and removed with it. |
+| `seed` | A fresh database seeded from the latest backup of `--seed-database`, or of the app's own database when no name is given. Seeding stops after `APP_PREVIEW_SEED_TIMEOUT` (default 30 minutes). |
+
+The strategy applies to single-service apps. A multi-service app, or an app whose `app.yaml` declares `databases:`, uses that file instead. Mark a database with `ephemeralInPreviews: true` there to give every preview its own copy.
+
+## Resources, idle sleep, and visibility
+
+- Each preview gets 256Mi of memory and 0.25 CPU by default. Change them with `--memory` and `--cpu`.
+- A preview sleeps after 30 minutes without requests. Change it with `--idle-sleep-minutes`, or for the control plane with `APP_PREVIEW_IDLE_SLEEP_MINUTES`.
+- Search engines do not index preview URLs by default. Add `--allow-indexing` to allow it.
+- Put basic auth in front of every preview of an app with `--gate`, plus `--gate-username` and `--gate-password`. The password is write-only: it is stored, not shown again.
+
+```sh
+levelrail-cli apps previews settings web --memory 512Mi --cpu 0.5 --idle-sleep-minutes 60
+levelrail-cli apps previews settings web --gate --gate-username reviewer --gate-password "$PREVIEW_GATE_PASSWORD"
+```
+
+Run `levelrail-cli apps previews settings web` with no policy flag to see the current values.
+
+## Pull request feedback
+
+Previews can report back to GitHub: a commit status on each deploy, and one pull request comment that is updated in place. This is off by default and opts in per app:
+
+```sh
+levelrail-cli apps previews pr-status enable web
+levelrail-cli apps previews pr-status disable web
+```
+
+The control plane can switch commit statuses and deployments off for every app with `APP_GIT_STATUS_ENABLED=false`.
+
+## Environment overrides for one pull request
+
+Set a value for one pull request only, for example to point one preview at a staging API. The override takes precedence over the app's environment for that pull request, and applies on its next deploy.
+
+```sh
 levelrail-cli apps pr-env set web FEATURE_FLAG --pr 42 --value on
 levelrail-cli apps pr-env set web API_KEY --pr 42 --value sk-test-123 --secret
 levelrail-cli apps pr-env list web --pr 42
-levelrail-cli apps pr-env clear web prenv_abc123 --pr 42
+levelrail-cli apps pr-env clear web <id> --pr 42
 ```
 
-</Tab>
-<Tab title="API">
-
-`GET`, `POST` on `/api/v1/apps/{name}/previews/{number}/env` and `DELETE /api/v1/apps/{name}/previews/{number}/env/{id}`. A secret is stored encrypted and its value is never returned.
-
-</Tab>
-</Tabs>
-
-Fork pull requests only receive overrides when you approved sharing the app's secrets with that fork.
-
-## What cleanup removes
-
-When a pull request closes or merges, Levelrail removes everything the preview created:
-
-- the preview app and its containers (or, for a static site, its published files), and the DNS record,
-- every disposable database and its data volumes,
-- the preview's own named volumes (a volume that another service still mounts is kept),
-- the pull request's env overrides and their encrypted values.
-
-Cleanup is safe to repeat. A closed event delivered twice is ignored the second time. If a step fails, such as a volume that is still in use, the preview is marked failed with the reason and the next close event, manual **Tear down**, or the stale sweep finishes the job. A pull request reopened later starts from a fresh preview with no old overrides.
+A secret is stored encrypted and its value is not returned by `list`. Use `--secret` for anything sensitive.
 
 ## Branch deploys
 
-A branch deploy gives a branch its own stable URL, separate from pull request previews. It is off by default. Choose which branches get one on the app's Previews page (Branch deploys), or from the CLI:
+A branch deploy gives a branch a stable URL of its own. It is separate from pull request previews and rebuilds on every push to the branch.
 
-```bash
+```sh
 levelrail-cli apps branch-deploys set web --mode patterns --branch staging --branch "feature/*"
 levelrail-cli apps branch-deploys list web
 levelrail-cli apps branch-deploys delete web staging
 ```
 
-- Modes: `off`, `all`, or `patterns` (exact names or globs where `*` matches any characters, including `/`). The production branch never gets one.
-- The URL comes from the branch name and stays the same across pushes: `<app>-br-<branch>` under the apps base domain, or `br-<branch>.<app>.<primary-domain>` without one. A branch name with characters outside lowercase letters, digits and dashes gets a short hash suffix, so `feature/x` and `feature-x` never share a URL. Names are capped to one DNS label.
-- Each push to the branch rebuilds it. Branch-scoped env overrides (`apps branch-env`) and the app's preview policy (resource limits, basic auth gate, search engine hiding, idle sleep) apply.
-- It is removed when the branch is deleted (the provider's push event for the deletion) and after it sees no push for the idle TTL, `APP_BRANCH_DEPLOY_TTL` (default 336h). `APP_BRANCH_DEPLOY_MAX_PER_APP` caps live branch deploys per app (default 10); a push past the cap is ignored with a note.
-- Works with GitHub, GitLab, Gitea and Bitbucket push webhooks. It does not provision preview databases. Per-context env and build settings are covered in [deploy contexts](/deploy-contexts).
+- `--mode` is `off`, `all`, or `patterns`. Only `all` and `patterns` give branches a deploy. In `patterns`, a pattern is an exact branch name or a glob where `*` matches any characters, including `/`. The production branch never gets one.
+- A branch deploy is removed when the branch is deleted, or after 14 days with no push. `APP_BRANCH_DEPLOY_TTL` changes the idle time.
+- `APP_BRANCH_DEPLOY_MAX_PER_APP` (default 10) caps live branch deploys per app. A push past the cap is ignored with a note.
+- Branch-scoped env overrides are set with `levelrail-cli apps branch-env`.
 
-## Frequently asked questions
+## Not yet
 
-<AccordionGroup>
-  <Accordion title="Which git hosts support previews?">
-    GitHub, GitLab, Bitbucket and Gitea.
-  </Accordion>
-  <Accordion title="Are previews on by default?">
-    Previews are gated on a per-app preview setting, so you turn them on where you want them.
-  </Accordion>
-  <Accordion title="What about secrets in previews?">
-    Previews use the app's configuration, so review which environment values a preview should receive before enabling it for untrusted forks.
-  </Accordion>
-  <Accordion title="Is this the same as deploy thumbnails?">
-    No. Deploy previews, the thumbnails in deploy history, are a separate feature from per-pull-request preview environments.
-  </Accordion>
-</AccordionGroup>
-
-## Review changes on a real URL
-
-Connect a repository and open a pull request.
-
-[Set up git integrations](/git-integrations) | [View on GitHub](https://github.com/glincker/levelrail)
+- **Static site previews.** Static sites publish a preview under the name `<app>-pr-<number>`. This page does not yet cover their files, gate, or teardown in detail.
+- **Pull request comment commands.** The control plane accepts commands in pull request comments. They are not documented here yet.
+- **Preview databases for branch deploys.** The branch deploy code path does not set up a database. Treat a branch deploy as app-only until this is confirmed.
