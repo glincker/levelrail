@@ -522,6 +522,14 @@ func specServiceFromDesired(svc store.DesiredService, buildCfg spec.Build) spec.
 			out.Env[k] = spec.EnvVar{Vault: &spec.VaultRef{Path: ref.Path, Key: ref.Key}}
 		}
 	}
+	// A rebuild must keep the app's scale and database links, not reset them to defaults.
+	out.Replicas = svc.Replicas
+	for k, ref := range svc.DatabaseEnv {
+		if out.Env == nil {
+			out.Env = map[string]spec.EnvVar{}
+		}
+		out.Env[k] = spec.EnvVar{From: ref.Database + "." + ref.Field}
+	}
 	if svc.Resources != nil {
 		out.Resources = specResourcesFromStore(*svc.Resources)
 	}

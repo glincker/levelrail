@@ -251,6 +251,9 @@ func newRailpackSolveOpt(ctx context.Context, plan *rpplan.BuildPlan, req Railpa
 		return nil, nil, fmt.Errorf("build: railpack: assemble deploy image: %w", err)
 	}
 
+	if _, userSet := req.Env["NODE_OPTIONS"]; req.NodeHeapMB > 0 && !userSet {
+		image.Config.Env = dropBuildHeapEnv(image.Config.Env, req.NodeHeapMB)
+	}
 	imageConfig, err := json.Marshal(image)
 	if err != nil {
 		return nil, nil, fmt.Errorf("build: railpack: marshal image config: %w", err)
@@ -482,6 +485,18 @@ func railpackSession(env map[string]string) []session.Attachable {
 		m[k] = []byte(v)
 	}
 	return []session.Attachable{secretsprovider.FromMap(m)}
+}
+
+// dropBuildHeapEnv removes the build-time heap cap from the image env so it never limits the running app.
+func dropBuildHeapEnv(env []string, heapMB int) []string {
+	injected := fmt.Sprintf("NODE_OPTIONS=--max-old-space-size=%d", heapMB)
+	out := env[:0:0]
+	for _, e := range env {
+		if e != injected {
+			out = append(out, e)
+		}
+	}
+	return out
 }
 
 // applyNodeHeap sets NODE_OPTIONS on the install and build steps unless the plan already sets it, and returns the log line (keys only).
