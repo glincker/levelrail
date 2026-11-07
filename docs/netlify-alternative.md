@@ -52,7 +52,7 @@ Stay on Netlify if you need Edge Functions, Netlify Identity or built-in analyti
 | Serverless functions | Netlify Functions | [Functions](/functions): container apps with triggers, a key-value store, versions and replay. They sleep when idle and wake on the first request, or stay running. Cold start is a container start |
 | Edge Functions | Supported | Not offered, and a stated non-goal |
 | Edge cache | Managed edge network | One response cache in the ingress with rules and purge. See [CDN and caching](/cdn-and-caching). It is a single cache, not multi-region |
-| CDN in front | Built in | Levelrail connects to Cloudflare as the DNS provider, with a per-app proxy switch and automatic cache purge on publish, deploy and rollback, so git, build, publish, DNS and purge are managed from one place: `levelrail-cli apps cdn set <app> --proxied on`. See [Cloudflare in front](/cloudflare-in-front). Not yet verified on a live proxied record. Other CDNs can sit in front, and you purge them with their own tools |
+| CDN in front | Built in | Levelrail connects to Cloudflare as the DNS provider, with a per-app proxy switch and automatic cache purge on publish, deploy and rollback, so git, build, publish, DNS and purge are managed from one place. `levelrail-cli cdn setup <app> --dry-run` then `levelrail-cli cdn setup <app>` run the checks and turn the proxy on, and `levelrail-cli cdn edge <app>` shows the proxy state, last purge and cache hit rate. See [Cloudflare in front](/cloudflare-in-front). Not yet verified on a live proxied record. Other CDNs can sit in front, and you purge them with their own tools |
 | Identity | Netlify Identity | Not offered |
 | Blobs | Netlify Blobs | Not offered. Managed Postgres and Redis exist |
 | Image CDN | Image transformation | Image resizing is not yet offered. A CDN in front can cache images you serve |
@@ -71,7 +71,7 @@ Stay on Netlify if you need Edge Functions, Netlify Identity or built-in analyti
     Yes, in Netlify syntax, with the exceptions above. A bad line is skipped and reported in the deploy log, and `levelrail-cli static-sites routes lint` checks the files before you deploy.
   </Accordion>
   <Accordion title="Can I serve a site from a global edge network?">
-    Levelrail serves static files from the node or nodes you run, through one cache in the ingress. For edge caching, connect Cloudflare: `levelrail-cli apps cdn set <app> --proxied on` turns the proxy on, and a static publish purges its cache. See [Cloudflare in front](/cloudflare-in-front). Not yet verified on a live proxied record.
+    Levelrail serves static files from the node or nodes you run, through one cache in the ingress. For edge caching, connect Cloudflare: `levelrail-cli cdn setup <app> --dry-run` then `levelrail-cli cdn setup <app>` run the checks and turn the proxy on, and a static publish purges its cache. See [Cloudflare in front](/cloudflare-in-front). Not yet verified on a live proxied record.
   </Accordion>
   <Accordion title="What does it cost?">
     The software is free under Apache 2.0. Your cost is the servers you run it on, rather than usage-based plans.

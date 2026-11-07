@@ -46,9 +46,12 @@ levelrail-cli apps secrets rotation list web
 levelrail-cli apps secrets rotation due
 levelrail-cli apps secrets rotation rotate web JWT_SECRET --yes
 levelrail-cli apps secrets rotation remove web JWT_SECRET
+levelrail-cli apps secrets rotation replace web JWT_SECRET --value-file ./new-secret.txt --yes
 ```
 
 `due` lists policies across every app and needs the root ability.
+
+`rotation replace` writes a new value without restarting the app. Pass the value with `--value-file` (a path, or `-` for stdin), or leave it out to have one generated. The old value is kept as `<KEY>_PREVIOUS` for the grace window, and `--yes` is required. Redeploy the app to pick the new value up. Never pass the value as a command argument.
 
 ## API
 
@@ -113,7 +116,7 @@ Still stuck: See [Limits](/secret-rotation#limits) for details on auto-generated
 
 Likely cause: Another operation is currently writing to this secret (for example, a deploy in progress).
 
-How to confirm: Check the secret status: `levelrail-cli apps secrets get <app> <key> --json | jq .locked` should return true if locked. Wait for any in-flight deploys to complete: `levelrail-cli apps status <app>` should show no pending state.
+How to confirm: Check the secret's locked state: `levelrail-cli apps secrets list <app>` shows the locked state of every key (`--json` prints it for scripts), and the key reads as locked. Wait for any in-flight deploys to complete: `levelrail-cli apps status <app>` should show no pending state.
 
 Fix: Wait for the lock to clear (usually takes 1-2 minutes as the current operation finishes). Then retry the rotation: `levelrail-cli apps secrets rotation rotate <app> <key> --yes`. If the lock persists after 10 minutes, restart the control plane or check logs for errors.
 
@@ -125,6 +128,6 @@ Likely cause: The grace window had not expired yet when the policy was deleted, 
 
 How to confirm: Check if the env variable still exists: `levelrail-cli apps env <app> | grep PREVIOUS`. If it is there, wait for the grace window to expire and the app to be restarted, or manually delete it.
 
-Fix: The `<KEY>_PREVIOUS` will be automatically deleted when the grace window expires and the app is next restarted. To remove it immediately, delete the env variable manually: `levelrail-cli apps secrets unset <app> <KEY>_PREVIOUS`.
+Fix: The `<KEY>_PREVIOUS` will be automatically deleted when the grace window expires and the app is next restarted. To remove it immediately, delete it manually: `levelrail-cli apps secrets delete <app> <KEY>_PREVIOUS` (add `--force` if the key is locked).
 
 Still stuck: See [Dashboard](/secret-rotation#dashboard) or [Environment](/environment-and-secrets) to delete env variables manually.
