@@ -174,3 +174,65 @@ test('set with null deletes the entry', async () => {
   await h.set('/a', null, {});
   assert.strictEqual(await h.get('/a'), null);
 });
+
+test('instances in one process share the fallback and the log throttle', async () => {
+  const { client, logs, clock } = make({ stateKey: 'shared-1' });
+  const mk = () => new CacheHandler({ client, stateKey: 'shared-1', buildId: 'b1', keyPrefix: 'app', now: () => clock.t, logger: (m) => logs.push(m), retryMs: 0 });
+  client.broken = true;
+  const a = mk();
+  const b = mk();
+  await a.set('/p', { kind: 'APP_PAGE', html: 'x', headers: {} }, { revalidate: 60 });
+  assert.strictEqual((await b.get('/p')).value.html, 'x');
+  for (let i = 0; i < 6; i++) await mk().get('/q' + i);
+  assert.strictEqual(logs.length, 1);
+});
+
+test('revalidation made during an outage is applied to redis on reconnect', async () => {
+  const { h, client, clock } = make();
+  await h.set('/a', { kind: 'FETCH', data: 1 }, { tags: ['t'] });
+  clock.t += 10;
+  client.broken = true;
+  await h.revalidateTag('t');
+  assert.strictEqual(await h.get('/a'), null);
+  client.broken = false;
+  clock.t += 10;
+  const other = new CacheHandler({ client, buildId: 'b1', keyPrefix: 'app', now: () => clock.t });
+  assert.strictEqual(await h.get('/a'), null);
+  assert.strictEqual(await other.get('/a'), null);
+  assert.strictEqual(h.localTags.size, 0);
+});
+
+test('replay keeps a newer tag time already stored', async () => {
+  const { h, client, clock } = make();
+  client.broken = true;
+  await h.revalidateTag('t');
+  client.broken = false;
+  clock.t += 50;
+  const other = new CacheHandler({ client, buildId: 'b1', keyPrefix: 'app', now: () => clock.t });
+  await other.revalidateTag('t');
+  const newer = String(clock.t);
+  await h.get('/x');
+  const stored = await client.hmGet('app:b1:tags', ['t']);
+  assert.strictEqual(stored[0], newer);
+});
+
+test('the database CA comes from an option, PEM env or file and verification stays on', () => {
+  const pem = '-----BEGIN CERTIFICATE-----\nAAAA\n-----END CERTIFICATE-----\n';
+  const { h } = make({ ca: pem });
+  assert.strictEqual(h.ca, pem);
+  process.env.LEVELRAIL_NEXT_CACHE_CA = pem;
+  try {
+    assert.strictEqual(make().h.ca, pem);
+  } finally {
+    delete process.env.LEVELRAIL_NEXT_CACHE_CA;
+  }
+  assert.strictEqual(make().h.ca, undefined);
+  process.env.LEVELRAIL_NEXT_CACHE_CA_FILE = '/nonexistent/ca.pem';
+  try {
+    const m = make();
+    assert.strictEqual(m.h.ca, undefined);
+    assert.strictEqual(m.logs.length, 1);
+  } finally {
+    delete process.env.LEVELRAIL_NEXT_CACHE_CA_FILE;
+  }
+});

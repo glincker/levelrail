@@ -32,7 +32,19 @@ levelrail-cli databases create --name myapp-cache --engine redis --version 7
 levelrail-cli databases link myapp-cache myapp --env-var REDIS_URL
 ```
 
-The handler reads the connection string from the first of `LEVELRAIL_NEXT_CACHE_URL`, `LEVELRAIL_REDIS_URL`, `REDIS_URL`. Run `levelrail-cli databases create --help` for the engine and version values your server offers.
+The handler reads the connection string from the first of `LEVELRAIL_NEXT_CACHE_URL`, `LEVELRAIL_REDIS_URL`, `REDIS_URL`.
+
+### TLS
+
+A managed Redis serves TLS only, with a self-signed certificate, so the link URL is `rediss://`. The handler verifies that certificate; it never turns verification off. Link the certificate as a second variable and the handler trusts it for this connection only:
+
+```
+levelrail-cli databases link myapp-cache myapp --env-var LEVELRAIL_NEXT_CACHE_CA --field tls_ca
+```
+
+Restart the app after linking. The `tls_ca` field resolves to the database certificate in PEM form, which is its own trust anchor. In `app.yaml` the same reference is `LEVELRAIL_NEXT_CACHE_CA: { from: { database: myapp-cache, field: tls_ca } }`. The certificate is issued for the database container name, so use the same-node host the link provides. For a host with a different name, set `LEVELRAIL_NEXT_CACHE_CA_SERVERNAME` to the certificate name.
+
+Without the CA the handler logs a certificate error and falls back to per process caching. Do not disable TLS on the database to work around it. Run `levelrail-cli databases create --help` for the engine and version values your server offers.
 
 ## Settings (environment)
 
@@ -46,12 +58,15 @@ The handler reads the connection string from the first of `LEVELRAIL_NEXT_CACHE_
 | `LEVELRAIL_NEXT_CACHE_GRACE_SECONDS` | 86400 | Added to an entry's `revalidate` to form its Redis TTL, so stale-while-revalidate still has something to serve. |
 | `LEVELRAIL_NEXT_CACHE_DEFAULT_TTL_SECONDS` | 2592000 | TTL for entries without a revalidate value. |
 | `LEVELRAIL_NEXT_CACHE_RETRY_MS` | 5000 | How long to skip Redis after a failure. |
+| `LEVELRAIL_NEXT_CACHE_CA` | unset | PEM of the CA to trust for a `rediss://` URL (see TLS). |
+| `LEVELRAIL_NEXT_CACHE_CA_FILE` | unset | Path to a PEM file, used when `LEVELRAIL_NEXT_CACHE_CA` is unset. |
+| `LEVELRAIL_NEXT_CACHE_CA_SERVERNAME` | unset | Certificate name to verify when the host differs from it. |
 
 ## How it behaves
 
 - Entries are stored as `<prefix>:<buildId>:e:<key>`. Tags are not scanned: each entry records its tags, and one Redis hash holds the last revalidation time per tag. On read the handler compares the entry's `lastModified` with those times and treats an older entry as a miss.
 - Tag times use each replica's clock. Keep replica clocks in sync (NTP); a few milliseconds of skew is harmless, seconds can delay or skip an invalidation.
-- Fail open: any Redis error, timeout or missing URL switches that replica to a small in-process LRU, logs one line per minute to stderr, and retries Redis after `LEVELRAIL_NEXT_CACHE_RETRY_MS`. Requests are never failed by the cache. While degraded, replicas do not share content, so you get the per replica behaviour until Redis is back; when it returns the fallback is cleared.
+- Fail open: any Redis error, timeout or missing URL switches that replica to a small in-process LRU shared by every cache instance in the process, so pages still cache per replica. It logs at most one line per minute to stderr per process and retries Redis after `LEVELRAIL_NEXT_CACHE_RETRY_MS`. Requests are never failed by the cache. While degraded, replicas do not share content. Revalidations made during the outage are remembered and written to Redis when it returns (before the first read), so an entry cached before the outage is not served stale; when Redis is back the fallback entries are dropped.
 - The tag hash has no TTL (dropping it would lose invalidations) and grows by one small field per distinct tag.
 
 ## Next.js versions
