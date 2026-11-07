@@ -13,6 +13,11 @@ import (
 func TestRun_Status_DockerConnected(t *testing.T) {
 	var gotMethod, gotPath string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/v1/updates/auto" {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte("{}"))
+			return
+		}
 		if r.URL.Path == "/api/v1/updates" {
 			w.Header().Set("Content-Type", "application/json")
 			_ = json.NewEncoder(w).Encode(updatesResource{CurrentVersion: "v1.2.3"})

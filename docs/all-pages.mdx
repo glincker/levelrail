@@ -307,7 +307,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Move a Coolify one-click service to a Compose app](/coolify-service-to-compose): How migrate coolify stages a Coolify one-click service as a Compose file with its magic variables translated, what it leaves for you to fix, and a manual path when you need one.
 - [Migrate from Dokploy](/migrate-from-dokploy): Import Dokploy applications, databases, env vars and domains into Levelrail with a read-only dry run, then copy data and switch DNS while Dokploy keeps serving.
 - [Migrate from CapRover](/migrate-from-caprover): Import CapRover apps, env vars, domains and volumes into Levelrail with a read-only dry run. CapRover builds locally, so images need a repo or registry.
-- [Migrate from Dokku](/migrate-from-dokku): Move Dokku apps to Levelrail by importing the env dump or a docker inspect snapshot. Live Dokku over SSH is not supported, so some steps are manual.
+- [Migrate from Dokku](/migrate-from-dokku): Move Dokku apps to Levelrail by reading the Dokku host's Docker over SSH, or from an env dump as the fallback. Includes a Dokku command map.
 - [Migrate from Docker Compose](/migrate-from-docker-compose): Turn a docker-compose.yml into Levelrail apps and managed databases with a plan first, then copy data and switch DNS while the old stack keeps running.
 - [Import Kubernetes manifests](/import-kubernetes): Convert existing Kubernetes YAML into Levelrail apps with levelrail-cli import k8s. The conversion is text only: no fetch, no execution, no cluster contact.
 - [Migration reference](/migration-reference): Flags, mapping tables, database copy and hub details, cutover verdicts and environment variables for the Levelrail migration importer.
