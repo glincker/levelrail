@@ -122,12 +122,15 @@
     "status": {
       "running": "Drenando",
       "succeeded": "Drenado",
+      "partial": "Drenado parcial",
       "failed": "El drenaje falló"
     },
     "emptyDone": "No había nada en este nodo, así que no hubo nada que mover.",
     "runningHint": "Se actualiza cada pocos segundos. Puedes cerrar este diálogo, el drenaje sigue en curso.",
     "movesTitle": "Movimientos",
     "blockedTitle": "Bloqueado, se queda en este nodo",
+    "partialTitle": "El drenaje terminó con cargas que se quedaron",
+    "partialHint": "Algunos movimientos funcionaron y otros se bloquearon o fallaron. Los elementos bloqueados siguen en este nodo, que sigue acordonado. Resuelve cada motivo y vuelve a drenar.",
     "errorTitle": "El drenaje se detuvo",
     "failedHint": "El nodo sigue acordonado. Corrige la causa que se muestra en el movimiento fallido y vuelve a drenar, o desacordona el nodo para devolverlo a la rotación.",
     "toNode": "a {{node}}",

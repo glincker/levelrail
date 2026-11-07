@@ -122,12 +122,15 @@
     "status": {
       "running": "Draining",
       "succeeded": "Drained",
+      "partial": "Partly drained",
       "failed": "Drain failed"
     },
     "emptyDone": "Nothing was placed on this node, so there was nothing to move.",
     "runningHint": "This updates every couple of seconds. You can close this dialog. The drain keeps running.",
     "movesTitle": "Moves",
     "blockedTitle": "Blocked, left on this node",
+    "partialTitle": "Drain finished with some workloads left behind",
+    "partialHint": "Some moves succeeded and others were blocked or failed. The blocked items below stay on this node, which stays cordoned. Resolve each reason, then drain again.",
     "errorTitle": "Drain stopped",
     "failedHint": "The node stays cordoned. Fix the cause shown on the failed move, then drain again, or uncordon the node to put it back in rotation.",
     "toNode": "to {{node}}",

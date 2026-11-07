@@ -22,6 +22,7 @@ import {
 import { toast } from '@/components/ui/toast'
 import { InfoTip, SkeletonLine } from './kit'
 import { useGitSource } from '../queries/gitSources'
+import { useImageStatus } from '../queries/dockerIntegration'
 import { usePreviewPolicy, useSetPreviewPolicy } from '../queries/previewPolicy'
 import { PreviewMigrateFields } from './PreviewMigrateFields'
 import type { PreviewOnLimit, PreviewPolicy } from '../types/previewEnvironment'
@@ -60,6 +61,7 @@ function UsageLine({
 export function PreviewPolicyCard({ appName }: { appName: string }) {
   const gitSource = useGitSource(appName)
   const policy = usePreviewPolicy(appName)
+  const imageStatus = useImageStatus(appName)
 
   if (!gitSource.data) return null
 
@@ -96,7 +98,7 @@ export function PreviewPolicyCard({ appName }: { appName: string }) {
             key={`${policy.data.on_limit}:${policy.data.ttl_hours}:${policy.data.migrate_command}:${policy.data.migrate_timeout_seconds}:${policy.data.image_tag_template}`}
             appName={appName}
             policy={policy.data}
-            isImageApp={String(gitSource.data.build_type) === 'image'}
+            isImageApp={imageStatus.data?.source === 'registry'}
           />
         )}
       </CardContent>

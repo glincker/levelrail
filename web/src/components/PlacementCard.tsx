@@ -113,6 +113,15 @@ export function PlacementCard({
             placement={placement.data}
           />
         )}
+        {(placement.data?.warnings ?? []).map((w) => (
+          <Alert key={w}>
+            <TriangleAlertGlassIcon
+              className="text-tone-warning"
+              size="1.7em"
+            />
+            <AlertDescription>{w}</AlertDescription>
+          </Alert>
+        ))}
         {placement.data?.domain_warnings?.length ? (
           <Alert>
             <TriangleAlertGlassIcon

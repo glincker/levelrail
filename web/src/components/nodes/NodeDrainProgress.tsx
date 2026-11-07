@@ -9,10 +9,11 @@ import { VirtualRows } from './VirtualRows'
 
 const DRAIN_VARIANT: Record<
   NodeDrainStatus,
-  'muted' | 'success' | 'destructive'
+  'muted' | 'success' | 'warning' | 'destructive'
 > = {
   running: 'muted',
   succeeded: 'success',
+  partial: 'warning',
   failed: 'destructive',
 }
 
@@ -41,6 +42,16 @@ export function NodeDrainProgress({ drain }: { drain: NodeDrain }) {
           <AlertDescription>
             <p>{drain.error}</p>
             <p>{t('drain.failedHint')}</p>
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
+      {drain.status === 'partial' ? (
+        <Alert>
+          <TriangleAlertGlassIcon className="text-tone-warning" size="1.7em" />
+          <AlertTitle>{t('drain.partialTitle')}</AlertTitle>
+          <AlertDescription>
+            <p>{t('drain.partialHint')}</p>
           </AlertDescription>
         </Alert>
       ) : null}
