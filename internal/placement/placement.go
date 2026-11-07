@@ -240,7 +240,12 @@ func newDecision(cands []Candidate, req Request) Decision {
 // Check validates an explicit target against req, the manual-assignment path.
 func Check(c Candidate, req Request) error {
 	if reason := Filter(c, req); reason != "" {
-		return fmt.Errorf("%w: node %s is %s", ErrNoEligibleNode, displayName(c), reason)
+		// State words read as "is cordoned"; longer reasons are full clauses.
+		verb := ": "
+		if !strings.Contains(reason, " ") {
+			verb = " is "
+		}
+		return fmt.Errorf("%w: node %s%s%s", ErrNoEligibleNode, displayName(c), verb, reason)
 	}
 	return nil
 }

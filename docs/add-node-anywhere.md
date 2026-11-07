@@ -47,6 +47,18 @@ levelrail-cli nodes preflight edge-1
 
 `--preflight` prints the join command, waits for the node, then prints each check and exits non-zero when one failed. `nodes preflight <id-or-name>` shows the last result; add `--wait` to wait for it.
 
+## Run the agent as a service on a second host
+
+The join command in the dialog runs the agent once in the foreground. For a host that should keep the agent across reboots, install the package and let systemd run it. Docker must already be installed on the host.
+
+```bash
+sudo dpkg -i levelrail-agent-linux-amd64.deb     # or: sudo rpm -i levelrail-agent-linux-amd64.rpm
+sudoedit /etc/levelrail-agent/agent.env
+sudo systemctl enable --now levelrail-agent
+```
+
+Set `APP_CONTROL_PLANE_ADDR` (host and port of the agent listener), `APP_JOIN_TOKEN` and `APP_CA_FINGERPRINT` in `agent.env` from the join command. The unit stores the node identity in `/var/lib/levelrail-agent/identity.json`, so after the first enrollment the token is no longer needed. The mesh key lives under `APP_DATA_DIR`; set it in `agent.env` when you want it somewhere other than the default. Check the result with `systemctl status levelrail-agent` and `levelrail-cli nodes preflight <name>`. Package files are listed in `checksums.txt` of each release; see [Docker](/docker#without-a-container).
+
 ## Provider, region and zone detection
 
 On every session the agent asks the metadata service of the cloud it runs on. Providers are probed in a fixed order, so a host that answers on more than one gives a stable result.

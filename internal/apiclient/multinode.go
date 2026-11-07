@@ -233,6 +233,7 @@ type PlacementResource struct {
 	Affinity     *placement.Affinity    `json:"affinity,omitempty"`
 	Eligible     []string               `json:"eligible_node_ids"`
 	Rejected     []PlacementRejection   `json:"rejected"`
+	Warnings     []string               `json:"warnings,omitempty"`
 }
 
 // GetPlacement calls GET /api/v1/{apps|databases}/{name}/placement.

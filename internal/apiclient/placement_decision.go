@@ -69,6 +69,7 @@ type PlacementDecisionView struct {
 	NodeID   string             `json:"node_id"`
 	Recorded *RecordedPlacement `json:"recorded"`
 	Preview  PlacementDecision  `json:"preview"`
+	Warnings []string           `json:"warnings,omitempty"`
 }
 
 // NodeAllocation is one node's allocatable capacity against its requested totals.
