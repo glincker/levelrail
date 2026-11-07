@@ -39,6 +39,7 @@ func (rt *Router) registerProjectRoutes(mux *http.ServeMux) {
 	// list page.
 	// Compose export (project_export.go): AbilityReadSensitive since env is
 	// read; include_secrets is gated again on write:sensitive in the handler.
+	mux.HandleFunc("POST /api/v1/projects/{id}/clone", rt.requireAbility(AbilityWrite, rt.handleCloneProject))
 	mux.HandleFunc("GET /api/v1/projects/{id}/export", rt.requireAbility(AbilityReadSensitive, rt.handleExportProject))
 	mux.HandleFunc("GET /api/v1/projects/{id}/topology", rt.requireAbility(AbilityRead, rt.handleGetProjectTopology))
 

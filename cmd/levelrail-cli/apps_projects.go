@@ -41,6 +41,8 @@ func runAppsProjects(prog string, args []string, stdout, stderr io.Writer, looku
 		return runAppsProjectsEnvSet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "topology":
 		return runAppsProjectsTopology(prog, args[1:], stdout, stderr, lookupEnv)
+	case "clone":
+		return runAppsProjectsClone(prog, args[1:], stdout, stderr, lookupEnv)
 	case "export":
 		return runAppsProjectsExport(prog, args[1:], stdout, stderr, lookupEnv)
 	case "backfill-default-env":

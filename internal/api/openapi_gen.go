@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1997 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1998 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1794,6 +1794,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/projects/default-environments/backfill", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleBackfillDefaultEnvironments", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/projects/{id}", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleDeleteProject", Description: ""},
 	{Method: "GET", Path: "/api/v1/projects/{id}", Ability: "AbilityRead", Group: "Projects / Organizations / Environments", Handler: "handleGetProject", Description: ""},
+	{Method: "POST", Path: "/api/v1/projects/{id}/clone", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleCloneProject", Description: "Topology (topology.go): a read-only diagram-ready graph derived from this project's existing desired state, AbilityRead like the project read itself above, not a new server-side list filter (see this file's own package doc comment on why apps/databases stay client-filtered elsewhere): a graph's nodes and edges aren't a list page. Compose export (project_export.go): AbilityReadSensitive since env is read; include_secrets is gated again on write:sensitive in the handler."},
 	{Method: "PUT", Path: "/api/v1/projects/{id}/default-environment", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleSetProjectDefaultEnvironment", Description: "Default environment per project (project_default_env.go): a create naming a project but no environment joins it."},
 	{Method: "GET", Path: "/api/v1/projects/{id}/env", Ability: "AbilityRead", Group: "Projects / Organizations / Environments", Handler: "handleGetProjectEnv", Description: "Shared env vars every app filed under this project inherits (project_env.go): same AbilityRead/AbilityWrite boundary as the project CRUD routes just above."},
 	{Method: "PUT", Path: "/api/v1/projects/{id}/env", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleSetProjectEnv", Description: ""},
@@ -1804,7 +1805,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/projects/{id}/environments", Ability: "AbilityRead", Group: "Projects / Organizations / Environments", Handler: "handleListEnvironments", Description: "Environments (environments.go): staging/production-style labels scoped to a project, tagged onto a service via its own app route."},
 	{Method: "POST", Path: "/api/v1/projects/{id}/environments", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleCreateEnvironment", Description: ""},
 	{Method: "GET", Path: "/api/v1/projects/{id}/environments/compare", Ability: "AbilityRead", Group: "Projects / Organizations / Environments", Handler: "handleCompareEnvironmentEnv", Description: "Cross-environment env var drift check (environment_compare.go): resolved effective env vars for two of this project's environments, secret values always redacted."},
-	{Method: "GET", Path: "/api/v1/projects/{id}/export", Ability: "AbilityReadSensitive", Group: "Projects / Organizations / Environments", Handler: "handleExportProject", Description: "Topology (topology.go): a read-only diagram-ready graph derived from this project's existing desired state, AbilityRead like the project read itself above, not a new server-side list filter (see this file's own package doc comment on why apps/databases stay client-filtered elsewhere): a graph's nodes and edges aren't a list page. Compose export (project_export.go): AbilityReadSensitive since env is read; include_secrets is gated again on write:sensitive in the handler."},
+	{Method: "GET", Path: "/api/v1/projects/{id}/export", Ability: "AbilityReadSensitive", Group: "Projects / Organizations / Environments", Handler: "handleExportProject", Description: ""},
 	{Method: "PUT", Path: "/api/v1/projects/{id}/organization", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleSetProjectOrganization", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/projects/{id}/quota", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleDeleteQuota", Description: ""},
 	{Method: "GET", Path: "/api/v1/projects/{id}/quota", Ability: "AbilityRead", Group: "Projects / Organizations / Environments", Handler: "handleGetQuota", Description: ""},
