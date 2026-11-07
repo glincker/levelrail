@@ -117,6 +117,9 @@ func cpEnv(dataDir, sock string, ports [5]int) []string {
 		fmt.Sprintf("APP_INGRESS_HTTP_ADDR=127.0.0.1:%d", ports[3]),
 		fmt.Sprintf("APP_INGRESS_HTTPS_ADDR=127.0.0.1:%d", ports[4]),
 		"DOCKER_HOST=unix://"+sock,
+		// Per-token budgets would turn load into 429s; this is a scratch instance.
+		"APP_API_RATE_LIMIT_READ_RPM=100000000",
+		"APP_API_RATE_LIMIT_WRITE_RPM=100000000",
 	)
 }
 
@@ -301,7 +304,7 @@ func execute(ctx context.Context, prof stressprofile.Profile, o options, stderr 
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				watch(pctx, api, rec, &events)
+				watch(pctx, jar, api, rec, &events)
 			}()
 		}
 		wg.Wait()
@@ -321,12 +324,12 @@ func execute(ctx context.Context, prof stressprofile.Profile, o options, stderr 
 }
 
 // watch holds one v2 SSE stream open and counts the events it receives.
-func watch(ctx context.Context, api string, rec *recorder, events *atomic.Int64) {
+func watch(ctx context.Context, jar http.CookieJar, api string, rec *recorder, events *atomic.Int64) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, api+"/api/v2/apps?watch=1", nil)
 	if err != nil {
 		return
 	}
-	c := &http.Client{Jar: nil}
+	c := &http.Client{Jar: jar}
 	start := time.Now()
 	resp, err := c.Do(req)
 	if err != nil {
