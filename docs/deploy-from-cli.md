@@ -59,7 +59,7 @@ Everything in the directory except:
 - `.git`, `node_modules`, `.next`, `.nuxt`, `.turbo`, `.venv`, `venv`, `__pycache__`, `target`, `coverage`, `.terraform` and `.DS_Store`,
 - secret-looking files: `.env`, `.env.*` (except `.env.example`, `.env.sample` and `.env.template`), `*.pem`, `*.key`, `id_rsa*` and `id_ed25519*`.
 
-A `.gitignore` rule that starts with `!` cannot bring a secret file back. Symbolic links and special files are never uploaded. To send an ignored path on purpose, name it with `--include`, for example `--include .env`.
+A `.gitignore` rule that starts with `!` cannot bring a secret file back. Symbolic links and special files are never uploaded. To send an ignored path on purpose, name it with `--include`, for example `--include .env`. Editor and agent config (`.claude`, `.cursor`, `.idea`, `.windsurf`, `.codex`, `.fleet`, `.history`, `.aider*`, `.vscode/settings.json`, `*.local.json`, `*.local.yaml`, `settings.local.*`) is also skipped by default, and `--include` sends any of it.
 
 `--dry-run` lists the files that would be uploaded and changes nothing:
 
