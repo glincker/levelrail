@@ -33,7 +33,7 @@ function StatusItem({
   children: ReactNode
 }) {
   return (
-    <div className="flex min-w-0 flex-col gap-0.5">
+    <div className="flex min-w-0 flex-col gap-0.5 max-sm:basis-full">
       <span className="text-xs text-muted-foreground">{label}</span>
       <div className="flex min-h-7 min-w-0 items-center">{children}</div>
     </div>
@@ -63,16 +63,19 @@ export function DomainsStatusBar({ onAdd }: { onAdd: () => void }) {
         <div
           role="region"
           aria-label={t('statusBar.label')}
-          className="grid items-center gap-x-6 gap-y-3 rounded-lg border border-border bg-card px-4 py-3 text-sm sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.5fr)_auto]"
+          className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-lg border border-border bg-card px-4 py-3 text-sm"
         >
           <StatusItem label={t('statusBar.addressLabel')}>
             {ip ? (
-              <span className="flex min-w-0 items-center gap-1">
-                <span className="truncate font-mono text-foreground">{ip}</span>
+              <span className="flex min-w-0 flex-wrap items-center gap-1">
+                <span className="min-w-0 break-all font-mono text-foreground">
+                  {ip}
+                </span>
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon-sm"
+                  className="shrink-0"
                   aria-label={
                     copied
                       ? t('serverAddress.copied')
@@ -127,7 +130,7 @@ export function DomainsStatusBar({ onAdd }: { onAdd: () => void }) {
               }
             />
           </StatusItem>
-          <div className="flex flex-wrap items-center gap-3 sm:col-span-2 sm:justify-end xl:col-span-1">
+          <div className="flex flex-wrap items-center gap-3 sm:ml-auto">
             {parked.length > 0 ? (
               <a
                 href="#parked-domains-heading"

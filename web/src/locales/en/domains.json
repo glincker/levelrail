@@ -1323,7 +1323,68 @@
     "security": "Security",
     "pages": "Pages",
     "seo": "SEO",
-    "tls": "TLS"
+    "tls": "TLS",
+    "breadcrumb": "Breadcrumb",
+    "back": "Domains",
+    "openDomain": "Open the page for {{domain}}",
+    "state": {
+      "live": "Live",
+      "waitingDns": "Waiting for DNS",
+      "wrongDns": "DNS points somewhere else",
+      "certFailed": "Certificate needs attention",
+      "issuing": "Issuing certificate",
+      "starting": "Almost live"
+    },
+    "resolvers": {
+      "label": "DNS answers by server",
+      "authoritative": "Your DNS host",
+      "state": {
+        "ok": "correct",
+        "pending": "no answer yet",
+        "wrong": "wrong value"
+      }
+    },
+    "provider": {
+      "generic": "Add this record where you manage your domain's DNS, usually your registrar or hosting provider.",
+      "cloudflare": "Your DNS looks like it is on Cloudflare. Add the record there and turn the orange cloud off until the certificate is issued.",
+      "route53": "Your DNS looks like it is on Amazon Route 53. Add the record in the hosted zone for this domain.",
+      "godaddy": "Your DNS looks like it is on GoDaddy. Add the record under DNS records for this domain.",
+      "namecheap": "Your DNS looks like it is on Namecheap. Add the record under Advanced DNS.",
+      "google": "Your DNS looks like it is on Google Cloud DNS. Add the record in this domain's zone.",
+      "open": "Open {{name}} DNS",
+      "name": {
+        "cloudflare": "Cloudflare",
+        "route53": "Route 53",
+        "godaddy": "GoDaddy",
+        "namecheap": "Namecheap",
+        "google": "Google"
+      }
+    },
+    "recordType": "Record type",
+    "field": {
+      "type": "Type",
+      "name": "Name",
+      "value": "Value"
+    },
+    "wrongValue": "Points to {{found}}, should be {{should}}.",
+    "sendAdmin": "Send to your DNS admin",
+    "adminCopied": "Message copied",
+    "adminMessage": "Hi, please add this DNS record so {{domain}} reaches our server.\n\nType: {{type}}\nName: {{domain}}\nValue: {{value}}\n\nIt can take a few minutes to show up. Thank you.",
+    "timeline": {
+      "label": "Certificate progress",
+      "dns": "DNS points here",
+      "requested": "Certificate requested",
+      "issued": "Certificate issued",
+      "expires": "Expires",
+      "done": "Done",
+      "todo": "Not yet"
+    },
+    "testIt": "Test it",
+    "redirect": "Redirect and www",
+    "danger": {
+      "title": "Danger zone",
+      "body": "Move this domain to another app, park it, or remove it. Visitors lose this address while it is away."
+    }
   },
   "waf": {
     "add": "Add WAF / rate limit",
@@ -1662,8 +1723,8 @@
     "issuing": "Issuing your certificate. This page updates by itself.",
     "issueFailed": "The certificate could not be issued. Check that the record points here and port 80 is open, then press Check now.",
     "route": {
-      "503": "The route answers 503, which means the server is reachable but the app behind it is not ready or not attached to this domain.",
       "404": "The route answers 404, which means the server is reachable but does not know this domain yet.",
+      "503": "The route answers 503, which means the server is reachable but the app behind it is not ready or not attached to this domain.",
       "5xx": "The route answers a server error, which means the server is reachable but the app behind it is failing. Check the app logs."
     },
     "diagnose": "Why is it not answering?"

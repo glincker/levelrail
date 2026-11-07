@@ -1323,7 +1323,68 @@
     "security": "Seguridad",
     "pages": "Páginas",
     "seo": "SEO",
-    "tls": "TLS"
+    "tls": "TLS",
+    "breadcrumb": "Ruta de navegación",
+    "back": "Dominios",
+    "openDomain": "Abrir la página de {{domain}}",
+    "state": {
+      "live": "En vivo",
+      "waitingDns": "Esperando al DNS",
+      "wrongDns": "El DNS apunta a otro lugar",
+      "certFailed": "El certificado necesita atención",
+      "issuing": "Emitiendo certificado",
+      "starting": "Casi en vivo"
+    },
+    "resolvers": {
+      "label": "Respuestas del DNS por servidor",
+      "authoritative": "Tu proveedor de DNS",
+      "state": {
+        "ok": "correcto",
+        "pending": "sin respuesta todavía",
+        "wrong": "valor incorrecto"
+      }
+    },
+    "provider": {
+      "generic": "Añade este registro donde gestionas el DNS de tu dominio, normalmente tu registrador o proveedor de hosting.",
+      "cloudflare": "Tu DNS parece estar en Cloudflare. Añade el registro allí y apaga la nube naranja hasta que se emita el certificado.",
+      "route53": "Tu DNS parece estar en Amazon Route 53. Añade el registro en la zona alojada de este dominio.",
+      "godaddy": "Tu DNS parece estar en GoDaddy. Añade el registro en los registros DNS de este dominio.",
+      "namecheap": "Tu DNS parece estar en Namecheap. Añade el registro en Advanced DNS.",
+      "google": "Tu DNS parece estar en Google Cloud DNS. Añade el registro en la zona de este dominio.",
+      "open": "Abrir el DNS de {{name}}",
+      "name": {
+        "cloudflare": "Cloudflare",
+        "route53": "Route 53",
+        "godaddy": "GoDaddy",
+        "namecheap": "Namecheap",
+        "google": "Google"
+      }
+    },
+    "recordType": "Tipo de registro",
+    "field": {
+      "type": "Tipo",
+      "name": "Nombre",
+      "value": "Valor"
+    },
+    "wrongValue": "Apunta a {{found}}, debería apuntar a {{should}}.",
+    "sendAdmin": "Enviar a tu administrador de DNS",
+    "adminCopied": "Mensaje copiado",
+    "adminMessage": "Hola, por favor añade este registro DNS para que {{domain}} llegue a nuestro servidor.\n\nTipo: {{type}}\nNombre: {{domain}}\nValor: {{value}}\n\nPuede tardar unos minutos en aparecer. Gracias.",
+    "timeline": {
+      "label": "Progreso del certificado",
+      "dns": "El DNS apunta aquí",
+      "requested": "Certificado solicitado",
+      "issued": "Certificado emitido",
+      "expires": "Caduca",
+      "done": "Hecho",
+      "todo": "Todavía no"
+    },
+    "testIt": "Pruébalo",
+    "redirect": "Redirección y www",
+    "danger": {
+      "title": "Zona de peligro",
+      "body": "Mueve este dominio a otra app, aparca el dominio o elimínalo. Los visitantes pierden esta dirección mientras no esté."
+    }
   },
   "waf": {
     "add": "Añadir WAF / límite de tasa",
@@ -1640,8 +1701,8 @@
     "issuing": "Emitiendo tu certificado. Esta página se actualiza sola.",
     "issueFailed": "No se pudo emitir el certificado. Comprueba que el registro apunta aquí y que el puerto 80 está abierto, y pulsa Comprobar ahora.",
     "route": {
-      "503": "La ruta responde 503: el servidor es accesible, pero la app que hay detrás no está lista o no está asociada a este dominio.",
       "404": "La ruta responde 404: el servidor es accesible, pero aún no conoce este dominio.",
+      "503": "La ruta responde 503: el servidor es accesible, pero la app que hay detrás no está lista o no está asociada a este dominio.",
       "5xx": "La ruta responde con un error del servidor: el servidor es accesible pero la aplicación detrás falla. Revisa los registros de la aplicación."
     },
     "diagnose": "¿Por qué no responde?"

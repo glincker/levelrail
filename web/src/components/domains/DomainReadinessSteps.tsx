@@ -63,6 +63,7 @@ export function DomainReadinessSteps({
   isFetching,
   onRefetch,
   proxyRow,
+  showControls = true,
 }: {
   domain: string
   input: ReadinessInput
@@ -72,13 +73,15 @@ export function DomainReadinessSteps({
   isFetching: boolean
   onRefetch: () => void
   proxyRow?: ProxyDomain
+  // The domain page runs its own header countdown and Check now.
+  showControls?: boolean
 }) {
   const { t } = useTranslation('domains')
   const [diagnosing, setDiagnosing] = useState(false)
   const steps = readinessSteps(input)
   const done = allStepsDone(steps)
   const left = useRecheckCountdown({
-    active: !done && !isFetching,
+    active: showControls && !done && !isFetching,
     resetKey: checkedAt,
     onFire: onRefetch,
   })
@@ -132,19 +135,21 @@ export function DomainReadinessSteps({
         ) : null}
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={onRefetch}
-          disabled={isFetching}
-        >
-          <RefreshCwGlassIcon
-            className={isFetching ? 'size-5 animate-spin' : 'size-5'}
-            aria-hidden="true"
-          />
-          {isFetching ? t('dnsCheck.checking') : t('readiness.checkNow')}
-        </Button>
+        {showControls ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onRefetch}
+            disabled={isFetching}
+          >
+            <RefreshCwGlassIcon
+              className={isFetching ? 'size-5 animate-spin' : 'size-5'}
+              aria-hidden="true"
+            />
+            {isFetching ? t('dnsCheck.checking') : t('readiness.checkNow')}
+          </Button>
+        ) : null}
         {problem ? (
           <Button
             type="button"
@@ -157,13 +162,15 @@ export function DomainReadinessSteps({
             {t('readiness.diagnose')}
           </Button>
         ) : null}
-        <span className="text-muted-foreground" aria-live="polite">
-          {done
-            ? t('readiness.allDone')
-            : isFetching
-              ? ''
-              : t('readiness.countdown', { seconds: left })}
-        </span>
+        {showControls ? (
+          <span className="text-muted-foreground" aria-live="polite">
+            {done
+              ? t('readiness.allDone')
+              : isFetching
+                ? ''
+                : t('readiness.countdown', { seconds: left })}
+          </span>
+        ) : null}
       </div>
       {diagnosing ? (
         <Suspense fallback={null}>
