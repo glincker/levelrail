@@ -44,6 +44,7 @@ const DEFAULT_INSTANCE: Record<GitConnectionProvider, string> = {
   forgejo: '',
   bitbucket: '',
   bitbucket_server: '',
+  azure_devops: 'https://dev.azure.com/',
 }
 
 // Bitbucket Server has no mark of its own in thesvg, so it shows Bitbucket's.
@@ -53,6 +54,7 @@ const BRAND_MARK: Record<GitConnectionProvider, string> = {
   forgejo: 'forgejo',
   bitbucket: 'bitbucket',
   bitbucket_server: 'bitbucket',
+  azure_devops: 'azure',
 }
 
 // Registers an OAuth application (or, for Bitbucket Server, a personal access
@@ -79,7 +81,8 @@ export function AddGitConnectionDialog({
   const [label, setLabel] = useState('')
   const [copied, setCopied] = useState(false)
 
-  const tokenAuth = provider === 'bitbucket_server'
+  const tokenAuth =
+    provider === 'bitbucket_server' || provider === 'azure_devops'
   const reusing = !tokenAuth && source !== NEW_APP
   const needsInstance = provider !== 'bitbucket'
   const canSubmit = tokenAuth
@@ -229,7 +232,9 @@ export function AddGitConnectionDialog({
                 onChange={(e) => setToken(e.target.value)}
               />
               <FieldDescription>
-                {t('gitConnections.add.tokenHelp')}
+                {provider === 'azure_devops'
+                  ? t('gitConnections.add.tokenHelpAzure')
+                  : t('gitConnections.add.tokenHelp')}
               </FieldDescription>
             </Field>
           ) : null}
@@ -249,9 +254,11 @@ export function AddGitConnectionDialog({
                     onChange={(e) => setInstanceUrl(e.target.value)}
                   />
                   <FieldDescription>
-                    {tokenAuth
-                      ? t('gitConnections.add.instanceHelpServer')
-                      : t('gitConnections.add.instanceHelp')}
+                    {provider === 'azure_devops'
+                      ? t('gitConnections.add.instanceHelpAzure')
+                      : tokenAuth
+                        ? t('gitConnections.add.instanceHelpServer')
+                        : t('gitConnections.add.instanceHelp')}
                   </FieldDescription>
                 </Field>
               ) : null}

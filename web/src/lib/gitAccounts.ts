@@ -31,6 +31,7 @@ export const GIT_HOSTS: readonly GitProviderName[] = [
   'bitbucket_server',
   'gitea',
   'forgejo',
+  'azure_devops',
 ]
 
 export type GitSettingsPath = (typeof SETTINGS_PATH)[GitProviderName]
@@ -42,6 +43,7 @@ const SETTINGS_PATH = {
   bitbucket_server: '/settings/bitbucket-server-app',
   gitea: '/settings/gitea-app',
   forgejo: '/settings/forgejo-app',
+  azure_devops: '/settings/azure-devops-app',
 } as const
 
 export function gitSettingsPath(provider: GitProviderName): GitSettingsPath {
@@ -50,7 +52,7 @@ export function gitSettingsPath(provider: GitProviderName): GitSettingsPath {
 
 // Bitbucket Server signs in with a token, so it needs no OAuth callback URL.
 export function hostNeedsPublicDomain(provider: GitProviderName): boolean {
-  return provider !== 'bitbucket_server'
+  return provider !== 'bitbucket_server' && provider !== 'azure_devops'
 }
 
 export function mapHealth(

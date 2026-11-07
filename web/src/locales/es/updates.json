@@ -676,5 +676,33 @@
     "failedCause": "Por qué falló: {{cause}}",
     "failedCli": "Ejecuta en el servidor: {{cli}}",
     "stuckShort": "La actualización parece atascada"
+  },
+  "autoUpdate": {
+    "title": "Actualizaciones automáticas",
+    "safety": "La suma de comprobación, la firma, la copia de seguridad y el rollback se ejecutan antes y después de cada actualización. Si falla la comprobación de salud, se revierte automáticamente.",
+    "state": "Actualizaciones automáticas",
+    "stateOn": "Activadas",
+    "stateOff": "Desactivadas",
+    "statePaused": "En pausa hasta {{date}}",
+    "defaultApplied": "Activadas por defecto en esta instalación.",
+    "modeLabel": "Modo",
+    "mode": {
+      "off": "Desactivado",
+      "patch": "Versiones de parche",
+      "any": "Cualquier versión"
+    },
+    "window": "Ventana (cron)",
+    "windowMinutes": "Duración (min)",
+    "pause": "Pausa (días)",
+    "pauseHelp": "0 reanuda",
+    "health": "Ventana de salud (s)",
+    "channel": "Canal",
+    "save": "Guardar",
+    "saved": "Ajustes de actualización automática guardados.",
+    "error": "No se pudo guardar: {{message}}",
+    "notice": {
+      "dismiss": "Descartar",
+      "manage": "Gestionar"
+    }
   }
 }

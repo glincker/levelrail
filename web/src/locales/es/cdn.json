@@ -231,5 +231,69 @@
     "reset": "Seguir el ajuste del servidor",
     "on": "activado",
     "off": "desactivado"
+  },
+  "edge": {
+    "title": "Edge",
+    "pipelineLabel": "Pipeline de git al edge",
+    "stage": {
+      "git": "Git",
+      "build": "Build",
+      "deploy": "Despliegue",
+      "dns": "DNS",
+      "edge": "Edge"
+    },
+    "noDeploy": "Sin despliegues",
+    "dns": "{{count}} registros gestionados",
+    "dnsNone": "Sin registros gestionados",
+    "health": {
+      "direct": "Directo",
+      "ok": "Con proxy",
+      "attention": "Requiere atención"
+    },
+    "cache": "Caché {{rate}}% de aciertos, {{entries}} entradas",
+    "lastPurge": "Última purga {{when}} ({{scope}})",
+    "purgeFailed": "Falló la purga: {{error}}",
+    "override": "Edge forzado a {{state}} para esta app",
+    "overrideOn": "activado",
+    "overrideOff": "desactivado",
+    "provider": "{{provider}} zona {{zone}}, SSL {{mode}}",
+    "setup": "Configurar CDN",
+    "purges": "Purgas recientes",
+    "loading": "Cargando estado del edge"
+  },
+  "setup": {
+    "title": "Configuración de CDN",
+    "description": "Comprueba el proveedor, el modo SSL, el desafío DNS y el plan DNS. Informa de correcciones y nunca cambia la configuración de tu zona.",
+    "dryRun": "Ejecutar simulación",
+    "running": "Comprobando...",
+    "apply": "Aplicar",
+    "applying": "Aplicando...",
+    "close": "Cerrar",
+    "provider": "Proveedor",
+    "providerAuto": "Detectar automáticamente",
+    "fix": "Corrección",
+    "applied": "Aplicado. El estado del edge se actualizará en breve.",
+    "dryRunDone": "Solo simulación. No se cambió nada.",
+    "result": {
+      "ok": "Todas las comprobaciones correctas",
+      "warn": "Correcto con avisos",
+      "fail": "Corrige primero los pasos fallidos"
+    },
+    "status": {
+      "ok": "OK",
+      "warn": "Aviso",
+      "fail": "Fallido",
+      "skipped": "Omitido"
+    },
+    "step": {
+      "provider": "Proveedor",
+      "ssl_mode": "Modo SSL",
+      "acme_dns01": "Desafío ACME DNS",
+      "client_address": "Dirección del cliente",
+      "dns_plan": "Plan DNS",
+      "apply": "Aplicar",
+      "verify": "Verificar"
+    },
+    "error": "Falló la configuración de CDN: {{message}}"
   }
 }

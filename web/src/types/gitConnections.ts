@@ -4,7 +4,12 @@
 import type { GitConnectionStatus } from './gitProviders'
 
 export type GitConnectionProvider =
-  'gitlab' | 'bitbucket' | 'bitbucket_server' | 'gitea' | 'forgejo'
+  | 'gitlab'
+  | 'bitbucket'
+  | 'bitbucket_server'
+  | 'gitea'
+  | 'forgejo'
+  | 'azure_devops'
 
 export interface GitProviderConnection {
   id: string

@@ -1129,6 +1129,18 @@ export const NAV_REGISTRY: readonly NavRegistryEntry[] = [
     settingsArea: 'integrations',
   },
   {
+    id: 'settings-azure-devops-app',
+    path: '/settings/azure-devops-app',
+    area: 'settings-integrations',
+    titleKey: 'settings:nav.items.azure-devops-app.title',
+    icon: 'GitBranch',
+    helpPath: null,
+    gated: null,
+    palette: true,
+    sidebar: false,
+    settingsArea: 'integrations',
+  },
+  {
     id: 'settings-beta-features',
     path: '/settings/beta-features',
     area: 'settings-beta',

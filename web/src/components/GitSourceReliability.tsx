@@ -1,3 +1,4 @@
+import { gitSettingsPath } from '../lib/gitAccounts'
 import { RefreshCwGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -15,7 +16,7 @@ function when(iso?: string): string {
   return Number.isNaN(d.getTime()) ? '' : d.toLocaleString()
 }
 
-type ConnectableProvider = 'gitlab' | 'bitbucket' | 'gitea'
+type ConnectableProvider = 'gitlab' | 'bitbucket' | 'gitea' | 'azure_devops'
 
 // The provider pages that can reconnect a source whose account is gone.
 // Without a known provider the repository host is the only hint.
@@ -65,7 +66,7 @@ export function GitSourceReliability({
                 <Button
                   key={provider}
                   size="sm"
-                  render={<a href={`/settings/${provider}-app`} />}
+                  render={<a href={gitSettingsPath(provider)} />}
                   nativeButton={false}
                 >
                   {t('reliability.connection.reconnect', {

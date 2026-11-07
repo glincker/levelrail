@@ -14,7 +14,13 @@ import {
 import { useGitConnections } from '../../queries/gitConnections'
 
 export type RailProvider =
-  'github' | 'gitlab' | 'gitea' | 'forgejo' | 'bitbucket' | 'bitbucket_server'
+  | 'github'
+  | 'gitlab'
+  | 'gitea'
+  | 'forgejo'
+  | 'bitbucket'
+  | 'bitbucket_server'
+  | 'azure_devops'
 
 interface RailBodyProps {
   provider: RailProvider

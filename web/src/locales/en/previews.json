@@ -100,5 +100,6 @@
     "save": "Save",
     "note": "Applies to every app. 0 keeps the startup default. A per-app override still wins.",
     "invalid": "Enter a whole number from 0 to {{max}}."
-  }
+  },
+  "pushOnlyProvider": "This repository comes from Azure DevOps, which deploys on push only. Pull request previews are not available."
 }

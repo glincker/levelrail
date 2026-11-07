@@ -31,6 +31,7 @@ const BRAND = {
   bitbucket_server: 'bitbucket',
   gitea: 'gitea',
   forgejo: 'forgejo',
+  azure_devops: 'azure',
 } as const
 
 export function HealthBadge({

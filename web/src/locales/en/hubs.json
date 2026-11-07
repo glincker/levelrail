@@ -48,7 +48,8 @@
       "bitbucket": "Bitbucket",
       "bitbucket_server": "Bitbucket Server",
       "gitea": "Gitea",
-      "forgejo": "Forgejo"
+      "forgejo": "Forgejo",
+      "azure_devops": "Azure DevOps"
     },
     "status": {
       "notConnected": "Not connected",

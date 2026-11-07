@@ -231,5 +231,69 @@
     "reset": "Follow the server setting",
     "on": "on",
     "off": "off"
+  },
+  "edge": {
+    "title": "Edge",
+    "pipelineLabel": "Git to edge pipeline",
+    "stage": {
+      "git": "Git",
+      "build": "Build",
+      "deploy": "Deploy",
+      "dns": "DNS",
+      "edge": "Edge"
+    },
+    "noDeploy": "No deploy yet",
+    "dns": "{{count}} managed records",
+    "dnsNone": "No managed records",
+    "health": {
+      "direct": "Direct",
+      "ok": "Proxied",
+      "attention": "Needs attention"
+    },
+    "cache": "Cache {{rate}}% hit, {{entries}} entries",
+    "lastPurge": "Last purge {{when}} ({{scope}})",
+    "purgeFailed": "Purge failed: {{error}}",
+    "override": "Edge forced {{state}} for this app",
+    "overrideOn": "on",
+    "overrideOff": "off",
+    "provider": "{{provider}} zone {{zone}}, SSL {{mode}}",
+    "setup": "Set up CDN",
+    "purges": "Recent purges",
+    "loading": "Loading edge status"
+  },
+  "setup": {
+    "title": "CDN setup",
+    "description": "Checks the provider, SSL mode, DNS challenge and DNS plan. It reports fixes and never changes your zone settings.",
+    "dryRun": "Run dry run",
+    "running": "Checking...",
+    "apply": "Apply",
+    "applying": "Applying...",
+    "close": "Close",
+    "provider": "Provider",
+    "providerAuto": "Detect automatically",
+    "fix": "Fix",
+    "applied": "Applied. The edge status refreshes shortly.",
+    "dryRunDone": "Dry run only. Nothing was changed.",
+    "result": {
+      "ok": "All checks passed",
+      "warn": "Passed with warnings",
+      "fail": "Fix the failed steps first"
+    },
+    "status": {
+      "ok": "OK",
+      "warn": "Warning",
+      "fail": "Failed",
+      "skipped": "Skipped"
+    },
+    "step": {
+      "provider": "Provider",
+      "ssl_mode": "SSL mode",
+      "acme_dns01": "ACME DNS challenge",
+      "client_address": "Client address",
+      "dns_plan": "DNS plan",
+      "apply": "Apply",
+      "verify": "Verify"
+    },
+    "error": "CDN setup failed: {{message}}"
   }
 }

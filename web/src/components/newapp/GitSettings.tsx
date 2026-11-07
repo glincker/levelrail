@@ -32,10 +32,12 @@ const PROVIDER_LABEL: Record<GitProviderName, string> = {
   bitbucket_server: 'Bitbucket Server',
   gitea: 'Gitea',
   forgejo: 'Forgejo',
+  azure_devops: 'Azure DevOps',
 }
 
 function brandOf(p: GitProviderName): string {
   if (p === 'bitbucket_server') return 'bitbucket'
+  if (p === 'azure_devops') return 'azure'
   if (p === 'forgejo') return 'gitea'
   return p
 }

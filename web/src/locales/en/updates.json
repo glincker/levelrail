@@ -676,5 +676,33 @@
     "failedCause": "Why it failed: {{cause}}",
     "failedCli": "Run on the server: {{cli}}",
     "stuckShort": "Upgrade looks stuck"
+  },
+  "autoUpdate": {
+    "title": "Automatic updates",
+    "safety": "Checksum, signature, backup and rollback run before and after every update. A failed health check rolls back automatically.",
+    "state": "Automatic updates",
+    "stateOn": "On",
+    "stateOff": "Off",
+    "statePaused": "Paused until {{date}}",
+    "defaultApplied": "Turned on by default for this install.",
+    "modeLabel": "Mode",
+    "mode": {
+      "off": "Off",
+      "patch": "Patch releases",
+      "any": "Any release"
+    },
+    "window": "Window (cron)",
+    "windowMinutes": "Length (min)",
+    "pause": "Pause (days)",
+    "pauseHelp": "0 resumes",
+    "health": "Health window (s)",
+    "channel": "Channel",
+    "save": "Save",
+    "saved": "Automatic update settings saved.",
+    "error": "Could not save: {{message}}",
+    "notice": {
+      "dismiss": "Dismiss",
+      "manage": "Manage"
+    }
   }
 }
