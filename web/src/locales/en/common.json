@@ -370,6 +370,8 @@
         "projects": "Projects",
         "templates": "Templates",
         "tags": "Tags",
+        "variables": "Variables",
+        "sources": "Sources",
         "pipelines": "Pipelines",
         "approvals": "Approvals",
         "databases": "Databases",

@@ -502,6 +502,8 @@
         "projects": "Proyectos",
         "templates": "Plantillas",
         "tags": "Etiquetas",
+        "variables": "Variables",
+        "sources": "Fuentes",
         "pipelines": "Pipelines",
         "approvals": "Aprobaciones",
         "databases": "Bases de datos",

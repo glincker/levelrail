@@ -56,6 +56,8 @@ const ALLOWLIST: Record<string, string> = {
   '/apps/new': 'wizard',
   '/builds': 'tab',
   '/tags': 'tab',
+  '/variables': 'tab',
+  '/sources': 'tab',
   '/security/image-scanning': 'tab',
   '/nodes/bootstrap-scripts': 'tab',
   '/deploy-timeline': 'tab',

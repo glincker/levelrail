@@ -118,6 +118,7 @@ export const NAMESPACES = [
   'sso',
   'cdn',
   'models',
+  'hubs',
   'templates',
   'trialApp',
   'tags',
