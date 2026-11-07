@@ -44,7 +44,7 @@ export function GetStartedNavItem() {
           <span
             aria-hidden="true"
             data-testid="get-started-progress"
-            className="ml-auto h-1 w-10 shrink-0 overflow-hidden rounded-full bg-sidebar-border"
+            className="ml-auto h-1.5 w-12 shrink-0 overflow-hidden rounded-full bg-sidebar-foreground/20"
           >
             <span
               className={`block h-full rounded-full bg-state-active-bar transition-[width] duration-300 ease-out motion-reduce:transition-none ${FILL[Math.round(Math.min(1, Math.max(0, fraction)) * 4)]}`}

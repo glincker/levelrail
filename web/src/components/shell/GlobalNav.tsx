@@ -197,7 +197,7 @@ function NavLinkItem({
         {item.icon}
         <span>{label}</span>
         {beta ? (
-          <BetaBadge className="shrink-0 group-data-[collapsible=icon]:hidden" />
+          <BetaBadge className="shrink-0 text-sidebar-foreground/85 group-data-[collapsible=icon]:hidden" />
         ) : null}
         <NavBadge
           count={count}
@@ -346,8 +346,8 @@ export function GlobalNav() {
         })}
       </div>
       {/* mt-auto pins the block to the bottom only when there is spare height. */}
-      <SidebarGroup className="mt-auto px-2 pb-2 pt-0">
-        <SidebarGroupContent className="border-t border-sidebar-border pt-2">
+      <SidebarGroup className="mt-auto px-2 pb-2 pt-2">
+        <SidebarGroupContent className="rounded-lg border border-sidebar-border bg-sidebar-raised p-1">
           <SidebarMenu>
             {visibleGlobalFooter().map((item) => (
               <NavLinkItem

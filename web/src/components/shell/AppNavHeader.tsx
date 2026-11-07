@@ -35,7 +35,7 @@ export function AppNavHeader({ name }: { name: string }) {
         <span>All apps</span>
       </SidebarMenuButton>
       {rail ? null : (
-        <div className="flex flex-col gap-1.5 rounded-xl bg-sidebar-accent/40 px-3 py-2">
+        <div className="flex flex-col gap-1.5 rounded-xl border border-sidebar-border bg-sidebar-raised px-3 py-2">
           <div className="flex items-center justify-between gap-2">
             <span className="truncate text-sm font-semibold text-sidebar-foreground">
               {app.name}

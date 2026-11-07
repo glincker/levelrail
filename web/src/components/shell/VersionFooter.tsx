@@ -47,7 +47,7 @@ export function VersionFooterView({
       to="/settings/updates"
       aria-label={label}
       title={label}
-      className="flex h-7 cursor-pointer items-center gap-2 truncate rounded-md px-2.5 text-xs text-sidebar-foreground/60 transition-colors duration-150 ease-out hover:bg-sidebar-accent/70 hover:text-sidebar-foreground active:bg-sidebar-accent motion-reduce:transition-none focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none group-data-[collapsible=icon]:justify-center"
+      className="flex h-7 cursor-pointer items-center gap-2 truncate rounded-md px-2.5 text-xs text-sidebar-foreground/80 transition-colors duration-150 ease-out hover:bg-state-accent/10 hover:text-sidebar-foreground active:bg-state-accent/15 motion-reduce:transition-none focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none group-data-[collapsible=icon]:justify-center"
     >
       <span
         data-testid="health-dot"

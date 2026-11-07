@@ -72,11 +72,12 @@
   --chart-danger: oklch(0.577 0.245 27.325);
   --chart-muted: oklch(0.62 0.01 250);
   --radius: var(--glinr-radius);
-  --sidebar: oklch(0.985 0 0);
+  --sidebar: oklch(0.965 0 0);
+  --sidebar-raised: color-mix(in oklab, var(--background) 60%, var(--sidebar));
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent: oklch(0.93 0 0);
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-active: var(--state-active-bg);
   --sidebar-active-foreground: var(--sidebar-foreground);
@@ -90,7 +91,7 @@
     var(--state-accent) 45%,
     transparent
   );
-  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-border: oklch(0.88 0 0);
   --sidebar-ring: var(--brand-accent);
 }
 
@@ -131,6 +132,7 @@ body {
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar: var(--sidebar);
+  --color-sidebar-raised: var(--sidebar-raised);
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);
   --color-chart-3: var(--chart-3);
@@ -200,6 +202,11 @@ body {
   --chart-danger: oklch(0.704 0.191 22.216);
   --chart-muted: oklch(0.65 0.01 250);
   --sidebar: oklch(0.205 0 0);
+  --sidebar-raised: color-mix(
+    in oklab,
+    var(--sidebar-foreground) 4%,
+    var(--sidebar)
+  );
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: var(--brand-accent-dark);
   --sidebar-primary-foreground: oklch(0.985 0 0);
@@ -221,7 +228,7 @@ body {
     var(--state-accent) 50%,
     transparent
   );
-  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-border: oklch(1 0 0 / 16%);
   --sidebar-ring: var(--brand-accent-dark);
 }
 
@@ -813,7 +820,7 @@ body {
   --secondary-foreground: oklch(0.96 0 0);
   --accent-foreground: oklch(0.96 0 0);
   --muted-foreground: oklch(0.7 0 0);
-  --sidebar: oklch(0.1 0 0);
+  --sidebar: oklch(0.15 0 0);
   --sidebar-foreground: oklch(0.96 0 0);
   --sidebar-accent: oklch(0.21 0 0);
   --sidebar-accent-foreground: oklch(0.96 0 0);
