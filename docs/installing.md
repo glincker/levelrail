@@ -744,6 +744,16 @@ How to confirm: check the original install output for the full URL, or check Set
 
 Fix: on the server, run `sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token` to print a new token, then visit `http://<server>:<port>/login#setup=<token>` with the fresh token.
 
+### Common errors
+
+| Step | Error you see | Fix |
+| --- | --- | --- |
+| Install | `control plane did not become healthy within 60s` | `systemctl status levelrail` and `journalctl -u levelrail -n 100 --no-pager`. A port already in use is a common cause. |
+| Install | `could not list releases from GitHub. Set LEVELRAIL_VERSION=vX.Y.Z to pin one.` | The server cannot reach GitHub. Check outbound HTTPS, or pin a release. |
+| Install | `checksum mismatch for ...` | Do not continue. Run the installer again. Do not set `LEVELRAIL_SKIP_CHECKSUM=1` to get past it. |
+| Login | `start device login: ... connection refused` | The CLI points at the wrong address. Run `export APP_API_URL=http://127.0.0.1:<dashboard port>` and try again. |
+| Import | `plan import: ... connection refused` | The control plane is not running. Start it with `systemctl start levelrail`. |
+
 ## Next step
 
 1. [Getting started](/getting-started): sign in, enable HTTPS and deploy your first app.
