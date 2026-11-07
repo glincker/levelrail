@@ -27,6 +27,7 @@ type upResult struct {
 	URL       string   `json:"url,omitempty"`
 	Plan      []string `json:"plan,omitempty"`
 	DryRun    bool     `json:"dry_run,omitempty"`
+	RepoNote  string   `json:"repo_note,omitempty"`
 	DeployID  string   `json:"deploy_id,omitempty"`
 	Status    string   `json:"status,omitempty"`
 	// Certificate is issued, pending or failed for the primary domain; empty when unknown.
@@ -113,6 +114,10 @@ func runUp(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(
 		printUpInference(stderr, prog, inf, exists)
 	}
 	if dryRun {
+		result.RepoNote = repoReachabilityNote(ctx, dir, prog, inf)
+		if result.RepoNote != "" && !jsonOut {
+			_, _ = fmt.Fprintf(stderr, "note: %s\n", result.RepoNote)
+		}
 		return writeScheduledTaskResult(stdout, stderr, of, result, func() {})
 	}
 	if !jsonOut && !yes && isTerminal(stdin) && !confirmUp(stdin, stderr) {

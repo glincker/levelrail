@@ -416,7 +416,7 @@ func finishUploadDeploy(ctx context.Context, client *Client, prog string, inf up
 		followCtx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
 		logDone = make(chan struct{})
-		touch, stopTick := startDeployProgress(stderr, "building", deployProgressInterval(rawLookupEnv))
+		touch, stopTick := startDeployProgress(stderr, buildProgressLabel(previousBuildDuration(ctx, client, name, trig.ID)), deployProgressInterval(rawLookupEnv))
 		defer stopTick()
 		stopLog = cancel
 		go func() {
