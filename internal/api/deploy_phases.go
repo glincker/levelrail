@@ -3,11 +3,8 @@ package api
 import (
 	"context"
 	"net/http"
-	"os"
 	"regexp"
 	"slices"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/deploytrace"
@@ -38,7 +35,7 @@ var (
 )
 
 // deployPhase is one stage of a deploy attempt. Times are null when the
-// stage has no timestamped evidence yet (live build lines carry none).
+// stage has no timestamped evidence yet.
 type deployPhase struct {
 	Phase      string     `json:"phase"`
 	Status     string     `json:"status"`
@@ -67,13 +64,6 @@ type phaseEvidence struct {
 	failed  bool
 	start   time.Time
 	end     time.Time // explicit end, zero when unknown
-}
-
-func phaseSampleCount() int {
-	if n, err := strconv.Atoi(strings.TrimSpace(os.Getenv("APP_DEPLOY_PHASES_SAMPLES"))); err == nil && n >= 2 && n <= 50 {
-		return n
-	}
-	return 5
 }
 
 func traceByKeys(trace []store.DeployTraceStep, steps ...string) phaseEvidence {
@@ -234,10 +224,11 @@ func (rt *Router) phaseBaselines(ctx context.Context, a store.DeployAttempt) (to
 	if err != nil {
 		return 0, nil, 0, false
 	}
+	limit := rt.phaseSampleCount(ctx)
 	var totals []int64
 	byPhase := map[string][]int64{}
 	for _, s := range attempts {
-		if len(totals) >= phaseSampleCount() {
+		if len(totals) >= limit {
 			break
 		}
 		if s.ID == a.ID || s.Status != store.DeployAttemptStatusSucceeded || s.FinishedAt == nil {
@@ -276,7 +267,7 @@ func (rt *Router) handleGetDeployPhases(w http.ResponseWriter, r *http.Request) 
 	}
 	now := time.Now().UTC()
 	trace := rt.traceRows(r.Context(), a.ID)
-	logs := rt.persistedDeployLog(r.Context(), a.ID)
+	logs := rt.phaseLogs(r.Context(), a, now)
 	phases := derivePhases(a, trace, logs, now)
 	end := now
 	if a.FinishedAt != nil {
@@ -300,6 +291,27 @@ func (rt *Router) handleGetDeployPhases(w http.ResponseWriter, r *http.Request) 
 	}
 	w.Header().Set("Cache-Control", "no-store")
 	writeJSON(w, http.StatusOK, resp)
+}
+
+// phaseLogs prefers the recorder's timestamped live lines while the attempt
+// runs, so install/build/export get times before the log is persisted.
+func (rt *Router) phaseLogs(ctx context.Context, a store.DeployAttempt, now time.Time) []telemetry.DeployLogEntry {
+	if rt.deployRecorder != nil && a.FinishedAt == nil {
+		lines, _, unsubscribe, ok := rt.deployRecorder.Snapshot(a.ID)
+		unsubscribe()
+		if ok {
+			out := make([]telemetry.DeployLogEntry, 0, len(lines))
+			for _, l := range lines {
+				at := l.At
+				if at.IsZero() {
+					at = now
+				}
+				out = append(out, telemetry.DeployLogEntry{AttemptID: a.ID, Stream: l.Stream, Timestamp: at, Message: l.Line})
+			}
+			return out
+		}
+	}
+	return rt.persistedDeployLog(ctx, a.ID)
 }
 
 func (rt *Router) persistedDeployLog(ctx context.Context, id string) []telemetry.DeployLogEntry {
