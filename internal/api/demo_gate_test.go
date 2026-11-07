@@ -121,6 +121,7 @@ func TestDemoGateAllowlistGolden(t *testing.T) {
 		"OPTIONS /api/v1/forms/{app}/{name}",
 		"OPTIONS /api/v1/sentry/api/{project}/envelope/",
 		"OPTIONS /api/v1/sentry/api/{project}/store/",
+		"OPTIONS /api/v1/vitals/{app}",
 		"POST /api/v1/apps/{name}/validate-spec",
 		"POST /api/v1/auth/login",
 		"POST /api/v1/auth/logout",
