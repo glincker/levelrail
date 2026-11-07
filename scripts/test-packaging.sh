@@ -40,7 +40,7 @@ if (deps.length !== 6) { console.error("want 6 platform deps, got", deps.length)
 if (p.version !== "9.9.9-test.1") { console.error("version", p.version); process.exit(1); }
 if (!deps.includes("levelrail-cli-win32-x64") && !deps.includes("levelrail-cli-windows-amd64")) process.exit(1);
 ' "$work/npm/levelrail-cli/package.json" || fail "main package.json"
-[ "$(ls -d "$work"/npm/*/ | wc -l | tr -d ' ')" = 9 ] || fail "want 9 npm packages"
+[ "$(find "$work/npm" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')" = 9 ] || fail "want 9 npm packages"
 node -e '
 const dir = process.argv[1];
 const v = "9.9.9-test.1";
