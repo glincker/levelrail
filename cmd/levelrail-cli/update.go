@@ -16,6 +16,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/cliupdate"
+	"github.com/GLINCKER/levelrail/internal/selfupgrade"
 )
 
 const (
@@ -39,6 +40,64 @@ var (
 	updateExePath = cliupdate.ExecutablePath
 	updateVerify  func(ctx context.Context, checksumsPath, bundlePath string) (string, error)
 )
+
+type managedReport struct {
+	Action  string `json:"action"`
+	Method  string `json:"install_method"`
+	Command string `json:"upgrade_command"`
+	Version string `json:"version,omitempty"`
+}
+
+// updateRunUpgrade is a test seam for the package manager call.
+var updateRunUpgrade = cliupdate.RunUpgrade
+
+// runManagedUpdate never swaps the binary itself: it prints the package manager
+// command and runs it only after a yes or an interactive confirmation.
+func runManagedUpdate(prog, method, exe, target string, dryRun, yes bool, format outputFormat, query string, jsonOut bool, stdout, stderr io.Writer) int {
+	spec := "latest"
+	if target != "" {
+		if !selfupgrade.ValidTag(target) {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("update: refusing unsafe release tag %q", target))
+		}
+		spec = strings.TrimPrefix(target, "v")
+	}
+	argv := cliupdate.UpgradeArgv(method, spec)
+	cmdline := cliupdate.UpgradeCommand(method, prog)
+	if argv != nil {
+		cmdline = strings.Join(argv, " ")
+	}
+	report := managedReport{Action: "managed", Method: method, Command: cmdline}
+	show := func() {
+		_, _ = fmt.Fprintf(stdout, "%s was installed with %s, so it is not replaced in place. Upgrade with: %s\n", prog, method, cmdline)
+	}
+	if argv == nil || dryRun {
+		return renderUpdate(stdout, stderr, format, query, report, show)
+	}
+	if !yes {
+		if !stdinIsTerminal() {
+			return renderUpdate(stdout, stderr, format, query, report, show)
+		}
+		_, _ = fmt.Fprintf(stderr, "Run %q to upgrade? [y/N] ", cmdline)
+		line, _ := bufio.NewReader(stdinSource).ReadString('\n')
+		if a := strings.ToLower(strings.TrimSpace(line)); a != "y" && a != "yes" {
+			return renderUpdate(stdout, stderr, format, query, report, show)
+		}
+	}
+	if err := updateRunUpgrade(context.Background(), argv, stderr, stderr); err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("update: %w", err))
+	}
+	report.Action = "updated"
+	if v, err := cliupdate.InstalledVersion(context.Background(), exe); err == nil {
+		report.Version = v
+	}
+	return renderUpdate(stdout, stderr, format, query, report, func() {
+		if report.Version != "" {
+			_, _ = fmt.Fprintf(stdout, "upgraded with %s, now at %s\n", cmdline, report.Version)
+			return
+		}
+		_, _ = fmt.Fprintf(stdout, "upgraded with %s\n", cmdline)
+	})
+}
 
 type updateCheckReport struct {
 	Current         string `json:"current"`
@@ -90,7 +149,9 @@ func runUpdate(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 			return reportError(stdout, stderr, *jsonOut, fmt.Errorf("check for updates: %w", err))
 		}
 		report := updateCheckReport{Current: current, Latest: latest, UpdateAvailable: cliupdate.Newer(current, latest)}
-		code := renderUpdate(stdout, stderr, format, *queryFlag, report, func() { printUpdateCheck(stdout, prog, report) })
+		exe, _ := updateExePath()
+		method := cliupdate.DetectMethod(exe, lookupEnv)
+		code := renderUpdate(stdout, stderr, format, *queryFlag, report, func() { printUpdateCheck(stdout, prog, report, method) })
 		if code == exitOK && *exitCode && report.UpdateAvailable {
 			return exitUpdateAvail
 		}
@@ -100,6 +161,10 @@ func runUpdate(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 	exe, err := updateExePath()
 	if err != nil {
 		return reportError(stdout, stderr, *jsonOut, err)
+	}
+	method := cliupdate.DetectMethod(exe, lookupEnv)
+	if cliupdate.PackageManaged(method) {
+		return runManagedUpdate(prog, method, exe, *target, *dryRun, *yes, format, *queryFlag, *jsonOut, stdout, stderr)
 	}
 	opts := cliupdate.Options{
 		Source: src, Current: current, Target: *target, DryRun: *dryRun, Force: *force, ExePath: exe,
@@ -166,7 +231,7 @@ func confirmUpdate(stderr io.Writer, prog, current, target string) error {
 	return nil
 }
 
-func printUpdateCheck(out io.Writer, prog string, r updateCheckReport) {
+func printUpdateCheck(out io.Writer, prog string, r updateCheckReport, method string) {
 	_, _ = fmt.Fprintf(out, "current: %s\n", r.Current)
 	latest := r.Latest
 	if latest == "" {
@@ -175,7 +240,7 @@ func printUpdateCheck(out io.Writer, prog string, r updateCheckReport) {
 	_, _ = fmt.Fprintf(out, "latest:  %s\n", latest)
 	switch {
 	case r.UpdateAvailable:
-		_, _ = fmt.Fprintf(out, "an update is available. Run: %s update\n", prog)
+		_, _ = fmt.Fprintf(out, "an update is available. Run: %s\n", cliupdate.UpgradeCommand(method, prog))
 	case r.Current == "dev":
 		_, _ = fmt.Fprintln(out, "this is a development build, so it is not compared with releases")
 	default:

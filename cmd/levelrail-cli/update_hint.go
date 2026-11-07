@@ -57,14 +57,16 @@ func startUpdateHint(prog string, args []string, stderr io.Writer, lookupEnv fun
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), wait)
 	result := make(chan string, 1)
-	hinter := cliupdate.Hinter{Source: src, Current: localVersionInfo().Version, Dir: dir, IntervalDays: days}
+	exe, _ := updateExePath()
+	method := cliupdate.DetectMethod(exe, lookupEnv)
+	hinter := cliupdate.Hinter{Method: method, Source: src, Current: localVersionInfo().Version, Dir: dir, IntervalDays: days}
 	go func() { result <- hinter.Check(ctx) }()
 	return func() {
 		defer cancel()
 		select {
 		case line := <-result:
 			if line != "" {
-				_, _ = fmt.Fprintf(stderr, "%s Run: %s update\n", line, prog)
+				_, _ = fmt.Fprintf(stderr, "%s Run: %s\n", line, cliupdate.UpgradeCommand(method, prog))
 			}
 		case <-ctx.Done():
 		}

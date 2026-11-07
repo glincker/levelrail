@@ -6,6 +6,7 @@ import (
 	"io"
 	"runtime/debug"
 
+	"github.com/GLINCKER/levelrail/internal/cliupdate"
 	"github.com/GLINCKER/levelrail/internal/version"
 )
 
@@ -56,6 +57,11 @@ func runVersion(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 	if err := renderResult(stdout, of.Format, of.Query, report, func() { printVersionHuman(stdout, report) }); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)
+	}
+	if report.Server != nil && of.Format != outputJSON && cliupdate.MinorBehind(report.CLI.Version, report.Server.CurrentVersion) {
+		exe, _ := updateExePath()
+		method := cliupdate.DetectMethod(exe, lookupEnv)
+		_, _ = fmt.Fprintf(stderr, "The server runs %s, newer than this CLI (%s). Run: %s\n", report.Server.CurrentVersion, report.CLI.Version, cliupdate.UpgradeCommand(method, prog))
 	}
 	return exitOK
 }

@@ -30,7 +30,9 @@ type Hinter struct {
 	Dir string
 	// IntervalDays of 0 or less disables the hint.
 	IntervalDays int
-	Now          func() time.Time
+	// Method is the install method; empty means a plain binary.
+	Method string
+	Now    func() time.Time
 }
 
 // Check returns the line to print, or "" when there is nothing to say. It
