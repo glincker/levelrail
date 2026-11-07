@@ -75,10 +75,13 @@ function ItemLink({
           tooltip={label ?? item.label}
           title={label ?? item.label}
           data-locked="true"
-          className={cn('text-muted-foreground', sub && 'h-7 pl-6 text-[13px]')}
+          className={cn(
+            'text-sidebar-foreground/75',
+            sub && 'h-7 pl-6 text-[13px]',
+          )}
         >
           {item.icon}
-          <span>{item.label}</span>
+          <span>{label ?? item.label}</span>
           <LockedFeatureMark id={describedBy} />
         </SidebarMenuButton>
       </SidebarMenuItem>
@@ -94,7 +97,7 @@ function ItemLink({
         className={cn(sub && 'h-7 pl-6 text-[13px]')}
       >
         {item.icon}
-        <span>{item.label}</span>
+        <span>{label ?? item.label}</span>
         {item.beta && (
           <BetaBadge className="ml-auto text-sidebar-foreground/85" />
         )}
