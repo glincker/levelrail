@@ -72,7 +72,7 @@ Because tier 4 is empty for almost every row, the "real infra" column below read
 | Canvas | beta | Visual project editor behind the `canvas` toggle, off by default. Unit and component tests only (`web/src/lib/canvasDraft.test.ts`, `web/src/components/canvas/canvas.test.tsx`); it reuses the platform-as-code plan and apply, so it also needs `iac` on. No e2e, not yet run against a real instance. [Canvas](/canvas) |
 | Resource advisor | beta | Unit tests for every rule and threshold in `internal/resourceadvisor` and API tests for apply, dismiss and snooze; CLI and MCP read tool; dedicated doc page. Behind the `resource-advisor` toggle, off by default. No e2e test and no run against real long-term usage history on a live host. [Resource advisor](/resource-advisor) |
 | CLI console | beta | Unit tests for the line parser, command policy, redaction and runner, API tests for the gate order, step-up, rate limit and token revocation. Behind the `cli-console` toggle, off by default. No e2e test and no run on a real host. [CLI console](/cli-console) |
-| Cloudflare tunnel | hide-behind-flag | Reconciler unit tests only, needs a real Cloudflare account, no dedicated doc page. |
+| [Cloudflare Tunnel](/cloudflare-tunnel) | hide-behind-flag | Reconciler and API unit tests, no e2e and no real Cloudflare account run. The switch applies live. |
 | Email providers: primary and backup failover, branding, credential reveal | beta | Unit tests for the provider registry, retry and failover matrix (`internal/email/failover_test.go`). No email provider test in `test/e2e`, and no live provider account has been exercised. See [email notifications](/email-notifications). |
 | Spend caps | beta | Arithmetic on measured egress and cost. Unit tests in `internal/spendcap` (controller, guard mode, override) and `internal/spendguard`. No e2e test and no run against real traffic or a real bill. `pause` serves a maintenance response and does not stop containers. See [spend caps](/spend-caps). |
 | Traffic export | beta | Unit tests in `internal/trafficexport` (pipeline, sinks, visitor identity). No e2e test, and no live PostHog, OpenTelemetry or webhook destination is recorded. See [traffic export](/traffic-export). |
@@ -220,9 +220,9 @@ Kinds, from the `NotifyKind` constants in `internal/alerting/rules.go`: generic,
 
 - Unit: `internal/reconcile/cloudflaretunnel/controller_test.go` and `controller_half_success_test.go`; API `internal/api/cloudflare_tunnel_test.go`; CLI `cloudflare_tunnel_test.go`; MCP `tools_cloudflare.go` covered by `tools_platform_visibility_test.go`.
 - E2E: none. Live Docker: none.
-- Docs: only in `docs/api-reference.md`, `docs/cli-reference.md`, `docs/feature-catalog.md`. No dedicated page.
+- Docs: [Cloudflare Tunnel](/cloudflare-tunnel), plus `docs/api-reference.md`, `docs/cli-reference.md` and `docs/feature-catalog.md`.
 - Real infra: none found. Needs a real Cloudflare account and token to prove anything.
-- Label: hide-behind-flag.
+- Label: hide-behind-flag. The switch in Settings, Beta features applies live, with no restart.
 
 ### Deploy approvals
 

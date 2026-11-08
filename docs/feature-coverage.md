@@ -28,7 +28,7 @@ Most rows say **Built and tested**. That means the code is in the repository and
 | CI deploy trust through OIDC for GitHub Actions, GitLab CI and CircleCI | Built and tested | [Pipelines and OIDC](/pipelines-oidc) |
 | SSH deploy key for private git repositories | Built and tested | [Git integrations](/git-integrations) |
 | Container image deploy, with promotion by digest and signature checks | Built and tested | [Images](/images) |
-| Docker Compose file as one app, with per-service status | Built and tested | [Compose apps](/compose-apps) |
+| Docker Compose file as one app, with per-service status | Beta | [Compose apps](/compose-apps) |
 | Upload a folder or a zip to a static site | Built and tested | [Drop deploy](/drop-deploy) |
 | Deploy the current directory from the CLI, with no git remote | Built and tested | [Deploy from the CLI](/deploy-from-cli) |
 | Import from a repo URL, a `docker run` command, an image, a compose file or a Dockerfile | Built and tested | [Importing apps](/importing-apps) |
@@ -55,13 +55,13 @@ Ruby and PHP projects get a plan from Railpack, but the docs say no live build h
 | --- | --- | --- |
 | Managed databases for postgres, redis, mysql, mongodb, mariadb, keydb, dragonfly, clickhouse, valkey, meilisearch, qdrant, typesense and memcached | Built and tested | [Managed databases](/managed-databases) |
 | Version upgrades with security checks and automatic rollback on failure | Built and tested | [Database upgrades](/database-upgrades) |
-| TLS on new MySQL, MariaDB and MongoDB instances | Built and tested | [Database access](/database-access) |
+| TLS on new MySQL, MariaDB and MongoDB instances | Beta | [Database access](/database-access) |
 | Point-in-time restore for Postgres | Built and tested | [Backups and storage](/backups-and-storage) |
-| Point-in-time restore for MySQL and MariaDB, from binlog | Built and tested | [Backups and storage](/backups-and-storage) |
-| MongoDB dump, verify and restore as a new database (no point-in-time restore) | Built and tested | [Backups and storage](/backups-and-storage) |
+| Point-in-time restore for MySQL and MariaDB, from binlog | Beta | [Backups and storage](/backups-and-storage) |
+| MongoDB dump, verify and restore as a new database (no point-in-time restore) | Beta | [Backups and storage](/backups-and-storage) |
 | Backup targets referenced by ID, with schedules and retention | Built and tested | [Backups and storage](/backups-and-storage) |
-| Scheduled dumps of compose database services (Postgres, MySQL and MariaDB images) | Built and tested | [Compose apps](/compose-apps) |
-| Encrypted database dumps, sealed per target with age | Built and tested | [Backups and storage](/backups-and-storage) |
+| Scheduled dumps of compose database services (Postgres, MySQL and MariaDB images) | Beta | [Compose apps](/compose-apps) |
+| Encrypted database dumps, sealed per target with age | Beta | [Backups and storage](/backups-and-storage) |
 | Restore drills that prove a backup can be restored | Built and tested | [Prove your backups work](/prove-your-backups-work) |
 
 Compose database dumps run on a cron schedule. Restoring one is a manual step today. The compose apps page lists the commands.
