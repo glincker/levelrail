@@ -36,6 +36,7 @@ const STATE_VARIANT: Record<
 // Reads the load balancer status the Scale panel already polls; renders
 // nothing until a load balancer is configured and has upstreams.
 export function AppReplicaTable({ appName }: { appName: string }) {
+  const { t: tc } = useTranslation('common')
   const { t } = useTranslation('resources', { keyPrefix: 'replicaTable' })
   const lb = useAppLoadBalancer(appName)
   const configured = lb.data?.configured === true
@@ -67,7 +68,7 @@ export function AppReplicaTable({ appName }: { appName: string }) {
         <CardTitle>{t('title')}</CardTitle>
       </CardHeader>
       <CardContent>
-        <Table>
+        <Table aria-label={tc('a11y.tables.appReplicas')}>
           <TableHeader>
             <TableRow>
               <TableHead>{t('replica')}</TableHead>

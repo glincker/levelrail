@@ -476,7 +476,10 @@ function PortsInUse({ rows }: { rows: PortHolder[] }) {
           description={t('inUse.empty')}
         />
       ) : (
-        <table className="w-full text-sm">
+        <table
+          aria-label={t('a11y.tables.appExposure', { ns: 'common' })}
+          className="w-full text-sm"
+        >
           <thead>
             <tr className="text-left text-muted-foreground">
               <th className="py-1 pr-4 font-normal">{t('inUse.port')}</th>

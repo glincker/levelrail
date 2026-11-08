@@ -85,7 +85,7 @@ export function GitBuildSuggestions({
           className="flex items-center gap-2 text-sm text-muted-foreground"
           role="status"
         >
-          <LoaderGlassIcon className="size-5 animate-spin" />
+          <LoaderGlassIcon className="size-5 animate-spin motion-reduce:animate-none" />
           {t('detected.loading')}
         </p>
       ) : null}

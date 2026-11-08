@@ -338,7 +338,7 @@ export function ProxyProviderCard() {
                   {setup.isPending && setup.variables?.confirm ? (
                     <LoaderGlassIcon
                       size="1.4em"
-                      className="animate-spin"
+                      className="animate-spin motion-reduce:animate-none"
                       aria-hidden="true"
                     />
                   ) : null}

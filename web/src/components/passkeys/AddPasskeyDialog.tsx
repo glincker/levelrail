@@ -134,7 +134,7 @@ export function AddPasskeyDialog({
                   {state === 'done' ? (
                     <CircleCheckGlassIcon className="size-5 text-tone-success" />
                   ) : state === 'active' && working ? (
-                    <LoaderCircleGlassIcon className="size-5 animate-spin" />
+                    <LoaderCircleGlassIcon className="size-5 animate-spin motion-reduce:animate-none" />
                   ) : (
                     <CircleGlassIcon className="size-5" />
                   )}

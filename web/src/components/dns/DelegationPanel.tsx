@@ -70,7 +70,10 @@ export function DelegationPanel({
       ) : null}
       {compact ? null : (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table
+            aria-label={t('a11y.tables.dnsDelegation', { ns: 'common' })}
+            className="w-full text-sm"
+          >
             <thead className="text-left text-xs text-muted-foreground">
               <tr>
                 <th className="py-1 font-medium">

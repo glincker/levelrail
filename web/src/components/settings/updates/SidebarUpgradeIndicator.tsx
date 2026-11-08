@@ -28,7 +28,7 @@ export function SidebarUpgradeIcon({ icon: Icon }: { icon: IconType }) {
           'size-5 -rotate-90 text-primary',
           (percent === null || s.state === 'reconnecting') &&
             motion &&
-            'animate-spin',
+            'animate-spin motion-reduce:animate-none',
         )}
       >
         <circle

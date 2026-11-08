@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import type { ImportService } from '../queries/imports'
@@ -16,11 +17,15 @@ export function ImportEnvTable({
   values: Record<string, string>
   onChange: (key: string, value: string) => void
 }) {
+  const { t: tc } = useTranslation('common')
   const env = service.env ?? []
   if (env.length === 0) return null
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+      <table
+        aria-label={tc('a11y.tables.importEnv')}
+        className="w-full text-sm"
+      >
         <thead>
           <tr className="text-left text-xs text-muted-foreground">
             <th className="py-1 pr-2 font-medium">Variable</th>

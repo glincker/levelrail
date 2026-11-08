@@ -223,7 +223,7 @@ function ProjectDetailPage() {
 function ProjectDetailPending() {
   return (
     <div className="space-y-6">
-      <div className="h-6 w-48 animate-pulse rounded bg-muted" />
+      <div className="h-6 w-48 animate-pulse motion-reduce:animate-none rounded bg-muted" />
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

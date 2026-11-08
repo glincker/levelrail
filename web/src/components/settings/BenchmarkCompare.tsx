@@ -106,7 +106,7 @@ export function BenchmarkCompare({ data }: { data: BenchmarkComparison }) {
 function DeltaTable({ deltas }: { deltas: BenchmarkDelta[] }) {
   const { t } = useTranslation('resilience')
   return (
-    <Table>
+    <Table aria-label={t('a11y.tables.benchmarkCompare', { ns: 'common' })}>
       <TableHeader>
         <TableRow>
           <TableHead>{t('benchmarks.table.scenario')}</TableHead>

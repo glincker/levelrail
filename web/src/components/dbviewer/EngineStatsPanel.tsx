@@ -49,7 +49,7 @@ function ObjectsTable({ stats }: { stats: DatabaseEngineStats }) {
     : t('viewer.engineStats.colDocuments')
   return (
     <div className="space-y-2">
-      <Table>
+      <Table aria-label={t('a11y.tables.engineStats', { ns: 'common' })}>
         <TableHeader>
           <TableRow>
             <TableHead>{t('viewer.engineStats.colName')}</TableHead>

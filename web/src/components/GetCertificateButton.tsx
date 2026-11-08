@@ -196,7 +196,7 @@ function Progress({
     <div className="space-y-2" role="status">
       <p className="flex items-center gap-2 text-sm font-medium">
         <LoaderCircleGlassIcon
-          className="size-5 animate-spin"
+          className="size-5 animate-spin motion-reduce:animate-none"
           aria-hidden="true"
         />
         {t('domainCert.progress.pendingTitle')}
@@ -258,7 +258,7 @@ function Review({
       ) : (
         <p className="flex items-center gap-2 text-sm" role="status">
           <LoaderCircleGlassIcon
-            className="size-5 animate-spin"
+            className="size-5 animate-spin motion-reduce:animate-none"
             aria-hidden="true"
           />
           {t('domainCert.checking')}

@@ -118,9 +118,13 @@ ingress.fallback_certs
 ingress.max_body_bytes
 ingress.proxy_cert_wait
 ingress.trusted_proxy_preset
+mesh.apply_retries
+mesh.apply_retry_delay
+mesh.apply_timeout
 mesh.hub_resolve_ttl
 mesh.hub_stale_max
 mesh.ready_retry_seconds
+mesh.wake_debounce
 monitors.raw_retention
 net.outbound_timeout
 network.gc_max_removals

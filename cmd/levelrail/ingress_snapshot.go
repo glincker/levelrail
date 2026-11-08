@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"path/filepath"
 
@@ -15,7 +16,7 @@ func setupIngressSnapshot(ctx context.Context, logger *slog.Logger, driver *ingr
 	status := driver.SnapshotStatus
 	key := sm.DeriveKey(ingressdriver.SnapshotKeyPurpose)
 	if key == nil {
-		logger.Warn("ingress route snapshot is off: no master key loaded to seal it")
+		logger.Info("ingress route snapshot is off: no master key loaded to seal it")
 		return status
 	}
 	store, err := ingressdriver.NewSnapshotStore(filepath.Join(dataDirFromEnv(), ingressdriver.SnapshotFilename), key)
@@ -26,7 +27,12 @@ func setupIngressSnapshot(ctx context.Context, logger *slog.Logger, driver *ingr
 	driver.SetSnapshot(store, edge.inherited.Fingerprint())
 	ingressdriver.SetActiveCertStorage(ingressdriver.NewSQLiteStorage(certs, logger))
 	if _, err := driver.RestoreSnapshot(ctx); err != nil {
-		logger.Warn("ingress route snapshot not used, waiting for the first reconcile", slog.String("error", err.Error()))
+		// A stale snapshot (listeners changed since) is routine; only corruption or I/O is a real fault.
+		level := slog.LevelWarn
+		if errors.Is(err, ingressdriver.ErrSnapshotStale) {
+			level = slog.LevelInfo
+		}
+		logger.Log(ctx, level, "ingress route snapshot not used, waiting for the first reconcile", slog.String("error", err.Error()))
 	}
 	return status
 }

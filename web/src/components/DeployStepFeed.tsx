@@ -41,7 +41,7 @@ function StatusIcon({ status }: { status: RowStatus }) {
     case 'running':
       return (
         <LoaderCircleGlassIcon
-          className="size-5 animate-spin text-muted-foreground"
+          className="size-5 animate-spin motion-reduce:animate-none text-muted-foreground"
           aria-hidden="true"
         />
       )

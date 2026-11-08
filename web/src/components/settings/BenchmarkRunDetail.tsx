@@ -106,7 +106,7 @@ function ResultTable({ results }: { results: BenchmarkResult[] }) {
   const { t } = useTranslation('resilience')
   const counts = new Map<string, number>()
   return (
-    <Table>
+    <Table aria-label={t('a11y.tables.benchmarkResults', { ns: 'common' })}>
       <TableHeader>
         <TableRow>
           <TableHead>{t('benchmarks.table.scenario')}</TableHead>
@@ -164,7 +164,7 @@ function MetricTable({
       <h4 className="text-sm font-medium">
         {t(`scenario.${scenario}`, { defaultValue: scenario })}
       </h4>
-      <Table>
+      <Table aria-label={t('a11y.tables.benchmarkSteps', { ns: 'common' })}>
         <TableHeader>
           <TableRow>
             <TableHead>{t('benchmarks.table.metric')}</TableHead>
@@ -247,7 +247,9 @@ export function BenchmarkRunDetail({ run }: { run: BenchmarkRun }) {
           <CardTitle>{t('limits.title')}</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
+          <Table
+            aria-label={tr('a11y.tables.benchmarkSamples', { ns: 'common' })}
+          >
             <TableHeader>
               <TableRow>
                 <TableHead>{t('limits.question')}</TableHead>

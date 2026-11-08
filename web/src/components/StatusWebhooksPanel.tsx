@@ -58,7 +58,10 @@ function DeliveryLog({ id }: { id: string }) {
     )
   }
   return (
-    <table className="w-full text-left text-xs">
+    <table
+      aria-label={t('a11y.tables.statusWebhooks', { ns: 'common' })}
+      className="w-full text-left text-xs"
+    >
       <thead className="text-muted-foreground">
         <tr>
           <th className="py-1 pr-2 font-medium">{t('webhooks.logWhen')}</th>

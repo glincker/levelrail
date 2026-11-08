@@ -144,7 +144,11 @@ export function DomainReadinessSteps({
             disabled={isFetching}
           >
             <RefreshCwGlassIcon
-              className={isFetching ? 'size-5 animate-spin' : 'size-5'}
+              className={
+                isFetching
+                  ? 'size-5 animate-spin motion-reduce:animate-none'
+                  : 'size-5'
+              }
               aria-hidden="true"
             />
             {isFetching ? t('dnsCheck.checking') : t('readiness.checkNow')}

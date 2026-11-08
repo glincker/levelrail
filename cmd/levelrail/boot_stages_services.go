@@ -134,7 +134,7 @@ func (s *bootState) startBuildAndIngress() {
 	webhookHandler, err := loadWebhookHandler(logger, b, db, deployRecorder, deployDispatcher, builder, engine)
 	if err != nil {
 		// Non-fatal, like the other optional wiring: only the git-push path is unavailable.
-		logger.Warn("webhook not configured", slog.String("error", err.Error()))
+		logger.Info("git webhook deploys are off until a repo, webhook secret and image repo are configured", slog.String("reason", err.Error()))
 	}
 
 	ingressDriver := ingressdriver.New(logger)
@@ -283,6 +283,7 @@ func (s *bootState) startMesh() error {
 	}
 	if meshCfg != nil {
 		meshEndpoints.Attach(meshCfg.coordinator, meshCfg.localNodeID)
+		wireMeshWake(meshCfg, s.engine.Nudge, agentRegistry, meshEndpoints)
 	}
 	apiRouter.SetAppTeardownOptions(application.WithNetworkPrefix(b.ShortName), application.WithInstanceID(instanceID))
 	apiRouter.SetPrivateNetworks(privateNetworkConfig(db, client, b.ShortName, instanceID))

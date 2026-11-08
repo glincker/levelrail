@@ -212,7 +212,10 @@ export function DnsRecordsTable({
   }
   return (
     <div className="overflow-x-auto rounded-md border border-border">
-      <table className="w-full text-left text-xs">
+      <table
+        aria-label={t('a11y.tables.serverAddresses', { ns: 'common' })}
+        className="w-full text-left text-xs"
+      >
         <thead className="text-muted-foreground">
           <tr>
             <th className="px-2 py-1 font-medium">

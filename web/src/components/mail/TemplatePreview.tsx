@@ -82,7 +82,7 @@ export function TemplatePreview({
             srcDoc={preview.data.html}
             className={cn(
               'mx-auto block h-[560px] rounded-md border-0 bg-white',
-              mobile ? 'w-[375px]' : 'w-full min-w-[620px]',
+              mobile ? 'w-full max-w-[375px]' : 'w-full min-w-[620px]',
             )}
           />
         </div>

@@ -85,7 +85,12 @@ export function InvestigationPanel({
               <Heading>{t('investigation.beforeAfter')}</Heading>
               {data.summary.has_traffic ? (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm tabular-nums">
+                  <table
+                    aria-label={t('a11y.tables.investigationMetrics', {
+                      ns: 'common',
+                    })}
+                    className="w-full text-sm tabular-nums"
+                  >
                     <thead>
                       <tr className="text-xs text-muted-foreground">
                         <th className="py-1 text-left font-medium" />
@@ -130,7 +135,12 @@ export function InvestigationPanel({
                 </p>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm tabular-nums">
+                  <table
+                    aria-label={t('a11y.tables.investigationEvents', {
+                      ns: 'common',
+                    })}
+                    className="w-full text-sm tabular-nums"
+                  >
                     <thead>
                       <tr className="text-xs text-muted-foreground">
                         <th className="py-1 text-left font-medium">

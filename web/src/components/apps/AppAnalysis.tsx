@@ -60,7 +60,10 @@ function DigestEvidence({ digest }: { digest?: AnalysisDigest | null }) {
       </h3>
       {metrics.length > 0 && (
         <div className="overflow-x-auto">
-          <table className="text-xs">
+          <table
+            aria-label={t('a11y.tables.appAnalysis', { ns: 'common' })}
+            className="text-xs"
+          >
             <thead className="text-left text-muted-foreground">
               <tr>
                 <th scope="col" className="pr-4 font-medium">

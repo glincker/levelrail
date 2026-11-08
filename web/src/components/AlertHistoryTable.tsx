@@ -200,7 +200,7 @@ export function AlertHistoryTable({ app }: { app?: string }) {
           tabIndex={0}
           className="overflow-x-auto rounded-lg border border-border focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
         >
-          <Table>
+          <Table aria-label={t('a11y.tables.alertHistory', { ns: 'common' })}>
             <TableHeader>
               <TableRow>
                 <TableHead>Time</TableHead>

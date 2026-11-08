@@ -213,7 +213,7 @@ export function FunctionKVTab({ name }: Readonly<{ name: string }>) {
       {data.keys.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t('kv.empty')}</p>
       ) : (
-        <Table>
+        <Table aria-label={t('a11y.tables.functionKv', { ns: 'common' })}>
           <TableHeader>
             <TableRow>
               <TableHead>{t('kv.columns.key')}</TableHead>

@@ -41,7 +41,10 @@ export function DiffPreview({
         <p className="text-sm text-muted-foreground">{t('diff.empty')}</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table
+            aria-label={t('a11y.tables.trafficDiff', { ns: 'common' })}
+            className="w-full text-left text-sm"
+          >
             <thead>
               <tr className="text-xs text-muted-foreground">
                 <th scope="col" className="w-1/3 py-1 pr-3 font-medium">

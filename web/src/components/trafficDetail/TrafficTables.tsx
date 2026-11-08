@@ -46,7 +46,7 @@ export function ReplicaTable({ rows }: Readonly<{ rows: TrafficReplica[] }>) {
       {rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t('replicas.empty')}</p>
       ) : (
-        <Table>
+        <Table aria-label={t('a11y.tables.trafficTopPaths', { ns: 'common' })}>
           <TableHeader>
             <TableRow>
               <TableHead>{t('replicas.upstream')}</TableHead>
@@ -90,7 +90,7 @@ export function ReplicaTable({ rows }: Readonly<{ rows: TrafficReplica[] }>) {
 function RouteRows({ rows }: Readonly<{ rows: TrafficRoute[] }>) {
   const { t } = useTranslation('trafficDetail')
   return (
-    <Table>
+    <Table aria-label={t('a11y.tables.trafficBreakdown', { ns: 'common' })}>
       <TableHeader>
         <TableRow>
           <TableHead>{t('routes.route')}</TableHead>
@@ -205,7 +205,7 @@ export function AudienceTable({
           {t(`audience.${kind}.empty`)}
         </p>
       ) : (
-        <Table>
+        <Table aria-label={t('a11y.tables.trafficErrors', { ns: 'common' })}>
           <TableHeader>
             <TableRow>
               <TableHead>{t(`audience.${kind}.label`)}</TableHead>

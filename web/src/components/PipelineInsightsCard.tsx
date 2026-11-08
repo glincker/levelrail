@@ -74,7 +74,9 @@ export function PipelineInsightsCard({
           />
         ) : (
           <>
-            <Table>
+            <Table
+              aria-label={t('a11y.tables.pipelineInsights', { ns: 'common' })}
+            >
               <TableHeader>
                 <TableRow>
                   <TableHead>{t('insights.job')}</TableHead>
@@ -111,7 +113,11 @@ export function PipelineInsightsCard({
                 <p className="mb-1 text-xs font-medium text-muted-foreground">
                   {t('insights.diffTitle')}
                 </p>
-                <Table>
+                <Table
+                  aria-label={t('a11y.tables.pipelineSlowSteps', {
+                    ns: 'common',
+                  })}
+                >
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t('insights.job')}</TableHead>

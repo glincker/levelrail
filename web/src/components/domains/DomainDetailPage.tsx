@@ -168,7 +168,11 @@ export function DomainDetailPage({
             disabled={isFetching}
           >
             <RefreshCwGlassIcon
-              className={isFetching ? 'animate-spin' : undefined}
+              className={
+                isFetching
+                  ? 'animate-spin motion-reduce:animate-none'
+                  : undefined
+              }
               aria-hidden="true"
             />
             {t('readiness.checkNow')}

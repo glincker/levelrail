@@ -44,6 +44,16 @@ const NavTabStrip = React.lazy(() =>
   })),
 )
 const DockPanel = React.lazy(() => import('../components/dock/DockPanel'))
+// The not-found page pulls in the full nav registry, so it loads only when needed.
+const RouteNotFound = React.lazy(() => import('../components/RouteNotFound'))
+
+function RootNotFound() {
+  return (
+    <React.Suspense fallback={<DelayedFallback />}>
+      <RouteNotFound />
+    </React.Suspense>
+  )
+}
 // Palette code is deferred until first use to keep it out of the first-load budget.
 const CommandPalette = React.lazy(() =>
   import('../components/CommandPalette').then((m) => ({
@@ -113,6 +123,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     return brand
   },
   component: RootLayout,
+  notFoundComponent: RootNotFound,
 })
 
 // Thin shell: brand-aware header/nav, <Outlet />. No data fetching of its

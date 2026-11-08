@@ -125,7 +125,9 @@ function PreviewStatusBadge({ status }: { status: PreviewEnvironmentStatus }) {
     <Badge variant={STATUS_BADGE_VARIANT[status]} className="rounded-full">
       <StatusIcon
         className={
-          status === 'deploying' ? 'size-3.5 animate-spin' : 'size-3.5'
+          status === 'deploying'
+            ? 'size-3.5 animate-spin motion-reduce:animate-none'
+            : 'size-3.5'
         }
         aria-hidden="true"
       />
@@ -380,7 +382,7 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
         {enabled ? (
           previews.isLoading ? (
             <p className="flex items-center gap-2 text-sm text-muted-foreground">
-              <LoaderGlassIcon className="size-5 animate-spin" />
+              <LoaderGlassIcon className="size-5 animate-spin motion-reduce:animate-none" />
               Loading previews...
             </p>
           ) : previews.data && previews.data.length > 0 ? (

@@ -54,7 +54,7 @@ export function DeployResult({
           className={
             live || failed
               ? 'mt-0.5 size-4 shrink-0'
-              : 'mt-0.5 size-4 shrink-0 animate-spin'
+              : 'mt-0.5 size-4 shrink-0 animate-spin motion-reduce:animate-none'
           }
         />
         {message}

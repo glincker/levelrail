@@ -115,7 +115,10 @@ export function UpgradeGlobalBar() {
           />
         ) : (
           <RefreshCwGlassIcon
-            className={cn('size-5 text-primary', motion && 'animate-spin')}
+            className={cn(
+              'size-5 text-primary',
+              motion && 'animate-spin motion-reduce:animate-none',
+            )}
             aria-hidden
           />
         )}

@@ -76,7 +76,7 @@ export function FunctionDetail({ name, extraTabs = [] }: FunctionDetailProps) {
           <TabsContent key={tab.id} value={tab.id} className="pt-4">
             <Suspense
               fallback={
-                <div className="h-24 animate-pulse rounded-md bg-muted" />
+                <div className="h-24 animate-pulse motion-reduce:animate-none rounded-md bg-muted" />
               }
             >
               {tab.render(name)}

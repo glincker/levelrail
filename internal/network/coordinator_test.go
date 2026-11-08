@@ -1,8 +1,10 @@
 package network
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"log/slog"
 	"net/netip"
 	"strings"
 	"sync"
@@ -158,6 +160,36 @@ func TestCoordinator_UnreachableNodeDoesNotBlockTheFleet(t *testing.T) {
 	}
 	if _, reached := sink.received["c"]; !reached {
 		t.Error("node c was not reached because node b failed")
+	}
+}
+
+func TestCoordinator_LogsAnOfflineNodeOnlyOnTransitions(t *testing.T) {
+	sink := newRecordingSink()
+	sink.identities["a"] = NodeIdentity{PublicKey: testKey(1)}
+	sink.failures["b"] = errors.New("node not registered")
+	var buf bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	c := NewCoordinator(sink, PlanOptions{MeshCIDR: testCIDR()}, WithCoordinatorLogger(logger))
+	inventory := []NodeInfo{node("a", 1, "10.181.0.1", ""), node("b", 2, "10.181.0.2", "")}
+
+	for range 5 {
+		if _, _, err := c.Distribute(context.Background(), inventory); err != nil {
+			t.Fatalf("Distribute: %v", err)
+		}
+	}
+	if got := strings.Count(buf.String(), "did not accept"); got != 1 {
+		t.Fatalf("warned %d times over 5 passes, want 1:\n%s", got, buf.String())
+	}
+
+	delete(sink.failures, "b")
+	sink.identities["b"] = NodeIdentity{PublicKey: testKey(2)}
+	for range 3 {
+		if _, _, err := c.Distribute(context.Background(), inventory); err != nil {
+			t.Fatalf("Distribute: %v", err)
+		}
+	}
+	if got := strings.Count(buf.String(), "accepted its mesh config again"); got != 1 {
+		t.Fatalf("recovery logged %d times, want 1:\n%s", got, buf.String())
 	}
 }
 

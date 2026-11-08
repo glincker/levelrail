@@ -97,7 +97,7 @@ export function NodeMoveSteps({ move }: { move: NodeMove }) {
       {move.status === 'running' ? (
         <li className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <LoaderCircleGlassIcon
-            className="size-5 shrink-0 animate-spin"
+            className="size-5 shrink-0 animate-spin motion-reduce:animate-none"
             aria-hidden="true"
           />
           {t(`phase.${move.phase}`)}

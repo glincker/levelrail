@@ -67,7 +67,10 @@ function StatusIcon({ status }: { status: DeployStepStatus }) {
       return (
         <LoaderCircleGlassIcon
           size="1.4em"
-          className={cn(base, 'animate-spin text-muted-foreground')}
+          className={cn(
+            base,
+            'animate-spin motion-reduce:animate-none text-muted-foreground',
+          )}
           aria-hidden="true"
         />
       )

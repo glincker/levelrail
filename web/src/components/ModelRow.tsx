@@ -213,12 +213,12 @@ export function ModelRowSkeleton() {
       className={`${MODEL_LIST_GRID} border-b border-border px-4 py-3`}
       aria-hidden="true"
     >
-      <div className="h-4 w-32 animate-pulse rounded bg-muted" />
-      <div className="h-4 w-14 animate-pulse rounded bg-muted" />
-      <div className="h-4 w-40 animate-pulse rounded bg-muted" />
-      <div className="h-5 w-20 animate-pulse rounded bg-muted" />
-      <div className="h-4 w-48 animate-pulse rounded bg-muted" />
-      <div className="h-6 w-20 animate-pulse rounded bg-muted" />
+      <div className="h-4 w-32 animate-pulse motion-reduce:animate-none rounded bg-muted" />
+      <div className="h-4 w-14 animate-pulse motion-reduce:animate-none rounded bg-muted" />
+      <div className="h-4 w-40 animate-pulse motion-reduce:animate-none rounded bg-muted" />
+      <div className="h-5 w-20 animate-pulse motion-reduce:animate-none rounded bg-muted" />
+      <div className="h-4 w-48 animate-pulse motion-reduce:animate-none rounded bg-muted" />
+      <div className="h-6 w-20 animate-pulse motion-reduce:animate-none rounded bg-muted" />
     </div>
   )
 }

@@ -127,9 +127,14 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_INGRESS_MAX_BODY_BYTES` | [`ingress.max_body_bytes`](/runtime-settings#networking) | `1073741824` |
 | `APP_PROXY_CERT_WAIT` | [`ingress.proxy_cert_wait`](/runtime-settings#networking) | `5m0s` |
 | `APP_INGRESS_TRUSTED_PROXY_PRESET` | [`ingress.trusted_proxy_preset`](/runtime-settings#networking) | `none` |
+| `APP_MESH_APPLY_RETRIES` | [`mesh.apply_retries`](/runtime-settings#networking) | `2` |
+| `APP_MESH_APPLY_RETRY_DELAY` | [`mesh.apply_retry_delay`](/runtime-settings#networking) | `500ms` |
+| `APP_MESH_APPLY_TIMEOUT` | [`mesh.apply_timeout`](/runtime-settings#networking) | `10s` |
 | `APP_MESH_HUB_RESOLVE_TTL` | [`mesh.hub_resolve_ttl`](/runtime-settings#networking) | `5m` |
 | `APP_MESH_HUB_STALE_MAX` | [`mesh.hub_stale_max`](/runtime-settings#networking) | `24h` |
 | `APP_MESH_READY_RETRY_SECONDS` | [`mesh.ready_retry_seconds`](/runtime-settings#networking) | `10` |
+| `APP_MESH_WAKE_DEBOUNCE` | [`mesh.wake_debounce`](/runtime-settings#networking) | `1s` |
+| `APP_NET_OUTBOUND_TIMEOUT` | [`net.outbound_timeout`](/runtime-settings#networking) | `30s` |
 | `APP_NETWORK_GC_MAX_REMOVALS` | [`network.gc_max_removals`](/runtime-settings#networking) | `20` |
 | `APP_OIDC_LISTEN_PORT` | [`pipelines.oidc_listen_port`](/runtime-settings#networking) | `9095` |
 | `LEVELRAIL_PROXY_UNROUTED_TO_LEVELRAIL` | [`proxy.unrouted_to_levelrail`](/runtime-settings#networking) | `false` |
@@ -164,6 +169,10 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_REGISTRY_PUSH_DEBOUNCE` | [`deploys.registry_push_debounce`](/runtime-settings#deploys) | `30s` |
 | `APP_REGISTRY_PUSH_MAX_BODY_BYTES` | [`deploys.registry_push_max_body_bytes`](/runtime-settings#deploys) | `262144` |
 | `APP_REGISTRY_PUSH_TIMEOUT` | [`deploys.registry_push_timeout`](/runtime-settings#deploys) | `5m` |
+| `APP_GIT_POLL_CONCURRENCY` | [`git.poll_concurrency`](/runtime-settings#deploys) | `4` |
+| `APP_GIT_POLL_ENABLED` | [`git.poll_enabled`](/runtime-settings#deploys) | `true` |
+| `APP_GIT_POLL_INTERVAL` | [`git.poll_interval`](/runtime-settings#deploys) | `5m` |
+| `APP_GIT_POLL_MAX_BACKOFF` | [`git.poll_max_backoff`](/runtime-settings#deploys) | `1h` |
 | `APP_IMAGE_KEEP_PER_APP` | [`images.keep_per_app`](/runtime-settings#deploys) | `3` |
 | `APP_JOBS_HTTP_TIMEOUT_SECONDS` | [`jobs.http_timeout_seconds`](/runtime-settings#deploys) | `30` |
 | `APP_NEXTJS_GENERATE_ACTIONS_KEY` | [`nextjs.generate_actions_key`](/runtime-settings#deploys) | `true` |
@@ -215,6 +224,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_STORAGE_LARGE_UNMANAGED_IMAGE_MB` | [`storage.large_unmanaged_image_mb`](/runtime-settings#observability) | `500` |
 | `APP_STORAGE_LOW_FREE_PERCENT` | [`storage.low_free_percent`](/runtime-settings#observability) | `15` |
 | `APP_DB_OPTIMIZE_INTERVAL` | [`store.optimize_interval`](/runtime-settings#observability) | `6h` |
+| `APP_DB_READ_CONNS` | [`store.read_connections`](/runtime-settings#observability) | `4` |
 | `APP_ACCESS_LOG_RETENTION` | [`telemetry.access_log_retention`](/runtime-settings#observability) | `8760h0m0s` |
 | `APP_ACCESS_LOG_SIZE` | [`telemetry.access_log_size`](/runtime-settings#observability) | `1000` |
 | `APP_LOG_BUDGET_MB` | [`telemetry.log_budget_mb`](/runtime-settings#observability) | `0` |

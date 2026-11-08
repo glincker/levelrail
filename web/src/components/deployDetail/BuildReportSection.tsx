@@ -46,6 +46,7 @@ export function BuildReportSection({
   appName: string
   deployId: string
 }) {
+  const { t: tc } = useTranslation('common')
   const { t } = useTranslation('deployDetail', { keyPrefix: 'buildReport' })
   const q = useBuildReport(appName, deployId)
 
@@ -80,7 +81,10 @@ export function BuildReportSection({
         <p className="text-sm text-muted-foreground">{t('noRoutes')}</p>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-border">
-          <table className="w-full text-sm">
+          <table
+            aria-label={tc('a11y.tables.buildReport')}
+            className="w-full text-sm"
+          >
             <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
               <tr>
                 <th scope="col" className="px-3 py-1.5 font-medium">

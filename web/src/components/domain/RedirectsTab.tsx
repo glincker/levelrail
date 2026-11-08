@@ -253,7 +253,10 @@ function RedirectsEditor({
         description={t('redirects.aliasesHelp')}
       >
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table
+            aria-label={t('a11y.tables.redirects', { ns: 'common' })}
+            className="w-full text-sm"
+          >
             <thead>
               <tr className="text-left text-xs text-muted-foreground">
                 <th className="py-1 font-normal">{t('redirects.domain')}</th>

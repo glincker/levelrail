@@ -436,7 +436,7 @@ export function GitBuildSettings({ appName, source }: GitBuildSettingsProps) {
               }}
             >
               {save.isPending ? (
-                <LoaderGlassIcon className="size-5 animate-spin" />
+                <LoaderGlassIcon className="size-5 animate-spin motion-reduce:animate-none" />
               ) : null}
               {save.isPending ? t('saving') : t('save')}
             </Button>

@@ -67,6 +67,7 @@ function PackageTable({
   return (
     <div className="max-h-56 overflow-auto rounded-md border border-border">
       <table
+        aria-label={t('a11y.tables.nodePatches', { ns: 'common' })}
         className={`w-full text-xs ${muted ? 'text-muted-foreground' : ''}`}
       >
         <thead className="sticky top-0 bg-muted text-left text-muted-foreground">

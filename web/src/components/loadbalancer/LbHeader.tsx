@@ -80,7 +80,9 @@ export function LbHeader({
           <RefreshCwGlassIcon
             size="1.4em"
             data-icon="inline-start"
-            className={checking ? 'animate-spin' : undefined}
+            className={
+              checking ? 'animate-spin motion-reduce:animate-none' : undefined
+            }
           />
           {cooldown > 0
             ? t('lb.header.checkNowCooldown', { seconds: cooldown })
