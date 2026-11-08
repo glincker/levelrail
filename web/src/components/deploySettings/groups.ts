@@ -23,6 +23,7 @@ export type SettingsCardKey =
   | 'strategy'
   | 'rolloutPolicy'
   | 'hooks'
+  | 'skew'
   | 'safety'
   | 'watch'
   | 'autoRollback'

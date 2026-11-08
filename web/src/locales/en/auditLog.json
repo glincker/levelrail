@@ -76,7 +76,13 @@
     "dropped": "Dropped",
     "queued": "Queued",
     "lastError": "Last error",
-    "lastErrorAt": "at {{time}}"
+    "lastErrorAt": "at {{time}}",
+    "check": "Check anchor",
+    "checking": "Checking",
+    "checkOk": "The live chain holds the anchored head (entry {{seq}}).",
+    "checkMismatch": "Mismatch: the live chain no longer holds the anchored head. Entries may have been altered or removed.",
+    "checkCompacted": "The anchored head was already purged, so it cannot be compared.",
+    "checkFailed": "Could not check the anchor"
   },
   "verify": {
     "button": "Verify chain",
@@ -96,5 +102,9 @@
     "rangeEnd": "Range ends at entry {{seq}}",
     "outside_one": "This range is intact, but the whole chain has {{count}} problem outside it. Verify without a range.",
     "outside_other": "This range is intact, but the whole chain has {{count}} problems outside it. Verify without a range."
+  },
+  "purge": {
+    "typeToConfirm": "Type {{word}} to confirm",
+    "word": "purge"
   }
 }

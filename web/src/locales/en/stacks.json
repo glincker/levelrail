@@ -241,5 +241,24 @@
       "title": "Apply from the CLI",
       "hint": "Writes the files to a new folder, then applies them as a stack. Applying from the dashboard is not available yet."
     }
+  },
+  "trust": {
+    "title": "CI trusts",
+    "hint": "Let a pipeline run plan or apply on this stack with its OIDC token. Apply needs an exact ref and an environment.",
+    "empty": "No pipeline is trusted on this stack.",
+    "loadFailed": "Could not load trusts.",
+    "repository": "Repository",
+    "ref": "Ref",
+    "environment": "Environment",
+    "verb": "Allowed",
+    "verbs": {
+      "plan": "Plan only",
+      "apply": "Plan and apply"
+    },
+    "add": "Add trust",
+    "added": "Trust added",
+    "addFailed": "Could not add trust",
+    "remove": "Remove trust for {{repo}}",
+    "removeFailed": "Could not remove trust"
   }
 }

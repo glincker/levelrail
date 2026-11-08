@@ -4,9 +4,12 @@ import { useTranslation } from 'react-i18next'
 import { ShieldCheckGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { buttonVariants } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { ApiError } from '../lib/apiError'
-import { auditAnchorStatusQueryOptions } from '../queries/auditLog'
+import {
+  auditAnchorStatusQueryOptions,
+  useCheckAuditAnchor,
+} from '../queries/auditLog'
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
@@ -20,6 +23,7 @@ function Stat({ label, value }: { label: string; value: number }) {
 export function AuditAnchorCard() {
   const { t } = useTranslation('auditLog')
   const { data, error } = useQuery(auditAnchorStatusQueryOptions())
+  const check = useCheckAuditAnchor()
 
   if (error instanceof ApiError && [403, 404].includes(error.status)) {
     return null
@@ -62,6 +66,40 @@ export function AuditAnchorCard() {
           </>
         )}
       </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={check.isPending}
+          onClick={() => {
+            check.mutate()
+          }}
+        >
+          {check.isPending ? t('anchor.checking') : t('anchor.check')}
+        </Button>
+      </div>
+      {check.data?.ok && check.data.matched > 0 ? (
+        <p className="text-sm text-muted-foreground">
+          {t('anchor.checkOk', { seq: check.data.live_head })}
+        </p>
+      ) : null}
+      {check.data?.ok && check.data.matched === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          {t('anchor.checkCompacted')}
+        </p>
+      ) : null}
+      {check.data && !check.data.ok ? (
+        <Alert role="alert" variant="destructive">
+          <TriangleAlertGlassIcon size="1.2em" aria-hidden="true" />
+          <AlertDescription>{t('anchor.checkMismatch')}</AlertDescription>
+        </Alert>
+      ) : null}
+      {check.isError ? (
+        <p className="text-sm text-destructive">
+          {t('anchor.checkFailed')}: {check.error.message}
+        </p>
+      ) : null}
       {data.enabled && data.last_error ? (
         <Alert variant="destructive">
           <TriangleAlertGlassIcon size="1.2em" aria-hidden="true" />

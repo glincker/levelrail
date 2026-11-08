@@ -31,6 +31,7 @@ import {
 } from './StackIndicators'
 import { DriftSummary } from './StackDrift'
 import { StackSettingsCard } from './StackSettingsCard'
+import { StackTrustCard } from './StackTrustCard'
 
 export interface StackSelection {
   rev?: number
@@ -219,6 +220,7 @@ export function StackDetail({
         />
       ) : null}
       <StackSettingsCard stack={stack} isRoot={isRoot} />
+      <StackTrustCard name={name} isRoot={isRoot} />
       <ApproveDialog
         name={name}
         revision={approving}

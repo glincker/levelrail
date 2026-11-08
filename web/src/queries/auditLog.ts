@@ -293,3 +293,44 @@ export const auditAnchorStatusQueryOptions = () =>
     refetchInterval: (query) =>
       query.state.error ? false : AUDIT_ANCHOR_REFETCH_MS,
   })
+
+export interface AuditAnchorReport {
+  ok: boolean
+  checked: number
+  matched: number
+  compacted: number
+  unverified: number
+  live_head: number
+  problems: AuditChainProblem[]
+}
+
+// Fetches the current signed head, then asks the server to confirm the live chain still holds it.
+export async function checkAuditAnchor(): Promise<AuditAnchorReport> {
+  const head = await fetch('/api/v1/audit-log/anchor')
+  if (!head.ok) {
+    throw new ApiError(
+      head.status,
+      await readErrorMessage(head, `audit anchor failed: ${head.status}`),
+    )
+  }
+  const anchor: unknown = await head.json()
+  const res = await fetch('/api/v1/audit-log/anchor-check', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ anchors: [anchor] }),
+  })
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `audit anchor check failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as AuditAnchorReport
+}
+
+export function useCheckAuditAnchor() {
+  return useMutation({
+    meta: { errorToast: false },
+    mutationFn: checkAuditAnchor,
+  })
+}

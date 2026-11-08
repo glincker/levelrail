@@ -212,5 +212,16 @@
         "error": "Error"
       }
     }
+  },
+  "skew": {
+    "title": "Skew protection (Next.js)",
+    "hint": "Applies to every Next.js app on this control plane. Old browser tabs keep their own build's assets for a grace window after a deploy.",
+    "deploymentId": "Set the deployment id on builds",
+    "grace": "Old asset grace (seconds)",
+    "held": "Old releases held (1 to 3)",
+    "save": "Save",
+    "saved": "Skew setting saved",
+    "failed": "Could not save the setting",
+    "rootOnly": "Only an admin can change these."
   }
 }

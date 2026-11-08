@@ -89,3 +89,26 @@ export function useDeleteMonitor() {
     },
   })
 }
+
+// The new secret ping path comes back once; the caller shows it and drops it.
+export function useRotateMonitorToken() {
+  const queryClient = useQueryClient()
+  return useMutation<Monitor, ApiError, string>({
+    mutationFn: async (id) => {
+      const res = await fetch(
+        `/api/v1/monitors/${encodeURIComponent(id)}/rotate-token`,
+        { method: 'POST' },
+      )
+      if (!res.ok) {
+        throw new ApiError(
+          res.status,
+          await readErrorMessage(res, `rotate token failed: ${res.status}`),
+        )
+      }
+      return (await res.json()) as Monitor
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: monitorKeys.all })
+    },
+  })
+}

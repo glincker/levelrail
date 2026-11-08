@@ -1,7 +1,12 @@
 import { EmptyState } from '@/components/ui/empty-state'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PlusGlassIcon, TrashGlassIcon, InboxGlassIcon } from '@thesvg/ui-react'
+import {
+  PlusGlassIcon,
+  TrashGlassIcon,
+  InboxGlassIcon,
+  KeyRotationGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -18,6 +23,7 @@ import {
   useDeleteMonitor,
   useMonitorResults,
   useMonitors,
+  useRotateMonitorToken,
 } from '../../queries/monitors'
 import type { Monitor } from '../../types/monitor'
 import { MonitorForm } from './MonitorForm'
@@ -58,6 +64,9 @@ export function MonitorRow({
     }
   }, [seen])
   const { data } = useMonitorResults(monitor.id, seen)
+  const rotate = useRotateMonitorToken()
+  const [confirmRotate, setConfirmRotate] = useState(false)
+  const [newPing, setNewPing] = useState<string | null>(null)
   const state = deriveMonitorState(monitor, data)
   const last = lastCheckAt(data)
   const lastIso = last === undefined ? undefined : new Date(last).toISOString()
@@ -88,6 +97,19 @@ export function MonitorRow({
       >
         {uptime === undefined ? t('notAvailable') : `${uptime.toFixed(1)}%`}
       </span>
+      {monitor.kind === 'heartbeat' ? (
+        <Button
+          type="button"
+          size="icon-sm"
+          variant="ghost"
+          aria-label={t('rotate.action', { name: monitor.name })}
+          onClick={() => {
+            setConfirmRotate(true)
+          }}
+        >
+          <KeyRotationGlassIcon className="size-5" aria-hidden="true" />
+        </Button>
+      ) : null}
       <Button
         type="button"
         size="icon-sm"
@@ -102,6 +124,30 @@ export function MonitorRow({
           aria-hidden="true"
         />
       </Button>
+      {newPing ? (
+        <p className="w-full font-mono text-xs break-all" role="status">
+          {t('rotate.newPath')} {newPing}
+        </p>
+      ) : null}
+      <ConfirmDialog
+        open={confirmRotate}
+        onOpenChange={setConfirmRotate}
+        title={t('rotate.title', { name: monitor.name })}
+        description={t('rotate.description')}
+        confirmLabel={t('rotate.confirm')}
+        pendingLabel={t('rotate.pending')}
+        pending={rotate.isPending}
+        error={rotate.error?.message ?? null}
+        onConfirm={() => {
+          rotate.mutate(monitor.id, {
+            onSuccess: (m) => {
+              setNewPing(m.ping_path ?? null)
+              setConfirmRotate(false)
+              toast.add({ title: t('rotate.done'), type: 'success' })
+            },
+          })
+        }}
+      />
     </li>
   )
 }

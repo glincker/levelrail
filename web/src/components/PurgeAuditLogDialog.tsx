@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { TrashGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import {
   Dialog,
@@ -10,6 +11,8 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { toast } from '@/components/ui/toast'
 import { usePurgeAuditLog } from '../queries/auditLog'
 
@@ -22,11 +25,15 @@ import { usePurgeAuditLog } from '../queries/auditLog'
 // server's own configured retention window already allows, so the copy
 // says exactly that rather than implying a full wipe.
 export function PurgeAuditLogDialog() {
+  const { t } = useTranslation('auditLog')
   const [open, setOpen] = useState(false)
+  const [typed, setTyped] = useState('')
+  const word = t('purge.word')
   const purgeAuditLog = usePurgeAuditLog()
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
+    setTyped('')
     if (!next) {
       purgeAuditLog.reset()
     }
@@ -54,6 +61,19 @@ export function PurgeAuditLogDialog() {
             undone.
           </DialogDescription>
         </DialogHeader>
+        <div className="grid gap-1">
+          <Label htmlFor="purge-confirm" className="text-xs">
+            {t('purge.typeToConfirm', { word })}
+          </Label>
+          <Input
+            id="purge-confirm"
+            autoComplete="off"
+            value={typed}
+            onChange={(e) => {
+              setTyped(e.target.value)
+            }}
+          />
+        </div>
         {purgeAuditLog.isError ? (
           <p className="text-sm text-destructive">
             {purgeAuditLog.error.message}
@@ -72,7 +92,7 @@ export function PurgeAuditLogDialog() {
           <Button
             type="button"
             variant="destructive"
-            disabled={purgeAuditLog.isPending}
+            disabled={purgeAuditLog.isPending || typed.trim() !== word}
             onClick={() => {
               purgeAuditLog.mutate(undefined, {
                 onSuccess: (result) => {

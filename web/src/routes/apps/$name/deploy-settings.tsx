@@ -22,6 +22,7 @@ import { ImageAutoUpdateCard } from '../../../components/ImageAutoUpdateCard'
 import { BuildHooksCard } from '../../../components/BuildHooksCard'
 import { BadgeSettingsCard } from '../../../components/BadgeSettingsCard'
 import { GitHubActionsCard } from '../../../components/GitHubActionsCard'
+import { SkewCard } from '../../../components/SkewCard'
 import { CIDeployCard } from '../../../components/CIDeployCard'
 import { CITemplatesCard } from '../../../components/CITemplatesCard'
 import { SettingsGroup } from '../../../components/deploySettings/SettingsGroup'
@@ -81,6 +82,9 @@ function DeploySettingsSection() {
         </CardHelp>
         <CardHelp card="hooks">
           <HooksEditor app={app} />
+        </CardHelp>
+        <CardHelp card="skew">
+          <SkewCard />
         </CardHelp>
       </SettingsGroup>
       <SettingsGroup id="safety">

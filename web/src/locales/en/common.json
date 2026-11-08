@@ -1043,7 +1043,8 @@
       "badge": "Shows a live deploy status badge you can embed in a README.",
       "githubActions": "Lets a GitHub Actions workflow deploy this app.",
       "ciDeploy": "Gives your CI system a token and a command to deploy this app.",
-      "rolloutPolicy": "Limits how many replicas may surge or go unavailable while a rolling release rolls out."
+      "rolloutPolicy": "Limits how many replicas may surge or go unavailable while a rolling release rolls out.",
+      "skew": "Keeps the previous Next.js release serving its old assets for a while after a deploy, so open tabs do not break."
     },
     "whatItDoes": "What this does:"
   },

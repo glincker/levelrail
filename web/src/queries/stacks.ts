@@ -223,3 +223,61 @@ export function useRejectStack(name: string) {
     onSuccess: invalidate,
   })
 }
+
+export interface StackTrust {
+  id: string
+  provider: string
+  repository: string
+  ref_pattern: string
+  environment: string
+  verbs: string[]
+  protected_ref_only?: boolean
+  warning?: string
+  created_by: string
+  created_at: string
+}
+
+export interface StackTrustInput {
+  provider: string
+  repository: string
+  ref_pattern: string
+  environment: string
+  verbs: string[]
+}
+
+export const stackTrustsKey = (name: string) =>
+  [...stackKeys.all, 'trusts', name] as const
+
+export function stackTrustsQueryOptions(name: string) {
+  return queryOptions({
+    queryKey: stackTrustsKey(name),
+    queryFn: () =>
+      request<StackTrust[]>(`${base(name)}/oidc-trusts`, undefined, 'trusts'),
+  })
+}
+
+export function useAddStackTrust(name: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: StackTrustInput) =>
+      request<StackTrust>(
+        `${base(name)}/oidc-trusts`,
+        json('POST', input),
+        'add trust',
+      ),
+    onSuccess: () => qc.invalidateQueries({ queryKey: stackTrustsKey(name) }),
+  })
+}
+
+export function useDeleteStackTrust(name: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) =>
+      request<unknown>(
+        `${base(name)}/oidc-trusts/${encodeURIComponent(id)}`,
+        { method: 'DELETE' },
+        'delete trust',
+      ),
+    onSuccess: () => qc.invalidateQueries({ queryKey: stackTrustsKey(name) }),
+  })
+}

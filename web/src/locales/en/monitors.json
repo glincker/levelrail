@@ -107,5 +107,14 @@
       "stale": "This incident changed since you loaded it. Refresh and review the draft again.",
       "changed": "The draft changed while you were publishing. Nothing was published; review it again."
     }
+  },
+  "rotate": {
+    "action": "Rotate ping URL of {{name}}",
+    "title": "Rotate the ping URL of {{name}}?",
+    "description": "The old URL stops working at once. Update every job that pings it.",
+    "confirm": "Rotate",
+    "pending": "Rotating",
+    "done": "Ping URL rotated",
+    "newPath": "New ping path (shown once):"
   }
 }
