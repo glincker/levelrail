@@ -25,7 +25,7 @@ The labels on this page are a summary. [Feature status](/feature-status) holds t
 | Capability | Status | Read more |
 | --- | --- | --- |
 | Git push to a remote on your own server, with a per-app token | Beta | [Git push deploy](/git-push-deploy) |
-| Git push remote that keeps its token out of `.git/config` (`--credential-helper`) | Beta | [Git push deploy](/git-push-deploy) |
+| Git push remote that keeps its token out of `.git/config` (default with `--apply`) | Beta | [Git push deploy](/git-push-deploy) |
 | Git provider webhooks for GitHub, GitLab, Bitbucket and Gitea | Built and tested | [Git integrations](/git-integrations) |
 | Hold an automatic git deploy until the commit's CI checks finish | Built and tested | [CI gate](/ci-gate) |
 | CI deploy trust through OIDC for GitHub Actions, GitLab CI and CircleCI | Built and tested | [Pipelines and OIDC](/pipelines-oidc) |

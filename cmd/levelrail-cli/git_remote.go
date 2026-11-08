@@ -91,9 +91,10 @@ func shortCommit(c string) string {
 func runGitRemoteIssue(prog, verb string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	label := "git remote " + verb
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, label, "print the remote, including the one-time token, as JSON to stdout and nothing else", stderr)
-	applyFlag := fs.Bool("apply", false, "set the remote in a local git repository (add, or set-url if it exists); the token URL is then kept only in .git/config and not printed")
+	applyFlag := fs.Bool("apply", false, "set the remote in a local git repository (add, or set-url if it exists); the token is kept out of .git/config (see --store-token-in-config)")
 	dirFlag := fs.String("dir", "", "repository directory for --apply (default: the current directory)")
-	helperFlag := fs.Bool("credential-helper", false, "with --apply: keep the token out of .git/config; the remote URL has no token and a git credential helper reads it from "+gitTokenEnv+" at push time")
+	fs.Bool("credential-helper", false, "accepted for compatibility; with --apply this is now the default (the remote URL has no token and a git credential helper reads it from "+gitTokenEnv+" at push time)")
+	storeFlag := fs.Bool("store-token-in-config", false, "with --apply: write the token into .git/config, where it is stored unencrypted in the repo config and readable by anyone who can read the repository")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s %s <app> [flags]\n\nIssues the push token and prints the exact git remote add line. The token is\nshown once. Pushing the deploy branch builds and deploys that commit.\nWith --apply the remote is configured in the repository for you.\n\nFlags:\n", prog, label)
 		fs.PrintDefaults()
@@ -116,11 +117,12 @@ func runGitRemoteIssue(prog, verb string, args []string, stdout, stderr io.Write
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("issue git remote token for app %q: %w", name, err))
 	}
+	helper := !*storeFlag
 	var applyErr error
 	var appliedDir string
 	if *applyFlag {
 		serverHost := ""
-		if *helperFlag {
+		if helper {
 			serverHost = hostOf(client.BaseURL())
 			if serverHost == "" {
 				serverHost = "-"
@@ -130,7 +132,7 @@ func runGitRemoteIssue(prog, verb string, args []string, stdout, stderr io.Write
 	}
 	if err := renderResult(stdout, of.Format, of.Query, g, func() {
 		printGitRemoteHuman(stdout, g)
-		if *applyFlag && applyErr == nil && *helperFlag {
+		if *applyFlag && applyErr == nil && helper {
 			// The one-time token is shown once so it can be exported; it is never written to .git/config.
 			_, _ = fmt.Fprintf(stdout, "\nremote %s configured in %s without a token in .git/config\n\nBefore pushing, export the one-time token (shown once):\n  export %s=%s\n\nDeploy with:\n  git push %s %s\n", g.RemoteName, appliedDir, gitTokenEnv, g.Token, g.RemoteName, g.Branch)
 			return

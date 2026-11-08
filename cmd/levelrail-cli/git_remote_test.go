@@ -98,11 +98,11 @@ func gitRemoteURL(t *testing.T, dir, name string) string {
 	return strings.TrimSpace(string(out))
 }
 
-func TestRun_GitRemoteApply(t *testing.T) {
+func TestRun_GitRemoteApplyStoreTokenOptOut(t *testing.T) {
 	srv := gitRemoteApplyServer(t, "deploy", "https://cp.example.com/api/v1/git/web.git")
 	dir := gitInitDir(t)
 
-	out, _ := runCLIExpectOK(t, []string{"git", "remote", "add", "web", "--apply", "--dir", dir, "--api-url", srv.URL})
+	out, _ := runCLIExpectOK(t, []string{"git", "remote", "add", "web", "--apply", "--store-token-in-config", "--dir", dir, "--api-url", srv.URL})
 	if strings.Contains(out, "gp_abc") || !strings.Contains(out, "remote deploy configured in") || !strings.Contains(out, "git push deploy trunk") {
 		t.Errorf("apply output = %q", out)
 	}
@@ -111,13 +111,13 @@ func TestRun_GitRemoteApply(t *testing.T) {
 	}
 
 	// rotate on an existing remote must replace it, not fail.
-	out, _ = runCLIExpectOK(t, []string{"git", "remote", "rotate", "web", "--apply", "--dir", dir, "--api-url", srv.URL})
+	out, _ = runCLIExpectOK(t, []string{"git", "remote", "rotate", "web", "--apply", "--store-token-in-config", "--dir", dir, "--api-url", srv.URL})
 	if strings.Contains(out, "gp_abc") {
 		t.Errorf("rotate output leaked token: %q", out)
 	}
 }
 
-func TestRun_GitRemoteApplyCredentialHelper(t *testing.T) {
+func TestRun_GitRemoteApplyDefaultKeepsTokenOutOfConfig(t *testing.T) {
 	var srv *httptest.Server
 	srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
@@ -128,7 +128,15 @@ func TestRun_GitRemoteApplyCredentialHelper(t *testing.T) {
 	}))
 	defer srv.Close()
 	dir := gitInitDir(t)
-	runCLIExpectOK(t, []string{"git", "remote", "add", "web", "--apply", "--credential-helper", "--dir", dir, "--api-url", srv.URL})
+	// A remote an older CLI wrote with the token inline must be cleaned by rotate.
+	runCLIExpectOK(t, []string{"git", "remote", "add", "web", "--apply", "--store-token-in-config", "--dir", dir, "--api-url", srv.URL})
+	if got := gitRemoteURL(t, dir, "deploy"); !strings.Contains(got, "gp_abc") { //nolint:gosec // fake test token
+		t.Fatalf("setup remote url = %q, want inline token", got)
+	}
+	out, _ := runCLIExpectOK(t, []string{"git", "remote", "rotate", "web", "--apply", "--dir", dir, "--api-url", srv.URL})
+	if !strings.Contains(out, "LEVELRAIL_GIT_TOKEN") {
+		t.Errorf("default apply output lacks export hint: %q", out)
+	}
 	if got := gitRemoteURL(t, dir, "deploy"); strings.Contains(got, "gp_abc") || got != "http://git@"+strings.TrimPrefix(srv.URL, "http://")+"/api/v1/git/web.git" {
 		t.Errorf("remote url = %q", got)
 	}
@@ -149,8 +157,17 @@ func TestRun_GitRemoteApplyCredentialHelper(t *testing.T) {
 	// A server naming a different host must not receive a helper that sends the token there.
 	other := gitRemoteApplyServer(t, "deploy2", "https://cp.example.com/x.git")
 	var outBuf, errBuf strings.Builder
-	if got := run("levelrail-cli-test", []string{"git", "remote", "add", "web", "--apply", "--credential-helper", "--dir", dir, "--api-url", other.URL}, &outBuf, &errBuf, envMap()); got == exitOK || gitRemoteURL(t, dir, "deploy2") != "" {
+	if got := run("levelrail-cli-test", []string{"git", "remote", "add", "web", "--apply", "--dir", dir, "--api-url", other.URL}, &outBuf, &errBuf, envMap()); got == exitOK || gitRemoteURL(t, dir, "deploy2") != "" {
 		t.Errorf("foreign host accepted: exit=%d", got)
+	}
+}
+
+func TestRun_GitRemoteApplyCredentialHelperAlias(t *testing.T) {
+	srv := gitRemoteApplyServer(t, "deploy", "https://cp.example.com/x.git")
+	var o, e strings.Builder
+	run("levelrail-cli-test", []string{"git", "remote", "add", "web", "--apply", "--credential-helper", "--dir", t.TempDir(), "--api-url", srv.URL}, &o, &e, envMap())
+	if strings.Contains(e.String(), "flag provided but not defined") {
+		t.Errorf("alias rejected: %q", e.String())
 	}
 }
 
@@ -176,9 +193,6 @@ func TestRun_GitRemoteApplyRejectsBadInput(t *testing.T) {
 		srv := gitRemoteApplyServer(t, c[0], c[1])
 		var outBuf, errBuf strings.Builder
 		args := []string{"git", "remote", "add", "web", "--apply", "--dir", dir, "--api-url", srv.URL}
-		if strings.Contains(name, "helper") {
-			args = append(args, "--credential-helper")
-		}
 		got := run("levelrail-cli-test", args, &outBuf, &errBuf, envMap())
 		if got == exitOK {
 			t.Errorf("%s: exit ok, want failure", name)
