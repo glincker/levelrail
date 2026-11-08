@@ -29,6 +29,8 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha || format('refs/pull/{0}/head', inputs.pr) }}
       - uses: ./.github/actions/setup-go-cached
+        with:
+          cache-prefix: go-proof
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '22'

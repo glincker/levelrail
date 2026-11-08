@@ -133,6 +133,9 @@ func failed(r result, why string) result {
 
 // classify is pass only when every service is up and none is unhealthy.
 func classify(r result, upErr error) result {
+	if svc, ok := hostKernelRefusal(r.Services); ok {
+		return skipped(r, svc+" refuses to start on this host kernel (upstream incompatibility, not a template defect)")
+	}
 	var problems []string
 	starting := false
 	for _, s := range r.Services {
@@ -160,6 +163,22 @@ func classify(r result, upErr error) result {
 		r.Summary += " (healthcheck still starting)"
 	}
 	return r
+}
+
+// hostKernelRefusal spots an image that exits because the runner kernel is
+// newer than it supports, which no manifest change can fix.
+func hostKernelRefusal(services []serviceResult) (string, bool) {
+	for _, s := range services {
+		if s.State != "exited" && s.State != "dead" {
+			continue
+		}
+		for _, l := range s.Logs {
+			if strings.Contains(l, "Linux kernel versions") && strings.Contains(l, "incompatibility") {
+				return s.Name, true
+			}
+		}
+	}
+	return "", false
 }
 
 // overrideFor drops host ports and fixed names so runs never collide, and
