@@ -12,6 +12,7 @@ type migrateDokployFlags struct {
 	dokployURL          string
 	dokployToken        string
 	outDir              string
+	stageDir            string
 	apply               bool
 	includeSecretValues bool
 	jsonOut             bool
@@ -29,6 +30,7 @@ func runMigrateDokploy(prog string, args []string, stdout, stderr io.Writer, loo
 	fs.StringVar(&f.dokployURL, "url", "", "Dokploy instance base URL, e.g. https://dokploy.example.com (required)")
 	fs.StringVar(&f.dokployToken, "token", "", "Dokploy API key (required)")
 	fs.StringVar(&f.outDir, "out-dir", "./migrated", "directory to write generated app.yaml files and secrets into (file mode only, i.e. when --apply is not given)")
+	fs.StringVar(&f.stageDir, "stage-dir", defaultStageDir, "directory compose stacks are staged into as compose.yaml plus stack.env, both owner-only")
 	fs.BoolVar(&f.apply, "apply", false, "create apps directly on the target Levelrail instance (POST /api/v1/apps) instead of writing files")
 	fs.BoolVar(&f.includeSecretValues, "include-secret-values", false, "write the real env var values already returned by Dokploy into a companion secrets file, or apply them via PUT .../secrets/{key}; never written into a generated app.yaml")
 	fs.StringVar(&targetTokenFlag, "target-token", "", "Levelrail API token, --apply only (overrides "+apiTokenEnvHelp+" and the credentials file)")
@@ -60,9 +62,10 @@ func runMigrateDokploy(prog string, args []string, stdout, stderr io.Writer, loo
 	for _, summary := range apps {
 		report.Apps = append(report.Apps, fetchAndMapDokployApplication(ctx, dokploy, summary, f.includeSecretValues))
 	}
+	report.Apps = append(report.Apps, discoverDokployCompose(ctx, f, lookupEnv, stderr)...)
 
 	return runMigrationPipeline(ctx, &report, migratePipelineFlags{
-		apply: f.apply, outDir: f.outDir, jsonOut: f.jsonOut,
+		apply: f.apply, outDir: f.outDir, stageDir: f.stageDir, jsonOut: f.jsonOut,
 		targetToken: targetTokenFlag, targetAPIURL: targetAPIURLFlag, targetProfile: targetProfileFlag,
 	}, prog, stdout, stderr, lookupEnv)
 }
@@ -92,6 +95,7 @@ Flags:
   --url string                     Dokploy instance base URL, e.g. https://dokploy.example.com (required)
   --token string                   Dokploy API key (required)
   --out-dir string                directory for generated files, default ./migrated (file mode only)
+  --stage-dir string               directory compose stacks are staged into, default ./migrated/compose
   --apply                            create apps on the target Levelrail instance instead of writing files
   --include-secret-values     write real env var values already returned by Dokploy into a secrets file or apply them
   --target-token string        Levelrail API token, --apply only (default: %[2]s env var, then the credentials file)
@@ -101,6 +105,10 @@ Flags:
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
+
+Compose stacks are staged as compose apps (compose.yaml plus stack.env)
+after the same validation a manual compose deploy runs; deploy each with
+the printed compose deploy command.
 
 Dokploy's docker (prebuilt image) and drop (file upload) source types,
 and its nixpacks/heroku_buildpacks/paketo_buildpacks build types, have no

@@ -208,6 +208,14 @@ Delete stops and removes the container and the database record, but **keeps the 
 
 If apps still connect to the database, delete is refused with a `409` naming them. The dashboard then offers "Delete anyway" and the CLI takes `--force`.
 
+### Filter the list and act on many databases
+
+The Databases page has a search box, engine toggles and a status strip (Healthy, Needs attention, Reconciling, Stopped) whose counts double as quick filters. The filters live in the URL (`?q=orders&engine=postgres,redis&status=stopped`), so a filtered list can be bookmarked or shared. On a narrow screen the engine toggles fold behind a Filters button.
+
+Tick rows (or press Ctrl or Cmd plus A inside the list) to open the bulk bar with Start, Stop and Back up. Each action opens a review dialog first: databases that cannot take the action (already running, already stopped, external, not created yet, no backup target) are listed as skipped. Stop asks for confirmation. The dashboard then calls the single-database endpoints for each target, a few at a time (`VITE_DATABASES_BULK_CONCURRENCY`, default 4), and reports every database on its own, so a permission error or a protected database fails only that row.
+
+Each row also has a menu with Open, Back up now and Copy connection string. The copied string holds a `<password>` placeholder, never the real password.
+
 ### Reusing a name after a delete
 
 Because the data volume survives, a new database with the same name would find the old data. The create is still accepted (`201`), but the reconciler's Create storage step stops and asks you to choose, showing the volume name and size: "Reuse the existing volume", "Remove leftover volume and retry" (needs an explicit confirm) or "Choose another name". Sending `existing_volume` in the create request stores the choice up front:
@@ -957,3 +965,7 @@ The dashboard (and `levelrail-cli databases create --wait`) shows each step. `le
 9. Apply size and backups, then 10. Ready.
 
 A failed step marks every later step as skipped. Retry starts a new attempt; the last few attempts are kept (`APP_DB_PROVISION_KEEP_ATTEMPTS`, default 5), and progress events are throttled by `APP_DB_PROVISION_EVENT_INTERVAL` (default 500ms).
+
+## Keyboard on list pages
+
+The Apps, Databases and Builds lists share one keyboard layer. `j` and `k` move between rows, `x` selects the focused row, `Enter` opens it, `/` jumps to the filter and `?` shows or hides the shortcut line. Keys are ignored while you type in a field, and row scrolling is instant when reduced motion is on. Active filters show as chips with a clear-all; a filter that hides every row says so instead of looking like an empty list.

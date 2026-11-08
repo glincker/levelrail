@@ -751,6 +751,9 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/scheduled-tasks/{id}/disable | AbilityWrite | handleSetScheduledTaskEnabled |
 | GET | /api/v1/apps/{name}/scheduled-tasks/{id}/runs | AbilityRead | handleListScheduledTaskRuns |
 | GET | /api/v1/apps/{name}/scheduled-tasks/{id}/runs/{run} | AbilityRead | handleGetScheduledTaskRun |
+| GET | /api/v1/apps/{name}/image-retention | AbilityRead | handleGetImageRetention |
+| PUT | /api/v1/apps/{name}/image-retention | AbilityRoot | handleSetImageRetention |
+| POST | /api/v1/apps/{name}/image-retention/preview | AbilityRoot | handlePreviewImageRetention |
 
 </Accordion>
 
@@ -2284,6 +2287,7 @@ Routes that do not fit an existing group.
 | POST | /api/v1/templates/custom | AbilityWrite | handleImportCustomTemplate |
 | POST | /api/v1/jobs/runs | AbilityRoot | handleStartOneShotJob |
 | GET | /api/v1/jobs/runs/{id} | AbilityRead | handleGetOneShotJob |
+| POST | /api/v1/jobs/runs/{id}/cancel | AbilityRoot | handleCancelOneShotJob |
 | POST | /mcp | Public |  |
 
 ## See also

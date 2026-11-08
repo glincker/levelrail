@@ -292,6 +292,7 @@ levelrail-cli apps schedule history <app> [flags]
 levelrail-cli apps schedule list <app> [--status S] [flags]
 levelrail-cli apps schedule cancel <app> <id> [flags]
 levelrail-cli apps deploy <app> --at WHEN (--image IMAGE | --latest --branch NAME) [flags]
+levelrail-cli apps deploy <app> (--dockerfile-file PATH | --dockerfile -) [--context-file PATH ...] [flags]   (build a pasted Dockerfile with no git repository; context files are relative, symlinks refused)
 levelrail-cli apps cancel-superseded enable|disable|status <app-name> [flags]
 levelrail-cli apps auto-rollback enable|disable|status <app-name> [flags]
 levelrail-cli apps autoscale show|set|clear|history <app-name> [flags]
@@ -402,7 +403,7 @@ levelrail-cli apps scheduled-tasks delete <app> <id> [flags]
 ```
 
 - `apps exec` runs a command in the app's container and exits with its real exit code.
-- `apps run` runs a command once (no retries unless `--retries N` is given) in a fresh container with the app's env and secrets, waits, prints the output and exits with the command's exit code (124 on timeout, 5 when the job failed without one). See [Jobs](/jobs#run-a-command-with-apps-run).
+- `apps run` runs a command once (no retries unless `--retries N` is given) in a fresh container with the app's env and secrets, waits, prints the output and exits with the command's exit code (124 on timeout, 5 when the job failed without one). Output is printed when the command finishes. Ctrl-C cancels the run (the container is killed and removed, exit 130). See [Jobs](/jobs#run-a-command-with-apps-run).
 - `apps console <app>` opens the console the app's template declares (Minecraft: `rcon-cli`) through the same exec path. With no command it opens a terminal; with `-- list` it runs once and prints the output. Templates that declare no console are refused with a pointer to `apps exec`. The console reads its credentials from the container's environment, nothing secret is passed on the command line.
 - `apps tunnel <app> [--service s] [--port p] [--local-port n]` listens on 127.0.0.1 and relays to a private container port, see [app tunnel](/app-tunnel).
 - `apps logs` searches an app's stored log entries (`--since 10m`, `--tail N` or `-n N`, `--service S`), or streams live with `--follow`. On a terminal with no search flag it follows live by default; `--no-follow` and piped or `--json` output give stored entries. For a capped excerpt see `logs query` under [Logs](#logs).
@@ -494,7 +495,7 @@ levelrail-cli apps git-source validate <name> [flags]
 levelrail-cli apps git-source detect <name> [--apply|--package DIR] [flags]
 levelrail-cli apps git-source affected <name> --files a,b [flags]
 levelrail-cli apps git-source get <name> [flags]
-levelrail-cli apps git-source plan <name> [--repo URL --branch B] [flags]
+levelrail-cli apps git-source plan <name> [--repo URL --branch B --connection ID] [flags]
 levelrail-cli apps git-source set <name> --repo-url URL [flags]
 levelrail-cli apps git-source set <name> --repo URL --branch B --build-pack T --deploy
 levelrail-cli apps git-source deploy <name> [--branch B] [flags]
@@ -2160,9 +2161,11 @@ levelrail-cli images layers <image-id> [--node N] [flags]
 levelrail-cli images gc [--node N] [--keep N] [--min-age-hours H] [--apply] [flags]
 levelrail-cli images verify (<image-id> | --ref repo@sha256:...) [--node N] [flags]
 levelrail-cli images policy [--ref repo@sha256:...] [flags]
+levelrail-cli images retention get <app> [flags]
+levelrail-cli images retention set <app> --keep N [--dry-run] [flags]
 ```
 
-- `images list` shows every image on a node with size, owners and why it is kept. `images gc` previews until `--apply` and never removes live images, rollback targets or recent deploys. `images verify` checks a cosign signature and exits non-zero when it fails. See [Images](/images).
+- `images list` shows every image on a node with size, owners and why it is kept. `images gc` previews until `--apply` and never removes live images, rollback targets or recent deploys. `images verify` checks a cosign signature and exits non-zero when it fails. `images retention set` sets how many deploy images one app keeps (2 to 1000, 0 follows the global setting); `--dry-run` lists what the next cleanup would remove and saves nothing. See [Images](/images).
 
 ## Related
 

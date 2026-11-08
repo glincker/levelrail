@@ -192,6 +192,18 @@ func (rt *Router) holdIfFrozen(ctx context.Context, name string, req deploy.Held
 	return true, fmt.Sprintf("held: %s, deploy %s will run when the window ends\n", (&deploy.FrozenError{Status: status}).Error(), id)
 }
 
+// replayContext restores what a saved request carried, so a replayed override
+// deploy still records its FreezeOverride reason.
+func replayContext(ctx context.Context, req deploy.HeldRequest) context.Context {
+	if len(req.BuildArgs) > 0 {
+		ctx = withExtraBuildArgs(ctx, req.BuildArgs)
+	}
+	if req.FreezeNote != "" {
+		ctx = withFreezeOverrideNote(ctx, req.FreezeNote)
+	}
+	return ctx
+}
+
 // replayGitDeploy re-runs a held or queued webhook deploy from its saved request.
 func (rt *Router) replayGitDeploy(ctx context.Context, name string, req deploy.HeldRequest) error {
 	gs, err := rt.gitSources.GetGitSource(ctx, name)
@@ -201,9 +213,7 @@ func (rt *Router) replayGitDeploy(ctx context.Context, name string, req deploy.H
 	if req.Branch != "" {
 		gs.Branch = req.Branch
 	}
-	if len(req.BuildArgs) > 0 {
-		ctx = withExtraBuildArgs(ctx, req.BuildArgs)
-	}
+	ctx = replayContext(ctx, req)
 	order := rt.nextOrder(ctx, name, req.CommitSHA, req.Before, req.CommitAt)
 	status, msg := rt.deployFromGitSource(ctx, name, *gs, req.CheckoutRef, req.CommitLabel, order)
 	if status >= http.StatusBadRequest {

@@ -47,6 +47,13 @@ func (c *Client) RunOneShotJob(ctx context.Context, req OneShotJobRequest) (OneS
 	return out, err
 }
 
+// CancelOneShotJob calls POST /api/v1/jobs/runs/{id}/cancel.
+func (c *Client) CancelOneShotJob(ctx context.Context, id string) (OneShotJob, error) {
+	var out OneShotJob
+	err := c.do(ctx, http.MethodPost, "/api/v1/jobs/runs/"+PathEscape(id)+"/cancel", nil, &out)
+	return out, err
+}
+
 // GetOneShotJob calls GET /api/v1/jobs/runs/{id}.
 func (c *Client) GetOneShotJob(ctx context.Context, id string) (OneShotJob, error) {
 	var out OneShotJob

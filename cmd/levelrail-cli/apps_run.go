@@ -4,9 +4,12 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
+	"os/signal"
 	"slices"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
@@ -18,6 +21,8 @@ const (
 	envRunPollRetries = "APP_RUN_POLL_RETRIES"
 	// exitRunTimeout follows the coreutils timeout convention so it never reads as a command's own code.
 	exitRunTimeout = 124
+	// exitInterrupted is the shell convention for a run stopped by Ctrl-C.
+	exitInterrupted = 130
 )
 
 // serviceAppName maps a service key of a multi-service app to the app name the API knows it by.
@@ -87,21 +92,44 @@ func runAppsRun(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 			maxPollFails = n
 		}
 	}
+	textOut := of.Format != outputJSON && of.Query == ""
+	printed := ""
+	// Ctrl-C cancels the run on the server so its container is killed and removed, not left behind.
+	sigCtx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+	defer stop()
 	pollFails := 0
 	for job.State == "Running" || job.State == "" {
 		if !deadline.IsZero() && time.Now().After(deadline) {
 			_, _ = fmt.Fprintf(stderr, "%s: job %s did not finish within %s; it may still be running, check GET /api/v1/jobs/runs/%s\n", prog, jobID, timeout, jobID)
 			return exitRunTimeout
 		}
-		time.Sleep(poll)
-		next, err := client.GetOneShotJob(ctx, jobID)
+		select {
+		case <-sigCtx.Done():
+			cctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+			_, cerr := client.CancelOneShotJob(cctx, jobID)
+			cancel()
+			if cerr != nil {
+				_, _ = fmt.Fprintf(stderr, "%s: cancel job %s: %v\n", prog, jobID, cerr)
+			} else {
+				_, _ = fmt.Fprintf(stderr, "%s: cancelled job %s; its container is removed\n", prog, jobID)
+			}
+			return exitInterrupted
+		case <-time.After(poll):
+		}
+		next, err := client.GetOneShotJob(sigCtx, jobID)
 		if err != nil {
+			if sigCtx.Err() != nil {
+				continue
+			}
 			if pollFails++; pollFails > maxPollFails {
 				return fail(fmt.Errorf("get job %q (it may still be running on the server): %w", jobID, err))
 			}
 			continue
 		}
 		pollFails, job = 0, next
+		if textOut {
+			printed = writeOutputDelta(stdout, printed, job.Output)
+		}
 	}
 
 	code := appsRunExitCode(job)
@@ -111,7 +139,7 @@ func runAppsRun(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		}
 		return code
 	}
-	_, _ = io.WriteString(stdout, job.Output)
+	writeOutputDelta(stdout, printed, job.Output)
 	if job.Output != "" && !strings.HasSuffix(job.Output, "\n") {
 		_, _ = fmt.Fprintln(stdout)
 	}
@@ -129,6 +157,16 @@ func runAppsRun(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		_, _ = fmt.Fprintf(stderr, "%s: command on %q failed (%s), exit %d\n", prog, target, reason, code)
 	}
 	return code
+}
+
+// writeOutputDelta prints the part of output not yet shown. A tail that no
+// longer extends what was printed (the server cut the head) is not reprinted.
+func writeOutputDelta(w io.Writer, printed, output string) string {
+	if strings.HasPrefix(output, printed) {
+		_, _ = io.WriteString(w, output[len(printed):])
+		return output
+	}
+	return printed
 }
 
 // appsRunExitCode returns the command's own exit code when the platform has one, so scripts can branch on it.
@@ -152,7 +190,8 @@ func appsRunUsage(prog string) string {
 Runs a command once (no retries unless --retries is set) in a fresh container built from the app, with its env,
 secrets and network, waits for it, prints its output and exits with the
 command's own exit code. No terminal is needed. Output is shown when the
-command finishes. Secret values are redacted from the output. Use
+command finishes.
+Ctrl-C cancels the run: the container is killed and removed. Secret values are redacted from the output. Use
 "apps exec" to run inside the live container instead.
 
 Access: one-off runs and scheduled jobs follow console exec access rules,

@@ -37,8 +37,8 @@ Dokploy apps and databases import over its HTTP API, read-only. Data, volumes an
 
 ## What does not move
 
-- Dokploy [compose apps](/compose-apps). They are listed as unsupported. Deploy the compose file with `levelrail-cli apps deploy-compose`.
-- Apps uploaded as an archive (`drop`) and file mounts.
+- Compose stacks whose file lives in a git repository. They are reported blocked; deploy them from git with a compose build.
+- Apps uploaded as an archive (`drop`).
 - Swarm services as such: Levelrail runs plain Docker containers, so Swarm placement and overlay networking do not carry over.
 - Certificates, DNS records, deploy history, logs and metrics.
 
@@ -117,7 +117,7 @@ Dokploy usually runs Traefik on ports 80 and 443. Either point DNS at a new serv
 | The URL is refused | Allow private networks on the control plane and pass `--allow-private` |
 | `401` from Dokploy | Create a new API key and set `APP_IMPORT_SOURCE_TOKEN` |
 | Database copy fails | Check host, port and user. Target version must be the same or newer than the source |
-| App shows as unsupported | Read the reason. Compose apps and archive uploads are not imported |
+| App shows as unsupported | Read the reason. Archive uploads and blocked compose stacks are not imported |
 | Domain shows `wait` | Lower the TTL and wait out the old value |
 
 ## Verify and roll back
@@ -129,3 +129,7 @@ The copy only reads the old server, so nothing there is changed. To roll back, r
 ## Choose to stay if
 
 Dokploy's Swarm multi-node scheduling and its compose workflow are what you rely on, or you cannot afford a write freeze on your databases. Levelrail does not use Swarm, and its migration path has no recorded run against a live Dokploy. See [Dokploy alternative](/dokploy-alternative) and the [comparison](/comparison).
+
+## Compose stacks
+
+`migrate dokploy` imports each raw compose stack as a [compose app](/compose-apps). The compose file is checked with the same validation a manual compose deploy runs, so a stack with `privileged`, host networking, host `pid` or `ipc`, `cap_add`, `devices` or a Docker socket mount stays blocked with that reason. A ready stack is staged as `compose.yaml` under `--stage-dir` (default `./migrated/compose`), with its domains and named volumes in the report. The stack env is split into secret and plain values. Without `--include-secret-values` only the names are reported; with it, all values go into `stack.env` (mode 0600), and the printed deploy command ends with `apps secrets set <app> --env-file stack.env`. A value spanning lines is never written and is reported instead. Files larger than `APP_IMPORT_COMPOSE_MAX_BYTES` (default 256 KiB) are refused. Dokploy file mounts on applications become app files at their mount path; unsafe paths are refused.

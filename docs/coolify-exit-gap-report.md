@@ -22,24 +22,27 @@ Status words: **moves** means created on the new side, **reported** means the to
 | Applications from git (Dockerfile, Nixpacks, static) | moves | Created stopped. Nixpacks becomes Railpack and is flagged because the build may differ. Connecting a private repo is a manual step |
 | Applications from a registry image | moves | Image and tag kept |
 | One-click services | reported | Compose body and env are read. The file and `--apply` modes of `migrate coolify` stage each one as `compose.yaml` under `--stage-dir`, with `SERVICE_` magic variables translated. Nothing is deployed. Dry-run and verify list it as skipped. See [one-click services to Compose](/coolify-service-to-compose). Pending run against a real instance |
-| Docker Compose applications (`dockercompose` build pack) | reported | Blocked and not translated. Stage the compose file by hand with the manual path in [one-click services to Compose](/coolify-service-to-compose), then deploy it with [compose apps](/compose-apps) |
+| Docker Compose applications (`dockercompose` build pack) | staged | `migrate coolify` stages `docker_compose_raw` as one `compose.yaml` under `--stage-dir`, with `SERVICE_` magic variables and generated secrets resolved. The file goes through the same host-access rules as a manual compose deploy: `privileged`, host network, host `pid`/`ipc`, `cap_add`, `devices` and Docker socket mounts keep the app blocked with the reason. Deploy it with [compose apps](/compose-apps). Pending run against a real instance |
 | Environment variables and secrets | moves | Secret-looking names go through the encrypted store. Preview duplicates are dropped. Secrets the token could not read are listed by name |
-| Build-time only flag on variables | reported | Variables are imported as runtime variables, and the names are listed |
-| Install, build and start commands | reported | Silently dropped before this audit. Now listed with their values |
-| Pre and post deployment commands | reported | Listed |
-| Publish directory of a static site | reported | Listed |
+| Build-time only flag on variables | moves | `migrate coolify --apply` stores them as secrets with build access, values never printed. The platform import keeps them as runtime variables and lists the names |
+| Install, build and start commands | moves | `migrate coolify` writes a static build as `build.command` (install and build joined) with `build.publish`, and a start command as `command:`. Railpack and Dockerfile builds list install and build commands as planned items. A command over `APP_IMPORT_COMMAND_MAX` bytes, spanning lines or setting a secret-looking value inline is not carried, and its text is not printed |
+| Pre and post deployment commands | moves | Become deploy hooks (`hooks.preDeploy`, `hooks.postDeploy`). A static site has no container, so they are reported |
+| Publish directory of a static site | moves | Becomes `build.publish`, or `build.path` when there is no build command |
+| Base directory and Dockerfile path | moves | Become `build.baseDirectory` and `build.path`. An absolute or `../` path is rejected and reported, never rewritten |
+| Node version pin (`NODE_VERSION`, `NIXPACKS_NODE_VERSION`) | reported | Planned item: pin Node in the repository (`engines.node` or `.node-version`) so Railpack reads it |
+| Tags | reported | Planned item, there is no tag field here |
 | Domains | moves | Read, then held back until cutover. A `www` redirect rule is reported |
 | TLS certificates | moves | Issued on first use after DNS points here. Custom uploaded certificates are not exported by Coolify's API |
 | HTTP basic auth on an app | reported | New. A staged app would otherwise be public |
 | Custom container labels (often Traefik middleware) | reported | Redirects, headers and rate limits need recreating as ingress settings |
 | Custom docker run options | reported | Capabilities, devices, ulimits |
 | Persistent volumes | moves | Created empty. The data copy is a separate step with file and byte counts |
-| File mounts | reported | Content is not copied |
+| File mounts | copied | Each file storage becomes an app file at its mount path with identical bytes (`apps files set`). A path that is not a clean absolute file path (relative, `..`, `.`, backslash, control character, reserved root) is refused with the reason, and content over `APP_SERVICE_FILE_MAX_BYTES` or not text is refused. Content is copied only with `--include-secret-values` (otherwise the report lists path and size), and a secret-looking name or content goes through the encrypted secret store. Duplicate and nested mount paths are reported. Directory mounts are reported |
 | Databases: PostgreSQL, MySQL, MariaDB, MongoDB, Redis | moves | Created empty at the same major version. Data copy uses `migrate db-copy`, and the report prints the command with the public port, user and database name read from Coolify |
 | Databases: KeyDB, Dragonfly, ClickHouse | reported | Silently dropped before this audit. Now listed as skipped with the dump tool to use |
 | Database backup schedules | reported | One row per schedule with the `backups schedule set` command. Imported databases also get a manual row for their schedule |
 | Scheduled tasks (cron) | moves | Was report-only. Enabled tasks become scheduled jobs that run `sh -c COMMAND` inside the app. Disabled tasks are skipped. Staged apps get their jobs disabled until cutover so a job never runs on both hosts |
-| Git webhook secrets (auto deploy) | reported | New. The git host still calls Coolify until you add a webhook pointing here |
+| Git webhook secrets (auto deploy) | reported | Planned item. The secret is never read into the report. Create a build hook (`apps build-hooks create`) and point the git host at it |
 | HTTP health checks | moves | Path, interval, timeout and retries |
 | Command health checks | moves | Built, unit tested, source field name not verified against a real instance. A command check becomes an `exec` probe (`sh -c COMMAND`, see the [app spec](/app-spec-reference)) with interval, timeout and retries. A missing, oversized or unrecognised command keeps a note to add the probe by hand |
 | Memory and CPU limits | moves | Memory and CPU are mapped. A swap or memory reservation set on the source has no setting here, so it is listed as a note on the app with its value |

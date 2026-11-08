@@ -7,5 +7,53 @@
   "logs": {
     "noContainer": "No container is running for this app, so there is nothing to stream.",
     "deploy": "Deploy it"
+  },
+  "bulkBar": {
+    "region": "Bulk actions",
+    "selected": "{{count}} selected",
+    "clear": "Clear selection",
+    "more": "More actions",
+    "review": "Review",
+    "readOnly": "Your account is read-only, so bulk actions are off.",
+    "reviewTitle": "{{action}} {{count}} apps",
+    "reviewDescription": "Each app is checked against your permissions. Apps you may not act on are listed as denied and left alone.",
+    "resultsTitle": "{{action}}: results",
+    "resultsLabel": "Per-app results",
+    "summary": "{{ok}} done, {{failed}} not applied",
+    "typeCount": "Type {{count}} to confirm",
+    "checking": "Checking targets",
+    "working": "Working",
+    "cancel": "Cancel",
+    "close": "Close",
+    "confirm": "{{action}} {{count}}",
+    "warning": {
+      "stop": "This stops {{count}} apps until you start them again.",
+      "delete": "This permanently deletes {{count}} apps. Each delete is recorded in the audit log."
+    },
+    "action": {
+      "restart": "Restart",
+      "redeploy": "Redeploy",
+      "stop": "Stop",
+      "start": "Start",
+      "add-tag": "Add tag",
+      "remove-tag": "Remove tag",
+      "set-environment": "Set environment",
+      "move-to-project": "Move to project",
+      "delete": "Delete"
+    },
+    "value": {
+      "add-tag": "Tag (key or key:value)",
+      "remove-tag": "Tag to remove",
+      "set-environment": "Environment name or ID",
+      "move-to-project": "Project ID"
+    },
+    "status": {
+      "ok": "Done",
+      "would_apply": "Will apply",
+      "denied": "Denied",
+      "not_found": "Not found",
+      "skipped": "Skipped",
+      "error": "Failed"
+    }
   }
 }

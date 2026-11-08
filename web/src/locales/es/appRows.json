@@ -7,5 +7,53 @@
   "logs": {
     "noContainer": "No hay ningun contenedor en ejecucion para esta app, asi que no hay nada que mostrar.",
     "deploy": "Desplegar"
+  },
+  "bulkBar": {
+    "region": "Acciones en bloque",
+    "selected": "{{count}} seleccionadas",
+    "clear": "Quitar selección",
+    "more": "Más acciones",
+    "review": "Revisar",
+    "readOnly": "Tu cuenta es de solo lectura, así que las acciones en bloque están desactivadas.",
+    "reviewTitle": "{{action}} {{count}} apps",
+    "reviewDescription": "Cada app se comprueba con tus permisos. Las que no puedes tocar aparecen como denegadas y no se cambian.",
+    "resultsTitle": "{{action}}: resultados",
+    "resultsLabel": "Resultados por app",
+    "summary": "{{ok}} hechas, {{failed}} sin aplicar",
+    "typeCount": "Escribe {{count}} para confirmar",
+    "checking": "Comprobando destinos",
+    "working": "Trabajando",
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "confirm": "{{action}} {{count}}",
+    "warning": {
+      "stop": "Esto detiene {{count}} apps hasta que las vuelvas a iniciar.",
+      "delete": "Esto elimina {{count}} apps para siempre. Cada borrado queda en el registro de auditoría."
+    },
+    "action": {
+      "restart": "Reiniciar",
+      "redeploy": "Redesplegar",
+      "stop": "Detener",
+      "start": "Iniciar",
+      "add-tag": "Añadir etiqueta",
+      "remove-tag": "Quitar etiqueta",
+      "set-environment": "Asignar entorno",
+      "move-to-project": "Mover a proyecto",
+      "delete": "Eliminar"
+    },
+    "value": {
+      "add-tag": "Etiqueta (clave o clave:valor)",
+      "remove-tag": "Etiqueta a quitar",
+      "set-environment": "Nombre o ID del entorno",
+      "move-to-project": "ID del proyecto"
+    },
+    "status": {
+      "ok": "Hecho",
+      "would_apply": "Se aplicará",
+      "denied": "Denegado",
+      "not_found": "No encontrada",
+      "skipped": "Omitida",
+      "error": "Falló"
+    }
   }
 }

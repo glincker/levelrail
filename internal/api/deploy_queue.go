@@ -219,7 +219,7 @@ func (rt *Router) enqueueManualBuild(ctx context.Context, existing store.Desired
 		hr.Branch = req.Ref
 	}
 	source := store.DeployAttemptSourceManual
-	if req.UploadHash != "" {
+	if req.UploadHash != "" || strings.HasPrefix(req.RepoURL, inlineURLPrefix) {
 		source = store.DeployAttemptSourceUpload
 	}
 	id, err := rt.enqueueDeploy(ctx, existing, source, buildReq.ImageRepo+":"+buildReq.CommitSHA, hr)
@@ -381,6 +381,12 @@ func (rt *Router) replayManualBuild(ctx context.Context, name string, hr deploy.
 			if m, gerr := st.Get(name, req.UploadHash); gerr == nil {
 				ctx = withUploadCommitMeta(ctx, m)
 			}
+		}
+	}
+	if strings.HasPrefix(req.RepoURL, inlineURLPrefix) {
+		source = store.DeployAttemptSourceUpload
+		if m, ok := rt.inlineMetaFor(ctx, name, req.RepoURL); ok {
+			ctx = withInlineCommitMeta(ctx, m)
 		}
 	}
 	run := rt.beginManualBuild(ctx, *existing, buildReq, buildType, source, req.DetectedFramework, hr.FreezeNote, hr.AllowPrivateRepoAuth)

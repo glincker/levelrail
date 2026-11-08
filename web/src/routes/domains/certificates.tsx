@@ -6,6 +6,7 @@ import { Banner } from '@/components/ui/banner'
 import { AutoHostList } from '../../components/certificates/AutoHostList'
 import { CertBudgetCard } from '../../components/certificates/CertBudgetCard'
 import { CertificateCenterTable } from '../../components/CertificateCenterTable'
+import { CertificatesEmptyState } from '../../components/empty/CertificatesEmptyState'
 import { DomainsTabs } from '../../components/domains/DomainsTabs'
 import { HelpLink } from '../../components/HelpLink'
 import { PageBanner } from '../../components/PageBanner'
@@ -80,7 +81,11 @@ function CertificatesTab() {
         </Banner>
       ) : null}
       <CertBudgetCard />
-      <CertificateCenterTable rows={rows} />
+      {rows.length === 0 ? (
+        <CertificatesEmptyState total={rows.length} />
+      ) : (
+        <CertificateCenterTable rows={rows} />
+      )}
       <AutoHostList />
     </DomainsHeader>
   )

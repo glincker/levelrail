@@ -28,14 +28,34 @@ type coolifyApplication struct {
 	HealthCheckRetries  int    `json:"health_check_retries"`
 	LimitsMemory        string `json:"limits_memory"`
 	LimitsCPUs          string `json:"limits_cpus"`
+	BaseDirectory       string `json:"base_directory,omitempty"`
+	InstallCommand      string `json:"install_command,omitempty"`
+	BuildCommand        string `json:"build_command,omitempty"`
+	StartCommand        string `json:"start_command,omitempty"`
+	PublishDirectory    string `json:"publish_directory,omitempty"`
+	PreDeployment       string `json:"pre_deployment_command,omitempty"`
+	PostDeployment      string `json:"post_deployment_command,omitempty"`
+	CustomLabels        string `json:"custom_labels,omitempty"`
+	Redirect            string `json:"redirect,omitempty"`
+	DockerRunOptions    string `json:"custom_docker_run_options,omitempty"`
+	DockerComposeRaw    string `json:"docker_compose_raw,omitempty"`
+	BasicAuthEnabled    bool   `json:"is_http_basic_auth_enabled,omitempty"`
+	// Webhook secrets are only checked for presence, never copied into a report or spec.
+	WebhookGithub    string          `json:"manual_webhook_secret_github,omitempty"`
+	WebhookGitlab    string          `json:"manual_webhook_secret_gitlab,omitempty"`
+	WebhookBitbucket string          `json:"manual_webhook_secret_bitbucket,omitempty"`
+	WebhookGitea     string          `json:"manual_webhook_secret_gitea,omitempty"`
+	Tags             json.RawMessage `json:"tags,omitempty"`
 }
 
 // Value is redacted without elevated ability; RealValue is only trusted when real values were requested.
 type coolifyEnvVar struct {
-	UUID      string `json:"uuid"`
-	Key       string `json:"key"`
-	Value     string `json:"value"`
-	RealValue string `json:"real_value"`
+	UUID        string `json:"uuid"`
+	Key         string `json:"key"`
+	Value       string `json:"value"`
+	RealValue   string `json:"real_value"`
+	IsBuildTime bool   `json:"is_build_time,omitempty"`
+	IsBuildtime bool   `json:"is_buildtime,omitempty"`
 }
 
 type coolifyErrorBody struct {
@@ -109,5 +129,23 @@ func (c *CoolifyClient) GetApplication(ctx context.Context, uuid string) (coolif
 func (c *CoolifyClient) ListEnvs(ctx context.Context, uuid string) ([]coolifyEnvVar, error) {
 	var out []coolifyEnvVar
 	err := c.do(ctx, "/applications/"+pathEscape(uuid)+"/envs", &out)
+	return out, err
+}
+
+// coolifyStorageList is an application's storages; only file storages are read here.
+type coolifyStorageList struct {
+	Files []coolifyFileStorage `json:"file_storages"`
+}
+
+type coolifyFileStorage struct {
+	MountPath   string `json:"mount_path"`
+	Content     string `json:"content"`
+	IsDirectory bool   `json:"is_directory"`
+}
+
+// ListStorages returns an application's storages.
+func (c *CoolifyClient) ListStorages(ctx context.Context, uuid string) (coolifyStorageList, error) {
+	var out coolifyStorageList
+	err := c.do(ctx, "/applications/"+pathEscape(uuid)+"/storages", &out)
 	return out, err
 }

@@ -122,7 +122,17 @@ func fetchAndMapApplication(ctx context.Context, coolify *CoolifyClient, summary
 	if err != nil {
 		return blockingFetchIssue(summary.Name, fmt.Sprintf("could not fetch environment variables: %v", err))
 	}
-	return mapCoolifyApplication(full, envs, includeSecretValues)
+	out := mapCoolifyApplication(full, envs, includeSecretValues)
+	if out.Blocking || out.Compose != nil {
+		return out
+	}
+	st, err := coolify.ListStorages(ctx, summary.UUID)
+	if err != nil {
+		out.Issues = appendIssue(out.Issues, "file_storages", issueReview, "could not read file storages, copy config files by hand")
+		return out
+	}
+	out.Files, out.Issues = mapFileStorages(st, includeSecretValues, out.Issues)
+	return out
 }
 
 func migrateCoolifyUsage(prog string) string {

@@ -9,6 +9,7 @@ import "net/http"
 func (rt *Router) registerJobRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/jobs/runs", rt.requireAbilityForResource(AbilityRoot, oneShotAppFromBody, rt.handleStartOneShotJob))
 	mux.HandleFunc("GET /api/v1/jobs/runs/{id}", rt.requireAbilityForResource(AbilityRead, rt.oneShotAppFromID, rt.handleGetOneShotJob))
+	mux.HandleFunc("POST /api/v1/jobs/runs/{id}/cancel", rt.requireAbilityForResource(AbilityRoot, rt.oneShotAppFromID, rt.handleCancelOneShotJob))
 
 	mux.HandleFunc("POST /api/v1/apps/{name}/jobs", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleCreateScheduledTask))
 	mux.HandleFunc("GET /api/v1/apps/{name}/jobs", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListScheduledTasks))

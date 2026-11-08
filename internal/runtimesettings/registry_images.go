@@ -1,7 +1,10 @@
 package runtimesettings
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -66,5 +69,82 @@ func init() {
 		Env: "APP_IMAGES_PULL_CONCURRENCY", Apply: ApplyLive, CheckValue: intRangeCheck(1, 32),
 		Title:       "Image pulls at once",
 		Description: "Most distinct image pulls a node runs at the same time, from 1 to 32. Deploys that need the same image share one pull.",
+	})
+}
+
+// Per-app image keep keys. 0 follows images.keep_per_app.
+const (
+	KeyAppImageKeep          = "app.image_keep"
+	KeyAppImageKeepOverrides = "app.image_keep_overrides"
+)
+
+// AppImageKeepMin is the smallest per-app keep, so the previous successful release survives.
+const AppImageKeepMin = 2
+
+// appImageKeepEntriesMax bounds the override map so one write cannot bloat the settings row.
+const appImageKeepEntriesMax = 10000
+
+// CheckAppImageKeep accepts 0 (follow the global count) or AppImageKeepMin up to the ceiling.
+func CheckAppImageKeep(n int) error {
+	if n == 0 || (n >= AppImageKeepMin && n <= imagesKeepCeiling) {
+		return nil
+	}
+	return fmt.Errorf("must be 0 (follow the global count) or from %d to %d", AppImageKeepMin, imagesKeepCeiling)
+}
+
+// CheckAppImageKeepCount refuses a map with more apps than the settings row may hold.
+func CheckAppImageKeepCount(n int) error {
+	if n > appImageKeepEntriesMax {
+		return fmt.Errorf("at most %d apps can have their own image keep count", appImageKeepEntriesMax)
+	}
+	return nil
+}
+
+// ParseAppImageKeepOverrides reads the per-app keep map; an empty value is no overrides.
+func ParseAppImageKeepOverrides(raw string) (map[string]int, error) {
+	out := map[string]int{}
+	if strings.TrimSpace(raw) == "" {
+		return out, nil
+	}
+	if err := json.Unmarshal([]byte(raw), &out); err != nil {
+		return nil, fmt.Errorf("must be a JSON object of app name to keep count: %w", err)
+	}
+	if len(out) > appImageKeepEntriesMax {
+		return nil, fmt.Errorf("at most %d apps", appImageKeepEntriesMax)
+	}
+	for app, n := range out {
+		if app == "" {
+			return nil, errors.New("app names must not be empty")
+		}
+		if err := CheckAppImageKeep(n); err != nil {
+			return nil, fmt.Errorf("app %q: %w", app, err)
+		}
+	}
+	return out, nil
+}
+
+func init() {
+	Register(Definition{
+		Key: KeyAppImageKeep, Category: CategoryDeploys, Kind: KindInt, Default: "0",
+		Env: "APP_IMAGE_KEEP", Apply: ApplyLive,
+		CheckValue: func(canonical string) error {
+			n, err := strconv.Atoi(strings.TrimSpace(canonical))
+			if err != nil {
+				return errors.New("must be a whole number")
+			}
+			return CheckAppImageKeep(n)
+		},
+		Title:       "Default images kept per app",
+		Description: "Images each app keeps when it has no keep count of its own: 0 follows the images-kept setting, otherwise 2 to 1000. Live images, rollback pins and images a queued or held deploy needs are always kept.",
+	})
+	Register(Definition{
+		Key: KeyAppImageKeepOverrides, Category: CategoryDeploys, Kind: KindString, Default: "",
+		Apply: ApplyLive,
+		CheckValue: func(canonical string) error {
+			_, err := ParseAppImageKeepOverrides(canonical)
+			return err
+		},
+		Title:       "Images kept, per app",
+		Description: "Keep counts set on single apps, as a JSON object of app name to count. Set them from each app's deploy settings or the images retention CLI rather than by hand.",
 	})
 }

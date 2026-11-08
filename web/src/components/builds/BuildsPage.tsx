@@ -12,11 +12,19 @@ import { useIsRoot } from '../../hooks/useIsRoot'
 import { useBuildCenter } from '../../queries/buildCenter'
 import { BuildCachePanel } from './BuildCachePanel'
 import { BuildsTable } from './BuildsTable'
+import { BuildsEmptyState } from '../empty/BuildsEmptyState'
+import { ListKeyboardHint } from '../ListKeyboardHint'
+import { useListKeyboard } from '../../hooks/useListKeyboard'
 
 export function BuildsPage() {
   const { t } = useTranslation('buildCenter')
   const [pruneOpen, setPruneOpen] = useState(false)
   const isRoot = useIsRoot()
+  const {
+    setContainer: setListContainer,
+    hintOpen,
+    closeHint,
+  } = useListKeyboard<HTMLDivElement>()
   const builds = useBuildCenter()
   const data = builds.data
   const isEmpty = data !== undefined && data.rows.length === 0
@@ -137,14 +145,19 @@ export function BuildsPage() {
               </p>
             </div>
 
-            {isEmpty ? null : (
-              <BuildsTable
-                rows={data.rows}
-                running={data.counts.running}
-                onFixCache={() => {
-                  setPruneOpen(true)
-                }}
-              />
+            {isEmpty ? (
+              <BuildsEmptyState total={data.rows.length} />
+            ) : (
+              <div ref={setListContainer} className="flex flex-col gap-2">
+                <ListKeyboardHint open={hintOpen} onClose={closeHint} />
+                <BuildsTable
+                  rows={data.rows}
+                  running={data.counts.running}
+                  onFixCache={() => {
+                    setPruneOpen(true)
+                  }}
+                />
+              </div>
             )}
           </>
         ) : null}

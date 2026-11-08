@@ -484,5 +484,37 @@
         "action": "Subir a {{next}}s"
       }
     }
+  },
+  "guided": {
+    "databases": {
+      "title": "Aún no hay bases de datos",
+      "body": "Crea una base de datos Postgres, MySQL, Redis o MongoDB gestionada en uno de tus nodos, con copias de seguridad y credenciales resueltas.",
+      "action": "Crear una base de datos"
+    },
+    "builds": {
+      "title": "Aún no hay compilaciones",
+      "body": "Las compilaciones aparecen aquí cuando una app se despliega desde un repo Git o un Dockerfile. Despliega una app para empezar.",
+      "action": "Desplegar una app"
+    },
+    "backups": {
+      "title": "Aún no hay nada respaldado",
+      "body": "Añade una base de datos o un volumen a un calendario de copias, o conecta un destino, y sus copias aparecerán aquí.",
+      "action": "Gestionar destinos de copia"
+    },
+    "firewall": {
+      "title": "Aún no hay reglas de firewall",
+      "body": "Solo están abiertos los puertos que publican tus apps. Añade una regla para permitir o denegar un puerto desde un rango.",
+      "action": "Añadir una regla"
+    },
+    "alerts": {
+      "title": "Aún no hay alertas",
+      "body": "Las alertas pertenecen a una app. Elige una app y añade una regla para reinicios en bucle, salud del dominio o caducidad de certificados.",
+      "action": "Elegir una app"
+    },
+    "certificates": {
+      "title": "Aún no hay certificados",
+      "body": "Los certificados se emiten solos cuando añades un dominio a una app.",
+      "action": "Añadir un dominio"
+    }
   }
 }

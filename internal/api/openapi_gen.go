@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2060 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2064 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -308,6 +308,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/health-score", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppHealthScore", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/health/discover", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDiscoverAppHealth", Description: "Health check auto-detect (apps_health_discover.go): AbilityRead, the same tier GET .../diagnose already uses for an active probe against a running container (routes.go), since this changes nothing and only reads what the container's own HTTP port already exposes."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/hook-runs", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppHookRuns", Description: "Latest pre/post-deploy hook outcome (apps_hooks.go, internal/reconcile/application's own HookRunRecorder). Read-only, same ability tier as the group route just above."},
+	{Method: "GET", Path: "/api/v1/apps/{name}/image-retention", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetImageRetention", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/image-retention", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetImageRetention", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/image-retention/preview", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePreviewImageRetention", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/images", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListImages", Description: "Previously-built image tags for this app's repo, so the deploy trigger form can offer a dropdown instead of a hand-typed tag (see ImageLister above). AbilityRead like every other passive view of an app's own state."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/ingress-limits", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppIngressLimits", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/ingress-limits", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePutAppIngressLimits", Description: ""},
@@ -1350,6 +1353,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/integrations", Ability: "AbilityRead", Group: "Other", Handler: "handleListIntegrationCatalog", Description: "Integrations (app_integrations.go): the curated internal/integrations catalog (PostHog, Sentry, etc), env-var injection only. The catalog itself is global and read-only (AbilityRead, no store involved, same shape service-templates uses); attach/detach store a field value through the app's own secrets namespace, AbilityWriteSensitive like PUT .../secrets/{key} above."},
 	{Method: "POST", Path: "/api/v1/jobs/runs", Ability: "AbilityRoot", Group: "Other", Handler: "handleStartOneShotJob", Description: ""},
 	{Method: "GET", Path: "/api/v1/jobs/runs/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetOneShotJob", Description: ""},
+	{Method: "POST", Path: "/api/v1/jobs/runs/{id}/cancel", Ability: "AbilityRoot", Group: "Other", Handler: "handleCancelOneShotJob", Description: ""},
 	{Method: "GET", Path: "/api/v1/loadbalancers", Ability: "AbilityRead", Group: "Other", Handler: "handleListLoadBalancers", Description: ""},
 	{Method: "GET", Path: "/api/v1/local-mode", Ability: "AbilityRead", Group: "Other", Handler: "handleGetLocalMode", Description: ""},
 	{Method: "POST", Path: "/api/v1/local-mode/reset", Ability: "AbilityRoot", Group: "Other", Handler: "handleLocalModeReset", Description: "A reset deletes every app, secret and database record of the instance, so AbilityRoot."},

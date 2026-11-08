@@ -7,7 +7,14 @@ import (
 	"strings"
 )
 
-var secretKeyRe = regexp.MustCompile(`(?i)(^|_)(secret|password|passwd|pwd|token|api_?key|private_?key|credential|auth|dsn)($|_)|_key$|^database_url$|^redis_url$|^mongo(db)?_url$|^db_url$`)
+var secretKeyRe = regexp.MustCompile(`(?i)(^|_)(secret|password|passwd|pwd|token|api_?key|private_?key|credential|auth|dsn)($|_)|_key$|^database_url$|^redis_url$|^mongo(db)?_url$|^db_url$|pass|secret|token|api_?key|credential|dsn`)
+
+var userinfoValueRe = regexp.MustCompile(`[A-Za-z][A-Za-z0-9+.-]*://[^\s/@]*:[^\s/@]+@`)
+
+// ValueLooksSecret reports whether a value embeds URL credentials, such as amqp://u:p@host.
+func ValueLooksSecret(v string) bool {
+	return userinfoValueRe.MatchString(v)
+}
 
 // LooksSecret reports whether an env var name suggests a secret value.
 func LooksSecret(key string) bool {

@@ -509,6 +509,10 @@ func (r *Runner) attemptExec(execCtx, runCtx context.Context, task store.Schedul
 			return res
 		}
 		if errors.Is(execCtx.Err(), context.Canceled) {
+			if errors.Is(context.Cause(execCtx), ErrRunCancelled) {
+				res.status, res.message = store.ScheduledTaskStatusInterrupted, cancelledMessage
+				return res
+			}
 			res.status, res.output = store.ScheduledTaskStatusInterrupted, shutdownMessage
 			return res
 		}
@@ -518,6 +522,11 @@ func (r *Runner) attemptExec(execCtx, runCtx context.Context, task store.Schedul
 }
 
 const shutdownMessage = "control plane shut down while this run was in flight"
+
+// ErrRunCancelled is the cancel cause of a run an operator stopped, so it is not reported as a shutdown.
+var ErrRunCancelled = errors.New("run cancelled by the operator")
+
+const cancelledMessage = "cancelled by the operator; the container was killed and removed"
 
 func (r *Runner) execOutcome(res result, out *tailCappedWriter, err error) result {
 	if err == nil {
@@ -574,6 +583,13 @@ func (r *Runner) attemptFresh(execCtx, runCtx context.Context, task store.Schedu
 	case err == nil:
 	case isReplaced(execCtx):
 		res.status, res.output = store.ScheduledTaskStatusReplaced, replacedOutputMessage
+		return res
+	case errors.Is(err, context.Canceled) && errors.Is(context.Cause(execCtx), ErrRunCancelled):
+		res.status, res.message = store.ScheduledTaskStatusInterrupted, cancelledMessage
+		if out.ExitCode > 0 {
+			code := out.ExitCode
+			res.exitCode = &code
+		}
 		return res
 	case errors.Is(err, context.Canceled):
 		res.status, res.message = store.ScheduledTaskStatusInterrupted, shutdownMessage

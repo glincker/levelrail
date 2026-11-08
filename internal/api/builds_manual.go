@@ -99,6 +99,8 @@ func (rt *Router) runManualBuild(m manualBuildRun) {
 		var err error
 		if strings.HasPrefix(m.repoURL, uploadURLPrefix) {
 			sourceDir, commit, cleanup, err = rt.fetchUpload(name, m.repoURL)
+		} else if strings.HasPrefix(m.repoURL, inlineURLPrefix) {
+			sourceDir, commit, cleanup, err = rt.fetchInline(ctx, name, m.repoURL)
 		} else {
 			token, scope := rt.cloneCredential(ctx, name, m.repoURL, m.allowPrivateRepoAuth)
 			fetchCtx := sourcecache.WithScope(ctx, scope)

@@ -186,6 +186,7 @@ func (rt *Router) deleteApp(ctx context.Context, name string) (teardownErr, err 
 			rt.logger.Warn("api: delete app: remove image auto update failed", slog.String("error", err.Error()), slog.String("name", name))
 		}
 	}
+	rt.forgetAppImageKeep(ctx, name)
 	if existing.AppID != "" {
 		// Name lock covers the window where a same-name create has saved its row but not yet linked it.
 		unlockSweep := lockAppName(name)

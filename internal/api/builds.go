@@ -128,6 +128,8 @@ type triggerBuildRequest struct {
 	FromCache bool `json:"from_cache,omitempty"`
 	// UploadHash builds a directory previously sent to POST /api/v1/apps/{name}/uploads instead of a git checkout.
 	UploadHash string `json:"upload_hash,omitempty"`
+	// InlineSource builds a pasted Dockerfile plus optional files, no git host or repository needed.
+	InlineSource *inlineSourceInput `json:"inline_source,omitempty"`
 	// NoCache disables the BuildKit layer cache; only build.type "dockerfile" supports it.
 	NoCache bool `json:"no_cache,omitempty"`
 	// RerunOf is the deploy attempt of this app that this build retries or rebuilds.
@@ -376,6 +378,16 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	var inline inlineMeta
+	if req.InlineSource != nil {
+		var status int
+		var msg string
+		if inline, status, msg = rt.prepareInlineBuild(r, name, &req, buildType); status != 0 {
+			writeError(w, status, msg)
+			return
+		}
+	}
+
 	if buildType == spec.BuildImage {
 		if req.Build.Image == "" {
 			writeError(w, http.StatusBadRequest, "build.image is required for build.type \"image\"")
@@ -389,7 +401,7 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusBadRequest, "from_cache needs a git source, not build.type \"image\"")
 			return
 		}
-	} else if req.UploadHash == "" {
+	} else if req.UploadHash == "" && inline.hash == "" {
 		if req.RepoURL == "" {
 			writeError(w, http.StatusBadRequest, "repo_url is required")
 			return
@@ -447,16 +459,21 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 		source = store.DeployAttemptSourceUpload
 		attemptCtx = withUploadCommitMeta(attemptCtx, upload)
 	}
+	if inline.hash != "" {
+		source = store.DeployAttemptSourceUpload
+		attemptCtx = withInlineCommitMeta(attemptCtx, inline)
+	}
 
 	rt.buildStartMu.Lock()
 	if rt.deploySafety != nil {
 		if rt.deployBlocker(r.Context(), name) {
-			resp, err := rt.enqueueManualBuild(r.Context(), *existing, req, buildReq, freezeNote, allowPrivateRepoAuth)
+			resp, err := rt.enqueueManualBuild(attemptCtx, *existing, req, buildReq, freezeNote, allowPrivateRepoAuth)
 			rt.buildStartMu.Unlock()
 			if err != nil {
 				rt.internalError(w, "api: trigger build: queue failed", err, slog.String("name", name))
 				return
 			}
+			rt.auditInlineSource(r, name, inline)
 			writeJSON(w, http.StatusAccepted, resp)
 			return
 		}
@@ -471,6 +488,7 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 	run.repoURL, run.ref, run.fromCache = req.RepoURL, req.Ref, req.FromCache
 	go rt.runManualBuild(run) //nolint:gosec // the build outlives the request; runManualBuild derives its own context
 
+	rt.auditInlineSource(r, name, inline)
 	writeJSON(w, http.StatusAccepted, triggerBuildResponse{ID: run.id})
 }
 

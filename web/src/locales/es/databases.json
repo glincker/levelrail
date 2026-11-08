@@ -1013,5 +1013,70 @@
       "done": "Volcado importado.",
       "failed": "La importación falló."
     }
+  },
+  "filter": {
+    "search": "Buscar bases de datos",
+    "engines": "Motores",
+    "enginesCount_one": "{{count}} motor",
+    "enginesCount_other": "{{count}} motores",
+    "statusGroup": "Filtrar por estado",
+    "clear": "Quitar filtros",
+    "status": {
+      "healthy": "Sana",
+      "attention": "Requiere atención",
+      "reconciling": "Reconciliando",
+      "stopped": "Detenida"
+    },
+    "emptyTitle": "Ninguna base de datos coincide con estos filtros",
+    "emptyBody": "Prueba otra búsqueda, motor o estado, o quita los filtros para ver todas las bases de datos."
+  },
+  "bulk": {
+    "region": "Acciones en lote",
+    "selected_one": "{{count}} seleccionada",
+    "selected_other": "{{count}} seleccionadas",
+    "selectAll_one": "Seleccionar la {{count}} base de datos mostrada",
+    "selectAll_other": "Seleccionar las {{count}} bases de datos mostradas",
+    "selectOne": "Seleccionar {{name}}",
+    "clear": "Quitar selección",
+    "action": {
+      "start": "Iniciar",
+      "stop": "Detener",
+      "backup": "Copia de seguridad"
+    },
+    "reviewTitle_one": "{{action}} {{count}} base de datos",
+    "reviewTitle_other": "{{action}} {{count}} bases de datos",
+    "reviewDescription": "Cada base de datos se comprueba con tus permisos por separado. Las que no admiten esta acción se omiten.",
+    "resultsTitle": "{{action}}: resultados",
+    "summary": "{{ok}} hechas, {{failed}} con error, {{skipped}} omitidas.",
+    "stopWarning_one": "Detener elimina el contenedor de {{count}} base de datos. Los datos siguen en su volumen y las apps pierden la conexión hasta que la inicies de nuevo.",
+    "stopWarning_other": "Detener elimina los contenedores de {{count}} bases de datos. Los datos siguen en sus volúmenes y las apps pierden la conexión hasta que las inicies de nuevo.",
+    "confirm_one": "{{action}} {{count}}",
+    "confirm_other": "{{action}} {{count}}",
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "working": "Trabajando...",
+    "result": {
+      "planned": "Lista",
+      "ok": "Hecha",
+      "skipped": "Omitida",
+      "denied": "No permitido",
+      "protected": "Protegida",
+      "notFound": "No encontrada",
+      "error": "Error"
+    },
+    "skip": {
+      "external": "Externa, no se ejecuta aquí",
+      "notCreated": "Aún no creada",
+      "running": "Ya en ejecución",
+      "stopped": "Ya detenida",
+      "noTarget": "Sin destino de copias"
+    }
+  },
+  "rowActions": {
+    "label": "Acciones para {{name}}",
+    "open": "Abrir",
+    "copyConnection": "Copiar cadena de conexión",
+    "copied": "Cadena de conexión copiada, sin la contraseña.",
+    "noBackupTarget": "Configura las copias primero"
   }
 }

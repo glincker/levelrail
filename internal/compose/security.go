@@ -96,3 +96,15 @@ func isDockerSocket(hostPath string) bool {
 	base := path.Base(strings.TrimRight(hostPath, "/"))
 	return base == "docker.sock" || base == "podman.sock" || base == "containerd.sock"
 }
+
+// ServiceHostViolations reports what validate rejects for one service's host access and
+// bind sources, for callers that cannot fully parse a file yet still must enforce the rules.
+func ServiceHostViolations(h HostAccess, hostPaths []string) []string {
+	out := hostAccessViolations(Service{HostAccess: h})
+	for _, p := range hostPaths {
+		if isDockerSocket(p) {
+			out = append(out, fmt.Sprintf("mounting the Docker socket (%s) is never allowed: it grants root on the host [%s]", p, dockerguard.RuleBindSensitive))
+		}
+	}
+	return out
+}

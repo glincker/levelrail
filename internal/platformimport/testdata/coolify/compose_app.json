@@ -1,0 +1,9 @@
+{
+  "uuid": "app-compose-1",
+  "name": "blog-stack",
+  "fqdn": "https://blog.example.test,https://www.blog.example.test",
+  "build_pack": "dockercompose",
+  "git_repository": "example/blog",
+  "git_branch": "main",
+  "docker_compose_raw": "services:\n  ghost:\n    image: ghost:5\n    environment:\n      - SERVICE_FQDN_GHOST_2368\n      - database__connection__password=${SERVICE_PASSWORD_MYSQL}\n  mysql:\n    image: mysql:8\n    environment:\n      - MYSQL_ROOT_PASSWORD=${SERVICE_PASSWORD_MYSQL}\n    volumes:\n      - mysql-data:/var/lib/mysql\nvolumes:\n  mysql-data: {}\n"
+}

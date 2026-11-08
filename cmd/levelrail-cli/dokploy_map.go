@@ -1,11 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"io"
 	"sort"
 	"strconv"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/platformimport"
 	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
@@ -206,4 +209,66 @@ func mapDokployEnv(raw string, includeSecretValues bool, issues []migrationIssue
 		return keys, nil, issues
 	}
 	return keys, parsed, issues
+}
+
+// discoverDokployCompose maps compose stacks through the read-only import source. A read failure
+// only warns, so applications still migrate when the stacks cannot be read.
+func discoverDokployCompose(ctx context.Context, f migrateDokployFlags, lookupEnv func(string) (string, bool), stderr io.Writer) []mappedApp {
+	src, err := platformimport.NewDokploy(f.dokployURL, f.dokployToken, platformimport.ClientOptions{Policy: platformimport.NetworkPolicy{
+		AllowPrivate: envIsTrue(lookupEnv, platformimport.AllowPrivateEnv), AllowLoopback: envIsTrue(lookupEnv, platformimport.AllowLoopbackEnv)}})
+	if err == nil {
+		var disc *platformimport.Discovery
+		if disc, err = src.Discover(ctx); err == nil {
+			out := make([]mappedApp, 0, len(disc.ComposeApps))
+			for _, c := range disc.ComposeApps {
+				out = append(out, mapDokployCompose(c, f.includeSecretValues))
+			}
+			return out
+		}
+	}
+	_, _ = fmt.Fprintf(stderr, "warning: could not read Dokploy compose stacks, they are not included: %v\n", err)
+	return nil
+}
+
+// mapDokployCompose stages a stack as a compose app. Env values are staged only when real values
+// were requested, matching the env import, since a key name cannot prove a value is harmless.
+func mapDokployCompose(c platformimport.ComposeApp, includeSecretValues bool) mappedApp {
+	name, issues := mapServiceName("Dokploy", c.Name, nil)
+	out := mappedApp{SourceName: c.Name, ServiceName: name}
+	for _, n := range c.Notes {
+		issues = appendIssue(issues, "compose", issueReview, n.Reason+", "+n.Manual)
+	}
+	if c.Verdict != platformimport.ComposeReady {
+		for _, r := range c.Blocked {
+			issues = appendIssue(issues, "compose", issueBlocking, r)
+		}
+		out.Issues, out.Blocking = issues, true
+		return out
+	}
+	plain, secrets := c.SplitEnv()
+	literal := map[string]string{}
+	if includeSecretValues {
+		for _, m := range []map[string]string{plain, secrets} {
+			for k, v := range m {
+				literal[k] = v
+			}
+		}
+	} else if len(plain)+len(secrets) > 0 {
+		issues = appendIssue(issues, "env", issueReview, fmt.Sprintf("%d env var(s) staged as names only; re-run with --include-secret-values to write their values into stack.env", len(plain)+len(secrets)))
+	}
+	keys := make([]string, 0, len(plain)+len(secrets))
+	for k := range plain {
+		keys = append(keys, k)
+	}
+	for k := range secrets {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	out.Service.EnvKeys, out.Service.Domains = keys, c.Domains
+	if len(literal) > 0 {
+		out.Service.EnvLiteral = literal
+	}
+	out.Compose = &stagedCompose{Yaml: c.Compose, Hosts: c.Domains, Volumes: c.Volumes}
+	out.Issues = issues
+	return out
 }

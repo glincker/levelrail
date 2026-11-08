@@ -344,3 +344,6 @@ docker exec -i <container> sh -c 'psql -U "${POSTGRES_USER:-postgres}" "${POSTGR
 # MySQL or MariaDB
 docker exec -i <container> sh -c 'MYSQL_PWD="${MYSQL_ROOT_PASSWORD:-$MARIADB_ROOT_PASSWORD}" mysql -uroot' < dump.sql
 ```
+## Imported stacks
+
+`migrate coolify` and `migrate dokploy` stage multi-service stacks from those platforms as compose apps. Imported files are treated as untrusted: they go through the same parser and host-access rules as a pasted file, so a rejected key keeps the stack blocked with the same reason, and the importer never fetches anything over the network for them. Staged files land under `--stage-dir` with owner-only permissions; deploy them with `levelrail-cli compose deploy <app> -f <path>`.

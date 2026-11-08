@@ -61,6 +61,9 @@ func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Write
 		fs.BoolVar(&src.latest, "latest", false, "deploy the newest commit of the connected branch")
 		fs.StringVar(&src.branch, "branch", "", "with --latest: branch to take the newest commit from (default: the connected branch)")
 		fs.BoolVar(&src.fromCache, "from-cache", false, "rebuild from the control plane's source cache without contacting the git host (default commit: the last successful source deploy)")
+		fs.StringVar(&src.dockerfile, "dockerfile", "", "build this Dockerfile text with no git repository; only \"-\" (read it from stdin) is accepted")
+		fs.StringVar(&src.dockerfileFile, "dockerfile-file", "", "build the Dockerfile at this local path with no git repository")
+		fs.Var(&src.contextFiles, "context-file", "with --dockerfile or --dockerfile-file: add this relative local file to the build context (repeatable)")
 	}
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, cfg.usage(prog)) }
 
@@ -107,6 +110,15 @@ func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Write
 			return reportError(stdout, stderr, jsonOut, newValidationError("--from-cache takes only an optional --commit"))
 		}
 		return deployFromCache(prog, client, name, src.commit, extra, stdout, stderr, jsonOut, of)
+	}
+	if src.dockerfile != "" || src.dockerfileFile != "" {
+		if image != "" || src.commit != "" || src.latest || src.branch != "" {
+			return reportError(stdout, stderr, jsonOut, newValidationError("--dockerfile and --dockerfile-file cannot be combined with --image, --commit, --latest or --branch"))
+		}
+		return deployFromInline(prog, client, name, src, stdin, stdout, stderr, jsonOut, of)
+	}
+	if len(src.contextFiles) > 0 {
+		return reportError(stdout, stderr, jsonOut, newValidationError("--context-file needs --dockerfile or --dockerfile-file"))
 	}
 	if src.commit != "" || src.latest {
 		if image != "" || (src.commit != "" && src.latest) {
@@ -229,6 +241,9 @@ Flags:
   --latest                   build and deploy the newest commit of the connected branch (with --branch to pick another)
   --from-cache               rebuild from the source cache without contacting the git host, for a git host outage
                              (default commit: the last successful source deploy; --commit picks another)
+  --dockerfile -             build a Dockerfile read from stdin, no git repository needed
+  --dockerfile-file string   build the Dockerfile at this local path, no git repository needed
+  --context-file string      add a relative local file to that build context (repeatable, symlinks refused)
   --pull                     re-resolve the tag against its registry, failing rather than deploying a cached
                              image; without --image, redeploys the app's current tag at its newest digest
   --diff                     show what this deploy would change (config, env keys, image) against the last

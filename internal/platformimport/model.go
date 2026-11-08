@@ -108,7 +108,26 @@ type App struct {
 	Crons       []Cron
 	MemoryBytes int64
 	NanoCPUs    int64
-	Notes       []Note
+	// Build is how the source builds and deploys the app, validated and secret free.
+	Build BuildSettings
+	// Files are config file mounts copied byte for byte from the source.
+	Files []AppFile
+	Notes []Note
+}
+
+// BuildSettings carries the source's build and deploy settings so a staged app builds the same way.
+// Paths are repository relative; a command that holds a secret-looking value is never kept here.
+type BuildSettings struct {
+	BaseDirectory  string
+	DockerfilePath string
+	InstallCommand string
+	BuildCommand   string
+	StartCommand   string
+	PublishDir     string
+	PreDeploy      string
+	PostDeploy     string
+	// BuildTimeKeys names the variables the source only exposes during the build.
+	BuildTimeKeys []string
 }
 
 // BackupSchedule is one scheduled database backup on the source.
@@ -203,7 +222,9 @@ type Discovery struct {
 	Unsupported  []Unsupported
 	// Services holds each one-click service's masked compose body and env.
 	Services []Service
-	Servers  []Server
+	// ComposeApps are multi-service stacks imported as compose apps.
+	ComposeApps []ComposeApp
+	Servers     []Server
 	// Warnings are source reads that failed softly, so the plan lacks that detail.
 	Warnings []string
 }

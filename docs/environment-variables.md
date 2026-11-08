@@ -148,9 +148,14 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_OIDC_LISTEN_PORT` | [`pipelines.oidc_listen_port`](/runtime-settings#networking) | `9095` |
 | `LEVELRAIL_PROXY_UNROUTED_TO_LEVELRAIL` | [`proxy.unrouted_to_levelrail`](/runtime-settings#networking) | `false` |
 | `APP_TRUST_LOOPBACK_FORWARDED` | [`security.trust_loopback_forwarded_headers`](/runtime-settings#networking) | `true` |
+| `APP_IMAGE_KEEP` | [`app.image_keep`](/runtime-settings#deploys) | `0` |
 | `APP_ENV_APPLY_ON_SET` | [`apps.env_apply_on_set`](/runtime-settings#deploys) | `false` |
 | `APP_MAX_REPLICAS_PER_SERVICE` | [`apps.max_replicas_per_service`](/runtime-settings#deploys) | `100` |
 | `APP_SIZE_PRESETS` | [`apps.size_presets`](/runtime-settings#deploys) | `small=0.5:512Mi,medium=1:1Gi,large=2:2Gi,xlarge=4:4Gi` |
+| `APP_RUN_CPU_LIMIT_MILLIS` | [`apps_run.cpu_limit_millis`](/runtime-settings#deploys) | `0` |
+| `APP_RUN_MAX_CONCURRENT_PER_APP` | [`apps_run.max_concurrent_per_app`](/runtime-settings#deploys) | `3` |
+| `APP_RUN_MAX_TIMEOUT_SECONDS` | [`apps_run.max_timeout_seconds`](/runtime-settings#deploys) | `3600` |
+| `APP_RUN_MEMORY_LIMIT_MB` | [`apps_run.memory_limit_mb`](/runtime-settings#deploys) | `0` |
 | `APP_BACKUP_LOCAL_ROOT` | [`backup.local_root`](/runtime-settings#deploys) | empty |
 | `APP_BOOT_EVENT_RECHECK` | [`boot.event_recheck`](/runtime-settings#deploys) | `3s` |
 | `APP_BOOT_RECHECKS` | [`boot.rechecks`](/runtime-settings#deploys) | `3s:10s` |
@@ -169,6 +174,9 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_APPROVE_DIGEST_CHECK_TIMEOUT_SECONDS` | [`deploy.approve_digest_check_timeout_seconds`](/runtime-settings#deploys) | `0` |
 | `APP_CI_GATE_MAX_WAITS_PER_APP` | [`deploy.ci_gate_max_waits_per_app`](/runtime-settings#deploys) | `4` |
 | `APP_DEPLOY_DRAIN_TIMEOUT` | [`deploy.drain_timeout`](/runtime-settings#deploys) | `15s` |
+| `APP_INLINE_SOURCE_KEEP` | [`deploy.inline_source_keep`](/runtime-settings#deploys) | `10` |
+| `APP_INLINE_SOURCE_MAX_BYTES` | [`deploy.inline_source_max_bytes`](/runtime-settings#deploys) | `262144` |
+| `APP_INLINE_SOURCE_MAX_FILES` | [`deploy.inline_source_max_files`](/runtime-settings#deploys) | `20` |
 | `APP_DEPLOY_MAX_CONCURRENT` | [`deploy.max_concurrent`](/runtime-settings#deploys) | `0` |
 | `APP_DEPLOY_MAX_CONCURRENT_PER_PROJECT` | [`deploy.max_concurrent_per_project`](/runtime-settings#deploys) | `0` |
 | `APP_DEPLOY_NEXT_ASSET_GRACE_MAX_HELD` | [`deploy.next_asset_grace_max_held`](/runtime-settings#deploys) | `1` |

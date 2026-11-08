@@ -16,6 +16,10 @@ type sourceDeployFlags struct {
 	branch string
 	// fromCache rebuilds from the control plane's source cache only.
 	fromCache bool
+	// dockerfile is "-" for stdin; dockerfileFile is a local path. Either one deploys without git.
+	dockerfile     string
+	dockerfileFile string
+	contextFiles   stringListFlag
 }
 
 // deployFromCache rebuilds the app from the control plane's source cache, the

@@ -20,10 +20,16 @@ api.max_body_bytes
 api.rate_limit_read_rpm
 api.rate_limit_redeem_rpm
 api.rate_limit_write_rpm
+app.image_keep
+app.image_keep_overrides
 apps.containers_inspect_timeout
 apps.env_apply_on_set
 apps.max_replicas_per_service
 apps.size_presets
+apps_run.cpu_limit_millis
+apps_run.max_concurrent_per_app
+apps_run.max_timeout_seconds
+apps_run.memory_limit_mb
 assets.upload_max_bytes
 audit.anchor_webhook_secret
 audit.anchor_webhook_url
@@ -69,6 +75,9 @@ deploy.approve_digest_check_timeout_seconds
 deploy.ci_gate_max_waits_per_app
 deploy.drain_timeout
 deploy.explain_log_lines
+deploy.inline_source_keep
+deploy.inline_source_max_bytes
+deploy.inline_source_max_files
 deploy.max_concurrent
 deploy.max_concurrent_per_project
 deploy.previous_release_hold

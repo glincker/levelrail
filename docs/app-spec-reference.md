@@ -436,6 +436,18 @@ release: bundle exec rake db:migrate
 - Add-on databases are not created at deploy. Each one produces a finding telling you to create and link the database.
 - Anything else, such as `environments`, other scripts or healthcheck command checks, produces a finding. Findings appear as log lines in the deploy output and as warnings on the deploy result; nothing is dropped silently.
 
+### Inline Dockerfile (no git repository)
+
+An app can build from Dockerfile text you paste or upload, with a few optional extra context files, and no git host or repository. It is the no-git counterpart of a git source's `build.type: dockerfile` with `build.path`.
+
+- Dashboard: the app's Source tab, Inline Dockerfile card.
+- CLI: `apps deploy <app> --dockerfile-file ./Dockerfile` or `cat Dockerfile | apps deploy <app> --dockerfile -`, plus `--context-file conf/app.conf` (repeatable). Context files must be relative paths inside the current directory; symlinks and special files are refused.
+- API: `POST /api/v1/apps/{name}/builds` with `{"build":{"type":"dockerfile"},"inline_source":{"dockerfile":"...","files":[{"path":"conf/app.conf","content":"..."}]}}`. It cannot be combined with `repo_url`, `upload_hash` or `from_cache`, and `build.path` and `build.base_directory` do not apply.
+
+Limits are runtime settings: `deploy.inline_source_max_bytes` (default 256 KiB, the Dockerfile plus every file name and body) and `deploy.inline_source_max_files` (default 20). Content over either limit gets HTTP 413. File names must be clean relative paths: no `..`, no leading `/`, no backslash, and not `Dockerfile` itself.
+
+The text is stored by its sha256 so a queued or retried deploy rebuilds the same bytes. Each app keeps its newest `deploy.inline_source_keep` sources (default 10); an hourly sweep deletes older ones unless a queued, held or running deploy still needs them. File names that differ only by case or Unicode normalization, or a file that is also a parent directory of another, are refused. In the deploy history, the deploy shows the first 12 hex characters of that hash as its commit. The build context is written to a private temporary directory (0700 directories, 0600 files) and removed after the build. Builds run in the same builder sandbox with the same base image and registry policy as a git deploy, and the same deploy permission, freeze windows and protected environments apply. The audit log records the hash, byte size and file count, never the text.
+
 ## Bind addresses and exposure
 
 Every published port (a service's `port`/`host_port`, and a managed database's public-access port; see [managing databases](/managing-databases)) binds to `bind_address`, resolved by `internal/bindaddr.Resolve`:

@@ -229,6 +229,12 @@ func BuildPlan(d *Discovery, o PlanOptions) *Plan {
 		p.planDatabase(db, o, dbTaken)
 	}
 	p.planEnvironments(d, o)
+	for _, c := range d.ComposeApps {
+		if !wanted(o.Only, c.SourceID, c.Name) {
+			continue
+		}
+		p.planCompose(c)
+	}
 	for _, u := range d.Unsupported {
 		if !wanted(o.Only, u.SourceID, u.Name) {
 			continue
@@ -443,4 +449,17 @@ func (p *Plan) planEnvironments(d *Discovery, o PlanOptions) {
 		p.Environments = append(p.Environments, EnvironmentPlan{SourceID: key, Project: e.Project, Name: e.Name})
 		p.add(item)
 	}
+}
+
+// planCompose reports a stack; a blocked one carries the same reasons a manual compose deploy gives.
+func (p *Plan) planCompose(c ComposeApp) {
+	item := Item{Kind: "compose", SourceID: c.SourceID, SourceName: c.Name, Target: SanitizeName(c.Name), Status: StatusMapped,
+		Manual: []string{"stage it with the migrate command and deploy it with the compose deploy command"}}
+	if c.Verdict == ComposeBlocked {
+		item.Status, item.Target, item.Reasons = StatusUnsupported, "", append([]string(nil), c.Blocked...)
+	}
+	for _, n := range c.Notes {
+		item.Reasons = append(item.Reasons, n.Reason)
+	}
+	p.add(item)
 }

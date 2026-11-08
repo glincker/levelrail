@@ -247,5 +247,6 @@
     "backupStarted": "Mail backup started",
     "backupFailed": "Mail backup failed",
     "keywords": "mail email mailbox"
-  }
+  },
+  "connectSource": "Connect Git source for {{app}}"
 }

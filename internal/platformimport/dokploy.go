@@ -81,6 +81,7 @@ type dokployMount struct {
 	HostPath   string `json:"hostPath"`
 	VolumeName string `json:"volumeName"`
 	MountPath  string `json:"mountPath"`
+	Content    string `json:"content"`
 }
 
 type dokployApp struct {
@@ -163,8 +164,7 @@ func (s *DokploySource) collect(ctx context.Context, d *Discovery, project strin
 		d.Apps = append(d.Apps, app)
 	}
 	for _, c := range res.Compose {
-		d.Unsupported = append(d.Unsupported, Unsupported{Kind: "compose", SourceID: c.ID, Name: c.Name,
-			Reason: "compose stacks are multi-service", Manual: "deploy the compose file with the compose deploy command"})
+		d.ComposeApps = append(d.ComposeApps, s.readCompose(ctx, project, c))
 	}
 	dbs := []struct {
 		engine string
@@ -204,6 +204,8 @@ func mapDokployApp(project string, a dokployApp) (App, *Unsupported) {
 			app.Volumes = append(app.Volumes, Volume{Name: m.VolumeName, ContainerPath: m.MountPath})
 		case "bind":
 			app.Volumes = append(app.Volumes, Volume{HostPath: m.HostPath, ContainerPath: m.MountPath})
+		case "file":
+			app.Notes = append(app.Notes, dokployFileMount(&app, m)...)
 		default:
 			app.Notes = append(app.Notes, Note{Reason: "file mount " + m.MountPath + " is not imported", Manual: "bake the file into the image or use a volume"})
 		}
@@ -305,7 +307,7 @@ func parseEnvBlob(blob string) []Env {
 		if len(v) >= 2 && (v[0] == '"' && v[len(v)-1] == '"' || v[0] == '\'' && v[len(v)-1] == '\'') {
 			v = v[1 : len(v)-1]
 		}
-		out = append(out, Env{Key: k, Value: v, Secret: LooksSecret(k)})
+		out = append(out, Env{Key: k, Value: v, Secret: LooksSecret(k) || ValueLooksSecret(v)})
 	}
 	return out
 }

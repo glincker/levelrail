@@ -11,4 +11,7 @@ func (rt *Router) registerImageRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/images/signature-policy/validate", rt.requireAbility(AbilityWrite, rt.handleValidateImageSignaturePolicy))
 	mux.HandleFunc("POST /api/v1/images/gc", rt.requireAbility(AbilityRoot, rt.handleImageGC))
 	mux.HandleFunc("POST /api/v1/images/remove", rt.requireAbility(AbilityRoot, rt.handleImageRemove))
+	mux.HandleFunc("GET /api/v1/apps/{name}/image-retention", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetImageRetention))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/image-retention", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleSetImageRetention))
+	mux.HandleFunc("POST /api/v1/apps/{name}/image-retention/preview", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handlePreviewImageRetention))
 }

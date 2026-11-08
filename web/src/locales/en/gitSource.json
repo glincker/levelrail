@@ -177,5 +177,65 @@
     "removeBody": "Fetches over SSH will fail until a new key is generated.",
     "removeConfirm": "Remove key",
     "cancel": "Cancel"
+  },
+  "dialog": {
+    "open": "Connect Git source",
+    "title": "Connect a Git source",
+    "step": {
+      "source": "Step 1 of 3: choose a connected provider or paste a repository URL, then a branch.",
+      "review": "Step 2 of 3: review the detected build and what the app keeps.",
+      "finish": "Step 3 of 3: the first deploy from this repository."
+    },
+    "next": "Next",
+    "back": "Back",
+    "done": "Done",
+    "linkOnly": "Link only",
+    "linked": "Repository linked. Push to the branch or deploy when ready.",
+    "reading": "Reading the repository",
+    "pickService": "Which service does this repository build?",
+    "effect": {
+      "unchanged": "keeps its current image",
+      "keeps_own_source": "keeps its own Git source",
+      "built_with_this_source": "also rebuilt from this repository"
+    },
+    "detected": "Detected build: {{build}}",
+    "detectError": {
+      "not_found": "Repository or branch not found.",
+      "access_denied": "No access to this repository. Pick it from a connected provider.",
+      "unreadable": "The repository could not be read. You can still pick the build by hand.",
+      "ssh_not_detectable": "SSH URLs are read after connecting.",
+      "unsupported_host": "This host cannot be read before connecting."
+    },
+    "kept": "Kept: {{env}} env vars and secrets, {{domains}} domains, {{volumes}} volumes.",
+    "protected": "This app is in a protected environment. Link only, then push to the branch so the deploy goes through approval.",
+    "failingStep": "Failed at: {{step}}",
+    "status": {
+      "queued": "Queued",
+      "building": "Building",
+      "ready": "Live",
+      "failed": "Failed",
+      "canceled": "Canceled",
+      "held": "Held",
+      "awaiting_approval": "Awaiting approval",
+      "rolled_back": "Rolled back",
+      "superseded": "Superseded"
+    },
+    "connectionNeedsRead": "Your access cannot use the picked connection to read private repos, so the repository was read without it."
+  },
+  "inline": {
+    "title": "Deploy from a Dockerfile",
+    "hint": "No git repo needed. Paste a Dockerfile or load one from your machine.",
+    "loadFile": "Load from file",
+    "dockerfile": "Dockerfile",
+    "placeholder": "FROM node:22-alpine",
+    "addFile": "Add context file",
+    "filePath": "Context file {{n}} path",
+    "fileContent": "Context file {{n}} content",
+    "pathPlaceholder": "path/in/context.txt",
+    "removeFile": "Remove context file {{n}}",
+    "deploy": "Deploy",
+    "started": "Build started.",
+    "failed": "Could not start the build",
+    "deployId": "Deploy {{id}} started."
   }
 }

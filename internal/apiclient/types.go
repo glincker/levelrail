@@ -329,6 +329,20 @@ type BuildTriggerRequest struct {
 	DetectedFramework string `json:"detected_framework,omitempty"`
 	// UploadHash builds a directory sent with UploadSource instead of a git checkout; RepoURL and Ref stay empty.
 	UploadHash string `json:"upload_hash,omitempty"`
+	// InlineSource builds pasted Dockerfile text plus optional files; RepoURL and Ref stay empty.
+	InlineSource *InlineSource `json:"inline_source,omitempty"`
+}
+
+// InlineSource is a Dockerfile and extra build context files sent as text, no git repository needed.
+type InlineSource struct {
+	Dockerfile string       `json:"dockerfile"`
+	Files      []InlineFile `json:"files,omitempty"`
+}
+
+// InlineFile is one extra build context file of an InlineSource, at a clean relative path.
+type InlineFile struct {
+	Path    string `json:"path"`
+	Content string `json:"content"`
 }
 
 // BuildTriggerRequestBuild is BuildTriggerRequest's nested build.* input

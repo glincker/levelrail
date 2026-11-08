@@ -233,6 +233,17 @@ func (rt *Router) handleStartOneShotJob(w http.ResponseWriter, r *http.Request) 
 	if req.TimeoutSeconds > 0 {
 		timeout = req.TimeoutSeconds
 	}
+	timeout = rt.clampOneShotTimeout(r.Context(), timeout)
+	release, ok := rt.acquireOneShotSlot(w, r, req.App)
+	if !ok {
+		return
+	}
+	launched := false
+	defer func() {
+		if !launched {
+			release()
+		}
+	}()
 
 	jobID, err := randomOneShotID()
 	if err != nil {
@@ -250,6 +261,7 @@ func (rt *Router) handleStartOneShotJob(w http.ResponseWriter, r *http.Request) 
 		Name: oneShotTaskNamePrefix + jobID, Mode: store.ScheduledTaskModeFresh, TimeoutSeconds: timeout,
 		Source: store.ScheduledTaskSourceAPI, CreatedAt: now, UpdatedAt: now,
 	}
+	rt.applyOneShotResourceLimits(r.Context(), &task)
 	if err := rt.scheduledTasks.SaveScheduledTask(r.Context(), task); err != nil {
 		rt.internalError(w, "api: start one-shot job: save task failed", err, slog.String("app", req.App))
 		return
@@ -272,16 +284,29 @@ func (rt *Router) handleStartOneShotJob(w http.ResponseWriter, r *http.Request) 
 		rt.pruneOneShotJobs(bg, p)
 	}
 	oneShotRegistry.Add(entry)
-	go entry.Job.Run(context.WithoutCancel(r.Context()), spec, func(ctx context.Context, _, _ int) scheduledtask.AttemptOutcome {
-		out, err := attempter.RunAttempt(ctx, task)
-		if err != nil {
-			rt.logger.Error("api: one-shot attempt failed", slog.String("error", err.Error()), slog.String("job", jobID))
-			if out.Status == "" {
-				out.Status = store.ScheduledTaskStatusFailed
+	// Detached from the request so a poll-based client can disconnect; cancel goes through the cancel route.
+	runCtx, cancelCause := context.WithCancelCause(context.WithoutCancel(r.Context()))
+	cancel := func() { cancelCause(scheduledtask.ErrRunCancelled) }
+	oneShotRuns.track(jobID, cancel)
+	launched = true
+	go func() {
+		defer func() {
+			oneShotRuns.untrack(jobID)
+			cancel()
+			release()
+		}()
+		entry.Job.Run(runCtx, spec, func(ctx context.Context, _, _ int) scheduledtask.AttemptOutcome {
+			out, err := attempter.RunAttempt(ctx, task)
+			if err != nil {
+				rt.logger.Error("api: one-shot attempt failed", slog.String("error", err.Error()), slog.String("job", jobID))
+				if out.Status == "" {
+					out.Status = store.ScheduledTaskStatusFailed
+				}
 			}
-		}
-		return out
-	})
+			return out
+		})
+	}()
+	rt.auditOneShot(r, auditActionOneShotStart, req.App, jobID, req.Command, http.StatusAccepted)
 	writeJSON(w, http.StatusAccepted, toOneShotResponse(entry))
 }
 

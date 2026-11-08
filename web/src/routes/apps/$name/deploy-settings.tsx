@@ -1,4 +1,4 @@
-import { Suspense } from 'react'
+import { Suspense, lazy } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useApp } from '../../../queries/apps'
 import { PortEditor } from '../../../components/PortEditor'
@@ -35,6 +35,10 @@ import { canaryQueryOptions } from '../../../queries/canary'
 import { badgeQueryOptions } from '../../../queries/badge'
 import { buildHooksQueryOptions } from '../../../queries/buildHooks'
 import { CardSkeleton } from '@/components/ui/card-skeleton'
+
+const ImageRetentionCard = lazy(
+  () => import('../../../components/ImageRetentionCard'),
+)
 
 // The one home for deploy settings, grouped by when they act: Build,
 // Run, Safety, Automation. The deploys page only links here. Suspense cards
@@ -111,6 +115,9 @@ function DeploySettingsSection() {
         <CardHelp card="secretScan">
           <SecretScanSettingsCard appName={name} />
         </CardHelp>
+        <Suspense fallback={<CardSkeleton titleWidth="w-40" rows={2} />}>
+          <ImageRetentionCard appName={name} />
+        </Suspense>
       </SettingsGroup>
       <SettingsGroup id="automation">
         <CardHelp card="scheduled">
