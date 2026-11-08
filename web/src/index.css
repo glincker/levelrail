@@ -601,6 +601,19 @@ body {
   scroll-behavior: auto !important;
 }
 
+/* Sidebar row height scales with density; compact is the default. */
+:root {
+  --nav-row-h: 1.75rem;
+  --nav-header-h: 1.5rem;
+}
+[data-density='compact'] {
+  --nav-row-h: 1.625rem;
+}
+[data-density='comfortable'] {
+  --nav-row-h: 2rem;
+  --nav-header-h: 1.75rem;
+}
+
 /* Density: compact is the :root default in glinr-tokens.css; comfortable swaps in the paired tokens. */
 [data-density='comfortable'] {
   --glinr-hero-tile-size: var(--glinr-hero-tile-size-comfortable);

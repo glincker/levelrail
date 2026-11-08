@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 
 // One row system for every sidebar link: same height, icon column and states as group headers.
 export const NAV_ROW_CLASS =
-  'h-9 cursor-pointer gap-2.5 rounded-md px-2.5 text-sm text-sidebar-foreground/85 outline-hidden transition-colors duration-150 ease-out motion-reduce:transition-none hover:bg-state-accent/10 hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring active:bg-state-accent/15 data-active:bg-sidebar-active data-active:font-medium data-active:text-sidebar-active-foreground [&_svg]:text-sidebar-foreground/80 hover:[&_svg]:text-sidebar-foreground data-active:[&_svg]:text-state-accent'
+  'h-(--nav-row-h) cursor-pointer gap-2 rounded-md px-2 text-[13px] font-normal text-sidebar-foreground/85 outline-hidden transition-colors duration-150 ease-out motion-reduce:transition-none hover:bg-sidebar-accent/50 hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring data-active:bg-sidebar-accent data-active:font-medium data-active:text-sidebar-foreground [&_svg]:size-4 [&_svg]:opacity-60 [&_svg]:grayscale hover:[&_svg]:opacity-90 data-active:[&_svg]:opacity-100 data-active:[&_svg]:grayscale-0 data-active:[&_svg]:text-state-accent'
 
 export function NavChevron({
   open,
@@ -17,7 +17,7 @@ export function NavChevron({
     <ChevronRightGlassIcon
       aria-hidden="true"
       className={cn(
-        'size-4 transition-[transform,color] duration-150 ease-out motion-reduce:transition-none',
+        'size-3 transition-[transform,color] duration-150 ease-out motion-reduce:transition-none',
         open && 'rotate-90',
         className,
       )}
@@ -78,7 +78,7 @@ export function CollapsibleSection({
 }) {
   const panelId = `nav-panel-${id}`
   return (
-    <div className={className}>
+    <div className={cn('pt-4', className)}>
       <button
         type="button"
         aria-expanded={open}
@@ -86,11 +86,8 @@ export function CollapsibleSection({
         title={typeof header === 'string' ? header : undefined}
         data-contains-active={active && !open ? 'true' : undefined}
         onClick={() => onOpenChange(!open)}
-        className="group/header flex h-9 w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 text-sm font-medium text-sidebar-foreground/85 outline-hidden transition-colors duration-150 ease-out hover:bg-state-accent/10 hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring active:bg-state-accent/15 motion-reduce:transition-none data-[contains-active=true]:text-sidebar-active-foreground"
+        className="group/header flex h-(--nav-header-h) w-full cursor-pointer items-center gap-2 rounded-md px-2 text-xs font-medium text-sidebar-foreground/45 outline-hidden transition-colors duration-150 ease-out hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring motion-reduce:transition-none data-[contains-active=true]:text-sidebar-active-foreground"
       >
-        <span className="grid size-5 shrink-0 place-items-center">
-          <NavChevron open={open} className={chevronClassName} />
-        </span>
         <span className="min-w-0 flex-1 truncate text-left">{header}</span>
         {active && !open ? (
           <span
@@ -100,9 +97,12 @@ export function CollapsibleSection({
           />
         ) : null}
         {open ? null : hint}
+        <span className="grid size-3 shrink-0 place-items-center">
+          <NavChevron open={open} className={chevronClassName} />
+        </span>
       </button>
       <NavCollapsePanel id={panelId} open={open}>
-        {children}
+        <div className="pt-1">{children}</div>
       </NavCollapsePanel>
     </div>
   )

@@ -468,6 +468,13 @@ export function visibleGlobalGroups(
   })).filter((g) => g.items.length > 0)
 }
 
+// A group with one item renders as that item, so no header repeats its label.
+export function isSingleItemGroup(group: {
+  items: readonly unknown[]
+}): boolean {
+  return group.items.length === 1
+}
+
 export function visibleGlobalFooter(): GlobalNavItem[] {
   return GLOBAL_NAV_FOOTER
 }

@@ -89,16 +89,16 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" variant="floating">
-      <SidebarHeader>
+      <SidebarHeader className="gap-0.5 px-2 pb-1 pt-2">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
               size="lg"
               render={<Link to="/" />}
-              className="cursor-pointer gap-3 rounded-md transition-colors duration-150 ease-out motion-reduce:transition-none data-[slot=sidebar-menu-button]:!p-1.5 hover:bg-sidebar-accent/70 active:bg-sidebar-accent"
+              className="cursor-pointer gap-2 rounded-md transition-colors duration-150 ease-out motion-reduce:transition-none data-[slot=sidebar-menu-button]:!p-1 h-9 hover:bg-sidebar-accent/70 active:bg-sidebar-accent"
             >
-              <span className="relative flex size-8 shrink-0 items-center justify-center text-sm font-bold text-foreground">
-                <BrandMarkGlyph svgWrapperClassName="flex size-7 items-center justify-center [&_svg]:size-full" />
+              <span className="relative flex size-5 shrink-0 items-center justify-center text-sm font-bold text-foreground">
+                <BrandMarkGlyph svgWrapperClassName="flex size-5 items-center justify-center [&_svg]:size-full" />
               </span>
               <span className="truncate text-sm font-semibold">
                 {brand.ShortName || brand.Name}
@@ -141,7 +141,7 @@ export function AppSidebar() {
         )}
       </SidebarContent>
 
-      <SidebarFooter>
+      <SidebarFooter className="gap-0.5 px-2 pb-2 pt-0">
         <VersionFooter />
         <SidebarMenu>
           <SidebarMenuItem>

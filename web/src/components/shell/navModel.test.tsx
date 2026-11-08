@@ -10,6 +10,7 @@ import {
   defaultGroupOpen,
   isGlobalItemActive,
   isItemDisclosed,
+  isSingleItemGroup,
   itemBadgeCount,
   pinnedGlobalItems,
   resolveOpen,
@@ -155,6 +156,12 @@ describe('global nav model', () => {
       'Traffic',
       'Private network',
     ])
+  })
+
+  it('renders a single-item group as that item, not under a repeated header', () => {
+    const access = GLOBAL_NAV_GROUPS.find((g) => g.id === 'access')
+    expect(access && isSingleItemGroup(access)).toBe(true)
+    expect(isSingleItemGroup({ items: [1, 2] })).toBe(false)
   })
 
   it('keeps every group at five items or fewer', () => {

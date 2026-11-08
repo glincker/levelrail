@@ -123,7 +123,7 @@ export function AccountMenu() {
           <SidebarMenuButton
             size="lg"
             tooltip={name}
-            className="gap-2 !p-1.5"
+            className="h-9 gap-2 !p-1.5"
           />
         }
       >
