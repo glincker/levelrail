@@ -63,6 +63,7 @@ export const NAMESPACES = [
   'sleepHistory',
   'forms',
   'gitBuild',
+  'appServices',
   'appRun',
   'frameworks',
   'teams',

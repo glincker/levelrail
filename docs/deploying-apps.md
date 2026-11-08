@@ -617,6 +617,8 @@ levelrail-cli apps logs shop --service web --since 10m -n 100
 levelrail-cli apps run shop --service worker -- bin/migrate
 ```
 
+In the dashboard, the **Services** tab of a multi-service app has a replica stepper with Apply and a Restart button on each row. Apply sends the full service resource with the new replica count, so the server's own limits and errors show next to the control; Restart asks for confirmation first. Both need the deploy ability. A single-service app has no such column (use Scale on the Resources tab).
+
 `apps logs` follows live by default when stdout is a terminal and you gave no search flag; `--no-follow` prints stored entries instead. Piped output and `--json` never follow, so scripts keep the same stable output. The same actions are in the API (`PUT /api/v1/apps/{name}`, `POST /api/v1/apps/{name}/restart`, `GET /api/v1/apps/{name}/logs`, `POST /api/v1/jobs/runs`). See [Jobs](/jobs#run-a-command-with-apps-run) for `apps run`.
 
 ### Scheduled tasks

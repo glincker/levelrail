@@ -83,6 +83,7 @@ import type forms from '../locales/en/forms.json'
 import type splitTesting from '../locales/en/splitTesting.json'
 import type scheduledDeploy from '../locales/en/scheduledDeploy.json'
 import type gitBuild from '../locales/en/gitBuild.json'
+import type appServices from '../locales/en/appServices.json'
 import type appRun from '../locales/en/appRun.json'
 import type frameworks from '../locales/en/frameworks.json'
 import type teams from '../locales/en/teams.json'
@@ -224,6 +225,7 @@ declare module 'i18next' {
       splitTesting: typeof splitTesting
       scheduledDeploy: typeof scheduledDeploy
       gitBuild: typeof gitBuild
+      appServices: typeof appServices
       appRun: typeof appRun
       frameworks: typeof frameworks
       teams: typeof teams
