@@ -1,12 +1,16 @@
-import { Fragment, useEffect, useId, useState, type KeyboardEvent } from 'react'
-import { Link, useRouterState } from '@tanstack/react-router'
 import {
-  DatabaseGlassIcon,
-  LayersGlassIcon,
-  PinGlassIcon,
-} from '@thesvg/ui-react'
-import { applyNavPrefs, type RecentEntry } from '@/lib/navPrefs'
-import { useNavPrefs, useNavRecent } from './useNavPrefs'
+  Fragment,
+  lazy,
+  Suspense,
+  useEffect,
+  useId,
+  useState,
+  type KeyboardEvent,
+} from 'react'
+import { Link, useRouterState } from '@tanstack/react-router'
+import { PinGlassIcon } from '@thesvg/ui-react'
+import type * as NavPrefsModule from '@/lib/navPrefs'
+import { useNavPrefsRaw, useNavRecentRaw } from './useNavPrefs'
 import { useTranslation } from 'react-i18next'
 import {
   SidebarGroup,
@@ -53,6 +57,11 @@ import { GetStartedNavItem } from './GetStartedNavItem'
 import { useNavPins } from './useNavPins'
 
 const GLOBAL_NAV_STORAGE_KEY = 'shell.nav.global.open'
+
+type PrefsApi = typeof NavPrefsModule
+const NavRecentGroup = lazy(() =>
+  import('./NavRecentGroup').then((m) => ({ default: m.NavRecentGroup })),
+)
 
 interface PinControl {
   pinned: boolean
@@ -235,40 +244,6 @@ function NavLinkItem({
   )
 }
 
-function RecentItem({
-  entry,
-  active,
-}: {
-  entry: RecentEntry
-  active: boolean
-}) {
-  const { t } = useTranslation()
-  const isApp = entry.kind === 'app'
-  const Icon = isApp ? LayersGlassIcon : DatabaseGlassIcon
-  const link = isApp ? (
-    <Link to="/apps/$name" params={{ name: entry.name }} />
-  ) : (
-    <Link to="/databases/$name" params={{ name: entry.name }} />
-  )
-  return (
-    <SidebarMenuItem>
-      <SidebarMenuButton
-        render={link}
-        isActive={active}
-        className={NAV_ROW_CLASS}
-        title={entry.name}
-      >
-        <Icon
-          size="1.4em"
-          aria-label={t(isApp ? 'shell.recent.app' : 'shell.recent.database')}
-          role="img"
-        />
-        <span>{entry.name}</span>
-      </SidebarMenuButton>
-    </SidebarMenuItem>
-  )
-}
-
 function GroupAttention({
   group,
   counts,
@@ -298,13 +273,26 @@ export function GlobalNav() {
   const routeAvailable = useRouteAvailable()
   const baseGroups = visibleGlobalGroups(routeAvailable)
   const { pins, toggle, full, max } = useNavPins()
-  const { prefs } = useNavPrefs()
-  const { recent } = useNavRecent()
+  const prefsRaw = useNavPrefsRaw()
+  const recentRaw = useNavRecentRaw()
+  // The ordering code loads only for users who stored prefs or have recents.
+  const [prefsApi, setPrefsApi] = useState<PrefsApi | null>(null)
+  const needsApi = prefsRaw !== null
+  useEffect(() => {
+    if (needsApi && !prefsApi) void import('@/lib/navPrefs').then(setPrefsApi)
+  }, [needsApi, prefsApi])
   const activeId = activeGlobalItemId(pathname, [
     ...baseGroups.flatMap((gr) => gr.items),
     ...visibleGlobalFooter(),
   ])
-  const groups = applyNavPrefs(baseGroups, prefs, activeId)
+  const groups =
+    prefsApi && prefsRaw !== null
+      ? prefsApi.applyNavPrefs(
+          baseGroups,
+          prefsApi.parseNavPrefs(prefsRaw),
+          activeId,
+        )
+      : baseGroups
   const pinned = pinnedGlobalItems(groups, pins)
   const pinFor = (id: string): PinControl => ({
     pinned: pins.includes(id),
@@ -343,12 +331,13 @@ export function GlobalNav() {
         className="nav-scroll flex min-h-0 flex-col gap-0 overflow-x-hidden overflow-y-auto p-2 pt-0 group-data-[collapsible=icon]:items-center"
       >
         <GetStartedNavItem />
-        {!rail && pinned.length > 0 ? (
+        {pinned.length > 0 ? (
           <CollapsibleSection
             id="global-pinned"
-            open={resolveOpen(stored, 'pinned', true)}
+            open={rail || resolveOpen(stored, 'pinned', true)}
             onOpenChange={(open) => setOpen('pinned', open)}
             header={t('shell.pins.group')}
+            railFlat={rail}
           >
             <SidebarMenu>
               {pinned.map((item) => (
@@ -358,48 +347,21 @@ export function GlobalNav() {
                   active={item.id === activeId}
                   counts={counts}
                   experimental={experimental}
-                  pin={pinFor(item.id)}
+                  pin={rail ? undefined : pinFor(item.id)}
                 />
               ))}
             </SidebarMenu>
           </CollapsibleSection>
         ) : null}
-        {!rail && recent.length > 0 ? (
-          <CollapsibleSection
-            id="global-recent"
-            open={resolveOpen(stored, 'recent', false)}
-            onOpenChange={(open) => setOpen('recent', open)}
-            header={t('shell.recent.group')}
-          >
-            <SidebarMenu>
-              {recent.map((entry) => (
-                <RecentItem
-                  key={`${entry.kind}:${entry.name}`}
-                  entry={entry}
-                  active={pathname.startsWith(
-                    `/${entry.kind === 'app' ? 'apps' : 'databases'}/${encodeURIComponent(entry.name)}`,
-                  )}
-                />
-              ))}
-            </SidebarMenu>
-          </CollapsibleSection>
-        ) : null}
-        {rail && pinned.length > 0 ? (
-          <SidebarGroup className="p-0">
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {pinned.map((item) => (
-                  <NavLinkItem
-                    key={item.id}
-                    item={item}
-                    active={item.id === activeId}
-                    counts={counts}
-                    experimental={experimental}
-                  />
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+        {!rail && recentRaw !== null ? (
+          <Suspense fallback={null}>
+            <NavRecentGroup
+              raw={recentRaw}
+              pathname={pathname}
+              open={resolveOpen(stored, 'recent', false)}
+              onOpenChange={(open) => setOpen('recent', open)}
+            />
+          </Suspense>
         ) : null}
         {groups.map((group, index) => {
           const groupName = t(`shell.navGroup.${group.id}`, {

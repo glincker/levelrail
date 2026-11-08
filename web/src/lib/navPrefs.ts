@@ -1,7 +1,10 @@
-import { NAV_RECENT_MAX } from './navConfig'
+import {
+  NAV_PREFS_STORAGE_KEY,
+  NAV_RECENT_MAX,
+  NAV_RECENT_STORAGE_KEY,
+} from './navConfig'
 
-export const NAV_PREFS_STORAGE_KEY = 'shell.nav.global.prefs'
-export const NAV_RECENT_STORAGE_KEY = 'shell.nav.recent'
+export { NAV_PREFS_STORAGE_KEY, NAV_RECENT_STORAGE_KEY }
 
 export interface NavPrefs {
   hiddenItems: string[]
@@ -222,6 +225,17 @@ export function pushRecent(
     (e) => !(e.kind === entry.kind && e.name === entry.name),
   )
   return [entry, ...rest].slice(0, max)
+}
+
+// Returns the new stored value, or null when the visit changes nothing.
+export function recordRecent(
+  pathname: string,
+  raw: string | null,
+): string | null {
+  const entry = recentFromPath(pathname)
+  if (!entry) return null
+  const next = JSON.stringify(pushRecent(parseRecent(raw), entry))
+  return next === raw ? null : next
 }
 
 export function parseRecent(raw: string | null): RecentEntry[] {

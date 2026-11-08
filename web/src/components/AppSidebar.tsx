@@ -20,9 +20,12 @@ import { GlobalNav } from './shell/GlobalNav'
 import { sidebarArea } from './shell/sidebarArea'
 import { scheduleIdle } from '../i18n/prefetch'
 import { BrandMarkGlyph } from './BrandMarkGlyph'
-import { recentFromPath } from '../lib/navPrefs'
-import { useNavRecent } from './shell/useNavPrefs'
-import { SidebarCustomize } from './shell/SidebarCustomize'
+import { useRecordRecent } from './shell/useNavPrefs'
+const SidebarCustomize = lazy(() =>
+  import('./shell/SidebarCustomize').then((m) => ({
+    default: m.SidebarCustomize,
+  })),
+)
 import { VersionFooter } from './shell/VersionFooter'
 import {
   scheduleResetSidebarScroll,
@@ -91,11 +94,7 @@ export function AppSidebar() {
     return scheduleResetSidebarScroll()
   }, [isMobile, openMobile])
   useEffect(warmScopedSidebars, [])
-  const { record } = useNavRecent()
-  useEffect(() => {
-    const entry = recentFromPath(pathname)
-    if (entry) record(entry)
-  }, [pathname, record])
+  useRecordRecent(pathname)
 
   return (
     <Sidebar collapsible="icon" variant="floating">
@@ -157,7 +156,9 @@ export function AppSidebar() {
       <SidebarFooter className="gap-0.5 px-2 pb-2 pt-1 group-data-[collapsible=icon]:items-center">
         <VersionFooter />
         {scopedAppName || scopedDatabaseName || isSettingsScoped ? null : (
-          <SidebarCustomize />
+          <Suspense fallback={null}>
+            <SidebarCustomize />
+          </Suspense>
         )}
         <SidebarMenu>
           <SidebarMenuItem>

@@ -1,25 +1,12 @@
-import { useCallback, useSyncExternalStore } from 'react'
-import {
-  EMPTY_NAV_PREFS,
-  NAV_PREFS_STORAGE_KEY,
-  NAV_RECENT_STORAGE_KEY,
-  parseNavPrefs,
-  parseRecent,
-  pushRecent,
-  type NavPrefs,
-  type RecentEntry,
-} from '@/lib/navPrefs'
+import { useEffect, useSyncExternalStore } from 'react'
+import { NAV_PREFS_STORAGE_KEY, NAV_RECENT_STORAGE_KEY } from '@/lib/navConfig'
 
-// Account preference sync only accepts appearance keys, so sidebar layout
-// stays in this browser's localStorage.
+// Eager and tiny: it only moves raw strings. Parsing and ordering live in
+// lib/navPrefs, which loads on demand. Account sync accepts only appearance
+// keys, so sidebar layout stays in this browser's localStorage.
 const listeners = new Set<() => void>()
-const NO_RECENT: RecentEntry[] = []
-let prefsRaw: string | null | undefined
-let prefsCache: NavPrefs = EMPTY_NAV_PREFS
-let recentRaw: string | null | undefined
-let recentCache: RecentEntry[] = NO_RECENT
 
-function readRaw(key: string): string | null {
+export function readNavRaw(key: string): string | null {
   try {
     return window.localStorage.getItem(key)
   } catch {
@@ -27,16 +14,13 @@ function readRaw(key: string): string | null {
   }
 }
 
-function writeRaw(key: string, value: string | null) {
+export function writeNavRaw(key: string, value: string | null) {
   try {
     if (value === null) window.localStorage.removeItem(key)
     else window.localStorage.setItem(key, value)
   } catch {
     // Storage unavailable: the change lasts for this session only.
   }
-}
-
-function emit() {
   listeners.forEach((l) => l())
 }
 
@@ -52,51 +36,24 @@ function subscribe(cb: () => void) {
   }
 }
 
-function getPrefs(): NavPrefs {
-  const raw = readRaw(NAV_PREFS_STORAGE_KEY)
-  if (raw !== prefsRaw) {
-    prefsRaw = raw
-    prefsCache = parseNavPrefs(raw)
-  }
-  return prefsCache
+const prefsRaw = () => readNavRaw(NAV_PREFS_STORAGE_KEY)
+const recentRaw = () => readNavRaw(NAV_RECENT_STORAGE_KEY)
+
+export function useNavPrefsRaw() {
+  return useSyncExternalStore(subscribe, prefsRaw, prefsRaw)
 }
 
-function getRecent(): RecentEntry[] {
-  const raw = readRaw(NAV_RECENT_STORAGE_KEY)
-  if (raw !== recentRaw) {
-    recentRaw = raw
-    recentCache = parseRecent(raw)
-  }
-  return recentCache
+export function useNavRecentRaw() {
+  return useSyncExternalStore(subscribe, recentRaw, recentRaw)
 }
 
-export function useNavPrefs() {
-  const prefs = useSyncExternalStore(subscribe, getPrefs, getPrefs)
-  const setPrefs = useCallback((next: NavPrefs) => {
-    writeRaw(NAV_PREFS_STORAGE_KEY, JSON.stringify(next))
-    emit()
-  }, [])
-  const update = useCallback(
-    (fn: (p: NavPrefs) => NavPrefs) => setPrefs(fn(getPrefs())),
-    [setPrefs],
-  )
-  return { prefs, update }
-}
-
-export function useNavRecent() {
-  const recent = useSyncExternalStore(subscribe, getRecent, getRecent)
-  const record = useCallback((entry: RecentEntry) => {
-    const next = pushRecent(getRecent(), entry)
-    if (JSON.stringify(next) === JSON.stringify(getRecent())) return
-    writeRaw(NAV_RECENT_STORAGE_KEY, JSON.stringify(next))
-    emit()
-  }, [])
-  return { recent, record }
-}
-
-// Pins are unpinned from their own control, so Reset leaves them alone.
-export function resetNavPersonalization() {
-  writeRaw(NAV_PREFS_STORAGE_KEY, null)
-  writeRaw(NAV_RECENT_STORAGE_KEY, null)
-  emit()
+// Records an app or database detail visit; the matching code loads only then.
+export function useRecordRecent(pathname: string) {
+  useEffect(() => {
+    if (!/^\/(apps|databases)\/[^/]/.test(pathname)) return
+    void import('@/lib/navPrefs').then((m) => {
+      const next = m.recordRecent(pathname, recentRaw())
+      if (next !== null) writeNavRaw(NAV_RECENT_STORAGE_KEY, next)
+    })
+  }, [pathname])
 }

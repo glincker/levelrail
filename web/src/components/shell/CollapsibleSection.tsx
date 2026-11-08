@@ -62,7 +62,10 @@ export function CollapsibleSection({
   className,
   active = false,
   chevronClassName,
+  railFlat = false,
 }: {
+  // Collapsed rail: show the items bare, without header or collapse panel.
+  railFlat?: boolean
   id: string
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -77,6 +80,7 @@ export function CollapsibleSection({
   chevronClassName?: string
 }) {
   const panelId = `nav-panel-${id}`
+  if (railFlat) return <div className={className}>{children}</div>
   return (
     <div className={cn('pt-2', className)}>
       <button

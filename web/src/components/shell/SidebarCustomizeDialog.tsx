@@ -36,7 +36,7 @@ import {
   visibleGlobalFooter,
   visibleGlobalGroups,
 } from './navModel'
-import { resetNavPersonalization, useNavPrefs } from './useNavPrefs'
+import { resetNavPersonalization, useNavPrefs } from './useNavPrefsParsed'
 
 const ICON_BTN =
   'inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground outline-hidden hover:bg-state-accent/10 hover:text-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring disabled:cursor-not-allowed disabled:opacity-40 pointer-coarse:size-10 [&_svg]:size-4'
@@ -71,7 +71,7 @@ function ReorderRow({
   setDragId: (id: string | null) => void
   indent?: boolean
 }) {
-  const { t } = useTranslation()
+  const { t } = useTranslation('sidebarCustomize')
   const reasonId = `customize-reason-${row.id}`
   return (
     <li
@@ -119,7 +119,7 @@ function ReorderRow({
         type="button"
         className={ICON_BTN}
         disabled={index === 0}
-        aria-label={t('shell.customize.moveUp', { label: row.label })}
+        aria-label={t('moveUp', { label: row.label })}
         onClick={() => onMove(row.id, -1)}
       >
         <ArrowUpGlassIcon aria-hidden="true" />
@@ -128,7 +128,7 @@ function ReorderRow({
         type="button"
         className={ICON_BTN}
         disabled={index === total - 1}
-        aria-label={t('shell.customize.moveDown', { label: row.label })}
+        aria-label={t('moveDown', { label: row.label })}
         onClick={() => onMove(row.id, 1)}
       >
         <ArrowDownGlassIcon aria-hidden="true" />
@@ -137,7 +137,7 @@ function ReorderRow({
         size="sm"
         checked={!row.hidden}
         disabled={!row.canHide && !row.hidden}
-        aria-label={t('shell.customize.show', { label: row.label })}
+        aria-label={t('show', { label: row.label })}
         aria-describedby={!row.canHide ? reasonId : undefined}
         onCheckedChange={(checked) => onHidden(row.id, !checked)}
       />
@@ -152,7 +152,8 @@ export function SidebarCustomizeDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
-  const { t } = useTranslation()
+  const { t } = useTranslation('sidebarCustomize')
+  const { t: tc } = useTranslation()
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const routeAvailable = useRouteAvailable()
   const { prefs, update } = useNavPrefs()
@@ -175,9 +176,9 @@ export function SidebarCustomizeDialog({
   )
   const groups = ordered
   const groupLabel = (id: string, fallback: string) =>
-    t(`shell.navGroup.${id}`, { defaultValue: fallback })
+    tc(`shell.navGroup.${id}`, { defaultValue: fallback })
   const itemLabel = (id: string, fallback: string) =>
-    t(`shell.nav.${id}`, { defaultValue: fallback })
+    tc(`shell.nav.${id}`, { defaultValue: fallback })
   const groupIds = orderIds(
     groups.filter((g) => !g.ungrouped).map((g) => g.id),
     prefs.groupOrder,
@@ -189,7 +190,7 @@ export function SidebarCustomizeDialog({
 
   const say = (label: string, ids: string[], id: string) =>
     setAnnounce(
-      t('shell.customize.moved', {
+      t('moved', {
         label,
         position: ids.indexOf(id) + 1,
         total: ids.length,
@@ -229,13 +230,11 @@ export function SidebarCustomizeDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>{t('shell.customize.title')}</DialogTitle>
-          <DialogDescription>
-            {t('shell.customize.description')}
-          </DialogDescription>
+          <DialogTitle>{t('title')}</DialogTitle>
+          <DialogDescription>{t('description')}</DialogDescription>
         </DialogHeader>
         <div className="max-h-[60vh] overflow-y-auto pr-1">
-          <ul aria-label={t('shell.customize.groups')} className="space-y-3">
+          <ul aria-label={t('groups')} className="space-y-3">
             {listIds.map((gid) => {
               const g = groups.find((x) => x.id === gid)
               if (!g) return null
@@ -248,7 +247,7 @@ export function SidebarCustomizeDialog({
               }
               const gi = groupIds.indexOf(g.id)
               const hideReason = groupHasItem(g, activeId)
-                ? t('shell.customize.currentGroup')
+                ? t('currentGroup')
                 : ''
               return (
                 <li key={g.id}>
@@ -270,7 +269,7 @@ export function SidebarCustomizeDialog({
                     )}
                     <li>
                       <ul
-                        aria-label={t('shell.customize.itemsIn', { label })}
+                        aria-label={t('itemsIn', { label })}
                         className="space-y-0.5"
                       >
                         {g.items.map((item, ii) => {
@@ -286,7 +285,7 @@ export function SidebarCustomizeDialog({
                               row={row}
                               index={ii}
                               total={g.items.length}
-                              hideReason={t('shell.customize.currentPage')}
+                              hideReason={t('currentPage')}
                               onMove={(id, d) => moveItem(g.id, id, d)}
                               onHidden={(id, hidden) =>
                                 update((p) =>
@@ -317,13 +316,13 @@ export function SidebarCustomizeDialog({
             variant="outline"
             onClick={() => {
               resetNavPersonalization()
-              setAnnounce(t('shell.customize.resetDone'))
+              setAnnounce(t('resetDone'))
             }}
           >
-            {t('shell.customize.reset')}
+            {t('reset')}
           </Button>
           <Button type="button" onClick={() => onOpenChange(false)}>
-            {t('shell.customize.done')}
+            {t('done')}
           </Button>
         </DialogFooter>
       </DialogContent>

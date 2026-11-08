@@ -2,7 +2,11 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { SidebarCustomizeDialog } from './SidebarCustomizeDialog'
-import { CommonI18n } from '@/test/commonI18n'
+import type { ReactNode } from 'react'
+import i18next from 'i18next'
+import { I18nextProvider, initReactI18next } from 'react-i18next'
+import commonEn from '@/locales/en/common.json'
+import customizeEn from '@/locales/en/sidebarCustomize.json'
 import { NAV_PREFS_STORAGE_KEY, parseNavPrefs } from '@/lib/navPrefs'
 
 vi.mock('@tanstack/react-router', async (importOriginal) => {
@@ -23,9 +27,9 @@ describe('SidebarCustomizeDialog', () => {
   it('hides a page, blocks the current one and resets', async () => {
     const user = userEvent.setup()
     render(
-      <CommonI18n>
+      <Wrap>
         <SidebarCustomizeDialog open onOpenChange={() => undefined} />
-      </CommonI18n>,
+      </Wrap>,
     )
     expect(
       screen.getByRole('dialog', { name: 'Customize sidebar' }),
@@ -46,12 +50,25 @@ describe('SidebarCustomizeDialog', () => {
   it('moves a page with the keyboard buttons and announces it', async () => {
     const user = userEvent.setup()
     render(
-      <CommonI18n>
+      <Wrap>
         <SidebarCustomizeDialog open onOpenChange={() => undefined} />
-      </CommonI18n>,
+      </Wrap>,
     )
     await user.click(screen.getByRole('button', { name: 'Move Alerts up' }))
     expect(screen.getByRole('status')).toHaveTextContent(/moved to position/)
     expect(Object.keys(stored().itemOrder).length).toBe(1)
   })
 })
+
+const testI18n = i18next.createInstance()
+void testI18n.use(initReactI18next).init({
+  lng: 'en',
+  ns: ['common', 'sidebarCustomize'],
+  defaultNS: 'common',
+  resources: { en: { common: commonEn, sidebarCustomize: customizeEn } },
+  interpolation: { escapeValue: false },
+})
+
+function Wrap({ children }: { children: ReactNode }) {
+  return <I18nextProvider i18n={testI18n}>{children}</I18nextProvider>
+}

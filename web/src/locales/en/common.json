@@ -419,26 +419,8 @@
       "pin": "Pin {{label}}",
       "limit": "Pin limit reached ({{max}}). Unpin one first."
     },
-    "recent": {
-      "group": "Recent",
-      "app": "App",
-      "database": "Database"
-    },
     "customize": {
-      "open": "Customize sidebar",
-      "title": "Customize sidebar",
-      "description": "Reorder, show or hide groups and pages. Hidden pages stay reachable from search.",
-      "groups": "Sidebar groups",
-      "itemsIn": "Pages in {{label}}",
-      "moveUp": "Move {{label}} up",
-      "moveDown": "Move {{label}} down",
-      "show": "Show {{label}}",
-      "moved": "{{label}} moved to position {{position}} of {{total}}",
-      "currentPage": "Current page",
-      "currentGroup": "Has current page",
-      "reset": "Reset to default",
-      "resetDone": "Sidebar reset to default",
-      "done": "Done"
+      "open": "Customize sidebar"
     },
     "locked": {
       "badge": "Beta",

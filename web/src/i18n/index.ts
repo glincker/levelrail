@@ -130,6 +130,7 @@ export const NAMESPACES = [
   'staticRoutes',
   'pipelines',
   'budget',
+  'sidebarCustomize',
   'inbox',
   'controlPlaneReplica',
   'autoscale',
