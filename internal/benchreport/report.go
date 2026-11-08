@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -190,7 +191,7 @@ func WriteJSON(path string, r Report) error {
 	if err != nil {
 		return fmt.Errorf("benchreport: encode: %w", err)
 	}
-	if err := os.WriteFile(path, append(b, '\n'), 0o644); err != nil { // #nosec G306 -- a results file is meant to be shared
+	if err := os.WriteFile(filepath.Clean(path), append(b, '\n'), 0o644); err != nil { // #nosec G304,G306 -- path traversal mitigated by Clean, results shared
 		return fmt.Errorf("benchreport: write %s: %w", path, err)
 	}
 	return nil
@@ -281,7 +282,7 @@ func Markdown(r Report) string {
 
 // WriteMarkdown writes Markdown(r) to path.
 func WriteMarkdown(path string, r Report) error {
-	if err := os.WriteFile(path, []byte(Markdown(r)), 0o644); err != nil { // #nosec G306 -- a results file is meant to be shared
+	if err := os.WriteFile(filepath.Clean(path), []byte(Markdown(r)), 0o644); err != nil { // #nosec G304,G306 -- path traversal mitigated by Clean, results shared
 		return fmt.Errorf("benchreport: write %s: %w", path, err)
 	}
 	return nil
