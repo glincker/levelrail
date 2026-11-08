@@ -79,43 +79,48 @@ export function PropagationChecker({
               </span>
             ) : null}
           </div>
-          <table className="w-full text-sm">
-            <thead className="text-left text-xs text-muted-foreground uppercase">
-              <tr>
-                <th className="py-1 font-medium">{t('check.col.server')}</th>
-                <th className="py-1 font-medium">{t('check.col.ttl')}</th>
-                <th className="py-1 font-medium">{t('check.col.answer')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {check.data.answers.map((a) => (
-                <tr
-                  key={`${a.source}-${a.server}`}
-                  className="border-t border-border"
-                >
-                  <td className="py-1.5 font-mono">
-                    {a.server === 'system' ? t('delegation.system') : a.server}
-                    {a.source === 'authoritative' ? (
-                      <Badge variant="outline" className="ml-1">
-                        {t('check.authoritative')}
-                      </Badge>
-                    ) : null}
-                  </td>
-                  <td className="py-1.5">
-                    {a.error ? '-' : t('check.ttlLeft', { ttl: a.ttl })}
-                  </td>
-                  <td className="py-1.5 font-mono text-xs break-all">
-                    {a.error ?? (a.values?.join(' | ') || t('check.noRecords'))}
-                    {a.matches === false ? (
-                      <Badge variant="warning" className="ml-1">
-                        {t('check.mismatch')}
-                      </Badge>
-                    ) : null}
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-left text-xs text-muted-foreground">
+                <tr>
+                  <th className="py-1 font-medium">{t('check.col.server')}</th>
+                  <th className="py-1 font-medium">{t('check.col.ttl')}</th>
+                  <th className="py-1 font-medium">{t('check.col.answer')}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {check.data.answers.map((a) => (
+                  <tr
+                    key={`${a.source}-${a.server}`}
+                    className="border-t border-border"
+                  >
+                    <td className="py-1.5 font-mono">
+                      {a.server === 'system'
+                        ? t('delegation.system')
+                        : a.server}
+                      {a.source === 'authoritative' ? (
+                        <Badge variant="outline" className="ml-1">
+                          {t('check.authoritative')}
+                        </Badge>
+                      ) : null}
+                    </td>
+                    <td className="py-1.5">
+                      {a.error ? '-' : t('check.ttlLeft', { ttl: a.ttl })}
+                    </td>
+                    <td className="py-1.5 font-mono text-xs break-all">
+                      {a.error ??
+                        (a.values?.join(' | ') || t('check.noRecords'))}
+                      {a.matches === false ? (
+                        <Badge variant="warning" className="ml-1">
+                          {t('check.mismatch')}
+                        </Badge>
+                      ) : null}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : null}
     </div>

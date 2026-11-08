@@ -3,6 +3,14 @@ import { useTranslation } from 'react-i18next'
 import { ChartLineGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { usePipelineInsights } from '../queries/pipelineUx'
 import type { Pipeline } from '../types/pipelines'
 
@@ -61,86 +69,74 @@ export function PipelineInsightsCard({
           <p className="text-sm text-muted-foreground">{t('insights.empty')}</p>
         ) : (
           <>
-            <table className="w-full text-sm">
-              <thead className="text-left text-xs text-muted-foreground">
-                <tr>
-                  <th className="py-1 font-medium">{t('insights.job')}</th>
-                  <th className="py-1 font-medium">{t('insights.runs')}</th>
-                  <th className="py-1 font-medium">{t('insights.failRate')}</th>
-                  <th className="py-1 font-medium">{t('insights.p50')}</th>
-                  <th className="py-1 font-medium">{t('insights.last')}</th>
-                  <th className="py-1" />
-                </tr>
-              </thead>
-              <tbody>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t('insights.job')}</TableHead>
+                  <TableHead>{t('insights.runs')}</TableHead>
+                  <TableHead>{t('insights.failRate')}</TableHead>
+                  <TableHead>{t('insights.p50')}</TableHead>
+                  <TableHead>{t('insights.last')}</TableHead>
+                  <TableHead />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {data.jobs.map((j) => (
-                  <tr
-                    key={j.job}
-                    className="border-t border-border tabular-nums"
-                  >
-                    <td className="py-1.5 font-medium text-foreground">
+                  <TableRow key={j.job} className="tabular-nums">
+                    <TableCell className="font-medium text-foreground">
                       {j.job}
-                    </td>
-                    <td className="py-1.5">{j.runs}</td>
-                    <td className="py-1.5">
-                      {Math.round(j.failure_rate * 100)}%
-                    </td>
-                    <td className="py-1.5">{secs(j.p50_seconds)}</td>
-                    <td className="py-1.5">{secs(j.last_seconds)}</td>
-                    <td className="py-1.5">
+                    </TableCell>
+                    <TableCell>{j.runs}</TableCell>
+                    <TableCell>{Math.round(j.failure_rate * 100)}%</TableCell>
+                    <TableCell>{secs(j.p50_seconds)}</TableCell>
+                    <TableCell>{secs(j.last_seconds)}</TableCell>
+                    <TableCell>
                       {j.flaky ? (
                         <Badge variant="warning" title={j.flaky_reason}>
                           {t('insights.flaky')}
                         </Badge>
                       ) : null}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
             {data.diff.length > 0 ? (
               <div>
                 <p className="mb-1 text-xs font-medium text-muted-foreground">
                   {t('insights.diffTitle')}
                 </p>
-                <table className="w-full text-sm">
-                  <thead className="text-left text-xs text-muted-foreground">
-                    <tr>
-                      <th className="py-1 font-medium">{t('insights.job')}</th>
-                      <th className="py-1 font-medium">
-                        {t('insights.before')}
-                      </th>
-                      <th className="py-1 font-medium">{t('insights.now')}</th>
-                      <th className="py-1 font-medium">
-                        {t('insights.change')}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('insights.job')}</TableHead>
+                      <TableHead>{t('insights.before')}</TableHead>
+                      <TableHead>{t('insights.now')}</TableHead>
+                      <TableHead>{t('insights.change')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {data.diff.map((d) => (
-                      <tr
-                        key={d.job}
-                        className="border-t border-border tabular-nums"
-                      >
-                        <td className="py-1.5 font-medium text-foreground">
+                      <TableRow key={d.job} className="tabular-nums">
+                        <TableCell className="font-medium text-foreground">
                           {d.job}
-                        </td>
-                        <td className="py-1.5">{secs(d.baseline_seconds)}</td>
-                        <td className="py-1.5">{secs(d.current_seconds)}</td>
-                        <td
+                        </TableCell>
+                        <TableCell>{secs(d.baseline_seconds)}</TableCell>
+                        <TableCell>{secs(d.current_seconds)}</TableCell>
+                        <TableCell
                           className={
                             d.delta_percent > 20
-                              ? 'py-1.5 text-destructive'
-                              : 'py-1.5 text-muted-foreground'
+                              ? 'text-destructive'
+                              : 'text-muted-foreground'
                           }
                         >
                           {d.delta_seconds > 0 ? '+' : ''}
                           {d.delta_seconds}s ({Math.round(d.delta_percent)}%)
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
             ) : null}
           </>

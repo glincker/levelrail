@@ -163,7 +163,7 @@ function HelpLayout() {
                 setShowTroubleshootingOnly(!showTroubleshootingOnly)
               }
               className={cn(
-                'rounded-md px-2 py-1 text-xs font-medium transition-colors',
+                'rounded-md px-2 py-1 text-xs font-medium transition-colors max-sm:min-h-10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
                 showTroubleshootingOnly
                   ? 'bg-primary text-primary-foreground'
                   : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground',
