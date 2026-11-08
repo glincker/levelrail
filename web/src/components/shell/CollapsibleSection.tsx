@@ -78,7 +78,7 @@ export function CollapsibleSection({
 }) {
   const panelId = `nav-panel-${id}`
   return (
-    <div className={cn('pt-3', className)}>
+    <div className={cn('pt-2', className)}>
       <button
         type="button"
         aria-expanded={open}

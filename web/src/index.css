@@ -481,8 +481,8 @@ body {
 
 /* Sidebar metrics scale with density; compact is the stored default and carries the hybrid size. */
 :root {
-  --nav-row-h: 2.25rem;
-  --nav-header-h: 1.75rem;
+  --nav-row-h: 2rem;
+  --nav-header-h: 1.5rem;
   --nav-font: 13.5px;
   --nav-width: 14.5rem;
   --nav-rail-w: 3.25rem;
