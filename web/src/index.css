@@ -915,6 +915,29 @@ body {
   --sidebar-border: oklch(0.3 0.03 265);
 }
 
+/* OLED theme: true black base from the OLED tokens, wins over any dark base. */
+:root.dark.oled {
+  --background: var(--glinr-surface-bg);
+  --foreground: var(--glinr-color-fg);
+  --card: var(--glinr-surface-raised);
+  --card-foreground: var(--glinr-color-fg);
+  --popover: var(--glinr-surface-overlay);
+  --popover-foreground: var(--glinr-color-fg);
+  --muted: var(--glinr-surface-raised);
+  --secondary: var(--glinr-surface-raised);
+  --accent: var(--glinr-surface-overlay);
+  --secondary-foreground: var(--glinr-color-fg);
+  --accent-foreground: var(--glinr-color-fg);
+  --muted-foreground: var(--glinr-color-fg-muted);
+  --sidebar: var(--glinr-surface-bg);
+  --sidebar-foreground: var(--glinr-color-fg);
+  --sidebar-accent: var(--glinr-surface-overlay);
+  --sidebar-accent-foreground: var(--glinr-color-fg);
+  --border: var(--glinr-border);
+  --input: var(--glinr-border-control);
+  --sidebar-border: var(--glinr-border);
+}
+
 /* Light bases (white is the stock theme above). */
 :root:not(.dark)[data-light-base='grey'] {
   --background: oklch(0.965 0.003 250);

@@ -457,6 +457,7 @@
       "menu": "Choose theme",
       "light": "Light",
       "dark": "Dark",
+      "oled": "OLED black",
       "system": "System"
     },
     "help": {

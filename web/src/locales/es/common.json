@@ -322,6 +322,7 @@
       "menu": "Elegir tema",
       "light": "Claro",
       "dark": "Oscuro",
+      "oled": "Negro OLED",
       "system": "Sistema"
     },
     "help": {

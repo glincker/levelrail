@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 
-export type Theme = 'light' | 'dark' | 'system'
+export type Theme = 'light' | 'dark' | 'oled' | 'system'
 
 // Same key the inline script in index.html reads synchronously before
 // React mounts, see that file's head script for why this needs to exist
@@ -26,7 +26,10 @@ const ThemeContext = createContext<ThemeContextValue | null>(null)
 function getStoredTheme(): Theme {
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY)
-    return stored === 'light' || stored === 'dark' || stored === 'system'
+    return stored === 'light' ||
+      stored === 'dark' ||
+      stored === 'oled' ||
+      stored === 'system'
       ? stored
       : 'dark'
   } catch {
@@ -41,11 +44,18 @@ function systemPrefersDark(): boolean {
 }
 
 function resolveIsDark(theme: Theme): boolean {
-  return theme === 'dark' || (theme === 'system' && systemPrefersDark())
+  return (
+    theme === 'dark' ||
+    theme === 'oled' ||
+    (theme === 'system' && systemPrefersDark())
+  )
 }
 
 function applyThemeClass(theme: Theme): void {
-  document.documentElement.classList.toggle('dark', resolveIsDark(theme))
+  const root = document.documentElement.classList
+  root.toggle('dark', resolveIsDark(theme))
+  // OLED rides on .dark so every dark rule still applies.
+  root.toggle('oled', theme === 'oled')
 }
 
 // Context provider for the app-wide light/dark/system theme. The

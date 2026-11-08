@@ -683,6 +683,7 @@ export function AppearanceSettings() {
             <ThemeChoice
               value={theme}
               onChange={setTheme}
+              includeOled
               labelledBy={themeLabelId}
             />
           </SettingRow>

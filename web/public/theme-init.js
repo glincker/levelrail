@@ -6,7 +6,11 @@
       stored === 'system'
         ? window.matchMedia('(prefers-color-scheme: dark)').matches
         : stored !== 'light'
-    document.documentElement.classList.toggle('dark', isDark)
+    document.documentElement.classList.toggle(
+      'dark',
+      isDark || stored === 'oled',
+    )
+    document.documentElement.classList.toggle('oled', stored === 'oled')
   } catch (e) {
     document.documentElement.classList.add('dark')
   }

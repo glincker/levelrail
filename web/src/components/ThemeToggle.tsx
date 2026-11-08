@@ -20,6 +20,7 @@ import { PAGE_WIDTHS, setPageWidth, usePageWidth } from '@/lib/pageWidth'
 const THEMES: { value: Theme; icon: UiIcon }[] = [
   { value: 'light', icon: SunGlassIcon },
   { value: 'dark', icon: MoonGlassIcon },
+  { value: 'oled', icon: MoonGlassIcon },
   { value: 'system', icon: MonitorGlassIcon },
 ]
 
