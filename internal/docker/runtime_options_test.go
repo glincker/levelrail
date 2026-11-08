@@ -34,7 +34,7 @@ func TestPickStopTimeout(t *testing.T) {
 		cfg   *int
 		want  time.Duration
 	}{
-		{0, &n, 0}, {-time.Second, &n, -time.Second}, {10 * time.Second, nil, 10 * time.Second}, {10 * time.Second, &n, 10 * time.Second}, {60 * time.Second, &n, 45 * time.Second},
+		{0, &n, 0}, {-time.Second, &n, -time.Second}, {10 * time.Second, nil, 10 * time.Second}, {10 * time.Second, &n, 45 * time.Second}, {60 * time.Second, &n, 60 * time.Second},
 	} {
 		if got := pickStopTimeout(tc.grace, tc.cfg); got != tc.want {
 			t.Errorf("pickStopTimeout(%v) = %v, want %v", tc.grace, got, tc.want)

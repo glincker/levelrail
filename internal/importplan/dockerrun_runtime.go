@@ -57,7 +57,7 @@ func (dr *dockerRun) applyRuntimeFlag(flag, val string) bool {
 		}
 		r.Sysctls[k] = v
 	case "--cap-drop":
-		r.CapDrop = append(r.CapDrop, strings.TrimPrefix(strings.ToUpper(val), "CAP_"))
+		r.CapDrop = append(r.CapDrop, spec.NormalizeCap(val))
 	case "--pids-limit":
 		n, err := strconv.Atoi(val)
 		if err != nil || n < 1 {

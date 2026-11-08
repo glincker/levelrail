@@ -1427,6 +1427,7 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 		spec.DNS = append([]string{c.meshDNSAddr}, spec.DNS...)
 		// The mesh resolver counts against the resolver limit; user entries beyond it are dropped.
 		if limit := appspec.RuntimeDNSMax(); len(spec.DNS) > limit {
+			slog.Warn("application: resolver limit reached, dropping user resolvers", slog.String("service", desired.Name), slog.Any("dropped", spec.DNS[limit:]))
 			spec.DNS = spec.DNS[:limit]
 		}
 	}

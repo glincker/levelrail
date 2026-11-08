@@ -9,7 +9,7 @@
 | `tmpfs` | `/path:size=64m[,mode=1777,uid=,gid=,exec,noexec,nosuid,nodev]`; size is required |
 | `ulimits` | `nofile`, `nproc`, `cpu`, `core`, `stack`, `memlock`, `fsize`; an integer or `{soft, hard}` |
 | `init` | Run a minimal init as PID 1 |
-| `stop_timeout` | Seconds between SIGTERM and SIGKILL |
+| `stop_timeout` | Seconds between SIGTERM and SIGKILL; the app may hold a stop (and so a redeploy) this long, up to the operator ceiling |
 | `extra_hosts` | `hostname:ip` entries; `host-gateway` is refused |
 | `dns` | Up to 3 resolver IPs, used after the mesh resolver |
 | `sysctls` | `net.core.somaxconn`, `net.ipv4.ip_local_port_range`, `net.ipv4.ip_unprivileged_port_start`, `net.ipv4.ping_group_range`, `net.ipv4.tcp_fin_timeout`, `net.ipv4.tcp_keepalive_{time,intvl,probes}`, `net.ipv4.tcp_max_syn_backlog`, `net.ipv4.tcp_syncookies`, `net.ipv4.tcp_tw_reuse`; not with `egress` |

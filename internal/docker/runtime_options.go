@@ -50,7 +50,7 @@ func mergeCapDrop(have, extra []string) []string {
 	return out
 }
 
-// configuredStopTimeout prefers a stop_timeout set at create over the caller's
+// configuredStopTimeout lets a stop_timeout set at create extend the caller's
 // grace, but never when the caller asked for an immediate kill or no timeout.
 func (c *Client) configuredStopTimeout(ctx context.Context, id string, grace time.Duration) time.Duration {
 	if grace <= 0 {
@@ -67,20 +67,21 @@ func pickStopTimeout(grace time.Duration, configured *int) time.Duration {
 	if grace <= 0 || configured == nil || *configured < 0 {
 		return grace
 	}
-	return min(grace, time.Duration(*configured)*time.Second)
+	return max(grace, time.Duration(*configured)*time.Second)
 }
 
 // clampTenantPids keeps an app's pids_limit within the operator's hardening
 // cap; with the cap off (rootless) a tenant value is not applied at all.
 func (h HardeningConfig) clampTenantPids(hc *container.HostConfig, spec ContainerSpec) {
-	if spec.PidsLimit <= 0 || spec.Hardened || !h.enforced() || hc.PidsLimit == nil {
+	if spec.PidsLimit <= 0 || spec.Hardened || hc.PidsLimit == nil {
 		return
 	}
+	// An operator limit of 0 means the host cannot apply one (rootless), in any mode.
 	if h.PidsLimit <= 0 {
 		hc.PidsLimit = nil
 		return
 	}
-	if *hc.PidsLimit > h.PidsLimit {
+	if h.enforced() && *hc.PidsLimit > h.PidsLimit {
 		limit := h.PidsLimit
 		hc.PidsLimit = &limit
 	}
