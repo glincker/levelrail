@@ -996,6 +996,9 @@
       "observe": "Observar",
       "traffic": "Tráfico"
     },
+    "items": {
+      "containers": "Contenedores"
+    },
     "more": "Más",
     "overview": "Resumen",
     "pages": "Páginas de {{section}}",

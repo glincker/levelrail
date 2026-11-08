@@ -8,6 +8,7 @@ import {
   BotGlassIcon,
   BracesGlassIcon,
   BugGlassIcon,
+  ContainerGlassIcon,
   ChartLineGlassIcon,
   ClipboardListGlassIcon,
   CloudGlassIcon,
@@ -624,6 +625,7 @@ export type AppTo =
   | '/apps/$name/resources'
   | '/apps/$name/volumes'
   | '/apps/$name/health'
+  | '/apps/$name/containers'
   | '/apps/$name/scheduled-tasks'
   | '/apps/$name/feature-flags'
   | '/apps/$name/split-testing'
@@ -768,6 +770,12 @@ export const APP_NAV_SECTIONS: AppNavSection[] = [
       ),
       item('volumes', 'Volumes', '/apps/$name/volumes', glass(ServerGlassIcon)),
       item('health', 'Health', '/apps/$name/health', glass(ActivityGlassIcon)),
+      item(
+        'containers',
+        'Containers',
+        '/apps/$name/containers',
+        glass(ContainerGlassIcon),
+      ),
       item(
         'scheduled-tasks',
         'Jobs',

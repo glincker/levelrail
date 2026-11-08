@@ -104,6 +104,7 @@ const EXPECTED_APP = [
   'resources',
   'volumes',
   'health',
+  'containers',
   'scheduled-tasks',
   'feature-flags',
   'split-testing',

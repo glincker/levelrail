@@ -301,6 +301,9 @@
       "config": "Config",
       "observe": "Observe"
     },
+    "items": {
+      "containers": "Containers"
+    },
     "more": "More",
     "overview": "Overview"
   },

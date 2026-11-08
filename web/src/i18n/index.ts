@@ -110,6 +110,7 @@ export const NAMESPACES = [
   'demo',
   'secretScan',
   'appFiles',
+  'appContainers',
   'maintenance',
   'appBuildCache',
   'buildPerformance',

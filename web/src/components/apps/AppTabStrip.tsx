@@ -154,7 +154,9 @@ export function AppTabStrip({ name }: { name: string }) {
                         : 'border-transparent text-muted-foreground hover:text-foreground',
                     )}
                   >
-                    {item.label}
+                    {t(`appTabs.items.${item.slug}`, {
+                      defaultValue: item.label,
+                    })}
                     {item.beta ? <BetaBadge /> : null}
                   </Link>
                 )

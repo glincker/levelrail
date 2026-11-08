@@ -1,0 +1,48 @@
+{
+  "title": "Containers",
+  "count_one": "{{count}} replica",
+  "count_other": "{{count}} replicas",
+  "loading": "Loading containers",
+  "forbidden": "You do not have permission to inspect this app's containers.",
+  "error": "Could not load containers: {{message}}",
+  "empty": {
+    "title": "No containers running",
+    "description": "The app is stopped or sleeping. Current status: {{status}}."
+  },
+  "unavailable": "Unavailable",
+  "unavailableTip": "The agent does not report this field for remote nodes.",
+  "none": "None",
+  "copyId": "Copy container id",
+  "copied": "Copied",
+  "restarts_one": "{{count}} restart",
+  "restarts_other": "{{count}} restarts",
+  "uptime": "Up {{duration}}",
+  "node": "Node",
+  "fields": {
+    "image": "Image",
+    "digest": "Digest",
+    "ports": "Ports",
+    "networks": "Networks",
+    "mounts": "Mounts",
+    "limits": "Limits",
+    "cpu": "CPU",
+    "memory": "Memory",
+    "health": "Health"
+  },
+  "state": {
+    "running": "Running",
+    "stopped": "Stopped",
+    "other": "{{state}}"
+  },
+  "health": {
+    "healthy": "Healthy",
+    "unhealthy": "Unhealthy",
+    "starting": "Starting",
+    "none": "No check",
+    "streak": "{{count}} failing in a row"
+  },
+  "readOnly": "ro",
+  "limitsValue": "{{cpu}} CPU, {{memory}}",
+  "noLimit": "No limit",
+  "usage": "{{used}} of {{limit}}"
+}
