@@ -48,7 +48,6 @@ const EXPECTED_GLOBAL = [
   '/mail',
   '/storage',
   '/inbox',
-  '/images',
   '/settings/registry',
   '/settings/registry-credentials',
   '/settings/network-shares',
@@ -79,7 +78,6 @@ const FOLDED_PATHS = [
   '/network',
   '/settings/network-shares',
   '/settings/node-providers',
-  '/settings/registry',
   '/settings/registry-credentials',
   '/settings/iam-policies',
 ]
@@ -249,7 +247,8 @@ describe('grouped nav entries', () => {
     ['/images', '/deployments', false],
     ['/resources', '/usage', true],
     ['/approvals', '/pipelines', true],
-    ['/settings/registry', '/images', true],
+    ['/settings/registry', '/settings/registry', true],
+    ['/images', '/settings/registry', true],
   ])('active match %s vs %s', (path, to, want) => {
     const it2 = item(to)
     expect(it2 && isGlobalItemActive(path, it2)).toBe(want)
@@ -354,15 +353,15 @@ describe('palette entries derived from the nav model', () => {
   })
 })
 
-describe('activeGlobalItemId', () => {
-  const items = allGlobalItems()
-  it.each([
-    ['/apps', 'apps'],
-    ['/projects', 'projects'],
-    ['/projects/p1', 'projects'],
-    ['/templates', 'templates'],
-  ])('%s activates only %s', (path, id) => {
-    expect(activeGlobalItemId(path, items)).toBe(id)
+describe('registry sidebar row', () => {
+  it('links to a real page, not the /images redirect into Storage', () => {
+    const reg = allGlobalItems().find((i) => i.id === 'registry')
+    expect(reg?.to).toBe('/settings/registry')
+  })
+  it('is the active row on its page and the old images path', () => {
+    const items = allGlobalItems()
+    expect(activeGlobalItemId('/settings/registry', items)).toBe('registry')
+    expect(activeGlobalItemId('/images', items)).toBe('registry')
   })
 })
 

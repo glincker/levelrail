@@ -347,7 +347,8 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
       {
         id: 'registry',
         label: 'Registry',
-        to: '/images',
+        // /images redirects into the Storage hub, so it cannot be the row target.
+        to: '/settings/registry',
         icon: glass(PackageGlassIcon),
         alsoActive: REGISTRY_GROUP_PATHS,
       },
@@ -419,12 +420,6 @@ export const FOLDED_GLOBAL_PAGES: GlobalNavItem[] = [
     'Cloud providers',
     '/settings/node-providers',
     glass(CloudGlassIcon),
-  ),
-  folded(
-    'registry-settings',
-    'Registry settings',
-    '/settings/registry',
-    glass(PackageGlassIcon),
   ),
   folded(
     'registry-credentials',
