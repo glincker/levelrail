@@ -71,6 +71,8 @@ export interface ScheduledTask {
   last_run_at?: string
   last_run_status?: ScheduledTaskRunStatus
   last_run_output?: string
+  // Set when the caller may not read the last run's output.
+  last_run_output_withheld?: boolean
   consecutive_failures: number
   consecutive_missed?: number
   running_since?: string
@@ -120,4 +122,6 @@ export interface JobRun {
   mode?: ScheduledTaskMode
   message?: string
   output?: string
+  // Set when the run printed output the caller may not read.
+  output_withheld?: boolean
 }

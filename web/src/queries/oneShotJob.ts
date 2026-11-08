@@ -15,6 +15,7 @@ export interface OneShotJob {
   message?: string
   output?: string
   output_truncated?: boolean
+  output_withheld?: boolean
 }
 
 const POLL_INTERVAL_MS = 1000

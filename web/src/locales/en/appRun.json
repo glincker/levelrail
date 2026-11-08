@@ -10,6 +10,7 @@
   "exitCode": "Exit code",
   "state": "State",
   "output": "Output",
+  "withheld": "Output is hidden because your role cannot read sensitive data.",
   "empty": "(no output)",
   "truncated": "Output was longer than the server keeps; only the last part is shown.",
   "accessRule": "One-off runs and scheduled jobs follow console exec access rules: running a command needs root access on this app and exec enabled for it.",
