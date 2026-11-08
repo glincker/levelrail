@@ -1,4 +1,5 @@
 {
+  "readOnlyNotice": "Tienes acceso de solo lectura. Pide a un administrador acceso de despliegue para cambiar estos ajustes.",
   "authGate": {
     "badgeOn": "Puerta de autenticación activada",
     "badgeOff": "Sin puerta de autenticación",

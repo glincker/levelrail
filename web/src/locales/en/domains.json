@@ -1,4 +1,5 @@
 {
+  "readOnlyNotice": "You have read-only access. Ask an admin for deploy access to change these settings.",
   "authGate": {
     "badgeOn": "Auth gate on",
     "badgeOff": "No auth gate",
