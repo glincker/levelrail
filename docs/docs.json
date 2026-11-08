@@ -508,6 +508,7 @@
               "behind-an-existing-proxy",
               "behind-cloudflare",
               "cloudflare-in-front",
+              "cloudflare-tunnel",
               "shared-hosts",
               "security-advisories",
               "advisory-feed"
