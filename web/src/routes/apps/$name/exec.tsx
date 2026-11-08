@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { AppTerminal } from '../../../components/AppTerminal'
 import { ExecPanel } from '../../../components/ExecPanel'
+import { RunCommandCard } from '../../../components/RunCommandCard'
 import { ExecAccessCard } from '../../../components/ExecAccessCard'
 import {
   execAccessQueryOptions,
@@ -39,6 +40,7 @@ function ExecSection() {
         <ExecAccessCard appName={name} />
         <AppTerminal name={name} execEnabled={enabled} />
         <ExecPanel name={name} execEnabled={enabled} />
+        <RunCommandCard name={name} />
       </div>
     </DemoGate>
   )

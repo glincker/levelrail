@@ -39,6 +39,8 @@ levelrail-cli apps run shop --service worker --timeout 5m -- node scripts/backfi
 
 `apps run` starts a one-shot job, waits for it, prints the output and exits with the command's own exit code, so it works in scripts and CI. No terminal is needed. The output is printed when the command finishes, not line by line. A timeout exits 124, and a job that failed without a command exit code (the container could not start) exits 5. Secret values are redacted from the output, and the command line is never echoed. `--service S` targets one service of a multi-service app. `--json` prints the finished job, output included, and nothing else. `apps run` sends a backoff limit of 0, so a failed command runs once; `--retries N` allows N more attempts. Use `apps exec` instead to run inside the live container.
 
+The dashboard has the same thing on an app's **Exec** tab, in the **Run in a fresh container** card. It splits the line into arguments without a shell, always sends a backoff limit of 0, polls the job once a second and shows the output and exit code when it ends. The Exec tab's first card, by contrast, runs inside the live container.
+
 ### API
 
 `POST /api/v1/jobs/runs` starts a job and answers 202 with its status. `GET /api/v1/jobs/runs/{id}` returns the status. Starting needs the same permission as running a scheduled job now (deploy on the app); reading needs read. The `GET` answer also carries the newest attempt's `exit_code`, `run_status` and `output` (at most `APP_JOBS_MAX_OUTPUT_BYTES` bytes, default 65536, the same limit a run keeps; `output_truncated` is set when the output was cut), so one call is enough to see what the command printed.

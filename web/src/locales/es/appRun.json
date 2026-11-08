@@ -1,0 +1,15 @@
+{
+  "title": "Ejecutar en un contenedor nuevo",
+  "description": "Inicia un contenedor nuevo con la imagen de esta app, sus variables y secretos, ejecuta el comando una vez y muestra su salida. El contenedor activo no se toca.",
+  "service": "Servicio",
+  "command": "Comando",
+  "placeholder": "bin/migrate",
+  "hint": "Se ejecuta directamente, sin shell. Usa comillas para un argumento con espacios. Para tuberías o redirecciones, usa sh -c \"...\".",
+  "run": "Ejecutar",
+  "running": "Ejecutando...",
+  "exitCode": "Código de salida",
+  "state": "Estado",
+  "output": "Salida",
+  "empty": "(sin salida)",
+  "truncated": "La salida era más larga de lo que guarda el servidor; solo se muestra la última parte."
+}
