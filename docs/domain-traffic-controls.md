@@ -396,7 +396,11 @@ Status: built and covered by unit tests for the API, the CLI and the dashboard c
 | Attach the www or apex counterpart while applying a preset | additionally `write` |
 | Restrict or unrestrict a port | `write:sensitive`, the same tier as firewall rules |
 | Read the body cap and timeouts | `read` |
-| Set or clear the body cap and timeouts | `deploy`. A read-only user can open the control, but saving returns a server error. |
+| Set or clear the body cap and timeouts | `deploy`. The domain page disables these controls for a user without it (see below). |
+
+On the domain page, a user whose role lacks `deploy` sees the TLS, redirect and more options cards disabled. A single line above them says: "You have read-only access. Ask an admin for deploy access to change these settings." The Danger zone is outside that block and is not affected. The page only disables the controls. The API still checks `deploy` on every write, so a request sent straight to the API is refused.
+
+Status: built and unit tested for the disabled state. Not checked in a browser as a viewer or an admin at narrow or wide widths.
 
 Every change is recorded in the audit log like any other API write.
 
