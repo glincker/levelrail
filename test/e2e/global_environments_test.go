@@ -6,13 +6,16 @@ package e2e
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/experimental"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 const (
@@ -89,5 +92,77 @@ func TestGlobalEnvironments_Live_GrantedUserCannotSeeOtherEnvironment(t *testing
 	}
 	if status, body = requestJSON(t, guest, http.MethodGet, server.URL+"/api/v1/environments/"+envIDs["genv-b"]+"/env", ""); status == http.StatusOK || strings.Contains(string(body), marker) {
 		t.Fatalf("other environment by direct id: status = %d, want a refusal, body = %.300s", status, body)
+	}
+}
+
+// An install from before global environments keeps its project-scoped
+// environment and the app tagged with it when the upgrade migration runs.
+func TestGlobalEnvironments_Live_UpgradeKeepsExistingEnvironments(t *testing.T) {
+	experimental.Set(experimental.GlobalEnvironments)
+	t.Cleanup(experimental.Reset)
+
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "levelrail.db")
+	const preGlobalSchema = 374
+	old, err := store.Open(ctx, path, store.WithMigrationCeiling(preGlobalSchema))
+	if err != nil {
+		t.Fatalf("open pre-upgrade store: %v", err)
+	}
+	for _, stmt := range []string{
+		`INSERT INTO projects (id, name) VALUES ('proj_legacy', 'Legacy')`,
+		`INSERT INTO environments (id, project_id, name) VALUES ('env_legacy', 'proj_legacy', 'Staging')`,
+		`INSERT INTO environments (id, project_id, name) VALUES ('preview-env-legacy', 'proj_legacy', 'Preview')`,
+		`INSERT INTO desired_services (name, image, port, updated_at, project_id, environment_id)
+		 VALUES ('legacy-web', 'levelrail/genv-e2e:1', 8080, '2026-08-01T00:00:00Z', 'proj_legacy', 'env_legacy')`,
+	} {
+		if _, err := old.ExecContext(ctx, stmt); err != nil {
+			t.Fatalf("seed pre-upgrade row: %v", err)
+		}
+	}
+	if err := old.Close(); err != nil {
+		t.Fatalf("close pre-upgrade store: %v", err)
+	}
+
+	db, err := store.Open(ctx, path)
+	if err != nil {
+		t.Fatalf("upgrade store: %v", err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+
+	if err := api.BootstrapAdmin(ctx, db, e2eEnvAdminUsername, e2eEnvAdminPassword); err != nil {
+		t.Fatalf("BootstrapAdmin() error = %v", err)
+	}
+	b := &brand.Brand{Name: "Env E2E Test Platform", BinaryName: "env-e2e-test-platform"}
+	server := newE2ETestServer(t, api.NewRouter(discardTestLogger(), b, db))
+	admin := loginE2EClient(t, server.URL, e2eEnvAdminUsername, e2eEnvAdminPassword)
+
+	status, body := requestJSON(t, admin, http.MethodGet, server.URL+"/api/v1/environments", "")
+	if status != http.StatusOK {
+		t.Fatalf("list environments: status = %d, body = %.300s", status, body)
+	}
+	var listed []struct {
+		ID       string `json:"id"`
+		Kind     string `json:"kind"`
+		AppCount int    `json:"app_count"`
+	}
+	if err := json.Unmarshal(body, &listed); err != nil {
+		t.Fatalf("decode list %.300s: %v", body, err)
+	}
+	byID := map[string]int{}
+	kinds := map[string]string{}
+	for _, e := range listed {
+		byID[e.ID] = e.AppCount
+		kinds[e.ID] = e.Kind
+	}
+	for _, id := range []string{"env_dev", "env_test", "env_uat", "env_production"} {
+		if _, ok := byID[id]; !ok {
+			t.Errorf("built-in environment %q missing after upgrade, body = %.400s", id, body)
+		}
+	}
+	if n, ok := byID["env_legacy"]; !ok || n != 1 || kinds["env_legacy"] != "custom" {
+		t.Errorf("legacy environment after upgrade: present=%v apps=%d kind=%q, body = %.400s", ok, n, kinds["env_legacy"], body)
+	}
+	if env, err := db.GetEnvironment(ctx, "preview-env-legacy"); err != nil || env.Kind != store.EnvironmentKindPreview {
+		t.Errorf("legacy preview environment kind = %q, err = %v, want preview", env.Kind, err)
 	}
 }
