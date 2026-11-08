@@ -140,27 +140,35 @@ describe('global nav model', () => {
     expect(GLOBAL_NAV_GROUPS.length).toBeLessThanOrEqual(8)
   })
 
-  it('shows only Dashboard ungrouped and fifteen or fewer sidebar rows', () => {
+  it('shows the Overview rows ungrouped and twenty or fewer sidebar rows', () => {
     const primary = GLOBAL_NAV_GROUPS.filter((g) => g.ungrouped)
     expect(primary).toHaveLength(1)
-    expect(primary[0]?.items.map((i) => i.label)).toEqual(['Dashboard'])
+    expect(primary[0]?.items.map((i) => i.label)).toEqual([
+      'Dashboard',
+      'Projects',
+      'Inbox',
+      'Alerts',
+    ])
     const rows = GLOBAL_NAV_GROUPS.flatMap((g) => g.items)
-    expect(rows.length).toBeLessThanOrEqual(15)
+    expect(rows.length).toBeLessThanOrEqual(20)
   })
 
-  it('groups Domains, Traffic and Private network under Network', () => {
+  it('groups Domains, Traffic, Firewall and Mail under Network', () => {
     const net = GLOBAL_NAV_GROUPS.find((g) => g.id === 'traffic')
     expect(net?.label).toBe('Network')
     expect(net?.items.map((i) => i.label)).toEqual([
       'Domains',
       'Traffic',
-      'Private network',
+      'Firewall',
+      'Mail',
     ])
   })
 
   it('renders a single-item group as that item, not under a repeated header', () => {
-    const access = GLOBAL_NAV_GROUPS.find((g) => g.id === 'access')
-    expect(access && isSingleItemGroup(access)).toBe(true)
+    expect(isSingleItemGroup({ items: [1] })).toBe(true)
+    for (const g of GLOBAL_NAV_GROUPS) {
+      expect(g.ungrouped || !isSingleItemGroup(g), g.id).toBe(true)
+    }
     expect(isSingleItemGroup({ items: [1, 2] })).toBe(false)
   })
 
@@ -209,10 +217,12 @@ describe('global nav model', () => {
     ['/apps/web/logs', '/apps', true],
     ['/appsettings', '/apps', false],
     ['/status', '/', true],
-    ['/network', '/network/private', true],
-    ['/network/proxy', '/network/private', false],
+    ['/network', '/network/proxy', true],
+    ['/network/private', '/network/proxy', true],
+    ['/network/private', '/firewall', false],
     ['/network/proxy', '/network/proxy', true],
-    ['/firewall', '/network/proxy', true],
+    ['/firewall', '/firewall', true],
+    ['/firewall', '/network/proxy', false],
   ])('active match %s vs %s', (path, to, want) => {
     const item = allGlobalItems().find((i) => i.to === to)
     expect(item && isGlobalItemActive(path, item)).toBe(want)

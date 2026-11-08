@@ -62,16 +62,9 @@ describe('NavTabStrip', () => {
   })
 
   it('shows sibling pages and marks the current one', () => {
-    renderAt('/projects')
-    expect(labels()).toEqual([
-      'Apps',
-      'Projects',
-      'Templates',
-      'Tags',
-      'Variables',
-      'Sources',
-    ])
-    expect(current()).toEqual(['Projects'])
+    renderAt('/variables')
+    expect(labels()).toEqual(['Apps', 'Variables', 'Sources', 'Tags'])
+    expect(current()).toEqual(['Variables'])
   })
 
   it('renders nothing outside a folded group', () => {
@@ -82,19 +75,15 @@ describe('NavTabStrip', () => {
     expect(labels()).toEqual([])
   })
 
-  it('drops a strip left with a single tab', () => {
+  it('hides DNS when the router has no DNS route', () => {
     routes.has = false
     renderAt('/domains')
-    expect(labels()).toEqual([])
+    expect(labels()).toEqual(['Domains', 'Certificates'])
   })
 
-  it('shows DNS with a route and Mail only when unlocked', () => {
+  it('shows DNS and Certificates with a route', () => {
     renderAt('/domains')
-    expect(labels()).toEqual(['Domains', 'DNS'])
-    cleanup()
-    experimental.enabled = ['mail']
-    renderAt('/domains')
-    expect(labels()).toEqual(['Domains', 'DNS', 'Mail'])
+    expect(labels()).toEqual(['Domains', 'DNS', 'Certificates'])
   })
 
   it('lists the security pages and marks only the longest match', () => {
@@ -115,7 +104,11 @@ describe('NavTabStrip', () => {
 
   it('adds bootstrap scripts to the server tabs', () => {
     renderAt('/nodes/bootstrap-scripts')
-    expect(labels()).toEqual(['Nodes', 'Cloud providers', 'Bootstrap scripts'])
+    expect(labels()).toEqual([
+      'Servers',
+      'Cloud providers',
+      'Bootstrap scripts',
+    ])
     expect(current()).toEqual(['Bootstrap scripts'])
   })
 

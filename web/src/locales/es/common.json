@@ -352,6 +352,7 @@
       "data": "Datos",
       "traffic": "Red",
       "infrastructure": "Flota y costes",
+      "platform": "Plataforma",
       "access": "Seguridad",
       "ai": "IA"
     },
@@ -495,6 +496,7 @@
         "servers": "Secciones de servidores",
         "registry": "Secciones del registro",
         "cost": "Secciones de uso y coste",
+        "alerts": "Secciones de alertas",
         "security": "Secciones de seguridad"
       },
       "tab": {
@@ -518,7 +520,13 @@
         "loadBalancers": "Balanceadores de carga",
         "cdn": "CDN",
         "firewall": "Cortafuegos",
-        "nodes": "Nodos",
+        "nodes": "Servidores",
+        "privateNetworks": "Red privada",
+        "topology": "Topologia",
+        "certificates": "Certificados",
+        "channels": "Canales",
+        "status": "Estado",
+        "alerts": "Alertas",
         "providers": "Proveedores cloud",
         "images": "Imágenes",
         "registry": "Registro",

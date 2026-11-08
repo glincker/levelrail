@@ -29,11 +29,11 @@ import {
   ImagesGlassIcon,
   InboxGlassIcon,
   KeyGlassIcon,
+  LockGlassIcon,
   LayersGlassIcon,
   LayoutGridGlassIcon,
   LightbulbGlassIcon,
   ListGlassIcon,
-  LockGlassIcon,
   PackageGlassIcon,
   PlugGlassIcon,
   RestoreGlassIcon,
@@ -89,6 +89,8 @@ export type GlobalTo =
   | '/network/private'
   | '/cdn'
   | '/domains'
+  | '/domains/certificates'
+  | '/settings/notification-channels'
   | '/dns'
   | '/loadbalancers'
   | '/mail'
@@ -168,14 +170,18 @@ export const COST_GROUP_PATHS = [
   '/resources',
 ] as const
 
-export const APPS_GROUP_PATHS = ['/projects', '/templates', '/tags'] as const
+export const APPS_GROUP_PATHS = ['/tags', '/variables', '/sources'] as const
 export const PIPELINE_GROUP_PATHS = ['/pipelines', '/approvals'] as const
-export const DOMAIN_GROUP_PATHS = ['/domains', '/dns', '/mail'] as const
+export const DOMAIN_GROUP_PATHS = [
+  '/domains',
+  '/dns',
+  '/domains/certificates',
+] as const
 export const TRAFFIC_GROUP_PATHS = [
   '/network/proxy',
+  '/network/private',
   '/loadbalancers',
   '/cdn',
-  '/firewall',
 ] as const
 export const REGISTRY_GROUP_PATHS = [
   '/images',
@@ -186,7 +192,7 @@ export const REGISTRY_GROUP_PATHS = [
 export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
   {
     id: 'primary',
-    label: 'Home',
+    label: 'Overview',
     ungrouped: true,
     items: [
       {
@@ -197,6 +203,25 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         exact: true,
         // Status is reached from the dashboard status strip.
         alsoActive: ['/status'],
+      },
+      {
+        id: 'projects',
+        label: 'Projects',
+        to: '/projects',
+        icon: glass(FolderGlassIcon),
+      },
+      {
+        id: 'inbox',
+        label: 'Inbox',
+        to: '/inbox',
+        icon: glass(InboxGlassIcon),
+        badge: 'inbox',
+      },
+      {
+        id: 'alerts',
+        label: 'Alerts',
+        to: '/alerts',
+        icon: glass(BellGlassIcon),
       },
     ],
   },
@@ -211,6 +236,12 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         icon: glass(LayersGlassIcon),
         badge: 'failing-apps',
         alsoActive: APPS_GROUP_PATHS,
+      },
+      {
+        id: 'templates',
+        label: 'Templates',
+        to: '/templates',
+        icon: glass(LayoutGridGlassIcon),
       },
       {
         id: 'deployments',
@@ -245,7 +276,12 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         label: 'Databases',
         to: '/databases',
         icon: glass(DatabaseGlassIcon),
-        alsoActive: ['/backups'],
+      },
+      {
+        id: 'backups',
+        label: 'Backups',
+        to: '/backups',
+        icon: glass(UploadGlassIcon),
       },
       {
         id: 'storage',
@@ -276,20 +312,29 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         icon: glass(TrafficConeGlassIcon),
         badge: 'proxy-attention',
         alsoActive: TRAFFIC_GROUP_PATHS,
+        // Topology is exactly /network; a prefix match would also light other pages.
+        alsoExact: ['/network'],
       },
       {
-        id: 'private-networks',
-        label: 'Private network',
-        to: '/network/private',
-        icon: glass(LockGlassIcon),
-        // Topology is exactly /network; a prefix match would also light Traffic's pages.
-        alsoExact: ['/network'],
+        id: 'firewall',
+        label: 'Firewall',
+        to: '/firewall',
+        icon: (
+          <ShieldCheckGlassIcon className="text-tone-success" size="1.4em" />
+        ),
+      },
+      {
+        id: 'mail',
+        label: 'Mail',
+        to: '/mail',
+        icon: glass(MailGlassIcon),
+        feature: 'mail',
       },
     ],
   },
   {
-    id: 'infrastructure',
-    label: 'Infrastructure',
+    id: 'platform',
+    label: 'Platform',
     items: [
       {
         id: 'nodes',
@@ -297,12 +342,6 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         to: '/nodes',
         icon: glass(ServerGlassIcon),
         alsoActive: ['/settings/node-providers'],
-      },
-      {
-        id: 'alerts',
-        label: 'Alerts',
-        to: '/alerts',
-        icon: glass(BellGlassIcon),
       },
       {
         id: 'registry',
@@ -318,12 +357,6 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         icon: glass(CoinsGlassIcon),
         alsoActive: COST_GROUP_PATHS,
       },
-    ],
-  },
-  {
-    id: 'access',
-    label: 'Security',
-    items: [
       {
         id: 'security',
         label: 'Security',
@@ -348,14 +381,17 @@ const folded = (
 // Destinations folded into a parent row's tab strip. No sidebar row, but they
 // stay in the command palette and light their parent through alsoActive.
 export const FOLDED_GLOBAL_PAGES: GlobalNavItem[] = [
+  folded(
+    'private-networks',
+    'Private network',
+    '/network/private',
+    glass(LockGlassIcon),
+  ),
   folded('status', 'Status', '/status', glass(ActivityGlassIcon)),
-  folded('projects', 'Projects', '/projects', glass(FolderGlassIcon)),
-  folded('templates', 'Templates', '/templates', glass(LayoutGridGlassIcon)),
   folded('tags', 'Tags', '/tags', glass(ListGlassIcon)),
   folded('variables', 'Variables', '/variables', glass(BracesGlassIcon)),
   folded('sources', 'Sources', '/sources', glass(GitBranchGlassIcon)),
   folded('approvals', 'Deploy approvals', '/approvals', glass(GavelGlassIcon)),
-  folded('backups', 'Backups', '/backups', glass(UploadGlassIcon)),
   folded(
     'network-shares',
     'Network shares',
@@ -366,15 +402,6 @@ export const FOLDED_GLOBAL_PAGES: GlobalNavItem[] = [
   folded('dns', 'DNS', '/dns', glass(ListGlassIcon), {
     requiresRoute: true,
   }),
-  folded('mail', 'Mail', '/mail', glass(MailGlassIcon), {
-    feature: 'mail',
-  }),
-  folded(
-    'firewall',
-    'Firewall',
-    '/firewall',
-    <ShieldCheckGlassIcon className="text-tone-success" size="1.4em" />,
-  ),
   folded(
     'loadbalancers',
     'Load balancers',
@@ -430,7 +457,6 @@ export const FOLDED_GLOBAL_PAGES: GlobalNavItem[] = [
     '/nodes/bootstrap-scripts',
     glass(TerminalGlassIcon),
   ),
-  folded('inbox', 'Inbox', '/inbox', glass(InboxGlassIcon)),
   folded('models', 'AI models', '/models', glass(CpuGlassIcon), {
     feature: 'ai-models',
   }),

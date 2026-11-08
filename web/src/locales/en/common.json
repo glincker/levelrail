@@ -363,6 +363,7 @@
         "servers": "Server sections",
         "registry": "Registry sections",
         "cost": "Usage and cost sections",
+        "alerts": "Alert sections",
         "security": "Security sections"
       },
       "tab": {
@@ -386,7 +387,13 @@
         "loadBalancers": "Load balancers",
         "cdn": "CDN",
         "firewall": "Firewall",
-        "nodes": "Nodes",
+        "nodes": "Servers",
+        "privateNetworks": "Private network",
+        "topology": "Topology",
+        "certificates": "Certificates",
+        "channels": "Channels",
+        "status": "Status",
+        "alerts": "Alerts",
         "providers": "Cloud providers",
         "images": "Images",
         "registry": "Registry",
@@ -477,6 +484,7 @@
       "data": "Data",
       "traffic": "Network",
       "infrastructure": "Infrastructure",
+      "platform": "Platform",
       "access": "Security",
       "ai": "AI"
     },

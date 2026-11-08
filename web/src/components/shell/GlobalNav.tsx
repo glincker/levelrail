@@ -30,7 +30,6 @@ import {
   isGlobalItemActive,
   isItemDisclosed,
   isSingleItemGroup,
-  FOLDED_GLOBAL_PAGES,
   itemBadgeCount,
   linkTarget,
   pinnedGlobalItems,
@@ -248,15 +247,11 @@ export function GlobalNav() {
   const experimental = useExperimentalFeatures()
   const routeAvailable = useRouteAvailable()
   const groups = visibleGlobalGroups(routeAvailable)
-  const projectsItem = FOLDED_GLOBAL_PAGES.find((i) => i.id === 'projects')
-  const templatesItem = FOLDED_GLOBAL_PAGES.find((i) => i.id === 'templates')
   const { pins, toggle, full, max } = useNavPins()
   const pinned = pinnedGlobalItems(groups, pins)
   const activeId = activeGlobalItemId(pathname, [
     ...groups.flatMap((gr) => gr.items),
     ...visibleGlobalFooter(),
-    ...(projectsItem ? [projectsItem] : []),
-    ...(templatesItem ? [templatesItem] : []),
   ])
   const pinFor = (id: string): PinControl => ({
     pinned: pins.includes(id),
@@ -316,30 +311,21 @@ export function GlobalNav() {
                 .filter((item) => isItemDisclosed(item, counts, pathname))
                 .map((item) => (
                   <Fragment key={item.id}>
-                    <NavLinkItem
-                      item={item}
-                      groupId={group.id}
-                      active={item.id === activeId}
-                      counts={counts}
-                      experimental={experimental}
-                      pin={pinFor(item.id)}
-                    />
-                    {item.id === 'apps' && projectsItem ? (
+                    {item.id === 'projects' ? (
                       <ProjectsNavItem
-                        item={projectsItem}
+                        item={item}
                         pathname={pathname}
-                        active={projectsItem.id === activeId}
+                        active={item.id === activeId}
                       />
-                    ) : null}
-                    {item.id === 'apps' && templatesItem ? (
+                    ) : (
                       <NavLinkItem
-                        item={templatesItem}
-                        groupId={group.id}
-                        active={templatesItem.id === activeId}
+                        item={item}
+                        active={item.id === activeId}
                         counts={counts}
                         experimental={experimental}
+                        pin={pinFor(item.id)}
                       />
-                    ) : null}
+                    )}
                   </Fragment>
                 ))}
             </SidebarMenu>
