@@ -280,10 +280,12 @@ const (
 // container. Desired state is read fresh from ServiceStore on every
 // Reconcile, never cached.
 type Controller struct {
-	store   ServiceStore
-	runtime docker.Runtime
-	driver  Applier
-	logger  *slog.Logger
+	// domainLimitCeilings reads the current domain limit ceilings each pass; nil leaves stored values as saved.
+	domainLimitCeilings func(ctx context.Context) (bodyBytes int64, timeoutSeconds int)
+	store               ServiceStore
+	runtime             docker.Runtime
+	driver              Applier
+	logger              *slog.Logger
 
 	// lastDial keeps each service's last resolved backend so a Docker API outage keeps routes instead of dropping them.
 	lastDial sync.Map

@@ -11,9 +11,9 @@ const (
 
 func init() {
 	registerLimit(Definition{
-		Key: KeyDomainLimitsMaxBodyBytes, Category: CategoryNetworking, Default: "10737418240", Env: "APP_DOMAIN_LIMITS_MAX_BODY_BYTES", Apply: ApplyLive, Risk: RiskWeakensSecurity, HigherIsWeaker: true,
+		Key: KeyDomainLimitsMaxBodyBytes, Category: CategoryNetworking, Default: "1073741824", Env: "APP_DOMAIN_LIMITS_MAX_BODY_BYTES", Apply: ApplyLive, Risk: RiskWeakensSecurity, HigherIsWeaker: true,
 		Title:       "Domain limits: largest request body",
-		Description: "Highest request body cap in bytes that a domain may set for itself, from 1 MiB to 1 TiB. A domain's own cap (domains limits set --max-body) must be at least 1 MiB and no higher than this. Caps already stored are not rewritten. The next save uses a changed value.",
+		Description: "Highest request body cap in bytes that a domain may set for itself, from 1 MiB to 1 TiB; the default matches the instance body limit. A domain's own cap (domains limits set --max-body) must be at least 1 MiB and no higher than this. Caps already stored are not rewritten. The next save uses a changed value.",
 	}, bodyLimitFloor, domainLimitsBodyCeiling)
 	registerLimit(Definition{
 		Key: KeyDomainLimitsMaxTimeoutSeconds, Category: CategoryNetworking, Default: "3600", Env: "APP_DOMAIN_LIMITS_MAX_TIMEOUT_SECONDS", Apply: ApplyLive,

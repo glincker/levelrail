@@ -38,8 +38,31 @@ func TestRun_DomainsLimits(t *testing.T) {
 			t.Errorf("%v: %s %s out=%q", tt.args, gotMethod, gotPath, stdout.String())
 		}
 	}
-	if gotBody.MaxBodyBytes != 0 {
-		// last decoded body is the empty DELETE; the PUT body was checked via the echoed output above
-		t.Logf("last body %+v", gotBody)
+}
+
+func TestRun_DomainsLimitsSetMerges(t *testing.T) {
+	var put setDomainLimitsRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPut {
+			_ = json.NewDecoder(r.Body).Decode(&put)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(domainLimitsResource{Domain: "app.example.com", Configured: true, MaxBodyBytes: 5 << 20, ReadTimeoutSeconds: 30, WriteTimeoutSeconds: 40})
+	}))
+	defer srv.Close()
+	run1 := func(extra ...string) {
+		var so, se bytes.Buffer
+		args := append(append([]string{"domains", "limits", "set", "web", "app.example.com"}, extra...), "--api-url", srv.URL)
+		if got := run("levelrail-cli-test", args, &so, &se, envMap()); got != exitOK {
+			t.Fatalf("exit = %d (%q)", got, se.String())
+		}
+	}
+	run1("--read-timeout", "90")
+	if put != (setDomainLimitsRequest{MaxBodyBytes: 5 << 20, ReadTimeoutSeconds: 90, WriteTimeoutSeconds: 40}) {
+		t.Errorf("merge body = %+v", put)
+	}
+	run1("--write-timeout", "0")
+	if put.WriteTimeoutSeconds != 0 || put.ReadTimeoutSeconds != 30 || put.MaxBodyBytes != 5<<20 {
+		t.Errorf("explicit 0 body = %+v", put)
 	}
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"io"
 
@@ -37,11 +38,12 @@ func domainsLimitsUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s domains limits get <app> <domain> [flags]     show a domain's request limits
   %[1]s domains limits set <app> <domain> [--max-body SIZE] [--read-timeout SECONDS] [--write-timeout SECONDS]
+
   %[1]s domains limits clear <app> <domain> [flags]   go back to the app and instance limits
 
 A request body cap (such as 100MiB) and upstream read and write timeouts for
-one domain. 0 or unset keeps the app and instance behavior. Every set call
-replaces all three values. Takes effect on the next ingress reconcile pass.
+one domain. 0 or unset keeps the app and instance behavior. Only the flags you give
+change; pass 0 to clear one value. Takes effect on the next ingress reconcile pass.
 `, prog)
 }
 
@@ -72,14 +74,34 @@ func runDomainsLimitsVerb(prog, verb string, args []string, stdout, stderr io.Wr
 	case "clear":
 		res, err = client.ClearDomainLimits(ctx, appName, domain)
 	default:
-		var body int64
-		if maxBody != "0" {
-			if body, err = spendcap.ParseBytes(maxBody); err != nil {
-				_, _ = fmt.Fprintf(stderr, "%s: --max-body: %v\n", prog, err)
-				return exitUsage
+		given := map[string]bool{}
+		fs.Visit(func(f *flag.Flag) { given[f.Name] = true })
+		if len(given) == 0 || (!given["max-body"] && !given["read-timeout"] && !given["write-timeout"]) {
+			_, _ = fmt.Fprintf(stderr, "%s: domains limits set needs --max-body, --read-timeout or --write-timeout\n", prog)
+			return exitUsage
+		}
+		// Only the flags given override; the rest keep their current value.
+		cur, getErr := client.GetDomainLimits(ctx, appName, domain)
+		if getErr != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("read limits for domain %q: %w", domain, getErr))
+		}
+		req := setDomainLimitsRequest{MaxBodyBytes: cur.MaxBodyBytes, ReadTimeoutSeconds: cur.ReadTimeoutSeconds, WriteTimeoutSeconds: cur.WriteTimeoutSeconds}
+		if given["max-body"] {
+			req.MaxBodyBytes = 0
+			if maxBody != "0" {
+				if req.MaxBodyBytes, err = spendcap.ParseBytes(maxBody); err != nil {
+					_, _ = fmt.Fprintf(stderr, "%s: --max-body: %v\n", prog, err)
+					return exitUsage
+				}
 			}
 		}
-		res, err = client.SetDomainLimits(ctx, appName, domain, setDomainLimitsRequest{MaxBodyBytes: body, ReadTimeoutSeconds: readT, WriteTimeoutSeconds: writeT})
+		if given["read-timeout"] {
+			req.ReadTimeoutSeconds = readT
+		}
+		if given["write-timeout"] {
+			req.WriteTimeoutSeconds = writeT
+		}
+		res, err = client.SetDomainLimits(ctx, appName, domain, req)
 	}
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("%s for domain %q: %w", label, domain, err))

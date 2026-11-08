@@ -90,7 +90,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_DOMAINS_DNS_WATCH_INTERVAL_SECONDS` | [`domains.dns_watch_interval_seconds`](/runtime-settings#networking) | `15` |
 | `APP_DOMAINS_DNS_WATCH_MAX_MINUTES` | [`domains.dns_watch_max_minutes`](/runtime-settings#networking) | `120` |
 | `APP_ACME_MAX_ATTEMPTS_PER_HOUR` | [`domains.https_attempts_per_hour`](/runtime-settings#networking) | `5` |
-| `APP_DOMAIN_LIMITS_MAX_BODY_BYTES` | [`domains.limits_max_body_bytes`](/runtime-settings#networking) | `10737418240` |
+| `APP_DOMAIN_LIMITS_MAX_BODY_BYTES` | [`domains.limits_max_body_bytes`](/runtime-settings#networking) | `1073741824` |
 | `APP_DOMAIN_LIMITS_MAX_TIMEOUT_SECONDS` | [`domains.limits_max_timeout_seconds`](/runtime-settings#networking) | `3600` |
 | `APP_DOMAINS_PARKED_RETENTION_DAYS` | [`domains.parked_retention_days`](/runtime-settings#networking) | `0` |
 | `APP_DOMAINS_ROLLBACK_WINDOW_MINUTES` | [`domains.rollback_window_minutes`](/runtime-settings#networking) | `60` |

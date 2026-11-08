@@ -164,7 +164,10 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			ingressOpts = append(ingressOpts, ingressreconcile.WithModelHosts(models.HostLister{Store: deps.db, Hosts: deps.models.hosts}))
 		}
 		_, skewIngress := nextSkewOptions(ctx, deps.db, deps.logger)
-		ingressOpts = append(ingressOpts, skewIngress)
+		ingressOpts = append(ingressOpts, skewIngress, ingressreconcile.WithDomainLimitCeilings(func(ctx context.Context) (int64, int) {
+			s := deps.settingsService()
+			return int64(s.Limit(ctx, runtimesettings.KeyDomainLimitsMaxBodyBytes)), s.Limit(ctx, runtimesettings.KeyDomainLimitsMaxTimeoutSeconds)
+		}))
 		if deps.dashboardDial != "" {
 			ingressOpts = append(ingressOpts, ingressreconcile.WithDashboardDial(deps.dashboardDial), ingressreconcile.WithGateSecret(deps.gateSecret))
 		}

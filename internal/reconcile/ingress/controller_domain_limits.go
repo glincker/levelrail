@@ -28,7 +28,33 @@ func (c *Controller) applyDomainLimits(ctx context.Context, routes []ingress.Pro
 	if len(rows) == 0 {
 		return routes, nil
 	}
-	return attachDomainLimits(routes, rows), nil
+	var bodyCeil int64
+	var timeoutCeil int
+	if c.domainLimitCeilings != nil {
+		bodyCeil, timeoutCeil = c.domainLimitCeilings(ctx)
+	}
+	return attachDomainLimits(routes, clampDomainLimits(rows, bodyCeil, timeoutCeil)), nil
+}
+
+// WithDomainLimitCeilings makes a lowered ceiling tighten limits already stored.
+func WithDomainLimitCeilings(f func(ctx context.Context) (bodyBytes int64, timeoutSeconds int)) Option {
+	return func(c *Controller) { c.domainLimitCeilings = f }
+}
+
+// clampDomainLimits applies min(stored, ceiling) to each field; 0 stays 0 and a 0 ceiling means unknown.
+func clampDomainLimits(rows []store.DomainLimits, bodyCeil int64, timeoutCeil int) []store.DomainLimits {
+	out := make([]store.DomainLimits, len(rows))
+	for i, l := range rows {
+		if bodyCeil > 0 && l.MaxBodyBytes > bodyCeil {
+			l.MaxBodyBytes = bodyCeil
+		}
+		if timeoutCeil > 0 {
+			l.ReadTimeoutSeconds = min(l.ReadTimeoutSeconds, timeoutCeil)
+			l.WriteTimeoutSeconds = min(l.WriteTimeoutSeconds, timeoutCeil)
+		}
+		out[i] = l
+	}
+	return out
 }
 
 func attachDomainLimits(routes []ingress.ProxyRoute, rows []store.DomainLimits) []ingress.ProxyRoute {

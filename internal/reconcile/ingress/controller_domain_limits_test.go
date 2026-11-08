@@ -8,6 +8,16 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
+func TestClampDomainLimits(t *testing.T) {
+	got := clampDomainLimits([]store.DomainLimits{{Domain: "a.test", MaxBodyBytes: 9 << 30, ReadTimeoutSeconds: 7200, WriteTimeoutSeconds: 0}}, 1<<30, 3600)[0]
+	if got.MaxBodyBytes != 1<<30 || got.ReadTimeoutSeconds != 3600 || got.WriteTimeoutSeconds != 0 {
+		t.Errorf("clamped = %+v", got)
+	}
+	if kept := clampDomainLimits([]store.DomainLimits{{Domain: "b.test", MaxBodyBytes: 5}}, 0, 0)[0]; kept.MaxBodyBytes != 5 {
+		t.Errorf("zero ceilings must not change values: %+v", kept)
+	}
+}
+
 func TestAttachDomainLimits(t *testing.T) {
 	routes := []ingress.ProxyRoute{
 		{Hosts: []string{"a.test", "b.test"}, BackendDial: "x:1", MaxBodyBytes: 7 << 20},
