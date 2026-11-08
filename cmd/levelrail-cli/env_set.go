@@ -2,10 +2,19 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"os"
 	"strings"
+	"unicode/utf8"
 )
+
+// envValueSourceMaxBytes bounds one value read from a file or stdin so a wrong path cannot flood the app spec.
+const envValueSourceMaxBytes = 64 << 10
+
+// envSetStdin is swapped in tests; KEY=@- reads from it.
+var envSetStdin io.Reader = os.Stdin
 
 // runEnvSet implements "env set <app> KEY=VALUE...": the plain-env counterpart of "env push" for a few values.
 func runEnvSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -25,12 +34,18 @@ func runEnvSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 	}
 	name := rest[0]
 	entries := make([]envFileEntry, 0, len(rest)-1)
+	stdinUsed := false
 	for _, kv := range rest[1:] {
 		k, v, found := strings.Cut(kv, "=")
 		if !found || k == "" {
-			return reportError(stdout, stderr, jsonOut, newValidationError("%q is not KEY=VALUE", kv))
+			// Never echo the argument: it may carry a secret value.
+			return reportError(stdout, stderr, jsonOut, newValidationError("%q is not KEY=VALUE", kvKeyHint(kv)))
 		}
-		entries = append(entries, envFileEntry{Key: k, Value: v})
+		resolved, err := resolveEnvValue(k, v, &stdinUsed)
+		if err != nil {
+			return reportError(stdout, stderr, jsonOut, err)
+		}
+		entries = append(entries, envFileEntry{Key: k, Value: resolved})
 	}
 
 	ctx := context.Background()
@@ -83,6 +98,86 @@ func runEnvSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 	return code
 }
 
+// kvKeyHint trims an argument to the part before any "=" so errors never print a value.
+func kvKeyHint(kv string) string {
+	k, _, _ := strings.Cut(kv, "=")
+	return k
+}
+
+// resolveEnvValue expands the "@path", "@-" and "@@literal" value forms; errors name the key and path, never the content.
+func resolveEnvValue(key, v string, stdinUsed *bool) (string, error) {
+	if !strings.HasPrefix(v, "@") {
+		return v, nil
+	}
+	if strings.HasPrefix(v, "@@") {
+		return v[1:], nil
+	}
+	src := v[1:]
+	if src == "" {
+		return "", newValidationError("%s: empty value source after @; use @@ for a literal leading @", key)
+	}
+	var raw []byte
+	var err error
+	if src == "-" {
+		if *stdinUsed {
+			return "", newValidationError("only one KEY=@- is allowed per call, stdin can be read once")
+		}
+		*stdinUsed = true
+		raw, err = readBounded(envSetStdin)
+		if err != nil {
+			return "", newValidationError("%s: cannot read stdin: %v", key, err)
+		}
+	} else {
+		raw, err = readEnvValueFile(src)
+		if err != nil {
+			return "", newValidationError("%s: cannot read %s: %v", key, src, err)
+		}
+	}
+	if !utf8.Valid(raw) || strings.IndexByte(string(raw), 0) >= 0 {
+		return "", newValidationError("%s: value from %s must be valid UTF-8 without NUL bytes", key, src)
+	}
+	return strings.TrimSuffix(string(raw), "\n"), nil
+}
+
+func readEnvValueFile(path string) ([]byte, error) {
+	// Stat before Open so a FIFO or device never blocks the read.
+	if st, err := os.Stat(path); err != nil {
+		return nil, errReadReason(err)
+	} else if !st.Mode().IsRegular() {
+		return nil, fmt.Errorf("not a regular file")
+	}
+	// The path is the operator's own CLI argument.
+	f, err := os.Open(path) //nolint:gosec // G304: explicit user-supplied file source
+	if err != nil {
+		return nil, errReadReason(err)
+	}
+	defer func() { _ = f.Close() }()
+	if st, err := f.Stat(); err != nil || !st.Mode().IsRegular() {
+		return nil, fmt.Errorf("not a regular file")
+	}
+	return readBounded(f)
+}
+
+// errReadReason drops the wrapped path so the message carries only the cause.
+func errReadReason(err error) error {
+	var pe *os.PathError
+	if errors.As(err, &pe) {
+		return pe.Err
+	}
+	return err
+}
+
+func readBounded(r io.Reader) ([]byte, error) {
+	b, err := io.ReadAll(io.LimitReader(r, envValueSourceMaxBytes+1))
+	if err != nil {
+		return nil, fmt.Errorf("read failed")
+	}
+	if len(b) > envValueSourceMaxBytes {
+		return nil, fmt.Errorf("value is larger than %d bytes", envValueSourceMaxBytes)
+	}
+	return b, nil
+}
+
 // printRebuildHint names the command that rebuilds this app's source; the CLI cannot tell upload from image-only apps cheaply.
 func printRebuildHint(w io.Writer, prog, app string, keys []string, gitApp bool) {
 	for _, k := range keys {
@@ -99,6 +194,9 @@ func envSetUsage(prog string) string {
   %[1]s env set <app> KEY=VALUE [KEY=VALUE...] [flags]
 
 Sets plain environment variables on an app, creating or changing them.
+Only the first "=" splits, so values may contain "=", spaces and quotes (quote them for your shell).
+KEY=@path reads the value from a file (one trailing newline is dropped), KEY=@- reads stdin (once per call),
+and KEY=@@text sets the literal "@text". Sources are limited to 64 KiB of UTF-8 text.
 Keys stored as secrets are refused, use "%[1]s apps secrets set" for those.
 Changes reach the running container at the next restart, or now with --apply.
 NEXT_PUBLIC_ and VITE_ keys are baked in at build time: a git app needs "%[1]s deploy <app> --latest", an upload app "%[1]s deploy <dir>".
