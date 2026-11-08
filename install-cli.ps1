@@ -18,6 +18,7 @@
 #   APP_INSTALL_VERIFY         signature check on checksums.txt (cosign keyless):
 #                              auto, require, or off
 #   LEVELRAIL_RELEASE_BASE_URL download release assets from this https mirror
+#                              (with no pinned version the newest tag is read from <base>/latest)
 #   LEVELRAIL_INSECURE_MIRROR=1  allow an http mirror (tests only)
 #   LEVELRAIL_SKIP_PATH=1      do not touch PATH (tests only)
 
@@ -171,6 +172,28 @@ public static extern System.IntPtr SendMessageTimeout(System.IntPtr hWnd, uint M
         $channel = Get-EnvValue 'LEVELRAIL_CHANNEL'
         if (@('', 'stable', 'beta') -notcontains $channel) {
             Stop-Install "LEVELRAIL_CHANNEL must be stable or beta, got: $channel"
+        }
+        $mirror = Get-EnvValue 'LEVELRAIL_RELEASE_BASE_URL'
+        if ($mirror) {
+            # A mirror publishes its newest tag at <base>/latest, no GitHub API needed.
+            $mirror = $mirror.TrimEnd('/')
+            if ($mirror -like 'http://*') {
+                if ((Get-EnvValue 'LEVELRAIL_INSECURE_MIRROR') -ne '1') {
+                    Stop-Install 'LEVELRAIL_RELEASE_BASE_URL must be https (LEVELRAIL_INSECURE_MIRROR=1 allows http for tests)'
+                }
+            } elseif ($mirror -notlike 'https://*') {
+                Stop-Install 'LEVELRAIL_RELEASE_BASE_URL must start with https://'
+            }
+            try {
+                $latest = [string](Invoke-RestMethod -UseBasicParsing -TimeoutSec 30 -Uri "$mirror/latest")
+            } catch {
+                Stop-Install "could not read the latest version from $mirror/latest ($($_.Exception.Message)). Set LEVELRAIL_VERSION=vX.Y.Z to pin one."
+            }
+            $latest = ($latest -split "`n")[0].Trim()
+            if ($latest -notmatch '^[A-Za-z0-9._+-]+$') {
+                Stop-Install "$mirror/latest returned something that is not a version tag"
+            }
+            return $latest
         }
         try {
             $releases = Invoke-RestMethod -UseBasicParsing -TimeoutSec 30 -Headers @{ Accept = 'application/vnd.github+json' } `

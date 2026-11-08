@@ -25,7 +25,7 @@ Set the optional `Description` field on a Go template (manifest templates reuse 
 
 {/* BEGIN GENERATED CATALOG TABLE */}
 
-Generated from `internal/catalog.Templates` (442 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
+Generated from `internal/catalog.Templates` (444 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
 
 | Category | Templates |
 | --- | --- |
@@ -39,7 +39,7 @@ Generated from `internal/catalog.Templates` (442 entries as of this build). Run 
 | [Developer Tools](#developer-tools) | 67 |
 | [Finance](#finance) | 11 |
 | [Games](#games) | 5 |
-| [Infrastructure](#infrastructure) | 17 |
+| [Infrastructure](#infrastructure) | 19 |
 | [IoT](#iot) | 3 |
 | [Media](#media) | 30 |
 | [Monitoring](#monitoring) | 35 |
@@ -342,6 +342,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | Template | Slogan | ID | Notes |
 | --- | --- | --- | --- |
 | [AdGuard Home](https://github.com/AdguardTeam/AdGuardHome/wiki/Docker) | Network-wide ad and tracker blocking with a DNS server and a friendly admin dashboard. | `adguard-home` |  |
+| [Apache Kafka](https://kafka.apache.org/documentation/) | A single broker Apache Kafka in KRaft mode (no ZooKeeper) on the official image, with a persistent volume. It is not published on the host and speaks plaintext, so reach it only from other services in this project at kafka:9092. | `kafka` |  |
 | [Cloudflare DDNS](https://github.com/favonia/cloudflare-ddns) | Keeps Cloudflare DNS records pointed at your current public IP address. | `cloudflare-ddns` |  |
 | [Consul](https://developer.hashicorp.com/consul/docs) | HashiCorp Consul in single-server mode with the web UI: service discovery, health checks and a key-value store. | `consul` |  |
 | [Elasticsearch](https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html) | A distributed, RESTful search and analytics engine for full-text search and log analytics. Security is off, so reach it from other services in this project at elasticsearch:9200, or attach a domain only behind Basic Auth. Not published on the host. | `elasticsearch` |  |
@@ -351,6 +352,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 | [MeshCentral](https://meshcentral.com/docs/) | A remote device management server with web-based desktop, terminal and file access, plus agents for Windows, Linux and macOS. Apache-2.0 licensed. The first account you register becomes the server admin, so register it before sharing the address. Set the host name to your public domain so agents can find the server. | `meshcentral` |  |
 | [NATS](https://docs.nats.io/) | A lightweight messaging server for pub/sub, request/reply and durable streams, with JetStream persistence enabled. | `nats` |  |
 | [NetBox](https://github.com/netbox-community/netbox-docker) | Source-of-truth IPAM and DCIM for tracking IP space, racks, devices, and cabling. | `netbox` |  |
+| [Nginx](https://nginx.org/en/docs/) | The Nginx web server on the official Alpine image, serving a persistent web root. It starts with the default welcome page; put your site files in the web root volume through the app's Files. | `nginx` |  |
 | [Nginx Proxy Manager](https://nginxproxymanager.com/guide/) | A web UI for managing Nginx reverse-proxy hosts, redirects, and Let's Encrypt certificates. | `nginx-proxy-manager` |  |
 | [Pi-hole](https://docs.pi-hole.net) | Network-wide ad blocking that works as a DNS sinkhole for your whole network. | `pi-hole` |  |
 | [Portainer](https://docs.portainer.io) | A web UI for managing containers, images, volumes, and networks. | `portainer` |  |

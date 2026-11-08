@@ -32,7 +32,10 @@ try {
   process.exit(1);
 }
 
-const result = spawnSync(bin, process.argv.slice(2), { stdio: "inherit" });
+const result = spawnSync(bin, process.argv.slice(2), {
+  stdio: "inherit",
+  env: { ...process.env, LEVELRAIL_CLI_INSTALL_METHOD: "npm" },
+});
 if (result.error) {
   console.error(`levelrail-cli: ${result.error.message}`);
   process.exit(1);

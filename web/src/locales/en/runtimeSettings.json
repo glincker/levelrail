@@ -229,6 +229,10 @@
     "bootEventRecheck": {
       "title": "Boot recheck after first event",
       "description": "How long after the first Docker event the control plane runs one more reconcile pass, from 1s to 1h. Read at start."
+    },
+    "metricsScrapeEnabled": {
+      "title": "Prometheus scrape endpoint",
+      "description": "Serve app, database and node metrics in Prometheus text format at /metrics for a read token. When off, the endpoint answers 404."
     }
   },
   "row": {
@@ -321,5 +325,18 @@
     "noMatchTitle": "No settings match",
     "noMatchBody": "Try a shorter search, or clear the filters to see every setting.",
     "allCategories": "All categories"
+  },
+  "prometheus": {
+    "title": "Prometheus scrape",
+    "description": "Create a read-only token and point Prometheus at /metrics.",
+    "toggle": "Metrics scrape endpoint",
+    "create": "Create scrape token",
+    "creating": "Creating...",
+    "tokenOnce": "Copy this token now. It is shown once and cannot be retrieved later.",
+    "tokenLabel": "Scrape token",
+    "configLabel": "Scrape job",
+    "dismiss": "Done, hide token",
+    "error": "Could not create the token: {{message}}",
+    "saveError": "Could not save: {{message}}"
   }
 }

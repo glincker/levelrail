@@ -121,18 +121,19 @@ Domain redirects, maintenance mode, basic auth, the WAF, [Shield](/domain-traffi
 
 ## Putting a CDN in front
 
-A CDN such as Cloudflare, Akamai or Fastly can sit in front of the ingress. For the Cloudflare specifics (SSL mode, certificates, upload limits, and what the proxy does not hide) see [Run behind Cloudflare](/behind-cloudflare). Levelrail does not manage the CDN itself, but these settings make the two work together:
+A CDN such as Cloudflare, Akamai or Fastly can sit in front of the ingress. For the Cloudflare specifics (SSL mode, certificates, upload limits, and what the proxy does not hide) see [Run behind Cloudflare](/behind-cloudflare). Levelrail connects to Cloudflare so DNS, the proxy, cache purge and edge status for an app are managed from one place (`cdn setup <app>`, see [Cloudflare in front](/cloudflare-in-front)). For other CDNs these settings make the two work together:
 
 - Send correct `Cache-Control` from your app (`public, max-age=...` or `s-maxage=...` for shared caches, `private` or `no-store` for anything personal). Both the CDN and the ingress follow it. Send a tag header such as `Cache-Tag` if you purge Levelrail by tag; check which header your CDN uses for its own tags, since the names differ.
 - Add the CDN's address ranges to `APP_INGRESS_TRUSTED_PROXIES` so visitor addresses, Shield rate limits and country rules use the real client address from `X-Forwarded-For` rather than the CDN's. See [behind an existing proxy](/behind-an-existing-proxy).
-- For Cloudflare, Levelrail purges the edge cache for you when a static site is published, deployed or rolled back, as long as the app's DNS records are proxied (see below). For any other CDN, purge it with its own tools; purging Levelrail does not purge the CDN, and the reverse.
+- For Cloudflare, Levelrail purges the edge cache for you when an app is published, deployed or rolled back, as long as the app's DNS records are proxied (see below). For any other CDN, purge it with its own tools; purging Levelrail does not purge the CDN, and the reverse.
 
 ### Cloudflare purge on publish
 
-When the app's records are proxied, a static publish, a deploy, publishing a held build and a rollback each clear Cloudflare's cache for the app's domains, so visitors do not keep seeing the old site.
+When the app's records are proxied, a static publish, a deploy of any app, publishing a held build and a rollback each clear Cloudflare's cache for the app's domains, so visitors do not keep seeing the old site.
 
 - The Cloudflare token needs the **Cache Purge** permission, and **Zone Settings: Read** for the SSL check below.
-- The purge is best effort. If it fails, the publish or rollback still succeeds; the build log shows a warning, and the rollback and publish responses carry a `cdn_warning` field.
+- A container app is purged when the deploy or rollback is accepted, before the new release serves. A build started by a push to the repository does not purge a container app yet. Each attempt is listed by `GET /api/v1/apps/{name}/edge` (kept in memory; `APP_CDN_PURGE_HISTORY` sets how many per app, default 20).
+- The purge is best effort. If it fails, the publish, deploy or rollback still succeeds; the build log shows a warning, and the responses carry a `cdn_warning` field.
 - Set `APP_CDN_PURGE=off` to turn the purge off, and `APP_CDN_PURGE_TIMEOUT` (a duration, default `20s`) to bound how long it may take.
 - The purge clears every cached URL under the app's hostnames, not other apps on the same zone.
 

@@ -389,7 +389,7 @@ func TestClient_RemoveNetwork_Live_DisconnectsAttachedContainersFirst(t *testing
 	if _, err := c.EnsureNetwork(ctx, netName); err != nil {
 		t.Fatalf("EnsureNetwork() error = %v", err)
 	}
-	id, err := c.Create(ctx, ContainerSpec{Name: containerName, Image: "nginx:alpine"})
+	id, err := c.Create(ctx, ContainerSpec{Name: containerName, Image: "nginx:alpine", Labels: map[string]string{containerAppLabel: "remove-test"}})
 	if err != nil {
 		t.Fatalf("Create() error = %v", err)
 	}

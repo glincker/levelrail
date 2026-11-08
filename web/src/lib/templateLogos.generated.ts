@@ -190,6 +190,7 @@ export const TEMPLATE_LOGO_LOADERS: Record<
   'jupyter-gpu': () => import('@thesvg/react/jupyter'),
   'jupyter-notebook': () => import('@thesvg/react/jupyter'),
   'jupyter-notebook-python': () => import('@thesvg/react/jupyter'),
+  kafka: () => import('@thesvg/react/kafka'),
   kanboard: () => import('@thesvg/react/kanboard'),
   karakeep: () => import('@thesvg/react/karakeep'),
   kavita: () => import('@thesvg/react/kavita'),

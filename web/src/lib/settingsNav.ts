@@ -423,6 +423,11 @@ export const settingsNavSections: SettingsNavSection[] = [
         icon: GitBranchGlassIcon,
       },
       {
+        id: 'azure-devops-app',
+        to: '/settings/azure-devops-app',
+        icon: GitBranchGlassIcon,
+      },
+      {
         id: 'registry',
         to: '/settings/registry',
         icon: PackageGlassIcon,

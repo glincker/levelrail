@@ -137,13 +137,19 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_JOBS_HTTP_TIMEOUT_SECONDS` | [`jobs.http_timeout_seconds`](/runtime-settings#deploys) | `30` |
 | `APP_NEXTJS_GENERATE_ACTIONS_KEY` | [`nextjs.generate_actions_key`](/runtime-settings#deploys) | `true` |
 | `APP_PLACEMENT_SCORE_MODE` | [`placement.score_mode`](/runtime-settings#deploys) | `spread` |
+| `APP_PREVIEW_MIGRATE_TIMEOUT` | [`previews.migrate_timeout`](/runtime-settings#deploys) | `10m` |
+| `APP_PREVIEW_MIGRATE_WAIT` | [`previews.migrate_wait`](/runtime-settings#deploys) | `2m` |
+| `APP_PROJECT_CLONE_MAX_APPS` | [`projects.clone_max_apps`](/runtime-settings#deploys) | `50` |
+| `APP_PROJECT_CLONE_PLACEHOLDER_DOMAIN` | [`projects.clone_placeholder_domain`](/runtime-settings#deploys) | `clone.invalid` |
 | `APP_PROJECTS_DEFAULT_ENVIRONMENT` | [`projects.default_environment`](/runtime-settings#deploys) | `false` |
 | `APP_PROJECTS_DEFAULT_ENVIRONMENT_NAME` | [`projects.default_environment_name`](/runtime-settings#deploys) | `production` |
+| `APP_REGISTRY_MIRROR_PREFIX` | [`registry.mirror_prefix`](/runtime-settings#deploys) | empty |
 | `APP_VOLUMES_IMPORT_OVERWRITE` | [`volumes.import_overwrite`](/runtime-settings#deploys) | `false` |
 | `APP_VOLUMES_TRANSFER_MAX_BYTES` | [`volumes.transfer_max_bytes`](/runtime-settings#deploys) | `10737418240` |
 | `APP_VOLUMES_TRANSFER_MAX_CONCURRENT` | [`volumes.transfer_max_concurrent`](/runtime-settings#deploys) | `1` |
 | `APP_VOLUMES_TRANSFER_SPOOL_DIR` | [`volumes.transfer_spool_dir`](/runtime-settings#deploys) | `volume-transfer` |
 | `APP_VOLUMES_TRANSFER_TIMEOUT` | [`volumes.transfer_timeout`](/runtime-settings#deploys) | `30m` |
+| `APP_DEPLOY_EXPLAIN_LOG_LINES` | [`deploy.explain_log_lines`](/runtime-settings#observability) | `8` |
 | `APP_DISK_CRITICAL_FREE_MB` | [`disk.critical_free_mb`](/runtime-settings#observability) | `512` |
 | `APP_DISK_FORECAST_MIN_DAYS` | [`disk.forecast_min_days`](/runtime-settings#observability) | `7` |
 | `APP_DISK_FORECAST_WINDOW_DAYS` | [`disk.forecast_window_days`](/runtime-settings#observability) | `30` |
@@ -156,6 +162,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_HEARTBEAT_JOB_MAX_ATTEMPTS` | [`heartbeat.job_max_attempts`](/runtime-settings#observability) | `3` |
 | `APP_HEARTBEAT_JOB_QUEUE` | [`heartbeat.job_queue`](/runtime-settings#observability) | `64` |
 | `APP_MONITOR_RAW_RETENTION` | [`monitors.raw_retention`](/runtime-settings#observability) | `48h` |
+| `APP_METRICS_SCRAPE_ENABLED` | [`observability.metrics_scrape_enabled`](/runtime-settings#observability) | `true` |
 | `APP_STORAGE_CRITICAL_FREE_PERCENT` | [`storage.critical_free_percent`](/runtime-settings#observability) | `5` |
 | `APP_STORAGE_LARGE_UNMANAGED_IMAGE_MB` | [`storage.large_unmanaged_image_mb`](/runtime-settings#observability) | `500` |
 | `APP_STORAGE_LOW_FREE_PERCENT` | [`storage.low_free_percent`](/runtime-settings#observability) | `15` |
@@ -174,6 +181,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_VITALS_REPORT_TOP_ROUTES` | [`vitals.report_top_routes`](/runtime-settings#observability) | `50` |
 | `APP_ACCOUNT_PREFERENCES_MAX_BYTES` | [`account.preferences_max_bytes`](/runtime-settings#data-retention) | `8192` |
 | `APP_BACKUP_DEFAULT_RETENTION_HOURS` | [`backup.default_retention_hours`](/runtime-settings#data-retention) | `168` |
+| `APP_CDN_PURGE_HISTORY` | [`cdn.purge_history`](/runtime-settings#data-retention) | `20` |
 | `APP_CLEANUP_ENABLED` | [`cleanup.enabled`](/runtime-settings#data-retention) | `true` |
 | `APP_CLEANUP_INTERVAL` | [`cleanup.interval`](/runtime-settings#data-retention) | `6h` |
 | `APP_IMAGES_REMOVE_MAX_PER_REQUEST` | [`images.remove_max_per_request`](/runtime-settings#data-retention) | `200` |
@@ -196,6 +204,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_VITALS_RETENTION_DAYS` | [`vitals.retention_days`](/runtime-settings#data-retention) | `30` |
 | `APP_ONBOARDING_ENABLED` | [`onboarding.enabled`](/runtime-settings#experimental) | `true` |
 | `APP_ONBOARDING_RESTORE_REMINDER_DAYS` | [`onboarding.restore_reminder_days`](/runtime-settings#experimental) | `7` |
+| `APP_UPDATE_CHANNELS_OFFERED` | [`updates.offered_channels`](/runtime-settings#experimental) | `stable` |
 <!-- runtime-settings:end -->
 
 ## Sessions and cookies
@@ -643,6 +652,8 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 | `APP_DB_RECREATE_BACKOFF_MAX` | ``15m`` | Longest wait between database recreates under backoff. Control plane. |
 | `APP_EXTERNAL_DB_PROBE_TIMEOUT` | ``2m`` | Time limit for probing an external database connection. Control plane. |
 | `APP_PREVIEW_SEED_TIMEOUT` | ``30m`` | Time limit for seeding a preview's database from the newest source backup. Control plane. |
+| `APP_PREVIEW_MIGRATE_TIMEOUT` | ``10m`` | Default time limit for a preview's migrate command when the app sets none. Control plane. |
+| `APP_PREVIEW_MIGRATE_WAIT` | ``2m`` | How long to wait for the preview container to run before its migrate command. Control plane. |
 | `APP_FAILURE_CONTEXT_QUIET` | ``2m`` | How long an app must run without restarting after recovery before a past crash loop stops showing as current. Control plane. |
 | `APP_RERUN_CHAIN_MAX_DEPTH` | ``50`` | Longest chain of deploy reruns followed when counting attempts. Control plane. |
 | `APP_LB_TRAFFIC_WINDOW` | ``5m`` | Time window over which load balancer traffic is counted. Control plane. |

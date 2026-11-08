@@ -37,13 +37,15 @@ echo "Release:  $tag (npm version $version, dist-tag $dist_tag)"
 gh release download "$tag" --repo "$repo" --pattern 'levelrail-cli-*' --dir "$work/dist" >/dev/null
 "$root/scripts/build-npm-packages.sh" "$tag" "$work/dist" "$work/out" >/dev/null
 
-# Platform packages first: the launcher package depends on them.
+# Platform packages first, then the launcher, then the forwarders that
+# depend on the launcher. Entries are output directories.
 packages=()
-for d in "$work"/out/levelrail-cli-*/ "$work"/out/levelrail-cli/; do
+for d in "$work"/out/levelrail-cli-*/ "$work"/out/levelrail-cli/ "$work"/out/levelrail/ "$work"/out/levelrail-scoped/; do
 	packages+=("$(basename "$d")")
 done
+pkg_name() { node -p "require('$work/out/$1/package.json').name"; }
 
-echo "Packages: ${packages[*]}"
+echo "Packages: ${packages[*]} (levelrail-scoped publishes as @levelrail/cli)"
 echo "Trusted publisher: github.com/$repo, workflow $workflow, environment $environment"
 if [ "$dry" -eq 0 ] && [ "$yes" -eq 0 ]; then
 	read -r -p "Publish these and register the trusted publisher? [y/N] " answer
@@ -55,21 +57,23 @@ if [ "$dry" -eq 0 ]; then
 	echo "npm user: $(npm whoami)"
 fi
 
-for name in "${packages[@]}"; do
+for dir in "${packages[@]}"; do
+	name="$(pkg_name "$dir")"
 	if npm view "${name}@${version}" version >/dev/null 2>&1; then
 		echo "skip     ${name}@${version} (already on npm)"
 		continue
 	fi
 	echo "publish  ${name}@${version}"
 	if [ "$dry" -eq 1 ]; then
-		(cd "$work/out/$name" && npm publish --dry-run --access public --tag "$dist_tag" >/dev/null)
+		(cd "$work/out/$dir" && npm publish --dry-run --access public --tag "$dist_tag" >/dev/null)
 	else
-		(cd "$work/out/$name" && npm publish --access public --tag "$dist_tag")
+		(cd "$work/out/$dir" && npm publish --access public --tag "$dist_tag")
 	fi
 done
 
 failed=0
-for name in "${packages[@]}"; do
+for dir in "${packages[@]}"; do
+	name="$(pkg_name "$dir")"
 	if npm trust list "$name" 2>/dev/null | grep -q "$repo"; then
 		echo "skip     trust for $name (already registered)"
 		continue

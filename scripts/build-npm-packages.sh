@@ -10,6 +10,8 @@ dist="${2:?usage: build-npm-packages.sh <tag> <dist-dir> <out-dir>}"
 out="${3:?usage: build-npm-packages.sh <tag> <dist-dir> <out-dir>}"
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 version="${tag#v}"
+# Shared across all nine packages so npm search and scanners see one story.
+keywords='"keywords": ["levelrail", "deploy", "paas", "self-hosted", "cli", "docker", "nextjs", "coolify-alternative", "vercel-alternative", "mcp", "devops"],'
 
 platforms="linux:amd64:linux:x64 linux:arm64:linux:arm64 darwin:amd64:darwin:x64 darwin:arm64:darwin:arm64 windows:amd64:win32:x64 windows:arm64:win32:arm64"
 
@@ -29,17 +31,33 @@ for p in $platforms; do
 	mkdir -p "$dir/bin"
 	cp "$src" "$dir/bin/levelrail-cli${ext}"
 	chmod 755 "$dir/bin/levelrail-cli${ext}"
+	cp "$root/LICENSE" "$dir/LICENSE"
+	cat >"$dir/README.md" <<EOF3
+# ${name}
+
+Prebuilt Levelrail CLI binary for ${goos}/${goarch} (npm os ${npm_os}, cpu ${npm_cpu}).
+
+Do not install this package directly. It is pulled in automatically by [levelrail-cli](https://www.npmjs.com/package/levelrail-cli), the client for the self-hosted Levelrail deployment platform. It installs the CLI only, never the server.
+
+Docs: https://docs.levelrail.com. Issues: https://github.com/glincker/levelrail/issues.
+
+Apache 2.0.
+EOF3
 	cat >"$dir/package.json" <<EOF
 {
   "name": "${name}",
   "version": "${version}",
-  "description": "Prebuilt levelrail-cli binary for ${goos}/${goarch}",
+  "description": "Prebuilt Levelrail CLI binary for ${goos}/${goarch}. Installed automatically by levelrail-cli, do not install directly.",
   "license": "Apache-2.0",
-  "repository": { "type": "git", "url": "git+https://github.com/glincker/levelrail.git" },
+  "repository": { "type": "git", "url": "git+https://github.com/glincker/levelrail.git", "directory": "deploy/packaging/npm" },
   "homepage": "https://levelrail.com",
+  "author": { "name": "Glincker", "url": "https://levelrail.com" },
+  "bugs": { "url": "https://github.com/glincker/levelrail/issues" },
+  ${keywords}
+  "publishConfig": { "access": "public", "provenance": true },
   "os": ["${npm_os}"],
   "cpu": ["${npm_cpu}"],
-  "files": ["bin"]
+  "files": ["bin", "README.md", "LICENSE"]
 }
 EOF
 	deps="${deps}    \"${name}\": \"${version}\",
@@ -60,10 +78,12 @@ cat >"$main/package.json" <<EOF
   "version": "${version}",
   "description": "Command line client for Levelrail, a self-hosted deployment platform",
   "license": "Apache-2.0",
-  "repository": { "type": "git", "url": "git+https://github.com/glincker/levelrail.git" },
+  "repository": { "type": "git", "url": "git+https://github.com/glincker/levelrail.git", "directory": "deploy/packaging/npm" },
   "homepage": "https://levelrail.com",
-  "bugs": "https://github.com/glincker/levelrail/issues",
-  "keywords": ["levelrail", "deploy", "paas", "self-hosted", "cli", "docker"],
+  "author": { "name": "Glincker", "url": "https://levelrail.com" },
+  "bugs": { "url": "https://github.com/glincker/levelrail/issues" },
+  ${keywords}
+  "publishConfig": { "access": "public", "provenance": true },
   "bin": { "levelrail-cli": "bin/levelrail-cli.js" },
   "files": ["bin", "README.md", "LICENSE"],
   "optionalDependencies": {
@@ -71,5 +91,38 @@ ${deps}
   }
 }
 EOF
+
+# Thin forwarders that claim the brand names: unscoped levelrail and the
+# scoped alias. Each depends on exactly the same levelrail-cli version.
+forwarder() {
+	local dir="$1" name="$2" bin="$3" readme="$4"
+	mkdir -p "$out/$dir/bin"
+	cp "$root/deploy/packaging/npm/forwarders/forward.js" "$out/$dir/bin/forward.js"
+	chmod 755 "$out/$dir/bin/forward.js"
+	cp "$root/deploy/packaging/npm/forwarders/$readme" "$out/$dir/README.md"
+	cp "$root/LICENSE" "$out/$dir/LICENSE"
+	cat >"$out/$dir/package.json" <<EOF2
+{
+  "name": "${name}",
+  "version": "${version}",
+  "description": "Command line client for Levelrail, a self-hosted deployment platform (forwards to levelrail-cli)",
+  "license": "Apache-2.0",
+  "repository": { "type": "git", "url": "git+https://github.com/glincker/levelrail.git", "directory": "deploy/packaging/npm/forwarders" },
+  "homepage": "https://levelrail.com",
+  "author": { "name": "Glincker", "url": "https://levelrail.com" },
+  "bugs": { "url": "https://github.com/glincker/levelrail/issues" },
+  ${keywords}
+  "bin": { "${bin}": "bin/forward.js" },
+  "files": ["bin", "README.md", "LICENSE"],
+  "engines": { "node": ">=18" },
+  "publishConfig": { "access": "public", "provenance": true },
+  "dependencies": {
+    "levelrail-cli": "${version}"
+  }
+}
+EOF2
+}
+forwarder levelrail levelrail levelrail README-levelrail.md
+forwarder levelrail-scoped @levelrail/cli levelrail-scoped README-scoped.md
 
 echo "built npm packages for ${version} in ${out}"

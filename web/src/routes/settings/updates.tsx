@@ -22,6 +22,7 @@ import { UpgradePreflight } from '../../components/settings/UpgradePreflight'
 import { UpgradeAttempts } from '../../components/settings/UpgradeAttempts'
 import { RestorePoints } from '../../components/settings/RestorePoints'
 import { AutomaticUpgrades } from '../../components/settings/AutomaticUpgrades'
+import { AutoUpdateCard } from '../../components/settings/AutoUpdateCard'
 import { ServerReadiness } from '../../components/settings/ServerReadiness'
 import { ReleaseHistory } from '../../components/settings/ReleaseHistory'
 import { UpgradeHistory } from '../../components/settings/UpgradeHistory'
@@ -130,6 +131,7 @@ function UpdatesSettingsPage() {
     >
       <UpdateStatusHeader initial={status} />
       <UpdateSettingsForm settings={settings} />
+      <AutoUpdateCard />
       <SectionCard title={t('auto.title')} description={t('auto.description')}>
         <AutomaticUpgrades />
       </SectionCard>

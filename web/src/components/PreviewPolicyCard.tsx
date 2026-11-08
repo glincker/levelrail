@@ -23,6 +23,7 @@ import { toast } from '@/components/ui/toast'
 import { InfoTip, SkeletonLine } from './kit'
 import { useGitSource } from '../queries/gitSources'
 import { usePreviewPolicy, useSetPreviewPolicy } from '../queries/previewPolicy'
+import { PreviewMigrateFields } from './PreviewMigrateFields'
 import type { PreviewOnLimit, PreviewPolicy } from '../types/previewEnvironment'
 
 const ON_LIMIT_LABEL: Record<PreviewOnLimit, string> = {
@@ -92,9 +93,10 @@ export function PreviewPolicyCard({ appName }: { appName: string }) {
           </p>
         ) : (
           <PreviewPolicyForm
-            key={`${policy.data.on_limit}:${policy.data.ttl_hours}`}
+            key={`${policy.data.on_limit}:${policy.data.ttl_hours}:${policy.data.migrate_command}:${policy.data.migrate_timeout_seconds}:${policy.data.image_tag_template}`}
             appName={appName}
             policy={policy.data}
+            isImageApp={String(gitSource.data.build_type) === 'image'}
           />
         )}
       </CardContent>
@@ -105,9 +107,11 @@ export function PreviewPolicyCard({ appName }: { appName: string }) {
 function PreviewPolicyForm({
   appName,
   policy,
+  isImageApp,
 }: {
   appName: string
   policy: PreviewPolicy
+  isImageApp: boolean
 }) {
   const setPolicy = useSetPreviewPolicy(appName)
   const [ttl, setTtl] = useState(String(policy.ttl_hours))
@@ -248,6 +252,12 @@ function PreviewPolicyForm({
           </Button>
         </div>
       </div>
+
+      <PreviewMigrateFields
+        appName={appName}
+        policy={policy}
+        isImageApp={isImageApp}
+      />
     </div>
   )
 }

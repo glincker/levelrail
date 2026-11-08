@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1991 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1998 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -175,6 +175,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/cdn", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppCDN", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/cdn", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePutAppCDN", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/cdn/resync", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleResyncAppCDN", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/cdn/setup", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetupAppCDN", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/changes", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppChanges", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/ci/templates", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetCITemplates", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/ci/trusts", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListCITrusts", Description: ""},
@@ -230,6 +231,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/dns-provider", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppDNSProvider", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/dns-provider", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppDNSProvider", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/dns-provider/test", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleTestAppDNSProvider", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/edge", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppEdge", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/effective-config", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetEffectiveConfig", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/egress-policy", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleClearAppEgressPolicy", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/egress-policy", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppEgressPolicy", Description: "Outbound allowlist per app: AbilityWriteSensitive, it changes the exfiltration surface. GET has its own route since an unset policy is the common case."},
@@ -382,6 +384,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/rollout", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteRollout", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/rollout", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetRollout", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/rollout", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePutRollout", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/rollout/state", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetRolloutState", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/save-as-template", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSaveAppAsTemplate", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/schedule", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppSchedule", Description: "Scheduled deploys (app_schedule.go): a per-app cron schedule that redeploys the latest commit on a branch, checked by internal/scheduledeploy.Scheduler. Same GET=Read/PUT=WriteSensitive split as git-source just above."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/schedule", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppSchedule", Description: ""},
@@ -452,6 +455,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/git/{repo}/git-receive-pack", Ability: "Public", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGitReceivePack", Description: ""},
 	{Method: "GET", Path: "/api/v1/git/{repo}/info/refs", Ability: "Public", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGitInfoRefs", Description: "The push endpoints (git_push_http.go) take HTTP basic auth with the per-app push token (hash compared in constant time, uniform 401, rate limited), not a session. An anonymous request gets the 401 challenge git clients expect."},
 	{Method: "GET", Path: "/api/v1/service-templates", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListServiceTemplates", Description: "Service template catalog (service_templates.go, ADR 015): read-only, static, served straight from internal/catalog.Templates, no store involved. AbilityRead like every other passive view."},
+	{Method: "POST", Path: "/api/v1/service-templates/validate", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleValidateTemplateSubmission", Description: ""},
 	{Method: "GET", Path: "/api/v1/service-templates/{id}", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetServiceTemplate", Description: ""},
 	{Method: "POST", Path: "/api/v1/service-templates/{id}/deploy", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeployServiceTemplateNow", Description: "One-click template deploy (handleDeployServiceTemplateNow): not scoped to an existing app (the app doesn't exist until this request creates it), same \"no resource to scope to yet\" shape as POST /api/v1/git/branches and POST /api/v1/build/detect below. AbilityDeploy, matching POST /api/v1/apps/{name}/compose above, since deployComposeBody is the same create-and-deploy core."},
 	{Method: "POST", Path: "/api/v1/service-templates/{id}/install", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleInstallServiceTemplate", Description: ""},
@@ -1102,6 +1106,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/deployments/stream", Ability: "AbilityRead", Group: "Other", Handler: "handleDeploymentsStream", Description: ""},
 	{Method: "GET", Path: "/api/v1/deployments/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleDeploymentsSummary", Description: ""},
 	{Method: "GET", Path: "/api/v1/deployments/timeline", Ability: "AbilityRead", Group: "Other", Handler: "handleDeploymentsTimeline", Description: ""},
+	{Method: "GET", Path: "/api/v1/deployments/{id}/explain", Ability: "AbilityRead", Group: "Other", Handler: "handleExplainDeploy", Description: ""},
 	{Method: "GET", Path: "/api/v1/deployments/{id}/phases", Ability: "AbilityRead", Group: "Other", Handler: "handleGetDeployPhases", Description: "Deploy phases (deploy_phases.go): stages with status, timing and ETA, derived from stored trace rows and the build log. AbilityRead."},
 	{Method: "GET", Path: "/api/v1/deployments/{id}/timeline", Ability: "AbilityRead", Group: "Other", Handler: "handleGetDeployTimeline", Description: "Per-deploy event timeline (deploy_timeline.go): the whole story of one deploy as ordered events, a live SSE view that ends when the deploy settles, and a two-deploy comparison. Settled timelines are frozen for replay until APP_DEPLOY_TIMELINE_RETENTION. AbilityRead, filtered to the apps the caller can read."},
 	{Method: "GET", Path: "/api/v1/deployments/{id}/timeline/compare", Ability: "AbilityRead", Group: "Other", Handler: "handleCompareDeployTimelines", Description: ""},
@@ -1789,6 +1794,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/projects/default-environments/backfill", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleBackfillDefaultEnvironments", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/projects/{id}", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleDeleteProject", Description: ""},
 	{Method: "GET", Path: "/api/v1/projects/{id}", Ability: "AbilityRead", Group: "Projects / Organizations / Environments", Handler: "handleGetProject", Description: ""},
+	{Method: "POST", Path: "/api/v1/projects/{id}/clone", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleCloneProject", Description: "Topology (topology.go): a read-only diagram-ready graph derived from this project's existing desired state, AbilityRead like the project read itself above, not a new server-side list filter (see this file's own package doc comment on why apps/databases stay client-filtered elsewhere): a graph's nodes and edges aren't a list page. Compose export (project_export.go): AbilityReadSensitive since env is read; include_secrets is gated again on write:sensitive in the handler."},
 	{Method: "PUT", Path: "/api/v1/projects/{id}/default-environment", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleSetProjectDefaultEnvironment", Description: "Default environment per project (project_default_env.go): a create naming a project but no environment joins it."},
 	{Method: "GET", Path: "/api/v1/projects/{id}/env", Ability: "AbilityRead", Group: "Projects / Organizations / Environments", Handler: "handleGetProjectEnv", Description: "Shared env vars every app filed under this project inherits (project_env.go): same AbilityRead/AbilityWrite boundary as the project CRUD routes just above."},
 	{Method: "PUT", Path: "/api/v1/projects/{id}/env", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleSetProjectEnv", Description: ""},
@@ -1799,7 +1805,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/projects/{id}/environments", Ability: "AbilityRead", Group: "Projects / Organizations / Environments", Handler: "handleListEnvironments", Description: "Environments (environments.go): staging/production-style labels scoped to a project, tagged onto a service via its own app route."},
 	{Method: "POST", Path: "/api/v1/projects/{id}/environments", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleCreateEnvironment", Description: ""},
 	{Method: "GET", Path: "/api/v1/projects/{id}/environments/compare", Ability: "AbilityRead", Group: "Projects / Organizations / Environments", Handler: "handleCompareEnvironmentEnv", Description: "Cross-environment env var drift check (environment_compare.go): resolved effective env vars for two of this project's environments, secret values always redacted."},
-	{Method: "GET", Path: "/api/v1/projects/{id}/export", Ability: "AbilityReadSensitive", Group: "Projects / Organizations / Environments", Handler: "handleExportProject", Description: "Topology (topology.go): a read-only diagram-ready graph derived from this project's existing desired state, AbilityRead like the project read itself above, not a new server-side list filter (see this file's own package doc comment on why apps/databases stay client-filtered elsewhere): a graph's nodes and edges aren't a list page. Compose export (project_export.go): AbilityReadSensitive since env is read; include_secrets is gated again on write:sensitive in the handler."},
+	{Method: "GET", Path: "/api/v1/projects/{id}/export", Ability: "AbilityReadSensitive", Group: "Projects / Organizations / Environments", Handler: "handleExportProject", Description: ""},
 	{Method: "PUT", Path: "/api/v1/projects/{id}/organization", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleSetProjectOrganization", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/projects/{id}/quota", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleDeleteQuota", Description: ""},
 	{Method: "GET", Path: "/api/v1/projects/{id}/quota", Ability: "AbilityRead", Group: "Projects / Organizations / Environments", Handler: "handleGetQuota", Description: ""},
@@ -1978,6 +1984,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/updates", Ability: "AbilityRead", Group: "System", Handler: "handleGetUpdates", Description: "Updates (Settings > Updates page): running version vs. GitHub's latest published release, AbilityRead like system/status above."},
 	{Method: "GET", Path: "/api/v1/updates/auto", Ability: "AbilityRoot", Group: "System", Handler: "handleGetUpgradePolicy", Description: ""},
 	{Method: "PUT", Path: "/api/v1/updates/auto", Ability: "AbilityRoot", Group: "System", Handler: "handleUpdateUpgradePolicy", Description: ""},
+	{Method: "POST", Path: "/api/v1/updates/auto/notice/dismiss", Ability: "AbilityRoot", Group: "System", Handler: "handleDismissUpgradeNotice", Description: ""},
 	{Method: "POST", Path: "/api/v1/updates/backup-now", Ability: "AbilityRoot", Group: "System", Handler: "handleUpgradeBackupNow", Description: ""},
 	{Method: "GET", Path: "/api/v1/updates/history", Ability: "AbilityRead", Group: "System", Handler: "handleUpgradeHistory", Description: ""},
 	{Method: "POST", Path: "/api/v1/updates/history/{id}/ack", Ability: "AbilityWrite", Group: "System", Handler: "handleAckUpgrade", Description: ""},

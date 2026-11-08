@@ -90,6 +90,9 @@ func (s *bootState) buildRunners() error {
 		},
 		Logger: logger,
 	}
+	if secretsManager != nil {
+		scheduledTaskRunner.Secrets = secretsManager
+	}
 	s.backupRunner = backupRunner
 	s.backupVerifyRunner = backupVerifyRunner
 	s.scheduledTaskRunner = scheduledTaskRunner

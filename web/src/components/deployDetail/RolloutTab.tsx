@@ -18,6 +18,7 @@ import type { DeployState } from '../../lib/deployState'
 import type { ReconcileCondition } from '../../types/deploy'
 import type { ProbeAttempt } from '../../types/probeAttempt'
 import { RolloutCountsPanel } from './RolloutCountsPanel'
+import { RolloutStateCard } from './RolloutStateCard'
 import { useDeployDetailT } from './useDeployDetailT'
 import type { TimelineRow } from './timelineRows'
 
@@ -177,6 +178,7 @@ export function RolloutTab({
   const { t } = useDeployDetailT()
   return (
     <div className="space-y-4">
+      {state.isStatic ? null : <RolloutStateCard appName={appName} />}
       <RolloutCountsPanel appName={appName} />
       <section
         aria-label={t('rollout.title')}

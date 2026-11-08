@@ -2,7 +2,10 @@ package provision
 
 import (
 	"fmt"
+	"os"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/runtimesettings/registrymirror"
 )
 
 // agentImageOwner is the registry namespace the agent image is published under, a concrete upstream location rather than branding.
@@ -27,6 +30,27 @@ type CloudInitParams struct {
 	// MeshEnabled gives the agent container the TUN device and NET_ADMIN
 	// its WireGuard device needs.
 	MeshEnabled bool
+	// RegistryMirrorPrefix is put in front of the default image's registry host; it never rewrites an explicit AgentImage.
+	RegistryMirrorPrefix string
+	// DockerMirror picks the get.docker.com mirror (Aliyun or AzureChinaCloud); empty falls back to LEVELRAIL_DOCKER_MIRROR.
+	DockerMirror string
+}
+
+// dockerMirrors is the allow list get.docker.com accepts that we expose.
+var dockerMirrors = map[string]bool{"Aliyun": true, "AzureChinaCloud": true}
+
+func (p CloudInitParams) dockerInstallCmd() (string, error) {
+	m := p.DockerMirror
+	if m == "" {
+		m = os.Getenv("LEVELRAIL_DOCKER_MIRROR")
+	}
+	if m == "" {
+		return "curl -fsSL https://get.docker.com | sh", nil
+	}
+	if !dockerMirrors[m] {
+		return "", fmt.Errorf("provision: render cloud-init: docker mirror %q is not allowed, use Aliyun or AzureChinaCloud", m)
+	}
+	return "curl -fsSL https://get.docker.com | sh -s -- --mirror " + m, nil
 }
 
 func (p CloudInitParams) agentImage() string {
@@ -43,7 +67,7 @@ func (p CloudInitParams) agentImage() string {
 	if tag == "" || tag == "dev" {
 		tag = "edge"
 	}
-	return agentImageOwner + p.AgentName + ":" + tag
+	return registrymirror.Apply(agentImageOwner+p.AgentName+":"+tag, p.RegistryMirrorPrefix)
 }
 
 // RenderCloudInit renders the user-data cloud-init runs on first boot: it
@@ -68,6 +92,11 @@ func RenderCloudInit(p CloudInitParams) (string, error) {
 		}
 	}
 
+	dockerCmd, err := p.dockerInstallCmd()
+	if err != nil {
+		return "", err
+	}
+
 	var envLines strings.Builder
 	fmt.Fprintf(&envLines, "APP_CONTROL_PLANE_ADDR=%s\n", p.ControlPlaneAddr)
 	fmt.Fprintf(&envLines, "APP_JOIN_TOKEN=%s\n", p.JoinToken)
@@ -81,7 +110,7 @@ func RenderCloudInit(p CloudInitParams) (string, error) {
 	}
 
 	unit := fmt.Sprintf(agentUnit, p.agentImage(), meshFlags, p.AgentName, p.DisplayName)
-	return fmt.Sprintf(cloudInitTemplate, indentBlock(envLines.String()), indentBlock(unit), p.AgentName), nil
+	return fmt.Sprintf(cloudInitTemplate, indentBlock(envLines.String()), indentBlock(unit), p.AgentName, dockerCmd), nil
 }
 
 const agentUnit = `[Unit]
@@ -113,7 +142,7 @@ write_files:
     content: |
 %[2]s
 runcmd:
-  - command -v docker >/dev/null 2>&1 || (curl -fsSL https://get.docker.com | sh)
+  - command -v docker >/dev/null 2>&1 || (%[4]s)
   - systemctl enable --now docker
   - mkdir -p /var/lib/%[3]s-data
   - chown root:root /var/lib/%[3]s-data

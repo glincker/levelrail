@@ -24,6 +24,17 @@ func TestSanitizeCacheID(t *testing.T) {
 	}
 }
 
+func TestSanitizeCacheIDLongNamesUnique(t *testing.T) {
+	prefix := strings.Repeat("a", 50)
+	a, b := SanitizeCacheID(prefix+"-one", ""), SanitizeCacheID(prefix+"-two", "")
+	if a == b || len(a) > maxCacheIDLen || len(b) > maxCacheIDLen {
+		t.Fatalf("collision or too long: %q %q", a, b)
+	}
+	if SanitizeCacheID(a, "") != a || SanitizeCacheID(prefix+"-one", "") != a {
+		t.Errorf("not stable: %q", a)
+	}
+}
+
 func TestPerAppCacheEnabled(t *testing.T) {
 	ctx := context.Background()
 	t.Setenv(EnvBuildCachePerApp, "")

@@ -112,6 +112,11 @@ func (rt *Router) deleteApp(ctx context.Context, name string) (teardownErr, err 
 		return nil, fmt.Errorf("delete app %q: %w", name, err)
 	}
 	rt.removeAppCredentials(ctx, name, integrationNS)
+	if vdb, ok := rt.vitalsDB(); ok {
+		if err := rt.vitalsRuntime().dropApp(ctx, vdb, name); err != nil {
+			rt.logger.Warn("api: delete app: drop buffered vitals failed", slog.String("error", err.Error()), slog.String("name", name))
+		}
+	}
 	unlock()
 	rt.dropMailCertSecret(ctx, *existing)
 	if err := rt.removeStaticSite(ctx, name); err != nil {
@@ -132,7 +137,7 @@ func (rt *Router) deleteApp(ctx context.Context, name string) (teardownErr, err 
 			rt.logger.Error("api: delete app: teardown pending", slog.String("error", teardownErr.Error()), slog.String("name", name))
 		}
 	}
-	rt.removeAppArtifacts(ctx, name, existing.NodeID)
+	rt.removeAppArtifactsUnlessReused(ctx, name, existing.NodeID)
 	if rt.canaries != nil && !store.IsCanaryService(name) {
 		if _, ok, err := rt.canaries.GetCanaryRelease(ctx, name); err == nil && ok {
 			if err := rt.removeCanary(ctx, name); err != nil {

@@ -70,3 +70,20 @@ func TestVitalsCountsTopRoutesAndBatchPrune(t *testing.T) {
 		t.Fatalf("routes left = %v", left)
 	}
 }
+
+func TestQueryVitalsOverallIgnoresRouteLimit(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	now := time.Now()
+	rows := []VitalsCount{
+		{App: "a", Route: "/big", Metric: "LCP", Device: "desktop", Hour: now, Bucket: 1, Count: 9},
+		{App: "a", Route: "/quiet", Metric: "LCP", Device: "desktop", Hour: now, Bucket: 5, Count: 2},
+	}
+	if err := db.AddVitalsCounts(ctx, rows); err != nil {
+		t.Fatal(err)
+	}
+	got, err := db.QueryVitalsOverall(ctx, "a", now.Add(-time.Hour))
+	if err != nil || len(got) != 2 {
+		t.Fatalf("overall = %+v, %v", got, err)
+	}
+}

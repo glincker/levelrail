@@ -491,7 +491,8 @@ jobs:
               [ "$has_stable" = "true" ] && dist_tag=beta
               ;;
           esac
-          for dir in npm-out/levelrail-cli-*/ npm-out/levelrail-cli/; do
+          # Order matters: the forwarders depend on levelrail-cli.
+          for dir in npm-out/levelrail-cli-*/ npm-out/levelrail-cli/ npm-out/levelrail/ npm-out/levelrail-scoped/; do
             name=$(node -p "require('./${dir}package.json').name")
             version=$(node -p "require('./${dir}package.json').version")
             if npm view "${name}@${version}" version >/dev/null 2>&1; then
@@ -500,6 +501,78 @@ jobs:
             fi
             (cd "$dir" && npm publish --provenance --access public --tag "$dist_tag")
           done
+
+  # Dogfood: install what publish-npm just shipped, from the registry, on
+  # the OS and CPU families users run. Never blocks the release because the
+  # registry can lag behind a publish.
+  verify-npm:
+    name: Verify npm install (${{ matrix.os }})
+    needs: publish-npm
+    if: (github.event_name == 'workflow_dispatch' || github.ref_type == 'tag') && vars.NPM_PUBLISH_ENABLED == 'true'
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest, windows-latest]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 22
+
+      - name: Install from the registry and check the version
+        run: |
+          set -euo pipefail
+          version="${RELEASE_TAG#v}"
+          delay=5
+          for attempt in 1 2 3 4 5 6 7; do
+            if npm view "levelrail-cli@${version}" version >/dev/null 2>&1; then
+              break
+            fi
+            if [ "$attempt" = 7 ]; then
+              echo "levelrail-cli@${version} never became visible on the registry" >&2
+              exit 1
+            fi
+            echo "Waiting ${delay}s for registry propagation (attempt ${attempt})"
+            sleep "$delay"
+            delay=$((delay * 2))
+          done
+          work=$(mktemp -d)
+          cd "$work"
+          npm init -y >/dev/null
+          npm install "levelrail-cli@${version}"
+          out=$(npx --no-install levelrail-cli version)
+          echo "$out"
+          printf '%s\n' "$out" | grep -F -- "$version" >/dev/null || {
+            echo "printed version does not contain ${version}" >&2
+            exit 1
+          }
+          npm audit signatures
+          fwd=$(mktemp -d)
+          cd "$fwd"
+          npm init -y >/dev/null
+          npm install "levelrail@${version}" "@levelrail/cli@${version}"
+          out=$(npx --no-install levelrail version)
+          printf '%s\n' "$out" | grep -F -- "$version" >/dev/null || {
+            echo "levelrail forwarder printed no ${version}" >&2
+            exit 1
+          }
+          out=$(npx --no-install levelrail-scoped version)
+          printf '%s\n' "$out" | grep -F -- "$version" >/dev/null || {
+            echo "@levelrail/cli forwarder printed no ${version}" >&2
+            exit 1
+          }
+          {
+            echo "### npm install verified on ${{ matrix.os }}"
+            echo "https://www.npmjs.com/package/levelrail-cli/v/${version}"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   image-channel:
     name: Resolve image tags

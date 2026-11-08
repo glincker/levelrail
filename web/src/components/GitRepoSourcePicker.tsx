@@ -16,6 +16,7 @@ import {
   BitbucketProviderRow,
   GitHubProviderRow,
   GiteaProviderRow,
+  AzureDevOpsProviderRow,
 } from './GitRepoSimpleProviderRows'
 
 // Shared "step 1" of CreateAppFromGitFields: a compact tab strip (one
@@ -24,7 +25,7 @@ import {
 // flows. Tab bodies live in GitRepoSourceRows.tsx /
 // GitRepoSimpleProviderRows.tsx, split to stay under the 500-line cap.
 export type GitRepoSourceProvider =
-  'github' | 'gitlab' | 'bitbucket' | 'gitea' | 'manual'
+  'github' | 'gitlab' | 'bitbucket' | 'gitea' | 'azure_devops' | 'manual'
 
 // providerRef carries what each provider's "use as source" endpoint needs
 // beyond a plain clone URL (owner+repo, or a connection id plus project id or owner/name).
@@ -38,7 +39,7 @@ export interface GitRepoSourceValue {
   providerRef?:
     | { kind: 'github'; owner: string; repo: string }
     | {
-        kind: 'gitlab' | 'bitbucket' | 'gitea'
+        kind: 'gitlab' | 'bitbucket' | 'gitea' | 'azure_devops'
         /** The connected account the repository was picked from. */
         connectionId: string
         /** A project id for GitLab, owner/name for Bitbucket and Gitea. */
@@ -85,6 +86,7 @@ export function GitRepoSourcePicker({
   const gitlab = findProvider(providers, 'gitlab')
   const bitbucket = findProvider(providers, 'bitbucket')
   const gitea = findProvider(providers, 'gitea')
+  const azure = findProvider(providers, 'azure_devops')
 
   // Computed once, shared by every tab body instead of re-fetching per tab.
   const gitSourceSummaries = useGitSourceSummariesOptional()
@@ -125,6 +127,12 @@ export function GitRepoSourcePicker({
       label: 'Gitea',
       icon: <CoffeeGlassIcon className="size-5" aria-hidden="true" />,
       connected: gitea.connected,
+    },
+    {
+      key: 'azure_devops',
+      label: 'Azure DevOps',
+      icon: <GitBranchGlassIcon className="size-5" aria-hidden="true" />,
+      connected: azure.connected,
     },
     {
       key: 'manual',
@@ -191,6 +199,14 @@ export function GitRepoSourcePicker({
         <TabsContent value="gitea" className="pt-2">
           <GiteaProviderRow
             provider={gitea}
+            disabled={disabled}
+            onSelect={handleSelect}
+            runningRepoByUrl={runningRepoByUrl}
+          />
+        </TabsContent>
+        <TabsContent value="azure_devops" className="pt-2">
+          <AzureDevOpsProviderRow
+            provider={azure}
             disabled={disabled}
             onSelect={handleSelect}
             runningRepoByUrl={runningRepoByUrl}

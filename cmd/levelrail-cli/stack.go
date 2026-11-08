@@ -52,6 +52,7 @@ Commands:
   unpin <name>                          remove the pin
   unlock <name>                         release a stuck apply lease (root only)
   delete <name> [--mode forget|destroy] stop managing a stack, or also delete its resources
+  drift <name>                          declared versus live drift; exit 2 when drifted, 0 when clean
   settings <name> [flags]               show or change --allow-prune, --drift, --require-approval (root only)
   trust add|list|remove <name> ...      OIDC trusts so CI needs no stored token (root only)
 
@@ -103,6 +104,8 @@ func runStack(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return stackSimple(prog, "unlock", rest, stdout, stderr, lookupEnv)
 	case "delete":
 		return stackDelete(prog, rest, stdout, stderr, lookupEnv)
+	case "drift":
+		return stackDrift(prog, rest, stdout, stderr, lookupEnv)
 	case "settings":
 		return stackSettings(prog, rest, stdout, stderr, lookupEnv)
 	case "trust":
@@ -978,4 +981,30 @@ func localGitSHA() string {
 		return ""
 	}
 	return head.Hash().String()
+}
+
+// stackDrift exits 2 on drift so CI can gate on it; an unchecked stack counts as clean.
+func stackDrift(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	c, code, ok := parseCLICall(prog, "stack drift", stackCmdUsage(prog, "drift", "<name>", "\nExit 0 when live matches declared, 2 when it drifted.\n"), args, stdout, stderr, lookupEnv, nil)
+	if !ok {
+		return code
+	}
+	pos, code, ok := stackPositionals(c, prog, "drift", "<name>", 1)
+	if !ok {
+		return code
+	}
+	s, raw, err := c.client.GetStack(context.Background(), pos[0])
+	if err != nil {
+		return iacFail(c, err)
+	}
+	if code := c.render(raw, func() {
+		_, _ = fmt.Fprintf(c.stdout, "%s: %s\n", s.Name, stackDriftText(s.Drift))
+		printStackDriftDetail(c.stdout, s.Drift)
+	}); code != exitOK {
+		return code
+	}
+	if s.Drift.Status == "drifted" {
+		return exitValidation
+	}
+	return exitOK
 }

@@ -166,7 +166,7 @@ func (rt *Router) handleApplyDomainWWW(w http.ResponseWriter, r *http.Request) {
 	}
 	switch {
 	case skipRedirect:
-		out.RedirectMessage = "skipped: redirect was turned off"
+		out.RedirectMessage = rt.clearWWWRedirect(ctx, r)
 		out.Message = joinNote(out.Message)
 	case failed:
 		out.RedirectMessage = "not applied because a DNS record failed"
@@ -249,6 +249,21 @@ func (rt *Router) applyWWWRedirect(ctx context.Context, r *http.Request, app, do
 	return false, fmt.Sprintf("the redirect was not saved (status %d)", rec.Code)
 }
 
+// clearWWWRedirect applies the serve-both preset so an existing apex/www
+// redirect is removed, not just left unsaved, when the caller opts out.
+func (rt *Router) clearWWWRedirect(ctx context.Context, r *http.Request) string {
+	const skipped = "skipped: redirect was turned off"
+	body, _ := json.Marshal(canonicalRequest{Preset: trafficpolicy.PresetServeBoth})
+	sub := r.Clone(ctx)
+	sub.Body = io.NopCloser(bytes.NewReader(body))
+	rec := httptest.NewRecorder()
+	rt.handleSetDomainCanonical(rec, sub)
+	if rec.Code == http.StatusOK {
+		return skipped
+	}
+	return skipped + "; an existing redirect could not be cleared (status " + fmt.Sprint(rec.Code) + ")"
+}
+
 func (rt *Router) wwwTwinAttached(ctx context.Context, app, domain string) (bool, error) {
 	twin, _ := trafficpolicy.Counterpart(domain)
 	return rt.appOwnsDomain(ctx, app, twin)
@@ -296,7 +311,7 @@ func (rt *Router) applyWWWAttachOnly(w http.ResponseWriter, r *http.Request, dom
 		Message: "no DNS provider manages this domain's zone; no DNS was written"}
 	if req.Redirect != nil && !*req.Redirect {
 		out.Redirect = nil
-		out.RedirectMessage = "skipped: redirect was turned off"
+		out.RedirectMessage = rt.clearWWWRedirect(r.Context(), r)
 		out.Message = joinNote(out.Message)
 	} else {
 		out.RedirectApplied, out.RedirectMessage = rt.applyWWWRedirect(r.Context(), r, app, domain, out.Redirect, st.res.Canonical, req.Replace)

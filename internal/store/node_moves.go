@@ -24,6 +24,8 @@ const (
 	NodeMoveStatusSucceeded  = "succeeded"
 	NodeMoveStatusFailed     = "failed"
 	NodeMoveStatusRolledBack = "rolled_back"
+	// NodeDrainStatusPartial marks a drain that moved some resources and left others blocked.
+	NodeDrainStatusPartial = "partial"
 )
 
 // NodeMoveStep is one recorded phase transition of a node move.

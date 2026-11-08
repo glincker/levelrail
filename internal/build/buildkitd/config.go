@@ -3,6 +3,7 @@
 package buildkitd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -10,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/runtimesettings/registrymirror"
 )
 
 const (
@@ -72,6 +75,9 @@ type Config struct {
 	// SecurityOpt holds relaxations the preflight proved necessary (ADR 046).
 	// Empty by default: none is applied on a guess.
 	SecurityOpt []string
+	// MirrorPrefix returns the live registry.mirror_prefix at reconcile time.
+	// Nil keeps the env seeded image.
+	MirrorPrefix func(context.Context) string
 }
 
 // SocketAddr is the unix address a BuildKit client dials.
@@ -101,6 +107,7 @@ func ConfigFromEnv(get func(string) string, rootless bool) (Config, error) {
 	if v := get("APP_BUILDKIT_IMAGE"); v != "" {
 		cfg.Image = v
 	}
+	cfg.Image = registrymirror.Apply(cfg.Image, get("APP_REGISTRY_MIRROR_PREFIX"))
 	if v := get("APP_BUILDKIT_SNAPSHOTTER"); v != "" {
 		switch v {
 		case "auto", "overlayfs", "fuse-overlayfs", "native":

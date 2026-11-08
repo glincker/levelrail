@@ -6,6 +6,19 @@ description: "The order to set up Cloudflare's proxy in front of a Levelrail ser
 
 Use this page as the order of operations. Each step names the setting and the command, and links to the page that explains the reasoning. [Run behind Cloudflare](/behind-cloudflare) lists what the proxy does not hide.
 
+## The one-command path
+
+`levelrail-cli cdn setup <app>` runs the checklist below for one app and returns one result per step: provider connected, zone SSL/TLS mode, DNS-01 certificates, client address preset, a DNS preview, the apply, and a final check. Add `--dry-run` to stop before any change.
+
+- A failed step stops the apply and changes nothing. A zone in Off or Flexible SSL mode is a failure, because it causes a redirect loop.
+- A warning does not stop the apply. DNS-01 and the client address preset are reported with the command that fixes them. Setup never changes the zone's settings, and it never turns on the client address preset for you, because that setting weakens a check and needs your confirmation.
+- The apply turns the proxy on for the app and re-syncs only the DNS records Levelrail created for it.
+- The same run is available as `POST /api/v1/apps/{name}/cdn/setup` with `{"provider": "cloudflare", "dry_run": true}`. Only Cloudflare is connected through setup today.
+
+`levelrail-cli cdn edge <app>` (API: `GET /api/v1/apps/{name}/edge`) shows the app's proxy state, provider, zone, SSL mode, the last cache purges and the cache hit rate of the ingress cache. The purge history is kept in memory, so it resets when the control plane restarts.
+
+Setup and the edge view are not yet verified against a live Cloudflare zone (pending run). The manual steps below remain the reference.
+
 ## Before you turn the proxy on
 
 - [ ] A Cloudflare DNS provider is connected in Levelrail, on the Domains page or with `levelrail-cli domains cloudflare-dns set --cf-api-token <token>`. The token needs `Zone:DNS:Edit` and `Zone:Zone:Read`, and the **Cache Purge** permission if you want purges.
@@ -47,7 +60,9 @@ For a new record, `levelrail-cli settings ingress set --dns-proxied` makes proxy
 
 ## Cache purge
 
-When an app's records are proxied, a static publish, a deploy, a held build publish and a rollback each purge Cloudflare's cache for the app's hostnames. The purge is best effort. If it fails, the publish or rollback still succeeds, and the response carries a `cdn_warning` field. See [CDN and caching](/cdn-and-caching#cloudflare-purge-on-publish).
+When an app's records are proxied, a static publish, a deploy, a held build publish and a rollback each purge Cloudflare's cache for the app's hostnames. A container app is purged when the deploy or rollback is accepted, before the new release is serving, so a page cached in between can still be old. A build triggered by a push to the repository does not purge a container app yet. Every attempt is added to the purge history shown by `cdn edge`.
+
+The purge is best effort. If it fails, the deploy, publish or rollback still succeeds, and the response carries a `cdn_warning` field. See [CDN and caching](/cdn-and-caching#cloudflare-purge-on-publish).
 
 ## Rollback does not restore the proxy
 

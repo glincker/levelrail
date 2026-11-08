@@ -33,6 +33,9 @@ func (c *CloudflareAPI) PurgeHosts(ctx context.Context, zone string, hosts []str
 	return nil
 }
 
+// Name identifies this provider in edge status and purge history.
+func (c *CloudflareAPI) Name() string { return "cloudflare" }
+
 // SSLMode reads the zone's SSL/TLS encryption mode: off, flexible, full or
 // strict. It needs a token with Zone Settings read.
 func (c *CloudflareAPI) SSLMode(ctx context.Context, zone string) (string, error) {

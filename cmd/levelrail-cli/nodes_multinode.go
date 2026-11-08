@@ -308,6 +308,9 @@ func runNodesPlacement(prog string, args []string, stdout, stderr io.Writer, loo
 		for _, r := range res.Rejected {
 			_, _ = fmt.Fprintf(stdout, "  not %s: %s\n", r.NodeID, r.Reason)
 		}
+		for _, w := range res.Warnings {
+			_, _ = fmt.Fprintf(stdout, "warning: %s\n", w)
+		}
 	}); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)

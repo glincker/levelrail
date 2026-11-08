@@ -2,14 +2,14 @@
   "generated_at": "2026-11-02T03:14:45Z",
   "note": "yes means every image manifest lists the architecture. It is a manifest fact, not a tested claim. unknown means no readable manifest or an install-time image tag.",
   "counts": {
-    "templates": 442,
-    "images": 486,
+    "templates": 444,
+    "images": 488,
     "arm64_yes": 393,
     "arm64_no": 15,
-    "arm64_unknown": 34,
+    "arm64_unknown": 36,
     "image_arm64_yes": 434,
     "image_arm64_no": 15,
-    "image_arm64_unknown": 37
+    "image_arm64_unknown": 39
   },
   "templates": [
     {
@@ -4361,6 +4361,20 @@
       ]
     },
     {
+      "id": "kafka",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "apache/kafka:3.8.0",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
+        }
+      ]
+    },
+    {
       "id": "kanboard",
       "amd64": "yes",
       "arm64": "yes",
@@ -6501,6 +6515,20 @@
           "arm64": "yes",
           "source": "manifest",
           "checked_at": "2026-10-31T23:54:42Z"
+        }
+      ]
+    },
+    {
+      "id": "nginx",
+      "amd64": "unknown",
+      "arm64": "unknown",
+      "images": [
+        {
+          "ref": "nginx:1.27.2-alpine",
+          "platforms": [],
+          "amd64": "unknown",
+          "arm64": "unknown",
+          "source": "unknown"
         }
       ]
     },

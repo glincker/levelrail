@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -45,6 +46,8 @@ type NetworkCleanupController struct {
 	instanceID string
 	nodeID     string
 	grace      time.Duration
+	maxPerPass int
+	logger     *slog.Logger
 	now        func() time.Time
 }
 
@@ -65,7 +68,8 @@ func (c *NetworkCleanupController) ForNode(nodeID string) *NetworkCleanupControl
 // as this instance's own, this package's behavior before cross-instance
 // safety existed.
 func NewNetworkCleanupController(apps AppLister, runtime docker.Runtime, prefix, instanceID string) *NetworkCleanupController {
-	return &NetworkCleanupController{apps: apps, runtime: runtime, prefix: prefix, instanceID: instanceID, grace: NetworkGraceFromEnv(), now: time.Now}
+	return &NetworkCleanupController{apps: apps, runtime: runtime, prefix: prefix, instanceID: instanceID, grace: NetworkGraceFromEnv(),
+		maxPerPass: NetworkGCMaxPerPassFromEnv(), logger: slog.Default(), now: time.Now}
 }
 
 // Name implements reconcile.Controller.
@@ -91,14 +95,16 @@ func (c *NetworkCleanupController) Reconcile(ctx context.Context) (reconcile.Res
 	if err != nil {
 		return notReady("ListNetworksFailed", err), fmt.Errorf("application/network-cleanup: list networks: %w", err)
 	}
-	observed = c.ownNetworks(observed)
 	if len(observed) == 0 {
 		return ready("NothingToClean"), nil
 	}
-
 	apps, err := c.apps.ListApps(ctx)
 	if err != nil {
 		return notReady("ListAppsFailed", err), fmt.Errorf("application/network-cleanup: list apps: %w", err)
+	}
+	observed = c.ownNetworks(observed)
+	if len(observed) == 0 {
+		return ready("NothingToClean"), nil
 	}
 	wanted := make(map[string]bool, len(apps))
 	for _, a := range apps {
@@ -111,13 +117,22 @@ func (c *NetworkCleanupController) Reconcile(ctx context.Context) (reconcile.Res
 		if wanted[n.Name] {
 			continue
 		}
+		if removed >= c.maxPerPass {
+			c.logger.Info("application: network GC pass limit reached", slog.String("node_id", c.nodeID), slog.Int("limit", c.maxPerPass))
+			break
+		}
 		if err := c.runtime.RemoveNetwork(ctx, n.Name); err != nil {
+			if docker.IsNetworkInUse(err) {
+				c.logger.Warn("application: orphaned network kept, unmanaged container attached", slog.String("node_id", c.nodeID), slog.String("network", n.Name), slog.String("network_id", n.ID))
+				continue
+			}
 			if firstErr == nil {
 				firstErr = fmt.Errorf("remove orphaned network %q: %w", n.Name, err)
 			}
 			continue
 		}
 		removed++
+		c.logger.Info("application: removed orphaned network", slog.String("node_id", c.nodeID), slog.String("network", n.Name), slog.String("network_id", n.ID))
 	}
 	if firstErr != nil {
 		return reconcile.Result{Conditions: []reconcile.Condition{{
@@ -131,43 +146,8 @@ func (c *NetworkCleanupController) Reconcile(ctx context.Context) (reconcile.Res
 	return ready("Converged"), nil
 }
 
-// ownNetworks filters observed down to networks this same control-plane
-// instance created, the same "list broadly, filter narrowly at the call
-// site" split ListNetworksByPrefix's own doc comment describes. No
-// instanceID configured (the default) is a no-op: every observed network
-// is treated as this instance's own, this controller's behavior before
-// cross-instance safety existed.
-//
-// Deliberately stricter than application.Controller.ownsInstance's
-// analogous container check: a network with no instance label at all is
-// EXCLUDED here, not kept. That's the opposite of ownsInstance's
-// "unlabeled = mine" fallback, and on purpose. ownsInstance's fallback is
-// safe because a name collision there additionally requires an identical
-// content-hashed container name (see staleContainers' own doc comment);
-// a network's name is just "<prefix>-app-<appID>", and appID is
-// frequently a short, human-chosen slug (e.g. "verify-app"), so two
-// independent Levelrail instances sharing one Docker daemon (a real,
-// observed dev/multi-instance-per-host setup, not a hypothetical) can
-// trivially produce the exact same network name without either instance
-// doing anything wrong. Treating that unlabeled name match as "mine"
-// already caused a live incident: a freshly started, empty-DB instance
-// repeatedly attempted RemoveNetwork against another, unrelated running
-// instance's network purely because neither the network nor (at that
-// point) anything else distinguished the two. It only survived because
-// Docker refused the delete while the other instance's containers were
-// still attached.
-//
-// The cost of this stricter rule is that a network created by a
-// pre-instance-labeling build of this same instance (so genuinely this
-// instance's own orphan, just never labeled) is no longer
-// auto-collected: Docker's network API has no way to attach a label to
-// an existing network after creation, so there is no safe way to
-// migrate it into the labeled set short of deleting and recreating it,
-// which risks disrupting whatever is still attached. Leaving a rare
-// pre-upgrade orphan uncollected (operator can remove it by hand) is the
-// correct tradeoff against silently deleting another instance's live
-// network. Only a network explicitly labeled with this instance's own
-// ID is ever a cleanup candidate.
+// ownNetworks keeps only networks labeled with this instance: an unlabeled name
+// match can belong to a sibling instance on a shared daemon, so it is never collected.
 func (c *NetworkCleanupController) ownNetworks(observed []docker.NetworkInfo) []docker.NetworkInfo {
 	if c.instanceID == "" {
 		return observed
@@ -201,6 +181,10 @@ func (c *NetworkCleanupController) reconcileWithAdmin(ctx context.Context, admin
 		if !v.Removable {
 			continue
 		}
+		if removed >= c.maxPerPass {
+			c.logger.Info("application: network GC pass limit reached", slog.String("node_id", c.nodeID), slog.Int("limit", c.maxPerPass))
+			break
+		}
 		ok, err := admin.RemoveNetworkIfEmpty(ctx, v.Name)
 		if err != nil {
 			if firstErr == nil {
@@ -210,6 +194,7 @@ func (c *NetworkCleanupController) reconcileWithAdmin(ctx context.Context, admin
 		}
 		if ok {
 			removed++
+			c.logger.Info("application: removed orphaned network", slog.String("node_id", c.nodeID), slog.String("network", v.Name), slog.String("network_id", v.ID))
 		}
 	}
 	if firstErr != nil {

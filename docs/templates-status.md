@@ -145,7 +145,7 @@ Fixed in the wave N pass: `valkey` interpolated its password from the host shell
 
 Generated from the registry scan in `internal/catalog/platforms.json` (`scripts/scan-catalog-platforms`), not from the smoke run. A template is `yes` only when every image it uses lists `linux/arm64` in its manifest. `not checked` means unknown, not unsupported: the scan could not read a manifest or the image tag is set at install time.
 
-Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 34 not checked** of 442 templates.
+Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 36 not checked** of 444 templates.
 
 | Template | arm64 | Verified platforms |
 | --- | --- | --- |
@@ -318,6 +318,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 34 not checked** of 4
 | `jupyter-gpu` | amd64 only | linux/amd64 |
 | `jupyter-notebook` | yes | linux/amd64, linux/arm64 |
 | `jupyter-notebook-python` | yes | linux/amd64, linux/arm64 |
+| `kafka` | not checked | - |
 | `kanboard` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `karakeep` | yes | linux/amd64, linux/arm64 |
 | `kavita` | yes | linux/amd64, linux/arm, linux/arm64 |
@@ -404,6 +405,7 @@ Last scan: 2026-11-02T03:14:45Z. **393 yes, 15 amd64 only, 34 not checked** of 4
 | `nextcloud` | yes | linux/386, linux/amd64, linux/arm, linux/arm64, linux/mips64le, linux/ppc64le, linux/s390x |
 | `nextjs-postgres-starter` | yes | linux/amd64, linux/arm, linux/arm64, linux/s390x |
 | `nexus` | yes | linux/amd64, linux/arm64 |
+| `nginx` | not checked | - |
 | `nginx-multi-backend-starter` | yes | linux/amd64, linux/arm, linux/arm64, linux/s390x |
 | `nginx-proxy-manager` | yes | linux/amd64, linux/arm, linux/arm64 |
 | `nocobase` | yes | linux/amd64, linux/arm64 |

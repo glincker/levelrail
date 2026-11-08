@@ -3,6 +3,7 @@ package api
 import "net/http"
 
 func (rt *Router) registerAlertNoiseRoutes(mux *http.ServeMux) {
+	rt.registerObsExplainRoutes(mux)
 	mux.HandleFunc("GET /api/v1/alert-silences", rt.requireAbility(AbilityRead, rt.handleListAlertSilences))
 	mux.HandleFunc("POST /api/v1/alert-silences", rt.requireAbility(AbilityWrite, rt.handleCreateAlertSilence))
 	mux.HandleFunc("DELETE /api/v1/alert-silences/{id}", rt.requireAbility(AbilityWrite, rt.handleExpireAlertSilence))

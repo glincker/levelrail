@@ -139,7 +139,7 @@ request never counts. A soft signal only sends an alert (reason
 (`APP_DEPLOY_WATCH_SOFT_ROLLBACK`, or per app) and its mode is `auto`.
 A ratio of `0` turns the check off.
 
-The watch has a mode, set by `APP_DEPLOY_WATCH_MODE` (default `notify`) or
+The watch has a mode, set by `APP_DEPLOY_WATCH_MODE` (default `auto`) or
 per app: `off` does not watch, `notify` alerts on a trip, `auto` also rolls
 back. `APP_DEPLOY_AUTO_ROLLBACK=true` is still read and means `auto`.
 
@@ -176,6 +176,36 @@ levelrail-cli apps deploys rollback-to web dep_abc123 --watch
 watch or was rolled back. The API is
 `GET /api/v1/apps/{name}/deploys/{deployId}/gate` (`latest` works as the
 id).
+
+## Runtime settings and defaults
+
+The four deploy timings are runtime settings. Each one resolves as the saved
+value, then its environment variable, then the default, and a change applies
+live. See [Runtime settings](/runtime-settings#deploys) for the limits.
+
+| Runtime setting | Env | Default | What it sets |
+| --- | --- | --- | --- |
+| `deploy.drain_timeout` | `APP_DEPLOY_DRAIN_TIMEOUT` | `15s` | minimum time the previous release keeps serving after cutover |
+| `deploy.previous_release_hold` | `APP_DEPLOY_PREVIOUS_RELEASE_HOLD` | `3m` | how long the previous release stays running as an instant rollback target, never shorter than the drain timeout |
+| `deploy.stable_window` | `APP_DEPLOY_STABLE_WINDOW` | `10s` | how long a new container must run without a restart before it may take traffic |
+| `deploy.watch_window` | `APP_DEPLOY_WATCH_WINDOW` | `5m` | how long the post-deploy watch runs after cutover |
+
+The gate and watch thresholds are platform defaults from environment
+variables, and each app can override them:
+
+| Env | Default | What it sets |
+| --- | --- | --- |
+| `APP_DEPLOY_SUCCESS_THRESHOLD` | `2` | readiness passes in a row before a new container may take traffic |
+| `APP_DEPLOY_WATCH_MODE` | `auto` | `off`, `notify` (alert only) or `auto` (alert and roll back) |
+| `APP_DEPLOY_WATCH_MAX_RESTARTS` | `2` | restarts or exits in the watch window that trip the watch |
+| `APP_DEPLOY_WATCH_ERROR_RATE` | `0.2` (20%) | 5xx share that trips the watch, once `APP_DEPLOY_WATCH_MIN_REQUESTS` (default `20`) requests have arrived |
+| `APP_DEPLOY_WATCH_LATENCY_RATIO` | `2` | p95 multiple of the previous release that is a soft regression, also needing a `APP_DEPLOY_WATCH_LATENCY_MIN_DELTA` rise of `100ms`. A soft signal rolls back only with `APP_DEPLOY_WATCH_SOFT_ROLLBACK=true` in `auto` mode |
+| `APP_DEPLOY_ROLLBACK_PINS` | `3` | past releases per app that stay pinned as rollback targets |
+
+To see where a deploy stands against these gates, run
+`levelrail-cli rollout state <app>`. It shows the health gate, the traffic
+flip and the hold countdown of the newest release, using the app's own
+settings. Add `--json` for the same data as one object.
 
 ## Per-app settings
 

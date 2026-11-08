@@ -78,7 +78,9 @@ type Policy struct {
 	Window            Window
 	MinReleaseAgeDays int
 	Paused            bool
-	NotifyChannelIDs  []string
+	// PausedUntil holds automatic upgrades until that time; zero means no timed pause.
+	PausedUntil      time.Time
+	NotifyChannelIDs []string
 }
 
 // Validate checks a policy before it is saved. A window is required once
@@ -149,6 +151,9 @@ func Eligible(p Policy, current string, cand Candidate, breakingNeedAck int, not
 	if p.Paused {
 		return Verdict{Code: VerdictPaused, Reason: "automatic upgrades are paused"}
 	}
+	if now.Before(p.PausedUntil) {
+		return Verdict{Code: VerdictPaused, Reason: "automatic upgrades are paused until " + stamp(p.PausedUntil), WaitUntil: p.PausedUntil}
+	}
 	if p.Window.Cron == "" {
 		return Verdict{Code: VerdictNoWindow, Reason: "no maintenance window is configured"}
 	}
@@ -203,7 +208,7 @@ func majorMinor(v string) ([2]int, bool) {
 // PolicyFromStore converts the persisted row.
 func PolicyFromStore(row store.UpgradePolicy, channelIDs []string) Policy {
 	return Policy{
-		Mode: row.Mode, MinReleaseAgeDays: row.MinReleaseAgeDays, Paused: row.Paused, NotifyChannelIDs: channelIDs,
+		Mode: row.Mode, MinReleaseAgeDays: row.MinReleaseAgeDays, Paused: row.Paused, NotifyChannelIDs: channelIDs, PausedUntil: PausedUntil(row),
 		Window: Window{Cron: row.WindowCron, Duration: time.Duration(row.WindowDurationSeconds) * time.Second, Timezone: row.WindowTimezone},
 	}
 }

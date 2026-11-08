@@ -427,6 +427,8 @@ func (rt *Router) handleCreateNodeProvision(w http.ResponseWriter, r *http.Reque
 		DisplayName:      rt.brand.Name,
 		AgentVersion:     version.Version,
 		MeshEnabled:      rt.mesh != nil,
+
+		RegistryMirrorPrefix: rt.registryMirrorPrefix(r.Context()),
 	})
 	if err != nil {
 		rt.internalError(w, "api: node provision: render cloud-init failed", err)

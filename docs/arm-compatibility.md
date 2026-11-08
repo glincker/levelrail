@@ -22,7 +22,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 
 ## Results by template
 
-393 listed, 15 amd64 only, 34 unknown, of 442 templates.
+393 listed, 15 amd64 only, 36 unknown, of 444 templates.
 
 | Template | arm64 in manifest | Smoke run on Arm host |
 | --- | --- | --- |
@@ -195,6 +195,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `jupyter-gpu` | amd64 only | not tested |
 | `jupyter-notebook` | listed | not tested |
 | `jupyter-notebook-python` | listed | not tested |
+| `kafka` | unknown | not tested |
 | `kanboard` | listed | not tested |
 | `karakeep` | listed | not tested |
 | `kavita` | listed | pass |
@@ -281,6 +282,7 @@ The smoke column is the result recorded on the Arm test host in [Template status
 | `nextcloud` | listed | pass |
 | `nextjs-postgres-starter` | listed | not tested |
 | `nexus` | listed | not tested |
+| `nginx` | unknown | not tested |
 | `nginx-multi-backend-starter` | listed | not tested |
 | `nginx-proxy-manager` | listed | not tested |
 | `nocobase` | listed | not tested |

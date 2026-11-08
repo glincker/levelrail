@@ -216,6 +216,9 @@ curl -fsSL https://levelrail.com/install.sh \
 | `LEVELRAIL_BINARY_FILE` | unset | Install a local binary instead of downloading one |
 | `LEVELRAIL_BINARY_URL` | unset | Download the binary from this URL instead (no checksum verification) |
 | `LEVELRAIL_SKIP_CHECKSUM` | unset | Set to `1` to install even when the release publishes no `checksums.txt` (or omits the binary from it) |
+| `LEVELRAIL_RELEASE_BASE_URL` | `https://github.com/glincker/levelrail/releases/download` | Download release files from `<base>/<tag>/<asset>` instead. https only, checksums and signatures are still verified. See [Install from mainland China](/install-from-china) |
+| `LEVELRAIL_DOCKER_MIRROR` | unset | `Aliyun` or `AzureChinaCloud`, from v0.9.4. Passed to get.docker.com `--mirror` when Docker is installed for you |
+| `LEVELRAIL_REGISTRY_MIRROR` | unset | From v0.9.4. Seeds the runtime setting `registry.mirror_prefix`, a prefix for images the control plane pulls (node agent, BuildKit). Change it later without a restart |
 | `LEVELRAIL_PUBLIC_IP` | discovered | Public IP used for the reachability test and summary |
 | `LEVELRAIL_SKIP_REACHABILITY` | unset | Set to `1` to skip the port 80/443 test |
 | `LEVELRAIL_MIN_RAM_MB` / `LEVELRAIL_MIN_DISK_GB` / `LEVELRAIL_MIN_DOCKER_MAJOR` | `1024` / `10` / `24` | Preflight thresholds |
@@ -471,7 +474,7 @@ Installs the CLI and shell completions on macOS or Linux.
 npm install -g levelrail-cli
 ```
 
-Pulls the binary for your platform (Linux, macOS or Windows, amd64 or arm64) as an optional dependency. Check it with `levelrail-cli help`.
+Pulls the binary for your platform (Linux, macOS or Windows, amd64 or arm64) as an optional dependency. Check it with `levelrail-cli help`. This installs the CLI client only, never the server. See [Use the CLI from npm](#use-the-cli-from-npm).
 </Tab>
 <Tab title="Windows">
 ```powershell
@@ -520,10 +523,27 @@ See the [CLI reference](/cli-reference) for every command.
 | --- | --- |
 | Homebrew (macOS and Linux) | `brew install glincker/tap/levelrail-cli` |
 | Scoop and winget (Windows) | Planned. Use the PowerShell installer above for now. |
+| npm, yarn or pnpm | `npx levelrail-cli <command>` or `npm install --global levelrail-cli` ([details](#use-the-cli-from-npm)) |
 | Go | `go install github.com/GLINCKER/levelrail/cmd/levelrail-cli@latest` |
 | Direct download | Pick `levelrail-cli-<os>-<arch>` (`linux`, `darwin`, or `windows`; `amd64` or `arm64`) from the [releases page](https://github.com/glincker/levelrail/releases). Windows files end in `.exe`. |
 
 Every release asset is listed in `checksums.txt`, which is signed with cosign and has a build provenance attestation. Windows binaries are published from the release after `v0.2.0-beta.15`; before that, run the install script from WSL.
+
+### Use the CLI from npm
+
+The CLI is published on npm as [`levelrail-cli`](https://www.npmjs.com/package/levelrail-cli). It installs only the client. The server needs Linux, systemd and root and is installed with `install.sh`.
+
+```bash
+npx levelrail-cli apps list              # run once, no install
+npm install --global levelrail-cli       # keep it on your PATH
+npx levelrail-cli@0.9.4 --help           # pin a version (CI and reproducible builds)
+```
+
+yarn and pnpm use the same registry: `yarn dlx levelrail-cli` and `pnpm dlx levelrail-cli`.
+
+- Platforms: Linux, macOS and Windows, on amd64 and arm64. The launcher package pulls the matching `levelrail-cli-<os>-<arch>` package as an optional dependency. There is no install script.
+- Provenance: packages are published from the release workflow with npm trusted publishing. Check them with `npm audit signatures` in a project that depends on `levelrail-cli`.
+- Pin the version to your server's version in CI so the client and the control plane stay in step.
 
 ## Verifying the install
 

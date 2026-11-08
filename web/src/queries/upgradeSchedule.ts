@@ -83,6 +83,10 @@ export interface UpgradePolicy {
   decision_at?: string
   server_timezone: string
   next_window: UpgradeWindow | null
+  default_applied?: boolean
+  paused_until?: string
+  health_window_seconds?: number
+  notice?: { text: string; dismiss_url: string } | null
 }
 
 export type UpgradePolicyInput = Pick<
@@ -94,7 +98,7 @@ export type UpgradePolicyInput = Pick<
   | 'min_release_age_days'
   | 'notify_channel_ids'
   | 'paused'
->
+> & { pause_days?: number; health_window_seconds?: number }
 
 export const scheduleKeys = {
   schedule: () => [...updatesKeys.all, 'schedule'] as const,
@@ -258,6 +262,22 @@ export function useRecheckPreflight(opts?: InlineErrorOptions) {
     onSuccess: (result) => {
       queryClient.setQueryData(scheduleKeys.preflight(), result)
       void queryClient.invalidateQueries({ queryKey: updatesKeys.status() })
+    },
+  })
+}
+
+export function useDismissAutoNotice() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    meta: { errorToast: false },
+    mutationFn: async (): Promise<void> => {
+      const res = await fetch('/api/v1/updates/auto/notice/dismiss', {
+        method: 'POST',
+      })
+      if (!res.ok) throw await failure(res, 'dismiss automatic update notice')
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: scheduleKeys.policy() })
     },
   })
 }

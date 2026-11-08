@@ -314,7 +314,7 @@ failing.
 | SonarCloud | `sonar.yml` | Push to `main` and `release/**`, Mondays, dispatch. Never on a PR | SonarCloud dashboard. Needs `SONAR_TOKEN`. Go coverage (`go test -short ./internal/...`) is imported everywhere except release branch pushes |
 | Codecov | `ci.yml`, `Coverage gate` | Push to `main` only (`ci.yml` has no `release/**` push trigger, the guard also covers it) | Informational statuses, no PR comment. Needs `CODECOV_TOKEN`. Config in `codecov.yml` |
 | govulncheck | `security-scheduled.yml` | Mondays, release tags, dispatch | Reachable findings in the job summary, SARIF to code scanning |
-| OpenSSF Scorecard | `security-scheduled.yml` | Mondays, dispatch | SARIF to code scanning |
+| OpenSSF Scorecard | `security-scheduled.yml` | Mondays, dispatch | SARIF to code scanning. Results are published to the OpenSSF API, and the badge lives at `https://api.scorecard.dev/projects/github.com/glincker/levelrail/badge` |
 | OSV-Scanner | `security-scheduled.yml` | Mondays, dispatch | SARIF to code scanning (Go and npm lockfiles) |
 | CodeQL | `codeql.yml` | Wednesdays, release tags, dispatch | Security tab |
 | zizmor | `pr-security.yml` | PRs touching `.github/` | Job log. actionlint stays in `Lint` and is the gate |
@@ -391,7 +391,9 @@ The formula template is `deploy/packaging/homebrew/levelrail-cli.rb.tmpl`, and `
 
 ### npm
 
-`publish-npm` publishes `levelrail-cli` plus six platform packages (`levelrail-cli-<os>-<arch>`) using npm trusted publishing, so no npm token is involved. Stable releases take the `latest` dist-tag and prereleases use `beta`. A version already on the registry is skipped, so re-running a partly failed release finishes the rest. The job only runs when the `NPM_PUBLISH_ENABLED` repo variable is `true`.
+`publish-npm` publishes `levelrail-cli` plus six platform packages (`levelrail-cli-<os>-<arch>`), then two forwarding packages that claim the brand names at the same version: `levelrail` (bin `levelrail`) and `@levelrail/cli` (bin `levelrail-scoped`, so no global bin collision). Both depend on exactly `levelrail-cli` and install the client only. They publish after `levelrail-cli` using npm trusted publishing, so no npm token is involved. Stable releases take the `latest` dist-tag and prereleases use `beta`. A version already on the registry is skipped, so re-running a partly failed release finishes the rest. The job only runs when the `NPM_PUBLISH_ENABLED` repo variable is `true`.
+
+`verify-npm` then installs `levelrail-cli` from the registry in a clean directory on Linux (amd64 and arm64), macOS and Windows runners, waits with bounded backoff for the version to appear, checks that `levelrail-cli version` prints the release version, installs `levelrail` and `@levelrail/cli` and checks `npx --no-install levelrail version` and `levelrail-scoped version`, and runs `npm audit signatures`. It is non-blocking, because the registry can lag behind a publish, and it writes the package URL to the job summary.
 
 One-time setup. npm configures a trusted publisher on a package that already exists, so each package is published once by hand first. The script does the whole thing under your own npm login:
 
@@ -400,7 +402,7 @@ scripts/npm-bootstrap.sh --dry-run    # builds the packages and shows every step
 scripts/npm-bootstrap.sh              # publishes, registers the trusted publisher, then enables the job
 ```
 
-It downloads the newest release's binaries, builds the seven packages, publishes the platform packages first, runs `npm trust github` on each package for `glincker/levelrail`, workflow `release.yml`, environment `npm-publish`, and only then sets `NPM_PUBLISH_ENABLED`. It skips anything already done, so it is safe to re-run after a failure. Publishing and registering both ask for your npm two-factor code.
+It downloads the newest release's binaries, builds the nine packages, publishes the platform packages first, then the launcher, then the two forwarders, runs `npm trust github` on each package for `glincker/levelrail`, workflow `release.yml`, environment `npm-publish`, and only then sets `NPM_PUBLISH_ENABLED`. It skips anything already done, so it is safe to re-run after a failure. Publishing and registering both ask for your npm two-factor code.
 
 After that, every release publishes with no token. If a publish fails, use "Re-run failed jobs" on the workflow run; versions already on the registry are skipped.
 

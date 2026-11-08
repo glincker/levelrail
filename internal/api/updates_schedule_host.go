@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -22,18 +23,22 @@ import (
 type UpgradeScheduleStore interface {
 	upgradesched.Store
 	UpdateUpgradePolicy(ctx context.Context, p store.UpgradePolicy) error
+	DismissUpgradeNotice(ctx context.Context, at string) error
 }
 
 type upgradeScheduleConfig struct {
-	store  UpgradeScheduleStore
-	sender dbupgrade.NoticeSender
-	cfg    upgradesched.Config
+	store    UpgradeScheduleStore
+	sender   dbupgrade.NoticeSender
+	cfg      upgradesched.Config
+	defaults upgradesched.Defaults
 }
 
 // WithUpgradeScheduling enables scheduled and automatic upgrades. sender
 // delivers the alerts (the deploy dispatcher), nil keeps them in the log.
 func WithUpgradeScheduling(s UpgradeScheduleStore, sender dbupgrade.NoticeSender, cfg upgradesched.Config) Option {
-	return func(rt *Router) { rt.upgradeSchedule = &upgradeScheduleConfig{store: s, sender: sender, cfg: cfg} }
+	return func(rt *Router) {
+		rt.upgradeSchedule = &upgradeScheduleConfig{store: s, sender: sender, cfg: cfg, defaults: upgradesched.DefaultsFromEnv(os.LookupEnv)}
+	}
 }
 
 // UpgradeScheduler returns the scheduler to run, or nil when scheduling is
@@ -47,9 +52,10 @@ func (rt *Router) UpgradeScheduler() *upgradesched.Scheduler {
 		c := rt.upgradeSchedule
 		s := &upgradesched.Scheduler{
 			Store: c.store, Host: upgradeHost{rt: rt}, Config: c.cfg, Logger: rt.logger,
-			Current: func() string { return version.Version },
-			NewID:   upgradesched.NewScheduleID,
-			Audit:   rt.auditSystemUpgradeEvent,
+			Current:  func() string { return version.Version },
+			NewID:    upgradesched.NewScheduleID,
+			Audit:    rt.auditSystemUpgradeEvent,
+			Defaults: c.defaults,
 		}
 		if rt.alertNoise != nil {
 			s.Windows = rt.alertNoise.ListMaintenanceWindows
@@ -222,6 +228,11 @@ func (h upgradeHost) Apply(ctx context.Context, target string, ack []string, ini
 	args := []string{"--to", target, "--yes", "--initiator", initiator, "--json"}
 	if len(ack) > 0 {
 		args = append(args, "--ack", strings.Join(ack, ","))
+	}
+	if h.rt.upgradeSchedule != nil {
+		if row, err := h.rt.upgradeSchedule.store.GetUpgradePolicy(ctx); err == nil && row.HealthWindowSeconds > 0 {
+			args = append(args, "--timeout", (time.Duration(row.HealthWindowSeconds) * time.Second).String())
+		}
 	}
 	return sc.launch(ctx, args)
 }

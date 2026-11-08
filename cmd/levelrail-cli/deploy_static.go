@@ -67,7 +67,7 @@ func runDeployStatic(prog, src string, o staticOpts, newClient func() *Client, s
 		}
 		res.Hash = fromHash
 		if err := ensureUploadApp(ctx, client, inf, nil, &res, say); err != nil {
-			return reportError(stdout, stderr, jsonOut, createdAppNote(prog, &res, err))
+			return reportError(stdout, stderr, jsonOut, rollbackCreatedApp(ctx, client, prog, &res, err))
 		}
 		return finishUploadDeploy(ctx, client, prog, inf, fromHash, nil, o.timeout, o.urlWait, &res, stdout, stderr, of, jsonOut)
 	}
@@ -126,11 +126,11 @@ func runDeployStatic(prog, src string, o staticOpts, newClient func() *Client, s
 	}
 	client := newClient()
 	if err := ensureUploadApp(ctx, client, inf, nil, &res, say); err != nil {
-		return reportError(stdout, stderr, jsonOut, createdAppNote(prog, &res, err))
+		return reportError(stdout, stderr, jsonOut, rollbackCreatedApp(ctx, client, prog, &res, err))
 	}
 	hash, err := upload(client)
 	if err != nil {
-		return reportError(stdout, stderr, jsonOut, createdAppNote(prog, &res, err))
+		return reportError(stdout, stderr, jsonOut, rollbackCreatedApp(ctx, client, prog, &res, err))
 	}
 	return finishUploadDeploy(ctx, client, prog, inf, hash, nil, o.timeout, o.urlWait, &res, stdout, stderr, of, jsonOut)
 }

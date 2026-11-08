@@ -93,6 +93,7 @@ func (rt *Router) doctorDefs() []doctorCheckDef {
 		one("dns_domains", doctorGroupNetwork, rt.doctorCheckDomainDNS),
 		one("dashboard_https", doctorGroupNetwork, rt.doctorCheckDashboardHTTPS),
 		many("registry", doctorGroupNetwork, rt.doctorCheckRegistryReachability),
+		one("registry_mirror", doctorGroupNetwork, rt.doctorCheckMirrorReachability),
 		many("cross_node_ingress", doctorGroupNetwork, rt.doctorCheckCrossNodeIngress),
 		many("ingress_edge", doctorGroupNetwork, rt.doctorCheckIngressEdge),
 		many("ingress_survives", doctorGroupNetwork, func(context.Context) []doctorCheckResource {

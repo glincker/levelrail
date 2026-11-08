@@ -280,17 +280,47 @@ type upgradePolicyResource struct {
 	DecisionAt            string                 `json:"decision_at,omitempty"`
 	ServerTimezone        string                 `json:"server_timezone"`
 	NextWindow            *upgradeWindowResource `json:"next_window"`
+	// DefaultApplied is true while nobody has saved a policy and the install runs the default one.
+	DefaultApplied      bool                   `json:"default_applied"`
+	PausedUntil         string                 `json:"paused_until,omitempty"`
+	HealthWindowSeconds int                    `json:"health_window_seconds"`
+	Notice              *upgradeNoticeResource `json:"notice"`
 }
 
-func (rt *Router) upgradePolicyResource(row store.UpgradePolicy) upgradePolicyResource {
+// upgradeNoticeResource is the one-time, dismissible notice that automatic upgrades are on.
+type upgradeNoticeResource struct {
+	Text       string `json:"text"`
+	DismissURL string `json:"dismiss_url"`
+}
+
+const upgradeNoticeDismissPath = "/api/v1/updates/auto/notice/dismiss"
+
+// resolvedUpgradePolicy loads the policy in force, with the default applied to an unsaved row.
+func (rt *Router) resolvedUpgradePolicy(ctx context.Context) (store.UpgradePolicy, bool, error) {
+	row, err := rt.upgradeSchedule.store.GetUpgradePolicy(ctx)
+	if err != nil {
+		return store.UpgradePolicy{}, false, err
+	}
+	resolved, defaulted := rt.upgradeSchedule.defaults.Resolve(row)
+	return resolved, defaulted, nil
+}
+
+func (rt *Router) upgradePolicyResource(row store.UpgradePolicy, defaulted bool) upgradePolicyResource {
 	out := upgradePolicyResource{
 		Mode: row.Mode, Effective: row.Mode, WindowCron: row.WindowCron, WindowDurationMinutes: row.WindowDurationSeconds / 60,
 		Timezone: row.WindowTimezone, MinReleaseAgeDays: row.MinReleaseAgeDays, NotifyChannelIDs: []string{}, Paused: row.Paused,
 		UpdatedBy: row.UpdatedBy, UpdatedAt: row.UpdatedAt, Decision: row.Decision, DecisionTag: row.DecisionTag,
 		DecisionAt: row.DecisionAt, ServerTimezone: serverTimezone(),
+		DefaultApplied: defaulted, PausedUntil: row.PausedUntil, HealthWindowSeconds: row.HealthWindowSeconds,
 	}
-	if row.Paused && row.Mode != upgradesched.ModeOff {
+	if row.Mode != upgradesched.ModeOff && (row.Paused || time.Now().Before(upgradesched.PausedUntil(row))) {
 		out.Effective = "paused"
+	}
+	if defaulted && row.NoticeDismissedAt == "" {
+		out.Notice = &upgradeNoticeResource{
+			Text:       "Automatic updates are on: verified releases install in the nightly maintenance window, with a backup first and automatic rollback. Turn them off or pick a channel on the Updates page, or run: updates disable.",
+			DismissURL: upgradeNoticeDismissPath,
+		}
 	}
 	_ = json.Unmarshal([]byte(row.NotifyChannelIDs), &out.NotifyChannelIDs)
 	if row.WindowCron != "" {
@@ -312,12 +342,31 @@ func (rt *Router) handleGetUpgradePolicy(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusNotImplemented, "upgrade scheduling is not configured on this control plane")
 		return
 	}
-	row, err := rt.upgradeSchedule.store.GetUpgradePolicy(r.Context())
+	row, defaulted, err := rt.resolvedUpgradePolicy(r.Context())
 	if err != nil {
 		rt.internalError(w, "api: get upgrade policy failed", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, rt.upgradePolicyResource(row))
+	writeJSON(w, http.StatusOK, rt.upgradePolicyResource(row, defaulted))
+}
+
+// handleDismissUpgradeNotice handles POST /api/v1/updates/auto/notice/dismiss. Root only.
+func (rt *Router) handleDismissUpgradeNotice(w http.ResponseWriter, r *http.Request) {
+	if rt.upgradeSchedule == nil {
+		writeError(w, http.StatusNotImplemented, "upgrade scheduling is not configured on this control plane")
+		return
+	}
+	if err := rt.upgradeSchedule.store.DismissUpgradeNotice(r.Context(), time.Now().UTC().Format(time.RFC3339)); err != nil {
+		rt.internalError(w, "api: dismiss upgrade notice failed", err)
+		return
+	}
+	rt.auditUpgradeEvent(r.Context(), r, auditActionPolicy, "automatic upgrade notice dismissed")
+	row, defaulted, err := rt.resolvedUpgradePolicy(r.Context())
+	if err != nil {
+		rt.internalError(w, "api: get upgrade policy failed", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, rt.upgradePolicyResource(row, defaulted))
 }
 
 type upgradePolicyRequest struct {
@@ -328,6 +377,10 @@ type upgradePolicyRequest struct {
 	MinReleaseAgeDays     int      `json:"min_release_age_days"`
 	NotifyChannelIDs      []string `json:"notify_channel_ids"`
 	Paused                bool     `json:"paused"`
+	// PauseDays holds automatic upgrades for that many days from now; 0 clears a timed pause, absent keeps it.
+	PauseDays *int `json:"pause_days,omitempty"`
+	// HealthWindowSeconds is how long a new release may take to turn healthy before rollback; 0 uses the engine default, absent keeps it.
+	HealthWindowSeconds *int `json:"health_window_seconds,omitempty"`
 }
 
 // handleUpdateUpgradePolicy handles PUT /api/v1/updates/auto. Root only.
@@ -357,6 +410,14 @@ func (rt *Router) handleUpdateUpgradePolicy(w http.ResponseWriter, r *http.Reque
 	}
 	if err := pol.Validate(); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if maxDays := upgradesched.MaxPauseDays(os.LookupEnv); req.PauseDays != nil && (*req.PauseDays < 0 || *req.PauseDays > maxDays) {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("pause_days must be between 0 and %d", maxDays))
+		return
+	}
+	if maxHW := upgradesched.MaxHealthWindow(os.LookupEnv); req.HealthWindowSeconds != nil && (*req.HealthWindowSeconds < 0 || time.Duration(*req.HealthWindowSeconds)*time.Second > maxHW) {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("health_window_seconds must be between 0 and %d", int(maxHW.Seconds())))
 		return
 	}
 	if pol.Active() && rt.currentUpdateChannel(r.Context()) == upgrade.ChannelEdge {
@@ -399,7 +460,19 @@ func (rt *Router) handleUpdateUpgradePolicy(w http.ResponseWriter, r *http.Reque
 		Mode: req.Mode, WindowCron: pol.Window.Cron, WindowDurationSeconds: int(pol.Window.Duration.Seconds()),
 		WindowTimezone: req.Timezone, MinReleaseAgeDays: req.MinReleaseAgeDays, NotifyChannelIDs: string(rawIDs),
 		Paused: req.Paused, UpdatedBy: sanitizeInitiator(firstNonEmpty(actorName, actorID)),
-		UpdatedAt: time.Now().UTC().Format(time.RFC3339),
+		UpdatedAt: time.Now().UTC().Format(time.RFC3339), PausedUntil: before.PausedUntil, HealthWindowSeconds: before.HealthWindowSeconds,
+	}
+	if before.Paused && !req.Paused {
+		row.PausedUntil = ""
+	}
+	if req.PauseDays != nil {
+		row.PausedUntil = ""
+		if *req.PauseDays > 0 {
+			row.PausedUntil = time.Now().UTC().Add(time.Duration(*req.PauseDays) * 24 * time.Hour).Format(time.RFC3339)
+		}
+	}
+	if req.HealthWindowSeconds != nil {
+		row.HealthWindowSeconds = *req.HealthWindowSeconds
 	}
 	if err := rt.upgradeSchedule.store.UpdateUpgradePolicy(r.Context(), row); err != nil {
 		rt.internalError(w, "api: update upgrade policy failed", err)
@@ -413,7 +486,7 @@ func (rt *Router) handleUpdateUpgradePolicy(w http.ResponseWriter, r *http.Reque
 		rt.internalError(w, "api: get upgrade policy failed", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, rt.upgradePolicyResource(updated))
+	writeJSON(w, http.StatusOK, rt.upgradePolicyResource(updated, false))
 }
 
 type upgradeBackupNowResponse struct {

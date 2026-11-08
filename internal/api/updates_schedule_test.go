@@ -191,6 +191,8 @@ func TestUpgradeScheduleLifecycle(t *testing.T) {
 }
 
 func TestUpgradeScheduleRefusals(t *testing.T) {
+	// Opted out of the default-on policy so an unsaved install has no window to fall back on.
+	t.Setenv(upgradesched.EnvDefaultMode, upgradesched.ModeOff)
 	rt, cookie, _, _ := newScheduleRouter(t)
 	future := time.Now().Add(6 * time.Hour).UTC().Format(time.RFC3339)
 	tests := []struct {
@@ -243,8 +245,8 @@ func TestUpgradePolicyValidationAndRoundTrip(t *testing.T) {
 
 	code, body := suDo(t, rt, cookie, http.MethodGet, "/api/v1/updates/auto", "")
 	pol := decodeBody[upgradePolicyResource](t, body)
-	if code != http.StatusOK || pol.Mode != "off" || pol.Effective != "off" {
-		t.Fatalf("default policy must be off: %d %+v", code, pol)
+	if code != http.StatusOK || pol.Mode != "any" || !pol.DefaultApplied || pol.Notice == nil || pol.WindowCron == "" {
+		t.Fatalf("an unsaved policy must run the default-on policy with a notice: %d %+v", code, pol)
 	}
 
 	bad := []string{

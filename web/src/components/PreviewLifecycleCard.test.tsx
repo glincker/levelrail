@@ -56,6 +56,10 @@ const basePolicy: PreviewPolicy = {
   gate_username: '',
   gate_password_set: false,
   allow_indexing: false,
+  migrate_command: '',
+  migrate_timeout_seconds: 0,
+  effective_migrate_timeout_seconds: 600,
+  image_tag_template: '',
 }
 
 describe('PreviewLifecycleCard', () => {

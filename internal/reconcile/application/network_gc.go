@@ -2,6 +2,7 @@ package application
 
 import (
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -14,7 +15,20 @@ const (
 	// EnvNetworkGCGrace is how old an ownerless network must be before GC removes it.
 	EnvNetworkGCGrace   = "APP_NETWORK_GC_GRACE"
 	defaultNetworkGrace = 10 * time.Minute
+	// EnvNetworkGCMaxRemovals caps removals per GC pass so a large backlog never stalls a reconcile.
+	EnvNetworkGCMaxRemovals    = "APP_NETWORK_GC_MAX_REMOVALS"
+	defaultNetworkGCMaxPerPass = 20
 )
+
+// NetworkGCMaxPerPassFromEnv reads APP_NETWORK_GC_MAX_REMOVALS, falling back to 20.
+func NetworkGCMaxPerPassFromEnv() int {
+	if v, ok := os.LookupEnv(EnvNetworkGCMaxRemovals); ok {
+		if n, err := strconv.Atoi(strings.TrimSpace(v)); err == nil && n > 0 {
+			return n
+		}
+	}
+	return defaultNetworkGCMaxPerPass
+}
 
 // Reasons a network is not removable, surfaced by the diagnostics API.
 const (

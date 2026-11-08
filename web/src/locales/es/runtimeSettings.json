@@ -229,6 +229,10 @@
     "bootEventRecheck": {
       "title": "Reverificación tras el primer evento al arrancar",
       "description": "Tiempo tras el primer evento de Docker en el que el plano de control ejecuta una pasada de reconciliación más, de 1s a 1h. Se lee al arrancar."
+    },
+    "metricsScrapeEnabled": {
+      "title": "Endpoint de scraping de Prometheus",
+      "description": "Sirve métricas de apps, bases de datos y nodos en formato de texto Prometheus en /metrics para un token de lectura. Desactivado, el endpoint responde 404."
     }
   },
   "row": {
@@ -321,5 +325,18 @@
     "noMatchTitle": "Ningún ajuste coincide",
     "noMatchBody": "Prueba con una búsqueda más corta o quita los filtros para ver todos los ajustes.",
     "allCategories": "Todas las categorías"
+  },
+  "prometheus": {
+    "title": "Scraping de Prometheus",
+    "description": "Crea un token de solo lectura y apunta Prometheus a /metrics.",
+    "toggle": "Endpoint de métricas",
+    "create": "Crear token de scraping",
+    "creating": "Creando...",
+    "tokenOnce": "Copia este token ahora. Se muestra una sola vez y no se puede recuperar después.",
+    "tokenLabel": "Token de scraping",
+    "configLabel": "Trabajo de scraping",
+    "dismiss": "Listo, ocultar token",
+    "error": "No se pudo crear el token: {{message}}",
+    "saveError": "No se pudo guardar: {{message}}"
   }
 }

@@ -27,6 +27,7 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [OpenAPI 3.1 spec](https://levelrail.com/openapi.json): every control plane route with its method, path parameters and required ability.
 - [API reference](https://docs.levelrail.com/api-reference): every route and the ability it needs.
 - [CLI reference](https://docs.levelrail.com/cli-reference): `levelrail-cli` commands.
+- [CLI on npm](https://docs.levelrail.com/installing#use-the-cli-from-npm): `npx levelrail-cli <command>` or `npm install --global levelrail-cli`. Client only, never the server (the server uses install.sh on Linux).
 - [MCP tool surface](https://docs.levelrail.com/mcp-tool-surface): `levelrail-mcp` tools and their context cost.
 - [AGENTS.md](https://github.com/glincker/levelrail/blob/main/AGENTS.md): how to work in the source repository.
 - [AI catalog](https://levelrail.com/.well-known/ai-catalog.json): machine-readable discovery file.

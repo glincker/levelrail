@@ -523,6 +523,33 @@ export function isGlobalItemActive(
   return (item.alsoActive ?? []).some((p) => matchesPrefix(pathname, p))
 }
 
+// One active row per path: the most specific match wins, so a hub parent that
+// lists child pages as tabs (Apps) yields to the child row (Projects).
+export function activeGlobalItemId(
+  pathname: string,
+  items: readonly GlobalNavItem[],
+): string | undefined {
+  let best: { id: string; score: number } | undefined
+  for (const item of items) {
+    if (!isGlobalItemActive(pathname, item)) continue
+    const own = item.exact
+      ? pathname === item.to
+      : pathname === item.to || pathname.startsWith(`${item.to}/`)
+    const alsoLen = Math.max(
+      0,
+      ...(item.alsoActive ?? [])
+        .filter((p) => matchesPrefix(pathname, p))
+        .map((p) => p.length),
+      ...(item.alsoExact ?? [])
+        .filter((p) => p === pathname)
+        .map((p) => p.length),
+    )
+    const score = own ? 10000 + String(item.to).length : alsoLen
+    if (!best || score > best.score) best = { id: item.id, score }
+  }
+  return best?.id
+}
+
 // Tolerates a trailing query or hash so callers can pass a raw location string.
 export function matchesPrefix(path: string, prefix: string): boolean {
   return (

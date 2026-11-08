@@ -1,5 +1,5 @@
 # .github/workflows/deploy.yml
-# Pin the CLI with LEVELRAIL_VERSION=vX.Y.Z on the installer step for reproducible builds.
+# The CLI comes from npm (client only, never the server). Pin it with LEVELRAIL_CLI_VERSION.
 # Build, push and deploy by digest with no stored Levelrail token.
 # One-time setup on the control plane:
 #   levelrail-cli apps ci trust add my-app --repo OWNER/REPO --ref refs/heads/main
@@ -26,7 +26,7 @@ jobs:
       APP: my-app
       IMAGE: ghcr.io/OWNER/REPO
       LEVELRAIL_API_URL: ${{ vars.LEVELRAIL_API_URL }}
-      LEVELRAIL_CLI_INSTALL_DIR: ${{ github.workspace }}/.bin
+      LEVELRAIL_CLI_VERSION: 0.9.4
     steps:
       - uses: actions/checkout@v4
 
@@ -43,9 +43,7 @@ jobs:
           tags: ${{ env.IMAGE }}:${{ github.sha }}
 
       - name: Install levelrail-cli
-        run: |
-          curl -fsSL https://levelrail.com/install-cli.sh | sh
-          echo "$LEVELRAIL_CLI_INSTALL_DIR" >> "$GITHUB_PATH"
+        run: npm install --global "levelrail-cli@$LEVELRAIL_CLI_VERSION"
 
       - name: Deploy and wait for healthy
         env:

@@ -120,6 +120,7 @@ export type UpdateChannel = 'stable' | 'beta' | 'edge'
 export interface UpdateSettings {
   channel: UpdateChannel
   auto_update_enabled: boolean
+  offered_channels?: UpdateChannel[]
 }
 
 export function updateSettingsQueryOptions() {

@@ -24,6 +24,7 @@ import { CollapsibleSection, NAV_ROW_CLASS } from './CollapsibleSection'
 import { NavBadge } from './NavBadge'
 import { cn } from '@/lib/utils'
 import {
+  activeGlobalItemId,
   chordFor,
   defaultGroupOpen,
   isGlobalItemActive,
@@ -144,7 +145,7 @@ function LockedNavLinkItem({
 
 function NavLinkItem({
   item,
-  pathname,
+  active,
   counts,
   experimental,
   pin,
@@ -153,7 +154,7 @@ function NavLinkItem({
 }: {
   item: GlobalNavItem
   groupId?: string
-  pathname: string
+  active: boolean
   counts: Record<string, number>
   experimental: readonly string[]
   pin?: PinControl
@@ -189,7 +190,7 @@ function NavLinkItem({
             aria-keyshortcuts={pin ? 'P' : undefined}
           />
         }
-        isActive={isGlobalItemActive(pathname, item)}
+        isActive={active}
         className={cn(NAV_ROW_CLASS, hue?.icon)}
         title={label}
         tooltip={{
@@ -250,8 +251,15 @@ export function GlobalNav() {
   const routeAvailable = useRouteAvailable()
   const groups = visibleGlobalGroups(routeAvailable)
   const projectsItem = FOLDED_GLOBAL_PAGES.find((i) => i.id === 'projects')
+  const templatesItem = FOLDED_GLOBAL_PAGES.find((i) => i.id === 'templates')
   const { pins, toggle, full, max } = useNavPins()
   const pinned = pinnedGlobalItems(groups, pins)
+  const activeId = activeGlobalItemId(pathname, [
+    ...groups.flatMap((gr) => gr.items),
+    ...visibleGlobalFooter(),
+    ...(projectsItem ? [projectsItem] : []),
+    ...(templatesItem ? [templatesItem] : []),
+  ])
   const pinFor = (id: string): PinControl => ({
     pinned: pins.includes(id),
     full,
@@ -294,7 +302,7 @@ export function GlobalNav() {
                   key={item.id}
                   item={item}
                   groupId={groups.find((gr) => gr.items.includes(item))?.id}
-                  pathname={pathname}
+                  active={item.id === activeId}
                   counts={counts}
                   experimental={experimental}
                   pin={pinFor(item.id)}
@@ -313,7 +321,7 @@ export function GlobalNav() {
                     <NavLinkItem
                       item={item}
                       groupId={group.id}
-                      pathname={pathname}
+                      active={item.id === activeId}
                       counts={counts}
                       experimental={experimental}
                       pin={pinFor(item.id)}
@@ -322,6 +330,16 @@ export function GlobalNav() {
                       <ProjectsNavItem
                         item={projectsItem}
                         pathname={pathname}
+                        active={projectsItem.id === activeId}
+                      />
+                    ) : null}
+                    {item.id === 'apps' && templatesItem ? (
+                      <NavLinkItem
+                        item={templatesItem}
+                        groupId={group.id}
+                        active={templatesItem.id === activeId}
+                        counts={counts}
+                        experimental={experimental}
                       />
                     ) : null}
                   </Fragment>
@@ -365,7 +383,7 @@ export function GlobalNav() {
               <NavLinkItem
                 key={item.id}
                 item={item}
-                pathname={pathname}
+                active={item.id === activeId}
                 counts={counts}
                 experimental={experimental}
                 beta={item.feature !== undefined}

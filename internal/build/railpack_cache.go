@@ -52,20 +52,8 @@ func SanitizeCacheID(id, tag string) string {
 			id = id[i+1:]
 		}
 	}
-	var b strings.Builder
-	for _, r := range strings.ToLower(id) {
-		switch {
-		case r >= 'a' && r <= 'z', r >= '0' && r <= '9', r == '-':
-			b.WriteRune(r)
-		case r == '_' || r == '.' || r == '/' || r == ' ':
-			b.WriteByte('-')
-		}
-	}
-	out := strings.Trim(b.String(), "-")
-	if len(out) > maxCacheIDLen {
-		out = strings.Trim(out[:maxCacheIDLen], "-")
-	}
-	return out
+	// FitCacheID hashes long names so apps sharing a prefix keep distinct ids.
+	return FitCacheID(id)
 }
 
 // cacheLogLine reports the id and a best effort existence signal. BuildKit

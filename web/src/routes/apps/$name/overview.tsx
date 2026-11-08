@@ -6,6 +6,7 @@ import { deployAttemptsQueryOptions } from '../../../queries/deployAttempts'
 import { useDeployProgress } from '../../../hooks/useDeployProgress'
 import { SleepHistoryCard } from '../../../components/SleepHistoryCard'
 import { OverviewPage } from '../../../components/overview/OverviewPage'
+import { AppEdgeCard } from '../../../components/apps/AppEdgeCard'
 import { ManagedByStackPanel } from '../../../components/apps/ManagedByStackPanel'
 import { PendingChangesNotice } from '../../../components/apps/PendingChangesNotice'
 import { TemplateUpgradeBadge } from '../../../components/apps/TemplateUpgradeBadge'
@@ -55,6 +56,7 @@ function OverviewSection() {
       <PendingChangesNotice appName={name} />
       <TemplateUpgradeBadge appName={name} />
       <OverviewPage app={app} conditions={conditions} attempts={attempts} />
+      <AppEdgeCard appName={name} />
       <Suspense fallback={null}>
         <AppResourceTree app={app} conditions={conditions} />
         <NextStatusCard app={app} />

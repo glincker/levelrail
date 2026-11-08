@@ -26429,6 +26429,168 @@
    }
   },
   {
+   "id": "kafka",
+   "aliases": [],
+   "name": "Apache Kafka",
+   "slogan": "A single broker Apache Kafka in KRaft mode (no ZooKeeper) on the official image, with a persistent volume. It is not published on the host and speaks plaintext, so reach it only from other services in this project at kafka:9092.",
+   "description": "A single broker Apache Kafka in KRaft mode (no ZooKeeper) on the official image, with a persistent volume. It is not published on the host and speaks plaintext, so reach it only from other services in this project at kafka:9092.",
+   "first_run": [
+    "Point producers and consumers in the same project at kafka:9092. Topics are created on first use."
+   ],
+   "category": "Infrastructure",
+   "status": "active",
+   "source_repo": "https://github.com/apache/kafka",
+   "documentation_url": "https://kafka.apache.org/documentation/",
+   "license": {
+    "spdx": "Apache-2.0",
+    "class": "permissive",
+    "url": "https://github.com/apache/kafka/blob/trunk/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "kafka",
+     "image": "apache/kafka",
+     "tag": "3.8.0",
+     "source_class": "upstream",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 1024,
+   "needs_config": false,
+   "install": {
+    "kind": "deploy",
+    "fields": []
+   },
+   "services": [
+    {
+     "name": "kafka",
+     "image": "apache/kafka:3.8.0",
+     "ports": [
+      9092
+     ],
+     "volumes": [
+      "kafka_data -> /var/lib/kafka/data"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "kafka",
+     "name": "KAFKA_ADVERTISED_LISTENERS",
+     "kind": "preset"
+    },
+    {
+     "service": "kafka",
+     "name": "KAFKA_CONTROLLER_LISTENER_NAMES",
+     "kind": "preset"
+    },
+    {
+     "service": "kafka",
+     "name": "KAFKA_CONTROLLER_QUORUM_VOTERS",
+     "kind": "preset"
+    },
+    {
+     "service": "kafka",
+     "name": "KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS",
+     "kind": "preset"
+    },
+    {
+     "service": "kafka",
+     "name": "KAFKA_LISTENERS",
+     "kind": "preset"
+    },
+    {
+     "service": "kafka",
+     "name": "KAFKA_LISTENER_SECURITY_PROTOCOL_MAP",
+     "kind": "preset"
+    },
+    {
+     "service": "kafka",
+     "name": "KAFKA_LOG_DIRS",
+     "kind": "preset"
+    },
+    {
+     "service": "kafka",
+     "name": "KAFKA_NODE_ID",
+     "kind": "preset"
+    },
+    {
+     "service": "kafka",
+     "name": "KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR",
+     "kind": "preset"
+    },
+    {
+     "service": "kafka",
+     "name": "KAFKA_PROCESS_ROLES",
+     "kind": "preset"
+    },
+    {
+     "service": "kafka",
+     "name": "KAFKA_TRANSACTION_STATE_LOG_MIN_ISR",
+     "kind": "preset"
+    },
+    {
+     "service": "kafka",
+     "name": "KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "kafka"
+      ],
+      "detail": "kafka_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
    "id": "kanboard",
    "aliases": [],
    "name": "Kanboard",
@@ -40188,6 +40350,120 @@
        "nexus"
       ],
       "detail": "nexus_data",
+      "message": "Stores data in named volumes"
+     }
+    ],
+    "protections": [
+     {
+      "code": "https_ingress",
+      "label": "Automatic HTTPS and an ingress shield in front of every domain"
+     },
+     {
+      "code": "volume_backups",
+      "label": "Named volumes can be backed up and restored"
+     },
+     {
+      "code": "health_gated_deploy",
+      "label": "Deploys are gated on the health check before traffic switches"
+     },
+     {
+      "code": "rollback",
+      "label": "One-step rollback to the previous revision"
+     },
+     {
+      "code": "exposure_report",
+      "label": "Exposure report shows what is reachable from outside"
+     },
+     {
+      "code": "firewall",
+      "label": "Host firewall rules managed for published ports"
+     }
+    ]
+   }
+  },
+  {
+   "id": "nginx",
+   "aliases": [],
+   "name": "Nginx",
+   "slogan": "The Nginx web server on the official Alpine image, serving a persistent web root. It starts with the default welcome page; put your site files in the web root volume through the app's Files.",
+   "description": "The Nginx web server on the official Alpine image, serving a persistent web root. It starts with the default welcome page; put your site files in the web root volume through the app's Files.",
+   "first_run": [
+    "Open the address to see the welcome page, then replace the files in /usr/share/nginx/html with your site."
+   ],
+   "category": "Infrastructure",
+   "status": "active",
+   "source_repo": "https://github.com/nginx/nginx",
+   "documentation_url": "https://nginx.org/en/docs/",
+   "license": {
+    "spdx": "BSD-2-Clause",
+    "class": "permissive",
+    "url": "https://github.com/nginx/nginx/blob/master/docs/text/LICENSE"
+   },
+   "hosted_use": "allowed",
+   "listing": {
+    "by": "community"
+   },
+   "trust": {
+    "level": "listed"
+   },
+   "arch": {
+    "amd64": "unknown",
+    "arm64": "unknown"
+   },
+   "images": [
+    {
+     "service": "nginx",
+     "image": "nginx",
+     "tag": "1.27.2-alpine",
+     "source_class": "official",
+     "signed": null,
+     "provenance": false,
+     "sbom": false,
+     "non_root": false
+    }
+   ],
+   "memory_mib": 64,
+   "needs_config": false,
+   "install": {
+    "kind": "install",
+    "fields": [
+     {
+      "key": "TZ",
+      "label": "Time zone",
+      "required": false,
+      "default_kind": "preset"
+     }
+    ]
+   },
+   "services": [
+    {
+     "name": "nginx",
+     "image": "nginx:1.27.2-alpine",
+     "ports": [
+      80
+     ],
+     "volumes": [
+      "nginx_html -> /usr/share/nginx/html"
+     ]
+    }
+   ],
+   "env": [
+    {
+     "service": "nginx",
+     "name": "TZ",
+     "kind": "preset"
+    }
+   ],
+   "requirements": {
+    "level": "standard",
+    "findings": [
+     {
+      "code": "persistent_data",
+      "severity": "info",
+      "services": [
+       "nginx"
+      ],
+      "detail": "nginx_html",
       "message": "Stores data in named volumes"
      }
     ],

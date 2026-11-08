@@ -1,0 +1,419 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-11-07T19:50:25.369818Z",
+  "build": {
+    "version": "",
+    "commit": "",
+    "dirty": false
+  },
+  "host": {
+    "os": "darwin",
+    "arch": "arm64",
+    "cpu_model": "Apple M4 Max",
+    "cpus": 0,
+    "docker": {},
+    "load1_start": 0,
+    "load1_end": 0
+  },
+  "repeat": 1,
+  "methodology": [
+    "Each scenario builds its own control plane slice (store, reconcile engine, embedded ingress) in the benchmark process and deploys a trivial fixture container on the local Docker engine.",
+    "The load generator runs on the same machine as the system under test, over loopback with TLS through the embedded ingress.",
+    "Request load is open loop: request i is scheduled at i / rate and latency is measured from that intended send time, so a stall is not hidden (coordinated omission). Ingress concurrency steps are closed loop and say so.",
+    "Percentiles are nearest rank over every request, failures included. A run with client_saturated above zero fails its own check.",
+    "Recovery time is the event to the last failed request. Replica restore time is polled from the container list at 200 ms resolution.",
+    "Deploy latency is Deploy to the first answer from the new version through the ingress, and includes the stability window the deploy gate waits for.",
+    "With repeat above 1 every run is kept and listed; nothing is averaged or dropped."
+  ],
+  "caveats": [
+    "NOT Linux production numbers: the host is darwin and Docker runs inside a virtual machine, so container, network and disk paths differ from a Linux server.",
+    "Load generator and system under test share one machine, so they compete for CPU and the figures are a floor for throughput and a ceiling for latency.",
+    "The control plane is an in-process slice, not the shipped binary under systemd, and there is one node: nothing here covers multi-node, zones or a real network.",
+    "Single run per scenario: this is a first measurement, not a distribution.",
+    "The binary carries no VCS stamp, so these numbers are not tied to a commit."
+  ],
+  "results": [
+    {
+      "id": "BenchmarkListApps/apps=100/admin",
+      "scenario": "BenchmarkListApps/apps=100/admin",
+      "status": "passed",
+      "summary": "go benchmark",
+      "recovery_ms": 0,
+      "error_window_ms": 0,
+      "requests": 0,
+      "request_errors": 0,
+      "assertions": null,
+      "metrics": {
+        "allocs_op": 7828,
+        "b_op": 486154,
+        "ns_op": 1951869
+      },
+      "ran_at": "2026-11-07T19:50:25.369704Z",
+      "duration_ms": 0
+    },
+    {
+      "id": "BenchmarkListApps/apps=100/scoped",
+      "scenario": "BenchmarkListApps/apps=100/scoped",
+      "status": "passed",
+      "summary": "go benchmark",
+      "recovery_ms": 0,
+      "error_window_ms": 0,
+      "requests": 0,
+      "request_errors": 0,
+      "assertions": null,
+      "metrics": {
+        "allocs_op": 14222,
+        "b_op": 865712,
+        "ns_op": 3653436
+      },
+      "ran_at": "2026-11-07T19:50:25.369704Z",
+      "duration_ms": 0
+    },
+    {
+      "id": "BenchmarkListApps/apps=500/admin",
+      "scenario": "BenchmarkListApps/apps=500/admin",
+      "status": "passed",
+      "summary": "go benchmark",
+      "recovery_ms": 0,
+      "error_window_ms": 0,
+      "requests": 0,
+      "request_errors": 0,
+      "assertions": null,
+      "metrics": {
+        "allocs_op": 7829,
+        "b_op": 789923,
+        "ns_op": 4044213
+      },
+      "ran_at": "2026-11-07T19:50:25.369704Z",
+      "duration_ms": 0
+    },
+    {
+      "id": "BenchmarkListApps/apps=500/scoped",
+      "scenario": "BenchmarkListApps/apps=500/scoped",
+      "status": "passed",
+      "summary": "go benchmark",
+      "recovery_ms": 0,
+      "error_window_ms": 0,
+      "requests": 0,
+      "request_errors": 0,
+      "assertions": null,
+      "metrics": {
+        "allocs_op": 57822,
+        "b_op": 3317523,
+        "ns_op": 5396004
+      },
+      "ran_at": "2026-11-07T19:50:25.369704Z",
+      "duration_ms": 0
+    },
+    {
+      "id": "BenchmarkListApps/apps=2000/admin",
+      "scenario": "BenchmarkListApps/apps=2000/admin",
+      "status": "passed",
+      "summary": "go benchmark",
+      "recovery_ms": 0,
+      "error_window_ms": 0,
+      "requests": 0,
+      "request_errors": 0,
+      "assertions": null,
+      "metrics": {
+        "allocs_op": 7832,
+        "b_op": 1931351,
+        "ns_op": 3968192
+      },
+      "ran_at": "2026-11-07T19:50:25.369704Z",
+      "duration_ms": 0
+    },
+    {
+      "id": "BenchmarkListApps/apps=2000/scoped",
+      "scenario": "BenchmarkListApps/apps=2000/scoped",
+      "status": "passed",
+      "summary": "go benchmark",
+      "recovery_ms": 0,
+      "error_window_ms": 0,
+      "requests": 0,
+      "request_errors": 0,
+      "assertions": null,
+      "metrics": {
+        "allocs_op": 221335,
+        "b_op": 15049039,
+        "ns_op": 16367673
+      },
+      "ran_at": "2026-11-07T19:50:25.369704Z",
+      "duration_ms": 0
+    },
+    {
+      "id": "BenchmarkV2WatchFanout/streams=1",
+      "scenario": "BenchmarkV2WatchFanout/streams=1",
+      "status": "passed",
+      "summary": "go benchmark",
+      "recovery_ms": 0,
+      "error_window_ms": 0,
+      "requests": 0,
+      "request_errors": 0,
+      "assertions": null,
+      "metrics": {
+        "allocs_op": 649,
+        "b_op": 39540,
+        "ms_per_event-max": 26.48,
+        "ms_per_event-mean": 25.25,
+        "ns_op": 25265714
+      },
+      "ran_at": "2026-11-07T19:50:25.369704Z",
+      "duration_ms": 0
+    },
+    {
+      "id": "BenchmarkV2WatchFanout/streams=16",
+      "scenario": "BenchmarkV2WatchFanout/streams=16",
+      "status": "passed",
+      "summary": "go benchmark",
+      "recovery_ms": 0,
+      "error_window_ms": 0,
+      "requests": 0,
+      "request_errors": 0,
+      "assertions": null,
+      "metrics": {
+        "allocs_op": 4054,
+        "b_op": 237623,
+        "ms_per_event-max": 25.28,
+        "ms_per_event-mean": 17.83,
+        "ns_op": 25026364
+      },
+      "ran_at": "2026-11-07T19:50:25.369704Z",
+      "duration_ms": 0
+    },
+    {
+      "id": "BenchmarkV2WatchFanout/streams=64",
+      "scenario": "BenchmarkV2WatchFanout/streams=64",
+      "status": "passed",
+      "summary": "go benchmark",
+      "recovery_ms": 0,
+      "error_window_ms": 0,
+      "requests": 0,
+      "request_errors": 0,
+      "assertions": null,
+      "metrics": {
+        "allocs_op": 14957,
+        "b_op": 871394,
+        "ms_per_event-max": 25.27,
+        "ms_per_event-mean": 13.68,
+        "ns_op": 25030688
+      },
+      "ran_at": "2026-11-07T19:50:25.369704Z",
+      "duration_ms": 0
+    },
+    {
+      "id": "BenchmarkBuildRoutesConfig/routes=10",
+      "scenario": "BenchmarkBuildRoutesConfig/routes=10",
+      "status": "passed",
+      "summary": "go benchmark",
+      "recovery_ms": 0,
+      "error_window_ms": 0,
+      "requests": 0,
+      "request_errors": 0,
+      "assertions": null,
+      "metrics": {
+        "allocs_op": 84,
+        "b_op": 8284,
+        "ns_op": 5133
+      },
+      "ran_at": "2026-11-07T19:50:25.369704Z",
+      "duration_ms": 0
+    },
+    {
+      "id": "BenchmarkBuildRoutesConfig/routes=100",
+      "scenario": "BenchmarkBuildRoutesConfig/routes=100",
+      "status": "passed",
+      "summary": "go benchmark",
+      "recovery_ms": 0,
+      "error_window_ms": 0,
+      "requests": 0,
+      "request_errors": 0,
+      "assertions": null,
+      "metrics": {
+        "allocs_op": 450,
+        "b_op": 61212,
+        "ns_op": 22311
+      },
+      "ran_at": "2026-11-07T19:50:25.369704Z",
+      "duration_ms": 0
+    },
+    {
+      "id": "BenchmarkBuildRoutesConfig/routes=500",
+      "scenario": "BenchmarkBuildRoutesConfig/routes=500",
+      "status": "passed",
+      "summary": "go benchmark",
+      "recovery_ms": 0,
+      "error_window_ms": 0,
+      "requests": 0,
+      "request_errors": 0,
+      "assertions": null,
+      "metrics": {
+        "allocs_op": 2054,
+        "b_op": 274077,
+        "ns_op": 113975
+      },
+      "ran_at": "2026-11-07T19:50:25.369704Z",
+      "duration_ms": 0
+    },
+    {
+      "id": "BenchmarkBuildRoutesConfig/routes=2000",
+      "scenario": "BenchmarkBuildRoutesConfig/routes=2000",
+      "status": "passed",
+      "summary": "go benchmark",
+      "recovery_ms": 0,
+      "error_window_ms": 0,
+      "requests": 0,
+      "request_errors": 0,
+      "assertions": null,
+      "metrics": {
+        "allocs_op": 8062,
+        "b_op": 1288289,
+        "ns_op": 474818
+      },
+      "ran_at": "2026-11-07T19:50:25.369704Z",
+      "duration_ms": 0
+    },
+    {
+      "id": "BenchmarkBuildAndMarshalRoutesConfig/routes=10",
+      "scenario": "BenchmarkBuildAndMarshalRoutesConfig/routes=10",
+      "status": "passed",
+      "summary": "go benchmark",
+      "recovery_ms": 0,
+      "error_window_ms": 0,
+      "requests": 0,
+      "request_errors": 0,
+      "assertions": null,
+      "metrics": {
+        "allocs_op": 97,
+        "b_op": 11347,
+        "json-bytes": 2463,
+        "ns_op": 9413
+      },
+      "ran_at": "2026-11-07T19:50:25.369704Z",
+      "duration_ms": 0
+    },
+    {
+      "id": "BenchmarkBuildAndMarshalRoutesConfig/routes=100",
+      "scenario": "BenchmarkBuildAndMarshalRoutesConfig/routes=100",
+      "status": "passed",
+      "summary": "go benchmark",
+      "recovery_ms": 0,
+      "error_window_ms": 0,
+      "requests": 0,
+      "request_errors": 0,
+      "assertions": null,
+      "metrics": {
+        "allocs_op": 463,
+        "b_op": 83170,
+        "json-bytes": 20373,
+        "ns_op": 60287
+      },
+      "ran_at": "2026-11-07T19:50:25.369704Z",
+      "duration_ms": 0
+    },
+    {
+      "id": "BenchmarkBuildAndMarshalRoutesConfig/routes=500",
+      "scenario": "BenchmarkBuildAndMarshalRoutesConfig/routes=500",
+      "status": "passed",
+      "summary": "go benchmark",
+      "recovery_ms": 0,
+      "error_window_ms": 0,
+      "requests": 0,
+      "request_errors": 0,
+      "assertions": null,
+      "metrics": {
+        "allocs_op": 2068,
+        "b_op": 398657,
+        "json-bytes": 101573,
+        "ns_op": 282383
+      },
+      "ran_at": "2026-11-07T19:50:25.369704Z",
+      "duration_ms": 0
+    },
+    {
+      "id": "BenchmarkBuildAndMarshalRoutesConfig/routes=2000",
+      "scenario": "BenchmarkBuildAndMarshalRoutesConfig/routes=2000",
+      "status": "passed",
+      "summary": "go benchmark",
+      "recovery_ms": 0,
+      "error_window_ms": 0,
+      "requests": 0,
+      "request_errors": 0,
+      "assertions": null,
+      "metrics": {
+        "allocs_op": 8079,
+        "b_op": 1879177,
+        "json-bytes": 410073,
+        "ns_op": 1129519
+      },
+      "ran_at": "2026-11-07T19:50:25.369704Z",
+      "duration_ms": 0
+    }
+  ],
+  "limits": [
+    {
+      "question": "Kill the serving container under traffic",
+      "status": "not run"
+    },
+    {
+      "question": "Docker API unreachable during a deploy",
+      "status": "not run"
+    },
+    {
+      "question": "Control plane restart under traffic",
+      "status": "not run"
+    },
+    {
+      "question": "Scratch volume filled",
+      "status": "not run"
+    },
+    {
+      "question": "OOM kill during the readiness wait",
+      "status": "not run"
+    },
+    {
+      "question": "Rising steady load through the ingress",
+      "status": "not run"
+    },
+    {
+      "question": "Deploy latency from image to serving",
+      "status": "not run"
+    },
+    {
+      "question": "Rolling deploy of two replicas under traffic",
+      "status": "not run"
+    },
+    {
+      "question": "Ingress throughput at fixed concurrency",
+      "status": "not run"
+    },
+    {
+      "question": "Kill one of two replicas under traffic",
+      "status": "not run"
+    },
+    {
+      "question": "Anything on a Linux server, a real network or a real application",
+      "status": "not measured"
+    },
+    {
+      "question": "Node agent link loss, node drain, zone loss",
+      "status": "not measured: needs a second node"
+    },
+    {
+      "question": "Control plane restart under systemd socket activation",
+      "status": "not measured: the restart scenario is in process"
+    },
+    {
+      "question": "Docker daemon restart (engine stopped)",
+      "status": "not measured: the API is cut with a proxy, the daemon keeps running"
+    },
+    {
+      "question": "Ingress throughput ceiling",
+      "status": "not established: the ladder stops at its top step, so the ceiling is at least the highest clean step"
+    },
+    {
+      "question": "Statistical confidence",
+      "status": "not measured: 1 run(s) per scenario"
+    }
+  ]
+}

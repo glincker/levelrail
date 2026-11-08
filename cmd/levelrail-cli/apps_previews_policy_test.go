@@ -113,3 +113,23 @@ func TestRun_PreviewsAlias_ExtendSettingsAndDelete(t *testing.T) {
 		t.Errorf("delete: path = %s", gotPath)
 	}
 }
+
+func TestRun_AppsPreviewsSettings_MigrateAndImageFlags(t *testing.T) {
+	var gotBody string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		gotBody = string(b)
+		_ = json.NewEncoder(w).Encode(apiclient.PreviewPolicyResource{MigrateCommand: "npm run migrate", EffectiveMigrateTimeoutSeconds: 90, ImageTagTemplate: "ghcr.io/o/a:pr-{number}"})
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "previews", "settings", "web", "--migrate-command", "npm run migrate", "--migrate-timeout", "90", "--image-tag-template", "ghcr.io/o/a:pr-{number}", "--api-url", srv.URL})
+	for _, want := range []string{`"migrate_command":"npm run migrate"`, `"migrate_timeout_seconds":90`, `"image_tag_template":"ghcr.io/o/a:pr-{number}"`} {
+		if !strings.Contains(gotBody, want) {
+			t.Errorf("body %s missing %s", gotBody, want)
+		}
+	}
+	if !strings.Contains(stdout, "timeout 90s") || !strings.Contains(stdout, "ghcr.io/o/a:pr-{number}") {
+		t.Errorf("stdout = %q", stdout)
+	}
+}

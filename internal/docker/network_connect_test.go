@@ -224,6 +224,7 @@ func TestClient_RemoveNetwork(t *testing.T) {
 		inspect         func(w http.ResponseWriter)
 		remove          func(w http.ResponseWriter)
 		disconnect      func(w http.ResponseWriter)
+		labels          map[string]map[string]string
 		wantErr         string
 		wantDisconnects int
 	}{
@@ -242,6 +243,7 @@ func TestClient_RemoveNetwork(t *testing.T) {
 					"c2": {Name: "web-1"},
 				}})
 			},
+			labels:          map[string]map[string]string{"c1": {containerAppLabel: "db"}, "c2": {containerAppLabel: "web"}},
 			disconnect:      func(w http.ResponseWriter) { jsonOK(w, nil) },
 			remove:          func(w http.ResponseWriter) { jsonOK(w, nil) },
 			wantDisconnects: 2,
@@ -267,9 +269,21 @@ func TestClient_RemoveNetwork(t *testing.T) {
 					"c1": {Name: "db-main"},
 				}})
 			},
+			labels:          map[string]map[string]string{"c1": {containerAppLabel: "db"}},
 			disconnect:      func(w http.ResponseWriter) { jsonError(w, http.StatusInternalServerError, "disk full") },
 			wantDisconnects: 1,
 			wantErr:         "disk full",
+		},
+		{
+			name: "foreign container attached keeps the network",
+			inspect: func(w http.ResponseWriter) {
+				jsonOK(w, dockernetwork.Inspect{Containers: map[string]dockernetwork.EndpointResource{
+					"c1": {Name: "db-main"},
+					"x9": {Name: "someone-elses"},
+				}})
+			},
+			labels:  map[string]map[string]string{"c1": {containerAppLabel: "db"}, "x9": {"com.example.other": "1"}},
+			wantErr: ErrNetworkInUse.Error(),
 		},
 		{
 			name: "remove real error propagates",
@@ -288,6 +302,9 @@ func TestClient_RemoveNetwork(t *testing.T) {
 				switch {
 				case r.Method == http.MethodGet && strings.Contains(r.URL.Path, "/networks/"):
 					tc.inspect(w)
+				case r.Method == http.MethodGet && strings.Contains(r.URL.Path, "/containers/"):
+					id := strings.TrimSuffix(r.URL.Path[strings.Index(r.URL.Path, "/containers/")+len("/containers/"):], "/json")
+					jsonOK(w, map[string]any{"Id": id, "Config": map[string]any{"Labels": tc.labels[id]}})
 				case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/disconnect"):
 					disconnects++
 					if tc.disconnect == nil {

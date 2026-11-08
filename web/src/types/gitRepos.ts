@@ -1,6 +1,7 @@
 // Wire types for GET /api/v1/git/repos (internal/api/git_repo_list.go).
 
-export type GitRepoProvider = 'github' | 'gitlab' | 'bitbucket' | 'gitea'
+export type GitRepoProvider =
+  'github' | 'gitlab' | 'bitbucket' | 'gitea' | 'azure_devops'
 
 export type GitRepoMode = 'include' | 'exclude' | 'only'
 

@@ -13,6 +13,7 @@ import {
 } from '../../components/settings/SettingsSkeletons'
 import { useTranslation } from 'react-i18next'
 import { ChartLineGlassIcon } from '@thesvg/ui-react'
+import { PrometheusScrapeCard } from '../../components/settings/PrometheusScrapeCard'
 import { LogVolumeCard } from '../../components/logBudgets/LogVolumeCard'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 
@@ -45,6 +46,7 @@ function ObservabilitySettingsPage() {
     >
       <RemoteReadConnectionCard settings={settings} />
       <ObservabilitySettingsCard settings={settings} />
+      <PrometheusScrapeCard />
       <LogVolumeCard />
     </PageTemplate>
   )

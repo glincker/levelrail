@@ -31,6 +31,7 @@ jobs:
       - run:
           name: Deploy and wait for healthy
           command: |
+            # On a Node image, `npm install --global levelrail-cli@0.9.4` replaces the next two lines.
             curl -fsSL https://levelrail.com/install-cli.sh | sh
             export PATH="$LEVELRAIL_CLI_INSTALL_DIR:$PATH"
             LEVELRAIL_ID_TOKEN=$(circleci run oidc get --claims "{\"aud\":\"$LEVELRAIL_API_URL\"}")

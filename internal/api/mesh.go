@@ -166,7 +166,7 @@ func (rt *Router) handleGetMeshStatus(w http.ResponseWriter, r *http.Request) {
 		LocalNodeID: rt.localNodeID,
 		PublicKey:   st.PublicKey.String(),
 		ListenPort:  st.ListenPort,
-		Peers:       toMeshPeerResources(st, nodes, time.Now()),
+		Peers:       toMeshPeerResources(st, nodes, rt.localNodeID, time.Now()),
 	}
 	if st.Address.IsValid() {
 		res.MeshAddress = st.Address.String()
@@ -190,7 +190,7 @@ func (rt *Router) handleGetMeshStatus(w http.ResponseWriter, r *http.Request) {
 // An operator debugging "why can't service A reach node B" needs to see
 // B in this list even when B has never once handshaked, which is the
 // whole point of a status view: it must show failure, not just success.
-func toMeshPeerResources(st network.Status, nodes []store.Node, now time.Time) []meshPeerResource {
+func toMeshPeerResources(st network.Status, nodes []store.Node, localNodeID string, now time.Time) []meshPeerResource {
 	byPubKey := make(map[string]store.Node, len(nodes))
 	for _, n := range nodes {
 		if n.MeshPublicKey != "" {
@@ -230,7 +230,7 @@ func toMeshPeerResources(st network.Status, nodes []store.Node, now time.Time) [
 	// configured as a peer yet (mesh controller hasn't reached this pass
 	// for them), or this is the local node's own row.
 	for _, n := range nodes {
-		if _, already := seen[n.ID]; already {
+		if _, already := seen[n.ID]; already || n.ID == localNodeID {
 			continue
 		}
 		if n.MeshPublicKey == "" {

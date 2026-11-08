@@ -311,7 +311,7 @@ export function SettingsScopedSidebar() {
                       {open ? (
                         <SidebarMenu
                           id={listId}
-                          className="mt-0.5 mb-1 ml-4 border-l pl-1"
+                          className="mt-0.5 mb-1 ml-4 w-auto min-w-0 border-l pl-1"
                         >
                           {section.items.map((item) => (
                             <SettingsNavLink

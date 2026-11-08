@@ -90,6 +90,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerDatabaseUpgradeRoutes(mux)
 	rt.registerTeamRoutes(mux)
 	rt.registerComposeRoutes(mux)
+	rt.registerCatalogRoutes(mux)
 	rt.registerEnvProtectionRoutes(mux)
 	rt.registerStandaloneDomainRoutes(mux)
 	rt.registerParkedDomainRoutes(mux)

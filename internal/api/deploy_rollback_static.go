@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/cdn"
 	"log/slog"
 	"net/http"
 	"os"
@@ -78,7 +79,7 @@ func (rt *Router) rollbackStatic(ctx context.Context, target store.DeployAttempt
 		rt.logger.Warn("api: static rollback: record attempt failed", slog.String("error", err.Error()), slog.String("name", target.ServiceName))
 	}
 	rt.nudgeReconciler()
-	return 0, "", rt.purgeWarning(ctx, target.ServiceName)
+	return 0, "", rt.purgeWarningFor(ctx, target.ServiceName, cdn.TriggerRollback)
 }
 
 func (rt *Router) recordStaticRollback(ctx context.Context, st staticRollbackStore, target store.DeployAttempt, stats deploy.StaticTreeStats) error {

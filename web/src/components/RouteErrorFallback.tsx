@@ -17,7 +17,7 @@ import { isConnectivityError } from '@/lib/connectionState'
 import { BrandContext } from '@/lib/brandContext'
 import { appListQueryOptions } from '@/queries/apps'
 import { databaseListQueryOptions } from '@/queries/databases'
-import { ReportIssueDialog } from './ReportIssueDialog'
+import { LazyReportIssueDialog } from './LazyReportIssueDialog'
 import { ForbiddenState } from './teams/ForbiddenState'
 import { NotFoundState, type NotFoundResource } from './NotFoundState'
 import { Button } from '@/components/ui/button'
@@ -84,7 +84,7 @@ function ReportLink({ error }: { error: unknown }) {
         <SocialGithubGlassIcon size="1.4em" aria-hidden="true" />
         {t('routeError.report')}
       </Button>
-      <ReportIssueDialog
+      <LazyReportIssueDialog
         open={open}
         onOpenChange={setOpen}
         source="error"

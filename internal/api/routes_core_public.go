@@ -130,6 +130,7 @@ func (rt *Router) registerPublicRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/updates/schedule", rt.requireAbility(AbilityRoot, rt.handleCancelUpgradeSchedule))
 	mux.HandleFunc("GET /api/v1/updates/auto", rt.requireAbility(AbilityRoot, rt.handleGetUpgradePolicy))
 	mux.HandleFunc("PUT /api/v1/updates/auto", rt.requireAbility(AbilityRoot, rt.handleUpdateUpgradePolicy))
+	mux.HandleFunc("POST /api/v1/updates/auto/notice/dismiss", rt.requireAbility(AbilityRoot, rt.handleDismissUpgradeNotice))
 	mux.HandleFunc("POST /api/v1/updates/migration-dry-run", rt.requireAbility(AbilityWrite, rt.handleMigrationDryRun))
 	mux.HandleFunc("POST /api/v1/updates/backup-now", rt.requireAbility(AbilityRoot, rt.handleUpgradeBackupNow))
 	// Channel/auto-update settings are AbilityRoot on both verbs: see

@@ -16,6 +16,8 @@ func runAppsDelete(prog string, args []string, stdout, stderr io.Writer, lookupE
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsDeleteUsage(prog)) }
 	deleteData := fs.Bool("delete-data", false, "also destroy the app's data volumes (needs --confirm NAME)")
 	confirm := fs.String("confirm", "", "the app name again, required with --delete-data")
+	// Accepted for parity with other destructive commands; delete never prompts.
+	_ = fs.Bool("yes", false, "accepted for scripts; the delete never asks for confirmation")
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
@@ -72,6 +74,7 @@ retried until it succeeds (the command then reports it as pending).
 Flags:
   --delete-data             also destroy the app's data volumes (needs --confirm NAME); without it they are kept as orphaned data
   --confirm string          the app name again, required with --delete-data
+  --yes                     accepted for scripts; the delete never asks for confirmation
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")

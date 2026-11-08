@@ -44,6 +44,8 @@ type vitalsStore interface {
 	AddVitalsCounts(ctx context.Context, rows []store.VitalsCount) error
 	VitalsRoutesSince(ctx context.Context, app string, since time.Time, limit int) ([]string, error)
 	QueryVitals(ctx context.Context, app string, since time.Time, topRoutes int) ([]store.VitalsBucketCount, error)
+	QueryVitalsOverall(ctx context.Context, app string, since time.Time) ([]store.VitalsBucketCount, error)
+	DeleteAppVitals(ctx context.Context, app string) error
 	PruneVitalsBatch(ctx context.Context, before time.Time, limit int) (int64, error)
 }
 
@@ -230,7 +232,9 @@ func vitalsStatOf(metric string, buckets map[int]int64) vitalsStat {
 	return st
 }
 
-func buildVitalsReport(rows []store.VitalsBucketCount) (map[string]vitalsStat, []vitalsRouteRow) {
+// buildVitalsReport builds the per-route table from rows and the app-wide overall from allRows,
+// which covers every route even when rows is limited to the busiest ones.
+func buildVitalsReport(rows, allRows []store.VitalsBucketCount) (map[string]vitalsStat, []vitalsRouteRow) {
 	byRoute := map[string]map[string]map[int]int64{}
 	all := map[string]map[int]int64{}
 	for _, c := range rows {
@@ -240,12 +244,20 @@ func buildVitalsReport(rows []store.VitalsBucketCount) (map[string]vitalsStat, [
 		if byRoute[c.Route] == nil {
 			byRoute[c.Route] = map[string]map[int]int64{}
 		}
-		for _, m := range []map[string]map[int]int64{byRoute[c.Route], all} {
-			if m[c.Metric] == nil {
-				m[c.Metric] = map[int]int64{}
-			}
-			m[c.Metric][c.Bucket] += c.Count
+		m := byRoute[c.Route]
+		if m[c.Metric] == nil {
+			m[c.Metric] = map[int]int64{}
 		}
+		m[c.Metric][c.Bucket] += c.Count
+	}
+	for _, c := range allRows {
+		if _, ok := vitalsMetrics[c.Metric]; !ok {
+			continue
+		}
+		if all[c.Metric] == nil {
+			all[c.Metric] = map[int]int64{}
+		}
+		all[c.Metric][c.Bucket] += c.Count
 	}
 	overall := map[string]vitalsStat{}
 	for m, b := range all {
@@ -298,12 +310,18 @@ func (rt *Router) writeVitals(w http.ResponseWriter, r *http.Request, db vitalsS
 	if found {
 		resp.Enabled, resp.PublicKey = cfg.Enabled, cfg.PublicKey
 	}
-	rows, err := db.QueryVitals(ctx, name, time.Now().Add(-vitalsReportDays*24*time.Hour), rt.runtimeSettings.Int(ctx, KeyVitalsTopRoutes))
+	since := time.Now().Add(-vitalsReportDays * 24 * time.Hour)
+	rows, err := db.QueryVitals(ctx, name, since, rt.runtimeSettings.Int(ctx, KeyVitalsTopRoutes))
 	if err != nil {
 		rt.internalError(w, "api: vitals: query", err)
 		return
 	}
-	resp.Overall, resp.Routes = buildVitalsReport(rows)
+	allRows, err := db.QueryVitalsOverall(ctx, name, since)
+	if err != nil {
+		rt.internalError(w, "api: vitals: query overall", err)
+		return
+	}
+	resp.Overall, resp.Routes = buildVitalsReport(rows, allRows)
 	writeJSON(w, http.StatusOK, resp)
 }
 

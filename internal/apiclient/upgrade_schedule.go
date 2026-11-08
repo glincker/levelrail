@@ -73,6 +73,16 @@ type UpgradePolicy struct {
 	DecisionAt            string         `json:"decision_at"`
 	ServerTimezone        string         `json:"server_timezone"`
 	NextWindow            *UpgradeWindow `json:"next_window"`
+	DefaultApplied        bool           `json:"default_applied"`
+	PausedUntil           string         `json:"paused_until"`
+	HealthWindowSeconds   int            `json:"health_window_seconds"`
+	Notice                *UpgradeNotice `json:"notice"`
+}
+
+// UpgradeNotice is the one-time notice that automatic upgrades are on by default.
+type UpgradeNotice struct {
+	Text       string `json:"text"`
+	DismissURL string `json:"dismiss_url"`
 }
 
 // UpgradePolicyRequest is PUT /api/v1/updates/auto's body.
@@ -84,6 +94,8 @@ type UpgradePolicyRequest struct {
 	MinReleaseAgeDays     int      `json:"min_release_age_days"`
 	NotifyChannelIDs      []string `json:"notify_channel_ids"`
 	Paused                bool     `json:"paused"`
+	PauseDays             *int     `json:"pause_days,omitempty"`
+	HealthWindowSeconds   *int     `json:"health_window_seconds,omitempty"`
 }
 
 // UpgradeBackupNowResult is POST /api/v1/updates/backup-now's response.
@@ -128,6 +140,13 @@ func (c *Client) GetUpgradePolicy(ctx context.Context) (UpgradePolicy, error) {
 func (c *Client) SetUpgradePolicy(ctx context.Context, req UpgradePolicyRequest) (UpgradePolicy, error) {
 	var out UpgradePolicy
 	err := c.do(ctx, http.MethodPut, "/api/v1/updates/auto", req, &out)
+	return out, err
+}
+
+// DismissUpgradeNotice calls POST /api/v1/updates/auto/notice/dismiss.
+func (c *Client) DismissUpgradeNotice(ctx context.Context) (UpgradePolicy, error) {
+	var out UpgradePolicy
+	err := c.do(ctx, http.MethodPost, "/api/v1/updates/auto/notice/dismiss", nil, &out)
 	return out, err
 }
 

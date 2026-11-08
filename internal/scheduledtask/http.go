@@ -90,7 +90,7 @@ func (r *Runner) attemptHTTP(runCtx context.Context, task store.ScheduledTask, r
 		res.status, res.output = store.ScheduledTaskStatusFailed, "build request: "+err.Error()
 		return res
 	}
-	if err := applyJobHeaders(req, cfg.Headers, svc.Env); err != nil {
+	if err := r.applyJobHeaders(runCtx, req, cfg.Headers, svc); err != nil {
 		res.status, res.output = store.ScheduledTaskStatusFailed, err.Error()
 		return res
 	}
@@ -180,20 +180,47 @@ func joinTarget(base, path string) (string, error) {
 	return u.ResolveReference(ref).String(), nil
 }
 
-// applyJobHeaders sets the configured headers. A secretRef is read from the
-// app's env now, so the value is never stored, and a missing one fails the run
-// naming only the variable, never a value.
-func applyJobHeaders(req *http.Request, headers []store.ScheduledTaskHeader, env map[string]string) error {
+// applyJobHeaders sets the configured headers. A secretRef is read now (app
+// secrets first, as containers do, then plain env), so the value is never
+// stored, and a failure names only the variable, never a value.
+func (r *Runner) applyJobHeaders(ctx context.Context, req *http.Request, headers []store.ScheduledTaskHeader, svc *store.DesiredService) error {
 	for _, h := range headers {
 		if h.SecretRef == "" {
 			req.Header.Set(h.Name, h.Value)
 			continue
 		}
-		v, ok := env[h.SecretRef]
-		if !ok || v == "" {
+		v, err := r.resolveHeaderSecret(ctx, svc, h.SecretRef)
+		if err != nil {
+			return fmt.Errorf("header %s: %w", h.Name, err)
+		}
+		if v == "" {
 			return fmt.Errorf("header %s: secret %s is not set on the app", h.Name, h.SecretRef)
 		}
 		req.Header.Set(h.Name, h.Prefix+v)
 	}
 	return nil
+}
+
+func (r *Runner) resolveHeaderSecret(ctx context.Context, svc *store.DesiredService, name string) (string, error) {
+	for _, ref := range svc.SecretEnv {
+		if ref.Name != name {
+			continue
+		}
+		if r.Secrets == nil {
+			return "", fmt.Errorf("secret %s cannot be read: no secret resolver is configured", name)
+		}
+		ok, err := r.Secrets.Exists(ctx, svc.Name, name)
+		if err != nil || !ok {
+			if err != nil {
+				return "", fmt.Errorf("check secret %s failed", name)
+			}
+			break
+		}
+		v, err := r.Secrets.Resolve(ctx, svc.Name, name)
+		if err != nil {
+			return "", fmt.Errorf("resolve secret %s failed", name)
+		}
+		return v, nil
+	}
+	return svc.Env[name], nil
 }

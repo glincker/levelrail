@@ -28,6 +28,8 @@ func runRollout(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return exitUsage
 	case "waves":
 		return runRolloutWaves(prog, args[1:], stdout, stderr, lookupEnv)
+	case "state":
+		return runRolloutState(prog, args[1:], stdout, stderr, lookupEnv)
 	case "status":
 		if len(args) > 1 && args[1] != "-h" && args[1] != "--help" {
 			printRolloutSummary(prog, args[1:], stdout, lookupEnv)
@@ -48,6 +50,8 @@ func rolloutUsage(prog string) string {
                                        latest deploy to converge (same as apps wait)
   %[1]s rollout waves <app> [--json]     show the rollout policy and the last rolling deploy's
                                        wave, updated, ready, unavailable and surge counts
+  %[1]s rollout state <app> [--json]     show the health gate, traffic flip and hold countdown of the
+                                       newest release (thresholds are the app's deploy-safety settings)
   %[1]s rollout history <app> [flags]    list deploy attempts, newest first (same as apps deploys list)
   %[1]s rollout undo <app> [flags]       roll back to the previous deploy (same as apps rollback)
   %[1]s rollout restart <app> [flags]    restart the app (same as apps restart)

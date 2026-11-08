@@ -1,4 +1,5 @@
 import { Suspense, lazy, useState, type ReactNode } from 'react'
+import { AutoUpdateNotice } from '../settings/AutoUpdateNotice'
 import {
   ChevronDownGlassIcon,
   SlidersHorizontalGlassIcon,
@@ -234,6 +235,7 @@ export function DashboardHome({
 
   return (
     <DashboardHero>
+      <AutoUpdateNotice />
       <DashboardViews
         start={<StartView summary={summary} sample={sample} />}
         hasApps

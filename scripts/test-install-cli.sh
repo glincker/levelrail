@@ -57,4 +57,10 @@ echo "$out" | grep -q "APP_INSTALL_VERIFY=require but cosign is not installed" |
 out="$(mirror_install good)"
 echo "$out" | grep -q "Checksum verified" || { echo "good checksum was not accepted in auto mode: $out"; exit 1; }
 
+in_ct 'echo v9.9.9 > /srv/rel/v9.9.9/good/latest; echo v9.9.9 > /srv/rel/v9.9.9/tampered/latest'
+out="$(mirror_install good LEVELRAIL_VERSION=)"
+echo "$out" | grep -q "Checksum verified" || { echo "mirror /latest version was not resolved and verified: $out"; exit 1; }
+out="$(mirror_install tampered LEVELRAIL_VERSION=)"
+echo "$out" | grep -q "checksum mismatch" || { echo "tampered mirror was not rejected after /latest: $out"; exit 1; }
+
 echo "install-cli.sh passed on ${base_image}"

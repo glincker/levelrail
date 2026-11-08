@@ -16,6 +16,7 @@ import { useGitSource } from '../queries/gitSources'
 import { useSetGitDeploySettings } from '../queries/gitDeploySettings'
 import type { GitDeploySettings } from '../types/gitSource'
 import { InfoTip } from './kit'
+import { supportsPrFeatures } from '../lib/gitProviderSupport'
 
 function toLines(list: string[]): string {
   return list.join('\n')
@@ -63,6 +64,7 @@ export function GitDeploySettingsCard({ appName }: { appName: string }) {
           key={JSON.stringify(current)}
           appName={appName}
           current={current}
+          statusSupported={supportsPrFeatures(source.data.connection?.provider)}
         />
       </CardContent>
     </Card>
@@ -72,9 +74,11 @@ export function GitDeploySettingsCard({ appName }: { appName: string }) {
 function DeploySettingsForm({
   appName,
   current,
+  statusSupported,
 }: {
   appName: string
   current: GitDeploySettings
+  statusSupported: boolean
 }) {
   const save = useSetGitDeploySettings(appName)
   const [paths, setPaths] = useState(toLines(current.deploy_paths))
@@ -150,26 +154,29 @@ function DeploySettingsForm({
           />
         </div>
       </div>
-      <div className="flex items-center gap-2">
-        <Switch
-          id="deploy-report-status"
-          checked={report}
-          onCheckedChange={setReport}
-          aria-label="Report deploys and pipeline runs to the git provider"
-        />
-        <Label
-          htmlFor="deploy-report-status"
-          className="flex items-center gap-1.5"
-        >
-          Report to the git provider
-          <InfoTip label="About status reporting">
-            Posts pipeline run states as commit statuses and, on GitHub, deploys
-            to the Deployments API (production, or preview for pull requests). A
-            failed post never fails a deploy or a run. The server can switch
-            this off for every app with APP_GIT_STATUS_ENABLED=false.
-          </InfoTip>
-        </Label>
-      </div>
+      {statusSupported ? (
+        <div className="flex items-center gap-2">
+          <Switch
+            id="deploy-report-status"
+            checked={report}
+            onCheckedChange={setReport}
+            aria-label="Report deploys and pipeline runs to the git provider"
+          />
+          <Label
+            htmlFor="deploy-report-status"
+            className="flex items-center gap-1.5"
+          >
+            Report to the git provider
+            <InfoTip label="About status reporting">
+              Posts pipeline run states as commit statuses and, on GitHub,
+              deploys to the Deployments API (production, or preview for pull
+              requests). A failed post never fails a deploy or a run. The server
+              can switch this off for every app with
+              APP_GIT_STATUS_ENABLED=false.
+            </InfoTip>
+          </Label>
+        </div>
+      ) : null}
       <div>
         <Button size="sm" onClick={submit} disabled={!dirty || save.isPending}>
           {save.isPending ? 'Saving...' : 'Save'}

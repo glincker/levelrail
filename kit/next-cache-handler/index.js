@@ -55,7 +55,7 @@ function collectTags(data, ctx) {
 const shared = new Map();
 
 function newState() {
-  return { client: null, connecting: null, downUntil: 0, lastLog: 0, lru: new Map(), localTags: new Map(), degraded: false };
+  return { client: null, connecting: null, downUntil: 0, lastLog: 0, lru: new Map(), localTags: new Map(), degraded: false, replaying: null };
 }
 
 function sharedState(key) {
@@ -167,17 +167,31 @@ class CacheHandler {
   }
 
   // Applies revalidations made while Redis was away, keeping any newer time already stored.
+  // Resolves to the exact tag times written so the caller drops only those from the local map.
   async replayTags(c) {
-    if (!this.st.localTags.size) return;
-    const tags = [...this.st.localTags.keys()];
+    if (!this.st.localTags.size) return new Map();
+    const snapshot = new Map(this.st.localTags);
+    const tags = [...snapshot.keys()];
     const stored = await c.hmGet(this.tagsKey, tags);
     const fields = {};
     tags.forEach((tag, i) => {
       const have = Number(stored[i]);
-      const mine = this.st.localTags.get(tag);
+      const mine = snapshot.get(tag);
       fields[tag] = String(Number.isFinite(have) && have > mine ? have : mine);
     });
     await c.hSet(this.tagsKey, fields);
+    return snapshot;
+  }
+
+  // One shared in-flight replay so concurrent requests never clear each other's pending tags.
+  replayOnce(c) {
+    const st = this.st;
+    if (!st.replaying) {
+      st.replaying = this.withTimeout(Promise.resolve(this.replayTags(c))).finally(() => {
+        st.replaying = null;
+      });
+    }
+    return st.replaying;
   }
 
   // Returns {ok, value}. ok=false means Redis was unavailable and the caller uses the LRU.
@@ -186,12 +200,16 @@ class CacheHandler {
     try {
       const client = await this.getClient();
       // Replay before the command so the first read after an outage already sees the revalidation.
-      if (this.st.degraded) await this.withTimeout(Promise.resolve(this.replayTags(client)));
+      let replayed = null;
+      if (this.st.degraded) replayed = await this.replayOnce(client);
       const value = await this.withTimeout(Promise.resolve(fn(client)));
-      if (this.st.degraded) {
-        this.st.degraded = false;
+      if (replayed) {
+        // Drop only tag times that were replayed unchanged; newer local ones wait for the next replay.
+        for (const [tag, t] of replayed) {
+          if (this.st.localTags.get(tag) === t) this.st.localTags.delete(tag);
+        }
         this.st.lru.clear();
-        this.st.localTags.clear();
+        if (!this.st.localTags.size) this.st.degraded = false;
       }
       return { ok: true, value };
     } catch (err) {
@@ -245,8 +263,8 @@ class CacheHandler {
     if (res.ok) return res.value ? { value: res.value.value, lastModified: res.value.lastModified } : null;
     const e = this.lruGet(key);
     if (!e) return null;
-    const times = Object.fromEntries(this.localTags);
-    if (this.staleByTag(e.tags, e.lastModified, times)) return null;
+    const tags = [...new Set([...(e.tags || []), ...soft])];
+    if (this.staleByTag(tags, e.lastModified, Object.fromEntries(this.localTags))) return null;
     return { value: e.value, lastModified: e.lastModified };
   }
 

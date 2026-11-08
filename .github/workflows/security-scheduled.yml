@@ -72,6 +72,7 @@ jobs:
       issues: read
       pull-requests: read
       checks: read
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -83,7 +84,7 @@ jobs:
         with:
           results_file: scorecard.sarif
           results_format: sarif
-          publish_results: false
+          publish_results: true
 
       - name: Upload SARIF
         continue-on-error: true

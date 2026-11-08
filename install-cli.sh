@@ -19,7 +19,8 @@
 #   APP_INSTALL_VERIFY       signature check on checksums.txt (cosign keyless),
 #                            same meaning as install.sh: auto, require, or off
 #   LEVELRAIL_RELEASE_BASE_URL  download release assets from this https mirror
-#                            instead of GitHub
+#                            instead of GitHub; with no LEVELRAIL_VERSION the
+#                            newest tag is read from <base>/latest
 #   LEVELRAIL_MODIFY_PATH=1  when the install dir is not on PATH, append the
 #                            export line to your shell profile (default: only
 #                            print it, never edit files)
@@ -111,6 +112,25 @@ list_releases() {
 resolve_version() {
 	if [ -n "${LEVELRAIL_VERSION:-}" ]; then
 		VERSION="$LEVELRAIL_VERSION"
+		return
+	fi
+	if [ -n "${LEVELRAIL_RELEASE_BASE_URL:-}" ]; then
+		# A mirror publishes its newest tag at <base>/latest, no GitHub API needed.
+		mirror_base="${LEVELRAIL_RELEASE_BASE_URL%/}"
+		mirror_proto="$HTTPS_ONLY"
+		case "$mirror_base" in
+		https://*) ;;
+		http://*)
+			[ "${LEVELRAIL_INSECURE_MIRROR:-}" = "1" ] || fatal "LEVELRAIL_RELEASE_BASE_URL must be https (LEVELRAIL_INSECURE_MIRROR=1 allows http for tests)"
+			mirror_proto="=http"
+			;;
+		*) fatal "LEVELRAIL_RELEASE_BASE_URL must start with https://" ;;
+		esac
+		VERSION="$(curl -fsSL --proto "$mirror_proto" --tlsv1.2 --connect-timeout 10 --max-time 30 "${mirror_base}/latest" 2>/dev/null | head -n 1 | tr -d ' \t\r' || true)"
+		[ -n "$VERSION" ] || fatal "could not read the latest version from ${mirror_base}/latest. Set LEVELRAIL_VERSION=vX.Y.Z to pin one."
+		case "$VERSION" in
+		*[!A-Za-z0-9._+-]*) fatal "${mirror_base}/latest returned something that is not a version tag" ;;
+		esac
 		return
 	fi
 	channel="${LEVELRAIL_CHANNEL:-}"

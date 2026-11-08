@@ -7,7 +7,13 @@ import { GitAccessValidate } from '../GitAccessValidate'
 import { GitProviderRail } from './GitProviderRail'
 
 export type GitProvider =
-  'github' | 'gitlab' | 'gitea' | 'forgejo' | 'bitbucket' | 'bitbucket_server'
+  | 'github'
+  | 'gitlab'
+  | 'gitea'
+  | 'forgejo'
+  | 'bitbucket'
+  | 'bitbucket_server'
+  | 'azure_devops'
 
 // Bitbucket Server has no mark of its own in thesvg, so it shows Bitbucket's.
 const BRAND_MARK: Record<GitProvider, string> = {
@@ -17,6 +23,7 @@ const BRAND_MARK: Record<GitProvider, string> = {
   forgejo: 'forgejo',
   bitbucket: 'bitbucket',
   bitbucket_server: 'bitbucket',
+  azure_devops: 'azure',
 }
 
 interface Copy {

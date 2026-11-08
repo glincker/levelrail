@@ -1,8 +1,10 @@
 package api
 
 import (
+	"context"
 	"github.com/GLINCKER/levelrail/internal/cloudmeta"
 	"github.com/GLINCKER/levelrail/internal/placement"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings/registrymirror"
 	"net"
 	"strconv"
 	"strings"
@@ -99,7 +101,7 @@ func (rt *Router) defaultControlPlaneAddr() string {
 // buildJoinCommands renders the docker and binary join commands. Every
 // interpolated value is validated by the caller or generated server side,
 // so nothing here can inject shell syntax.
-func (rt *Router) buildJoinCommands(addr, token, caFingerprint, nodeName string, mesh bool, domain joinDomain) joinCommands {
+func (rt *Router) buildJoinCommands(ctx context.Context, addr, token, caFingerprint, nodeName string, mesh bool, domain joinDomain) joinCommands {
 	env := []string{"APP_CONTROL_PLANE_ADDR=" + addr, "APP_JOIN_TOKEN=" + token}
 	if caFingerprint != "" {
 		env = append(env, "APP_CA_FINGERPRINT="+caFingerprint)
@@ -108,6 +110,7 @@ func (rt *Router) buildJoinCommands(addr, token, caFingerprint, nodeName string,
 		env = append(env, "APP_NODE_NAME="+nodeName)
 	}
 	agent := rt.brand.AgentName()
+	image := registrymirror.Apply(sshProvisionAgentImage(agent), rt.registryMirrorPrefix(ctx))
 	dataDir := "/var/lib/" + agent + "-data"
 	env = append(env, "APP_AGENT_IDENTITY_FILE="+dataDir+"/identity.json")
 	if mesh {
@@ -123,7 +126,7 @@ func (rt *Router) buildJoinCommands(addr, token, caFingerprint, nodeName string,
 	for _, e := range env {
 		docker = append(docker, "-e "+e)
 	}
-	docker = append(docker, sshProvisionAgentImage(agent))
+	docker = append(docker, image)
 
 	// The agent auto-detects /run/podman/podman.sock, so no socket env is needed.
 	podman := []string{"sudo podman run -d --restart unless-stopped --name " + agent, "--user 0:0 --network host",
@@ -134,7 +137,7 @@ func (rt *Router) buildJoinCommands(addr, token, caFingerprint, nodeName string,
 	for _, e := range env {
 		podman = append(podman, "-e "+e)
 	}
-	podman = append(podman, sshProvisionAgentImage(agent))
+	podman = append(podman, image)
 
 	return joinCommands{
 		Docker: strings.Join(docker, " "),

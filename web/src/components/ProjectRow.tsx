@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { ChevronRightGlassIcon, FolderGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
+import { CloneProjectDialog } from './projects/CloneProjectDialog'
 import { DeleteProjectDialog } from './DeleteProjectDialog'
 import type { ProjectResource } from '../types/projectDetail'
 
@@ -42,6 +43,11 @@ export function ProjectRow({ project }: { project: ProjectResource }) {
             <ChevronRightGlassIcon className="size-5" aria-hidden="true" />
           </Button>
         </Link>
+        <CloneProjectDialog
+          projectId={project.id}
+          projectName={project.name}
+          size="icon-sm"
+        />
         <DeleteProjectDialog id={project.id} name={project.name} />
       </span>
     </div>

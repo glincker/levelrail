@@ -99,6 +99,7 @@ func printStack(w io.Writer, s apiclient.StackInfo) {
 		drift += " (checked " + stackTime(s.Drift.CheckedAt) + ")"
 	}
 	_, _ = fmt.Fprintf(w, "Drift     %s\n", drift)
+	printStackDriftDetail(w, s.Drift)
 	if s.PinnedRevision > 0 {
 		_, _ = fmt.Fprintf(w, "Pinned    revision %d\n", s.PinnedRevision)
 	}
@@ -309,5 +310,19 @@ func printStackDelete(w io.Writer, r apiclient.StackDeleteResult) {
 	}
 	if len(r.DataKept) > 0 {
 		_, _ = fmt.Fprintf(w, "data kept: %s (the database and its volume still exist; add --delete-data to remove them)\n", strings.Join(r.DataKept, ", "))
+	}
+}
+
+// printStackDriftDetail lists each drifted resource, or says plainly that live matches declared.
+func printStackDriftDetail(w io.Writer, d apiclient.StackDrift) {
+	switch {
+	case d.CheckedAt == "":
+		return
+	case d.Status != "drifted":
+		_, _ = fmt.Fprintln(w, "          no drift: live state matches the declared stack")
+		return
+	}
+	for _, it := range d.Summary {
+		_, _ = fmt.Fprintf(w, "          drifted: %s %s (declared differs from live)\n", it.Kind, it.Name)
 	}
 }

@@ -4407,8 +4407,9 @@ type DeployURLCopiesResource struct {
 // (GET/PUT /api/v1/updates/settings): which release channel to compare
 // against and whether to check for it in the background.
 type UpdateSettingsResource struct {
-	Channel           string `json:"channel"`
-	AutoUpdateEnabled bool   `json:"auto_update_enabled"`
+	Channel           string   `json:"channel"`
+	AutoUpdateEnabled bool     `json:"auto_update_enabled"`
+	OfferedChannels   []string `json:"offered_channels,omitempty"`
 }
 
 // SetupStatusResource mirrors GET /api/v1/auth/setup-status.

@@ -14,6 +14,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [First 15 minutes](/first-15-minutes): A checklist for a new server: install, open the setup link, turn on HTTPS, deploy an app and take your first backup. Each step links to the full page.
 - [What you need before you start](/what-you-need): A plain-language checklist for installing Levelrail: a Linux server, a few ports, and optionally a domain. No Kubernetes, no prior DevOps experience.
 - [Installing Levelrail](/installing): Requirements, then every supported way to get the Levelrail control plane running on Linux with install.sh, Docker, or source build.
+- [Install from mainland China](/install-from-china): Install and run Levelrail where github.com, ghcr.io or Docker Hub are slow or blocked: release base URL, Docker mirrors, a registry mirror prefix, a pinned version and signature checks.
 - [Container runtimes](/container-runtimes): Which container runtimes Levelrail supports on a Linux server, how install.sh picks one, and the manual steps for Podman.
 - [Install on a cloud VM](/install-on-cloud): Copy-paste user data and startup scripts that install the control plane on a fresh AWS, Google Cloud, Azure, DigitalOcean or Hetzner VM, with the ports to open.
 - [Cloud firewall rules](/cloud-firewall-rules): Copy-paste cloud firewall rules for DigitalOcean, Hetzner, AWS, Google Cloud, Oracle Cloud and Azure: ports 80 and 443, and optionally 8080 from your own IP.
@@ -81,6 +82,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 
 - [Troubleshooting](/troubleshooting): Fixes for the most common problems when deploying, logging in, or running Levelrail.
 - [Doctor](/doctor): One health check for the server, in the dashboard and the CLI, with a fix or a next step for every problem.
+- [Doctor and import from the command line](/doctor-and-import): Run the server checks, apply safe fixes, explain a failing check, and plan or create apps from a repository, an image, a config folder or a monorepo with levelrail-cli.
 - [Email notifications](/email-notifications): Choose an email provider for alert emails, password resets and invites, check your sender domain, send a test, and read the delivery log.
 - [Email templates and messages](/email-templates): Edit every email the platform sends, build audiences, and send announcements with opt-outs, scheduling and delivery history.
 - [Alert inbox](/alert-inbox): An in-app inbox of the alerts that reached you, with per-account read state, routing rules and an optional daily digest, plus the guardrails on mass actions.
@@ -137,7 +139,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Running Levelrail in Docker](/docker): Run Levelrail control plane and node agent as Docker containers.
 - [Zero-downtime deploys with Docker: readiness-gated cutover and rollback](/zero-downtime-deploys): How Levelrail ships without downtime: blue-green, rolling or recreate strategies gated on real readiness probes and digest-pinned images.
 - [Rollout control](/rollout-control): Tune rolling deploys with max_surge and max_unavailable, and protect running replicas with a min_available disruption budget.
-- [Preview environments per pull request on your own servers](/preview-environments): Levelrail deploys a preview environment for each pull request on GitHub, GitLab, Bitbucket and Gitea and tears it down when the pull request closes.
+- [Preview environments](/preview-environments): Run a copy of an app for each pull request, with its own URL, caps, optional database, and automatic teardown when the pull request closes.
 - [Deploy contexts: env and build settings per kind of deploy](/deploy-contexts): Set env vars and static build settings separately for pull request previews, branch deploys and specific branches, and see the effective config for any deploy.
 
 ### Networking and multi-node
@@ -165,6 +167,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Add a node anywhere](/add-node-anywhere): Add an EC2 instance, Google Cloud VM, VPS or home server as a node in one guided flow, with zone auto-detect, preflight checks and failure-domain placement.
 - [Run Levelrail on home hardware](/home-hardware): Install notes for a Raspberry Pi, an old laptop or a mini PC, and what to do when your home connection has no public address.
 - [Resource-aware placement](/resource-aware-placement): How new apps and databases are placed on nodes with room for them, how to read the "why here" explanation, and how to set the overcommit policy.
+- [Node scheduling: taints, tolerations, affinity and score mode](/node-scheduling): Keep workloads off a node with taints, let chosen apps onto it with tolerations, place apps near or away from each other with affinity, and pick spread or bin-pack scoring live.
 - [Autoscaling](/autoscaling): Scale an app between a minimum and a maximum replica count on CPU, memory or request load, with cooldowns and a recorded reason for each decision.
 - [Node provisioning](/node-provisioning): Create a server at Hetzner, DigitalOcean, AWS, Azure or GCP and enroll it as a node, with the credential each needs, status polling, cost and known gaps.
 - [Multi-cloud provisioning quickstart](/multi-cloud-provisioning): Pick a cloud provider and add a provisioned node in three commands, with the credential each provider needs. Cost and gaps are on the node provisioning page.
@@ -177,6 +180,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 ### Databases and storage
 
 - [Managing databases](/managing-databases): Create and manage databases with backups, point-in-time restore, and lifecycle management.
+- [Managed databases from the command line](/managed-databases): Create a managed database, follow its provisioning steps, plan version upgrades, and rotate the owner password with levelrail-cli.
 - [Postgres connection pooler](/postgres-pooler): Run a pgbouncer style pooler next to a managed Postgres database in transaction pooling mode, so many app connections share a few server connections.
 - [Database upgrades](/database-upgrades): Schedule automatic database upgrades with security checks and automatic rollback on failure.
 - [Database version catalog](/database-version-catalog): Where the database versions, release channels and end-of-life dates offered at create and upgrade time come from: a published, signed catalog file.
@@ -217,6 +221,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Pipelines](/pipelines): Define CI/CD pipelines as YAML with triggers, jobs, matrix builds, approvals, and deploys, and run them on your own nodes.
 - [Pipelines: OIDC federation](/pipelines-oidc): Mint short-lived OIDC tokens for pipeline jobs, and wire AWS, GCP, or Vault to trust them without a long-lived credential.
 - [Git integrations](/git-integrations): Connect GitHub, GitLab, Bitbucket or Gitea for automatic git-triggered deploys, per-pull-request preview environments, and webhook history with replay.
+- [Azure DevOps](/azure-devops): Deploy from Azure Repos with a personal access token and a push service hook.
 - [Git reliability](/git-reliability): What the control plane caches and polls, what connection and webhook statuses mean, the variables behind them, and how to recover a push that did not deploy.
 - [Wait for CI before deploying](/ci-gate): Hold an automatic git deploy until the commit's CI checks conclude. Works with GitHub and GitLab, and the push is answered at once while the wait runs in the background.
 - [Deploy with git push](/git-push-deploy): Push a branch to a git remote on your own server and it builds and deploys that exact commit. A beta feature, off by default, with a per-app token.

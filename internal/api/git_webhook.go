@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/azuredevops"
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/sourcecache"
@@ -163,7 +164,7 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 		return rt.handleIssueCommentWebhook(ctx, name, gs, body)
 	}
 
-	ev, err := webhook.ParsePushEventForProvider(body, header.Get(webhook.HeaderBitbucketEventKey))
+	ev, err := parseProviderPushEvent(body, header)
 	if err != nil {
 		rt.logger.Warn("api: git push webhook: malformed payload", slog.String("error", err.Error()), slog.String("name", name))
 		return http.StatusBadRequest, "malformed payload"
@@ -680,6 +681,9 @@ func (rt *Router) deployServicesSpecFanout(ctx context.Context, appName string, 
 // Checks a push webhook against secret using the scheme the headers indicate: GitHub and Bitbucket sign the body (HMAC),
 // GitLab sends the secret verbatim (compared in constant time). Gitea uses the GitHub branch. Missing or mismatched headers fail closed.
 func verifyGitPushWebhookAuth(secret string, body []byte, header http.Header) bool {
+	if strings.HasPrefix(header.Get("Authorization"), "Basic ") {
+		return azuredevops.VerifyBasicAuth(secret, header)
+	}
 	if token := header.Get(webhook.HeaderGitLabToken); token != "" {
 		return secret != "" && subtle.ConstantTimeCompare([]byte(token), []byte(secret)) == 1
 	}

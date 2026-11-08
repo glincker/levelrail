@@ -24,6 +24,10 @@ func runTemplates(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return exitOK
 	case "list":
 		return runTemplatesList(prog, args[1:], stdout, stderr, lookupEnv)
+	case "search":
+		return runTemplatesSearch(prog, args[1:], stdout, stderr, lookupEnv)
+	case "validate":
+		return runTemplatesValidate(prog, args[1:], stdout, stderr)
 	case "get":
 		return runTemplatesGet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "show":
@@ -44,7 +48,9 @@ func runTemplates(prog string, args []string, stdout, stderr io.Writer, lookupEn
 func templatesUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s templates list [--custom] [flags]               browse the curated service catalog, or --custom for your own saved templates
-  %[1]s templates get <id> [flags]                       show one entry (built-in or custom), including its full compose.yaml
+  %[1]s templates search <term>... [flags]               find catalog entries by id, name, category or slogan
+  %[1]s templates validate <template.yaml | dir>         check a community submission offline against the catalog rules
+  %[1]s templates get <id> [flags]                     show one entry (built-in or custom), including its full compose.yaml
   %[1]s templates show <id> [flags]                      what a template needs (privileges, ports, secrets) and what Levelrail adds
   %[1]s templates deploy <id> [--name NAME] [flags]     deploy a template's compose.yaml as an app, built-in or custom
   %[1]s templates install <id> [--name NAME] [--env K=V] [--domain SVC=HOST]   install a manifest template with its settings

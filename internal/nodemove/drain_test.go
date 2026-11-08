@@ -61,7 +61,7 @@ func TestDrain(t *testing.T) {
 		{
 			name:       "blocked resource fails the drain but moves the rest",
 			setup:      func(p *fakePlanner) { p.blockApp = "web" },
-			wantStatus: store.NodeMoveStatusFailed,
+			wantStatus: store.NodeDrainStatusPartial,
 			wantErr:    "could not move: app web",
 			wantLeft:   1,
 		},
@@ -70,7 +70,7 @@ func TestDrain(t *testing.T) {
 			setup: func(p *fakePlanner) {
 				p.models = []store.NodeDrainBlocked{{Kind: "model", Name: "llm", Reason: "models cannot be moved"}}
 			},
-			wantStatus: store.NodeMoveStatusFailed,
+			wantStatus: store.NodeDrainStatusPartial,
 			wantErr:    "model llm",
 		},
 		{

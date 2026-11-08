@@ -39,6 +39,9 @@ func runStatus(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		if up, err := client.GetUpdates(context.Background()); err == nil && up.CurrentVersion != "" {
 			_, _ = fmt.Fprintf(stdout, "server version:      %s (cli %s)\n", up.CurrentVersion, displayCLIVersion(localVersionInfo()))
 		}
+		if pol, err := client.GetUpgradePolicy(context.Background()); err == nil {
+			printUpgradeNotice(stdout, prog, pol)
+		}
 	}); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)

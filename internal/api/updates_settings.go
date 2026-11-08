@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/kit/upgrade"
@@ -25,8 +27,37 @@ type updateSettingsResource struct {
 	AutoUpdateEnabled bool   `json:"auto_update_enabled"`
 }
 
-func toUpdateSettingsResource(s store.UpdateSettings) updateSettingsResource {
-	return updateSettingsResource{Channel: s.Channel, AutoUpdateEnabled: s.AutoUpdateEnabled}
+// updateSettingsResponse adds the channels the dashboard offers; others stay valid for the API but hidden.
+type updateSettingsResponse struct {
+	updateSettingsResource
+	OfferedChannels []string `json:"offered_channels"`
+}
+
+// envOfferedChannels seeds which channels are offered for selection; only stable until 1.0.
+const envOfferedChannels = "APP_UPDATE_CHANNELS_OFFERED"
+
+func offeredUpdateChannels() []string {
+	raw, ok := os.LookupEnv(envOfferedChannels)
+	if !ok || strings.TrimSpace(raw) == "" {
+		return []string{upgrade.ChannelStable}
+	}
+	out := []string{}
+	for _, c := range strings.Split(raw, ",") {
+		if c = strings.TrimSpace(c); upgrade.ValidChannel(c) {
+			out = append(out, c)
+		}
+	}
+	if len(out) == 0 {
+		return []string{upgrade.ChannelStable}
+	}
+	return out
+}
+
+func (rt *Router) toUpdateSettingsResource(ctx context.Context, s store.UpdateSettings) updateSettingsResponse {
+	return updateSettingsResponse{
+		updateSettingsResource: updateSettingsResource{Channel: s.Channel, AutoUpdateEnabled: s.AutoUpdateEnabled},
+		OfferedChannels:        rt.offeredUpdateChannels(ctx),
+	}
 }
 
 // handleGetUpdateSettings handles GET /api/v1/updates/settings: the
@@ -40,7 +71,7 @@ func (rt *Router) handleGetUpdateSettings(w http.ResponseWriter, r *http.Request
 		rt.internalError(w, "api: get update settings failed", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, toUpdateSettingsResource(settings))
+	writeJSON(w, http.StatusOK, rt.toUpdateSettingsResource(r.Context(), settings))
 }
 
 // handleUpdateSettings handles PUT /api/v1/updates/settings: sets the
@@ -63,5 +94,5 @@ func (rt *Router) handleUpdateSettings(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: update update settings failed", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, toUpdateSettingsResource(settings))
+	writeJSON(w, http.StatusOK, rt.toUpdateSettingsResource(r.Context(), settings))
 }

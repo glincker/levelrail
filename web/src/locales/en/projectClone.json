@@ -1,0 +1,30 @@
+{
+  "trigger": "Clone",
+  "title": "Clone project",
+  "description": "Copy this project's apps into a new project. Cloned apps are created suspended, so nothing runs until you start them.",
+  "name": "New project name",
+  "nameHint": "If the name is taken, a number is added.",
+  "options": {
+    "envVars": "Copy environment variables",
+    "settings": "Copy app settings",
+    "domains": "Domains",
+    "domainsNone": "None",
+    "domainsPlaceholder": "Placeholder hostnames"
+  },
+  "preview": "Preview plan",
+  "previewing": "Checking...",
+  "apply": "Create clone",
+  "applying": "Cloning...",
+  "cancel": "Close",
+  "plan": {
+    "apps": "Apps to create ({{count}})",
+    "appLine": "{{source}} to {{name}}",
+    "envVars": "{{count}} environment variables",
+    "suspended": "Cloned apps are created suspended. Start them from the new project once values are set.",
+    "secrets": "Secret keys that need values ({{count}})",
+    "secretsLink": "Set them on the new project",
+    "skipped": "Skipped ({{count}})",
+    "empty": "Nothing to create."
+  },
+  "done": "Project cloned."
+}

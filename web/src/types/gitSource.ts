@@ -159,7 +159,7 @@ export interface GitSourceResource {
   connection_id?: string
   connection?: {
     id: string
-    provider?: 'gitlab' | 'bitbucket' | 'gitea'
+    provider?: 'gitlab' | 'bitbucket' | 'gitea' | 'azure_devops'
     label?: string
     account_name?: string
     host?: string

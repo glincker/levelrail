@@ -96,6 +96,8 @@ type placementDecisionResource struct {
 	Recorded *recordedDecision `json:"recorded"`
 	// Preview re-evaluates every node now, as if the workload were being placed fresh.
 	Preview placement.Decision `json:"preview"`
+	// Warnings lists selector mismatches with the running node.
+	Warnings []string `json:"warnings,omitempty"`
 }
 
 func (rt *Router) placementDecisionView(ctx context.Context, kind, name string) (placementDecisionResource, error) {
@@ -130,7 +132,7 @@ func (rt *Router) placementDecisionView(ctx context.Context, kind, name string) 
 			cands[i].Load = max(cands[i].Load-1, 0)
 		}
 	}
-	out := placementDecisionResource{Kind: kind, Name: name, NodeID: nodeID}
+	out := placementDecisionResource{Kind: kind, Name: name, NodeID: nodeID, Warnings: selectorViolationWarnings(sel, cands, nodeID)}
 	cands, req, err := rt.ruledRequest(ctx, kind, name, cands, placement.Request{Selector: sel, Needs: needs, Policy: rt.currentPlacementPolicy(ctx)})
 	if err != nil {
 		return placementDecisionResource{}, err

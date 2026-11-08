@@ -122,6 +122,7 @@ System endpoints for:
 | POST | /api/v1/updates/migration-dry-run | AbilityWrite | handleMigrationDryRun |
 | GET | /api/v1/system/storage/inventory | AbilityRead | handleStorageInventory |
 | GET | /api/v1/system/disk/history | AbilityRead | handleDiskHistory |
+| POST | /api/v1/updates/auto/notice/dismiss | AbilityRoot | handleDismissUpgradeNotice |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
@@ -704,6 +705,10 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/vitals/rotate-key | AbilityDeploy | handleRotateVitalsKey |
 | GET | /api/v1/apps/{name}/deploys/{deployId}/build-report | AbilityRead | handleNextBuildReport |
 | GET | /api/v1/apps/{name}/next-advisor | AbilityRead | handleNextAdvisor |
+| GET | /api/v1/apps/{name}/rollout/state | AbilityRead | handleGetRolloutState |
+| POST | /api/v1/service-templates/validate | AbilityRead | handleValidateTemplateSubmission |
+| GET | /api/v1/apps/{name}/edge | AbilityRead | handleGetAppEdge |
+| POST | /api/v1/apps/{name}/cdn/setup | AbilityWriteSensitive | handleSetupAppCDN |
 
 </Accordion>
 
@@ -969,6 +974,7 @@ Endpoints for:
 | GET | /api/v1/organizations/{id}/activity | AbilityRead | handleListOrganizationActivity |
 | PUT | /api/v1/projects/{id}/default-environment | AbilityWrite | handleSetProjectDefaultEnvironment |
 | POST | /api/v1/projects/default-environments/backfill | AbilityWrite | handleBackfillDefaultEnvironments |
+| POST | /api/v1/projects/{id}/clone | AbilityWrite | handleCloneProject |
 
 ## Nodes
 
@@ -2215,6 +2221,7 @@ Routes that do not fit an existing group.
 | OPTIONS | /api/v1/vitals/{app} | Public | handleVitalsPreflight |
 | GET | /internal/diagnostic | Public | handleInternalDiagnostic |
 | PATCH | /api/v1/tags/{id} | AbilityWrite | handleRenameTag |
+| GET | /api/v1/deployments/{id}/explain | AbilityRead | handleExplainDeploy |
 | POST | /mcp | Public |  |
 
 ## See also

@@ -4,7 +4,7 @@ description: Browse self-hostable open-source apps you can deploy with Levelrail
 "og:url": "https://docs.levelrail.com/self-host"
 ---
 
-442 open-source apps you can run on your own server with a Levelrail template. Each page lists the services, ports, volumes and environment variables the template sets up, and how to deploy it. For how templates work, see the [service template catalog](/templates-and-registry).
+444 open-source apps you can run on your own server with a Levelrail template. Each page lists the services, ports, volumes and environment variables the template sets up, and how to deploy it. For how templates work, see the [service template catalog](/templates-and-registry).
 
 ## AI
 
@@ -280,6 +280,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 ## Infrastructure
 
 - [AdGuard Home](/self-host/adguard-home): Network-wide ad and tracker blocking with a DNS server and a friendly admin dashboard.
+- [Apache Kafka](/self-host/kafka): A single broker Apache Kafka in KRaft mode (no ZooKeeper) on the official image, with a persistent volume. It is not published on the host and speaks plaintext, so reach it only from other services in this project at kafka:9092.
 - [Cloudflare DDNS](/self-host/cloudflare-ddns): Keeps Cloudflare DNS records pointed at your current public IP address.
 - [Consul](/self-host/consul): HashiCorp Consul in single-server mode with the web UI: service discovery, health checks and a key-value store.
 - [Elasticsearch](/self-host/elasticsearch): A distributed, RESTful search and analytics engine for full-text search and log analytics. Security is off, so reach it from other services in this project at elasticsearch:9200, or attach a domain only behind Basic Auth. Not published on the host.
@@ -289,6 +290,7 @@ Deliverability depends on reverse DNS, SPF, DKIM and a clean IP; see the mail te
 - [MeshCentral](/self-host/meshcentral): A remote device management server with web-based desktop, terminal and file access, plus agents for Windows, Linux and macOS. Apache-2.0 licensed. The first account you register becomes the server admin, so register it before sharing the address. Set the host name to your public domain so agents can find the server.
 - [NATS](/self-host/nats): A lightweight messaging server for pub/sub, request/reply and durable streams, with JetStream persistence enabled.
 - [NetBox](/self-host/netbox): Source-of-truth IPAM and DCIM for tracking IP space, racks, devices, and cabling.
+- [Nginx](/self-host/nginx): The Nginx web server on the official Alpine image, serving a persistent web root. It starts with the default welcome page; put your site files in the web root volume through the app's Files.
 - [Nginx Proxy Manager](/self-host/nginx-proxy-manager): A web UI for managing Nginx reverse-proxy hosts, redirects, and Let's Encrypt certificates.
 - [Pi-hole](/self-host/pi-hole): Network-wide ad blocking that works as a DNS sinkhole for your whole network.
 - [Portainer](/self-host/portainer): A web UI for managing containers, images, volumes, and networks.

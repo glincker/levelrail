@@ -13,6 +13,12 @@ import (
 func cdnUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s cdn overview [--window 5m|1h|24h|7d]
+  %[1]s cdn setup <app> [--provider cloudflare] [--dry-run]
+  %[1]s cdn edge <app>
+
+setup runs the Cloudflare-in-front checklist (provider, SSL mode, DNS-01, client address, DNS plan),
+then turns the proxy on and re-syncs DNS. --dry-run stops before any change.
+edge shows the proxy, zone, SSL mode, last cache purge and cache hit rate for one app.
 
 Fleet traffic from ingress metrics, edge cache hit rate and the share of requests per node.
 --json prints one object with window, requests, rate_per_sec, error_rate_5xx, bytes_out, cache and nodes.
@@ -32,7 +38,7 @@ func runCDN(prog string, args []string, stdout, stderr io.Writer, lookupEnv func
 			return o, func(w io.Writer) { printCDNOverview(w, o) }, err
 		},
 	}
-	return dispatchSub(prog, "cdn", cdnUsage, map[string]apiCmd{"overview": cmd}, args, stdout, stderr, lookupEnv)
+	return dispatchSub(prog, "cdn", cdnUsage, map[string]apiCmd{"overview": cmd, "setup": cdnSetupCmd(), "edge": cdnEdgeCmd()}, args, stdout, stderr, lookupEnv)
 }
 
 func printCDNOverview(out io.Writer, o apiclient.CDNOverview) {

@@ -72,6 +72,7 @@ const (
 	KeyIngressDNS01AllHosts    = "ingress.dns01_all_hosts"
 	KeyIngressCARetryBase      = "ingress.ca_switch_retry_base"
 	KeyIngressCARetryMax       = "ingress.ca_switch_retry_max"
+	KeyMetricsScrapeEnabled    = "observability.metrics_scrape_enabled"
 	KeyHeartbeatJobAttempts    = "heartbeat.job_max_attempts"
 	KeyHeartbeatJobBackoffBase = "heartbeat.job_backoff_base"
 	KeyHeartbeatJobBackoffMax  = "heartbeat.job_backoff_max"
@@ -321,6 +322,12 @@ func intRangeCheck(floor, ceil int) func(string) error {
 }
 
 func registerHeartbeatJobSettings() {
+	Register(Definition{
+		Key: KeyMetricsScrapeEnabled, Category: CategoryObservability, Kind: KindBool, Default: "true",
+		Env: "APP_METRICS_SCRAPE_ENABLED", Apply: ApplyLive,
+		Title:       "Prometheus scrape endpoint",
+		Description: "Serve GET /metrics to callers holding a read token. Turn off to answer 404 without revoking tokens.",
+	})
 	Register(Definition{
 		Key: KeyHeartbeatJobAttempts, Category: CategoryObservability, Kind: KindInt, Default: "3",
 		Env: "APP_HEARTBEAT_JOB_MAX_ATTEMPTS", Apply: ApplyLive, CheckValue: intRangeCheck(1, 20),

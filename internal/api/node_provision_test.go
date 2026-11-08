@@ -681,3 +681,28 @@ func TestHandleCreateNodeProvision_CleansUpOrphanedServerOnPersistFailure(t *tes
 		t.Errorf("deletedIDs = %v, want [srv-orphan]", fake.deletedIDs)
 	}
 }
+
+func TestHandleCreateNodeProvision_AppliesRegistryMirrorPrefix(t *testing.T) {
+	for _, tc := range []struct {
+		name, prefix string
+		want         bool
+	}{{"mirror set", "m.example.com", true}, {"no mirror", "", false}} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("APP_REGISTRY_MIRROR_PREFIX", tc.prefix)
+			secrets := newFakeNodeProviderSecrets()
+			_ = secrets.SetValue(context.Background(), store.NodeProviderSecretsKey("hetzner"), store.NodeProviderTokenEnvKey, "tok")
+			fake := &fakeNodeProvisioner{createServerID: "1", createIPAddr: "1.2.3.4"}
+			rt, db := newTestRouterWithNodeProvisioning(t, secrets, fake)
+			cookie := loginTestSession(t, rt, db)
+			body := `{"provider":"hetzner","region":"fsn1","size":"cx22","name":"web-1","control_plane_addr":"cp.example.com:9443"}`
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/nodes/provision", body))
+			if rec.Code != http.StatusCreated {
+				t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+			}
+			if got := strings.Contains(fake.lastCreateOpts.UserData, "m.example.com/ghcr.io/"); got != tc.want {
+				t.Errorf("mirrored image in user data = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}

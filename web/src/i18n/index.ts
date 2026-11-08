@@ -148,6 +148,7 @@ export const NAMESPACES = [
   'relatedLinks',
   'gitSource',
   'projectExport',
+  'projectClone',
   'certBudget',
   'appRows',
   'tokensNotices',

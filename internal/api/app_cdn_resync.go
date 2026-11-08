@@ -84,7 +84,12 @@ func (rt *Router) resyncAppCDN(ctx context.Context, app string, dryRun bool) (ap
 	if err != nil {
 		return appCDNResyncResult{}, err
 	}
-	want := rt.appDNSProxied(ctx, app, s)
+	return rt.resyncAppCDNTo(ctx, app, rt.appDNSProxied(ctx, app, s), dryRun)
+}
+
+// resyncAppCDNTo moves the app's records to want, which setup previews before
+// it saves the override.
+func (rt *Router) resyncAppCDNTo(ctx context.Context, app string, want, dryRun bool) (appCDNResyncResult, error) {
 	res := appCDNResyncResult{App: app, Effective: want, DryRun: dryRun, Records: []appCDNResyncRecord{}}
 	all, err := rt.domains.ListServiceDomains(ctx)
 	if err != nil {

@@ -135,6 +135,51 @@ The Environment tab shows a Variable health card. It flags empty values, plain v
 
 Every edit also records which variables were added, changed or removed, by whom and when, shown under Recent changes and by `apps env history <name>`. Values are never recorded, only names, so the history is safe to share. It keeps the newest 1000 changes per app.
 
+## Output masking
+
+The control plane also hides stored secret values in what it writes out. Each known value is replaced with `[redacted]` in app and container logs (when stored and when read back), deploy and build output, audit log rows, alert history and notification delivery errors, and the control plane's own logs.
+
+A value is registered for masking when:
+
+- a secret is saved (`apps secrets set`) or read from the store,
+- the control plane boots and decrypts every stored secret it can open, so lines written after startup are covered,
+- a Vault value is read at deploy time,
+- a pipeline job secret, a GitHub App installation token or a DDNS provider token is used.
+
+Rules that follow from that:
+
+- Values shorter than 8 characters are never masked, so ordinary text such as `true` or `1234` is not shredded.
+- The same value is also masked in base64 (standard, unpadded and URL-safe), URL-escaped and JSON-escaped forms, and with LF line endings where the source had CRLF.
+- `APP_SECRETMASK_MAX_VALUES` (default `20000`) caps how many distinct values are tracked. Past the cap, new secrets are not masked and the control plane logs one warning, `secretmask: registry full, new secrets are not masked`.
+- The registry is in memory in the control plane process and is rebuilt at each boot from the stored secrets.
+
+## Managing secrets from the CLI
+
+```bash
+levelrail-cli apps secrets list my-app                           # keys and locked state, never values
+levelrail-cli apps secrets set my-app --env-file ./secrets.env   # one secret per KEY=value line
+levelrail-cli apps secrets lock my-app DATABASE_PASSWORD --locked=true
+levelrail-cli apps secrets build-time my-app NPM_TOKEN --enabled=true
+levelrail-cli apps secrets delete my-app OLD_TOKEN --force
+```
+
+A value typed on the command line can end up in shell history, so prefer `--env-file` for real credentials. `build-time` is off by default, and an enabled secret can be read by anyone who can change the Dockerfile.
+
+Rotation has its own commands. Both need `--yes`:
+
+```bash
+levelrail-cli apps secrets rotation replace my-app API_TOKEN --value-file ./new-token --yes   # keeps the old value for the grace window, no restart
+levelrail-cli apps secrets rotation rotate my-app SESSION_KEY --yes                          # generates a value and restarts the app
+```
+
+See [Secret rotation policies](/secret-rotation) for schedules and status. Scan a directory or an app's plain values with `levelrail-cli secrets scan --path ./repo` and `levelrail-cli secrets scan my-app --policy-show`, described in [Secret scanning](/secret-scanning). Per-app data keys and the master key are covered by `levelrail-cli secrets key-status`, `secrets rotate-dek <app>` and `secrets key-policy --max-age-days 90 --remind-every-days 7`, in [Master key rotation](/master-key-rotation).
+
+## Not yet
+
+- Plain variables that are sensitive by name or value are masked in API and CLI reads, but they are not registered with the output masker. A log line that prints one is not redacted. Store the value as a secret to get log masking.
+- A value the app transforms in another way (a hash, a truncated copy, a different encoding) is not recognized.
+- There is no per-app setting for output masking. `APP_SECRETMASK_MAX_VALUES` is the only tunable.
+
 ## Threat model
 
 This protects against:

@@ -326,6 +326,10 @@
       "appearance": {
         "title": "Apariencia",
         "description": "Tema, acento, fuente, ancho y densidad."
+      },
+      "azure-devops-app": {
+        "title": "Azure DevOps",
+        "description": "Acceso a repositorios de Azure DevOps con un token de acceso personal."
       }
     },
     "search": "Buscar en la configuración",
@@ -1412,7 +1416,8 @@
         "bitbucket_server": "ID de cliente",
         "forgejo": "ID de cliente",
         "gitea": "ID de cliente",
-        "gitlab": "ID de la aplicación"
+        "gitlab": "ID de la aplicación",
+        "azure_devops": "ID de cliente"
       },
       "clientSecret": "Secreto",
       "connect": "Verificar y conectar",
@@ -1459,12 +1464,15 @@
         "bitbucket_server": "Añadir una cuenta de Bitbucket Server",
         "forgejo": "Añadir una cuenta de Forgejo",
         "gitea": "Añadir una cuenta de Gitea",
-        "gitlab": "Añadir una cuenta de GitLab"
+        "gitlab": "Añadir una cuenta de GitLab",
+        "azure_devops": "Añadir una organización de Azure DevOps"
       },
       "token": "Token de acceso personal",
       "tokenDescription": "Crea en el servidor un token de acceso personal con permiso de lectura y escritura de repositorios y pégalo aquí. Se verifica y luego se guarda cifrado.",
       "tokenHelp": "En Administrar cuenta, Tokens de acceso personal. El token no se vuelve a mostrar.",
-      "verifying": "Verificando"
+      "verifying": "Verificando",
+      "instanceHelpAzure": "La dirección de tu organización, por ejemplo https://dev.azure.com/ORG.",
+      "tokenHelpAzure": "Configuración de usuario, Tokens de acceso personal, con permiso Code (lectura y escritura). El token no se vuelve a mostrar."
     },
     "authorize": "Autorizar",
     "default": "Predeterminada",
@@ -1482,7 +1490,8 @@
         "bitbucket_server": "Crea un token de acceso personal en tu Bitbucket Server y añádelo aquí. Cada servidor o cuenta es una conexión propia.",
         "forgejo": "Registra una aplicación OAuth de Forgejo y luego autorízala. Codeberg y los servidores autoalojados son cada uno su propia conexión.",
         "gitea": "Registra una aplicación OAuth de Gitea y luego autorízala. Cada servidor Gitea o Forgejo es su propia conexión.",
-        "gitlab": "Registra una aplicación OAuth de GitLab y luego autorízala. gitlab.com y las instancias autoadministradas pueden conectarse a la vez."
+        "gitlab": "Registra una aplicación OAuth de GitLab y luego autorízala. gitlab.com y las instancias autoadministradas pueden conectarse a la vez.",
+        "azure_devops": "Crea un token de acceso personal en tu organización de Azure DevOps y añádelo aquí."
       },
       "title": "Ninguna cuenta conectada"
     },
@@ -2389,6 +2398,11 @@
         "access": "El acceso sigue los permisos OAuth que concediste.",
         "asks": "Pegarás el ID y el secreto de una aplicación OAuth, y luego iniciarás sesión.",
         "name": "GitLab"
+      },
+      "azure_devops": {
+        "name": "Azure DevOps",
+        "asks": "Pegarás la URL de tu organización y un token de acceso personal.",
+        "access": "El acceso sigue los permisos del token."
       }
     },
     "loadFailed": "No se pudieron cargar tus cuentas de Git. Inténtalo de nuevo en un momento.",
@@ -2474,8 +2488,18 @@
           "0": "Proyectos que su cuenta autorizada puede leer",
           "1": "Ramas y commits para despliegues",
           "2": "Entrega de webhooks para eventos de push"
-        }
+        },
+        "azure_devops": [
+          "Repositorios que el propietario del token puede leer",
+          "Ramas y commits para despliegues",
+          "Entrega de webhooks para eventos push"
+        ]
       }
+    },
+    "azure_devops": {
+      "title": "Azure DevOps",
+      "description": "Conecta una organización de Azure DevOps con un token de acceso personal para explorar repositorios y desplegar con cada push. Los repositorios aparecen como PROYECTO/repo.",
+      "banner": "Los despliegues se ejecutan con cada push. Las vistas previas de pull requests y los estados de commit no están disponibles en Azure DevOps."
     }
   },
   "registryVendors": {

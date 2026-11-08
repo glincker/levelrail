@@ -133,6 +133,7 @@ var readOnlyMayMutate = map[string]string{ //nolint:gosec // route paths and rea
 	"POST /api/v1/fixes/{id}/preview":                            "re-runs the originating check and lists the changes an apply would make, persists nothing",
 	"POST /api/v1/system/doctor/checks/{id}/run":                 "re-runs one read-only health check, persists nothing",
 	"POST /api/v1/pipelines/validate":                            "validates YAML, persists nothing",
+	"POST /api/v1/service-templates/validate":                    "checks a submitted template and compose file against the catalog rules, persists nothing",
 	"POST /api/v1/pipelines/filters":                             "rewrites submitted YAML with path filters, persists nothing",
 	"POST /api/v1/apps/{name}/log-pipeline/preview":              "runs submitted rules over submitted sample lines, persists nothing",
 	"POST /api/v1/apps/{name}/exposure/preview":                  "computes the changes an exposure edit would make, persists nothing",

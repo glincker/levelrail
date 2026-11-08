@@ -239,3 +239,48 @@ func TestRunner_HTTPHeadersFromSecretRef(t *testing.T) {
 		t.Fatalf("missing secret: %q %q", res.status, res.output)
 	}
 }
+
+type fakeSecrets struct {
+	vals map[string]string
+	err  error
+}
+
+func (f fakeSecrets) Exists(_ context.Context, _, k string) (bool, error) {
+	_, ok := f.vals[k]
+	return ok, f.err
+}
+
+func (f fakeSecrets) Resolve(_ context.Context, _, k string) (string, error) {
+	return f.vals[k], f.err
+}
+
+func TestRunner_HTTPHeadersFromAppSecret(t *testing.T) {
+	var got string
+	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		got = r.Header.Get("Authorization")
+	}))
+	defer srv.Close()
+	cfg := store.ScheduledTaskHTTP{Method: "GET", Path: "/c", Headers: []store.ScheduledTaskHeader{
+		{Name: "Authorization", SecretRef: "CRON_SECRET", Prefix: "Bearer "},
+	}}
+	task := store.ScheduledTask{ID: "t", ServiceName: "web", Name: "c"}
+	r := httpRunner(&fakeTarget{base: srv.URL}, cfg)
+	r.Apps = &fakeAppStore{svc: store.DesiredService{Name: "web", SecretEnv: []store.SecretEnvRef{{Name: "CRON_SECRET"}}}}
+	r.Secrets = fakeSecrets{vals: map[string]string{"CRON_SECRET": "app-secret"}}
+	res := r.attemptHTTP(context.Background(), task, "r1")
+	if res.status != store.ScheduledTaskStatusSuccess || got != "Bearer app-secret" {
+		t.Fatalf("status %q header %q", res.status, got)
+	}
+
+	r.Secrets = fakeSecrets{vals: map[string]string{"CRON_SECRET": "app-secret"}, err: errors.New("boom app-secret")}
+	res = r.attemptHTTP(context.Background(), task, "r2")
+	if res.status != store.ScheduledTaskStatusFailed || strings.Contains(res.output, "app-secret") || !strings.Contains(res.output, "CRON_SECRET") {
+		t.Fatalf("resolver failure: %q %q", res.status, res.output)
+	}
+
+	r.Secrets = nil
+	res = r.attemptHTTP(context.Background(), task, "r3")
+	if res.status != store.ScheduledTaskStatusFailed || !strings.Contains(res.output, "CRON_SECRET") {
+		t.Fatalf("no resolver: %q %q", res.status, res.output)
+	}
+}

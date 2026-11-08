@@ -37,7 +37,7 @@ func (c *Client) EnsureIsolatedNetwork(ctx context.Context, name string, opts Is
 		if opts.matches(inspect) || !opts.Recreate {
 			return inspect.ID, false, nil
 		}
-		if err := c.RemoveNetwork(ctx, name); err != nil {
+		if err := c.removeNetwork(ctx, name, false); err != nil {
 			return "", false, err
 		}
 	case !cerrdefs.IsNotFound(err):

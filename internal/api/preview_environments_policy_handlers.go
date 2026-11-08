@@ -105,6 +105,11 @@ type previewPolicyResource struct {
 	GateUsername              string `json:"gate_username"`
 	GatePasswordSet           bool   `json:"gate_password_set"`
 	AllowIndexing             bool   `json:"allow_indexing"`
+	MigrateCommand            string `json:"migrate_command"`
+	// MigrateTimeoutSeconds is the app's own bound (0 uses the platform default).
+	MigrateTimeoutSeconds          int    `json:"migrate_timeout_seconds"`
+	EffectiveMigrateTimeoutSeconds int    `json:"effective_migrate_timeout_seconds"`
+	ImageTagTemplate               string `json:"image_tag_template"`
 }
 
 func (rt *Router) previewPolicyFor(ctx context.Context, appName string) (previewPolicyResource, error) {
@@ -130,6 +135,8 @@ func (rt *Router) previewPolicyFor(ctx context.Context, appName string) (preview
 		IdleSleepMinutes: s.IdleSleepMinutes, EffectiveIdleSleepMinutes: previewIdleSleepMinutes(s),
 		DatabaseStrategy: s.DatabaseStrategy, SeedDatabase: s.SeedDatabase, AllowForkSecrets: s.AllowForkSecrets,
 		GateBasicAuth: s.GateBasicAuth, GateUsername: s.GateUsername, GatePasswordSet: gateSet, AllowIndexing: s.AllowIndexing,
+		MigrateCommand: s.MigrateCommand, MigrateTimeoutSeconds: s.MigrateTimeoutSeconds,
+		EffectiveMigrateTimeoutSeconds: int(previewMigrateTimeoutOr(s, rt.previewMigratePlatformTimeout(ctx)) / time.Second), ImageTagTemplate: s.ImageTagTemplate,
 	}, nil
 }
 
@@ -159,6 +166,10 @@ type setPreviewPolicyRequest struct {
 	// GatePassword is write-only; it is stored encrypted and never returned.
 	GatePassword  *string `json:"gate_password,omitempty"`
 	AllowIndexing *bool   `json:"allow_indexing,omitempty"`
+	// MigrateCommand and ImageTagTemplate take an empty string to clear them.
+	MigrateCommand        *string `json:"migrate_command,omitempty"`
+	MigrateTimeoutSeconds *int    `json:"migrate_timeout_seconds,omitempty"`
+	ImageTagTemplate      *string `json:"image_tag_template,omitempty"`
 }
 
 // handleSetPreviewPolicy handles PUT /api/v1/apps/{name}/preview-policy.

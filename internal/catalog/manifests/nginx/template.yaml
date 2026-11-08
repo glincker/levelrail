@@ -1,0 +1,30 @@
+id: nginx
+name: Nginx
+description: The Nginx web server on the official Alpine image, serving a persistent web root. It starts with the default welcome page; put your site files in the web root volume through the app's Files.
+icon: monitor
+category: Infrastructure
+documentation_url: https://nginx.org/en/docs/
+source_repo: https://github.com/nginx/nginx
+license: BSD-2-Clause
+license_class: permissive
+license_url: https://github.com/nginx/nginx/blob/master/docs/text/LICENSE
+hosted_use: allowed
+listing:
+  by: community
+status: active
+recommended_memory_bytes: 67108864
+first_run:
+  - Open the address to see the welcome page, then replace the files in /usr/share/nginx/html with your site.
+env:
+  - key: TZ
+    label: Time zone
+    description: IANA time zone for dates and logs.
+    default: Etc/UTC
+domains:
+  - service: nginx
+    port: 80
+    description: Public address of the site.
+healthcheck:
+  service: nginx
+  port: 80
+  path: /

@@ -139,6 +139,7 @@ type ProviderTo =
   | '/settings/bitbucket-server-app'
   | '/settings/gitea-app'
   | '/settings/forgejo-app'
+  | '/settings/azure-devops-app'
 
 const PROVIDER_TO: Record<GitProviderName, ProviderTo> = {
   github: '/settings/github-app',
@@ -147,6 +148,7 @@ const PROVIDER_TO: Record<GitProviderName, ProviderTo> = {
   bitbucket_server: '/settings/bitbucket-server-app',
   gitea: '/settings/gitea-app',
   forgejo: '/settings/forgejo-app',
+  azure_devops: '/settings/azure-devops-app',
 }
 
 function healthTone(status: string | undefined): Tone {

@@ -108,6 +108,8 @@ func buildExplainTable() map[string]Explanation {
 			nextFixButton+"It switches the saved address to https once a certificate works.", "settings.dashboard_url.https", KindAuto),
 		ex("registry", "An image registry cannot be reached from this host.", "Builds and deploys that pull from it fail.",
 			"Check the registry address under Settings, then Registries, and the host's outbound network. Press Re-check afterwards.", "", KindGuided),
+		ex("registry_mirror", "GitHub, ghcr.io or Docker Hub cannot be reached from this host.", "Installs, upgrades, builds and node setup that download from them fail or stall.",
+			"If your network restricts them, set a registry mirror under Settings and follow the install from mainland China page. Press Re-check afterwards.", "", KindGuided),
 		ex("cross_node_ingress", "Traffic cannot get from the entry node to an app on another node.", "Visitors see a TLS or gateway error.",
 			"Open Nodes, pick the node and press Test connection. The mesh checks explain what is blocked.", "", KindGuided),
 		ex("ingress_edge", "The edge proxy is not routing as configured.", "Some domains may not serve the right app.",

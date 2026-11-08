@@ -15,6 +15,18 @@ type rollbackPinDeleter interface {
 	DeleteRollbackPin(ctx context.Context, serviceName, attemptID string) error
 }
 
+// removeAppArtifactsUnlessReused runs the by-name cleanup under the name lock and skips it when a
+// same-name app was recreated during teardown, so it cannot delete the replacement's uploads or cache.
+func (rt *Router) removeAppArtifactsUnlessReused(ctx context.Context, name, nodeID string) {
+	unlock := lockAppName(name)
+	defer unlock()
+	if _, err := rt.apps.GetDesiredService(ctx, name); err == nil {
+		rt.logger.Info("api: delete app: name reused during teardown, artifact cleanup skipped", slog.String("name", name))
+		return
+	}
+	rt.removeAppArtifacts(ctx, name, nodeID)
+}
+
 // removeAppArtifacts drops what a deleted app leaves on the host: rollback
 // pin tags, its locally built images and stored upload archives. Unused only
 // (Docker refuses to remove an image a container still runs); failures are logged.

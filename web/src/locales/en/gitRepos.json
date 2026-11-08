@@ -54,7 +54,8 @@
       "bitbucket": "Bitbucket",
       "gitea": "Gitea",
       "forgejo": "Forgejo",
-      "bitbucket_server": "Bitbucket Server"
+      "bitbucket_server": "Bitbucket Server",
+      "azure_devops": "Azure DevOps"
     },
     "needs_reauthorize": {
       "title": "{{provider}} needs to be reconnected",

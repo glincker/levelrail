@@ -69,6 +69,17 @@ docker buildx imagetools inspect ghcr.io/glincker/levelrail:beta --format '{{ js
 
 `install.sh` always checks the SHA-256 checksum. It checks the signature when `cosign` is installed and the release has a bundle. `levelrail self-upgrade` and the dashboard upgrade verify the signature inside the server and need no `cosign` binary. After the first verified signature the host is pinned and refuses unsigned releases. The settings and the escape hatches are in [Installing](/installing#verifying-release-binaries).
 
+## Using a mirror
+
+A mirror changes where bytes come from, not what they must be. Keep these rules:
+
+- Binaries: set `LEVELRAIL_RELEASE_BASE_URL` (from v0.9.4) to a host that holds `checksums.txt` and `checksums.txt.sigstore.json` unchanged. The installer verifies both whatever host served them.
+- Images: pull by digest (`image@sha256:...`) and run `cosign verify` against that digest. A copy made with `skopeo copy --all --preserve-digests` keeps the digest and the signature tags, so the same signature stays valid. `docker pull` then `docker push` changes the manifest and breaks it.
+- Third party mirrors such as DaoCloud are unofficial and community run. Trust the digest and signature, not the mirror.
+- Do not use release proxy services for binaries. They can alter files and the project does not recommend them.
+
+The full setup is in [Install from mainland China](/install-from-china).
+
 ## What this does not cover
 
 - A valid signature says where a file was built. It does not say the code is free of bugs or vulnerabilities.

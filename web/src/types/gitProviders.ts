@@ -3,7 +3,13 @@
 // gitProviderResource), matching its resource struct field for field.
 
 export type GitProviderName =
-  'github' | 'gitlab' | 'bitbucket' | 'bitbucket_server' | 'gitea' | 'forgejo'
+  | 'github'
+  | 'gitlab'
+  | 'bitbucket'
+  | 'bitbucket_server'
+  | 'gitea'
+  | 'forgejo'
+  | 'azure_devops'
 
 export type GitConnectionHealth =
   'ok' | 'needs_reauthorize' | 'revoked' | 'rate_limited'

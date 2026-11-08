@@ -27,12 +27,6 @@ func nextSkewOptions(ctx context.Context, db *store.DB, logger *slog.Logger) (ap
 		}
 	})
 	hold := application.WithNextGraceHold(book.HeldUntil)
-	ids := ingressreconcile.WithNextGraceIDs(func(service string, now time.Time) []string {
-		var out []string
-		for _, g := range book.Active(service, now) {
-			out = append(out, g.DeploymentID)
-		}
-		return out
-	})
+	ids := ingressreconcile.WithNextGraces(book.Active)
 	return hold, ids
 }

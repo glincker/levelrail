@@ -28,10 +28,11 @@ const (
 
 	gitProviderForgejo         = store.GitProviderForgejo
 	gitProviderBitbucketServer = store.GitProviderBitbucketServer
+	gitProviderAzureDevOps     = store.GitProviderAzureDevOps
 )
 
 // connectionGitProviders are the providers that hold operator-managed connections, in display order.
-var connectionGitProviders = []string{gitProviderGitLab, gitProviderBitbucket, gitProviderBitbucketServer, gitProviderGitea, gitProviderForgejo}
+var connectionGitProviders = []string{gitProviderGitLab, gitProviderBitbucket, gitProviderBitbucketServer, gitProviderAzureDevOps, gitProviderGitea, gitProviderForgejo}
 
 // repoListConnError marks a failure to reach the connection itself (not
 // connected, not authorized, no key), as opposed to a provider listing failure.
@@ -164,6 +165,8 @@ func (rt *Router) connectionRepoFetch(c store.GitConnection) repolist.FetchFunc 
 			for _, r := range list {
 				repos = append(repos, bitbucketServerRepoToRepo(r))
 			}
+		case gitProviderAzureDevOps:
+			repos, res, err = rt.azureDevOpsRepos(ctx, conn, token)
 		default:
 			var list []giteaapp.Repo
 			list, res, err = rt.giteaAppClient.ListRepos(ctx, conn.InstanceURL, token, rt.repoListOptions())

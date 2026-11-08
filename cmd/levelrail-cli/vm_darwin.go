@@ -39,6 +39,9 @@ func (r limactlRunner) Run(ctx context.Context, args ...string) ([]byte, error) 
 	c := r.cmd(ctx, args)
 	c.Stdout, c.Stderr = &out, &errb
 	if err := c.Run(); err != nil {
+		if errors.Is(err, exec.ErrNotFound) || errors.Is(err, os.ErrNotExist) {
+			return nil, errLimactlMissing
+		}
 		msg := strings.TrimSpace(errb.String())
 		if len(msg) > 400 {
 			msg = msg[len(msg)-400:]
@@ -51,7 +54,11 @@ func (r limactlRunner) Run(ctx context.Context, args ...string) ([]byte, error) 
 func (r limactlRunner) Interactive(ctx context.Context, args ...string) error {
 	c := r.cmd(ctx, args)
 	c.Stdin, c.Stdout, c.Stderr = os.Stdin, os.Stdout, os.Stderr
-	return c.Run()
+	err := c.Run()
+	if errors.Is(err, exec.ErrNotFound) || errors.Is(err, os.ErrNotExist) {
+		return errLimactlMissing
+	}
+	return err
 }
 
 // Stream copies stdout straight to w so a large export never sits in memory.
@@ -83,7 +90,7 @@ func newVMEnv(lookup func(string) (string, bool)) (*vmEnv, error) {
 	bin := filepath.Join(dataDir, "bin", "limactl")
 	if _, serr := os.Stat(bin); serr != nil {
 		if bin, err = exec.LookPath("limactl"); err != nil {
-			return nil, errors.New("limactl not found; install Lima (the pinned download lands in a later slice)")
+			return nil, errLimactlMissing
 		}
 	}
 	maxPath, err := vmruntime.SocketPathMax(lookup)

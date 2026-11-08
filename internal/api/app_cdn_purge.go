@@ -9,6 +9,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/cdn"
 )
 
 const (
@@ -86,6 +88,12 @@ func (rt *Router) appCDNZones(ctx context.Context, app string) (map[string]*cdnZ
 // purgeAppCache clears the CDN edge cache for the app's domains. It is
 // best effort: callers log and show the error, and never fail a publish on it.
 func (rt *Router) purgeAppCache(ctx context.Context, app string) error {
+	return rt.purgeAppCacheFor(ctx, app, cdn.TriggerPublish)
+}
+
+// purgeAppCacheFor is purgeAppCache that also records the attempt in the
+// purge history under trigger, so the edge status can show what cleared it.
+func (rt *Router) purgeAppCacheFor(ctx context.Context, app, trigger string) error {
 	if strings.EqualFold(os.Getenv(envCDNPurge), "off") {
 		return nil
 	}
@@ -101,11 +109,22 @@ func (rt *Router) purgeAppCache(ctx context.Context, app string) error {
 		names = append(names, name)
 	}
 	sort.Strings(names)
+	rec := cdn.PurgeRecord{At: time.Now().UTC(), Trigger: trigger, Scope: cdn.ScopeHosts, Zones: []string{}, OK: true}
 	for _, name := range names {
 		z := zones[name]
+		rec.Provider = cdnProviderName(z.client)
+		rec.Zones = append(rec.Zones, strings.TrimSuffix(name, "."))
+		rec.Hosts += len(z.hosts)
 		if err := z.client.PurgeHosts(ctx, name, z.hosts); err != nil {
 			errs = append(errs, fmt.Errorf("zone %s: %w", strings.TrimSuffix(name, "."), err))
 		}
+	}
+	if len(names) > 0 {
+		rec.OK = len(errs) == 0
+		if !rec.OK {
+			rec.Error = errors.Join(errs...).Error()
+		}
+		rt.cdnPurgeHistory(ctx).Add(app, rec)
 	}
 	if len(errs) == 0 {
 		return nil
@@ -118,7 +137,11 @@ func (rt *Router) purgeAppCache(ctx context.Context, app string) error {
 
 // purgeWarning is purgeAppCache for response bodies: "" on success.
 func (rt *Router) purgeWarning(ctx context.Context, app string) string {
-	if err := rt.purgeAppCache(ctx, app); err != nil {
+	return rt.purgeWarningFor(ctx, app, cdn.TriggerPublish)
+}
+
+func (rt *Router) purgeWarningFor(ctx context.Context, app, trigger string) string {
+	if err := rt.purgeAppCacheFor(ctx, app, trigger); err != nil {
 		return err.Error()
 	}
 	return ""
@@ -161,4 +184,11 @@ func sslModeWarning(mode string) string {
 		return "Cloudflare SSL/TLS mode is Full; Full (strict) also checks the origin certificate"
 	}
 	return ""
+}
+
+func cdnProviderName(c cdnZoneClient) string {
+	if n, ok := c.(interface{ Name() string }); ok && n.Name() != "" {
+		return n.Name()
+	}
+	return "unknown"
 }

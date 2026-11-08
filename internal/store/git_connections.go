@@ -21,6 +21,8 @@ const (
 	GitProviderForgejo = "forgejo"
 	// GitProviderBitbucketServer is Bitbucket Server or Data Center, authenticated with a personal access token.
 	GitProviderBitbucketServer = "bitbucket_server"
+	// GitProviderAzureDevOps is an Azure DevOps organization, authenticated with a personal access token.
+	GitProviderAzureDevOps = "azure_devops"
 )
 
 // ErrGitConnectionNotFound is returned when a connection id matches no row.

@@ -127,7 +127,14 @@ func (r *Runner) AdvanceDrain(ctx context.Context, id string) error {
 		for _, b := range d.Blocked {
 			names = append(names, b.Kind+" "+b.Name)
 		}
-		return r.finishDrain(ctx, &d, store.NodeMoveStatusFailed, "could not move: "+strings.Join(names, ", "))
+		status := store.NodeMoveStatusFailed
+		for _, c := range children {
+			if c.Status == store.NodeMoveStatusSucceeded {
+				status = store.NodeDrainStatusPartial
+				break
+			}
+		}
+		return r.finishDrain(ctx, &d, status, "could not move: "+strings.Join(names, ", "))
 	}
 	return r.finishDrain(ctx, &d, store.NodeMoveStatusSucceeded, "")
 }

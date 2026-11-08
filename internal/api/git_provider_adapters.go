@@ -15,7 +15,7 @@ import (
 
 const (
 	errInternal         = "internal error"
-	errGitProviderOneOf = "provider must be one of gitlab, bitbucket, bitbucket_server, gitea, forgejo"
+	errGitProviderOneOf = "provider must be one of gitlab, bitbucket, bitbucket_server, azure_devops, gitea, forgejo"
 )
 
 // GitConnSecrets is the internal/secrets.Manager surface the git provider
@@ -157,6 +157,8 @@ func (rt *Router) gitAdapter(provider string) (gitProviderAdapter, bool) {
 		return rt.forgejoAdapter(), true
 	case gitProviderBitbucketServer:
 		return rt.bitbucketServerAdapter(), true
+	case gitProviderAzureDevOps:
+		return rt.azureDevOpsAdapter(), true
 	}
 	return gitProviderAdapter{}, false
 }

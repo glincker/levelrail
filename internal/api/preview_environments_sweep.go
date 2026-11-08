@@ -24,6 +24,12 @@ import (
 const defaultPreviewTTL = 7 * 24 * time.Hour
 
 func (rt *Router) effectivePreviewTTL() time.Duration {
+	// The saved setting wins so operators can change it without a restart.
+	if rt.runtimeSettings != nil {
+		if h := rt.runtimeSettings.Int(context.Background(), KeyPreviewTTLHours); h > 0 {
+			return time.Duration(h) * time.Hour
+		}
+	}
 	if rt.previewTTL > 0 {
 		return rt.previewTTL
 	}

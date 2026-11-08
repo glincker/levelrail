@@ -284,6 +284,14 @@ levelrail-cli apps environments clone <id> --new-name NAME \
 
 The environment detail page has a "Clone environment..." button next to the protected toggle and delete action, opening a clone dialog. It shows the same preview as the API (suggested names, domains not copied, secret/scheduled-task counts), lets you override a name or assign domains per app, and has an explicit "Also copy real secret values" checkbox that defaults unchecked.
 
+## Cloning a project
+
+`POST /api/v1/projects/{id}/clone` (CLI: `levelrail-cli apps projects clone <name> --to <new> [--env ENV] [--dry-run]`) copies a project, or one environment of it, into a new project. Body: `{"name", "environment"?, "include": {"env_vars", "domains": "none|placeholder", "settings"}, "dry_run"}`. It needs the same ability as creating a project.
+
+- Copied: app image and port, plain env vars, and with `settings` the other app settings (health, resources, hooks, labels, dependencies between the cloned apps). A taken project or app name gets a numeric suffix, and apps are named `<app>-copy`.
+- Never copied: secret values (a secret-looking env var becomes a secret key with no value and is listed under `secret_keys_needing_values`), volumes and their data, database and vault links, host ports, file mounts, log drains and live domains. `placeholder` gives each app an unroutable stand-in domain (`APP_PROJECT_CLONE_PLACEHOLDER_DOMAIN`).
+- Cloned apps are created stopped. A dry run returns the plan and changes nothing. `APP_PROJECT_CLONE_MAX_APPS` caps the apps per clone (default 50).
+
 ## Dashboard pages
 
 | Page | What's there |

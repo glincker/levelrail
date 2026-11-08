@@ -12,7 +12,12 @@ import { useAppListOptional } from '@/queries/apps'
 import { useProjectListOptional } from '@/queries/projects'
 import type { AppListEntry } from '@/types/appDetail'
 import type { ProjectResource } from '@/types/projectDetail'
-import { NavChevron, NavCollapsePanel } from './CollapsibleSection'
+import { cn } from '@/lib/utils'
+import {
+  NavChevron,
+  NavCollapsePanel,
+  NAV_ROW_CLASS,
+} from './CollapsibleSection'
 import {
   isGlobalItemActive,
   linkTarget,
@@ -131,9 +136,11 @@ function ProjectTreeRow({
 export function ProjectsNavItem({
   item,
   pathname,
+  active,
 }: {
   item: GlobalNavItem
   pathname: string
+  active?: boolean
 }) {
   const projectsQuery = useProjectListOptional()
   const appsQuery = useAppListOptional()
@@ -147,9 +154,10 @@ export function ProjectsNavItem({
     <SidebarMenuItem>
       <SidebarMenuButton
         render={<Link to={linkTarget(item)} />}
-        isActive={isGlobalItemActive(pathname, item)}
+        isActive={active ?? isGlobalItemActive(pathname, item)}
         tooltip={item.label}
-        className={projects.length > 0 ? 'pr-8' : undefined}
+        title={item.label}
+        className={cn(NAV_ROW_CLASS, projects.length > 0 && 'pr-8')}
       >
         {item.icon}
         <span>{item.label}</span>

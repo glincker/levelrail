@@ -253,7 +253,12 @@ export function GitRepoListPicker({
                 key={a.connection_id}
                 label={`${a.account || a.label} (${a.loaded})`}
                 active={connection === a.connection_id}
-                icon={<BrandIcon name={a.provider} className="size-3.5" />}
+                icon={
+                  <BrandIcon
+                    name={a.provider === 'azure_devops' ? 'azure' : a.provider}
+                    className="size-3.5"
+                  />
+                }
                 onClick={() => chooseAccount(a.connection_id)}
               />
             ))}
