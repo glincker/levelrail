@@ -14,9 +14,11 @@ Most rows say **Built and tested**. That means the code is in the repository and
 | --- | --- |
 | **Built and tested** | The code exists and has unit or integration tests. No real host run is cited. This is the default for a row that has no stated run. |
 | **Proven on a real host** | A run on real infrastructure is recorded in the docs. The row says what was and was not covered. |
-| **Beta** | Listed as beta in the experimental catalog (`internal/experimental/catalog.go`), or as beta in the page the row links to. Gated behind a switch. See [Experimental features](/experimental-features). |
-| **Experimental** | Listed as experimental in the experimental catalog. Gated behind a switch. See [Experimental features](/experimental-features). |
+| **Beta** | Works and is tested, but has no end-to-end test and no record of a run on real infrastructure. This is the beta label in [Feature status](/feature-status). Some beta features also sit behind a Settings switch. The linked page says which. |
+| **Experimental** | Listed as experimental in the experimental catalog (`internal/experimental/catalog.go`). Off by default and gated behind a switch. See [Experimental features](/experimental-features). |
 | **Plan only** | Planning or plan generation exists, but the build or deploy path has not run live. |
+
+The labels on this page are a summary. [Feature status](/feature-status) holds the evidence tiers behind them.
 
 ## Deploy sources
 
