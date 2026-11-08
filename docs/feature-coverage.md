@@ -25,6 +25,7 @@ The labels on this page are a summary. [Feature status](/feature-status) holds t
 | Capability | Status | Read more |
 | --- | --- | --- |
 | Git push to a remote on your own server, with a per-app token | Beta | [Git push deploy](/git-push-deploy) |
+| Git push remote that keeps its token out of `.git/config` (`--credential-helper`) | Beta | [Git push deploy](/git-push-deploy) |
 | Git provider webhooks for GitHub, GitLab, Bitbucket and Gitea | Built and tested | [Git integrations](/git-integrations) |
 | Hold an automatic git deploy until the commit's CI checks finish | Built and tested | [CI gate](/ci-gate) |
 | CI deploy trust through OIDC for GitHub Actions, GitLab CI and CircleCI | Built and tested | [Pipelines and OIDC](/pipelines-oidc) |
@@ -56,6 +57,7 @@ Ruby and PHP projects get a plan from Railpack, but the docs say no live build h
 | Capability | Status | Read more |
 | --- | --- | --- |
 | Managed databases for postgres, redis, mysql, mongodb, mariadb, keydb, dragonfly, clickhouse, valkey, meilisearch, qdrant, typesense and memcached | Built and tested | [Managed databases](/managed-databases) |
+| Restore a dump into a database from a file or stdin, through the CLI and API. A database with data is refused unless forced | Beta | [Managing databases](/managing-databases) |
 | Version upgrades with security checks and automatic rollback on failure | Built and tested | [Database upgrades](/database-upgrades) |
 | TLS for Postgres and Redis databases, and Valkey once switched on | Built and tested | [Managing databases](/managing-databases) |
 | TLS on new MySQL, MariaDB and MongoDB instances, and on older ones through the API | Beta | [Managing databases](/managing-databases) |
@@ -80,6 +82,7 @@ Compose database dumps run on a cron schedule. Restoring one is a manual step to
 | Forward auth in front of a domain | Built and tested | [Domains and ingress](/domains-and-ingress) |
 | Per-domain request body cap and upstream read and write timeouts | Built and tested | [Domain traffic controls](/domain-traffic-controls) |
 | WAF, rate limiting and redirects | Built and tested | [Domains and ingress](/domains-and-ingress) |
+| Abuse limits as runtime settings (`abuse.*`). The ingress limiter still reads environment values, so saved values do not change it yet | Beta | [Ingress abuse defense](/abuse-defense) |
 | Private networks that group apps and allow named app-to-app paths | Built and tested | [Private networks](/private-networks) |
 | WireGuard mesh between nodes | Built and tested | [Multi-node](/multi-node) |
 | Mail DNS records (SPF, DKIM, DMARC, MX), add-only by default | Experimental | [Mail DNS](/mail-dns) |
@@ -94,6 +97,7 @@ The Proven on a real host row covers one recorded issuance, on 2026-10-05, again
 | Static site pull request previews, named `<app>-pr-<number>` | Built and tested | [Preview environments](/preview-environments#static-sites) |
 | Preview TTL, cap, idle sleep and cleanup when the pull request closes | Built and tested | [Previews](/previews) |
 | Basic auth gate on previews (`--gate`) | Built and tested | [Preview environments](/preview-environments) |
+| Previews list badge for the basic auth gate. It shows the app-wide policy on rows with a domain, not each domain's live state | Beta | [Previews](/previews) |
 | Static previews: the basic auth gate is applied, and a publish without it is refused and marked failed | Built and tested | [Preview environments](/preview-environments#static-sites) |
 | Static previews: a forward-auth gate on the preview domain is refused | Built and tested | [Preview environments](/preview-environments#static-sites) |
 
