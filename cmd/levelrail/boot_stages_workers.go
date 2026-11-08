@@ -528,6 +528,7 @@ func (s *bootState) serve() error {
 	}()
 	rs, rsCtx := s.apiRouter.RuntimeSettings(), context.Background()
 	engine.SetBootPasses(bootPassDelays(logger, rs.List(rsCtx, runtimesettings.KeyBootRechecks)), rs.Duration(rsCtx, runtimesettings.KeyBootEventRecheck))
+	engine.SetResyncSource(resyncFromSettings(rsCtx, rs))
 	engineErr := engine.Run(ctx, events, resyncInterval)
 
 	drainCtx, drainCancel := context.WithTimeout(context.Background(), envDurationOr(logger, shutdownDrainEnv, defaultShutdownDrain))
@@ -586,4 +587,11 @@ func bootPassDelays(logger *slog.Logger, items []string) []time.Duration {
 		out = append(out, d)
 	}
 	return out
+}
+
+// resyncFromSettings reads the live resync interval each tick; zero keeps the boot default.
+func resyncFromSettings(ctx context.Context, rs *runtimesettings.Service) func() time.Duration {
+	return func() time.Duration {
+		return time.Duration(rs.Int(ctx, runtimesettings.KeyReconcileResyncSeconds)) * time.Second
+	}
 }
