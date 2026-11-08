@@ -421,7 +421,7 @@ var Tree = map[string]*Node{
 		"invites": {Subs: map[string]*Node{"list": nil, "create": nil, "revoke": nil, "accept": nil}}}},
 	"quota":   {Subs: map[string]*Node{"show": nil, "set": nil, "clear": nil}},
 	"members": {Subs: map[string]*Node{"list": nil, "set-role": nil, "remove": nil, "leave": nil}},
-	"mail":    {Subs: map[string]*Node{"status": nil, "dns": {Subs: map[string]*Node{"plan": nil, "apply": nil, "check": nil, "status": nil}}}},
+	"mail":    {Subs: map[string]*Node{"status": nil, "broadcasts": {Subs: map[string]*Node{"list": nil, "send": nil, "cancel": nil}}, "audiences": {Subs: map[string]*Node{"list": nil}}, "suppressions": {Subs: map[string]*Node{"list": nil, "add": nil, "remove": nil}}, "dns": {Subs: map[string]*Node{"plan": nil, "apply": nil, "check": nil, "status": nil}}}},
 	"dns": {Subs: map[string]*Node{
 		"zones":         {Subs: map[string]*Node{"list": nil, "create": nil, "delete": nil, "nameservers": nil, "verify": nil}},
 		"records":       {Subs: map[string]*Node{"list": nil, "add": nil, "update": nil, "delete": nil, "import": nil, "export": nil, "template": nil}},

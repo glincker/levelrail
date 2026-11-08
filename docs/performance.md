@@ -227,3 +227,5 @@ Where it stands:
 ## Database read pool
 
 The control plane keeps a pool of read-only SQLite connections beside the single writer. Size it with the runtime setting `store.read_connections` (1 to 32, default 4; `APP_DB_READ_CONNS` only seeds it). A saved change resizes the pool on the next WAL maintenance tick, with no restart. Setting `APP_DB_READ_CONNS=0` at boot sends reads to the writer and stays boot-only.
+
+SQLite connection tuning is also a runtime setting, applied to the writer and read connections on the same tick: `store.cache_size_mb` (0 to 4096, `APP_DB_CACHE_SIZE_MB`), `store.mmap_size_mb` (0 to 16384, `APP_DB_MMAP_SIZE_MB`), `store.temp_store` (`default`, `file`, `memory`, `APP_DB_TEMP_STORE`) and `store.synchronous` (`default`, `normal`, `full`, `APP_DB_SYNCHRONOUS`). The default value of each keeps the SQLite built-in. Env only seeds the defaults.

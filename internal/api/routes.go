@@ -70,6 +70,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerIngressEdgeRoutes(mux)
 	rt.registerCostExplorerRoutes(mux)
 	rt.registerAutoscaleRoutes(mux)
+	rt.registerSizePresetRoutes(mux)
 	rt.registerPreviewRoutes(mux)
 	rt.registerSupplyChainRoutes(mux)
 	rt.registerSecretScanRoutes(mux)

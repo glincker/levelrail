@@ -249,6 +249,7 @@ func (db *DB) RunWALMaintenance(ctx context.Context) {
 			err := db.CheckpointWAL(ctx, false)
 			loop.Observe(start, err)
 			db.ApplyReadConnsSource()
+			db.ApplyTuningSource(ctx)
 		}
 	}
 }

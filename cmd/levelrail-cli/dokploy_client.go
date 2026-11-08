@@ -44,6 +44,12 @@ type dokployApplication struct {
 
 	MemoryLimit string `json:"memoryLimit"`
 	CPULimit    string `json:"cpuLimit"`
+
+	AutoDeploy      *bool  `json:"autoDeploy"`
+	CleanCache      bool   `json:"cleanCache"`
+	PreviewActive   bool   `json:"isPreviewDeploymentsActive"`
+	PreviewLimit    int    `json:"previewLimit"`
+	PreviewWildcard string `json:"previewWildcard"`
 }
 
 // dokployDomain mirrors Dokploy's Domain model

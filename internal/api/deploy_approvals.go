@@ -7,8 +7,9 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"os"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -629,15 +630,10 @@ func (rt *Router) RunDeployApprovalExpirySweep(ctx context.Context, interval tim
 	}
 }
 
-const defaultDeployApprovalClaimTimeout = 15 * time.Minute
-
 // deployApprovalClaimTimeout is how long an approving claim may stand before
-// recovery treats its claimer as gone (APP_DEPLOY_APPROVAL_CLAIM_TIMEOUT).
-func deployApprovalClaimTimeout() time.Duration {
-	if d, err := time.ParseDuration(os.Getenv("APP_DEPLOY_APPROVAL_CLAIM_TIMEOUT")); err == nil && d > 0 {
-		return d
-	}
-	return defaultDeployApprovalClaimTimeout
+// recovery treats its claimer as gone.
+func (rt *Router) deployApprovalClaimTimeout(ctx context.Context) time.Duration {
+	return time.Duration(rt.runtimeSettings.Limit(ctx, runtimesettings.KeyDeployApprovalClaimTimeoutSec)) * time.Second
 }
 
 func (rt *Router) logStaleClaimRecovery(ctx context.Context) {
@@ -657,7 +653,7 @@ func (rt *Router) recoverStaleApprovalClaims(ctx context.Context) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	cutoff := store.FormatAuditTime(time.Now().Add(-deployApprovalClaimTimeout()))
+	cutoff := store.FormatAuditTime(time.Now().Add(-rt.deployApprovalClaimTimeout(ctx)))
 	n := 0
 	for _, a := range claimed {
 		if a.DecidedAt >= cutoff {

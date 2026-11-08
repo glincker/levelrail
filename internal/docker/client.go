@@ -724,6 +724,7 @@ func buildHostConfig(spec ContainerSpec, portBindings nat.PortMap) *container.Ho
 			CpusetCpus: spec.Resources.CPUSetCPUs,
 		}
 	}
+	applyLogRotation(hostConfig, currentLogRotation())
 	if spec.CPUShares > 0 {
 		hostConfig.CPUShares = spec.CPUShares
 	}

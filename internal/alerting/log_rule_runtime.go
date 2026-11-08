@@ -10,7 +10,9 @@ import (
 // evaluation cadence, the cooldown clock and the samples to attach when the
 // rule's firing transition dispatches.
 type logRuleRuntime struct {
-	policy   LogRulePolicy
+	policy LogRulePolicy
+	// source, when set, supplies the live policy for each evaluation.
+	source   func() LogRulePolicy
 	throttle *domainHealthThrottle
 
 	mu        sync.Mutex
@@ -28,6 +30,16 @@ func newLogRuleRuntime() logRuleRuntime {
 		lastFired: make(map[string]time.Time),
 	}
 }
+
+func (l *logRuleRuntime) current() LogRulePolicy {
+	if l.source != nil {
+		return l.source()
+	}
+	return l.policy
+}
+
+// SetLogRulePolicySource makes log rule limits follow live settings instead of the boot env.
+func (e *Engine) SetLogRulePolicySource(fn func() LogRulePolicy) { e.logRule.source = fn }
 
 func (l *logRuleRuntime) store(id, notice string, samples []string) {
 	l.mu.Lock()
@@ -56,10 +68,11 @@ func (l *logRuleRuntime) inCooldown(id string, cooldown time.Duration, now time.
 // evaluateLogRule runs one log rule if its cadence allows. skip is true when
 // the rule was throttled and nothing should be persisted this tick.
 func (e *Engine) evaluateLogRule(ctx context.Context, r Rule, now time.Time) (next Rule, skip bool, err error) {
-	if !e.logRule.throttle.ready(r.ID, e.logRule.policy.EvalEvery, now) {
+	policy := e.logRule.current()
+	if !e.logRule.throttle.ready(r.ID, policy.EvalEvery, now) {
 		return r, true, nil
 	}
-	next, res, err := EvaluateLogRule(ctx, e.logs, r, e.logRule.policy, now)
+	next, res, err := EvaluateLogRule(ctx, e.logs, r, policy, now)
 	if err != nil {
 		return r, false, err
 	}

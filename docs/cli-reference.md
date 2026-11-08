@@ -906,6 +906,20 @@ levelrail-cli mail dns check <domain> [--host H] [--dkim-selector S] [--json]
 
 `plan` is a dry run and prints a plan hash. `apply` refuses a stale hash and never replaces existing MX, SPF, DKIM or DMARC records unless `--replace-existing` lists their kind.
 
+## Mail broadcasts
+
+Needs the mail app and an email provider. See [Email notifications](/email-notifications).
+
+```
+levelrail-cli mail broadcasts list [--json]
+levelrail-cli mail broadcasts send --subject S (--body T | --body-file F) (--audience ID | --to a@d,b@d) [--schedule RFC3339] [--dry-run] [--json]
+levelrail-cli mail broadcasts cancel <id>
+levelrail-cli mail audiences list
+levelrail-cli mail suppressions list|add|remove [address] [--reason R]
+```
+
+`--dry-run` only counts who would get the message and how much of the daily cap is left. Suppressed addresses never receive announcements.
+
 ## DNS
 
 See [DNS zones and records](/dns).
@@ -1041,7 +1055,7 @@ levelrail-cli channels test <id> [flags]
 levelrail-cli channels deliveries <id> [flags]
 levelrail-cli channels quiet-hours <id> [--start HH:MM --end HH:MM [--timezone Z] | --clear]
 ```
-Valid `--kind` values: `generic`, `slack`, `discord`, `telegram`, `email`, `pushover`, `pagerduty`, `teams`, `resend`, `ntfy`, `gotify`, `mattermost`, `lark`, `rocketchat`, `opsgenie`, `webex`, `googlechat`. `update` fully replaces a channel's configuration. `--notify-device-login` opts a channel into a link-only notice when a CLI login is waiting. `test` sends a real test message; `deliveries` lists a channel's recorded send history, newest first. See [Email notifications](/email-notifications).
+Valid `--kind` values: `generic`, `slack`, `discord`, `telegram`, `email`, `pushover`, `pagerduty`, `teams`, `resend`, `ntfy`, `gotify`, `mattermost`, `lark`, `rocketchat`, `opsgenie`, `webex`, `googlechat`. For `telegram`, add `&message_thread_id=N` to the sendMessage URL to post into one forum topic. `update` fully replaces a channel's configuration. `--notify-device-login` opts a channel into a link-only notice when a CLI login is waiting. `test` sends a real test message; `deliveries` lists a channel's recorded send history, newest first. See [Email notifications](/email-notifications).
 
 ## Push subscriptions
 

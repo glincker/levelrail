@@ -4,13 +4,22 @@ import (
 	"encoding/json"
 	"os"
 	"strconv"
+	"sync/atomic"
 )
 
 const defaultAffinityMaxTerms = 8
 
+var affinityLive atomic.Pointer[func() int]
+
+// SetAffinityTermsSource makes MaxAffinityTerms follow a live setting.
+func SetAffinityTermsSource(fn func() int) { affinityLive.Store(&fn) }
+
 // MaxAffinityTerms is the most affinity terms one app may carry, read from
 // APP_PLACEMENT_AFFINITY_MAX_TERMS so operators can tune it without a rebuild.
 func MaxAffinityTerms() int {
+	if p := affinityLive.Load(); p != nil {
+		return (*p)()
+	}
 	if n, err := strconv.Atoi(os.Getenv("APP_PLACEMENT_AFFINITY_MAX_TERMS")); err == nil && n > 0 {
 		return n
 	}

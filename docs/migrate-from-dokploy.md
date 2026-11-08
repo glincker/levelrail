@@ -24,6 +24,7 @@ Dokploy apps and databases import over its HTTP API, read-only. Data, volumes an
 | Domains | The domain list |
 | Volumes | Volume and bind mounts |
 | Replicas, memory and CPU limits | Imported |
+| Preview deployments | The preview limit becomes the app's preview policy maximum on `--apply`. The wildcard host, auto deploy off and clean cache are reported as review items |
 | Health check | Only when it is a curl or wget style HTTP probe |
 | Databases | PostgreSQL, MySQL, MariaDB, MongoDB and Redis, created empty with the major version from the image tag |
 

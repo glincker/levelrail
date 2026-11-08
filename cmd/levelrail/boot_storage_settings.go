@@ -62,10 +62,27 @@ func (s *bootState) wireStorageSettings() {
 	store.SetReadConnsSource(func() int {
 		return rs().Limit(context.Background(), runtimesettings.KeyReadConns)
 	})
+	store.SetTuningSource(func() store.Tuning {
+		c := context.Background()
+		return store.Tuning{
+			CacheSizeMB: rs().Int(c, runtimesettings.KeyDBCacheSizeMB),
+			MmapSizeMB:  rs().Int(c, runtimesettings.KeyDBMmapSizeMB),
+			TempStore:   dbTuningName(rs().String(c, runtimesettings.KeyDBTempStore)),
+			Synchronous: dbTuningName(rs().String(c, runtimesettings.KeyDBSynchronous)),
+		}
+	})
 	go s.db.RunOptimize(s.ctx, func() time.Duration {
 		return rs().Duration(context.Background(), runtimesettings.KeyDBOptimizeInterval)
 	})
 	telemetry.SetLogBudgetSource(func() int64 {
 		return int64(rs().Int(context.Background(), runtimesettings.KeyLogBudgetMB)) * mibBytes
 	})
+}
+
+// dbTuningName maps the "default" setting value to empty, meaning leave SQLite alone.
+func dbTuningName(v string) string {
+	if v == runtimesettings.DBTuningDefault {
+		return ""
+	}
+	return v
 }

@@ -246,3 +246,26 @@ func TestMapDokployEnvKeysSorted(t *testing.T) {
 		t.Errorf("keys = %v, want sorted", keys)
 	}
 }
+
+func TestMapDokployPreviewSettings(t *testing.T) {
+	off := false
+	got := mapDokployApplication(dokployApplication{
+		Name: "web", SourceType: "github", BuildType: "dockerfile", Owner: "acme", Repository: "web",
+		AutoDeploy: &off, CleanCache: true, PreviewActive: true, PreviewLimit: 4, PreviewWildcard: "*.pv.example.com",
+	}, nil, false)
+	if got.Service.Previews == nil || got.Service.Previews.MaxPreviews != 4 {
+		t.Fatalf("Previews = %+v, want max 4", got.Service.Previews)
+	}
+	for _, field := range []string{"autoDeploy", "cleanCache", "previewWildcard"} {
+		found := false
+		for _, is := range got.Issues {
+			found = found || is.Field == field
+		}
+		if !found {
+			t.Errorf("missing issue for %s", field)
+		}
+	}
+	if off := mapDokployApplication(dokployApplication{Name: "x", SourceType: "github", BuildType: "railpack"}, nil, false); off.Service.Previews != nil {
+		t.Errorf("previews off must map to nil, got %+v", off.Service.Previews)
+	}
+}

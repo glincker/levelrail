@@ -193,8 +193,12 @@ security.webhook_replay_window
 storage.critical_free_percent
 storage.large_unmanaged_image_mb
 storage.low_free_percent
+store.cache_size_mb
+store.mmap_size_mb
 store.optimize_interval
 store.read_connections
+store.synchronous
+store.temp_store
 supply_chain.default_enabled
 supply_chain.default_gate
 telemetry.access_log_retention

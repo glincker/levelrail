@@ -109,6 +109,11 @@ type dokployApp struct {
 	GiteaBranch         string          `json:"giteaBranch"`
 	CustomGitURL        string          `json:"customGitUrl"`
 	CustomGitBranch     string          `json:"customGitBranch"`
+	AutoDeploy          *bool           `json:"autoDeploy"`
+	CleanCache          bool            `json:"cleanCache"`
+	PreviewActive       bool            `json:"isPreviewDeploymentsActive"`
+	PreviewLimit        int             `json:"previewLimit"`
+	PreviewWildcard     string          `json:"previewWildcard"`
 	Domains             []dokployDomain `json:"domains"`
 	Mounts              []dokployMount  `json:"mounts"`
 	HealthCheckSwarm    *struct {
@@ -210,6 +215,7 @@ func mapDokployApp(project string, a dokployApp) (App, *Unsupported) {
 			app.Notes = append(app.Notes, Note{Reason: "swarm health check command could not be converted to an HTTP probe", Manual: "add an HTTP health check after import"})
 		}
 	}
+	app.Notes = append(app.Notes, dokployPreviewNotes(a)...)
 	switch strings.ToLower(a.SourceType) {
 	case "docker":
 		app.Kind, app.Image = SourceImage, a.DockerImage
@@ -242,6 +248,28 @@ func mapDokployApp(project string, a dokployApp) (App, *Unsupported) {
 		}
 	}
 	return app, nil
+}
+
+// Preview and deploy flags have no App field, so they travel as notes the plan renders.
+func dokployPreviewNotes(a dokployApp) []Note {
+	var out []Note
+	if a.PreviewActive {
+		msg := "preview deployments are on"
+		if a.PreviewLimit > 0 {
+			msg += " (limit " + strconv.Itoa(a.PreviewLimit) + ")"
+		}
+		if a.PreviewWildcard != "" {
+			msg += ", wildcard host " + a.PreviewWildcard
+		}
+		out = append(out, Note{Reason: msg, Manual: "set the preview policy with apps previews settings after import"})
+	}
+	if a.AutoDeploy != nil && !*a.AutoDeploy {
+		out = append(out, Note{Reason: "auto deploy on push is off in the source", Manual: "keep auto deploy off for this app after import"})
+	}
+	if a.CleanCache {
+		out = append(out, Note{Reason: "clean cache on deploy is on in the source", Manual: "use a no-cache build for this app"})
+	}
+	return out
 }
 
 func healthPathFromTest(test []string) string {

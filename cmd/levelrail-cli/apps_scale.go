@@ -17,10 +17,11 @@ import (
 func runAppsScale(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps scale", "print the app as JSON to stdout and nothing else", stderr)
 	var replicas int
-	var strategy, memory, swap, cpuset string
+	var strategy, memory, swap, cpuset, size string
 	var cpu float64
 	fs.IntVar(&replicas, "replicas", 0, "number of container replicas (at least 1; use \"apps stop\" to run none)")
 	fs.StringVar(&strategy, "strategy", "", "deploy strategy: rolling, recreate, or blue-green (default: unchanged)")
+	fs.StringVar(&size, "size", "", "named size preset such as small or large (see the size-presets API); sets CPU and memory unless --cpu or --memory is given")
 	fs.StringVar(&memory, "memory", "", "memory limit, e.g. 512Mi or 2Gi (default: unchanged)")
 	fs.Float64Var(&cpu, "cpu", 0, "CPU limit in cores, e.g. 0.5 (default: unchanged)")
 	fs.StringVar(&swap, "swap-memory", "", "memory plus swap limit, e.g. 1Gi; at least the memory limit (default: unchanged)")
@@ -39,12 +40,12 @@ func runAppsScale(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	}
 	name := rest[0]
 	if len(rest) > 1 {
-		if replicas != 0 || strategy != "" || memory != "" || cpu != 0 || swap != "" || cpuset != "" {
+		if replicas != 0 || strategy != "" || memory != "" || cpu != 0 || swap != "" || cpuset != "" || size != "" {
 			return reportError(stdout, stderr, jsonOut, newValidationError("service=count pairs cannot be combined with --replicas, --strategy, --memory, --cpu, --swap-memory or --cpuset-cpus"))
 		}
 		return scaleServices(prog, name, rest[1:], apiURLFlag, tokenFlag, profileFlag, jsonOut, of, stdout, stderr, lookupEnv)
 	}
-	if replicas < 0 || cpu < 0 || (replicas == 0 && strategy == "" && memory == "" && cpu == 0 && swap == "" && cpuset == "") {
+	if replicas < 0 || cpu < 0 || (replicas == 0 && size == "" && strategy == "" && memory == "" && cpu == 0 && swap == "" && cpuset == "") {
 		return reportError(stdout, stderr, jsonOut, newValidationError("apps scale requires --replicas N (N >= 1), --strategy, --memory, --cpu, --swap-memory and/or --cpuset-cpus"))
 	}
 	memoryBytes, err := parseOptionalMemory(memory)
@@ -70,6 +71,22 @@ func runAppsScale(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	}
 	if replicas > 0 {
 		app.Replicas = replicas
+	}
+	if size != "" {
+		presets, err := client.ListSizePresets(ctx)
+		if err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("list size presets: %w", err))
+		}
+		p, ok := findSizePreset(presets, size)
+		if !ok {
+			return reportError(stdout, stderr, jsonOut, newValidationError("--size %q is not a preset; available: %s", size, sizePresetNames(presets)))
+		}
+		if memoryBytes == 0 {
+			memoryBytes = p.MemoryBytes
+		}
+		if cpu == 0 {
+			cpu = p.CPU
+		}
 	}
 	if strategy != "" {
 		app.Strategy = strategy
@@ -249,4 +266,21 @@ Flags:
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
 `, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
+}
+
+func findSizePreset(presets []apiclient.SizePreset, name string) (apiclient.SizePreset, bool) {
+	for _, p := range presets {
+		if strings.EqualFold(p.Name, name) {
+			return p, true
+		}
+	}
+	return apiclient.SizePreset{}, false
+}
+
+func sizePresetNames(presets []apiclient.SizePreset) string {
+	names := make([]string, 0, len(presets))
+	for _, p := range presets {
+		names = append(names, p.Name)
+	}
+	return strings.Join(names, ", ")
 }

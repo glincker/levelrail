@@ -77,8 +77,14 @@ type mappedService struct {
 	Memory    string        `json:"memory,omitempty"`
 	CPU       float64       `json:"cpu,omitempty"`
 	EnvKeys   []string      `json:"env_keys,omitempty"`
+	// Previews is set only by the Dokploy mapper, applied through the preview policy route.
+	Previews *mappedPreviews `json:"previews,omitempty"`
 	// EnvLiteral is set only when includeSecretValues was requested; it is never serialized or written to app.yaml.
 	EnvLiteral map[string]string `json:"-"`
+}
+
+type mappedPreviews struct {
+	MaxPreviews int `json:"max_previews,omitempty"`
 }
 
 type mappedHealth struct {

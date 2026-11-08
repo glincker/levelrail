@@ -17,7 +17,7 @@ import (
 func mailUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s mail status                       show whether the mail server is installed, running and ready
-%[3]s%[4]s%[5]s%[6]s%[7]s  %[1]s mail dns plan <domain> [flags]    dry run: diff the mail records against the live zone
+%[3]s%[4]s%[5]s%[6]s%[7]s%[8]s  %[1]s mail dns plan <domain> [flags]    dry run: diff the mail records against the live zone
   %[1]s mail dns apply <domain> --plan-hash H --confirm [flags]   write a plan you reviewed
   %[1]s mail dns check <domain> [--host H] [--dkim-selector S]    grade the live mail DNS
   %[1]s mail dns provider <domain>        where the domain's DNS lives and whether it is connected
@@ -38,7 +38,7 @@ Experimental: needs APP_EXPERIMENTAL=mail. The default is add-only: existing
 MX, SPF, DKIM and DMARC records are never replaced unless --replace-existing
 lists their kind (MX, SPF, DKIM, DMARC, HOST, MTASTS, TLSRPT, AUTOCONFIG).
 Presets: %[2]s.
-`, prog, strings.Join(mailrecords.PresetIDs(), ", "), fmt.Sprintf(mailPortsUsageLines, prog), fmt.Sprintf(mailMailboxUsageLines, prog), fmt.Sprintf(mailCertUsageLines, prog), fmt.Sprintf(mailBackupUsageLines, prog), fmt.Sprintf(mailSystemEmailUsageLines, prog))
+`, prog, strings.Join(mailrecords.PresetIDs(), ", "), fmt.Sprintf(mailPortsUsageLines, prog), fmt.Sprintf(mailMailboxUsageLines, prog), fmt.Sprintf(mailCertUsageLines, prog), fmt.Sprintf(mailBackupUsageLines, prog), fmt.Sprintf(mailSystemEmailUsageLines, prog), fmt.Sprintf(mailBroadcastUsageLines, prog))
 }
 
 type mailFlags struct {
@@ -105,6 +105,9 @@ func runMail(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 	}
 	if len(args) >= 1 && (args[0] == "domains" || args[0] == "mailboxes" || args[0] == "aliases" || args[0] == "queue") {
 		return runMailMailboxes(prog, args[0], args[1:], stdout, stderr, lookupEnv)
+	}
+	if len(args) >= 1 && (args[0] == "broadcasts" || args[0] == "audiences" || args[0] == "suppressions") {
+		return runMailBroadcasts(prog, args[0], args[1:], stdout, stderr, lookupEnv)
 	}
 	if len(args) >= 1 && args[0] == "status" {
 		var app string

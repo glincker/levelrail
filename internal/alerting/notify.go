@@ -10,6 +10,7 @@ import (
 	"net/textproto"
 	"net/url"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 
@@ -252,8 +253,9 @@ func notifyDiscord(ctx context.Context, client *http.Client, url string, ev Even
 
 // chat_id goes in the body, since Telegram does not reliably read it from a query string.
 type telegramPayload struct {
-	ChatID string `json:"chat_id"`
-	Text   string `json:"text"`
+	ChatID   string `json:"chat_id"`
+	ThreadID int    `json:"message_thread_id,omitempty"`
+	Text     string `json:"text"`
 }
 
 // rawURL is the full sendMessage endpoint with the bot token in its path; chat_id is moved from the query into the body.
@@ -262,7 +264,11 @@ func notifyTelegram(ctx context.Context, client *http.Client, rawURL string, ev 
 	if err != nil {
 		return fmt.Errorf("alerting: notify: %w", err)
 	}
-	return postJSON(ctx, client, rawURL, telegramPayload{ChatID: chatID, Text: summaryText(ev)})
+	thread, err := parseTelegramThreadID(rawURL)
+	if err != nil {
+		return fmt.Errorf("alerting: notify: %w", err)
+	}
+	return postJSON(ctx, client, rawURL, telegramPayload{ChatID: chatID, ThreadID: thread, Text: summaryText(ev)})
 }
 
 // pushoverPayload is the Pushover Message API's request body
@@ -583,6 +589,23 @@ func parseResendCreds(rawURL string) (key, to, from string, err error) {
 		from = resendDefaultFrom
 	}
 	return key, to, from, nil
+}
+
+// parseTelegramThreadID reads the optional message_thread_id query parameter, the forum topic to post into; 0 means none.
+func parseTelegramThreadID(rawURL string) (int, error) {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return 0, fmt.Errorf("invalid telegram notify_url: %w", err)
+	}
+	raw := u.Query().Get("message_thread_id")
+	if raw == "" {
+		return 0, nil
+	}
+	n, err := strconv.Atoi(raw)
+	if err != nil || n <= 0 {
+		return 0, fmt.Errorf("telegram message_thread_id must be a positive number")
+	}
+	return n, nil
 }
 
 // Shared with deploy_notify.go's Telegram send, so both parse notify_url identically.

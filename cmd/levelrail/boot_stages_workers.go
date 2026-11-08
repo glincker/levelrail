@@ -154,6 +154,10 @@ func (s *bootState) startAlerting() {
 	alertingEngine.SetCertExpiryPolicy(certPolicy)
 	alertingEngine.SetVersionSkew(db, upgrade.DefaultFetchers(b.RepoSlug()))
 	alertingEngine.SetBudgets(apiRouter)
+	alertingEngine.SetLogRulePolicySource(func() alerting.LogRulePolicy {
+		l := apiRouter.RuntimeSettings().LogRuleLimits(context.Background())
+		return alerting.LogRulePolicy{EvalEvery: l.EvalEvery, MaxWindow: l.MaxWindow, MaxRows: l.MaxRows, Samples: l.Samples}
+	})
 	alertingEngine.SetDomainTraffic(apiRouter)
 	alertingEngine.SetEmailDelivery(db)
 	alertingEngine.SetCleanup(apiRouter)

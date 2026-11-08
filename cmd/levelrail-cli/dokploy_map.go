@@ -32,7 +32,29 @@ func mapDokployApplication(app dokployApplication, domains []dokployDomain, incl
 	out.Service.CPU, out.Issues = mapDokployCPU(app.CPULimit, out.Issues)
 	out.Service.EnvKeys, out.Service.EnvLiteral, out.Issues = mapDokployEnv(app.Env, includeSecretValues, out.Issues)
 
+	out.Service.Previews, out.Issues = mapDokployPreviews(app, out.Issues)
+
 	return out
+}
+
+// Only the limit maps onto the preview policy; the rest is reported so nothing drops silently.
+func mapDokployPreviews(app dokployApplication, issues []migrationIssue) (*mappedPreviews, []migrationIssue) {
+	if app.AutoDeploy != nil && !*app.AutoDeploy {
+		issues = appendIssue(issues, "autoDeploy", issueReview, "auto deploy on push is off in Dokploy; the new app builds only when you start a deploy, keep it that way")
+	}
+	if app.CleanCache {
+		issues = appendIssue(issues, "cleanCache", issueReview, "Dokploy cleans the build cache on every deploy; use a no-cache build for this app if you rely on it")
+	}
+	if !app.PreviewActive {
+		return nil, issues
+	}
+	if app.PreviewWildcard != "" {
+		issues = appendIssue(issues, "previewWildcard", issueReview, fmt.Sprintf("preview wildcard host %q is not migrated; previews use the platform preview domain", app.PreviewWildcard))
+	}
+	if app.PreviewLimit < 1 {
+		issues = appendIssue(issues, "previewLimit", issueReview, "preview deployments are on without a limit; the platform cap applies")
+	}
+	return &mappedPreviews{MaxPreviews: max(app.PreviewLimit, 0)}, issues
 }
 
 // Dokploy's docker (prebuilt image) and drop (file upload) sources have no image field to map, so they need manual review.

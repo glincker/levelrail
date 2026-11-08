@@ -151,6 +151,19 @@ func TestMapCaproverApplication(t *testing.T) {
 			},
 		},
 		{
+			name: "proxy flags become review issues",
+			app: caproverAppDefinition{
+				AppName: "web", ContainerHTTPPort: 3000, ForceSSL: true, WebsocketSupport: true,
+				RedirectDomain: "www.example.com", HTTPAuth: &caproverHTTPAuth{User: "editor"},
+			},
+			rootDomain: "example.com",
+			check: func(t *testing.T, got mappedApp) {
+				for _, f := range []string{"forceSsl", "websocketSupport", "redirectDomain", "httpAuth"} {
+					assertHasIssue(t, got.Issues, f, issueReview, "a review note for "+f)
+				}
+			},
+		},
+		{
 			name:       "no repo url or ref is ever set",
 			app:        caproverAppDefinition{AppName: "web", ContainerHTTPPort: 3000},
 			rootDomain: "example.com",
