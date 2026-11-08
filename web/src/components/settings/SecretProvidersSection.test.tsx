@@ -106,6 +106,48 @@ describe('SecretProvidersSection', () => {
     expect(body).not.toHaveProperty('environment')
   })
 
+  it('blocks Save for 1Password when the vault is empty', async () => {
+    const methods: (string | undefined)[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((_url: string, init?: RequestInit) => {
+        methods.push(init?.method)
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              providers: [
+                {
+                  name: 'vaults',
+                  type: 'onepassword',
+                  project: '',
+                  environment: '',
+                  base_url: 'https://connect.internal:8080',
+                  has_token: true,
+                  updated_at: '2026-11-07T00:00:00Z',
+                },
+              ],
+            }),
+          ),
+        )
+      }),
+    )
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <SecretProvidersSection />
+      </QueryClientProvider>,
+    )
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'secretProviders.edit' }),
+    )
+    await userEvent.click(
+      screen.getByRole('button', { name: 'secretProviders.save' }),
+    )
+    expect((await screen.findByRole('alert')).textContent).toContain(
+      'secretProviders.errVault',
+    )
+    expect(methods).not.toContain('PUT')
+  })
+
   it('shows the Connect server origin and vault for 1Password rows', async () => {
     vi.stubGlobal(
       'fetch',
@@ -278,5 +320,114 @@ describe('SecretProvidersSection', () => {
       expect(screen.queryByRole('form')).toBeNull()
     })
     expect(document.body.textContent).not.toContain('shh')
+  })
+
+  function stubEditable(row: Record<string, unknown>) {
+    const calls: { url: string; init?: RequestInit }[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string, init?: RequestInit) => {
+        calls.push({ url, init })
+        if (init?.method === 'PUT') return Promise.resolve(new Response('{}'))
+        return Promise.resolve(
+          new Response(JSON.stringify({ providers: [row] })),
+        )
+      }),
+    )
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <SecretProvidersSection />
+      </QueryClientProvider>,
+    )
+    return calls
+  }
+
+  const infisicalRow = {
+    name: 'inf',
+    type: 'infisical',
+    project: 'ws1',
+    environment: 'prod',
+    client_id: 'cid-stored',
+    self_hosted: false,
+    has_token: true,
+    updated_at: '2026-11-08T00:00:00Z',
+  }
+
+  it('prefills the Infisical client ID on edit and keeps the secret empty', async () => {
+    const calls = stubEditable(infisicalRow)
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'secretProviders.edit' }),
+    )
+    expect(
+      screen.getByLabelText<HTMLInputElement>('secretProviders.clientId').value,
+    ).toBe('cid-stored')
+    expect(
+      screen.getByLabelText<HTMLInputElement>('secretProviders.clientSecret')
+        .value,
+    ).toBe('')
+    await userEvent.click(
+      screen.getByRole('button', { name: 'secretProviders.save' }),
+    )
+    await waitFor(() => {
+      expect(calls.some((c) => c.init?.method === 'PUT')).toBe(true)
+    })
+    const body = JSON.parse(
+      calls.find((c) => c.init?.method === 'PUT')?.init?.body as string,
+    ) as Record<string, unknown>
+    expect(body.token).toBeUndefined()
+  })
+
+  it('requires the client secret only once the client ID changes', async () => {
+    const calls = stubEditable(infisicalRow)
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'secretProviders.edit' }),
+    )
+    await userEvent.type(screen.getByLabelText('secretProviders.clientId'), 'x')
+    await userEvent.click(
+      screen.getByRole('button', { name: 'secretProviders.save' }),
+    )
+    expect((await screen.findByRole('alert')).textContent).toContain(
+      'secretProviders.errIdentityReenter',
+    )
+    expect(calls.some((c) => c.init?.method === 'PUT')).toBe(false)
+    await userEvent.type(
+      screen.getByLabelText('secretProviders.clientSecret'),
+      'shh',
+    )
+    await userEvent.click(
+      screen.getByRole('button', { name: 'secretProviders.save' }),
+    )
+    await waitFor(() => {
+      expect(calls.some((c) => c.init?.method === 'PUT')).toBe(true)
+    })
+    const body = JSON.parse(
+      calls.find((c) => c.init?.method === 'PUT')?.init?.body as string,
+    ) as Record<string, unknown>
+    expect(body.token).toBe('infisical-identity:cid-storedx:shh')
+  })
+
+  it('blocks Save client-side when the 1Password vault is empty', async () => {
+    const calls = stubEditable({
+      name: 'vaults',
+      type: 'onepassword',
+      project: 'Prod',
+      base_url: 'https://connect.internal:8080',
+      self_hosted: true,
+      has_token: true,
+      updated_at: '2026-11-08T00:00:00Z',
+    })
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'secretProviders.edit' }),
+    )
+    await userEvent.clear(
+      screen.getByLabelText('secretProviders.projectOnePassword'),
+    )
+    await userEvent.click(
+      screen.getByRole('button', { name: 'secretProviders.save' }),
+    )
+    expect((await screen.findByRole('alert')).textContent).toContain(
+      'secretProviders.errVault',
+    )
+    expect(calls.some((c) => c.init?.method === 'PUT')).toBe(false)
   })
 })

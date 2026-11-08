@@ -370,6 +370,8 @@ type backupScheduleResource struct {
 	// RetainDays is a second, independent retention dimension: 0 means
 	// no age limit, mirroring Retain's own zero-means-unlimited meaning.
 	RetainDays int `json:"retain_days,omitempty"`
+	// Paused is true while the scheduler skips this schedule; the config stays saved.
+	Paused bool `json:"paused,omitempty"`
 }
 
 // setBackupScheduleRequest is handleSetBackupSchedule's request body.
@@ -431,12 +433,17 @@ func (rt *Router) handleSetBackupSchedule(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	paused := false
+	if d, err := rt.databases.GetDesiredDatabase(r.Context(), name); err == nil {
+		paused = d.BackupPaused
+	}
 	writeJSON(w, http.StatusOK, backupScheduleResource{
 		DatabaseName: name,
 		TargetID:     req.TargetID,
 		Schedule:     req.Schedule,
 		Retain:       req.Retain,
 		RetainDays:   req.RetainDays,
+		Paused:       paused,
 	})
 }
 
@@ -482,4 +489,48 @@ func randomBackupHistoryID() (string, error) {
 		return "", fmt.Errorf("api: generate backup history id: %w", err)
 	}
 	return "bkh_" + base64.RawURLEncoding.EncodeToString(buf), nil
+}
+
+// backupPauser is the optional store surface for pausing a database schedule.
+type backupPauser interface {
+	SetDatabaseBackupPaused(ctx context.Context, name string, paused bool) error
+}
+
+// handlePauseBackupSchedule and handleResumeBackupSchedule flip the paused flag; the saved cron, target and retention stay.
+func (rt *Router) handlePauseBackupSchedule(w http.ResponseWriter, r *http.Request) {
+	rt.setDatabaseBackupPaused(w, r, true)
+}
+
+func (rt *Router) handleResumeBackupSchedule(w http.ResponseWriter, r *http.Request) {
+	rt.setDatabaseBackupPaused(w, r, false)
+}
+
+func (rt *Router) setDatabaseBackupPaused(w http.ResponseWriter, r *http.Request, paused bool) {
+	name := r.PathValue("name")
+	p, ok := rt.databases.(backupPauser)
+	if !ok {
+		writeError(w, http.StatusNotImplemented, "pausing backup schedules is not available")
+		return
+	}
+	d, err := rt.databases.GetDesiredDatabase(r.Context(), name)
+	if errors.Is(err, store.ErrDatabaseNotFound) {
+		writeError(w, http.StatusNotFound, "database not found")
+		return
+	}
+	if err != nil {
+		rt.internalError(w, "api: pause backup schedule: load database failed", err, slog.String("name", name))
+		return
+	}
+	if d.BackupSchedule == "" {
+		writeError(w, http.StatusConflict, "database has no backup schedule")
+		return
+	}
+	if err := p.SetDatabaseBackupPaused(r.Context(), name, paused); err != nil {
+		rt.internalError(w, "api: pause backup schedule failed", err, slog.String("name", name))
+		return
+	}
+	writeJSON(w, http.StatusOK, backupScheduleResource{
+		DatabaseName: name, TargetID: d.BackupTargetID, Schedule: d.BackupSchedule,
+		Retain: d.BackupRetain, RetainDays: d.BackupRetainDays, Paused: paused,
+	})
 }

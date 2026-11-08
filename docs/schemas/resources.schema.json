@@ -110,6 +110,7 @@
             "node_host_guardrail",
             "node_offline",
             "node_resource_usage",
+            "oom_killed",
             "parked_domain_cert_expiry",
             "patch_status",
             "pooler_saturated",

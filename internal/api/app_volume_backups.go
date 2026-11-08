@@ -117,6 +117,8 @@ type volumeBackupScheduleResource struct {
 	Retain      int    `json:"retain,omitempty"`
 	RetainDays  int    `json:"retain_days,omitempty"`
 	SqlitePath  string `json:"sqlite_path,omitempty"`
+	// Paused is true while the scheduler skips this schedule; the config stays saved.
+	Paused bool `json:"paused,omitempty"`
 }
 
 // handleGetVolumeBackupSchedule handles GET .../backup-schedule. A missing schedule is a normal state, not an error.
@@ -142,6 +144,7 @@ func (rt *Router) handleGetVolumeBackupSchedule(w http.ResponseWriter, r *http.R
 		Retain:      cfg.BackupRetain,
 		RetainDays:  cfg.BackupRetainDays,
 		SqlitePath:  cfg.SqlitePath,
+		Paused:      cfg.BackupPaused,
 	})
 }
 
@@ -227,4 +230,38 @@ func (rt *Router) loadVolumeBackupHistory(w http.ResponseWriter, r *http.Request
 		return store.BackupHistory{}, false
 	}
 	return h, true
+}
+
+// volumeBackupPauser is the optional store surface for pausing a volume schedule.
+type volumeBackupPauser interface {
+	SetServiceVolumeBackupPaused(ctx context.Context, serviceName, volumeName string, paused bool) error
+}
+
+func (rt *Router) handlePauseVolumeBackupSchedule(w http.ResponseWriter, r *http.Request) {
+	rt.setVolumeBackupPaused(w, r, true)
+}
+
+func (rt *Router) handleResumeVolumeBackupSchedule(w http.ResponseWriter, r *http.Request) {
+	rt.setVolumeBackupPaused(w, r, false)
+}
+
+func (rt *Router) setVolumeBackupPaused(w http.ResponseWriter, r *http.Request, paused bool) {
+	serviceName := r.PathValue("name")
+	volumeName := r.PathValue("volume")
+	if _, ok := rt.loadServiceVolume(w, r, serviceName, volumeName, "api: pause volume backup schedule: load service failed"); !ok {
+		return
+	}
+	p, ok := rt.serviceVolumeBackupSchedule.(volumeBackupPauser)
+	if !ok {
+		writeError(w, http.StatusNotImplemented, "pausing backup schedules is not available")
+		return
+	}
+	if err := p.SetServiceVolumeBackupPaused(r.Context(), serviceName, volumeName, paused); errors.Is(err, store.ErrServiceVolumeBackupNotFound) {
+		writeError(w, http.StatusConflict, "volume has no backup schedule")
+		return
+	} else if err != nil {
+		rt.internalError(w, "api: pause volume backup schedule failed", err, slog.String("service", serviceName), slog.String("volume", volumeName))
+		return
+	}
+	rt.handleGetVolumeBackupSchedule(w, r)
 }

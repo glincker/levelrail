@@ -367,6 +367,8 @@ const (
 	EventStart EventAction = "start"
 	EventDie   EventAction = "die"
 	EventStop  EventAction = "stop"
+	// EventOOM is the kernel killing the container for exceeding its memory limit.
+	EventOOM EventAction = "oom"
 )
 
 // Event is a trimmed container lifecycle event from the Docker event

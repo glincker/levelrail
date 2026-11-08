@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/footprint"
 )
 
 // WatchState is where a watched domain is on its way to serving traffic.
@@ -138,16 +140,11 @@ func (w *Watcher) Run(ctx context.Context) error {
 	if err := w.Load(ctx); err != nil {
 		w.cfg.Logger.Error("dnsstatus: load watched domains failed", slog.String("error", err.Error()))
 	}
-	t := time.NewTicker(watchScanEvery)
-	defer t.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-t.C:
-			w.Tick(ctx)
-		}
-	}
+	// Registered so the idle footprint report lists the one-second scan.
+	return footprint.Every(ctx, "dns watch scan", watchScanEvery, w.cfg.Logger, func(ctx context.Context) error {
+		w.Tick(ctx)
+		return nil
+	})
 }
 
 // Register starts watching domain for app. A live domain only has its app updated;

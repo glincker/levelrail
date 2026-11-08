@@ -9,6 +9,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/diskguard"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
+	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
@@ -57,6 +58,9 @@ func (s *bootState) wireStorageSettings() {
 	go log.RunVisitorHistory(s.ctx)
 	backup.SetLocalRootSource(func() string {
 		return rs().String(context.Background(), runtimesettings.KeyBackupLocalRoot)
+	})
+	store.SetReadConnsSource(func() int {
+		return rs().Limit(context.Background(), runtimesettings.KeyReadConns)
 	})
 	go s.db.RunOptimize(s.ctx, func() time.Duration {
 		return rs().Duration(context.Background(), runtimesettings.KeyDBOptimizeInterval)

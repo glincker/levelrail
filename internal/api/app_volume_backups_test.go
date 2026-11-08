@@ -286,3 +286,34 @@ func TestHandleListVolumeBackupHistory_Success(t *testing.T) {
 		t.Fatalf("got = %+v, want exactly one row for bkh_1", got)
 	}
 }
+
+func TestHandleVolumeBackupSchedule_PausedScheduleKeepsConfig(t *testing.T) {
+	t.Parallel()
+	rt, db := newTestRouterWithVolumeBackupRunner(t, newFakeVolumeBackupRunner())
+	cookie := loginTestSession(t, rt, db)
+	seedServiceWithVolume(t, db)
+	seedBackupTargetForAPI(t, db)
+	base := "/api/v1/apps/web/volumes/data/backup-schedule"
+
+	do := func(method, path, body string) *httptest.ResponseRecorder {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, method, path, body))
+		return rec
+	}
+	if rec := do(http.MethodPost, base+"/pause", ""); rec.Code != http.StatusConflict {
+		t.Fatalf("pause without schedule status = %d, want 409", rec.Code)
+	}
+	if rec := do(http.MethodPut, base, `{"target_id":"bkt_test1","schedule":"0 3 * * *","retain":5}`); rec.Code != http.StatusOK {
+		t.Fatalf("PUT status = %d", rec.Code)
+	}
+	rec := do(http.MethodPost, base+"/pause", "")
+	var got volumeBackupScheduleResource
+	if rec.Code != http.StatusOK || json.NewDecoder(rec.Body).Decode(&got) != nil || !got.Paused || got.Schedule != "0 3 * * *" || got.Retain != 5 {
+		t.Fatalf("pause = %d %+v, want paused with config kept", rec.Code, got)
+	}
+	rec = do(http.MethodPost, base+"/resume", "")
+	got = volumeBackupScheduleResource{}
+	if rec.Code != http.StatusOK || json.NewDecoder(rec.Body).Decode(&got) != nil || got.Paused {
+		t.Fatalf("resume = %d %+v, want not paused", rec.Code, got)
+	}
+}

@@ -21,6 +21,10 @@ func runAppVolumeBackupsSchedule(prog string, args []string, stdout, stderr io.W
 		return runAppVolumeBackupsScheduleSet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "clear":
 		return runAppVolumeBackupsScheduleClear(prog, args[1:], stdout, stderr, lookupEnv)
+	case "pause":
+		return runAppVolumeBackupsSchedulePause(prog, args[1:], true, stdout, stderr, lookupEnv)
+	case "resume":
+		return runAppVolumeBackupsSchedulePause(prog, args[1:], false, stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown app-volume-backups schedule subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, appVolumeBackupsScheduleUsage(prog))
@@ -31,6 +35,7 @@ func runAppVolumeBackupsSchedule(prog string, args []string, stdout, stderr io.W
 func appVolumeBackupsScheduleUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s app-volume-backups schedule set <app> <volume> --target ID --cron EXPR [flags]   configure a recurring backup
+  %[1]s app-volume-backups schedule pause|resume <app> <volume> [flags]
   %[1]s app-volume-backups schedule clear <app> <volume> [flags]                        remove a recurring backup
 
 Run "%[1]s app-volume-backups schedule <subcommand> -h" for a subcommand's own flags.
@@ -116,4 +121,30 @@ func runAppVolumeBackupsScheduleClear(prog string, args []string, stdout, stderr
 	}
 
 	return writeScheduledTaskResult(stdout, stderr, of, map[string]bool{"cleared": true}, func() { _, _ = fmt.Fprintf(stdout, "backup schedule removed for %s/%s\n", name, volume) })
+}
+
+func runAppVolumeBackupsSchedulePause(prog string, args []string, paused bool, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	verb := pauseVerbName(paused)
+	cmd := "app-volume-backups schedule " + verb
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, cmd, "print the schedule as JSON to stdout and nothing else", stderr)
+	fs.Usage = func() {
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s %s <app> <volume> [flags]\n\nThe saved cron, target and retention are kept; manual backups still work.\n\nFlags:\n", prog, cmd)
+		fs.PrintDefaults()
+	}
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+	rest, ok := requireArgs(fs, stderr, prog, cmd, "an app name and a volume name", 2)
+	if !ok {
+		return exitUsage
+	}
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	res, err := client.PauseVolumeBackupSchedule(context.Background(), rest[0], rest[1], paused)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("%s backup schedule for %s/%s: %w", verb, rest[0], rest[1], err))
+	}
+	return writeScheduledTaskResult(stdout, stderr, of, res, func() {
+		_, _ = fmt.Fprintf(stdout, "backup schedule for %s/%s: %sd\n", rest[0], rest[1], verb)
+	})
 }

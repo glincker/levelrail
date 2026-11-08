@@ -27,6 +27,8 @@ type ServiceVolumeBackupConfig struct {
 	BackupRetainDays int
 	// SqlitePath: see migrations/0259.
 	SqlitePath string
+	// BackupPaused keeps the schedule configured but stops the scheduler from running it.
+	BackupPaused bool
 }
 
 // SetServiceVolumeBackupSchedule upserts serviceName/volumeName's backup
@@ -60,10 +62,10 @@ func (db *DB) GetServiceVolumeBackupSchedule(ctx context.Context, serviceName, v
 		backupTargetID sql.NullString
 	)
 	err := db.QueryRowContext(ctx, `
-		SELECT service_name, volume_name, backup_target_id, backup_schedule, backup_retain, backup_retain_days, sqlite_path
+		SELECT service_name, volume_name, backup_target_id, backup_schedule, backup_retain, backup_retain_days, sqlite_path, backup_paused
 		FROM service_volume_backups
 		WHERE service_name = ? AND volume_name = ?
-	`, serviceName, volumeName).Scan(&c.ServiceName, &c.VolumeName, &backupTargetID, &c.BackupSchedule, &c.BackupRetain, &c.BackupRetainDays, &c.SqlitePath)
+	`, serviceName, volumeName).Scan(&c.ServiceName, &c.VolumeName, &backupTargetID, &c.BackupSchedule, &c.BackupRetain, &c.BackupRetainDays, &c.SqlitePath, &c.BackupPaused)
 	if errors.Is(err, sql.ErrNoRows) {
 		return ServiceVolumeBackupConfig{}, ErrServiceVolumeBackupNotFound
 	}
@@ -81,9 +83,9 @@ func (db *DB) GetServiceVolumeBackupSchedule(ctx context.Context, serviceName, v
 // comment for why both are required together rather than schedule alone.
 func (db *DB) ListScheduledServiceVolumes(ctx context.Context) ([]ServiceVolumeBackupConfig, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT service_name, volume_name, backup_target_id, backup_schedule, backup_retain, backup_retain_days, sqlite_path
+		SELECT service_name, volume_name, backup_target_id, backup_schedule, backup_retain, backup_retain_days, sqlite_path, backup_paused
 		FROM service_volume_backups
-		WHERE backup_schedule != '' AND backup_target_id IS NOT NULL
+		WHERE backup_schedule != '' AND backup_target_id IS NOT NULL AND backup_paused = 0
 		ORDER BY service_name, volume_name
 	`)
 	if err != nil {
@@ -99,7 +101,7 @@ func (db *DB) ListScheduledServiceVolumes(ctx context.Context) ([]ServiceVolumeB
 			c              ServiceVolumeBackupConfig
 			backupTargetID sql.NullString
 		)
-		if err := rows.Scan(&c.ServiceName, &c.VolumeName, &backupTargetID, &c.BackupSchedule, &c.BackupRetain, &c.BackupRetainDays, &c.SqlitePath); err != nil {
+		if err := rows.Scan(&c.ServiceName, &c.VolumeName, &backupTargetID, &c.BackupSchedule, &c.BackupRetain, &c.BackupRetainDays, &c.SqlitePath, &c.BackupPaused); err != nil {
 			return nil, fmt.Errorf("store: scan scheduled service volume row: %w", err)
 		}
 		c.BackupTargetID = backupTargetID.String
@@ -109,4 +111,18 @@ func (db *DB) ListScheduledServiceVolumes(ctx context.Context) ([]ServiceVolumeB
 		return nil, fmt.Errorf("store: iterate scheduled service volume rows: %w", err)
 	}
 	return out, nil
+}
+
+// SetServiceVolumeBackupPaused pauses or resumes a volume's scheduled backup; a volume with no schedule row is ErrServiceVolumeBackupNotFound.
+func (db *DB) SetServiceVolumeBackupPaused(ctx context.Context, serviceName, volumeName string, paused bool) error {
+	res, err := db.ExecContext(ctx, `UPDATE service_volume_backups SET backup_paused = ? WHERE service_name = ? AND volume_name = ?`, paused, serviceName, volumeName)
+	if err != nil {
+		return fmt.Errorf("store: set backup paused for service %q volume %q: %w", serviceName, volumeName, err)
+	}
+	if n, err := res.RowsAffected(); err != nil {
+		return fmt.Errorf("store: set backup paused for service %q volume %q: rows affected: %w", serviceName, volumeName, err)
+	} else if n == 0 {
+		return ErrServiceVolumeBackupNotFound
+	}
+	return nil
 }

@@ -1380,6 +1380,8 @@ func mapAction(a events.Action) EventAction {
 		return EventDie
 	case "stop":
 		return EventStop
+	case "oom":
+		return EventOOM
 	default:
 		return ""
 	}

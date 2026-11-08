@@ -46,6 +46,8 @@ func (rt *Router) registerBackupRoutes(mux *http.ServeMux) {
 	// No GET: handleGetDatabase already returns these fields.
 	mux.HandleFunc("PUT /api/v1/databases/{name}/backup-schedule", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleSetBackupSchedule))
 	mux.HandleFunc("DELETE /api/v1/databases/{name}/backup-schedule", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleClearBackupSchedule))
+	mux.HandleFunc("POST /api/v1/databases/{name}/backup-schedule/pause", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handlePauseBackupSchedule))
+	mux.HandleFunc("POST /api/v1/databases/{name}/backup-schedule/resume", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleResumeBackupSchedule))
 
 	// Public host access per database: AbilityWriteSensitive, it changes network exposure.
 	// No GET: handleGetDatabase already returns the fields.
@@ -116,6 +118,8 @@ func (rt *Router) registerBackupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/apps/{name}/volumes/{volume}/import", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleImportVolume))
 	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/backup-schedule", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetVolumeBackupSchedule))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/volumes/{volume}/backup-schedule", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetVolumeBackupSchedule))
+	mux.HandleFunc("POST /api/v1/apps/{name}/volumes/{volume}/backup-schedule/pause", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handlePauseVolumeBackupSchedule))
+	mux.HandleFunc("POST /api/v1/apps/{name}/volumes/{volume}/backup-schedule/resume", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleResumeVolumeBackupSchedule))
 	mux.HandleFunc("GET /api/v1/apps/{name}/compose-db-services", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListComposeDBServices))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/compose-db-services/{service}/backup-schedule", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetComposeDBBackupSchedule))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/compose-db-services/{service}/backup-schedule", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteComposeDBBackupSchedule))

@@ -148,8 +148,55 @@ func (rt *Router) gitPushBuildConfig(ctx context.Context, name string, c *object
 		if _, err := tree.File("Dockerfile"); err == nil {
 			return spec.BuildDockerfile, "", ""
 		}
+		if def := resolveDefinitionBuild(treeReader(tree), gitPushBaseDir(ctx, rt, name)); def.Dockerfile != "" {
+			return spec.BuildDockerfile, def.Dockerfile, ""
+		}
 	}
 	return spec.BuildRailpack, "", ""
+}
+
+// gitPushDefinitionNote is non-empty when the commit has a definition file a git
+// build cannot honor and nothing else decides the build, so the push says so.
+func (rt *Router) gitPushDefinitionNote(ctx context.Context, name string, c *object.Commit) string {
+	if rt.gitSources != nil {
+		if gs, err := rt.gitSources.GetGitSource(ctx, name); err == nil && gs != nil && gs.BuildPath != "" {
+			return ""
+		}
+	}
+	tree, err := c.Tree()
+	if err != nil {
+		return ""
+	}
+	if _, err := tree.File("Dockerfile"); err == nil {
+		return ""
+	}
+	return resolveDefinitionBuild(treeReader(tree), gitPushBaseDir(ctx, rt, name)).Note
+}
+
+func gitPushBaseDir(ctx context.Context, rt *Router, name string) string {
+	if rt.gitSources == nil {
+		return ""
+	}
+	if gs, err := rt.gitSources.GetGitSource(ctx, name); err == nil && gs != nil {
+		return gs.BaseDirectory
+	}
+	return ""
+}
+
+// treeReader reads a blob from a commit tree, bounded by limit bytes.
+func treeReader(tree *object.Tree) func(string, int) ([]byte, error) {
+	return func(p string, limit int) ([]byte, error) {
+		f, err := tree.File(p)
+		if err != nil {
+			return nil, err
+		}
+		r, err := f.Reader()
+		if err != nil {
+			return nil, err
+		}
+		defer func() { _ = r.Close() }()
+		return io.ReadAll(io.LimitReader(r, int64(limit)))
+	}
 }
 
 // gitPushStaticSPA is the stored single page app flag, the same source the
@@ -182,6 +229,10 @@ func (rt *Router) deployGitPush(r *http.Request, ws *pushStream, name string, pl
 			return "the push could not be parked for approval"
 		}
 		return ""
+	}
+	if note := rt.gitPushDefinitionNote(ctx, name, plan.commit); note != "" {
+		ws.say("Cannot build: " + note)
+		return "unsupported definition file"
 	}
 	buildType, path, base := rt.gitPushBuildConfig(ctx, name, plan.commit)
 	treq := triggerBuildRequest{

@@ -2079,8 +2079,11 @@ levelrail-cli templates get <id> [flags]
 levelrail-cli templates deploy <id> [--name NAME] [flags]
 levelrail-cli templates install <id> [--name NAME] [--env KEY=VALUE]... [--domain SERVICE=HOST]... [flags]
 levelrail-cli templates delete <id> [flags]
+levelrail-cli templates import <file | -> [--id ID] [--name NAME] [--description TEXT] [--var NAME]... [flags]
 ```
 `list` browses the curated service catalog with license and trust columns, or `--custom` for your own saved templates. `--license-class`, `--arch` and `--hide-deprecated` filter on the server, and deprecated entries are marked, not hidden, by default. `get` shows one entry including its license, trust, verification (image tag and architectures) and any deprecation notice, then its full compose.yaml. `deploy` deploys a template's compose.yaml as an app, and the app name defaults to the template id; pass `--name` to use another. A custom template works with every verb the same as a built-in one, except `delete`: only a custom template can be deleted (see `apps save-as-template`). See [Templates](/templates).
+
+`import` saves a local compose file (or `-` for stdin) as a custom template through `POST /api/v1/templates/custom`. The id defaults to the file name; an id used by a built-in or an existing custom template is refused. `--var` names a `${NAME}` placeholder the file must use.
 
 `install` is for manifest templates (the ones `get` shows with settings): it fills each `${KEY}` setting from `--env`, a generated secret or its default, puts the listed services behind `--domain` hosts, and deploys the result as a compose app that is not a trial. See [Compose apps](/compose-apps#templates).
 

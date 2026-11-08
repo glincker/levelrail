@@ -223,3 +223,7 @@ Where it stands:
 - Compression: GET JSON under `/api/` is gzipped when the client accepts it (`APP_API_COMPRESSION=off` disables). SSE, NDJSON and text streams, responses that set a cookie, `Cache-Control: no-store` responses (the secret-bearing ones) and `/api/v1/auth/` are never compressed, which avoids BREACH on secrets.
 - Previously not fixed: the dashboard and apps list still fetch the whole apps list (about 314 kB at 1000 apps) because status tiles and filters count client side. A server side summary endpoint is the next step. The thesvg brand logo chunks (about 250 kB each) still load on home, databases and nodes. `npm run check-bundle-size` already fails on the diagram `elk` chunk (1463 kB against a 720 kB budget) before this change.
 - Apps seeded here have no running containers, so this measures list rendering and fetching, not live metrics streaming.
+
+## Database read pool
+
+The control plane keeps a pool of read-only SQLite connections beside the single writer. Size it with the runtime setting `store.read_connections` (1 to 32, default 4; `APP_DB_READ_CONNS` only seeds it). A saved change resizes the pool on the next WAL maintenance tick, with no restart. Setting `APP_DB_READ_CONNS=0` at boot sends reads to the writer and stays boot-only.

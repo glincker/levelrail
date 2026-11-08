@@ -1350,6 +1350,8 @@ Endpoints for:
 | GET | /api/v1/backups/copy-settings | AbilityRead | handleGetBackupCopySettings |
 | PUT | /api/v1/backups/copy-settings | AbilityWriteSensitive | handleSetBackupCopySettings |
 | GET | /api/v1/backups/copies | AbilityRead | handleListBackupCopies |
+| POST | /api/v1/databases/{name}/backup-schedule/pause | AbilityWriteSensitive | handlePauseBackupSchedule |
+| POST | /api/v1/databases/{name}/backup-schedule/resume | AbilityWriteSensitive | handleResumeBackupSchedule |
 
 ## App Volume Backups / Restore
 
@@ -1384,6 +1386,8 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/volumes/{volume}/files/restore | AbilityWrite | handleRestoreVolumeFile |
 | GET | /api/v1/apps/{name}/volumes/{volume}/export | AbilityWriteSensitive | handleExportVolume |
 | POST | /api/v1/apps/{name}/volumes/{volume}/import | AbilityWriteSensitive | handleImportVolume |
+| POST | /api/v1/apps/{name}/volumes/{volume}/backup-schedule/pause | AbilityWriteSensitive | handlePauseVolumeBackupSchedule |
+| POST | /api/v1/apps/{name}/volumes/{volume}/backup-schedule/resume | AbilityWriteSensitive | handleResumeVolumeBackupSchedule |
 
 ## App Storage / Database Attach
 
@@ -2246,6 +2250,7 @@ Routes that do not fit an existing group.
 | GET | /internal/diagnostic | Public | handleInternalDiagnostic |
 | PATCH | /api/v1/tags/{id} | AbilityWrite | handleRenameTag |
 | GET | /api/v1/deployments/{id}/explain | AbilityRead | handleExplainDeploy |
+| POST | /api/v1/templates/custom | AbilityWrite | handleImportCustomTemplate |
 | POST | /mcp | Public |  |
 
 ## See also

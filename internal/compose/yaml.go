@@ -24,7 +24,7 @@ type rawFile struct {
 	// just their keys (same reasoning as Networks): File.HasSecrets/
 	// HasConfigs only need to know either block was declared at all, not
 	// its shape.
-	Secrets map[string]struct{}  `yaml:"secrets"`
+	Secrets map[string]rawConfig `yaml:"secrets"`
 	Configs map[string]rawConfig `yaml:"configs"`
 }
 

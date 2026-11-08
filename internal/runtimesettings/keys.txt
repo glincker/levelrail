@@ -185,6 +185,7 @@ storage.critical_free_percent
 storage.large_unmanaged_image_mb
 storage.low_free_percent
 store.optimize_interval
+store.read_connections
 supply_chain.default_enabled
 supply_chain.default_gate
 telemetry.access_log_retention

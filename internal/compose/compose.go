@@ -232,7 +232,6 @@ func Parse(data []byte) (*File, error) {
 		Version:     raw.Version,
 		Services:    make(map[string]Service, len(raw.Services)),
 		Domains:     raw.Domains,
-		HasSecrets:  len(raw.Secrets) > 0,
 		HasConfigs:  len(raw.Configs) > 0,
 		Unsupported: findUnsupported(data),
 	}
@@ -247,6 +246,9 @@ func Parse(data []byte) (*File, error) {
 		f.Services[name] = Service(svc)
 	}
 	if err := resolveConfigFiles(f, raw.Configs); err != nil {
+		return nil, err
+	}
+	if err := resolveSecretFiles(f, raw.Secrets); err != nil {
 		return nil, err
 	}
 	if len(raw.Networks) > 0 {

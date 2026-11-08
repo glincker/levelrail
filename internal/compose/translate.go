@@ -98,7 +98,7 @@ func ToDesiredServices(appName string, f *File) (services []store.DesiredService
 			d.Domains = []string{domain}
 		}
 		for _, cf := range svc.Files {
-			d.Files = append(d.Files, store.ServiceFile{Path: cf.Path, Mode: cf.Mode, Content: cf.Content, Hash: store.FileContentHash(d.Name, cf.Path, cf.Content)})
+			d.Files = append(d.Files, store.ServiceFile{Path: cf.Path, Mode: cf.Mode, Secret: cf.Secret, NoExpand: cf.NoExpand, Content: cf.Content, Hash: store.FileContentHash(d.Name, cf.Path, cf.Content)})
 		}
 		for _, v := range svc.Volumes {
 			if v.HostPath != "" {

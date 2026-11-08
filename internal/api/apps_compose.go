@@ -205,6 +205,9 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 	}
 	defer quotaRelease()
 
+	if !rt.storeComposeSecretFiles(w, r, services) {
+		return composeDeployResponse{}, false
+	}
 	templateDefaults := rt.planTemplateDefaults(r.Context(), name, opts.templateID, file, services, previousServices)
 
 	now := time.Now().UTC().Format(time.RFC3339)
@@ -236,7 +239,10 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 		notices = append(notices, composeNoticeResult{Level: string(n.Level), Message: n.Message})
 	}
 
-	revision := rt.recordComposeRevision(r, name, body, opts)
+	revision := 0
+	if stored := redactedComposeBody(rt.logger, body); stored != nil {
+		revision = rt.recordComposeRevision(r, name, stored, opts)
+	}
 	rt.nudgeReconciler()
 	return composeDeployResponse{AppID: name, Services: out, Notices: notices, Revision: revision, Skipped: skipped}, true
 }
@@ -460,4 +466,66 @@ func (rt *Router) admitComposeQuota(w http.ResponseWriter, r *http.Request, prev
 		}
 	}
 	return rt.quotaMu.Unlock, true
+}
+
+// redactedComposeBody strips inline secret bodies before history keeps the
+// file; on a parse failure nothing is stored, so plaintext never lands in a revision.
+func redactedComposeBody(logger *slog.Logger, body []byte) []byte {
+	out, _, err := compose.RedactSecretContent(body)
+	if err != nil {
+		logger.Error("api: compose: redact revision failed", slog.String("error", err.Error()))
+		return nil
+	}
+	return out
+}
+
+// storeComposeSecretFiles moves compose-origin secret file bodies into the
+// secrets store and blanks them in desired state. A redacted marker (a
+// rollback or upgrade of a stored revision) reuses the stored value, and a
+// missing one refuses the deploy before anything is written.
+func (rt *Router) storeComposeSecretFiles(w http.ResponseWriter, r *http.Request, services []store.DesiredService) bool {
+	type pending struct {
+		svc, file int
+		plain     string
+		write     bool
+	}
+	var todo []pending
+	for i := range services {
+		for j, f := range services[i].Files {
+			if !f.Secret || !f.NoExpand {
+				continue
+			}
+			if rt.composeSecrets == nil {
+				writeError(w, http.StatusBadRequest, "this compose file has a secret file but no secrets master key is configured")
+				return false
+			}
+			key := store.FileSecretKey(f.Path)
+			if f.Content != compose.RedactedSecretMarker {
+				todo = append(todo, pending{svc: i, file: j, plain: f.Content, write: true})
+				continue
+			}
+			plain, err := rt.composeSecrets.Resolve(r.Context(), services[i].Name, key)
+			if errors.Is(err, secrets.ErrValueNotFound) {
+				writeError(w, http.StatusConflict, "secret file "+f.Path+" was redacted in this revision and has no stored value, deploy it again with its content")
+				return false
+			}
+			if err != nil {
+				rt.internalError(w, "api: deploy compose: resolve secret file failed", err, slog.String("service", services[i].Name))
+				return false
+			}
+			todo = append(todo, pending{svc: i, file: j, plain: plain})
+		}
+	}
+	for _, p := range todo {
+		f := &services[p.svc].Files[p.file]
+		if p.write {
+			if err := rt.composeSecrets.SetValue(r.Context(), services[p.svc].Name, store.FileSecretKey(f.Path), p.plain); err != nil {
+				rt.internalError(w, "api: deploy compose: store secret file failed", err, slog.String("service", services[p.svc].Name))
+				return false
+			}
+		}
+		f.Hash = store.FileContentHash(services[p.svc].Name, f.Path, p.plain)
+		f.Content = ""
+	}
+	return true
 }

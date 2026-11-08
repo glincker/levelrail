@@ -359,6 +359,8 @@ func (e *Engine) Tick(ctx context.Context) error {
 			}
 		case KindCrashloop:
 			next = EvaluateCrashloop(e.tracker, r, now)
+		case KindOOMKilled:
+			next = EvaluateOOMKilled(e.tracker, r, now)
 		case KindCertExpiry:
 			if e.certs == nil {
 				e.logger.Warn("alerting: cert_expiry rule found but no cert source configured, skipping", slog.String("rule_id", r.ID))
@@ -742,7 +744,7 @@ func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotice
 	}
 
 	ev := Event{Rule: r, Resolved: resolved}
-	if r.Kind == KindCrashloop && !resolved {
+	if (r.Kind == KindCrashloop || r.Kind == KindOOMKilled) && !resolved {
 		ev.LogLines = e.fetchRecentLogLines(ctx, r.ResourceID)
 	}
 	if (r.Kind == KindCertExpiry || r.Kind == KindCertExpiring || r.Kind == KindCertRenewalStalled || r.Kind == KindParkedDomainCertExpiry) && !resolved {

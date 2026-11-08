@@ -36,6 +36,8 @@ func runTemplates(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runTemplatesDeploy(prog, args[1:], stdout, stderr, lookupEnv)
 	case "install":
 		return runTemplatesInstall(prog, args[1:], stdout, stderr, lookupEnv)
+	case "import":
+		return runTemplatesImport(prog, args[1:], stdout, stderr, lookupEnv)
 	case "delete":
 		return runTemplatesDelete(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
@@ -54,6 +56,7 @@ func templatesUsage(prog string) string {
   %[1]s templates show <id> [flags]                      what a template needs (privileges, ports, secrets) and what Levelrail adds
   %[1]s templates deploy <id> [--name NAME] [flags]     deploy a template's compose.yaml as an app, built-in or custom
   %[1]s templates install <id> [--name NAME] [--env K=V] [--domain SVC=HOST]   install a manifest template with its settings
+  %[1]s templates import <file | -> [--id ID] [--name NAME] [--description TEXT] [flags]   save a compose file as a custom template
   %[1]s templates delete <id> [flags]                    delete a custom template (see "apps save-as-template")
 
 "deploy" defaults the app name to <id>; pass --name to deploy under a

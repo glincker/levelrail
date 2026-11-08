@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2022 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2027 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -82,6 +82,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/volumes/{volume}/backup-schedule", Ability: "AbilityWriteSensitive", Group: "App Volume Backups / Restore", Handler: "handleClearVolumeBackupSchedule", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/volumes/{volume}/backup-schedule", Ability: "AbilityRead", Group: "App Volume Backups / Restore", Handler: "handleGetVolumeBackupSchedule", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/volumes/{volume}/backup-schedule", Ability: "AbilityWriteSensitive", Group: "App Volume Backups / Restore", Handler: "handleSetVolumeBackupSchedule", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/volumes/{volume}/backup-schedule/pause", Ability: "AbilityWriteSensitive", Group: "App Volume Backups / Restore", Handler: "handlePauseVolumeBackupSchedule", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/volumes/{volume}/backup-schedule/resume", Ability: "AbilityWriteSensitive", Group: "App Volume Backups / Restore", Handler: "handleResumeVolumeBackupSchedule", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/volumes/{volume}/backups", Ability: "AbilityRead", Group: "App Volume Backups / Restore", Handler: "handleListVolumeBackupHistory", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/volumes/{volume}/backups", Ability: "AbilityWriteSensitive", Group: "App Volume Backups / Restore", Handler: "handleTriggerVolumeBackup", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/volumes/{volume}/backups/{historyId}", Ability: "AbilityWriteSensitive", Group: "App Volume Backups / Restore", Handler: "handleDeleteVolumeBackup", Description: ""},
@@ -698,6 +700,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/backups/protection/refresh", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handleRefreshBackupProtection", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/databases/{name}/backup-schedule", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handleClearBackupSchedule", Description: ""},
 	{Method: "PUT", Path: "/api/v1/databases/{name}/backup-schedule", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handleSetBackupSchedule", Description: "Scheduled backup config: AbilityWriteSensitive, it decides where unattended backups go. No GET: handleGetDatabase already returns these fields."},
+	{Method: "POST", Path: "/api/v1/databases/{name}/backup-schedule/pause", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handlePauseBackupSchedule", Description: ""},
+	{Method: "POST", Path: "/api/v1/databases/{name}/backup-schedule/resume", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handleResumeBackupSchedule", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/backups", Ability: "AbilityRead", Group: "Database Backups / Restore / Clone Restore", Handler: "handleListBackupHistory", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/backups", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handleTriggerBackup", Description: "Backup history and manual trigger, per database. Trigger needs AbilityWriteSensitive: it starts real work against a live bucket using a previously-stored credential, the same sensitivity class creating or deleting the backup target itself already carries. History listing is ordinary AbilityRead."},
 	{Method: "DELETE", Path: "/api/v1/databases/{name}/backups/{historyId}", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handleDeleteBackup", Description: "Delete one specific archived backup on demand, rather than waiting for retention (BackupRetain/BackupRetainDays above) to age it out. AbilityWriteSensitive, matching the manual trigger route above: this destroys a real stored artifact, the same sensitivity class as triggering a backup or deleting the backup target itself, not the AbilityRoot tier restore below uses, since nothing here touches a live database's own data. See handleDeleteBackup's own doc comment."},
@@ -1743,6 +1747,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/teams/{id}/quota", Ability: "AbilityWrite", Group: "Other", Handler: "handleSetQuota", Description: ""},
 	{Method: "POST", Path: "/api/v1/teams/{id}/transfer", Ability: "AbilityWrite", Group: "Other", Handler: "handleTransferTeam", Description: ""},
 	{Method: "GET", Path: "/api/v1/templates/custom", Ability: "AbilityRead", Group: "Other", Handler: "handleListCustomTemplates", Description: "Custom templates (service_templates_custom.go): operator-defined templates captured from a running app. Deploy reuses the service-templates/{id}/deploy route above, no second deploy path."},
+	{Method: "POST", Path: "/api/v1/templates/custom", Ability: "AbilityWrite", Group: "Other", Handler: "handleImportCustomTemplate", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/templates/custom/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteCustomTemplate", Description: ""},
 	{Method: "GET", Path: "/api/v1/tokens/unused", Ability: "Session", Group: "Other", Handler: "handleUnusedTokens", Description: "Read-only list of idle tokens, same audience as the token list."},
 	{Method: "GET", Path: "/api/v1/traffic/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleTrafficSummary", Description: "Counts for the sidebar attention badge and the domains health strip, from stored state and the last known DNS checks only."},
