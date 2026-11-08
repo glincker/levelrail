@@ -158,7 +158,7 @@ func runUpgradeAuto(prog string, args []string, stdout, stderr io.Writer, lookup
 	pause := fs.Bool("pause", false, "pause automatic upgrades without losing the policy")
 	resume := fs.Bool("resume", false, "resume paused automatic upgrades")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s upgrade auto get\n  %s upgrade auto set --mode off|patch|any [flags]\n\nAutomatic upgrades are off by default. Releases with breaking changes that need acknowledgement,\nand major version jumps, are never applied automatically.\n\nFlags:\n", prog, prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s upgrade auto get\n  %s upgrade auto set --mode off|patch|any [flags]\n\nAutomatic upgrades are on by default (any eligible release, 03:00 UTC for 2h) until a policy is saved;\nturn them off with --mode off. Releases with breaking changes that need acknowledgement,\nand major version jumps, are never applied automatically.\n\nFlags:\n", prog, prog)
 		fs.PrintDefaults()
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenP, apiURLP, profileP, jsonP, outputP, queryP}, prog, stderr)

@@ -10,10 +10,8 @@ set -eu
 REPO="glincker/levelrail"
 AGENT="levelrail-agent"
 BIN_PATH="${LEVELRAIL_AGENT_BIN:-/usr/local/bin/${AGENT}}"
-CONF_DIR="${LEVELRAIL_AGENT_CONF_DIR:-/etc/${AGENT}}"
-ENV_FILE="${CONF_DIR}/agent.env"
-UNIT_PATH="${LEVELRAIL_AGENT_UNIT:-/etc/systemd/system/${AGENT}.service}"
-STATE_DIR="${LEVELRAIL_AGENT_STATE_DIR:-/var/lib/${AGENT}}"
+# The unit name is separate from the release asset name so a second agent can run beside the first.
+UNIT_NAME="${LEVELRAIL_AGENT_UNIT_NAME:-levelrail-agent}"
 HTTPS_ONLY="=https"
 PROTO="$HTTPS_ONLY"
 VERIFY_MODE="${APP_INSTALL_VERIFY:-auto}"
@@ -59,6 +57,7 @@ Usage: install-agent.sh --server HOST:PORT --token-stdin|--token-file FILE [opti
   --token-file FILE      read the join token from FILE
   --token TOKEN          pass the token as an argument (visible in the process list, avoid)
   --name NAME            node name (lowercase letters, digits, dashes)
+  --unit-name NAME       systemd unit, config and state name (default levelrail-agent, env LEVELRAIL_AGENT_UNIT_NAME)
   --mesh                 join the WireGuard mesh (APP_MESH_ENABLED=1, NET_ADMIN, /dev/net/tun)
   --version vX.Y.Z       release to install (default: newest published)
   --wait SECONDS         how long to wait for the agent to enroll (default 60)
@@ -79,6 +78,7 @@ while [ $# -gt 0 ]; do
 	--token-file) need_value $# "$1"; TOKEN_FROM="file:$2"; shift ;;
 	--token-stdin) TOKEN_FROM="stdin" ;;
 	--token) need_value $# "$1"; TOKEN="$2"; TOKEN_FROM="arg"; shift ;;
+	--unit-name) need_value $# "$1"; UNIT_NAME="$2"; shift ;;
 	--mesh) MESH=1 ;;
 	--dry-run) DRY=1 ;;
 	--uninstall) UNINSTALL=1 ;;
@@ -88,6 +88,14 @@ while [ $# -gt 0 ]; do
 	esac
 	shift
 done
+
+case "$UNIT_NAME" in
+'' | *[!a-z0-9-]*) fatal "--unit-name must be lowercase letters, digits and dashes" ;;
+esac
+CONF_DIR="${LEVELRAIL_AGENT_CONF_DIR:-/etc/${UNIT_NAME}}"
+ENV_FILE="${CONF_DIR}/agent.env"
+UNIT_PATH="${LEVELRAIL_AGENT_UNIT:-/etc/systemd/system/${UNIT_NAME}.service}"
+STATE_DIR="${LEVELRAIL_AGENT_STATE_DIR:-/var/lib/${UNIT_NAME}}"
 
 case "$WAIT" in
 '' | *[!0-9]*) fatal "--wait must be a number of seconds" ;;
@@ -111,7 +119,7 @@ User=root
 EnvironmentFile=${ENV_FILE}
 Environment=APP_AGENT_IDENTITY_FILE=${STATE_DIR}/identity.json
 # Creates the state directory (0700) for the node identity and certificates.
-StateDirectory=${AGENT}
+StateDirectory=${UNIT_NAME}
 StateDirectoryMode=0700
 ExecStart=${BIN_PATH}
 # The agent keeps containers running while it is down, so always come back.
@@ -304,12 +312,12 @@ scrub_token() {
 
 wait_enrolled() {
 	if [ "$DRY" -eq 1 ]; then
-		log "[dry-run] wait up to ${WAIT}s for ${STATE_DIR}/identity.json and an active ${AGENT} service"
+		log "[dry-run] wait up to ${WAIT}s for ${STATE_DIR}/identity.json and an active ${UNIT_NAME} service"
 		return 0
 	fi
 	waited=0
 	while [ "$waited" -lt "$WAIT" ]; do
-		if [ -f "${STATE_DIR}/identity.json" ] && systemctl is-active --quiet "$AGENT"; then
+		if [ -f "${STATE_DIR}/identity.json" ] && systemctl is-active --quiet "$UNIT_NAME"; then
 			return 0
 		fi
 		sleep 2
@@ -319,11 +327,11 @@ wait_enrolled() {
 }
 
 do_uninstall() {
-	log "Removing the ${AGENT} service, binary and env file. Docker data and other software stay untouched."
+	log "Removing the ${UNIT_NAME} service, binary and env file. Docker data and other software stay untouched."
 	if [ "$DRY" -eq 0 ]; then
 		[ "$(id -u)" -eq 0 ] || fatal "run as root. Fix: re-run with sudo."
 	fi
-	act systemctl disable --now "$AGENT" || true
+	act systemctl disable --now "$UNIT_NAME" || true
 	act rm -f "$UNIT_PATH" "$BIN_PATH" "$ENV_FILE"
 	act rmdir "$CONF_DIR" || true
 	act systemctl daemon-reload || true
@@ -360,17 +368,17 @@ do_install() {
 		unit_text >"$UNIT_PATH"
 	fi
 	act systemctl daemon-reload
-	act systemctl enable "$AGENT"
-	act systemctl restart "$AGENT"
+	act systemctl enable "$UNIT_NAME"
+	act systemctl restart "$UNIT_NAME"
 	if wait_enrolled; then
 		[ "$DRY" -eq 1 ] || scrub_token
 		log "The agent is running and enrolled."
 		log "Next: on the control plane run 'levelrail-cli nodes list' and look for this node as online."
-		log "Logs: journalctl -u ${AGENT} -f   Remove: sh install-agent.sh --uninstall"
+		log "Logs: journalctl -u ${UNIT_NAME} -f   Remove: sh install-agent.sh --uninstall"
 	else
 		{
 			log "The agent did not enroll within ${WAIT}s."
-			log "Check: journalctl -u ${AGENT} -n 50 --no-pager"
+			log "Check: journalctl -u ${UNIT_NAME} -n 50 --no-pager"
 			log "Likely fixes: the control plane is unreachable from here (open TCP 9443), the join token expired or was already used (mint a new one), or APP_AGENT_ADVERTISE_HOST on the control plane does not match --server."
 		} >&2
 		exit 1

@@ -62,6 +62,7 @@ The control plane does not serve the script itself, so the download is a separat
 Options: `--mesh` (sets `APP_MESH_ENABLED=1` and adds `CAP_NET_ADMIN` and `/dev/net/tun` to the unit), `--version vX.Y.Z`, `--wait SECONDS` (default 60), `--token-file FILE`, and `--dry-run` to print every action without changing anything. Re-running it on an enrolled node upgrades the binary and needs no token.
 
 - Logs: `journalctl -u levelrail-agent -f`
+- A second agent on the same host: pass `--unit-name NAME` (or set `LEVELRAIL_AGENT_UNIT_NAME`). The unit, `/etc/NAME` and `/var/lib/NAME` follow it; the default stays `levelrail-agent`.
 - Uninstall: `sudo sh install-agent.sh --uninstall` removes the unit, binary and env file. It never touches Docker data or other software, and keeps the node identity so a reinstall rejoins as the same node.
 - Firewall: allow TCP 9443 from the node to the control plane (agent mTLS), and UDP 51820 between nodes when the mesh is on.
 

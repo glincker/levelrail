@@ -44,7 +44,7 @@ func runNodesAdd(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("create join token: %w", err))
 	}
 	if preflight {
-		return addWithPreflight(client, req.NodeName, created, timeout, interval, of, jsonOut, stdout, stderr)
+		return addWithPreflight(client, req.NodeName, req.Mesh, created, timeout, interval, of, jsonOut, stdout, stderr)
 	}
 	if err := renderResult(stdout, of.Format, of.Query, created, func() {
 		if created.JoinCommands == nil {
@@ -52,7 +52,7 @@ func runNodesAdd(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 			_, _ = fmt.Fprintln(stdout, "no control plane address is known: pass --control-plane host:port to get a ready command")
 			return
 		}
-		printJoinCommands(stdout, created)
+		printJoinCommands(stdout, created, installAgentOpts{Name: req.NodeName, Mesh: req.Mesh})
 		_, _ = fmt.Fprintln(stdout, "Then watch it appear with: nodes list, or re-run with --preflight to wait and check it")
 	}); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
@@ -404,10 +404,10 @@ Flags:
 // addWithPreflight prints the join command, then waits for the node and
 // reports its preflight. The token is printed before waiting because it is
 // shown only once and the wait can take minutes.
-func addWithPreflight(client *apiclient.Client, name string, created apiclient.CreateNodeJoinTokenResponse, timeout, interval time.Duration, of outputFlags, jsonOut bool, stdout, stderr io.Writer) int {
+func addWithPreflight(client *apiclient.Client, name string, mesh bool, created apiclient.CreateNodeJoinTokenResponse, timeout, interval time.Duration, of outputFlags, jsonOut bool, stdout, stderr io.Writer) int {
 	human := of.Format == "" || of.Format == "table" || of.Format == "text"
 	if human && !jsonOut && created.JoinCommands != nil {
-		printJoinCommands(stdout, created)
+		printJoinCommands(stdout, created, installAgentOpts{Name: name, Mesh: mesh})
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
@@ -427,22 +427,28 @@ func addWithPreflight(client *apiclient.Client, name string, created apiclient.C
 
 // printJoinCommands prints the Docker, Podman and binary variants so a Podman
 // host is not handed a Docker-only command.
-func printJoinCommands(out io.Writer, created apiclient.CreateNodeJoinTokenResponse) {
+func printJoinCommands(out io.Writer, created apiclient.CreateNodeJoinTokenResponse, opts installAgentOpts) {
 	c := created.JoinCommands
 	_, _ = fmt.Fprintf(out, "Run this on the new server with Docker (single use, expires %s):\n\n%s\n\n", created.ExpiresAt.Format(time.RFC3339), c.Docker)
 	if c.Podman != "" {
 		_, _ = fmt.Fprintf(out, "With Podman (rootful; first run: sudo systemctl enable --now podman.socket):\n\n%s\n\n", c.Podman)
 	}
 	_, _ = fmt.Fprintf(out, "Or, with the agent binary installed (it auto-detects Docker or Podman):\n\n%s\n\n", c.Binary)
-	printInstallAgentScript(out, created)
+	printInstallAgentScript(out, created, opts)
 }
 
 // installAgentScriptURL is where the installer lives: the control plane does not serve it.
 const installAgentScriptURL = "https://raw.githubusercontent.com/glincker/levelrail/main/scripts/install-agent.sh"
 
+// installAgentOpts carries the nodes add flags the installer needs again.
+type installAgentOpts struct {
+	Name string
+	Mesh bool
+}
+
 // printInstallAgentScript prints the two-step installer form. The token goes
 // through stdin so it stays out of the installed host's process list.
-func printInstallAgentScript(out io.Writer, created apiclient.CreateNodeJoinTokenResponse) {
+func printInstallAgentScript(out io.Writer, created apiclient.CreateNodeJoinTokenResponse, opts installAgentOpts) {
 	if created.ControlPlaneAddr == "" || created.Token == "" {
 		return
 	}
@@ -450,5 +456,11 @@ func printInstallAgentScript(out io.Writer, created apiclient.CreateNodeJoinToke
 	if created.CAFingerprint != "" {
 		cmd += " --ca-fingerprint " + created.CAFingerprint
 	}
-	_, _ = fmt.Fprintf(out, "Or, as a systemd service (the control plane does not serve the script, so download it first; add --mesh for the WireGuard mesh):\n\ncurl -fsSL %s -o install-agent.sh\nprintf '%%s' '%s' | %s\n\n", installAgentScriptURL, created.Token, cmd)
+	if opts.Name != "" {
+		cmd += " --name " + opts.Name
+	}
+	if opts.Mesh {
+		cmd += " --mesh"
+	}
+	_, _ = fmt.Fprintf(out, "Or, as a systemd service (the control plane does not serve the script, so download it first; add --mesh to join the WireGuard mesh):\n\ncurl -fsSL %s -o install-agent.sh\nprintf '%%s' '%s' | %s\n\n", installAgentScriptURL, created.Token, cmd)
 }

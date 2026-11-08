@@ -64,3 +64,12 @@ func TestRun_NodesDelete_Help(t *testing.T) {
 		t.Errorf("stderr = %q, want usage text", stderr)
 	}
 }
+
+func TestNodesDeleteAcceptsYes(t *testing.T) {
+	srv, _, _ := newNoContentEchoServer(t)
+	defer srv.Close()
+	stdout, _ := runCLIExpectOK(t, []string{"nodes", "delete", "nd_1", "--yes", "--api-url", srv.URL})
+	if !strings.Contains(stdout, "deleted") {
+		t.Errorf("stdout = %q", stdout)
+	}
+}

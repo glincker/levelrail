@@ -1405,7 +1405,7 @@ See [Multi-node](/multi-node).
 ```
 levelrail-cli nodes list [flags]
 levelrail-cli nodes get <id> [flags]
-levelrail-cli nodes delete <id> [flags]
+levelrail-cli nodes delete <id> [--yes] [flags]
 levelrail-cli nodes join-token [flags]
 levelrail-cli nodes reenroll-token <id> [flags]
 levelrail-cli nodes revoke-cert <id> [flags]
@@ -1488,7 +1488,7 @@ levelrail-cli upgrade auto get
 levelrail-cli upgrade auto set [--mode off|patch|any] [--window-cron EXPR] [--window-duration 2h] [--timezone TZ] [--min-age-days N] [--notify ID,...] [--pause | --resume]
 ```
 
-`backup-now` takes a control plane backup and re-runs the preflight. `schedule` queues the upgrade for a time or the next maintenance window; the preflight re-runs at that time and nothing is applied if it fails. `auto` reads and sets the automatic upgrade policy, which is off by default; `set` changes only the flags you pass. All of these need a root token. See [Upgrade safely](/upgrade-safely).
+`backup-now` takes a control plane backup and re-runs the preflight. `schedule` queues the upgrade for a time or the next maintenance window; the preflight re-runs at that time and nothing is applied if it fails. `auto` reads and sets the automatic upgrade policy, which is on by default (mode `any`, 03:00 UTC for 2h) until you save one, and `set --mode off` turns it off; `set` changes only the flags you pass. All of these need a root token. See [Upgrade safely](/upgrade-safely).
 
 `--plan` shows the breaking changes between the running version and the target (default: latest on the channel). `--apply` asks the control plane to run the safe self-update on its host: verified download, snapshot, migration dry run, swap, health check and automatic rollback. Breaking changes flagged as needing acknowledgement are refused until you list their ids with `--ack-breaking`. It follows the attempt to its outcome unless `--no-wait`, and exits non-zero when the upgrade was rolled back or failed. `--attempts` lists every attempt with its step timeline. `--dry-run` and `--plan` also print the schema change and migration count, whether the data directory has room for the backup and the new release, the restart behaviour and the command that restores the backup, and change nothing. The upgrade takes a control plane backup first and is refused if it fails; `--skip-backup` goes on without it (no database restore point), and with no flags `upgrade` exits non-zero when its backup fails unless `--skip-backup` is given. See [Upgrade safely](/upgrade-safely#preview-an-upgrade-without-changing-anything).
 

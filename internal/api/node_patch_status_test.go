@@ -136,3 +136,38 @@ func TestHandleGetNodePatchStatus_UpToDate_ReportsCheckedWithZero(t *testing.T) 
 		t.Errorf("got = %+v, want checked=true total=0 security=0", got)
 	}
 }
+
+func TestHandleGetNodePatchStatus_LocalAliasAndFreshRun(t *testing.T) {
+	rt, db, tdb := newTestRouterWithTelemetry(t)
+	rt.localNodeID = "node_self"
+	cookie := loginTestSession(t, rt, db)
+
+	old := time.Now().UTC().Add(-time.Hour).Truncate(time.Second)
+	if err := tdb.WriteSamples(context.Background(), []telemetry.Sample{
+		{ResourceID: "node:node_self", Metric: telemetry.MetricOSPatchesAvailable, Timestamp: old, Value: 12},
+		{ResourceID: "node:node_self", Metric: telemetry.MetricOSSecurityPatchesAvailable, Timestamp: old, Value: 10},
+	}); err != nil {
+		t.Fatalf("seed samples: %v", err)
+	}
+	get := func() nodePatchStatusResponse {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/nodes/local/patch-status", ""))
+		if rec.Code != http.StatusOK {
+			t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+		}
+		var got nodePatchStatusResponse
+		if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		return got
+	}
+	if got := get(); got.Total != 12 || got.Security != 10 {
+		t.Fatalf("before run = %+v, want 12/10", got)
+	}
+
+	fin := time.Now()
+	rt.patcher().record(nodePatchRun{ID: "run1", NodeID: NodeGuardrailLocalID, Status: patchRunSucceeded, FinishedAt: &fin, PatchStatusAfter: &nodePatchCounts{Total: 2}}, 5)
+	if got := get(); got.Total != 2 || got.Security != 0 {
+		t.Errorf("after run = %+v, want 2/0", got)
+	}
+}

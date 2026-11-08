@@ -45,5 +45,10 @@ if [ "$(sh "$script" --print-unit)" != "$(cat "$unit")" ]; then
 	fail=1
 fi
 
+if ! sh "$script" --print-unit --unit-name levelrail-agent-b | grep -q '^StateDirectory=levelrail-agent-b$'; then
+	printf 'FAIL --unit-name must change the unit state directory\n' >&2
+	fail=1
+fi
+
 [ "$fail" -eq 0 ] && echo "install-agent tests passed"
 exit "$fail"

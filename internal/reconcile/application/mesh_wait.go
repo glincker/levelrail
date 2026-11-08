@@ -43,9 +43,11 @@ func (c *Controller) meshWaitBlock(ctx context.Context, desired *store.DesiredSe
 		return nil
 	}
 	delay, first := c.nextMeshDelay(ctx)
+	level := slog.LevelDebug
 	if first {
-		slog.Info("reconcile: service waits for the mesh before starting", slog.String("service", c.serviceName), slog.String("node", desired.NodeID), slog.String("reason", path.Reason))
+		level = slog.LevelInfo
 	}
+	slog.Log(ctx, level, "reconcile: service waits for the mesh before starting", slog.String("service", c.serviceName), slog.String("node", desired.NodeID), slog.String("reason", path.Reason))
 	return &reconcile.Result{
 		Conditions: []reconcile.Condition{{
 			Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionUnknown, Reason: ReasonWaitingForMesh,
