@@ -25,16 +25,16 @@ Each check reads the remote branch head (a git `ls-remote`, no provider API budg
 - A webhook and the poller never both queue one commit: both check and enqueue under one lock, deduped by commit SHA.
 - The first head ever seen for a source is only remembered. It cannot be told from a rollback you did on purpose, so it is not deployed.
 - A head that is older than what is already deployed or queued is ignored.
-- A failing or rate limited host is backed off with a doubling delay up to `APP_GIT_POLL_MAX_BACKOFF`, and a provider connection marked rate limited is skipped until its next check time.
+- A failing or rate limited host is backed off with a doubling delay up to `git.poll_max_backoff`, and a provider connection marked rate limited is skipped until its next check time.
 - Cancelling the control plane's context stops the poller cleanly.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `APP_GIT_POLL_ENABLED` | `true` | `false` turns polling off everywhere. |
-| `APP_GIT_POLL_INTERVAL` | `5m` | Time between checks of one source. |
+| `git.poll_enabled` (env seed `APP_GIT_POLL_ENABLED`) | `true` | `false` turns polling off everywhere. |
+| `git.poll_interval` (seed `APP_GIT_POLL_INTERVAL`) | `5m` | Time between checks of one source. |
 | `APP_GIT_POLL_JITTER` | `0.2` | Fraction of the interval added or removed at random, so sources do not poll together. |
-| `APP_GIT_POLL_CONCURRENCY` | `4` | Sources checked at once. |
-| `APP_GIT_POLL_MAX_BACKOFF` | `1h` | Longest wait after repeated failures. |
+| `git.poll_concurrency` (seed `APP_GIT_POLL_CONCURRENCY`) | `4` | Sources checked at once. |
+| `git.poll_max_backoff` (seed `APP_GIT_POLL_MAX_BACKOFF`) | `1h` | Longest wait after repeated failures. |
 
 ## Older deliveries are not redeployed
 
@@ -67,7 +67,7 @@ Webhook address (`webhook_url_warning`): `private_address` means the address is 
 | `APP_GIT_RATE_LIMIT_MAX_WAIT` | `5s` | Longest `Retry-After` slept on; longer waits return a next check time instead. |
 | `APP_GIT_RATE_LIMIT_BACKOFF` | `60s` | Assumed wait when the provider sends no `Retry-After`. |
 | `APP_GIT_WEBHOOK_ALLOW_PRIVATE` | off | Do not warn about a private webhook address. |
-| `APP_GIT_POLL_*` | see above | The poller. |
+| `APP_GIT_POLL_*` | see above | The poller. Settings apply live; jitter stays env-only. |
 
 ## Recovering
 

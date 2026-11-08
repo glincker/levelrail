@@ -56,6 +56,7 @@ func openReadPool(ctx context.Context, path string) *sql.DB {
 
 // Close shuts down the read pool and then the writer connection.
 func (db *DB) Close() error {
+	db.closeTouches()
 	// Best effort: stale planner stats cost more than a failed pragma on shutdown.
 	octx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	_ = db.Optimize(octx)

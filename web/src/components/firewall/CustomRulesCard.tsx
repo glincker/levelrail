@@ -27,7 +27,9 @@ import {
   type FwRule,
 } from '../../queries/firewallEdge'
 import { movedOrder, toRuleInput } from './firewallRuleModel'
+import { RuleListBar } from './RuleListBar'
 import { RuleRow } from './RuleRow'
+import { useRuleList } from './useRuleList'
 import { VirtualRows } from './VirtualRows'
 import { useFirewallLabels } from './useFirewallLabels'
 
@@ -49,6 +51,7 @@ export function CustomRulesCard({
   const reorder = useReorderFirewallRules()
   const del = useDeleteFirewallRule()
   const [removing, setRemoving] = useState<FwRule | null>(null)
+  const list = useRuleList(custom)
 
   function fail(e: Error) {
     toast.add({
@@ -70,7 +73,8 @@ export function CustomRulesCard({
     if (ids) reorder.mutate(ids, { onError: fail })
   }
 
-  function menu(rule: FwRule, index: number): ActionMenuItem[] {
+  function menu(rule: FwRule): ActionMenuItem[] {
+    const index = custom.findIndex((r) => r.id === rule.id)
     return [
       {
         id: 'edit',
@@ -82,14 +86,14 @@ export function CustomRulesCard({
         id: 'up',
         label: t('rules.moveUp'),
         icon: <ArrowUpGlassIcon size="1.4em" />,
-        disabled: index === 0,
+        disabled: list.reordered || index === 0,
         onSelect: () => move(rule, -1),
       },
       {
         id: 'down',
         label: t('rules.moveDown'),
         icon: <ArrowDownGlassIcon size="1.4em" />,
-        disabled: index === custom.length - 1,
+        disabled: list.reordered || index === custom.length - 1,
         onSelect: () => move(rule, 1),
       },
       {
@@ -128,21 +132,32 @@ export function CustomRulesCard({
             }
           />
         ) : (
-          <VirtualRows
-            items={custom}
-            rowHeight={56}
-            label={t('rules.customTitle')}
-            getKey={(r) => r.id}
-            renderRow={(r, i) => (
-              <RuleRow
-                rule={r}
-                actionLabel={labels.action[r.action]}
-                menuItems={menu(r, i)}
-                disabled={update.isPending}
-                onToggle={(enabled) => toggle(r, enabled)}
+          <div className="space-y-2">
+            <RuleListBar list={list} label={t('rules.customTitle')} />
+            {list.visible.length === 0 ? (
+              <p className="px-2 py-4 text-center text-sm text-muted-foreground">
+                {t('list.noMatch')}
+              </p>
+            ) : (
+              <VirtualRows
+                items={list.visible}
+                rowHeight={56}
+                label={t('rules.customTitle')}
+                getKey={(r) => r.id}
+                renderRow={(r) => (
+                  <RuleRow
+                    rule={r}
+                    actionLabel={labels.action[r.action]}
+                    menuItems={menu(r)}
+                    selected={list.isSelected(r.id)}
+                    onSelect={(on) => list.toggle(r.id, on)}
+                    disabled={update.isPending}
+                    onToggle={(enabled) => toggle(r, enabled)}
+                  />
+                )}
               />
             )}
-          />
+          </div>
         )}
       </CardContent>
       <ConfirmDialog

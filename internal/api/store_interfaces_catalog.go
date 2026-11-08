@@ -52,6 +52,7 @@ type ComposeSecretStore interface {
 // DatabaseStore is the store surface the databases handlers need, the
 // database-kind counterpart to AppStore.
 type DatabaseStore interface {
+	SetDatabaseBackupPaused(ctx context.Context, name string, paused bool) error
 	SaveDesiredDatabase(ctx context.Context, d store.DesiredDatabase) error
 	GetDesiredDatabase(ctx context.Context, name string) (*store.DesiredDatabase, error)
 	ListDesiredDatabases(ctx context.Context) ([]store.DesiredDatabase, error)

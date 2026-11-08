@@ -1059,6 +1059,9 @@ func (fakeDrainDatabaseStore) UpdateDatabaseProject(context.Context, string, str
 func (fakeDrainDatabaseStore) SetDatabaseBackupSchedule(context.Context, string, string, string, int, int) error {
 	return nil
 }
+func (fakeDrainDatabaseStore) SetDatabaseBackupPaused(context.Context, string, bool) error {
+	return nil
+}
 func (fakeDrainDatabaseStore) SetDatabasePITR(context.Context, string, bool, string) error {
 	return nil
 }

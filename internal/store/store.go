@@ -29,6 +29,8 @@ type DB struct {
 	attemptObs atomic.Pointer[AttemptObserver]
 	// resourceBoot makes the resource version jump happen once per open handle.
 	resourceBoot sync.Once
+	// touches batches advisory last-seen writes; nil writes through.
+	touches *touchBuffer
 }
 
 // Open opens (creating if needed) the SQLite database at path, applies
@@ -55,7 +57,7 @@ func Open(ctx context.Context, path string, opts ...OpenOption) (*DB, error) {
 	// which handles contention from other processes/connections).
 	sqlDB.SetMaxOpenConns(1)
 
-	db := &DB{DB: sqlDB, m: newDBMetrics(path)}
+	db := &DB{DB: sqlDB, m: newDBMetrics(path), touches: newTouchBuffer()}
 
 	if err := db.PingContext(ctx); err != nil {
 		_ = sqlDB.Close()

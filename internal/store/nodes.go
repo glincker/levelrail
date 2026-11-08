@@ -383,13 +383,15 @@ func (db *DB) UpdateNodeWorkloads(ctx context.Context, id string, acceptsApp, ac
 // process hung," which is exactly the case internal/reconcile/nodehealth
 // needs to detect.
 func (db *DB) TouchNodeLastSeen(ctx context.Context, id string) error {
-	_, err := db.ExecContext(ctx, `
+	return db.touch(func(b *touchBuffer) map[string]time.Time { return b.nodes }, id, func() error {
+		_, err := db.ExecContext(ctx, `
 		UPDATE nodes SET last_seen_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?
 	`, id)
-	if err != nil {
-		return fmt.Errorf("store: touch node %q last_seen_at: %w", id, err)
-	}
-	return nil
+		if err != nil {
+			return fmt.Errorf("store: touch node %q last_seen_at: %w", id, err)
+		}
+		return nil
+	})
 }
 
 // SetNodeSchedulable cordons (schedulable=false) or uncordons

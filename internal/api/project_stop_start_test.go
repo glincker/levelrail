@@ -300,6 +300,9 @@ func (f *fakeProjectLifecycleDatabaseStore) UpdateDatabaseSuspended(_ context.Co
 func (fakeProjectLifecycleDatabaseStore) SetDatabaseBackupSchedule(context.Context, string, string, string, int, int) error {
 	return nil
 }
+func (fakeProjectLifecycleDatabaseStore) SetDatabaseBackupPaused(context.Context, string, bool) error {
+	return nil
+}
 func (fakeProjectLifecycleDatabaseStore) SetDatabasePITR(context.Context, string, bool, string) error {
 	return nil
 }

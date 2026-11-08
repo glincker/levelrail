@@ -173,13 +173,15 @@ func (db *DB) apiTokenExists(ctx context.Context, id string) (bool, error) {
 // request it's authenticating, so callers log and continue rather than
 // fail the request on error.
 func (db *DB) TouchAPITokenLastUsed(ctx context.Context, id string) error {
-	_, err := db.ExecContext(ctx, `
+	return db.touch(func(b *touchBuffer) map[string]time.Time { return b.tokens }, id, func() error {
+		_, err := db.ExecContext(ctx, `
 		UPDATE api_tokens SET last_used_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?
 	`, id)
-	if err != nil {
-		return fmt.Errorf("store: touch api token %q last_used_at: %w", id, err)
-	}
-	return nil
+		if err != nil {
+			return fmt.Errorf("store: touch api token %q last_used_at: %w", id, err)
+		}
+		return nil
+	})
 }
 
 func scanAPIToken(scan func(dest ...any) error) (*APIToken, error) {

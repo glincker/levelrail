@@ -328,5 +328,37 @@
       "blocked": "Blocked",
       "server": "Server"
     }
+  },
+  "list": {
+    "selectAll": "Select all shown",
+    "selectRow": "Select {{name}}",
+    "searchLabel": "Search {{list}}",
+    "searchPlaceholder": "Search name, note or match",
+    "sortLabel": "Sort by",
+    "sort": {
+      "default": "Rule order",
+      "name": "Name",
+      "hits": "Most hits",
+      "recent": "Recently changed"
+    },
+    "barLabel": "Bulk actions",
+    "selected_one": "{{count}} selected",
+    "selected_other": "{{count}} selected",
+    "enable": "Enable",
+    "disable": "Disable",
+    "delete": "Delete",
+    "clear": "Clear",
+    "noMatch": "Nothing matches this search",
+    "enabledCount_one": "{{count}} entry enabled",
+    "enabledCount_other": "{{count}} entries enabled",
+    "disabledCount_one": "{{count}} entry disabled",
+    "disabledCount_other": "{{count}} entries disabled",
+    "deletedCount_one": "{{count}} entry deleted",
+    "deletedCount_other": "{{count}} entries deleted",
+    "bulkFailed_one": "{{count}} change failed",
+    "bulkFailed_other": "{{count}} changes failed",
+    "deleteTitle_one": "Delete {{count}} entry?",
+    "deleteTitle_other": "Delete {{count}} entries?",
+    "deleteHelp": "Traffic is no longer filtered by them. This cannot be undone."
   }
 }

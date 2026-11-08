@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/netclient"
 	"io"
 	"net/http"
 	"net/url"
@@ -122,7 +123,7 @@ func (f Fetcher) Fetch(ctx context.Context, tag, asset, dir string) (Fetched, er
 func (f Fetcher) client() *http.Client {
 	c := f.Client
 	if c == nil {
-		c = &http.Client{}
+		c = netclient.New()
 	}
 	cp := *c
 	cp.CheckRedirect = func(req *http.Request, via []*http.Request) error {

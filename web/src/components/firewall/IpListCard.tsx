@@ -17,6 +17,9 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { Input } from '@/components/ui/input'
 import { toast } from '@/components/ui/toast'
 import { useDeleteFirewallRule, type FwRule } from '../../queries/firewallEdge'
+import { Checkbox } from '@/components/ui/checkbox'
+import { RuleListBar } from './RuleListBar'
+import { useRuleList } from './useRuleList'
 import { VirtualRows } from './VirtualRows'
 import type { FirewallActions } from './useFirewallActions'
 
@@ -38,6 +41,8 @@ export function IpListCard({
   const [note, setNote] = useState('')
   const [error, setError] = useState<string | null>(null)
   const block = kind === 'block'
+  const list = useRuleList(rules)
+  const title = block ? t('ipList.blockTitle') : t('ipList.bypassTitle')
 
   function add(e: FormEvent) {
     e.preventDefault()
@@ -144,48 +149,64 @@ export function IpListCard({
             }
           />
         ) : (
-          <VirtualRows
-            items={rules}
-            rowHeight={44}
-            label={block ? t('ipList.blockTitle') : t('ipList.bypassTitle')}
-            getKey={(r) => r.id}
-            renderRow={(r) => (
-              <div className="flex items-center gap-3 px-2 py-2 text-sm">
-                <span
-                  className="min-w-0 flex-1 truncate font-mono text-[13px]"
-                  title={r.conditions[0]?.value}
-                >
-                  {r.conditions[0]?.value}
-                </span>
-                {r.scope ? (
-                  <span
-                    className="max-w-40 truncate font-mono text-xs text-muted-foreground"
-                    title={r.scope}
-                  >
-                    {r.scope}
-                  </span>
-                ) : null}
-                <span
-                  className="hidden min-w-0 flex-1 truncate text-xs text-muted-foreground sm:block"
-                  title={r.note}
-                >
-                  {r.note}
-                </span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  disabled={del.isPending}
-                  aria-label={t('ipList.removeFor', {
-                    ip: r.conditions[0]?.value ?? r.name,
-                  })}
-                  onClick={() => remove(r)}
-                >
-                  <TrashGlassIcon size="1.4em" />
-                </Button>
-              </div>
+          <div className="space-y-2">
+            <RuleListBar list={list} label={title} />
+            {list.visible.length === 0 ? (
+              <p className="px-2 py-4 text-center text-sm text-muted-foreground">
+                {t('list.noMatch')}
+              </p>
+            ) : (
+              <VirtualRows
+                items={list.visible}
+                rowHeight={44}
+                label={block ? t('ipList.blockTitle') : t('ipList.bypassTitle')}
+                getKey={(r) => r.id}
+                renderRow={(r) => (
+                  <div className="flex items-center gap-3 px-2 py-2 text-sm">
+                    <Checkbox
+                      aria-label={t('list.selectRow', {
+                        name: r.conditions[0]?.value ?? r.name,
+                      })}
+                      checked={list.isSelected(r.id)}
+                      onCheckedChange={(on) => list.toggle(r.id, on)}
+                    />
+                    <span
+                      className="min-w-0 flex-1 truncate font-mono text-[13px]"
+                      title={r.conditions[0]?.value}
+                    >
+                      {r.conditions[0]?.value}
+                    </span>
+                    {r.scope ? (
+                      <span
+                        className="max-w-40 truncate font-mono text-xs text-muted-foreground"
+                        title={r.scope}
+                      >
+                        {r.scope}
+                      </span>
+                    ) : null}
+                    <span
+                      className="hidden min-w-0 flex-1 truncate text-xs text-muted-foreground sm:block"
+                      title={r.note}
+                    >
+                      {r.note}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      disabled={del.isPending}
+                      aria-label={t('ipList.removeFor', {
+                        ip: r.conditions[0]?.value ?? r.name,
+                      })}
+                      onClick={() => remove(r)}
+                    >
+                      <TrashGlassIcon size="1.4em" />
+                    </Button>
+                  </div>
+                )}
+              />
             )}
-          />
+          </div>
         )}
         <p className="text-xs text-muted-foreground">
           {scope ? t('ipList.scopeNote', { scope }) : t('ipList.allHostsNote')}

@@ -95,6 +95,10 @@ footprint.trim_interval
 footprint.trim_min_idle_mb
 games.status_cache
 games.status_timeout
+git.poll_concurrency
+git.poll_enabled
+git.poll_interval
+git.poll_max_backoff
 git.ssh_scan_allow_internal
 heartbeat.job_backoff_base
 heartbeat.job_backoff_max
@@ -118,6 +122,7 @@ mesh.hub_resolve_ttl
 mesh.hub_stale_max
 mesh.ready_retry_seconds
 monitors.raw_retention
+net.outbound_timeout
 network.gc_max_removals
 nextjs.generate_actions_key
 nextjs.memory_floor_mb

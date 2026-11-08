@@ -8,6 +8,7 @@ package cloudmeta
 import (
 	"context"
 	"encoding/json"
+	"github.com/GLINCKER/levelrail/internal/netclient"
 	"io"
 	"net/http"
 	"os"
@@ -168,7 +169,7 @@ func merge(found, override Info) Info {
 func probeAll(ctx context.Context, cfg Config) Info {
 	p := prober{client: cfg.Client, timeout: cfg.Timeout}
 	if p.client == nil {
-		p.client = &http.Client{}
+		p.client = netclient.New()
 	}
 	if p.timeout <= 0 {
 		p.timeout = defaultTimeout

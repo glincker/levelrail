@@ -26,6 +26,7 @@ type ServiceVolumeBackupRunner interface {
 type ServiceVolumeBackupScheduleStore interface {
 	SetServiceVolumeBackupSchedule(ctx context.Context, serviceName, volumeName, targetID, schedule string, retain, retainDays int, sqlitePath string) error
 	GetServiceVolumeBackupSchedule(ctx context.Context, serviceName, volumeName string) (store.ServiceVolumeBackupConfig, error)
+	SetServiceVolumeBackupPaused(ctx context.Context, serviceName, volumeName string, paused bool) error
 }
 
 type triggerVolumeBackupRequest struct {
@@ -232,11 +233,6 @@ func (rt *Router) loadVolumeBackupHistory(w http.ResponseWriter, r *http.Request
 	return h, true
 }
 
-// volumeBackupPauser is the optional store surface for pausing a volume schedule.
-type volumeBackupPauser interface {
-	SetServiceVolumeBackupPaused(ctx context.Context, serviceName, volumeName string, paused bool) error
-}
-
 func (rt *Router) handlePauseVolumeBackupSchedule(w http.ResponseWriter, r *http.Request) {
 	rt.setVolumeBackupPaused(w, r, true)
 }
@@ -251,12 +247,7 @@ func (rt *Router) setVolumeBackupPaused(w http.ResponseWriter, r *http.Request, 
 	if _, ok := rt.loadServiceVolume(w, r, serviceName, volumeName, "api: pause volume backup schedule: load service failed"); !ok {
 		return
 	}
-	p, ok := rt.serviceVolumeBackupSchedule.(volumeBackupPauser)
-	if !ok {
-		writeError(w, http.StatusNotImplemented, "pausing backup schedules is not available")
-		return
-	}
-	if err := p.SetServiceVolumeBackupPaused(r.Context(), serviceName, volumeName, paused); errors.Is(err, store.ErrServiceVolumeBackupNotFound) {
+	if err := rt.serviceVolumeBackupSchedule.SetServiceVolumeBackupPaused(r.Context(), serviceName, volumeName, paused); errors.Is(err, store.ErrServiceVolumeBackupNotFound) {
 		writeError(w, http.StatusConflict, "volume has no backup schedule")
 		return
 	} else if err != nil {

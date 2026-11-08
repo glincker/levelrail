@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/GLINCKER/levelrail/internal/netclient"
 	"log/slog"
 	"net/http"
 	"sync/atomic"
@@ -45,6 +46,7 @@ func (rt *Router) attachRuntimeSettings(s Store) {
 	build.SetNetworkResolver(func(ctx context.Context) (string, error) { return svc.StringChecked(ctx, build.KeyBuildNetwork) })
 	wireBuildCacheSettings(svc)
 	wireJobHTTPSettings(svc)
+	netclient.SetTimeoutSource(func() time.Duration { return svc.Duration(context.Background(), runtimesettings.KeyNetOutboundTimeout) })
 	wireNextSkewSettings(svc)
 	wireDiagnosticSettings(svc)
 	abuse.SetLiveLimits(svc.AbuseLimits)

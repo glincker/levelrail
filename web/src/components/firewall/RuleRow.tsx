@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { EllipsisGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Switch } from '@/components/ui/switch'
 import { ActionMenu, type ActionMenuItem } from '@/components/kit/ActionMenu'
 import { Sparkline, StatusPill } from '@/components/kit'
@@ -15,17 +16,28 @@ export function RuleRow({
   menuItems,
   disabled,
   onToggle,
+  selected,
+  onSelect,
 }: {
   rule: FwRule
   actionLabel: string
   menuItems: ActionMenuItem[]
   disabled?: boolean
   onToggle: (enabled: boolean) => void
+  selected?: boolean
+  onSelect?: (on: boolean) => void
 }) {
   const { t } = useTranslation('firewall')
   const when = rule.conditions.map(conditionText).join(' AND ')
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-2 py-2 text-sm">
+      {onSelect ? (
+        <Checkbox
+          aria-label={t('list.selectRow', { name: rule.name })}
+          checked={selected === true}
+          onCheckedChange={onSelect}
+        />
+      ) : null}
       <span className="w-6 shrink-0 text-xs text-muted-foreground tabular-nums">
         {rule.position}
       </span>

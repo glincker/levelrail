@@ -491,11 +491,6 @@ func randomBackupHistoryID() (string, error) {
 	return "bkh_" + base64.RawURLEncoding.EncodeToString(buf), nil
 }
 
-// backupPauser is the optional store surface for pausing a database schedule.
-type backupPauser interface {
-	SetDatabaseBackupPaused(ctx context.Context, name string, paused bool) error
-}
-
 // handlePauseBackupSchedule and handleResumeBackupSchedule flip the paused flag; the saved cron, target and retention stay.
 func (rt *Router) handlePauseBackupSchedule(w http.ResponseWriter, r *http.Request) {
 	rt.setDatabaseBackupPaused(w, r, true)
@@ -507,11 +502,6 @@ func (rt *Router) handleResumeBackupSchedule(w http.ResponseWriter, r *http.Requ
 
 func (rt *Router) setDatabaseBackupPaused(w http.ResponseWriter, r *http.Request, paused bool) {
 	name := r.PathValue("name")
-	p, ok := rt.databases.(backupPauser)
-	if !ok {
-		writeError(w, http.StatusNotImplemented, "pausing backup schedules is not available")
-		return
-	}
 	d, err := rt.databases.GetDesiredDatabase(r.Context(), name)
 	if errors.Is(err, store.ErrDatabaseNotFound) {
 		writeError(w, http.StatusNotFound, "database not found")
@@ -525,7 +515,7 @@ func (rt *Router) setDatabaseBackupPaused(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusConflict, "database has no backup schedule")
 		return
 	}
-	if err := p.SetDatabaseBackupPaused(r.Context(), name, paused); err != nil {
+	if err := rt.databases.SetDatabaseBackupPaused(r.Context(), name, paused); err != nil {
 		rt.internalError(w, "api: pause backup schedule failed", err, slog.String("name", name))
 		return
 	}

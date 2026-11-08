@@ -337,6 +337,12 @@ func (rt *Router) pruneStaleComposeServices(ctx context.Context, appName string,
 			continue
 		}
 		rt.teardownServiceContainers(svc.Name, svc.NodeID)
+		// A removed service must not leave encrypted values or its key behind.
+		if rt.secrets != nil {
+			if err := rt.secrets.DeleteAll(ctx, svc.Name); err != nil {
+				rt.logger.Warn("api: deploy compose: remove pruned service secrets failed", slog.String("error", err.Error()), slog.String("service", svc.Name))
+			}
+		}
 	}
 }
 

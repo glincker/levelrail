@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { CircleCheckGlassIcon } from '@thesvg/ui-react'
@@ -17,6 +17,10 @@ import { MailNextStep } from './MailNextStep'
 import { nextStepOf } from './mailSetup'
 import { MailPortsCard } from './MailPortsCard'
 import type { MailTab } from './mailTabs'
+
+const MailCertCard = lazy(() =>
+  import('./MailCertCard').then((m) => ({ default: m.MailCertCard })),
+)
 
 interface Props {
   status: MailStatus
@@ -135,6 +139,11 @@ export function MailOverview({
             <>
               <MailChecklist report={report} status={status} />
               <MailPortsCard />
+              {up ? (
+                <Suspense fallback={null}>
+                  <MailCertCard installed />
+                </Suspense>
+              ) : null}
             </>
           ) : null}
         </div>
@@ -148,6 +157,11 @@ export function MailOverview({
           />
           <MailChecklist report={report} status={status} />
           <MailPortsCard />
+          {up ? (
+            <Suspense fallback={null}>
+              <MailCertCard installed />
+            </Suspense>
+          ) : null}
         </>
       )}
     </div>
