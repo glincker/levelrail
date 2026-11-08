@@ -50,7 +50,8 @@ import { CronScheduleFields } from './CronScheduleFields'
 function toFieldValues(svc: ComposeDbService): ScheduleFormValues {
   return {
     targetId: svc.target_id ?? '',
-    retain: String(svc.retain ?? 7),
+    // Server omits retain when 0 (keep all); only default to 7 for a new schedule.
+    retain: String(svc.scheduled ? (svc.retain ?? 0) : 7),
     retainDays: String(svc.retain_days ?? 0),
     ...fromCron(svc.schedule),
   }

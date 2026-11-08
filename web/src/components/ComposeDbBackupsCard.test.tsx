@@ -50,13 +50,13 @@ function bodyOf(init?: RequestInit): string {
   return typeof init?.body === 'string' ? init.body : ''
 }
 
-function mount() {
+function mount(svc: Record<string, unknown> = service) {
   const fetchMock = vi.fn((url: string, init?: RequestInit) => {
     const u = url
     if (u.endsWith('/backup-targets')) {
       return json([{ id: 't1', name: 'bucket', provider: 'aws', bucket: 'b' }])
     }
-    if (u.endsWith('/compose-db-services')) return json([service])
+    if (u.endsWith('/compose-db-services')) return json([svc])
     if (init?.method === 'POST')
       return json({ id: 'r1', status: 'running' }, 202)
     if (init?.method === 'PUT') return json({})
@@ -102,6 +102,18 @@ describe('ComposeDbBackupsCard', () => {
     await waitFor(() => {
       const post = fetchMock.mock.calls.find((c) => c[1]?.method === 'POST')
       expect(JSON.parse(bodyOf(post?.[1]))).toEqual({ target_id: 't1' })
+    })
+  })
+
+  it('keeps retain 0 (keep all) when the server omits it', async () => {
+    const fetchMock = mount({ ...service, retain: undefined, retain_days: 30 })
+    fireEvent.click(await screen.findByRole('button', { name: 'Save' }))
+    await waitFor(() => {
+      const put = fetchMock.mock.calls.find((c) => c[1]?.method === 'PUT')
+      expect(JSON.parse(bodyOf(put?.[1]))).toMatchObject({
+        retain: 0,
+        retain_days: 30,
+      })
     })
   })
 })
