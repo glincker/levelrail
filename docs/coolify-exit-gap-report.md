@@ -62,7 +62,7 @@ Status words: **moves** means created on the new side, **reported** means the to
 
 ## Not proven yet
 
-- The environment create step in the guided import API (the planner and Apply are ready, the API applier still has to implement `CreateEnvironment`).
+- The environment create step in the guided import API (the applier now creates environments and places apps and databases in them, covered by a unit test but not yet run against a real Coolify instance).
 - A run against a real Coolify instance, including large instances with many environments.
 - That Coolify's API returns the fields above for every build pack and version.
 - Restoring a backup copied across, and the write pause needed for a database that takes writes during the final copy.

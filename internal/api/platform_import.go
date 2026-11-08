@@ -174,10 +174,33 @@ func (rt *Router) importPlanOptions(ctx context.Context, req platformImportReque
 	for _, d := range dbs {
 		opts.ExistingDatabases[d.Name] = d.Engine + ":" + d.Version
 	}
+	if opts.ExistingEnvironments, err = rt.existingImportEnvironments(ctx); err != nil {
+		return platformimport.PlanOptions{}, nil, err
+	}
 	if opts.DBVersions, opts.LatestDBVersions, err = rt.importDBVersions(req.DBVersions); err != nil {
 		return platformimport.PlanOptions{}, nil, err
 	}
 	return opts, domains, nil
+}
+
+// existingImportEnvironments keys every environment as "project/environment"
+// so a re-run skips the ones an earlier run created.
+func (rt *Router) existingImportEnvironments(ctx context.Context) (map[string]bool, error) {
+	out := map[string]bool{}
+	projects, err := rt.projects.ListProjects(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list projects: %w", err)
+	}
+	for _, p := range projects {
+		envs, err := rt.environments.ListEnvironmentsByProject(ctx, p.ID)
+		if err != nil {
+			return nil, fmt.Errorf("list environments: %w", err)
+		}
+		for _, e := range envs {
+			out[platformimport.EnvironmentKey(p.Name, e.Name)] = true
+		}
+	}
+	return out, nil
 }
 
 func (rt *Router) writeImportError(w http.ResponseWriter, err error, token string) {
@@ -306,6 +329,43 @@ func (a *importApplier) projectID(ctx context.Context, name string) (string, err
 	return id, nil
 }
 
+// environmentID returns the id of the named environment in the named project,
+// creating it when missing. It is "" when either name is empty.
+func (a *importApplier) environmentID(ctx context.Context, project, name string) (string, error) {
+	if project == "" || name == "" {
+		return "", nil
+	}
+	projectID, err := a.projectID(ctx, project)
+	if err != nil {
+		return "", err
+	}
+	envs, err := a.rt.environments.ListEnvironmentsByProject(ctx, projectID)
+	if err != nil {
+		return "", fmt.Errorf("list environments: %w", err)
+	}
+	for _, e := range envs {
+		if strings.EqualFold(e.Name, name) {
+			return e.ID, nil
+		}
+	}
+	id, err := randomEnvironmentID()
+	if err != nil {
+		return "", fmt.Errorf("generate environment id: %w", err)
+	}
+	e := store.Environment{ID: id, ProjectID: projectID, Name: name, CreatedAt: time.Now().UTC().Format(time.RFC3339)}
+	if err := a.rt.environments.SaveEnvironment(ctx, e); err != nil {
+		return "", fmt.Errorf("create environment: %w", err)
+	}
+	return id, nil
+}
+
+// CreateEnvironment makes the project and environment if they are missing,
+// so a re-run is a no-op.
+func (a *importApplier) CreateEnvironment(ctx context.Context, p platformimport.EnvironmentPlan) ([]string, error) {
+	_, err := a.environmentID(ctx, p.Project, p.Name)
+	return nil, err
+}
+
 func planToAppResource(p platformimport.AppPlan) appResource {
 	res := appResource{Name: p.Name, Image: p.Image, Port: p.Port, Domains: p.Domains, Env: p.Env, Replicas: p.Replicas, Labels: p.Labels}
 	if p.MemoryBytes > 0 || p.NanoCPUs > 0 {
@@ -378,6 +438,15 @@ func (a *importApplier) CreateApp(ctx context.Context, p platformimport.AppPlan)
 			return warnings, fmt.Errorf("assign project: %w", err)
 		}
 	}
+	envID, err := a.environmentID(ctx, p.Project, p.Environment)
+	if err != nil {
+		return warnings, err
+	}
+	if envID != "" {
+		if err := rt.environments.SetServiceEnvironment(ctx, p.Name, envID); err != nil {
+			return warnings, fmt.Errorf("assign environment: %w", err)
+		}
+	}
 	// Linking stays under the lock: a delete's orphan sweep must not drop the App row between lookup and link.
 	if _, err := rt.ensureAppLinked(ctx, p.Name, p.Name); err != nil {
 		return warnings, fmt.Errorf("link app: %w", err)
@@ -415,6 +484,15 @@ func (a *importApplier) CreateDatabase(ctx context.Context, p platformimport.Dat
 	if projectID != "" {
 		if err := rt.databases.UpdateDatabaseProject(ctx, p.Name, projectID); err != nil {
 			return nil, fmt.Errorf("assign project: %w", err)
+		}
+	}
+	envID, err := a.environmentID(ctx, p.Project, p.Environment)
+	if err != nil {
+		return nil, err
+	}
+	if envID != "" {
+		if err := a.rt.setDatabaseEnvironment(ctx, p.Name, envID); err != nil {
+			return nil, fmt.Errorf("assign environment: %w", err)
 		}
 	}
 	return nil, nil

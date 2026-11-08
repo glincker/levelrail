@@ -178,3 +178,40 @@ func TestPlatformImportVercelTeamScopesEveryCall(t *testing.T) {
 		}
 	}
 }
+
+func TestImportApplierPlacesAppsAndDatabasesInEnvironments(t *testing.T) {
+	db := openTestDB(t)
+	rt := NewRouter(nil, testBrand(), db)
+	ctx := t.Context()
+	ap := &importApplier{rt: rt}
+	env := platformimport.EnvironmentPlan{SourceID: "Shop/staging", Project: "Shop", Name: "staging"}
+	for i := 0; i < 2; i++ {
+		if _, err := ap.CreateEnvironment(ctx, env); err != nil {
+			t.Fatalf("create environment: %v", err)
+		}
+	}
+	projects, err := db.ListProjects(ctx)
+	if err != nil || len(projects) != 1 {
+		t.Fatalf("projects: %v %v", projects, err)
+	}
+	envs, err := db.ListEnvironmentsByProject(ctx, projects[0].ID)
+	if err != nil || len(envs) != 1 || envs[0].Name != "staging" {
+		t.Fatalf("a re-run must not duplicate the environment: %+v %v", envs, err)
+	}
+	existing, err := rt.existingImportEnvironments(ctx)
+	if err != nil || !existing["Shop/staging"] {
+		t.Fatalf("existing environments: %v %v", existing, err)
+	}
+	if _, err := ap.CreateApp(ctx, platformimport.AppPlan{Name: "web", Image: "nginx:1.27", Port: 80, Replicas: 1, Project: "Shop", Environment: "staging"}); err != nil {
+		t.Fatalf("create app: %v", err)
+	}
+	if _, err := ap.CreateDatabase(ctx, platformimport.DatabasePlan{Name: "web-db", Engine: "postgres", Version: "15", Project: "Shop", Environment: "staging"}); err != nil {
+		t.Fatalf("create database: %v", err)
+	}
+	if ref, err := db.EnvironmentOfDatabase(ctx, "web-db"); err != nil || ref == nil || ref.ID != envs[0].ID {
+		t.Errorf("database environment: %+v %v", ref, err)
+	}
+	if n, _, err := db.EnvironmentMemberCounts(ctx, envs[0].ID); err != nil || n != 1 {
+		t.Errorf("app members: %d %v", n, err)
+	}
+}
