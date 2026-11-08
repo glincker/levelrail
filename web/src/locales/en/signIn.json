@@ -71,6 +71,7 @@
     "title": "Trusted browsers",
     "description": "These browsers can sign in with your password without asking another session for approval. Revoke any you no longer use.",
     "empty": "No trusted browsers yet.",
+    "emptyHint": "Browsers you mark as trusted at sign-in show up here.",
     "current": "This browser",
     "lastUsed": "Last used {{time}} from {{ip}}",
     "revoke": "Revoke",

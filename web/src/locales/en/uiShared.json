@@ -19,5 +19,9 @@
   },
   "chip": {
     "remove": "Remove {{label}}"
+  },
+  "timeRangeControls": {
+    "label": "Time range",
+    "refresh": "Refresh"
   }
 }

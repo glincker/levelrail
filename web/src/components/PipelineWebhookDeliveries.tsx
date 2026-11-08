@@ -1,3 +1,5 @@
+import { EmptyState } from '@/components/ui/empty-state'
+import { InboxGlassIcon } from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
 import { RotateCcwGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
@@ -39,9 +41,12 @@ export function PipelineWebhookDeliveries({
         {t('webhook.deliveries')}
       </h3>
       {list.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          {t('webhook.noDeliveries')}
-        </p>
+        <EmptyState
+          kind="no-results"
+          icon={<InboxGlassIcon className="size-5" aria-hidden="true" />}
+          title={t('webhook.noDeliveries')}
+          description={t('webhook.noDeliveriesHint')}
+        />
       ) : (
         <ul className="max-h-60 divide-y divide-border overflow-y-auto rounded-lg border border-border">
           {list.map((d) => (

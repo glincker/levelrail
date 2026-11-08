@@ -76,6 +76,7 @@
     "button": "Env overrides",
     "help": "Set values for this pull request's preview only. They win over the app's own env and apply on the next deploy (push a commit). They are removed with the preview.",
     "empty": "No overrides for this pull request.",
+    "emptyHint": "Overrides set here apply only to this pull request's preview.",
     "hidden": "hidden",
     "remove": "Remove override {{key}}",
     "key": "Env var",
@@ -121,5 +122,25 @@
     "saved": "Preview settings saved.",
     "error": "Could not update preview settings."
   },
-  "pushOnlyProvider": "This repository comes from Azure DevOps, which deploys on push only. Pull request previews are not available."
+  "pushOnlyProvider": "This repository comes from Azure DevOps, which deploys on push only. Pull request previews are not available.",
+  "previewMode": {
+    "groupLabel": "Deploy preview mode",
+    "default": "{{label}} (default)",
+    "about": "About {{label}} previews",
+    "off": {
+      "label": "Off",
+      "summary": "No preview is made.",
+      "cost": "Nothing runs after a deploy and nothing is stored."
+    },
+    "metadata": {
+      "label": "Metadata",
+      "summary": "No browser. Costs about nothing.",
+      "cost": "Makes one small request to the app after each deploy and reads its title and social image (og:image). No browser, no container and no browser image download. It may download one social image of up to 2 MB per deploy. Without a social image the preview is a text card. Pages that need a login are skipped."
+    },
+    "screenshot": {
+      "label": "Screenshot",
+      "summary": "Runs a browser for about 10 s per deploy.",
+      "cost": "Runs a browser container for about 10 seconds after each deploy and shows the real page. The browser image is about 143 MB, downloaded once and removed again when it sits unused."
+    }
+  }
 }

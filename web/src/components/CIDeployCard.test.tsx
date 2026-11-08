@@ -96,7 +96,7 @@ describe('CIDeployCard providers', () => {
     const user = userEvent.setup()
     renderCard()
     await user.click(
-      await screen.findByRole('button', { name: 'ciDeploy.providers.gitlab' }),
+      await screen.findByRole('radio', { name: 'ciDeploy.providers.gitlab' }),
     )
     expect(screen.queryByText('ciDeploy.issuerLabel')).toBeNull()
     await user.type(
@@ -121,12 +121,12 @@ describe('CIDeployCard providers', () => {
     const user = userEvent.setup()
     renderCard()
     await user.click(
-      await screen.findByRole('button', { name: 'ciDeploy.providers.gitlab' }),
+      await screen.findByRole('radio', { name: 'ciDeploy.providers.gitlab' }),
     )
     expect(screen.getByText('ciDeploy.issuerLabel')).toBeTruthy()
 
     await user.click(
-      screen.getByRole('button', { name: 'ciDeploy.providers.circleci' }),
+      screen.getByRole('radio', { name: 'ciDeploy.providers.circleci' }),
     )
     expect(screen.queryByText('ciDeploy.issuerLabel')).toBeNull()
     await user.type(

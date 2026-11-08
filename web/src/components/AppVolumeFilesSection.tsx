@@ -1,3 +1,4 @@
+import { EmptyState } from '@/components/ui/empty-state'
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -88,9 +89,12 @@ function FilesBrowser({
           {t('volumeFiles.loading')}
         </p>
       ) : data && data.entries.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          {t('volumeFiles.empty')}
-        </p>
+        <EmptyState
+          kind="no-results"
+          icon={<FolderGlassIcon className="size-5" aria-hidden="true" />}
+          title={t('volumeFiles.empty')}
+          description={t('volumeFiles.emptyHint')}
+        />
       ) : (
         <ul className="divide-y rounded-lg border">
           {data?.entries.map((e) => (

@@ -31,6 +31,7 @@ import type {
   GitSourceResource,
   WorkspacePackage,
 } from '../types/gitSource'
+import { Alert } from '@/components/ui/alert'
 
 const BUILD_TYPES: GitSourceBuildType[] = ['railpack', 'dockerfile', 'static']
 
@@ -216,9 +217,9 @@ export function GitBuildSettings({ appName, source }: GitBuildSettingsProps) {
       </div>
 
       {showNudge ? (
-        <div
-          role="alert"
-          className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200"
+        <Alert
+          variant="warning"
+          className="flex flex-wrap items-start justify-between gap-3 p-3"
         >
           <div className="flex min-w-0 flex-1 items-start gap-2">
             <TriangleAlertGlassIcon className="mt-0.5 size-6 shrink-0 text-tone-warning" />
@@ -230,7 +231,7 @@ export function GitBuildSettings({ appName, source }: GitBuildSettingsProps) {
           <Button type="button" size="sm" onClick={openForm}>
             {t('nudge.action')}
           </Button>
-        </div>
+        </Alert>
       ) : null}
 
       <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1.5 text-sm">

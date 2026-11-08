@@ -2,6 +2,7 @@
   "title": "Archivos",
   "description": "Archivos de configuración en línea que se escriben en el contenedor al iniciar. Los archivos secretos nunca se vuelven a mostrar después de guardarlos.",
   "empty": "Aún no hay archivos en línea.",
+  "emptyHint": "Añade un archivo para montarlo en la app al desplegar.",
   "add": "Agregar archivo",
   "edit": "Editar {{path}}",
   "delete": "Eliminar {{path}}",

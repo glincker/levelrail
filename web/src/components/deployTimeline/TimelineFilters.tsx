@@ -7,6 +7,7 @@ import {
   type TimelineFilters as Filters,
   type TimelineZoom,
 } from '../../lib/deployTimeline'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 
 export interface NamedOption {
   id: string
@@ -76,25 +77,17 @@ export function TimelineFilters({
     filters.status !== ''
   return (
     <div className="flex flex-wrap items-end gap-3">
-      <div
-        role="group"
+      <SegmentedControl<TimelineZoom>
         aria-label={t('zoom.label')}
-        className="inline-flex rounded-md border border-border p-0.5"
-      >
-        {TIMELINE_ZOOMS.map((z: TimelineZoom) => (
-          <button
-            key={z}
-            type="button"
-            aria-pressed={filters.zoom === z}
-            onClick={() => {
-              set({ zoom: z })
-            }}
-            className="h-8 rounded px-3 text-sm text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring aria-pressed:bg-muted aria-pressed:text-foreground"
-          >
-            {t(`zoom.${z}`)}
-          </button>
-        ))}
-      </div>
+        value={filters.zoom}
+        onValueChange={(z) => {
+          set({ zoom: z })
+        }}
+        options={TIMELINE_ZOOMS.map((z) => ({
+          value: z,
+          label: t(`zoom.${z}`),
+        }))}
+      />
       <FilterSelect
         label={t('filters.app')}
         allLabel={t('filters.allApps')}

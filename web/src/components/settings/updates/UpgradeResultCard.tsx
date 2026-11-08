@@ -1,13 +1,10 @@
-import { lazy, Suspense, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CircleAlertGlassIcon, CircleCheckGlassIcon } from '@thesvg/ui-react'
 import { cn } from '@/lib/utils'
 import type { SelfUpgradeAttempt } from '../../../queries/selfUpgrade'
 import { FailureActions } from './FailureActions'
-
-const UpgradePipeline = lazy(() =>
-  import('./UpgradePipeline').then((m) => ({ default: m.UpgradePipeline })),
-)
+import { UpgradePipeline } from './UpgradePipeline'
 
 interface Props {
   attempt: SelfUpgradeAttempt
@@ -99,16 +96,14 @@ export function UpgradeResultCard({
         </button>
       </div>
       {open ? (
-        <Suspense fallback={null}>
-          <UpgradePipeline
-            target={attempt.to_version}
-            plannedSteps={[]}
-            attempt={attempt}
-            startedAt={null}
-            reconnecting={false}
-            showReload={false}
-          />
-        </Suspense>
+        <UpgradePipeline
+          target={attempt.to_version}
+          plannedSteps={[]}
+          attempt={attempt}
+          startedAt={null}
+          reconnecting={false}
+          showReload={false}
+        />
       ) : null}
     </section>
   )

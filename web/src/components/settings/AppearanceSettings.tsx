@@ -39,6 +39,7 @@ import {
   CODE_SIZE_MIN,
   CONTRASTS,
   RADII,
+  BACKDROPS,
   LOOKS,
   clampCodeSize,
   clampContentWidth,
@@ -520,6 +521,14 @@ export function AppearanceSettings() {
     hint: t(`appearancePage.look.${v}Hint`),
     isDefault: v === DEF.look,
   }))
+  const backdropOptions: Choice<(typeof BACKDROPS)[number]>[] = BACKDROPS.map(
+    (v) => ({
+      value: v,
+      label: t(`appearancePage.backdrop.${v}`),
+      hint: t(`appearancePage.backdrop.${v}Hint`),
+      isDefault: v === DEF.backdrop,
+    }),
+  )
   const contrastOptions: Choice<(typeof CONTRASTS)[number]>[] = CONTRASTS.map(
     (v) => ({
       value: v,
@@ -880,6 +889,20 @@ export function AppearanceSettings() {
               value={appearance.look}
               options={lookOptions}
               onChange={(look) => setAppearance({ look })}
+              {...common}
+            />
+          </SettingRow>
+          <SettingRow
+            wide
+            title={t('appearancePage.backdrop.title')}
+            description={t('appearancePage.backdrop.description')}
+          >
+            <ChoiceGroup
+              compact
+              label={t('appearancePage.backdrop.title')}
+              value={appearance.backdrop}
+              options={backdropOptions}
+              onChange={(backdrop) => setAppearance({ backdrop })}
               {...common}
             />
           </SettingRow>

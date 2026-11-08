@@ -257,6 +257,7 @@
     "onlyNew_other": "Only new ({{count}})",
     "noNew": "No new error types in this range.",
     "empty": "No error lines in this range.",
+    "emptyHint": "Widen the time range or check back after the next deploy.",
     "truncated": "Only the newest {{rows}} lines were read. Narrow the range for exact counts.",
     "saved": "Saved",
     "orderLabel": "Result order",

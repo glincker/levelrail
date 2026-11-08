@@ -1,11 +1,13 @@
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
+import { SearchGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { SplitGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { SegmentedControl } from '@/components/ui/segmented-control'
+import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { HelpLink } from './HelpLink'
 import { PageBanner } from './PageBanner'
 import { LazyLoadBalancersDiagram } from './banners/LazyDiagrams'
@@ -16,24 +18,33 @@ import {
 } from './LoadBalancerOverviewRow'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import {
-  LB_STATE_LABEL,
   OVERVIEW_PAGE_LIMIT,
   useLoadBalancerList,
   type LoadBalancerOverviewState,
 } from '../queries/loadBalancers'
 
-const STATE_FILTERS: (LoadBalancerOverviewState | '')[] = [
-  '',
+type StateFilter = LoadBalancerOverviewState | 'all'
+
+const STATE_FILTERS: readonly StateFilter[] = [
+  'all',
   'balancing',
   'degraded',
   'none',
 ]
+
+const FILTER_KEY = {
+  all: 'lb.overview.all',
+  balancing: 'lb.overview.stateBalancing',
+  degraded: 'lb.overview.stateDegraded',
+  none: 'lb.overview.stateNone',
+} as const satisfies Record<StateFilter, string>
 
 function LoadBalancerTable({
   items,
 }: {
   items: NonNullable<ReturnType<typeof useLoadBalancerList>['data']>['items']
 }) {
+  const { t } = useTranslation('statePlaceholders')
   const parentRef = useRef<HTMLDivElement>(null)
   const virtualizer = useVirtualizer({
     count: items.length,
@@ -49,6 +60,7 @@ function LoadBalancerTable({
       <LoadBalancerOverviewHeader />
       <div
         role="list"
+        aria-label={t('lb.overview.listLabel')}
         style={{ height: virtualizer.getTotalSize(), position: 'relative' }}
       >
         {virtualizer.getVirtualItems().map((row) => {
@@ -79,7 +91,8 @@ function LoadBalancerTable({
 export function LoadBalancerOverview() {
   const { t } = useTranslation('statePlaceholders')
   const [search, setSearch] = useState('')
-  const [state, setState] = useState<LoadBalancerOverviewState | ''>('')
+  const [filter, setFilter] = useState<StateFilter>('all')
+  const state = filter === 'all' ? '' : filter
   const [pickerOpen, setPickerOpen] = useState(false)
   const debouncedSearch = useDebouncedValue(search.trim(), 250)
   const query = useLoadBalancerList({ search: debouncedSearch, state })
@@ -90,9 +103,7 @@ export function LoadBalancerOverview() {
 
   let content
   if (query.isPending) {
-    content = (
-      <div className="h-40 animate-pulse rounded-lg border border-border bg-card" />
-    )
+    content = <TableSkeleton columnCount={5} rowCount={4} />
   } else if (query.isError) {
     content = (
       <EmptyState
@@ -106,9 +117,12 @@ export function LoadBalancerOverview() {
     content = null
   } else if (items.length === 0) {
     content = (
-      <p className="rounded-lg border border-border bg-muted/30 px-4 py-4 text-center text-sm text-muted-foreground">
-        No load balancers match this filter.
-      </p>
+      <EmptyState
+        kind="no-results"
+        icon={<SearchGlassIcon className="size-5" aria-hidden="true" />}
+        title={t('lb.overview.noMatch')}
+        description={t('lb.overview.noMatchHint')}
+      />
     )
   } else {
     content = <LoadBalancerTable items={items} />
@@ -130,15 +144,14 @@ export function LoadBalancerOverview() {
         }
         action={
           <>
-            <HelpLink path="/load-balancing" label="Load balancing guide" />
+            <HelpLink path="/load-balancing" label={t('lb.page.guide')} />
             {query.isPending ? null : (
               <Button
-                size="sm"
                 onClick={() => {
                   setPickerOpen(true)
                 }}
               >
-                Configure a load balancer
+                {t('lb.overview.configure')}
               </Button>
             )}
           </>
@@ -155,32 +168,26 @@ export function LoadBalancerOverview() {
             onChange={(e) => {
               setSearch(e.target.value)
             }}
-            placeholder="Search by app name"
-            aria-label="Search load balancers"
+            placeholder={t('lb.overview.search')}
+            aria-label={t('lb.overview.searchLabel')}
             className="max-w-xs"
           />
-          <div
-            className="flex items-center gap-1"
-            role="group"
-            aria-label="State"
-          >
-            {STATE_FILTERS.map((s) => (
-              <Button
-                key={s || 'all'}
-                size="sm"
-                variant={state === s ? 'secondary' : 'ghost'}
-                aria-pressed={state === s}
-                onClick={() => {
-                  setState(s)
-                }}
-              >
-                {s === '' ? 'All' : LB_STATE_LABEL[s]}
-              </Button>
-            ))}
-          </div>
+          <SegmentedControl
+            aria-label={t('lb.overview.state')}
+            value={filter}
+            onValueChange={setFilter}
+            options={STATE_FILTERS.map((s) => ({
+              value: s,
+              label: t(FILTER_KEY[s]),
+            }))}
+          />
           {total > items.length ? (
             <span className="text-xs text-muted-foreground">
-              Showing {items.length} of {total} (limit {OVERVIEW_PAGE_LIMIT})
+              {t('lb.overview.showing', {
+                shown: items.length,
+                total,
+                limit: OVERVIEW_PAGE_LIMIT,
+              })}
             </span>
           ) : null}
         </div>

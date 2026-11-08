@@ -42,6 +42,7 @@
     "fallback": "Nombre de host automático",
     "direct": "IP y puerto directos",
     "none": "Aún no hay URL pública. Añade un dominio, activa los nombres de host automáticos o usa IP y puerto directos.",
+    "noneTitle": "Sin URL pública",
     "internal": "Otras aplicaciones de este servidor la alcanzan por el nombre de la aplicación en el puerto {{port}}."
   },
   "check": {
@@ -69,6 +70,7 @@
     "port": "Puerto",
     "heldBy": "Ocupado por",
     "empty": "Ninguna aplicación ni el plano de control tiene puertos de host fijados o publicados.",
+    "emptyTitle": "Sin puertos del host fijados",
     "control": "Plano de control: {{name}}",
     "app": "Aplicación {{name}}",
     "stream": "Stream de {{name}}"

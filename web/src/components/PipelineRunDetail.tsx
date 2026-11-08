@@ -32,6 +32,7 @@ import { PipelineReportLink } from './PipelineReportLink'
 import { PipelineRunLogs } from './PipelineRunLogs'
 import { PipelineStatusBadge } from './PipelineStatusBadge'
 import { PipelineStepList } from './PipelineStepList'
+import { Alert } from '@/components/ui/alert'
 
 function ApprovalGate({
   app,
@@ -51,7 +52,11 @@ function ApprovalGate({
       { onError: (e) => toast.add({ title: e.message, type: 'error' }) },
     )
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-950/30">
+    <Alert
+      variant="warning"
+      role="status"
+      className="flex flex-wrap items-center gap-2 p-3"
+    >
       <div className="min-w-48 flex-1">
         <p className="font-medium text-foreground">{approval.message}</p>
         <p className="text-xs text-muted-foreground">
@@ -68,16 +73,11 @@ function ApprovalGate({
         aria-label={t('detail.approvalComment')}
         className="w-48"
       />
-      <Button
-        size="sm"
-        disabled={decide.isPending}
-        onClick={() => act('approved')}
-      >
+      <Button disabled={decide.isPending} onClick={() => act('approved')}>
         <ThumbsUpGlassIcon size="1.4em" aria-hidden="true" />
         {t('detail.approve')}
       </Button>
       <Button
-        size="sm"
         variant="destructive"
         disabled={decide.isPending}
         onClick={() => act('rejected')}
@@ -85,7 +85,7 @@ function ApprovalGate({
         <ThumbsDownGlassIcon size="1.4em" aria-hidden="true" />
         {t('detail.reject')}
       </Button>
-    </div>
+    </Alert>
   )
 }
 

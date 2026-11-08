@@ -41,6 +41,7 @@ export const ACCENT_CHOICES = [...ACCENTS, 'custom'] as const
 export const GUTTERS = ['tight', 'normal', 'roomy'] as const
 export const RADII = ['sharp', 'normal', 'soft'] as const
 export const LOOKS = ['glass', 'restrained'] as const
+export const BACKDROPS = ['branded', 'plain'] as const
 export const CONTRASTS = ['system', 'on', 'off'] as const
 // 'system-mono' is the bundled Geist Mono default; 'device-mono' is the OS monospace.
 export const CODE_FONTS = [
@@ -63,6 +64,7 @@ export type Motion = (typeof MOTIONS)[number]
 export type Gutter = (typeof GUTTERS)[number]
 export type Radius = (typeof RADII)[number]
 export type Look = (typeof LOOKS)[number]
+export type Backdrop = (typeof BACKDROPS)[number]
 export type Contrast = (typeof CONTRASTS)[number]
 export type CodeFont = (typeof CODE_FONTS)[number]
 
@@ -78,6 +80,7 @@ export interface Appearance {
   motion: Motion
   radius: Radius
   look: Look
+  backdrop: Backdrop
   contrast: Contrast
   codeFont: CodeFont
   /** Code, log and terminal text size in px. */
@@ -97,6 +100,7 @@ export const APPEARANCE_DEFAULTS: Appearance = {
   motion: 'system',
   radius: 'normal',
   look: 'glass',
+  backdrop: 'branded',
   contrast: 'system',
   codeFont: 'system-mono',
   codeSize: CODE_SIZE_DEFAULT,
@@ -128,6 +132,7 @@ const ATTRS: Record<keyof Appearance, string> = {
   motion: 'data-motion',
   radius: 'data-radius',
   look: 'data-look',
+  backdrop: 'data-backdrop',
   contrast: 'data-contrast',
   codeFont: 'data-code-font',
   codeSize: 'data-code-size',
@@ -208,6 +213,7 @@ export function parseAppearance(raw: string | null): Appearance {
     motion: pick(MOTIONS, data.motion, d.motion),
     radius: pick(RADII, data.radius, d.radius),
     look: pick(LOOKS, data.look, d.look),
+    backdrop: pick(BACKDROPS, data.backdrop, d.backdrop),
     contrast: pick(CONTRASTS, data.contrast, d.contrast),
     codeFont: pick(CODE_FONTS, data.codeFont, d.codeFont),
     codeSize: clampCodeSize(data.codeSize),

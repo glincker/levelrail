@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { ActivityGlassIcon } from '@thesvg/ui-react'
 import { detectionTimes } from './detection'
 import { LbTextField, LbToggleBlock, type LbSectionProps } from './LbField'
@@ -20,20 +21,21 @@ export function HealthDetectionPreview({ form }: Pick<LbSectionProps, 'form'>) {
 }
 
 export function HealthFields({ form, errors, onChange }: LbSectionProps) {
+  const { t } = useTranslation('statePlaceholders')
   return (
     <div className="space-y-6">
       <LbToggleBlock
         id="lb-active"
-        title="Active checks"
-        info="Probe every replica on an interval and stop sending traffic to one that fails."
+        title={t('lb.health.active')}
+        info={t('lb.health.activeInfo')}
         checked={form.healthEnabled}
         onCheckedChange={(healthEnabled) => onChange({ healthEnabled })}
         footer={<HealthDetectionPreview form={form} />}
       >
         <LbTextField
           id="lb-health-path"
-          label="Path"
-          info="The URL probed on each replica. It should return quickly and only depend on the app itself."
+          label={t('lb.health.path')}
+          info={t('lb.health.pathInfo')}
           value={form.healthPath}
           error={errors.healthPath}
           placeholder="/healthz"
@@ -41,18 +43,18 @@ export function HealthFields({ form, errors, onChange }: LbSectionProps) {
         />
         <LbTextField
           id="lb-health-status"
-          label="Expected status"
-          info="The HTTP status that counts as a pass. Blank accepts any 2xx or 3xx."
+          label={t('lb.health.status')}
+          info={t('lb.health.statusInfo')}
           value={form.healthStatus}
           error={errors.healthStatus}
-          placeholder="2xx or 3xx"
+          placeholder={t('lb.health.statusPlaceholder')}
           numeric
           onChange={(healthStatus) => onChange({ healthStatus })}
         />
         <LbTextField
           id="lb-health-interval"
-          label="Interval"
-          info="How often each replica is probed."
+          label={t('lb.health.interval')}
+          info={t('lb.health.intervalInfo')}
           value={form.healthInterval}
           error={errors.healthInterval}
           placeholder="10s"
@@ -60,8 +62,8 @@ export function HealthFields({ form, errors, onChange }: LbSectionProps) {
         />
         <LbTextField
           id="lb-health-timeout"
-          label="Timeout"
-          info="How long to wait for a reply. Must be shorter than the interval."
+          label={t('lb.health.timeout')}
+          info={t('lb.health.timeoutInfo')}
           value={form.healthTimeout}
           error={errors.healthTimeout}
           placeholder="5s"
@@ -69,8 +71,8 @@ export function HealthFields({ form, errors, onChange }: LbSectionProps) {
         />
         <LbTextField
           id="lb-health-fails"
-          label="Failures to mark down"
-          info="Consecutive failed probes before a replica leaves the pool."
+          label={t('lb.health.fails')}
+          info={t('lb.health.failsInfo')}
           value={form.healthFails}
           placeholder="1"
           numeric
@@ -78,8 +80,8 @@ export function HealthFields({ form, errors, onChange }: LbSectionProps) {
         />
         <LbTextField
           id="lb-health-passes"
-          label="Passes to recover"
-          info="Consecutive passing probes before a replica rejoins the pool."
+          label={t('lb.health.passes')}
+          info={t('lb.health.passesInfo')}
           value={form.healthPasses}
           placeholder="1"
           numeric
@@ -89,15 +91,15 @@ export function HealthFields({ form, errors, onChange }: LbSectionProps) {
 
       <LbToggleBlock
         id="lb-passive"
-        title="Passive checks"
-        info="Watch real requests. A replica that keeps failing them is skipped for a while, faster than waiting for the next probe."
+        title={t('lb.health.passive')}
+        info={t('lb.health.passiveInfo')}
         checked={form.passiveEnabled}
         onCheckedChange={(passiveEnabled) => onChange({ passiveEnabled })}
       >
         <LbTextField
           id="lb-max-fails"
-          label="Failures before skipping"
-          info="Failed requests within the window that trigger a skip."
+          label={t('lb.health.maxFails')}
+          info={t('lb.health.maxFailsInfo')}
           value={form.maxFails}
           placeholder="1"
           numeric
@@ -105,8 +107,8 @@ export function HealthFields({ form, errors, onChange }: LbSectionProps) {
         />
         <LbTextField
           id="lb-fail-duration"
-          label="Skip for"
-          info="How long a failing replica is skipped, and the window failures are counted in."
+          label={t('lb.health.skipFor')}
+          info={t('lb.health.skipForInfo')}
           value={form.failDuration}
           error={errors.failDuration}
           placeholder="30s"

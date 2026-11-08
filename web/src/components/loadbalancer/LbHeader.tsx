@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import {
   EllipsisGlassIcon,
   RefreshCwGlassIcon,
@@ -47,6 +48,7 @@ export function LbHeader({
   onExport,
   onRemove,
 }: Props) {
+  const { t } = useTranslation('statePlaceholders')
   const algo = ALGORITHM_OPTIONS.find((o) => o.value === algorithm)
   return (
     <header className="flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -57,12 +59,14 @@ export function LbHeader({
         icon={<StateGlyphIcon glyph={GLYPH[rollup.level]} />}
       />
       <p className="text-lg font-semibold" aria-live="polite">
-        <AnimatedNumber value={rollup.healthy} /> of{' '}
-        <AnimatedNumber value={rollup.total} /> healthy
+        <AnimatedNumber value={rollup.healthy} /> {t('lb.header.of')}{' '}
+        <AnimatedNumber value={rollup.total} /> {t('lb.header.healthy')}
       </p>
       <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs">
         {algo?.label ?? algorithm}
-        <InfoTip label="About this algorithm">{algo?.description}</InfoTip>
+        <InfoTip label={t('lb.header.aboutAlgorithm')}>
+          {algo?.description}
+        </InfoTip>
       </span>
       <div className="ml-auto flex items-center gap-2">
         <Button
@@ -78,11 +82,13 @@ export function LbHeader({
             data-icon="inline-start"
             className={checking ? 'animate-spin' : undefined}
           />
-          Check now{cooldown > 0 ? ` (${cooldown}s)` : ''}
+          {cooldown > 0
+            ? t('lb.header.checkNowCooldown', { seconds: cooldown })
+            : t('lb.header.checkNow')}
         </Button>
         <Button type="button" size="sm" variant="outline" onClick={onExport}>
           <ShareGlassIcon size="1.4em" data-icon="inline-start" />
-          Export
+          {t('lb.header.export')}
         </Button>
         <ActionMenu
           trigger={
@@ -90,7 +96,7 @@ export function LbHeader({
               type="button"
               size="icon"
               variant="ghost"
-              aria-label="More actions"
+              aria-label={t('lb.header.moreActions')}
             >
               <EllipsisGlassIcon size="1.4em" />
             </Button>
@@ -98,8 +104,8 @@ export function LbHeader({
           items={[
             {
               id: 'remove',
-              label: 'Remove load balancer',
-              description: 'Domains go back to a single upstream',
+              label: t('lb.header.remove'),
+              description: t('lb.header.removeHint'),
               icon: <TrashGlassIcon size="1.4em" />,
               tone: 'danger',
               onSelect: onRemove,

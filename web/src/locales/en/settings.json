@@ -57,6 +57,7 @@
     "title": "Leftover resources",
     "description": "Containers, volumes and certificates that no app or database accounts for. They are removed automatically once they stay orphaned past the grace period. Database data volumes are never removed.",
     "empty": "Nothing left over. Every container and volume belongs to a live app or database.",
+    "emptyTitle": "No orphaned resources",
     "localNode": "this node",
     "kind": {
       "container": "Container",
@@ -3768,6 +3769,14 @@
       "glassHint": "Soft wash, capsules",
       "restrained": "Restrained",
       "restrainedHint": "Flat, compact corners"
+    },
+    "backdrop": {
+      "title": "Background",
+      "description": "Branded adds a soft colour wash behind the app. Plain keeps the background fully dark or light.",
+      "branded": "Branded",
+      "brandedHint": "Soft colour wash",
+      "plain": "Plain",
+      "plainHint": "No wash, solid background"
     },
     "radius": {
       "title": "Corner roundness",

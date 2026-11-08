@@ -114,13 +114,17 @@ function WebhookBody({
         </Alert>
       ) : null}
       {minted ? (
-        <div className="space-y-3 rounded-lg border border-amber-300 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/30">
+        <Alert
+          variant="warning"
+          role="status"
+          className="flex flex-col gap-3 p-3"
+        >
           <p className="text-xs text-foreground">{t('webhook.shownOnce')}</p>
           <CopyField label={t('webhook.url')} value={minted.url} />
           {minted.secret ? (
             <CopyField label={t('webhook.secret')} value={minted.secret} />
           ) : null}
-        </div>
+        </Alert>
       ) : null}
       {!hook.configured ? (
         <div className="space-y-3">

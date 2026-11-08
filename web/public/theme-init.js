@@ -16,6 +16,9 @@
       if (saved && saved.look === 'restrained') {
         document.documentElement.setAttribute('data-look', 'restrained')
       }
+      if (saved && saved.backdrop === 'plain') {
+        document.documentElement.setAttribute('data-backdrop', 'plain')
+      }
     } catch (e) {}
     // document.write keeps the link parser-inserted, so first paint waits for it.
     if (stored === 'oled') {

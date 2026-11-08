@@ -3431,6 +3431,7 @@
     "description": "Contenedores, volúmenes y certificados que ninguna app ni base de datos reclama. Se eliminan automáticamente cuando permanecen huérfanos más allá del periodo de gracia. Los volúmenes de datos de bases de datos nunca se eliminan.",
     "dryRun": "Simulación",
     "empty": "No queda nada. Cada contenedor y volumen pertenece a una app o base de datos activa.",
+    "emptyTitle": "Sin recursos huérfanos",
     "kind": {
       "certificate": "Certificado",
       "container": "Contenedor",
@@ -3736,6 +3737,14 @@
       "glassHint": "Fondo suave, cápsulas",
       "restrained": "Sobrio",
       "restrainedHint": "Plano, esquinas compactas"
+    },
+    "backdrop": {
+      "title": "Fondo",
+      "description": "De marca añade un suave degradado de color detrás de la app. Liso mantiene el fondo totalmente oscuro o claro.",
+      "branded": "De marca",
+      "brandedHint": "Degradado suave",
+      "plain": "Liso",
+      "plainHint": "Sin degradado, fondo sólido"
     },
     "radius": {
       "title": "Redondez de esquinas",

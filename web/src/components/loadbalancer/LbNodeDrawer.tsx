@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { ArrowRightGlassIcon, ClockGlassIcon } from '@thesvg/ui-react'
 import { RelativeTime, StatusPill, Timeline } from '@/components/kit'
 import { Button } from '@/components/ui/button'
@@ -50,6 +51,7 @@ export function LbNodeDrawer({
   onClose,
   onAdmin,
 }: Props) {
+  const { t } = useTranslation('statePlaceholders')
   const view = u ? upstreamView(u) : undefined
   const share = u ? (upstreamShares(allUpstreams, algorithm).get(u.id) ?? 0) : 0
   const recent = (history?.checks ?? []).slice(-12).reverse()
@@ -60,10 +62,10 @@ export function LbNodeDrawer({
           <>
             <SheetHeader className="p-0">
               <SheetTitle className="font-mono text-sm">
-                {u.dial || `replica ${u.replica}`}
+                {u.dial || t('lb.table.replica', { replica: u.replica })}
               </SheetTitle>
               <SheetDescription className="sr-only">
-                Upstream details and actions
+                {t('lb.drawer.description')}
               </SheetDescription>
               <div className="flex flex-wrap items-center gap-2">
                 <StatusPill
@@ -79,29 +81,35 @@ export function LbNodeDrawer({
 
             <dl className="grid grid-cols-3 gap-3">
               <Stat
-                label="Traffic share"
+                label={t('lb.drawer.trafficShare')}
                 value={formatShare(share, algorithm)}
               />
-              <Stat label="Connections" value={String(u.active_connections)} />
-              <Stat label="Failures" value={String(u.fails)} />
               <Stat
-                label="Latency"
+                label={t('lb.drawer.connections')}
+                value={String(u.active_connections)}
+              />
+              <Stat label={t('lb.drawer.failures')} value={String(u.fails)} />
+              <Stat
+                label={t('lb.drawer.latency')}
                 value={u.latency_ms ? `${u.latency_ms}ms` : '-'}
               />
-              <Stat label="Replica" value={String(u.replica)} />
-              <Stat label="Node" value={u.node_id || 'local'} />
+              <Stat label={t('lb.drawer.replica')} value={String(u.replica)} />
+              <Stat
+                label={t('lb.drawer.node')}
+                value={u.node_id || t('lb.drawer.local')}
+              />
             </dl>
 
             {u.last_check ? (
               <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <ClockGlassIcon className="size-5" aria-hidden="true" />
-                Checked <RelativeTime at={u.last_check} live />
+                {t('lb.drawer.checked')} <RelativeTime at={u.last_check} live />
               </p>
             ) : null}
 
             <section className="space-y-2">
               <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
-                Actions
+                {t('lb.drawer.actions')}
               </h3>
               <ul className="space-y-2">
                 {adminActions(u, historySupported).map((a) => (
@@ -130,7 +138,7 @@ export function LbNodeDrawer({
               <>
                 <section className="space-y-2">
                   <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
-                    Recent checks
+                    {t('lb.drawer.recentChecks')}
                   </h3>
                   <HealthHistoryStrip checks={history?.checks ?? []} />
                   <p className="text-xs text-muted-foreground">
@@ -145,8 +153,12 @@ export function LbNodeDrawer({
                         >
                           <span>
                             {c.ok
-                              ? 'Passed'
-                              : `Failed${c.reason ? `: ${c.reason}` : ''}`}
+                              ? t('lb.drawer.passed')
+                              : c.reason
+                                ? t('lb.drawer.failedReason', {
+                                    reason: c.reason,
+                                  })
+                                : t('lb.drawer.failed')}
                           </span>
                           <span className="text-muted-foreground tabular-nums">
                             {c.latency_ms ? `${c.latency_ms}ms` : ''}
@@ -158,25 +170,28 @@ export function LbNodeDrawer({
                 </section>
                 <section className="space-y-2">
                   <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
-                    State changes
+                    {t('lb.drawer.stateChanges')}
                   </h3>
                   <Timeline
-                    emptyLabel="No changes recorded."
+                    emptyLabel={t('lb.drawer.noChanges')}
                     items={(history?.transitions ?? [])
                       .slice()
                       .reverse()
-                      .map((t, i) => ({
-                        id: `${t.at}-${i}`,
-                        at: t.at,
+                      .map((tr, i) => ({
+                        id: `${tr.at}-${i}`,
+                        at: tr.at,
                         icon: <ArrowRightGlassIcon className="size-5" />,
                         tone:
-                          t.to === 'healthy'
+                          tr.to === 'healthy'
                             ? 'success'
-                            : t.to === 'unhealthy'
+                            : tr.to === 'unhealthy'
                               ? 'danger'
                               : 'warning',
-                        title: `${t.from} to ${t.to}`,
-                        detail: t.reason,
+                        title: t('lb.drawer.transition', {
+                          from: tr.from,
+                          to: tr.to,
+                        }),
+                        detail: tr.reason,
                       }))}
                   />
                 </section>

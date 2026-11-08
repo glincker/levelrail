@@ -1,3 +1,4 @@
+import { EmptyState } from '@/components/ui/empty-state'
 import { selectableCardClass } from '@/components/ui/selectable-card'
 import { useState } from 'react'
 import {
@@ -346,7 +347,12 @@ function UrlList({
     <div className="space-y-2 border-t border-border pt-4">
       <h3 className="text-sm font-medium">{t('urls.title')}</h3>
       {urls.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t('urls.none')}</p>
+        <EmptyState
+          kind="first-run"
+          icon={<GlobeGlassIcon className="size-5" aria-hidden="true" />}
+          title={t('urls.noneTitle')}
+          description={t('urls.none')}
+        />
       ) : (
         <ul className="space-y-1 text-sm">
           {urls.map((u) => (
@@ -463,7 +469,12 @@ function PortsInUse({ rows }: { rows: PortHolder[] }) {
     <div className="space-y-2 border-t border-border pt-4">
       <h3 className="text-sm font-medium">{t('inUse.title')}</h3>
       {rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t('inUse.empty')}</p>
+        <EmptyState
+          kind="no-results"
+          icon={<PlugGlassIcon className="size-5" aria-hidden="true" />}
+          title={t('inUse.emptyTitle')}
+          description={t('inUse.empty')}
+        />
       ) : (
         <table className="w-full text-sm">
           <thead>

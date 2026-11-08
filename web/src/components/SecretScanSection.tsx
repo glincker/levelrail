@@ -1,3 +1,5 @@
+import { ShieldCheckGlassIcon } from '@thesvg/ui-react'
+import { EmptyState } from '@/components/ui/empty-state'
 import { CardSkeleton } from '@/components/ui/card-skeleton'
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -107,7 +109,12 @@ function RunBody({ appName, run }: { appName: string; run: SecretScanRun }) {
         <p className="text-sm text-muted-foreground">{t('section.partial')}</p>
       ) : null}
       {run.findings.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t('section.clean')}</p>
+        <EmptyState
+          kind="no-results"
+          icon={<ShieldCheckGlassIcon className="size-5" aria-hidden="true" />}
+          title={t('section.clean')}
+          description={t('section.cleanHint')}
+        />
       ) : (
         <>
           {hasActive ? (

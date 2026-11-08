@@ -76,6 +76,7 @@
     "button": "Variables propias",
     "help": "Define valores solo para la vista previa de este pull request. Tienen prioridad sobre el entorno de la propia aplicación y se aplican en el próximo despliegue (haz un push de un commit). Se eliminan junto con la vista previa.",
     "empty": "No hay reemplazos para este pull request.",
+    "emptyHint": "Las sobrescrituras de aquí solo se aplican a la vista previa de esta pull request.",
     "hidden": "oculto",
     "remove": "Quitar el reemplazo {{key}}",
     "key": "Variable de entorno",
@@ -121,5 +122,25 @@
     "saved": "Ajustes de vista previa guardados.",
     "error": "No se pudieron actualizar los ajustes de vista previa."
   },
-  "pushOnlyProvider": "Este repositorio viene de Azure DevOps, que solo despliega con cada push. Las vistas previas de pull requests no están disponibles."
+  "pushOnlyProvider": "Este repositorio viene de Azure DevOps, que solo despliega con cada push. Las vistas previas de pull requests no están disponibles.",
+  "previewMode": {
+    "groupLabel": "Modo de vista previa del despliegue",
+    "default": "{{label}} (predeterminado)",
+    "about": "Acerca de las vistas previas {{label}}",
+    "off": {
+      "label": "Desactivado",
+      "summary": "No se crea ninguna vista previa.",
+      "cost": "No se ejecuta nada tras un despliegue y no se guarda nada."
+    },
+    "metadata": {
+      "label": "Metadatos",
+      "summary": "Sin navegador. Casi no cuesta nada.",
+      "cost": "Hace una petición pequeña a la app tras cada despliegue y lee su título y su imagen social (og:image). Sin navegador, sin contenedor y sin descargar la imagen del navegador. Puede descargar una imagen social de hasta 2 MB por despliegue. Sin imagen social, la vista previa es una tarjeta de texto. Las páginas que piden iniciar sesión se omiten."
+    },
+    "screenshot": {
+      "label": "Captura",
+      "summary": "Ejecuta un navegador unos 10 s por despliegue.",
+      "cost": "Ejecuta un contenedor de navegador unos 10 segundos tras cada despliegue y muestra la página real. La imagen del navegador ocupa unos 143 MB, se descarga una vez y se elimina de nuevo cuando no se usa."
+    }
+  }
 }

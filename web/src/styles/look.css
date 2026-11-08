@@ -44,11 +44,17 @@
 html:not([data-look='restrained']) body {
   background-color: var(--background);
   background-image: var(--glinr-mesh);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-size: 100% 100vh;
 }
 html:not([data-look='restrained']) [data-slot='sidebar-wrapper'],
 html:not([data-look='restrained']) [data-slot='sidebar-inset'] {
   background-color: transparent;
   box-shadow: none;
+}
+html:not([data-look='restrained'])[data-backdrop='plain'] body {
+  background-image: none;
 }
 @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
   html:not([data-look='restrained']) body {

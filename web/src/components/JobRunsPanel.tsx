@@ -1,3 +1,5 @@
+import { EmptyState } from '@/components/ui/empty-state'
+import { ClockGlassIcon } from '@thesvg/ui-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { RestoreGlassIcon } from '@thesvg/ui-react'
@@ -275,9 +277,14 @@ export function JobRunsPanel({ appName }: { appName: string }) {
         ) : error ? (
           <p className="text-sm text-destructive">{error.message}</p>
         ) : runs.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            {status === ALL ? t('history.empty') : t('history.emptyFiltered')}
-          </p>
+          <EmptyState
+            kind="no-results"
+            icon={<ClockGlassIcon className="size-5" aria-hidden="true" />}
+            title={t('history.emptyTitle')}
+            description={
+              status === ALL ? t('history.empty') : t('history.emptyFiltered')
+            }
+          />
         ) : (
           <ResponsiveTable
             rows={runs}

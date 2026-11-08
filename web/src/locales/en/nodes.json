@@ -833,6 +833,7 @@
     "title": "Taints",
     "description": "Reserve this node. Apps and databases are not placed here unless they tolerate the taint. Saving replaces the whole set.",
     "empty": "No taints. Any app can be placed here.",
+    "emptyTitle": "No taints",
     "keyPlaceholder": "dedicated",
     "valuePlaceholder": "gpu",
     "operator": "Operator",

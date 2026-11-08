@@ -833,6 +833,7 @@
     "title": "Taints",
     "description": "Reserva este nodo. Las apps y bases de datos no se colocan aquí salvo que toleren el taint. Al guardar se reemplaza todo el conjunto.",
     "empty": "Sin taints. Cualquier app puede colocarse aquí.",
+    "emptyTitle": "Sin taints",
     "keyPlaceholder": "dedicated",
     "valuePlaceholder": "gpu",
     "operator": "Operador",

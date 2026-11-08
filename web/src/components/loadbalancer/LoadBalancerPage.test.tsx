@@ -1,4 +1,10 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import type { ReactElement } from 'react'
+import {
+  render as rtlRender,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -13,6 +19,10 @@ import { LoadBalancerPage } from './LoadBalancerPage'
 import { presetById } from './presets'
 import { tokenize } from './highlight'
 import { createTestQueryClient } from '@/test/testQueryClient'
+import { AllI18n } from '@/test/allI18n'
+
+// Every render gets the real en catalogues so assertions read the English copy.
+const render = (ui: ReactElement) => rtlRender(ui, { wrapper: AllI18n })
 
 vi.mock('../../hooks/useBrand', () => ({
   useBrand: (): Brand => ({

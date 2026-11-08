@@ -53,11 +53,12 @@ interface Props {
 }
 
 function Loading() {
+  const { t } = useTranslation('statePlaceholders')
   return (
     <div
       className="space-y-4"
       aria-busy="true"
-      aria-label="Loading load balancer"
+      aria-label={t('lb.page.loading')}
     >
       <SkeletonLine width="40%" />
       <SkeletonTile className="h-48" />
@@ -166,16 +167,16 @@ export function LoadBalancerPage({ appName, replicas, onSetReplicas }: Props) {
         setPresetNote('')
         toast.add({
           title,
-          description: 'The ingress reconciler applies it on its next pass.',
+          description: t('lb.page.reconcilerNote'),
           type: 'success',
           actionProps: undo
-            ? { children: 'Undo', onClick: () => save.mutate(undo) }
+            ? { children: t('lb.page.undo'), onClick: () => save.mutate(undo) }
             : undefined,
         })
       },
       onError: (error) =>
         toast.add({
-          title: 'Could not save the load balancer.',
+          title: t('lb.page.saveError'),
           description: error.message,
           type: 'error',
         }),
@@ -205,17 +206,20 @@ export function LoadBalancerPage({ appName, replicas, onSetReplicas }: Props) {
         try {
           await save.mutateAsync(apply(before))
           toast.add({
-            title: `Applied: ${s.title}`,
+            title: t('lb.page.applied', { title: s.title }),
             type: 'success',
             actionProps: {
-              children: 'Undo',
+              children: t('lb.page.undo'),
               onClick: () => save.mutate(before),
             },
           })
         } catch (error) {
           toast.add({
-            title: 'Could not apply the suggestion.',
-            description: error instanceof Error ? error.message : 'Unknown',
+            title: t('lb.page.applyError'),
+            description:
+              error instanceof Error
+                ? error.message
+                : t('lb.page.unknownError'),
             type: 'error',
           })
         } finally {
@@ -230,7 +234,7 @@ export function LoadBalancerPage({ appName, replicas, onSetReplicas }: Props) {
         setCheckNote(note ?? '')
         const ok = results.filter((r) => r.ok).length
         toast.add({
-          title: `Check finished: ${ok} of ${results.length} passed`,
+          title: t('lb.page.checkFinished', { ok, total: results.length }),
           type: ok === results.length ? 'success' : 'warning',
         })
       },
@@ -241,8 +245,8 @@ export function LoadBalancerPage({ appName, replicas, onSetReplicas }: Props) {
         }
         toast.add({
           title: isUnsupported(error)
-            ? 'Check now is not available yet.'
-            : 'Check failed.',
+            ? t('lb.page.checkUnavailable')
+            : t('lb.page.checkFailed'),
           description: error.message,
           type: 'error',
         })
@@ -256,7 +260,7 @@ export function LoadBalancerPage({ appName, replicas, onSetReplicas }: Props) {
       {
         onError: (error) =>
           toast.add({
-            title: 'Could not update the upstream.',
+            title: t('lb.page.adminError'),
             description: error.message,
             type: 'error',
           }),
@@ -270,14 +274,14 @@ export function LoadBalancerPage({ appName, replicas, onSetReplicas }: Props) {
         setRemoveOpen(false)
         setDraft(null)
         toast.add({
-          title: 'Load balancer removed.',
-          description: `${appName} routes to a single upstream again.`,
+          title: t('lb.page.removed'),
+          description: t('lb.page.removedHint', { app: appName }),
           type: 'success',
         })
       },
       onError: (error) =>
         toast.add({
-          title: 'Could not remove the load balancer.',
+          title: t('lb.page.removeError'),
           description: error.message,
           type: 'error',
         }),
@@ -292,7 +296,7 @@ export function LoadBalancerPage({ appName, replicas, onSetReplicas }: Props) {
         onCreate={(p) =>
           saveConfig(
             { ...p.config, active_health: undefined },
-            'Load balancer created.',
+            t('lb.page.created'),
           )
         }
         onPreset={applyPreset}
@@ -312,7 +316,7 @@ export function LoadBalancerPage({ appName, replicas, onSetReplicas }: Props) {
       onSave={() =>
         saveConfig(
           configFromForm(form),
-          configured ? 'Load balancer saved.' : 'Load balancer created.',
+          configured ? t('lb.page.saved') : t('lb.page.created'),
         )
       }
       onRevert={() => {
@@ -385,10 +389,10 @@ export function LoadBalancerPage({ appName, replicas, onSetReplicas }: Props) {
       ) : (
         <header>
           <h2 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
-            New load balancer
+            {t('lb.page.newTitle')}
           </h2>
           <p className="text-sm text-muted-foreground">
-            Review the settings, then create it.
+            {t('lb.page.newHint')}
           </p>
         </header>
       )}
@@ -405,22 +409,22 @@ export function LoadBalancerPage({ appName, replicas, onSetReplicas }: Props) {
 
       {configured ? (
         <section
-          aria-label="Export"
+          aria-label={t('lb.export.section')}
           className="space-y-3 rounded-2xl border p-4"
         >
           <button
             type="button"
             aria-expanded={exportOpen}
             onClick={() => setExportOpen(!exportOpen)}
-            className="text-sm font-medium"
+            className="min-h-(--glinr-control-h) rounded-lg px-1 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
           >
-            Export as code
+            {t('lb.export.toggle')}
           </button>
           {exportOpen ? <ExportTabs appName={appName} /> : null}
         </section>
       ) : null}
       <div className="flex justify-end">
-        <HelpLink path="/load-balancing" label="Load balancing guide" />
+        <HelpLink path="/load-balancing" label={t('lb.page.guide')} />
       </div>
 
       <LbNodeDrawer

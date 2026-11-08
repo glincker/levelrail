@@ -1,9 +1,14 @@
 import type { AnchorHTMLAttributes, ReactNode } from 'react'
-import { render, screen, waitFor } from '@testing-library/react'
+import type { ReactElement } from 'react'
+import { render as rtlRender, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { LoadBalancerOverview } from './LoadBalancerOverview'
+import { AllI18n } from '@/test/allI18n'
+
+// Every render gets the real en catalogues so assertions read the English copy.
+const render = (ui: ReactElement) => rtlRender(ui, { wrapper: AllI18n })
 import type { Brand } from '../types/brand'
 import type { LoadBalancerSummary } from '../queries/loadBalancers'
 import { createTestQueryClient } from '@/test/testQueryClient'
@@ -177,7 +182,7 @@ describe('LoadBalancerOverview', () => {
     renderPage()
     await screen.findByRole('link', { name: 'web' })
 
-    await userEvent.click(screen.getByRole('button', { name: 'Degraded' }))
+    await userEvent.click(screen.getByRole('radio', { name: 'Degraded' }))
     await waitFor(() => {
       expect(urls.some((u) => u.includes('state=degraded'))).toBe(true)
     })

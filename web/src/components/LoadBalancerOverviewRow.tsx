@@ -1,3 +1,5 @@
+import type { TFunction } from 'i18next'
+import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
 import {
   ChevronRightGlassIcon,
@@ -7,7 +9,6 @@ import {
 } from '@thesvg/ui-react'
 import { StatusBadge } from '@/components/ui/status-badge'
 import {
-  LB_STATE_LABEL,
   type LoadBalancerOverviewState,
   type LoadBalancerSummary,
 } from '../queries/loadBalancers'
@@ -18,46 +19,54 @@ export const LB_LIST_GRID =
 const STATE_META = {
   balancing: {
     variant: 'success',
-    label: LB_STATE_LABEL.balancing,
+    label: 'lb.overview.stateBalancing',
     icon: CircleCheckGlassIcon,
   },
   degraded: {
     variant: 'warning',
-    label: LB_STATE_LABEL.degraded,
+    label: 'lb.overview.stateDegraded',
     icon: TriangleAlertGlassIcon,
   },
   none: {
     variant: 'muted',
-    label: LB_STATE_LABEL.none,
+    label: 'lb.overview.stateNone',
     icon: CircleMinusGlassIcon,
   },
 } as const satisfies Record<
   LoadBalancerOverviewState,
   {
     variant: 'success' | 'warning' | 'muted'
-    label: string
+    label:
+      | 'lb.overview.stateBalancing'
+      | 'lb.overview.stateDegraded'
+      | 'lb.overview.stateNone'
     icon: typeof CircleCheckGlassIcon
   }
 >
 
-function lastCheckLabel(iso: string | undefined): string {
-  if (!iso) return 'Not yet'
+function lastCheckLabel(
+  iso: string | undefined,
+  t: TFunction<'statePlaceholders'>,
+): string {
+  if (!iso) return t('lb.overview.notYet')
   const secs = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 1000))
-  if (secs < 60) return `${secs}s ago`
-  if (secs < 3600) return `${Math.round(secs / 60)}m ago`
-  return `${Math.round(secs / 3600)}h ago`
+  if (secs < 60) return t('lb.overview.secondsAgo', { count: secs })
+  if (secs < 3600)
+    return t('lb.overview.minutesAgo', { count: Math.round(secs / 60) })
+  return t('lb.overview.hoursAgo', { count: Math.round(secs / 3600) })
 }
 
 export function LoadBalancerOverviewHeader() {
+  const { t } = useTranslation('statePlaceholders')
   return (
     <div
       className={`${LB_LIST_GRID} sticky top-0 z-10 border-b border-border bg-card px-4 py-2 text-xs font-medium text-muted-foreground`}
     >
-      <span>App</span>
-      <span>Algorithm</span>
-      <span>State</span>
-      <span>Upstreams</span>
-      <span>Last check</span>
+      <span>{t('lb.overview.app')}</span>
+      <span>{t('lb.overview.algorithm')}</span>
+      <span>{t('lb.overview.state')}</span>
+      <span>{t('lb.overview.upstreams')}</span>
+      <span>{t('lb.overview.lastCheck')}</span>
       <span aria-hidden="true" />
     </div>
   )
@@ -68,6 +77,7 @@ export function LoadBalancerOverviewRow({
 }: {
   item: LoadBalancerSummary
 }) {
+  const { t } = useTranslation('statePlaceholders')
   const meta = STATE_META[item.state]
   return (
     <div
@@ -86,17 +96,20 @@ export function LoadBalancerOverviewRow({
       <span>
         <StatusBadge
           variant={meta.variant}
-          label={meta.label}
+          label={t(meta.label)}
           icon={meta.icon}
         />
       </span>
       <span className="text-muted-foreground">
         {item.upstreams_total === 0
-          ? 'None observed'
-          : `${item.upstreams_healthy} of ${item.upstreams_total} healthy`}
+          ? t('lb.overview.noneObserved')
+          : t('lb.overview.healthyOf', {
+              healthy: item.upstreams_healthy,
+              total: item.upstreams_total,
+            })}
       </span>
       <span className="text-muted-foreground">
-        {lastCheckLabel(item.last_check)}
+        {lastCheckLabel(item.last_check, t)}
       </span>
       <ChevronRightGlassIcon
         className="size-5 text-muted-foreground"

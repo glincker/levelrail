@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { EllipsisGlassIcon } from '@thesvg/ui-react'
 import {
   ActionMenu,
@@ -46,6 +47,7 @@ function LatencyCell({
   h?: UpstreamHistory
   supported: boolean
 }) {
+  const { t } = useTranslation('statePlaceholders')
   const values = (h?.series.latency_ms ?? []).map((p) => p.value)
   if (values.length >= 2) {
     return (
@@ -55,7 +57,7 @@ function LatencyCell({
           tone="info"
           width={64}
           height={20}
-          ariaLabel={`Latency over the last 30 minutes for ${u.dial}`}
+          ariaLabel={t('lb.table.latencyTrend', { dial: u.dial })}
         />
         <span className="text-xs tabular-nums">{u.latency_ms ?? '-'}ms</span>
       </span>
@@ -66,7 +68,7 @@ function LatencyCell({
   }
   return (
     <span className="text-xs text-muted-foreground">
-      {supported ? 'no data yet' : '-'}
+      {supported ? t('lb.table.noData') : '-'}
     </span>
   )
 }
@@ -79,6 +81,7 @@ export function LbUpstreamTable({
   onOpen,
   onAdmin,
 }: Props) {
+  const { t } = useTranslation('statePlaceholders')
   const shares = upstreamShares(upstreams, algorithm)
   return (
     <div className="space-y-1">
@@ -86,18 +89,23 @@ export function LbUpstreamTable({
         aria-hidden="true"
         className={`hidden px-3 text-xs text-muted-foreground ${COLS}`}
       >
-        <span>Upstream</span>
-        <span>Status</span>
-        <span>Latency</span>
-        <span>Traffic</span>
-        <span>Conns</span>
-        <span>Share</span>
-        <span>Last 12 checks</span>
+        <span>{t('lb.table.upstream')}</span>
+        <span>{t('lb.table.status')}</span>
+        <span>{t('lb.table.latency')}</span>
+        <span>{t('lb.table.traffic')}</span>
+        <span>{t('lb.table.conns')}</span>
+        <span>{t('lb.table.share')}</span>
+        <span>{t('lb.table.lastChecks')}</span>
         <span />
       </div>
-      <ul role="list" className="divide-y divide-border rounded-xl border">
+      <ul
+        role="list"
+        aria-label={t('lb.table.label')}
+        className="divide-y divide-border rounded-xl border"
+      >
         {upstreams.map((u) => {
           const view = upstreamView(u)
+          const name = u.dial || t('lb.table.replica', { replica: u.replica })
           const h = history.get(u.id)
           const changed = changedAt(u, h)
           const menu = adminActions(u, historySupported).map((a) => ({
@@ -119,19 +127,20 @@ export function LbUpstreamTable({
                   onClick={() => onOpen(u.id)}
                   className="block max-w-full truncate rounded font-mono text-xs font-medium outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring/60"
                 >
-                  {u.dial || `replica ${u.replica}`}
+                  {name}
                 </button>
                 <div className="text-xs text-muted-foreground">
                   {u.last_check ? (
                     <>
-                      checked <RelativeTime at={u.last_check} live />
+                      {t('lb.table.checked')}{' '}
+                      <RelativeTime at={u.last_check} live />
                     </>
                   ) : (
-                    'not checked yet'
+                    t('lb.table.notChecked')
                   )}
                   {changed ? (
                     <>
-                      {' · changed '}
+                      {` · ${t('lb.table.changed')} `}
                       <RelativeTime at={changed} live />
                     </>
                   ) : null}
@@ -155,9 +164,12 @@ export function LbUpstreamTable({
               </div>
               <LatencyCell u={u} h={h} supported={historySupported} />
               <LbTrafficCell u={u} />
-              <span className="text-sm tabular-nums" title="Open connections">
+              <span
+                className="text-sm tabular-nums"
+                title={t('lb.table.openConnections')}
+              >
                 <span className="text-xs text-muted-foreground md:hidden">
-                  conns{' '}
+                  {t('lb.table.conns')}{' '}
                 </span>
                 <AnimatedNumber value={u.active_connections} />
               </span>
@@ -165,8 +177,8 @@ export function LbUpstreamTable({
                 className="text-sm tabular-nums"
                 title={
                   sharesAreEstimated(algorithm)
-                    ? 'Estimated share, not measured'
-                    : 'Share of traffic'
+                    ? t('lb.table.shareEstimated')
+                    : t('lb.table.shareMeasured')
                 }
               >
                 {formatShare(shares.get(u.id) ?? 0, algorithm)}
@@ -182,7 +194,7 @@ export function LbUpstreamTable({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    aria-label={`Actions for ${u.dial || `replica ${u.replica}`}`}
+                    aria-label={t('lb.table.actionsFor', { name })}
                   >
                     <EllipsisGlassIcon size="1.4em" />
                   </Button>
@@ -190,8 +202,8 @@ export function LbUpstreamTable({
                 items={[
                   {
                     id: 'details',
-                    label: 'View details',
-                    description: 'Checks, changes and actions',
+                    label: t('lb.table.viewDetails'),
+                    description: t('lb.table.viewDetailsHint'),
                     onSelect: () => onOpen(u.id),
                   },
                   ...menu,

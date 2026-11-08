@@ -1,3 +1,5 @@
+import { EmptyState } from '@/components/ui/empty-state'
+import { ShieldCheckGlassIcon } from '@thesvg/ui-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
@@ -78,7 +80,12 @@ function TaintsForm({ nodeId, saved }: { nodeId: string; saved: NodeTaint[] }) {
   return (
     <>
       {rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t('taints.empty')}</p>
+        <EmptyState
+          kind="no-results"
+          icon={<ShieldCheckGlassIcon className="size-5" aria-hidden="true" />}
+          title={t('taints.emptyTitle')}
+          description={t('taints.empty')}
+        />
       ) : null}
       <TaintRowsEditor
         rows={rows}

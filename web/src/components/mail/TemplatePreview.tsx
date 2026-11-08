@@ -1,13 +1,8 @@
 import { useEffect, useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import {
-  MonitorGlassIcon,
-  MoonGlassIcon,
-  SmartphoneGlassIcon,
-  SunGlassIcon,
-} from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 import { Button } from '@/components/ui/button'
 import { CodeBlock } from '@/components/ui/code-block'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -51,47 +46,25 @@ export function TemplatePreview({
     <section aria-label={t('templates.preview.title')} className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-sm font-medium">{t('templates.preview.title')}</h3>
-        <div className="flex flex-wrap gap-1">
-          <Button
-            type="button"
-            size="sm"
-            variant={mobile ? 'ghost' : 'secondary'}
-            aria-pressed={!mobile}
-            onClick={() => setMobile(false)}
-          >
-            <MonitorGlassIcon size="1.4em" data-icon="inline-start" />
-            {t('templates.preview.desktop')}
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={mobile ? 'secondary' : 'ghost'}
-            aria-pressed={mobile}
-            onClick={() => setMobile(true)}
-          >
-            <SmartphoneGlassIcon size="1.4em" data-icon="inline-start" />
-            {t('templates.preview.mobile')}
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={dark ? 'ghost' : 'secondary'}
-            aria-pressed={!dark}
-            onClick={() => setDark(false)}
-          >
-            <SunGlassIcon size="1.4em" data-icon="inline-start" />
-            {t('templates.preview.light')}
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={dark ? 'secondary' : 'ghost'}
-            aria-pressed={dark}
-            onClick={() => setDark(true)}
-          >
-            <MoonGlassIcon size="1.4em" data-icon="inline-start" />
-            {t('templates.preview.dark')}
-          </Button>
+        <div className="flex flex-wrap gap-2">
+          <SegmentedControl
+            aria-label={t('templates.preview.deviceLabel')}
+            value={mobile ? 'mobile' : 'desktop'}
+            onValueChange={(v) => setMobile(v === 'mobile')}
+            options={[
+              { value: 'desktop', label: t('templates.preview.desktop') },
+              { value: 'mobile', label: t('templates.preview.mobile') },
+            ]}
+          />
+          <SegmentedControl
+            aria-label={t('templates.preview.schemeLabel')}
+            value={dark ? 'dark' : 'light'}
+            onValueChange={(v) => setDark(v === 'dark')}
+            options={[
+              { value: 'light', label: t('templates.preview.light') },
+              { value: 'dark', label: t('templates.preview.dark') },
+            ]}
+          />
         </div>
       </div>
       {preview.isError ? (

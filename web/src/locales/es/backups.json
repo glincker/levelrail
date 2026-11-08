@@ -432,6 +432,7 @@
     "upload": "Subir archivo",
     "loading": "Cargando archivos",
     "empty": "Este directorio está vacío.",
+    "emptyHint": "Los archivos que la app escribe en este volumen aparecen aquí.",
     "truncated": "Lista truncada. Abre un subdirectorio para ver el resto.",
     "download": "Descargar {{name}}",
     "delete": "Eliminar {{name}}",

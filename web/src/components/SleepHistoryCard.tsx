@@ -1,3 +1,4 @@
+import { EmptyState } from '@/components/ui/empty-state'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { MoonGlassIcon, SunGlassIcon } from '@thesvg/ui-react'
@@ -323,7 +324,12 @@ export function SleepHistoryCard({
             {t('events.title')}
           </h3>
           {rows.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t('events.empty')}</p>
+            <EmptyState
+              kind="no-results"
+              icon={<MoonGlassIcon className="size-5" aria-hidden="true" />}
+              title={t('events.emptyTitle')}
+              description={t('events.empty')}
+            />
           ) : (
             <ResponsiveTable
               rows={rows}

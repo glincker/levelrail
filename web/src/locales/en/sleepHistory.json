@@ -28,6 +28,7 @@
   "events": {
     "title": "Events",
     "empty": "Nothing recorded yet. Events appear here when the app sleeps or wakes.",
+    "emptyTitle": "No sleep events",
     "kind": {
       "slept": "Went to sleep",
       "woke": "Woke up",

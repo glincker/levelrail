@@ -49,6 +49,7 @@
     "delete": "Delete",
     "deleteLabel": "Delete group {{name}}",
     "empty": "No groups yet. Groups show as collapsible sections on the public page.",
+    "emptyTitle": "No groups",
     "limit": "Group limit reached.",
     "moveDown": "Move {{name}} down",
     "moveUp": "Move {{name}} up",

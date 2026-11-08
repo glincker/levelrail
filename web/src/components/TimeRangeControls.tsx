@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { RefreshCwGlassIcon } from '@thesvg/ui-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from './ui/button'
 import { TIME_RANGE_PRESETS, type TimeRangeKey } from '../lib/timeRange'
 
@@ -26,11 +27,12 @@ export function TimeRangeControls({
   onRefresh: () => void
   children?: ReactNode
 }) {
+  const { t } = useTranslation('uiShared')
   return (
     <div className="flex items-center gap-2">
       <div
         role="group"
-        aria-label="Time range"
+        aria-label={t('timeRangeControls.label')}
         className="inline-flex rounded-md border border-border"
       >
         {TIME_RANGE_PRESETS.map((preset) => (
@@ -53,7 +55,7 @@ export function TimeRangeControls({
       </div>
       <Button type="button" variant="outline" size="sm" onClick={onRefresh}>
         <RefreshCwGlassIcon className="size-5" aria-hidden="true" />
-        Refresh
+        {t('timeRangeControls.refresh')}
       </Button>
       {children}
     </div>

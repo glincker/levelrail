@@ -151,6 +151,7 @@
     "filter": "Estado",
     "filterAll": "Todos los estados",
     "empty": "Aún no hay ejecuciones. Usa Ejecutar ahora para iniciar una.",
+    "emptyTitle": "Sin ejecuciones",
     "emptyFiltered": "No hay ejecuciones con este estado.",
     "columns": {
       "started": "Inicio",
