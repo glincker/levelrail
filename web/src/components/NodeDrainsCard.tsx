@@ -21,7 +21,7 @@ export function NodeDrainsCard({ nodeId }: { nodeId: string }) {
   const drains = useNodeDrains(nodeId)
 
   return (
-    <Card>
+    <Card id="node-drains">
       <CardHeader>
         <CardTitle>{t('drains.title')}</CardTitle>
         <CardDescription>{t('drains.description')}</CardDescription>
