@@ -1,6 +1,6 @@
 ---
 title: "Domain traffic controls"
-description: "Per-domain traffic controls in the embedded ingress: header rules, path forwarders, country rules, caching, redirects and raw ports, from the UI, CLI or API."
+description: "Per-domain traffic controls in the embedded ingress: header rules, path forwarders, country rules, caching, redirects, raw ports, and body and timeout limits, from the UI, CLI or API."
 "og:url": "https://docs.levelrail.com/domain-traffic-controls"
 ---
 
@@ -14,6 +14,7 @@ Every domain an app owns has its own set of traffic controls, enforced by the em
 | [Cache](#caching) | Keep responses in memory and answer repeat requests from the ingress |
 | [Redirects](#redirects) | Force HTTPS, www and apex setup, aliases, trailing slash and lower case host |
 | [Ports](#ports) | See the app's raw TCP/UDP ports and open one only to chosen addresses |
+| [Limits](#domain-traffic-limits) | Cap the request body and set upstream read and write timeouts for one domain |
 
 None of these needs a second proxy or a container restart. A change is stored, audited, and applied on the next ingress reconcile pass (normally within a second). Deleting a section restores the default behavior for that domain.
 
@@ -22,7 +23,7 @@ None of these needs a second proxy or a container restart. A change is stored, a
 <Tabs>
 <Tab title="Dashboard">
 
-On the **Domains** page, click a domain name. The domain page has tabs for Overview, Headers, Forwarding, Access, Cache, Redirects, Ports and Danger zone. The abuse shield moved to [Firewall](firewall): select the host under Rules, or use the Firewall limits button on the domain page. Each editor keeps an unsaved draft per tab, shows the difference before you save, and a "rules preview" lists in order what happens to a sample request.
+On the **Domains** page, click a domain name. The domain page has tabs for Overview, Headers, Forwarding, Access, Cache, Redirects, Ports and Danger zone. The abuse shield moved to [Firewall](firewall): select the host under Rules, or use the Firewall limits button on the domain page. Each editor keeps an unsaved draft per tab, shows the difference before you save, and a "rules preview" lists in order what happens to a sample request. The body cap and timeouts sit on the same page in their own block; see [Domain traffic limits](#domain-traffic-limits).
 
 </Tab>
 <Tab title="CLI">
@@ -35,6 +36,7 @@ levelrail-cli domains shield <verb> <app> <domain>
 levelrail-cli domains cache <verb> <app> <domain>
 levelrail-cli domains redirects <verb> <app> <domain>
 levelrail-cli domains ports <verb> <app> <domain>
+levelrail-cli domains limits <verb> <app> <domain>
 ```
 
 Run any of them with `-h` for its verbs and flags. Every command accepts `--json` and `-o`.
@@ -59,6 +61,7 @@ POST   /api/v1/apps/{name}/domains/{domain}/redirects/canonical
 PUT    /api/v1/apps/{name}/domains/{domain}/redirects/aliases
 GET    /api/v1/apps/{name}/domains/{domain}/ports
 PUT/DELETE /api/v1/apps/{name}/domains/{domain}/ports/{port}/restrict
+GET/PUT/DELETE /api/v1/apps/{name}/domains/{domain}/limits
 GET    /api/v1/system/geoip?ip=
 ```
 
@@ -213,7 +216,7 @@ A scraper or bot flood should not be able to run up your bandwidth or take an ap
 | `retry_after_seconds` | Sent with `429` for rate and concurrency rejections |
 | `tarpit_ms` | Hold a rejected request this long before answering, capped by `APP_SHIELD_TARPIT_MAX`, and only while a tarpit slot is free |
 
-The domain page in the dashboard has a Traffic limits control for the per-domain body cap and read and write timeouts, the same as the CLI and API.
+The shield's body cap is a separate setting from the per-domain body cap. The per-domain cap and timeouts are described in [Domain traffic limits](#domain-traffic-limits).
 
 Rate and concurrency rejections return `429` with `Retry-After`. Verifying good bots by reverse DNS is not part of the shield, so add search engine ranges to `allow` if you need them.
 
@@ -346,6 +349,43 @@ Every cap has a default and an environment override on the control plane.
 | `APP_SHIELD_ATTACK_DEFAULT_DURATION` | 1h | Under attack default length |
 | `APP_SHIELD_ATTACK_MAX_DURATION` | 24h | Longest under attack window |
 | `APP_SHIELD_BOT_LIST_FILE` | none | Replaces the shipped bot denylist |
+| `APP_DOMAIN_LIMITS_MAX_BODY_BYTES` | 1073741824 | Largest body cap a domain may set (runtime setting `domains.limits_max_body_bytes`) |
+| `APP_DOMAIN_LIMITS_MAX_TIMEOUT_SECONDS` | 3600 | Largest read or write timeout a domain may set (runtime setting `domains.limits_max_timeout_seconds`) |
+
+## Domain traffic limits
+
+A domain can have its own request body cap and its own upstream read and write timeouts. They override the app and instance values for that domain only. Leave a field at 0 to keep the app or instance value.
+
+| Setting | Field | Allowed values | Meaning |
+| --- | --- | --- | --- |
+| Body cap | `max_body_bytes` | 0, or 1 MiB up to the body ceiling | Largest request body for this domain. Larger bodies get `413`. |
+| Read timeout | `read_timeout_seconds` | 0, or 1 up to the timeout ceiling | Seconds the ingress waits to read from the app. |
+| Write timeout | `write_timeout_seconds` | 0, or 1 up to the timeout ceiling | Seconds the ingress waits to write to the app. |
+
+The body ceiling defaults to 1 GiB and the timeout ceiling to 3600 seconds. Both come from the runtime settings `domains.limits_max_body_bytes` and `domains.limits_max_timeout_seconds`, seeded by `APP_DOMAIN_LIMITS_MAX_BODY_BYTES` and `APP_DOMAIN_LIMITS_MAX_TIMEOUT_SECONDS`. A value above a ceiling is refused with `400` and the message names the limit. Lowering a ceiling also tightens limits already stored.
+
+The timeouts apply to the main upstream, not to path forwarders. A read timeout shorter than a WebSocket's idle period will cut that connection. The limits apply to app and standalone proxy domains only. A redirect-only or maintenance-mode domain renders no proxy route, so its limits do nothing there. Changes apply on the next ingress reconcile pass.
+
+On the domain page, the **Traffic limits** block has three fields. The body cap is entered in MB, and the timeouts in seconds. Save stays disabled until a value changes or while a field is invalid. Reset appears once the domain has its own limits and removes them.
+
+```bash
+levelrail-cli domains limits get my-app example.com
+levelrail-cli domains limits set my-app example.com --max-body 100MiB --read-timeout 120 --write-timeout 120
+levelrail-cli domains limits set my-app example.com --read-timeout 0
+levelrail-cli domains limits clear my-app example.com
+```
+
+`set` changes only the flags you pass, and `0` clears one value. `clear` goes back to the app and instance values.
+
+```text
+GET    /api/v1/apps/{name}/domains/{domain}/limits    read
+PUT    /api/v1/apps/{name}/domains/{domain}/limits    deploy
+DELETE /api/v1/apps/{name}/domains/{domain}/limits    deploy
+```
+
+The PUT body is `{"max_body_bytes": 104857600, "read_timeout_seconds": 120, "write_timeout_seconds": 120}`. The response is the stored limits, with the current ceilings and the minimum body size, so a client can show the same bounds the dashboard does.
+
+Status: built and covered by unit tests for the API, the CLI and the dashboard control. Not proven on a real host. No live request has gone through a domain body cap or timeout in a real deployment, and the dashboard control has not been checked in a browser at narrow or wide widths.
 
 ## Permissions and audit
 
@@ -355,6 +395,8 @@ Every cap has a default and an environment override on the control plane.
 | Change or delete headers, forwarders, geo, cache, redirect settings, canonical and aliases; purge the cache | `deploy`, the same tier as other per-domain routing settings |
 | Attach the www or apex counterpart while applying a preset | additionally `write` |
 | Restrict or unrestrict a port | `write:sensitive`, the same tier as firewall rules |
+| Read the body cap and timeouts | `read` |
+| Set or clear the body cap and timeouts | `deploy`. A read-only user can open the control, but saving returns a server error. |
 
 Every change is recorded in the audit log like any other API write.
 
