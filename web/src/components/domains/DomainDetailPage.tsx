@@ -18,6 +18,7 @@ import { DomainRedirectControl } from '../DomainRedirectControl'
 import { DomainSearchVisibilityControl } from '../DomainSearchVisibilityControl'
 import { DomainTLSCertControl } from '../DomainTLSCertControl'
 import { DomainWafControl } from '../DomainWafControl'
+import { DomainTrafficLimitsControl } from './DomainTrafficLimitsControl'
 import { GetCertificateButton } from '../GetCertificateButton'
 import { ProxyDomainStatus } from '../ProxyDomainStatus'
 import {
@@ -216,6 +217,7 @@ export function DomainDetailPage({
             <DomainMaintenanceControl appName={appName} domain={domain} />
             <DomainErrorPagesControl appName={appName} domain={domain} />
             <DomainSearchVisibilityControl appName={appName} domain={domain} />
+            <DomainTrafficLimitsControl appName={appName} domain={domain} />
           </DetailCard>
           <DangerZone appName={appName} domain={domain} />
         </div>

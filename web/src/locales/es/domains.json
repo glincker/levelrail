@@ -1789,5 +1789,20 @@
       "wwwTitle": "Conecta también www",
       "wwwBody": "Mucha gente escribe www. Con un clic lo conectamos y lo enviamos a {{domain}}."
     }
+  },
+  "limits": {
+    "title": "Limites de trafico",
+    "configured": "Configurado",
+    "default": "Predeterminado",
+    "bodyLabel": "Subida maxima (MB)",
+    "readLabel": "Timeout de lectura (s)",
+    "writeLabel": "Timeout de escritura (s)",
+    "bodyHint": "Vacio = sin limite. De {{min}} a {{max}} MB.",
+    "timeoutHint": "Vacio = predeterminado. Hasta {{max}} s.",
+    "save": "Guardar",
+    "reset": "Restablecer",
+    "saved": "Limites de trafico guardados",
+    "resetDone": "Limites de trafico restablecidos",
+    "note": "Se aplica en la siguiente reconciliacion del ingress."
   }
 }

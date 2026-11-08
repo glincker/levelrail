@@ -213,6 +213,8 @@ A scraper or bot flood should not be able to run up your bandwidth or take an ap
 | `retry_after_seconds` | Sent with `429` for rate and concurrency rejections |
 | `tarpit_ms` | Hold a rejected request this long before answering, capped by `APP_SHIELD_TARPIT_MAX`, and only while a tarpit slot is free |
 
+The domain page in the dashboard has a Traffic limits control for the per-domain body cap and read and write timeouts, the same as the CLI and API.
+
 Rate and concurrency rejections return `429` with `Retry-After`. Verifying good bots by reverse DNS is not part of the shield, so add search engine ranges to `allow` if you need them.
 
 The bot denylist ships as data (`internal/trafficpolicy/shield_bots.txt`, shown in Firewall under Rules and by `levelrail-cli domains shield bots`). Point `APP_SHIELD_BOT_LIST_FILE` at your own file (one lower case fragment per line, `#` comments) to replace it; changes apply when the ingress config next reloads.
