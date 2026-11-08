@@ -178,6 +178,7 @@ noted per-document since these move between draft, proposed, accepted
 | --- | --- |
 | [roadmap.md](/roadmap) | What's Done, In progress, and explicitly out of scope, kept current against `main` |
 | [feature-status.md](/feature-status) | Maturity label and test evidence per feature, and README claims checked against the code |
+| [change-tracking.md](/change-tracking) | How to commit, describe and label changes so release history stays readable |
 | [experimental-features.md](/experimental-features) | The `APP_EXPERIMENTAL` switch, what each gated feature does while off, and how the CLI, MCP, and web read it |
 | [ci.md](/ci) | How the CI lanes, required checks and local hooks fit together |
 | [profiles.md](/profiles) | The minimal, standard and suite server profiles, what each starts, and how to switch without losing data |
