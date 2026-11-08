@@ -1,0 +1,35 @@
+# label | kind | check   (kinds: cli-verb, route, setting, page, doc)
+Run an app from the CLI | cli-verb | apps run
+Plan an app deploy | cli-verb | apps plan
+Export a database | cli-verb | databases export
+Import a database | cli-verb | databases import
+Database import API | route | /api/v1/databases/{name}/import
+Compose database backups CLI | cli-verb | apps backups
+Compose database backup list | route | /api/v1/apps/{name}/compose-db-services/{service}/backups
+Compose database restore | route | /api/v1/apps/{name}/compose-db-services/{service}/backups/{run}/restore
+Compose database backup schedule | route | /api/v1/apps/{name}/compose-db-services/{service}/backup-schedule
+Domain limits CLI | cli-verb | domains limits
+Domain limits API | route | /api/v1/apps/{name}/domains/{domain}/limits
+SSH deploy key for Git sources | route | /api/v1/apps/{name}/git-source/ssh-key
+Git source CLI | cli-verb | apps git-source
+Git source affected check | route | /api/v1/apps/{name}/git-source/affected
+Repo plan API | route | /api/v1/apps/repo-plan
+Repo import plan CLI | cli-verb | import repo
+Per-service runtime options API | route | /api/v1/apps/{name}/services/{service}/runtime
+Per-service runtime options CLI | cli-verb | apps runtime
+Runtime settings API | route | /api/v1/settings/runtime
+Runtime settings apply API | route | /api/v1/settings/runtime/apply
+Runtime settings CLI | cli-verb | settings runtime
+Runtime tmpfs cap setting | setting | runtime.tmpfs_max
+Canonical domain setting | setting | domains.canonical
+Secret providers API | route | /api/v1/settings/secret-providers
+Secret provider connection test | route | /api/v1/settings/secret-providers/{name}/test
+Go-live page | page | apps/$name/go-live.tsx
+Database overview page | page | databases/$name/overview.tsx
+Database slow queries page | page | databases/$name/slow-queries.tsx
+Backups page | page | backups/index.tsx
+Control plane backup page | page | settings/control-plane-backup.tsx
+Runtime options doc | doc | docs/runtime-options.md
+Domain traffic controls doc | doc | docs/domain-traffic-controls.md
+Vault secret references doc | doc | docs/vault-secret-references.md
+Prove your backups doc | doc | docs/prove-your-backups-work.md

@@ -1,0 +1,48 @@
+name: proof
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Pull request number to post proof on
+        required: true
+        type: string
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  proof:
+    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'proof'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || format('refs/pull/{0}/head', inputs.pr) }}
+      - uses: ./.github/actions/setup-go-cached
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+      - name: Build web and binaries (no tests)
+        run: |
+          (cd web && npm ci --ignore-scripts && npm run build)
+          go build -buildvcs=false -o levelrail ./cmd/levelrail
+          go build -buildvcs=false -o levelrail-cli ./cmd/levelrail-cli
+      - name: Screenshot tools
+        run: |
+          pip install shot-scraper playwright
+          shot-scraper install
+          sudo apt-get install -y --no-install-recommends webp
+      - name: Post proof
+        env:
+          LEVELRAIL_PROOF_BASE: origin/${{ github.event.pull_request.base.ref || 'main' }}
+        run: scripts/proof/run.sh --pr "$PR_NUMBER"

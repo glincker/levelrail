@@ -1,0 +1,11 @@
+# path-glob[,glob] | route | seed step | label
+# A page is captured only when the PR diff touches a matching file. Seed names
+# a script in scripts/proof/seed/ ("none" means no seed, shot is flagged).
+# {app} in a route is replaced by the seeded app name.
+web/src/components/ComposeDbBackupsCard.tsx,web/src/components/ComposeDbRestoreDialog.tsx | /apps/{app}/volumes | none | Compose database backups card
+web/src/components/RunCommandCard.tsx,web/src/routes/apps/$name/exec.tsx | /apps/{app}/exec | app | Run command card
+web/src/components/AppReplicaTable.tsx,web/src/components/ui/number-stepper.tsx | /apps/{app}/services | app | Replica stepper
+web/src/components/domains/DomainTrafficLimitsControl.tsx,web/src/components/domains/DomainDetailPage.tsx | /apps/{app}/domains | app | Domain limits control
+web/src/components/settings/SecretProvidersSection.tsx,web/src/routes/settings/vault.tsx | /settings/vault | none | Secret providers section
+web/src/components/PreviewEnvironmentsCard.tsx,web/src/components/ApprovePreviewDialog.tsx,web/src/routes/apps/$name/previews.tsx | /apps/{app}/previews | app | Previews gate badge
+web/src/components/GitSourceCard.tsx,web/src/components/GitSourceDeployNow.tsx | /apps/{app}/source | app | Git source connect
