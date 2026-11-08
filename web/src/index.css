@@ -299,26 +299,6 @@ body {
 }
 
 .dark {
-  --tone-neutral-fg: var(--glinr-status-neutral-fg);
-  --tone-neutral-soft: var(--glinr-status-neutral-soft);
-  --tone-neutral-border: var(--glinr-status-neutral-border);
-  --tone-neutral-solid: var(--glinr-status-neutral-solid);
-  --tone-success-fg: var(--glinr-status-success-fg);
-  --tone-success-soft: var(--glinr-status-success-soft);
-  --tone-success-border: var(--glinr-status-success-border);
-  --tone-success-solid: var(--glinr-status-success-solid);
-  --tone-warning-fg: var(--glinr-status-warning-fg);
-  --tone-warning-soft: var(--glinr-status-warning-soft);
-  --tone-warning-border: var(--glinr-status-warning-border);
-  --tone-warning-solid: var(--glinr-status-warning-solid);
-  --tone-danger-fg: var(--glinr-status-danger-fg);
-  --tone-danger-soft: var(--glinr-status-danger-soft);
-  --tone-danger-border: var(--glinr-status-danger-border);
-  --tone-danger-solid: var(--glinr-status-danger-solid);
-  --tone-info-fg: var(--glinr-status-info-fg);
-  --tone-info-soft: var(--glinr-status-info-soft);
-  --tone-info-border: var(--glinr-status-info-border);
-  --tone-info-solid: var(--glinr-status-info-solid);
   --tone-accent-fg: oklch(0.82 0.11 227);
   --tone-accent-soft: oklch(0.27 0.07 227);
   --tone-accent-border: oklch(0.4 0.13 227);

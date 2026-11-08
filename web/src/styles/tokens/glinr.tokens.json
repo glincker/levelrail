@@ -828,8 +828,7 @@
       "$extensions": {
         "glinr": {
           "name": "radius-xs",
-          "stability": "experimental",
-          "tailwind": "radius-glinr-xs"
+          "stability": "experimental"
         }
       }
     },
@@ -839,8 +838,7 @@
       "$extensions": {
         "glinr": {
           "name": "radius-menu",
-          "stability": "experimental",
-          "tailwind": "radius-glinr-menu"
+          "stability": "experimental"
         }
       }
     },
@@ -850,8 +848,7 @@
       "$extensions": {
         "glinr": {
           "name": "radius-group",
-          "stability": "experimental",
-          "tailwind": "radius-glinr-group"
+          "stability": "experimental"
         }
       }
     },
@@ -861,8 +858,7 @@
       "$extensions": {
         "glinr": {
           "name": "radius-card",
-          "stability": "experimental",
-          "tailwind": "radius-glinr-card"
+          "stability": "experimental"
         }
       }
     },
@@ -872,8 +868,7 @@
       "$extensions": {
         "glinr": {
           "name": "radius-pill",
-          "stability": "experimental",
-          "tailwind": "radius-glinr-pill"
+          "stability": "experimental"
         }
       }
     }
@@ -1396,8 +1391,7 @@
       "$extensions": {
         "glinr": {
           "name": "surface-bg",
-          "stability": "experimental",
-          "tailwind": "color-glinr-surface-bg"
+          "stability": "experimental"
         }
       }
     },
@@ -1411,8 +1405,7 @@
       "$extensions": {
         "glinr": {
           "name": "surface-raised",
-          "stability": "experimental",
-          "tailwind": "color-glinr-surface-raised"
+          "stability": "experimental"
         }
       }
     },
@@ -1426,8 +1419,7 @@
       "$extensions": {
         "glinr": {
           "name": "surface-sunken",
-          "stability": "experimental",
-          "tailwind": "color-glinr-surface-sunken"
+          "stability": "experimental"
         }
       }
     },
@@ -1441,8 +1433,7 @@
       "$extensions": {
         "glinr": {
           "name": "surface-overlay",
-          "stability": "experimental",
-          "tailwind": "color-glinr-surface-overlay"
+          "stability": "experimental"
         }
       }
     },
@@ -1456,8 +1447,7 @@
       "$extensions": {
         "glinr": {
           "name": "surface-glass",
-          "stability": "experimental",
-          "tailwind": "color-glinr-surface-glass"
+          "stability": "experimental"
         }
       }
     },
@@ -1467,8 +1457,7 @@
       "$extensions": {
         "glinr": {
           "name": "surface-glass-solid",
-          "stability": "experimental",
-          "tailwind": "color-glinr-surface-glass-solid"
+          "stability": "experimental"
         }
       }
     },
@@ -1482,8 +1471,7 @@
       "$extensions": {
         "glinr": {
           "name": "border-control",
-          "stability": "experimental",
-          "tailwind": "color-glinr-border-control"
+          "stability": "experimental"
         }
       }
     },
@@ -1497,8 +1485,7 @@
       "$extensions": {
         "glinr": {
           "name": "divider",
-          "stability": "experimental",
-          "tailwind": "color-glinr-divider"
+          "stability": "experimental"
         }
       }
     },
@@ -1512,8 +1499,7 @@
       "$extensions": {
         "glinr": {
           "name": "hover",
-          "stability": "experimental",
-          "tailwind": "color-glinr-hover"
+          "stability": "experimental"
         }
       }
     },
@@ -1527,8 +1513,7 @@
       "$extensions": {
         "glinr": {
           "name": "press",
-          "stability": "experimental",
-          "tailwind": "color-glinr-press"
+          "stability": "experimental"
         }
       }
     },
@@ -1542,8 +1527,7 @@
       "$extensions": {
         "glinr": {
           "name": "accent-solid",
-          "stability": "experimental",
-          "tailwind": "color-glinr-accent-solid"
+          "stability": "experimental"
         }
       }
     },
@@ -1557,8 +1541,7 @@
       "$extensions": {
         "glinr": {
           "name": "accent-solid-hover",
-          "stability": "experimental",
-          "tailwind": "color-glinr-accent-solid-hover"
+          "stability": "experimental"
         }
       }
     },
@@ -1572,8 +1555,7 @@
       "$extensions": {
         "glinr": {
           "name": "accent-solid-active",
-          "stability": "experimental",
-          "tailwind": "color-glinr-accent-solid-active"
+          "stability": "experimental"
         }
       }
     },
@@ -1587,8 +1569,7 @@
       "$extensions": {
         "glinr": {
           "name": "accent-fg",
-          "stability": "experimental",
-          "tailwind": "color-glinr-accent-fg"
+          "stability": "experimental"
         }
       }
     },
@@ -1602,8 +1583,7 @@
       "$extensions": {
         "glinr": {
           "name": "accent-ink",
-          "stability": "experimental",
-          "tailwind": "color-glinr-accent-ink"
+          "stability": "experimental"
         }
       }
     },
@@ -1617,8 +1597,7 @@
       "$extensions": {
         "glinr": {
           "name": "accent-ring",
-          "stability": "experimental",
-          "tailwind": "color-glinr-accent-ring"
+          "stability": "experimental"
         }
       }
     },
@@ -1632,8 +1611,7 @@
       "$extensions": {
         "glinr": {
           "name": "accent-soft",
-          "stability": "experimental",
-          "tailwind": "color-glinr-accent-soft"
+          "stability": "experimental"
         }
       }
     },
@@ -1650,20 +1628,6 @@
           "stability": "experimental"
         }
       }
-    },
-    "mesh": {
-      "$value": {
-        "light": "radial-gradient(60% 50% at 10% 0%, oklch(0.9 0.06 215), transparent), radial-gradient(50% 40% at 90% 10%, oklch(0.88 0.07 190), transparent), radial-gradient(60% 50% at 70% 100%, oklch(0.86 0.06 255), transparent)",
-        "dark": "radial-gradient(60% 50% at 10% 0%, oklch(0.32 0.07 215), transparent), radial-gradient(50% 40% at 90% 10%, oklch(0.3 0.06 190), transparent), radial-gradient(60% 50% at 70% 100%, oklch(0.3 0.07 255), transparent)",
-        "oled": "none"
-      },
-      "$description": "Fixed background wash behind glass, redeclared per mode.",
-      "$extensions": {
-        "glinr": {
-          "name": "mesh",
-          "stability": "experimental"
-        }
-      }
     }
   },
   "status": {
@@ -1677,8 +1641,7 @@
       "$extensions": {
         "glinr": {
           "name": "status-success-fg",
-          "stability": "experimental",
-          "tailwind": "color-glinr-status-success-fg"
+          "stability": "experimental"
         }
       }
     },
@@ -1692,8 +1655,7 @@
       "$extensions": {
         "glinr": {
           "name": "status-success-solid",
-          "stability": "experimental",
-          "tailwind": "color-glinr-status-success-solid"
+          "stability": "experimental"
         }
       }
     },
@@ -1707,8 +1669,7 @@
       "$extensions": {
         "glinr": {
           "name": "status-success-soft",
-          "stability": "experimental",
-          "tailwind": "color-glinr-status-success-soft"
+          "stability": "experimental"
         }
       }
     },
@@ -1722,8 +1683,7 @@
       "$extensions": {
         "glinr": {
           "name": "status-success-border",
-          "stability": "experimental",
-          "tailwind": "color-glinr-status-success-border"
+          "stability": "experimental"
         }
       }
     },
@@ -1737,8 +1697,7 @@
       "$extensions": {
         "glinr": {
           "name": "status-warning-fg",
-          "stability": "experimental",
-          "tailwind": "color-glinr-status-warning-fg"
+          "stability": "experimental"
         }
       }
     },
@@ -1752,8 +1711,7 @@
       "$extensions": {
         "glinr": {
           "name": "status-warning-solid",
-          "stability": "experimental",
-          "tailwind": "color-glinr-status-warning-solid"
+          "stability": "experimental"
         }
       }
     },
@@ -1767,8 +1725,7 @@
       "$extensions": {
         "glinr": {
           "name": "status-warning-soft",
-          "stability": "experimental",
-          "tailwind": "color-glinr-status-warning-soft"
+          "stability": "experimental"
         }
       }
     },
@@ -1782,8 +1739,7 @@
       "$extensions": {
         "glinr": {
           "name": "status-warning-border",
-          "stability": "experimental",
-          "tailwind": "color-glinr-status-warning-border"
+          "stability": "experimental"
         }
       }
     },
@@ -1797,8 +1753,7 @@
       "$extensions": {
         "glinr": {
           "name": "status-danger-fg",
-          "stability": "experimental",
-          "tailwind": "color-glinr-status-danger-fg"
+          "stability": "experimental"
         }
       }
     },
@@ -1812,8 +1767,7 @@
       "$extensions": {
         "glinr": {
           "name": "status-danger-solid",
-          "stability": "experimental",
-          "tailwind": "color-glinr-status-danger-solid"
+          "stability": "experimental"
         }
       }
     },
@@ -1827,8 +1781,7 @@
       "$extensions": {
         "glinr": {
           "name": "status-danger-soft",
-          "stability": "experimental",
-          "tailwind": "color-glinr-status-danger-soft"
+          "stability": "experimental"
         }
       }
     },
@@ -1842,8 +1795,7 @@
       "$extensions": {
         "glinr": {
           "name": "status-danger-border",
-          "stability": "experimental",
-          "tailwind": "color-glinr-status-danger-border"
+          "stability": "experimental"
         }
       }
     },
@@ -1857,8 +1809,7 @@
       "$extensions": {
         "glinr": {
           "name": "status-info-fg",
-          "stability": "experimental",
-          "tailwind": "color-glinr-status-info-fg"
+          "stability": "experimental"
         }
       }
     },
@@ -1872,8 +1823,7 @@
       "$extensions": {
         "glinr": {
           "name": "status-info-solid",
-          "stability": "experimental",
-          "tailwind": "color-glinr-status-info-solid"
+          "stability": "experimental"
         }
       }
     },
@@ -1887,8 +1837,7 @@
       "$extensions": {
         "glinr": {
           "name": "status-info-soft",
-          "stability": "experimental",
-          "tailwind": "color-glinr-status-info-soft"
+          "stability": "experimental"
         }
       }
     },
@@ -1902,8 +1851,7 @@
       "$extensions": {
         "glinr": {
           "name": "status-info-border",
-          "stability": "experimental",
-          "tailwind": "color-glinr-status-info-border"
+          "stability": "experimental"
         }
       }
     },
@@ -1917,8 +1865,7 @@
       "$extensions": {
         "glinr": {
           "name": "status-neutral-fg",
-          "stability": "experimental",
-          "tailwind": "color-glinr-status-neutral-fg"
+          "stability": "experimental"
         }
       }
     },
@@ -1932,8 +1879,7 @@
       "$extensions": {
         "glinr": {
           "name": "status-neutral-solid",
-          "stability": "experimental",
-          "tailwind": "color-glinr-status-neutral-solid"
+          "stability": "experimental"
         }
       }
     },
@@ -1947,8 +1893,7 @@
       "$extensions": {
         "glinr": {
           "name": "status-neutral-soft",
-          "stability": "experimental",
-          "tailwind": "color-glinr-status-neutral-soft"
+          "stability": "experimental"
         }
       }
     },
@@ -1962,8 +1907,7 @@
       "$extensions": {
         "glinr": {
           "name": "status-neutral-border",
-          "stability": "experimental",
-          "tailwind": "color-glinr-status-neutral-border"
+          "stability": "experimental"
         }
       }
     }
@@ -1979,8 +1923,7 @@
       "$extensions": {
         "glinr": {
           "name": "material-ultrathin",
-          "stability": "experimental",
-          "tailwind": "color-glinr-material-ultrathin"
+          "stability": "experimental"
         }
       }
     },
@@ -1994,8 +1937,7 @@
       "$extensions": {
         "glinr": {
           "name": "material-thin",
-          "stability": "experimental",
-          "tailwind": "color-glinr-material-thin"
+          "stability": "experimental"
         }
       }
     },
@@ -2009,8 +1951,7 @@
       "$extensions": {
         "glinr": {
           "name": "material-regular",
-          "stability": "experimental",
-          "tailwind": "color-glinr-material-regular"
+          "stability": "experimental"
         }
       }
     },
@@ -2024,8 +1965,7 @@
       "$extensions": {
         "glinr": {
           "name": "material-thick",
-          "stability": "experimental",
-          "tailwind": "color-glinr-material-thick"
+          "stability": "experimental"
         }
       }
     },
@@ -2035,8 +1975,7 @@
       "$extensions": {
         "glinr": {
           "name": "material-tinted",
-          "stability": "experimental",
-          "tailwind": "color-glinr-material-tinted"
+          "stability": "experimental"
         }
       }
     }

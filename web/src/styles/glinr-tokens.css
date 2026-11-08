@@ -150,7 +150,6 @@
   --glinr-accent-ring: oklch(0.55 0.17 232);
   --glinr-accent-soft: oklch(0.52 0.15 232 / 10%);
   --glinr-seg-thumb: oklch(0.995 0.002 245);
-  --glinr-mesh: radial-gradient(60% 50% at 10% 0%, oklch(0.9 0.06 215), transparent), radial-gradient(50% 40% at 90% 10%, oklch(0.88 0.07 190), transparent), radial-gradient(60% 50% at 70% 100%, oklch(0.86 0.06 255), transparent);
   --glinr-status-success-fg: oklch(0.42 0.11 155);
   --glinr-status-success-solid: oklch(0.6 0.15 155);
   --glinr-status-success-soft: oklch(0.6 0.15 155 / 12%);
@@ -227,7 +226,6 @@
   --glinr-accent-ring: oklch(0.78 0.12 228);
   --glinr-accent-soft: oklch(0.72 0.13 228 / 14%);
   --glinr-seg-thumb: oklch(0.3 0.018 250);
-  --glinr-mesh: radial-gradient(60% 50% at 10% 0%, oklch(0.32 0.07 215), transparent), radial-gradient(50% 40% at 90% 10%, oklch(0.3 0.06 190), transparent), radial-gradient(60% 50% at 70% 100%, oklch(0.3 0.07 255), transparent);
   --glinr-status-success-fg: oklch(0.8 0.14 155);
   --glinr-status-success-solid: oklch(0.72 0.16 155);
   --glinr-status-success-soft: oklch(0.72 0.16 155 / 16%);
@@ -274,7 +272,6 @@
   --glinr-surface-glass: oklch(0.22 0.01 250 / 90%);
   --glinr-border-control: oklch(0.52 0.012 250);
   --glinr-seg-thumb: oklch(0.28 0.012 250);
-  --glinr-mesh: none;
   --glinr-status-success-soft: oklch(0.72 0.16 155 / 18%);
   --glinr-status-warning-soft: oklch(0.78 0.15 75 / 18%);
   --glinr-status-danger-soft: oklch(0.68 0.19 25 / 18%);
