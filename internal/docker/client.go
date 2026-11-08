@@ -463,7 +463,7 @@ func (c *Client) Create(ctx context.Context, spec ContainerSpec) (string, error)
 	if err != nil {
 		return "", fmt.Errorf("docker: create container %q: %w", spec.Name, err)
 	}
-	if err := c.chownFreshVolumes(ctx, resp.ID, spec.Image, spec.Volumes); err != nil {
+	if err := c.chownFreshVolumes(ctx, resp.ID, spec.Image, spec.User, spec.Volumes); err != nil {
 		slog.Warn("docker: could not fix ownership of a new volume for a non-root image", slog.String("container", spec.Name), slog.String("error", err.Error()))
 	}
 	if len(spec.Files) > 0 {

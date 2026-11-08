@@ -101,7 +101,7 @@ func (t *GRPCTransport) Create(ctx context.Context, spec docker.ContainerSpec) (
 		return "", ErrAgentLacksCapability
 	}
 	if spec.WorkingDir != "" && !t.caps.has(CapContainerSpecWorkdir) {
-		return "", ErrAgentLacksCapability
+		return "", fmt.Errorf("%w: working_dir needs %s", ErrAgentLacksCapability, CapContainerSpecWorkdir)
 	}
 	if spec.NeedsFilesCapability() && !t.caps.has(CapContainerSpecFiles) {
 		return "", ErrAgentLacksCapability

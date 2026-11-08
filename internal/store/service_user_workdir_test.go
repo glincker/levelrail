@@ -39,3 +39,14 @@ func TestAppliedFields_UserWorkingDirChangeDrifts(t *testing.T) {
 		}
 	}
 }
+
+func TestDiffApplied_OldSnapshotWithoutUserKeysHasNoDrift(t *testing.T) {
+	svc := DesiredService{Name: "web", Image: "nginx:1", Port: 80}
+	fields := AppliedFields(svc)
+	delete(fields, AppliedFieldUser)
+	delete(fields, AppliedFieldWorkingDir)
+	old := AppliedConfig{ServiceName: "web", Fields: fields}
+	if drift := DiffApplied(&old, nil, AppliedFields(svc)); len(drift.ConfigKeys) != 0 || len(drift.EnvKeys) != 0 {
+		t.Fatalf("snapshot from before user/working_dir existed reports drift: %+v", drift)
+	}
+}

@@ -6,31 +6,40 @@ import (
 )
 
 func TestToDesiredServices_UserAndWorkingDir(t *testing.T) {
-	f, err := Parse([]byte("services:\n  web:\n    image: nginx:1\n    user: \"1000:1000\"\n    working_dir: /srv\n  bad:\n    image: nginx:1\n    user: \"${UID}\"\n    working_dir: rel\n"))
+	f, err := Parse([]byte("services:\n  web:\n    image: nginx:1\n    user: \"${APP_UID:-1000}:1000\"\n    working_dir: /srv\n"))
 	if err != nil {
 		t.Fatalf("Parse() error = %v", err)
+	}
+	gen := func(string, string, int) (string, error) { return "x", nil }
+	if _, _, err := ResolveMagicVars(f, gen, func(string, string, string) error { return nil }); err != nil {
+		t.Fatalf("ResolveMagicVars() error = %v", err)
 	}
 	for _, u := range f.Unsupported {
 		if u.Key == "user" || u.Key == "working_dir" {
 			t.Fatalf("%s is still reported as unsupported", u.Key)
 		}
 	}
-	got, warnings, err := ToDesiredServices("app", f)
+	got, _, err := ToDesiredServices("app", f)
 	if err != nil {
 		t.Fatalf("ToDesiredServices() error = %v", err)
 	}
-	byName := map[string]int{}
-	for i, d := range got {
-		byName[d.Name] = i
+	if got[0].User != "1000:1000" || got[0].WorkingDir != "/srv" {
+		t.Fatalf("user/working_dir = %q/%q", got[0].User, got[0].WorkingDir)
 	}
-	if web := got[byName["app-web"]]; web.User != "1000:1000" || web.WorkingDir != "/srv" {
-		t.Fatalf("web user/working_dir = %q/%q", web.User, web.WorkingDir)
-	}
-	if bad := got[byName["app-bad"]]; bad.User != "" || bad.WorkingDir != "" {
-		t.Fatalf("invalid values must fall back to the image defaults: %q/%q", bad.User, bad.WorkingDir)
-	}
-	joined := strings.Join(warnings, "\n")
-	if !strings.Contains(joined, "user:") || !strings.Contains(joined, "working_dir:") || strings.Contains(joined, "${UID}") {
-		t.Fatalf("warnings = %q", joined)
+}
+
+func TestToDesiredServices_InvalidUserFailsWithoutEcho(t *testing.T) {
+	for _, body := range []string{"    user: \"evil user\"\n", "    working_dir: rel/dir\n"} {
+		f, err := Parse([]byte("services:\n  web:\n    image: nginx:1\n" + body))
+		if err != nil {
+			t.Fatalf("Parse() error = %v", err)
+		}
+		_, _, err = ToDesiredServices("app", f)
+		if err == nil || !strings.Contains(err.Error(), `service "web"`) {
+			t.Fatalf("ToDesiredServices() error = %v, want a failure naming the service", err)
+		}
+		if strings.Contains(err.Error(), "evil user") || strings.Contains(err.Error(), "rel/dir") {
+			t.Fatalf("error echoes the value: %v", err)
+		}
 	}
 }

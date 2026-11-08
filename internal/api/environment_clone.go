@@ -623,6 +623,8 @@ func cloneDesiredService(source store.DesiredService, newName string, domains []
 		Env:                  env,
 		Command:              append([]string(nil), source.Command...),
 		Entrypoint:           append([]string(nil), source.Entrypoint...),
+		User:                 source.User,
+		WorkingDir:           source.WorkingDir,
 		PullPolicy:           source.PullPolicy,
 		RegistryCredentialID: source.RegistryCredentialID,
 		SecretEnv:            secretEnv,

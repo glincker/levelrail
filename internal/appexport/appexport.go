@@ -57,6 +57,8 @@ type Service struct {
 	Image            string
 	Command          []string
 	Entrypoint       []string
+	User             string
+	WorkingDir       string
 	Port             int
 	Domains          []string
 	Env              map[string]string
@@ -343,6 +345,12 @@ func writeService(b *strings.Builder, s Service, vars []envVar) {
 	}
 	if len(s.Command) > 0 {
 		fmt.Fprintf(b, "    command: %s\n", ysList(s.Command))
+	}
+	if s.User != "" {
+		fmt.Fprintf(b, "    user: %s\n", ys(s.User))
+	}
+	if s.WorkingDir != "" {
+		fmt.Fprintf(b, "    working_dir: %s\n", ys(s.WorkingDir))
 	}
 	fmt.Fprintf(b, "    restart: %s\n", restartPolicy(s.Restart))
 	if len(vars) > 0 {

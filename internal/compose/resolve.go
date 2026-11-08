@@ -79,6 +79,21 @@ func resolveMagicVars(
 			changed = true
 		}
 
+		for _, field := range []struct {
+			key string
+			val *string
+		}{{"user", &svc.User}, {"working_dir", &svc.WorkingDir}} {
+			if *field.val == "" {
+				continue
+			}
+			resolved, ferr := resolveScalarField(f, svcKey, field.key, *field.val, interpolate)
+			if ferr != nil {
+				return nil, nil, ferr
+			}
+			*field.val = resolved
+			changed = true
+		}
+
 		if len(svc.Environment) == 0 {
 			if changed {
 				f.Services[svcKey] = svc
@@ -230,4 +245,26 @@ func resolveGenerated(cache map[string]string, v MagicVar, generate func(kind, k
 	}
 	cache[cacheKey] = val
 	return val, nil
+}
+
+// resolveScalarField expands ${VAR} and ${VAR:-default} in a single-value key
+// such as user:; an unset variable without a default is left for validation.
+func resolveScalarField(f *File, svcKey, key, value string, interpolate bool) (string, error) {
+	if interpolate {
+		v, err := interpolateValue(value, f.InterpVars, func(w string) {
+			f.InterpWarnings = append(f.InterpWarnings, fmt.Sprintf("service %q: %s: %s", svcKey, key, w))
+		})
+		if err != nil {
+			return "", fmt.Errorf("service %q: %s: %w", svcKey, key, err)
+		}
+		value = v
+	}
+	for _, v := range FindMagicVars(value) {
+		if rv, ok := resolveDomainVar(f, svcKey, v); ok {
+			value = strings.Replace(value, v.Token, rv, 1)
+		} else if v.HasDefault && !v.Generatable {
+			value = strings.Replace(value, v.Token, v.Default, 1)
+		}
+	}
+	return value, nil
 }
