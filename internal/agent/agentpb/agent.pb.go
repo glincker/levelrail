@@ -2958,7 +2958,10 @@ type ContainerSpec struct {
 	BindMounts []*BindMount `protobuf:"bytes,22,rep,name=bind_mounts,json=bindMounts,proto3" json:"bind_mounts,omitempty"`
 	// files are inline files written into the container before it starts. Sent
 	// only to agents advertising "container_spec_files".
-	Files         []*FileMount `protobuf:"bytes,23,rep,name=files,proto3" json:"files,omitempty"`
+	Files []*FileMount `protobuf:"bytes,23,rep,name=files,proto3" json:"files,omitempty"`
+	// working_dir mirrors internal/docker.ContainerSpec.WorkingDir. Sent only to
+	// agents advertising "container_spec_workdir".
+	WorkingDir    string `protobuf:"bytes,24,opt,name=working_dir,json=workingDir,proto3" json:"working_dir,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3152,6 +3155,13 @@ func (x *ContainerSpec) GetFiles() []*FileMount {
 		return x.Files
 	}
 	return nil
+}
+
+func (x *ContainerSpec) GetWorkingDir() string {
+	if x != nil {
+		return x.WorkingDir
+	}
+	return ""
 }
 
 type FileMount struct {
@@ -7777,7 +7787,7 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"cpusetCpus\"H\n" +
 	"\vVolumeMount\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12%\n" +
-	"\x0econtainer_path\x18\x02 \x01(\tR\rcontainerPath\"\x90\b\n" +
+	"\x0econtainer_path\x18\x02 \x01(\tR\rcontainerPath\"\xb1\b\n" +
 	"\rContainerSpec\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05image\x18\x02 \x01(\tR\x05image\x125\n" +
@@ -7807,7 +7817,9 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\x04user\x18\x15 \x01(\tR\x04user\x12>\n" +
 	"\vbind_mounts\x18\x16 \x03(\v2\x1d.levelrail.agent.v1.BindMountR\n" +
 	"bindMounts\x123\n" +
-	"\x05files\x18\x17 \x03(\v2\x1d.levelrail.agent.v1.FileMountR\x05files\x1a6\n" +
+	"\x05files\x18\x17 \x03(\v2\x1d.levelrail.agent.v1.FileMountR\x05files\x12\x1f\n" +
+	"\vworking_dir\x18\x18 \x01(\tR\n" +
+	"workingDir\x1a6\n" +
 	"\bEnvEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a9\n" +

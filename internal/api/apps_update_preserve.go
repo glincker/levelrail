@@ -77,6 +77,7 @@ func preserveUnsentAppFields(desired *store.DesiredService, existing store.Desir
 	desired.Volumes = existing.Volumes
 	desired.BindMounts = existing.BindMounts
 	desired.Entrypoint = existing.Entrypoint
+	desired.User, desired.WorkingDir = existing.User, existing.WorkingDir
 	desired.PullPolicy = existing.PullPolicy
 	desired.RegistryCredentialID = existing.RegistryCredentialID
 	desired.DependsOn = existing.DependsOn

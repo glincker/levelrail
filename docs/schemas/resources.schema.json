@@ -1777,12 +1777,22 @@
           },
           "type": "array"
         },
+        "user": {
+          "description": "Container user as a name or uid, optionally :group or :gid.",
+          "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]*(:[A-Za-z0-9_][A-Za-z0-9_.-]*)?$",
+          "type": "string"
+        },
         "volumes": {
           "description": "Named volumes or host bind mounts to mount into the container.",
           "items": {
             "$ref": "#/$defs/volume"
           },
           "type": "array"
+        },
+        "working_dir": {
+          "description": "Absolute working directory that overrides the image's WORKDIR.",
+          "pattern": "^/",
+          "type": "string"
         },
         "workload": {
           "default": "replicated",

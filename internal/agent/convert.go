@@ -124,6 +124,7 @@ func containerSpecToPB(s docker.ContainerSpec) *agentpb.ContainerSpec {
 		SecurityOpt:  s.SecurityOpt,
 		Devices:      s.Devices,
 		User:         s.User,
+		WorkingDir:   s.WorkingDir,
 		BindMounts:   bindMountsToPB(s.BindMounts),
 		Files:        fileMountsToPB(s.Files),
 	}
@@ -233,6 +234,7 @@ func containerSpecFromPB(s *agentpb.ContainerSpec) docker.ContainerSpec {
 		SecurityOpt:  s.SecurityOpt,
 		Devices:      s.Devices,
 		User:         s.User,
+		WorkingDir:   s.WorkingDir,
 		BindMounts:   bindMountsFromPB(s.BindMounts),
 		Files:        fileMountsFromPB(s.Files),
 	}

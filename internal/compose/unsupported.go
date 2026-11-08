@@ -34,8 +34,6 @@ var alternatives = map[string]string{
 	"extends":                              "only same-file extends: {service: name} is resolved; inline the keys from the other file",
 	"env_file":                             "read only for git deploys (build.type: compose), from files inside the repository; for a pasted file move the values into environment: or the app's env vars",
 	"container_name":                       "the custom name is not applied; containers are named <app>-<service> and other services reach this one by its service key, so use that as the hostname",
-	"user":                                 "not applied (no per-service user field yet); set USER in the image, or wrap the start command with entrypoint:",
-	"working_dir":                          "not applied (no per-service working directory field yet); set WORKDIR in the image, or cd inside command:",
 	"hostname":                             "services reach each other by service name; remove it",
 	"expose":                               "internal-only ports need no declaration; add ports: for the one ingress should route to",
 	"stop_grace_period":                    "the reconciler's own stop timeout applies; remove it",

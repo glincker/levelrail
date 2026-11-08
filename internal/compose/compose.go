@@ -100,6 +100,9 @@ type Service struct {
 	// (store.DesiredService.Entrypoint), parsed with the same
 	// string-or-list union as Command.
 	Entrypoint Command
+	// User and WorkingDir are user: and working_dir:, validated like app.yaml's.
+	User       string
+	WorkingDir string
 	// PullPolicy is pull_policy:, normalized by normalizePullPolicy into
 	// exactly the two states store.DesiredService.PullPolicy
 	// distinguishes: PullPolicyAlways forces a fresh pull even when the

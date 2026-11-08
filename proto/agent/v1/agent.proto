@@ -449,6 +449,9 @@ message ContainerSpec {
   // files are inline files written into the container before it starts. Sent
   // only to agents advertising "container_spec_files".
   repeated FileMount files = 23;
+  // working_dir mirrors internal/docker.ContainerSpec.WorkingDir. Sent only to
+  // agents advertising "container_spec_workdir".
+  string working_dir = 24;
 }
 
 message FileMount {

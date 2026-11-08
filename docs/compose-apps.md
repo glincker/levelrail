@@ -77,7 +77,7 @@ A key outside the table above does not stop the deploy, but it is never dropped 
 The warning has one fixed shape, with `top-level` in place of the service name for a top-level key:
 
 ```text
-service "web": user: is not supported and was ignored; not applied (no per-service user field yet); set USER in the image, or wrap the start command with entrypoint:
+service "web": container_name: is not supported and was ignored; the custom name is not applied; containers are named <app>-<service> and other services reach this one by its service key, so use that as the hostname
 ```
 
 A key with no specific advice gets `remove it, or bake the setting into the image; it has no effect on how this service runs`.
@@ -94,7 +94,7 @@ These service keys are read. Everything else is ignored with a warning, or rejec
 
 | Group | Keys |
 | --- | --- |
-| Run | `image`, `command`, `entrypoint`, `environment`, `env_file` (git deploys), `extends` (same file), `restart`, `pull_policy`, `profiles`, `labels` |
+| Run | `image`, `command`, `entrypoint`, `user`, `working_dir`, `environment`, `env_file` (git deploys), `extends` (same file), `restart`, `pull_policy`, `profiles`, `labels` |
 | Network and storage | `ports`, `volumes`, `networks` (reported only) |
 | Readiness and order | `healthcheck` (`test`, `interval`, `timeout`, `retries`, `start_period`), `depends_on` |
 | Resources | `mem_limit`, `cpus`, `shm_size`, `deploy` (`replicas`, `resources.limits`, `resources.reservations.devices`) |
@@ -103,15 +103,13 @@ These service keys are read. Everything else is ignored with a warning, or rejec
 
 `build`, `secrets`, `configs` and the host access keys listed under "What is rejected" are parsed only so they can be refused or redirected with a clear message. They are not supported. `SERVICE_FQDN_*`, `SERVICE_URL_*` and `SERVICE_PASSWORD_*` style variables from imported templates are rewritten into literal values or generated secrets before the file is parsed.
 
-The five ignored keys people paste most, and the fix for each:
+The ignored keys people paste most, and the fix for each:
 
 | Key | Fix |
 | --- | --- |
 | `env_file` | Read for git deploys (`build.type: compose`), then overridden by `environment:`. In a pasted file it is not read: move the values into `environment:` or the app's env vars. |
 | `extends` | Same-file `extends: {service: name}` is merged. Only `extends` with `file:` is ignored: inline those keys. |
 | `container_name` | Not applied. Containers are named `<app>-<service>`; other services reach this one by its service key. |
-| `user` | Not applied (the app spec has no per-service user field yet). Set `USER` in the image, or wrap the start command with `entrypoint:`. |
-| `working_dir` | Not applied (no per-service working directory field yet). Set `WORKDIR` in the image, or `cd` inside `command:`. |
 
 More ignored keys and their alternatives:
 
@@ -120,7 +118,6 @@ More ignored keys and their alternatives:
 | `extends` with `file:` | Inline the keys from the other file. |
 | `env_file` in a pasted file | Move the values into `environment:` or the app's env vars. |
 | `container_name`, `hostname`, `links` | Not applied or needed: containers are named `<app>-<service>` and services reach each other by name. |
-| `user`, `working_dir` | Set `USER` or `WORKDIR` in the image. |
 | `cap_drop`, `pids_limit` | Not needed: every container already drops all capabilities except a minimal set and gets a process limit (`APP_CONTAINER_PIDS_LIMIT`, default 4096). |
 | `expose` | Add `ports:` for the port ingress should route to. |
 | `deploy.resources.reservations` CPU and memory | Only limits are applied. |

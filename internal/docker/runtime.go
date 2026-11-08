@@ -282,6 +282,8 @@ type ContainerSpec struct {
 	RestartPolicy string
 	// User runs the container process as this uid[:gid]. Empty keeps the image's user.
 	User string
+	// WorkingDir overrides the image's WORKDIR. Empty keeps the image's.
+	WorkingDir string
 	// UsernsMode is the engine's user namespace mode, such as "auto" or
 	// "keep-id" (Podman). Empty keeps the engine default.
 	UsernsMode string

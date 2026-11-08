@@ -81,13 +81,17 @@ func (h *IdentityHolder) Set(id *Identity) {
 func LocalAgentInfo() *agentpb.AgentInfo {
 	return &agentpb.AgentInfo{
 		Version: version.Version, Commit: buildCommit(), Os: runtime.GOOS, Arch: runtime.GOARCH,
-		Capabilities: []string{CapContainerSpecSecurity, CapExitTimes, CapContainerSpecFiles, CapBuildNetwork},
+		Capabilities: []string{CapContainerSpecSecurity, CapExitTimes, CapContainerSpecFiles, CapBuildNetwork, CapContainerSpecWorkdir},
 	}
 }
 
 // CapContainerSpecSecurity means the agent applies userns, security-opt,
 // device, user and bind mount fields of a container spec.
 const CapContainerSpecSecurity = "container_spec_security"
+
+// CapContainerSpecWorkdir means the agent applies ContainerSpec.WorkingDir;
+// an older agent would start the process in the image's WORKDIR instead.
+const CapContainerSpecWorkdir = "container_spec_workdir"
 
 // CapContainerSpecFiles means the agent writes the spec's inline files into
 // the container before starting it.

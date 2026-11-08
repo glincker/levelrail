@@ -16,6 +16,8 @@ const (
 	AppliedFieldPort       = "port"
 	AppliedFieldCommand    = "command"
 	AppliedFieldEntrypoint = "entrypoint"
+	AppliedFieldUser       = "user"
+	AppliedFieldWorkingDir = "working_dir"
 	AppliedFieldLabels     = "labels"
 	AppliedFieldHostPort   = "host_port"
 	AppliedFieldBindAddr   = "bind_address"
@@ -58,6 +60,8 @@ func AppliedFields(svc DesiredService) map[string]string {
 		AppliedFieldPort:        strconv.Itoa(svc.Port),
 		AppliedFieldCommand:     shortJSONHash(svc.Command),
 		AppliedFieldEntrypoint:  shortJSONHash(svc.Entrypoint),
+		AppliedFieldUser:        shortJSONHash(svc.User),
+		AppliedFieldWorkingDir:  shortJSONHash(svc.WorkingDir),
 		AppliedFieldLabels:      shortJSONHash(sortedLabels(svc.Labels)),
 		AppliedFieldHostPort:    hostPortField(svc.HostPort),
 		AppliedFieldBindAddr:    svc.BindAddress,

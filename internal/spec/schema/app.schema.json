@@ -125,6 +125,8 @@
           "items": { "type": "string" },
           "minItems": 1
         },
+        "user": { "description": "Container user as a name or uid, optionally :group or :gid.", "type": "string", "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]*(:[A-Za-z0-9_][A-Za-z0-9_.-]*)?$" },
+        "working_dir": { "description": "Absolute working directory that overrides the image's WORKDIR.", "type": "string", "pattern": "^/" },
         "egress": { "description": "Outbound network allowlist for the container.", "$ref": "#/$defs/egress" },
         "tolerations": {
           "description": "Node taints this service may be placed despite.",

@@ -454,6 +454,7 @@ func (c *Client) Create(ctx context.Context, spec ContainerSpec) (string, error)
 			Cmd:          spec.Command,
 			Entrypoint:   spec.Entrypoint,
 			User:         spec.User,
+			WorkingDir:   spec.WorkingDir,
 		},
 		hostConfig,
 		toNetworkingConfig(spec.Network), nil,

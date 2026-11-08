@@ -2857,6 +2857,7 @@ func toContainerSpec(name string, desired *store.DesiredService) (docker.Contain
 	if len(desired.Entrypoint) > 0 {
 		spec.Entrypoint = desired.Entrypoint
 	}
+	spec.User, spec.WorkingDir = desired.User, desired.WorkingDir
 	if desired.Port != 0 {
 		// BindAddress (migrations/0103_service_bind_address.sql): which
 		// interface Port (and HostPort, if pinned) binds to. Every

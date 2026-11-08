@@ -32,6 +32,16 @@ func ToDesiredServices(appName string, f *File) (services []store.DesiredService
 		if err := spec.ValidateLabels(svc.Labels); err != nil {
 			return nil, nil, fmt.Errorf("service %q: %w", key, err)
 		}
+		// An unusable value (often an unexpanded ${UID}) keeps the image default
+		// with a warning, the same outcome these keys had before they were read.
+		if err := spec.ValidateUser(svc.User); err != nil {
+			warnings = append(warnings, fmt.Sprintf("service %q: %v; the image's user is used", key, err))
+			svc.User = ""
+		}
+		if err := spec.ValidateWorkingDir(svc.WorkingDir); err != nil {
+			warnings = append(warnings, fmt.Sprintf("service %q: %v; the image's working directory is used", key, err))
+			svc.WorkingDir = ""
+		}
 		pullPolicy, err := normalizePullPolicy(svc.PullPolicy)
 		if err != nil {
 			return nil, nil, fmt.Errorf("service %q: %w", key, err)
@@ -45,6 +55,8 @@ func ToDesiredServices(appName string, f *File) (services []store.DesiredService
 			Labels:           svc.Labels,
 			Command:          svc.Command,
 			Entrypoint:       svc.Entrypoint,
+			User:             svc.User,
+			WorkingDir:       svc.WorkingDir,
 			PullPolicy:       pullPolicy,
 			DependsOn:        []string(svc.DependsOn),
 			DependsOnHealthy: svc.DependsOnHealthy,

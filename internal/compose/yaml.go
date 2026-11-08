@@ -41,6 +41,8 @@ type rawService struct {
 	DependsOn   DependsOn         `yaml:"depends_on"`
 	Command     Command           `yaml:"command"`
 	Entrypoint  Command           `yaml:"entrypoint"`
+	User        string            `yaml:"user"`
+	WorkingDir  string            `yaml:"working_dir"`
 	PullPolicy  string            `yaml:"pull_policy"`
 	Deploy      *Deploy           `yaml:"deploy"`
 	Secrets     []any             `yaml:"secrets"`

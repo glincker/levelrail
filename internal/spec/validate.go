@@ -122,6 +122,9 @@ func (svc *Service) validate(name string) error {
 	if err := svc.validateHooks(name); err != nil {
 		return err
 	}
+	if err := svc.validateProcess(name); err != nil {
+		return err
+	}
 	if err := svc.validateFiles(name); err != nil {
 		return err
 	}
