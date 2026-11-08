@@ -37,6 +37,10 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		writeAppInvalid(w, err)
 		return
 	}
+	if err := rt.checkReplicaCap(r.Context(), req.Replicas); err != nil {
+		writeAppInvalid(w, err)
+		return
+	}
 	// Create only: apps that predate this rule keep updating under their old names.
 	if err := spec.ValidateServiceName(req.Name); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())

@@ -100,3 +100,56 @@ func TestAppsRun_JSONKeepsStdoutPure(t *testing.T) {
 		t.Fatalf("stdout = %q, want one JSON job with the output (err %v)", out.String(), err)
 	}
 }
+
+func TestAppsRun_SendsBackoffZeroByDefaultAndRetries(t *testing.T) {
+	for _, tc := range []struct {
+		extra []string
+		want  int
+	}{{nil, 0}, {[]string{"--retries", "2"}, 2}} {
+		var raw map[string]any
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodPost {
+				body, _ := io.ReadAll(r.Body)
+				_ = json.Unmarshal(body, &raw)
+			}
+			_ = json.NewEncoder(w).Encode(apiclient.OneShotJob{ID: "jb_1", App: "web", State: "Succeeded"})
+		}))
+		args := append([]string{"apps", "run", "--api-url", srv.URL, "--token", "t"}, tc.extra...)
+		args = append(args, "web", "--", "true")
+		var out, errb bytes.Buffer
+		if got := run("levelrail-cli-test", args, &out, &errb, envMap()); got != exitOK {
+			t.Fatalf("exit = %d (%s)", got, errb.String())
+		}
+		srv.Close()
+		if v, ok := raw["backoff_limit"]; !ok || v != float64(tc.want) {
+			t.Errorf("backoff_limit = %v (present %v), want %d", v, ok, tc.want)
+		}
+	}
+}
+
+func TestAppsRun_PollErrorKeepsJobIDAndRetries(t *testing.T) {
+	polls := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			_ = json.NewEncoder(w).Encode(apiclient.OneShotJob{ID: "jb_9", State: "Running"})
+			return
+		}
+		if polls++; polls <= 2 {
+			http.Error(w, "boom", http.StatusBadGateway)
+			return
+		}
+		_ = json.NewEncoder(w).Encode(apiclient.OneShotJob{ID: "jb_9", State: "Succeeded"})
+	}))
+	defer srv.Close()
+	var out, errb bytes.Buffer
+	args := []string{"apps", "run", "--api-url", srv.URL, "--token", "t", "--poll", "1ms", "web", "--", "true"}
+	if got := run("levelrail-cli-test", args, &out, &errb, envMap()); got != exitOK {
+		t.Fatalf("transient poll errors must be retried, exit = %d (%s)", got, errb.String())
+	}
+
+	polls = -100
+	errb.Reset()
+	if got := run("levelrail-cli-test", args, &out, &errb, envMap()); got == exitOK || !strings.Contains(errb.String(), "jb_9") {
+		t.Fatalf("exit = %d, stderr %q, want a failure naming jb_9", got, errb.String())
+	}
+}

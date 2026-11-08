@@ -247,7 +247,7 @@ levelrail-cli apps moves get <name> <id> [flags]
 - `apps promote` promotes the app's image onto a sibling app in another environment. `--release` promotes a specific release id from `releases list` instead of the one the app is bound to.
 - `apps rollback --release ID` redeploys that release by its digest pinned ref and retargets the binding. Both `--release` flags need `APP_RELEASE_BINDINGS=on` on the server and answer 404 for a release that does not belong to the app.
 - `apps apply` restarts an app so saved env, secret and config changes reach the running container; it does nothing when nothing is pending.
-- `apps scale` changes the replica count and/or the deploy strategy. With `service=count` pairs it sets replicas per service of a multi-service app; every key is checked before anything changes. `apps restart --service S` recreates one service.
+- `apps scale` changes the replica count and/or the deploy strategy. With `service=count` pairs it sets replicas per service of a multi-service app; every key is checked before anything changes, then services are updated one at a time. If an update fails, the services already changed are set back to their previous counts (best effort, each rollback is reported), so it is not atomic. `apps restart --service S` recreates one service.
 - `apps hook-runs` shows the most recent outcome of an app's pre and post deploy hooks; `apps images` lists the locally present image tags under the app's current image repo.
 - `apps set` changes app settings. `--pr-comment-commands on|off` lets write-access users run `/levelrail` commands from pull request comments (see [Pull request comment commands](/pr-comment-commands)).
 - `apps set-node` and `apps clear-node` move an app to another node, or back to the control plane's own local node. With `--with-volumes` the named volumes move too, and `apps moves` shows the history of those moves.
@@ -362,7 +362,7 @@ levelrail-cli apps exec-access enable|disable|status <name> [flags]
 
 ```
 levelrail-cli apps exec <name> -- <command> [args...] [flags]
-levelrail-cli apps run <name> [--service S] [--timeout D] -- <command> [args...] [flags]
+levelrail-cli apps run <name> [--service S] [--timeout D] [--retries N] -- <command> [args...] [flags]
 levelrail-cli apps console <name> [-- <command> [args...]] [flags]
 levelrail-cli apps export <name> [--format compose] [--out DIR|-] [flags]
 levelrail-cli apps logs <name> [flags]
@@ -386,7 +386,7 @@ levelrail-cli apps scheduled-tasks delete <app> <id> [flags]
 ```
 
 - `apps exec` runs a command in the app's container and exits with its real exit code.
-- `apps run` runs a command once in a fresh container with the app's env and secrets, waits, prints the output and exits with the command's exit code (124 on timeout, 5 when the job failed without one). See [Jobs](/jobs#run-a-command-with-apps-run).
+- `apps run` runs a command once (no retries unless `--retries N` is given) in a fresh container with the app's env and secrets, waits, prints the output and exits with the command's exit code (124 on timeout, 5 when the job failed without one). See [Jobs](/jobs#run-a-command-with-apps-run).
 - `apps console <app>` opens the console the app's template declares (Minecraft: `rcon-cli`) through the same exec path. With no command it opens a terminal; with `-- list` it runs once and prints the output. Templates that declare no console are refused with a pointer to `apps exec`. The console reads its credentials from the container's environment, nothing secret is passed on the command line.
 - `apps tunnel <app> [--service s] [--port p] [--local-port n]` listens on 127.0.0.1 and relays to a private container port, see [app tunnel](/app-tunnel).
 - `apps logs` searches an app's stored log entries (`--since 10m`, `--tail N` or `-n N`, `--service S`), or streams live with `--follow`. On a terminal with no search flag it follows live by default; `--no-follow` and piped or `--json` output give stored entries. For a capped excerpt see `logs query` under [Logs](#logs).

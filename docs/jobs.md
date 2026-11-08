@@ -37,11 +37,11 @@ levelrail-cli apps run web -- bin/rails db:migrate
 levelrail-cli apps run shop --service worker --timeout 5m -- node scripts/backfill.js
 ```
 
-`apps run` starts a one-shot job, waits for it, prints the output and exits with the command's own exit code, so it works in scripts and CI. No terminal is needed. The output is printed when the command finishes, not line by line. A timeout exits 124, and a job that failed without a command exit code (the container could not start) exits 5. Secret values are redacted from the output, and the command line is never echoed. `--service S` targets one service of a multi-service app. `--json` prints the finished job, output included, and nothing else. Use `apps exec` instead to run inside the live container.
+`apps run` starts a one-shot job, waits for it, prints the output and exits with the command's own exit code, so it works in scripts and CI. No terminal is needed. The output is printed when the command finishes, not line by line. A timeout exits 124, and a job that failed without a command exit code (the container could not start) exits 5. Secret values are redacted from the output, and the command line is never echoed. `--service S` targets one service of a multi-service app. `--json` prints the finished job, output included, and nothing else. `apps run` sends a backoff limit of 0, so a failed command runs once; `--retries N` allows N more attempts. Use `apps exec` instead to run inside the live container.
 
 ### API
 
-`POST /api/v1/jobs/runs` starts a job and answers 202 with its status. `GET /api/v1/jobs/runs/{id}` returns the status. Starting needs the same permission as running a scheduled job now (deploy on the app); reading needs read. The `GET` answer also carries the newest attempt's `exit_code`, `run_status` and `output` (the last `APP_ONESHOT_OUTPUT_TAIL_BYTES` bytes, default 65536, with `output_truncated` set when it was cut), so one call is enough to see what the command printed.
+`POST /api/v1/jobs/runs` starts a job and answers 202 with its status. `GET /api/v1/jobs/runs/{id}` returns the status. Starting needs the same permission as running a scheduled job now (deploy on the app); reading needs read. The `GET` answer also carries the newest attempt's `exit_code`, `run_status` and `output` (at most `APP_JOBS_MAX_OUTPUT_BYTES` bytes, default 65536, the same limit a run keeps; `output_truncated` is set when the output was cut), so one call is enough to see what the command printed.
 
 ```json
 { "app": "web", "command": ["node", "scripts/backfill.js"], "completions": 10, "parallelism": 3, "backoff_limit": 4, "timeout_seconds": 900 }
@@ -55,7 +55,6 @@ levelrail-cli apps run shop --service worker --timeout 5m -- node scripts/backfi
 | `APP_JOB_DEFAULT_TIMEOUT` | `10m` | Per-attempt timeout when the request gives none. |
 | `APP_JOB_MAX_COMPLETIONS` | `100` | Largest `completions` accepted. |
 | `APP_JOB_MAX_PARALLELISM` | `10` | Largest `parallelism` accepted. |
-| `APP_ONESHOT_OUTPUT_TAIL_BYTES` | `65536` | Output bytes kept in a job answer. The full output stays in the run history. |
 | `APP_JOB_ONESHOT_KEEP` | `100` | Finished jobs whose status is kept. Older ones are pruned together with their hidden task row. |
 
 ### Limits today

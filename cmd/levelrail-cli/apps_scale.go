@@ -6,6 +6,8 @@ import (
 	"io"
 	"strconv"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 // runAppsScale implements "apps scale <name> --replicas N [--strategy S]":
@@ -118,7 +120,7 @@ type scalePair struct {
 }
 
 // scaleServices resolves each service key through the app group, then sets every replica count.
-// All keys are checked before the first change so a typo never leaves a half-scaled app.
+// Keys are checked first; a failed update then rolls back the services already changed.
 func scaleServices(prog, app string, pairArgs []string, apiURLFlag, tokenFlag, profileFlag string, jsonOut bool, of outputFlags, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	pairs, err := parseScalePairs(pairArgs)
 	if err != nil {
@@ -147,16 +149,19 @@ func scaleServices(prog, app string, pairArgs []string, apiURLFlag, tokenFlag, p
 		}
 	}
 	updated := make([]appResource, 0, len(pairs))
+	previous := make([]appResource, 0, len(pairs))
 	for _, p := range pairs {
 		target := serviceAppName(app, p.service)
 		res, err := client.GetApp(ctx, target)
 		if err != nil {
-			return reportError(stdout, stderr, jsonOut, fmt.Errorf("get app %q: %w", target, err))
+			return reportError(stdout, stderr, jsonOut, scaleFailure(ctx, client, stderr, previous, fmt.Errorf("get app %q: %w", target, err)))
 		}
+		before := res
 		res.Replicas = p.replicas
 		if res, err = client.UpdateApp(ctx, target, res); err != nil {
-			return reportError(stdout, stderr, jsonOut, fmt.Errorf("scale service %q: %w", p.service, err))
+			return reportError(stdout, stderr, jsonOut, scaleFailure(ctx, client, stderr, previous, fmt.Errorf("scale service %q: %w", p.service, err)))
 		}
+		previous = append(previous, before)
 		updated = append(updated, res)
 	}
 	if err := renderResult(stdout, of.Format, of.Query, updated, func() {
@@ -169,6 +174,19 @@ func scaleServices(prog, app string, pairArgs []string, apiURLFlag, tokenFlag, p
 		return exitCodeForError(err)
 	}
 	return exitOK
+}
+
+// scaleFailure restores the replica counts of services already changed, best effort, and says what it did.
+func scaleFailure(ctx context.Context, client *apiclient.Client, stderr io.Writer, applied []appResource, cause error) error {
+	for i := len(applied) - 1; i >= 0; i-- {
+		prev := applied[i]
+		if _, err := client.UpdateApp(ctx, prev.Name, prev); err != nil {
+			_, _ = fmt.Fprintf(stderr, "rollback of %q to %d replica(s) failed: %v\n", prev.Name, prev.Replicas, err)
+			continue
+		}
+		_, _ = fmt.Fprintf(stderr, "rolled back %q to %d replica(s)\n", prev.Name, prev.Replicas)
+	}
+	return cause
 }
 
 func parseOptionalMemory(s string) (int64, error) {
@@ -188,8 +206,10 @@ for any app, including one running a prebuilt image. Limits apply to a
 running container live when Docker allows it, otherwise at the next restart.
 
 With service=count pairs, each named service of a multi-service app gets its
-own replica count (counts of at least 1; every service is checked before any
-change). Pairs cannot be combined with the flags below.
+own replica count (counts of at least 1). Every key is checked before any
+change. The updates then run one at a time, not atomically: if one fails, the
+services already changed are set back to their previous counts (best effort,
+each rollback is reported). Pairs cannot be combined with the flags below.
 
 Flags:
   --replicas int          number of container replicas (at least 1)

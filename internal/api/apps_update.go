@@ -49,6 +49,10 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 		writeAppInvalid(w, err)
 		return
 	}
+	if err := rt.checkReplicaCap(r.Context(), req.Replicas); err != nil {
+		writeAppInvalid(w, err)
+		return
+	}
 	if !rt.requireWildcardDNS01(w, r, req.Domains) {
 		return
 	}

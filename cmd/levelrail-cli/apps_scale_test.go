@@ -40,3 +40,37 @@ func TestRun_AppsScale_Validation(t *testing.T) {
 		}
 	}
 }
+
+func TestRun_AppsScale_PairsRollBackOnFailure(t *testing.T) {
+	var puts []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/apps/shop/group":
+			_, _ = w.Write([]byte(`{"services":[{"name":"shop-web"},{"name":"shop-worker"}]}`))
+		case r.Method == http.MethodGet:
+			name := strings.TrimPrefix(r.URL.Path, "/api/v1/apps/")
+			_ = json.NewEncoder(w).Encode(map[string]any{"name": name, "image": "x:1", "port": 80, "replicas": 1})
+		case r.Method == http.MethodPut:
+			body, _ := io.ReadAll(r.Body)
+			puts = append(puts, r.URL.Path+" "+string(body))
+			if strings.Contains(r.URL.Path, "worker") && strings.Contains(string(body), `"replicas":4`) {
+				http.Error(w, `{"error":"nope"}`, http.StatusBadRequest)
+				return
+			}
+			_, _ = w.Write(body)
+		}
+	}))
+	defer srv.Close()
+	var out, errb strings.Builder
+	got := run("levelrail-cli-test", []string{"apps", "scale", "shop", "web=3", "worker=4", "--api-url", srv.URL, "--token", "t"}, &out, &errb, envMap())
+	if got == exitOK {
+		t.Fatalf("exit = 0, want failure (stderr %q)", errb.String())
+	}
+	if !strings.Contains(errb.String(), `rolled back "shop-web" to 1 replica(s)`) {
+		t.Errorf("stderr = %q, want a rollback report", errb.String())
+	}
+	if len(puts) != 3 || !strings.Contains(puts[2], `"replicas":1`) {
+		t.Errorf("PUTs = %v, want web=3, worker=4 (rejected), web back to 1", puts)
+	}
+}

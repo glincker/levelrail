@@ -46,7 +46,7 @@ func TestHandleGetOneShotJob_UnknownIs404(t *testing.T) {
 }
 
 func TestHandleGetOneShotJob_CarriesLatestRunOutputTail(t *testing.T) {
-	t.Setenv(envOneShotOutputTail, "5")
+	t.Setenv("APP_JOBS_MAX_OUTPUT_BYTES", "5")
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	seedScheduledTaskApp(t, db, "web")

@@ -12,6 +12,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -135,20 +136,13 @@ type oneShotResponse struct {
 	OutputTruncated bool   `json:"output_truncated,omitempty"`
 }
 
-const (
-	envOneShotOutputTail     = "APP_ONESHOT_OUTPUT_TAIL_BYTES"
-	defaultOneShotOutputTail = 64 * 1024
-)
+// oneShotTruncatedHeader is the prefix the runner puts on output it cut to the job output limit.
+const oneShotTruncatedHeader = "[output truncated"
 
-// oneShotOutputTail is how many trailing output bytes a job response carries.
+// oneShotOutputTail is how many trailing output bytes a job response carries: the job output limit,
+// so the answer never holds more than a run keeps.
 func oneShotOutputTail() int {
-	if v, ok := os.LookupEnv(envOneShotOutputTail); ok {
-		var n int
-		if _, err := fmt.Sscanf(v, "%d", &n); err == nil && n > 0 {
-			return n
-		}
-	}
-	return defaultOneShotOutputTail
+	return scheduledtask.LimitsFromEnv(os.LookupEnv).MaxOutputBytes
 }
 
 // attachOneShotOutput adds the newest attempt's exit code and output tail.
@@ -167,7 +161,8 @@ func (rt *Router) attachOneShotOutput(ctx context.Context, taskID string, resp *
 	}
 	resp.ExitCode, resp.RunStatus = run.ExitCode, run.Status
 	resp.Output = run.Output
-	if limit := oneShotOutputTail(); len(resp.Output) > limit {
+	resp.OutputTruncated = strings.HasPrefix(resp.Output, oneShotTruncatedHeader)
+	if limit := oneShotOutputTail(); limit > 0 && len(resp.Output) > limit {
 		resp.Output, resp.OutputTruncated = resp.Output[len(resp.Output)-limit:], true
 	}
 }

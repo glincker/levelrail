@@ -1,12 +1,14 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
 	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/placement"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/standalone"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -145,4 +147,15 @@ func validateAppResourceWith(a appResource, storedPortless bool) error {
 // worker, UDP-only) stay so; req already carries the merged stored fields.
 func validateAppUpdate(req appResource, existing store.DesiredService) error {
 	return validateAppResourceWith(req, req.Port == 0 && existing.Port == 0)
+}
+
+// checkReplicaCap rejects a replica count above the live apps.max_replicas_per_service cap.
+func (rt *Router) checkReplicaCap(ctx context.Context, replicas int) error {
+	if rt.runtimeSettings == nil {
+		return nil
+	}
+	if limit := rt.runtimeSettings.Limit(ctx, runtimesettings.KeyAppsMaxReplicasPerService); replicas > limit {
+		return fmt.Errorf("replicas must not exceed %d (setting %s)", limit, runtimesettings.KeyAppsMaxReplicasPerService)
+	}
+	return nil
 }
