@@ -496,6 +496,8 @@ type Router struct {
 	// previewAdmitMu serializes the check-evict-save section that enforces it.
 	previewLimits  PreviewLimits
 	previewAdmitMu sync.Mutex
+	// previewDeployLocks serializes deploys of the same preview.
+	previewDeployLocks keyedLocks
 	// quotaMu makes a quota check and the create it guards one atomic step.
 	quotaMu sync.Mutex
 	// previewDeploys tracks approval-triggered background deploys.

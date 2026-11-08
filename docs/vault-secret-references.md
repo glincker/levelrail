@@ -15,7 +15,7 @@ An env var can point at a secret in an external Vault instead of holding a value
 | OpenBao | Not tested | OpenBao serves the same KV v2 HTTP API, so the same settings should work. Levelrail has no OpenBao specific test for app references. Try it on a non production app first. |
 | Doppler | Beta | Read only. Service token, one project and config per provider. See [Doppler and Infisical](#doppler-and-infisical). |
 | Infisical | Beta | Read only. Access token, one workspace and environment per provider. Cloud or self-hosted. |
-| 1Password | Not supported yet | There is no 1Password backend. |
+| 1Password | Beta | Read only, through a 1Password Connect server you run. Connect token, `op://` references. See [1Password Connect](#1password-connect). |
 
 The Vault Transit engine (Vault or OpenBao) can also wrap the master key. That is a separate feature, set with the `APP_VAULT_*` variables in [Environment variables](/environment-variables). It does not enable app references.
 
@@ -139,3 +139,19 @@ Network rules: Levelrail calls only `api.doppler.com` or `app.infisical.com`, or
 | `secrets.provider_max_response_kib` | 1024 | Largest provider response read. |
 
 Infisical machine identity login (client ID and secret) is not supported yet. Use an access token.
+
+## 1Password Connect
+
+1Password is a read only provider that talks to a Connect server you host. It is set up through the API and CLI. The dashboard form does not list it yet. Connect it with the Connect server URL and an access token:
+
+```bash
+levelrail-cli secrets provider add vaults --type onepassword --base-url https://connect.internal:8080 --project Prod --provider-token-file -
+levelrail-cli apps secrets set web STRIPE_KEY op://vaults/Stripe/api_key
+levelrail-cli apps secrets set web OTHER_KEY op://vaults/Staging/Stripe/api_key
+```
+
+The form is `op://PROVIDER/[VAULT/]ITEM/FIELD`. Without a vault, the provider's `--project` is the vault. When the provider sets `--project`, a reference naming any other vault is refused. A value starting with `op://` whose first part is not a configured 1Password provider stays a literal, so apps that resolve `op://` themselves keep working. Vault and item can be a name or a Connect ID, and the field is matched by its label or ID. Names with quotes or backslashes are refused. A name that matches no item or more than one item fails the read.
+
+`--base-url` is required and its address may be private, because the Connect server is yours. Link-local addresses are always refused and a redirect to another host is refused. The same rules, fail closed behavior and runtime settings as above apply. Each read makes up to three requests (vault, item, item detail) and is cached for the cache time.
+
+Not verified against a real Connect server yet: the tests use a local fake of the Connect API.

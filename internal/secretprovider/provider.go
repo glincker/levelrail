@@ -1,4 +1,4 @@
-// Package secretprovider reads app secrets live from Doppler or Infisical,
+// Package secretprovider reads app secrets live from Doppler, Infisical or 1Password Connect,
 // read only, as a sibling of internal/vault. A provider value is never
 // persisted: it is read at container create time, kept only in a short
 // in-memory cache, and registered with the output masker.
@@ -28,8 +28,10 @@ import (
 const (
 	TypeDoppler     = "doppler"
 	TypeInfisical   = "infisical"
+	TypeOnePassword = "onepassword"
 	SchemeDoppler   = "doppler://"
 	SchemeInfisical = "infisical://"
+	SchemeOnePass   = "op://"
 )
 
 // Errors a caller may match to explain a failed read.
@@ -64,15 +66,18 @@ func (c Config) Validate() error {
 	if !namePattern.MatchString(c.Name) {
 		return fmt.Errorf("name must be 1 to 40 lowercase letters, digits or underscores, starting with a letter")
 	}
-	if c.Type != TypeDoppler && c.Type != TypeInfisical {
-		return fmt.Errorf("type must be %q or %q", TypeDoppler, TypeInfisical)
+	if c.Type != TypeDoppler && c.Type != TypeInfisical && c.Type != TypeOnePassword {
+		return fmt.Errorf("type must be %q, %q or %q", TypeDoppler, TypeInfisical, TypeOnePassword)
 	}
-	if c.Project == "" || c.Environment == "" {
+	if c.Type == TypeOnePassword && c.BaseURL == "" {
+		return fmt.Errorf("base_url is required for onepassword (the URL of your Connect server)")
+	}
+	if c.Type != TypeOnePassword && (c.Project == "" || c.Environment == "") {
 		return fmt.Errorf("project and environment are required (Doppler project and config, Infisical workspace ID and environment slug)")
 	}
 	if c.BaseURL != "" {
-		if c.Type != TypeInfisical {
-			return fmt.Errorf("base_url is only supported for self-hosted Infisical")
+		if c.Type == TypeDoppler {
+			return fmt.Errorf("base_url is only supported for Infisical and onepassword")
 		}
 		u, err := url.Parse(c.BaseURL)
 		if err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" || u.User != nil {
@@ -88,15 +93,25 @@ type Ref struct {
 	Provider string
 	Name     string
 	Path     string
+	// Vault and Item are set for op:// references only. Name holds the field.
+	Vault string
+	Item  string
 }
 
 // String renders the reference without any value.
 func (r Ref) String() string {
+	if r.Type == TypeOnePassword {
+		if r.Vault == "" {
+			return fmt.Sprintf("%s%s/%s/%s", SchemeOnePass, r.Provider, r.Item, r.Name)
+		}
+		return fmt.Sprintf("%s%s/%s/%s/%s", SchemeOnePass, r.Provider, r.Vault, r.Item, r.Name)
+	}
 	return fmt.Sprintf("%s://%s/%s", r.Type, r.Provider, strings.TrimPrefix(strings.TrimSuffix(r.Path, "/")+"/"+r.Name, "/"))
 }
 
 // ParseRef reports whether v is a provider reference and parses it.
-// doppler://<provider>/<NAME>, infisical://<provider>/[dir/...]/<NAME>.
+// doppler://<provider>/<NAME>, infisical://<provider>/[dir/...]/<NAME>,
+// op://<provider>/[<vault>/]<item>/<field> (vault defaults to the provider's project).
 func ParseRef(v string) (Ref, bool, error) {
 	var ref Ref
 	var rest string
@@ -105,6 +120,8 @@ func ParseRef(v string) (Ref, bool, error) {
 		ref.Type, rest = TypeDoppler, strings.TrimPrefix(v, SchemeDoppler)
 	case strings.HasPrefix(v, SchemeInfisical):
 		ref.Type, rest = TypeInfisical, strings.TrimPrefix(v, SchemeInfisical)
+	case strings.HasPrefix(v, SchemeOnePass):
+		return parseOnePassword(strings.TrimPrefix(v, SchemeOnePass))
 	default:
 		return Ref{}, false, nil
 	}
@@ -118,6 +135,25 @@ func ParseRef(v string) (Ref, bool, error) {
 	ref.Provider, ref.Name = parts[0], parts[len(parts)-1]
 	if len(parts) > 2 {
 		ref.Path = "/" + strings.Join(parts[1:len(parts)-1], "/")
+	}
+	return ref, true, nil
+}
+
+func parseOnePassword(rest string) (Ref, bool, error) {
+	parts := strings.Split(rest, "/")
+	if len(parts) < 3 || len(parts) > 4 {
+		return Ref{}, true, fmt.Errorf("reference must look like op://<provider>/[<vault>/]<item>/<field>")
+	}
+	for i, p := range parts {
+		dec, err := url.PathUnescape(p)
+		if err != nil || dec == "" || strings.ContainsAny(dec, "\"\\\x00") {
+			return Ref{}, true, fmt.Errorf("op reference parts must be non empty and must not contain quotes or backslashes")
+		}
+		parts[i] = dec
+	}
+	ref := Ref{Type: TypeOnePassword, Provider: parts[0], Item: parts[len(parts)-2], Name: parts[len(parts)-1]}
+	if len(parts) == 4 {
+		ref.Vault = parts[1]
 	}
 	return ref, true, nil
 }
@@ -262,7 +298,7 @@ func isTimeout(err error) bool {
 }
 
 func cacheKey(cfg Config, token string, ref Ref) string {
-	h := sha256.Sum256([]byte(strings.Join([]string{cfg.Type, cfg.BaseURL, cfg.Project, cfg.Environment, cfg.Path, ref.Path, ref.Name, token}, "\x00")))
+	h := sha256.Sum256([]byte(strings.Join([]string{cfg.Type, cfg.BaseURL, cfg.Project, cfg.Environment, cfg.Path, ref.Path, ref.Vault, ref.Item, ref.Name, token}, "\x00")))
 	return hex.EncodeToString(h[:])
 }
 
@@ -299,7 +335,71 @@ func (r *Resolver) Fetch(ctx context.Context, cfg Config, token string, ref Ref,
 	return value, nil
 }
 
+// opIDPattern matches a Connect vault or item ID, so names and IDs both work.
+var opIDPattern = regexp.MustCompile(`^[a-z0-9]{26}$`)
+
+// opLookup resolves a vault or item name to its Connect ID with an exact filter; an ID passes through.
+func (r *Resolver) opLookup(ctx context.Context, cfg Config, token, path, key, name string, t Tunables) (string, error) {
+	if opIDPattern.MatchString(name) {
+		return name, nil
+	}
+	if strings.ContainsAny(name, "\"\\") {
+		return "", fmt.Errorf("onepassword: vault and item names must not contain quotes or backslashes")
+	}
+	var list []struct {
+		ID string `json:"id"`
+	}
+	q := url.Values{"filter": {key + ` eq "` + name + `"`}}
+	if err := r.get(ctx, cfg, token, path, q, t, &list); err != nil {
+		return "", err
+	}
+	if len(list) != 1 || list[0].ID == "" {
+		return "", fmt.Errorf("onepassword: %w", ErrNotFound)
+	}
+	return url.PathEscape(list[0].ID), nil
+}
+
+func (r *Resolver) fetchOnePassword(ctx context.Context, cfg Config, token string, ref Ref, t Tunables) (string, error) {
+	vault := ref.Vault
+	if vault == "" {
+		vault = cfg.Project
+	} else if cfg.Project != "" && vault != cfg.Project {
+		// The provider's vault is a limit set by root, not a default a secret writer can override.
+		return "", fmt.Errorf("onepassword: vault %q is outside the provider's vault", vault)
+	}
+	if vault == "" {
+		return "", fmt.Errorf("onepassword: no vault in the reference and no default vault on the provider")
+	}
+	vid, err := r.opLookup(ctx, cfg, token, "/v1/vaults", "name", vault, t)
+	if err != nil {
+		return "", err
+	}
+	iid, err := r.opLookup(ctx, cfg, token, "/v1/vaults/"+vid+"/items", "title", ref.Item, t)
+	if err != nil {
+		return "", err
+	}
+	var item struct {
+		Fields []struct {
+			ID    string  `json:"id"`
+			Label string  `json:"label"`
+			Value *string `json:"value"`
+		} `json:"fields"`
+	}
+	if err := r.get(ctx, cfg, token, "/v1/vaults/"+vid+"/items/"+iid, nil, t, &item); err != nil {
+		return "", err
+	}
+	for _, f := range item.Fields {
+		if (f.Label == ref.Name || f.ID == ref.Name) && f.Value != nil {
+			return *f.Value, nil
+		}
+	}
+	return "", fmt.Errorf("onepassword: %w", ErrNotFound)
+}
+
 func (r *Resolver) fetch(ctx context.Context, cfg Config, token string, ref Ref, t Tunables) (string, error) {
+	if cfg.Type == TypeOnePassword {
+		return r.fetchOnePassword(ctx, cfg, token, ref, t)
+	}
 	if cfg.Type == TypeDoppler {
 		var out struct {
 			Value struct {
@@ -343,6 +443,9 @@ func (r *Resolver) fetch(ctx context.Context, cfg Config, token string, ref Ref,
 
 // Test checks the token can list secret names in the configured scope, without reading values into the result.
 func (r *Resolver) Test(ctx context.Context, cfg Config, token string, t Tunables) error {
+	if cfg.Type == TypeOnePassword {
+		return r.get(ctx, cfg, token, "/v1/vaults", nil, t, nil)
+	}
 	if cfg.Type == TypeDoppler {
 		q := url.Values{"project": {cfg.Project}, "config": {cfg.Environment}}
 		return r.get(ctx, cfg, token, "/v3/configs/config/secrets/names", q, t, nil)

@@ -158,7 +158,7 @@ func TestContainerRestorer_Restore_KeyDB(t *testing.T) {
 	if !reflect.DeepEqual(rt.gotInputCmd, wantCmd) {
 		t.Errorf("ExecWithInput cmd = %v, want %v", rt.gotInputCmd, wantCmd)
 	}
-	wantDisableSaveCmd := []string{"keydb-cli", "CONFIG", "SET", "save", ""}
+	wantDisableSaveCmd := keydbDisableAutoSaveCmd
 	if !reflect.DeepEqual(rt.gotCmd, wantDisableSaveCmd) {
 		t.Errorf("Exec cmd = %v, want %v", rt.gotCmd, wantDisableSaveCmd)
 	}

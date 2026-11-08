@@ -127,6 +127,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsScale(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "stop":
 		return runAppsStop(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "maintenance":
+		return runAppsMaintenance(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "keep":
 		return runAppsKeep(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "start":
@@ -312,6 +314,7 @@ func appsUsage(prog string) string {
   %[1]s apps validate-spec <app> --file PATH|- [flags]   check an app.yaml on the server without deploying
   %[1]s apps listening-ports <app> [flags]   show which ports the running container listens on
   %[1]s apps skew <name> [flags]      show skew protection and the held previous release
+  %[1]s apps maintenance show|set|clear <app> [flags]   maintenance page on every domain of the app, all or none
   %[1]s apps deploy <name> [flags]   deploy an image to an existing app
   %[1]s apps ci token|trust <name> [flags]   deploy from any CI with OIDC: mint a deploy token, manage which pipelines are trusted
   %[1]s apps github-actions get|set|start|finish <name> [flags]   what the GitHub Actions deploy action reports back (deployment, check run)

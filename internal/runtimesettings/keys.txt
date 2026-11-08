@@ -168,6 +168,7 @@ storage.low_free_percent
 supply_chain.default_enabled
 supply_chain.default_gate
 telemetry.access_log_retention
+telemetry.access_log_size
 telemetry.log_budget_mb
 telemetry.logs_retention
 telemetry.metrics_retention

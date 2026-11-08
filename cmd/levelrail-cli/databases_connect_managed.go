@@ -32,7 +32,7 @@ func connectString(t connectTarget) string {
 		return fmt.Sprintf("postgresql://%s@%s/%s", t.user, addr, t.database)
 	case "mysql", "mariadb":
 		return fmt.Sprintf("mysql://%s@%s/%s", t.user, addr, t.database)
-	case "redis", "valkey":
+	case "redis", "valkey", "keydb":
 		if t.tls {
 			return "rediss://" + addr
 		}
@@ -53,7 +53,7 @@ func clientCommand(t connectTarget, password string) (bin string, args, env []st
 			args = append(args, t.database)
 		}
 		return "mysql", args, withEnv("MYSQL_PWD", password), true
-	case "redis", "valkey":
+	case "redis", "valkey", "keydb":
 		args = []string{"-h", t.host, "-p", port}
 		if t.tls {
 			// The tunnel end is 127.0.0.1, which the server certificate does not name.

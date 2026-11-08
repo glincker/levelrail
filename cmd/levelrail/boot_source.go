@@ -481,7 +481,7 @@ func databaseCredentialOpts(ctx context.Context, deps dynamicSourceDeps, desired
 		}
 		opts = append(opts, databaseTLSOpt(ctx, deps, desired.Name, desired.Engine)...)
 		opts = append(opts, database.WithSlowQueryThreshold(deps.databaseSlowQueryThresholdMs))
-	case store.EngineRedis, store.EngineValkey:
+	case store.EngineRedis, store.EngineValkey, store.EngineKeyDB:
 		// Redis and Valkey need no credentials to reconcile at all (this package's
 		// own doc comment), so TLS is the only per-engine option it ever
 		// gets here.

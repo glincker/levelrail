@@ -110,7 +110,7 @@ var mariadbDumpCmd = []string{"sh", "-c", `exec mariadb-dump -uroot -p"$MARIADB_
 // keydbDumpCmd is redisDumpCmd's exact counterpart for KeyDB: same --rdb -
 // mechanism, keydb-cli because the eqalpha/keydb image ships its own CLI
 // binary under that name rather than redis-cli.
-var keydbDumpCmd = []string{"keydb-cli", "--rdb", "-"}
+var keydbDumpCmd = []string{"sh", "-c", redisTLSProbe + ` exec keydb-cli $RTLS --rdb -`}
 
 // dragonflyDumpCmd cannot reuse redisDumpCmd's --rdb - streaming: unlike
 // Redis, Dragonfly's SAVE/BGSAVE default to its own DF snapshot format,

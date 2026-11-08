@@ -303,3 +303,86 @@ func TestSecretProviderStoreRotation(t *testing.T) {
 		t.Fatalf("delete left %v (%v)", mem[OwnerKey], err)
 	}
 }
+
+func onePassServer(t *testing.T, itemStatus int, itemBody string) *httptest.Server {
+	t.Helper()
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer "+fakeToken {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		switch r.URL.Path {
+		case "/v1/vaults":
+			_, _ = w.Write([]byte(`[{"id":"vaultid00000000000000000a1","name":"Prod"}]`))
+		case "/v1/vaults/vaultid00000000000000000a1/items":
+			_, _ = w.Write([]byte(`[{"id":"itemid000000000000000000b2","title":"Stripe"}]`))
+		case "/v1/vaults/vaultid00000000000000000a1/items/itemid000000000000000000b2":
+			w.WriteHeader(itemStatus)
+			_, _ = w.Write([]byte(itemBody))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+}
+
+func TestSecretProviderOnePassword(t *testing.T) {
+	op := func(url string) Config {
+		return Config{Name: "op1", Type: TypeOnePassword, BaseURL: url}
+	}
+	ref, ok, err := ParseRef("op://op1/Prod/Stripe/api_key")
+	if !ok || err != nil || ref.Vault != "Prod" || ref.Item != "Stripe" || ref.Name != "api_key" {
+		t.Fatalf("parse: %+v %v %v", ref, ok, err)
+	}
+	good := `{"fields":[{"id":"x","label":"api_key","value":"op-live-value"}]}`
+	srv := onePassServer(t, http.StatusOK, good)
+	defer srv.Close()
+	if v, err := NewResolver().Fetch(context.Background(), op(srv.URL), fakeToken, ref, tunables()); err != nil || v != "op-live-value" {
+		t.Fatalf("fetch = %q, %v", v, err)
+	}
+	if _, err := NewResolver().Fetch(context.Background(), op(srv.URL), "wrong", ref, tunables()); !errors.Is(err, ErrUnauthorized) {
+		t.Fatalf("401 err = %v", err)
+	}
+	missing := onePassServer(t, http.StatusNotFound, "")
+	defer missing.Close()
+	if _, err := NewResolver().Fetch(context.Background(), op(missing.URL), fakeToken, ref, tunables()); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("404 err = %v", err)
+	}
+	big := onePassServer(t, http.StatusOK, good+strings.Repeat(" ", 1<<17))
+	defer big.Close()
+	if _, err := NewResolver().Fetch(context.Background(), op(big.URL), fakeToken, ref, tunables()); err == nil || !strings.Contains(err.Error(), "larger than") {
+		t.Fatalf("oversize err = %v", err)
+	}
+	redir := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "http://other.example.invalid/v1/vaults", http.StatusFound)
+	}))
+	defer redir.Close()
+	if _, err := NewResolver().Fetch(context.Background(), op(redir.URL), fakeToken, ref, tunables()); !errors.Is(err, ErrRedirectBlocked) {
+		t.Fatalf("redirect err = %v", err)
+	}
+	if err := op("").Validate(); err == nil {
+		t.Fatal("onepassword without base_url must be rejected")
+	}
+}
+
+func TestOnePasswordVaultScopeRefused(t *testing.T) {
+	cfg := Config{Name: "op1", Type: TypeOnePassword, BaseURL: "http://127.0.0.1:1", Project: "Prod"}
+	ref, _, err := ParseRef("op://op1/Infra/db/password")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := NewResolver().Fetch(context.Background(), cfg, fakeToken, ref, tunables()); err == nil || !strings.Contains(err.Error(), "outside the provider") {
+		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestOnePasswordNativeValuePassesThrough(t *testing.T) {
+	native := "op://Prod/Stripe/api_key"
+	five := "op://Prod/Stripe/section/field/extra"
+	inner := memSecrets{"app": {"A": native, "B": five}}
+	e := EnvResolver{Inner: inner, Providers: Store{Secrets: inner}, Resolver: NewResolver(), Tunables: func(context.Context) Tunables { return tunables() }}
+	for k, want := range map[string]string{"A": native, "B": five} {
+		if v, err := e.Resolve(context.Background(), "app", k); err != nil || v != want {
+			t.Fatalf("%s = %q, %v", k, v, err)
+		}
+	}
+}

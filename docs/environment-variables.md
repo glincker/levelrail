@@ -198,6 +198,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_STORAGE_LARGE_UNMANAGED_IMAGE_MB` | [`storage.large_unmanaged_image_mb`](/runtime-settings#observability) | `500` |
 | `APP_STORAGE_LOW_FREE_PERCENT` | [`storage.low_free_percent`](/runtime-settings#observability) | `15` |
 | `APP_ACCESS_LOG_RETENTION` | [`telemetry.access_log_retention`](/runtime-settings#observability) | `8760h0m0s` |
+| `APP_ACCESS_LOG_SIZE` | [`telemetry.access_log_size`](/runtime-settings#observability) | `1000` |
 | `APP_LOG_BUDGET_MB` | [`telemetry.log_budget_mb`](/runtime-settings#observability) | `0` |
 | `APP_LOGS_RETENTION` | [`telemetry.logs_retention`](/runtime-settings#observability) | `360h` |
 | `APP_METRICS_RETENTION` | [`telemetry.metrics_retention`](/runtime-settings#observability) | `360h` |

@@ -98,7 +98,7 @@ func TestSupportsTLS(t *testing.T) {
 		{engine: "mariadb", want: false},
 		{engine: "mongodb", want: false},
 		{engine: "clickhouse", want: false},
-		{engine: "keydb", want: false},
+		{engine: "keydb", want: true},
 		{engine: "dragonfly", want: false},
 		{engine: "unknown-engine", want: false},
 	}

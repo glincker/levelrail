@@ -9,12 +9,13 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-func TestDatabaseTLSToggle_AcceptsValkeyRejectsOthers(t *testing.T) {
+func TestDatabaseTLSToggle_AcceptsValkeyAndKeyDBRejectsOthers(t *testing.T) {
 	rt, db, _ := newAccessTestRouter(t)
 	ctx := context.Background()
 	for _, d := range []store.DesiredDatabase{
 		{Name: "cache", Engine: store.EngineValkey, Version: "8"},
 		{Name: "kv", Engine: store.EngineKeyDB, Version: "latest"},
+		{Name: "df", Engine: store.EngineDragonfly, Version: "latest"},
 	} {
 		if err := db.SaveDesiredDatabase(ctx, d); err != nil {
 			t.Fatalf("seed %s: %v", d.Name, err)
@@ -31,7 +32,12 @@ func TestDatabaseTLSToggle_AcceptsValkeyRejectsOthers(t *testing.T) {
 	}
 
 	rec = viewerDo(t, rt, cookie, http.MethodPut, "/api/v1/databases/kv/tls", `{"enabled":true}`)
+	if rec.Code != http.StatusOK {
+		t.Errorf("keydb toggle = %d, want 200", rec.Code)
+	}
+
+	rec = viewerDo(t, rt, cookie, http.MethodPut, "/api/v1/databases/df/tls", `{"enabled":true}`)
 	if rec.Code != http.StatusBadRequest {
-		t.Errorf("keydb toggle = %d, want 400", rec.Code)
+		t.Errorf("dragonfly toggle = %d, want 400", rec.Code)
 	}
 }

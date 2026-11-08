@@ -30,21 +30,33 @@ func TestPreviewImageTagAndMigrateValidation(t *testing.T) {
 	}
 }
 
-func TestRunPreviewMigrateRefusesUnverifiableDatabase(t *testing.T) {
+func TestRunPreviewMigrateDatabaseReadiness(t *testing.T) {
 	rt := &Router{}
 	s := store.DefaultPreviewAppSettings("a")
 	if note, err := rt.runPreviewMigrate(context.Background(), "a-pr-1", s, true); note != "" || err != nil {
 		t.Fatalf("no command must be a no-op, got %q %v", note, err)
 	}
 	s.MigrateCommand = "npm run migrate"
-	for _, strategy := range []string{store.PreviewDatabaseStrategyShared, store.PreviewDatabaseStrategyFresh, store.PreviewDatabaseStrategySeed} {
+	for _, strategy := range []string{store.PreviewDatabaseStrategyShared, store.PreviewDatabaseStrategyFresh} {
 		s.DatabaseStrategy = strategy
-		if _, err := rt.runPreviewMigrate(context.Background(), "a-pr-1", s, false); err == nil || !strings.Contains(err.Error(), "cannot yet verify") {
+		if _, err := rt.runPreviewMigrate(context.Background(), "a-pr-1", s, false); err == nil || !strings.Contains(err.Error(), "cannot be verified") {
 			t.Fatalf("%s: err = %v", strategy, err)
 		}
+	}
+	s.DatabaseStrategy = store.PreviewDatabaseStrategySeed
+	if err := previewMigrateDatabaseGuard(s, false); err != nil {
+		t.Fatalf("seed must be allowed: %v", err)
 	}
 	s.DatabaseStrategy = store.PreviewDatabaseStrategyNone
 	if _, err := rt.runPreviewMigrate(context.Background(), "a-pr-1", s, true); err == nil {
 		t.Fatal("app.yaml databases must be refused")
+	}
+	// A seed that cannot run must stop the migration, not leave an empty database.
+	_, err := rt.seedPreviewDatabase(context.Background(), "main", store.PreviewEphemeralDatabase{DatabaseName: "a-pr-1-db"}, "postgres", true)
+	if err == nil || !strings.Contains(err.Error(), "migration skipped") {
+		t.Fatalf("seed without runner under migrate: %v", err)
+	}
+	if notes, err := rt.seedPreviewDatabase(context.Background(), "main", store.PreviewEphemeralDatabase{DatabaseName: "a-pr-1-db"}, "postgres", false); err != nil || len(notes) != 1 {
+		t.Fatalf("seed without runner, no migrate: %v %v", notes, err)
 	}
 }

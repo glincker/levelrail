@@ -203,6 +203,19 @@ func (e EnvResolver) Resolve(ctx context.Context, serviceName, envKey string) (s
 	if !isRef {
 		return v, nil
 	}
+	if ref.Type == TypeOnePassword || (err != nil && strings.HasPrefix(v, SchemeOnePass)) {
+		// Native op:// values for an in-container CLI stay literal unless they name a configured provider.
+		if err != nil {
+			return v, nil
+		}
+		cfg, ok, gerr := e.Providers.Get(ctx, ref.Provider)
+		if gerr != nil {
+			return "", gerr
+		}
+		if !ok || cfg.Type != TypeOnePassword {
+			return v, nil
+		}
+	}
 	if err != nil {
 		return "", fmt.Errorf("secret %q holds a bad provider reference: %w", envKey, err)
 	}

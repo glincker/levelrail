@@ -231,6 +231,8 @@ levelrail-cli apps restart <name> [--service S] [flags]
 levelrail-cli apps apply <name> [flags]
 levelrail-cli apps stop <name> [flags]
 levelrail-cli apps keep <name> [flags]
+levelrail-cli apps maintenance show|clear <app> [flags]
+levelrail-cli apps maintenance set <app> [--title T] [--message M] [--until TIME | --for DUR] [--retry-after DUR] [--max-duration DUR] [--bypass IPS] [--no-health-bypass] [flags]
 levelrail-cli apps start <name> [flags]
 levelrail-cli apps scale <name> [--replicas N] [--strategy rolling|recreate|blue-green] [--memory 512Mi] [--cpu 0.5] [flags]
 levelrail-cli apps scale <name> web=2 worker=1 [flags]
@@ -245,6 +247,7 @@ levelrail-cli apps moves get <name> <id> [flags]
 ```
 
 - `apps keep` turns a one-click trial deployment into a permanent app: it stops being flagged as throwaway, with every service of the same app. Repeating it is harmless; an app that never was a trial answers 409.
+- `apps maintenance` shows, enables or ends the maintenance page on every domain of an app at once, all or none. `show` needs read access, `set` and `clear` need deploy access. Use `--for`, `--until` or `--max-duration` so it ends on its own; the server enforces the limits. For a single domain use `domains maintenance`.
 - `apps wait` polls until a deploy attempt converges and exits 0 on success, 5 if it converged as a failure, 6 on timeout. On success it says what happened: `rolled out`, `already up to date` (the deploy changed nothing) or `last rollout: restarted (no new deployment was created)`; `--json` carries the same as `outcome`.
 - `apps deploy-spec` fans an app.yaml's `services:` map out into independent builds under one app; `apps group` shows a service's siblings under the same multi-service app.
 - `apps builds trigger` builds an image from a git source and deploys it to an existing app.

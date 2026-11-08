@@ -44,6 +44,9 @@ func (s *bootState) wireStorageSettings() {
 	ingressdriver.DefaultAccessLog().SetRetentionSource(func() time.Duration {
 		return rs().AccessLogRetention(context.Background())
 	})
+	ingressdriver.DefaultAccessLog().SetCapacitySource(func() int {
+		return rs().Limit(context.Background(), runtimesettings.KeyAccessLogSize)
+	})
 	ingressdriver.DefaultAccessLog().SetVisitorRotationSource(func() time.Duration {
 		return rs().VisitorSaltRotation(context.Background())
 	})

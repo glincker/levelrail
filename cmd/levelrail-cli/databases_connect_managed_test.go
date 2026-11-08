@@ -47,6 +47,7 @@ func TestConnectStringRedisFamilyTLS(t *testing.T) {
 		{"redis", true, "rediss://127.0.0.1:7000", true},
 		{"valkey", false, "redis://127.0.0.1:7000", false},
 		{"valkey", true, "rediss://127.0.0.1:7000", true},
+		{"keydb", true, "rediss://127.0.0.1:7000", true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.engine, func(t *testing.T) {

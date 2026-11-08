@@ -158,12 +158,13 @@ func (rt *Router) runPreviewMigrate(ctx context.Context, previewName string, s s
 	}
 }
 
-// previewMigrateDatabaseGuard refuses to run a migration against a preview
-// whose database is attached asynchronously. The runtime state exposes neither
-// the container env nor a seed-finished status, so readiness cannot be proven.
+// previewMigrateDatabaseGuard allows a migration only where the control plane
+// can prove the database is ready: none, or seed, whose restore finishes before
+// the migration starts. shared would migrate the production database, fresh has
+// no readiness probe, and app.yaml databases are attached asynchronously.
 func previewMigrateDatabaseGuard(s store.PreviewAppSettings, appYAMLDatabases bool) error {
-	if s.DatabaseStrategy != store.PreviewDatabaseStrategyNone || appYAMLDatabases {
-		return fmt.Errorf("migration skipped: the preview database (%s strategy) is attached and seeded asynchronously and this control plane cannot yet verify that the running container has the database env or that a seed restore finished; set the database strategy to none or run the migration from your app start command", s.DatabaseStrategy)
+	if appYAMLDatabases || s.DatabaseStrategy == store.PreviewDatabaseStrategyShared || s.DatabaseStrategy == store.PreviewDatabaseStrategyFresh {
+		return fmt.Errorf("migration skipped: the preview database (%s strategy) cannot be verified ready before the migration; use the none or seed strategy, or run the migration from your app start command", s.DatabaseStrategy)
 	}
 	return nil
 }

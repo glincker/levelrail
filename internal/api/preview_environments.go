@@ -138,6 +138,9 @@ func (rt *Router) deployPreviewEnvironmentInner(ctx context.Context, appName str
 	previewName := previewAppName(appName, ev.Number)
 	started := time.Now()
 
+	// Deliveries for one PR run one at a time so they cannot restore into or tear down each other's database.
+	defer rt.previewDeployLocks.lock(previewName)()
+
 	preview, done, status, message := rt.beginPreview(ctx, appName, gs, ev, approved)
 	if done {
 		return status, message
@@ -230,9 +233,20 @@ func (rt *Router) deployPreviewEnvironmentInner(ctx context.Context, appName str
 	} else {
 		notes = rt.finishPreviewExposure(ctx, appName, previewName, usedDomain, policy)
 		notes = append(notes, seedNotes...)
-		notes = append(notes, rt.applyPreviewDatabaseStrategy(ctx, preview, appName, previewName, gs, policy)...)
-		migrateNote, migrateErr := rt.runPreviewMigrate(ctx, previewName, policy, len(gs.Databases) > 0)
+		strategyNotes, createdDB, migrateErr := rt.applyPreviewDatabaseStrategyReady(ctx, preview, appName, previewName, gs, policy, policy.MigrateCommand != "")
+		notes = append(notes, strategyNotes...)
+		var migrateNote string
+		if migrateErr == nil {
+			migrateNote, migrateErr = rt.runPreviewMigrate(ctx, previewName, policy, len(gs.Databases) > 0)
+		}
 		if migrateErr != nil {
+			// Fail closed, but only a database this run created goes: an earlier push's seeded one stays.
+			if createdDB {
+				rt.teardownPreviewEphemeralDatabases(ctx, preview.ID)
+				if clearErr := rt.apps.UpdateServiceDatabaseAttachment(ctx, previewName, nil); clearErr != nil {
+					rt.logger.Error("api: clear preview database attachment failed", slog.String("error", clearErr.Error()), slog.String("preview_app", previewName))
+				}
+			}
 			rt.logger.Error("api: pull request webhook: preview migrate failed", slog.String("error", migrateErr.Error()), slog.String("app_name", appName), slog.Int("pr_number", ev.Number))
 			rt.finishPreviewFailed(ctx, gs, preview, migrateErr.Error())
 			return http.StatusInternalServerError, "preview migration failed\n"
