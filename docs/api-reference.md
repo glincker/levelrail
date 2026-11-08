@@ -713,6 +713,7 @@ Endpoints for:
 | POST | /api/v1/service-templates/validate | AbilityRead | handleValidateTemplateSubmission |
 | GET | /api/v1/apps/{name}/edge | AbilityRead | handleGetAppEdge |
 | POST | /api/v1/apps/{name}/cdn/setup | AbilityWriteSensitive | handleSetupAppCDN |
+| GET | /api/v1/apps/{name}/containers | AbilityRead | handleListAppContainers |
 
 </Accordion>
 

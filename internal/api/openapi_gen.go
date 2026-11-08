@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2002 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2003 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -195,6 +195,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/connections", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListAppConnections", Description: "Multi-connection app-to-database (apps_connections.go): the DatabaseEnv-map-backed sibling of PUT/DELETE .../database just above, for an app that connects to more than one managed database. Same AbilityWrite tier and \"config write, not a deploy trigger\" reasoning; GET is AbilityRead like any other app-detail read."},
 	{Method: "POST", Path: "/api/v1/apps/{name}/connections", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCreateAppConnection", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/connections/{env_var}", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteAppConnection", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/containers", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListAppContainers", Description: "Health & readiness score: a read-only synthesis of signals this router already exposes separately (deploys, crashloop, TLS, secrets, backups, health checks, alerting). See app_health_score.go's own doc comment."},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/contexts", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteAppContext", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/contexts", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListAppContexts", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/contexts", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppContext", Description: ""},
@@ -290,7 +291,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/health", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleClearAppHealth", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/health", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppHealth", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/health", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppHealth", Description: ""},
-	{Method: "GET", Path: "/api/v1/apps/{name}/health-score", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppHealthScore", Description: "Health & readiness score: a read-only synthesis of signals this router already exposes separately (deploys, crashloop, TLS, secrets, backups, health checks, alerting). See app_health_score.go's own doc comment."},
+	{Method: "GET", Path: "/api/v1/apps/{name}/health-score", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppHealthScore", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/health/discover", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDiscoverAppHealth", Description: "Health check auto-detect (apps_health_discover.go): AbilityRead, the same tier GET .../diagnose already uses for an active probe against a running container (routes.go), since this changes nothing and only reads what the container's own HTTP port already exposes."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/hook-runs", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppHookRuns", Description: "Latest pre/post-deploy hook outcome (apps_hooks.go, internal/reconcile/application's own HookRunRecorder). Read-only, same ability tier as the group route just above."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/images", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListImages", Description: "Previously-built image tags for this app's repo, so the deploy trigger form can offer a dropdown instead of a hand-typed tag (see ImageLister above). AbilityRead like every other passive view of an app's own state."},

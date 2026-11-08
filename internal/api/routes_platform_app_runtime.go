@@ -86,6 +86,7 @@ func (rt *Router) registerAppRuntimeRoutes(mux *http.ServeMux) {
 	// router already exposes separately (deploys, crashloop, TLS,
 	// secrets, backups, health checks, alerting). See
 	// app_health_score.go's own doc comment.
+	mux.HandleFunc("GET /api/v1/apps/{name}/containers", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListAppContainers))
 	mux.HandleFunc("GET /api/v1/apps/{name}/health-score", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppHealthScore))
 
 	// Scheduled tasks: run an arbitrary command inside this app's
