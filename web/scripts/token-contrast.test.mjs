@@ -85,11 +85,19 @@ describe.each(['light', 'dark', 'oled'])('token contrast, %s', (mode) => {
 
   it('keeps body text at 4.5 or more', () => {
     for (const surface of [bg, raised, ui('surface-sunken')]) {
-      expect(ratio(value('color', 'fg', mode), surface)).toBeGreaterThanOrEqual(TEXT_MIN)
-      expect(ratio(value('color', 'fg-muted', mode), surface)).toBeGreaterThanOrEqual(TEXT_MIN)
+      expect(ratio(value('color', 'fg', mode), surface)).toBeGreaterThanOrEqual(
+        TEXT_MIN,
+      )
+      expect(
+        ratio(value('color', 'fg-muted', mode), surface),
+      ).toBeGreaterThanOrEqual(TEXT_MIN)
     }
     expect(ratio(ui('accent-fg'), raised)).toBeGreaterThanOrEqual(TEXT_MIN)
-    for (const k of ['accent-solid', 'accent-solid-hover', 'accent-solid-active']) {
+    for (const k of [
+      'accent-solid',
+      'accent-solid-hover',
+      'accent-solid-active',
+    ]) {
       expect(ratio(ui('accent-ink'), ui(k))).toBeGreaterThanOrEqual(TEXT_MIN)
     }
   })
@@ -99,7 +107,9 @@ describe.each(['light', 'dark', 'oled'])('token contrast, %s', (mode) => {
     expect(ratio(ui('accent-ring'), raised)).toBeGreaterThanOrEqual(UI_MIN)
     expect(ratio(ui('accent-solid'), raised)).toBeGreaterThanOrEqual(UI_MIN)
     for (const tone of TONES) {
-      expect(ratio(value('status', `${tone}-solid`, mode), raised)).toBeGreaterThanOrEqual(UI_MIN)
+      expect(
+        ratio(value('status', `${tone}-solid`, mode), raised),
+      ).toBeGreaterThanOrEqual(UI_MIN)
     }
   })
 

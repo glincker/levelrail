@@ -37,6 +37,26 @@ describe('status vocabulary', () => {
     expect(screen.getByText('Running').className).toContain('text-tone-success')
   })
 
+  it('draws a shape per state and pings only in-progress states', () => {
+    render(
+      <>
+        <StatusBadge state="running" label="Up" />
+        <StatusBadge state="deploying" label="Deploying" />
+        <StatusBadge state="failed" label="Down" form="dot" />
+      </>,
+    )
+    const shape = (text: string) =>
+      screen.getByText(text).querySelector('[data-shape]') ??
+      screen.getByText(text).parentElement?.querySelector('[data-shape]')
+    expect(shape('Up')?.getAttribute('data-shape')).toBe('circle')
+    expect(shape('Up')?.getAttribute('aria-hidden')).toBe('true')
+    expect(shape('Up')?.querySelector('[data-testid="status-ping"]')).toBeNull()
+    expect(
+      shape('Deploying')?.querySelector('[data-testid="status-ping"]'),
+    ).not.toBeNull()
+    expect(shape('Down')?.getAttribute('data-shape')).toBe('diamond')
+  })
+
   it('has an info variant on the tone tokens', () => {
     render(<Badge variant="info">Propagating</Badge>)
     expect(screen.getByText('Propagating').className).toContain(

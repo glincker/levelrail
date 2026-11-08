@@ -74,7 +74,7 @@ export function build(tree) {
     }
   }
 
-  const tokensCss = `${HEADER}\n\n:root {\n${light.join('\n')}\n}\n\n.dark {\n${dark.join('\n')}\n}\n\n.oled {\n${oled.join('\n')}\n}\n`
+  const tokensCss = `${HEADER}\n\n:root, [data-mode="light"] {\n${light.join('\n')}\n}\n\n.dark, [data-mode="dark"] {\n${dark.join('\n')}\n}\n\n.oled, [data-mode="oled"] {\n${oled.join('\n')}\n}\n`
 
   const mapped = tokens.filter((t) => t.tailwind)
   const themeCss = `${HEADER}\n\n@theme inline {\n${mapped

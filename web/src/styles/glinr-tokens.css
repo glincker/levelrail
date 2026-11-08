@@ -1,6 +1,6 @@
 /* GLINR design tokens, generated from tokens/glinr.tokens.json, do not edit. Run `npm run tokens`. */
 
-:root {
+:root, [data-mode="light"] {
   --glinr-bg: oklch(1 0 0);
   --glinr-surface: oklch(1 0 0);
   --glinr-border: oklch(0.21 0.02 250 / 11%);
@@ -31,12 +31,19 @@
   --glinr-space-16: 4rem;
   --glinr-page-gap: var(--glinr-space-5);
   --glinr-page-gap-comfortable: var(--glinr-space-6);
-  --glinr-card-pad: var(--glinr-space-4);
+  --glinr-card-pad: 1rem;
   --glinr-card-pad-comfortable: var(--glinr-space-6);
   --glinr-section-pad: var(--glinr-space-4);
   --glinr-section-pad-comfortable: var(--glinr-space-6);
   --glinr-banner-pad: var(--glinr-space-3);
   --glinr-banner-pad-comfortable: var(--glinr-space-4);
+  --glinr-gutter: 1rem;
+  --glinr-section-gap: 1.5rem;
+  --glinr-group-gap: 3rem;
+  --glinr-label-gap: 0.5rem;
+  --glinr-help-gap: 0.25rem;
+  --glinr-control-gap: 0.5rem;
+  --glinr-nav-row-gap: 0.25rem;
   --glinr-tile-size: 2.5rem;
   --glinr-hero-tile-size: 2.5rem;
   --glinr-hero-tile-size-comfortable: 2.5rem;
@@ -44,7 +51,7 @@
   --glinr-control-h-comfortable: 2.25rem;
   --glinr-row-h: 2.25rem;
   --glinr-row-h-comfortable: 2.75rem;
-  --glinr-table-header-h: 2rem;
+  --glinr-table-header-h: 2.25rem;
   --glinr-table-header-h-comfortable: 2.25rem;
   --glinr-badge-h: 1.375rem;
   --glinr-badge-h-comfortable: 1.5rem;
@@ -56,6 +63,10 @@
   --glinr-capsule-h: 2rem;
   --glinr-capsule-h-sm: 1.75rem;
   --glinr-segment-h: 2rem;
+  --glinr-nav-row-h: 2.25rem;
+  --glinr-table-row-h-dense: 2.25rem;
+  --glinr-capsule-h-lg: 2.5rem;
+  --glinr-count-h: 1.25rem;
   --glinr-content-narrow: 40rem;
   --glinr-content-max: 96rem;
   --glinr-content-max-wide: 120rem;
@@ -138,6 +149,8 @@
   --glinr-accent-ink: oklch(0.99 0.004 232);
   --glinr-accent-ring: oklch(0.55 0.17 232);
   --glinr-accent-soft: oklch(0.52 0.15 232 / 10%);
+  --glinr-seg-thumb: oklch(0.995 0.002 245);
+  --glinr-mesh: radial-gradient(60% 50% at 10% 0%, oklch(0.9 0.06 215), transparent), radial-gradient(50% 40% at 90% 10%, oklch(0.88 0.07 190), transparent), radial-gradient(60% 50% at 70% 100%, oklch(0.86 0.06 255), transparent);
   --glinr-status-success-fg: oklch(0.42 0.11 155);
   --glinr-status-success-solid: oklch(0.6 0.15 155);
   --glinr-status-success-soft: oklch(0.6 0.15 155 / 12%);
@@ -178,9 +191,10 @@
   --glinr-glass-edge: oklch(1 0 0 / 60%);
   --glinr-specular: inset 0 1px 0 oklch(1 0 0 / 75%);
   --glinr-glass-inner: inset 0 -10px 20px -14px oklch(0.21 0.02 250 / 10%);
+  --glinr-layer-edge: 0 3px 0 -1px color-mix(in oklab, var(--glinr-accent-solid) 30%, transparent);
 }
 
-.dark {
+.dark, [data-mode="dark"] {
   --glinr-bg: oklch(0.145 0 0);
   --glinr-surface: oklch(0.205 0 0);
   --glinr-border: oklch(1 0 0 / 9%);
@@ -212,6 +226,8 @@
   --glinr-accent-ink: oklch(0.17 0.03 240);
   --glinr-accent-ring: oklch(0.78 0.12 228);
   --glinr-accent-soft: oklch(0.72 0.13 228 / 14%);
+  --glinr-seg-thumb: oklch(0.3 0.018 250);
+  --glinr-mesh: radial-gradient(60% 50% at 10% 0%, oklch(0.32 0.07 215), transparent), radial-gradient(50% 40% at 90% 10%, oklch(0.3 0.06 190), transparent), radial-gradient(60% 50% at 70% 100%, oklch(0.3 0.07 255), transparent);
   --glinr-status-success-fg: oklch(0.8 0.14 155);
   --glinr-status-success-solid: oklch(0.72 0.16 155);
   --glinr-status-success-soft: oklch(0.72 0.16 155 / 16%);
@@ -243,7 +259,7 @@
   --glinr-glass-inner: inset 0 -10px 20px -14px oklch(0 0 0 / 40%);
 }
 
-.oled {
+.oled, [data-mode="oled"] {
   --glinr-bg: oklch(0 0 0);
   --glinr-surface: oklch(0.17 0.008 250);
   --glinr-border: oklch(1 0 0 / 10%);
@@ -257,6 +273,8 @@
   --glinr-surface-overlay: oklch(0.22 0.01 250);
   --glinr-surface-glass: oklch(0.22 0.01 250 / 90%);
   --glinr-border-control: oklch(0.52 0.012 250);
+  --glinr-seg-thumb: oklch(0.28 0.012 250);
+  --glinr-mesh: none;
   --glinr-status-success-soft: oklch(0.72 0.16 155 / 18%);
   --glinr-status-warning-soft: oklch(0.78 0.15 75 / 18%);
   --glinr-status-danger-soft: oklch(0.68 0.19 25 / 18%);

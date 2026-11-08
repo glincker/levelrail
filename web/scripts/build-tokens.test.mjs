@@ -70,12 +70,15 @@ describe('glinr design tokens', () => {
   })
 
   it('emits an oled block with only the values that differ from dark', () => {
-    const block = /\n\.oled \{\n([\s\S]*?)\n\}/.exec(tokensCss)?.[1] ?? ''
+    const block =
+      /\n\.oled, \[data-mode="oled"\] \{\n([\s\S]*?)\n\}/.exec(
+        tokensCss,
+      )?.[1] ?? ''
     expect(block).toContain('--glinr-surface-bg: oklch(0 0 0);')
     expect(block).toContain('--glinr-surface-raised: oklch(0.17 0.008 250);')
     expect(block).not.toContain('--glinr-accent-solid:')
-    expect(tokensCss.indexOf('\n.oled {')).toBeGreaterThan(
-      tokensCss.indexOf('\n.dark {'),
+    expect(tokensCss.indexOf('\n.oled, [data-mode="oled"] {')).toBeGreaterThan(
+      tokensCss.indexOf('\n.dark, [data-mode="dark"] {'),
     )
   })
 

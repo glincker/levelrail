@@ -338,7 +338,7 @@
       }
     },
     "card-pad": {
-      "$value": "{space.4}",
+      "$value": "1rem",
       "$description": "Card and panel padding (compact default).",
       "$extensions": {
         "glinr": {
@@ -394,6 +394,76 @@
         "glinr": {
           "name": "banner-pad-comfortable",
           "stability": "stable"
+        }
+      }
+    },
+    "gutter": {
+      "$value": "1rem",
+      "$description": "Page edge and shell gutter.",
+      "$extensions": {
+        "glinr": {
+          "name": "gutter",
+          "stability": "experimental"
+        }
+      }
+    },
+    "section-gap": {
+      "$value": "1.5rem",
+      "$description": "Gap between sections, toolbar and table.",
+      "$extensions": {
+        "glinr": {
+          "name": "section-gap",
+          "stability": "experimental"
+        }
+      }
+    },
+    "group-gap": {
+      "$value": "3rem",
+      "$description": "Gap between groups on a long sheet.",
+      "$extensions": {
+        "glinr": {
+          "name": "group-gap",
+          "stability": "experimental"
+        }
+      }
+    },
+    "label-gap": {
+      "$value": "0.5rem",
+      "$description": "Label to field.",
+      "$extensions": {
+        "glinr": {
+          "name": "label-gap",
+          "stability": "experimental"
+        }
+      }
+    },
+    "help-gap": {
+      "$value": "0.25rem",
+      "$description": "Field to help text.",
+      "$extensions": {
+        "glinr": {
+          "name": "help-gap",
+          "stability": "experimental"
+        }
+      }
+    },
+    "control-gap": {
+      "$value": "0.5rem",
+      "$description": "Toolbar, button rows and actions.",
+      "$extensions": {
+        "glinr": {
+          "name": "control-gap",
+          "stability": "experimental"
+        }
+      }
+    },
+    "nav-row-gap": {
+      "$value": "0.25rem",
+      "$description": "Gap between sidebar nav rows.",
+      "$extensions": {
+        "glinr": {
+          "name": "nav-row-gap",
+          "stability": "experimental"
         }
       }
     }
@@ -474,7 +544,7 @@
       }
     },
     "table-header-h": {
-      "$value": "2rem",
+      "$value": "2.25rem",
       "$description": "Table header row height (compact default).",
       "$extensions": {
         "glinr": {
@@ -589,6 +659,46 @@
       "$extensions": {
         "glinr": {
           "name": "segment-h",
+          "stability": "experimental"
+        }
+      }
+    },
+    "nav-row-h": {
+      "$value": "2.25rem",
+      "$description": "Sidebar nav row height.",
+      "$extensions": {
+        "glinr": {
+          "name": "nav-row-h",
+          "stability": "experimental"
+        }
+      }
+    },
+    "table-row-h-dense": {
+      "$value": "2.25rem",
+      "$description": "Dense table row height.",
+      "$extensions": {
+        "glinr": {
+          "name": "table-row-h-dense",
+          "stability": "experimental"
+        }
+      }
+    },
+    "capsule-h-lg": {
+      "$value": "2.5rem",
+      "$description": "Large capsule button height.",
+      "$extensions": {
+        "glinr": {
+          "name": "capsule-h-lg",
+          "stability": "experimental"
+        }
+      }
+    },
+    "count-h": {
+      "$value": "1.25rem",
+      "$description": "Count badge height and min width.",
+      "$extensions": {
+        "glinr": {
+          "name": "count-h",
           "stability": "experimental"
         }
       }
@@ -1526,6 +1636,34 @@
           "tailwind": "color-glinr-accent-soft"
         }
       }
+    },
+    "seg-thumb": {
+      "$value": {
+        "light": "oklch(0.995 0.002 245)",
+        "dark": "oklch(0.3 0.018 250)",
+        "oled": "oklch(0.28 0.012 250)"
+      },
+      "$description": "Segmented control thumb fill.",
+      "$extensions": {
+        "glinr": {
+          "name": "seg-thumb",
+          "stability": "experimental"
+        }
+      }
+    },
+    "mesh": {
+      "$value": {
+        "light": "radial-gradient(60% 50% at 10% 0%, oklch(0.9 0.06 215), transparent), radial-gradient(50% 40% at 90% 10%, oklch(0.88 0.07 190), transparent), radial-gradient(60% 50% at 70% 100%, oklch(0.86 0.06 255), transparent)",
+        "dark": "radial-gradient(60% 50% at 10% 0%, oklch(0.32 0.07 215), transparent), radial-gradient(50% 40% at 90% 10%, oklch(0.3 0.06 190), transparent), radial-gradient(60% 50% at 70% 100%, oklch(0.3 0.07 255), transparent)",
+        "oled": "none"
+      },
+      "$description": "Fixed background wash behind glass, redeclared per mode.",
+      "$extensions": {
+        "glinr": {
+          "name": "mesh",
+          "stability": "experimental"
+        }
+      }
     }
   },
   "status": {
@@ -2074,6 +2212,16 @@
       "$extensions": {
         "glinr": {
           "name": "glass-inner",
+          "stability": "experimental"
+        }
+      }
+    },
+    "layer-edge": {
+      "$value": "0 3px 0 -1px color-mix(in oklab, var(--glinr-accent-solid) 30%, transparent)",
+      "$description": "Peeking layer under selectable object cards.",
+      "$extensions": {
+        "glinr": {
+          "name": "layer-edge",
           "stability": "experimental"
         }
       }

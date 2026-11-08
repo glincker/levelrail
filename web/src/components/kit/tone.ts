@@ -47,6 +47,38 @@ export const TONE: Record<Tone, ToneClasses> = {
   },
 }
 
+export type StatusShape = 'circle' | 'ring' | 'triangle' | 'diamond' | 'dashed'
+
+export interface StatusSpec {
+  tone: Tone
+  shape: StatusShape
+  live: boolean
+}
+
+// Shape carries meaning without colour; only in-progress states ping.
+export const STATUS = {
+  running: { tone: 'success', shape: 'circle', live: false },
+  healthy: { tone: 'success', shape: 'circle', live: false },
+  ready: { tone: 'success', shape: 'circle', live: false },
+  building: { tone: 'info', shape: 'ring', live: true },
+  deploying: { tone: 'info', shape: 'ring', live: true },
+  waking: { tone: 'info', shape: 'ring', live: true },
+  draining: { tone: 'warning', shape: 'triangle', live: true },
+  degraded: { tone: 'warning', shape: 'triangle', live: false },
+  partial: { tone: 'warning', shape: 'triangle', live: false },
+  failed: { tone: 'danger', shape: 'diamond', live: false },
+  offline: { tone: 'danger', shape: 'diamond', live: false },
+  expired: { tone: 'danger', shape: 'diamond', live: false },
+  queued: { tone: 'neutral', shape: 'dashed', live: false },
+  scheduled: { tone: 'neutral', shape: 'dashed', live: false },
+  pending: { tone: 'neutral', shape: 'dashed', live: false },
+  stopped: { tone: 'neutral', shape: 'dashed', live: false },
+  paused: { tone: 'neutral', shape: 'dashed', live: false },
+  sleeping: { tone: 'neutral', shape: 'dashed', live: false },
+} as const satisfies Record<string, StatusSpec>
+
+export type StatusState = keyof typeof STATUS
+
 export type BadgeToneVariant =
   'muted' | 'success' | 'warning' | 'destructive' | 'info' | 'accent'
 

@@ -49,7 +49,8 @@ for (const id of [
   // An object entry pins a thesvg variant: { "slug": "go", "variant": "mono" }.
   const slug = typeof entry === 'string' ? entry : entry.slug
   const variant = typeof entry === 'string' ? undefined : entry.variant
-  if (existsSync(path.join(distDir, `${slug}.js`))) mapped.push([id, slug, variant])
+  if (existsSync(path.join(distDir, `${slug}.js`)))
+    mapped.push([id, slug, variant])
   else missing.push(id)
 }
 
