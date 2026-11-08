@@ -2,6 +2,7 @@ package docker
 
 import (
 	"testing"
+	"time"
 
 	"github.com/docker/docker/api/types/container"
 )
@@ -23,5 +24,20 @@ func TestApplyRuntimeOptions(t *testing.T) {
 	}
 	if (ContainerSpec{}).NeedsRuntimeCapability() || !(ContainerSpec{PidsLimit: 5}).NeedsRuntimeCapability() {
 		t.Fatal("capability gate wrong")
+	}
+}
+
+func TestPickStopTimeout(t *testing.T) {
+	n := 45
+	for _, tc := range []struct {
+		grace time.Duration
+		cfg   *int
+		want  time.Duration
+	}{
+		{0, &n, 0}, {-time.Second, &n, -time.Second}, {10 * time.Second, nil, 10 * time.Second}, {10 * time.Second, &n, 10 * time.Second}, {60 * time.Second, &n, 45 * time.Second},
+	} {
+		if got := pickStopTimeout(tc.grace, tc.cfg); got != tc.want {
+			t.Errorf("pickStopTimeout(%v) = %v, want %v", tc.grace, got, tc.want)
+		}
 	}
 }

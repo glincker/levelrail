@@ -43,3 +43,29 @@ func TestToDesiredServices_InvalidUserFailsWithoutEcho(t *testing.T) {
 		}
 	}
 }
+
+func TestToDesiredServices_RuntimeOptions(t *testing.T) {
+	doc := "services:\n  web:\n    image: nginx:1\n    read_only: true\n    tmpfs: [/tmp]\n    cap_drop: [cap_net_raw, ALL]\n    stop_grace_period: 500ms\n    sysctls: {kernel.core_pattern: x}\n"
+	f, err := Parse([]byte(doc))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, warns, err := ToDesiredServices("app", f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	d := got[0]
+	if d.Resources == nil || d.Resources.ReadOnlyRootfs == nil || !*d.Resources.ReadOnlyRootfs {
+		t.Fatal("read_only must reach Resources.ReadOnlyRootfs")
+	}
+	if d.Runtime.CapDrop[0] != "NET_RAW" || !strings.Contains(d.Runtime.Tmpfs[0], "size=") || *d.Runtime.StopTimeout != 1 || d.Runtime.Sysctls != nil {
+		t.Fatalf("runtime = %+v", d.Runtime)
+	}
+	if !strings.Contains(strings.Join(warns, "\n"), "sysctls") {
+		t.Fatalf("skipped option not named: %v", warns)
+	}
+	bad, _ := Parse([]byte("services:\n  web:\n    image: nginx:1\n    cap_drop: [BOGUS]\n"))
+	if _, _, err := ToDesiredServices("app", bad); err == nil {
+		t.Fatal("an invalid cap_drop must fail the deploy")
+	}
+}

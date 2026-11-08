@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types/container"
-	units "github.com/docker/go-units"
 )
 
 // applyRuntimeOptions maps the allowlisted spec fields onto hostConfig after
@@ -25,7 +24,7 @@ func applyRuntimeOptions(hc *container.HostConfig, spec ContainerSpec) {
 		hc.Tmpfs[p] = opts
 	}
 	for _, u := range spec.Ulimits {
-		hc.Ulimits = append(hc.Ulimits, &units.Ulimit{Name: u.Name, Soft: u.Soft, Hard: u.Hard})
+		hc.Ulimits = append(hc.Ulimits, &container.Ulimit{Name: u.Name, Soft: u.Soft, Hard: u.Hard})
 	}
 	if len(spec.Sysctls) > 0 {
 		hc.Sysctls = make(map[string]string, len(spec.Sysctls))
@@ -51,11 +50,38 @@ func mergeCapDrop(have, extra []string) []string {
 	return out
 }
 
-// configuredStopTimeout prefers a stop_timeout set at create over the caller's grace.
+// configuredStopTimeout prefers a stop_timeout set at create over the caller's
+// grace, but never when the caller asked for an immediate kill or no timeout.
 func (c *Client) configuredStopTimeout(ctx context.Context, id string, grace time.Duration) time.Duration {
-	info, err := c.cli.ContainerInspect(ctx, id)
-	if err != nil || info.Config == nil || info.Config.StopTimeout == nil {
+	if grace <= 0 {
 		return grace
 	}
-	return time.Duration(*info.Config.StopTimeout) * time.Second
+	info, err := c.cli.ContainerInspect(ctx, id)
+	if err != nil || info.Config == nil {
+		return grace
+	}
+	return pickStopTimeout(grace, info.Config.StopTimeout)
+}
+
+func pickStopTimeout(grace time.Duration, configured *int) time.Duration {
+	if grace <= 0 || configured == nil || *configured < 0 {
+		return grace
+	}
+	return min(grace, time.Duration(*configured)*time.Second)
+}
+
+// clampTenantPids keeps an app's pids_limit within the operator's hardening
+// cap; with the cap off (rootless) a tenant value is not applied at all.
+func (h HardeningConfig) clampTenantPids(hc *container.HostConfig, spec ContainerSpec) {
+	if spec.PidsLimit <= 0 || spec.Hardened || !h.enforced() || hc.PidsLimit == nil {
+		return
+	}
+	if h.PidsLimit <= 0 {
+		hc.PidsLimit = nil
+		return
+	}
+	if *hc.PidsLimit > h.PidsLimit {
+		limit := h.PidsLimit
+		hc.PidsLimit = &limit
+	}
 }

@@ -59,11 +59,14 @@ func ToDesiredServices(appName string, f *File) (services []store.DesiredService
 			DependsOnHealthy: svc.DependsOnHealthy,
 			Strategy:         svc.Strategy,
 		}
-		if rt, warn := runtimeFromService(svc); warn != "" {
-			warnings = append(warnings, fmt.Sprintf("service %q: %s", key, warn))
-		} else {
-			d.Runtime = rt
+		rt, rtWarns, err := runtimeFromService(svc)
+		if err != nil {
+			return nil, nil, fmt.Errorf("service %q: %w", key, err)
 		}
+		for _, w := range rtWarns {
+			warnings = append(warnings, fmt.Sprintf("service %q: %s", key, w))
+		}
+		d.Runtime = rt
 		gpu, err := gpuFromDeploy(svc.Deploy)
 		if err != nil {
 			return nil, nil, fmt.Errorf("service %q: %w", key, err)
@@ -79,6 +82,7 @@ func ToDesiredServices(appName string, f *File) (services []store.DesiredService
 		if err := applyShmSize(&d, svc.ShmSize); err != nil {
 			return nil, nil, fmt.Errorf("service %q: %w", key, err)
 		}
+		store.ApplyRuntimeOptions(&d, d.Runtime)
 		replicas, err := replicasFromDeploy(svc.Deploy)
 		if err != nil {
 			return nil, nil, fmt.Errorf("service %q: %w", key, err)

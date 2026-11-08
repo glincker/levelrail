@@ -15,6 +15,7 @@ import (
 // Limits come from env so an operator can tighten or widen them; the
 // defaults keep one app from claiming host-sized resources.
 const (
+	envRuntimeTmpfsDefault   = "APP_RUNTIME_TMPFS_DEFAULT_BYTES"
 	envRuntimeTmpfsMax       = "APP_RUNTIME_TMPFS_MAX"
 	envRuntimeTmpfsBytes     = "APP_RUNTIME_TMPFS_MAX_BYTES"
 	envRuntimeShmBytes       = "APP_RUNTIME_SHM_MAX_BYTES"
@@ -35,6 +36,12 @@ const (
 	defaultRuntimeUlimitCount    = 4194304
 	defaultRuntimeUlimitBytes    = 1 << 30
 )
+
+// MaxStopTimeoutSeconds is the hard ceiling the agent wire format also applies.
+const MaxStopTimeoutSeconds = 3600
+
+// RuntimeDNSMax is how many resolvers a container may have in total.
+func RuntimeDNSMax() int { return envPositive(envRuntimeDNSMax, defaultRuntimeDNSMax) }
 
 // RuntimeOptions is the allowlisted subset of docker run options. Anything
 // that widens the container's reach into the host (cap_add, privileged,
@@ -263,7 +270,7 @@ func (r *RuntimeOptions) validateHosts() error {
 			return fmt.Errorf("runtime.extra_hosts[%d]: must be hostname:ip", i)
 		}
 		// host-gateway would reach services bound to the host's loopback side.
-		if _, err := netip.ParseAddr(strings.Trim(ip, "[]")); err != nil {
+		if addr, err := netip.ParseAddr(strings.Trim(ip, "[]")); err != nil || addr.Zone() != "" {
 			return fmt.Errorf("runtime.extra_hosts[%d]: address must be an IP, host-gateway is not allowed", i)
 		}
 	}
@@ -271,7 +278,7 @@ func (r *RuntimeOptions) validateHosts() error {
 		return fmt.Errorf("runtime.dns: at most %d servers", limit)
 	}
 	for i, d := range r.DNS {
-		if _, err := netip.ParseAddr(d); err != nil {
+		if addr, err := netip.ParseAddr(d); err != nil || addr.Zone() != "" {
 			return fmt.Errorf("runtime.dns[%d]: must be an IP address", i)
 		}
 	}
@@ -312,7 +319,7 @@ func (r *RuntimeOptions) validateCaps() error {
 }
 
 func (r *RuntimeOptions) validateNumbers() error {
-	if limit := envPositive(envRuntimeStopTimeoutMax, defaultRuntimeStopTimeoutMax); r.StopTimeout != nil && (*r.StopTimeout < 0 || *r.StopTimeout > limit) {
+	if limit := min(envPositive(envRuntimeStopTimeoutMax, defaultRuntimeStopTimeoutMax), MaxStopTimeoutSeconds); r.StopTimeout != nil && (*r.StopTimeout < 0 || *r.StopTimeout > limit) {
 		return fmt.Errorf("runtime.stop_timeout: seconds between 0 and %d", limit)
 	}
 	if limit := envPositive(envRuntimePidsMax, defaultRuntimePidsMax); r.PidsLimit < 0 || r.PidsLimit > limit {
@@ -388,4 +395,73 @@ func (r *RuntimeOptions) ComposeKeys() map[string]any {
 		out["pids_limit"] = r.PidsLimit
 	}
 	return out
+}
+
+// NormalizeCap upper-cases a capability name and strips a CAP_ prefix.
+func NormalizeCap(c string) string {
+	return strings.TrimPrefix(strings.ToUpper(strings.TrimSpace(c)), "CAP_")
+}
+
+// NormalizeTmpfs gives a size-less tmpfs entry a bounded default size, since
+// an unsized tmpfs may grow to half of host memory.
+func NormalizeTmpfs(entry string) string {
+	_, opts, _ := strings.Cut(entry, ":")
+	if strings.Contains(opts, "size=") {
+		return entry
+	}
+	size := envPositive(envRuntimeTmpfsDefault, 64<<20)
+	if limit := envPositive(envRuntimeTmpfsBytes, defaultRuntimeTmpfsBytes); size > limit {
+		size = limit
+	}
+	if opts == "" {
+		return fmt.Sprintf("%s:size=%d", entry, size)
+	}
+	return fmt.Sprintf("%s,size=%d", entry, size)
+}
+
+// Sanitize validates each option on its own. Invalid non-hardening options are
+// skipped with a warning naming them; an invalid cap_drop or read_only is a
+// hard error so a hardening request never fails open.
+func (r *RuntimeOptions) Sanitize() (*RuntimeOptions, []string, error) {
+	if r == nil {
+		return nil, nil, nil
+	}
+	steps := []struct {
+		name string
+		hard bool
+		set  func(dst, src *RuntimeOptions)
+	}{
+		{"shm_size", false, func(d, s *RuntimeOptions) { d.ShmSize = s.ShmSize }},
+		{"read_only", true, func(d, s *RuntimeOptions) { d.ReadOnly = s.ReadOnly }},
+		{"tmpfs", false, func(d, s *RuntimeOptions) { d.Tmpfs = s.Tmpfs }},
+		{"ulimits", false, func(d, s *RuntimeOptions) { d.Ulimits = s.Ulimits }},
+		{"init", false, func(d, s *RuntimeOptions) { d.Init = s.Init }},
+		{"stop_timeout", false, func(d, s *RuntimeOptions) { d.StopTimeout = s.StopTimeout }},
+		{"extra_hosts", false, func(d, s *RuntimeOptions) { d.ExtraHosts = s.ExtraHosts }},
+		{"dns", false, func(d, s *RuntimeOptions) { d.DNS = s.DNS }},
+		{"sysctls", false, func(d, s *RuntimeOptions) { d.Sysctls = s.Sysctls }},
+		{"cap_drop", true, func(d, s *RuntimeOptions) { d.CapDrop = s.CapDrop }},
+		{"pids_limit", false, func(d, s *RuntimeOptions) { d.PidsLimit = s.PidsLimit }},
+	}
+	out := &RuntimeOptions{}
+	var warns []string
+	for _, st := range steps {
+		probe := &RuntimeOptions{}
+		st.set(probe, r)
+		if len(probe.ComposeKeys()) == 0 {
+			continue
+		}
+		if err := probe.Validate(); err != nil {
+			if st.hard {
+				return nil, nil, err
+			}
+			warns = append(warns, fmt.Sprintf("%v; %s was not applied", err, st.name))
+			continue
+		}
+		st.set(out, r)
+	}
+	if len(out.ComposeKeys()) == 0 {
+		return nil, warns, nil
+	}
+	return out, warns, nil
 }

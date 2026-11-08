@@ -1425,6 +1425,10 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 	traceRegistryAuth(ctx, tr, desired, spec.RegistryAuth)
 	if c.meshDNSAddr != "" {
 		spec.DNS = append([]string{c.meshDNSAddr}, spec.DNS...)
+		// The mesh resolver counts against the resolver limit; user entries beyond it are dropped.
+		if limit := appspec.RuntimeDNSMax(); len(spec.DNS) > limit {
+			spec.DNS = spec.DNS[:limit]
+		}
 	}
 	meshHosts, err := c.databaseExtraHosts(ctx, desired)
 	if err != nil {
@@ -2860,6 +2864,9 @@ func toContainerSpec(name string, desired *store.DesiredService) (docker.Contain
 		spec.Entrypoint = desired.Entrypoint
 	}
 	spec.User, spec.WorkingDir = desired.User, desired.WorkingDir
+	if err := desired.Runtime.Validate(); err != nil {
+		return spec, fmt.Errorf("stored runtime options no longer pass validation, edit them in the app spec: %w", err)
+	}
 	applyRuntimeOptions(&spec, desired.Runtime)
 	if desired.Port != 0 {
 		// BindAddress (migrations/0103_service_bind_address.sql): which

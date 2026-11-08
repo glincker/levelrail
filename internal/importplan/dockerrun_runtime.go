@@ -15,7 +15,7 @@ func (dr *dockerRun) applyRuntimeFlag(flag, val string) bool {
 	case "--shm-size":
 		r.ShmSize = strings.ToLower(val)
 	case "--tmpfs":
-		r.Tmpfs = append(r.Tmpfs, val)
+		r.Tmpfs = append(r.Tmpfs, spec.NormalizeTmpfs(val))
 	case "--ulimit":
 		name, rest, _ := strings.Cut(val, "=")
 		soft, hard, hasHard := strings.Cut(rest, ":")
@@ -71,12 +71,20 @@ func (dr *dockerRun) applyRuntimeFlag(flag, val string) bool {
 	return true
 }
 
-// finishRuntime validates the collected options; a rejected set is dropped whole with the reason.
-func (dr *dockerRun) finishRuntime() {
-	if err := dr.Runtime.Validate(); err != nil {
-		dr.Warnings = append(dr.Warnings, Warning{Code: "unsupported_flag", Message: fmt.Sprintf("runtime tuning flags were not imported: %v", err)})
-		dr.Runtime = spec.RuntimeOptions{}
+// finishRuntime validates each option on its own; a bad cap_drop fails the import.
+func (dr *dockerRun) finishRuntime() error {
+	out, warns, err := dr.Runtime.Sanitize()
+	if err != nil {
+		return fmt.Errorf("importplan: %w", err)
 	}
+	for _, w := range warns {
+		dr.Warnings = append(dr.Warnings, Warning{Code: "unsupported_flag", Message: w})
+	}
+	dr.Runtime = spec.RuntimeOptions{}
+	if out != nil {
+		dr.Runtime = *out
+	}
+	return nil
 }
 
 // runtimeKeys renders the options as compose keys, nil when none were given.

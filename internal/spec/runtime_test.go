@@ -55,3 +55,12 @@ func TestParseRuntimeBlockAndRefusedKeys(t *testing.T) {
 		}
 	}
 }
+
+func TestRuntimeZoneRejected(t *testing.T) {
+	if err := (&RuntimeOptions{DNS: []string{"fe80::1%eth0\nx"}}).Validate(); err == nil {
+		t.Fatal("zone accepted in dns")
+	}
+	if err := (&RuntimeOptions{ExtraHosts: []string{"h:fe80::1%eth0"}}).Validate(); err == nil {
+		t.Fatal("zone accepted in extra_hosts")
+	}
+}

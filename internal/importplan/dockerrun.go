@@ -181,7 +181,9 @@ func parseDockerRun(text string) (*dockerRun, error) {
 	if i+1 < len(toks) {
 		dr.Command = toks[i+1:]
 	}
-	dr.finishRuntime()
+	if err := dr.finishRuntime(); err != nil {
+		return nil, err
+	}
 	return dr, nil
 }
 

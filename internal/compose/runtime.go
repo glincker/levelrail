@@ -2,6 +2,7 @@ package compose
 
 import (
 	"fmt"
+	"math"
 	"sort"
 	"time"
 
@@ -86,31 +87,38 @@ func splitKV(s string) (string, string) {
 	return s, ""
 }
 
-// runtimeFromService maps the tuning keys onto the allowlisted options. A set
-// that fails validation is not applied at all and the reason is returned, so a
-// pasted file keeps deploying the way it did before these keys were read.
-func runtimeFromService(svc Service) (*spec.RuntimeOptions, string) {
+// runtimeFromService maps the tuning keys onto the allowlisted options. An
+// invalid option is skipped with a warning naming it; an invalid cap_drop or
+// read_only fails the deploy so hardening never fails open.
+func runtimeFromService(svc Service) (*spec.RuntimeOptions, []string, error) {
 	r := &spec.RuntimeOptions{
-		Tmpfs: svc.Tmpfs, Ulimits: svc.Ulimits, Init: svc.Init, ExtraHosts: svc.ExtraHosts,
-		DNS: svc.DNS, Sysctls: svc.Sysctls, CapDrop: svc.CapDrop, PidsLimit: svc.PidsLimit,
+		Ulimits: svc.Ulimits, Init: svc.Init, ExtraHosts: svc.ExtraHosts,
+		DNS: svc.DNS, Sysctls: svc.Sysctls, PidsLimit: svc.PidsLimit,
+	}
+	for _, t := range svc.Tmpfs {
+		r.Tmpfs = append(r.Tmpfs, spec.NormalizeTmpfs(t))
+	}
+	for _, c := range svc.CapDrop {
+		r.CapDrop = append(r.CapDrop, spec.NormalizeCap(c))
 	}
 	if svc.ReadOnly {
 		on := true
 		r.ReadOnly = &on
 	}
+	var warns []string
 	if svc.StopGracePeriod != "" {
 		d, err := time.ParseDuration(svc.StopGracePeriod)
 		if err != nil || d < 0 {
-			return nil, "stop_grace_period: not applied, expected a duration such as 30s"
+			warns = append(warns, "stop_grace_period: not applied, expected a duration such as 30s")
+		} else {
+			// A sub-second grace would truncate to an immediate SIGKILL.
+			secs := max(int(math.Ceil(d.Seconds())), 1)
+			if d == 0 {
+				secs = 0
+			}
+			r.StopTimeout = &secs
 		}
-		secs := int(d.Seconds())
-		r.StopTimeout = &secs
 	}
-	if len(r.ComposeKeys()) == 0 {
-		return nil, ""
-	}
-	if err := r.Validate(); err != nil {
-		return nil, fmt.Sprintf("%v; the runtime options (tmpfs, ulimits, sysctls, dns, extra_hosts, cap_drop, read_only, init, pids_limit, stop_grace_period) were not applied", err)
-	}
-	return r, ""
+	out, more, err := r.Sanitize()
+	return out, append(warns, more...), err
 }

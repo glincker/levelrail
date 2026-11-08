@@ -443,6 +443,7 @@ func (c *Client) Create(ctx context.Context, spec ContainerSpec) (string, error)
 	c.hardening.apply(hostConfig, spec)
 	c.hardening.applyReadOnlyRootfs(hostConfig, spec)
 	applyRuntimeOptions(hostConfig, spec)
+	c.hardening.clampTenantPids(hostConfig, spec)
 
 	release := c.declare(spec)
 	defer release()

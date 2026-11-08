@@ -77,7 +77,7 @@ func TestDockerRunRealWorld(t *testing.T) {
 		{"entrypoint", `docker run --entrypoint "/bin/sh -c" -p 80:80 alpine:3 'echo hi'`, "alpine:3", 80, 0, nil, ""},
 		{"env from host", `docker run -e API_KEY -p 80:80 myorg/x:2`, "myorg/x:2", 80, 0, []string{"env_from_host"}, ""},
 		{"env file", `docker run --env-file ./.env -p 80:80 myorg/x:2`, "myorg/x:2", 80, 0, []string{"env_file"}, ""},
-		{"tmpfs ulimit", `docker run --tmpfs /tmp --ulimit nofile=1024 -p 80:80 myorg/x:2`, "myorg/x:2", 80, 0, []string{"unsupported_flag"}, "runtime.tmpfs[0]"},
+		{"tmpfs ulimit", `docker run --tmpfs /tmp --ulimit rtprio=1 -p 80:80 myorg/x:2`, "myorg/x:2", 80, 0, []string{"unsupported_flag"}, "runtime.ulimits.rtprio"},
 		{"network custom", `docker run --network mynet -p 80:80 myorg/x:2`, "myorg/x:2", 80, 0, []string{"network"}, ""},
 		{"gpus", `docker run --gpus all -p 11434:11434 ollama/ollama:0.3`, "ollama/ollama:0.3", 11434, 0, []string{"unsupported_flag"}, "--gpus"},
 		{"labels", `docker run -l a=b --label c=d -p 80:80 myorg/x:2`, "myorg/x:2", 80, 0, []string{"unsupported_flag"}, "--label"},
