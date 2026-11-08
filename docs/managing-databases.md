@@ -175,6 +175,8 @@ levelrail-cli databases create --name cache --engine memcached --version 1.6
 
 ### Planned engines
 
+Message queues and document or time-series stores such as RabbitMQ, NATS, CouchDB and InfluxDB are catalog templates, not managed engines; see the [coverage table](/migrate-from-dokku#datastore-coverage).
+
 Not available yet: CockroachDB. It needs a reconciler case, a backup dump, a restore path, a verify runner and viewer support before it can be offered.
 
 ## Stop, start, and delete

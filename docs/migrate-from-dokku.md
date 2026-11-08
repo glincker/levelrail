@@ -183,6 +183,21 @@ The commands you used every day, and where they went. Levelrail commands are wri
 | `plugin:install` | Not available | There is no plugin system. Templates, the API and MCP are the extension points |
 | `events`, `report` | The audit log and the app timeline | |
 
+## Datastore coverage
+
+Each Dokku datastore plugin maps to a managed database engine, a catalog template you run as an app, or nothing. A managed engine gets generated credentials, backups, restore and the database copy step. A catalog template is an ordinary app with its own volume: move its data with the volume copy in [Migrate over SSH](/migrate-over-ssh#images-and-volumes) and back it up as app storage.
+
+| Datastore | Offered as | Name |
+| --- | --- | --- |
+| Postgres, MySQL, MariaDB, MongoDB, Redis | Managed engine | `postgres`, `mysql`, `mariadb`, `mongodb`, `redis` |
+| Memcached, ClickHouse, Meilisearch, Typesense | Managed engine | `memcached`, `clickhouse`, `meilisearch`, `typesense` |
+| CouchDB, Elasticsearch, OpenSearch, Solr | Catalog template | `couchdb`, `elasticsearch`, `opensearch`, `solr` |
+| RabbitMQ, NATS | Catalog template | `rabbitmq`, `nats` |
+| InfluxDB, Neo4j | Catalog template | `influxdb`, `neo4j` |
+| RethinkDB, OrientDB, Graphite, Pushpin | Not offered | none |
+
+The database copy step handles managed engines only. Catalog templates have no dump and restore step, so stop the source service before copying its volume. `GET /api/v1/database-engines` is the live source for engines.
+
 ## Databases and the downtime window
 
 The copy is a full dump and restore with row counts compared and the source read-only. There is no incremental sync. Pause the Dokku app (`dokku ps:stop APP`), run the final copy, start the app here, switch DNS. The window is the final copy time plus a restart. A Dokku app that only serves from its image and has no database can move with no outage you would notice. See the [downtime table](/migrate-to-levelrail#what-stays-online-during-the-move).
