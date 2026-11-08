@@ -76,9 +76,9 @@ Omit `node_id` at creation to let the control plane pick a node, or pass it to c
 | --- | --- | --- | --- |
 | Postgres | `postgres` | `16` | on by default |
 | Redis | `redis` | `7` | on by default |
-| MySQL | `mysql` | `8` | on for databases created after TLS support landed |
-| MongoDB | `mongodb` | `7` | on for databases created after TLS support landed |
-| MariaDB | `mariadb` | `11` | on for databases created after TLS support landed |
+| MySQL | `mysql` | `8` | on for new databases; older ones can be switched with `PUT /api/v1/databases/{name}/tls` |
+| MongoDB | `mongodb` | `7` | on for new databases; older ones can be switched with `PUT /api/v1/databases/{name}/tls` |
+| MariaDB | `mariadb` | `11` | on for new databases; older ones can be switched with `PUT /api/v1/databases/{name}/tls` |
 | KeyDB | `keydb` | `latest` | no |
 | Valkey | `valkey` | `8` | no |
 | Dragonfly | `dragonfly` | `v1.27.1` | no |
@@ -542,7 +542,7 @@ When the database has a running container, new limits apply live. If the contain
 
 Postgres and Redis get TLS enabled automatically at creation, with a self-signed certificate generated once and persisted through the secrets mechanism. TLS shows as on once a certificate exists for the database.
 
-MySQL, MariaDB and MongoDB databases created from this release on get the same certificate and the server offers TLS (MongoDB with `preferTLS`), but plaintext connections are still accepted, so existing clients keep working and a client opts in with its own TLS setting. Databases created before this release are not switched: they have no stored TLS mode and keep running as they were. `PUT /api/v1/databases/{name}/tls` turns it on or off for MySQL, MariaDB, MongoDB and Redis.
+MySQL, MariaDB and MongoDB databases created from this release on get the same certificate and the server offers TLS (MongoDB with `preferTLS`), but plaintext connections are still accepted, so existing clients keep working and a client opts in with its own TLS setting. Databases created before this release are not switched automatically: they have no stored TLS mode and keep running as they were. `PUT /api/v1/databases/{name}/tls` with `{"enabled": true}` turns it on for an existing MySQL, MariaDB, MongoDB or Redis database and `false` turns it off (the stored certificate is deleted); the reconciler then replaces the container, and data lives on its volume. Postgres is always on and cannot be switched. The certificate is self-signed, generated once and never rotated automatically. It is built and tested with fakes and local Docker, not proven on a real host.
 
 Both engines have an "encrypt without verifying" mode in their standard connection URI (Postgres `sslmode=require`, Redis `rediss://`), which mainstream client libraries honor with no app-side change. When an app attaches to a TLS-enabled database, it automatically gets the TLS form of the connection string: `?sslmode=require` appended for Postgres, or `rediss://` on the TLS-only port for Redis. Nothing in `app.yaml` opts into this.
 
