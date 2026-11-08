@@ -93,6 +93,7 @@ func runGitRemoteIssue(prog, verb string, args []string, stdout, stderr io.Write
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, label, "print the remote, including the one-time token, as JSON to stdout and nothing else", stderr)
 	applyFlag := fs.Bool("apply", false, "set the remote in a local git repository (add, or set-url if it exists); the token URL is then kept only in .git/config and not printed")
 	dirFlag := fs.String("dir", "", "repository directory for --apply (default: the current directory)")
+	helperFlag := fs.Bool("credential-helper", false, "with --apply: keep the token out of .git/config; the remote URL has no token and a git credential helper reads it from "+gitTokenEnv+" at push time")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s %s <app> [flags]\n\nIssues the push token and prints the exact git remote add line. The token is\nshown once. Pushing the deploy branch builds and deploys that commit.\nWith --apply the remote is configured in the repository for you.\n\nFlags:\n", prog, label)
 		fs.PrintDefaults()
@@ -118,10 +119,22 @@ func runGitRemoteIssue(prog, verb string, args []string, stdout, stderr io.Write
 	var applyErr error
 	var appliedDir string
 	if *applyFlag {
-		appliedDir, applyErr = applyGitRemote(ctx, *dirFlag, g.RemoteName, g.URL, g.Username, g.Token)
+		serverHost := ""
+		if *helperFlag {
+			serverHost = hostOf(client.BaseURL())
+			if serverHost == "" {
+				serverHost = "-"
+			}
+		}
+		appliedDir, applyErr = applyGitRemote(ctx, *dirFlag, g.RemoteName, g.URL, g.Username, g.Token, serverHost)
 	}
 	if err := renderResult(stdout, of.Format, of.Query, g, func() {
 		printGitRemoteHuman(stdout, g)
+		if *applyFlag && applyErr == nil && *helperFlag {
+			// The one-time token is shown once so it can be exported; it is never written to .git/config.
+			_, _ = fmt.Fprintf(stdout, "\nremote %s configured in %s without a token in .git/config\n\nBefore pushing, export the one-time token (shown once):\n  export %s=%s\n\nDeploy with:\n  git push %s %s\n", g.RemoteName, appliedDir, gitTokenEnv, g.Token, g.RemoteName, g.Branch)
+			return
+		}
 		if *applyFlag && applyErr == nil {
 			_, _ = fmt.Fprintf(stdout, "\nremote %s configured in %s\n\nDeploy with:\n  git push %s %s\n", g.RemoteName, appliedDir, g.RemoteName, g.Branch)
 			return
@@ -138,11 +151,27 @@ func runGitRemoteIssue(prog, verb string, args []string, stdout, stderr io.Write
 	return exitOK
 }
 
+// gitTokenEnv names the variable the credential helper reads at push time.
+const gitTokenEnv = "LEVELRAIL_GIT_TOKEN" //nolint:gosec // env var name, not a credential
+
+// gitCredentialHelper is a fixed shell snippet for git; it embeds no user input and no secret.
+const gitCredentialHelper = `!f() { test "$1" = get && echo "password=$` + gitTokenEnv + `"; }; f`
+
+var gitUserRe = regexp.MustCompile(`^[A-Za-z0-9_.-]{1,64}$`)
+
+func hostOf(raw string) string {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return ""
+	}
+	return u.Host
+}
+
 var gitRemoteNameRe = regexp.MustCompile(`^[A-Za-z0-9_.][A-Za-z0-9_.-]{0,63}$`)
 
 // applyGitRemote sets the push remote with git in argv form. Errors never carry
 // the URL or token: git output is dropped because it can echo the URL.
-func applyGitRemote(ctx context.Context, dir, name, rawURL, username, token string) (string, error) {
+func applyGitRemote(ctx context.Context, dir, name, rawURL, username, token, helperHost string) (string, error) {
 	if !gitRemoteNameRe.MatchString(name) || name == "." || name == ".." {
 		return "", errors.New("invalid remote name from the server")
 	}
@@ -150,7 +179,19 @@ func applyGitRemote(ctx context.Context, dir, name, rawURL, username, token stri
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
 		return "", errors.New("invalid remote URL from the server")
 	}
-	if token != "" {
+	if helperHost != "" {
+		// A helper sends the token to whatever host the URL names, so it must be this server.
+		if u.Host != helperHost {
+			return "", errors.New("remote URL host does not match the configured server")
+		}
+		if username == "" {
+			username = "git"
+		}
+		if !gitUserRe.MatchString(username) {
+			return "", errors.New("invalid remote user name from the server")
+		}
+		u.User = url.User(username)
+	} else if token != "" {
 		if username == "" {
 			username = "git"
 		}
@@ -189,6 +230,16 @@ func applyGitRemote(ctx context.Context, dir, name, rawURL, username, token stri
 	}
 	if err := exec.CommandContext(ctx, gitBin, "-C", abs, "remote", verb, "--", name, u.String()).Run(); err != nil { //nolint:gosec // argv form, literal git, validated name and URL
 		return "", fmt.Errorf("git remote %s failed", verb)
+	}
+	if helperHost != "" {
+		key := "credential." + u.Scheme + "://" + u.Host + ".helper"
+		// An empty first value makes git drop system and global helpers (osxkeychain, store) for this URL, so the token is never saved or shadowed by a stale entry.
+		if err := exec.CommandContext(ctx, gitBin, "-C", abs, "config", "--local", "--replace-all", key, "").Run(); err != nil { //nolint:gosec // argv form, literal git, fixed key
+			return "", errors.New("git config for the credential helper failed")
+		}
+		if err := exec.CommandContext(ctx, gitBin, "-C", abs, "config", "--local", "--add", key, gitCredentialHelper).Run(); err != nil { //nolint:gosec // argv form, literal git, fixed helper
+			return "", errors.New("git config for the credential helper failed")
+		}
 	}
 	return abs, nil
 }

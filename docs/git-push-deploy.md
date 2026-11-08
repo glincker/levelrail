@@ -35,6 +35,8 @@ On the **Source** tab the card shows the remote, a copy button, the deploy branc
 To keep the token out of `.git/config`, add the remote without it and let a git credential helper ask once. The user name is `git`, the password is the token.
 </Tip>
 
+Add `--credential-helper` with `--apply` to keep the token out of `.git/config`. The remote URL is written with the user name only, and a fixed git credential helper for this server reads the token from the `LEVELRAIL_GIT_TOKEN` environment variable at push time. The one-time token is printed once so you can export it, and the command refuses a server URL whose host differs from the API address. Without the flag nothing changes. This is unit tested with fakes and has not pushed to a live git server.
+
 ## What a push does
 
 A push to the deploy branch (`main` by default) is received, stored, built and deployed. The build output comes back to your terminal as `remote:` lines, so you see what the dashboard sees.

@@ -921,6 +921,8 @@ Endpoints for:
 | POST | /api/v1/databases/{name}/pooler | AbilityWriteSensitive | handleEnableDatabasePooler |
 | DELETE | /api/v1/databases/{name}/pooler | AbilityWriteSensitive | handleDisableDatabasePooler |
 | POST | /api/v1/databases/{name}/branches | AbilityWriteSensitive | handleBranchDatabase |
+| GET | /api/v1/databases/{name}/import | AbilityRoot | handleDatabaseImportCheck |
+| POST | /api/v1/databases/{name}/import | AbilityRoot | handleDatabaseImport |
 
 ## Projects / Organizations / Environments
 

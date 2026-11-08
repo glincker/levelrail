@@ -282,11 +282,13 @@ bkh_p93kd7z1q   bkt_ax7f2j1kd  succeeded  2148291  2026-09-12T03:00:01Z  2026-09
 
 On the dashboard, use the target picker and **Back up now** button in the **Backups** card on a database's Overview tab. A manual backup is refused with `507` when the control plane's data directory has less than `APP_MIN_BACKUP_DISK_MB` free (default 256), because the backup history row is written there.
 
-### Export and clone
+### Export, import and clone
 
 ```bash
 levelrail-cli databases export <database> --out main.dump
 levelrail-cli databases export <database> --latest --out - > main.dump
+levelrail-cli databases import <database> --in main.dump
+levelrail-cli databases import <database> --in - --force --yes < main.dump
 levelrail-cli databases clone <database> <new-name>
 levelrail-cli databases clone <database> <new-name> --backup <backup-id>
 ```
@@ -295,9 +297,11 @@ levelrail-cli databases clone <database> <new-name> --backup <backup-id>
 
 The command waits up to `--wait` for the fresh backup. The default is 15 minutes, and the `LEVELRAIL_EXPORT_WAIT` environment variable sets a different default. Progress goes to stderr and stdout carries only the dump. The command refuses to print a dump to a terminal, writes the file with mode `0600`, and replaces an existing file only with `--force`. If the backup fails or the wait runs out, it exits with an error that names the backup to check. `--target` picks the backup target when more than one is configured.
 
+`import` is the reverse of `export`: it streams a dump from a file or stdin into a running database of the same engine (Postgres, MySQL, MariaDB, MongoDB or Redis). The dump is never printed or logged. A database that already holds data is refused unless you pass `--force`, which also asks you to type the database name; `--yes` skips that prompt and is required with `--in -`. The route is `POST /api/v1/databases/{name}/import` and needs the root ability, like an in-place restore. The largest accepted dump is the `databases.import_max_bytes` setting (default 1 GiB), and the upload is received in full first, so a bigger or interrupted one fails with `413` or `400` before anything is restored. The audit log records the database name, byte count and outcome, never the dump.
+
 `clone` creates a new database from a backup of the source. Without `--backup` it takes a fresh backup first and waits for it, the same as `export`. It can also set `--version` for a different engine version and `--project` for the project the new database joins. The source is never changed. The command prints the started clone and returns. Check progress with `levelrail-cli databases get <new-name>`.
 
-Built and unit tested with fakes (`cmd/levelrail-cli/databases_export_test.go`, `databases_clone_test.go`). It has not run against a live control plane.
+Built and unit tested with fakes (`cmd/levelrail-cli/databases_export_test.go`, `databases_clone_test.go`, `databases_import_test.go`). It has not run against a live control plane, and `import` has not restored into a real database.
 
 ### Scheduled backups
 

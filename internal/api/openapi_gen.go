@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2018 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2020 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -706,7 +706,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/databases/{name}/public-access", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handleClearDatabasePublicAccess", Description: ""},
 	{Method: "PUT", Path: "/api/v1/databases/{name}/public-access", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handleSetDatabasePublicAccess", Description: "Public host access per database: AbilityWriteSensitive, it changes network exposure. No GET: handleGetDatabase already returns the fields."},
 	{Method: "POST", Path: "/api/v1/databases/{name}/restore", Ability: "AbilityRoot", Group: "Database Backups / Restore / Clone Restore", Handler: "handleTriggerRestore", Description: "Restore, per database (restore.go). AbilityRoot, not AbilityWriteSensitive: see handleTriggerRestore's own doc comment for why this, alone among every backup-related route, needs the same top tier as node management and placement. History listing is ordinary AbilityRead, the same boundary the backup history route above already draws."},
-	{Method: "POST", Path: "/api/v1/databases/{name}/restore-as-new", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handleCloneRestore", Description: "Restore as a new database (database_clone_restore.go): the non-destructive counterpart just above, AbilityWriteSensitive rather than AbilityRoot, see handleCloneRestore's own doc comment for why this endpoint doesn't need the top tier the in-place restore route does. History listing is ordinary AbilityRead, the same boundary the in-place restore history route above draws."},
+	{Method: "POST", Path: "/api/v1/databases/{name}/restore-as-new", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handleCloneRestore", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/restores", Ability: "AbilityRead", Group: "Database Backups / Restore / Clone Restore", Handler: "handleListRestoreHistory", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/start", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handleStartDatabase", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/stop", Ability: "AbilityWriteSensitive", Group: "Database Backups / Restore / Clone Restore", Handler: "handleStopDatabase", Description: "Stop/start, per database (database_stop_start.go). AbilityWriteSensitive, same tier public-access above uses: taking a database offline (and, on start, back online) is real operational impact, not an ordinary desired-state edit."},
@@ -729,6 +729,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/databases/{name}/engine-stats", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabaseEngineStats", Description: "Live counts for engines with no data browser; index names can name tenants."},
 	{Method: "PUT", Path: "/api/v1/databases/{name}/environment", Ability: "AbilityWrite", Group: "Databases CRUD / Engines / Resources", Handler: "handleSetDatabaseEnvironment", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/explain", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseExplain", Description: ""},
+	{Method: "GET", Path: "/api/v1/databases/{name}/import", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseImportCheck", Description: "Restore as a new database (database_clone_restore.go): the non-destructive counterpart just above, AbilityWriteSensitive rather than AbilityRoot, see handleCloneRestore's own doc comment for why this endpoint doesn't need the top tier the in-place restore route does. History listing is ordinary AbilityRead, the same boundary the in-place restore history route above draws. Import (database_import.go): a dump streamed into the database; AbilityRoot like restore since it can replace live data."},
+	{Method: "POST", Path: "/api/v1/databases/{name}/import", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseImport", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/key", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabaseKey", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/keys", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleScanDatabaseKeys", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/links", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleListDatabaseLinks", Description: ""},

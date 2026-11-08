@@ -1,3 +1,18 @@
+abuse.default_burst
+abuse.default_rps
+abuse.dryrun_default_window
+abuse.dryrun_max_window
+abuse.dryrun_top_clients
+abuse.idle_evict
+abuse.max_agent_entries
+abuse.max_burst
+abuse.max_deny_entries
+abuse.max_retry_after
+abuse.max_rps
+abuse.max_tracked_clients
+abuse.shards
+abuse.suggest_burst_seconds
+abuse.suggest_client_share
 account.preferences_max_bytes
 api.max_body_bytes
 api.rate_limit_read_rpm
@@ -32,6 +47,7 @@ cutover.verify_hsts_min_age
 cutover.verify_min_interval
 cutover.verify_slow_ttfb
 cutover.verify_timeout
+databases.import_max_bytes
 databases.pooler_default
 databases.pooler_image
 deploy.ci_gate_max_waits_per_app

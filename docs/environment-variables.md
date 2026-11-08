@@ -45,6 +45,21 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 
 | Variable | Setting | Default |
 | --- | --- | --- |
+| `APP_ABUSE_DEFAULT_BURST` | [`abuse.default_burst`](/runtime-settings#security) | `40` |
+| `APP_ABUSE_DEFAULT_RPS` | [`abuse.default_rps`](/runtime-settings#security) | `20` |
+| `APP_ABUSE_DRYRUN_DEFAULT_WINDOW` | [`abuse.dryrun_default_window`](/runtime-settings#security) | `15m0s` |
+| `APP_ABUSE_DRYRUN_MAX_WINDOW` | [`abuse.dryrun_max_window`](/runtime-settings#security) | `1h0m0s` |
+| `APP_ABUSE_DRYRUN_TOP_CLIENTS` | [`abuse.dryrun_top_clients`](/runtime-settings#security) | `10` |
+| `APP_ABUSE_IDLE_EVICT` | [`abuse.idle_evict`](/runtime-settings#security) | `5m0s` |
+| `APP_ABUSE_MAX_AGENT_ENTRIES` | [`abuse.max_agent_entries`](/runtime-settings#security) | `64` |
+| `APP_ABUSE_MAX_BURST` | [`abuse.max_burst`](/runtime-settings#security) | `100000` |
+| `APP_ABUSE_MAX_DENY_ENTRIES` | [`abuse.max_deny_entries`](/runtime-settings#security) | `256` |
+| `APP_ABUSE_MAX_RETRY_AFTER` | [`abuse.max_retry_after`](/runtime-settings#security) | `1m0s` |
+| `APP_ABUSE_MAX_RPS` | [`abuse.max_rps`](/runtime-settings#security) | `10000` |
+| `APP_ABUSE_MAX_TRACKED_CLIENTS` | [`abuse.max_tracked_clients`](/runtime-settings#security) | `100000` |
+| `APP_ABUSE_SHARDS` | [`abuse.shards`](/runtime-settings#security) | `64` |
+| `APP_ABUSE_SUGGEST_BURST_SECONDS` | [`abuse.suggest_burst_seconds`](/runtime-settings#security) | `2` |
+| `APP_ABUSE_SUGGEST_CLIENT_SHARE` | [`abuse.suggest_client_share`](/runtime-settings#security) | `0.25` |
 | `APP_API_RATE_LIMIT_READ_RPM` | [`api.rate_limit_read_rpm`](/runtime-settings#security) | `600` |
 | `APP_API_RATE_LIMIT_TOKEN_REDEEM_RPM` | [`api.rate_limit_redeem_rpm`](/runtime-settings#security) | `10` |
 | `APP_API_RATE_LIMIT_WRITE_RPM` | [`api.rate_limit_write_rpm`](/runtime-settings#security) | `120` |
@@ -83,6 +98,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CUTOVER_VERIFY_MIN_INTERVAL` | [`cutover.verify_min_interval`](/runtime-settings#networking) | `10s` |
 | `APP_CUTOVER_VERIFY_SLOW_TTFB` | [`cutover.verify_slow_ttfb`](/runtime-settings#networking) | `1500ms` |
 | `APP_CUTOVER_VERIFY_REQUEST_TIMEOUT` | [`cutover.verify_timeout`](/runtime-settings#networking) | `5s` |
+| `APP_DATABASE_IMPORT_MAX_BYTES` | [`databases.import_max_bytes`](/runtime-settings#networking) | `1073741824` |
 | `APP_DNS_VERIFY_PROVIDER_ON_SAVE` | [`dns.verify_provider_on_save`](/runtime-settings#networking) | `true` |
 | `APP_DOMAINS_BATCH_MAX_ITEMS` | [`domains.batch_max_items`](/runtime-settings#networking) | `50` |
 | `APP_DOMAINS_CANONICAL` | [`domains.canonical`](/runtime-settings#networking) | `apex` |

@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/abuse"
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/iac"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
@@ -44,6 +45,7 @@ func (rt *Router) attachRuntimeSettings(s Store) {
 	wireJobHTTPSettings(svc)
 	wireNextSkewSettings(svc)
 	wireDiagnosticSettings(svc)
+	abuse.SetLiveLimits(svc.AbuseLimits)
 	loopbackDistrusted.Store(!svc.Bool(context.Background(), runtimesettings.KeyTrustLoopbackForwarded))
 }
 

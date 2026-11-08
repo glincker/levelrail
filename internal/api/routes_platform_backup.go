@@ -148,6 +148,9 @@ func (rt *Router) registerBackupRoutes(mux *http.ServeMux) {
 	// for why this endpoint doesn't need the top tier the in-place
 	// restore route does. History listing is ordinary AbilityRead, the
 	// same boundary the in-place restore history route above draws.
+	// Import (database_import.go): a dump streamed into the database; AbilityRoot like restore since it can replace live data.
+	mux.HandleFunc("GET /api/v1/databases/{name}/import", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleDatabaseImportCheck))
+	mux.HandleFunc("POST /api/v1/databases/{name}/import", rt.requireAbilityForResource(AbilityRoot, databaseResourceFromPath, rt.handleDatabaseImport))
 	mux.HandleFunc("POST /api/v1/databases/{name}/restore-as-new", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleCloneRestore))
 	mux.HandleFunc("GET /api/v1/databases/{name}/clone-restores", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleListCloneRestores))
 	// Branch (database_branch.go): a new independent database from a backup or point in time, same tier as restore-as-new.
