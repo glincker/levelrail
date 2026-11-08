@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.9.3](https://github.com/glincker/levelrail/compare/v0.9.2...v0.9.3) (2026-11-07)
+
+
+### Features
+
+* v0.9.3 ([#1442](https://github.com/glincker/levelrail/issues/1442)) ([43b39ba](https://github.com/glincker/levelrail/commit/43b39ba6c6ed55bf75e6ed40ddceafad6cb21633))
+
+
+### Bug Fixes
+
+* green CI after v0.9.3 (lint, schema, bundle budget, log terminal tests) ([#1446](https://github.com/glincker/levelrail/issues/1446)) ([e2a7f52](https://github.com/glincker/levelrail/commit/e2a7f527db32904543a4ba029d00751189d7e9c1))
+
+
+### Documentation
+
+* use a version placeholder in the pin example ([#1434](https://github.com/glincker/levelrail/issues/1434)) ([3235865](https://github.com/glincker/levelrail/commit/32358658675750786366f881b76228e5fa2eae59))
+
 ## [0.9.2](https://github.com/glincker/levelrail/compare/v0.9.0...v0.9.2) (2026-11-06)
 
 
