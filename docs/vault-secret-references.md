@@ -119,6 +119,8 @@ levelrail-cli secrets provider remove prod
 
 `--type vault` on `add` and `remove` uses the Vault settings above. The token is stored encrypted, is write-only, and is never returned by the API or the CLI. Saving a new token keeps the old one working for the rotation grace window. Adding and removing providers and the connection test need the root or admin role and are audited. The API is `GET /api/v1/settings/secret-providers`, `PUT` and `DELETE /api/v1/settings/secret-providers/{name}`, and `POST /api/v1/settings/secret-providers/{name}/test`.
 
+In the dashboard, a 1Password provider row shows the Connect server address (scheme, host and port only) and the default vault. The token is never shown.
+
 To use a value, store a reference as an app secret:
 
 ```bash

@@ -105,4 +105,40 @@ describe('SecretProvidersSection', () => {
     })
     expect(body).not.toHaveProperty('environment')
   })
+
+  it('shows the Connect server origin and vault for 1Password rows', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({
+              providers: [
+                {
+                  name: 'op1',
+                  type: 'onepassword',
+                  project: 'Infra',
+                  base_url: 'https://user:pw@connect.internal:8080/x?k=v',
+                  self_hosted: true,
+                  has_token: true,
+                  updated_at: '2026-11-07T00:00:00Z',
+                },
+              ],
+            }),
+          ),
+        ),
+      ),
+    )
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <SecretProvidersSection />
+      </QueryClientProvider>,
+    )
+    expect(
+      await screen.findByText('https://connect.internal:8080 / Infra', {
+        exact: false,
+      }),
+    ).toBeTruthy()
+    expect(screen.queryByText('pw', { exact: false })).toBeNull()
+  })
 })

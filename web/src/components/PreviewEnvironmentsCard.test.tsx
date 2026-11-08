@@ -92,6 +92,7 @@ describe('PreviewEnvironmentsCard', () => {
   let gitSourceConnected: boolean
   let staleFixture: boolean
   let ephemeralDatabasesFixture: unknown[]
+  let gatedFlag: boolean | undefined
   let gateFixture: { gate_basic_auth: boolean; gate_password_set: boolean }
 
   beforeEach(() => {
@@ -100,6 +101,7 @@ describe('PreviewEnvironmentsCard', () => {
     gitSourceConnected = true
     staleFixture = false
     ephemeralDatabasesFixture = []
+    gatedFlag = undefined
     gateFixture = { gate_basic_auth: true, gate_password_set: true }
     fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = requestUrlOf(input)
@@ -148,6 +150,7 @@ describe('PreviewEnvironmentsCard', () => {
                     branch: 'feature-x',
                     head_sha: 'abc123',
                     domain: 'pr-42.demo-app.example.com',
+                    gated: gatedFlag,
                     status: 'active',
                     created_at: '2026-01-01T00:00:00Z',
                     updated_at: '2026-01-01T00:00:00Z',
@@ -377,5 +380,28 @@ describe('PreviewEnvironmentsCard', () => {
     gateFixture = { gate_basic_auth: false, gate_password_set: false }
     renderCard()
     expect(await screen.findByText('Public')).toBeInTheDocument()
+  })
+
+  it('reads the per-preview flag over the app policy when gated', async () => {
+    previewEnabled = true
+    gatedFlag = true
+    gateFixture = { gate_basic_auth: false, gate_password_set: false }
+    renderCard()
+    expect(await screen.findByText('Basic auth on')).toBeInTheDocument()
+  })
+
+  it('shows Public for an open preview even if the policy gate is on', async () => {
+    previewEnabled = true
+    gatedFlag = false
+    renderCard()
+    expect(await screen.findByText('Public')).toBeInTheDocument()
+  })
+
+  it('falls back to the policy when the flag is absent', async () => {
+    previewEnabled = true
+    gatedFlag = undefined
+    gateFixture = { gate_basic_auth: true, gate_password_set: false }
+    renderCard()
+    expect(await screen.findByText('Gate needs a password')).toBeInTheDocument()
   })
 })

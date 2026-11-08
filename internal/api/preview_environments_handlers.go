@@ -23,8 +23,9 @@ type previewEnvironmentResource struct {
 	HeadSHA      string `json:"head_sha"`
 	Domain       string `json:"domain,omitempty"`
 	// Gated is true when the preview's domain currently requires sign-in.
-	// A flag only, never the credentials.
-	Gated        bool   `json:"gated"`
+	// A flag only, never the credentials. Omitted when unknown (lookup failed
+	// or no domain) so clients never read a failure as public.
+	Gated        *bool  `json:"gated,omitempty"`
 	Status       string `json:"status"`
 	StatusReason string `json:"status_reason,omitempty"`
 	CreatedAt    string `json:"created_at"`
@@ -194,7 +195,7 @@ func (rt *Router) handleListPreviewEnvironments(w http.ResponseWriter, r *http.R
 			domains = append(domains, p.Domain)
 		}
 	}
-	// A failed lookup degrades to ungated flags, like the other display extras.
+	// A failed lookup omits the flag rather than claiming public.
 	gated, err := rt.previewEnvironments.GatedDomains(r.Context(), domains)
 	if err != nil {
 		rt.logger.Warn("api: preview gate lookup failed", slog.String("name", name), slog.String("error", err.Error()))
@@ -202,7 +203,10 @@ func (rt *Router) handleListPreviewEnvironments(w http.ResponseWriter, r *http.R
 	out := make([]previewEnvironmentResource, 0, len(previews))
 	for _, p := range previews {
 		res := rt.toPreviewEnvironmentResource(r.Context(), p, ttl)
-		res.Gated = p.Domain != "" && gated[p.Domain]
+		if err == nil && p.Domain != "" {
+			g := gated[p.Domain]
+			res.Gated = &g
+		}
 		out = append(out, res)
 	}
 	writeJSON(w, http.StatusOK, out)

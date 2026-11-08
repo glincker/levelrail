@@ -15,7 +15,7 @@
     "gateOff": "Public",
     "gateNeedsPassword": "Gate needs a password",
     "gateTipLabel": "About the preview gate",
-    "gateTip": "App-wide preview setting, change it under Preview lifecycle."
+    "gateTip": "Whether this preview sits behind basic auth. Change the app-wide setting under Lifecycle, resources and exposure."
   },
   "approve": {
     "button": "Approve preview",

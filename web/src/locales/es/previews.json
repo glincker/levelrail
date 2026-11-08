@@ -15,7 +15,7 @@
     "gateOff": "Público",
     "gateNeedsPassword": "La barrera necesita contraseña",
     "gateTipLabel": "Acerca de la barrera de la vista previa",
-    "gateTip": "Ajuste común a toda la app, cámbialo en Ciclo de vida de las vistas previas."
+    "gateTip": "Indica si esta vista previa está tras autenticación básica. Cambia el ajuste común a la app en Ciclo de vida, recursos y exposición."
   },
   "approve": {
     "button": "Aprobar vista previa",

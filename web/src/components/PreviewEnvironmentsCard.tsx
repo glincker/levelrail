@@ -81,14 +81,27 @@ const STATUS_ICON: Record<PreviewEnvironmentStatus, UiIcon> = {
   limit_reached: BanGlassIcon,
 }
 
-// App-wide gate state shown per row. No badge until the policy loads, so
-// the list never claims Public without data.
-function PreviewGateBadge({ appName }: { appName: string }) {
+// Per-preview gate flag from the list API; the app-wide policy is only the
+// fallback when the flag is absent, so the list never claims Public blindly.
+function PreviewGateBadge({
+  appName,
+  gated: previewGated,
+}: {
+  appName: string
+  gated?: boolean
+}) {
   const { t } = useTranslation('previews')
   const policy = usePreviewPolicy(appName)
-  if (!policy.data) return null
-  const { gate_basic_auth: gated, gate_password_set: hasPassword } = policy.data
-  const needsPassword = gated && !hasPassword
+  let gated: boolean
+  let needsPassword = false
+  if (previewGated !== undefined) {
+    gated = previewGated
+  } else if (policy.data) {
+    gated = policy.data.gate_basic_auth
+    needsPassword = gated && !policy.data.gate_password_set
+  } else {
+    return null
+  }
   const variant = needsPassword ? 'warning' : gated ? 'success' : 'muted'
   const label = needsPassword
     ? t('row.gateNeedsPassword')
@@ -393,7 +406,10 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
                         </Badge>
                       ) : null}
                       {preview.domain ? (
-                        <PreviewGateBadge appName={app.name} />
+                        <PreviewGateBadge
+                          appName={app.name}
+                          gated={preview.gated}
+                        />
                       ) : null}
                       {preview.stale ? (
                         <Badge variant="warning" className="rounded-full">

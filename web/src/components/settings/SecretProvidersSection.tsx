@@ -255,6 +255,16 @@ function ProviderForm({
   )
 }
 
+// Origin only, so any userinfo or query in a stored URL is never rendered.
+function connectOrigin(raw: string | undefined): string {
+  if (!raw) return ''
+  try {
+    return new URL(raw).origin
+  } catch {
+    return ''
+  }
+}
+
 function ProviderRow({
   provider,
   onEdit,
@@ -282,7 +292,9 @@ function ProviderRow({
         </div>
         <p className="text-muted-foreground truncate text-xs">
           {provider.type === 'onepassword'
-            ? provider.project
+            ? [connectOrigin(provider.base_url), provider.project]
+                .filter(Boolean)
+                .join(' / ')
             : `${provider.project} / ${provider.environment}`}
           {provider.path ? ` ${provider.path}` : ''}
           {' · '}

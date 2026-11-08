@@ -332,7 +332,7 @@ func TestHandleListPreviewEnvironments_GatedFlag(t *testing.T) {
 		}
 		out := map[int]bool{}
 		for _, p := range got {
-			out[p.PRNumber] = p.Gated
+			out[p.PRNumber] = p.Gated != nil && *p.Gated
 		}
 		return out
 	}
