@@ -108,7 +108,7 @@ function HelpLayout() {
         <button
           type="button"
           onClick={() => toggleSection(sectionKey)}
-          className="mb-1.5 w-full flex items-center gap-1.5 px-2 py-1.5 text-[13px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+          className="mb-1.5 w-full flex items-center gap-1.5 px-2 py-1.5 pointer-coarse:min-h-10 text-[13px] font-medium text-muted-foreground hover:text-foreground transition-colors"
           aria-expanded={isExpanded}
         >
           {isExpanded ? (

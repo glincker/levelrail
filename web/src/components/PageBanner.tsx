@@ -61,7 +61,7 @@ export function PageBanner({
     <header
       data-testid={compact ? 'page-banner-compact' : 'page-banner-full'}
       className={cn(
-        'relative isolate flex flex-col items-stretch overflow-hidden sm:flex-row',
+        'relative isolate flex flex-col items-stretch overflow-hidden sm:flex-row sm:flex-wrap',
         compact
           ? 'rounded-xl border border-border bg-card'
           : 'banner-edge rounded-3xl bg-[linear-gradient(180deg,color-mix(in_oklab,var(--card),var(--foreground)_4%),var(--card))]',

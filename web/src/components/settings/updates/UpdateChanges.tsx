@@ -30,11 +30,11 @@ export function UpdateChanges({ status }: { status: UpdateStatus }) {
             {t('changes.versionLabel')}
           </dt>
           <dd className="flex flex-wrap items-center gap-1.5 font-mono text-xs">
-            <code className="rounded bg-muted px-1.5 py-0.5">
+            <code className="break-all rounded bg-muted px-1.5 py-0.5">
               {status.current_version}
             </code>
             <span aria-hidden="true">{'>'}</span>
-            <code className="rounded bg-muted px-1.5 py-0.5 text-foreground">
+            <code className="break-all rounded bg-muted px-1.5 py-0.5 text-foreground">
               {status.latest_version}
             </code>
           </dd>

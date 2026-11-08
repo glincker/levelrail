@@ -57,7 +57,7 @@ export function UpdateBrandBanner({
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <span title={t('status.runningVersion')}>
             <span className="sr-only">{t('status.runningVersion')}</span>
-            <code className="rounded-md bg-banner-strong/10 px-2 py-1 font-mono text-sm text-banner-strong ring-1 ring-banner-strong/15">
+            <code className="break-all rounded-md bg-banner-strong/10 px-2 py-1 font-mono text-sm text-banner-strong ring-1 ring-banner-strong/15">
               {version}
             </code>
           </span>

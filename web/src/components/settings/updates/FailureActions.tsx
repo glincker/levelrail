@@ -79,7 +79,7 @@ export function FailureActions({ attempt }: { attempt: SelfUpgradeAttempt }) {
             {t('selfUpgrade.failure.cliSummary')}
           </summary>
           <p className="mt-1">{t('selfUpgrade.failure.cliHint')}</p>
-          <code className="mt-1 block rounded bg-muted px-2 py-1 font-mono">
+          <code className="mt-1 block break-all rounded bg-muted px-2 py-1 font-mono">
             {`levelrail-cli ${f.cli} ${attempt.id}`}
           </code>
         </details>
