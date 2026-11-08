@@ -26,11 +26,11 @@ describe('navPins', () => {
     expect(removePin(['a'], 'zzz')).toEqual(['a'])
   })
 
-  it('reads the cap from env text with a default of 5', () => {
+  it('reads the cap from env text with a default of 6', () => {
     expect(maxNavPins('3')).toBe(3)
-    expect(maxNavPins(undefined)).toBe(5)
-    expect(maxNavPins('0')).toBe(5)
-    expect(maxNavPins('abc')).toBe(5)
+    expect(maxNavPins(undefined)).toBe(6)
+    expect(maxNavPins('0')).toBe(6)
+    expect(maxNavPins('abc')).toBe(6)
   })
 
   it('treats malformed storage as no pins', () => {

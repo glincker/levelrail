@@ -213,7 +213,7 @@ html:not([data-look='restrained']) [data-slot='sidebar-inner'] {
   position: absolute;
   top: 0;
   right: 0;
-  left: var(--glinr-grouped-inset, 1rem);
+  left: 1rem;
   height: 1px;
   background-color: var(--glinr-divider);
 }

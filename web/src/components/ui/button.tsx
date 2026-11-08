@@ -86,7 +86,7 @@ function Button({
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
       onClick={loading ? undefined : props.onClick}
-      aria-busy={loading || undefined}
+      aria-busy={loading || props['aria-busy']}
       aria-disabled={loading || props['aria-disabled']}
       role={role}
       nativeButton={nativeButtonFromRender(props.render, props.nativeButton)}

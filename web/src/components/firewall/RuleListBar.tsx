@@ -35,7 +35,10 @@ export function RuleListBar({
   const [busy, setBusy] = useState(false)
   const count = list.selected.length
 
-  function report(results: PromiseSettledResult<unknown>[], key: string) {
+  function report(
+    results: PromiseSettledResult<unknown>[],
+    key: 'list.enabledCount' | 'list.disabledCount' | 'list.deletedCount',
+  ) {
     const failed = results.filter((r) => r.status === 'rejected').length
     const done = results.length - failed
     if (done > 0) {

@@ -8,7 +8,7 @@ const rule = (id: string, name: string, hits: number, at: string): FwRule => ({
   enabled: true,
   action: 'deny',
   position: 1,
-  conditions: [{ field: 'ip', op: 'eq', value: `10.0.0.${id}` }],
+  conditions: [{ field: 'ip', op: 'equals', value: `10.0.0.${id}` }],
   updated_at: at,
   hits: { total: hits, sparkline: [] },
 })

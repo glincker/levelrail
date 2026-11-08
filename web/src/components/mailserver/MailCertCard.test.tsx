@@ -41,7 +41,7 @@ function renderCard() {
 
 describe('MailCertCard', () => {
   it('shows the served certificate and posts the obtain request', async () => {
-    const fetchMock = vi.fn((url: string, init?: RequestInit) =>
+    const fetchMock = vi.fn((_url: string, init?: RequestInit) =>
       Promise.resolve(
         init?.method === 'POST'
           ? new Response(JSON.stringify({ error: 'not yet' }), { status: 501 })
