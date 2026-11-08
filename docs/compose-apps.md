@@ -66,6 +66,7 @@ Each deploy is saved as a numbered revision. Deploying the same app name again u
 | `deploy.replicas`, `deploy.resources.reservations.devices` | Replica count and GPU reservations. Other Swarm keys are rejected. |
 | `mem_limit`, `cpus`, `deploy.resources.limits.memory`, `deploy.resources.limits.cpus` | Hard memory and CPU caps for the service (`512m`, `1g`, `0.5`). The shorthand wins when both are set. |
 | `shm_size` | Size of `/dev/shm` (`1gb`, `256m`), for Chromium based apps that crash with Docker's 64 MB default. Changing it recreates the container. |
+| `ulimits`, `init`, `extra_hosts`, `dns`, `sysctls`, `pids_limit`, `tmpfs`, `cap_drop`, `read_only`, `stop_grace_period` | Applied to the container, using the same allowlist as the `runtime:` block of an app spec. `stop_grace_period` sets the stop timeout; a value that does not parse as a duration is skipped with a warning. An invalid `cap_drop` or `read_only` fails the deploy, so a hardening setting is never dropped silently. Without `pids_limit`, the container gets the platform default (`APP_CONTAINER_PIDS_LIMIT`, 4096). Bounds come from the `APP_RUNTIME_*` variables. A change recreates the container. See [Runtime options](/runtime-options) for each key and its allowed values. |
 | `networks` | Parsed and reported as a notice. Every service shares one app network. |
 
 Values that are not finite, round to zero, are negative or exceed the cap are rejected at deploy time with the service and key named. Set `APP_COMPOSE_MAX_MEMORY_BYTES` and `APP_COMPOSE_MAX_CPUS` on the control plane to lower the cap; unset keeps only the built-in overflow guard. `shm_size` is capped at 2 GiB by default; set `APP_COMPOSE_MAX_SHM_BYTES` (bytes) to raise or lower it. A service with `shm_size` and no memory limit counts its `/dev/shm` size against the project memory quota, since that memory comes from the host.
@@ -98,6 +99,7 @@ These service keys are read. Everything else is ignored with a warning, or rejec
 | Network and storage | `ports`, `volumes`, `networks` (reported only) |
 | Readiness and order | `healthcheck` (`test`, `interval`, `timeout`, `retries`, `start_period`), `depends_on` |
 | Resources | `mem_limit`, `cpus`, `shm_size`, `deploy` (`replicas`, `resources.limits`, `resources.reservations.devices`) |
+| Runtime | `ulimits`, `init`, `extra_hosts`, `dns`, `sysctls`, `pids_limit`, `tmpfs`, `cap_drop`, `read_only`, `stop_grace_period`; see [Runtime options](/runtime-options) |
 | Levelrail extensions | `x-levelrail-domains`, `x-levelrail-strategy`, `x-levelrail-strategy-reason`, `x-levelrail-healthcheck`, `x-levelrail-published-ports` |
 | Top level | `services`, `version`, `networks`, `volumes` (names only) |
 
@@ -118,10 +120,9 @@ More ignored keys and their alternatives:
 | `extends` with `file:` | Inline the keys from the other file. |
 | `env_file` in a pasted file | Move the values into `environment:` or the app's env vars. |
 | `container_name`, `hostname`, `links` | Not applied or needed: containers are named `<app>-<service>` and services reach each other by name. |
-| `cap_drop`, `pids_limit` | Not needed: every container already drops all capabilities except a minimal set and gets a process limit (`APP_CONTAINER_PIDS_LIMIT`, default 4096). |
 | `expose` | Add `ports:` for the port ingress should route to. |
 | `deploy.resources.reservations` CPU and memory | Only limits are applied. |
-| `tty`, `stdin_open`, `logging`, `ulimits`, `stop_grace_period` | Remove them, they have no effect. |
+| `tty`, `stdin_open`, `logging` | Remove them, they have no effect. |
 | Top-level `volumes:` options, `name:` | Named volumes are always created for the app. |
 | `healthcheck.disable`, `healthcheck.start_interval`, `depends_on.restart`, `depends_on.required`, long-form `ports` `host_ip`, long-form `volumes` `bind` or `tmpfs` | Remove them. |
 
