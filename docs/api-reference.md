@@ -766,6 +766,9 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/secrets/{key}/rotate | AbilityWriteSensitive | handleRotateSecretValue |
 | POST | /api/v1/webhooks/functions/{name} | Public | handleFunctionWebhook |
 | POST | /api/v1/apps/{name}/secrets/{key}/build-time | AbilityWriteSensitive | handleSetSecretBuildTime |
+| GET | /api/v1/apps/{name}/git-source/ssh-key | AbilityRead | handleGetGitSSHKey |
+| POST | /api/v1/apps/{name}/git-source/ssh-key | AbilityWriteSensitive | handleSetGitSSHKey |
+| DELETE | /api/v1/apps/{name}/git-source/ssh-key | AbilityWriteSensitive | handleDeleteGitSSHKey |
 
 ## Telemetry
 

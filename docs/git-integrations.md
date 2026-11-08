@@ -16,6 +16,26 @@ This page covers connecting a provider, using a repository as an app's source, d
 Fastest path: connect the provider in the dashboard ([Connect a provider](#connect-a-provider)), then run `levelrail-cli github-app use-as-source <owner> <repo> --app-name my-app`. Pushes to the default branch deploy from then on.
 </Tip>
 
+## SSH deploy key for private repositories
+
+A private repository on any git host can be cloned over SSH with a per-app deploy key, with no personal access token. Set the git source's `repo_url` to an SSH URL (`git@host:owner/repo.git` or `ssh://git@host:port/owner/repo.git`), then mint the key.
+
+```bash
+curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"trust_on_first_use": true}' \
+  "$LEVELRAIL_URL/api/v1/apps/my-app/git-source/ssh-key"
+```
+
+The response holds `public_key` (an ed25519 key in `authorized_keys` format), its `fingerprint`, and the pinned `host_fingerprint`. Add the public key to the repository's deploy keys (read-only is enough). `GET` returns the same fields later; `DELETE` removes the key. `POST` always mints a new key, so it also rotates.
+
+- The private key is generated on the control plane, stored encrypted with the same envelope encryption as every secret, and never returned by any route or written to a log. Clones hold it in memory only, so no key file touches disk and no shell command is built from user input.
+- Host keys are always pinned. Send `host_key` (the server's public key in `authorized_keys` format, for example from `ssh-keyscan`) to pin one you verified yourself, or `trust_on_first_use: true` to scan once and pin what the host presents; compare the returned `host_fingerprint` with the host's published fingerprint. A later clone that sees a different host key fails. There is no option to skip host key checking.
+- Keys are per app, so one compromised key exposes only that app's repository. The scan timeout comes from `APP_GIT_SSH_SCAN_TIMEOUT` (default 10s).
+
+<Note>
+Webhook registration, branch listing and build detection still use the provider API, so an SSH-only source deploys from pushes you wire to the app's webhook URL by hand, or from a manual deploy.
+</Note>
+
 ## Provider connections and git sources
 
 Two records are involved, and keeping them separate is deliberate.

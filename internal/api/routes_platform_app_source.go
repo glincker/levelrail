@@ -50,6 +50,11 @@ func (rt *Router) registerAppSourceRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/apps/{name}/git-source/validate", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleValidateGitSourceAccess))
 	mux.HandleFunc("POST /api/v1/apps/{name}/git-source/rotate-webhook-secret", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleRotateGitSourceWebhookSecret))
 
+	// SSH deploy key (git_ssh_key.go): the private half is write-only.
+	mux.HandleFunc("GET /api/v1/apps/{name}/git-source/ssh-key", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetGitSSHKey))
+	mux.HandleFunc("POST /api/v1/apps/{name}/git-source/ssh-key", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetGitSSHKey))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/git-source/ssh-key", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteGitSSHKey))
+
 	// Git push deploy remote (git_push_remote.go): token management for the
 	// beta push remote, GET=Read, everything else WriteSensitive like git-source.
 	mux.HandleFunc("GET /api/v1/apps/{name}/git-remote", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetGitRemote))

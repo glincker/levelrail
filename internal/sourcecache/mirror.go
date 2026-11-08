@@ -46,7 +46,10 @@ func (c *Cache) refresh(ctx context.Context, repoURL, token, mirrorDir string, r
 			return fmt.Errorf("sourcecache: configure mirror remote: %w", cerr)
 		}
 	}
-	auth := authFor(repoURL, token)
+	auth := authOf(ctx)
+	if auth == nil {
+		auth = authFor(repoURL, token)
+	}
 	var err error
 	for attempt := 0; ; attempt++ {
 		actx, cancel := context.WithTimeout(ctx, c.cfg.FetchTimeout)

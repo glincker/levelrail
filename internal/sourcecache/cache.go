@@ -61,6 +61,22 @@ func WithScope(ctx context.Context, scope string) context.Context {
 	return context.WithValue(ctx, scopeKey{}, scope)
 }
 
+type authKey struct{}
+
+// WithAuth overrides the token-derived auth for one Checkout, used for SSH
+// deploy keys so the key never travels as a token string.
+func WithAuth(ctx context.Context, auth transport.AuthMethod) context.Context {
+	return context.WithValue(ctx, authKey{}, auth)
+}
+
+func authOf(ctx context.Context) transport.AuthMethod {
+	v, _ := ctx.Value(authKey{}).(transport.AuthMethod)
+	return v
+}
+
+// ScopeOf returns the credential scope WithScope attached, if any.
+func ScopeOf(ctx context.Context) string { return scopeOf(ctx) }
+
 func scopeOf(ctx context.Context) string {
 	v, _ := ctx.Value(scopeKey{}).(string)
 	return v
