@@ -68,7 +68,7 @@ func TestComposeServiceRunner_Success(t *testing.T) {
 	if up.gotBody != "pg dump body" {
 		t.Errorf("uploaded %q, want the compose dumper output", up.gotBody)
 	}
-	if !strings.HasPrefix(up.gotKey, "compose/shop/db/db-20261108T030000Z.dump") {
+	if !strings.HasPrefix(up.gotKey, "compose/shop/db/db-20261108T030000Z-") {
 		t.Errorf("object key = %q", up.gotKey)
 	}
 	if len(runs.started) != 1 || runs.started[0].ObjectKey != up.gotKey || len(runs.finished) != 1 || runs.finished[0] != store.BackupStatusSucceeded {

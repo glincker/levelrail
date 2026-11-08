@@ -102,3 +102,26 @@ func TestComposeRestoreCmd(t *testing.T) {
 		t.Error("mongodb accepted")
 	}
 }
+
+type cutReader struct{ sent bool }
+
+func (c *cutReader) Read(p []byte) (int, error) {
+	if c.sent {
+		return 0, errors.New("connection reset")
+	}
+	c.sent = true
+	return copy(p, "SELECT 1;\n"), nil
+}
+
+func TestGuardedReaderCommitsOnlyOnCleanEOF(t *testing.T) {
+	clean := &guardedReader{src: strings.NewReader("SELECT 1;"), prelude: "BEGIN;\n", suffix: "\nCOMMIT;\n"}
+	got, err := io.ReadAll(clean)
+	if err != nil || !strings.HasSuffix(string(got), "COMMIT;\n") {
+		t.Fatalf("clean stream = %q, %v, want trailing COMMIT", got, err)
+	}
+	cut := &guardedReader{src: &cutReader{}, prelude: "BEGIN;\n", suffix: "\nCOMMIT;\n"}
+	got, err = io.ReadAll(cut)
+	if err == nil || cut.err == nil || strings.Contains(string(got), "COMMIT") {
+		t.Fatalf("cut stream = %q, %v, want error and no COMMIT", got, err)
+	}
+}

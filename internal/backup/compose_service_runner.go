@@ -53,7 +53,7 @@ func (c *ComposeServiceRunner) RunComposeServiceBackup(ctx context.Context, runI
 	sealer, sealErr := c.Runner.dumpSealer(ctx, targetID)
 	objectKey := ""
 	if sealErr == nil {
-		objectKey = fmt.Sprintf("compose/%s/%s/%s-%s.dump%s", app, service, service, startedAt.UTC().Format("20060102T150405Z"), CodecSuffix(sealer.Codec()))
+		objectKey = fmt.Sprintf("compose/%s/%s/%s-%s-%s.dump%s", app, service, service, startedAt.UTC().Format("20060102T150405Z"), runID, CodecSuffix(sealer.Codec()))
 	}
 	if err := c.Runs.StartComposeServiceBackupRun(ctx, store.ComposeServiceBackupRun{
 		ID: runID, App: app, Service: service, TargetID: targetID, ObjectKey: objectKey,

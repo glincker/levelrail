@@ -317,7 +317,7 @@ levelrail-cli apps backups restore <app> <service> <run>        # preview, then 
 levelrail-cli apps backups restore <app> <service> <run> --yes  # for scripts
 ```
 
-Without `--yes` and without a terminal the command sends no restore request. Postgres is replayed in one transaction after the `public` schema is reset, so a damaged dump rolls back. MySQL and MariaDB dumps replace the tables they contain, so a table created after the backup stays. This is built and unit tested but has not run against a real database container and bucket. To load a dump by hand instead, download the object from the backup target (decrypt it first if the target encrypts dumps) and use:
+Without `--yes` and without a terminal the command sends no restore request. Postgres is replayed in one transaction after the `public` schema is reset, and the commit is only sent when the whole dump streamed cleanly and still matches its recorded checksum, so a damaged or cut-off dump rolls back. MySQL and MariaDB drop and recreate the service's named database (`MYSQL_DATABASE` or `MARIADB_DATABASE`) before the replay; a service without one is refused, because a server-wide dump would rewrite the system schema and root credentials. A stream that fails midway is reported as failed, but MySQL and MariaDB cannot roll back, so the safety dump is the way back. Only one restore per service runs at a time; a second answers 409. This is built and unit tested but has not run against a real database container and bucket. To load a dump by hand instead, download the object from the backup target (decrypt it first if the target encrypts dumps) and use:
 
 ```sh
 # Postgres

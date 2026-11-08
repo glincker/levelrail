@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/backup"
@@ -23,6 +24,10 @@ type ComposeDBRestoreRunner interface {
 func WithComposeDBRestoreRunner(r ComposeDBRestoreRunner) Option {
 	return func(rt *Router) { rt.composeDBRestoreRunner = r }
 }
+
+// composeRestoreInFlight holds one key per app/service with a restore running, so a retry
+// cannot interleave a second replay with the first. Package level to avoid touching the Router.
+var composeRestoreInFlight sync.Map
 
 type composeDBRestoreRequest struct {
 	Confirm string `json:"confirm"`
@@ -99,9 +104,15 @@ func (rt *Router) handleRestoreComposeDBBackup(w http.ResponseWriter, r *http.Re
 		rt.internalError(w, "api: restore compose db: generate id failed", err)
 		return
 	}
+	flightKey := app + "/" + service
+	if _, busy := composeRestoreInFlight.LoadOrStore(flightKey, safetyID); busy {
+		writeError(w, http.StatusConflict, "a restore is already running for this service")
+		return
+	}
 	actorType, actorID, actorName, _ := rt.currentActor(r)
 	path := r.URL.Path
 	go func() { //nolint:gosec // deliberately not r.Context(): it is cancelled when this handler returns, as in handleTriggerComposeDBBackup
+		defer composeRestoreInFlight.Delete(flightKey)
 		err := rt.composeDBRestoreRunner.RunComposeServiceRestore(context.Background(), safetyID, app, service, det.engine, run)
 		outcome, status := "succeeded", http.StatusOK
 		if err != nil {

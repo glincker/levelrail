@@ -2,8 +2,11 @@ package backup
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"hash"
 	"io"
 	"strings"
 
@@ -95,14 +98,16 @@ func (c *ComposeServiceRestorer) RunComposeServiceRestore(ctx context.Context, s
 		return fmt.Errorf("download compose run %q: %w", run.ID, err)
 	}
 	defer func() { _ = dump.Close() }()
-	var plain io.Reader = dump
+	// Hashing the stream actually replayed closes the gap between the earlier verify and this use.
+	raw := &integrityReader{src: dump, h: sha256.New(), want: run.Checksum, wantSize: run.SizeBytes}
+	var plain io.Reader = raw
 	if codec := composeRunCodec(run.ObjectKey); codec != "" {
-		sealed, err := OpenSealed(dump, codec, c.Identities)
+		sealed, err := OpenSealed(raw, codec, c.Identities)
 		if err != nil {
 			return fmt.Errorf("open compose run %q: %w", run.ID, err)
 		}
 		defer func() { _ = sealed.Close() }()
-		plain = sealed
+		plain = &drainOnEOF{src: sealed, rest: raw}
 	}
 	if err := c.Restorer.Restore(ctx, engine, container, plain); err != nil {
 		return fmt.Errorf("restore %s/%s from run %q: %w", app, service, run.ID, err)
@@ -110,18 +115,103 @@ func (c *ComposeServiceRestorer) RunComposeServiceRestore(ctx context.Context, s
 	return nil
 }
 
+// integrityReader hashes everything read through it and fails the final read when the
+// bytes differ from what was recorded at backup time.
+type integrityReader struct {
+	src      io.Reader
+	h        hash.Hash
+	n        int64
+	want     string
+	wantSize int64
+}
+
+func (r *integrityReader) Read(p []byte) (int, error) {
+	n, err := r.src.Read(p)
+	_, _ = r.h.Write(p[:n])
+	r.n += int64(n)
+	if errors.Is(err, io.EOF) && r.want != "" {
+		if hex.EncodeToString(r.h.Sum(nil)) != r.want || (r.wantSize != 0 && r.n != r.wantSize) {
+			return n, errors.New("backup object changed since it was verified")
+		}
+	}
+	return n, err
+}
+
+// drainOnEOF reads the raw stream to its end once the decoded one finishes, so the
+// integrity check always sees the whole object before a commit is allowed.
+type drainOnEOF struct {
+	src  io.Reader
+	rest io.Reader
+}
+
+func (d *drainOnEOF) Read(p []byte) (int, error) {
+	n, err := d.src.Read(p)
+	if errors.Is(err, io.EOF) {
+		if _, derr := io.Copy(io.Discard, d.rest); derr != nil {
+			return n, derr
+		}
+	}
+	return n, err
+}
+
 // The restore commands mirror the compose dump commands: same env fallbacks, and the
 // password travels in MYSQL_PWD from the container's own env, never on the command line.
-// Postgres replays in one transaction after resetting the public schema, so a bad dump
-// rolls back. MySQL and MariaDB dumps carry their own DROP TABLE and CREATE DATABASE.
+// Postgres gets its transaction from Go (see guardedReader), so a stream that ends early
+// is never committed. MySQL and MariaDB drop and recreate the one named database first so
+// the result replaces it; a server-wide dump is refused because it would rewrite the
+// system schema and the root credentials.
+const composeMySQLReplace = `BT=$(printf '\140'); [ -n "$D" ] || { echo "restore needs MYSQL_DATABASE or MARIADB_DATABASE on the service; server-wide dumps are not restored in place" >&2; exit 3; }; ` +
+	`%[1]s -uroot -e "DROP DATABASE IF EXISTS ${BT}${D}${BT}; CREATE DATABASE ${BT}${D}${BT}" || exit 1; exec %[1]s -uroot`
+
 var (
 	composePostgresRestoreCmd = []string{"sh", "-c",
-		`U="${POSTGRES_USER:-postgres}"; { echo "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"; cat; } | psql --no-password -v ON_ERROR_STOP=1 --single-transaction -U "$U" "${POSTGRES_DB:-$U}"`}
+		`U="${POSTGRES_USER:-postgres}"; exec psql --no-password -v ON_ERROR_STOP=1 -U "$U" "${POSTGRES_DB:-$U}"`}
 	composeMySQLRestoreCmd = []string{"sh", "-c",
-		`export MYSQL_PWD="${MYSQL_ROOT_PASSWORD:-$MARIADB_ROOT_PASSWORD}"; exec mysql -uroot`}
+		`export MYSQL_PWD="${MYSQL_ROOT_PASSWORD:-$MARIADB_ROOT_PASSWORD}"; D="$MYSQL_DATABASE"; ` + fmt.Sprintf(composeMySQLReplace, "mysql")}
 	composeMariaDBRestoreCmd = []string{"sh", "-c",
-		`export MYSQL_PWD="${MARIADB_ROOT_PASSWORD:-$MYSQL_ROOT_PASSWORD}"; exec mariadb -uroot`}
+		`export MYSQL_PWD="${MARIADB_ROOT_PASSWORD:-$MYSQL_ROOT_PASSWORD}"; D="${MARIADB_DATABASE:-$MYSQL_DATABASE}"; ` + fmt.Sprintf(composeMySQLReplace, "mariadb")}
 )
+
+// composePostgresPrelude opens the transaction and resets the schema; COMMIT is only
+// sent by guardedReader after a clean end of the dump.
+const composePostgresPrelude = "BEGIN;\nDROP SCHEMA public CASCADE;\nCREATE SCHEMA public;\n"
+
+// guardedReader frames the dump with an optional prelude and suffix. The suffix is only
+// emitted on a clean EOF, and the first real read error is remembered so a truncated
+// stream cannot look like a successful restore.
+type guardedReader struct {
+	src     io.Reader
+	prelude string
+	suffix  string
+	err     error
+	done    bool
+}
+
+func (g *guardedReader) Read(p []byte) (int, error) {
+	if g.prelude != "" {
+		n := copy(p, g.prelude)
+		g.prelude = g.prelude[n:]
+		return n, nil
+	}
+	if g.done {
+		if g.suffix != "" {
+			n := copy(p, g.suffix)
+			g.suffix = g.suffix[n:]
+			return n, nil
+		}
+		return 0, io.EOF
+	}
+	n, err := g.src.Read(p)
+	if err == nil {
+		return n, nil
+	}
+	if errors.Is(err, io.EOF) {
+		g.done = true
+		return n, nil
+	}
+	g.err = err
+	return n, err
+}
 
 // ComposeRestoreCmd returns the in-container restore command for a compose database service.
 func ComposeRestoreCmd(engine string) ([]string, error) {
@@ -147,7 +237,11 @@ func (c *ComposeContainerRestorer) Restore(ctx context.Context, engine, containe
 	if err != nil {
 		return err
 	}
-	rc, err := c.Runtime.ExecWithInput(ctx, containerName, cmd, dump)
+	g := &guardedReader{src: dump}
+	if engine == store.EnginePostgres {
+		g.prelude, g.suffix = composePostgresPrelude, "\nCOMMIT;\n"
+	}
+	rc, err := c.Runtime.ExecWithInput(ctx, containerName, cmd, g)
 	if err != nil {
 		return fmt.Errorf("backup: restore %s compose service %q: %w", engine, containerName, err)
 	}
@@ -155,6 +249,9 @@ func (c *ComposeContainerRestorer) Restore(ctx context.Context, engine, containe
 	// Draining reaches EOF so a non-zero exit surfaces here.
 	if _, err := io.Copy(io.Discard, rc); err != nil {
 		return fmt.Errorf("backup: restore %s compose service %q: %w", engine, containerName, err)
+	}
+	if g.err != nil {
+		return fmt.Errorf("backup: restore %s compose service %q: dump stream failed, not committed: %w", engine, containerName, g.err)
 	}
 	return nil
 }
