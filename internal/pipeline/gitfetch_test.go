@@ -13,6 +13,8 @@ import (
 
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
+
+	"github.com/GLINCKER/levelrail/internal/sourcecache"
 )
 
 type testRepo struct {
@@ -109,6 +111,15 @@ func TestGitFetcherUnavailableSHA(t *testing.T) {
 				t.Fatalf("err = %v, want ErrSHAUnavailable (must not fall back to the tip)", err)
 			}
 		})
+	}
+}
+
+func TestGitFetcherSSHNeedsDeployKey(t *testing.T) {
+	for _, sha := range []string{"", strings.Repeat("a", 40)} {
+		_, err := GitFetcher{}.FetchFiles(context.Background(), "ssh://git@10.0.0.5:6379/x", "tok", "", sha, []string{".pipelines"})
+		if !errors.Is(err, sourcecache.ErrSSHAuthRequired) {
+			t.Fatalf("sha %q: err = %v, want ErrSSHAuthRequired", sha, err)
+		}
 	}
 }
 

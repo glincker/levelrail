@@ -142,6 +142,44 @@ func AuthMethod(privatePEM []byte, pinnedHostKey string) (transport.AuthMethod, 
 	}, nil
 }
 
+// Secret field names of an app's stored deploy key and pinned host key.
+const (
+	PrivateKeyField = "ssh_private_key"
+	HostKeyField    = "ssh_host_key"
+)
+
+// SecretReader is the slice of the secrets store a deploy key lookup needs.
+type SecretReader interface {
+	Exists(ctx context.Context, key, field string) (bool, error)
+	Resolve(ctx context.Context, key, field string) (string, error)
+}
+
+// DeployKeyAuth loads the deploy key stored under secretsKey. No stored key
+// is ErrAuthRequired; a stored but unreadable key is an error without detail.
+func DeployKeyAuth(ctx context.Context, s SecretReader, secretsKey string) (transport.AuthMethod, error) {
+	if s == nil {
+		return nil, ErrAuthRequired
+	}
+	if ok, err := s.Exists(ctx, secretsKey, PrivateKeyField); err != nil || !ok {
+		return nil, ErrAuthRequired
+	}
+	priv, err := s.Resolve(ctx, secretsKey, PrivateKeyField)
+	if err != nil {
+		return nil, errDeployKeyUnusable
+	}
+	host, err := s.Resolve(ctx, secretsKey, HostKeyField)
+	if err != nil {
+		return nil, errDeployKeyUnusable
+	}
+	auth, err := AuthMethod([]byte(priv), host)
+	if err != nil {
+		return nil, errDeployKeyUnusable
+	}
+	return auth, nil
+}
+
+var errDeployKeyUnusable = errors.New("gitsshkey: ssh deploy key or pinned host key is missing or unreadable; set the key again")
+
 var errCaptured = errors.New("gitsshkey: host key captured")
 
 // ErrBlockedScanTarget marks a host key scan refused because the resolved

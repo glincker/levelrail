@@ -17,7 +17,7 @@ func TestInstallGitNetguardBlocksInternalHosts(t *testing.T) {
 	hit := false
 	srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { hit = true }))
 	defer srv.Close()
-	installGitNetguard()
+	installGitNetguard(nil)
 	for _, u := range []string{srv.URL + "/r.git", "http://169.254.169.254/latest/meta-data/"} {
 		_, err := git.CloneContext(context.Background(), memory.NewStorage(), nil, &git.CloneOptions{URL: u})
 		if err == nil || !strings.Contains(err.Error(), "internal") {
@@ -35,7 +35,7 @@ func TestInstallGitNetguardGitOverrideIsIndependent(t *testing.T) {
 	hit := false
 	srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { hit = true }))
 	defer srv.Close()
-	installGitNetguard()
+	installGitNetguard(nil)
 	_, _ = git.CloneContext(context.Background(), memory.NewStorage(), nil, &git.CloneOptions{URL: srv.URL + "/r.git"})
 	if !hit {
 		t.Error("the loopback server was not contacted although the git override is on")

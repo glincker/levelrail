@@ -253,7 +253,7 @@ func (rt *Router) gitPollHead(ctx context.Context, name string, gs store.GitSour
 	}
 	hctx, cancel := context.WithTimeout(ctx, gitPollHeadTimeout)
 	defer cancel()
-	head, err := rt.resolveBranchSHA(hctx, gs.RepoURL, gs.Branch, token)
+	head, err := rt.resolveBranchSHA(rt.gitAuthCtx(hctx, name, gs.RepoURL), gs.RepoURL, gs.Branch, token)
 	if err != nil {
 		return "", fmt.Errorf("resolve head: %w", err)
 	}

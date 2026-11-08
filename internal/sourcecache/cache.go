@@ -18,6 +18,8 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
+
+	"github.com/GLINCKER/levelrail/internal/gitsshkey"
 )
 
 const lastUsedFile = ".last_used"
@@ -90,6 +92,24 @@ var ErrSSHAuthRequired = errors.New("sourcecache: ssh repository needs a deploy 
 func authOf(ctx context.Context) transport.AuthMethod {
 	v, _ := ctx.Value(authKey{}).(transport.AuthMethod)
 	return v
+}
+
+// RemoteAuth is the auth a one-off remote call outside the cache uses: the
+// ctx auth or its error, ErrSSHAuthRequired for ssh with none, else the token.
+func RemoteAuth(ctx context.Context, repoURL, token string) (transport.AuthMethod, error) {
+	if err := authErrOf(ctx); err != nil {
+		return nil, err
+	}
+	if a := authOf(ctx); a != nil {
+		return a, nil
+	}
+	if gitsshkey.IsSSHURL(repoURL) {
+		return nil, ErrSSHAuthRequired
+	}
+	if token != "" {
+		return &githttp.BasicAuth{Username: "x-access-token", Password: token}, nil
+	}
+	return nil, nil
 }
 
 // ScopeOf returns the credential scope WithScope attached, if any.

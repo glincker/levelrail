@@ -17,7 +17,7 @@ import (
 
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
-	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/go-git/go-git/v5/plumbing/transport"
 
 	"github.com/GLINCKER/levelrail/internal/agent"
 	"github.com/GLINCKER/levelrail/internal/alerting"
@@ -26,6 +26,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/gitsshkey"
 	"github.com/GLINCKER/levelrail/internal/oidc"
 	"github.com/GLINCKER/levelrail/internal/pipeline"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
@@ -33,6 +34,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/rollbackref"
 	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 	"github.com/GLINCKER/levelrail/internal/secrets"
+	"github.com/GLINCKER/levelrail/internal/sourcecache"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -164,8 +166,12 @@ func (a *pipelineActions) Build(ctx context.Context, req pipeline.BuildRequest, 
 	if err != nil {
 		return "", fmt.Errorf("build needs a connected repository: %w", err)
 	}
+	auth, err := a.cloneAuth(ctx, req.App, url, token)
+	if err != nil {
+		return "", err
+	}
 	log("cloning " + url)
-	dir, cleanup, err := cloneForBuild(ctx, url, token, req.Ref, req.SHA)
+	dir, cleanup, err := cloneForBuild(ctx, url, auth, req.Ref, req.SHA)
 	if err != nil {
 		return "", err
 	}
@@ -183,16 +189,40 @@ func (a *pipelineActions) Build(ctx context.Context, req pipeline.BuildRequest, 
 	return tag, nil
 }
 
-func cloneForBuild(ctx context.Context, url, token, ref, sha string) (string, func(), error) {
+// RepoAuth returns the app's ssh deploy key for an ssh URL and nil otherwise,
+// so pipeline fetches never use the control plane's own ssh identity.
+func (a *pipelineActions) RepoAuth(ctx context.Context, app, repoURL string) (transport.AuthMethod, error) {
+	if !gitsshkey.IsSSHURL(repoURL) {
+		return nil, nil
+	}
+	if a.secrets == nil {
+		return nil, sourcecache.ErrSSHAuthRequired
+	}
+	auth, err := gitsshkey.DeployKeyAuth(ctx, a.secrets, store.GitSourceSecretsKey(app))
+	if errors.Is(err, gitsshkey.ErrAuthRequired) {
+		return nil, sourcecache.ErrSSHAuthRequired
+	}
+	return auth, err
+}
+
+func (a *pipelineActions) cloneAuth(ctx context.Context, app, repoURL, token string) (transport.AuthMethod, error) {
+	auth, err := a.RepoAuth(ctx, app, repoURL)
+	if err != nil || auth != nil {
+		return auth, err
+	}
+	return sourcecache.RemoteAuth(ctx, repoURL, token)
+}
+
+func cloneForBuild(ctx context.Context, url string, auth transport.AuthMethod, ref, sha string) (string, func(), error) {
+	if auth == nil && gitsshkey.IsSSHURL(url) {
+		return "", nil, sourcecache.ErrSSHAuthRequired
+	}
 	dir, err := os.MkdirTemp("", "pipeline-build-*")
 	if err != nil {
 		return "", nil, fmt.Errorf("create build dir: %w", err)
 	}
 	cleanup := func() { _ = os.RemoveAll(dir) }
-	opts := &git.CloneOptions{URL: url}
-	if token != "" {
-		opts.Auth = &githttp.BasicAuth{Username: "x-access-token", Password: token}
-	}
+	opts := &git.CloneOptions{URL: url, Auth: auth}
 	if sha == "" && strings.HasPrefix(ref, "refs/heads/") {
 		opts.ReferenceName = plumbing.ReferenceName(ref)
 		opts.SingleBranch = true

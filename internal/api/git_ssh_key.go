@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	gitSSHPrivateKey = "ssh_private_key"
-	gitSSHHostKey    = "ssh_host_key"
+	gitSSHPrivateKey = gitsshkey.PrivateKeyField
+	gitSSHHostKey    = gitsshkey.HostKeyField
 	envGitSSHScanTTL = "APP_GIT_SSH_SCAN_TIMEOUT"
 	defaultSSHScan   = 10 * time.Second
 )
@@ -76,6 +76,12 @@ func (rt *Router) withSSHDeployKey(ctx context.Context, repoURL string) context.
 		return sourcecache.WithAuthError(ctx, errSSHKeyUnusable)
 	}
 	return sourcecache.WithAuth(ctx, auth)
+}
+
+// gitAuthCtx carries name's deploy key for a ref listing of an ssh repoURL;
+// with no key, sourcecache.RemoteAuth fails closed.
+func (rt *Router) gitAuthCtx(ctx context.Context, name, repoURL string) context.Context {
+	return rt.withSSHDeployKey(sourcecache.WithScope(ctx, "app:"+name), repoURL)
 }
 
 // errSSHKeyUnusable carries no detail so nothing about the key can leak.
