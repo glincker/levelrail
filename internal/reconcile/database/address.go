@@ -119,7 +119,7 @@ const (
 // different names not verified here, and MySQL/MariaDB have no
 // driver-agnostic URI knob for "encrypt but don't verify" at all.
 func SupportsTLS(engine string) bool {
-	return engine == store.EnginePostgres || engine == store.EngineRedis
+	return engine == store.EnginePostgres || engine == store.EngineRedis || engine == store.EngineValkey
 }
 
 // ServerTLSEngine reports whether the server side of engine can terminate TLS here. Unlike SupportsTLS, MySQL and MariaDB clients opt in themselves, so no URL changes.
@@ -137,7 +137,7 @@ func TLSContainerPort(engine string) (int, bool) {
 	switch engine {
 	case store.EnginePostgres:
 		return postgresContainerPort, true
-	case store.EngineRedis:
+	case store.EngineRedis, store.EngineValkey:
 		return redisTLSContainerPort, true
 	default:
 		return 0, false

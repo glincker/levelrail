@@ -35,6 +35,8 @@ func TestDatabaseTLSEffective(t *testing.T) {
 		{EngineMySQL, DatabaseTLSModeOn, true},
 		{EngineMariaDB, DatabaseTLSModeOn, true},
 		{EngineRedis, DatabaseTLSModeOff, false},
+		{EngineValkey, DatabaseTLSModeDefault, false},
+		{EngineValkey, DatabaseTLSModeOn, true},
 	}
 	for _, tc := range tests {
 		if got := DatabaseTLSEffective(tc.engine, tc.mode); got != tc.want {

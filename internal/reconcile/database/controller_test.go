@@ -833,6 +833,40 @@ func TestController_Reconcile_Redis_TLS_DisablesPlaintextPort(t *testing.T) {
 	}
 }
 
+func TestController_Reconcile_Valkey_TLS_DisablesPlaintextPort(t *testing.T) {
+	rt := newFakeRuntime()
+	certPEM, keyPEM, err := GenerateSelfSignedCert("db-kv")
+	if err != nil {
+		t.Fatalf("GenerateSelfSignedCert() error = %v", err)
+	}
+	material := &TLSMaterial{CertPEM: certPEM, KeyPEM: keyPEM}
+	desired := &store.DesiredDatabase{Name: "kv", Engine: store.EngineValkey, Version: "8"}
+	c := New("kv", &fakeStore{db: desired}, rt, WithTLS(material))
+
+	result, err := c.Reconcile(context.Background())
+	if err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	if cond := conditionOf(t, result); cond.Status != reconcile.ConditionTrue || cond.Reason != "Deployed" {
+		t.Fatalf("condition = %+v, want Status=True Reason=Deployed", cond)
+	}
+	wantCommand, _ := redisCommandAndPort(material)
+	if !reflect.DeepEqual(rt.lastCreateSpec.Command, wantCommand) {
+		t.Errorf("database container Command = %v, want %v", rt.lastCreateSpec.Command, wantCommand)
+	}
+	if rt.execWithInputCalls != 1 {
+		t.Errorf("execWithInputCalls = %d, want 1", rt.execWithInputCalls)
+	}
+
+	plain := newFakeRuntime()
+	if _, err := New("kv", &fakeStore{db: desired}, plain).Reconcile(context.Background()); err != nil {
+		t.Fatalf("plain Reconcile() error = %v", err)
+	}
+	if len(plain.lastCreateSpec.Command) != 0 {
+		t.Errorf("plain valkey Command = %v, want none", plain.lastCreateSpec.Command)
+	}
+}
+
 // TestController_Reconcile_Postgres_PITR_MountsWALArchiveAndEnablesArchiving
 // proves a brand-new PITR-enabled Postgres database gets the wal-archive
 // volume mounted and the archive_mode/archive_command flags set, and

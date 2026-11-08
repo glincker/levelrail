@@ -59,7 +59,7 @@ func DatabaseTLSEffective(engine, mode string) bool {
 // DatabaseTLSToggleable reports whether the operator can switch TLS for engine.
 func DatabaseTLSToggleable(engine string) bool {
 	switch engine {
-	case EngineMySQL, EngineMariaDB, EngineMongoDB, EngineRedis:
+	case EngineMySQL, EngineMariaDB, EngineMongoDB, EngineRedis, EngineValkey:
 		return true
 	}
 	return false

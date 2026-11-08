@@ -549,8 +549,10 @@ func (c *Controller) reconcileOnce(ctx context.Context) (reconcile.Result, error
 
 	case store.EngineValkey:
 		// Same /data path, port and image defaults (RDB snapshots, no
-		// password) as Redis; the image ships redis-server and redis-cli symlinks.
-		return c.reconcileEngine(ctx, desired, nil, nil, redisDataPath, redisContainerPort, nil)
+		// password) as Redis; the image ships redis-server and redis-cli symlinks,
+		// and the TLS flags are the same, so the Redis command is reused.
+		command, containerPort := redisCommandAndPort(c.tls)
+		return c.reconcileEngine(ctx, desired, nil, command, redisDataPath, containerPort, c.tls)
 
 	case store.EngineDragonfly:
 		// dragonflyCommand pins dbfilename so restoreRedisLike's
