@@ -13,7 +13,7 @@ import {
   type UiIcon,
 } from '@thesvg/ui-react'
 import { CircleQuestionMarkGlassIcon } from '@thesvg/ui-react'
-import { SidebarMenuButton } from '@/components/ui/sidebar'
+import { SidebarMenuButton, useSidebar } from '@/components/ui/sidebar'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -100,6 +100,7 @@ function StatusRow() {
 /** AccountMenu is the sidebar footer: avatar and name opening the account, theme, help and sign-out menu. */
 export function AccountMenu() {
   const { t } = useTranslation()
+  const { state } = useSidebar()
   const brand = useBrand()
   const username = useAuthUsername()
   const logout = useLogout()
@@ -137,7 +138,11 @@ export function AccountMenu() {
           ) : null}
         </span>
       </DropdownMenuTrigger>
-      <DropdownMenuContent side="top" align="start" className="w-72 p-0">
+      <DropdownMenuContent
+        side={state === 'collapsed' ? 'right' : 'top'}
+        align="end"
+        className="w-72 p-0"
+      >
         <div className="flex items-center gap-3 border-b border-border px-3 py-3">
           {avatar}
           <span className="flex min-w-0 flex-1 flex-col">

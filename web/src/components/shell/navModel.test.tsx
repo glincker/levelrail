@@ -177,10 +177,10 @@ describe('global nav model', () => {
     }
   })
 
-  it('opens every group by default', () => {
-    for (const g of GLOBAL_NAV_GROUPS) {
-      expect(defaultGroupOpen(), g.id).toBe(true)
-    }
+  it('opens every group on tall viewports and only the active one on short ones', () => {
+    expect(defaultGroupOpen(900, false)).toBe(true)
+    expect(defaultGroupOpen(800, false)).toBe(false)
+    expect(defaultGroupOpen(800, true)).toBe(true)
   })
 
   it('aggregates domain and DNS attention onto Domains', () => {

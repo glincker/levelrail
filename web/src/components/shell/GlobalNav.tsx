@@ -144,6 +144,7 @@ function LockedNavLinkItem({
 
 function NavLinkItem({
   item,
+  groupName,
   active,
   counts,
   experimental,
@@ -151,7 +152,7 @@ function NavLinkItem({
   beta,
 }: {
   item: GlobalNavItem
-  groupId?: string
+  groupName?: string
   active: boolean
   counts: Record<string, number>
   experimental: readonly string[]
@@ -192,9 +193,18 @@ function NavLinkItem({
         title={label}
         tooltip={{
           children: (
-            <span className="flex items-center gap-2">
-              {label}
-              {chord ? <Kbd keys={chord} /> : null}
+            <span className="flex flex-col gap-0.5">
+              <span className="flex items-center gap-2">
+                {label}
+                {beta ? <BetaBadge /> : null}
+                {count > 0 ? (
+                  <span className="tabular-nums">{count}</span>
+                ) : null}
+                {chord ? <Kbd keys={chord} /> : null}
+              </span>
+              {groupName ? (
+                <span className="text-xs opacity-70">{groupName}</span>
+              ) : null}
             </span>
           ),
         }}
@@ -262,7 +272,15 @@ export function GlobalNav() {
 
   // Decided once on mount so navigating never flips a group the user did not touch.
   const [initialOpen] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(groups.map((gr) => [gr.id, defaultGroupOpen()])),
+    Object.fromEntries(
+      groups.map((gr) => [
+        gr.id,
+        defaultGroupOpen(
+          window.innerHeight,
+          gr.items.some((i) => isGlobalItemActive(pathname, i)),
+        ),
+      ]),
+    ),
   )
 
   // Reveal the current page by opening its group, and keep it open.
@@ -279,7 +297,7 @@ export function GlobalNav() {
     <div className="flex max-h-full min-h-0 flex-col">
       <div
         data-sidebar-scroll=""
-        className="no-scrollbar flex min-h-0 flex-col gap-0.5 overflow-y-auto p-2"
+        className="nav-scroll flex min-h-0 flex-col gap-0 overflow-x-hidden overflow-y-auto p-2 pt-0 group-data-[collapsible=icon]:items-center"
       >
         <GetStartedNavItem />
         {!rail && pinned.length > 0 ? (
@@ -294,7 +312,6 @@ export function GlobalNav() {
                 <NavLinkItem
                   key={item.id}
                   item={item}
-                  groupId={groups.find((gr) => gr.items.includes(item))?.id}
                   active={item.id === activeId}
                   counts={counts}
                   experimental={experimental}
@@ -304,7 +321,10 @@ export function GlobalNav() {
             </SidebarMenu>
           </CollapsibleSection>
         ) : null}
-        {groups.map((group) => {
+        {groups.map((group, index) => {
+          const groupName = t(`shell.navGroup.${group.id}`, {
+            defaultValue: group.label,
+          })
           const menu = (
             <SidebarMenu>
               {group.items
@@ -320,6 +340,7 @@ export function GlobalNav() {
                     ) : (
                       <NavLinkItem
                         item={item}
+                        groupName={group.ungrouped ? undefined : groupName}
                         active={item.id === activeId}
                         counts={counts}
                         experimental={experimental}
@@ -332,7 +353,15 @@ export function GlobalNav() {
           )
           if (rail || group.ungrouped || isSingleItemGroup(group)) {
             return (
-              <SidebarGroup key={group.id} className="p-0">
+              <SidebarGroup
+                key={group.id}
+                className={cn(
+                  'p-0',
+                  rail &&
+                    index > 0 &&
+                    'mt-2 border-t border-sidebar-border pt-2',
+                )}
+              >
                 <SidebarGroupContent>{menu}</SidebarGroupContent>
               </SidebarGroup>
             )

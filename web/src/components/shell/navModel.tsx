@@ -320,9 +320,7 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         id: 'firewall',
         label: 'Firewall',
         to: '/firewall',
-        icon: (
-          <ShieldCheckGlassIcon className="text-tone-success" size="1.4em" />
-        ),
+        icon: <ShieldCheckGlassIcon size="1.4em" />,
       },
       {
         id: 'mail',
@@ -363,9 +361,7 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         id: 'security',
         label: 'Security',
         to: '/security',
-        icon: (
-          <ShieldAlertGlassIcon className="text-tone-warning" size="1.4em" />
-        ),
+        icon: <ShieldAlertGlassIcon size="1.4em" />,
         alsoActive: ['/settings/iam-policies'],
       },
     ],
@@ -439,7 +435,7 @@ export const FOLDED_GLOBAL_PAGES: GlobalNavItem[] = [
     'iam-policies',
     'IAM policies',
     '/settings/iam-policies',
-    <ShieldCheckGlassIcon className="text-tone-success" size="1.4em" />,
+    <ShieldCheckGlassIcon size="1.4em" />,
   ),
   folded(
     'scanning',
@@ -860,10 +856,16 @@ export function isSingleSection(section: AppNavSection): boolean {
   return section.items.length === 1
 }
 
-// With about 15 rows every group starts open.
+// Tall viewports open every group; shorter ones open only the group holding the current page.
 // Anything the user toggles is persisted and wins from then on.
-export function defaultGroupOpen(): boolean {
-  return true
+const OPEN_ALL_MIN_HEIGHT =
+  Number(import.meta.env.VITE_SIDEBAR_OPEN_ALL_MIN_HEIGHT) || 900
+
+export function defaultGroupOpen(
+  viewportHeight: number,
+  containsActive: boolean,
+): boolean {
+  return viewportHeight >= OPEN_ALL_MIN_HEIGHT || containsActive
 }
 
 export function resolveOpen(
