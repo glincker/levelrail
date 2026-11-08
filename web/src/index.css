@@ -264,26 +264,26 @@ body {
    fg (text/icon), soft (tinted surface), border, solid (dots, bars).
    Spacing: 8px scale (gap-2/4/6). Radii: rounded-xl (12) and rounded-2xl (16). */
 :root {
-  --tone-neutral-fg: oklch(0.44 0.015 260);
-  --tone-neutral-soft: oklch(0.965 0.004 260);
-  --tone-neutral-border: oklch(0.91 0.006 260);
-  --tone-neutral-solid: oklch(0.62 0.015 260);
-  --tone-success-fg: oklch(0.42 0.11 155);
-  --tone-success-soft: oklch(0.965 0.03 155);
-  --tone-success-border: oklch(0.9 0.06 155);
-  --tone-success-solid: oklch(0.62 0.15 155);
-  --tone-warning-fg: oklch(0.48 0.11 75);
-  --tone-warning-soft: oklch(0.97 0.04 75);
-  --tone-warning-border: oklch(0.9 0.08 75);
-  --tone-warning-solid: oklch(0.75 0.15 75);
-  --tone-danger-fg: oklch(0.48 0.19 25);
-  --tone-danger-soft: oklch(0.97 0.02 25);
-  --tone-danger-border: oklch(0.9 0.07 25);
-  --tone-danger-solid: oklch(0.62 0.21 25);
-  --tone-info-fg: oklch(0.46 0.14 240);
-  --tone-info-soft: oklch(0.965 0.025 240);
-  --tone-info-border: oklch(0.9 0.06 240);
-  --tone-info-solid: oklch(0.62 0.15 240);
+  --tone-neutral-fg: var(--glinr-status-neutral-fg);
+  --tone-neutral-soft: var(--glinr-status-neutral-soft);
+  --tone-neutral-border: var(--glinr-status-neutral-border);
+  --tone-neutral-solid: var(--glinr-status-neutral-solid);
+  --tone-success-fg: var(--glinr-status-success-fg);
+  --tone-success-soft: var(--glinr-status-success-soft);
+  --tone-success-border: var(--glinr-status-success-border);
+  --tone-success-solid: var(--glinr-status-success-solid);
+  --tone-warning-fg: var(--glinr-status-warning-fg);
+  --tone-warning-soft: var(--glinr-status-warning-soft);
+  --tone-warning-border: var(--glinr-status-warning-border);
+  --tone-warning-solid: var(--glinr-status-warning-solid);
+  --tone-danger-fg: var(--glinr-status-danger-fg);
+  --tone-danger-soft: var(--glinr-status-danger-soft);
+  --tone-danger-border: var(--glinr-status-danger-border);
+  --tone-danger-solid: var(--glinr-status-danger-solid);
+  --tone-info-fg: var(--glinr-status-info-fg);
+  --tone-info-soft: var(--glinr-status-info-soft);
+  --tone-info-border: var(--glinr-status-info-border);
+  --tone-info-solid: var(--glinr-status-info-solid);
   --tone-accent-fg: oklch(0.46 0.19 227);
   --tone-accent-soft: oklch(0.965 0.025 227);
   --tone-accent-border: oklch(0.9 0.06 227);
@@ -299,26 +299,26 @@ body {
 }
 
 .dark {
-  --tone-neutral-fg: oklch(0.8 0.012 260);
-  --tone-neutral-soft: oklch(0.27 0.006 260);
-  --tone-neutral-border: oklch(0.36 0.008 260);
-  --tone-neutral-solid: oklch(0.68 0.012 260);
-  --tone-success-fg: oklch(0.82 0.14 155);
-  --tone-success-soft: oklch(0.26 0.05 155);
-  --tone-success-border: oklch(0.37 0.07 155);
-  --tone-success-solid: oklch(0.72 0.16 155);
-  --tone-warning-fg: oklch(0.85 0.13 75);
-  --tone-warning-soft: oklch(0.28 0.05 75);
-  --tone-warning-border: oklch(0.4 0.08 75);
-  --tone-warning-solid: oklch(0.8 0.15 75);
-  --tone-danger-fg: oklch(0.8 0.13 25);
-  --tone-danger-soft: oklch(0.27 0.07 25);
-  --tone-danger-border: oklch(0.4 0.12 25);
-  --tone-danger-solid: oklch(0.7 0.19 25);
-  --tone-info-fg: oklch(0.82 0.1 240);
-  --tone-info-soft: oklch(0.26 0.05 240);
-  --tone-info-border: oklch(0.38 0.09 240);
-  --tone-info-solid: oklch(0.72 0.13 240);
+  --tone-neutral-fg: var(--glinr-status-neutral-fg);
+  --tone-neutral-soft: var(--glinr-status-neutral-soft);
+  --tone-neutral-border: var(--glinr-status-neutral-border);
+  --tone-neutral-solid: var(--glinr-status-neutral-solid);
+  --tone-success-fg: var(--glinr-status-success-fg);
+  --tone-success-soft: var(--glinr-status-success-soft);
+  --tone-success-border: var(--glinr-status-success-border);
+  --tone-success-solid: var(--glinr-status-success-solid);
+  --tone-warning-fg: var(--glinr-status-warning-fg);
+  --tone-warning-soft: var(--glinr-status-warning-soft);
+  --tone-warning-border: var(--glinr-status-warning-border);
+  --tone-warning-solid: var(--glinr-status-warning-solid);
+  --tone-danger-fg: var(--glinr-status-danger-fg);
+  --tone-danger-soft: var(--glinr-status-danger-soft);
+  --tone-danger-border: var(--glinr-status-danger-border);
+  --tone-danger-solid: var(--glinr-status-danger-solid);
+  --tone-info-fg: var(--glinr-status-info-fg);
+  --tone-info-soft: var(--glinr-status-info-soft);
+  --tone-info-border: var(--glinr-status-info-border);
+  --tone-info-solid: var(--glinr-status-info-solid);
   --tone-accent-fg: oklch(0.82 0.11 227);
   --tone-accent-soft: oklch(0.27 0.07 227);
   --tone-accent-border: oklch(0.4 0.13 227);
@@ -476,6 +476,19 @@ body {
   );
 }
 
+@keyframes status-ping {
+  from {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  to {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+.status-ping {
+  animation: status-ping var(--glinr-dur-ping) var(--glinr-ease-out) infinite;
+}
 .kit-pulse-ring {
   animation: kit-pulse-ring 1.8s var(--motion-ease) infinite;
 }
@@ -547,6 +560,7 @@ body {
       .cleanup-flash,
       .kit-shimmer,
       .kit-pulse-ring,
+      .status-ping,
       .kit-enter,
       .kit-tile-enter,
       .kit-exit

@@ -1221,6 +1221,16 @@
           "stability": "experimental"
         }
       }
+    },
+    "dur-ping": {
+      "$value": "1600ms",
+      "$description": "Ping ring period for in-progress status dots.",
+      "$extensions": {
+        "glinr": {
+          "name": "dur-ping",
+          "stability": "experimental"
+        }
+      }
     }
   },
   "appearance": {

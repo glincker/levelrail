@@ -116,6 +116,7 @@
   --glinr-dur-popover: 280ms;
   --glinr-dur-sheet: 380ms;
   --glinr-press-scale: 0.97;
+  --glinr-dur-ping: 1600ms;
   --glinr-custom-width: 1440px;
   --glinr-text-scale: 100;
   --glinr-accent-light: #107292;
