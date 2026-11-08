@@ -21,8 +21,10 @@ type ComposeServiceBackup struct {
 	BackupRetain     int
 	BackupRetainDays int
 	Enabled          bool
-	CreatedAt        string
-	UpdatedAt        string
+	// BackupPaused keeps the schedule configured but stops the scheduler from running it.
+	BackupPaused bool
+	CreatedAt    string
+	UpdatedAt    string
 }
 
 // ComposeServiceBackupRun is one dump attempt of a compose database service.
@@ -40,19 +42,21 @@ type ComposeServiceBackupRun struct {
 	FinishedAt string
 }
 
-const composeServiceBackupCols = `app, service, engine, backup_target_id, backup_schedule, backup_retain, backup_retain_days, enabled, created_at, updated_at`
+const composeServiceBackupCols = `app, service, engine, backup_target_id, backup_schedule, backup_retain, backup_retain_days, enabled, created_at, updated_at, backup_paused`
 
 func scanComposeServiceBackup(s rowScanner) (ComposeServiceBackup, error) {
 	var (
 		c       ComposeServiceBackup
 		target  sql.NullString
 		enabled int
+		paused  int
 	)
-	if err := s.Scan(&c.App, &c.Service, &c.Engine, &target, &c.BackupSchedule, &c.BackupRetain, &c.BackupRetainDays, &enabled, &c.CreatedAt, &c.UpdatedAt); err != nil {
+	if err := s.Scan(&c.App, &c.Service, &c.Engine, &target, &c.BackupSchedule, &c.BackupRetain, &c.BackupRetainDays, &enabled, &c.CreatedAt, &c.UpdatedAt, &paused); err != nil {
 		return ComposeServiceBackup{}, err
 	}
 	c.BackupTargetID = target.String
 	c.Enabled = enabled != 0
+	c.BackupPaused = paused != 0
 	return c, nil
 }
 
@@ -63,9 +67,13 @@ func (db *DB) UpsertComposeServiceBackup(ctx context.Context, c ComposeServiceBa
 	if c.Enabled {
 		enabled = 1
 	}
+	paused := 0
+	if c.BackupPaused {
+		paused = 1
+	}
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO compose_service_backups (`+composeServiceBackupCols+`)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT (app, service) DO UPDATE SET
 			engine = excluded.engine,
 			backup_target_id = excluded.backup_target_id,
@@ -75,7 +83,7 @@ func (db *DB) UpsertComposeServiceBackup(ctx context.Context, c ComposeServiceBa
 			enabled = excluded.enabled,
 			updated_at = excluded.updated_at
 	`, c.App, c.Service, c.Engine, sql.NullString{String: c.BackupTargetID, Valid: c.BackupTargetID != ""},
-		c.BackupSchedule, c.BackupRetain, c.BackupRetainDays, enabled, now, now)
+		c.BackupSchedule, c.BackupRetain, c.BackupRetainDays, enabled, now, now, paused)
 	if err != nil {
 		return fmt.Errorf("store: upsert compose service backup %q/%q: %w", c.App, c.Service, err)
 	}
@@ -119,7 +127,20 @@ func (db *DB) ListComposeServiceBackups(ctx context.Context, app string) ([]Comp
 
 // ListScheduledComposeServices returns enabled rows that have both a cron schedule and a target.
 func (db *DB) ListScheduledComposeServices(ctx context.Context) ([]ComposeServiceBackup, error) {
-	return db.queryComposeServiceBackups(ctx, `WHERE backup_schedule != '' AND backup_target_id IS NOT NULL AND enabled = 1`)
+	return db.queryComposeServiceBackups(ctx, `WHERE backup_schedule != '' AND backup_target_id IS NOT NULL AND enabled = 1 AND backup_paused = 0`)
+}
+
+// SetComposeServiceBackupPaused pauses or resumes one service schedule; a service with no row is ErrComposeServiceBackupNotFound.
+func (db *DB) SetComposeServiceBackupPaused(ctx context.Context, app, service string, paused bool) error {
+	res, err := db.ExecContext(ctx, `UPDATE compose_service_backups SET backup_paused = ?, updated_at = ? WHERE app = ? AND service = ?`,
+		paused, time.Now().UTC().Format(time.RFC3339), app, service)
+	if err != nil {
+		return fmt.Errorf("store: set compose service backup paused %q/%q: %w", app, service, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrComposeServiceBackupNotFound
+	}
+	return nil
 }
 
 // DeleteComposeServiceBackup removes the schedule row; run history is kept.

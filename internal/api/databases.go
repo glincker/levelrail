@@ -382,10 +382,18 @@ func (rt *Router) insertDesiredDatabase(ctx context.Context, d store.DesiredData
 	return rt.databases.SaveDesiredDatabase(ctx, d)
 }
 
+// maxCreateBody bounds a database create payload, which is a small JSON object.
+const maxCreateBody = 1 << 20
+
 // handleCreateDatabase rejects an existing name and treats an explicit node_id as a placement override.
 func (rt *Router) handleCreateDatabase(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(r.Body)
+	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxCreateBody))
 	if err != nil {
+		var tooBig *http.MaxBytesError
+		if errors.As(err, &tooBig) {
+			writeError(w, http.StatusRequestEntityTooLarge, "request body too large")
+			return
+		}
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}

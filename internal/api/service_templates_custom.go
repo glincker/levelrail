@@ -265,6 +265,7 @@ type importCustomTemplateResponse struct {
 	Description           string   `json:"description"`
 	RequiresConfiguration bool     `json:"requires_configuration"`
 	RequiredEnvKeys       []string `json:"required_env_keys,omitempty"`
+	Variables             []string `json:"variables,omitempty"`
 	CreatedAt             string   `json:"created_at"`
 }
 
@@ -318,7 +319,7 @@ func (rt *Router) handleImportCustomTemplate(w http.ResponseWriter, r *http.Requ
 		principalID = ""
 	}
 	now := time.Now().UTC().Format(time.RFC3339)
-	tpl := store.CustomTemplate{ID: req.ID, Name: req.Name, Description: req.Description, Compose: req.ComposeYAML, CreatedBy: principalID, CreatedAt: now, UpdatedAt: now}
+	tpl := store.CustomTemplate{ID: req.ID, Name: req.Name, Description: req.Description, Compose: req.ComposeYAML, CreatedBy: principalID, CreatedAt: now, UpdatedAt: now, Variables: req.Variables}
 	if err := rt.customTemplates.SaveCustomTemplate(r.Context(), tpl); err != nil {
 		rt.internalError(w, "api: import custom template: save failed", err, slog.String("id", req.ID))
 		return
@@ -327,6 +328,7 @@ func (rt *Router) handleImportCustomTemplate(w http.ResponseWriter, r *http.Requ
 		ID: tpl.ID, Name: tpl.Name, Description: tpl.Description,
 		RequiresConfiguration: composeNeedsConfiguration(tpl.Compose),
 		RequiredEnvKeys:       requiredEnvKeys(tpl.Compose),
+		Variables:             tpl.Variables,
 		CreatedAt:             tpl.CreatedAt,
 	})
 }

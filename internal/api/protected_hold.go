@@ -207,7 +207,7 @@ func (rt *Router) replayGitPush(ctx context.Context, name string, req deploy.Hel
 	if err != nil {
 		return errors.New("the held commit is no longer stored, push again")
 	}
-	buildType, path, base := rt.gitPushBuildConfig(ctx, name, commit)
+	buildType, path, base, _ := rt.gitPushBuildConfig(ctx, name, commit)
 	treq := triggerBuildRequest{
 		RepoURL: req.PushMirror, Ref: req.CommitSHA,
 		Build: triggerBuildBuildInput{Type: buildType, Path: path, BaseDirectory: base, StaticSPA: rt.gitPushStaticSPA(ctx, name, buildType)},

@@ -160,6 +160,17 @@ levelrail-cli compose redeploy shop                # recreate every service
 levelrail-cli compose redeploy shop --service api  # recreate one
 ```
 
+Restart, stop, start or read the logs of one service without touching the rest of the stack. The service key is the name used in the compose file, and an unknown key returns 404.
+
+```bash
+curl -X POST  $URL/api/v1/apps/shop/compose/services/api/restart -H "Authorization: Bearer $TOKEN"
+curl -X POST  $URL/api/v1/apps/shop/compose/services/api/stop    -H "Authorization: Bearer $TOKEN"
+curl -X POST  $URL/api/v1/apps/shop/compose/services/api/start   -H "Authorization: Bearer $TOKEN"
+curl          $URL/api/v1/apps/shop/compose/services/api/logs    -H "Authorization: Bearer $TOKEN"
+```
+
+Restart, stop and start need deploy access to the app. Logs need read access.
+
 ## Rollback
 
 Every deploy records the compose file it used. Rolling back re-applies an earlier file through the normal deploy path and saves the result as a new revision, so you can roll forward again later. Generated passwords are stored per app, not per revision, so an older file still uses the same database password that the data in its volumes expects.
@@ -295,6 +306,7 @@ Schedules and run history for compose services are stored apart from managed dat
 | `GET` | `/api/v1/apps/{name}/compose-db-services` | `read` (detected database services and their schedules) |
 | `PUT` | `/api/v1/apps/{name}/compose-db-services/{service}/backup-schedule` | `write-sensitive` (`target_id`, `schedule`, `retain`, `retain_days`, `enabled`) |
 | `DELETE` | `/api/v1/apps/{name}/compose-db-services/{service}/backup-schedule` | `write-sensitive` |
+| `POST` | `/api/v1/apps/{name}/compose-db-services/{service}/backup-schedule/pause` | `write-sensitive` (keeps the schedule, the scheduler skips it; `resume` undoes it) |
 | `GET` | `/api/v1/apps/{name}/compose-db-services/{service}/backups` | `read` (run history) |
 | `POST` | `/api/v1/apps/{name}/compose-db-services/{service}/backups` | `write-sensitive` (run now, `target_id` optional when a schedule exists) |
 

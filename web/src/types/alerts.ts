@@ -29,6 +29,7 @@ import type { Severity } from './alertNoise'
 export type AlertRuleKind =
   | 'threshold'
   | 'crashloop'
+  | 'oom_killed'
   | 'cert_expiry'
   | 'patch_status'
   | 'scheduled_task_failure'

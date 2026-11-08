@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/spool"
 	"io"
 	"log/slog"
 	"net/http"
@@ -236,7 +237,7 @@ func (s importSpool) discard() {
 
 // spoolImportBody copies src to an unlinked-on-discard 0600 temp file and rewinds it.
 func spoolImportBody(src io.Reader) (importSpool, int64, error) {
-	f, err := os.CreateTemp("", "levelrail-dbimport-*")
+	f, err := spool.Create("dbimport")
 	if err != nil {
 		return importSpool{}, 0, err
 	}

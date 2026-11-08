@@ -205,6 +205,11 @@
       "description": "Fires when an uptime monitor stays down after its confirmation checks, and resolves once it has recovered.",
       "action": "Open the monitor's results to see the failing reason, then fix the target or its network path."
     },
+    "oom_killed": {
+      "label": "OOM killed",
+      "description": "Fires when the kernel kills this app's container for running out of memory, repeatedly inside the restart window.",
+      "action": "Raise the app's memory limit or fix the leak, then redeploy and watch the memory chart."
+    },
     "database_down": {
       "label": "Database down",
       "description": "Fires while the database is not accepting connections.",

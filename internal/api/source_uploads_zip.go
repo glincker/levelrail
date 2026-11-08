@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"fmt"
+	"github.com/GLINCKER/levelrail/internal/spool"
 	"io"
 	"log/slog"
 	"mime"
@@ -42,7 +43,10 @@ func (rt *Router) convertZipBody(w http.ResponseWriter, r *http.Request, limit i
 
 // spoolZip appends two temp files to files (the zip, then the converted tar) and returns an HTTP status and message on failure.
 func (rt *Router) spoolZip(r *http.Request, limit int64, files *[]*os.File) (sourceupload.ZipResult, int, string) {
-	zipFile, err := os.CreateTemp("", "drop-zip-*")
+	zipFile, err := spool.Create("drop-zip")
+	if errors.Is(err, spool.ErrQuota) {
+		return sourceupload.ZipResult{}, http.StatusInsufficientStorage, "upload spool is full, retry shortly"
+	}
 	if err != nil {
 		rt.logger.Error("api: zip upload: temp file failed", slog.String("error", err.Error()))
 		return sourceupload.ZipResult{}, http.StatusInternalServerError, "internal error"
@@ -55,7 +59,7 @@ func (rt *Router) spoolZip(r *http.Request, limit int64, files *[]*os.File) (sou
 	if n > limit {
 		return sourceupload.ZipResult{}, http.StatusRequestEntityTooLarge, fmt.Sprintf("zip is larger than the %d byte limit (%s)", limit, envUploadMaxBytes)
 	}
-	tgz, err := os.CreateTemp("", "drop-tgz-*")
+	tgz, err := spool.Create("drop-tgz")
 	if err != nil {
 		rt.logger.Error("api: zip upload: temp file failed", slog.String("error", err.Error()))
 		return sourceupload.ZipResult{}, http.StatusInternalServerError, "internal error"

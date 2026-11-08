@@ -722,6 +722,12 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/compose-db-services/{service}/backups/{run}/restore | AbilityRoot | handleRestoreComposeDBBackup |
 | GET | /api/v1/apps/{name}/services/{service}/runtime | AbilityRead | handleGetServiceRuntime |
 | PUT | /api/v1/apps/{name}/services/{service}/runtime | AbilityWriteSensitive | handlePutServiceRuntime |
+| POST | /api/v1/apps/{name}/compose-db-services/{service}/backup-schedule/pause | AbilityWriteSensitive | handlePauseComposeDBBackupSchedule |
+| POST | /api/v1/apps/{name}/compose-db-services/{service}/backup-schedule/resume | AbilityWriteSensitive | handleResumeComposeDBBackupSchedule |
+| POST | /api/v1/apps/{name}/compose/services/{service}/restart | AbilityDeploy | handleRestartApp |
+| POST | /api/v1/apps/{name}/compose/services/{service}/stop | AbilityDeploy | handleStopApp |
+| POST | /api/v1/apps/{name}/compose/services/{service}/start | AbilityDeploy | handleStartApp |
+| GET | /api/v1/apps/{name}/compose/services/{service}/logs | AbilityRead | handleQueryLogs |
 
 </Accordion>
 

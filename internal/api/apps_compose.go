@@ -208,6 +208,7 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 	if !rt.storeComposeSecretFiles(w, r, services) {
 		return composeDeployResponse{}, false
 	}
+	rt.pruneStaleComposeSecretFiles(r.Context(), previousServices, services)
 	templateDefaults := rt.planTemplateDefaults(r.Context(), name, opts.templateID, file, services, previousServices)
 
 	now := time.Now().UTC().Format(time.RFC3339)
@@ -534,4 +535,46 @@ func (rt *Router) storeComposeSecretFiles(w http.ResponseWriter, r *http.Request
 		f.Content = ""
 	}
 	return true
+}
+
+// composeSecretDeleter is optional on the secret store so older fakes and
+// stores without delete support keep working.
+type composeSecretDeleter interface {
+	DeleteValue(ctx context.Context, serviceName, envKey string) error
+}
+
+// pruneStaleComposeSecretFiles deletes stored bodies of secret files the new
+// compose revision no longer declares, so dropped secrets do not linger.
+// Only services that still exist are touched; removed services are cleaned elsewhere.
+func (rt *Router) pruneStaleComposeSecretFiles(ctx context.Context, previous, next []store.DesiredService) {
+	del, ok := rt.composeSecrets.(composeSecretDeleter)
+	if !ok || rt.composeSecrets == nil {
+		return
+	}
+	keep := map[string]bool{}
+	for _, svc := range next {
+		for _, f := range svc.Files {
+			if f.Secret {
+				keep[svc.Name+"|"+store.FileSecretKey(f.Path)] = true
+			}
+		}
+	}
+	live := map[string]bool{}
+	for _, svc := range next {
+		live[svc.Name] = true
+	}
+	for _, svc := range previous {
+		if !live[svc.Name] {
+			continue
+		}
+		for _, f := range svc.Files {
+			key := store.FileSecretKey(f.Path)
+			if !f.Secret || keep[svc.Name+"|"+key] {
+				continue
+			}
+			if err := del.DeleteValue(ctx, svc.Name, key); err != nil {
+				slog.Warn("api: deploy compose: delete stale secret file failed", slog.String("service", svc.Name), slog.Any("error", err))
+			}
+		}
+	}
 }

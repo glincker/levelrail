@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"github.com/GLINCKER/levelrail/internal/spool"
 	"log/slog"
 	"net/http"
 	"os"
@@ -104,6 +105,7 @@ type cpHealthResource struct {
 	Reconcile  cpReconcile          `json:"reconcile"`
 	Streams    cpStreams            `json:"streams"`
 	Footprint  cpFootprint          `json:"footprint"`
+	Spool      spool.Stats          `json:"spool"`
 	Idle       footprint.Assessment `json:"idle_footprint"`
 	Thresholds cphealth.Thresholds  `json:"thresholds"`
 	Findings   []cphealth.Finding   `json:"findings"`
@@ -140,13 +142,14 @@ type cpQueue struct {
 }
 
 type cpFootprint struct {
-	RSSBytes       uint64                `json:"rss_bytes"`
-	Threads        int                   `json:"threads"`
-	OpenFDs        int                   `json:"open_fds"`
-	CPUPercent     float64               `json:"cpu_percent"`
-	TelemetryBytes int64                 `json:"telemetry_bytes"`
-	MemoryLimit    footprint.MemoryLimit `json:"memory_limit"`
-	Loops          []footprint.LoopInfo  `json:"loops"`
+	RSSBytes       uint64                     `json:"rss_bytes"`
+	Threads        int                        `json:"threads"`
+	OpenFDs        int                        `json:"open_fds"`
+	CPUPercent     float64                    `json:"cpu_percent"`
+	TelemetryBytes int64                      `json:"telemetry_bytes"`
+	MemoryLimit    footprint.MemoryLimit      `json:"memory_limit"`
+	Loops          []footprint.LoopInfo       `json:"loops"`
+	Goroutines     []footprint.SubsystemCount `json:"goroutines_by_subsystem"`
 }
 
 type cpStreams struct {
@@ -173,10 +176,11 @@ func (rt *Router) cpHealthSnapshot() (cpHealthResource, bool) {
 		DB:      p.DB.Metrics(),
 		Streams: cpStreams{Active: rt.cpHealth.streams.Load(), Cap: rt.cpHealth.streamCap()},
 	}
+	res.Spool = spool.Usage()
 	proc := footprint.ReadProc()
 	res.Footprint = cpFootprint{
 		RSSBytes: proc.RSSBytes, Threads: proc.Threads, OpenFDs: proc.OpenFDs, CPUPercent: proc.CPUPercent,
-		MemoryLimit: p.MemoryLimit, Loops: footprint.Loops(),
+		MemoryLimit: p.MemoryLimit, Loops: footprint.Loops(), Goroutines: footprint.Subsystems(),
 	}
 	if p.Telemetry != nil {
 		if n, err := p.Telemetry.FileBytes(context.Background()); err == nil {

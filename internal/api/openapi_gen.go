@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2029 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2035 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -192,6 +192,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/compose-db-services", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListComposeDBServices", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/compose-db-services/{service}/backup-schedule", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteComposeDBBackupSchedule", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/compose-db-services/{service}/backup-schedule", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetComposeDBBackupSchedule", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/compose-db-services/{service}/backup-schedule/pause", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePauseComposeDBBackupSchedule", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/compose-db-services/{service}/backup-schedule/resume", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleResumeComposeDBBackupSchedule", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/compose-db-services/{service}/backups", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListComposeDBBackupRuns", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/compose-db-services/{service}/backups", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleTriggerComposeDBBackup", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/compose-db-services/{service}/backups/{run}/restore", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRestoreComposeDBBackup", Description: "AbilityRoot like the volume restore: it replaces the live database in place."},
@@ -199,6 +201,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/compose/revisions", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListComposeRevisions", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/compose/revisions/{revision}", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetComposeRevision", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/compose/rollback", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRollbackCompose", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/compose/services/{service}/logs", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleQueryLogs", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/compose/services/{service}/restart", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRestartApp", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/compose/services/{service}/start", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleStartApp", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/compose/services/{service}/stop", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleStopApp", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/connectable-databases", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListConnectableDatabases", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/connections", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListAppConnections", Description: "Multi-connection app-to-database (apps_connections.go): the DatabaseEnv-map-backed sibling of PUT/DELETE .../database just above, for an app that connects to more than one managed database. Same AbilityWrite tier and \"config write, not a deploy trigger\" reasoning; GET is AbilityRead like any other app-detail read."},
 	{Method: "POST", Path: "/api/v1/apps/{name}/connections", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCreateAppConnection", Description: ""},

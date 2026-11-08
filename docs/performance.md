@@ -229,3 +229,14 @@ Where it stands:
 The control plane keeps a pool of read-only SQLite connections beside the single writer. Size it with the runtime setting `store.read_connections` (1 to 32, default 4; `APP_DB_READ_CONNS` only seeds it). A saved change resizes the pool on the next WAL maintenance tick, with no restart. Setting `APP_DB_READ_CONNS=0` at boot sends reads to the writer and stays boot-only.
 
 SQLite connection tuning is also a runtime setting, applied to the writer and read connections on the same tick: `store.cache_size_mb` (0 to 4096, `APP_DB_CACHE_SIZE_MB`), `store.mmap_size_mb` (0 to 16384, `APP_DB_MMAP_SIZE_MB`), `store.temp_store` (`default`, `file`, `memory`, `APP_DB_TEMP_STORE`) and `store.synchronous` (`default`, `normal`, `full`, `APP_DB_SYNCHRONOUS`). The default value of each keeps the SQLite built-in. Env only seeds the defaults.
+
+## Goroutine attribution
+
+`GET /api/v1/system/cp-health` lists `goroutines_by_subsystem` under `footprint`: live counts for each background loop (`loop:<name>`) and for long lived streams (`live-logs`, `terminal`, `deployments-stream`). Goroutines started through `footprint.Run` also carry a pprof `subsystem` label, so a goroutine profile groups them by owner.
+
+## Image pulls
+
+Deploys that need the same image and registry credentials share one pull, and
+a node runs at most `images.pull_concurrency` distinct pulls at once (default
+3). A deploy that joins a pull already in flight waits for it and shows no
+layer progress of its own.

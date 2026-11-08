@@ -40,6 +40,7 @@ export const ALERT_KIND_OPTIONS: {
 }[] = [
   { value: 'threshold', label: 'Threshold', Icon: GaugeGlassIcon },
   { value: 'crashloop', label: 'Crashloop', Icon: RotateCcwGlassIcon },
+  { value: 'oom_killed', Icon: CpuGlassIcon },
   {
     value: 'cert_expiry',
     label: 'Certificate expiry',
@@ -139,6 +140,7 @@ export const alertRuleFormSchema = z
     kind: z.enum([
       'threshold',
       'crashloop',
+      'oom_killed',
       'cert_expiry',
       'patch_status',
       'scheduled_task_failure',
@@ -461,7 +463,7 @@ export function buildAlertRuleRequest(
     req.comparator = values.comparator
     req.threshold = values.threshold
     req.for_duration = values.forDuration.trim() || undefined
-  } else if (values.kind === 'crashloop') {
+  } else if (values.kind === 'crashloop' || values.kind === 'oom_killed') {
     req.restart_count_threshold = values.restartCountThreshold
     req.restart_window = values.restartWindow.trim()
   } else if (isScheduledTaskKind(values.kind)) {

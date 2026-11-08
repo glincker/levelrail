@@ -79,6 +79,41 @@ export async function saveAppAsTemplate(
   return (await res.json()) as CustomTemplateDetail
 }
 
+export interface ImportCustomTemplateRequest {
+  id: string
+  name: string
+  description?: string
+  compose_yaml: string
+  variables?: string[]
+}
+
+// The response omits the compose body, so it never echoes the file back.
+export interface ImportedCustomTemplate {
+  id: string
+  name: string
+  description: string
+  requires_configuration: boolean
+  required_env_keys?: string[]
+  created_at: string
+}
+
+export async function importCustomTemplate(
+  req: ImportCustomTemplateRequest,
+): Promise<ImportedCustomTemplate> {
+  const res = await fetch('/api/v1/templates/custom', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req),
+  })
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `import template failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as ImportedCustomTemplate
+}
+
 export async function deleteCustomTemplate(id: string): Promise<void> {
   const res = await fetch(
     `/api/v1/templates/custom/${encodeURIComponent(id)}`,
@@ -120,6 +155,19 @@ export function useSaveAppAsTemplate() {
       appName: string
       request: SaveAppAsTemplateRequest
     }) => saveAppAsTemplate(appName, request),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: customTemplateKeys.list(),
+      })
+    },
+  })
+}
+
+export function useImportCustomTemplate() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    meta: { errorToast: false },
+    mutationFn: (req: ImportCustomTemplateRequest) => importCustomTemplate(req),
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: customTemplateKeys.list(),

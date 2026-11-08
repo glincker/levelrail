@@ -115,3 +115,35 @@ func TestComposeAppExistsSeesAppRowAndMemberServices(t *testing.T) {
 		t.Fatalf("ComposeAppExists unknown = %v, %v, want false", ok, err)
 	}
 }
+
+func TestComposeServiceBackupPause(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	target := seedBackupTarget(t, db)
+	c := ComposeServiceBackup{App: "shop", Service: "db", Engine: EnginePostgres, BackupTargetID: target.ID, BackupSchedule: "0 3 * * *", BackupRetain: 3, Enabled: true}
+	if err := db.UpsertComposeServiceBackup(ctx, c); err != nil {
+		t.Fatalf("upsert: %v", err)
+	}
+	if err := db.SetComposeServiceBackupPaused(ctx, "shop", "db", true); err != nil {
+		t.Fatalf("pause: %v", err)
+	}
+	if sched, _ := db.ListScheduledComposeServices(ctx); len(sched) != 0 {
+		t.Fatalf("paused row listed as scheduled: %+v", sched)
+	}
+	// Re-saving the schedule must not silently resume it.
+	if err := db.UpsertComposeServiceBackup(ctx, c); err != nil {
+		t.Fatalf("re-upsert: %v", err)
+	}
+	if got, _ := db.GetComposeServiceBackup(ctx, "shop", "db"); !got.BackupPaused {
+		t.Fatalf("upsert cleared paused: %+v", got)
+	}
+	if err := db.SetComposeServiceBackupPaused(ctx, "shop", "db", false); err != nil {
+		t.Fatalf("resume: %v", err)
+	}
+	if sched, _ := db.ListScheduledComposeServices(ctx); len(sched) != 1 {
+		t.Fatalf("resumed row not scheduled: %+v", sched)
+	}
+	if err := db.SetComposeServiceBackupPaused(ctx, "shop", "nope", true); !errors.Is(err, ErrComposeServiceBackupNotFound) {
+		t.Fatalf("missing row err = %v", err)
+	}
+}

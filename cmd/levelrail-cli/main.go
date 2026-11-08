@@ -41,6 +41,7 @@ func runDispatch(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		_ = os.Setenv(envNoColor, "1")
 	}
 	args, debug := extractDebugFlag(args)
+	args, noColorFlag = extractNoColorFlag(args)
 	args, scopeFlags = extractScopeFlags(expandOutputShorthand(args))
 	installServerTrust(prog, args, stderr, lookupEnv)
 	apiclient.ResetServerPins()

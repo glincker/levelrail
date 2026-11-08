@@ -157,3 +157,18 @@ describe('traffic alert kinds', () => {
     expect(domainFromResourceId('service:web')).toBe('')
   })
 })
+
+describe('oom_killed rule', () => {
+  it('sends the restart count and window like a crashloop rule', () => {
+    const req = buildAlertRuleRequest(
+      values({ kind: 'oom_killed', restartCountThreshold: 3 }),
+      'web',
+    )
+    expect(req).toMatchObject({
+      kind: 'oom_killed',
+      restart_count_threshold: 3,
+      restart_window: '5m',
+    })
+    expect(req.metric).toBeUndefined()
+  })
+})

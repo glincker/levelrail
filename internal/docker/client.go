@@ -1254,6 +1254,15 @@ func (c *Client) ensureImage(ctx context.Context, ref string, auth *RegistryAuth
 		}
 	}
 
+	return pulls.do(ctx, pullKey(ref, auth), func() error {
+		return c.pullImage(ctx, ref, auth, onPull)
+	})
+}
+
+// pulls dedupes and caps image pulls across all deploy pipelines.
+var pulls = newPullGroup()
+
+func (c *Client) pullImage(ctx context.Context, ref string, auth *RegistryAuth, onPull func(PullEvent)) error {
 	var pullOpts image.PullOptions
 	if auth != nil {
 		encoded, err := registry.EncodeAuthConfig(registry.AuthConfig{Username: auth.Username, Password: auth.Password})

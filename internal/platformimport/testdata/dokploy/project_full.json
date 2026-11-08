@@ -1,0 +1,26 @@
+{
+  "projects": [
+    {
+      "projectId": "p1",
+      "name": "shop",
+      "applications": [
+        {"applicationId": "app-web", "name": "Web"},
+        {"applicationId": "app-api", "name": "Api"}
+      ],
+      "compose": [{"composeId": "cmp-1", "name": "legacy-stack"}],
+      "postgres": [{"postgresId": "pg-1", "name": "shop-db", "dockerImage": "postgres:16"}]
+    }
+  ],
+  "applications": {
+    "app-web": {
+      "applicationId": "app-web", "name": "Web", "sourceType": "docker", "dockerImage": "ghcr.io/example/web:1.2",
+      "env": "NODE_ENV=production\nSESSION_SECRET=e2e-placeholder\n",
+      "domains": [{"host": "Shop.Example.com", "port": 3000}]
+    },
+    "app-api": {
+      "applicationId": "app-api", "name": "Api", "sourceType": "docker", "dockerImage": "ghcr.io/example/api:4.0",
+      "replicas": 2,
+      "domains": [{"host": "api.example.com", "port": 8080}]
+    }
+  }
+}

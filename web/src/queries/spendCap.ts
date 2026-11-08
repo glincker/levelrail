@@ -95,6 +95,7 @@ export interface SpendCapEvent {
 }
 
 export const spendCapKeys = {
+  list: () => ['costs', 'app-caps'] as const,
   detail: (appName: string) => [...appKeys.detail(appName), 'budget'] as const,
   history: (appName: string) =>
     [...appKeys.detail(appName), 'budget-history'] as const,
@@ -221,4 +222,17 @@ export function appPauseUrl(appName: string): string {
 
 export function budgetPauseUrl(budgetId: string): string {
   return `/api/v1/costs/budgets/${encodeURIComponent(budgetId)}/dry-run`
+}
+
+export function spendCapsQueryOptions() {
+  return queryOptions({
+    queryKey: spendCapKeys.list(),
+    queryFn: async (): Promise<SpendCap[]> => {
+      const res = await fetch('/api/v1/costs/app-caps')
+      if (!res.ok) return fail(res, 'app caps')
+      return ((await res.json()) as { caps: SpendCap[] }).caps
+    },
+    refetchInterval: 60_000,
+    retry: false,
+  })
 }

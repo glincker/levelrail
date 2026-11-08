@@ -136,5 +136,29 @@
     "pauseConfirm": "Pause app",
     "pausing": "Pausing",
     "rightSize": "Right-size apps"
+  },
+  "appCaps": {
+    "title": "Per-app caps",
+    "description": "Monthly egress and cost caps set on each app, with what is enforced now.",
+    "loadError": "Could not load app caps: {{message}}",
+    "empty": "No app has a cap yet. Open an app and set a monthly cap on its budget card.",
+    "app": "App",
+    "usage": "{{pct}}% of cap",
+    "ceiling": "Cost ceiling",
+    "ceilingLabel": "Cost ceiling for {{app}}",
+    "set": "Set",
+    "saved": "Cap updated for {{app}}",
+    "saveFailed": "Could not update cap: {{message}}",
+    "enforced": {
+      "none": "Within cap",
+      "throttle": "Throttled",
+      "pause": "Paused"
+    },
+    "blocked": "Deploys blocked",
+    "overridden": "Override active",
+    "preview": "Dry run",
+    "override": "Override",
+    "edit": "Open app",
+    "forecast": "Projected to exceed"
   }
 }

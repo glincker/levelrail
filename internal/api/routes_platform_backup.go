@@ -122,6 +122,8 @@ func (rt *Router) registerBackupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/apps/{name}/volumes/{volume}/backup-schedule/resume", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleResumeVolumeBackupSchedule))
 	mux.HandleFunc("GET /api/v1/apps/{name}/compose-db-services", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListComposeDBServices))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/compose-db-services/{service}/backup-schedule", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetComposeDBBackupSchedule))
+	mux.HandleFunc("POST /api/v1/apps/{name}/compose-db-services/{service}/backup-schedule/pause", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handlePauseComposeDBBackupSchedule))
+	mux.HandleFunc("POST /api/v1/apps/{name}/compose-db-services/{service}/backup-schedule/resume", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleResumeComposeDBBackupSchedule))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/compose-db-services/{service}/backup-schedule", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteComposeDBBackupSchedule))
 	mux.HandleFunc("GET /api/v1/apps/{name}/compose-db-services/{service}/backups", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListComposeDBBackupRuns))
 	mux.HandleFunc("POST /api/v1/apps/{name}/compose-db-services/{service}/backups", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleTriggerComposeDBBackup))

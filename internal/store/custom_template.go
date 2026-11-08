@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 )
@@ -32,6 +33,30 @@ type CustomTemplate struct {
 	CreatedBy string
 	CreatedAt string
 	UpdatedAt string
+	// Variables names the ${NAME} placeholders filled in at deploy.
+	Variables []string
+}
+
+func encodeTemplateVariables(v []string) string {
+	if len(v) == 0 {
+		return ""
+	}
+	b, err := json.Marshal(v)
+	if err != nil {
+		return ""
+	}
+	return string(b)
+}
+
+func decodeTemplateVariables(raw string) []string {
+	if raw == "" {
+		return nil
+	}
+	var v []string
+	if json.Unmarshal([]byte(raw), &v) != nil {
+		return nil
+	}
+	return v
 }
 
 // SaveCustomTemplate inserts a new custom template row. IDs are minted
@@ -41,9 +66,9 @@ type CustomTemplate struct {
 // internal/api/service_templates.go's resolveTemplate).
 func (db *DB) SaveCustomTemplate(ctx context.Context, t CustomTemplate) error {
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO custom_templates (id, name, description, compose, source_app, created_by, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-	`, t.ID, t.Name, t.Description, t.Compose, t.SourceApp, t.CreatedBy, t.CreatedAt, t.UpdatedAt)
+		INSERT INTO custom_templates (id, name, description, compose, source_app, created_by, created_at, updated_at, variables)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, t.ID, t.Name, t.Description, t.Compose, t.SourceApp, t.CreatedBy, t.CreatedAt, t.UpdatedAt, encodeTemplateVariables(t.Variables))
 	if err != nil {
 		return fmt.Errorf("store: save custom template %q: %w", t.ID, err)
 	}
@@ -54,17 +79,19 @@ func (db *DB) SaveCustomTemplate(ctx context.Context, t CustomTemplate) error {
 // ErrCustomTemplateNotFound.
 func (db *DB) GetCustomTemplate(ctx context.Context, id string) (CustomTemplate, error) {
 	var t CustomTemplate
+	var vars string
 	err := db.QueryRowContext(ctx, `
-		SELECT id, name, description, compose, source_app, created_by, created_at, updated_at
+		SELECT id, name, description, compose, source_app, created_by, created_at, updated_at, variables
 		FROM custom_templates
 		WHERE id = ?
-	`, id).Scan(&t.ID, &t.Name, &t.Description, &t.Compose, &t.SourceApp, &t.CreatedBy, &t.CreatedAt, &t.UpdatedAt)
+	`, id).Scan(&t.ID, &t.Name, &t.Description, &t.Compose, &t.SourceApp, &t.CreatedBy, &t.CreatedAt, &t.UpdatedAt, &vars)
 	if errors.Is(err, sql.ErrNoRows) {
 		return CustomTemplate{}, ErrCustomTemplateNotFound
 	}
 	if err != nil {
 		return CustomTemplate{}, fmt.Errorf("store: get custom template %q: %w", id, err)
 	}
+	t.Variables = decodeTemplateVariables(vars)
 	return t, nil
 }
 
@@ -73,7 +100,7 @@ func (db *DB) GetCustomTemplate(ctx context.Context, id string) (CustomTemplate,
 // a settings-style listing).
 func (db *DB) ListCustomTemplates(ctx context.Context) ([]CustomTemplate, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT id, name, description, compose, source_app, created_by, created_at, updated_at
+		SELECT id, name, description, compose, source_app, created_by, created_at, updated_at, variables
 		FROM custom_templates
 		ORDER BY created_at
 	`)
@@ -87,9 +114,11 @@ func (db *DB) ListCustomTemplates(ctx context.Context) ([]CustomTemplate, error)
 	var out []CustomTemplate
 	for rows.Next() {
 		var t CustomTemplate
-		if err := rows.Scan(&t.ID, &t.Name, &t.Description, &t.Compose, &t.SourceApp, &t.CreatedBy, &t.CreatedAt, &t.UpdatedAt); err != nil {
+		var vars string
+		if err := rows.Scan(&t.ID, &t.Name, &t.Description, &t.Compose, &t.SourceApp, &t.CreatedBy, &t.CreatedAt, &t.UpdatedAt, &vars); err != nil {
 			return nil, fmt.Errorf("store: scan custom template row: %w", err)
 		}
+		t.Variables = decodeTemplateVariables(vars)
 		out = append(out, t)
 	}
 	if err := rows.Err(); err != nil {

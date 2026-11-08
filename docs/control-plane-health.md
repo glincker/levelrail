@@ -62,3 +62,7 @@ Applying a fix needs a root token. Reading health needs read access. The API is 
 | `APP_DB_READ_CONNS` | 4 | read-only SQLite connections for dashboard reads, so they do not queue behind reconcile writes. 0 sends reads to the single writer connection |
 
 See [Benchmarks](/benchmarks#control-plane-at-1000-apps) for measured latency at 1000 apps.
+
+## Upload spool
+
+Uploads (assets, buckets, database imports, source zips) stage their body in a spool directory (`LEVELRAIL_SPOOL_DIR`, default under the OS temp dir). The health response carries a `spool` block with file count, bytes, quota and orphan count. A sweeper loop deletes files older than the max age, which only exist after a crash. The max age (`LEVELRAIL_SPOOL_MAX_AGE_SECONDS`, default 3600) and the quota (`LEVELRAIL_SPOOL_QUOTA_BYTES`, default unlimited) seed live settings. Past the quota, source zip uploads answer 507.

@@ -235,3 +235,14 @@ func TestPreviewCompose(t *testing.T) {
 		})
 	}
 }
+
+func TestComposeServiceControlsUnknownService(t *testing.T) {
+	t.Parallel()
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	composeDo(t, rt, cookie, http.MethodPost, "/api/v1/apps/stack/compose", stackV1, http.StatusOK)
+	for _, path := range []string{"restart", "stop", "start"} {
+		composeDo(t, rt, cookie, http.MethodPost, "/api/v1/apps/stack/compose/services/nope/"+path, "", http.StatusNotFound)
+	}
+	composeDo(t, rt, cookie, http.MethodGet, "/api/v1/apps/stack/compose/services/nope/logs", "", http.StatusNotFound)
+}

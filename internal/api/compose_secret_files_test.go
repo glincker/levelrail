@@ -67,3 +67,27 @@ func TestComposeSecretFileRefusesWithoutStoredValue(t *testing.T) {
 		t.Fatalf("status = %d", rec.Code)
 	}
 }
+
+func (m memComposeSecrets) DeleteValue(_ context.Context, svc, key string) error {
+	delete(m, svc+"|"+key)
+	return nil
+}
+
+func TestPruneStaleComposeSecretFiles(t *testing.T) {
+	mem := memComposeSecrets{}
+	rt := &Router{composeSecrets: mem}
+	oldKey := store.FileSecretKey("/run/secrets/old")
+	keepKey := store.FileSecretKey("/run/secrets/keep")
+	mem["a-app|"+oldKey] = "x"
+	mem["a-app|"+keepKey] = "y"
+	prev := []store.DesiredService{{Name: "a-app", Files: []store.ServiceFile{
+		{Path: "/run/secrets/old", Secret: true}, {Path: "/run/secrets/keep", Secret: true}}}}
+	next := []store.DesiredService{{Name: "a-app", Files: []store.ServiceFile{{Path: "/run/secrets/keep", Secret: true}}}}
+	rt.pruneStaleComposeSecretFiles(context.Background(), prev, next)
+	if _, ok := mem["a-app|"+oldKey]; ok {
+		t.Fatal("stale secret file kept")
+	}
+	if mem["a-app|"+keepKey] != "y" {
+		t.Fatal("kept secret file removed")
+	}
+}

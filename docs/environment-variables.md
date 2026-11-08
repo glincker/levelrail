@@ -130,6 +130,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_INGRESS_MAX_BODY_BYTES` | [`ingress.max_body_bytes`](/runtime-settings#networking) | `1073741824` |
 | `APP_PROXY_CERT_WAIT` | [`ingress.proxy_cert_wait`](/runtime-settings#networking) | `5m0s` |
 | `APP_INGRESS_TRUSTED_PROXY_PRESET` | [`ingress.trusted_proxy_preset`](/runtime-settings#networking) | `none` |
+| `APP_INGRESS_UNMATCHED_MODE` | [`ingress.unmatched_mode`](/runtime-settings#networking) | `diagnostic` |
+| `APP_INGRESS_UNMATCHED_REDIRECT_URL` | [`ingress.unmatched_redirect_url`](/runtime-settings#networking) | empty |
 | `APP_MESH_APPLY_RETRIES` | [`mesh.apply_retries`](/runtime-settings#networking) | `2` |
 | `APP_MESH_APPLY_RETRY_DELAY` | [`mesh.apply_retry_delay`](/runtime-settings#networking) | `500ms` |
 | `APP_MESH_APPLY_TIMEOUT` | [`mesh.apply_timeout`](/runtime-settings#networking) | `10s` |
@@ -187,6 +189,7 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_GIT_POLL_MAX_BACKOFF` | [`git.poll_max_backoff`](/runtime-settings#deploys) | `1h` |
 | `APP_IAC_PLAN_VALUE_MAX` | [`iac.plan_value_max`](/runtime-settings#deploys) | `120` |
 | `APP_IMAGE_KEEP_PER_APP` | [`images.keep_per_app`](/runtime-settings#deploys) | `3` |
+| `APP_IMAGES_PULL_CONCURRENCY` | [`images.pull_concurrency`](/runtime-settings#deploys) | `3` |
 | `APP_JOBS_HTTP_TIMEOUT_SECONDS` | [`jobs.http_timeout_seconds`](/runtime-settings#deploys) | `30` |
 | `APP_NEXTJS_GENERATE_ACTIONS_KEY` | [`nextjs.generate_actions_key`](/runtime-settings#deploys) | `true` |
 | `APP_PLACEMENT_AFFINITY_MAX_TERMS` | [`placement.affinity_max_terms`](/runtime-settings#deploys) | `8` |
@@ -272,6 +275,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_VITALS_RATE_PER_IP` | [`vitals.rate_limit_per_ip_per_minute`](/runtime-settings#observability) | `120` |
 | `APP_VITALS_RATE_PER_MIN` | [`vitals.rate_limit_per_minute`](/runtime-settings#observability) | `600` |
 | `APP_VITALS_REPORT_TOP_ROUTES` | [`vitals.report_top_routes`](/runtime-settings#observability) | `50` |
+| `APP_VOLUMES_SIZE_HISTORY_RETENTION` | [`volumes.size_history_retention`](/runtime-settings#observability) | `168h` |
+| `APP_VOLUMES_USAGE_ALERT_PERCENT` | [`volumes.usage_alert_percent`](/runtime-settings#observability) | `90` |
 | `APP_ACCOUNT_PREFERENCES_MAX_BYTES` | [`account.preferences_max_bytes`](/runtime-settings#data-retention) | `8192` |
 | `APP_BACKUP_DEFAULT_RETENTION_HOURS` | [`backup.default_retention_hours`](/runtime-settings#data-retention) | `168` |
 | `APP_CDN_PURGE_HISTORY` | [`cdn.purge_history`](/runtime-settings#data-retention) | `20` |

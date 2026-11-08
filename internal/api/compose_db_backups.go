@@ -40,6 +40,7 @@ type composeDBServiceResource struct {
 	Retain     int    `json:"retain,omitempty"`
 	RetainDays int    `json:"retain_days,omitempty"`
 	Enabled    bool   `json:"enabled"`
+	Paused     bool   `json:"paused"`
 }
 
 type composeDBBackupScheduleRequest struct {
@@ -69,6 +70,7 @@ func composeDBScheduleResource(svc composeDBDetected, c *store.ComposeServiceBac
 		out.Scheduled = c.BackupSchedule != "" && c.BackupTargetID != ""
 		out.Schedule, out.TargetID = c.BackupSchedule, c.BackupTargetID
 		out.Retain, out.RetainDays, out.Enabled = c.BackupRetain, c.BackupRetainDays, c.Enabled
+		out.Paused = c.BackupPaused
 	}
 	return out
 }
@@ -177,6 +179,52 @@ func (rt *Router) handleSetComposeDBBackupSchedule(w http.ResponseWriter, r *htt
 	}
 	if err := rt.composeDBBackups.UpsertComposeServiceBackup(r.Context(), cfg); err != nil {
 		rt.internalError(w, "api: set compose db backup schedule failed", err, slog.String("app", app), slog.String("service", service))
+		return
+	}
+	// Re-read so a paused flag kept by the upsert shows in the response.
+	if saved, err := rt.composeDBBackups.GetComposeServiceBackup(r.Context(), app, service); err == nil {
+		cfg = saved
+	}
+	writeJSON(w, http.StatusOK, composeDBScheduleResource(det, &cfg))
+}
+
+// composeDBBackupPauser is the optional store surface for pausing a service schedule.
+type composeDBBackupPauser interface {
+	SetComposeServiceBackupPaused(ctx context.Context, app, service string, paused bool) error
+}
+
+func (rt *Router) handlePauseComposeDBBackupSchedule(w http.ResponseWriter, r *http.Request) {
+	rt.setComposeDBBackupPaused(w, r, true)
+}
+
+func (rt *Router) handleResumeComposeDBBackupSchedule(w http.ResponseWriter, r *http.Request) {
+	rt.setComposeDBBackupPaused(w, r, false)
+}
+
+func (rt *Router) setComposeDBBackupPaused(w http.ResponseWriter, r *http.Request, paused bool) {
+	if !rt.composeDBStoreReady(w) {
+		return
+	}
+	p, ok := rt.composeDBBackups.(composeDBBackupPauser)
+	if !ok {
+		writeError(w, http.StatusNotImplemented, "pausing backup schedules is not available")
+		return
+	}
+	app, service := r.PathValue("name"), r.PathValue("service")
+	det, ok := rt.findComposeDBService(w, r, app, service)
+	if !ok {
+		return
+	}
+	if err := p.SetComposeServiceBackupPaused(r.Context(), app, service, paused); errors.Is(err, store.ErrComposeServiceBackupNotFound) {
+		writeError(w, http.StatusConflict, "service has no backup schedule")
+		return
+	} else if err != nil {
+		rt.internalError(w, "api: pause compose db backup schedule failed", err, slog.String("app", app), slog.String("service", service))
+		return
+	}
+	cfg, err := rt.composeDBBackups.GetComposeServiceBackup(r.Context(), app, service)
+	if err != nil {
+		rt.internalError(w, "api: pause compose db backup schedule: reload failed", err, slog.String("app", app), slog.String("service", service))
 		return
 	}
 	writeJSON(w, http.StatusOK, composeDBScheduleResource(det, &cfg))

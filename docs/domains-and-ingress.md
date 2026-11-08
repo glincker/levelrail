@@ -553,6 +553,17 @@ levelrail-cli domains standalone add <domain> --target 127.0.0.1:3000 --confirm
 
 The same page explains the **Server address** card, which shows the public IPv4 and IPv6 your DNS records must point at, with a manual override.
 
+## Unmatched hosts and the bare server address
+
+A request for a host no app or standalone domain claims, including the server's bare IP, gets the help page by default. Two runtime settings change that:
+
+- `ingress.unmatched_mode`: `diagnostic` (default) shows the help page, `not_found` answers a plain 404 with no detail, `redirect` sends the visitor to `ingress.unmatched_redirect_url`.
+- `ingress.unmatched_redirect_url`: an absolute http or https URL. With `redirect` mode and no URL, the help page stays.
+
+```bash
+levelrail-cli settings runtime set ingress.unmatched_mode not_found
+```
+
 ## Firewall: ports 80 and 443
 
 Public traffic and ACME's HTTP-01 challenge need your server reachable from the internet on **ports 80 and 443**. Port 80 is also how Let's Encrypt validates domain ownership. If it is blocked, issuance fails even if everything else is configured correctly.

@@ -58,6 +58,9 @@ type Hardening struct {
 	// plane for the live-state page; empty keeps the static page.
 	DiagnosticDial  string
 	DiagnosticToken string
+	// UnmatchedMode and UnmatchedRedirectURL pick the catch-all answer; empty keeps the diagnostic page.
+	UnmatchedMode        string
+	UnmatchedRedirectURL string
 }
 
 // DefaultHardening returns defaults that are safe for general web apps: no

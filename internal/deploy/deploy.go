@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -328,6 +329,12 @@ func (p *Pipeline) deployDockerfile(ctx context.Context, req Request, progress f
 		dockerfilePath = filepath.Join(buildRoot, req.Service.Build.Path)
 		if err := build.EnsureWithin(req.SourceDir, dockerfilePath); err != nil {
 			return "", fmt.Errorf("deploy: service %q: build.path %q: %w", req.ServiceName, req.Service.Build.Path, err)
+		}
+	}
+
+	if dockerfilePath == "" {
+		if _, err := os.Stat(filepath.Join(buildRoot, "Dockerfile")); err != nil {
+			dockerfilePath = definitionDockerfile(req.SourceDir, buildRoot)
 		}
 	}
 

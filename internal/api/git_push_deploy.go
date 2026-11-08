@@ -135,42 +135,39 @@ func (rt *Router) gitPushBlockedReason(ctx context.Context, name string) string 
 	return ""
 }
 
-func (rt *Router) gitPushBuildConfig(ctx context.Context, name string, c *object.Commit) (buildType, path, base string) {
+// gitPushBuildConfig picks the build and also returns a note when the commit has
+// a definition file a git build cannot honor and nothing else decides the build.
+func (rt *Router) gitPushBuildConfig(ctx context.Context, name string, c *object.Commit) (buildType, path, base, note string) {
+	var gs *store.GitSource
 	if rt.gitSources != nil {
-		if gs, err := rt.gitSources.GetGitSource(ctx, name); err == nil && gs != nil {
-			switch gs.BuildType {
-			case spec.BuildDockerfile, spec.BuildRailpack, spec.BuildStatic:
-				return gs.BuildType, gs.BuildPath, gs.BaseDirectory
-			}
+		if g, err := rt.gitSources.GetGitSource(ctx, name); err == nil {
+			gs = g
 		}
 	}
-	if tree, err := c.Tree(); err == nil {
-		if _, err := tree.File("Dockerfile"); err == nil {
-			return spec.BuildDockerfile, "", ""
+	tree, treeErr := c.Tree()
+	hasDockerfile := false
+	if treeErr == nil {
+		_, err := tree.File("Dockerfile")
+		hasDockerfile = err == nil
+		if !hasDockerfile && (gs == nil || gs.BuildPath == "") {
+			note = resolveDefinitionBuild(treeReader(tree), gitPushBaseDir(ctx, rt, name)).Note
+		}
+	}
+	if gs != nil {
+		switch gs.BuildType {
+		case spec.BuildDockerfile, spec.BuildRailpack, spec.BuildStatic:
+			return gs.BuildType, gs.BuildPath, gs.BaseDirectory, note
+		}
+	}
+	if treeErr == nil {
+		if hasDockerfile {
+			return spec.BuildDockerfile, "", "", note
 		}
 		if def := resolveDefinitionBuild(treeReader(tree), gitPushBaseDir(ctx, rt, name)); def.Dockerfile != "" {
-			return spec.BuildDockerfile, def.Dockerfile, ""
+			return spec.BuildDockerfile, def.Dockerfile, "", note
 		}
 	}
-	return spec.BuildRailpack, "", ""
-}
-
-// gitPushDefinitionNote is non-empty when the commit has a definition file a git
-// build cannot honor and nothing else decides the build, so the push says so.
-func (rt *Router) gitPushDefinitionNote(ctx context.Context, name string, c *object.Commit) string {
-	if rt.gitSources != nil {
-		if gs, err := rt.gitSources.GetGitSource(ctx, name); err == nil && gs != nil && gs.BuildPath != "" {
-			return ""
-		}
-	}
-	tree, err := c.Tree()
-	if err != nil {
-		return ""
-	}
-	if _, err := tree.File("Dockerfile"); err == nil {
-		return ""
-	}
-	return resolveDefinitionBuild(treeReader(tree), gitPushBaseDir(ctx, rt, name)).Note
+	return spec.BuildRailpack, "", "", note
 }
 
 func gitPushBaseDir(ctx context.Context, rt *Router, name string) string {
@@ -230,11 +227,11 @@ func (rt *Router) deployGitPush(r *http.Request, ws *pushStream, name string, pl
 		}
 		return ""
 	}
-	if note := rt.gitPushDefinitionNote(ctx, name, plan.commit); note != "" {
+	buildType, path, base, note := rt.gitPushBuildConfig(ctx, name, plan.commit)
+	if note != "" {
 		ws.say("Cannot build: " + note)
 		return "unsupported definition file"
 	}
-	buildType, path, base := rt.gitPushBuildConfig(ctx, name, plan.commit)
 	treq := triggerBuildRequest{
 		RepoURL: gitPushMirrorURL(name), Ref: hash,
 		Build: triggerBuildBuildInput{Type: buildType, Path: path, BaseDirectory: base, StaticSPA: rt.gitPushStaticSPA(ctx, name, buildType)},

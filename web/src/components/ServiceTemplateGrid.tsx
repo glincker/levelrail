@@ -25,6 +25,7 @@ import {
   type UiIcon,
 } from '@thesvg/ui-react'
 import { TemplateLogoTile } from './TemplateLogoTile'
+import { LazyImportTemplateDialog } from './LazyImportTemplateDialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -193,20 +194,23 @@ export function ServiceTemplateGrid({
 
   return (
     <div className="space-y-4">
-      <div className="relative">
-        <SearchGlassIcon
-          className="pointer-events-none absolute top-1/2 left-2.5 size-5 -translate-y-1/2 text-muted-foreground"
-          aria-hidden="true"
-        />
-        <Input
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value)
-          }}
-          placeholder={t('card.searchPlaceholder')}
-          aria-label={t('card.searchLabel')}
-          className="pl-8"
-        />
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <SearchGlassIcon
+            className="pointer-events-none absolute top-1/2 left-2.5 size-5 -translate-y-1/2 text-muted-foreground"
+            aria-hidden="true"
+          />
+          <Input
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value)
+            }}
+            placeholder={t('card.searchPlaceholder')}
+            aria-label={t('card.searchLabel')}
+            className="pl-8"
+          />
+        </div>
+        <LazyImportTemplateDialog />
       </div>
       {templatesQuery.isLoading ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
