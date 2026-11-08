@@ -12,6 +12,8 @@ const (
 	KeyDiskCriticalFreeMB = "disk.critical_free_mb"
 	KeyDiskReserveMB      = "disk.reserve_mb"
 	KeyMetricsRetention   = "telemetry.metrics_retention"
+	KeyMetricsRetention1m = "telemetry.metrics_retention_1m"
+	KeyMetricsRetention1h = "telemetry.metrics_retention_1h"
 	KeyLogsRetention      = "telemetry.logs_retention"
 	KeyLogBudgetMB        = "telemetry.log_budget_mb"
 	KeyMonitorRawRetained = "monitors.raw_retention"
@@ -66,6 +68,18 @@ func init() {
 		Env: "APP_METRICS_RETENTION", Apply: ApplyLive, CheckValue: durationRangeCheck(minTelemetryRetention, maxTelemetryRetention),
 		Title:       "Raw metrics retention",
 		Description: "How long raw container metric samples are kept before the prune job deletes them, from 1h to 8760h; older data stays available in the coarser rollup tiers.",
+	})
+	Register(Definition{
+		Key: KeyMetricsRetention1m, Category: CategoryObservability, Kind: KindDuration, Default: "720h",
+		Env: "APP_METRICS_RETENTION_1M", Apply: ApplyLive, CheckValue: durationRangeCheck(minTelemetryRetention, maxTelemetryRetention),
+		Title:       "Metrics 1 minute rollup retention",
+		Description: "How long the one minute metric rollups are kept before the prune job deletes them, from 1h to 8760h; the hourly rollups keep the long view.",
+	})
+	Register(Definition{
+		Key: KeyMetricsRetention1h, Category: CategoryObservability, Kind: KindDuration, Default: "8760h",
+		Env: "APP_METRICS_RETENTION_1H", Apply: ApplyLive, CheckValue: durationRangeCheck(minTelemetryRetention, maxTelemetryRetention),
+		Title:       "Metrics hourly rollup retention",
+		Description: "How long the hourly metric rollups are kept before the prune job deletes them, from 1h to 8760h; the next prune uses a changed value.",
 	})
 	Register(Definition{
 		Key: KeyLogsRetention, Category: CategoryObservability, Kind: KindDuration, Default: "360h",

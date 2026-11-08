@@ -73,3 +73,26 @@ func TestInstallServiceTemplate(t *testing.T) {
 		t.Errorf("detail manifest = %+v", detail.Manifest)
 	}
 }
+
+func TestInstallServiceTemplateDryRun(t *testing.T) {
+	rt, db := newTestRouterWithComposeSecrets(t)
+	cookie := loginTestSession(t, rt, db)
+
+	var plan templateInstallPlan
+	_ = json.Unmarshal(composeDo(t, rt, cookie, http.MethodPost, "/api/v1/service-templates/plunk/install",
+		`{"name":"mail","dry_run":true,"env":{"JWT_SECRET":"hunter2-secret"}}`, http.StatusOK), &plan)
+	if !plan.DryRun || len(plan.Missing) == 0 {
+		t.Fatalf("plan = %+v, want listed missing required values", plan)
+	}
+	if strings.Contains(plan.Compose, "hunter2-secret") {
+		t.Errorf("compose leaks a secret value")
+	}
+	for _, e := range plan.Env {
+		if e.Key == "JWT_SECRET" && e.Value != maskedValue {
+			t.Errorf("JWT_SECRET value = %q, want masked", e.Value)
+		}
+	}
+	if _, err := db.GetDesiredService(context.Background(), "mail-plunk"); err == nil {
+		t.Errorf("dry run stored a service")
+	}
+}

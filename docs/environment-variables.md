@@ -267,6 +267,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_LOG_BUDGET_MB` | [`telemetry.log_budget_mb`](/runtime-settings#observability) | `0` |
 | `APP_LOGS_RETENTION` | [`telemetry.logs_retention`](/runtime-settings#observability) | `360h` |
 | `APP_METRICS_RETENTION` | [`telemetry.metrics_retention`](/runtime-settings#observability) | `360h` |
+| `APP_METRICS_RETENTION_1H` | [`telemetry.metrics_retention_1h`](/runtime-settings#observability) | `8760h` |
+| `APP_METRICS_RETENTION_1M` | [`telemetry.metrics_retention_1m`](/runtime-settings#observability) | `720h` |
 | `APP_VISITOR_HISTORY_RETENTION` | [`telemetry.visitor_history_retention`](/runtime-settings#observability) | `168h0m0s` |
 | `APP_VISITOR_SALT_ROTATION` | [`telemetry.visitor_salt_rotation`](/runtime-settings#observability) | `24h0m0s` |
 | `APP_UI_OUTBOUND_UTM` | [`ui.outbound_utm`](/runtime-settings#observability) | `true` |

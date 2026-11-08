@@ -42,6 +42,10 @@ func retentionSetting(router *api.Router, key string, profileDefault time.Durati
 func (s *bootState) wireStorageSettings() {
 	rs := func() *runtimesettings.Service { return s.apiRouter.RuntimeSettings() }
 	s.telemetryDB.SetRawRetentionSource(retentionSetting(s.apiRouter, runtimesettings.KeyMetricsRetention, profileRetention))
+	s.telemetryDB.SetRollupRetentionSources(
+		retentionSetting(s.apiRouter, runtimesettings.KeyMetricsRetention1m, 0),
+		retentionSetting(s.apiRouter, runtimesettings.KeyMetricsRetention1h, 0),
+	)
 	ingressdriver.DefaultAccessLog().SetRetentionSource(func() time.Duration {
 		return rs().AccessLogRetention(context.Background())
 	})

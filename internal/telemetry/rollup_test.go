@@ -344,3 +344,27 @@ func TestTierConfigFromEnv(t *testing.T) {
 		t.Errorf("invalid values must fall back to defaults: %+v", cfg)
 	}
 }
+
+func TestPrune_RollupRetentionFollowsSources(t *testing.T) {
+	ctx := context.Background()
+	start := time.Unix(1_699_999_200, 0).UTC()
+	cfg := testTierConfig()
+	db, clk := newClockDB(t, cfg, start.Add(3*time.Hour))
+	seed(t, db, start, 3*time.Hour)
+	if _, err := db.Rollup(ctx, clk.now()); err != nil {
+		t.Fatal(err)
+	}
+	db.SetRollupRetentionSources(func() time.Duration { return time.Hour }, func() time.Duration { return 48 * time.Hour })
+	res, err := db.Prune(ctx, clk.now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Minute == 0 {
+		t.Error("minute rollups older than the source window were not pruned")
+	}
+	var oldest int64
+	_ = db.QueryRowContext(ctx, `SELECT MIN(ts) FROM metric_rollups WHERE tier = 60`).Scan(&oldest)
+	if oldest < clk.now().Add(-time.Hour).Unix() {
+		t.Errorf("oldest minute rollup %d is older than the window", oldest)
+	}
+}

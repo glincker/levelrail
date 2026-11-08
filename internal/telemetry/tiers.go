@@ -78,6 +78,11 @@ func (db *DB) SetClock(now func() time.Time) { db.clock = now }
 // SetRawRetentionSource makes the raw sample retention follow fn on every prune and query. Call before the DB is shared.
 func (db *DB) SetRawRetentionSource(fn func() time.Duration) { db.rawRetentionFn = fn }
 
+// SetRollupRetentionSources makes the 1 minute and hourly rollup retention follow the given functions on every prune and query.
+func (db *DB) SetRollupRetentionSources(minute, hour func() time.Duration) {
+	db.minuteRetentionFn, db.hourRetentionFn = minute, hour
+}
+
 func (db *DB) tierConfig() TierConfig {
 	cfg := DefaultTierConfig()
 	if db.tiers != nil {
@@ -86,6 +91,16 @@ func (db *DB) tierConfig() TierConfig {
 	if db.rawRetentionFn != nil {
 		if d := db.rawRetentionFn(); d > 0 {
 			cfg.RawRetention = d
+		}
+	}
+	if db.minuteRetentionFn != nil {
+		if d := db.minuteRetentionFn(); d > 0 {
+			cfg.MinuteRetention = d
+		}
+	}
+	if db.hourRetentionFn != nil {
+		if d := db.hourRetentionFn(); d > 0 {
+			cfg.HourRetention = d
 		}
 	}
 	return cfg

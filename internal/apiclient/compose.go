@@ -113,6 +113,23 @@ type TemplateInstallRequest struct {
 	Name    string            `json:"name,omitempty"`
 	Env     map[string]string `json:"env,omitempty"`
 	Domains map[string]string `json:"domains,omitempty"`
+	DryRun  bool              `json:"dry_run,omitempty"`
+}
+
+// TemplateInstallPlanEnv is one setting in a dry-run plan.
+type TemplateInstallPlanEnv struct {
+	Key    string `json:"key"`
+	Value  string `json:"value,omitempty"`
+	Source string `json:"source"`
+	Secret bool   `json:"secret,omitempty"`
+}
+
+// TemplateInstallPlan is the dry-run answer of the install endpoint.
+type TemplateInstallPlan struct {
+	Name    string                   `json:"name"`
+	Missing []string                 `json:"missing,omitempty"`
+	Env     []TemplateInstallPlanEnv `json:"env"`
+	Compose string                   `json:"compose"`
 }
 
 func profilesQuery(profiles []string) string {
@@ -208,6 +225,14 @@ func (c *Client) ComposeDown(ctx context.Context, name string, removeVolumes boo
 		path += "?volumes=true"
 	}
 	err := c.do(ctx, http.MethodDelete, path, nil, &out)
+	return out, err
+}
+
+// PlanTemplateInstall asks the install endpoint for a dry-run plan.
+func (c *Client) PlanTemplateInstall(ctx context.Context, id string, req TemplateInstallRequest) (TemplateInstallPlan, error) {
+	req.DryRun = true
+	var out TemplateInstallPlan
+	err := c.do(ctx, http.MethodPost, "/api/v1/service-templates/"+PathEscape(id)+"/install", req, &out)
 	return out, err
 }
 

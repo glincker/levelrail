@@ -2097,7 +2097,7 @@ levelrail-cli git-providers use-as-source --id ID --repo REPO --app-name NAME [f
 levelrail-cli templates list [--custom] [--verified] [--license-class CLASS] [--arch amd64|arm64] [--category NAME] [--hide-deprecated] [flags]
 levelrail-cli templates get <id> [flags]
 levelrail-cli templates deploy <id> [--name NAME] [flags]
-levelrail-cli templates install <id> [--name NAME] [--env KEY=VALUE]... [--domain SERVICE=HOST]... [flags]
+levelrail-cli templates install <id> [--name NAME] [--env KEY=VALUE]... [--domain SERVICE=HOST]... [--dry-run] [flags]
 levelrail-cli templates delete <id> [flags]
 levelrail-cli templates import <file | -> [--id ID] [--name NAME] [--description TEXT] [--var NAME]... [flags]
 ```
@@ -2108,6 +2108,8 @@ levelrail-cli templates import <file | -> [--id ID] [--name NAME] [--description
 `import` saves a local compose file (or `-` for stdin) as a custom template through `POST /api/v1/templates/custom`. The id defaults to the file name; an id used by a built-in or an existing custom template is refused. `--var` names a `${NAME}` placeholder the file must use.
 
 `install` is for manifest templates (the ones `get` shows with settings): it fills each `${KEY}` setting from `--env`, a generated secret or its default, puts the listed services behind `--domain` hosts, and deploys the result as a compose app that is not a trial. See [Compose apps](/compose-apps#templates).
+
+`install --dry-run` stores nothing: it prints each setting with where its value comes from, lists required settings that are still missing, and shows the rendered compose with secret values masked.
 
 ## Compose
 

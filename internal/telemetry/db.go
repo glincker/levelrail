@@ -23,9 +23,10 @@ import (
 // never contends with internal/store's own WAL.
 type DB struct {
 	*sql.DB
-	tiers          *TierConfig
-	rawRetentionFn func() time.Duration
-	clock          func() time.Time
+	tiers                              *TierConfig
+	rawRetentionFn                     func() time.Duration
+	minuteRetentionFn, hourRetentionFn func() time.Duration
+	clock                              func() time.Time
 }
 
 // Open opens (creating if needed) the SQLite database at path, applies

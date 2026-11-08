@@ -18,6 +18,7 @@ type templateInstallRequest struct {
 	Name    string            `json:"name,omitempty"`
 	Env     map[string]string `json:"env,omitempty"`
 	Domains map[string]string `json:"domains,omitempty"`
+	DryRun  bool              `json:"dry_run,omitempty"`
 }
 
 func manifestIcon(m *catalog.Manifest) string {
@@ -45,6 +46,10 @@ func (rt *Router) handleInstallServiceTemplate(w http.ResponseWriter, r *http.Re
 	var req templateInstallRequest
 	if err := decodeJSONBody(r, &req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid JSON body: "+err.Error())
+		return
+	}
+	if req.DryRun {
+		rt.writeTemplateInstallPlan(w, tpl, req)
 		return
 	}
 	name := req.Name
