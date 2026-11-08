@@ -1,6 +1,7 @@
+import { EmptyState } from '@/components/ui/empty-state'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ChartLineGlassIcon } from '@thesvg/ui-react'
+import { ChartLineGlassIcon, InboxGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -66,7 +67,11 @@ export function PipelineInsightsCard({
         ) : error ? (
           <p className="text-sm text-destructive">{t('insights.loadFailed')}</p>
         ) : !data || data.jobs.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t('insights.empty')}</p>
+          <EmptyState
+            compact
+            icon={<InboxGlassIcon className="size-5" />}
+            title={t('insights.empty')}
+          />
         ) : (
           <>
             <Table>

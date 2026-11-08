@@ -1,4 +1,4 @@
-import { ShieldCheckGlassIcon } from '@thesvg/ui-react'
+import { ShieldCheckGlassIcon, InboxGlassIcon } from '@thesvg/ui-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { CardSkeleton } from '@/components/ui/card-skeleton'
 import { useState, type ReactNode } from 'react'
@@ -155,7 +155,13 @@ export function SecretScanSection({
   if (scan.isPending) {
     body = <CardSkeleton titleWidth="w-40" rows={2} />
   } else if (scan.isError) {
-    body = <p className="text-sm text-muted-foreground">{t('section.empty')}</p>
+    body = (
+      <EmptyState
+        compact
+        icon={<InboxGlassIcon className="size-5" />}
+        title={t('section.empty')}
+      />
+    )
   } else {
     body = <RunBody appName={appName} run={scan.data} />
   }

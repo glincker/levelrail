@@ -175,7 +175,35 @@
       "cookieUse": "Las sesiones viven en la memoria de la réplica.",
       "cookieTradeoff": "Fija un navegador a una réplica, así que la carga puede quedar desigual.",
       "weightedUse": "Canarios o réplicas de distinto tamaño.",
-      "weightedTradeoff": "Mantienes los pesos a mano."
+      "weightedTradeoff": "Mantienes los pesos a mano.",
+      "round_robin": {
+        "label": "Round robin",
+        "description": "Cada solicitud va a la siguiente réplica por turno."
+      },
+      "least_conn": {
+        "label": "Menos conexiones",
+        "description": "Envía a la réplica con menos solicitudes activas."
+      },
+      "ip_hash": {
+        "label": "Hash de IP",
+        "description": "La misma dirección de cliente siempre llega a la misma réplica."
+      },
+      "client_ip_hash": {
+        "label": "Hash de IP de cliente",
+        "description": "Calcula el hash de la IP del cliente tras los proxies de confianza, así los clientes detrás de una CDN se reparten entre réplicas."
+      },
+      "uri_hash": {
+        "label": "Hash de URI",
+        "description": "La misma ruta siempre llega a la misma réplica (bueno para caché)."
+      },
+      "cookie": {
+        "label": "Cookie persistente",
+        "description": "Una cookie fija la sesión del navegador a una réplica."
+      },
+      "weighted": {
+        "label": "Ponderado",
+        "description": "Da a cada réplica una parte del tráfico, útil para canarios."
+      }
     },
     "bar": {
       "region": "Cambios sin guardar",
@@ -318,6 +346,143 @@
       "noMatch": "Ninguna app coincide con esa búsqueda",
       "noMatchHint": "Prueba un nombre más corto o distinto.",
       "truncated": "Mostrando las primeras {{count}} coincidencias. Afina la búsqueda para reducirlas."
+    },
+    "preset": {
+      "balanced": {
+        "name": "App web equilibrada",
+        "useWhen": "Una app web o API típica sin estado."
+      },
+      "sticky": {
+        "name": "Sesiones persistentes",
+        "useWhen": "Las sesiones viven en memoria en cada réplica."
+      },
+      "websockets": {
+        "name": "WebSockets y conexiones largas",
+        "useWhen": "Streams, sockets o long polling.",
+        "note": "Los reintentos están desactivados porque las conexiones actualizadas no se pueden repetir."
+      },
+      "cache": {
+        "name": "Bueno para caché",
+        "useWhen": "Cada réplica mantiene una caché caliente por ruta."
+      },
+      "canary": {
+        "name": "Canario 90/10",
+        "useWhen": "Prueba una versión nueva con una parte del tráfico.",
+        "note": "Los pesos siguen el índice de réplica: con 2 réplicas el reparto es 90/10."
+      },
+      "bluegreen": {
+        "name": "Cambio blue-green",
+        "useWhen": "Cambia de versión con un traspaso rápido y limpio."
+      },
+      "apiguard": {
+        "name": "Protección de API pública",
+        "useWhen": "Una API expuesta a internet."
+      }
+    },
+    "admin": {
+      "unsupported": "Requiere un plano de control más reciente",
+      "active": {
+        "label": "Activar",
+        "meaning": "De vuelta en rotación y recibiendo solicitudes nuevas."
+      },
+      "draining": {
+        "label": "Drenar",
+        "meaning": "Termina las solicitudes abiertas, no envía nuevas."
+      },
+      "disabled": {
+        "label": "Desactivar",
+        "meaning": "Fuera de rotación hasta que la actives de nuevo."
+      }
+    },
+    "change": {
+      "value": {
+        "off": "desactivado",
+        "unset": "sin definir",
+        "na": "n/d",
+        "even": "uniforme",
+        "noVerify": "sin verificación",
+        "passive": "{{fails}} fallos, omitir {{skip}}",
+        "retries": "{{count}} en {{within}}",
+        "rate": "{{rps}}/s, ráfaga {{burst}}"
+      },
+      "risk": {
+        "algorithm": "Los clientes pueden pasar a otra réplica y perder sesiones en memoria.",
+        "active": "Las réplicas caídas seguirán recibiendo tráfico.",
+        "rate": "Los clientes por encima del límite reciben respuestas 429.",
+        "tls": "No se verificarán los certificados de las réplicas."
+      },
+      "label": {
+        "algorithm": "Algoritmo",
+        "cookie": "Cookie",
+        "weights": "Reparto de tráfico",
+        "active": "Chequeo de salud",
+        "interval": "Intervalo de chequeo",
+        "timeout": "Timeout de chequeo",
+        "passes": "Éxitos para recuperar",
+        "fails": "Fallos para marcar caída",
+        "status": "Estado esperado",
+        "passive": "Chequeos pasivos",
+        "retries": "Reintentos",
+        "slow": "Arranque lento",
+        "drain": "Drenaje",
+        "reqTimeout": "Timeout de solicitud",
+        "rate": "Límite de tasa",
+        "tls": "TLS upstream"
+      }
+    },
+    "effect": {
+      "none": "Sin cambios.",
+      "split": "Las solicitudes nuevas se reparten {{split}}.",
+      "follow": "Las solicitudes nuevas siguen {{algo}}.",
+      "drain": "Los deploys mantienen streams abiertos durante {{drain}}.",
+      "default": "Se aplica a solicitudes nuevas; las conexiones abiertas no se cortan."
+    },
+    "suggest": {
+      "noHealth": {
+        "title": "Sin chequeo de salud",
+        "detail": "Una réplica caída sigue recibiendo tráfico.",
+        "action": "Añadir chequeo /healthz"
+      },
+      "single": {
+        "title": "Una réplica, nada que balancear",
+        "detail": "Ejecuta dos réplicas para conmutación por error.",
+        "action": "Definir réplicas"
+      },
+      "flapping": {
+        "title": "Un upstream está oscilando",
+        "detail": "3 o más cambios de estado en 10 minutos.",
+        "action": "Exigir 3 fallos"
+      },
+      "ipHash": {
+        "title": "Hash de IP detrás de un proxy",
+        "detail": "Los clientes detrás de una CDN o proxy compartido caen en una réplica.",
+        "action": "Usar cookie persistente"
+      },
+      "weights": {
+        "title": "Los pesos se ignoran",
+        "detail": "Solo el algoritmo ponderado los usa.",
+        "action": "Usar ponderado"
+      },
+      "passive": {
+        "title": "Los chequeos pasivos están desactivados",
+        "detail": "Los fallos de solicitudes reales podrían expulsar antes una réplica.",
+        "action": "Activar"
+      },
+      "slowStart": {
+        "title": "Sin arranque lento",
+        "detail": "Una réplica nueva recibe toda su parte de golpe.",
+        "action": "Rampa de 30s"
+      },
+      "drain": {
+        "title": "Los deploys cortan streams abiertos",
+        "detail": "No hay tiempo de drenaje definido.",
+        "action": "Drenar 15s"
+      },
+      "timeout": {
+        "title": "El timeout de salud es ajustado",
+        "detail": "Los chequeos tardan {{ms}}ms en p95, el timeout es {{timeout}}.",
+        "action": "Subir a {{next}}s"
+      }
     }
   }
 }

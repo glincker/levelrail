@@ -14,7 +14,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { ALGORITHM_OPTIONS } from '../../lib/loadBalancer'
 import type { LoadBalancerAlgorithm } from '../../queries/appLoadBalancer'
-import { UNSUPPORTED_HINT } from './adminActions'
+import { unsupportedHint } from './adminActions'
 import { StateGlyphIcon } from './StateGlyphIcon'
 import type { PoolRollup } from './rollup'
 
@@ -74,7 +74,7 @@ export function LbHeader({
           size="sm"
           variant="outline"
           disabled={!checkSupported || checking || cooldown > 0}
-          title={checkSupported ? undefined : UNSUPPORTED_HINT}
+          title={checkSupported ? undefined : unsupportedHint()}
           onClick={onCheck}
         >
           <RefreshCwGlassIcon

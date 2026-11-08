@@ -23,5 +23,23 @@
   "timeRangeControls": {
     "label": "Time range",
     "refresh": "Refresh"
+  },
+  "logToolbar": {
+    "level": "Log level",
+    "levels": {
+      "all": "All",
+      "errors": "Errors",
+      "warnings": "Warnings",
+      "info": "Info",
+      "debug": "Debug"
+    },
+    "filterPlaceholder": "Filter lines",
+    "filterLabel": "Filter log lines",
+    "jumpToError": "Jump to first error",
+    "copy": "Copy",
+    "copied": "Copied",
+    "copiedAnnounce": "Copied to clipboard",
+    "download": "Download",
+    "shownOf": "{{shown}} of {{total}} lines"
   }
 }

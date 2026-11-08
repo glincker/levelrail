@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { PlusGlassIcon, XGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 import { Switch } from '@/components/ui/switch'
 import { IDLE_PRESETS, isValidIdleMinutes } from '../../lib/sleepState'
 import type { AppSleep, SleepUpdate } from '../../queries/appSleep'
@@ -128,33 +129,24 @@ export function SleepSettingsForm({
   return (
     <div className="space-y-3">
       <div className="space-y-2">
-        <p
-          className="text-sm font-medium text-foreground"
-          id="sleep-idle-label"
-        >
+        <p className="text-sm font-medium text-foreground">
           {t('appSleep.idleTitle')}
         </p>
-        <div
-          className="flex flex-wrap items-end gap-2"
-          role="group"
-          aria-labelledby="sleep-idle-label"
-        >
-          {IDLE_PRESETS.map((m) => (
-            <Button
-              key={m}
-              type="button"
-              size="sm"
-              variant={idle === m ? 'default' : 'outline'}
-              aria-pressed={idle === m}
-              disabled={pending}
-              onClick={() => {
-                setCustom(String(m))
-                onSave({ idle_minutes: m }, t('appSleep.toast.updated'))
-              }}
-            >
-              {t('appSleep.presetMinutes', { count: m })}
-            </Button>
-          ))}
+        <div className="flex flex-wrap items-end gap-2">
+          <SegmentedControl
+            aria-label={t('appSleep.idleTitle')}
+            value={String(idle)}
+            disabled={pending}
+            options={IDLE_PRESETS.map((m) => ({
+              value: String(m),
+              label: t('appSleep.presetMinutes', { count: m }),
+            }))}
+            onValueChange={(v) => {
+              const m = Number(v)
+              setCustom(v)
+              onSave({ idle_minutes: m }, t('appSleep.toast.updated'))
+            }}
+          />
           <label className="space-y-1 text-xs text-muted-foreground">
             {t('appSleep.minutesLabel', {
               min: sleep.idle_limits.min_minutes,

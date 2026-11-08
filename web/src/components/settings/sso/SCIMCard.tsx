@@ -1,9 +1,11 @@
+import { EmptyState } from '@/components/ui/empty-state'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   BanGlassIcon,
   KeyGlassIcon,
   RefreshCwGlassIcon,
+  InboxGlassIcon,
 } from '@thesvg/ui-react'
 import type { SCIMToken, SCIMTokenCreated, SSOSettings } from '@/queries/sso'
 import {
@@ -137,7 +139,11 @@ export function SCIMCard({
         </Field>
       </FieldGroup>
       {tokens.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t('scim.empty')}</p>
+        <EmptyState
+          compact
+          icon={<InboxGlassIcon className="size-5" />}
+          title={t('scim.empty')}
+        />
       ) : (
         <ul
           data-slot="grouped-list"

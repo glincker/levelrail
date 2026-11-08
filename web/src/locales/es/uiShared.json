@@ -23,5 +23,23 @@
   "timeRangeControls": {
     "label": "Rango de tiempo",
     "refresh": "Actualizar"
+  },
+  "logToolbar": {
+    "level": "Nivel de log",
+    "levels": {
+      "all": "Todos",
+      "errors": "Errores",
+      "warnings": "Avisos",
+      "info": "Info",
+      "debug": "Depuración"
+    },
+    "filterPlaceholder": "Filtrar líneas",
+    "filterLabel": "Filtrar líneas de log",
+    "jumpToError": "Ir al primer error",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "copiedAnnounce": "Copiado al portapapeles",
+    "download": "Descargar",
+    "shownOf": "{{shown}} de {{total}} líneas"
   }
 }

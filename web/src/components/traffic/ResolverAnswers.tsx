@@ -1,3 +1,4 @@
+import { EmptyState } from '@/components/ui/empty-state'
 import { useTranslation } from 'react-i18next'
 import {
   CircleAlertGlassIcon,
@@ -5,6 +6,7 @@ import {
   CircleMinusGlassIcon,
   RotateCwGlassIcon,
   type UiIcon,
+  InboxGlassIcon,
 } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -78,7 +80,11 @@ export function ResolverAnswers({
         </Button>
       </div>
       {resolvers.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t('resolvers.empty')}</p>
+        <EmptyState
+          compact
+          icon={<InboxGlassIcon className="size-5" />}
+          title={t('resolvers.empty')}
+        />
       ) : (
         <table className="w-full text-left text-sm">
           <caption className="sr-only">{t('resolvers.caption')}</caption>

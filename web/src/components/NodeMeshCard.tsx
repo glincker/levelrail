@@ -2,6 +2,7 @@ import {
   RestoreGlassIcon,
   WifiHighGlassIcon,
   WifiOffGlassIcon,
+  InboxGlassIcon,
 } from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
@@ -243,7 +244,11 @@ export function NodeMeshCard({
         ) : null}
 
         {peers.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t('mesh.noPeers')}</p>
+          <EmptyState
+            compact
+            icon={<InboxGlassIcon className="size-5" />}
+            title={t('mesh.noPeers')}
+          />
         ) : (
           <div className="overflow-hidden rounded-lg border border-border">
             <Table aria-label={t('mesh.peersLabel')}>

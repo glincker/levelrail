@@ -1,6 +1,7 @@
+import { EmptyState } from '@/components/ui/empty-state'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CirclePlusGlassIcon } from '@thesvg/ui-react'
+import { CirclePlusGlassIcon, InboxGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -333,7 +334,11 @@ export function StatusIncidentsPanel() {
       ) : error ? (
         <p className="text-sm text-destructive">{error.message}</p>
       ) : (data ?? []).length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t('incidents.empty')}</p>
+        <EmptyState
+          compact
+          icon={<InboxGlassIcon className="size-5" />}
+          title={t('incidents.empty')}
+        />
       ) : (
         (data ?? []).map((i) => <IncidentCard key={i.id} incident={i} />)
       )}

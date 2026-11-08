@@ -28,6 +28,10 @@ import type { GitSourceResource } from '../types/gitSource'
 import { GitSourceConnectedView } from './GitSourceConnectedView'
 import { GitSourceEditForm } from './GitSourceEditForm'
 import { GitSourceJustConnected } from './GitSourceJustConnected'
+import { GitSourceSwitchPlan } from './GitSourceSwitchPlan'
+import { GitSourceDeployNow } from './GitSourceDeployNow'
+import { setGitBuild } from '../queries/gitBuildSettings'
+import type { GitSourcePlanSuggestion } from '../queries/gitSourceConnect'
 
 // Git source connect/manage card, PUT/GET/DELETE
 // /api/v1/apps/{name}/git-source (internal/api/git_sources.go): the
@@ -52,9 +56,30 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
   const { t } = useTranslation('gitSource')
   const query = useGitSource(app.name)
   const queryClient = useQueryClient()
+  // Static build command and publish dir from the plan; the connect body has no
+  // field for them, so they are saved right after the link.
+  const [staticBuild, setStaticBuild] =
+    useState<GitSourcePlanSuggestion | null>(null)
   const connectMutation = useMutation({
-    mutationFn: ({ appName, form }: { appName: string; form: FormState }) =>
-      connectGitSource(appName, form),
+    mutationFn: async ({
+      appName,
+      form,
+    }: {
+      appName: string
+      form: FormState
+    }) => {
+      const result = await connectGitSource(appName, form)
+      if (staticBuild && form.buildType === 'static') {
+        await setGitBuild(appName, {
+          build_type: 'static',
+          build_path: form.buildPath,
+          base_directory: form.baseDirectory,
+          build_command: staticBuild.build_command,
+          publish_dir: staticBuild.publish_dir,
+        })
+      }
+      return result
+    },
     onSuccess: (result) => {
       queryClient.setQueryData(gitSourceKeys.detail(app.name), result.resource)
     },
@@ -169,8 +194,11 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <GitBranchGlassIcon className="size-5 text-muted-foreground" />
-          {t('card.title')}
+          {notConnected ? t('connect.title') : t('card.title')}
         </CardTitle>
+        {notConnected ? (
+          <p className="text-sm text-muted-foreground">{t('connect.intro')}</p>
+        ) : null}
       </CardHeader>
       <CardContent className="space-y-4">
         {query.isLoading ? (
@@ -197,26 +225,53 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
             }}
           />
         ) : editing || notConnected ? (
-          <GitSourceEditForm
-            appName={app.name}
-            form={form}
-            setForm={setForm}
-            error={rowsError}
-            setError={setRowsError}
-            pending={connectMutation.isPending}
-            notConnected={notConnected}
-            onSubmit={submit}
-            onCancel={cancelEdit}
-          />
+          <>
+            {notConnected ? (
+              <GitSourceSwitchPlan
+                appName={app.name}
+                repoUrl={form.repoUrl}
+                branch={form.branch}
+                onApply={(s) => {
+                  setForm({
+                    ...form,
+                    buildType: s.build_type,
+                    buildPath: s.build_path ?? '',
+                    baseDirectory: s.base_directory ?? '',
+                  })
+                  setStaticBuild(s.build_type === 'static' ? s : null)
+                }}
+              />
+            ) : null}
+            <GitSourceEditForm
+              appName={app.name}
+              form={form}
+              setForm={setForm}
+              error={rowsError}
+              setError={setRowsError}
+              pending={connectMutation.isPending}
+              notConnected={notConnected}
+              onSubmit={submit}
+              onCancel={cancelEdit}
+            />
+          </>
         ) : query.data ? (
-          <GitSourceConnectedView
-            app={app}
-            source={query.data}
-            disconnecting={deleteGitSource.isPending}
-            onEdit={() => {
-              if (query.data) startEdit(formFromResource(query.data))
-            }}
-            onDisconnect={disconnect}
+          <>
+            <GitSourceConnectedView
+              app={app}
+              source={query.data}
+              disconnecting={deleteGitSource.isPending}
+              onEdit={() => {
+                if (query.data) startEdit(formFromResource(query.data))
+              }}
+              onDisconnect={disconnect}
+            />
+            <GitSourceDeployNow appName={app.name} branch={query.data.branch} />
+          </>
+        ) : null}
+        {justConnected ? (
+          <GitSourceDeployNow
+            appName={app.name}
+            branch={justConnected.branch}
           />
         ) : null}
       </CardContent>

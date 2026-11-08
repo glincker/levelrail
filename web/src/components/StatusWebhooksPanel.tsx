@@ -1,6 +1,11 @@
+import { EmptyState } from '@/components/ui/empty-state'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CirclePlusGlassIcon, TrashGlassIcon } from '@thesvg/ui-react'
+import {
+  CirclePlusGlassIcon,
+  TrashGlassIcon,
+  InboxGlassIcon,
+} from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -289,7 +294,11 @@ export function StatusWebhooksPanel() {
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-muted-foreground">{t('webhooks.empty')}</p>
+        <EmptyState
+          compact
+          icon={<InboxGlassIcon className="size-5" />}
+          title={t('webhooks.empty')}
+        />
       )}
     </div>
   )

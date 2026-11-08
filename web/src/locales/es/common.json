@@ -836,7 +836,10 @@
     "envValue": "Valor de variable, fila {{row}}"
   },
   "projectsPage": {
-    "list": { "name": "Nombre", "created": "Creado" },
+    "list": {
+      "name": "Nombre",
+      "created": "Creado"
+    },
     "empty": {
       "title": "Aún no hay proyectos",
       "description": "Los proyectos agrupan una app con su base de datos y caché. Crea uno para empezar a organizar."
@@ -1439,5 +1442,8 @@
   "roleGate": {
     "needsAdmin": "Requiere administrador",
     "needsOperator": "Requiere operador"
+  },
+  "overview": {
+    "connectGitSource": "Conectar origen Git"
   }
 }

@@ -15,7 +15,7 @@ import type {
   LiveUpstream,
   UpstreamHistory,
 } from '../../queries/loadBalancerLive'
-import { adminActions, UNSUPPORTED_HINT } from './adminActions'
+import { adminActions, unsupportedHint } from './adminActions'
 import { summarizeChecks } from './checkSummary'
 import { HealthHistoryStrip } from './HealthHistoryStrip'
 import { StateGlyphIcon } from './StateGlyphIcon'
@@ -118,7 +118,7 @@ export function LbNodeDrawer({
                     className="flex items-center justify-between gap-3"
                   >
                     <span className="min-w-0 text-xs text-muted-foreground">
-                      {historySupported ? a.meaning : UNSUPPORTED_HINT}
+                      {historySupported ? a.meaning : unsupportedHint()}
                     </span>
                     <Button
                       type="button"

@@ -1,3 +1,4 @@
+import { EmptyState } from '@/components/ui/empty-state'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
@@ -8,6 +9,7 @@ import {
   ClockGlassIcon,
   RestoreGlassIcon,
   TrashGlassIcon,
+  InboxGlassIcon,
 } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -75,7 +77,11 @@ function RunsList({ app, service }: { app: string; service: string }) {
   const rows: ComposeDbBackupRun[] = runs.data ?? []
   if (rows.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">{t('composeDb.noRuns')}</p>
+      <EmptyState
+        compact
+        icon={<InboxGlassIcon className="size-5" />}
+        title={t('composeDb.noRuns')}
+      />
     )
   }
   const restorable = rows.some((r) => r.status === 'succeeded' && r.object_key)

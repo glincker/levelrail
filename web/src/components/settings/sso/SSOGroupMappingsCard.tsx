@@ -1,6 +1,7 @@
+import { EmptyState } from '@/components/ui/empty-state'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PlusGlassIcon, TrashGlassIcon } from '@thesvg/ui-react'
+import { PlusGlassIcon, TrashGlassIcon, InboxGlassIcon } from '@thesvg/ui-react'
 import type { SSOGroupMapping } from '@/queries/sso'
 import { useSaveSSOMappings } from '@/queries/sso'
 import type { RoleResource } from '@/queries/roles'
@@ -67,7 +68,11 @@ export function SSOGroupMappingsCard({
       error={save.isError ? save.error.message : undefined}
     >
       {rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t('mappings.empty')}</p>
+        <EmptyState
+          compact
+          icon={<InboxGlassIcon className="size-5" />}
+          title={t('mappings.empty')}
+        />
       ) : (
         <div className="space-y-2">
           <div className="hidden grid-cols-[minmax(0,2fr)_minmax(0,2fr)_6rem_2rem] gap-2 text-xs font-medium text-muted-foreground sm:grid">

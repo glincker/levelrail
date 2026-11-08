@@ -2,18 +2,13 @@ import type { ReactNode } from 'react'
 import { RefreshCwGlassIcon } from '@thesvg/ui-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from './ui/button'
+import { SegmentedControl } from './ui/segmented-control'
 import { TIME_RANGE_PRESETS, type TimeRangeKey } from '../lib/timeRange'
 
-// The preset-button group plus Refresh button shared by
-// MetricsDashboard.tsx (per-app) and NodeMetricsDashboard.tsx
-// (per-node): both dashboards let the viewer pick a `TimeRangeKey`
-// preset and force a "now" recompute without touching that key, and
-// until this extraction the two files carried character-for-character
-// identical JSX for it. State (rangeKey, refreshNonce, the memoized
-// resolveTimeRange call) stays in each dashboard, not here: this
-// component is presentational only, driven entirely by props, the same
-// split MetricChartCard.tsx draws between itself (presentational) and
-// its two callers (data-fetching).
+// Presentational only: each dashboard owns rangeKey and the refresh nonce.
+
+// Short keys keep six segments compact; 'custom' leaves every segment unselected.
+const OPTIONS = TIME_RANGE_PRESETS.map((p) => ({ value: p.key, label: p.key }))
 
 export function TimeRangeControls({
   rangeKey,
@@ -29,30 +24,15 @@ export function TimeRangeControls({
 }) {
   const { t } = useTranslation('uiShared')
   return (
-    <div className="flex items-center gap-2">
-      <div
-        role="group"
+    <div className="flex flex-wrap items-center gap-2">
+      <SegmentedControl<TimeRangeKey | 'custom'>
         aria-label={t('timeRangeControls.label')}
-        className="inline-flex rounded-md border border-border"
-      >
-        {TIME_RANGE_PRESETS.map((preset) => (
-          <button
-            key={preset.key}
-            type="button"
-            onClick={() => {
-              onRangeChange(preset.key)
-            }}
-            aria-pressed={rangeKey === preset.key}
-            className={`px-2.5 py-1 text-xs font-medium first:rounded-l-md last:rounded-r-md ${
-              rangeKey === preset.key
-                ? 'bg-foreground text-background'
-                : 'bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground'
-            }`}
-          >
-            {preset.label}
-          </button>
-        ))}
-      </div>
+        value={rangeKey}
+        options={OPTIONS}
+        onValueChange={(key) => {
+          if (key !== 'custom') onRangeChange(key)
+        }}
+      />
       <Button type="button" variant="outline" size="sm" onClick={onRefresh}>
         <RefreshCwGlassIcon className="size-5" aria-hidden="true" />
         {t('timeRangeControls.refresh')}

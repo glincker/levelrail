@@ -3,6 +3,7 @@ import type {
   LoadBalancerConfig,
   UpstreamState,
 } from '../queries/appLoadBalancer'
+import { lbT } from './lbText'
 
 export const ALGORITHM_OPTIONS: {
   value: LoadBalancerAlgorithm
@@ -11,40 +12,87 @@ export const ALGORITHM_OPTIONS: {
 }[] = [
   {
     value: 'round_robin',
-    label: 'Round robin',
-    description: 'Each request goes to the next replica in turn.',
+    get label() {
+      return lbT('algo.round_robin.label', 'Round robin')
+    },
+    get description() {
+      return lbT(
+        'algo.round_robin.description',
+        'Each request goes to the next replica in turn.',
+      )
+    },
   },
   {
     value: 'least_conn',
-    label: 'Least connections',
-    description: 'Send to the replica with the fewest active requests.',
+    get label() {
+      return lbT('algo.least_conn.label', 'Least connections')
+    },
+    get description() {
+      return lbT(
+        'algo.least_conn.description',
+        'Send to the replica with the fewest active requests.',
+      )
+    },
   },
   {
     value: 'ip_hash',
-    label: 'IP hash',
-    description: 'The same client address always reaches the same replica.',
+    get label() {
+      return lbT('algo.ip_hash.label', 'IP hash')
+    },
+    get description() {
+      return lbT(
+        'algo.ip_hash.description',
+        'The same client address always reaches the same replica.',
+      )
+    },
   },
   {
     value: 'client_ip_hash',
-    label: 'Client IP hash',
-    description:
-      'Hashes the client IP after trusted-proxy handling, so clients behind a CDN spread across replicas.',
+    get label() {
+      return lbT('algo.client_ip_hash.label', 'Client IP hash')
+    },
+    get description() {
+      return lbT(
+        'algo.client_ip_hash.description',
+        'Hashes the client IP after trusted-proxy handling, so clients behind a CDN spread across replicas.',
+      )
+    },
   },
   {
     value: 'uri_hash',
-    label: 'URI hash',
-    description:
-      'The same path always reaches the same replica (cache friendly).',
+    get label() {
+      return lbT('algo.uri_hash.label', 'URI hash')
+    },
+    get description() {
+      return lbT(
+        'algo.uri_hash.description',
+        'The same path always reaches the same replica (cache friendly).',
+      )
+    },
   },
   {
     value: 'cookie',
-    label: 'Sticky cookie',
-    description: 'A cookie pins a browser session to one replica.',
+    get label() {
+      return lbT('algo.cookie.label', 'Sticky cookie')
+    },
+    get description() {
+      return lbT(
+        'algo.cookie.description',
+        'A cookie pins a browser session to one replica.',
+      )
+    },
   },
   {
     value: 'weighted',
-    label: 'Weighted',
-    description: 'Give each replica a share of traffic, useful for canaries.',
+    get label() {
+      return lbT('algo.weighted.label', 'Weighted')
+    },
+    get description() {
+      return lbT(
+        'algo.weighted.description',
+        'Give each replica a share of traffic, useful for canaries.',
+      )
+    },
   },
 ]
 

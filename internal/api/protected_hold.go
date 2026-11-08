@@ -27,7 +27,13 @@ func (rt *Router) protectedEnvironmentOf(ctx context.Context, name string) (env 
 		return store.Environment{}, false, nil
 	}
 	svc, err := rt.apps.GetDesiredService(ctx, name)
-	if err != nil || svc == nil || svc.EnvironmentID == "" {
+	if errors.Is(err, store.ErrServiceNotFound) {
+		return store.Environment{}, false, nil
+	}
+	if err != nil {
+		return store.Environment{}, false, fmt.Errorf("load service: %w", err)
+	}
+	if svc == nil || svc.EnvironmentID == "" {
 		return store.Environment{}, false, nil
 	}
 	e, err := rt.environments.GetEnvironment(ctx, svc.EnvironmentID)

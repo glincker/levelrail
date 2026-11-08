@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2027 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2029 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1846,8 +1846,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/git-source/affected", Ability: "AbilityRead", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleGitSourceAffected", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/git-source/build", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleSetGitSourceBuild", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/git-source/commits", Ability: "AbilityDeploy", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleListGitSourceCommits", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/git-source/deploy", Ability: "AbilityDeploy", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleGitSourceDeploy", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/git-source/deploy-settings", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleSetGitDeploySettings", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/git-source/detect", Ability: "AbilityDeploy", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleDetectGitSourceBuild", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/git-source/plan", Ability: "AbilityDeploy", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleGitSourcePlan", Description: "Plan is a dry run for attaching a repo to an existing app; deploy builds the connected branch now."},
 	{Method: "POST", Path: "/api/v1/apps/{name}/git-source/rotate-webhook-secret", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleRotateGitSourceWebhookSecret", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/git-source/ssh-key", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleDeleteGitSSHKey", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/git-source/ssh-key", Ability: "AbilityRead", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleGetGitSSHKey", Description: "SSH deploy key (git_ssh_key.go): the private half is write-only."},

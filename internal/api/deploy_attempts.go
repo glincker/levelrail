@@ -104,6 +104,11 @@ func (rt *Router) beginBuildDeployAttempt(ctx context.Context, req deploy.Reques
 			return "", fallback, noop, noopCommit
 		}
 	}
+	if note := freezeOverrideNoteFrom(ctx); note != "" && rt.deploySafety != nil {
+		if err := rt.deploySafety.SetDeployAttemptReason(ctx, id, note); err != nil {
+			rt.logger.Error("api: trigger build: record freeze override failed", slog.String("attempt_id", id), slog.String("error", err.Error()))
+		}
+	}
 
 	setCommit = func(setCtx context.Context, commit string) {
 		if commit == "" || commit == req.CommitSHA {

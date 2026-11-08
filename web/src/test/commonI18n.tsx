@@ -2,14 +2,15 @@ import type { ReactNode } from 'react'
 import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import commonEn from '../locales/en/common.json'
+import uiSharedEn from '../locales/en/uiShared.json'
 
 const testI18n = i18next.createInstance()
 void testI18n.use(initReactI18next).init({
   lng: 'en',
   fallbackLng: 'en',
-  ns: ['common'],
+  ns: ['common', 'uiShared'],
   defaultNS: 'common',
-  resources: { en: { common: commonEn } },
+  resources: { en: { common: commonEn, uiShared: uiSharedEn } },
   interpolation: { escapeValue: false },
 })
 

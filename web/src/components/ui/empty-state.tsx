@@ -40,7 +40,8 @@ export function EmptyState({
   /** Decorative SVG shown in place of the icon on higher-emphasis, top-of-funnel zero states (e.g. the first-ever app). */
   illustration?: IllustrationName
   title: string
-  description: string
+  /** Omit for a one-line state; the title then stands alone. */
+  description?: string
   /** Extra content between the description and the action row, e.g. a short code sample. */
   children?: ReactNode
   /** Primary action, typically a Button or a dialog/wizard trigger rendering one. Omit for a purely informational state. */
@@ -78,7 +79,9 @@ export function EmptyState({
         </span>
         <div className="min-w-0 flex-1 space-y-0.5">
           <p className="text-sm font-medium text-foreground">{title}</p>
-          <p className="text-sm text-muted-foreground">{description}</p>
+          {description ? (
+            <p className="text-sm text-muted-foreground">{description}</p>
+          ) : null}
           {hint ? (
             <p className="text-xs text-muted-foreground">{hint}</p>
           ) : null}
@@ -108,7 +111,9 @@ export function EmptyState({
         </span>
         <div className="min-w-0 space-y-0.5">
           <p className="text-sm font-medium text-foreground">{title}</p>
-          <p className="text-xs text-muted-foreground">{description}</p>
+          {description ? (
+            <p className="text-xs text-muted-foreground">{description}</p>
+          ) : null}
         </div>
         {action ? <div className="ml-auto shrink-0">{action}</div> : null}
       </div>
@@ -138,9 +143,11 @@ export function EmptyState({
       )}
       <div className="space-y-1">
         <p className="text-sm font-medium text-foreground">{title}</p>
-        <p className="mx-auto max-w-sm text-sm text-muted-foreground">
-          {description}
-        </p>
+        {description ? (
+          <p className="mx-auto max-w-sm text-sm text-muted-foreground">
+            {description}
+          </p>
+        ) : null}
       </div>
       {hint ? (
         <p className="mx-auto max-w-sm text-xs text-muted-foreground">{hint}</p>

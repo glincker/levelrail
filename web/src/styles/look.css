@@ -2,7 +2,7 @@
 
 /* Field focus, both looks: accent border plus a soft halo, instant, never a thick ring. */
 :is(
-    input:not([type='checkbox'], [type='radio'], [type='range'], [type='button'], [type='submit'], [type='file']),
+    input:not([type='checkbox'], [type='radio'], [type='range'], [type='button'], [type='submit'], [type='file'], [data-bare]),
     textarea,
     select,
     [data-slot='select-trigger']
@@ -14,7 +14,7 @@
   transition: none;
 }
 :is(
-    input:not([type='checkbox'], [type='radio'], [type='range'], [type='button'], [type='submit'], [type='file']),
+    input:not([type='checkbox'], [type='radio'], [type='range'], [type='button'], [type='submit'], [type='file'], [data-bare]),
     textarea,
     select,
     [data-slot='select-trigger']

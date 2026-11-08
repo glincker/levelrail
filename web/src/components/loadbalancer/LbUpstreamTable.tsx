@@ -14,7 +14,7 @@ import type {
   LiveUpstream,
   UpstreamHistory,
 } from '../../queries/loadBalancerLive'
-import { adminActions, UNSUPPORTED_HINT } from './adminActions'
+import { adminActions, unsupportedHint } from './adminActions'
 import { HealthHistoryStrip } from './HealthHistoryStrip'
 import { LbTrafficCell } from './LbTrafficCell'
 import { StateGlyphIcon } from './StateGlyphIcon'
@@ -111,7 +111,7 @@ export function LbUpstreamTable({
           const menu = adminActions(u, historySupported).map((a) => ({
             id: a.state,
             label: a.label,
-            description: historySupported ? a.meaning : UNSUPPORTED_HINT,
+            description: historySupported ? a.meaning : unsupportedHint(),
             disabled: a.disabled,
             onSelect: () => onAdmin(u.id, a.state),
           }))
