@@ -106,8 +106,12 @@ func runMail(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 	if len(args) >= 1 && (args[0] == "domains" || args[0] == "mailboxes" || args[0] == "aliases" || args[0] == "queue") {
 		return runMailMailboxes(prog, args[0], args[1:], stdout, stderr, lookupEnv)
 	}
-	if len(args) >= 1 && (args[0] == "broadcasts" || args[0] == "audiences" || args[0] == "suppressions") {
-		return runMailBroadcasts(prog, args[0], args[1:], stdout, stderr, lookupEnv)
+	if len(args) >= 1 {
+		// A switch on args[0] keeps these verbs visible to the command tree drift test.
+		switch args[0] {
+		case "broadcasts", "audiences", "suppressions":
+			return runMailBroadcasts(prog, args[0], args[1:], stdout, stderr, lookupEnv)
+		}
 	}
 	if len(args) >= 1 && args[0] == "status" {
 		var app string

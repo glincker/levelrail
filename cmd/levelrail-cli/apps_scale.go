@@ -238,7 +238,7 @@ func parseOptionalMemory(s string) (int64, error) {
 
 func appsScaleUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s apps scale <name> [--replicas N] [--strategy rolling|recreate|blue-green] [--memory 512Mi] [--cpu 0.5] [--swap-memory 1Gi] [--cpuset-cpus 0-1] [flags]
+  %[1]s apps scale <name> [--replicas N] [--strategy rolling|recreate|blue-green] [--memory 512Mi] [--cpu 0.5] [--swap-memory 1Gi] [--cpuset-cpus 0-1] [--size small] [flags]
   %[1]s apps scale <name> web=2 worker=1 [flags]
 
 Sets an app's replica count, deploy strategy and/or resource limits. Works

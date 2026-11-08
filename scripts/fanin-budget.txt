@@ -12,6 +12,7 @@ internal/compose 62
 internal/configtranslate 29
 internal/costbudget 171
 internal/dbprovision 46
+internal/defparse 29
 internal/deploy 27
 internal/deploysafety 48
 internal/deploytrace 46
