@@ -40,8 +40,10 @@ func TestAuthzDeny_AIControlAgentTokens(t *testing.T) {
 						continue
 					}
 					rec := gateDo(rt, r.method, r.path(), tok, r.body)
-					if agent && rec.Code != http.StatusForbidden {
-						t.Errorf("mode %s: %s as %s = %d %s, want 403", mode, r.key(), label, rec.Code, rec.Body.String())
+					// With AI control off the agent tokens are revoked, so the token check can answer 401 before authz; both are denials.
+					denied := rec.Code == http.StatusForbidden || (mode == store.AIControlModeOff && rec.Code == http.StatusUnauthorized)
+					if agent && !denied {
+						t.Errorf("mode %s: %s as %s = %d %s, want 403 (401 when the mode is off)", mode, r.key(), label, rec.Code, rec.Body.String())
 					}
 					if !agent && (rec.Code == http.StatusUnauthorized || rec.Code == http.StatusForbidden) {
 						t.Errorf("mode %s: %s as human root = %d, want it to reach the handler", mode, r.key(), rec.Code)
