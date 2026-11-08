@@ -78,10 +78,12 @@ func runTemplatesList(prog string, args []string, stdout, stderr io.Writer, look
 	var licenseClass, arch string
 	fs.StringVar(&licenseClass, "license-class", "", "only templates with this license class: permissive, copyleft, network-copyleft, source-available or proprietary")
 	fs.StringVar(&arch, "arch", "", "only templates whose images support this architecture: amd64 or arm64")
+	var category string
+	fs.StringVar(&category, "category", "", "only templates in this category (case-insensitive, see the CATEGORY column)")
 	var hideDeprecated bool
 	fs.BoolVar(&hideDeprecated, "hide-deprecated", false, "leave out deprecated templates (they are listed, marked, by default)")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s templates list [--custom] [--verified] [--license-class C] [--arch A] [--hide-deprecated] [flags]\n\nLists every entry in the curated service catalog, without each entry's\ncompose body (see \"templates get\"). --custom lists your own saved\ntemplates instead.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s templates list [--custom] [--verified] [--license-class C] [--arch A] [--category NAME] [--hide-deprecated] [flags]\n\nLists every entry in the curated service catalog, without each entry's\ncompose body (see \"templates get\"). --custom lists your own saved\ntemplates instead.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 
@@ -108,6 +110,15 @@ func runTemplatesList(prog string, args []string, stdout, stderr io.Writer, look
 		kept := result[:0]
 		for _, t := range result {
 			if t.Verified {
+				kept = append(kept, t)
+			}
+		}
+		result = kept
+	}
+	if category != "" {
+		kept := result[:0]
+		for _, t := range result {
+			if strings.EqualFold(t.Category, category) {
 				kept = append(kept, t)
 			}
 		}

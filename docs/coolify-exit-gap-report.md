@@ -70,6 +70,10 @@ Status words: **moves** means created on the new side, **reported** means the to
 - The `destination.network` and memory swap field names in the application payload, which are assumed from the documented API and not checked on a real instance.
 - One-click service staging (compose translation, generated secrets and the `compose deploy` step) against a real Coolify instance. Pending run.
 
+## Checked against the code
+
+Last checked against the importer in `internal/platformimport/coolify.go` on 2026-11-08. Backup schedules and S3 destinations are still only listed as manual rows with the command to run (`reportBackups`); nothing creates them during `--apply` yet. Every row marked built or moves is covered by fixture tests in `internal/platformimport` and `cmd/levelrail-cli`, none by a real instance.
+
 ## Next gaps, by value
 
 1. Import database backup schedules and S3 targets instead of listing them.

@@ -74,3 +74,40 @@ func TestRun_AppsScale_PairsRollBackOnFailure(t *testing.T) {
 		t.Errorf("PUTs = %v, want web=3, worker=4 (rejected), web back to 1", puts)
 	}
 }
+
+func TestAppsScale_SwapAndCpuset(t *testing.T) {
+	var put map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodPut {
+			body, _ := io.ReadAll(r.Body)
+			_ = json.Unmarshal(body, &put)
+			_, _ = w.Write(body)
+			return
+		}
+		_, _ = w.Write([]byte(`{"name":"web","image":"x:1","port":80,"replicas":1}`))
+	}))
+	defer srv.Close()
+
+	runCLIExpectOK(t, []string{"apps", "scale", "web", "--memory", "512Mi", "--swap-memory", "1Gi", "--cpuset-cpus", "0-1", "--api-url", srv.URL})
+	res, _ := put["resources"].(map[string]any)
+	if res["cpuset_cpus"] != "0-1" || res["swap_memory_bytes"] != float64(1<<30) {
+		t.Errorf("PUT resources = %v, want cpuset and swap set", res)
+	}
+	if len(res) < 3 {
+		t.Errorf("PUT resources = %v, want memory, swap and cpuset", res)
+	}
+}
+
+func TestAppsScale_SwapCpusetValidation(t *testing.T) {
+	for _, args := range [][]string{
+		{"apps", "scale", "web", "--cpuset-cpus", "a-b"},
+		{"apps", "scale", "web", "--swap-memory", "nope"},
+		{"apps", "scale", "web", "worker=1", "--cpuset-cpus", "0"},
+	} {
+		var stdout, stderr strings.Builder
+		if got := run("levelrail-cli-test", args, &stdout, &stderr, envMap()); got == exitOK {
+			t.Errorf("run(%v) = exitOK, want a validation failure", args)
+		}
+	}
+}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -16,12 +17,14 @@ import (
 func runAppsScale(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps scale", "print the app as JSON to stdout and nothing else", stderr)
 	var replicas int
-	var strategy, memory string
+	var strategy, memory, swap, cpuset string
 	var cpu float64
 	fs.IntVar(&replicas, "replicas", 0, "number of container replicas (at least 1; use \"apps stop\" to run none)")
 	fs.StringVar(&strategy, "strategy", "", "deploy strategy: rolling, recreate, or blue-green (default: unchanged)")
 	fs.StringVar(&memory, "memory", "", "memory limit, e.g. 512Mi or 2Gi (default: unchanged)")
 	fs.Float64Var(&cpu, "cpu", 0, "CPU limit in cores, e.g. 0.5 (default: unchanged)")
+	fs.StringVar(&swap, "swap-memory", "", "memory plus swap limit, e.g. 1Gi; at least the memory limit (default: unchanged)")
+	fs.StringVar(&cpuset, "cpuset-cpus", "", "CPUs the app may use, e.g. 0-1 or 0,2 (default: unchanged)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsScaleUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -36,17 +39,24 @@ func runAppsScale(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	}
 	name := rest[0]
 	if len(rest) > 1 {
-		if replicas != 0 || strategy != "" || memory != "" || cpu != 0 {
-			return reportError(stdout, stderr, jsonOut, newValidationError("service=count pairs cannot be combined with --replicas, --strategy, --memory or --cpu"))
+		if replicas != 0 || strategy != "" || memory != "" || cpu != 0 || swap != "" || cpuset != "" {
+			return reportError(stdout, stderr, jsonOut, newValidationError("service=count pairs cannot be combined with --replicas, --strategy, --memory, --cpu, --swap-memory or --cpuset-cpus"))
 		}
 		return scaleServices(prog, name, rest[1:], apiURLFlag, tokenFlag, profileFlag, jsonOut, of, stdout, stderr, lookupEnv)
 	}
-	if replicas < 0 || cpu < 0 || (replicas == 0 && strategy == "" && memory == "" && cpu == 0) {
-		return reportError(stdout, stderr, jsonOut, newValidationError("apps scale requires --replicas N (N >= 1), --strategy, --memory and/or --cpu"))
+	if replicas < 0 || cpu < 0 || (replicas == 0 && strategy == "" && memory == "" && cpu == 0 && swap == "" && cpuset == "") {
+		return reportError(stdout, stderr, jsonOut, newValidationError("apps scale requires --replicas N (N >= 1), --strategy, --memory, --cpu, --swap-memory and/or --cpuset-cpus"))
 	}
 	memoryBytes, err := parseOptionalMemory(memory)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--memory: %v", err))
+	}
+	swapBytes, err := parseOptionalMemory(swap)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, newValidationError("--swap-memory: %v", err))
+	}
+	if cpuset != "" && !cpusetPattern.MatchString(cpuset) {
+		return reportError(stdout, stderr, jsonOut, newValidationError("--cpuset-cpus must be a CPU list such as 0-1 or 0,2, got %q", cpuset))
 	}
 	if strategy != "" && strategy != "rolling" && strategy != "recreate" && strategy != "blue-green" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--strategy must be rolling, recreate, or blue-green, got %q", strategy))
@@ -64,7 +74,7 @@ func runAppsScale(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	if strategy != "" {
 		app.Strategy = strategy
 	}
-	if memoryBytes > 0 || cpu > 0 {
+	if memoryBytes > 0 || cpu > 0 || swapBytes > 0 || cpuset != "" {
 		res := serviceResources{}
 		if app.Resources != nil {
 			res = *app.Resources
@@ -74,6 +84,16 @@ func runAppsScale(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		}
 		if cpu > 0 {
 			res.NanoCPUs = int64(cpu * 1e9)
+		}
+		if swapBytes > 0 {
+			// Docker's swap value is memory plus swap combined, so it cannot sit below the effective memory limit.
+			if swapBytes < res.MemoryBytes {
+				return reportError(stdout, stderr, jsonOut, newValidationError("--swap-memory (%s) must be at least the memory limit: it is memory+swap combined, not swap alone", swap))
+			}
+			res.SwapMemoryBytes = swapBytes
+		}
+		if cpuset != "" {
+			res.CPUSetCPUs = cpuset
 		}
 		app.Resources = &res
 	}
@@ -189,6 +209,9 @@ func scaleFailure(ctx context.Context, client *apiclient.Client, stderr io.Write
 	return cause
 }
 
+// cpusetPattern accepts kernel CPU list syntax: numbers and ranges joined by commas.
+var cpusetPattern = regexp.MustCompile(`^[0-9]+(-[0-9]+)?(,[0-9]+(-[0-9]+)?)*$`)
+
 func parseOptionalMemory(s string) (int64, error) {
 	if s == "" {
 		return 0, nil
@@ -198,7 +221,7 @@ func parseOptionalMemory(s string) (int64, error) {
 
 func appsScaleUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s apps scale <name> [--replicas N] [--strategy rolling|recreate|blue-green] [--memory 512Mi] [--cpu 0.5] [flags]
+  %[1]s apps scale <name> [--replicas N] [--strategy rolling|recreate|blue-green] [--memory 512Mi] [--cpu 0.5] [--swap-memory 1Gi] [--cpuset-cpus 0-1] [flags]
   %[1]s apps scale <name> web=2 worker=1 [flags]
 
 Sets an app's replica count, deploy strategy and/or resource limits. Works
@@ -216,6 +239,8 @@ Flags:
   --strategy string       deploy strategy: rolling, recreate, or blue-green
   --memory string         memory limit, e.g. 512Mi or 2Gi
   --cpu float             CPU limit in cores, e.g. 0.5
+  --swap-memory string    memory plus swap limit, e.g. 1Gi (at least the memory limit)
+  --cpuset-cpus string    CPUs the app may use, e.g. 0-1 or 0,2
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")

@@ -236,7 +236,7 @@ levelrail-cli apps keep <name> [flags]
 levelrail-cli apps maintenance show|clear <app> [flags]
 levelrail-cli apps maintenance set <app> [--title T] [--message M] [--until TIME | --for DUR] [--retry-after DUR] [--max-duration DUR] [--bypass IPS] [--no-health-bypass] [flags]
 levelrail-cli apps start <name> [flags]
-levelrail-cli apps scale <name> [--replicas N] [--strategy rolling|recreate|blue-green] [--memory 512Mi] [--cpu 0.5] [flags]
+levelrail-cli apps scale <name> [--replicas N] [--strategy rolling|recreate|blue-green] [--memory 512Mi] [--cpu 0.5] [--swap-memory 1Gi] [--cpuset-cpus 0-1] [flags]
 levelrail-cli apps scale <name> web=2 worker=1 [flags]
 levelrail-cli apps group <name> [flags]
 levelrail-cli apps hook-runs <name> [flags]
@@ -2074,14 +2074,14 @@ levelrail-cli git-providers use-as-source --id ID --repo REPO --app-name NAME [f
 ## Templates
 
 ```
-levelrail-cli templates list [--custom] [--verified] [--license-class CLASS] [--arch amd64|arm64] [--hide-deprecated] [flags]
+levelrail-cli templates list [--custom] [--verified] [--license-class CLASS] [--arch amd64|arm64] [--category NAME] [--hide-deprecated] [flags]
 levelrail-cli templates get <id> [flags]
 levelrail-cli templates deploy <id> [--name NAME] [flags]
 levelrail-cli templates install <id> [--name NAME] [--env KEY=VALUE]... [--domain SERVICE=HOST]... [flags]
 levelrail-cli templates delete <id> [flags]
 levelrail-cli templates import <file | -> [--id ID] [--name NAME] [--description TEXT] [--var NAME]... [flags]
 ```
-`list` browses the curated service catalog with license and trust columns, or `--custom` for your own saved templates. `--license-class`, `--arch` and `--hide-deprecated` filter on the server, and deprecated entries are marked, not hidden, by default. `get` shows one entry including its license, trust, verification (image tag and architectures) and any deprecation notice, then its full compose.yaml. `deploy` deploys a template's compose.yaml as an app, and the app name defaults to the template id; pass `--name` to use another. A custom template works with every verb the same as a built-in one, except `delete`: only a custom template can be deleted (see `apps save-as-template`). See [Templates](/templates).
+`list` browses the curated service catalog with license and trust columns, or `--custom` for your own saved templates. `--license-class`, `--arch` and `--hide-deprecated` filter on the server, `--category` matches the CATEGORY column case-insensitively on the client, and deprecated entries are marked, not hidden, by default. `get` shows one entry including its license, trust, verification (image tag and architectures) and any deprecation notice, then its full compose.yaml. `deploy` deploys a template's compose.yaml as an app, and the app name defaults to the template id; pass `--name` to use another. A custom template works with every verb the same as a built-in one, except `delete`: only a custom template can be deleted (see `apps save-as-template`). See [Templates](/templates).
 
 `import` saves a local compose file (or `-` for stdin) as a custom template through `POST /api/v1/templates/custom`. The id defaults to the file name; an id used by a built-in or an existing custom template is refused. `--var` names a `${NAME}` placeholder the file must use.
 
@@ -2294,3 +2294,5 @@ levelrail-cli vm token (--check | --exchange --cookie-jar PATH) [--json]
 Runs Levelrail in a private Linux VM on macOS with no host folders mounted. `vm shell` opens a guest shell where the VM user has passwordless sudo, so the VM is the boundary. Settings live in a host file, and the environment only seeds it at `init`. An export archive holds the control plane database and its secrets. Keep it private; without `--encrypt` it is clear text. See [Desktop runtime](/desktop-runtime).
 
 The `up` and `deploy` inference reads an optional definition file (`levelrail-definition.json`, schemaVersion 2) with `dockerfilePath`; an explicit `--dockerfile` or `--image` wins.
+
+`apps scale --swap-memory` sets the combined memory plus swap limit (it must be at least the memory limit) and `--cpuset-cpus` pins the app to a CPU list such as `0-1` or `0,2`. Neither can be combined with `service=count` pairs.
