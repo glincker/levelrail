@@ -284,6 +284,27 @@
       "pin": "Fijar {{label}}",
       "limit": "Límite de fijados alcanzado ({{max}}). Quita uno primero."
     },
+    "recent": {
+      "group": "Recientes",
+      "app": "App",
+      "database": "Base de datos"
+    },
+    "customize": {
+      "open": "Personalizar barra lateral",
+      "title": "Personalizar barra lateral",
+      "description": "Reordena, muestra u oculta grupos y páginas. Las páginas ocultas siguen disponibles en la búsqueda.",
+      "groups": "Grupos de la barra lateral",
+      "itemsIn": "Páginas en {{label}}",
+      "moveUp": "Subir {{label}}",
+      "moveDown": "Bajar {{label}}",
+      "show": "Mostrar {{label}}",
+      "moved": "{{label}} movido a la posición {{position}} de {{total}}",
+      "currentPage": "Página actual",
+      "currentGroup": "Contiene la página actual",
+      "reset": "Restablecer valores",
+      "resetDone": "Barra lateral restablecida",
+      "done": "Listo"
+    },
     "locked": {
       "badge": "Beta",
       "description": "Esta es una función beta y está desactivada. Ábrela para ir a Funciones beta y activarla.",

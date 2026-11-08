@@ -1,6 +1,12 @@
 import { Fragment, useEffect, useId, useState, type KeyboardEvent } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
-import { PinGlassIcon } from '@thesvg/ui-react'
+import {
+  DatabaseGlassIcon,
+  LayersGlassIcon,
+  PinGlassIcon,
+} from '@thesvg/ui-react'
+import { applyNavPrefs, type RecentEntry } from '@/lib/navPrefs'
+import { useNavPrefs, useNavRecent } from './useNavPrefs'
 import { useTranslation } from 'react-i18next'
 import {
   SidebarGroup,
@@ -229,6 +235,40 @@ function NavLinkItem({
   )
 }
 
+function RecentItem({
+  entry,
+  active,
+}: {
+  entry: RecentEntry
+  active: boolean
+}) {
+  const { t } = useTranslation()
+  const isApp = entry.kind === 'app'
+  const Icon = isApp ? LayersGlassIcon : DatabaseGlassIcon
+  const link = isApp ? (
+    <Link to="/apps/$name" params={{ name: entry.name }} />
+  ) : (
+    <Link to="/databases/$name" params={{ name: entry.name }} />
+  )
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        render={link}
+        isActive={active}
+        className={NAV_ROW_CLASS}
+        title={entry.name}
+      >
+        <Icon
+          size="1.4em"
+          aria-label={t(isApp ? 'shell.recent.app' : 'shell.recent.database')}
+          role="img"
+        />
+        <span>{entry.name}</span>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  )
+}
+
 function GroupAttention({
   group,
   counts,
@@ -256,13 +296,16 @@ export function GlobalNav() {
   const counts = useNavCounts()
   const experimental = useExperimentalFeatures()
   const routeAvailable = useRouteAvailable()
-  const groups = visibleGlobalGroups(routeAvailable)
+  const baseGroups = visibleGlobalGroups(routeAvailable)
   const { pins, toggle, full, max } = useNavPins()
-  const pinned = pinnedGlobalItems(groups, pins)
+  const { prefs } = useNavPrefs()
+  const { recent } = useNavRecent()
   const activeId = activeGlobalItemId(pathname, [
-    ...groups.flatMap((gr) => gr.items),
+    ...baseGroups.flatMap((gr) => gr.items),
     ...visibleGlobalFooter(),
   ])
+  const groups = applyNavPrefs(baseGroups, prefs, activeId)
+  const pinned = pinnedGlobalItems(groups, pins)
   const pinFor = (id: string): PinControl => ({
     pinned: pins.includes(id),
     full,
@@ -321,6 +364,43 @@ export function GlobalNav() {
             </SidebarMenu>
           </CollapsibleSection>
         ) : null}
+        {!rail && recent.length > 0 ? (
+          <CollapsibleSection
+            id="global-recent"
+            open={resolveOpen(stored, 'recent', false)}
+            onOpenChange={(open) => setOpen('recent', open)}
+            header={t('shell.recent.group')}
+          >
+            <SidebarMenu>
+              {recent.map((entry) => (
+                <RecentItem
+                  key={`${entry.kind}:${entry.name}`}
+                  entry={entry}
+                  active={pathname.startsWith(
+                    `/${entry.kind === 'app' ? 'apps' : 'databases'}/${encodeURIComponent(entry.name)}`,
+                  )}
+                />
+              ))}
+            </SidebarMenu>
+          </CollapsibleSection>
+        ) : null}
+        {rail && pinned.length > 0 ? (
+          <SidebarGroup className="p-0">
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {pinned.map((item) => (
+                  <NavLinkItem
+                    key={item.id}
+                    item={item}
+                    active={item.id === activeId}
+                    counts={counts}
+                    experimental={experimental}
+                  />
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ) : null}
         {groups.map((group, index) => {
           const groupName = t(`shell.navGroup.${group.id}`, {
             defaultValue: group.label,
@@ -329,6 +409,9 @@ export function GlobalNav() {
             <SidebarMenu>
               {group.items
                 .filter((item) => isItemDisclosed(item, counts, pathname))
+                .filter(
+                  (item) => !(rail && pinned.some((p) => p.id === item.id)),
+                )
                 .map((item) => (
                   <Fragment key={item.id}>
                     {item.id === 'projects' ? (

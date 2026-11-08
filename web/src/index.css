@@ -488,8 +488,8 @@ body {
   --nav-rail-w: 3.25rem;
 }
 [data-density='comfortable'] {
-  --nav-row-h: 2.25rem;
-  --nav-header-h: 1.75rem;
+  --nav-row-h: 2rem;
+  --nav-header-h: 1.5rem;
   --nav-font: 14px;
   --nav-width: 15.5rem;
 }
