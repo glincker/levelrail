@@ -51,7 +51,20 @@ function resolveIsDark(theme: Theme): boolean {
   )
 }
 
+const OLED_LINK_ID = 'levelrail-oled-css'
+
+// The OLED variable block is its own sheet so light and dark users never download it.
+function ensureOledStylesheet(): void {
+  if (document.getElementById(OLED_LINK_ID)) return
+  const link = document.createElement('link')
+  link.id = OLED_LINK_ID
+  link.rel = 'stylesheet'
+  link.href = '/glinr.oled.css'
+  document.head.appendChild(link)
+}
+
 function applyThemeClass(theme: Theme): void {
+  if (theme === 'oled') ensureOledStylesheet()
   const root = document.documentElement.classList
   root.toggle('dark', resolveIsDark(theme))
   // OLED rides on .dark so every dark rule still applies.

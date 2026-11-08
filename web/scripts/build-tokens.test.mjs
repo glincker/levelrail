@@ -8,7 +8,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const tree = JSON.parse(
   readFileSync(path.join(root, 'src/styles/tokens/glinr.tokens.json'), 'utf8'),
 )
-const { tokens, tokensCss, themeCss } = build(tree)
+const { tokens, tokensCss, themeCss, oledCss, materialCss } = build(tree)
 const names = new Set(tokens.map((t) => t.name))
 
 function walk(dir, out = []) {
@@ -36,7 +36,8 @@ describe('glinr design tokens', () => {
   })
 
   it('declares every token name in the generated CSS', () => {
-    for (const name of names) expect(tokensCss).toContain(`${name}:`)
+    for (const name of names)
+      expect(tokensCss + materialCss).toContain(`${name}:`)
   })
 
   it('keeps every legacy variable name', () => {
@@ -69,17 +70,33 @@ describe('glinr design tokens', () => {
     for (const name of legacy) expect(names.has(`--glinr-${name}`)).toBe(true)
   })
 
-  it('emits an oled block with only the values that differ from dark', () => {
+  it('emits the oled block as its own sheet with only values that differ from dark', () => {
     const block =
-      /\n\.oled, \[data-mode="oled"\] \{\n([\s\S]*?)\n\}/.exec(
-        tokensCss,
+      /\.dark\.oled, \[data-mode="oled"\]\[data-mode\] \{\n([\s\S]*?)\n\}/.exec(
+        oledCss,
       )?.[1] ?? ''
     expect(block).toContain('--glinr-surface-bg: oklch(0 0 0);')
     expect(block).toContain('--glinr-surface-raised: oklch(0.17 0.008 250);')
     expect(block).not.toContain('--glinr-accent-solid:')
-    expect(tokensCss.indexOf('\n.oled, [data-mode="oled"] {')).toBeGreaterThan(
-      tokensCss.indexOf('\n.dark, [data-mode="dark"] {'),
+    expect(tokensCss).not.toContain('oled')
+    expect(readFileSync(path.join(root, 'public/glinr.oled.css'), 'utf8')).toBe(
+      oledCss,
     )
+  })
+
+  it('splits the material group into its own sheet', () => {
+    expect(materialCss).toContain('--glinr-material-regular:')
+    expect(materialCss).toContain('--glinr-blur-thick:')
+    expect(materialCss).toContain('--glinr-shadow-float:')
+    expect(tokensCss).not.toContain('--glinr-material-')
+    expect(tokensCss).not.toContain('--glinr-blur-')
+    expect(oledCss).not.toContain('--glinr-material-')
+    expect(
+      readFileSync(
+        path.join(root, 'src/styles/tokens/glinr.material.css'),
+        'utf8',
+      ),
+    ).toBe(materialCss)
   })
 
   it('declares the density and font tokens', () => {

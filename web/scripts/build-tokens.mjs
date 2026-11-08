@@ -7,6 +7,9 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const sourcePath = path.join(root, 'src/styles/tokens/glinr.tokens.json')
 const tokensCssPath = path.join(root, 'src/styles/glinr-tokens.css')
 const themeCssPath = path.join(root, 'src/styles/glinr-theme.css')
+// Stable, unhashed URL so the pre-paint script can link it for OLED users only.
+const oledCssPath = path.join(root, 'public/glinr.oled.css')
+const materialCssPath = path.join(root, 'src/styles/tokens/glinr.material.css')
 
 const HEADER =
   '/* GLINR design tokens, generated from tokens/glinr.tokens.json, do not edit. Run `npm run tokens`. */'
@@ -28,6 +31,7 @@ export function collect(tree) {
         name: `--glinr-${ext.name ?? `${group}-${key}`}`,
         value: node.$value,
         stability: ext.stability,
+        chunk: ext.chunk,
         tailwind: ext.tailwind,
         description: node.$description,
       })
@@ -57,10 +61,10 @@ export function build(tree) {
     if (!t.description) throw new Error(`${t.path} needs a $description`)
   }
 
-  const light = []
-  const dark = []
-  const oled = []
+  const bases = { base: [[], [], []], material: [[], [], []] }
   for (const t of tokens) {
+    const [light, dark, oled] =
+      bases[t.chunk === 'material' ? 'material' : 'base']
     const modal =
       typeof t.value === 'object' && t.value !== null && 'light' in t.value
     const lightValue = modal ? t.value.light : t.value
@@ -74,21 +78,31 @@ export function build(tree) {
     }
   }
 
-  const tokensCss = `${HEADER}\n\n:root, [data-mode="light"] {\n${light.join('\n')}\n}\n\n.dark, [data-mode="dark"] {\n${dark.join('\n')}\n}\n\n.oled, [data-mode="oled"] {\n${oled.join('\n')}\n}\n`
+  const rules = (set, withOled) =>
+    `:root, [data-mode="light"] {\n${set[0].join('\n')}\n}\n\n.dark, [data-mode="dark"] {\n${set[1].join('\n')}\n}\n${withOled ? `\n${oledRule(set[2])}` : ''}`
+  // Doubled selectors beat .dark even when this sheet is linked before the bundle.
+  const oledRule = (lines) =>
+    `.dark.oled, [data-mode="oled"][data-mode] {\n${lines.join('\n')}\n}\n`
+
+  const tokensCss = `${HEADER}\n\n${rules(bases.base, false)}`
+  const oledCss = `${HEADER}\n\n${oledRule(bases.base[2])}`
+  const materialCss = `${HEADER}\n\n${rules(bases.material, true)}`
 
   const mapped = tokens.filter((t) => t.tailwind)
   const themeCss = `${HEADER}\n\n@theme inline {\n${mapped
     .map((t) => `  --${t.tailwind}: var(${t.name});`)
     .join('\n')}\n}\n`
 
-  return { tokens, tokensCss, themeCss }
+  return { tokens, tokensCss, themeCss, oledCss, materialCss }
 }
 
 function main() {
   const tree = JSON.parse(readFileSync(sourcePath, 'utf8'))
-  const { tokens, tokensCss, themeCss } = build(tree)
+  const { tokens, tokensCss, themeCss, oledCss, materialCss } = build(tree)
   writeFileSync(tokensCssPath, tokensCss)
   writeFileSync(themeCssPath, themeCss)
+  writeFileSync(oledCssPath, oledCss)
+  writeFileSync(materialCssPath, materialCss)
   console.log(`glinr tokens: ${tokens.length} tokens written`)
 }
 
