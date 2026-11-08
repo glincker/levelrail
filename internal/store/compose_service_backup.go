@@ -134,6 +134,23 @@ func (db *DB) DeleteComposeServiceBackup(ctx context.Context, app, service strin
 	return nil
 }
 
+// DeleteComposeServiceBackupsForApp removes every schedule row of an app; run history is kept.
+func (db *DB) DeleteComposeServiceBackupsForApp(ctx context.Context, app string) error {
+	if _, err := db.ExecContext(ctx, `DELETE FROM compose_service_backups WHERE app = ?`, app); err != nil {
+		return fmt.Errorf("store: delete compose service backups for app %q: %w", app, err)
+	}
+	return nil
+}
+
+// ComposeAppExists reports whether a desired service named app is still stored.
+func (db *DB) ComposeAppExists(ctx context.Context, app string) (bool, error) {
+	_, err := db.GetDesiredService(ctx, app)
+	if errors.Is(err, ErrServiceNotFound) {
+		return false, nil
+	}
+	return err == nil, err
+}
+
 // StartComposeServiceBackupRun records a running attempt.
 func (db *DB) StartComposeServiceBackupRun(ctx context.Context, r ComposeServiceBackupRun) error {
 	_, err := db.ExecContext(ctx, `

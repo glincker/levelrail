@@ -138,6 +138,14 @@ func (rt *Router) deleteApp(ctx context.Context, name string) (teardownErr, err 
 		}
 	}
 	rt.removeAppArtifactsUnlessReused(ctx, name, existing.NodeID)
+	// Schedules go with the app; run history and stored objects stay, like volume backup history.
+	if cd, ok := rt.composeDBBackups.(interface {
+		DeleteComposeServiceBackupsForApp(ctx context.Context, app string) error
+	}); ok {
+		if err := cd.DeleteComposeServiceBackupsForApp(ctx, name); err != nil {
+			rt.logger.Warn("api: delete app: remove compose backup schedules failed", slog.String("error", err.Error()), slog.String("name", name))
+		}
+	}
 	if rt.canaries != nil && !store.IsCanaryService(name) {
 		if _, ok, err := rt.canaries.GetCanaryRelease(ctx, name); err == nil && ok {
 			if err := rt.removeCanary(ctx, name); err != nil {

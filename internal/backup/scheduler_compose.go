@@ -22,6 +22,11 @@ type ScheduledComposeServiceRunner interface {
 	RunComposeServiceBackup(ctx context.Context, runID, app, service, engine, targetID string) error
 }
 
+// ComposeAppChecker is the optional surface the scheduler uses to skip schedules of deleted apps.
+type ComposeAppChecker interface {
+	ComposeAppExists(ctx context.Context, app string) (bool, error)
+}
+
 func composeScheduleKey(app, service string) string { return app + "/" + service }
 
 // tickComposeServices fires due compose database service schedules. Called with s.mu held.
@@ -43,6 +48,9 @@ func (s *Scheduler) tickComposeServices(ctx context.Context, now time.Time) erro
 	for _, c := range rows {
 		key := composeScheduleKey(c.App, c.Service)
 		seen[key] = struct{}{}
+		if s.composeAppGone(ctx, c.App, key) {
+			continue
+		}
 		sched, perr := cronexpr.Parse(c.BackupSchedule)
 		if perr != nil {
 			s.log().Warn("backup: scheduler: invalid compose service schedule, skipping",
@@ -67,7 +75,34 @@ func (s *Scheduler) tickComposeServices(ctx context.Context, now time.Time) erro
 			delete(s.composeNextRun, key)
 		}
 	}
+	for key := range s.composeOrphanLogged {
+		if _, ok := seen[key]; !ok {
+			delete(s.composeOrphanLogged, key)
+		}
+	}
 	return errors.Join(errs...)
+}
+
+// composeAppGone is a safety net for schedule rows left behind by a deleted app. It logs once per schedule.
+func (s *Scheduler) composeAppGone(ctx context.Context, app, key string) bool {
+	ck, ok := s.Store.(ComposeAppChecker)
+	if !ok {
+		return false
+	}
+	exists, err := ck.ComposeAppExists(ctx, app)
+	if err != nil || exists {
+		return false
+	}
+	if s.composeOrphanLogged == nil {
+		s.composeOrphanLogged = make(map[string]struct{})
+	}
+	if _, done := s.composeOrphanLogged[key]; !done {
+		s.composeOrphanLogged[key] = struct{}{}
+		s.log().Warn("backup: scheduler: compose service schedule belongs to a deleted app, skipping",
+			slog.String("service_ref", key))
+	}
+	delete(s.composeNextRun, key)
+	return true
 }
 
 func (s *Scheduler) runScheduledCompose(ctx context.Context, cs ComposeServiceScheduleStore, c store.ComposeServiceBackup) error {

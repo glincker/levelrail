@@ -189,6 +189,8 @@ type Scheduler struct {
 	baseNextRun map[string]time.Time
 	// composeNextRun is the next fire time of each compose database service schedule.
 	composeNextRun map[string]time.Time
+	// composeOrphanLogged remembers schedules of deleted apps already reported.
+	composeOrphanLogged map[string]struct{}
 }
 
 // NewScheduler builds a Scheduler ready to Tick or Run. logger defaults

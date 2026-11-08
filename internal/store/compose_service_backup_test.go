@@ -76,3 +76,29 @@ func TestComposeServiceBackupRunsAndPrune(t *testing.T) {
 		t.Fatalf("runs after prune = %d, want 2", len(runs))
 	}
 }
+
+func TestDeleteComposeServiceBackupsForAppKeepsRuns(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	for _, svc := range []string{"db", "cache"} {
+		c := ComposeServiceBackup{App: "shop", Service: svc, Engine: EnginePostgres, BackupSchedule: "0 3 * * *", Enabled: true}
+		if err := db.UpsertComposeServiceBackup(ctx, c); err != nil {
+			t.Fatalf("upsert %s: %v", svc, err)
+		}
+	}
+	if err := db.StartComposeServiceBackupRun(ctx, ComposeServiceBackupRun{ID: "csr_keep", App: "shop", Service: "db", ObjectKey: "k/1", StartedAt: time.Now().UTC().Format(time.RFC3339)}); err != nil {
+		t.Fatalf("start run: %v", err)
+	}
+	if err := db.DeleteComposeServiceBackupsForApp(ctx, "shop"); err != nil {
+		t.Fatalf("delete for app: %v", err)
+	}
+	if rows, _ := db.ListComposeServiceBackups(ctx, "shop"); len(rows) != 0 {
+		t.Fatalf("schedules left = %d, want 0", len(rows))
+	}
+	if runs, _ := db.ListComposeServiceBackupRuns(ctx, "shop", "db", 10); len(runs) != 1 {
+		t.Fatalf("runs = %d, want history kept", len(runs))
+	}
+	if ok, err := db.ComposeAppExists(ctx, "shop"); err != nil || ok {
+		t.Fatalf("ComposeAppExists = %v, %v, want false", ok, err)
+	}
+}
