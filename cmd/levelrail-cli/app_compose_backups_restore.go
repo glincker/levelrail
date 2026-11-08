@@ -21,7 +21,15 @@ var composeRestoreIsTTY = func(r io.Reader) bool {
 
 func appsBackupsUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
+  %[1]s apps backups services <app> [flags]
+  %[1]s apps backups schedule set <app> <service> --target ID --cron EXPR [--retain N] [--retain-days N] [--disable] [flags]
+  %[1]s apps backups schedule clear <app> <service> [flags]
+  %[1]s apps backups runs <app> <service> [flags]
+  %[1]s apps backups run <app> <service> --target ID [flags]
   %[1]s apps backups restore <app> <service> <run> [--yes] [flags]
+
+services lists detected database services and their schedules. schedule
+clear keeps existing backup objects.
 
 Replaces a compose database service's live data from one succeeded backup
 run (postgres, mysql, mariadb). A safety dump of the current data is taken
@@ -43,6 +51,14 @@ func runAppsBackups(prog string, args []string, stdout, stderr io.Writer, lookup
 	case "-h", "--help", "help":
 		_, _ = fmt.Fprint(stdout, appsBackupsUsage(prog))
 		return exitOK
+	case "services":
+		return runAppsBackupsServices(prog, args[1:], stdout, stderr, lookupEnv)
+	case "schedule":
+		return runAppsBackupsSchedule(prog, args[1:], stdout, stderr, lookupEnv)
+	case "runs":
+		return runAppsBackupsRuns(prog, args[1:], stdout, stderr, lookupEnv)
+	case "run":
+		return runAppsBackupsRun(prog, args[1:], stdout, stderr, lookupEnv)
 	case "restore":
 		return runAppsBackupsRestore(prog, args[1:], stdout, stderr, lookupEnv, stdin)
 	}

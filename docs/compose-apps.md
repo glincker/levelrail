@@ -313,6 +313,11 @@ Before it touches the database, the control plane checks the stored object again
 From the CLI:
 
 ```sh
+levelrail-cli apps backups services <app>                       # detected databases and schedules
+levelrail-cli apps backups schedule set <app> <service> --target ID --cron "0 3 * * *"
+levelrail-cli apps backups schedule clear <app> <service>       # existing backups are kept
+levelrail-cli apps backups runs <app> <service>
+levelrail-cli apps backups run <app> <service> --target ID      # back up now
 levelrail-cli apps backups restore <app> <service> <run>        # preview, then type the phrase
 levelrail-cli apps backups restore <app> <service> <run> --yes  # for scripts
 ```

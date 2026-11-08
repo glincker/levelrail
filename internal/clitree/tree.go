@@ -165,7 +165,7 @@ var Tree = map[string]*Node{
 		"tag":                nil,
 		"untag":              nil,
 		"egress":             {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil}},
-		"backups":            {Subs: map[string]*Node{"restore": nil}},
+		"backups":            {Subs: map[string]*Node{"services": nil, "schedule": {Subs: map[string]*Node{"set": nil, "clear": nil}}, "runs": nil, "run": nil, "restore": nil}},
 		"build-cache":        {Subs: map[string]*Node{"show": nil, "set": nil, "clear": nil, "remove": nil}},
 		"health":             {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil, "discover": nil}},
 		"containers":         nil,

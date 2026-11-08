@@ -416,6 +416,11 @@ levelrail-cli apps volumes import <app> <volume> --in FILE.tar.gz [--force] [fla
 levelrail-cli apps volumes detach <name> --name NAME [flags]
 levelrail-cli apps storage set <name> --storage-target-id ID [flags]
 levelrail-cli apps storage clear <name> [flags]
+levelrail-cli apps backups services <app>
+levelrail-cli apps backups schedule set <app> <service> --target ID --cron EXPR [--retain N] [--retain-days N] [--disable]
+levelrail-cli apps backups schedule clear <app> <service>
+levelrail-cli apps backups runs <app> <service>
+levelrail-cli apps backups run <app> <service> --target ID
 levelrail-cli apps backups restore <app> <service> <run> [--yes]
 levelrail-cli apps build-cache show <name>|--global
 levelrail-cli apps build-cache set <name>|--global --target ID [--mode min|max] [--disable]
