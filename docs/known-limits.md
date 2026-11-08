@@ -38,6 +38,7 @@ Current limits, each with the page it comes from. Labels and evidence change wit
 
 - The last local catalog smoke (2026-10-25, plus eight hand-booted on 2026-10-27) passed 101 of 108 templates that need no operator configuration. The rest of the catalog is untested. Source: [feature status](feature-status.md), [templates status](templates-status.md).
 - Point-in-time restore covers Postgres, MySQL and MariaDB only. MongoDB has no oplog here. TLS is built for Postgres, Redis, Valkey, MySQL, MariaDB and MongoDB (on at creation for Postgres, Redis and, from the TLS release on, MySQL, MariaDB and MongoDB; older MySQL, MariaDB and MongoDB databases, Redis and every Valkey database can be switched with `PUT /api/v1/databases/{name}/tls`, and Valkey stays plaintext until switched). KeyDB, Dragonfly, ClickHouse, Meilisearch, Qdrant, Typesense and Memcached have no TLS, and no TLS path, Valkey included, was run on a real host. Source: [roadmap](roadmap.md), [feature status](feature-status.md).
+- Database backups for compose services (Postgres, MySQL, MariaDB) have no restore control in the dashboard or CLI. Restore is a manual load of the dump, covered in [compose apps](compose-apps.md). The schedules, run history and dashboard card are built and unit tested, but not yet run against a live server or a real compose app with a database. Source: [compose apps](compose-apps.md), [feature status](feature-status.md).
 
 ## Behind flags or beta
 
