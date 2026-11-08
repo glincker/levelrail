@@ -967,5 +967,40 @@
     "starting": "Iniciando...",
     "started": "Se está creando la rama \"{{name}}\".",
     "action": "Rama"
+  },
+  "dataActions": {
+    "title": "Transferencia de datos",
+    "description": "Descarga un volcado, clona esta base de datos o carga un volcado en ella. Un clon nunca modifica el origen.",
+    "needsReadSensitive": "Descargar un volcado requiere la habilidad read:sensitive.",
+    "needsWriteSensitive": "Clonar requiere la habilidad write:sensitive.",
+    "needsRoot": "Importar un volcado requiere la habilidad root.",
+    "download": {
+      "title": "Descargar volcado",
+      "action": "Descargar el último volcado",
+      "source": "Última copia correcta, hecha el {{when}}. Haz una copia nueva antes para tener datos actuales.",
+      "none": "Aún no hay copias correctas. Haz una copia primero."
+    },
+    "clone": {
+      "title": "Clonar",
+      "label": "Nombre de la nueva base de datos",
+      "action": "Clonar",
+      "cloning": "Clonando...",
+      "hint": "Crea una base de datos nueva a partir de la última copia correcta.",
+      "none": "Aún no hay copias correctas. Haz una copia primero.",
+      "started": "Clon {{name}} iniciado.",
+      "failed": "No se pudo iniciar el clon."
+    },
+    "import": {
+      "title": "Importar volcado",
+      "label": "Archivo de volcado",
+      "action": "Importar",
+      "replace": "Reemplazar datos",
+      "uploading": "Subiendo...",
+      "progress": "Progreso de subida",
+      "nonEmpty": "Esta base de datos ya contiene datos. Importar los reemplaza. Escribe el nombre de la base de datos para confirmar.",
+      "confirmLabel": "Escribe {{name}} para confirmar",
+      "done": "Volcado importado.",
+      "failed": "La importación falló."
+    }
   }
 }

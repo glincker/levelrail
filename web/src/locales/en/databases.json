@@ -967,5 +967,40 @@
     "starting": "Starting...",
     "started": "Branch \"{{name}}\" is being created.",
     "action": "Branch"
+  },
+  "dataActions": {
+    "title": "Data transfer",
+    "description": "Download a dump, clone this database or load a dump into it. The source is never changed by a clone.",
+    "needsReadSensitive": "Downloading a dump needs the read:sensitive ability.",
+    "needsWriteSensitive": "Cloning needs the write:sensitive ability.",
+    "needsRoot": "Importing a dump needs the root ability.",
+    "download": {
+      "title": "Download dump",
+      "action": "Download latest dump",
+      "source": "Newest succeeded backup, taken {{when}}. Take a fresh backup first for current data.",
+      "none": "No succeeded backup yet. Run a backup first."
+    },
+    "clone": {
+      "title": "Clone",
+      "label": "New database name",
+      "action": "Clone",
+      "cloning": "Cloning...",
+      "hint": "Creates a new database from the newest succeeded backup.",
+      "none": "No succeeded backup yet. Run a backup first.",
+      "started": "Clone {{name}} started.",
+      "failed": "Could not start the clone."
+    },
+    "import": {
+      "title": "Import dump",
+      "label": "Dump file",
+      "action": "Import",
+      "replace": "Replace data",
+      "uploading": "Uploading...",
+      "progress": "Upload progress",
+      "nonEmpty": "This database already holds data. Importing replaces it. Type the database name to confirm.",
+      "confirmLabel": "Type {{name}} to confirm",
+      "done": "Dump imported.",
+      "failed": "Import failed."
+    }
   }
 }

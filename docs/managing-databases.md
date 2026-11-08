@@ -301,6 +301,8 @@ The command waits up to `--wait` for the fresh backup. The default is 15 minutes
 
 `clone` creates a new database from a backup of the source. Without `--backup` it takes a fresh backup first and waits for it, the same as `export`. It can also set `--version` for a different engine version and `--project` for the project the new database joins. The source is never changed. The command prints the started clone and returns. Check progress with `levelrail-cli databases get <new-name>`.
 
+On the dashboard, the **Data transfer** card on a database's Overview page offers the same three actions. **Download latest dump** streams the newest succeeded backup (it does not take a new one, so run a backup first for current data) and needs `read:sensitive`. **Clone** is prefilled with `<name>-clone` and starts a restore into a new database from that backup, which needs `write:sensitive`. **Import** takes a dump file, checks first whether the database already holds data, and for a non-empty database asks you to type its name before replacing it. It shows upload progress and the server's own error text, and needs `root`. Controls you lack the ability for are disabled with one line saying why.
+
 Built and unit tested with fakes (`cmd/levelrail-cli/databases_export_test.go`, `databases_clone_test.go`, `databases_import_test.go`). It has not run against a live control plane, and `import` has not restored into a real database.
 
 ### Scheduled backups
