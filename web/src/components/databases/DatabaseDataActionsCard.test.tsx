@@ -25,6 +25,17 @@ const backup = {
 
 function stubApi(importEmpty: boolean) {
   const fetchMock = vi.fn((input: string, init?: RequestInit) => {
+    if (input.endsWith('/backups') && init?.method === 'POST')
+      return Promise.resolve(
+        jsonResponse({ id: 'bk2', status: 'running' }, 202),
+      )
+    if (input.endsWith('/backup-targets'))
+      return Promise.resolve(
+        jsonResponse([
+          { id: 't1', name: 'main' },
+          { id: 't2', name: 'offsite' },
+        ]),
+      )
     if (input.endsWith('/backups'))
       return Promise.resolve(jsonResponse([backup]))
     if (input.endsWith('/restore-as-new') && init?.method === 'POST')
@@ -66,6 +77,29 @@ describe('DatabaseDataActionsCard', () => {
     expect(screen.getByRole('button', { name: 'Clone' })).toBeDisabled()
     expect(screen.getByLabelText('Dump file')).toBeDisabled()
     expect(screen.getByText(/read:sensitive/)).toBeInTheDocument()
+  })
+
+  it('backs up now to the chosen target and explains when not allowed', async () => {
+    granted = ['write:sensitive']
+    const fetchMock = stubApi(true)
+    renderCard()
+    const select = await screen.findByLabelText('Backup target')
+    await waitFor(() => expect(select).toHaveValue('t1'))
+    await userEvent.selectOptions(select, 't2')
+    await userEvent.click(screen.getByRole('button', { name: 'Back up now' }))
+    await waitFor(() => {
+      const call = fetchMock.mock.calls.find(
+        ([u, i]) => u.endsWith('/backups') && i?.method === 'POST',
+      )
+      expect(JSON.parse(call?.[1]?.body as string)).toEqual({ target_id: 't2' })
+    })
+  })
+
+  it('disables back up now without the ability', () => {
+    stubApi(true)
+    renderCard()
+    expect(screen.getByRole('button', { name: 'Back up now' })).toBeDisabled()
+    expect(screen.getByText(/Backing up needs/)).toBeInTheDocument()
   })
 
   it('submits the clone with the prefilled name', async () => {

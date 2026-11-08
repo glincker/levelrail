@@ -973,7 +973,18 @@
     "description": "Descarga un volcado, clona esta base de datos o carga un volcado en ella. Un clon nunca modifica el origen.",
     "needsReadSensitive": "Descargar un volcado requiere la habilidad read:sensitive.",
     "needsWriteSensitive": "Clonar requiere la habilidad write:sensitive.",
+    "needsBackupWrite": "Hacer una copia requiere la habilidad write:sensitive.",
     "needsRoot": "Importar un volcado requiere la habilidad root.",
+    "backup": {
+      "title": "Copia ahora",
+      "target": "Destino de copia",
+      "action": "Copiar ahora",
+      "running": "Copiando...",
+      "hint": "Inicia una copia en el destino elegido. Descargar y clonar usan la última correcta.",
+      "noTarget": "Aún no hay destino de copia. Añade uno en Copias primero.",
+      "started": "Copia iniciada.",
+      "failed": "No se pudo iniciar la copia."
+    },
     "download": {
       "title": "Descargar volcado",
       "action": "Descargar el último volcado",

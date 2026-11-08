@@ -973,7 +973,18 @@
     "description": "Download a dump, clone this database or load a dump into it. The source is never changed by a clone.",
     "needsReadSensitive": "Downloading a dump needs the read:sensitive ability.",
     "needsWriteSensitive": "Cloning needs the write:sensitive ability.",
+    "needsBackupWrite": "Backing up needs the write:sensitive ability.",
     "needsRoot": "Importing a dump needs the root ability.",
+    "backup": {
+      "title": "Back up now",
+      "target": "Backup target",
+      "action": "Back up now",
+      "running": "Backing up...",
+      "hint": "Starts a backup to the chosen target. Download and clone use the newest succeeded one.",
+      "noTarget": "No backup target yet. Add one under Backups first.",
+      "started": "Backup started.",
+      "failed": "Could not start the backup."
+    },
     "download": {
       "title": "Download dump",
       "action": "Download latest dump",

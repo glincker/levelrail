@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import {
   CopyGlassIcon,
   DownloadGlassIcon,
+  ShieldCheckGlassIcon,
   UploadGlassIcon,
 } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -10,13 +11,16 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { NativeSelect } from '@/components/ui/native-select'
 import { Progress } from '@/components/ui/progress'
 import { toast } from '@/components/ui/toast'
 import { useAbilities } from '@/hooks/useAbilities'
 import {
   backupDownloadURL,
   useBackupHistory,
+  useTriggerBackup,
 } from '../../queries/backupHistory'
+import { useBackupTargetsOptional } from '../../queries/backupTargets'
 import { useTriggerCloneRestore } from '../../queries/cloneRestore'
 import {
   uploadDatabaseImport,
@@ -42,6 +46,11 @@ export function DatabaseDataActionsCard({ database }: { database: string }) {
         <p className="text-sm text-muted-foreground">
           {t('dataActions.description')}
         </p>
+        <BackupNowForm
+          database={database}
+          running={history.data?.[0]?.status === 'running'}
+          allowed={canClone}
+        />
         <section aria-label={t('dataActions.download.title')}>
           <div className="flex flex-wrap items-center gap-2">
             {canDownload && latest ? (
@@ -81,6 +90,78 @@ export function DatabaseDataActionsCard({ database }: { database: string }) {
         <ImportForm database={database} allowed={canImport} />
       </CardContent>
     </Card>
+  )
+}
+
+function BackupNowForm({
+  database,
+  running,
+  allowed,
+}: {
+  database: string
+  running: boolean
+  allowed: boolean
+}) {
+  const { t } = useTranslation('databases')
+  const targets = useBackupTargetsOptional()
+  const list = targets.data ?? []
+  const [picked, setPicked] = useState('')
+  const trigger = useTriggerBackup(database)
+  const targetId = list.some((x) => x.id === picked) ? picked : list[0]?.id
+  const ready = allowed && !!targetId && !running && !trigger.isPending
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!ready || !targetId) return
+    trigger.mutate(targetId, {
+      onSuccess: () =>
+        toast.add({ title: t('dataActions.backup.started'), type: 'success' }),
+      onError: (error) =>
+        toast.add({
+          title: t('dataActions.backup.failed'),
+          description: error.message,
+          type: 'error',
+        }),
+    })
+  }
+
+  return (
+    <form
+      onSubmit={submit}
+      className="flex flex-wrap items-end gap-2"
+      aria-label={t('dataActions.backup.title')}
+    >
+      <div className="min-w-48 flex-1 space-y-1">
+        <Label htmlFor={`backup-target-${database}`}>
+          {t('dataActions.backup.target')}
+        </Label>
+        <NativeSelect
+          id={`backup-target-${database}`}
+          value={targetId ?? ''}
+          disabled={!allowed || list.length === 0}
+          onChange={(e) => setPicked(e.target.value)}
+        >
+          {list.map((x) => (
+            <option key={x.id} value={x.id}>
+              {x.name}
+            </option>
+          ))}
+        </NativeSelect>
+      </div>
+      <Button type="submit" size="sm" disabled={!ready}>
+        <ShieldCheckGlassIcon className="size-4" aria-hidden="true" />
+        {running || trigger.isPending
+          ? t('dataActions.backup.running')
+          : t('dataActions.backup.action')}
+      </Button>
+      <p className="w-full text-xs text-muted-foreground">
+        {!allowed
+          ? t('dataActions.needsBackupWrite')
+          : list.length === 0
+            ? t('dataActions.backup.noTarget')
+            : t('dataActions.backup.hint')}
+      </p>
+    </form>
   )
 }
 
