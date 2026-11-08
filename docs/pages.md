@@ -143,7 +143,7 @@ A static site you deploy with `--ref` is one deploy of one ref. To get a stable 
 
 ### Pull request previews
 
-A source-connected static site gets a preview for each pull request when previews are on. The pull request's head commit is built and published as its own site, `<site>-pr-<number>`, on the preview URL, and the pull request gets the usual comment and commit status. The live site, its domain and its release history are not touched. Closing or merging the pull request, or the stale preview sweep, removes the preview's files. Static previews do not enforce the preview basic auth gate. See [static sites in previews](/preview-environments#static-sites).
+A source-connected static site gets a preview for each pull request when previews are on. The pull request's head commit is built and published as its own site, `<site>-pr-<number>`, on the preview URL, and the pull request gets the usual comment and commit status. The live site, its domain and its release history are not touched. Closing or merging the pull request, or the stale preview sweep, removes the preview's files. The basic auth gate (`--gate`) is created and enforced on static previews, the same as on container previews. If the gate cannot be created, the preview is not published and is marked failed. A forward-auth gate on the preview domain is refused, because static routes cannot enforce it. See [static sites in previews](/preview-environments#static-sites).
 
 ## App env in static builds
 

@@ -1111,6 +1111,7 @@
             "pages": [
               "roadmap",
               "feature-status",
+              "feature-coverage",
               "experimental-features",
               "support-policy",
               "performance",
