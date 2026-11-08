@@ -11,15 +11,20 @@ import { Button } from '@/components/ui/button'
 
 const ROW_CAP = 5
 
-type RankMetric = 'cpu_percent' | 'memory_usage_bytes' | 'network_rx_bytes'
+type RankMetric =
+  'cpu_percent' | 'memory_usage_bytes' | 'network_rx_bytes' | 'disk_bytes'
 
 const RANK_OPTIONS: { key: RankMetric; label: string }[] = [
   { key: 'cpu_percent', label: 'CPU' },
   { key: 'memory_usage_bytes', label: 'Memory' },
   { key: 'network_rx_bytes', label: 'Network' },
+  { key: 'disk_bytes', label: 'Disk' },
 ]
 
 function valueOf(usage: AppResourceUsage, metric: RankMetric): number {
+  if (metric === 'disk_bytes') {
+    return (usage.disk_read_bytes ?? 0) + (usage.disk_write_bytes ?? 0)
+  }
   return usage[metric] ?? 0
 }
 
@@ -39,6 +44,11 @@ function formatValue(usage: AppResourceUsage, metric: RankMetric): string {
       return usage.network_rx_bytes === undefined
         ? '-'
         : `${formatBytes(usage.network_rx_bytes)} in / ${formatBytes(usage.network_tx_bytes)} out`
+    case 'disk_bytes':
+      return usage.disk_read_bytes === undefined &&
+        usage.disk_write_bytes === undefined
+        ? '-'
+        : `${formatBytes(usage.disk_read_bytes ?? 0)} read / ${formatBytes(usage.disk_write_bytes ?? 0)} written`
   }
 }
 

@@ -38,6 +38,7 @@ Applying a fix needs a root token. Reading health needs read access. The API is 
 
 - Live streams (deploy logs, resource logs, pipeline logs, the deployments stream) are capped. Past the cap a new stream gets `503` with `Retry-After`. Set `APP_MAX_LIVE_STREAMS` (default 500).
 - The write ahead log is checkpointed every minute and capped at 64 MiB after a checkpoint, so a long reader cannot let it grow without bound.
+- Planner statistics are refreshed with `PRAGMA optimize` every 6 hours and once at shutdown. Change the interval with the runtime setting `store.optimize_interval` (`0` disables it, `APP_DB_OPTIMIZE_INTERVAL` only seeds the default). The `sqlite optimize` loop shows in the footprint card.
 - The app list is paginated (`limit`, `offset`) with a hard cap, and API requests are rate limited per actor.
 
 ## Thresholds

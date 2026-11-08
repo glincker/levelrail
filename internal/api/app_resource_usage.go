@@ -14,6 +14,8 @@ var resourceUsageMetrics = []string{
 	"memory_limit_bytes",
 	"network_rx_bytes",
 	"network_tx_bytes",
+	"disk_read_bytes",
+	"disk_write_bytes",
 }
 
 // Fields are omitted, not zero, when telemetry has never recorded that metric for the app.
@@ -24,6 +26,8 @@ type appResourceUsageResource struct {
 	MemoryLimitBytes *float64 `json:"memory_limit_bytes,omitempty"`
 	NetworkRxBytes   *float64 `json:"network_rx_bytes,omitempty"`
 	NetworkTxBytes   *float64 `json:"network_tx_bytes,omitempty"`
+	DiskReadBytes    *float64 `json:"disk_read_bytes,omitempty"`
+	DiskWriteBytes   *float64 `json:"disk_write_bytes,omitempty"`
 }
 
 // handleAppResourceUsage returns every app in one call, so the dashboard avoids per-app fetches.
@@ -81,6 +85,10 @@ func (rt *Router) handleAppResourceUsage(w http.ResponseWriter, r *http.Request)
 				usage.NetworkRxBytes = &value
 			case "network_tx_bytes":
 				usage.NetworkTxBytes = &value
+			case "disk_read_bytes":
+				usage.DiskReadBytes = &value
+			case "disk_write_bytes":
+				usage.DiskWriteBytes = &value
 			}
 		}
 	}

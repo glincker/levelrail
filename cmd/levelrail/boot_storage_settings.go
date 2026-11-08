@@ -58,6 +58,9 @@ func (s *bootState) wireStorageSettings() {
 	backup.SetLocalRootSource(func() string {
 		return rs().String(context.Background(), runtimesettings.KeyBackupLocalRoot)
 	})
+	go s.db.RunOptimize(s.ctx, func() time.Duration {
+		return rs().Duration(context.Background(), runtimesettings.KeyDBOptimizeInterval)
+	})
 	telemetry.SetLogBudgetSource(func() int64 {
 		return int64(rs().Int(context.Background(), runtimesettings.KeyLogBudgetMB)) * mibBytes
 	})

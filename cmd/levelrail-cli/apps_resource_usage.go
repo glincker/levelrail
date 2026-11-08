@@ -47,11 +47,12 @@ func printAppResourceUsageTable(out io.Writer, usage []appResourceUsageResource)
 	})
 
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "NAME\tCPU\tMEMORY\tNET RX\tNET TX")
+	_, _ = fmt.Fprintln(tw, "NAME\tCPU\tMEMORY\tNET RX\tNET TX\tDISK R\tDISK W")
 	for _, u := range ranked {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n",
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
 			u.Name, formatCPUPercent(u.CPUPercent), formatMemoryUsage(u.MemoryUsageBytes, u.MemoryLimitBytes),
-			formatByteRate(u.NetworkRxBytes), formatByteRate(u.NetworkTxBytes))
+			formatByteRate(u.NetworkRxBytes), formatByteRate(u.NetworkTxBytes),
+			formatByteRate(u.DiskReadBytes), formatByteRate(u.DiskWriteBytes))
 	}
 	_ = tw.Flush()
 }

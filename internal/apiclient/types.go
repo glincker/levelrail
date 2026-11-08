@@ -3922,6 +3922,8 @@ type AppResourceUsageResource struct {
 	MemoryLimitBytes *float64 `json:"memory_limit_bytes,omitempty"`
 	NetworkRxBytes   *float64 `json:"network_rx_bytes,omitempty"`
 	NetworkTxBytes   *float64 `json:"network_tx_bytes,omitempty"`
+	DiskReadBytes    *float64 `json:"disk_read_bytes,omitempty"`
+	DiskWriteBytes   *float64 `json:"disk_write_bytes,omitempty"`
 }
 
 // NodeMetricsResource mirrors internal/api's nodeMetricsResponse
