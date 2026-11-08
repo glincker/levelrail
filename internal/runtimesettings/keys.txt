@@ -86,6 +86,7 @@ ingress.proxy_cert_wait
 ingress.trusted_proxy_preset
 mesh.hub_resolve_ttl
 mesh.hub_stale_max
+mesh.ready_retry_seconds
 monitors.raw_retention
 network.gc_max_removals
 nextjs.generate_actions_key

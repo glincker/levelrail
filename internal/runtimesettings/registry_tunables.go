@@ -17,11 +17,18 @@ const (
 	KeyDeployExplainLogLines         = "deploy.explain_log_lines"
 	KeyUpdateOfferedChannels         = "updates.offered_channels"
 	KeyNetworkGCMaxRemovals          = "network.gc_max_removals"
+	KeyMeshReadyRetrySeconds         = "mesh.ready_retry_seconds"
 )
 
 var releaseChannels = []string{"stable", "beta", "edge"}
 
 func init() {
+	Register(Definition{
+		Key: KeyMeshReadyRetrySeconds, Category: CategoryNetworking, Kind: KindInt, Default: "10",
+		Env: "APP_MESH_READY_RETRY_SECONDS", Apply: ApplyLive, CheckValue: intRangeCheck(2, 300),
+		Title:       "Mesh wait retry ceiling",
+		Description: "The longest gap, in seconds from 2 to 300, between checks of an app waiting for its node's WireGuard mesh. Checks start at 2 seconds and double up to this value; the app starts as soon as the mesh is healthy. The next check uses a changed value.",
+	})
 	Register(Definition{
 		Key: KeyNetworkGCMaxRemovals, Category: CategoryNetworking, Kind: KindInt, Default: "20",
 		Env: "APP_NETWORK_GC_MAX_REMOVALS", Apply: ApplyLive, CheckValue: intRangeCheck(1, 1000),

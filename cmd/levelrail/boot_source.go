@@ -302,6 +302,12 @@ func appOptionsFor(deps dynamicSourceDeps) []application.Option {
 		application.WithProbeLimits(probe.LimitsFromEnv(os.LookupEnv)),
 		application.WithNodeGPU(modelNodes{db: deps.db, localNodeID: localNodeIDOf(deps)}),
 		application.WithMeshPaths(newMeshPathResolver(deps.meshCfg, deps.db)),
+		application.WithMeshRetry(func(ctx context.Context) time.Duration {
+			if s := deps.settingsService(); s != nil {
+				return time.Duration(s.Int(ctx, runtimesettings.KeyMeshReadyRetrySeconds)) * time.Second
+			}
+			return 0
+		}),
 	}
 	appOpts = append(appOpts, deps.deployGate.appOptions(deps.db)...)
 	if reconcile.WorkersFromEnv(os.Getenv) > 1 {

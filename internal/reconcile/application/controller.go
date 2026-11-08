@@ -287,10 +287,13 @@ type Controller struct {
 	handoffFailed       map[string]time.Time            // target name to the time its next pinned-port handoff may run
 	pendingReady        *PendingReadiness               // nil keeps the blocking readiness wait, see WithReadinessRequeue
 	readinessRequeue    time.Duration
-	deferReadiness      bool                    // this run uses pendingReady: set per run from the strategy
-	retained            RetainedDeploys         // nil means no service is a retained deploy URL
-	restartBackoff      *RestartBackoff         // nil disables crash restart backoff, see WithRestartBackoff
-	meshPaths           meshpath.Resolver       // nil is valid: remote ports stay on loopback, see WithMeshPaths
+	deferReadiness      bool              // this run uses pendingReady: set per run from the strategy
+	retained            RetainedDeploys   // nil means no service is a retained deploy URL
+	restartBackoff      *RestartBackoff   // nil disables crash restart backoff, see WithRestartBackoff
+	meshPaths           meshpath.Resolver // nil is valid: remote ports stay on loopback, see WithMeshPaths
+	meshRetry           func(context.Context) time.Duration
+	meshWaitMu          sync.Mutex
+	meshWaitStreak      int
 	gateDefaults        *deploysafety.Effective // nil: one readiness pass is enough, see WithStabilityGate
 	gateSource          DeploySafetySource
 	gateRecorder        GateRecorder
@@ -677,6 +680,10 @@ func (c *Controller) reconcileDesired(ctx context.Context, desired *store.Desire
 	}
 
 	if blocked := c.gpuPlacementBlock(ctx, desired); blocked != nil {
+		return *blocked, nil
+	}
+
+	if blocked := c.meshWaitBlock(ctx, desired); blocked != nil {
 		return *blocked, nil
 	}
 
