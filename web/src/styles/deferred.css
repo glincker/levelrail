@@ -1,0 +1,164 @@
+/* Rules not needed for first paint. Loaded after the shell mounts (lib/deferredStyles.ts) to keep the first-load budget. */
+
+/* Top bar: regular material once the page scrolls. */
+html:not([data-look='restrained']) header[data-scrolled='true'] > [data-slot='bar-surface'] {
+  background-color: var(--glinr-surface-glass-solid);
+  border-color: var(--glinr-divider);
+}
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  html:not([data-look='restrained']) header[data-scrolled='true'] > [data-slot='bar-surface'] {
+    background-color: var(--glinr-material-regular);
+    -webkit-backdrop-filter: blur(var(--glinr-blur-regular)) saturate(var(--glinr-saturate-regular));
+    backdrop-filter: blur(var(--glinr-blur-regular)) saturate(var(--glinr-saturate-regular));
+  }
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  html:not([data-look='restrained']) header[data-scrolled='true'] > [data-slot='bar-surface'] {
+    background-color: var(--glinr-surface-glass-solid);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* Large title collapses with the scroll where scroll-driven animation exists. */
+@keyframes lr-title-out {
+  to {
+    transform: scale(0.82);
+    opacity: 0.2;
+  }
+}
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    html:not([data-look='restrained']):not([data-motion='off']) header[data-large-title='true'] h1 {
+      transform-origin: left center;
+      animation: lr-title-out linear both;
+      animation-timeline: scroll();
+      animation-range: 0 88px;
+    }
+  }
+}
+
+/* Grain orb: brand colors dissolved into dots by thresholded noise inside a round fade, no solid shape. */
+.grain-orb {
+  background:
+    radial-gradient(
+      38% 38% at 32% 34%,
+      rgba(76, 195, 230, 0.95),
+      transparent 72%
+    ),
+    radial-gradient(
+      40% 40% at 70% 38%,
+      rgba(182, 171, 255, 0.9),
+      transparent 72%
+    ),
+    radial-gradient(
+      38% 38% at 40% 74%,
+      rgba(0, 203, 170, 0.9),
+      transparent 72%
+    ),
+    radial-gradient(
+      30% 30% at 78% 78%,
+      rgba(255, 138, 107, 0.8),
+      transparent 72%
+    ),
+    radial-gradient(
+      26% 26% at 56% 56%,
+      rgba(233, 162, 27, 0.55),
+      transparent 72%
+    );
+  filter: saturate(1.35) brightness(1.3);
+  mask-image:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 9 0 0 0 -3.5'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"),
+    radial-gradient(closest-side, black 18%, transparent 82%);
+  mask-size:
+    180px 180px,
+    100% 100%;
+  mask-composite: intersect;
+  -webkit-mask-composite: source-in;
+}
+
+/* Route view transitions. The shell (brand header, top bar, footer) is not
+   named, so it stays put; only the sidebar body and the page slide. Types come
+   from lib/routeTransition.ts. Browsers without view transitions or
+   :active-view-transition-type simply swap, and reduced motion never starts one. */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+  ::view-transition-group(nav-panel),
+  ::view-transition-group(page-content) {
+    overflow: clip;
+  }
+  ::view-transition-old(nav-panel),
+  ::view-transition-new(nav-panel),
+  ::view-transition-old(page-content),
+  ::view-transition-new(page-content) {
+    animation-duration: var(--route-transition-ms, 200ms);
+    animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+    animation-fill-mode: both;
+  }
+  :root:active-view-transition-type(same)::view-transition-old(page-content) {
+    animation-name: route-fade-out;
+    animation-duration: 100ms;
+  }
+  :root:active-view-transition-type(same)::view-transition-new(page-content) {
+    animation-name: route-fade-in;
+    animation-duration: 140ms;
+  }
+  :root:active-view-transition-type(forward)::view-transition-old(nav-panel),
+  :root:active-view-transition-type(forward)::view-transition-old(
+      page-content
+    ) {
+    animation-name: route-out-left;
+  }
+  :root:active-view-transition-type(forward)::view-transition-new(nav-panel),
+  :root:active-view-transition-type(forward)::view-transition-new(
+      page-content
+    ) {
+    animation-name: route-in-right;
+  }
+  :root:active-view-transition-type(back)::view-transition-old(nav-panel),
+  :root:active-view-transition-type(back)::view-transition-old(page-content) {
+    animation-name: route-out-right;
+  }
+  :root:active-view-transition-type(back)::view-transition-new(nav-panel),
+  :root:active-view-transition-type(back)::view-transition-new(page-content) {
+    animation-name: route-in-left;
+  }
+}
+
+@keyframes route-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes route-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes route-out-left {
+  to {
+    opacity: 0;
+    transform: translateX(-28px);
+  }
+}
+@keyframes route-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+}
+@keyframes route-out-right {
+  to {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+}
+@keyframes route-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-28px);
+  }
+}

@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils'
+import '@/styles/brand-glow.css'
 
 /** BrandGlow paints the login panel's grainy brand wash; place it as the first child of a relative, overflow-hidden, dark parent. */
 export function BrandGlow({ className }: { className?: string }) {

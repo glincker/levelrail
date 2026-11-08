@@ -1,4 +1,6 @@
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { loadDeferredStyles } from '@/lib/deferredStyles'
 import '@/styles/material.css'
 import { SearchGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
@@ -31,6 +33,7 @@ export function AppHeader({ onSearch }: { onSearch: () => void }) {
   const { t } = useTranslation()
   const scrolled = useMainScrolled()
   const pageTitle = usePageTitle()
+  useEffect(loadDeferredStyles, [])
 
   return (
     <>
