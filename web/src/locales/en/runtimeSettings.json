@@ -233,6 +233,18 @@
     "metricsScrapeEnabled": {
       "title": "Prometheus scrape endpoint",
       "description": "Serve app, database and node metrics in Prometheus text format at /metrics for a read token. When off, the endpoint answers 404."
+    },
+    "envApplyOnSet": {
+      "title": "Apply env changes on set",
+      "description": "When on, env set and env import restart the app so the new values reach the running container, as if --apply was passed. Pass --no-apply to keep one change pending. Off by default; a change applies to the next command."
+    },
+    "maxReplicasPerService": {
+      "title": "Replica cap per service",
+      "description": "Largest replica count the API accepts for one service when an app is created, updated or scaled; a bigger count is refused with HTTP 400. Between 1 and 1000; a change applies to the next request, running apps keep their count."
+    },
+    "containersInspectTimeout": {
+      "title": "Container inspect timeout",
+      "description": "How long the app containers view waits for a node's live inspect (health, restarts, networks, mounts), from 1s to 2m. When it runs out the view still answers, with those fields marked unavailable. The next request uses a changed value."
     }
   },
   "row": {

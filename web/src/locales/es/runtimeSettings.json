@@ -233,6 +233,18 @@
     "metricsScrapeEnabled": {
       "title": "Endpoint de scraping de Prometheus",
       "description": "Sirve métricas de apps, bases de datos y nodos en formato de texto Prometheus en /metrics para un token de lectura. Desactivado, el endpoint responde 404."
+    },
+    "envApplyOnSet": {
+      "title": "Aplicar cambios de entorno al guardar",
+      "description": "Si está activo, env set y env import reinician la app para que los valores nuevos lleguen al contenedor en ejecución, como si se pasara --apply. Usa --no-apply para dejar un cambio pendiente. Desactivado por defecto; el cambio se aplica al siguiente comando."
+    },
+    "maxReplicasPerService": {
+      "title": "Límite de réplicas por servicio",
+      "description": "Mayor número de réplicas que acepta la API para un servicio al crear, actualizar o escalar una app; un valor mayor se rechaza con HTTP 400. Entre 1 y 1000; el cambio se aplica a la siguiente petición y las apps en ejecución conservan su número."
+    },
+    "containersInspectTimeout": {
+      "title": "Tiempo límite de inspección de contenedores",
+      "description": "Cuánto espera la vista de contenedores de la app la inspección en vivo de un nodo (salud, reinicios, redes, montajes), de 1s a 2m. Si se agota, la vista responde igualmente con esos campos marcados como no disponibles. La siguiente petición usa el valor nuevo."
     }
   },
   "row": {
