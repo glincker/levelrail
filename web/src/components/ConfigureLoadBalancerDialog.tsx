@@ -2,6 +2,7 @@ import { ListSkeleton } from '@/components/ui/list-skeleton'
 import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { ReactNode } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { PackageGlassIcon } from '@thesvg/ui-react'
@@ -28,6 +29,7 @@ export function ConfigureLoadBalancerDialog({
   onOpenChange: (open: boolean) => void
 }) {
   const navigate = useNavigate()
+  const { t } = useTranslation('statePlaceholders')
   const apps = useAppListOptional()
   const [search, setSearch] = useState('')
 
@@ -50,8 +52,8 @@ export function ConfigureLoadBalancerDialog({
       <EmptyState
         kind="error"
         icon={<TriangleAlertGlassIcon className="size-5" aria-hidden="true" />}
-        title="Could not load your apps"
-        description="Close this dialog and try again."
+        title={t('loadBalancerPicker.loadError')}
+        description={t('loadBalancerPicker.loadErrorHint')}
       />
     )
   } else if ((apps.data ?? []).length === 0) {

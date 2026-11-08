@@ -1,0 +1,46 @@
+{
+  "loadBalancers": {
+    "loadError": "Could not load load balancers"
+  },
+  "loadBalancerPicker": {
+    "loadError": "Could not load your apps",
+    "loadErrorHint": "Close this dialog and try again."
+  },
+  "loadBalancerPage": {
+    "loadError": "Could not load the load balancer",
+    "statusError": "Could not load upstream status"
+  },
+  "healthTimeline": {
+    "loadError": "Could not load deploy history",
+    "loadErrorHint": "The timeline needs it. Try again in a moment."
+  },
+  "mesh": {
+    "title": "WireGuard mesh",
+    "loading": "Loading mesh status...",
+    "disabledTitle": "Mesh networking is not enabled",
+    "disabledHint": "Set APP_MESH_ENABLED=1 on this control plane to bring up its WireGuard device and peer visibility.",
+    "never": "Never",
+    "secondsAgo": "{{count}}s ago",
+    "minutesAgo": "{{count}} min ago",
+    "noMeshAddress": "No mesh address yet",
+    "notPeered": "Not peered yet",
+    "healthy": "Healthy",
+    "stale": "Stale",
+    "noLivePeer": "No live peer entry",
+    "backend": "Backend",
+    "unknown": "Unknown",
+    "meshAddress": "Mesh address",
+    "notAssigned": "Not assigned",
+    "publicKey": "Public key",
+    "notGenerated": "Not generated yet",
+    "endpoint": "Endpoint",
+    "lastHandshake": "Last handshake",
+    "rotationConfirmed": "Last rotation confirmed: started {{started}}, confirmed {{confirmed}}",
+    "rotationConfirmedNoTime": "Last rotation confirmed: started {{started}}",
+    "rotationPending": "Last rotation still confirming: started {{started}}",
+    "noPeers": "No peers configured yet.",
+    "peersLabel": "Mesh peers",
+    "peer": "Peer",
+    "health": "Health"
+  }
+}

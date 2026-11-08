@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useVirtualizer } from '@tanstack/react-virtual'
@@ -76,6 +77,7 @@ function LoadBalancerTable({
 }
 
 export function LoadBalancerOverview() {
+  const { t } = useTranslation('statePlaceholders')
   const [search, setSearch] = useState('')
   const [state, setState] = useState<LoadBalancerOverviewState | ''>('')
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -96,7 +98,7 @@ export function LoadBalancerOverview() {
       <EmptyState
         kind="error"
         icon={<TriangleAlertGlassIcon className="size-5" aria-hidden="true" />}
-        title="Could not load load balancers"
+        title={t('loadBalancers.loadError')}
         description={query.error.message}
       />
     )

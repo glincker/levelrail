@@ -146,6 +146,7 @@ import type models from '../locales/en/models.json'
 import type hubs from '../locales/en/hubs.json'
 import type aiAssistant from '../locales/en/aiAssistant.json'
 import type demo from '../locales/en/demo.json'
+import type statePlaceholders from '../locales/en/statePlaceholders.json'
 import type secretScan from '../locales/en/secretScan.json'
 import type appFiles from '../locales/en/appFiles.json'
 import type appContainers from '../locales/en/appContainers.json'
@@ -281,6 +282,7 @@ declare module 'i18next' {
       templates: typeof templates
       aiAssistant: typeof aiAssistant
       demo: typeof demo
+      statePlaceholders: typeof statePlaceholders
       secretScan: typeof secretScan
       appFiles: typeof appFiles
       appContainers: typeof appContainers

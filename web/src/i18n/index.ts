@@ -110,6 +110,7 @@ export const NAMESPACES = [
   'encryptionKeys',
   'aiAssistant',
   'demo',
+  'statePlaceholders',
   'secretScan',
   'appFiles',
   'appContainers',

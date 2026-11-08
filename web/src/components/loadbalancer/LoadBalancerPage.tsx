@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useQueryClient } from '@tanstack/react-query'
@@ -66,6 +67,7 @@ function Loading() {
 }
 
 export function LoadBalancerPage({ appName, replicas, onSetReplicas }: Props) {
+  const { t } = useTranslation('statePlaceholders')
   const resource = useAppLoadBalancer(appName)
   const configured = resource.data?.configured ?? false
   const status = useAppLoadBalancerStatus(appName, configured)
@@ -147,7 +149,7 @@ export function LoadBalancerPage({ appName, replicas, onSetReplicas }: Props) {
       <EmptyState
         kind="error"
         icon={<TriangleAlertGlassIcon className="size-5" aria-hidden="true" />}
-        title="Could not load the load balancer"
+        title={t('loadBalancerPage.loadError')}
         description={resource.error.message}
       />
     )
@@ -344,7 +346,7 @@ export function LoadBalancerPage({ appName, replicas, onSetReplicas }: Props) {
               icon={
                 <TriangleAlertGlassIcon className="size-5" aria-hidden="true" />
               }
-              title="Could not load upstream status"
+              title={t('loadBalancerPage.statusError')}
               description={status.error.message}
             />
           ) : (

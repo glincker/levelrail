@@ -1,0 +1,46 @@
+{
+  "loadBalancers": {
+    "loadError": "No se pudieron cargar los balanceadores de carga"
+  },
+  "loadBalancerPicker": {
+    "loadError": "No se pudieron cargar tus apps",
+    "loadErrorHint": "Cierra este cuadro e inténtalo de nuevo."
+  },
+  "loadBalancerPage": {
+    "loadError": "No se pudo cargar el balanceador de carga",
+    "statusError": "No se pudo cargar el estado de los upstreams"
+  },
+  "healthTimeline": {
+    "loadError": "No se pudo cargar el historial de despliegues",
+    "loadErrorHint": "La línea de tiempo lo necesita. Inténtalo de nuevo en un momento."
+  },
+  "mesh": {
+    "title": "Malla WireGuard",
+    "loading": "Cargando el estado de la malla...",
+    "disabledTitle": "La red de malla no está activada",
+    "disabledHint": "Define APP_MESH_ENABLED=1 en este plano de control para activar su dispositivo WireGuard y la visibilidad de pares.",
+    "never": "Nunca",
+    "secondsAgo": "hace {{count}} s",
+    "minutesAgo": "hace {{count}} min",
+    "noMeshAddress": "Aún sin dirección de malla",
+    "notPeered": "Aún sin emparejar",
+    "healthy": "Sano",
+    "stale": "Obsoleto",
+    "noLivePeer": "Sin entrada de par activa",
+    "backend": "Backend",
+    "unknown": "Desconocido",
+    "meshAddress": "Dirección de malla",
+    "notAssigned": "Sin asignar",
+    "publicKey": "Clave pública",
+    "notGenerated": "Aún sin generar",
+    "endpoint": "Endpoint",
+    "lastHandshake": "Último handshake",
+    "rotationConfirmed": "Última rotación confirmada: iniciada {{started}}, confirmada {{confirmed}}",
+    "rotationConfirmedNoTime": "Última rotación confirmada: iniciada {{started}}",
+    "rotationPending": "Última rotación aún en confirmación: iniciada {{started}}",
+    "noPeers": "Aún no hay pares configurados.",
+    "peersLabel": "Pares de la malla",
+    "peer": "Par",
+    "health": "Estado"
+  }
+}

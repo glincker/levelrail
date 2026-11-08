@@ -1,4 +1,5 @@
 import { useMemo, useState, type KeyboardEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -173,6 +174,7 @@ function Legend() {
 }
 
 export function AppHealthTimeline({ appName }: { appName: string }) {
+  const { t } = useTranslation('statePlaceholders')
   const navigate = useNavigate()
   const [rangeKey, setRangeKey] = useState<TimeRangeKey>('24h')
   const [hovered, setHovered] = useState<string | null>(null)
@@ -228,8 +230,8 @@ export function AppHealthTimeline({ appName }: { appName: string }) {
           icon={
             <TriangleAlertGlassIcon className="size-5" aria-hidden="true" />
           }
-          title="Could not load deploy history"
-          description="The timeline needs it. Try again in a moment."
+          title={t('healthTimeline.loadError')}
+          description={t('healthTimeline.loadErrorHint')}
         />
       </div>
     )
