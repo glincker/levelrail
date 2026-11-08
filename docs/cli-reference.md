@@ -202,6 +202,7 @@ levelrail-cli apps init [--file app.yaml] [--name NAME] [--image IMAGE | --build
 levelrail-cli apps validate --file <app.yaml|compose.yaml> [flags]
 levelrail-cli apps validate-spec <app> --file PATH|- [flags]
 levelrail-cli apps listening-ports <app> [flags]
+levelrail-cli apps next-advisor <app> [flags]
 levelrail-cli apps clone <name> <new-name> [flags]
 levelrail-cli apps delete <name> [flags]
 ```
@@ -214,6 +215,7 @@ levelrail-cli apps delete <name> [flags]
 - `apps init` writes a starter `app.yaml` offline. Optional field names and hints are read from the embedded schema, and the result is validated before it is written. It refuses to overwrite a file unless `--force` is set.
 - `apps validate-spec <app> --file PATH|-` sends the file to the server and checks it with the deploy-time rules, without deploying or saving. It prints one `error path: message` line per issue and exits 2 when invalid. Files over 1 MiB are rejected before any request. `--json` prints the raw response.
 - `apps listening-ports <app>` shows whether the running container listens on the configured port. It reads the container socket table, so it needs exec enabled for the app; otherwise the note column says why and the verdict is `unknown`.
+- `apps next-advisor <app>` checks the saved config of a Next.js app (shared cache, skew protection, build memory, web vitals) and prints one row per finding with its fix. It needs no build; for other apps it says Next.js was not detected. `--json` prints the raw response.
 - `apps validate` parses and validates an app.yaml or a Docker Compose file locally, with no API call and no deploy. It prints the detected format, service count, and every non-blocking `notices` entry a real deploy would also surface.
 - `apps delete` removes an app and stops its containers; if the node is unreachable the delete is reported as pending and retried.
 
@@ -269,6 +271,7 @@ levelrail-cli apps deploys compare <name> --from ID [--to ID] [flags]
 levelrail-cli apps deploys logs <name> <deploy-id> [flags]
 levelrail-cli apps deploys steps <name> <deploy-id> [flags]
 levelrail-cli apps deploys failed [--since 24h] [flags]
+levelrail-cli apps deploys build-report <name> <deploy-id> [flags]
 levelrail-cli apps deploys cancel <name> <deploy-id> [flags]
 levelrail-cli apps deploys rollback-to <name> <deploy-id> [--watch] [flags]
 levelrail-cli apps deploys gate <name> [deploy-id] [--watch] [flags]
@@ -305,6 +308,7 @@ levelrail-cli apps auto-rollback-slo-burn status <app-name> [flags]
 
 - `apps deploys list` is real, row per attempt deploy history, newest first. `apps deploys show` prints one attempt (the newest by default) with its structured failure: code, cause, failing step, redacted log excerpt, suggested fix, docs link and retryable. See [Deploy failures](/deploy-failures).
 - `apps deploys wait` blocks until one deploy is healthy, failed, canceled, superseded or blocked (a freeze window or approval) and prints the result with its failure. Exit 0 healthy, 7 failed, canceled, superseded or blocked, 6 timeout. Without a deploy id it resolves the newest deploy once and follows it by id.
+- `apps deploys build-report <name> <deploy-id>` prints the Next.js route table (static, ISR or dynamic, with sizes), the shared first-load size and build warnings parsed from that attempt's stored build log. Sizes read 0 when the log has no size columns.
 - `apps deploys compare` diffs two deploy attempts, or one against the current live state. `apps deploys logs` prints one attempt's full build and log output to stdout. `apps deploys steps` streams the pipeline steps (detecting, building, pushing, deploying) until the attempt ends and exits non-zero if a step failed; an already finished attempt replays only a short summary.
 - `apps deploys failed` lists every app's latest failed deploy in the window (default set by the server), with the image of its newest good deploy as a rollback target.
 - `apps deploys cancel` cancels a queued or in-progress deploy before it cuts traffic. `apps deploys rollback-to` redeploys a past succeeded deploy's exact image, pinned by digest or rollback pin, with that deploy's config; `--watch` follows it through the readiness gate.

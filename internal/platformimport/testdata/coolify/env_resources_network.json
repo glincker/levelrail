@@ -1,0 +1,14 @@
+{
+  "name": "production",
+  "applications": [
+    {"uuid": "app-web", "name": "web", "build_pack": "dockerimage", "docker_registry_image_name": "ghcr.io/acme/w", "docker_registry_image_tag": "v1", "ports_exposes": "80",
+     "limits_memory": "512m", "limits_memory_swap": "1g", "limits_memory_swappiness": 60, "limits_memory_reservation": "256m", "destination": {"network": "backend"}},
+    {"uuid": "app-api", "name": "api", "build_pack": "dockerimage", "docker_registry_image_name": "ghcr.io/acme/a", "docker_registry_image_tag": "v1", "ports_exposes": "80",
+     "limits_memory_swap": "0", "limits_memory_reservation": "0", "destination": {"network": "backend"}},
+    {"uuid": "app-solo", "name": "solo", "build_pack": "dockerimage", "docker_registry_image_name": "ghcr.io/acme/s", "docker_registry_image_tag": "v1", "ports_exposes": "80",
+     "destination": {"network": "lonely"}},
+    {"uuid": "app-def", "name": "def", "build_pack": "dockerimage", "docker_registry_image_name": "ghcr.io/acme/d", "docker_registry_image_tag": "v1", "ports_exposes": "80",
+     "destination": {"network": "coolify"}}
+  ],
+  "postgresqls": [{"uuid": "db-1", "name": "main-db", "image": "postgres:16", "destination": {"network": "backend"}}]
+}

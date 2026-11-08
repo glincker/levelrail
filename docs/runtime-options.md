@@ -18,9 +18,9 @@ description: The allowlisted container options a service can set under runtime, 
 | `dns` | Up to 3 resolver IPs, used after the mesh resolver |
 | `sysctls` | `net.core.somaxconn`, `net.ipv4.ip_local_port_range`, `net.ipv4.ip_unprivileged_port_start`, `net.ipv4.ping_group_range`, `net.ipv4.tcp_fin_timeout`, `net.ipv4.tcp_keepalive_{time,intvl,probes}`, `net.ipv4.tcp_max_syn_backlog`, `net.ipv4.tcp_syncookies`, `net.ipv4.tcp_tw_reuse`; not with `egress` |
 | `cap_drop` | Capability names such as `NET_RAW`, or `ALL`. The `CAP_` prefix is optional. |
-| `pids_limit` | Process cap, at most `APP_RUNTIME_PIDS_LIMIT_MAX` (default 32768). Unset, the container keeps the platform default, `APP_CONTAINER_PIDS_LIMIT` (4096). |
+| `pids_limit` | Process cap, at most the `runtime.pids_limit_max` setting (default 32768). Unset, the container keeps the platform default, `APP_CONTAINER_PIDS_LIMIT` (4096). |
 
-Counts and sizes are bounded by the `APP_RUNTIME_*` variables, for example `APP_RUNTIME_DNS_MAX`, `APP_RUNTIME_ULIMIT_COUNT_MAX` and `APP_RUNTIME_TMPFS_MAX`.
+Counts and sizes are bounded by the `runtime.*` [runtime settings](/runtime-settings#deploys), for example `runtime.dns_max`, `runtime.ulimit_count_max` and `runtime.tmpfs_max`. Change them in Settings, with the CLI or the API and they apply to the next deploy or edit without a restart. The `APP_RUNTIME_*` variables only seed the defaults.
 
 ## Change them without editing the spec
 
@@ -48,4 +48,4 @@ services:
 
 Compose files map `tmpfs`, `ulimits`, `init`, `stop_grace_period` (to `stop_timeout`), `extra_hosts`, `dns`, `sysctls`, `cap_drop`, `pids_limit` and `read_only` onto the same keys. An invalid `cap_drop` or `read_only` fails the deploy. Any other invalid set is skipped with a warning that names it, and the rest of the block still applies. Nodes with an older agent refuse the deploy until upgraded.
 
-A `tmpfs` entry in a compose file with no `size=` gets a default size of 64 MiB. Set `APP_RUNTIME_TMPFS_DEFAULT_BYTES` to change it, up to `APP_RUNTIME_TMPFS_MAX_BYTES` (1 GiB unless set). The `runtime:` block still requires `size=` on every entry.
+A `tmpfs` entry in a compose file with no `size=` gets a default size of 64 MiB. Change it with the `runtime.tmpfs_default_bytes` setting, up to `runtime.tmpfs_max_bytes` (1 GiB by default). The `runtime:` block still requires `size=` on every entry.

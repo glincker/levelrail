@@ -8,12 +8,14 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync/atomic"
 
 	"gopkg.in/yaml.v3"
 )
 
-// Limits come from env so an operator can tighten or widen them; the
-// defaults keep one app from claiming host-sized resources.
+// Limits are runtime settings (APP_RUNTIME_* only seeds them) so an operator
+// can tighten or widen them live; the defaults keep one app from claiming
+// host-sized resources.
 const (
 	envRuntimeTmpfsDefault   = "APP_RUNTIME_TMPFS_DEFAULT_BYTES"
 	envRuntimeTmpfsMax       = "APP_RUNTIME_TMPFS_MAX"
@@ -37,11 +39,33 @@ const (
 	defaultRuntimeUlimitBytes    = 1 << 30
 )
 
+// runtimeLimitSource resolves a limit by its env name from the runtime
+// settings; it stays nil in tools without a database, which read env.
+var runtimeLimitSource atomic.Pointer[func(env string) (int, bool)]
+
+// SetRuntimeLimitSource makes the runtime option bounds follow saved settings.
+func SetRuntimeLimitSource(fn func(env string) (int, bool)) {
+	if fn == nil {
+		runtimeLimitSource.Store(nil)
+		return
+	}
+	runtimeLimitSource.Store(&fn)
+}
+
+func runtimeLimit(envKey string, def int) int {
+	if src := runtimeLimitSource.Load(); src != nil {
+		if n, ok := (*src)(envKey); ok && n > 0 {
+			return n
+		}
+	}
+	return envPositive(envKey, def)
+}
+
 // MaxStopTimeoutSeconds is the hard ceiling the agent wire format also applies.
 const MaxStopTimeoutSeconds = 3600
 
 // RuntimeDNSMax is how many resolvers a container may have in total.
-func RuntimeDNSMax() int { return envPositive(envRuntimeDNSMax, defaultRuntimeDNSMax) }
+func RuntimeDNSMax() int { return runtimeLimit(envRuntimeDNSMax, defaultRuntimeDNSMax) }
 
 // RuntimeOptions is the allowlisted subset of docker run options. Anything
 // that widens the container's reach into the host (cap_add, privileged,
@@ -174,7 +198,7 @@ func (r *RuntimeOptions) ShmSizeBytes() int64 {
 	if r == nil || r.ShmSize == "" {
 		return 0
 	}
-	n, _ := ParseByteSize(r.ShmSize, int64(envPositive(envRuntimeShmBytes, defaultRuntimeShmBytes)))
+	n, _ := ParseByteSize(r.ShmSize, int64(runtimeLimit(envRuntimeShmBytes, defaultRuntimeShmBytes)))
 	return n
 }
 
@@ -184,7 +208,7 @@ func (r *RuntimeOptions) Validate() error {
 		return nil
 	}
 	if r.ShmSize != "" {
-		if _, err := ParseByteSize(r.ShmSize, int64(envPositive(envRuntimeShmBytes, defaultRuntimeShmBytes))); err != nil {
+		if _, err := ParseByteSize(r.ShmSize, int64(runtimeLimit(envRuntimeShmBytes, defaultRuntimeShmBytes))); err != nil {
 			return fmt.Errorf("runtime.shm_size: %w", err)
 		}
 	}
@@ -197,10 +221,10 @@ func (r *RuntimeOptions) Validate() error {
 }
 
 func (r *RuntimeOptions) validateTmpfs() error {
-	if limit := envPositive(envRuntimeTmpfsMax, defaultRuntimeTmpfsMax); len(r.Tmpfs) > limit {
+	if limit := runtimeLimit(envRuntimeTmpfsMax, defaultRuntimeTmpfsMax); len(r.Tmpfs) > limit {
 		return fmt.Errorf("runtime.tmpfs: at most %d mounts", limit)
 	}
-	maxBytes := int64(envPositive(envRuntimeTmpfsBytes, defaultRuntimeTmpfsBytes))
+	maxBytes := int64(runtimeLimit(envRuntimeTmpfsBytes, defaultRuntimeTmpfsBytes))
 	seen := map[string]bool{}
 	for i, entry := range r.Tmpfs {
 		p, opts, _ := strings.Cut(entry, ":")
@@ -239,9 +263,9 @@ func (r *RuntimeOptions) validateUlimits() error {
 		if !ok {
 			return fmt.Errorf("runtime.ulimits.%s: not allowed; use nofile, nproc, cpu, core, stack, memlock or fsize", strings.ToValidUTF8(truncate(name, 24), "?"))
 		}
-		limit := int64(envPositive(envRuntimeUlimitCount, defaultRuntimeUlimitCount))
+		limit := int64(runtimeLimit(envRuntimeUlimitCount, defaultRuntimeUlimitCount))
 		if isBytes {
-			limit = int64(envPositive(envRuntimeUlimitBytes, defaultRuntimeUlimitBytes))
+			limit = int64(runtimeLimit(envRuntimeUlimitBytes, defaultRuntimeUlimitBytes))
 		}
 		if u.Soft < 0 || u.Hard < 0 || u.Soft > limit || u.Hard > limit {
 			return fmt.Errorf("runtime.ulimits.%s: values must be between 0 and %d", name, limit)
@@ -261,7 +285,7 @@ func truncate(s string, n int) string {
 }
 
 func (r *RuntimeOptions) validateHosts() error {
-	if limit := envPositive(envRuntimeExtraHostsMax, defaultRuntimeExtraHostsMax); len(r.ExtraHosts) > limit {
+	if limit := runtimeLimit(envRuntimeExtraHostsMax, defaultRuntimeExtraHostsMax); len(r.ExtraHosts) > limit {
 		return fmt.Errorf("runtime.extra_hosts: at most %d entries", limit)
 	}
 	for i, h := range r.ExtraHosts {
@@ -274,7 +298,7 @@ func (r *RuntimeOptions) validateHosts() error {
 			return fmt.Errorf("runtime.extra_hosts[%d]: address must be an IP, host-gateway is not allowed", i)
 		}
 	}
-	if limit := envPositive(envRuntimeDNSMax, defaultRuntimeDNSMax); len(r.DNS) > limit {
+	if limit := runtimeLimit(envRuntimeDNSMax, defaultRuntimeDNSMax); len(r.DNS) > limit {
 		return fmt.Errorf("runtime.dns: at most %d servers", limit)
 	}
 	for i, d := range r.DNS {
@@ -319,10 +343,10 @@ func (r *RuntimeOptions) validateCaps() error {
 }
 
 func (r *RuntimeOptions) validateNumbers() error {
-	if limit := min(envPositive(envRuntimeStopTimeoutMax, defaultRuntimeStopTimeoutMax), MaxStopTimeoutSeconds); r.StopTimeout != nil && (*r.StopTimeout < 0 || *r.StopTimeout > limit) {
+	if limit := min(runtimeLimit(envRuntimeStopTimeoutMax, defaultRuntimeStopTimeoutMax), MaxStopTimeoutSeconds); r.StopTimeout != nil && (*r.StopTimeout < 0 || *r.StopTimeout > limit) {
 		return fmt.Errorf("runtime.stop_timeout: seconds between 0 and %d", limit)
 	}
-	if limit := envPositive(envRuntimePidsMax, defaultRuntimePidsMax); r.PidsLimit < 0 || r.PidsLimit > limit {
+	if limit := runtimeLimit(envRuntimePidsMax, defaultRuntimePidsMax); r.PidsLimit < 0 || r.PidsLimit > limit {
 		return fmt.Errorf("runtime.pids_limit: between 1 and %d", limit)
 	}
 	return nil
@@ -409,8 +433,8 @@ func NormalizeTmpfs(entry string) string {
 	if strings.Contains(opts, "size=") {
 		return entry
 	}
-	size := envPositive(envRuntimeTmpfsDefault, 64<<20)
-	if limit := envPositive(envRuntimeTmpfsBytes, defaultRuntimeTmpfsBytes); size > limit {
+	size := runtimeLimit(envRuntimeTmpfsDefault, 64<<20)
+	if limit := runtimeLimit(envRuntimeTmpfsBytes, defaultRuntimeTmpfsBytes); size > limit {
 		size = limit
 	}
 	if opts == "" {

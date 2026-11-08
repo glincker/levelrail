@@ -25,14 +25,14 @@ func CurrentRuntimeBounds() RuntimeBounds {
 	}
 	sort.Strings(ul)
 	return RuntimeBounds{
-		TmpfsMax:       envPositive(envRuntimeTmpfsMax, defaultRuntimeTmpfsMax),
-		TmpfsBytesMax:  envPositive(envRuntimeTmpfsBytes, defaultRuntimeTmpfsBytes),
-		ExtraHostsMax:  envPositive(envRuntimeExtraHostsMax, defaultRuntimeExtraHostsMax),
-		DNSMax:         envPositive(envRuntimeDNSMax, defaultRuntimeDNSMax),
-		StopTimeoutMax: min(envPositive(envRuntimeStopTimeoutMax, defaultRuntimeStopTimeoutMax), MaxStopTimeoutSeconds),
-		PidsLimitMax:   envPositive(envRuntimePidsMax, defaultRuntimePidsMax),
-		UlimitCountMax: envPositive(envRuntimeUlimitCount, defaultRuntimeUlimitCount),
-		UlimitBytesMax: envPositive(envRuntimeUlimitBytes, defaultRuntimeUlimitBytes),
+		TmpfsMax:       runtimeLimit(envRuntimeTmpfsMax, defaultRuntimeTmpfsMax),
+		TmpfsBytesMax:  runtimeLimit(envRuntimeTmpfsBytes, defaultRuntimeTmpfsBytes),
+		ExtraHostsMax:  runtimeLimit(envRuntimeExtraHostsMax, defaultRuntimeExtraHostsMax),
+		DNSMax:         runtimeLimit(envRuntimeDNSMax, defaultRuntimeDNSMax),
+		StopTimeoutMax: min(runtimeLimit(envRuntimeStopTimeoutMax, defaultRuntimeStopTimeoutMax), MaxStopTimeoutSeconds),
+		PidsLimitMax:   runtimeLimit(envRuntimePidsMax, defaultRuntimePidsMax),
+		UlimitCountMax: runtimeLimit(envRuntimeUlimitCount, defaultRuntimeUlimitCount),
+		UlimitBytesMax: runtimeLimit(envRuntimeUlimitBytes, defaultRuntimeUlimitBytes),
 		Ulimits:        ul,
 		Sysctls:        sortedKeys(safeSysctls),
 	}

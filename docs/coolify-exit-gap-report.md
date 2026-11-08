@@ -42,11 +42,11 @@ Status words: **moves** means created on the new side, **reported** means the to
 | Git webhook secrets (auto deploy) | reported | New. The git host still calls Coolify until you add a webhook pointing here |
 | HTTP health checks | moves | Path, interval, timeout and retries |
 | Command health checks | moves | Built, unit tested, source field name not verified against a real instance. A command check becomes an `exec` probe (`sh -c COMMAND`, see the [app spec](/app-spec-reference)) with interval, timeout and retries. A missing, oversized or unrecognised command keeps a note to add the probe by hand |
-| Memory and CPU limits | moves | Swap and reservations are not mapped |
+| Memory and CPU limits | moves | Memory and CPU are mapped. A swap or memory reservation set on the source has no setting here, so it is listed as a note on the app with its value |
 | Preview deployments | reported | Flag only. Previews are not recreated |
 | Projects and environments | moves | Each Coolify project becomes a project and each of its environments (empty ones too) becomes an environment of it. Apps and databases keep their own environment. The dry run lists every environment, and a re-run skips the ones that exist |
 | Servers and destinations | reported | New. The report lists every server, the proxy that holds ports 80 and 443, and warns when there is more than one deploy server. Staged apps land on the control plane node |
-| Docker networks | invisible | Apps that rely on a custom Coolify network are not detected |
+| Docker networks | reported | An app on a custom network shared with another imported app, database or service gets a note naming the others. Read from the data already fetched, no extra request. Networks the API does not expose are not seen |
 | Team members, roles, API tokens | invisible | Not migrated by design. Recreate users and tokens here |
 | S3 storage destinations | reported | One row per destination with a `backup-targets create` command. Keys and bucket secrets are never read, so you enter them again |
 | SSH keys, GitHub App credentials | invisible | Credentials are never read. Add them again |
@@ -67,11 +67,11 @@ Status words: **moves** means created on the new side, **reported** means the to
 - That Coolify's API returns the fields above for every build pack and version.
 - Restoring a backup copied across, and the write pause needed for a database that takes writes during the final copy.
 - Fallback to Coolify after the first write lands on the new database. Copy the data back first.
+- The `destination.network` and memory swap field names in the application payload, which are assumed from the documented API and not checked on a real instance.
 - One-click service staging (compose translation, generated secrets and the `compose deploy` step) against a real Coolify instance. Pending run.
 
 ## Next gaps, by value
 
 1. Import database backup schedules and S3 targets instead of listing them.
-2. Detect apps that depend on a custom Docker network.
-3. Per-server node placement for multi-server instances.
-4. Recreate git webhooks through the git provider integration. GitHub, GitLab, Bitbucket, Gitea and Azure DevOps (`azure_devops`, access token plus service hook) are all supported git sources here, so every provider has a target.
+2. Per-server node placement for multi-server instances.
+3. Recreate git webhooks through the git provider integration. GitHub, GitLab, Bitbucket, Gitea and Azure DevOps (`azure_devops`, access token plus service hook) are all supported git sources here, so every provider has a target.

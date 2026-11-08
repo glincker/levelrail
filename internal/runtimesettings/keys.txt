@@ -152,6 +152,16 @@ retention.revoked_token_days
 retention.status_incident_days
 retention.usage_cost_days
 retention.webhook_delivery_days
+runtime.dns_max
+runtime.extra_hosts_max
+runtime.pids_limit_max
+runtime.shm_max_bytes
+runtime.stop_timeout_max_seconds
+runtime.tmpfs_default_bytes
+runtime.tmpfs_max
+runtime.tmpfs_max_bytes
+runtime.ulimit_bytes_max
+runtime.ulimit_count_max
 scheduled_tasks.history_keep
 secrets.provider_cache_ttl_seconds
 secrets.provider_max_response_kib

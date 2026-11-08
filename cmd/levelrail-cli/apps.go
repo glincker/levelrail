@@ -37,6 +37,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsValidateSpec(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	case "listening-ports":
 		return runAppsListeningPorts(prog, args[1:], stdout, stderr, lookupEnv)
+	case "next-advisor":
+		return runAppsNextAdvisor(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy-spec":
 		return runAppsDeploySpec(prog, args[1:], stdout, stderr, lookupEnv)
 	case "group":
@@ -315,6 +317,7 @@ func appsUsage(prog string) string {
   %[1]s apps get <name> [flags]       show one app
   %[1]s apps validate-spec <app> --file PATH|- [flags]   check an app.yaml on the server without deploying
   %[1]s apps listening-ports <app> [flags]   show which ports the running container listens on
+  %[1]s apps next-advisor <app> [flags]   check a Next.js app's saved config and list what to fix
   %[1]s apps skew <name> [flags]      show skew protection and the held previous release
   %[1]s apps maintenance show|set|clear <app> [flags]   maintenance page on every domain of the app, all or none
   %[1]s apps deploy <name> [flags]   deploy an image to an existing app

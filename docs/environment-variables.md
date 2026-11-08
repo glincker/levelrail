@@ -174,6 +174,16 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_PROJECTS_DEFAULT_ENVIRONMENT` | [`projects.default_environment`](/runtime-settings#deploys) | `false` |
 | `APP_PROJECTS_DEFAULT_ENVIRONMENT_NAME` | [`projects.default_environment_name`](/runtime-settings#deploys) | `production` |
 | `APP_REGISTRY_MIRROR_PREFIX` | [`registry.mirror_prefix`](/runtime-settings#deploys) | empty |
+| `APP_RUNTIME_DNS_MAX` | [`runtime.dns_max`](/runtime-settings#deploys) | `3` |
+| `APP_RUNTIME_EXTRA_HOSTS_MAX` | [`runtime.extra_hosts_max`](/runtime-settings#deploys) | `32` |
+| `APP_RUNTIME_PIDS_LIMIT_MAX` | [`runtime.pids_limit_max`](/runtime-settings#deploys) | `32768` |
+| `APP_RUNTIME_SHM_MAX_BYTES` | [`runtime.shm_max_bytes`](/runtime-settings#deploys) | `4294967296` |
+| `APP_RUNTIME_STOP_TIMEOUT_MAX_SECONDS` | [`runtime.stop_timeout_max_seconds`](/runtime-settings#deploys) | `600` |
+| `APP_RUNTIME_TMPFS_DEFAULT_BYTES` | [`runtime.tmpfs_default_bytes`](/runtime-settings#deploys) | `67108864` |
+| `APP_RUNTIME_TMPFS_MAX` | [`runtime.tmpfs_max`](/runtime-settings#deploys) | `16` |
+| `APP_RUNTIME_TMPFS_MAX_BYTES` | [`runtime.tmpfs_max_bytes`](/runtime-settings#deploys) | `1073741824` |
+| `APP_RUNTIME_ULIMIT_BYTES_MAX` | [`runtime.ulimit_bytes_max`](/runtime-settings#deploys) | `1073741824` |
+| `APP_RUNTIME_ULIMIT_COUNT_MAX` | [`runtime.ulimit_count_max`](/runtime-settings#deploys) | `4194304` |
 | `APP_VOLUMES_IMPORT_OVERWRITE` | [`volumes.import_overwrite`](/runtime-settings#deploys) | `false` |
 | `APP_VOLUMES_TRANSFER_MAX_BYTES` | [`volumes.transfer_max_bytes`](/runtime-settings#deploys) | `10737418240` |
 | `APP_VOLUMES_TRANSFER_MAX_CONCURRENT` | [`volumes.transfer_max_concurrent`](/runtime-settings#deploys) | `1` |
