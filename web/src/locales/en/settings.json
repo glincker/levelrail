@@ -736,6 +736,10 @@
     "groupCount": "{{count}} pages",
     "noMatchTitle": "No settings match \"{{query}}\"",
     "noMatchDescription": "Try a different word, or clear the search to see every area.",
+    "searchLoading": "Searching settings",
+    "searchFailedTitle": "Search could not finish",
+    "searchFailedDescription": "Showing the matches found in the menu. Try the full search again.",
+    "retry": "Retry",
     "title": "Settings",
     "description": "Account, team, and platform configuration.",
     "jumpTo": "Jump to an area"

@@ -1,7 +1,11 @@
 import { useMemo, useState } from 'react'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { SearchGlassIcon, SettingsGlassIcon } from '@thesvg/ui-react'
+import {
+  TriangleAlertGlassIcon,
+  SearchGlassIcon,
+  SettingsGlassIcon,
+} from '@thesvg/ui-react'
 import {
   filterSettingsNav,
   mergeSettingsHits,
@@ -13,7 +17,9 @@ import { Badge } from '@/components/ui/badge'
 import { BETA_FEATURES_PATH, lockedSearch } from '../../lib/experimental'
 import { PageBanner } from '../../components/PageBanner'
 import { EmptyState } from '../../components/ui/empty-state'
+import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
+import { Skeleton } from '../../components/ui/skeleton'
 import {
   Card,
   CardHeader,
@@ -79,6 +85,9 @@ function SettingsHubPage() {
     return mergeSettingsHits(sections, local, hrefs)
   }, [sections, query, q, settingHits.data])
 
+  const searching = q.length >= 2 && settingHits.isLoading
+  const searchFailed = q.length >= 2 && settingHits.isError
+
   return (
     <div className="mx-auto flex w-full min-w-0 max-w-(--glinr-content-max) flex-col gap-(--glinr-page-gap)">
       <PageBanner
@@ -117,6 +126,39 @@ function SettingsHubPage() {
             </a>
           ))}
         </nav>
+      ) : null}
+
+      {searching ? (
+        <div
+          role="status"
+          aria-busy="true"
+          aria-label={t('nav.searchLoading')}
+          className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+        >
+          {Array.from({ length: 3 }, (_, i) => (
+            <Skeleton key={i} className="h-20 w-full" />
+          ))}
+        </div>
+      ) : null}
+
+      {searchFailed ? (
+        <EmptyState
+          kind="error"
+          icon={<TriangleAlertGlassIcon className="size-5" />}
+          title={t('nav.searchFailedTitle')}
+          description={t('nav.searchFailedDescription')}
+          action={
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                void settingHits.refetch()
+              }}
+            >
+              {t('nav.retry')}
+            </Button>
+          }
+        />
       ) : null}
 
       {visible.length === 0 ? (
