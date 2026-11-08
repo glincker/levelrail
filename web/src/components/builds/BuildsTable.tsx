@@ -20,16 +20,25 @@ import {
 const VIRTUALIZE_ABOVE = 50
 const ROW_HEIGHT_PX = 76
 const GRID =
-  'grid grid-cols-[minmax(0,2fr)_minmax(0,1.1fr)_5rem_4rem_minmax(0,1.1fr)_minmax(0,1fr)_minmax(0,1.6fr)] items-center gap-3 px-4'
+  'grid grid-cols-[1.25rem_minmax(0,2fr)_minmax(0,1.1fr)_5rem_4rem_minmax(0,1.1fr)_minmax(0,1fr)_minmax(0,1.6fr)] items-center gap-3 px-4'
 
 interface RowProps {
   row: BuildRow
   running: number
   nowMs: number
+  selected: boolean
+  onToggle: (id: string) => void
   onFixCache: () => void
 }
 
-function BuildRowItem({ row, running, nowMs, onFixCache }: RowProps) {
+function BuildRowItem({
+  row,
+  running,
+  nowMs,
+  selected,
+  onToggle,
+  onFixCache,
+}: RowProps) {
   const { t } = useTranslation('buildCenter')
   const cancel = useBuildAction('cancel')
   const retry = useBuildAction('retry')
@@ -60,6 +69,15 @@ function BuildRowItem({ row, running, nowMs, onFixCache }: RowProps) {
       className={`${GRID} h-[76px] border-b border-border text-sm`}
       data-testid={`build-row-${row.id}`}
     >
+      <input
+        type="checkbox"
+        className="size-4 accent-primary"
+        checked={selected}
+        aria-label={t('select.row', { app: row.app })}
+        onChange={() => {
+          onToggle(row.id)
+        }}
+      />
       <span className="min-w-0">
         <span className="block truncate font-medium">{row.app}</span>
         <span className="block truncate font-mono text-xs text-muted-foreground">
@@ -150,10 +168,20 @@ function BuildRowItem({ row, running, nowMs, onFixCache }: RowProps) {
 interface TableProps {
   rows: BuildRow[]
   running: number
+  selected: ReadonlySet<string>
+  onToggle: (id: string) => void
+  onToggleAll: () => void
   onFixCache: () => void
 }
 
-export function BuildsTable({ rows, running, onFixCache }: TableProps) {
+export function BuildsTable({
+  rows,
+  running,
+  selected,
+  onToggle,
+  onToggleAll,
+  onFixCache,
+}: TableProps) {
   const { t } = useTranslation('buildCenter')
   const parentRef = useRef<HTMLDivElement>(null)
   const virtualize = rows.length > VIRTUALIZE_ABOVE
@@ -173,6 +201,13 @@ export function BuildsTable({ rows, running, onFixCache }: TableProps) {
       <div
         className={`${GRID} sticky top-0 z-10 border-b border-border bg-card py-2 text-xs font-medium text-muted-foreground`}
       >
+        <input
+          type="checkbox"
+          className="size-4 accent-primary"
+          checked={rows.length > 0 && rows.every((r) => selected.has(r.id))}
+          aria-label={t('select.all')}
+          onChange={onToggleAll}
+        />
         <span>{t('columns.build')}</span>
         <span>{t('columns.status')}</span>
         <span>{t('columns.duration')}</span>
@@ -199,6 +234,8 @@ export function BuildsTable({ rows, running, onFixCache }: TableProps) {
                   row={row}
                   running={running}
                   nowMs={nowMs}
+                  selected={selected.has(row.id)}
+                  onToggle={onToggle}
                   onFixCache={onFixCache}
                 />
               </div>
@@ -212,6 +249,8 @@ export function BuildsTable({ rows, running, onFixCache }: TableProps) {
             row={row}
             running={running}
             nowMs={nowMs}
+            selected={selected.has(row.id)}
+            onToggle={onToggle}
             onFixCache={onFixCache}
           />
         ))

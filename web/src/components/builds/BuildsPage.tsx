@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BroomGlassIcon, HammerGlassIcon } from '@thesvg/ui-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -11,16 +11,44 @@ import { DeploymentsSectionTabs } from '../shell/SectionTabGroups'
 import { useIsRoot } from '../../hooks/useIsRoot'
 import { useBuildCenter } from '../../queries/buildCenter'
 import { BuildCachePanel } from './BuildCachePanel'
+import { BuildsBulkBar } from './BuildsBulkBar'
+import {
+  EMPTY_FILTER,
+  BuildsFilterBar,
+  filterBuilds,
+  type BuildsFilter,
+} from './BuildsFilterBar'
 import { BuildsTable } from './BuildsTable'
 
 export function BuildsPage() {
   const { t } = useTranslation('buildCenter')
   const [pruneOpen, setPruneOpen] = useState(false)
+  const [filter, setFilter] = useState<BuildsFilter>(EMPTY_FILTER)
+  const [selected, setSelected] = useState<ReadonlySet<string>>(new Set())
   const isRoot = useIsRoot()
   const builds = useBuildCenter()
   const data = builds.data
   const isEmpty = data !== undefined && data.rows.length === 0
   const size = isEmpty ? 'hero' : 'compact'
+  const visible = useMemo(
+    () => filterBuilds(data?.rows ?? [], filter),
+    [data, filter],
+  )
+  const chosen = visible.filter((r) => selected.has(r.id))
+  const toggle = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (!next.delete(id)) next.add(id)
+      return next
+    })
+  }
+  const toggleAll = () => {
+    setSelected(
+      visible.every((r) => selected.has(r.id))
+        ? new Set()
+        : new Set(visible.map((r) => r.id)),
+    )
+  }
   const cacheFull = data?.rows.some((r) => r.hint?.fix === 'prune_cache')
 
   return (
@@ -138,9 +166,29 @@ export function BuildsPage() {
             </div>
 
             {isEmpty ? null : (
+              <BuildsFilterBar
+                value={filter}
+                onChange={(f) => {
+                  setFilter(f)
+                  setSelected(new Set())
+                }}
+              />
+            )}
+            {chosen.length > 0 ? (
+              <BuildsBulkBar
+                rows={chosen}
+                onClear={() => {
+                  setSelected(new Set())
+                }}
+              />
+            ) : null}
+            {isEmpty ? null : (
               <BuildsTable
-                rows={data.rows}
+                rows={visible}
                 running={data.counts.running}
+                selected={selected}
+                onToggle={toggle}
+                onToggleAll={toggleAll}
                 onFixCache={() => {
                   setPruneOpen(true)
                 }}

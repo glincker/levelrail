@@ -90,5 +90,33 @@
       "image": "image",
       "cache": "cache"
     }
+  },
+  "select": {
+    "all": "Select all builds",
+    "row": "Select build of {{app}}"
+  },
+  "filter": {
+    "label": "Filter builds",
+    "status": "Status",
+    "search": "Search",
+    "placeholder": "App, branch or commit",
+    "options": {
+      "all": "All",
+      "queued": "Queued",
+      "running": "Running",
+      "succeeded": "Succeeded",
+      "failed": "Failed",
+      "canceled": "Canceled"
+    }
+  },
+  "bulk": {
+    "label": "Bulk build actions",
+    "selected_one": "{{count}} build selected",
+    "selected_other": "{{count}} builds selected",
+    "cancel": "Cancel ({{count}})",
+    "retry": "Retry ({{count}})",
+    "clear": "Clear",
+    "cancelResult": "{{ok}} canceled, {{failed}} failed",
+    "retryResult": "{{ok}} restarted, {{failed}} failed"
   }
 }
