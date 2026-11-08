@@ -154,9 +154,33 @@ Two optional settings per app, both off by default. They are set through `PUT /a
 - **Migration step.** `migrate_command` (for example `npm run migrate`) runs once through `sh -c` inside the preview's container, after the database strategy has been applied and before the preview is marked active. The container carries the preview's environment. If the command exits non-zero or times out, the preview is marked failed and the masked output tail is the failure reason, shown in the preview list and the pull request comment. The timeout is `migrate_timeout_seconds`, else `APP_PREVIEW_MIGRATE_TIMEOUT` (default 10 minutes). The wait for the container to be running is `APP_PREVIEW_MIGRATE_WAIT` (default 2 minutes). It applies to single-service previews, not static or multi-service ones. Because a preview database is attached and seeded asynchronously and the control plane cannot yet confirm the container has its env or that a seed restore finished, a preview with a migrate command and a database strategy other than `none` (or `databases:` in `app.yaml`) fails with a message saying so. Set it from the CLI with `apps previews settings <app> --migrate-command ... --migrate-timeout ...`.
 - **Prebuilt image.** `image_tag_template` deploys a registry image for the pull request with no build, for example `ghcr.io/org/app:pr-{number}`. Placeholders are `{number}`, `{sha}`, `{short_sha}` and `{branch}`, and at least one is required. Set it with `--image-tag-template`. Your CI must push that tag before the pull request event arrives, or the deploy fails. It applies to single-service previews.
 
+## Static site previews
+
+When an app's build type is static (single service), a preview publishes the pull request's head commit as its own static site named `<app>-pr-<number>`. The live site, its route and its release history are not touched. Closing the pull request, the stale sweep and `apps previews teardown` remove the preview's site row, route and files. The basic auth gate (`--gate`) is not enforced on static previews: the deploy notes say so when it is set. Built and tested, not proven on a real host.
+
+## Pull request comment commands
+
+Comment commands are off until you turn them on per app, and `APP_PR_COMMENT_COMMANDS_DISABLED=true` switches them off for the whole control plane:
+
+```sh
+levelrail-cli apps set web --pr-comment-commands on
+levelrail-cli apps set web --pr-comment-commands-forks on   # also accept them on fork pull requests
+```
+
+A command is a line at the start of a pull request comment, outside code fences, with nothing after the verb. Exactly one command per comment, otherwise nothing runs.
+
+| Comment | Effect |
+| --- | --- |
+| `/levelrail status` | Read-only status reply. |
+| `/levelrail redeploy` | Redeploys the app. |
+| `/levelrail rollback` | Rolls back to the earlier deploy. |
+| `/levelrail preview redeploy` | Redeploys this pull request's preview (previews must be enabled). |
+| `/levelrail help` | Lists the commands. |
+
+The commenter must have `write` or `admin` permission on the repository, checked against GitHub for each command and refused if the lookup fails. Comments from bots and GitHub Apps are ignored, each comment id runs once, and per-pull-request and per-user rate limits apply (`APP_PR_COMMENT_COMMANDS_PER_PR_PER_MINUTE`, `APP_PR_COMMENT_COMMANDS_PER_USER_PER_MINUTE`). The commands are GitHub only. There is no `/destroy` or `/deploy` command: teardown stays with closing the pull request or the CLI. Built and tested, not proven on a real host.
+
 ## Not yet
 
-- **Static site previews.** Static sites publish a preview under the name `<app>-pr-<number>`. This page does not yet cover their files, gate, or teardown in detail.
-- **Pull request comment commands.** The control plane accepts commands in pull request comments (per-source `pr_comment_commands` and `pr_comment_commands_forks` switches). The command list is not documented here yet.
 - **Migration step with a database strategy.** `migrate_command` only works when the database strategy is `none`. With any other strategy the preview fails with a message saying so.
-- **Preview databases for branch deploys.** The branch deploy code path does not set up a database. Treat a branch deploy as app-only until this is confirmed.
+- **Preview databases for branch deploys.** Branch deploys are app-only. The branch deploy code path never creates, seeds or removes a database, so a branch deploy uses the app's own database env. Database strategies apply to pull request previews only.
+- **Comment commands outside GitHub.** GitLab, Gitea and Bitbucket pull requests do not accept comment commands.
