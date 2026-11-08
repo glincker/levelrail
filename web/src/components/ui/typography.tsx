@@ -39,7 +39,7 @@ export function Display({
   return <Tag className={cn(displayVariants({ size }), className)} {...props} />
 }
 
-/** Eyebrow is the mono uppercase label with a leading accent dot above headings. */
+/** Eyebrow is the mono sentence-case label with a leading accent dot above headings. */
 export function Eyebrow({
   children,
   className,
@@ -52,7 +52,7 @@ export function Eyebrow({
   return (
     <p
       className={cn(
-        'flex items-center gap-2 font-(family-name:--glinr-font-eyebrow) text-(length:--glinr-type-size-eyebrow) leading-4 tracking-widest text-muted-foreground uppercase',
+        'flex items-center gap-2 font-(family-name:--glinr-font-eyebrow) text-xs leading-4 text-muted-foreground',
         className,
       )}
     >
@@ -82,7 +82,7 @@ export function Lede({ className, ...props }: ComponentProps<'p'>) {
 
 /*
  * Label scale: FieldLabel 13px medium muted (sentence case, no tracking),
- * SectionTitle 14px semibold, Body text-sm. Eyebrow stays the only uppercase label.
+ * SectionTitle 14px semibold, Body text-sm. Eyebrow is a 12px sentence-case label.
  */
 export function FieldLabel({
   as: Tag = 'p',

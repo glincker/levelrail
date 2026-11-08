@@ -227,7 +227,7 @@ export function LoginScreen({
                 type="button"
                 variant="outline"
                 size="sm"
-                className="w-full"
+                className="w-full max-sm:h-10"
                 disabled={quickLogin.isPending}
                 onClick={() => {
                   quickLogin.mutate({
@@ -245,7 +245,7 @@ export function LoginScreen({
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="w-full text-muted-foreground"
+                className="w-full text-muted-foreground max-sm:h-10"
                 onClick={() => {
                   setUsername(DEV_MODE_USERNAME)
                 }}
@@ -261,9 +261,9 @@ export function LoginScreen({
             <LockedOutDialog />
           </footer>
         )}
-        <div className="mx-auto w-full max-w-sm">
+        <footer className="mx-auto w-full max-w-sm">
           <LoginAttribution />
-        </div>
+        </footer>
       </div>
 
       <LoginBrandPanel name={brand.Name} />

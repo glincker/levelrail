@@ -40,6 +40,7 @@ export function ThemeToggle() {
             type="button"
             variant="outline"
             size="icon-sm"
+            className="max-sm:size-10"
             aria-label={t('shell.theme.label', { theme: currentLabel })}
             title={t('shell.theme.label', { theme: currentLabel })}
           />

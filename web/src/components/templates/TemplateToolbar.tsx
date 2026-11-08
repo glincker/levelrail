@@ -41,7 +41,7 @@ function CategoryPill({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
+        'flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 pointer-coarse:min-h-10 text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
         active
           ? 'border-primary bg-primary/10 text-primary'
           : 'border-border bg-card text-foreground/70 hover:text-foreground',
