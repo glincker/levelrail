@@ -11,6 +11,12 @@
       isDark || stored === 'oled',
     )
     document.documentElement.classList.toggle('oled', stored === 'oled')
+    try {
+      var saved = JSON.parse(localStorage.getItem('levelrail-appearance-v1'))
+      if (saved && saved.look === 'restrained') {
+        document.documentElement.setAttribute('data-look', 'restrained')
+      }
+    } catch (e) {}
     // document.write keeps the link parser-inserted, so first paint waits for it.
     if (stored === 'oled') {
       document.write(

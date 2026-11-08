@@ -3725,6 +3725,14 @@
       "importBad": "Ese archivo no es una exportación de apariencia válida.",
       "imported": "Importado."
     },
+    "look": {
+      "title": "Aspecto",
+      "description": "Cristal añade un fondo suave, esquinas más redondas y botones en cápsula. Sobrio es más plano y denso.",
+      "glass": "Cristal",
+      "glassHint": "Fondo suave, cápsulas",
+      "restrained": "Sobrio",
+      "restrainedHint": "Plano, esquinas compactas"
+    },
     "radius": {
       "title": "Redondez de esquinas",
       "description": "Qué tan redondos son botones, tarjetas y campos.",

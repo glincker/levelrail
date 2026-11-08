@@ -40,6 +40,7 @@ import {
   CODE_SIZE_MIN,
   CONTRASTS,
   RADII,
+  LOOKS,
   clampCodeSize,
   clampContentWidth,
   DARK_BASES,
@@ -515,6 +516,12 @@ export function AppearanceSettings() {
     sample: <RadiusSample id={v} />,
     isDefault: v === DEF.radius,
   }))
+  const lookOptions: Choice<(typeof LOOKS)[number]>[] = LOOKS.map((v) => ({
+    value: v,
+    label: t(`appearancePage.look.${v}`),
+    hint: t(`appearancePage.look.${v}Hint`),
+    isDefault: v === DEF.look,
+  }))
   const contrastOptions: Choice<(typeof CONTRASTS)[number]>[] = CONTRASTS.map(
     (v) => ({
       value: v,
@@ -885,6 +892,20 @@ export function AppearanceSettings() {
                 />
               </div>
             ) : null}
+          </SettingRow>
+          <SettingRow
+            wide
+            title={t('appearancePage.look.title')}
+            description={t('appearancePage.look.description')}
+          >
+            <ChoiceGroup
+              compact
+              label={t('appearancePage.look.title')}
+              value={appearance.look}
+              options={lookOptions}
+              onChange={(look) => setAppearance({ look })}
+              {...common}
+            />
           </SettingRow>
           <div className="grid gap-x-8 gap-y-4 py-4 xl:grid-cols-2">
             <SettingRow

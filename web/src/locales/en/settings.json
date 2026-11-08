@@ -3757,6 +3757,14 @@
       "importBad": "That file is not a valid appearance export.",
       "imported": "Imported."
     },
+    "look": {
+      "title": "Look",
+      "description": "Glass-forward adds a soft backdrop, rounder corners and capsule buttons. Restrained is flatter and denser.",
+      "glass": "Glass-forward",
+      "glassHint": "Soft wash, capsules",
+      "restrained": "Restrained",
+      "restrainedHint": "Flat, compact corners"
+    },
     "radius": {
       "title": "Corner roundness",
       "description": "How round buttons, cards and inputs are.",
