@@ -42,6 +42,8 @@ func runBackupsRestore(prog string, args []string, stdout, stderr io.Writer, loo
 	fs.StringVar(&backupID, "backup", "", "id of a previously succeeded backup to restore from (required unless --latest)")
 	fs.BoolVar(&latest, "latest", false, "restore from the newest succeeded backup instead of naming one")
 	fs.StringVar(&confirm, "confirm", "", "must exactly equal the database name to skip the interactive confirmation prompt")
+	var wo watchOptions
+	wo.register(fs)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, backupsRestoreUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -93,6 +95,20 @@ func runBackupsRestore(prog string, args []string, stdout, stderr io.Writer, loo
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)
 	}
+	if wo.enabled() {
+		return followOperation(context.Background(), wo, "restore "+started.ID, stderr, lookupEnv, func(ctx context.Context) (watchState, error) {
+			list, err := client.ListRestores(ctx, name)
+			if err != nil {
+				return watchState{}, err
+			}
+			for _, h := range list {
+				if h.ID == started.ID {
+					return watchState{Status: h.Status, Error: h.Error}, nil
+				}
+			}
+			return watchState{}, fmt.Errorf("restore %q not listed yet", started.ID)
+		})
+	}
 	return exitOK
 }
 
@@ -134,5 +150,5 @@ Flags:
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
-`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
+%[5]s`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL, watchUsageFlags)
 }

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 // Asynchronous: returns once the attempt is recorded, so check backups list for the outcome.
@@ -12,6 +14,8 @@ func runBackupsTrigger(prog string, args []string, stdout, stderr io.Writer, loo
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "backups trigger", "print the started backup attempt as JSON to stdout and nothing else", stderr)
 	var targetID string
 	fs.StringVar(&targetID, "target", "", "backup target id to back up to (default: the only configured target)")
+	var wo watchOptions
+	wo.register(fs)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, backupsTriggerUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -47,6 +51,20 @@ func runBackupsTrigger(prog string, args []string, stdout, stderr io.Writer, loo
 	}); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)
+	}
+	if wo.enabled() {
+		return followOperation(context.Background(), wo, "backup "+started.ID, stderr, lookupEnv, func(ctx context.Context) (watchState, error) {
+			list, err := client.ListBackups(ctx, name, apiclient.ListBackupsOptions{Limit: 50})
+			if err != nil {
+				return watchState{}, err
+			}
+			for _, h := range list {
+				if h.ID == started.ID {
+					return watchState{Status: h.Status, Error: h.Error}, nil
+				}
+			}
+			return watchState{}, fmt.Errorf("backup %q not listed yet", started.ID)
+		})
 	}
 	return exitOK
 }
@@ -88,5 +106,5 @@ Flags:
   --output string          output format: json, table, or text (default table; --json is shorthand for --output json)
   --query string           JMESPath expression to filter the result before printing
   -h, --help               show this help
-`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL)
+%[5]s`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL, watchUsageFlags)
 }

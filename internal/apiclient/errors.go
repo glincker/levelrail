@@ -3,9 +3,12 @@ package apiclient
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 )
 
 // ErrorIssue mirrors internal/telemetry's ErrorIssue.
@@ -111,4 +114,42 @@ func (c *Client) SetErrorStatus(ctx context.Context, app, fingerprint, status st
 	body := map[string]string{"status": status}
 	err := c.do(ctx, http.MethodPatch, "/api/v1/apps/"+PathEscape(app)+"/errors/"+PathEscape(fingerprint), body, &out)
 	return out, err
+}
+
+// NotSupportedError says the server answered like an older build that lacks an endpoint.
+// It wraps the APIError, so exit code classification stays the same.
+type NotSupportedError struct {
+	Feature string
+	Cause   *APIError
+}
+
+func (e *NotSupportedError) Error() string {
+	return fmt.Sprintf("this server does not support %s yet (HTTP %d); upgrade the server or use a CLI that matches it", e.Feature, e.Cause.StatusCode)
+}
+
+func (e *NotSupportedError) Unwrap() error { return e.Cause }
+
+// NotSupported turns a missing-route answer into a NotSupportedError. A 404 that names a
+// missing resource (app, database) is left alone, since that is the caller's mistake.
+func NotSupported(feature string, err error) error {
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		return err
+	}
+	switch apiErr.StatusCode {
+	case http.StatusMethodNotAllowed, http.StatusNotImplemented:
+		return &NotSupportedError{Feature: feature, Cause: apiErr}
+	case http.StatusNotFound:
+		switch strings.ToLower(strings.TrimSpace(apiErr.Message)) {
+		case "", "404 page not found", "page not found", "not found":
+			return &NotSupportedError{Feature: feature, Cause: apiErr}
+		}
+	}
+	return err
+}
+
+// IsNotSupported reports whether err is a NotSupportedError.
+func IsNotSupported(err error) bool {
+	var ns *NotSupportedError
+	return errors.As(err, &ns)
 }

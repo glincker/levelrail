@@ -139,6 +139,9 @@ Network rules: Levelrail calls only `api.doppler.com` or `app.infisical.com`, or
 | `secrets.provider_timeout_seconds` | 10 | Time limit for one provider read. |
 | `secrets.provider_cache_ttl_seconds` | 60 | Seconds a read value is reused. 0 reads on every container start. |
 | `secrets.provider_max_response_kib` | 1024 | Largest provider response read. |
+| `secrets.provider_max_rps` | 20 | Requests per second sent to one provider, 0 is off. A read that would wait longer than the timeout fails with a rate limit reason. |
+
+Provider errors never carry a token, client secret or secret value. A guard test covers every provider type.
 
 ### Infisical machine identity
 

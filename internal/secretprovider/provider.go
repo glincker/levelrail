@@ -164,6 +164,8 @@ type Tunables struct {
 	Timeout          time.Duration
 	CacheTTL         time.Duration
 	MaxResponseBytes int64
+	// MaxRPS caps requests per second per provider; 0 turns the cap off.
+	MaxRPS float64
 }
 
 // maxIdentityLifeSeconds bounds a provider supplied expiresIn so it cannot overflow or pin a token.
@@ -182,6 +184,7 @@ type Resolver struct {
 	// idents holds one short-lived Infisical login per provider name; loginMu serializes relogins.
 	loginMu sync.Mutex
 	idents  map[string]identEntry
+	limit   *limiter
 	// defaultBase overrides the public API hosts, for tests only.
 	defaultBase map[string]string
 }
@@ -194,7 +197,7 @@ func Default() *Resolver { return shared }
 
 // NewResolver returns a Resolver with an empty cache.
 func NewResolver() *Resolver {
-	return &Resolver{cache: map[string]cacheEntry{}, idents: map[string]identEntry{}, now: time.Now}
+	return &Resolver{cache: map[string]cacheEntry{}, idents: map[string]identEntry{}, limit: newLimiter(), now: time.Now}
 }
 
 func (r *Resolver) endpoint(cfg Config) (*url.URL, bool, error) {
@@ -276,6 +279,9 @@ func (r *Resolver) call(ctx context.Context, cfg Config, method, token, path str
 	base, selfHosted, err := r.endpoint(cfg)
 	if err != nil {
 		return err
+	}
+	if err := r.wait(ctx, cfg.Name, t); err != nil {
+		return fmt.Errorf("%s: %w", cfg.Type, err)
 	}
 	ctx, cancel := context.WithTimeout(ctx, t.Timeout)
 	defer cancel()

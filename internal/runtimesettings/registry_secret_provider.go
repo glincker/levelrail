@@ -5,6 +5,7 @@ const (
 	KeySecretProviderTimeout     = "secrets.provider_timeout_seconds"   //nolint:gosec // setting key, not a credential
 	KeySecretProviderCacheTTL    = "secrets.provider_cache_ttl_seconds" //nolint:gosec // setting key, not a credential
 	KeySecretProviderMaxResponse = "secrets.provider_max_response_kib"  //nolint:gosec // setting key, not a credential
+	KeySecretProviderMaxRPS      = "secrets.provider_max_rps"           //nolint:gosec // setting key, not a credential
 )
 
 func init() {
@@ -25,5 +26,11 @@ func init() {
 		Env: "APP_SECRET_PROVIDER_MAX_RESPONSE_KIB", Apply: ApplyLive, CheckValue: intRangeCheck(16, 16384),
 		Title:       "Secret providers: response size limit",
 		Description: "Largest provider response read, in KiB, from 16 to 16384. A larger response fails the read instead of being parsed.",
+	})
+	Register(Definition{
+		Key: KeySecretProviderMaxRPS, Category: CategorySecurity, Kind: KindInt, Default: "20",
+		Env: "APP_SECRET_PROVIDER_MAX_RPS", Apply: ApplyLive, CheckValue: intRangeCheck(0, 1000),
+		Title:       "Secret providers: requests per second",
+		Description: "Most requests per second sent to one Doppler, Infisical or 1Password provider, from 0 to 1000. Extra reads wait briefly, then fail with a rate limit reason. 0 turns the cap off.",
 	})
 }

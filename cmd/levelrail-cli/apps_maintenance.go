@@ -1,9 +1,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 // runAppsMaintenance dispatches "apps maintenance show|set|clear <app>". It
@@ -70,10 +73,40 @@ func runAppsMaintenanceVerb(prog, verb string, args []string, stdout, stderr io.
 			_, _ = fmt.Fprintf(stderr, "%s: %s: %v\n", prog, cmd, err)
 			return exitUsage
 		}
-		return appMaintenanceSet(stdout, stderr, jsonOut, of, apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv), app, req)
+		return appsMaintenanceCall(stdout, stderr, jsonOut, of, apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv), app, verb, req)
 	case "clear":
-		return appMaintenanceClear(stdout, stderr, jsonOut, of, apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv), app)
+		return appsMaintenanceCall(stdout, stderr, jsonOut, of, apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv), app, verb, apiclient.SetDomainMaintenanceRequest{})
 	default:
-		return appMaintenanceGet(stdout, stderr, jsonOut, of, apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv), app)
+		return appsMaintenanceCall(stdout, stderr, jsonOut, of, apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv), app, verb, apiclient.SetDomainMaintenanceRequest{})
 	}
+}
+
+// appsMaintenanceCall runs one verb and reports an older server as not supported instead of a bare 404.
+func appsMaintenanceCall(stdout, stderr io.Writer, jsonOut bool, of outputFlags, c *Client, app, verb string, req apiclient.SetDomainMaintenanceRequest) int {
+	var (
+		m   apiclient.AppMaintenanceResource
+		err error
+		msg string
+	)
+	switch verb {
+	case "set":
+		m, err = c.SetAppMaintenance(context.Background(), app, req)
+		msg = fmt.Sprintf("enable maintenance mode for every domain of app %q (nothing was changed)", app)
+	case "clear":
+		m, err = c.ClearAppMaintenance(context.Background(), app)
+		msg = fmt.Sprintf("disable maintenance mode for app %q (retry to finish)", app)
+	default:
+		m, err = c.GetAppMaintenance(context.Background(), app)
+		msg = fmt.Sprintf("get maintenance state for app %q", app)
+	}
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("%s: %w", msg, apiclient.NotSupported("app maintenance mode", err)))
+	}
+	return writeScheduledTaskResult(stdout, stderr, of, m, func() {
+		if verb == "clear" {
+			_, _ = fmt.Fprintf(stdout, "maintenance mode disabled for every domain of app %q\n", app)
+			return
+		}
+		printAppMaintenanceHuman(stdout, m)
+	})
 }

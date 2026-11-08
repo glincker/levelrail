@@ -36,6 +36,8 @@ func runDatabasesMajorUpgrade(prog string, args []string, stdout, stderr io.Writ
 	var version, confirm string
 	fs.StringVar(&version, "version", "", "target major version, e.g. 17 (required)")
 	fs.StringVar(&confirm, "confirm", "", "must equal the database name to skip the interactive prompt")
+	var wo watchOptions
+	wo.register(fs)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, majorUpgradeUsage(prog)) }
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
@@ -57,8 +59,23 @@ func runDatabasesMajorUpgrade(prog string, args []string, stdout, stderr io.Writ
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("major upgrade of database %q to %q: %w", name, version, err))
 	}
-	return writeScheduledTaskResult(stdout, stderr, of, started, func() {
+	code := writeScheduledTaskResult(stdout, stderr, of, started, func() {
 		_, _ = fmt.Fprintf(stdout, "major upgrade %q of database %q from %s to %s started; follow it with \"%s databases major-upgrades %s\"\n", started.ID, name, started.FromVersion, started.ToVersion, prog, name)
+	})
+	if code != exitOK || !wo.enabled() {
+		return code
+	}
+	return followOperation(context.Background(), wo, "major upgrade "+started.ID, stderr, lookupEnv, func(ctx context.Context) (watchState, error) {
+		list, err := client.ListMajorUpgrades(ctx, name)
+		if err != nil {
+			return watchState{}, err
+		}
+		for _, u := range list {
+			if u.ID == started.ID {
+				return watchState{Status: u.Status, Phase: u.Phase, Error: u.Error}, nil
+			}
+		}
+		return watchState{}, fmt.Errorf("upgrade %q not listed yet", started.ID)
 	})
 }
 
@@ -159,6 +176,9 @@ func majorUpgradeUsage(prog string) string {
   %[1]s databases major-upgrades <name> [flags]
   %[1]s databases major-upgrade-rollback <name> <id> [--confirm NAME] [flags]
   %[1]s databases major-upgrade-discard <name> <id> [flags]
+
+With --wait or --watch the command follows the upgrade to the end and exits 0
+on success, 1 on failure.
 
 Upgrades a Postgres database across a major version by dump and restore. The
 database is offline for the duration. The old data is copied to a snapshot

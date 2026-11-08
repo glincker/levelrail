@@ -1,3 +1,4 @@
+import { Suspense, lazy } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import {
   observabilitySettingsQueryOptions,
@@ -16,6 +17,10 @@ import { ChartLineGlassIcon } from '@thesvg/ui-react'
 import { PrometheusScrapeCard } from '../../components/settings/PrometheusScrapeCard'
 import { LogVolumeCard } from '../../components/logBudgets/LogVolumeCard'
 import { PageTemplate } from '@/components/shell/PageTemplate'
+
+const OtelDestinationsCard = lazy(
+  () => import('../../components/settings/OtelDestinationsCard'),
+)
 
 export const Route = createFileRoute('/settings/observability')({
   loader: ({ context: { queryClient } }) =>
@@ -48,6 +53,9 @@ function ObservabilitySettingsPage() {
       <ObservabilitySettingsCard settings={settings} />
       <PrometheusScrapeCard />
       <LogVolumeCard />
+      <Suspense fallback={<SettingsCardSkeleton rows={2} />}>
+        <OtelDestinationsCard />
+      </Suspense>
     </PageTemplate>
   )
 }

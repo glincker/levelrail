@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"text/tabwriter"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 func appsNextAdvisorUsage(prog string) string {
@@ -39,7 +41,7 @@ func runAppsNextAdvisor(prog string, args []string, stdout, stderr io.Writer, lo
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	res, err := client.NextAdvisor(context.Background(), rest[0])
 	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("next advisor for %s: %w", rest[0], err))
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("next advisor for %s: %w", rest[0], apiclient.NotSupported("the Next.js advisor", err)))
 	}
 	if rerr := renderResult(stdout, of.Format, of.Query, res, func() {
 		if !res.Detected {
@@ -77,7 +79,7 @@ func runAppsDeploysBuildReport(prog string, args []string, stdout, stderr io.Wri
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	res, err := client.NextBuildReport(context.Background(), rest[0], rest[1])
 	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("build report for %s %s: %w", rest[0], rest[1], err))
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("build report for %s %s: %w", rest[0], rest[1], apiclient.NotSupported("Next.js build reports", err)))
 	}
 	if rerr := renderResult(stdout, of.Format, of.Query, res, func() {
 		if !res.Detected {

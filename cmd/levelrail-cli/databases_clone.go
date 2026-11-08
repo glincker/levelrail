@@ -17,6 +17,8 @@ func runDatabasesClone(prog string, args []string, stdout, stderr io.Writer, loo
 	fs.StringVar(&version, "version", "", "engine version for the new database (default: the source's version)")
 	fs.StringVar(&projectID, "project", "", "project id to assign the new database to")
 	fs.DurationVar(&wait, "wait", 0, "how long to wait for the fresh backup (default: "+exportWaitEnv+" env var, then 15m)")
+	var wo watchOptions
+	wo.registerWatch(fs)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, databasesCloneUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -62,6 +64,20 @@ func runDatabasesClone(prog string, args []string, stdout, stderr io.Writer, loo
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)
 	}
+	if wo.enabled() {
+		return followOperation(ctx, wo, "clone "+started.ID, stderr, lookupEnv, func(ctx context.Context) (watchState, error) {
+			list, err := client.ListCloneRestores(ctx, src)
+			if err != nil {
+				return watchState{}, err
+			}
+			for _, h := range list {
+				if h.ID == started.ID {
+					return watchState{Status: h.Status, Error: h.Error}, nil
+				}
+			}
+			return watchState{}, fmt.Errorf("clone %q not listed yet", started.ID)
+		})
+	}
 	return exitOK
 }
 
@@ -85,7 +101,7 @@ Flags:
   --output string    output format: json, table, or text
   --query string     JMESPath expression to filter the result before printing
   -h, --help         show this help
-`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL, exportWaitEnv)
+%[6]s`, prog, apiTokenEnvHelp, apiURLEnvHelp, defaultAPIURL, exportWaitEnv, watchOnlyUsageFlags)
 }
 
 func validDatabaseName(n string) bool {

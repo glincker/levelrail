@@ -34,7 +34,7 @@ func runSystemDiskHistory(prog string, args []string, stdout, stderr io.Writer, 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	res, err := client.GetDiskHistory(context.Background(), *days)
 	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("disk history: %w", err))
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("disk history: %w", apiclient.NotSupported("disk history", err)))
 	}
 	return finishRender(stdout, stderr, of, res, func() { printDiskHistory(stdout, res, *rows) })
 }
