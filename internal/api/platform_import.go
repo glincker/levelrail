@@ -263,8 +263,9 @@ func (rt *Router) handleApplyPlatformImport(w http.ResponseWriter, r *http.Reque
 	writeJSON(w, http.StatusOK, report)
 }
 
-// stripBindMounts drops host bind mounts for callers without the root
-// ability, since persisting one is a host-filesystem capability.
+// stripBindMounts drops host bind mounts and cron jobs for callers without the
+// root ability: a bind mount is a host-filesystem capability and an imported cron
+// runs "sh -c" in the app, which the console exec rule reserves for root.
 func stripBindMounts(rt *Router, r *http.Request, plan *platformimport.Plan) {
 	if rt.callerHasAbility(r, AbilityRoot) {
 		return
@@ -280,15 +281,24 @@ func stripBindMounts(rt *Router, r *http.Request, plan *platformimport.Plan) {
 			kept = append(kept, v)
 		}
 		plan.Apps[i].Volumes = kept
-		if dropped == 0 {
+		droppedJobs := len(plan.Apps[i].Crons)
+		plan.Apps[i].Crons = nil
+		if dropped == 0 && droppedJobs == 0 {
 			continue
 		}
 		for j := range plan.Report.Items {
 			it := &plan.Report.Items[j]
-			if it.Kind == "app" && it.SourceID == plan.Apps[i].SourceID {
-				it.Status = platformimport.StatusNeedsAttention
+			if it.Kind != "app" || it.SourceID != plan.Apps[i].SourceID {
+				continue
+			}
+			it.Status = platformimport.StatusNeedsAttention
+			if dropped > 0 {
 				it.Reasons = append(it.Reasons, fmt.Sprintf("%d bind mount(s) were skipped: they need the root ability", dropped))
 				it.Manual = append(it.Manual, "re-run with a root token or add the bind mounts by hand")
+			}
+			if droppedJobs > 0 {
+				it.Reasons = append(it.Reasons, fmt.Sprintf("%d scheduled job(s) were skipped: jobs run a shell command and need the root ability", droppedJobs))
+				it.Manual = append(it.Manual, "a root token can re-run the import or add the jobs in the app's Jobs tab")
 			}
 		}
 	}

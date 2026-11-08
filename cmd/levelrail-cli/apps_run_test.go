@@ -27,6 +27,8 @@ func TestAppsRun(t *testing.T) {
 	}{
 		{name: "success prints output", args: []string{"apps", "run", "web", "--", "echo", "hi"},
 			final: apiclient.OneShotJob{State: "Succeeded", Output: "hi\n"}, wantApp: "web", wantCmd: "echo hi", wantStdout: "hi\n"},
+		{name: "withheld output is named", args: []string{"apps", "run", "web", "--", "env"},
+			final: apiclient.OneShotJob{State: "Succeeded", OutputWithheld: true}, wantApp: "web", wantCmd: "env", wantStderr: "output withheld"},
 		{name: "service targets the sibling app", args: []string{"apps", "run", "shop", "--service", "worker", "--", "bin/migrate"},
 			final: apiclient.OneShotJob{State: "Succeeded"}, wantApp: "shop-worker", wantCmd: "bin/migrate"},
 		{name: "command exit code is returned", args: []string{"apps", "run", "web", "--", "false"},

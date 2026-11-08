@@ -78,6 +78,10 @@ func (c *ComposeServiceRestorer) RunComposeServiceRestore(ctx context.Context, s
 	if run.App != app || run.Service != service {
 		return fmt.Errorf("%w: run %q belongs to another service", ErrComposeRestoreRefused, run.ID)
 	}
+	// Without a recorded checksum the object cannot be verified, so it is not replayed.
+	if run.Checksum == "" {
+		return fmt.Errorf("%w: run %q has no recorded checksum", ErrComposeRestoreRefused, run.ID)
+	}
 	ctx, container, err := resolveComposeWithNode(ctx, c.Containers, app, service)
 	if err != nil {
 		return fmt.Errorf("resolve container for %s/%s: %w", app, service, err)
@@ -160,7 +164,9 @@ func (d *drainOnEOF) Read(p []byte) (int, error) {
 // is never committed. MySQL and MariaDB drop and recreate the one named database first so
 // the result replaces it; a server-wide dump is refused because it would rewrite the
 // system schema and the root credentials.
+// The name is checked so a backtick or other character cannot break out of the quoted identifier.
 const composeMySQLReplace = `BT=$(printf '\140'); [ -n "$D" ] || { echo "restore needs MYSQL_DATABASE or MARIADB_DATABASE on the service; server-wide dumps are not restored in place" >&2; exit 3; }; ` +
+	`case "$D" in *[!A-Za-z0-9_\$-]*) echo "restore refused: the database name may only hold letters, digits, _, $ and -" >&2; exit 3;; esac; ` +
 	`%[1]s -uroot -e "DROP DATABASE IF EXISTS ${BT}${D}${BT}; CREATE DATABASE ${BT}${D}${BT}" || exit 1; exec %[1]s -uroot`
 
 var (

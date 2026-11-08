@@ -287,6 +287,9 @@ func jobsLogs(ctx context.Context, client *Client, app, job, runID string, of ou
 		if run.Output != "" && !strings.HasSuffix(run.Output, "\n") {
 			_, _ = fmt.Fprintln(stdout)
 		}
+		if run.OutputWithheld {
+			_, _ = fmt.Fprintln(stderr, "output withheld: this token lacks the read_sensitive ability, so only the status and exit code are shown")
+		}
 	})
 }
 

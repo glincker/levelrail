@@ -50,3 +50,19 @@ func TestAbuseRPSChangeAppliesWithoutRestart(t *testing.T) {
 		t.Fatalf("raised ceiling not applied live: %v", err)
 	}
 }
+
+func TestAbuseFloatSettingsRejectNaNAndInf(t *testing.T) {
+	def := abuse.DefaultLimits()
+	for _, seed := range []string{"NaN", "nan", "Inf", "+Inf", "-Inf", "1e999"} {
+		svc := New(newFakeStore(), envOf(map[string]string{abuse.EnvMaxRPS: seed, abuse.EnvDefaultRPS: seed}))
+		l := svc.AbuseLimits(t.Context())
+		if l.MaxRPS != def.MaxRPS || l.DefaultRPS != def.DefaultRPS {
+			t.Errorf("env seed %q: max %v default %v, want the defaults", seed, l.MaxRPS, l.DefaultRPS)
+		}
+		for _, key := range []string{KeyAbuseMaxRPS, KeyAbuseDefaultRPS} {
+			if _, err := svc.ValidateForWrite(t.Context(), key, raw(`"`+seed+`"`), WriteOptions{}); err == nil {
+				t.Errorf("%s accepted %q", key, seed)
+			}
+		}
+	}
+}

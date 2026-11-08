@@ -84,13 +84,15 @@ type scheduledTaskResource struct {
 	HeartbeatHost       string `json:"heartbeat_host,omitempty"`
 	HeartbeatConfigured bool   `json:"heartbeat_configured,omitempty"`
 
-	LastRunAt           *time.Time `json:"last_run_at,omitempty"`
-	LastRunStatus       string     `json:"last_run_status,omitempty"`
-	LastRunOutput       string     `json:"last_run_output,omitempty"`
-	ConsecutiveFailures int        `json:"consecutive_failures"`
-	ConsecutiveMissed   int        `json:"consecutive_missed"`
-	RunningSince        *time.Time `json:"running_since,omitempty"`
-	NextRunAt           *time.Time `json:"next_run_at,omitempty"`
+	LastRunAt     *time.Time `json:"last_run_at,omitempty"`
+	LastRunStatus string     `json:"last_run_status,omitempty"`
+	LastRunOutput string     `json:"last_run_output,omitempty"`
+	// LastRunOutputWithheld is set when the caller lacks read_sensitive and the last run printed output.
+	LastRunOutputWithheld bool       `json:"last_run_output_withheld,omitempty"`
+	ConsecutiveFailures   int        `json:"consecutive_failures"`
+	ConsecutiveMissed     int        `json:"consecutive_missed"`
+	RunningSince          *time.Time `json:"running_since,omitempty"`
+	NextRunAt             *time.Time `json:"next_run_at,omitempty"`
 
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
@@ -397,9 +399,20 @@ func (rt *Router) handleListScheduledTasks(w http.ResponseWriter, r *http.Reques
 		if isOneShotTask(task) {
 			continue
 		}
-		out = append(out, rt.jobResource(r.Context(), task))
+		out = append(out, rt.readableJobResource(r, task))
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+// readableJobResource drops the last run's output for callers without read_sensitive:
+// job output can echo env values that redaction does not know about.
+func (rt *Router) readableJobResource(r *http.Request, t store.ScheduledTask) scheduledTaskResource {
+	res := rt.jobResource(r.Context(), t)
+	if res.LastRunOutput != "" && !rt.callerHasAbility(r, AbilityReadSensitive) {
+		res.LastRunOutput = ""
+		res.LastRunOutputWithheld = true
+	}
+	return res
 }
 
 // loadOwnedScheduledTask loads the job addressed by its ID or, failing
@@ -444,7 +457,7 @@ func (rt *Router) handleGetScheduledTask(w http.ResponseWriter, r *http.Request)
 	if !ok {
 		return
 	}
-	writeJSON(w, http.StatusOK, rt.jobResource(r.Context(), task))
+	writeJSON(w, http.StatusOK, rt.readableJobResource(r, task))
 }
 
 // handleUpdateScheduledTask handles PUT /api/v1/apps/{name}/jobs/{id}. The
@@ -551,7 +564,7 @@ func (rt *Router) handleSetScheduledTaskEnabled(enabled bool) http.HandlerFunc {
 			writeError(w, http.StatusInternalServerError, "internal error")
 			return
 		}
-		writeJSON(w, http.StatusOK, rt.jobResource(r.Context(), reloaded))
+		writeJSON(w, http.StatusOK, rt.readableJobResource(r, reloaded))
 	}
 }
 
@@ -598,6 +611,8 @@ type scheduledTaskRunResource struct {
 	Mode         string     `json:"mode,omitempty"`
 	Message      string     `json:"message,omitempty"`
 	Output       string     `json:"output,omitempty"`
+	// OutputWithheld is set when the run printed output the caller may not read without read_sensitive.
+	OutputWithheld bool `json:"output_withheld,omitempty"`
 }
 
 func toJobRunResource(run store.ScheduledTaskRun, withOutput bool) scheduledTaskRunResource {
@@ -656,8 +671,8 @@ func (rt *Router) handleListScheduledTaskRuns(w http.ResponseWriter, r *http.Req
 	writeJSON(w, http.StatusOK, out)
 }
 
-// handleGetScheduledTaskRun serves GET .../jobs/{id}/runs/{run}, including
-// the captured output (secrets already redacted when the run was recorded).
+// handleGetScheduledTaskRun serves GET .../jobs/{id}/runs/{run}. The captured output
+// (known secrets redacted when recorded) is only returned to read_sensitive callers.
 func (rt *Router) handleGetScheduledTaskRun(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	task, ok := rt.loadOwnedScheduledTask(w, r, name, r.PathValue("id"), "get job run")
@@ -673,7 +688,9 @@ func (rt *Router) handleGetScheduledTaskRun(w http.ResponseWriter, r *http.Reque
 		rt.internalError(w, "api: get job run failed", err, slog.String("run_id", r.PathValue("run")))
 		return
 	}
-	res := toJobRunResource(run, true)
+	withOutput := rt.callerHasAbility(r, AbilityReadSensitive)
+	res := toJobRunResource(run, withOutput)
+	res.OutputWithheld = !withOutput && run.Output != ""
 	res.JobName = task.Name
 	writeJSON(w, http.StatusOK, res)
 }

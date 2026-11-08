@@ -63,11 +63,6 @@ func sentEnv(t *testing.T, bodies map[string][]byte) map[string]string {
 }
 
 func TestEnvSetValueForms(t *testing.T) {
-	dir := t.TempDir()
-	pem := filepath.Join(dir, "k.pem")
-	if err := os.WriteFile(pem, []byte("line1\nline2\n"), 0o600); err != nil {
-		t.Fatal(err)
-	}
 	cases := []struct{ name, arg, want string }{
 		{"equals", "A=x=y", "x=y"},
 		{"quotes", `A=say "hi"`, `say "hi"`},
@@ -75,7 +70,6 @@ func TestEnvSetValueForms(t *testing.T) {
 		{"empty", "A=", ""},
 		{"spaces", "A= lead and trail ", " lead and trail "},
 		{"hash", "A=#c", "#c"},
-		{"file", "A=@" + pem, "line1\nline2"},
 		{"escape", "A=@@x", "@x"},
 		{"bare at word", "A=@oncall", "@oncall"},
 		{"bare at empty", "A=@", "@"},
@@ -112,10 +106,11 @@ func TestEnvSetValueSourceStdinAndErrors(t *testing.T) {
 	envSetStdin = strings.NewReader("x")
 	for _, args := range [][]string{
 		{"A=@-", "B=@-"},
-		{"A=@" + dir},
-		{"A=@" + filepath.Join(dir, "missing")},
-		{"A=@" + big},
-		{"A=@" + nul},
+		{"--allow-file-values", "A=@" + dir},
+		{"--allow-file-values", "A=@" + filepath.Join(dir, "missing")},
+		{"--allow-file-values", "A=@" + big},
+		{"--allow-file-values", "A=@" + nul},
+		{"--allow-file-values", "A=@~other/x"},
 	} {
 		msg := runCLIExpectValidationError(t, cliArgs(srv, append([]string{"env", "set", "web"}, args...)...))
 		if strings.Contains(msg, "a\x00b") {
@@ -124,6 +119,36 @@ func TestEnvSetValueSourceStdinAndErrors(t *testing.T) {
 	}
 	if len(bodies) != 0 {
 		t.Errorf("API was called despite a bad value source: %v", bodies)
+	}
+}
+
+func TestEnvSetFileValueNeedsOptIn(t *testing.T) {
+	dir := t.TempDir()
+	pem := filepath.Join(dir, "k.pem")
+	if err := os.WriteFile(pem, []byte("line1\nline2\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("HOME", dir)
+	t.Setenv("USERPROFILE", dir)
+	bodies := map[string][]byte{}
+	srv := routeServer(t, envSetRoutes(nil), bodies)
+	for _, arg := range []string{"A=@" + pem, "A=@./k.pem", "A=@../x", "A=@~/k.pem"} {
+		msg := runCLIExpectValidationError(t, cliArgs(srv, "env", "set", "web", arg))
+		if !strings.Contains(msg, "--allow-file-values") || strings.Contains(msg, "line1") {
+			t.Errorf("%s: message must name the flag and no content, got %q", arg, msg)
+		}
+	}
+	if len(bodies) != 0 {
+		t.Errorf("API was called without the opt-in: %v", bodies)
+	}
+
+	for _, arg := range []string{"A=@" + pem, "A=@~/k.pem"} {
+		bodies = map[string][]byte{}
+		srv = routeServer(t, envSetRoutes(nil), bodies)
+		runCLIExpectOK(t, cliArgs(srv, "env", "set", "--allow-file-values", "web", arg))
+		if got := sentEnv(t, bodies)["A"]; got != "line1\nline2" {
+			t.Errorf("%s: A = %q", arg, got)
+		}
 	}
 }
 

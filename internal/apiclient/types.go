@@ -2299,6 +2299,8 @@ type ScheduledTaskResource struct {
 	LastRunAt     *time.Time `json:"last_run_at,omitempty"`
 	LastRunStatus string     `json:"last_run_status,omitempty"`
 	LastRunOutput string     `json:"last_run_output,omitempty"`
+	// LastRunOutputWithheld means the last run printed output this token may not read.
+	LastRunOutputWithheld bool `json:"last_run_output_withheld,omitempty"`
 	// ConsecutiveFailures mirrors internal/api's own field: what a
 	// kind=scheduled_task_failure alert rule watches.
 	ConsecutiveFailures int `json:"consecutive_failures"`
@@ -2351,6 +2353,8 @@ type JobRunResource struct {
 	Mode         string     `json:"mode,omitempty"`
 	Message      string     `json:"message,omitempty"`
 	Output       string     `json:"output,omitempty"`
+	// OutputWithheld means the run printed output this token may not read (it lacks read_sensitive).
+	OutputWithheld bool `json:"output_withheld,omitempty"`
 }
 
 // ScheduledTaskRequest mirrors the fields internal/api's

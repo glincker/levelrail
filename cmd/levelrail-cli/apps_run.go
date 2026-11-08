@@ -118,6 +118,9 @@ func runAppsRun(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 	if job.OutputTruncated {
 		_, _ = fmt.Fprintln(stderr, "output was longer than the server keeps; only the last part is shown")
 	}
+	if job.OutputWithheld {
+		_, _ = fmt.Fprintln(stderr, "output withheld: this token lacks the read_sensitive ability, so only the status and exit code are shown")
+	}
 	if code != exitOK {
 		reason := job.Message
 		if reason == "" {

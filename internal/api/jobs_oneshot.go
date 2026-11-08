@@ -127,6 +127,8 @@ type oneShotResponse struct {
 	RunStatus       string `json:"run_status,omitempty"`
 	Output          string `json:"output,omitempty"`
 	OutputTruncated bool   `json:"output_truncated,omitempty"`
+	// OutputWithheld is set when the run printed output the caller may not read without read_sensitive.
+	OutputWithheld bool `json:"output_withheld,omitempty"`
 }
 
 // oneShotTruncatedHeader is the prefix the runner puts on output it cut to the job output limit.
@@ -140,7 +142,8 @@ func oneShotOutputTail() int {
 
 // attachOneShotOutput adds the newest attempt's exit code and output tail.
 // Output was redacted when the run was recorded; a lookup failure leaves the status-only answer.
-func (rt *Router) attachOneShotOutput(ctx context.Context, taskID string, resp *oneShotResponse) {
+// Redaction only covers known secrets, so the output itself needs read_sensitive.
+func (rt *Router) attachOneShotOutput(ctx context.Context, taskID string, withOutput bool, resp *oneShotResponse) {
 	if taskID == "" || rt.scheduledTasks == nil {
 		return
 	}
@@ -153,6 +156,10 @@ func (rt *Router) attachOneShotOutput(ctx context.Context, taskID string, resp *
 		return
 	}
 	resp.ExitCode, resp.RunStatus = run.ExitCode, run.Status
+	if !withOutput {
+		resp.OutputWithheld = run.Output != ""
+		return
+	}
 	resp.Output = run.Output
 	resp.OutputTruncated = strings.HasPrefix(resp.Output, oneShotTruncatedHeader)
 	if limit := oneShotOutputTail(); limit > 0 && len(resp.Output) > limit {
@@ -285,7 +292,7 @@ func (rt *Router) handleGetOneShotJob(w http.ResponseWriter, r *http.Request) {
 	p := rt.oneShotPersister(r.Context())
 	if entry, ok := oneShotRegistry.Get(id); ok {
 		resp := toOneShotResponse(entry)
-		rt.attachOneShotOutput(r.Context(), entry.TaskID, &resp)
+		rt.attachOneShotOutput(r.Context(), entry.TaskID, rt.callerHasAbility(r, AbilityReadSensitive), &resp)
 		writeJSON(w, http.StatusOK, resp)
 		return
 	}
@@ -293,7 +300,7 @@ func (rt *Router) handleGetOneShotJob(w http.ResponseWriter, r *http.Request) {
 		j, err := p.GetOneShotJob(r.Context(), id)
 		if err == nil {
 			resp := fromStoredOneShot(j)
-			rt.attachOneShotOutput(r.Context(), j.TaskID, &resp)
+			rt.attachOneShotOutput(r.Context(), j.TaskID, rt.callerHasAbility(r, AbilityReadSensitive), &resp)
 			writeJSON(w, http.StatusOK, resp)
 			return
 		}

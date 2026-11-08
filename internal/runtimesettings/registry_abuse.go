@@ -3,6 +3,7 @@ package runtimesettings
 import (
 	"context"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -41,7 +42,8 @@ var (
 func abuseFloatCheck(r abuseFloatRange) func(string) error {
 	return func(canonical string) error {
 		f, err := strconv.ParseFloat(canonical, 64)
-		if err != nil || f < r.lo || f > r.hi {
+		// NaN fails every comparison, so it must be refused before the range check.
+		if err != nil || math.IsNaN(f) || math.IsInf(f, 0) || f < r.lo || f > r.hi {
 			return fmt.Errorf("value must be a number between %g and %g", r.lo, r.hi)
 		}
 		return nil
@@ -149,7 +151,7 @@ func init() {
 func (s *Service) abuseFloatSetting(ctx context.Context, key string, fallback float64) float64 {
 	r := abuseFloats[key]
 	f, err := strconv.ParseFloat(strings.TrimSpace(s.String(ctx, key)), 64)
-	if err != nil || f <= 0 {
+	if err != nil || math.IsNaN(f) || math.IsInf(f, 0) || f <= 0 {
 		return fallback
 	}
 	return min(max(f, r.lo), r.hi)

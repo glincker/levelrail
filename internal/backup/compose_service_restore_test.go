@@ -4,11 +4,15 @@ import (
 	"context"
 	"errors"
 	"io"
+	"os/exec"
 	"strings"
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
+
+// selectOneSum is the sha256 of the fake downloader's "SELECT 1;" object.
+const selectOneSum = "17db4fd369edb9244b9f91d9aeed145c3d04ad8ba6e95d06247f07a63527d11a"
 
 type restoreOrder struct{ steps []string }
 
@@ -50,7 +54,7 @@ func TestComposeServiceRestore_SafetyDumpFirst(t *testing.T) {
 	for _, engine := range []string{store.EnginePostgres, store.EngineMySQL, store.EngineMariaDB} {
 		t.Run(engine, func(t *testing.T) {
 			o := &restoreOrder{}
-			run := store.ComposeServiceBackupRun{ID: "csr_1", App: "shop", Service: "db", TargetID: "t", Status: store.BackupStatusSucceeded, ObjectKey: "compose/shop/db/x.dump"}
+			run := store.ComposeServiceBackupRun{ID: "csr_1", App: "shop", Service: "db", TargetID: "t", Status: store.BackupStatusSucceeded, ObjectKey: "compose/shop/db/x.dump", Checksum: selectOneSum}
 			if err := newComposeRestorer(o, nil).RunComposeServiceRestore(context.Background(), "csr_s", "shop", "db", engine, run); err != nil {
 				t.Fatalf("restore: %v", err)
 			}
@@ -63,7 +67,7 @@ func TestComposeServiceRestore_SafetyDumpFirst(t *testing.T) {
 
 func TestComposeServiceRestore_AbortsWhenSafetyDumpFails(t *testing.T) {
 	o := &restoreOrder{}
-	run := store.ComposeServiceBackupRun{ID: "csr_1", App: "shop", Service: "db", TargetID: "t", Status: store.BackupStatusSucceeded, ObjectKey: "k.dump"}
+	run := store.ComposeServiceBackupRun{ID: "csr_1", App: "shop", Service: "db", TargetID: "t", Status: store.BackupStatusSucceeded, ObjectKey: "k.dump", Checksum: selectOneSum}
 	err := newComposeRestorer(o, errors.New("disk full")).RunComposeServiceRestore(context.Background(), "csr_s", "shop", "db", store.EnginePostgres, run)
 	if err == nil || strings.Join(o.steps, ",") != "safety" {
 		t.Fatalf("err = %v steps = %v, want abort after the failed safety dump", err, o.steps)
@@ -80,6 +84,7 @@ func TestComposeServiceRestore_RefusesBadRuns(t *testing.T) {
 		"other-svc":    {store.ComposeServiceBackupRun{App: "shop", Service: "cache", Status: store.BackupStatusSucceeded, ObjectKey: "k"}, store.EnginePostgres},
 		"engine":       {store.ComposeServiceBackupRun{App: "shop", Service: "db", Status: store.BackupStatusSucceeded, ObjectKey: "k"}, store.EngineRedis},
 		"no-objectkey": {store.ComposeServiceBackupRun{App: "shop", Service: "db", Status: store.BackupStatusSucceeded}, store.EnginePostgres},
+		"no-checksum":  {store.ComposeServiceBackupRun{App: "shop", Service: "db", Status: store.BackupStatusSucceeded, ObjectKey: "k"}, store.EngineMySQL},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -100,6 +105,31 @@ func TestComposeRestoreCmd(t *testing.T) {
 	}
 	if _, err := ComposeRestoreCmd(store.EngineMongoDB); err == nil {
 		t.Error("mongodb accepted")
+	}
+}
+
+func TestComposeMySQLRestoreRefusesUnsafeDatabaseName(t *testing.T) {
+	if _, err := exec.LookPath("sh"); err != nil {
+		t.Skip("no sh")
+	}
+	for _, name := range []string{"a`b", "x; DROP", "a b", "db$(id)"} {
+		for _, engine := range []string{store.EngineMySQL, store.EngineMariaDB} {
+			cmd, _ := ComposeRestoreCmd(engine)
+			c := exec.Command("sh", "-c", cmd[2]) //nolint:gosec // G204: fixed restore script under test
+			c.Env = []string{"PATH=/nonexistent", "MYSQL_DATABASE=" + name}
+			out, err := c.CombinedOutput()
+			var ee *exec.ExitError
+			if !errors.As(err, &ee) || ee.ExitCode() != 3 || !strings.Contains(string(out), "database name") {
+				t.Errorf("%s %q: err %v out %q, want exit 3 naming the database name rule", engine, name, err, out)
+			}
+		}
+	}
+	cmd, _ := ComposeRestoreCmd(store.EngineMySQL)
+	c := exec.Command("sh", "-c", cmd[2]) //nolint:gosec // G204: fixed restore script under test
+	c.Env = []string{"PATH=/nonexistent", "MYSQL_DATABASE=shop_db-1$"}
+	out, _ := c.CombinedOutput()
+	if strings.Contains(string(out), "database name") {
+		t.Errorf("a valid name was refused: %q", out)
 	}
 }
 

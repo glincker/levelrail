@@ -20,7 +20,8 @@ var envSetStdin io.Reader = os.Stdin
 // runEnvSet implements "env set <app> KEY=VALUE...": the plain-env counterpart of "env push" for a few values.
 func runEnvSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenP, apiURLP, profileP, jsonOutP, outputP, queryP := apiFlagSet(prog, "env set", "print the plan as JSON to stdout and nothing else", stderr)
-	var apply, noApply bool
+	var apply, noApply, allowFiles bool
+	fs.BoolVar(&allowFiles, "allow-file-values", false, "let KEY=@/path, @./path and @~/path read the value from a local file")
 	fs.BoolVar(&apply, "apply", false, "restart the app now so the new env reaches the running container")
 	fs.BoolVar(&noApply, "no-apply", false, "leave the change pending even when apps.env_apply_on_set is on")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, envSetUsage(prog)) }
@@ -46,7 +47,7 @@ func runEnvSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 			// Never echo the argument: it may carry a secret value.
 			return reportError(stdout, stderr, jsonOut, newValidationError("%q is not KEY=VALUE", kvKeyHint(kv)))
 		}
-		resolved, err := resolveEnvValue(k, v, &stdinUsed)
+		resolved, err := resolveEnvValue(k, v, allowFiles, &stdinUsed)
 		if err != nil {
 			return reportError(stdout, stderr, jsonOut, err)
 		}
@@ -110,9 +111,9 @@ func kvKeyHint(kv string) string {
 	return k
 }
 
-// resolveEnvValue expands "@-", "@./path", "@/abs" and "@@literal"; a bare "@word" stays literal so existing values keep working.
-// Errors name the key and path, never the content.
-func resolveEnvValue(key, v string, stdinUsed *bool) (string, error) {
+// resolveEnvValue expands "@-" and "@@literal"; a bare "@word" stays literal so existing values keep working.
+// File paths need allowFiles so a script passing an untrusted value cannot upload a local file. Errors never carry content.
+func resolveEnvValue(key, v string, allowFiles bool, stdinUsed *bool) (string, error) {
 	if !strings.HasPrefix(v, "@") {
 		return v, nil
 	}
@@ -135,7 +136,14 @@ func resolveEnvValue(key, v string, stdinUsed *bool) (string, error) {
 			return "", newValidationError("%s: cannot read stdin: %v", key, err)
 		}
 	} else {
-		raw, err = readEnvValueFile(src)
+		if !allowFiles {
+			return "", newValidationError("%s: a value starting with @ followed by a path reads a local file; pass --allow-file-values to allow it, or start the value with @@ to store a literal @", key)
+		}
+		path, perr := expandHomePath(src)
+		if perr != nil {
+			return "", newValidationError("%s: %v", key, perr)
+		}
+		raw, err = readEnvValueFile(path)
 		if err != nil {
 			return "", newValidationError("%s: cannot read %s: %v", key, src, err)
 		}
@@ -146,10 +154,26 @@ func resolveEnvValue(key, v string, stdinUsed *bool) (string, error) {
 	return strings.TrimSuffix(string(raw), "\n"), nil
 }
 
-// isExplicitPath keeps a value like "@oncall" literal: only absolute or ./ ../ forms read a file.
+// isExplicitPath keeps a value like "@oncall" literal: only absolute, ./ ../ and ~ forms name a file.
 func isExplicitPath(p string) bool {
-	return filepath.IsAbs(p) || strings.HasPrefix(p, "./") || strings.HasPrefix(p, "../") ||
+	return filepath.IsAbs(p) || strings.HasPrefix(p, "/") || strings.HasPrefix(p, "~") ||
+		strings.HasPrefix(p, "./") || strings.HasPrefix(p, "../") ||
 		strings.HasPrefix(p, ".\\") || strings.HasPrefix(p, "..\\")
+}
+
+// expandHomePath resolves "~/x" itself because the shell does not expand a tilde after "KEY=@".
+func expandHomePath(p string) (string, error) {
+	if !strings.HasPrefix(p, "~") {
+		return p, nil
+	}
+	if p != "~" && !strings.HasPrefix(p, "~/") {
+		return "", fmt.Errorf("only ~/ is supported for home paths")
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("cannot resolve the home directory")
+	}
+	return filepath.Join(home, strings.TrimPrefix(p, "~")), nil
 }
 
 func readEnvValueFile(path string) ([]byte, error) {
@@ -208,13 +232,16 @@ func envSetUsage(prog string) string {
 
 Sets plain environment variables on an app, creating or changing them.
 Only the first "=" splits, so values may contain "=", spaces and quotes (quote them for your shell).
-KEY=@./path or KEY=@/abs/path reads the value from a file (one trailing newline is dropped), KEY=@- reads stdin (once per call),
-and KEY=@@text sets the literal "@text". Any other leading @ (for example @oncall) is stored as typed. Sources are limited to 64 KiB of UTF-8 text.
+KEY=@- reads the value from stdin (once per call). With --allow-file-values, KEY=@./path, KEY=@/abs/path or KEY=@~/path
+reads it from a file; without the flag such a value is refused, so a script cannot upload a local file by accident.
+One trailing newline is dropped and sources are limited to 64 KiB of UTF-8 text. KEY=@@text is an escape that sets
+the literal "@text". Any other leading @ (for example @oncall) is stored as typed.
 Keys stored as secrets are refused, use "%[1]s apps secrets set" for those.
 Changes reach the running container at the next restart, or now with --apply.
 NEXT_PUBLIC_ and VITE_ keys are baked in at build time: a git app needs "%[1]s deploy <app> --latest", an upload app "%[1]s deploy <dir>".
 
 Flags:
+  --allow-file-values let KEY=@/path, @./path and @~/path read the value from a local file
   --apply             restart the app now so the new env reaches the running container
   --no-apply          leave the change pending even when apps.env_apply_on_set is on
   --token string      API token (default: %[2]s env var, then the credentials file)

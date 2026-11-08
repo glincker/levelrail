@@ -36,6 +36,8 @@ type OneShotJob struct {
 	RunStatus       string `json:"run_status,omitempty"`
 	Output          string `json:"output,omitempty"`
 	OutputTruncated bool   `json:"output_truncated,omitempty"`
+	// OutputWithheld means the run printed output this token may not read (it lacks read_sensitive).
+	OutputWithheld bool `json:"output_withheld,omitempty"`
 }
 
 // RunOneShotJob calls POST /api/v1/jobs/runs.
