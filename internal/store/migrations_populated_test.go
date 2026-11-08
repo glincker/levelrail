@@ -10,10 +10,37 @@ import (
 // lastV092Migration is the newest migration shipped in tag v0.9.2.
 const lastV092Migration = 3199
 
+// postTagBelowCeiling are migrations added after v0.9.2 but numbered below its
+// newest one; a real v0.9.2 database lacks them, so the old schema skips them.
+var postTagBelowCeiling = []int{2672, 2691}
+
+// v092MigrationCount is the number of migration files in the v0.9.2 tag.
+const v092MigrationCount = 486
+
+func TestMigrationsPopulated_NoNewOutOfOrder(t *testing.T) {
+	all, err := loadMigrations()
+	if err != nil {
+		t.Fatal(err)
+	}
+	skip := map[int]bool{}
+	for _, v := range postTagBelowCeiling {
+		skip[v] = true
+	}
+	n := 0
+	for _, m := range all {
+		if m.version <= lastV092Migration && !skip[m.version] {
+			n++
+		}
+	}
+	if n != v092MigrationCount {
+		t.Errorf("%d migrations <= %d outside the known post-tag list, want %d: number new migrations above the previous release maximum", n, lastV092Migration, v092MigrationCount)
+	}
+}
+
 func TestMigrationsPopulated_UpgradeFromV092(t *testing.T) {
 	ctx := context.Background()
 	path := filepath.Join(t.TempDir(), "state.db")
-	old, err := Open(ctx, path, WithMigrationCeiling(lastV092Migration))
+	old, err := Open(ctx, path, WithMigrationCeiling(lastV092Migration), WithMigrationSkip(postTagBelowCeiling...))
 	if err != nil {
 		t.Fatalf("open at %d: %v", lastV092Migration, err)
 	}
@@ -22,6 +49,8 @@ func TestMigrationsPopulated_UpgradeFromV092(t *testing.T) {
 		`INSERT INTO apps (id, name) VALUES ('a1', 'web')`,
 		`INSERT INTO service_secrets (service_name, wrapped_dek) VALUES ('web', x'01020304')`,
 		`INSERT INTO service_secret_values (service_name, env_key, ciphertext) VALUES ('web', 'KEY', CAST('test-secret-ciphertext' AS BLOB))`,
+		`INSERT INTO desired_services (name, image, port, updated_at) VALUES ('web', 'img:1', 80, '2026-10-01T00:00:00Z')`,
+		`INSERT INTO preview_app_settings (app_name, updated_at) VALUES ('web', '2026-10-01T00:00:00Z')`,
 		`INSERT INTO backup_targets (id, name, provider, bucket, created_at) VALUES ('t1', 'main', 'aws', 'bkt', '2026-10-01T00:00:00Z')`,
 		`INSERT INTO secret_rotation_policies (service_name, env_key, interval_days, created_at, updated_at) VALUES ('web', 'KEY', 30, '2026-10-01T00:00:00Z', '2026-10-01T00:00:00Z')`,
 	}
@@ -40,7 +69,7 @@ func TestMigrationsPopulated_UpgradeFromV092(t *testing.T) {
 	}
 	defer func() { _ = cur.Close() }()
 
-	for _, tbl := range []string{"users", "apps", "service_secrets", "service_secret_values", "backup_targets", "secret_rotation_policies"} {
+	for _, tbl := range []string{"users", "apps", "service_secrets", "service_secret_values", "backup_targets", "secret_rotation_policies", "desired_services", "preview_app_settings"} {
 		var n int
 		if err := cur.QueryRowContext(ctx, `SELECT COUNT(*) FROM `+tbl).Scan(&n); err != nil || n != 1 {
 			t.Errorf("%s rows = %d (err %v), want 1", tbl, n, err)

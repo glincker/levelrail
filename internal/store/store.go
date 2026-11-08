@@ -104,6 +104,7 @@ func dsn(path string) string {
 type openConfig struct {
 	preMigrate PreMigrateHook
 	ceiling    int
+	skip       map[int]bool
 }
 
 // OpenOption customizes Open.
@@ -117,6 +118,17 @@ type PreMigrateHook func(ctx context.Context, db *DB, from, to int)
 // database has migrations pending (never for a brand new one).
 func WithPreMigrateHook(h PreMigrateHook) OpenOption {
 	return func(c *openConfig) { c.preMigrate = h }
+}
+
+// WithMigrationSkip leaves the given versions unapplied, so upgrade tests can
+// model migrations added out of order after a release tag.
+func WithMigrationSkip(versions ...int) OpenOption {
+	return func(c *openConfig) {
+		c.skip = make(map[int]bool, len(versions))
+		for _, v := range versions {
+			c.skip[v] = true
+		}
+	}
 }
 
 // WithMigrationCeiling stops migrating after version, so upgrade tests can

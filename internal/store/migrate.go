@@ -118,6 +118,15 @@ func (db *DB) migrate(ctx context.Context, cfg openConfig) error {
 	if cfg.ceiling > 0 {
 		migrations = migrationsThrough(migrations, cfg.ceiling)
 	}
+	if len(cfg.skip) > 0 {
+		kept := migrations[:0:0]
+		for _, m := range migrations {
+			if !cfg.skip[m.version] {
+				kept = append(kept, m)
+			}
+		}
+		migrations = kept
+	}
 
 	applied, err := db.appliedVersions(ctx)
 	if err != nil {
