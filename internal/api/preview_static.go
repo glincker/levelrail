@@ -65,23 +65,32 @@ func (rt *Router) deployPreviewStatic(ctx context.Context, appName, previewName 
 }
 
 // finishStaticPreviewExposure is finishPreviewExposure for a static preview:
-// the DNS record and search hiding, without idle sleep (there is no container).
-// The basic auth gate is not applied by the static route, so it is reported.
-func (rt *Router) finishStaticPreviewExposure(ctx context.Context, appName, previewName, domain string, s store.PreviewAppSettings) []string {
+// the DNS record, search hiding and the basic auth gate, without idle sleep
+// (there is no container). A requested gate that cannot be applied, or a
+// forward-auth gate the static route cannot enforce, is an error so the
+// caller does not publish an unprotected preview.
+func (rt *Router) finishStaticPreviewExposure(ctx context.Context, appName, previewName, domain string, s store.PreviewAppSettings) ([]string, error) {
 	var notes []string
 	if domain != "" {
 		if res := rt.previewDNS(ctx, previewName, domain); res.DNS == dnsResultError {
 			rt.logger.Warn("api: preview dns record failed", slog.String("domain", domain), slog.String("message", res.Message))
 			notes = append(notes, "the DNS record could not be created: "+res.Message)
 		}
+		if g, found, err := rt.domainAuthGate.GetDomainAuthGate(ctx, domain); err != nil {
+			return notes, fmt.Errorf("check forward-auth gate for %q: %w", domain, err)
+		} else if found && g.Enabled {
+			return notes, fmt.Errorf("forward-auth gates are not enforced on static previews, remove the gate on %q", domain)
+		}
 	}
-	gateRequested := s.GateBasicAuth
+	gateRequested := s.GateBasicAuth && domain != ""
 	s.GateBasicAuth = false
 	notes = append(notes, rt.secureReachablePreview(ctx, appName, domain, s)...)
-	if gateRequested && domain != "" {
-		notes = append(notes, "the basic auth gate is not enforced on static previews")
+	if gateRequested {
+		if err := rt.gatePreviewDomain(ctx, appName, domain, store.PreviewAppSettings{GateUsername: s.GateUsername}); err != nil {
+			return notes, fmt.Errorf("apply basic auth gate: %w", err)
+		}
 	}
-	return notes
+	return notes, nil
 }
 
 // teardownPreviewStatic removes a preview's static site row, route and files.

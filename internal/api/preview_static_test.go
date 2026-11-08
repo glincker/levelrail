@@ -7,12 +7,14 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
+	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -228,4 +230,47 @@ func TestStaticPreview_TeardownIgnoresNonPreviewName(t *testing.T) {
 		t.Fatalf("teardownPreviewStatic(web) failed = %v", failed)
 	}
 	assertMainSiteIntact(t, db, mainDir)
+}
+
+func TestStaticPreview_GateCreatesRowAndFailsClosed(t *testing.T) {
+	rt, db, _, _, _, _ := setUpStaticPreviewApp(t)
+	withPreviewSecrets(t, rt)
+	mgr, ok := rt.secrets.(*secrets.Manager)
+	if !ok {
+		t.Fatalf("secrets = %T, want *secrets.Manager", rt.secrets)
+	}
+	rt.domainBasicAuthSecrets = mgr
+	ctx := context.Background()
+	const domain = "pr-42.web.example.com"
+	// The domain settings triggers only recognise service and standalone owners.
+	if err := db.CreateStandaloneDomain(ctx, store.StandaloneDomain{Domain: domain, Target: "http://127.0.0.1:1", TargetKind: "url"}); err != nil {
+		t.Fatalf("seed domain owner: %v", err)
+	}
+	s := store.PreviewAppSettings{GateBasicAuth: true, GateUsername: "reviewer"}
+
+	// No stored password: the gate cannot be created, so the preview must not publish.
+	notes, err := rt.finishStaticPreviewExposure(ctx, "web", "web-pr-42", domain, s)
+	if err == nil {
+		t.Fatalf("notes = %v, err nil; want an error when the gate cannot be created", notes)
+	}
+	if _, found, _ := db.GetDomainBasicAuth(ctx, domain); found {
+		t.Fatal("gate row exists after a failed gate creation")
+	}
+
+	if err := mgr.SetValue(ctx, previewGateSecretPrefix+"web", previewGateSecretKey, "pw-for-test"); err != nil {
+		t.Fatalf("store gate password: %v", err)
+	}
+	notes, err = rt.finishStaticPreviewExposure(ctx, "web", "web-pr-42", domain, s)
+	if err != nil {
+		t.Fatalf("finishStaticPreviewExposure() error = %v", err)
+	}
+	for _, n := range notes {
+		if strings.Contains(n, "not enforced") {
+			t.Fatalf("note %q must not be reported once the gate is enforced", n)
+		}
+	}
+	auth, found, err := db.GetDomainBasicAuth(ctx, domain)
+	if err != nil || !found || auth.Username != "reviewer" {
+		t.Fatalf("gate row = %+v, found %v, err %v; want reviewer", auth, found, err)
+	}
 }

@@ -219,7 +219,14 @@ func (rt *Router) deployPreviewEnvironmentInner(ctx context.Context, appName str
 
 	var notes []string
 	if static {
-		notes = rt.finishStaticPreviewExposure(ctx, appName, previewName, usedDomain, policy)
+		var exposeErr error
+		notes, exposeErr = rt.finishStaticPreviewExposure(ctx, appName, previewName, usedDomain, policy)
+		if exposeErr != nil {
+			rt.logger.Error("api: pull request webhook: static preview exposure failed", slog.String("error", exposeErr.Error()), slog.String("app_name", appName), slog.Int("pr_number", ev.Number))
+			rt.teardownPreviewStatic(ctx, previewName)
+			rt.finishPreviewFailed(ctx, gs, preview, "preview not published: "+exposeErr.Error())
+			return http.StatusInternalServerError, "deploy failed\n"
+		}
 	} else {
 		notes = rt.finishPreviewExposure(ctx, appName, previewName, usedDomain, policy)
 		notes = append(notes, seedNotes...)
