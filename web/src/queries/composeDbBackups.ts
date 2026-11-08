@@ -9,6 +9,23 @@ import type {
   SetComposeDbScheduleRequest,
 } from '../types/composeDbBackups'
 
+export interface ComposeDbRestoreRequest {
+  confirm: string
+  preview: boolean
+}
+
+export interface ComposeDbRestoreResponse {
+  run_id: string
+  object_key: string
+  size_bytes: number
+  engine: string
+  app: string
+  service: string
+  confirm_phrase: string
+  preview: boolean
+  safety_run_id?: string
+}
+
 const RUNNING_POLL_INTERVAL_MS = 3_000
 
 export const composeDbKeys = {
@@ -116,5 +133,36 @@ export function useTriggerComposeDbBackup(app: string, service: string) {
     },
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: composeDbKeys.runs(app, service) }),
+  })
+}
+
+// Root only. preview:true mutates nothing; preview:false replaces the live
+// database in the background, so success here means "accepted", not "restored".
+export function useComposeDbRestore(app: string, service: string) {
+  const qc = useQueryClient()
+  return useMutation<
+    ComposeDbRestoreResponse,
+    ApiError,
+    ComposeDbRestoreRequest & { run: string }
+  >({
+    mutationFn: async ({ run, ...body }) => {
+      const res = await fetch(
+        `${servicePath(app, service)}/backups/${encodeURIComponent(run)}/restore`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        },
+      )
+      await ensureOk(res, 'restore compose db backup')
+      return (await res.json()) as ComposeDbRestoreResponse
+    },
+    onSuccess: (_data, vars) => {
+      if (!vars.preview) {
+        void qc.invalidateQueries({
+          queryKey: composeDbKeys.runs(app, service),
+        })
+      }
+    },
   })
 }

@@ -472,6 +472,20 @@
       "running": "Running",
       "succeeded": "Succeeded",
       "failed": "Failed"
-    }
+    },
+    "restore": "Restore",
+    "restoreNeedsRoot": "Only an admin can restore a database backup.",
+    "restoreTitle": "Restore {{service}} from this backup",
+    "restoreWarning": "This replaces the live database in place. A safety dump of the current data is taken first and appears in run history.",
+    "restoreEngine": "Engine",
+    "restoreObject": "Backup object",
+    "restoreSize": "Size",
+    "restoreLoading": "Checking the backup...",
+    "restorePhraseLabel": "Type {{phrase}} to confirm",
+    "restoreConfirm": "Replace database",
+    "restoreStarting": "Starting...",
+    "restoreCancel": "Cancel",
+    "restoreClose": "Close",
+    "restoreAccepted": "Restore started. Safety dump: {{id}}. It runs in the background, so check run history and the audit log for the outcome."
   }
 }

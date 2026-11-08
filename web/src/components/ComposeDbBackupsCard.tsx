@@ -6,6 +6,7 @@ import { Controller, useForm } from 'react-hook-form'
 import {
   ChevronDownGlassIcon,
   ClockGlassIcon,
+  RestoreGlassIcon,
   TrashGlassIcon,
 } from '@thesvg/ui-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -45,6 +46,7 @@ import type {
   ComposeDbBackupRun,
   ComposeDbService,
 } from '../types/composeDbBackups'
+import { ComposeDbRestoreDialog } from './ComposeDbRestoreDialog'
 import { CronScheduleFields } from './CronScheduleFields'
 
 function toFieldValues(svc: ComposeDbService): ScheduleFormValues {
@@ -60,6 +62,9 @@ function toFieldValues(svc: ComposeDbService): ScheduleFormValues {
 function RunsList({ app, service }: { app: string; service: string }) {
   const { t } = useTranslation('backups')
   const runs = useComposeDbRuns(app, service, true)
+  const { can } = useAbilities()
+  const canRestore = can('root')
+  const [restoreRun, setRestoreRun] = useState<string | null>(null)
   if (runs.isError) {
     return (
       <p className="text-sm text-destructive">
@@ -73,42 +78,75 @@ function RunsList({ app, service }: { app: string; service: string }) {
       <p className="text-sm text-muted-foreground">{t('composeDb.noRuns')}</p>
     )
   }
+  const restorable = rows.some((r) => r.status === 'succeeded' && r.object_key)
   return (
-    <ul className="divide-y divide-border rounded-md border border-border text-sm">
-      {rows.map((run) => (
-        <li
-          key={run.id}
-          className="flex flex-wrap items-center gap-2 px-3 py-2"
-        >
-          <Badge
-            variant={
+    <div className="space-y-2">
+      <ul className="divide-y divide-border rounded-md border border-border text-sm">
+        {rows.map((run) => (
+          <li
+            key={run.id}
+            className="flex flex-wrap items-center gap-2 px-3 py-2"
+          >
+            <Badge
+              variant={
+                run.status === 'failed'
+                  ? 'destructive'
+                  : run.status === 'succeeded'
+                    ? 'success'
+                    : 'outline'
+              }
+            >
+              {run.status === 'running' ||
+              run.status === 'succeeded' ||
               run.status === 'failed'
-                ? 'destructive'
-                : run.status === 'succeeded'
-                  ? 'success'
-                  : 'outline'
-            }
-          >
-            {run.status === 'running' ||
-            run.status === 'succeeded' ||
-            run.status === 'failed'
-              ? t(`composeDb.status.${run.status}`)
-              : run.status}
-          </Badge>
-          <time
-            dateTime={run.started_at}
-            className="text-muted-foreground tabular-nums"
-          >
-            {new Date(run.started_at).toLocaleString()}
-          </time>
-          {run.error ? (
-            <span className="min-w-0 break-words text-destructive">
-              {run.error}
-            </span>
-          ) : null}
-        </li>
-      ))}
-    </ul>
+                ? t(`composeDb.status.${run.status}`)
+                : run.status}
+            </Badge>
+            <time
+              dateTime={run.started_at}
+              className="text-muted-foreground tabular-nums"
+            >
+              {new Date(run.started_at).toLocaleString()}
+            </time>
+            {run.error ? (
+              <span className="min-w-0 break-words text-destructive">
+                {run.error}
+              </span>
+            ) : null}
+            {run.status === 'succeeded' && run.object_key ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="ml-auto"
+                disabled={!canRestore}
+                onClick={() => {
+                  setRestoreRun(run.id)
+                }}
+              >
+                <RestoreGlassIcon className="size-4" aria-hidden="true" />
+                {t('composeDb.restore')}
+              </Button>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+      {restorable && !canRestore ? (
+        <p className="text-sm text-muted-foreground">
+          {t('composeDb.restoreNeedsRoot')}
+        </p>
+      ) : null}
+      {restoreRun ? (
+        <ComposeDbRestoreDialog
+          app={app}
+          service={service}
+          run={restoreRun}
+          onClose={() => {
+            setRestoreRun(null)
+          }}
+        />
+      ) : null}
+    </div>
   )
 }
 
