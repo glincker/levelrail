@@ -607,6 +607,7 @@ type Router struct {
 	serviceVolumeBackupSchedule  ServiceVolumeBackupScheduleStore                                                    // always set, same "core Store interface" shape as backupTargets above: reading a volume's schedule needs no runner configuration, only triggering a manual backup does
 	composeDBBackups             ComposeDBBackupStore                                                                // nil when the store lacks compose backups: those routes return 501
 	composeDBBackupRunner        ComposeDBBackupRunner                                                               // nil is valid: POST .../compose-db-services/{service}/backups returns 501
+	composeDBRestoreRunner       ComposeDBRestoreRunner                                                              // nil is valid: the compose restore route returns 501
 	serviceVolumeBackupRunner    ServiceVolumeBackupRunner                                                           // nil is valid: POST /api/v1/apps/{name}/volumes/{volume}/backups returns 501, same shape as backupRunner above
 	serviceVolumeRestoreHistory  ServiceVolumeRestoreHistoryStore                                                    // always set, same "core Store interface" shape as restoreHistory above
 	serviceVolumeRestoreRunner   ServiceVolumeRestoreRunner                                                          // nil is valid: POST /api/v1/apps/{name}/volumes/{volume}/restore returns 501, same shape as restoreRunner above

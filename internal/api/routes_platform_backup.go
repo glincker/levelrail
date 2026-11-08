@@ -121,6 +121,8 @@ func (rt *Router) registerBackupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/compose-db-services/{service}/backup-schedule", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteComposeDBBackupSchedule))
 	mux.HandleFunc("GET /api/v1/apps/{name}/compose-db-services/{service}/backups", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListComposeDBBackupRuns))
 	mux.HandleFunc("POST /api/v1/apps/{name}/compose-db-services/{service}/backups", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleTriggerComposeDBBackup))
+	// AbilityRoot like the volume restore: it replaces the live database in place.
+	mux.HandleFunc("POST /api/v1/apps/{name}/compose-db-services/{service}/backups/{run}/restore", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleRestoreComposeDBBackup))
 
 	// Volume file browser: reads need read:sensitive (contents can hold secrets), edits need write plus read:sensitive, so an operator can fix a config file without SSH.
 	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/files", rt.requireAbilityForResource(AbilityReadSensitive, appResourceFromPath, rt.handleListVolumeFiles))

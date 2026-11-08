@@ -719,6 +719,7 @@ Endpoints for:
 | DELETE | /api/v1/apps/{name}/compose-db-services/{service}/backup-schedule | AbilityWriteSensitive | handleDeleteComposeDBBackupSchedule |
 | GET | /api/v1/apps/{name}/compose-db-services/{service}/backups | AbilityRead | handleListComposeDBBackupRuns |
 | POST | /api/v1/apps/{name}/compose-db-services/{service}/backups | AbilityWriteSensitive | handleTriggerComposeDBBackup |
+| POST | /api/v1/apps/{name}/compose-db-services/{service}/backups/{run}/restore | AbilityRoot | handleRestoreComposeDBBackup |
 
 </Accordion>
 

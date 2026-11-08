@@ -23,9 +23,18 @@ func newComposeServiceBackupRunner(db *store.DB, client *docker.Client, runner *
 }
 
 // composeBackupOption stays a no-op without a master key, like the other backup options.
-func composeBackupOption(db *store.DB, client *docker.Client, runner *backup.Runner) api.Option {
+// The restore side reuses the database restore runner's downloader, restorer and decrypt identities.
+func composeBackupOption(db *store.DB, client *docker.Client, runner *backup.Runner, restore *backup.RestoreRunner) api.Option {
 	if runner == nil {
 		return func(*api.Router) {}
 	}
-	return api.WithComposeDBBackupRunner(newComposeServiceBackupRunner(db, client, runner))
+	dumper := newComposeServiceBackupRunner(db, client, runner)
+	restorer := &backup.ComposeServiceRestorer{
+		Safety: dumper, Destinations: runner, Containers: dumper.Containers,
+		Downloader: restore.Downloader, Restorer: &backup.ComposeContainerRestorer{Runtime: client}, Identities: restore.Identities,
+	}
+	return func(rt *api.Router) {
+		api.WithComposeDBBackupRunner(dumper)(rt)
+		api.WithComposeDBRestoreRunner(restorer)(rt)
+	}
 }

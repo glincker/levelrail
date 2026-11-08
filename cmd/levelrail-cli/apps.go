@@ -177,6 +177,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsScan(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "cache":
 		return runAppsCache(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
+	case "backups":
+		return runAppsBackups(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	case "build-cache":
 		return runAppsBuildCache(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "build-stats":
@@ -389,6 +391,7 @@ func appsUsage(prog string) string {
   %[1]s apps sbom <app> [deploy-id] [--download]   show a deploy's software bill of materials
   %[1]s apps scan <verb> <app> [flags]    enable/disable/status/run/gate/override vulnerability scanning
   %[1]s apps cache <show|clear> <name>    show or clear one app's BuildKit build cache on the builder
+  %[1]s apps backups restore <app> <service> <run> [--yes]   restore a compose database service from a backup run
   %[1]s apps build-cache <verb> [flags]   show/set/clear/remove the BuildKit remote cache on a storage destination
   %[1]s apps build-stats <name> [--limit N]   build duration trend (p50, p95) and cache hits
   %[1]s apps build-speed <name> [--fix]   time saved by build cache and speedup suggestions

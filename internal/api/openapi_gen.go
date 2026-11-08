@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2017 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2018 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -192,6 +192,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/apps/{name}/compose-db-services/{service}/backup-schedule", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetComposeDBBackupSchedule", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/compose-db-services/{service}/backups", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListComposeDBBackupRuns", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/compose-db-services/{service}/backups", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleTriggerComposeDBBackup", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/compose-db-services/{service}/backups/{run}/restore", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRestoreComposeDBBackup", Description: "AbilityRoot like the volume restore: it replaces the live database in place."},
 	{Method: "POST", Path: "/api/v1/apps/{name}/compose/redeploy", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRedeployCompose", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/compose/revisions", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListComposeRevisions", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/compose/revisions/{revision}", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetComposeRevision", Description: ""},

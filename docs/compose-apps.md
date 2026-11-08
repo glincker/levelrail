@@ -300,7 +300,24 @@ Schedules and run history for compose services are stored apart from managed dat
 
 In the dashboard, the **Database backups** card on the app's **Volumes** tab lists each detected database service with its engine, its schedule and what its retention settings keep. Only users with the `write-sensitive` ability can change anything. They choose a backup target, set a cron schedule, set how many backups to keep (`Keep last`) and an optional maximum age in days, pause or resume the schedule, remove it, or run a backup now. A new schedule starts with `Keep last` at 7. A value of 0 turns that limit off, and 0 for both keeps every backup. Read-only users see the schedule and the recent runs. If no backup target exists yet, the card links to Settings. The card does not appear for an app with no detected database service. There is no CLI command for these schedules yet. The card and these endpoints are built and unit tested, but not yet run against a live server.
 
-Restore is not automated for compose services yet. Download the dump object from the backup target (decrypt it first if the target encrypts dumps), then load it into the running service by hand:
+Restore replaces a database service's live data from one succeeded backup run. It needs the `root` ability.
+
+| Method | Path | Ability |
+| --- | --- | --- |
+| `POST` | `/api/v1/apps/{name}/compose-db-services/{service}/backups/{run}/restore` | `root` (`confirm`, `preview`) |
+
+Send `{"preview": true}` first. It changes nothing and returns the run, object key, size, engine and the exact confirm phrase, which is `restore <app>/<service>`. A real restore needs `confirm` to equal that phrase, otherwise the call answers 400. Only a succeeded run can be restored (a failed or running one answers 409). Restoring into a new service (`as_new`) is not supported and answers 400.
+
+Before it touches the database, the control plane checks the stored object against its recorded checksum, then takes a safety dump of the current data to the same backup target. If the checksum check or the safety dump fails, the restore stops and the database is left as it was. The safety dump shows up in the run history. The restore itself runs in the background and the outcome is written to the audit log as `compose_db.restore`.
+
+From the CLI:
+
+```sh
+levelrail-cli apps backups restore <app> <service> <run>        # preview, then type the phrase
+levelrail-cli apps backups restore <app> <service> <run> --yes  # for scripts
+```
+
+Without `--yes` and without a terminal the command sends no restore request. Postgres is replayed in one transaction after the `public` schema is reset, so a damaged dump rolls back. MySQL and MariaDB dumps replace the tables they contain, so a table created after the backup stays. This is built and unit tested but has not run against a real database container and bucket. To load a dump by hand instead, download the object from the backup target (decrypt it first if the target encrypts dumps) and use:
 
 ```sh
 # Postgres
@@ -308,5 +325,3 @@ docker exec -i <container> sh -c 'psql -U "${POSTGRES_USER:-postgres}" "${POSTGR
 # MySQL or MariaDB
 docker exec -i <container> sh -c 'MYSQL_PWD="${MYSQL_ROOT_PASSWORD:-$MARIADB_ROOT_PASSWORD}" mysql -uroot' < dump.sql
 ```
-
-Take a fresh dump first, since loading over live data can overwrite it.

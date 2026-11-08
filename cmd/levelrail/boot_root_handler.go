@@ -329,7 +329,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 			mailBackupOption(backupRunner, secretsManager),
 			// Volume backups reuse the database runner: one implementation serves both resource kinds.
 			api.WithServiceVolumeBackupRunner(backupRunner),
-			composeBackupOption(db, client, backupRunner),
+			composeBackupOption(db, client, backupRunner, restoreRunner),
 			// Needs ExecWithInput on the local runtime, the same way ContainerDumper needs Exec.
 			api.WithRestoreRunner(restoreRunner),
 			api.WithServiceVolumeRestoreRunner(restoreRunner),
