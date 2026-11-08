@@ -52,6 +52,8 @@ var Tree = map[string]*Node{
 		"deploy-compose":          nil,
 		"init":                    nil,
 		"validate":                nil,
+		"validate-spec":           nil,
+		"listening-ports":         nil,
 		"deploy-spec":             nil,
 		"group":                   nil,
 		"hook-runs":               nil,

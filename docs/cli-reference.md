@@ -200,6 +200,8 @@ levelrail-cli apps overview [name ...] [flags]
 levelrail-cli apps network <name> [flags]
 levelrail-cli apps init [--file app.yaml] [--name NAME] [--image IMAGE | --build TYPE] [--port N] [--domain HOST] [--database ENGINE] [--force]
 levelrail-cli apps validate --file <app.yaml|compose.yaml> [flags]
+levelrail-cli apps validate-spec <app> --file PATH|- [flags]
+levelrail-cli apps listening-ports <app> [flags]
 levelrail-cli apps clone <name> <new-name> [flags]
 levelrail-cli apps delete <name> [flags]
 ```
@@ -210,6 +212,8 @@ levelrail-cli apps delete <name> [flags]
 `apps tree <name>` prints what an app consists of: current deployment and last deploy (image tag, short digest, status), replicas with their reconcile conditions, domains, volumes, linked databases and the env key count (never values). `--watch` redraws every `--interval` (default 5s, or `LEVELRAIL_TREE_INTERVAL`) until Ctrl+C; `--json` prints the nested structure. Per-container rows are not shown because there is no per-app container endpoint.
 - `apps create --file` sends a service's `published_ports` (container_port, host_port, protocol tcp or udp). `apps get`, `apps list` and `apps deploy-compose` show them as `53/udp`, and `--json` carries `published_ports`. Refusals print the server message plus a hint.
 - `apps init` writes a starter `app.yaml` offline. Optional field names and hints are read from the embedded schema, and the result is validated before it is written. It refuses to overwrite a file unless `--force` is set.
+- `apps validate-spec <app> --file PATH|-` sends the file to the server and checks it with the deploy-time rules, without deploying or saving. It prints one `error path: message` line per issue and exits 2 when invalid. Files over 1 MiB are rejected before any request. `--json` prints the raw response.
+- `apps listening-ports <app>` shows whether the running container listens on the configured port. It reads the container socket table, so it needs exec enabled for the app; otherwise the note column says why and the verdict is `unknown`.
 - `apps validate` parses and validates an app.yaml or a Docker Compose file locally, with no API call and no deploy. It prints the detected format, service count, and every non-blocking `notices` entry a real deploy would also surface.
 - `apps delete` removes an app and stops its containers; if the node is unreachable the delete is reported as pending and retried.
 

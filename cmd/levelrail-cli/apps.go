@@ -33,6 +33,10 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsInit(prog, args[1:], stdout, stderr, lookupEnv)
 	case "validate":
 		return runAppsValidate(prog, args[1:], stdout, stderr, lookupEnv)
+	case "validate-spec":
+		return runAppsValidateSpec(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
+	case "listening-ports":
+		return runAppsListeningPorts(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy-spec":
 		return runAppsDeploySpec(prog, args[1:], stdout, stderr, lookupEnv)
 	case "group":
@@ -305,6 +309,8 @@ func appsUsage(prog string) string {
   %[1]s apps create [flags]         create an app (existing image, git build, --file, or --interactive)
   %[1]s apps list [flags]             list apps
   %[1]s apps get <name> [flags]       show one app
+  %[1]s apps validate-spec <app> --file PATH|- [flags]   check an app.yaml on the server without deploying
+  %[1]s apps listening-ports <app> [flags]   show which ports the running container listens on
   %[1]s apps skew <name> [flags]      show skew protection and the held previous release
   %[1]s apps deploy <name> [flags]   deploy an image to an existing app
   %[1]s apps ci token|trust <name> [flags]   deploy from any CI with OIDC: mint a deploy token, manage which pipelines are trusted
