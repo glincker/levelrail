@@ -98,5 +98,34 @@
     "healthEnable": "Enable a health check",
     "healthPath": "Path",
     "healthHint": "Checked before cutting traffic to a new container, and to detect a crashed one afterward. Railpack-detected apps that don't serve this path should turn it off."
+  },
+  "sshKey": {
+    "title": "SSH deploy key",
+    "loading": "Loading...",
+    "none": "No key yet",
+    "fingerprint": "Fingerprint {{fingerprint}}",
+    "publicKey": "Public key",
+    "hint": "Add this as a read-only deploy key on the repository host.",
+    "hostPinned": "Pinned host key {{fingerprint}}",
+    "hostKeyChoice": "How to pin the host key",
+    "mode": {
+      "paste": "Paste host key",
+      "tofu": "Trust on first use"
+    },
+    "hostKeyLabel": "Host key",
+    "hostKeyPlaceholder": "git.example.com ssh-ed25519 AAAA...",
+    "tofuWarning": "Trusts whatever answers first. Verify the fingerprint shown afterwards.",
+    "generate": "Generate key",
+    "saved": "SSH deploy key saved.",
+    "removed": "SSH deploy key removed.",
+    "rotate": "Rotate",
+    "rotateTitle": "Rotate the SSH deploy key?",
+    "rotateBody": "A new key replaces the current one. Add the new public key on the repository host, or fetches will fail.",
+    "rotateConfirm": "Rotate key",
+    "remove": "Remove",
+    "removeTitle": "Remove the SSH deploy key?",
+    "removeBody": "Fetches over SSH will fail until a new key is generated.",
+    "removeConfirm": "Remove key",
+    "cancel": "Cancel"
   }
 }

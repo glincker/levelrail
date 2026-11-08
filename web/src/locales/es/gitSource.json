@@ -98,5 +98,34 @@
     "healthEnable": "Activar una comprobación de salud",
     "healthPath": "Ruta",
     "healthHint": "Se comprueba antes de pasar el tráfico a un contenedor nuevo, y para detectar después uno caído. Las apps detectadas por Railpack que no sirvan esta ruta deberían desactivarla."
+  },
+  "sshKey": {
+    "title": "Clave de despliegue SSH",
+    "loading": "Cargando...",
+    "none": "Aún sin clave",
+    "fingerprint": "Huella {{fingerprint}}",
+    "publicKey": "Clave pública",
+    "hint": "Añádela como clave de despliegue de solo lectura en el host del repositorio.",
+    "hostPinned": "Clave de host fijada {{fingerprint}}",
+    "hostKeyChoice": "Cómo fijar la clave del host",
+    "mode": {
+      "paste": "Pegar clave del host",
+      "tofu": "Confiar en el primer uso"
+    },
+    "hostKeyLabel": "Clave del host",
+    "hostKeyPlaceholder": "git.example.com ssh-ed25519 AAAA...",
+    "tofuWarning": "Confía en lo primero que responda. Verifica después la huella mostrada.",
+    "generate": "Generar clave",
+    "saved": "Clave de despliegue SSH guardada.",
+    "removed": "Clave de despliegue SSH eliminada.",
+    "rotate": "Rotar",
+    "rotateTitle": "¿Rotar la clave de despliegue SSH?",
+    "rotateBody": "Una clave nueva sustituye a la actual. Añade la nueva clave pública en el host del repositorio o las descargas fallarán.",
+    "rotateConfirm": "Rotar clave",
+    "remove": "Eliminar",
+    "removeTitle": "¿Eliminar la clave de despliegue SSH?",
+    "removeBody": "Las descargas por SSH fallarán hasta generar una clave nueva.",
+    "removeConfirm": "Eliminar clave",
+    "cancel": "Cancelar"
   }
 }

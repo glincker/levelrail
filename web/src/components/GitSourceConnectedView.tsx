@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import type { AppDetail } from '../types/appDetail'
 import type { GitSourceResource } from '../types/gitSource'
 import { TRIGGER_MODES } from '../lib/gitSourceForm'
+import { isSshRepoUrl } from '../lib/gitSshUrl'
 import { GitAccessValidate } from './GitAccessValidate'
 import { GitBuildSettings } from './GitBuildSettings'
 import { GitSourceCopyField } from './GitSourceCopyField'
@@ -15,6 +16,11 @@ const GitSourceReliability = lazy(() =>
   import('./GitSourceReliability').then((m) => ({
     default: m.GitSourceReliability,
   })),
+)
+
+// Lazy: only SSH repo URLs need the deploy key section.
+const GitSshKeySection = lazy(() =>
+  import('./GitSshKeySection').then((m) => ({ default: m.GitSshKeySection })),
 )
 
 export function GitSourceConnectedView({
@@ -77,6 +83,12 @@ export function GitSourceConnectedView({
       <Suspense fallback={null}>
         <GitSourceReliability appName={app.name} source={source} />
       </Suspense>
+
+      {isSshRepoUrl(source.repo_url) ? (
+        <Suspense fallback={null}>
+          <GitSshKeySection appName={app.name} />
+        </Suspense>
+      ) : null}
 
       <GitSourceCopyField
         id="git-source-webhook-url-connected"
