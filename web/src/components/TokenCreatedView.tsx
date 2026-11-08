@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Alert } from '@/components/ui/alert'
 import {
   CheckGlassIcon,
   CopyGlassIcon,
@@ -35,12 +36,12 @@ export function TokenCreatedView({
         description={<>&ldquo;{created.name}&rdquo; is ready to use.</>}
       />
       <CreateFlowSteps steps={TOKEN_STEPS} currentIndex={1} />
-      <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
+      <Alert variant="warning" className="flex items-start gap-2">
         <TriangleAlertGlassIcon className="mt-0.5 size-6 shrink-0 text-tone-warning" />
         <p className="text-sm">
           Copy this token now. It will not be shown again.
         </p>
-      </div>
+      </Alert>
       <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 p-2">
         <code className="min-w-0 flex-1 overflow-x-auto text-xs break-all">
           {created.token}

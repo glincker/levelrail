@@ -1,4 +1,6 @@
-import { ListSkeleton } from "@/components/ui/list-skeleton"
+import { ListSkeleton } from '@/components/ui/list-skeleton'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
+import { EmptyState } from '@/components/ui/empty-state'
 import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
@@ -45,9 +47,12 @@ export function ConfigureLoadBalancerDialog({
     body = <ListSkeleton />
   } else if (apps.isError) {
     body = (
-      <p className="text-sm text-destructive">
-        Could not load your apps. Close this dialog and try again.
-      </p>
+      <EmptyState
+        kind="error"
+        icon={<TriangleAlertGlassIcon className="size-5" aria-hidden="true" />}
+        title="Could not load your apps"
+        description="Close this dialog and try again."
+      />
     )
   } else if ((apps.data ?? []).length === 0) {
     body = (

@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
+import { EmptyState } from '@/components/ui/empty-state'
 import { useQueryClient } from '@tanstack/react-query'
 import { SkeletonLine, SkeletonTile } from '@/components/kit'
 import { HelpLink } from '@/components/HelpLink'
@@ -142,9 +144,12 @@ export function LoadBalancerPage({ appName, replicas, onSetReplicas }: Props) {
   if (resource.isLoading) return <Loading />
   if (resource.isError) {
     return (
-      <p role="alert" className="text-sm text-tone-danger">
-        Could not load the load balancer: {resource.error.message}
-      </p>
+      <EmptyState
+        kind="error"
+        icon={<TriangleAlertGlassIcon className="size-5" aria-hidden="true" />}
+        title="Could not load the load balancer"
+        description={resource.error.message}
+      />
     )
   }
 
@@ -334,9 +339,14 @@ export function LoadBalancerPage({ appName, replicas, onSetReplicas }: Props) {
           {status.isLoading ? (
             <SkeletonTile className="h-48" />
           ) : status.isError ? (
-            <p role="alert" className="text-sm text-tone-danger">
-              Could not load upstream status: {status.error.message}
-            </p>
+            <EmptyState
+              kind="error"
+              icon={
+                <TriangleAlertGlassIcon className="size-5" aria-hidden="true" />
+              }
+              title="Could not load upstream status"
+              description={status.error.message}
+            />
           ) : (
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
               <LbTopology

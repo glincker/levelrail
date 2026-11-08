@@ -139,7 +139,10 @@ export function SCIMCard({
       {tokens.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t('scim.empty')}</p>
       ) : (
-        <ul className="divide-y divide-border rounded-lg border border-border bg-card px-4">
+        <ul
+          data-slot="grouped-list"
+          className="rounded-lg border border-border bg-card px-4"
+        >
           {tokens.map((tok) => (
             <li
               key={tok.id}

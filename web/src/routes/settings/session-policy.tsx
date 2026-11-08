@@ -111,7 +111,10 @@ function SessionPolicyPage() {
         </Banner>
       }
     >
-      <ul className="divide-y divide-border rounded-lg border border-border bg-card px-4">
+      <ul
+        data-slot="grouped-list"
+        className="rounded-lg border border-border bg-card px-4"
+      >
         {teams.map((team) => (
           <li
             key={team.id}

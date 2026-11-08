@@ -99,10 +99,10 @@ describe('AppHealthTimeline', () => {
     expect(screen.getByText(/Loading timeline/)).toBeTruthy()
   })
 
-  it('switches range with aria-pressed', async () => {
+  it('switches range with the segmented control', async () => {
     renderIt()
-    const sevenDay = await screen.findByRole('button', { name: '7d' })
+    const sevenDay = await screen.findByRole('radio', { name: '7d' })
     fireEvent.click(sevenDay)
-    expect(sevenDay.getAttribute('aria-pressed')).toBe('true')
+    expect((sevenDay as HTMLInputElement).checked).toBe(true)
   })
 })

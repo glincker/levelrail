@@ -12,7 +12,7 @@ export function AppQuickActions({ app }: { app: AppListEntry }) {
   const { redeploy, isPending } = useRedeployApp(app.name, app.image)
   const domain = app.domains?.[0]
   return (
-    <span className="relative z-10 flex items-center gap-0.5 max-lg:hidden opacity-0 transition-opacity duration-150 group-focus-within/row:opacity-100 group-hover/row:opacity-100 motion-reduce:transition-none">
+    <span className="relative z-10 flex items-center gap-0.5 max-lg:hidden opacity-60 transition-opacity duration-150 group-focus-within/row:opacity-100 group-hover/row:opacity-100 [@media(pointer:coarse)]:[&>*]:size-10 motion-reduce:transition-none">
       {domain ? (
         <Button
           size="icon-sm"

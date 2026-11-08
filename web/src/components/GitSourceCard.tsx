@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Alert } from '@/components/ui/alert'
 import { useTranslation } from 'react-i18next'
 import {
   GitBranchGlassIcon,
@@ -180,10 +181,10 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
         ) : null}
 
         {otherError ? (
-          <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-2.5 text-destructive">
+          <Alert variant="danger" className="flex items-start gap-2">
             <TriangleAlertGlassIcon className="mt-0.5 size-6 shrink-0 text-tone-warning" />
             <p className="text-sm">{otherError.message}</p>
-          </div>
+          </Alert>
         ) : null}
 
         {justConnected ? (

@@ -1,3 +1,4 @@
+import { ProgressBar } from '@/components/ui/progress-ring'
 import {
   CircleAlertGlassIcon,
   CircleCheckGlassIcon,
@@ -158,11 +159,10 @@ function TraceRow({ ev }: { ev: DeployStepEvent }) {
           ) : null}
         </div>
         {percent !== null ? (
-          <progress
-            className="mt-1 h-1.5 w-full max-w-xs"
+          <ProgressBar
+            className="mt-1 max-w-xs"
             value={percent}
-            max={100}
-            aria-label={t('trace.pullProgress')}
+            label={t('trace.pullProgress')}
           />
         ) : null}
         {ev.detail ? (

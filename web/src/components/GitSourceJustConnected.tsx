@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { Alert } from '@/components/ui/alert'
 import { CheckGlassIcon, TriangleAlertGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
 import type { GitSourceResource } from '../types/gitSource'
@@ -21,17 +22,17 @@ export function GitSourceJustConnected({
   return (
     <div className="space-y-3">
       {autoRegistered ? (
-        <div className="flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-2.5 text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-900/20 dark:text-emerald-200">
+        <Alert variant="success" className="flex items-start gap-2">
           <CheckGlassIcon className="mt-0.5 size-5 shrink-0" />
           <p className="text-sm">{t('justConnected.autoRegistered')}</p>
-        </div>
+        </Alert>
       ) : (
-        <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
+        <Alert variant="warning" className="flex items-start gap-2">
           <TriangleAlertGlassIcon className="mt-0.5 size-6 shrink-0 text-tone-warning" />
           <p className="text-sm">
             {webhookError ? webhookError : t('justConnected.secretOnce')}
           </p>
-        </div>
+        </Alert>
       )}
 
       {!autoRegistered ? (

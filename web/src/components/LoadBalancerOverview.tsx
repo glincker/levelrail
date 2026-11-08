@@ -1,4 +1,6 @@
 import { useRef, useState } from 'react'
+import { TriangleAlertGlassIcon } from '@thesvg/ui-react'
+import { EmptyState } from '@/components/ui/empty-state'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { SplitGlassIcon } from '@thesvg/ui-react'
 import { Button } from '@/components/ui/button'
@@ -91,9 +93,12 @@ export function LoadBalancerOverview() {
     )
   } else if (query.isError) {
     content = (
-      <p className="text-sm text-destructive">
-        Could not load load balancers: {query.error.message}
-      </p>
+      <EmptyState
+        kind="error"
+        icon={<TriangleAlertGlassIcon className="size-5" aria-hidden="true" />}
+        title="Could not load load balancers"
+        description={query.error.message}
+      />
     )
   } else if (items.length === 0 && !filtered) {
     content = null

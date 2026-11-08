@@ -1,4 +1,4 @@
-import { ListSkeleton } from "@/components/ui/list-skeleton"
+import { ListSkeleton } from '@/components/ui/list-skeleton'
 import { useState } from 'react'
 import { CodeBlock } from '@/components/ui/code-block'
 import { Link, useNavigate } from '@tanstack/react-router'
