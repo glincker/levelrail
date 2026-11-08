@@ -160,6 +160,14 @@ func (rt *Router) describeOrphans(ctx context.Context, now time.Time) ([]storage
 	return out, total, nil
 }
 
+type orphansSnapshot struct {
+	list  []storageOrphanResource
+	total int64
+}
+
+// orphansReadKey is per router so two control planes in one process never share a cache entry.
+func (rt *Router) orphansReadKey() string { return fmt.Sprintf("storage-orphans-%p", rt) }
+
 // handleListStorageOrphans handles GET /api/v1/storage/orphans: Docker
 // volumes this control plane created whose database or app no longer
 // exists, with size, age and the last backup of what they held.
@@ -168,11 +176,16 @@ func (rt *Router) handleListStorageOrphans(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusNotImplemented, "docker volume management is not configured on this control plane")
 		return
 	}
-	list, total, err := rt.describeOrphans(r.Context(), time.Now())
+	v, err := rt.expensiveRead(r.Context(), rt.orphansReadKey(), func(ctx context.Context) (any, error) {
+		list, total, err := rt.describeOrphans(ctx, time.Now())
+		return orphansSnapshot{list: list, total: total}, err
+	})
 	if err != nil {
 		rt.internalError(w, "api: list storage orphans failed", err)
 		return
 	}
+	snap := v.(orphansSnapshot)
+	list, total := snap.list, snap.total
 	resp := storageOrphansResponse{TotalBytes: total, ThresholdBytes: orphanAttentionThreshold()}
 	resp.Orphans, resp.Page = pageWithInfo(w, r, list)
 	writeJSON(w, http.StatusOK, resp)
@@ -234,6 +247,7 @@ func (rt *Router) handleReclaimStorageOrphan(w http.ResponseWriter, r *http.Requ
 		rt.internalError(w, "api: reclaim storage orphan failed", err, slog.String("volume", id))
 		return
 	}
+	rt.forgetExpensiveRead(rt.orphansReadKey())
 	var reclaimed int64
 	if target.SizeBytes > 0 {
 		reclaimed = target.SizeBytes
@@ -249,6 +263,7 @@ func (rt *Router) purgeVolumes(ctx context.Context, owner string, names []string
 	if rt.orphanedVolumes == nil {
 		return
 	}
+	defer rt.forgetExpensiveRead(rt.orphansReadKey())
 	for _, n := range names {
 		if err := rt.orphanedVolumes.RemoveVolume(ctx, n); err != nil && !errors.Is(err, context.Canceled) {
 			rt.logger.Warn("api: delete data: volume not removed, it stays listed as orphaned data", slog.String("owner", owner), slog.String("volume", n), slog.String("error", err.Error()))

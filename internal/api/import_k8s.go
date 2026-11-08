@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -9,7 +10,17 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/iac"
 	"github.com/GLINCKER/levelrail/internal/k8simport"
+	"github.com/GLINCKER/levelrail/internal/platformimport"
+	"github.com/GLINCKER/levelrail/internal/runtimesettings"
 )
+
+// applyImportLimits copies the live import.max_bytes and import.max_items settings into the importer.
+func (rt *Router) applyImportLimits(ctx context.Context) {
+	if rt.runtimeSettings == nil {
+		return
+	}
+	platformimport.SetLimits(int64(rt.runtimeSettings.Int(ctx, runtimesettings.KeyImportMaxBytes)), rt.runtimeSettings.Int(ctx, runtimesettings.KeyImportMaxItems))
+}
 
 const k8sImportFile = "k8s-import.yaml"
 
@@ -56,7 +67,8 @@ func (rt *Router) handleImportK8s(w http.ResponseWriter, r *http.Request) {
 	dryRun := q.Get("dry_run") == "true" || q.Get("dry_run") == "1"
 	force := q.Get("force") == "true" || q.Get("force") == "1"
 	opts := k8simport.Options{AppPrefix: q.Get("app_prefix"), NamespaceAs: q.Get("namespace_as"), Project: q.Get("project")}
-	raw, ok := readK8sManifest(w, r, k8simport.LimitsFromEnv().MaxBytes)
+	rt.applyImportLimits(r.Context())
+	raw, ok := readK8sManifest(w, r, int(min(platformimport.MaxBytes(), int64(k8simport.LimitsFromEnv().MaxBytes))))
 	if !ok {
 		return
 	}

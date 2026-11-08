@@ -122,6 +122,17 @@ func (db *DB) PruneCleanupRuns(ctx context.Context, before time.Time) (int64, er
 	return n, nil
 }
 
+// TrimCleanupRuns deletes all but the newest keep runs of one target.
+func (db *DB) TrimCleanupRuns(ctx context.Context, target string, keep int) (int64, error) {
+	res, err := db.ExecContext(ctx, `DELETE FROM cleanup_runs WHERE target = ? AND id NOT IN (SELECT id FROM cleanup_runs WHERE target = ? ORDER BY id DESC LIMIT ?)`,
+		target, target, keep)
+	if err != nil {
+		return 0, fmt.Errorf("store: trim cleanup runs: %w", err)
+	}
+	n, _ := res.RowsAffected()
+	return n, nil
+}
+
 func (db *DB) queryCleanupRuns(ctx context.Context, q string, args ...any) ([]CleanupRun, error) {
 	rows, err := db.QueryContext(ctx, q, args...)
 	if err != nil {

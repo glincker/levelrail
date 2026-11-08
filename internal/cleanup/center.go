@@ -410,7 +410,10 @@ func (c *Center) execute(ctx context.Context, t Target, days int, opts RunOption
 	c.invalidateUsage(m.ID)
 	c.writeAudit(bg, m, rec, opts)
 	c.emit(rec, m)
-	if notify {
+	switch {
+	case res.Err != nil && !opts.DryRun && err == nil && c.pauseReached(bg, m.ID):
+		c.sendPauseNotice(bg, m, rec)
+	case notify:
 		c.sendNotice(bg, m, rec)
 	}
 	return recordOf(rec), res, nil

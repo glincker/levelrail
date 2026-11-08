@@ -91,3 +91,9 @@ A target that cannot use a cutoff (it deletes by count or by status) implements 
 ## Not covered yet
 
 Registry blob garbage collection, remote node stores, log size caps and scheduled VACUUM are not part of the cleanup center. Security audit tables, the auth library audit events and upgrade history are not covered: their floors and append-only rules stay as they are.
+
+## Run history and automatic pausing
+
+Run history is trimmed on every scheduled pass: each target keeps its newest `cleanup.runs_keep` runs (default 500) on top of the age limit.
+
+A target whose last `cleanup.max_consecutive_failures` real runs all failed (default 5, 0 never pauses) is skipped by the scheduler and one alert is sent when it reaches that count. Dry runs never count. A manual run from the dashboard or CLI still works, and one that succeeds resumes the schedule. Both settings apply live, with no restart.

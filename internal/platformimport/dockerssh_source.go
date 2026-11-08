@@ -39,8 +39,14 @@ func (s DockerSSHSource) Discover(ctx context.Context) (*Discovery, error) {
 	if err != nil {
 		return nil, fmt.Errorf("read containers over ssh: %w", err)
 	}
+	if err := CheckBytes(len(raw), "container inspect output"); err != nil {
+		return nil, err
+	}
 	d, err := DockerSource{Data: raw}.Discover(ctx)
 	if err != nil {
+		return nil, err
+	}
+	if err := CheckItems(len(d.Apps), "container list"); err != nil {
 		return nil, err
 	}
 	d.Platform = DockerSSH

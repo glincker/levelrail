@@ -87,7 +87,7 @@ func (rt *Router) handleDeploymentsStream(w http.ResponseWriter, r *http.Request
 	if !ok {
 		return
 	}
-	defer footprint.Attribute("deployments-stream")()
+	defer footprint.Label(r.Context(), "deployments-stream")()
 	_, _ = fmt.Fprint(w, ": connected\n\n")
 	flusher.Flush()
 

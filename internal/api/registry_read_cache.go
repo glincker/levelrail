@@ -48,3 +48,10 @@ func (rt *Router) expensiveRead(ctx context.Context, key string, fn func(context
 	})
 	return readFlight.do(ctx, key, expensiveReadTTL(), fn)
 }
+
+// forgetExpensiveRead drops a cached key so the next read recomputes after a write.
+func (rt *Router) forgetExpensiveRead(key string) {
+	if readFlight != nil {
+		readFlight.forget(key)
+	}
+}

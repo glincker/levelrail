@@ -167,7 +167,7 @@ func (rt *Router) streamResourceLogsWithStatus(w http.ResponseWriter, r *http.Re
 		rt.logger.Error("api: "+opName+": response writer does not support flushing", slog.String("name", name))
 		return
 	}
-	defer footprint.Attribute("live-logs")()
+	defer footprint.Label(r.Context(), "live-logs")()
 	// See handleDeployLogStream's identical comment (deploy_attempts.go)
 	// for why this unconditional comment line is written before anything
 	// else: a zero-entries backfill (a freshly deployed, not-yet-noisy

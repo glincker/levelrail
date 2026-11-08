@@ -84,9 +84,14 @@ func (l *Loop) Active() func() {
 
 // Every runs tick on interval until ctx ends. The first tick is delayed by a random jitter of up to a tenth of the interval so loops do not wake together, and each tick is recorded.
 func Every(ctx context.Context, name string, interval time.Duration, logger *slog.Logger, tick func(context.Context) error) error {
+	var err error
+	Run(ctx, "loop:"+name, func(ctx context.Context) { err = every(ctx, name, interval, logger, tick) })
+	return err
+}
+
+func every(ctx context.Context, name string, interval time.Duration, logger *slog.Logger, tick func(context.Context) error) error {
 	l := Track(name, interval)
 	defer l.Active()()
-	defer Attribute("loop:" + name)()
 	timer := time.NewTimer(interval + jitter(interval))
 	defer timer.Stop()
 	for {

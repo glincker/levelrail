@@ -44,6 +44,8 @@ cleanup.enabled
 cleanup.failing_floor
 cleanup.failing_window
 cleanup.interval
+cleanup.max_consecutive_failures
+cleanup.runs_keep
 compose.depends_on_timeout
 containers.log_max_files
 containers.log_max_size_mb
@@ -123,6 +125,8 @@ images.keep_per_app
 images.prune_schedule
 images.pull_concurrency
 images.remove_max_per_request
+import.max_bytes
+import.max_items
 ingress.ca_switch_retry_base
 ingress.ca_switch_retry_max
 ingress.cloudflare_ips_max_bytes

@@ -33,3 +33,21 @@ func TestGoroutineLabelsRunHoldsCount(t *testing.T) {
 		}
 	})
 }
+
+func TestLabelSetsAndClearsGoroutinePprofLabel(t *testing.T) {
+	ctx := context.Background()
+	done := Label(ctx, "test-label")
+	found := false
+	for _, s := range Subsystems() {
+		found = found || s.Name == "test-label"
+	}
+	if !found {
+		t.Error("expected test-label to be counted")
+	}
+	done()
+	for _, s := range Subsystems() {
+		if s.Name == "test-label" {
+			t.Error("count must drop after done")
+		}
+	}
+}

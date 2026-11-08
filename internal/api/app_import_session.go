@@ -241,7 +241,11 @@ func (rt *Router) decodeAppImportCreate(w http.ResponseWriter, r *http.Request) 
 }
 
 func (rt *Router) discoverForImport(ctx context.Context, src platformimport.Source, token string) (*platformimport.Discovery, error) {
+	rt.applyImportLimits(ctx)
 	disc, err := src.Discover(ctx)
+	if err == nil {
+		err = platformimport.CheckItems(len(disc.Apps), "source platform")
+	}
 	if err != nil {
 		msg := err.Error()
 		if token != "" {

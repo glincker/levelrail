@@ -86,7 +86,7 @@ func (rt *Router) handleAppTerminal(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotImplemented, "exec is not configured on this control plane")
 		return
 	}
-	defer footprint.Attribute("terminal")()
+	defer footprint.Label(r.Context(), "terminal")()
 
 	name := r.PathValue("name")
 	svc, ok := rt.loadExecApp(w, r, name)

@@ -213,12 +213,9 @@ func (r *requester) do(ctx context.Context, method, path string, query url.Value
 		return r.redact(fmt.Errorf("request %s %s: %w", method, path, err))
 	}
 	defer func() { _ = resp.Body.Close() }()
-	data, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseBytes+1))
+	data, err := ReadBounded(resp.Body, "response for "+path)
 	if err != nil {
-		return r.redact(fmt.Errorf("read response: %w", err))
-	}
-	if len(data) > maxResponseBytes {
-		return fmt.Errorf("response for %s exceeds %d bytes", path, maxResponseBytes)
+		return r.redact(err)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
 		snippet := strings.TrimSpace(string(data))

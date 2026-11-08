@@ -190,6 +190,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_IAC_PLAN_VALUE_MAX` | [`iac.plan_value_max`](/runtime-settings#deploys) | `120` |
 | `APP_IMAGE_KEEP_PER_APP` | [`images.keep_per_app`](/runtime-settings#deploys) | `3` |
 | `APP_IMAGES_PULL_CONCURRENCY` | [`images.pull_concurrency`](/runtime-settings#deploys) | `3` |
+| `APP_IMPORT_MAX_BYTES` | [`import.max_bytes`](/runtime-settings#deploys) | `8388608` |
+| `APP_IMPORT_MAX_ITEMS` | [`import.max_items`](/runtime-settings#deploys) | `5000` |
 | `APP_JOBS_HTTP_TIMEOUT_SECONDS` | [`jobs.http_timeout_seconds`](/runtime-settings#deploys) | `30` |
 | `APP_NEXTJS_GENERATE_ACTIONS_KEY` | [`nextjs.generate_actions_key`](/runtime-settings#deploys) | `true` |
 | `APP_PLACEMENT_AFFINITY_MAX_TERMS` | [`placement.affinity_max_terms`](/runtime-settings#deploys) | `8` |
@@ -284,6 +286,8 @@ These variables only seed the default of a [runtime setting](/runtime-settings).
 | `APP_CLEANUP_FAILING_FLOOR` | [`cleanup.failing_floor`](/runtime-settings#data-retention) | `1` |
 | `APP_CLEANUP_FAILING_WINDOW` | [`cleanup.failing_window`](/runtime-settings#data-retention) | `24h` |
 | `APP_CLEANUP_INTERVAL` | [`cleanup.interval`](/runtime-settings#data-retention) | `6h` |
+| `APP_CLEANUP_MAX_CONSECUTIVE_FAILURES` | [`cleanup.max_consecutive_failures`](/runtime-settings#data-retention) | `5` |
+| `APP_CLEANUP_RUNS_KEEP` | [`cleanup.runs_keep`](/runtime-settings#data-retention) | `500` |
 | `APP_IMAGES_REMOVE_MAX_PER_REQUEST` | [`images.remove_max_per_request`](/runtime-settings#data-retention) | `200` |
 | `APP_NODES_PATCH_RUN_HISTORY` | [`nodes.patch_run_history`](/runtime-settings#data-retention) | `20` |
 | `APP_RETENTION_AI_HISTORY_DAYS` | [`retention.ai_history_days`](/runtime-settings#data-retention) | `90` |

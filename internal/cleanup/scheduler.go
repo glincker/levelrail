@@ -93,6 +93,9 @@ func (c *Center) eligible(ctx context.Context) []Target {
 		if m.ReadOnly || c.ModeOf(ctx, m) == ModeOff {
 			continue
 		}
+		if c.paused(ctx, m.ID) {
+			continue
+		}
 		out = append(out, t)
 	}
 	return out
@@ -160,6 +163,7 @@ func (c *Center) pruneHistory(ctx context.Context) {
 	if _, err := c.cfg.Store.PruneCleanupRuns(ctx, cutoff); err != nil {
 		c.cfg.Logger.Warn("cleanup: prune history", slog.String("error", err.Error()))
 	}
+	c.trimRuns(ctx)
 }
 
 // sleep waits d or until ctx ends, and reports whether the full wait elapsed.

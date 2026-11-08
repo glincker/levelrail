@@ -73,3 +73,16 @@ func waitFlight(ctx context.Context, e *flightEntry) (any, error) {
 		return nil, ctx.Err()
 	}
 }
+
+// forget removes a finished entry; a running one is left so its waiters still get the result.
+func (g *flightGroup) forget(key string) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	if e, ok := g.entries[key]; ok {
+		select {
+		case <-e.done:
+			delete(g.entries, key)
+		default:
+		}
+	}
+}
