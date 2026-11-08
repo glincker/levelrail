@@ -164,6 +164,9 @@ func (rt *Router) handleAttachAppIntegration(w http.ResponseWriter, r *http.Requ
 			writeError(w, http.StatusBadRequest, fmt.Sprintf("%s is required", field.Name))
 			return
 		}
+		if !rt.allowProviderRefs(w, r, strings.TrimSpace(req.Fields[field.Name])) {
+			return
+		}
 	}
 
 	id, err := randomAppIntegrationID()

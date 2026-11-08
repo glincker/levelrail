@@ -146,6 +146,13 @@ func (rt *Router) handleDeploySpec(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotImplemented, "secrets are not configured on this control plane (no master key set)")
 		return
 	}
+	for _, values := range inlineSecrets {
+		for _, v := range values {
+			if !rt.allowProviderRefs(w, r, v) {
+				return
+			}
+		}
+	}
 	// Stored before DeploySpec runs, since validateEnv checks required secrets up front.
 	for key, values := range inlineSecrets {
 		svcName := name + "-" + key

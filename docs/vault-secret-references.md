@@ -132,7 +132,9 @@ The Infisical form is `infisical://PROVIDER/[folder/...]/NAME`. Without a folder
 
 The value is read when the container is created and kept only in memory for the cache time. It is masked in build and deploy logs. A deploy fails, and never starts with an empty value, when the provider is missing, rejects the token, does not answer in time, does not have the secret, or returns an empty value. The error names the variable and the reference.
 
-Network rules: Levelrail calls only `api.doppler.com` or `app.infisical.com`, or the `--base-url` an admin set for self-hosted Infisical. Private and loopback addresses are refused unless they come from that explicit base URL. Link-local addresses such as cloud metadata are always refused. A redirect to another host is refused.
+Network rules: Levelrail calls only `api.doppler.com` or `app.infisical.com`, or the `--base-url` an admin set for self-hosted Infisical. Private and loopback addresses are refused unless they come from that explicit base URL. Link-local addresses such as cloud metadata are always refused. A redirect to another host or scheme is refused.
+
+Provider references (`doppler://`, `infisical://`, and `op://` values that name a configured provider) are set by root, the same tier that manages providers. A provider `path` on Infisical is a limit: a reference may only point at that path or below it. Changing a provider's `base_url` or project needs a new token.
 
 | Runtime setting | Default | Meaning |
 | --- | --- | --- |

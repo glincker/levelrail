@@ -58,6 +58,11 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotImplemented, "secrets are not configured on this control plane (no master key set)")
 		return
 	}
+	for _, v := range req.Secrets {
+		if !rt.allowProviderRefs(w, r, v) {
+			return
+		}
+	}
 	req.ProjectID = defaultProjectFor(r, req.ProjectID)
 	if err := rt.validateProjectID(r.Context(), req.ProjectID); err != nil {
 		if errors.Is(err, store.ErrProjectNotFound) {

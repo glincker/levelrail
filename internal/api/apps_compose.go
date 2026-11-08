@@ -508,6 +508,9 @@ func (rt *Router) storeComposeSecretFiles(w http.ResponseWriter, r *http.Request
 			}
 			key := store.FileSecretKey(f.Path)
 			if f.Content != compose.RedactedSecretMarker {
+				if !rt.allowProviderRefs(w, r, f.Content) {
+					return false
+				}
 				todo = append(todo, pending{svc: i, file: j, plain: f.Content, write: true})
 				continue
 			}

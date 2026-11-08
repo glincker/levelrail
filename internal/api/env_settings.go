@@ -168,6 +168,9 @@ func (rt *Router) handleConvertEnvToSecret(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusBadRequest, "an empty variable cannot become a secret")
 		return
 	}
+	if !rt.allowProviderRefs(w, r, value) {
+		return
+	}
 	err := rt.secrets.SetValueGuarded(r.Context(), name, key, value, false)
 	if errors.Is(err, secrets.ErrSecretLocked) {
 		writeError(w, http.StatusConflict, "a locked secret with this key already exists")

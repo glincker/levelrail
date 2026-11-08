@@ -106,6 +106,9 @@ func (rt *Router) handleSetAppBranchEnv(w http.ResponseWriter, r *http.Request) 
 			writeError(w, http.StatusNotImplemented, "secrets are not configured on this control plane (no master key set)")
 			return
 		}
+		if !rt.allowProviderRefs(w, r, req.Value) {
+			return
+		}
 		namespace := store.BranchEnvOverrideSecretsKey(name, req.BranchPattern)
 		if err := rt.secrets.SetValueGuarded(r.Context(), namespace, req.Key, req.Value, true); err != nil {
 			rt.internalError(w, "api: set app branch env: encrypt value failed", err, slog.String("name", name), slog.String("key", req.Key))

@@ -182,7 +182,7 @@ func (rt *Router) deployPreviewEnvironmentInner(ctx context.Context, appName str
 	case len(gs.Services) > 0:
 		usedDomain, domainConflict, deployErr = rt.deployPreviewMulti(ctx, appName, previewName, gs, sourceDir, ev.HeadSHA, wantDomain, vars)
 	case static:
-		usedDomain, domainConflict, deployErr = rt.deployPreviewStatic(ctx, appName, previewName, gs, sourceDir, ev.HeadSHA, wantDomain)
+		usedDomain, domainConflict, deployErr = rt.deployPreviewStatic(ctx, appName, previewName, gs, sourceDir, ev.HeadSHA, wantDomain, policy)
 	default:
 		usedDomain, domainConflict, deployErr = rt.deployPreviewSingle(ctx, appName, previewName, gs, sourceDir, ev.HeadSHA, wantDomain, vars)
 	}

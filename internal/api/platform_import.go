@@ -257,7 +257,7 @@ func (rt *Router) handleApplyPlatformImport(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusNotImplemented, "secrets are not configured on this control plane (no master key set)")
 		return
 	}
-	report := platformimport.Apply(r.Context(), plan, &importApplier{rt: rt})
+	report := platformimport.Apply(r.Context(), plan, &importApplier{rt: rt, providerRefs: rt.callerHasAbility(r, AbilityRoot)})
 	rt.nudgeReconciler()
 	rt.logger.Info("api: platform import applied", slog.String("platform", req.Platform), slog.Any("counts", report.Counts))
 	writeJSON(w, http.StatusOK, report)
@@ -303,6 +303,8 @@ type importApplier struct {
 	// connect lists the managed databases each app (by target name) must join
 	// the network of, because a rewritten hostname only resolves there.
 	connect map[string][]string
+	// providerRefs lets imported secrets hold provider references; only a root caller sets it.
+	providerRefs bool
 }
 
 func (a *importApplier) projectID(ctx context.Context, name string) (string, error) {
@@ -403,6 +405,11 @@ func (a *importApplier) CreateApp(ctx context.Context, p platformimport.AppPlan)
 		return nil, errors.New("an app with this name already exists")
 	} else if !errors.Is(err, store.ErrServiceNotFound) {
 		return nil, fmt.Errorf("check existing app: %w", err)
+	}
+	for k, v := range p.Secrets {
+		if !a.providerRefs && rt.resolvesThroughProvider(ctx, v) {
+			return nil, fmt.Errorf("secret %q: %s", k, providerRefNeedsRoot)
+		}
 	}
 	secretKeys := make([]string, 0, len(p.Secrets))
 	for k, v := range p.Secrets {

@@ -143,6 +143,9 @@ func (rt *Router) findComposeDBRun(w http.ResponseWriter, r *http.Request, app, 
 
 // auditComposeDBRestore records the async outcome; the route middleware already audited the request itself.
 func (rt *Router) auditComposeDBRestore(path, actorType, actorID, actorName string, detail map[string]string, status int) {
+	if rt.auditLog == nil {
+		return
+	}
 	id, err := store.NewAuditEntryID()
 	if err != nil {
 		rt.logger.Warn("api: compose db restore audit id failed")

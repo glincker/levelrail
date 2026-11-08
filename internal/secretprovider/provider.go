@@ -16,6 +16,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"path"
 	"regexp"
 	"strings"
 	"sync"
@@ -40,7 +41,7 @@ var (
 	ErrUnauthorized    = errors.New("provider rejected the token")
 	ErrNotFound        = errors.New("secret not found in provider")
 	ErrBlockedAddress  = errors.New("provider address is private or link-local and is not an admin set self-hosted URL")
-	ErrRedirectBlocked = errors.New("provider redirected to another host")
+	ErrRedirectBlocked = errors.New("provider redirected to another host or scheme")
 )
 
 var defaultBaseURLs = map[string]string{
@@ -234,7 +235,7 @@ func httpClient(base *url.URL, selfHosted bool, timeout time.Duration) *http.Cli
 	// Proxy is off so the dial check sees the real provider address.
 	transport := &http.Transport{Proxy: nil, DialContext: dialer.DialContext, TLSHandshakeTimeout: timeout, ResponseHeaderTimeout: timeout}
 	return &http.Client{Transport: transport, Timeout: timeout, CheckRedirect: func(req *http.Request, via []*http.Request) error {
-		if req.URL.Host != base.Host || len(via) > 3 {
+		if req.URL.Host != base.Host || req.URL.Scheme != base.Scheme || len(via) > 3 {
 			return ErrRedirectBlocked
 		}
 		return nil
@@ -537,19 +538,16 @@ func (r *Resolver) fetch(ctx context.Context, cfg Config, token string, ref Ref,
 		}
 		return "", fmt.Errorf("doppler: %w", ErrNotFound)
 	}
-	path := ref.Path
-	if path == "" {
-		path = cfg.Path
-	}
-	if path == "" {
-		path = "/"
+	dir, err := infisicalPath(cfg.Path, ref.Path)
+	if err != nil {
+		return "", err
 	}
 	var out struct {
 		Secret struct {
 			Value *string `json:"secretValue"`
 		} `json:"secret"`
 	}
-	q := url.Values{"workspaceId": {cfg.Project}, "environment": {cfg.Environment}, "secretPath": {path}}
+	q := url.Values{"workspaceId": {cfg.Project}, "environment": {cfg.Environment}, "secretPath": {dir}}
 	if err := r.get(ctx, cfg, token, "/api/v3/secrets/raw/"+url.PathEscape(ref.Name), q, t, &out); err != nil {
 		return "", err
 	}
@@ -557,6 +555,19 @@ func (r *Resolver) fetch(ctx context.Context, cfg Config, token string, ref Ref,
 		return "", fmt.Errorf("infisical: %w", ErrNotFound)
 	}
 	return *out.Secret.Value, nil
+}
+
+// infisicalPath treats the provider's path as a limit set by root: a reference may only narrow it.
+func infisicalPath(limit, refPath string) (string, error) {
+	base := path.Clean("/" + limit)
+	if refPath == "" {
+		return base, nil
+	}
+	p := path.Clean("/" + refPath)
+	if base != "/" && p != base && !strings.HasPrefix(p, base+"/") {
+		return "", fmt.Errorf("infisical: path %q is outside the provider's path %q", p, base)
+	}
+	return p, nil
 }
 
 // Test checks the token can list secret names in the configured scope, without reading values into the result.
@@ -568,10 +579,6 @@ func (r *Resolver) Test(ctx context.Context, cfg Config, token string, t Tunable
 		q := url.Values{"project": {cfg.Project}, "config": {cfg.Environment}}
 		return r.get(ctx, cfg, token, "/v3/configs/config/secrets/names", q, t, nil)
 	}
-	path := cfg.Path
-	if path == "" {
-		path = "/"
-	}
-	q := url.Values{"workspaceId": {cfg.Project}, "environment": {cfg.Environment}, "secretPath": {path}}
+	q := url.Values{"workspaceId": {cfg.Project}, "environment": {cfg.Environment}, "secretPath": {path.Clean("/" + cfg.Path)}}
 	return r.get(ctx, cfg, token, "/api/v3/secrets/raw", q, t, nil)
 }

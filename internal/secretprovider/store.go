@@ -125,12 +125,23 @@ func (s Store) Put(ctx context.Context, cfg Config, token string, grace time.Dur
 		return Config{}, fmt.Errorf("provider %q is a %s provider; remove it first to change the type", cfg.Name, existing.Type)
 	}
 	cfg.GraceUntil = existing.GraceUntil
+	// A stored token must never be sent to an endpoint or project it was not issued for.
+	moved := found && (existing.BaseURL != cfg.BaseURL || existing.Project != cfg.Project)
+	if moved {
+		if token == "" {
+			return Config{}, fmt.Errorf("a new token is required when base_url or project changes")
+		}
+		cfg.GraceUntil = time.Time{}
+		if err := s.dropPrevious(ctx, cfg.Name); err != nil {
+			return Config{}, err
+		}
+	}
 	switch {
 	case token == "" && !s.HasToken(ctx, cfg.Name):
 		return Config{}, fmt.Errorf("token is required the first time a provider is added")
 	case token != "":
 		old, _, _ := s.Tokens(ctx, existing, now)
-		if found && old != "" && old != token && grace > 0 {
+		if found && !moved && old != "" && old != token && grace > 0 {
 			if err := s.Secrets.SetValue(ctx, OwnerKey, prevPrefix+suffix(cfg.Name), old); err != nil {
 				return Config{}, fmt.Errorf("keep previous provider token: %w", err)
 			}
@@ -149,6 +160,37 @@ func (s Store) Put(ctx context.Context, cfg Config, token string, grace time.Dur
 		return Config{}, fmt.Errorf("save secret provider: %w", err)
 	}
 	return cfg, nil
+}
+
+func (s Store) dropPrevious(ctx context.Context, name string) error {
+	ok, err := s.Secrets.Exists(ctx, OwnerKey, prevPrefix+suffix(name))
+	if err != nil || !ok {
+		return err
+	}
+	if err := s.Secrets.DeleteValue(ctx, OwnerKey, prevPrefix+suffix(name)); err != nil {
+		return fmt.Errorf("drop previous provider token: %w", err)
+	}
+	return nil
+}
+
+// ResolvesLive reports whether v would be read through a configured provider at container create.
+// Native op:// values that name no 1Password provider stay literal, so they do not count.
+func (s Store) ResolvesLive(ctx context.Context, v string) (bool, error) {
+	ref, isRef, err := ParseRef(v)
+	if !isRef {
+		return false, nil
+	}
+	if !strings.HasPrefix(v, SchemeOnePass) {
+		return true, nil
+	}
+	if err != nil {
+		return false, nil
+	}
+	cfg, ok, gerr := s.Get(ctx, ref.Provider)
+	if gerr != nil {
+		return false, gerr
+	}
+	return ok && cfg.Type == TypeOnePassword, nil
 }
 
 // Delete removes the config and both tokens; removing a missing provider is not an error.

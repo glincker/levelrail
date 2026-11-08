@@ -27,11 +27,41 @@ func isStaticPreviewSource(gs store.GitSource) bool {
 	return err == nil && b.Type == spec.BuildStatic
 }
 
+type domainOwnerLookup interface {
+	DomainOwnerOf(ctx context.Context, domain string) (owner string, found bool, err error)
+}
+
+// preGateStaticPreview writes the basic auth gate before the site exists, so its route is never served ungated.
+// It returns whether the gate row is new (and so safe to remove on failure); a domain owned by someone else is left alone.
+func (rt *Router) preGateStaticPreview(ctx context.Context, appName, previewName, domain string, s store.PreviewAppSettings) (created bool, err error) {
+	if !s.GateBasicAuth || domain == "" {
+		return false, nil
+	}
+	lookup, ok := rt.apps.(domainOwnerLookup)
+	if !ok {
+		return false, nil
+	}
+	owner, found, err := lookup.DomainOwnerOf(ctx, domain)
+	if err != nil {
+		return false, fmt.Errorf("check owner of %q: %w", domain, err)
+	}
+	if found && owner != previewName {
+		return false, nil
+	}
+	if err := rt.gatePreviewDomain(ctx, appName, domain, store.PreviewAppSettings{GateUsername: s.GateUsername}); err != nil {
+		if !found {
+			rt.removePreviewGates(ctx, []string{domain})
+		}
+		return false, fmt.Errorf("apply basic auth gate: %w", err)
+	}
+	return !found, nil
+}
+
 // deployPreviewStatic publishes the PR's head commit as its own static site
 // under previewName, so the live site, its route and its release history are
 // never touched. A taken domain retries once without one, like the container
 // path.
-func (rt *Router) deployPreviewStatic(ctx context.Context, appName, previewName string, gs store.GitSource, sourceDir, headSHA, wantDomain string) (usedDomain string, domainConflict bool, err error) {
+func (rt *Router) deployPreviewStatic(ctx context.Context, appName, previewName string, gs store.GitSource, sourceDir, headSHA, wantDomain string, policy store.PreviewAppSettings) (usedDomain string, domainConflict bool, err error) {
 	prod, err := rt.apps.GetDesiredService(ctx, appName)
 	if err != nil {
 		return "", false, fmt.Errorf("load production service %q: %w", appName, err)
@@ -47,7 +77,14 @@ func (rt *Router) deployPreviewStatic(ctx context.Context, appName, previewName 
 	svcSpec.Domains = domainSlice(wantDomain)
 	req := deploy.Request{ServiceName: previewName, Service: svcSpec, SourceDir: sourceDir, CommitSHA: headSHA, ImageRepo: previewName, Preview: true}
 
+	newGate, err := rt.preGateStaticPreview(ctx, appName, previewName, wantDomain, policy)
+	if err != nil {
+		return "", false, err
+	}
 	_, deployErr := rt.builder.Deploy(ctx, req, build.SlogProgress(rt.logger))
+	if deployErr != nil && newGate {
+		rt.removePreviewGates(ctx, []string{wantDomain})
+	}
 	usedDomain = wantDomain
 	var domainTaken *store.ErrDomainTaken
 	if deployErr != nil && wantDomain != "" && errors.As(deployErr, &domainTaken) {

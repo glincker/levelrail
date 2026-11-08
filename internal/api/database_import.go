@@ -213,6 +213,19 @@ func (rt *Router) handleDatabaseImport(w http.ResponseWriter, r *http.Request) {
 		fail(http.StatusBadRequest, "the dump is empty; nothing was restored")
 		return
 	}
+	// Writers outside this import (the app itself) may have added data while the upload spooled.
+	if !holds && !force {
+		again, perr := databaseHoldsDataNow(r.Context(), db, runtime)
+		if perr != nil {
+			rt.logger.Warn("api: database import: second emptiness probe failed", slog.String("database", name), slog.String("error", perr.Error()))
+			fail(http.StatusBadGateway, "could not read the database to check whether it is still empty; nothing was restored")
+			return
+		}
+		if again {
+			fail(http.StatusConflict, "the database received data during the upload: pass force with confirm to replace it")
+			return
+		}
+	}
 	err = (&backup.ContainerRestorer{Runtime: runtime}).Restore(ctx, db.Engine, databaseContainerName(name), spool.f)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
