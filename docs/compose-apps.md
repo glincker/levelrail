@@ -285,3 +285,9 @@ For help with compose files, run `levelrail-cli compose preview <name> -f compos
 | `POST` | `/api/v1/apps/{name}/compose/redeploy` | `deploy` |
 | `DELETE` | `/api/v1/apps/{name}/compose[?volumes=true]` | `write` (plus `write-sensitive` with volumes) |
 | `POST` | `/api/v1/service-templates/{id}/install` | `deploy` |
+
+## Backing up a database service (building block)
+
+Built and tested: the backup package recognizes Postgres, MySQL and MariaDB services in a compose app by image name (`postgres`, `postgis`, `mysql`, `mariadb`) and builds the dump command that runs inside the service container with the engine's own tool (`pg_dump`, `mysqldump`, `mariadb-dump`). Credentials come from the container's own environment (`POSTGRES_USER`, `POSTGRES_DB`, `MYSQL_ROOT_PASSWORD`, `MARIADB_ROOT_PASSWORD`) and the MySQL family password is passed through `MYSQL_PWD`, never on a command line. Covered by unit tests, no Docker.
+
+Not yet available: scheduling these dumps from the CLI or dashboard. That needs a store record for a compose service target and is a follow-up, so compose database services are still not offered as backup targets today.
