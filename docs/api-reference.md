@@ -714,6 +714,11 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/edge | AbilityRead | handleGetAppEdge |
 | POST | /api/v1/apps/{name}/cdn/setup | AbilityWriteSensitive | handleSetupAppCDN |
 | GET | /api/v1/apps/{name}/containers | AbilityRead | handleListAppContainers |
+| GET | /api/v1/apps/{name}/compose-db-services | AbilityRead | handleListComposeDBServices |
+| PUT | /api/v1/apps/{name}/compose-db-services/{service}/backup-schedule | AbilityWriteSensitive | handleSetComposeDBBackupSchedule |
+| DELETE | /api/v1/apps/{name}/compose-db-services/{service}/backup-schedule | AbilityWriteSensitive | handleDeleteComposeDBBackupSchedule |
+| GET | /api/v1/apps/{name}/compose-db-services/{service}/backups | AbilityRead | handleListComposeDBBackupRuns |
+| POST | /api/v1/apps/{name}/compose-db-services/{service}/backups | AbilityWriteSensitive | handleTriggerComposeDBBackup |
 
 </Accordion>
 

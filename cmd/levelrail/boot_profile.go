@@ -89,6 +89,10 @@ func startWhenWork(ctx context.Context, logger *slog.Logger, name string, hasWor
 func hasScheduledBackups(db *store.DB) func(context.Context) (bool, error) {
 	return func(ctx context.Context) (bool, error) {
 		n, err := db.CountScheduledBackups(ctx)
-		return n > 0, err
+		if err != nil || n > 0 {
+			return n > 0, err
+		}
+		c, err := db.CountScheduledComposeServiceBackups(ctx)
+		return c > 0, err
 	}
 }

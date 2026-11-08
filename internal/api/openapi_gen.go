@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 2009 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 2014 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -187,6 +187,11 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/compose", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleComposeDown", Description: "Same tier as DELETE /apps/{name}; ?volumes=true also needs write-sensitive, checked in the handler."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/compose", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetComposeStack", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/compose", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeployCompose", Description: "Compose ingestion (apps_compose.go): fans a compose.yaml's services: out into one store.App plus its member services. AbilityDeploy, the same tier POST .../deploys uses: this creates and deploys, it's not ordinary config."},
+	{Method: "GET", Path: "/api/v1/apps/{name}/compose-db-services", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListComposeDBServices", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/compose-db-services/{service}/backup-schedule", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteComposeDBBackupSchedule", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/compose-db-services/{service}/backup-schedule", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetComposeDBBackupSchedule", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/compose-db-services/{service}/backups", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListComposeDBBackupRuns", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/compose-db-services/{service}/backups", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleTriggerComposeDBBackup", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/compose/redeploy", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRedeployCompose", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/compose/revisions", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListComposeRevisions", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/compose/revisions/{revision}", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetComposeRevision", Description: ""},

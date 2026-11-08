@@ -604,6 +604,8 @@ type Router struct {
 	pitrRestoreRunner            PITRRestoreRunner                                                                   // nil is valid: POST /api/v1/databases/{name}/pitr-restore returns 501, same shape as restoreRunner above
 	serviceVolumeBackupHistory   ServiceVolumeBackupHistoryStore                                                     // always set, same "core Store interface" shape as backupHistory above
 	serviceVolumeBackupSchedule  ServiceVolumeBackupScheduleStore                                                    // always set, same "core Store interface" shape as backupTargets above: reading a volume's schedule needs no runner configuration, only triggering a manual backup does
+	composeDBBackups             ComposeDBBackupStore                                                                // nil when the store lacks compose backups: those routes return 501
+	composeDBBackupRunner        ComposeDBBackupRunner                                                               // nil is valid: POST .../compose-db-services/{service}/backups returns 501
 	serviceVolumeBackupRunner    ServiceVolumeBackupRunner                                                           // nil is valid: POST /api/v1/apps/{name}/volumes/{volume}/backups returns 501, same shape as backupRunner above
 	serviceVolumeRestoreHistory  ServiceVolumeRestoreHistoryStore                                                    // always set, same "core Store interface" shape as restoreHistory above
 	serviceVolumeRestoreRunner   ServiceVolumeRestoreRunner                                                          // nil is valid: POST /api/v1/apps/{name}/volumes/{volume}/restore returns 501, same shape as restoreRunner above
@@ -1118,6 +1120,9 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	rt.dnsRecordManager = rt.resolveDNSRecordManager
 	rt.fetch = rt.gitCheckout
 	rt.gitSourceFetch = rt.gitCheckoutWithToken
+	if c, ok := any(s).(ComposeDBBackupStore); ok {
+		rt.composeDBBackups = c
+	}
 	if g, ok := any(s).(GitPushStore); ok {
 		rt.gitPushStore = g
 	}

@@ -283,8 +283,27 @@ For help with compose files, run `levelrail-cli compose preview <name> -f compos
 | `DELETE` | `/api/v1/apps/{name}/compose[?volumes=true]` | `write` (plus `write-sensitive` with volumes) |
 | `POST` | `/api/v1/service-templates/{id}/install` | `deploy` |
 
-## Backing up a database service (building block)
+## Backing up a database service
 
-Built and tested: the backup package recognizes Postgres, MySQL and MariaDB services in a compose app by image name (`postgres`, `postgis`, `mysql`, `mariadb`) and builds the dump command that runs inside the service container with the engine's own tool (`pg_dump`, `mysqldump`, `mariadb-dump`). Credentials come from the container's own environment (`POSTGRES_USER`, `POSTGRES_DB`, `MYSQL_ROOT_PASSWORD`, `MARIADB_ROOT_PASSWORD`) and the MySQL family password is passed through `MYSQL_PWD`, never on a command line. Covered by unit tests, no Docker.
+Postgres, MySQL and MariaDB services in a compose app (detected by image name: `postgres`, `postgis`, `mysql`, `mariadb`) can be dumped on a cron schedule. The dump runs inside the service container with the engine's own tool (`pg_dump`, `mysqldump`, `mariadb-dump`), using the credentials already in the container's environment (`POSTGRES_USER`, `POSTGRES_DB`, `MYSQL_ROOT_PASSWORD`, `MARIADB_ROOT_PASSWORD`). The MySQL family password goes through `MYSQL_PWD`, never a command line. The dump then uses the same backup target, encryption, upload and retention as managed database backups. Dumps run on the control plane node, so the service must run there.
 
-Not yet available: scheduling these dumps from the CLI or dashboard. That needs a store record for a compose service target and is a follow-up, so compose database services are still not offered as backup targets today.
+Schedules and run history for compose services are stored apart from managed database history. Each run is recorded with its status, size, object key and error.
+
+| Method | Path | Ability |
+| --- | --- | --- |
+| `GET` | `/api/v1/apps/{name}/compose-db-services` | `read` (detected database services and their schedules) |
+| `PUT` | `/api/v1/apps/{name}/compose-db-services/{service}/backup-schedule` | `write-sensitive` (`target_id`, `schedule`, `retain`, `retain_days`, `enabled`) |
+| `DELETE` | `/api/v1/apps/{name}/compose-db-services/{service}/backup-schedule` | `write-sensitive` |
+| `GET` | `/api/v1/apps/{name}/compose-db-services/{service}/backups` | `read` (run history) |
+| `POST` | `/api/v1/apps/{name}/compose-db-services/{service}/backups` | `write-sensitive` (run now, `target_id` optional when a schedule exists) |
+
+Restore is not automated for compose services yet. Download the dump object from the backup target (decrypt it first if the target encrypts dumps), then load it into the running service by hand:
+
+```sh
+# Postgres
+docker exec -i <container> sh -c 'psql -U "${POSTGRES_USER:-postgres}" "${POSTGRES_DB:-${POSTGRES_USER:-postgres}}"' < dump.sql
+# MySQL or MariaDB
+docker exec -i <container> sh -c 'MYSQL_PWD="${MYSQL_ROOT_PASSWORD:-$MARIADB_ROOT_PASSWORD}" mysql -uroot' < dump.sql
+```
+
+Take a fresh dump first, since loading over live data can overwrite it. Dashboard and CLI controls for these schedules are not part of this change.

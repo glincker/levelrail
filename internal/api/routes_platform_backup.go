@@ -116,6 +116,11 @@ func (rt *Router) registerBackupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/apps/{name}/volumes/{volume}/import", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleImportVolume))
 	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/backup-schedule", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetVolumeBackupSchedule))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/volumes/{volume}/backup-schedule", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetVolumeBackupSchedule))
+	mux.HandleFunc("GET /api/v1/apps/{name}/compose-db-services", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListComposeDBServices))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/compose-db-services/{service}/backup-schedule", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetComposeDBBackupSchedule))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/compose-db-services/{service}/backup-schedule", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteComposeDBBackupSchedule))
+	mux.HandleFunc("GET /api/v1/apps/{name}/compose-db-services/{service}/backups", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListComposeDBBackupRuns))
+	mux.HandleFunc("POST /api/v1/apps/{name}/compose-db-services/{service}/backups", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleTriggerComposeDBBackup))
 
 	// Volume file browser: reads need read:sensitive (contents can hold secrets), edits need write plus read:sensitive, so an operator can fix a config file without SSH.
 	mux.HandleFunc("GET /api/v1/apps/{name}/volumes/{volume}/files", rt.requireAbilityForResource(AbilityReadSensitive, appResourceFromPath, rt.handleListVolumeFiles))
