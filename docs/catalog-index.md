@@ -56,4 +56,8 @@ The admission wording is: no known-exploited vulnerability (CISA KEV) in this im
 - `internal/catalog/images.lock.json`: digests and signals resolved by CI, never written by hand.
 - `internal/catalog/platforms.json`: the registry platform scan.
 
+## Image pins
+
+Template manifests pin an exact version tag (for example `couchdb:3.4`), not a digest. The digest for each tag is resolved by CI into `images.lock.json` and recorded with the smoke result, so a tag that later points at different content shows up as a lock change instead of a hand-edited manifest. Digest-pinning a manifest by hand is not needed and is not accepted.
+
 To list your own product, see [Add a template](/add-a-template).

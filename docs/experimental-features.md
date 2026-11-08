@@ -41,7 +41,7 @@ Features that are off are not hidden: they show as locked entries in the sidebar
 
 ## Graduation criteria (proposed)
 
-Proposed, not in force. A flag leaves this list when its row is met and the evidence is linked from [Feature status](/feature-status). "Real host" means a run on a fresh VPS, not a local Docker daemon. Status comes from `internal/experimental/catalog.go`.
+Proposed, not in force. A flag leaves this list when its row is met and the evidence is linked from [Feature status](/feature-status). "Real host" means a run on a fresh VPS, not a local Docker daemon. Status comes from `internal/experimental/catalog.go`. What each of the six rows without a real host run has and lacks today is listed in [Feature status](/feature-status#graduation-evidence-audit-six-gated-features).
 
 | Key | Status | Proposed proof to graduate |
 | --- | --- | --- |
