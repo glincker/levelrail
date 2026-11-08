@@ -21,7 +21,6 @@ import { sidebarArea } from './shell/sidebarArea'
 import { scheduleIdle } from '../i18n/prefetch'
 import { BrandMarkGlyph } from './BrandMarkGlyph'
 import { VersionFooter } from './shell/VersionFooter'
-import { SidebarVersionLink } from './shell/SidebarVersionLink'
 import {
   scheduleResetSidebarScroll,
   scheduleScrollActiveNavItem,
@@ -107,7 +106,6 @@ export function AppSidebar() {
                 {brand.ShortName || brand.Name}
               </span>
             </SidebarMenuButton>
-            <SidebarVersionLink />
           </SidebarMenuItem>
         </SidebarMenu>
         <SidebarTrigger

@@ -486,14 +486,14 @@ body {
 
 /* Sidebar metrics scale with density; compact is the stored default and carries the hybrid size. */
 :root {
-  --nav-row-h: 1.875rem;
-  --nav-header-h: 1.5rem;
+  --nav-row-h: 2.25rem;
+  --nav-header-h: 1.75rem;
   --nav-font: 13.5px;
   --nav-width: 14.5rem;
   --nav-rail-w: 3.25rem;
 }
 [data-density='comfortable'] {
-  --nav-row-h: 2.125rem;
+  --nav-row-h: 2.25rem;
   --nav-header-h: 1.75rem;
   --nav-font: 14px;
   --nav-width: 15.5rem;
