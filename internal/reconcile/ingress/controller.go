@@ -1121,7 +1121,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			c.logger.WarnContext(ctx, "ingress: static site routing rules unreadable, serving files without them",
 				slog.String("static_site", site.Name), slog.String("error", rulesErr.Error()))
 		}
-		staticRoutes = append(staticRoutes, ingress.StaticRoute{Hosts: site.Domains, RootDir: site.RootDir, Rules: rules})
+		staticRoutes = append(staticRoutes, c.staticRoutesFor(ctx, site, rules, authByDomain)...)
 	}
 
 	// Platform primary domain (store.IngressSettings.PrimaryDomain): one
@@ -2039,4 +2039,28 @@ func withoutHosts(hosts []string, drop map[string]bool) []string {
 		}
 	}
 	return out
+}
+
+// staticRoutesFor splits a site's hosts so each gated host gets its own
+// route with basic auth; a gated host whose account cannot be resolved is
+// dropped (fail closed) rather than served publicly.
+func (c *Controller) staticRoutesFor(ctx context.Context, site store.StaticSite, rules *staticroutes.Ruleset, authByDomain map[string]store.DomainBasicAuth) []ingress.StaticRoute {
+	var open []string
+	var routes []ingress.StaticRoute
+	for _, host := range site.Domains {
+		auth, gated := authByDomain[host]
+		if !gated {
+			open = append(open, host)
+			continue
+		}
+		account, ok := c.resolveBasicAuthAccount(ctx, host, auth)
+		if !ok {
+			continue
+		}
+		routes = append(routes, ingress.StaticRoute{Hosts: []string{host}, RootDir: site.RootDir, Rules: rules, BasicAuth: account})
+	}
+	if len(open) > 0 {
+		routes = append([]ingress.StaticRoute{{Hosts: open, RootDir: site.RootDir, Rules: rules}}, routes...)
+	}
+	return routes
 }

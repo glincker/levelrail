@@ -156,7 +156,7 @@ Two optional settings per app, both off by default. They are set through `PUT /a
 
 ## Static site previews
 
-When an app's build type is static (single service), a preview publishes the pull request's head commit as its own static site named `<app>-pr-<number>`. The live site, its route and its release history are not touched. Closing the pull request, the stale sweep and `apps previews teardown` remove the preview's site row, route and files. The basic auth gate (`--gate`) is not enforced on static previews: the deploy notes say so when it is set. Built and tested, not proven on a real host.
+When an app's build type is static (single service), a preview publishes the pull request's head commit as its own static site named `<app>-pr-<number>`. The live site, its route and its release history are not touched. Closing the pull request, the stale sweep and `apps previews teardown` remove the preview's site row, route and files. The basic auth gate (`--gate`) is enforced on static previews too. If the gate password cannot be resolved, the preview is not routed rather than served publicly. Built and tested, not proven on a real host.
 
 ## Pull request comment commands
 

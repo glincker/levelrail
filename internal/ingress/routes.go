@@ -266,6 +266,9 @@ type StaticRoute struct {
 	// Rules, when set, serves the tree through the routing rules compiled
 	// at deploy time instead of the plain file server.
 	Rules *staticroutes.Ruleset
+	// BasicAuth, if non-nil, puts the same basic auth handler a ProxyRoute
+	// gets ahead of the file server, so a gated static site is not public.
+	BasicAuth *BasicAuthAccount
 }
 
 // MaintenanceRoute is one domain currently in maintenance mode: every
@@ -675,6 +678,9 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		}
 		if opts.RequestStats {
 			staticHandle = append([]any{NewRequestStatsHandler(r.Hosts[0])}, staticHandle...)
+		}
+		if r.BasicAuth != nil {
+			staticHandle = append([]any{NewBasicAuthHandler(r.BasicAuth.Username, r.BasicAuth.Password)}, staticHandle...)
 		}
 		routes = append(routes, Route{
 			Match:  []Matcher{{Host: r.Hosts}},
