@@ -116,7 +116,7 @@ jobs:
 
       - name: Known-exploited and secret scan
         run: |
-          curl -fsSL "$KEV_URL" | jq -r '.vulnerabilities[].cveID' | sort -u > out/kev.txt
+          curl --retry 3 -fsSL "$KEV_URL" | jq -r '.vulnerabilities[].cveID' | sort -u > out/kev.txt
           fail=0
           while read -r ref _digest; do
             name="$(echo "$ref" | tr '/:' '__')"
