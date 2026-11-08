@@ -100,12 +100,41 @@ func (rt *Router) teardownPreviewStatic(ctx context.Context, previewName string)
 	if !strings.Contains(previewName, previewSiteMarker) {
 		return nil
 	}
+	// Domains are read first: the site row (and its domain claims) is gone after removal.
+	var domains []string
+	if g, ok := rt.staticSites.(staticSiteGetter); ok {
+		if site, err := g.GetStaticSite(ctx, previewName); err == nil {
+			domains = site.Domains
+		}
+	}
 	if err := rt.removeStaticSite(ctx, previewName); err != nil {
 		rt.logger.Error("api: teardown preview static site failed", slog.String("error", err.Error()), slog.String("preview_app_id", previewName))
 		return []string{"static:" + previewName}
 	}
+	failed := rt.removePreviewGates(ctx, domains)
 	rt.nudgeReconciler()
-	return nil
+	return failed
+}
+
+// removePreviewGates deletes the basic auth row and stored password of each
+// released preview domain so a later owner of the host starts ungated.
+func (rt *Router) removePreviewGates(ctx context.Context, domains []string) []string {
+	var failed []string
+	for _, d := range domains {
+		if rt.domainBasicAuth != nil {
+			if err := rt.domainBasicAuth.DeleteDomainBasicAuth(ctx, d); err != nil {
+				rt.logger.Error("api: teardown preview gate row failed", slog.String("error", err.Error()), slog.String("domain", d))
+				failed = append(failed, "gate:"+d)
+			}
+		}
+		if rt.domainBasicAuthSecrets != nil {
+			if err := rt.domainBasicAuthSecrets.DeleteAll(ctx, store.DomainBasicAuthSecretsKey(d)); err != nil {
+				rt.logger.Error("api: teardown preview gate secret failed", slog.String("error", err.Error()), slog.String("domain", d))
+				failed = append(failed, "gate-secret:"+d)
+			}
+		}
+	}
+	return failed
 }
 
 // staticPreviewNames lists the site names that belong to a live preview row,

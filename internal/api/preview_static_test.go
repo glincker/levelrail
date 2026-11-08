@@ -242,9 +242,8 @@ func TestStaticPreview_GateCreatesRowAndFailsClosed(t *testing.T) {
 	rt.domainBasicAuthSecrets = mgr
 	ctx := context.Background()
 	const domain = "pr-42.web.example.com"
-	// The domain settings triggers only recognise service and standalone owners.
-	if err := db.CreateStandaloneDomain(ctx, store.StandaloneDomain{Domain: domain, Target: "http://127.0.0.1:1", TargetKind: "url"}); err != nil {
-		t.Fatalf("seed domain owner: %v", err)
+	if err := db.SaveStaticSite(ctx, store.StaticSite{Name: "web-pr-42", Domains: []string{domain}, RootDir: t.TempDir()}); err != nil {
+		t.Fatalf("seed static site domain owner: %v", err)
 	}
 	s := store.PreviewAppSettings{GateBasicAuth: true, GateUsername: "reviewer"}
 
@@ -272,5 +271,36 @@ func TestStaticPreview_GateCreatesRowAndFailsClosed(t *testing.T) {
 	auth, found, err := db.GetDomainBasicAuth(ctx, domain)
 	if err != nil || !found || auth.Username != "reviewer" {
 		t.Fatalf("gate row = %+v, found %v, err %v; want reviewer", auth, found, err)
+	}
+}
+
+func TestStaticPreview_TeardownRemovesGateRowAndSecret(t *testing.T) {
+	rt, db, _, _, _, _ := setUpStaticPreviewApp(t)
+	withPreviewSecrets(t, rt)
+	mgr, ok := rt.secrets.(*secrets.Manager)
+	if !ok {
+		t.Fatalf("secrets = %T, want *secrets.Manager", rt.secrets)
+	}
+	rt.domainBasicAuthSecrets = mgr
+	ctx := context.Background()
+	const domain = "pr-42.web.example.com"
+	if err := db.SaveStaticSite(ctx, store.StaticSite{Name: "web-pr-42", Domains: []string{domain}, RootDir: t.TempDir()}); err != nil {
+		t.Fatalf("seed static site: %v", err)
+	}
+	if err := mgr.SetValue(ctx, store.DomainBasicAuthSecretsKey(domain), store.DomainBasicAuthPasswordEnvKey, "pw-for-test"); err != nil {
+		t.Fatalf("store gate password: %v", err)
+	}
+	if err := db.SetDomainBasicAuth(ctx, domain, "reviewer"); err != nil {
+		t.Fatalf("create gate row: %v", err)
+	}
+
+	if failed := rt.teardownPreviewStatic(ctx, "web-pr-42"); len(failed) != 0 {
+		t.Fatalf("teardownPreviewStatic failed = %v", failed)
+	}
+	if _, found, err := db.GetDomainBasicAuth(ctx, domain); err != nil || found {
+		t.Fatalf("gate row found = %v, err %v; want removed", found, err)
+	}
+	if has, err := mgr.Exists(ctx, store.DomainBasicAuthSecretsKey(domain), store.DomainBasicAuthPasswordEnvKey); err != nil || has {
+		t.Fatalf("gate password exists = %v, err %v; want removed", has, err)
 	}
 }

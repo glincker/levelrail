@@ -122,3 +122,25 @@ func TestDomainBasicAuthSecretsKey_Stable(t *testing.T) {
 		t.Errorf("DomainBasicAuthSecretsKey() collides across distinct domains")
 	}
 }
+
+func TestDomainBasicAuth_StaticSiteOwner(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+
+	if err := db.SaveStaticSite(ctx, StaticSite{Name: "docs", Domains: []string{"docs.example.com"}, RootDir: "/srv/docs"}); err != nil {
+		t.Fatalf("SaveStaticSite() error = %v", err)
+	}
+	if err := db.SetDomainBasicAuth(ctx, "docs.example.com", "reviewer"); err != nil {
+		t.Fatalf("SetDomainBasicAuth() for a static site domain error = %v", err)
+	}
+	if err := db.SetDomainBasicAuth(ctx, "unknown.example.com", "reviewer"); err == nil {
+		t.Fatal("SetDomainBasicAuth() for an unowned domain succeeded, want a no-owner error")
+	}
+
+	if err := db.DeleteStaticSite(ctx, "docs"); err != nil {
+		t.Fatalf("DeleteStaticSite() error = %v", err)
+	}
+	if _, found, err := db.GetDomainBasicAuth(ctx, "docs.example.com"); err != nil || found {
+		t.Fatalf("GetDomainBasicAuth() = found %v, err %v; want the gate released with its static site", found, err)
+	}
+}
