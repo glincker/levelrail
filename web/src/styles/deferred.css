@@ -1,19 +1,27 @@
 /* Rules not needed for first paint. Loaded after the shell mounts (lib/deferredStyles.ts) to keep the first-load budget. */
 
 /* Top bar: regular material once the page scrolls. */
-html:not([data-look='restrained']) header[data-scrolled='true'] > [data-slot='bar-surface'] {
+html:not([data-look='restrained'])
+  header[data-scrolled='true']
+  > [data-slot='bar-surface'] {
   background-color: var(--glinr-surface-glass-solid);
   border-color: var(--glinr-divider);
 }
 @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
-  html:not([data-look='restrained']) header[data-scrolled='true'] > [data-slot='bar-surface'] {
+  html:not([data-look='restrained'])
+    header[data-scrolled='true']
+    > [data-slot='bar-surface'] {
     background-color: var(--glinr-material-regular);
-    -webkit-backdrop-filter: blur(var(--glinr-blur-regular)) saturate(var(--glinr-saturate-regular));
-    backdrop-filter: blur(var(--glinr-blur-regular)) saturate(var(--glinr-saturate-regular));
+    -webkit-backdrop-filter: blur(var(--glinr-blur-regular))
+      saturate(var(--glinr-saturate-regular));
+    backdrop-filter: blur(var(--glinr-blur-regular))
+      saturate(var(--glinr-saturate-regular));
   }
 }
 @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
-  html:not([data-look='restrained']) header[data-scrolled='true'] > [data-slot='bar-surface'] {
+  html:not([data-look='restrained'])
+    header[data-scrolled='true']
+    > [data-slot='bar-surface'] {
     background-color: var(--glinr-surface-glass-solid);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
@@ -29,7 +37,9 @@ html:not([data-look='restrained']) header[data-scrolled='true'] > [data-slot='ba
 }
 @supports (animation-timeline: scroll()) {
   @media (prefers-reduced-motion: no-preference) {
-    html:not([data-look='restrained']):not([data-motion='off']) header[data-large-title='true'] h1 {
+    html:not([data-look='restrained']):not([data-motion='off'])
+      header[data-large-title='true']
+      h1 {
       transform-origin: left center;
       animation: lr-title-out linear both;
       animation-timeline: scroll();
@@ -161,4 +171,54 @@ html:not([data-look='restrained']) header[data-scrolled='true'] > [data-slot='ba
     opacity: 0;
     transform: translateX(-28px);
   }
+}
+
+/* Sidebar: translucent wash over the backdrop, hairline edge; flyout and collapsed popover use the regular material tier. */
+html:not([data-look='restrained']) [data-slot='sidebar-inner'] {
+  background-color: color-mix(in oklab, var(--sidebar) 78%, transparent);
+  border-color: var(--glinr-divider);
+}
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  html:not([data-look='restrained']) [data-slot='sidebar-inner'] {
+    -webkit-backdrop-filter: blur(var(--glinr-blur-regular))
+      saturate(var(--glinr-saturate-regular));
+    backdrop-filter: blur(var(--glinr-blur-regular))
+      saturate(var(--glinr-saturate-regular));
+  }
+  html:not([data-look='restrained']) [data-sidebar='menu-sub-popover'],
+  html:not([data-look='restrained']) [data-slot='sidebar'][data-mobile='true'] {
+    background-color: var(--glinr-material-regular);
+    -webkit-backdrop-filter: blur(var(--glinr-blur-regular))
+      saturate(var(--glinr-saturate-regular));
+    backdrop-filter: blur(var(--glinr-blur-regular))
+      saturate(var(--glinr-saturate-regular));
+  }
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  html:not([data-look='restrained']) [data-slot='sidebar-inner'],
+  html:not([data-look='restrained']) [data-sidebar='menu-sub-popover'],
+  html:not([data-look='restrained']) [data-slot='sidebar'][data-mobile='true'] {
+    background-color: var(--sidebar);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* Grouped list rows: hairline divider inset past the leading icon. */
+[data-slot='grouped-list'] > * + * {
+  position: relative;
+}
+[data-slot='grouped-list'] > * + *::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: var(--glinr-grouped-inset, 1rem);
+  height: 1px;
+  background-color: var(--glinr-divider);
+}
+
+/* Valid fields get a success border. */
+:is(input, textarea, select, [data-slot='select-trigger'])[data-valid='true'] {
+  border-color: var(--glinr-status-success-solid);
 }

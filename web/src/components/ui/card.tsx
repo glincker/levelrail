@@ -5,14 +5,21 @@ import { cn } from '@/lib/utils'
 function Card({
   className,
   size = 'default',
+  variant = 'default',
   ...props
-}: React.ComponentProps<'div'> & { size?: 'default' | 'sm' }) {
+}: React.ComponentProps<'div'> & {
+  size?: 'default' | 'sm'
+  variant?: 'default' | 'object'
+}) {
   return (
     <div
       data-slot="card"
       data-size={size}
+      data-variant={variant}
       className={cn(
         'group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-(--glinr-radius-card) bg-card look-glass:shadow-[var(--glinr-elev-1)] py-(--card-spacing) text-sm text-card-foreground shadow-card ring-1 ring-foreground/10 [--card-spacing:var(--glinr-card-pad)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-(--glinr-radius-card) *:[img:last-child]:rounded-b-(--glinr-radius-card)',
+        variant === 'object' &&
+          'shadow-[var(--glinr-elev-1),var(--glinr-layer-edge)]',
         className,
       )}
       {...props}
