@@ -46,3 +46,42 @@ export function mergeCertificateCenterRows(
 
   return rows.sort((a, b) => a.domain.localeCompare(b.domain))
 }
+
+// Rows whose certificate ends within `days` (already-expired ones included).
+// Rows without an expiry (not issued, internal) never match a day window.
+export function filterCertRowsExpiringWithin(
+  rows: CertificateCenterRow[],
+  days: number,
+  now = new Date(),
+): CertificateCenterRow[] {
+  const limit = now.getTime() + days * 86_400_000
+  return rows.filter((r) => {
+    if (!r.cert?.not_after) return false
+    const end = Date.parse(r.cert.not_after)
+    return Number.isFinite(end) && end <= limit
+  })
+}
+
+// Soonest expiry first; rows without a date sink to the end.
+export function sortCertRowsByExpiry(
+  rows: CertificateCenterRow[],
+): CertificateCenterRow[] {
+  const end = (r: CertificateCenterRow) => {
+    const v = r.cert?.not_after ? Date.parse(r.cert.not_after) : NaN
+    return Number.isFinite(v) ? v : Number.POSITIVE_INFINITY
+  }
+  return [...rows].sort((a, b) => end(a) - end(b))
+}
+
+// Rows the per-domain renew endpoint accepts: app-owned, not proxy managed,
+// and automatic (no stored cert yet, or ACME).
+export function renewableCertRows(
+  rows: CertificateCenterRow[],
+): CertificateCenterRow[] {
+  return rows.filter(
+    (r) =>
+      Boolean(r.appName) &&
+      r.tlsOwner !== 'proxy' &&
+      (!r.cert || r.cert.source === 'acme'),
+  )
+}

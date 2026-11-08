@@ -1710,6 +1710,19 @@
       "expiring_other": "{{count}} certificates expire soon",
       "expiringBody": "Automatic certificates renew on their own. If one stays in this state, force a renewal from its row."
     },
+    "bulk": {
+      "select": "Select {{domain}}",
+      "expiresIn": "Expires within",
+      "days": "Days",
+      "daysUnit": "days",
+      "sortExpiry": "Soonest expiry first",
+      "renew_one": "Renew {{count}} selected",
+      "renew_other": "Renew {{count}} selected",
+      "done_one": "Renewal requested for {{count}} domain",
+      "done_other": "Renewal requested for {{count}} domains",
+      "failed_one": "{{count}} domain could not be renewed",
+      "failed_other": "{{count}} domains could not be renewed"
+    },
     "table": {
       "noApp": "No app",
       "notIssued": "Not yet issued",

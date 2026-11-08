@@ -55,7 +55,32 @@
     "title": "Alert rules",
     "description": "Threshold, crashloop, certificate expiry, scheduled task failure, domain health, and missing backup rules over this app's metrics, restarts, jobs, domains, and backup schedules. Notifies via webhook, Slack, or Discord on a firing/resolved transition.",
     "emptyTitle": "No alert rules yet",
-    "emptyDescription": "Get notified the moment a metric crosses a threshold or a container starts crashlooping, via webhook, Slack, or Discord."
+    "emptyDescription": "Get notified the moment a metric crosses a threshold or a container starts crashlooping, via webhook, Slack, or Discord.",
+    "bulk": {
+      "filter": "Filter rules",
+      "reason": "Bulk mute from the dashboard",
+      "filters": {
+        "all": "All",
+        "firing": "Firing",
+        "pending": "Pending",
+        "ok": "OK",
+        "silenced": "Muted"
+      },
+      "duration": "Mute for",
+      "durations": {
+        "1h": "1 hour",
+        "4h": "4 hours",
+        "24h": "1 day",
+        "168h": "1 week"
+      },
+      "mute_one": "Mute {{count}} shown",
+      "mute_other": "Mute {{count}} shown",
+      "done_one": "Muted {{count}} rule",
+      "done_other": "Muted {{count}} rules",
+      "failed_one": "{{count}} rule could not be muted",
+      "failed_other": "{{count}} rules could not be muted",
+      "error": "Could not mute the rules"
+    }
   },
   "slo": {
     "title": "Track a {{target}}% availability SLO",

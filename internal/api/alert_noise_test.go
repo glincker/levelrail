@@ -242,3 +242,38 @@ func TestAlertRuleNoiseFields(t *testing.T) {
 		}
 	}
 }
+
+func TestBulkMuteWritesOneAuditRowPerRule(t *testing.T) {
+	rt, db, adb, cookie := newNoiseRouter(t)
+	ctx := context.Background()
+	for _, id := range []string{"r1", "r2"} {
+		_ = adb.SaveRule(ctx, alerting.Rule{ID: id, Name: "cpu", Kind: alerting.KindThreshold, ResourceID: "service:web", Metric: "cpu", Comparator: alerting.GreaterThan, Enabled: true})
+	}
+	rec := apiDo(t, rt, cookie, http.MethodPost, "/api/v1/alert-rules/bulk-mute", `{"rule_ids":["r1","r2","nope"],"duration":"2h","reason":"deploy"}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	var out struct {
+		Items []bulkMuteItem `json:"items"`
+	}
+	_ = json.Unmarshal(rec.Body.Bytes(), &out)
+	if len(out.Items) != 3 || out.Items[0].SilenceID == "" || out.Items[2].Error == "" {
+		t.Fatalf("items = %+v", out.Items)
+	}
+	entries, err := db.ListAuditEntries(ctx, 100, nil, store.AuditEntryFilter{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	n := 0
+	for _, e := range entries {
+		if e.Path == "/api/v1/alert-rules/r1/mute" || e.Path == "/api/v1/alert-rules/r2/mute" {
+			n++
+		}
+	}
+	if n != 2 {
+		t.Errorf("audit rows per muted rule = %d, want 2", n)
+	}
+	if rec = apiDo(t, rt, cookie, http.MethodPost, "/api/v1/alert-rules/bulk-mute", `{"rule_ids":["r1"],"duration":"bad"}`); rec.Code != http.StatusBadRequest {
+		t.Errorf("bad duration status = %d, want 400", rec.Code)
+	}
+}

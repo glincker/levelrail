@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { ShieldCheckGlassIcon } from '@thesvg/ui-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
+import { toast } from '@/components/ui/toast'
 import {
   certExpiryDate,
   certRenewalBadge,
@@ -12,13 +14,28 @@ import {
   isInternalCert,
   isProxyManagedCert,
 } from '../lib/certStatus'
-import type { CertificateCenterRow } from '../lib/certificateCenter'
+import {
+  filterCertRowsExpiringWithin,
+  renewableCertRows,
+  sortCertRowsByExpiry,
+  type CertificateCenterRow,
+} from '../lib/certificateCenter'
+import { certificatesKeys } from '../queries/certificates'
+import { renewDomainCertificate } from '../queries/domainTlsCert'
 import { DomainTLSCertControl } from './DomainTLSCertControl'
 import { RenewCertificateButton } from './RenewCertificateButton'
 
 // One line per domain: name, one status chip, expiry, Renew now. Uploading
 // a certificate of your own is a collapsed action so it stays out of the way.
-function CertificateRow({ row }: { row: CertificateCenterRow }) {
+function CertificateRow({
+  row,
+  selected,
+  onToggle,
+}: {
+  row: CertificateCenterRow
+  selected: boolean
+  onToggle: () => void
+}) {
   const { t } = useTranslation('https')
   const { t: ts } = useTranslation('settings')
   const { t: td } = useTranslation('domains')
@@ -61,6 +78,13 @@ function CertificateRow({ row }: { row: CertificateCenterRow }) {
     <div className="py-2.5">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <div className="flex min-w-0 flex-1 basis-56 items-center gap-2">
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={onToggle}
+            disabled={renewableCertRows([row]).length === 0}
+            aria-label={ts('certificatesPage.bulk.select', { domain })}
+          />
           {appName ? (
             <Link
               to="/apps/$name/domains/$domain"
@@ -122,12 +146,23 @@ function CertificateRow({ row }: { row: CertificateCenterRow }) {
   )
 }
 
+const DEFAULT_WINDOW_DAYS = Number(
+  import.meta.env.VITE_CERT_EXPIRY_FILTER_DAYS ?? 14,
+)
+
 export function CertificateCenterTable({
   rows,
 }: {
   rows: CertificateCenterRow[]
 }) {
   const { t } = useTranslation('settings')
+  const queryClient = useQueryClient()
+  const [windowOn, setWindowOn] = useState(false)
+  const [days, setDays] = useState(DEFAULT_WINDOW_DAYS)
+  const [byExpiry, setByExpiry] = useState(false)
+  const [picked, setPicked] = useState<Set<string>>(new Set())
+  const [busy, setBusy] = useState(false)
+
   if (rows.length === 0) {
     return (
       <EmptyState
@@ -139,11 +174,89 @@ export function CertificateCenterTable({
     )
   }
 
+  let shown = windowOn ? filterCertRowsExpiringWithin(rows, days) : rows
+  if (byExpiry) shown = sortCertRowsByExpiry(shown)
+  const renewable = renewableCertRows(shown)
+  const targets = renewable.filter((r) => picked.has(r.domain))
+
+  const toggle = (domain: string) =>
+    setPicked((prev) => {
+      const next = new Set(prev)
+      if (next.has(domain)) next.delete(domain)
+      else next.add(domain)
+      return next
+    })
+
+  const renewSelected = async () => {
+    setBusy(true)
+    const results = await Promise.allSettled(
+      targets.map((r) => renewDomainCertificate(r.appName ?? '', r.domain)),
+    )
+    const failed = results.filter((r) => r.status === 'rejected').length
+    void queryClient.invalidateQueries({ queryKey: certificatesKeys.all })
+    toast.add({
+      title: t('certificatesPage.bulk.done', {
+        count: results.length - failed,
+      }),
+      description:
+        failed > 0 ? t('certificatesPage.bulk.failed', { count: failed }) : '',
+      type: failed > 0 ? 'error' : 'success',
+    })
+    setPicked(new Set())
+    setBusy(false)
+  }
+
   return (
-    <div className="divide-y divide-border rounded-lg border border-border bg-card px-4">
-      {rows.map((row) => (
-        <CertificateRow key={row.domain} row={row} />
-      ))}
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-3 text-sm">
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={windowOn}
+            onChange={(e) => setWindowOn(e.target.checked)}
+          />
+          {t('certificatesPage.bulk.expiresIn')}
+        </label>
+        <input
+          type="number"
+          min={1}
+          value={days}
+          disabled={!windowOn}
+          aria-label={t('certificatesPage.bulk.days')}
+          onChange={(e) => setDays(Math.max(1, Number(e.target.value) || 1))}
+          className="w-16 rounded-md border bg-background px-2 py-1"
+        />
+        <span className="text-muted-foreground">
+          {t('certificatesPage.bulk.daysUnit')}
+        </span>
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={byExpiry}
+            onChange={(e) => setByExpiry(e.target.checked)}
+          />
+          {t('certificatesPage.bulk.sortExpiry')}
+        </label>
+        <Button
+          type="button"
+          size="sm"
+          className="ml-auto"
+          disabled={busy || targets.length === 0}
+          onClick={() => void renewSelected()}
+        >
+          {t('certificatesPage.bulk.renew', { count: targets.length })}
+        </Button>
+      </div>
+      <div className="divide-y divide-border rounded-lg border border-border bg-card px-4">
+        {shown.map((row) => (
+          <CertificateRow
+            key={row.domain}
+            row={row}
+            selected={picked.has(row.domain)}
+            onToggle={() => toggle(row.domain)}
+          />
+        ))}
+      </div>
     </div>
   )
 }

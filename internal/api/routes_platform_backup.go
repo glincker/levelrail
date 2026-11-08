@@ -30,6 +30,7 @@ func (rt *Router) registerBackupRoutes(mux *http.ServeMux) {
 	// triggering a backup or deleting the backup target itself, not the
 	// AbilityRoot tier restore below uses, since nothing here touches a
 	// live database's own data. See handleDeleteBackup's own doc comment.
+	mux.HandleFunc("POST /api/v1/backups/bulk-delete", rt.requireAbility(AbilityWriteSensitive, rt.handleBulkDeleteBackups))
 	mux.HandleFunc("DELETE /api/v1/databases/{name}/backups/{historyId}", rt.requireAbilityForResource(AbilityWriteSensitive, databaseResourceFromPath, rt.handleDeleteBackup))
 
 	// Backup verification: re-download a succeeded backup and confirm it

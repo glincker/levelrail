@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
@@ -10,6 +10,7 @@ import {
   type ResponsiveColumn,
 } from '@/components/ui/responsive-table'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
+import { AlertRulesBulkBar, type RuleFilter } from './AlertRulesBulkBar'
 import { AlertTemplatePicker } from './AlertTemplatePicker'
 import { CreateAlertRuleDialog } from './CreateAlertRuleDialog'
 import { EditAlertRuleDialog } from './EditAlertRuleDialog'
@@ -218,6 +219,14 @@ export function AlertRulesPanel({
   const rules = data ?? []
   const columns = useMemo(() => buildColumns(appName, ta), [appName, ta])
   const anyFiring = rules.some((r) => ruleState(r) === 'firing')
+  const [filter, setFilter] = useState<RuleFilter>('all')
+  const shown = rules.filter((r) =>
+    filter === 'all'
+      ? true
+      : filter === 'silenced'
+        ? Boolean(r.silenced)
+        : ruleState(r) === filter,
+  )
 
   return (
     <section className="rounded-lg border border-border p-4">
@@ -263,8 +272,14 @@ export function AlertRulesPanel({
           />
         ) : (
           <>
+            <AlertRulesBulkBar
+              appName={appName}
+              filter={filter}
+              onFilter={setFilter}
+              shown={shown}
+            />
             <ResponsiveTable
-              rows={rules}
+              rows={shown}
               columns={columns}
               getRowId={(rule) => rule.id}
               ariaLabel={t('tableLabels.alertRules')}

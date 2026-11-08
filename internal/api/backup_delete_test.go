@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -298,5 +299,42 @@ func TestHandleDeleteVolumeBackup_StillRunning_Refused(t *testing.T) {
 	}
 	if deleter.callCount != 0 {
 		t.Errorf("DeleteBackup was called %d times, want 0 for a backup that is still running", deleter.callCount)
+	}
+}
+
+func TestBulkDeleteBackups_RefusesRunningAndDeletesRest(t *testing.T) {
+	t.Parallel()
+	deleter := &fakeBackupDeleter{}
+	rt, db := newTestRouterWithBackupDeleter(t, deleter)
+	cookie := loginTestSession(t, rt, db)
+	if err := db.SaveDesiredDatabase(context.Background(), store.DesiredDatabase{Name: "main", Engine: store.EnginePostgres, Version: "16"}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	seedBackupTargetForAPI(t, db)
+	seedSucceededBackupForAPI(t, db, "main")
+	if err := db.StartBackupHistory(context.Background(), store.BackupHistory{
+		ID: "bkh_run", DatabaseName: "main", TargetID: "bkt_test1",
+		ObjectKey: "main/run.dump", StartedAt: "2026-08-14T04:00:00Z",
+	}); err != nil {
+		t.Fatalf("seed running backup: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/backups/bulk-delete", `{"ids":["bkh_run","bkh_1"],"dry_run":true}`))
+	if rec.Code != http.StatusOK || deleter.callCount != 0 {
+		t.Fatalf("dry run status = %d, deletes = %d", rec.Code, deleter.callCount)
+	}
+
+	rec = httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/backups/bulk-delete", `{"ids":["bkh_run","bkh_1"]}`))
+	var out struct {
+		Items []bulkBackupDeleteItem `json:"items"`
+	}
+	_ = json.Unmarshal(rec.Body.Bytes(), &out)
+	if len(out.Items) != 2 || out.Items[0].Outcome != "refused" || out.Items[1].Outcome != "deleted" {
+		t.Fatalf("items = %+v", out.Items)
+	}
+	if deleter.callCount != 1 || deleter.gotHistory != "bkh_1" {
+		t.Errorf("deletes = %d (%q), want only bkh_1", deleter.callCount, deleter.gotHistory)
 	}
 }

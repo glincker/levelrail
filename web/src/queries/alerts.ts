@@ -164,3 +164,43 @@ export function useDeleteAlertRule(appName: string) {
     },
   })
 }
+
+export type BulkMuteItem = {
+  rule_id: string
+  silence_id?: string
+  error?: string
+}
+
+// POST /api/v1/alert-rules/bulk-mute: one silence and one audit row per rule.
+export function useBulkMuteAlertRules(appName: string) {
+  const queryClient = useQueryClient()
+  return useMutation<
+    BulkMuteItem[],
+    ApiError,
+    { ruleIds: string[]; duration: string; reason: string }
+  >({
+    mutationFn: async (vars) => {
+      const res = await fetch('/api/v1/alert-rules/bulk-mute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rule_ids: vars.ruleIds,
+          duration: vars.duration,
+          reason: vars.reason,
+        }),
+      })
+      if (!res.ok) {
+        throw new ApiError(
+          res.status,
+          await readErrorMessage(res, `bulk mute failed: ${res.status}`),
+        )
+      }
+      return ((await res.json()) as { items: BulkMuteItem[] }).items
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: alertRuleKeys.all(appName),
+      })
+    },
+  })
+}
