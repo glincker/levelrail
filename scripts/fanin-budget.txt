@@ -1,73 +1,55 @@
 # Max transitive dependents per package (scripts/check-fanin.sh). Raise a number only
 # with a reason in the PR; lowering it after a split is the point.
-# v0.8.11: new leaf packages analysis, apptype, rollbackref (imports docker) and scaffold pull in store/spec/policy, adding 3 to 4 dependents to the shared core.
-# v0.8.11: internal/api imports internal/monitor, so every dependent of the API now depends on it and on kit/netguard (the SSRF guard its probes dial through).
-# v0.8.12: internal/mailrecords reuses the SPF and DMARC grading in internal/email and internal/api imports it, so the API's dependents now depend on internal/email.
-# v0.8.12: internal/mail/demo (the dev-only mail demo zone) imports internal/dnszones, adding one dependent.
-# v0.8.12: internal/mailstorage imports internal/objectstore, adding one dependent to deploytrace and semver; it and internal/statuswebhook (signed subscriber webhooks) each add one to netguard and docker.
-# v0.8.12: the plugin egress proxy (internal/plugin/egress) dials through kit/netguard, adding three dependents.
-# v0.8.13: the scan-catalog-platforms and gen-template-platforms tools import internal/catalog, adding two dependents to every package the catalog reaches.
-# v0.8.14: the gen-arm-compat tool imports internal/catalog, adding two dependents to every package the catalog reaches.
-# v0.9.0: the gen-runtime-settings-docs tool imports internal/api for its init-time settings registry, adding one dependent to internal/changes.
-# v0.9.1: kit/ticker.Safe guards every schedule loop against a zero or negative interval, so the schedule packages depend on it (27 dependents).
-# v0.9.2: internal/spec imports internal/placement for the tolerations and affinity fields, so every dependent of spec depends on it.
-# v0.9.4: registrymirror is imported by runtimesettings (registry-mirror keys), build/buildkitd, provision and the API, so it inherits the runtimesettings readers.
-# v0.9.4: deploysafety is imported by the API rollout state routes, the application reconciler, cmd/levelrail, failure, deploywatch, chaos/live, scheduledtask and the CLI.
-# v0.9.4: deploytrace is read by the API explain routes, the application reconciler, deploy and deploytimeline; changes by the API, alerting, investigate and deploywatch.
-# v0.9.1: internal/runtimesettings is the shared live settings registry that every feature registers keys in, so 51 packages read it by design (stack Setting kind, token verbs, node settings).
-# v0.9.5: the Coolify environments import (internal/platformimport) is used by the API applier and the CLI, so every dependent of the API now depends on it (39 dependents).
-# v0.9.5: the Procfile and app.json translation at deploy (internal/configtranslate) is imported by the deploy path and the API (26 dependents).
-# v0.9.5: kit/diskspace, internal/build and internal/version each gained one or two dependents from the remote build dispatch, the agent installer and the server patching host code; not traced per package.
-internal/autoscale 162
-internal/bindaddr 162
-internal/bindmount 164
-internal/build 40
-internal/canarypolicy 162
-internal/changes 26
-internal/chaos 156
-internal/compose 57
-internal/costbudget 156
-internal/dbprovision 42
-internal/deploy 25
-internal/deploysafety 50
-internal/deploytrace 48
-internal/dnszones 24
-internal/docker 174
-internal/dockerguard 59
-internal/email 31
-internal/envredact 65
-internal/extdb 34
-internal/footprint 167
-internal/frameworks 47
-internal/gpu 155
-internal/loadbalancer 162
-internal/meshpath 42
-internal/monitor 155
-internal/network 49
-internal/pkgregistry 27
-internal/placement 170
-internal/policy 157
-internal/quota 155
-internal/reconcile 156
-internal/reconcile/database 41
-internal/rolloutpolicy 162
-internal/runtimesettings 55
-internal/secretmask 160
-internal/spec 161
-internal/spendcap 164
-internal/store 153
-internal/telemetry 54
-internal/usagecost 155
-internal/version 37
-kit/cronexpr 162
-kit/diskspace 48
-kit/ids 76
-kit/netguard 178
-kit/probe 162
-kit/semver 30
-kit/ticker 32
-kit/timeutil 156
-kit/upgrade 25
-internal/runtimesettings/registrymirror 67
-internal/platformimport 45
-internal/configtranslate 30
+internal/autoscale 180
+internal/bindaddr 180
+internal/bindmount 182
+internal/build 39
+internal/canarypolicy 180
+internal/changes 25
+internal/chaos 171
+internal/compose 62
+internal/configtranslate 29
+internal/costbudget 171
+internal/dbprovision 46
+internal/deploy 27
+internal/deploysafety 48
+internal/deploytrace 46
+internal/dnszones 25
+internal/docker 191
+internal/dockerguard 64
+internal/email 34
+internal/envredact 71
+internal/extdb 36
+internal/footprint 182
+internal/frameworks 52
+internal/gpu 170
+internal/loadbalancer 180
+internal/meshpath 46
+internal/monitor 170
+internal/network 54
+internal/pkgregistry 29
+internal/placement 180
+internal/platformimport 43
+internal/policy 172
+internal/quota 170
+internal/reconcile 171
+internal/reconcile/database 45
+internal/rolloutpolicy 180
+internal/runtimesettings 61
+internal/runtimesettings/registrymirror 65
+internal/secretmask 177
+internal/spec 179
+internal/spendcap 182
+internal/store 169
+internal/telemetry 59
+internal/usagecost 170
+internal/version 36
+kit/cronexpr 180
+kit/diskspace 47
+kit/ids 83
+kit/netguard 194
+kit/probe 180
+kit/semver 32
+kit/ticker 30
+kit/timeutil 171
+kit/upgrade 27
