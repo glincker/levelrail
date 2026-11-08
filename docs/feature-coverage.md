@@ -100,6 +100,7 @@ The Proven on a real host row covers one recorded issuance, on 2026-10-05, again
 | Previews list badge for the basic auth gate. It shows the app-wide policy on rows with a domain, not each domain's live state | Beta | [Previews](/previews) |
 | Static previews: the basic auth gate is applied, and a publish without it is refused and marked failed | Built and tested | [Preview environments](/preview-environments#static-sites) |
 | Static previews: a forward-auth gate on the preview domain is refused | Built and tested | [Preview environments](/preview-environments#static-sites) |
+| Migration step for a container preview with a database strategy, run after the database is ready | Beta | [Preview environments](/preview-environments) |
 
 ## Security
 
@@ -108,7 +109,8 @@ The Proven on a real host row covers one recorded issuance, on 2026-10-05, again
 | HashiCorp Vault and OpenBao secret references (KV v2, token or AppRole) | Built and tested | [Vault secret references](/vault-secret-references) |
 | Vault Transit engine wraps the master key | Built and tested | [Vault secret references](/vault-secret-references) |
 | Doppler secret references (read only) | Beta | [Vault secret references](/vault-secret-references) |
-| Infisical secret references (read only) | Beta | [Vault secret references](/vault-secret-references) |
+| Infisical secret references (read only), with an access token or a machine identity login | Beta | [Vault secret references](/vault-secret-references) |
+| 1Password secret references (read only) through a Connect server you run | Beta | [Vault secret references](/vault-secret-references#1password-connect) |
 | Secret masking and reveal policies for app variables | Built and tested | [Environment and secrets](/environment-and-secrets) |
 | Audit log of every mutating request, with a hash chain you can verify and CSV export | Built and tested | [Audit log](/audit-log) |
 | Team roles: owner, admin, developer and viewer | Built and tested | [Teams and roles](/teams-and-roles) |

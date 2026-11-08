@@ -4,7 +4,7 @@ description: Per-feature maturity labels (stable, beta, hide-behind-flag) with t
 "og:url": "https://docs.levelrail.com/feature-status"
 ---
 
-This page labels every major feature by how much evidence backs it today. The evidence was first gathered on 2026-09-26. E2E rows were re-checked against main on 2026-10-05. Last updated 2026-11-07 (release/v0.9.5 branch). Counts come from the generated pages linked below. Every claim cites a path, and where evidence is missing the page says so.
+This page labels every major feature by how much evidence backs it today. The evidence was first gathered on 2026-09-26. E2E rows were re-checked against main on 2026-10-05. Last updated 2026-11-08 (release/v0.9.5 branch). Counts come from the generated pages linked below. Every claim cites a path, and where evidence is missing the page says so.
 
 ## How to read the labels
 

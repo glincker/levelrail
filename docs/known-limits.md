@@ -27,6 +27,12 @@ Current limits, each with the page it comes from. Labels and evidence change wit
 - The 15 vendor notification kinds have never had a real vendor accept a send. Source: [feature status](feature-status.md).
 - SAML and SCIM were run against Keycloak and SimpleSAMLphp in a local lab, not against Okta or Entra ID. Source: [feature status](feature-status.md).
 
+- No real-host run is recorded for these in this release, so none of them is proven on a real host: `apps run`, `apps scale` and `apps restart --service`; runtime options as seen in `docker inspect` (read-only root, capability drop, pids, tmpfs, ulimits, stop timeout); the compose Postgres backup schedule, typed-confirm restore and `databases` export, clone and import; an SSH deploy key clone with host key pinning; the basic auth gate on static previews (401 without credentials); the per-domain request body cap in the embedded proxy (413); the Valkey TLS toggle with a `rediss` connection; and the control plane idle footprint after five minutes.
+- The 1Password Connect provider is tested against a local fake API only. The Add provider save from the dashboard is not confirmed in a browser run. Source: [vault secret references](vault-secret-references.md).
+- The Infisical machine identity login is tested against a local stand-in server only. Source: [vault secret references](vault-secret-references.md).
+- The KeyDB health probe is unverified on the image, and the Dragonfly probe has no run against a real image. Source: [managed databases](managed-databases.md).
+- The preview migration step is tested with a fake runner, not against a live Postgres database. Source: [preview environments](preview-environments.md).
+
 ## App controls
 
 - The one-off command, per-service replica and restart controls, and the Logs service selector are unit and component tested with mocked fetch. None has run against a live server, and none has a browser check at phone or desktop width. The Logs selector's navigate-on-change path has no test. Source: [feature status](feature-status.md).
