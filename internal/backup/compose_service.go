@@ -75,6 +75,15 @@ func ComposeDumpCmd(engine string) ([]string, error) {
 // consume it unchanged.
 type ComposeServiceDumper struct {
 	Runtime docker.Runtime
+	// Runtimes picks the runtime for the node carried by ctx; nil falls back to Runtime.
+	Runtimes func(nodeID string) (docker.Runtime, error)
+}
+
+func composeRuntime(ctx context.Context, fixed docker.Runtime, pick func(string) (docker.Runtime, error)) (docker.Runtime, error) {
+	if pick == nil {
+		return fixed, nil
+	}
+	return pick(composeNodeFrom(ctx))
 }
 
 // Dump implements Dumper.
@@ -83,7 +92,11 @@ func (d *ComposeServiceDumper) Dump(ctx context.Context, engine, containerName s
 	if err != nil {
 		return nil, err
 	}
-	rc, err := d.Runtime.Exec(ctx, containerName, cmd)
+	rt, err := composeRuntime(ctx, d.Runtime, d.Runtimes)
+	if err != nil {
+		return nil, fmt.Errorf("backup: dump %s compose service %q: %w", engine, containerName, err)
+	}
+	rc, err := rt.Exec(ctx, containerName, cmd)
 	if err != nil {
 		return nil, fmt.Errorf("backup: dump %s compose service %q: %w", engine, containerName, err)
 	}

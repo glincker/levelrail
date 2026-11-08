@@ -78,7 +78,7 @@ func (c *ComposeServiceRestorer) RunComposeServiceRestore(ctx context.Context, s
 	if run.App != app || run.Service != service {
 		return fmt.Errorf("%w: run %q belongs to another service", ErrComposeRestoreRefused, run.ID)
 	}
-	container, err := c.Containers.ResolveComposeContainer(ctx, app, service)
+	ctx, container, err := resolveComposeWithNode(ctx, c.Containers, app, service)
 	if err != nil {
 		return fmt.Errorf("resolve container for %s/%s: %w", app, service, err)
 	}
@@ -172,9 +172,24 @@ var (
 		`export MYSQL_PWD="${MARIADB_ROOT_PASSWORD:-$MYSQL_ROOT_PASSWORD}"; D="${MARIADB_DATABASE:-$MYSQL_DATABASE}"; ` + fmt.Sprintf(composeMySQLReplace, "mariadb")}
 )
 
-// composePostgresPrelude opens the transaction and resets the schema; COMMIT is only
-// sent by guardedReader after a clean end of the dump.
-const composePostgresPrelude = "BEGIN;\nDROP SCHEMA public CASCADE;\nCREATE SCHEMA public;\n"
+// composePostgresPrelude opens the transaction and clears every user schema (not system or
+// extension-owned ones) so the replay lands on an empty scope; %I quotes each name.
+// COMMIT is only sent by guardedReader after a clean end of the dump.
+const composePostgresPrelude = `BEGIN;
+DO $lr_reset$
+DECLARE s name;
+BEGIN
+  FOR s IN
+    SELECT n.nspname FROM pg_namespace n
+    WHERE n.nspname <> 'information_schema' AND n.nspname !~ '^pg_'
+      AND NOT EXISTS (SELECT 1 FROM pg_depend d WHERE d.classid = 'pg_namespace'::regclass AND d.objid = n.oid AND d.deptype = 'e')
+  LOOP
+    EXECUTE format('DROP SCHEMA %I CASCADE', s);
+  END LOOP;
+  CREATE SCHEMA public;
+END
+$lr_reset$;
+`
 
 // guardedReader frames the dump with an optional prelude and suffix. The suffix is only
 // emitted on a clean EOF, and the first real read error is remembered so a truncated
@@ -228,7 +243,8 @@ func ComposeRestoreCmd(engine string) ([]string, error) {
 
 // ComposeContainerRestorer is the Restorer for compose database services, the counterpart of ComposeServiceDumper.
 type ComposeContainerRestorer struct {
-	Runtime docker.Runtime
+	Runtime  docker.Runtime
+	Runtimes func(nodeID string) (docker.Runtime, error)
 }
 
 // Restore implements Restorer.
@@ -241,7 +257,11 @@ func (c *ComposeContainerRestorer) Restore(ctx context.Context, engine, containe
 	if engine == store.EnginePostgres {
 		g.prelude, g.suffix = composePostgresPrelude, "\nCOMMIT;\n"
 	}
-	rc, err := c.Runtime.ExecWithInput(ctx, containerName, cmd, g)
+	rt, err := composeRuntime(ctx, c.Runtime, c.Runtimes)
+	if err != nil {
+		return fmt.Errorf("backup: restore %s compose service %q: %w", engine, containerName, err)
+	}
+	rc, err := rt.ExecWithInput(ctx, containerName, cmd, g)
 	if err != nil {
 		return fmt.Errorf("backup: restore %s compose service %q: %w", engine, containerName, err)
 	}

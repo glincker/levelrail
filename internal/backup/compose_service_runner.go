@@ -20,6 +20,36 @@ type ComposeContainerResolver interface {
 	ResolveComposeContainer(ctx context.Context, app, service string) (string, error)
 }
 
+// ComposeTargetResolver is the node-aware form: it also reports which node runs the container.
+type ComposeTargetResolver interface {
+	ResolveComposeTarget(ctx context.Context, app, service string) (container, nodeID string, err error)
+}
+
+type composeNodeKey struct{}
+
+// WithComposeNode carries the node of the resolved container to the dumper and restorer.
+func WithComposeNode(ctx context.Context, nodeID string) context.Context {
+	return context.WithValue(ctx, composeNodeKey{}, nodeID)
+}
+
+func composeNodeFrom(ctx context.Context) string {
+	id, _ := ctx.Value(composeNodeKey{}).(string)
+	return id
+}
+
+// resolveComposeWithNode resolves the container and returns a context bound to its node.
+func resolveComposeWithNode(ctx context.Context, r ComposeContainerResolver, app, service string) (context.Context, string, error) {
+	if tr, ok := r.(ComposeTargetResolver); ok {
+		container, nodeID, err := tr.ResolveComposeTarget(ctx, app, service)
+		if err != nil {
+			return ctx, "", err
+		}
+		return WithComposeNode(ctx, nodeID), container, nil
+	}
+	container, err := r.ResolveComposeContainer(ctx, app, service)
+	return ctx, container, err
+}
+
 // ComposeRunStore records compose service backup attempts.
 type ComposeRunStore interface {
 	StartComposeServiceBackupRun(ctx context.Context, r store.ComposeServiceBackupRun) error
@@ -85,7 +115,7 @@ func (c *ComposeServiceRunner) RunComposeServiceBackup(ctx context.Context, runI
 }
 
 func (c *ComposeServiceRunner) dump(ctx context.Context, app, service, engine, targetID, objectKey string, sealer *Sealer) (int64, string, error) {
-	container, err := c.Containers.ResolveComposeContainer(ctx, app, service)
+	ctx, container, err := resolveComposeWithNode(ctx, c.Containers, app, service)
 	if err != nil {
 		return 0, "", fmt.Errorf("resolve container for %s/%s: %w", app, service, err)
 	}
@@ -115,31 +145,51 @@ type ComposeServiceLister interface {
 type DesiredComposeResolver struct {
 	Services ComposeServiceLister
 	Runtime  docker.Runtime
+	// Runtimes picks the runtime of the node a service is placed on; "" is the control plane.
+	// When nil, Runtime serves every node.
+	Runtimes func(nodeID string) (docker.Runtime, error)
 	// Owns reports whether containerName belongs to desired service serviceName.
 	Owns func(serviceName, containerName string) bool
 }
 
+func (d *DesiredComposeResolver) runtimeFor(nodeID string) (docker.Runtime, error) {
+	if d.Runtimes != nil {
+		return d.Runtimes(nodeID)
+	}
+	return d.Runtime, nil
+}
+
 // ResolveComposeContainer implements ComposeContainerResolver.
 func (d *DesiredComposeResolver) ResolveComposeContainer(ctx context.Context, app, service string) (string, error) {
+	c, _, err := d.ResolveComposeTarget(ctx, app, service)
+	return c, err
+}
+
+// ResolveComposeTarget implements ComposeTargetResolver, looking on the node the service is placed on.
+func (d *DesiredComposeResolver) ResolveComposeTarget(ctx context.Context, app, service string) (string, string, error) {
 	svcs, err := d.Services.ListServicesByApp(ctx, app)
 	if err != nil {
-		return "", fmt.Errorf("list services of %q: %w", app, err)
+		return "", "", fmt.Errorf("list services of %q: %w", app, err)
 	}
 	full := app + "-" + service
 	for _, s := range svcs {
 		if s.Name != full && s.Name != service {
 			continue
 		}
-		states, err := d.Runtime.ListByPrefix(ctx, s.Name+"-")
+		rt, err := d.runtimeFor(s.NodeID)
 		if err != nil {
-			return "", fmt.Errorf("list containers of %q: %w", s.Name, err)
+			return "", "", fmt.Errorf("runtime for node %q: %w", s.NodeID, err)
+		}
+		states, err := rt.ListByPrefix(ctx, s.Name+"-")
+		if err != nil {
+			return "", "", fmt.Errorf("list containers of %q: %w", s.Name, err)
 		}
 		for _, st := range states {
 			if st.Running && d.Owns != nil && d.Owns(s.Name, st.Name) {
-				return st.Name, nil
+				return st.Name, s.NodeID, nil
 			}
 		}
-		return "", ErrComposeContainerNotRunning
+		return "", "", ErrComposeContainerNotRunning
 	}
-	return "", fmt.Errorf("service %q not found in app %q", service, app)
+	return "", "", fmt.Errorf("service %q not found in app %q", service, app)
 }

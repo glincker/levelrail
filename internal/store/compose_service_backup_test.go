@@ -102,3 +102,16 @@ func TestDeleteComposeServiceBackupsForAppKeepsRuns(t *testing.T) {
 		t.Fatalf("ComposeAppExists = %v, %v, want false", ok, err)
 	}
 }
+
+func TestComposeAppExistsSeesAppRowAndMemberServices(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	app := newTestApp()
+	seedAppWithWebWorker(t, db, app)
+	if ok, err := db.ComposeAppExists(ctx, app.ID); err != nil || !ok {
+		t.Fatalf("ComposeAppExists for a live app = %v, %v, want true", ok, err)
+	}
+	if ok, err := db.ComposeAppExists(ctx, "app_gone"); err != nil || ok {
+		t.Fatalf("ComposeAppExists unknown = %v, %v, want false", ok, err)
+	}
+}

@@ -142,13 +142,19 @@ func (db *DB) DeleteComposeServiceBackupsForApp(ctx context.Context, app string)
 	return nil
 }
 
-// ComposeAppExists reports whether a desired service named app is still stored.
+// ComposeAppExists reports whether the app row or any of its member services is still stored.
+// Compose services are stored as "<app>-<service>", so the app id is never a service name.
 func (db *DB) ComposeAppExists(ctx context.Context, app string) (bool, error) {
-	_, err := db.GetDesiredService(ctx, app)
-	if errors.Is(err, ErrServiceNotFound) {
-		return false, nil
+	if _, err := db.GetApp(ctx, app); err == nil {
+		return true, nil
+	} else if !errors.Is(err, ErrAppNotFound) {
+		return false, err
 	}
-	return err == nil, err
+	svcs, err := db.ListServicesByApp(ctx, app)
+	if err != nil {
+		return false, err
+	}
+	return len(svcs) > 0, nil
 }
 
 // StartComposeServiceBackupRun records a running attempt.
