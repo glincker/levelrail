@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import { useState } from 'react'
 
 import { cn } from '@/lib/utils'
 
@@ -9,11 +10,14 @@ function Table({
   containerClassName,
   ...props
 }: React.ComponentProps<'table'> & { containerClassName?: string }) {
+  const [scrolled, setScrolled] = useState(false)
   return (
     <div
       data-slot="table-container"
+      data-scrolled={scrolled || undefined}
+      onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 0)}
       className={cn(
-        'relative w-full overflow-x-auto overscroll-x-contain',
+        'relative w-full overflow-x-auto overscroll-x-contain [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10 [&_thead_th]:bg-background [&_thead_th]:transition-shadow motion-reduce:[&_thead_th]:transition-none data-scrolled:[&_thead_th]:bg-glinr-material-thick data-scrolled:[&_thead_th]:shadow-[0_1px_0_var(--border)]',
         containerClassName,
       )}
     >
@@ -68,7 +72,7 @@ function TableRow({ className, ...props }: React.ComponentProps<'tr'>) {
     <tr
       data-slot="table-row"
       className={cn(
-        'border-b transition-colors hover:bg-muted/50 has-aria-expanded:bg-muted/50 data-[state=selected]:bg-muted',
+        'border-b transition-colors hover:bg-glinr-hover has-aria-expanded:bg-glinr-hover data-[state=selected]:bg-glinr-accent-soft data-[state=selected]:[&>td:first-child]:shadow-[inset_2px_0_0_var(--state-active-bar)] aria-selected:bg-glinr-accent-soft aria-selected:[&>td:first-child]:shadow-[inset_2px_0_0_var(--state-active-bar)]',
         className,
       )}
       {...props}
@@ -81,7 +85,7 @@ function TableHead({ className, ...props }: React.ComponentProps<'th'>) {
     <th
       data-slot="table-head"
       className={cn(
-        'h-(--glinr-table-header-h) px-2 text-left align-middle font-medium whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0',
+        'h-9 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0',
         className,
       )}
       {...props}

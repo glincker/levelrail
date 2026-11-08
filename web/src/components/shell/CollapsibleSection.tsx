@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 
 // One row system for every sidebar link: same height, icon column and states as group headers.
 export const NAV_ROW_CLASS =
-  'h-(--nav-row-h) cursor-pointer gap-2 rounded-md px-2 text-(length:--nav-font) font-normal text-sidebar-foreground/90 outline-hidden transition-colors duration-150 ease-out motion-reduce:transition-none hover:bg-sidebar-accent/50 hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring data-active:bg-sidebar-accent data-active:font-medium data-active:text-sidebar-foreground [&_svg]:size-4 [&_svg]:text-sidebar-foreground/60 hover:[&_svg]:text-sidebar-foreground/80 data-active:[&_svg]:text-state-accent'
+  'relative my-0.5 h-9 cursor-pointer gap-2 rounded-md px-2 before:pointer-events-none before:absolute before:inset-y-2 before:left-0 before:w-0.5 before:rounded-full before:bg-state-active-bar before:opacity-0 before:transition-opacity motion-reduce:before:transition-none data-active:before:opacity-100 text-(length:--nav-font) font-normal text-sidebar-foreground/90 outline-hidden transition-colors duration-150 ease-out motion-reduce:transition-none hover:bg-sidebar-accent/50 hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring data-active:bg-sidebar-accent data-active:font-medium data-active:text-sidebar-foreground [&_svg]:size-4 [&_svg]:text-sidebar-foreground/60 hover:[&_svg]:text-sidebar-foreground/80 data-active:[&_svg]:text-state-accent'
 
 export function NavChevron({
   open,
