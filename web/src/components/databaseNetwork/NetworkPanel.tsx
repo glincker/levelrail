@@ -11,6 +11,8 @@ import { TlsCard } from './TlsCard'
 export function NetworkPanel({ databaseName }: { databaseName: string }) {
   const { t } = useTranslation('databaseAccess')
   const { data, isLoading, error } = useDatabaseNetwork(databaseName)
+  // The server decides root on this database, policies included.
+  const canEdit = data?.can_edit === true
 
   return (
     <div className="space-y-4">
@@ -32,14 +34,24 @@ export function NetworkPanel({ databaseName }: { databaseName: string }) {
         </Alert>
       ) : (
         <>
-          <ReachabilityCard databaseName={databaseName} network={data} />
-          <AllowedSourcesCard databaseName={databaseName} network={data} />
-          <ScopeCard
-            key={data.scope.current}
-            databaseName={databaseName}
-            network={data}
-          />
-          <TlsCard databaseName={databaseName} network={data} />
+          {!canEdit ? (
+            <p className="text-muted-foreground text-xs">
+              {t('network.readOnlyNotice')}
+            </p>
+          ) : null}
+          <fieldset
+            disabled={!canEdit}
+            className="m-0 min-w-0 space-y-4 border-0 p-0"
+          >
+            <ReachabilityCard databaseName={databaseName} network={data} />
+            <AllowedSourcesCard databaseName={databaseName} network={data} />
+            <ScopeCard
+              key={data.scope.current}
+              databaseName={databaseName}
+              network={data}
+            />
+            <TlsCard databaseName={databaseName} network={data} />
+          </fieldset>
         </>
       )}
     </div>

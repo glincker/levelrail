@@ -176,6 +176,7 @@
   "network": {
     "title": "Network",
     "description": "How this database can be reached, who is allowed in, and how far its reach extends.",
+    "readOnlyNotice": "You have read-only access. Changing database network exposure needs root access to this database.",
     "loadFailed": "Could not read this database's network: {{error}}"
   },
   "reach": {
