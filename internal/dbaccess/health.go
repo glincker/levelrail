@@ -25,7 +25,7 @@ func connectionsScript(engine string) (string, bool) {
 		return mysqlConnectionsScript("mysql", "MYSQL_ROOT_PASSWORD"), true
 	case store.EngineMariaDB:
 		return mysqlConnectionsScript("mariadb", "MARIADB_ROOT_PASSWORD"), true
-	case store.EngineRedis:
+	case store.EngineRedis, store.EngineValkey:
 		return `RC="redis-cli"; $RC ping >/dev/null 2>&1 || RC="redis-cli --tls --insecure -p 6380"; ` +
 			`u=$($RC INFO clients | tr -d '\r' | awk -F: '/^connected_clients/{print $2}'); ` +
 			`m=$($RC CONFIG GET maxclients | tail -1 | tr -d '\r'); echo "$u $m"`, true

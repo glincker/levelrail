@@ -21,6 +21,7 @@ type connectTarget struct {
 	database string
 	host     string
 	port     int
+	tls      bool
 }
 
 // connectString is the connection string for the local end of the tunnel; the password is never part of it.
@@ -31,7 +32,10 @@ func connectString(t connectTarget) string {
 		return fmt.Sprintf("postgresql://%s@%s/%s", t.user, addr, t.database)
 	case "mysql", "mariadb":
 		return fmt.Sprintf("mysql://%s@%s/%s", t.user, addr, t.database)
-	case "redis":
+	case "redis", "valkey":
+		if t.tls {
+			return "rediss://" + addr
+		}
 		return "redis://" + addr
 	}
 	return addr
@@ -49,8 +53,13 @@ func clientCommand(t connectTarget, password string) (bin string, args, env []st
 			args = append(args, t.database)
 		}
 		return "mysql", args, withEnv("MYSQL_PWD", password), true
-	case "redis":
-		return "redis-cli", []string{"-h", t.host, "-p", port}, withEnv("REDISCLI_AUTH", password), true
+	case "redis", "valkey":
+		args = []string{"-h", t.host, "-p", port}
+		if t.tls {
+			// The tunnel end is 127.0.0.1, which the server certificate does not name.
+			args = append(args, "--tls", "--insecure")
+		}
+		return "redis-cli", args, withEnv("REDISCLI_AUTH", password), true
 	}
 	return "", nil, nil, false
 }
@@ -103,7 +112,7 @@ func runDatabasesConnectManaged(prog string, args []string, stdout, stderr io.Wr
 	if database == "" && res.Engine == "postgres" {
 		database = "postgres"
 	}
-	target := connectTarget{engine: res.Engine, user: user, database: database, host: "127.0.0.1", port: ln.Addr().(*net.TCPAddr).Port}
+	target := connectTarget{engine: res.Engine, user: user, database: database, host: "127.0.0.1", port: ln.Addr().(*net.TCPAddr).Port, tls: res.TLSEnabled}
 	_, _ = fmt.Fprintf(stdout, "%s\n", connectString(target))
 	_, _ = fmt.Fprintf(stderr, "tunnel to database %q on %s (Ctrl+C to stop); the password is not shown, see 'databases users' to issue one\n", name, ln.Addr())
 

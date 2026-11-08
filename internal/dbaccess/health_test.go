@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 type recordingExec struct {
@@ -47,5 +48,13 @@ func TestReadPoolerPools_AuthFailureIsUnavailable(t *testing.T) {
 	}
 	if _, err := ReadPoolerPools(context.Background(), ex, "c1", 6432, ""); !errors.Is(err, ErrPoolerStatsUnavailable) {
 		t.Errorf("empty password error = %v, want ErrPoolerStatsUnavailable", err)
+	}
+}
+
+func TestConnectionsScriptValkeyMatchesRedis(t *testing.T) {
+	want, ok := connectionsScript(store.EngineRedis)
+	got, gok := connectionsScript(store.EngineValkey)
+	if !ok || !gok || got != want {
+		t.Fatalf("valkey script = %q ok=%v, want redis script %q", got, gok, want)
 	}
 }
